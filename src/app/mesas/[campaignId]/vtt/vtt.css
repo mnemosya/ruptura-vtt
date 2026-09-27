@@ -459,15 +459,21 @@
   --rv-rod-cor: var(--cy);
   position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 14;
   /* Largura pelo CONTEÚDO, com teto: o estado de repouso é só duas
-     linhas curtas e o com ação carrega "Janela concluída" + o botão na
-     mesma fileira. Fixar uma largura só faz um dos dois mentir — o
+     linhas curtas e o com ação ganha o botão à direita, na mesma
+     fileira. Fixar uma largura só faz um dos dois mentir — o
      primeiro fica largo demais, o segundo estoura (o botão saía por
      cima do colchete da direita). O teto continua deixando os dois
      trilhos de facção respirarem nas laterais. */
   width: max-content;
-  min-width: 268px; max-width: min(430px, calc(100% - 220px));
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 15px 30px 15px; border-radius: var(--rv-r-peca);
+  max-width: min(430px, calc(100% - 220px));
+  display: flex; align-items: center; justify-content: center; gap: 24px;
+  /* Mesmo respiro em volta toda — sem largura mínima, que só abria
+     vazio nas laterais. */
+  padding: 15px;
+  /* Chanfro das peças do VTT (`vtt-chassi.css`): a regra global só pega
+     controles, e a placa é uma `section`. */
+  border-radius: 4px var(--rv-notch, 10px) 4px var(--rv-notch, 10px);
+  corner-shape: round bevel round bevel;
   border: 1px solid #1b2a44;
   background: linear-gradient(160deg, #101b2e, #0a1220);
   box-shadow: 0 24px 48px rgba(0, 0, 0, .55), 0 4px 12px rgba(0, 0, 0, .4);
@@ -527,31 +533,29 @@
   white-space: nowrap;
 }
 
-/* Rodapé: régua, estado à esquerda, ação à direita. */
-.rv-rodadas-pe {
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  align-self: stretch; margin-top: 10px; padding-top: 12px;
-  border-top: 1px solid #1b2a44;
-}
+.rv-rodadas-nucleo { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+/* Estado só pra leitor de tela — de quem é a vez já se lê nos trilhos. */
 .rv-rodadas-estado {
-  font-family: var(--font-mono), monospace; font-size: 10px;
-  letter-spacing: .16em; text-transform: uppercase; color: #5f7492;
-  /* Uma linha: quebrado em duas ele empurra a fileira pra baixo e a
-     placa passa a ter duas alturas conforme o texto do estado. */
-  text-align: left; white-space: nowrap;
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
-.rv-rodadas-estado[data-lado="pj"] { color: #7fc9db; }
-.rv-rodadas-estado[data-lado="pn"] { color: #d98a97; }
-.rv-rodadas-estado[data-lado="livre"] { color: #5f7492; }
 .rv-rodadas-avanca {
   flex: none; padding: 9px 18px; cursor: pointer;
   border: 1px solid color-mix(in srgb, var(--rv-rod-cor) 55%, transparent);
   border-radius: var(--rv-r); background: transparent;
-  font-family: var(--rv-display), sans-serif;
-  font-size: 10px; font-weight: 400; letter-spacing: .12em; text-transform: uppercase;
+  letter-spacing: .08em; text-transform: uppercase;
   color: var(--rv-rod-cor);
   transition: background .14s, border-color .14s;
 }
+/* Fonte mono. Duas classes porque `.rm-root button { font: inherit }`
+   (classe + elemento) vence uma classe só e devolvia a Rajdhani. */
+.rv-rodadas .rv-rodadas-avanca { font: 700 10px var(--font-mono), monospace; }
+/* Mesma armadilha nos botões do trilho: Agir/Concluir e Passar saíam
+   em Rajdhani. Os de declarar janela (`≤2`/`3+`) ficam de fora de
+   propósito — o `≤` em mono fica esquisito; vão pra Rajdhani. */
+.rv-ator .rv-ator-agir,
+.rv-ator .rv-ator-passar { font-family: var(--font-mono), monospace; }
+.rv-ator .rv-ator-declara button { font-family: var(--font-rajdhani), "Rajdhani", sans-serif; font-size: 12px; }
 .rv-rodadas-avanca:hover { background: color-mix(in srgb, var(--rv-rod-cor) 12%, transparent); border-color: var(--rv-rod-cor); }
 .rv-rodadas-avanca:focus-visible { outline: 2px solid var(--rv-rod-cor); outline-offset: 2px; }
 
@@ -610,11 +614,15 @@
 .rv-ator {
   position: relative; display: grid; grid-template-columns: auto auto; align-items: center;
   gap: 7px; padding: 3px; border-radius: 32px;
+  /* Colado no retrato: quando alguém age, a caixa Concluir/Passar
+     alarga a coluna inteira, os slots esticam junto e, sem isto, a
+     sobra ia pro vão entre o retrato e os botões. No lado PN (`rtl`)
+     `start` é a direita — o mesmo "colado" espelhado. */
+  justify-content: start;
   transition: opacity .16s, background .16s;
 }
 .rv-faccao--pn .rv-ator { grid-template-columns: auto auto; direction: rtl; }
 .rv-faccao--pn .rv-ator > * { direction: ltr; }
-.rv-ator[data-situacao="agindo"] { grid-template-columns: auto; justify-items: center; background: var(--rv-am-soft); border-radius: var(--rv-r); padding: 6px; }
 .rv-ator[data-situacao="aguardando"] { opacity: .74; }
 .rv-ator[data-situacao="agiu"], .rv-ator[data-situacao="fora"] { opacity: .42; }
 .rv-ator[data-situacao="agiu"]:hover, .rv-ator[data-situacao="fora"]:hover,
@@ -643,7 +651,9 @@
 .rv-ator[data-sel="true"] .rv-ator-retrato { box-shadow: 0 0 0 3px var(--rv-cy-soft), 0 0 20px color-mix(in srgb, var(--cy) 22%, transparent); border-color: #7ce6ff; }
 .rv-faccao--pn .rv-ator[data-sel="true"] .rv-ator-retrato { box-shadow: 0 0 0 3px var(--rv-dg-soft), 0 0 20px color-mix(in srgb, var(--dg) 30%, transparent); border-color: #ff9aa8; }
 /* Em ação agora */
-.rv-ator[data-situacao="agindo"] .rv-ator-retrato { border-color: var(--am); box-shadow: 0 0 0 3px var(--rv-am-soft), 0 0 22px color-mix(in srgb, var(--am) 30%, transparent); }
+/* Halo de quem age: cor do LADO (ciano jogadores, vermelho narrador). */
+.rv-ator[data-situacao="agindo"] .rv-ator-retrato { border-color: var(--cy); box-shadow: 0 0 0 3px var(--rv-cy-soft), 0 0 22px color-mix(in srgb, var(--cy) 30%, transparent); }
+.rv-faccao--pn .rv-ator[data-situacao="agindo"] .rv-ator-retrato { border-color: var(--dg); box-shadow: 0 0 0 3px var(--rv-dg-soft), 0 0 22px color-mix(in srgb, var(--dg) 30%, transparent); }
 .rv-ator[data-situacao="agiu"] .rv-ator-retrato, .rv-ator[data-situacao="fora"] .rv-ator-retrato { filter: grayscale(.55); }
 
 /* PA guardado por fragmentação — badge pequeno NO retrato (regra 5). */
@@ -665,7 +675,6 @@
    menor desalinhado em cima dele. Vale pros dois trilhos — nada de
    alinhar por borda de cada lado. */
 .rv-ator-acoes { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
-.rv-ator[data-situacao="agindo"] .rv-ator-acoes { align-items: center; }
 
 .rv-ator-agir {
   min-height: 24px; padding: 2px 10px; cursor: pointer;
@@ -681,10 +690,6 @@
 .rv-faccao--pn .rv-ator-agir:hover:not(:disabled) { border-color: color-mix(in srgb, var(--dg) 30%, transparent); background: color-mix(in srgb, var(--dg) 30%, transparent); color: #fff0f2; }
 .rv-faccao--pn .rv-ator-agir:focus-visible { outline-color: var(--dg); }
 
-.rv-ator-ativo {
-  padding: 2px 9px; border-radius: var(--rv-r-pill); background: color-mix(in srgb, var(--am) 30%, transparent); color: var(--am);
-  font: 700 10px var(--font-mono), monospace; letter-spacing: .12em; text-transform: uppercase;
-}
 
 /* Declaração de janela (regra: só entra na janela que declarou). Dois
    alvos minúsculos no próprio slot — substituem o menu "+ Declarar" e
@@ -703,9 +708,6 @@
   font: 700 10px var(--font-mono), monospace; line-height: 1; white-space: nowrap;
   transition: background .14s, color .14s, border-color .14s, opacity .14s;
 }
-/* O glifo é decorativo (`aria-hidden`) e não pode empurrar o número:
-   fica na mesma altura de caixa, sem herdar a métrica da fonte mono. */
-.rv-ator-declara button > span { font-size: 10px; line-height: 1; }
 .rv-ator-declara button:hover:not(:disabled) { color: var(--txt-forte); background: var(--rv-raise); border-color: var(--linha-hover); }
 .rv-ator-declara button:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 .rv-ator-declara button:disabled { opacity: .3; cursor: not-allowed; }
@@ -727,12 +729,36 @@
 /* Concluir/Passar e nada mais — sem escolha de PA (ver `Resolucao` em
    `_turnos/TrilhaFaccoes.tsx`). Sem o seletor, a caixa encolheu pra
    pouco mais que a largura do próprio slot. */
-.rv-ator-resolucao {
-  grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 5px;
-  margin-top: 3px; padding: 6px;
-  border-radius: var(--rv-r); background: rgba(10,16,23,.94); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--am) 30%, transparent);
+/* Toma o lugar do "Agir", na mesma coluna — sem caixa própria. */
+.rv-ator-resolucao { display: flex; gap: 4px; }
+/* Passar: a mesma métrica do Agir/Concluir, sem preenchimento. */
+.rv-ator-passar {
+  min-height: 24px; padding: 2px 10px; cursor: pointer;
+  border: 1px solid transparent; border-radius: var(--rv-r); background: transparent; color: var(--txt-dim);
+  font: 700 10px var(--font-mono), monospace; letter-spacing: .08em; text-transform: uppercase;
+  transition: color .14s, border-color .14s;
 }
-.rv-ator-resolucao .rv-btn { padding: 4px 10px; font-size: 11px; }
+.rv-ator-passar:hover { color: var(--txt-forte); border-color: var(--linha-hover); }
+.rv-ator-passar:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+/* "×" de cancelar o Agir: selinho no canto de cima do retrato, do
+   lado de FORA do trilho (espelhado no PN), onde os outros selos
+   (`.rv-ator-marca`) nunca aparecem enquanto alguém age. */
+.rv-ator-retrato-caixa { position: relative; }
+/* Duas classes: vence o `border-radius: 4px !important` que a folha
+   global dá a botões só de ícone (`vtt-chassi.css`). */
+.rv-ator-retrato-caixa .rv-ator-cancelar {
+  position: absolute; top: -2px; right: -6px; z-index: 1;
+  width: 20px; height: 20px; padding: 0; cursor: pointer;
+  display: grid; place-items: center;
+  border: 1px solid color-mix(in srgb, var(--cy) 55%, transparent); border-radius: 50% !important;
+  background: #0b1a22; color: var(--cy);
+  box-shadow: 0 0 0 2px #0b1219;
+  transition: color .14s, border-color .14s;
+}
+.rv-faccao--pn .rv-ator-cancelar { right: auto; left: -6px; }
+.rv-faccao--pn .rv-ator-retrato-caixa .rv-ator-cancelar { border-color: color-mix(in srgb, var(--dg) 55%, transparent); background: #22111a; color: var(--dg); }
+.rv-ator-cancelar:hover { filter: brightness(1.35); }
+.rv-ator-cancelar:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 
 @media (prefers-reduced-motion: reduce) {
   .rv-ator-retrato:hover { transform: none; }
@@ -747,7 +773,7 @@
   .rv-ator-retrato { width: 40px; height: 40px; font-size: 11px; }
   .rv-faccao--pj .rv-faccao-espinha { left: 24px; }
   .rv-faccao--pn .rv-faccao-espinha { right: 24px; }
-  .rv-rodadas { min-width: 236px; padding: 12px 20px 13px; }
+  .rv-rodadas { padding: 12px; }
 }
 @media (max-width: 760px) {
   /* Aqui o HUD ocupa a largura toda do rodapé (não só a esquerda),
@@ -760,11 +786,9 @@
      ninguém pode agir — esconder o controle esconderia a regra. Só
      encolhem, e o teto de PA (a informação da decisão) fica. */
   .rv-ator-declara button { height: 16px; padding: 0 3px; font-size: 10px; }
-  .rv-ator-declara button > span { font-size: 10px; }
-  .rv-rodadas { top: 6px; min-width: 200px; padding: 10px 16px 11px; }
+  .rv-rodadas { top: 6px; padding: 10px; }
   .rv-rodadas-janela { font-size: 13px; }
-  .rv-rodadas-pe { flex-direction: column; align-items: stretch; gap: 8px; }
-  .rv-rodadas-estado { text-align: center; }
+  .rv-rodadas { gap: 14px; }
 }
 
 /* ─────────────────────────────────────────────────────────────────

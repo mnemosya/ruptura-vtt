@@ -10,15 +10,16 @@
  * estados sem montar a trilha inteira em volta. Um componente só, dois
  * lugares — a página nunca mostra uma cópia que envelheceu.
  *
- * Duas partes:
+ * Duas partes, lado a lado:
  *
  *  · o NÚCLEO, sempre presente: a rodada em caixa pequena por cima e a
  *    janela em vigor com o teto de PA embaixo, grande. Os dois juntos
  *    respondem "onde estamos" sem ler mais nada.
  *
- *  · o RODAPÉ, condicional: uma régua, o estado à esquerda e a ação à
- *    direita. Só existe quando há algo a dizer além do óbvio — ver
- *    `temNoticia` abaixo. É a diferença entre os dois estados do Figma.
+ *  · a AÇÃO, à direita, só quando a janela acabou: resolver os lentos
+ *    ou encerrar a rodada. Sem rodapé nem texto de estado — de quem é
+ *    a vez já se lê nos trilhos de facção; o estado segue existindo só
+ *    pra leitor de tela (`role="status"`, visualmente oculto).
  *
  * Nada aqui decide regra: quem diz se a janela acabou é
  * `podeEncerrarJanela`, e de quem é a vez, `ladoDaVez`.
@@ -56,48 +57,34 @@ export function NucleoRodada({
     : janelaAcabou ? "Janela concluída"
     : "Qualquer lado pode abrir";
 
-  /**
-   * Há notícia? Só então o rodapé existe.
-   *
-   * "Qualquer lado pode abrir" é o estado de repouso: ninguém agindo,
-   * nenhuma vez definida pela alternância, janela ainda aberta. Não é
-   * informação — é a ausência dela. Uma régua e uma linha extra pra
-   * anunciar que nada mudou é ruído numa peça fixa no topo da mesa.
-   */
-  const temNoticia = agindo !== null || vez !== null || janelaAcabou;
 
   return (
     <section className="rv-rodadas" aria-label="Rodada e ativação" data-janela={trilha.janela}>
-      <p className="rv-rodadas-rodada">
-        Rodada {trilha.rodada}
-        {trilha.modo !== "combate" && (
-          <span className="rv-rodadas-modo" data-modo={trilha.modo}>
-            {trilha.modo === "emboscada" ? "Emboscada" : trilha.modo === "tregua" ? "Trégua" : "Exploração"}
-          </span>
-        )}
-      </p>
-      <p className="rv-rodadas-janela" data-janela={trilha.janela} title={DICA_JANELA[trilha.janela]}>
-        {ROTULO_JANELA_CURTO[trilha.janela]} · {limiteDaJanela(trilha.janela)}
-      </p>
-
-      {temNoticia && (
-        <div className="rv-rodadas-pe">
-          <p className="rv-rodadas-estado" data-lado={agindo ? agindo.lado : vez ?? "livre"} role="status" aria-live="polite">
-            {estado}
-          </p>
-          {/* Avançar janela/rodada só aparece quando o modelo diz que
-              ninguém mais pode agir nela — e nunca no meio de uma
-              ativação aberta (escolha incompatível). */}
-          {janelaAcabou && !agindo && (
-            <button
-              type="button"
-              className="rv-rodadas-avanca"
-              onClick={trilha.janela === "rapidos" ? onAvancarJanela : onProximaRodada}
-            >
-              {trilha.janela === "rapidos" ? `Resolver ${ROTULO_JANELA_CURTO.lentos}` : "Encerrar rodada"}
-            </button>
+      <div className="rv-rodadas-nucleo">
+        <p className="rv-rodadas-rodada">
+          Rodada {trilha.rodada}
+          {trilha.modo !== "combate" && (
+            <span className="rv-rodadas-modo" data-modo={trilha.modo}>
+              {trilha.modo === "emboscada" ? "Emboscada" : trilha.modo === "tregua" ? "Trégua" : "Exploração"}
+            </span>
           )}
-        </div>
+        </p>
+        <p className="rv-rodadas-janela" data-janela={trilha.janela} title={DICA_JANELA[trilha.janela]}>
+          {ROTULO_JANELA_CURTO[trilha.janela]} · {limiteDaJanela(trilha.janela)}
+        </p>
+      </div>
+      <p className="rv-rodadas-estado" role="status" aria-live="polite">{estado}</p>
+      {/* Avançar janela/rodada só aparece quando o modelo diz que
+          ninguém mais pode agir nela — e nunca no meio de uma
+          ativação aberta (escolha incompatível). */}
+      {janelaAcabou && !agindo && (
+        <button
+          type="button"
+          className="rv-rodadas-avanca"
+          onClick={trilha.janela === "rapidos" ? onAvancarJanela : onProximaRodada}
+        >
+          {trilha.janela === "rapidos" ? `Resolver ${ROTULO_JANELA_CURTO.lentos}` : "Encerrar rodada"}
+        </button>
       )}
     </section>
   );

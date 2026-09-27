@@ -188,7 +188,9 @@
   .rv-cena-palco,
   .rc-picker-fechar,
   .rc-arma-swap,
-  .rc-arma-fechar
+  .rc-arma-fechar,
+  .rv-ator-retrato,
+  .rv-ator-declara button
 )):not(button[aria-label]:has(svg)) {
   /* ordem: superior esquerdo, superior direito, inferior direito,
      inferior esquerdo — exatamente `rup-clip`. */
@@ -199,7 +201,12 @@
 /* Caixas compostas só por ícone são exceção deliberada. O pictograma
    já concentra toda a leitura dentro de uma área pequena; chanfrar a
    caixa em volta reduz área útil e cria ruído. Inclui os dois trilhos,
-   controles de janela e ações quadradas de fechar/trocar. */
+   controles de janela e ações quadradas de fechar/trocar.
+   O retrato do trilho de facção (`.rv-ator-retrato`) também fica fora
+   da regra acima, mas não entra aqui: ele é CIRCULAR (`vtt.css`). O
+   mesmo vale pros botõezinhos de declarar janela (`.rv-ator-declara`):
+   18px de altura, o chanfro comia o próprio glifo — ficam no raio
+   simples do `vtt.css`. */
 .rv-ferr-btn,
 .rc-tabrail-btn,
 .rc-winbtn,
