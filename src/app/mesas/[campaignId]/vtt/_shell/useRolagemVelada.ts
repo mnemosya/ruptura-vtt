@@ -39,6 +39,9 @@ export interface RolagemVelada<T extends HTMLElement> {
 export function useRolagemVelada<T extends HTMLElement>(): RolagemVelada<T> {
   const ref = useRef<T | null>(null);
   const [estado, setEstado] = useState({ rolavel: false, inicio: true, fim: false });
+  /* Espelho síncrono de `estado` — ver o comentário em `medir`. */
+  const estadoRef = useRef(estado);
+  estadoRef.current = estado;
 
   const medir = useCallback(() => {
     const el = ref.current;
@@ -51,12 +54,17 @@ export function useRolagemVelada<T extends HTMLElement>(): RolagemVelada<T> {
       inicio: el.scrollTop <= 1,
       fim: el.scrollTop + el.clientHeight >= el.scrollHeight - 1,
     };
-    // Só reescreve quando muda de verdade: `onScroll` dispara a cada
-    // quadro do gesto, e um `setState` por quadro rerenderizaria a
-    // lista inteira enquanto ela rola.
-    setEstado((a) => (
-      a.rolavel === proximo.rolavel && a.inicio === proximo.inicio && a.fim === proximo.fim ? a : proximo
-    ));
+    // Só chama `setEstado` quando muda de verdade — e a comparação vem
+    // ANTES da chamada, não dentro de um updater. `onScroll` dispara a
+    // cada quadro do gesto, e o efeito abaixo mede a cada render: um
+    // `setEstado(updater)` que devolve o mesmo valor ainda enfileira um
+    // update. As abas do painel re-renderizam a cada quadro de pan do
+    // mapa, e isso por quadro estourava o "Maximum update depth
+    // exceeded" do React (apontando pro `setPan`).
+    const a = estadoRef.current;
+    if (a.rolavel === proximo.rolavel && a.inicio === proximo.inicio && a.fim === proximo.fim) return;
+    estadoRef.current = proximo;
+    setEstado(proximo);
   }, []);
 
   useEffect(() => {

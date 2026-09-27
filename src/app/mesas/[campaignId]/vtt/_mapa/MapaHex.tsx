@@ -2085,7 +2085,15 @@ export function MapaHex({
   // gesto ficaria presa numa posição/célula que não é mais a de baixo
   // do cursor. Mais simples e robusto que recalcular "o que há agora
   // sob o cursor": só limpar.
-  useEffect(() => { setHint(null); }, [pan.x, pan.y, zoom]);
+  //
+  // Só chama `setHint` se HÁ hint: um `setHint(null)` incondicional a
+  // cada quadro de pan enfileirava um update dentro de efeito por quadro
+  // (o React nem sempre descarta o valor igual no meio de uma sequência
+  // de renders), e num arrasto longo isso estourava o "Maximum update
+  // depth exceeded" apontando pro `setPan`.
+  const hintRef = useRef(hint);
+  hintRef.current = hint;
+  useEffect(() => { if (hintRef.current) setHint(null); }, [pan.x, pan.y, zoom]);
 
   const hintParaCelula = useCallback((c: Hex): Omit<HintMapa, "x" | "y"> | null => {
     const real = terrenoReal?.get(hexKey(c));

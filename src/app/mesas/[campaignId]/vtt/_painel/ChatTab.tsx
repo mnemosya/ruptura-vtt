@@ -99,6 +99,9 @@ export function ChatTab({
    * trabalho, e o atalho passa a valer mais que o silêncio.
    */
   const [rolagem, setRolagem] = useState({ rolavel: false, inicio: true, fim: true, longe: false });
+  /* Espelho síncrono de `rolagem` — ver `medirRolagem`. */
+  const rolagemRef = useRef(rolagem);
+  rolagemRef.current = rolagem;
   /**
    * A ALTURA DA BANDEJA, medida.
    *
@@ -243,10 +246,16 @@ export function ChatTab({
       fim: faltando <= 1,
       longe: faltando > Math.max(DISTANCIA_ATALHO, el.clientHeight),
     };
-    setRolagem((a) => (
-      a.rolavel === proximo.rolavel && a.inicio === proximo.inicio
-      && a.fim === proximo.fim && a.longe === proximo.longe ? a : proximo
-    ));
+    // Compara ANTES de chamar `setRolagem`: esta medida roda a cada
+    // render (efeito sem dependências), e o chat re-renderiza a cada
+    // quadro de pan do mapa. Um `setRolagem(updater)` por render — mesmo
+    // devolvendo o valor igual — enfileirava um update dentro de efeito
+    // por quadro, e num arrasto longo o React acusava "Maximum update
+    // depth exceeded" (apontando pro `setPan` do mapa).
+    const a = rolagemRef.current;
+    if (a.rolavel === proximo.rolavel && a.inicio === proximo.inicio
+      && a.fim === proximo.fim && a.longe === proximo.longe) return;
+    setRolagem(proximo);
   }
 
   useEffect(() => {
