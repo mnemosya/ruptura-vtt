@@ -471,6 +471,8 @@ export interface PropsMapaHex {
    * movimento total do gesto ficou abaixo do limiar de arrasto.
    */
   onMenuContextual?: (info: { clientX: number; clientY: number; tokenId: string | null; hex: Hex }) => void;
+  /** Shift + botão direito: alterna target sem seleção, cartão ou pan. */
+  onAlternarAlvo?: (tokenId: string) => void;
 
   /**
    * Fantasma ao vivo do POSICIONAMENTO de um token novo (fluxo de
@@ -620,6 +622,7 @@ export function MapaHex({
   onPingCelula,
   onPan,
   onMenuContextual,
+  onAlternarAlvo,
   onWheelZoom,
   movimentosVisuais,
   onAnimacaoConcluida,
@@ -1669,16 +1672,17 @@ export function MapaHex({
   // direito ARRASTADO" (pan) pela distância total percorrida — o
   // mesmo limiar de `LIMIAR_ARRASTO_PX` usado pra distinguir clique de
   // arrasto em qualquer outro gesto deste arquivo.
-  const panOrigemRef = useRef<{ x: number; y: number } | null>(null);
+  const panOrigemRef = useRef<{ x: number; y: number; targetId: string | null; shift: boolean } | null>(null);
   const panDistanciaRef = useRef(0);
   const onPointerDownSvg = useCallback((e: React.PointerEvent) => {
     if (e.button !== 2) return;
     e.preventDefault();
     onFecharCartaoToken();
-    panOrigemRef.current = { x: e.clientX, y: e.clientY };
+    const targetId=(e.target as Element).closest('.rv-token')?.getAttribute('data-token-id')??null;
+    panOrigemRef.current = { x: e.clientX, y: e.clientY, targetId, shift:e.shiftKey };
     panDistanciaRef.current = 0;
-    if (onPan) panRef.current = { x: e.clientX, y: e.clientY };
-  }, [onPan, onFecharCartaoToken]);
+    if (onPan && !(e.shiftKey && targetId && onAlternarAlvo)) panRef.current = { x: e.clientX, y: e.clientY };
+  }, [onPan, onFecharCartaoToken, onAlternarAlvo]);
 
   // Espelho síncrono de `pontoMundo` — ele muda de referência a cada
   // tick de pan (depende de `pan.x/y`), e é EXATAMENTE esse tick que
@@ -1693,7 +1697,7 @@ export function MapaHex({
   useEffect(() => { pontoMundoRef.current = pontoMundo; }, [pontoMundo]);
 
   useEffect(() => {
-    if (!onPan && !onMenuContextual) return;
+    if (!onPan && !onMenuContextual && !onAlternarAlvo) return;
     function mover(e: PointerEvent) {
       if (panOrigemRef.current) {
         panDistanciaRef.current = Math.hypot(e.clientX - panOrigemRef.current.x, e.clientY - panOrigemRef.current.y);
@@ -1708,12 +1712,14 @@ export function MapaHex({
       // Botão direito solto sem ter arrastado (praticamente) nada —
       // era um CLIQUE, não um pan: abre o menu contextual no que
       // estiver sob o cursor (token ou célula vazia).
-      if (onMenuContextual && panOrigemRef.current && panDistanciaRef.current < LIMIAR_ARRASTO_PX) {
+      if (e.button===2 && panOrigemRef.current && panDistanciaRef.current < LIMIAR_ARRASTO_PX) {
         const alvo = document.elementFromPoint(e.clientX, e.clientY);
         const tokenId = alvo?.closest(".rv-token")?.getAttribute("data-token-id") ?? null;
         const p = pontoMundoRef.current(e.clientX, e.clientY);
         const hex = p ? pixelParaHex(p.x, p.y, TAM) : { q: 0, r: 0 };
-        onMenuContextual({ clientX: e.clientX, clientY: e.clientY, tokenId, hex });
+        if(panOrigemRef.current.shift && panOrigemRef.current.targetId && onAlternarAlvo) {
+          if(tokenId===panOrigemRef.current.targetId)onAlternarAlvo(tokenId);
+        } else onMenuContextual?.({ clientX: e.clientX, clientY: e.clientY, tokenId, hex });
       }
       panRef.current = null;
       panOrigemRef.current = null;
@@ -1727,7 +1733,7 @@ export function MapaHex({
     // `pontoMundo` de propósito FORA desta lista — ver o comentário do
     // `pontoMundoRef` acima. `zoom` fica: não muda por pixel de pan
     // (só pela roda), então não gera a mesma reinscrição por tick.
-  }, [onPan, onMenuContextual, zoom]);
+  }, [onPan, onMenuContextual, onAlternarAlvo, zoom]);
 
   // ── Zoom pela roda do mouse/trackpad ─────────────────────────────
   // Listener NATIVO (não `onWheel` do React) — o listener sintético do
@@ -2201,6 +2207,16 @@ export function MapaHex({
       aria-label={`Mapa da cena ${cena.nome}, grade hexagonal de ${cena.largura} por ${cena.altura} metros`}
       onPointerDown={onPointerDownSvg}
       onContextMenu={(e) => { if (onPan || onMenuContextual) e.preventDefault(); }}
+      onKeyDown={(e) => {
+        if (e.key !== "ContextMenu" && !(e.shiftKey && e.key === "F10")) return;
+        const elemento = (e.target as Element).closest('.rv-token');
+        const id = elemento?.getAttribute('data-token-id');
+        const token = cena.tokens.find(t => t.id === id);
+        if (!elemento || !token || !onMenuContextual) return;
+        e.preventDefault();
+        const r = elemento.getBoundingClientRect();
+        onMenuContextual({ clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, tokenId: token.id, hex: token.pos });
+      }}
     >
       <defs>
         {/* Piso: gradiente + ruído. É o que evita o "cinza vazio". */}
@@ -3481,7 +3497,7 @@ function Token({
       opacity={opacoReduzido ? 0.35 : undefined}
       tabIndex={0}
       role="button"
-      aria-label={`${token.nome}, ${token.lado === "pj" ? "aliado" : token.lado === "pn" ? "hostil" : "neutro"}${temPv ? `, PV ${token.pv} de ${token.pvMax}` : ""}${token.condicoes.length ? `, condições: ${token.condicoes.map((c) => CONDICOES[c].rotulo).join(", ")}` : ""}${token.visivel ? "" : ", oculto"}`}
+      aria-label={`${token.nome}, ${token.lado === "pj" ? "aliado" : token.lado === "pn" ? "hostil" : "neutro"}${temPv ? `, PV ${token.pv} de ${token.pvMax}` : ""}${token.condicoes.length ? `, condições: ${token.condicoes.map((c) => CONDICOES[c].rotulo).join(", ")}` : ""}${token.visivel ? "" : ", oculto"}${estado.alvo ? ", marcado como alvo" : ""}`}
       // Seleção + início de arraste no MESMO evento (pointerdown), não
       // em onClick — onClick dispararia DE NOVO no soltar do mesmo
       // gesto (mousedown+mouseup no mesmo alvo geram click), chamando

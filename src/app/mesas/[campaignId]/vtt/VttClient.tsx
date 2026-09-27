@@ -26,6 +26,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MousePointer2, Ruler, PaintBucket, MapPin, Images, Layers, Menu, Hexagon, Swords, Minus, Undo2, Redo2, Loader2, UserPlus, Box, Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2, Dices, ImageUp, ScrollText, ChevronDown } from "lucide-react";
 import { Plus } from "../../../_design/icons";
 import { MapaHex, TAM, type EstadoVisualToken, type CenaMapa } from "./_mapa/MapaHex";
+import { useTargets } from "./_realtime/useTargets";
+import { Crosshair } from "lucide-react";
+import { AcoesRapidasToken } from "./_shell/AcoesRapidasToken";
+import type { CategoriaAcaoToken } from "./_dominio/targets";
 import { type AlcaArea, type AreaDesenhavel, type EstadoVisualArea, type GuiaGesto } from "./_mapa/CamadaAreas";
 import { type Hex, type TamanhoCriatura, hexDistancia, hexKey, hexNoRaio, hexIguais, hexParaPixel, centroDaGrade, panParaCentralizar } from "./_mapa/hex";
 import { type ObjetoCena } from "./_dados/cenaDemo";
@@ -341,6 +345,8 @@ export function VttClient({
   const [selecionadoId, setSelecionadoId] = useState<string | null>(null);
   const [selecionadosIds, setSelecionadosIds] = useState<Set<string>>(new Set());
   const [hoverId, setHoverId] = useState<string | null>(null);
+  const [radialTokenId, setRadialTokenId] = useState<string | null>(null);
+  const fecharRadial = useCallback(() => setRadialTokenId(null), []);
   /** Token cujo retrato está sendo trocado — aberto pelo menu contextual (ver `itensMenuContextual`). */
   const [editandoRetratoDe, setEditandoRetratoDe] = useState<string | null>(null);
   /** Cartão de detalhes do token — aberto por clique, nunca por hover. */
@@ -1103,6 +1109,12 @@ export function VttClient({
     [estadoCena, imgs.urls],
   );
   const tokenPorId = useMemo(() => new Map(tokensApresentacao.map((t) => [t.id, t])), [tokensApresentacao]);
+  const idsTargetsVisiveis = useMemo(() => new Set(tokenPorId.keys()), [tokenPorId]);
+  const targets = useTargets(campaignId, estadoCena?.cena.id ?? null, usuarioId, idsTargetsVisiveis);
+  const meusAlvos = useMemo(() => targets.meus.flatMap(id => {
+    const t = tokenPorId.get(id);
+    return t ? [{ tokenId: id, characterId: t.characterId ?? null, nome: t.nome }] : [];
+  }), [targets.meus, tokenPorId]);
   // Realtime pode remover/ocultar um token enquanto o cartão dele está
   // aberto. Sem esta guarda, sobrava um cartão órfão ancorado onde o
   // token existia antes.
@@ -2252,6 +2264,34 @@ export function VttClient({
    * `/ficha`, que continua existindo.
    */
   const consoleDaMesa = useConsoleDaMesa();
+  const definirAlvosNoMapa = consoleDaMesa?.definirAlvosNoMapa;
+  const fecharAcaoToken = consoleDaMesa?.fecharAcaoToken;
+  useEffect(() => () => { fecharAcaoToken?.(); definirAlvosNoMapa?.([]); }, [estadoCena?.cena.id, fecharAcaoToken, definirAlvosNoMapa]);
+  useEffect(() => { definirAlvosNoMapa?.(meusAlvos); }, [definirAlvosNoMapa, meusAlvos]);
+  useEffect(() => { setRadialTokenId(null); }, [estadoCena?.cena.id]);
+  const abrirRadial = useCallback((id: string) => {
+    const t = tokenPorId.get(id);
+    if (!t?.characterId || !t.podeControlar || !consoleDaMesa) return;
+    fecharCartaoToken();
+    setMenuContextual(null);
+    consoleDaMesa.aquecer();
+    setRadialTokenId(id);
+  }, [tokenPorId, consoleDaMesa, fecharCartaoToken]);
+  const escolherAcaoToken = (categoria: CategoriaAcaoToken) => {
+    const t = radialTokenId ? tokenPorId.get(radialTokenId) : null;
+    if (t?.characterId && t.podeControlar) consoleDaMesa?.abrirAcaoToken(t.characterId, { tokenId: t.id, categoria });
+    fecharRadial();
+  };
+  useEffect(() => {
+    const ouvir = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || elementoEhEditavel(document.activeElement as HTMLElement | null)) return;
+      if (e.shiftKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "a" && selecionadoId) {
+        e.preventDefault(); abrirRadial(selecionadoId);
+      }
+    };
+    window.addEventListener("keydown", ouvir);
+    return () => window.removeEventListener("keydown", ouvir);
+  }, [abrirRadial, selecionadoId]);
   const fluxoTokenRef = useRef(fluxoToken);
   useEffect(() => { fluxoTokenRef.current = fluxoToken; }, [fluxoToken]);
   const [confirmandoRemocao, setConfirmandoRemocao] = useState<TokenApresentacao | null>(null);
@@ -4588,6 +4628,16 @@ export function VttClient({
         }]
       : [];
 
+    // Ficha é navegação; ações/targets formam sua própria seção.
+    const temFicha = itemFicha.length > 0;
+    if (t.characterId && t.podeControlar && consoleDaMesa) itemFicha.push({
+      id: "acoes-rapidas", rotulo: "Ações rápidas · Shift+A", icone: <Swords size={14} />, separadorAntes: temFicha,
+      onSelecionar: () => abrirRadial(tokenId),
+    });
+    itemFicha.push({ id: "target", rotulo: targets.meus.includes(tokenId) ? "Desmarcar alvo" : "Marcar alvo",
+      icone: <Crosshair size={14} />, separadorAntes: temFicha && itemFicha.length === 1,
+      onSelecionar: () => { void targets.alternar(tokenId); } });
+
     // ALTERAR RETRATO — a única porta que o JOGADOR tem pra isso.
     // Ela era o retrato do HUD ("o retrato é o botão"), e sumiu junto
     // com ele; sem este item, `EditorRetratoToken` viraria código
@@ -5613,6 +5663,8 @@ export function VttClient({
   // ── Atalhos globais ────────────────────────────────────────────
   useEffect(() => {
     function ouvir(e: KeyboardEvent) {
+      if (e.defaultPrevented) return;
+      if (e.key === "Escape" && document.querySelector('.rv-token-actions')) return;
       const acao = interpretarAtalho(
         { key: e.key, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, alvoEhEditavel: elementoEhEditavel(document.activeElement as HTMLElement | null) },
         ferramentasDisponiveis,
@@ -5885,6 +5937,8 @@ export function VttClient({
 
       {/* ═══ PALCO — mapa em tela cheia, tudo flutua por cima ═══ */}
       <main className="rv-palco" ref={palcoRef} data-arrastando-arquivo={arrastandoArquivo || undefined}>
+        {radialTokenId && tokenPorId.get(radialTokenId)?.podeControlar && <AcoesRapidasToken tokenId={radialTokenId} nome={tokenPorId.get(radialTokenId)!.nome} onEscolher={escolherAcaoToken} onFechar={fecharRadial} />}
+        {targets.erro && <div className="rv-target-status" role="status">{targets.erro}</div>}
         {/* O contêiner do mapa é quem recebe o arrasto vindo do painel
             (`dragover`/`drop` não chegam dentro do `<svg>`). Só reage
             ao MIME do diretório de personagens — arrastar qualquer
@@ -5907,7 +5961,8 @@ export function VttClient({
         >
           <MapaHex
             cena={cenaExibida} zoom={zoom} pan={pan}
-            selecionadoId={selecionadoId} hoverId={hoverId} alvoIds={[]}
+            selecionadoId={selecionadoId} hoverId={hoverId} alvoIds={targets.todos}
+            onAlternarAlvo={targets.alternar}
             estadoPorToken={estadoPorToken}
             ancoraPonteiroRef={ancoraPonteiroRef}
             conversorPontoRef={conversorPontoRef}

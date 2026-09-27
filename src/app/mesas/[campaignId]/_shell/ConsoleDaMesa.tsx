@@ -20,9 +20,10 @@
  * `abrir(characterId)`.
  */
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ConsoleNoVtt, precarregarConsole } from "../vtt/_painel/janelas/ConsoleNoVtt";
+import type { AlvoAcaoToken, PedidoAcaoToken } from "../vtt/_dominio/targets";
 
 interface ApiConsoleDaMesa {
   /**
@@ -36,6 +37,9 @@ interface ApiConsoleDaMesa {
    * fazia melhor que a janela.
    */
   abrir: (characterId: string, aba?: string) => void;
+  abrirAcaoToken: (characterId: string, pedido: PedidoAcaoToken) => void;
+  definirAlvosNoMapa: (alvos: AlvoAcaoToken[]) => void;
+  fecharAcaoToken: () => void;
   /** Aquecimento (hover/foco) — baixa bundle e catálogos antes do clique. */
   aquecer: () => void;
   /** Há uma ficha aberta agora. */
@@ -80,6 +84,19 @@ export function ProvedorConsoleDaMesa({ campaignId, children }: { campaignId: st
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [de, setDe] = useState<string | null>(null);
+  const [acaoToken, setAcaoToken] = useState<PedidoAcaoToken | null>(null);
+  const acaoTokenRef = useRef(acaoToken);
+  acaoTokenRef.current = acaoToken;
+  const fecharAcaoToken = useCallback(() => {
+    if (!acaoTokenRef.current) return;
+    setAcaoToken(null);
+    setDe(null);
+  }, []);
+  const [alvosNoMapa, definirAlvosNoMapa] = useState<AlvoAcaoToken[]>([]);
+  const abrirAcaoToken = useCallback((characterId: string, pedido: PedidoAcaoToken) => {
+    setAcaoToken(pedido);
+    setDe(characterId);
+  }, []);
   const [fechadaEm, setFechadaEm] = useState(0);
   const [focoNoMapa, setFocoNoMapa] = useState<((tokenId: string) => void) | null>(null);
   // `useState` com função exige o wrapper: `setFocoNoMapa(fn)` chamaria `fn`.
@@ -89,6 +106,7 @@ export function ProvedorConsoleDaMesa({ campaignId, children }: { campaignId: st
 
   const [abaInicial, setAbaInicial] = useState<string | null>(null);
   const abrir = useCallback((characterId: string, aba?: string) => {
+    setAcaoToken(null);
     setAbaInicial(aba ?? null);
     setDe(characterId);
   }, []);
@@ -104,6 +122,7 @@ export function ProvedorConsoleDaMesa({ campaignId, children }: { campaignId: st
    * lista) não é tocado.
    */
   const fechar = useCallback(() => {
+    setAcaoToken(null);
     setDe(null);
     setFechadaEm((n) => n + 1);
     router.refresh();
@@ -115,8 +134,8 @@ export function ProvedorConsoleDaMesa({ campaignId, children }: { campaignId: st
   );
 
   const api = useMemo(
-    () => ({ abrir, aquecer, aberto: de !== null, fechadaEm, focarNoMapa, registrarFocoNoMapa }),
-    [abrir, aquecer, de, fechadaEm, focarNoMapa, registrarFocoNoMapa],
+    () => ({ abrir, abrirAcaoToken, fecharAcaoToken, definirAlvosNoMapa, aquecer, aberto: de !== null, fechadaEm, focarNoMapa, registrarFocoNoMapa }),
+    [abrir, abrirAcaoToken, fecharAcaoToken, aquecer, de, fechadaEm, focarNoMapa, registrarFocoNoMapa],
   );
 
   /**
@@ -169,7 +188,7 @@ export function ProvedorConsoleDaMesa({ campaignId, children }: { campaignId: st
   return (
     <Contexto.Provider value={api}>
       {children}
-      <ConsoleNoVtt campaignId={campaignId} characterId={de} abaInicial={abaInicial} onFechar={fechar} />
+      <ConsoleNoVtt campaignId={campaignId} characterId={de} abaInicial={abaInicial} onFechar={fechar} acaoToken={acaoToken} alvosNoMapa={alvosNoMapa} />
     </Contexto.Provider>
   );
 }

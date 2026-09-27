@@ -43,6 +43,7 @@ export function JanelaInterna({
   onFechar,
   children,
   testId,
+  modal = true,
 }: {
   aberta: boolean;
   titulo: string;
@@ -52,6 +53,8 @@ export function JanelaInterna({
   onFechar: () => void;
   children: ReactNode;
   testId?: string;
+  /** Ferramentas que pedem um alvo precisam manter o mapa interativo. */
+  modal?: boolean;
 }) {
   const [modo, setModo] = useState<Modo>("normal");
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
@@ -94,7 +97,7 @@ export function JanelaInterna({
         fechar();
         return;
       }
-      if (e.key !== "Tab") return;
+      if (e.key !== "Tab" || !modal) return;
       const raiz = janelaRef.current;
       if (!raiz) return;
       const focaveis = raiz.querySelectorAll<HTMLElement>(
@@ -113,7 +116,7 @@ export function JanelaInterna({
     }
     window.addEventListener("keydown", aoTeclar, true);
     return () => window.removeEventListener("keydown", aoTeclar, true);
-  }, [aberta, modo, fechar]);
+  }, [aberta, modo, fechar, modal]);
 
   // Foco inicial dentro da janela, sem rolar nada.
   useEffect(() => {
@@ -168,14 +171,14 @@ export function JanelaInterna({
 
   return createPortal(
     <>
-      {!minimizada && <div className="pn-jan-fundo" role="presentation" onClick={fechar} data-testid="painel-janela-fundo" />}
+      {modal && !minimizada && <div className="pn-jan-fundo" role="presentation" onClick={fechar} data-testid="painel-janela-fundo" />}
 
       <div
         ref={janelaRef}
         className="pn-jan"
         style={estilo}
         role="dialog"
-        aria-modal={!minimizada}
+        aria-modal={modal && !minimizada}
         aria-labelledby={tituloId}
         data-min={minimizada ? "true" : undefined}
         // `inert` enquanto minimizada: o conteúdo continua montado (é o

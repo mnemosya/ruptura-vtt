@@ -68,7 +68,7 @@ assert.match(vttClient, /<CartaoTokenHover/, "A mesa monta o cartão de hover.")
 // O delimitador no fim importa: `useState<SelectedTokenHudData>` casa
 // com `<SelectedTokenHud` e não é montagem nenhuma.
 assert.doesNotMatch(vttClient, /<SelectedTokenHud[\s/>]/, "O HUD antigo não pode voltar a ser montado.");
-assert.match(vttClient, /ATRASO_CARTAO_MS/, "O cartão só aparece depois de uma parada deliberada do ponteiro.");
+assert.match(vttClient, /onAtivarCartaoToken=\{aoAtivarCartaoToken\}/, "Clique normal preserva a abertura do cartão de status.");
 // NUNCA meio cartão: o de "só o nome" é o estado de quem não tem
 // permissão nenhuma, então mostrá-lo enquanto a leitura está em voo
 // diria a quem TEM permissão que ela não tem. Sem dados, o gesto fica
@@ -76,7 +76,7 @@ assert.match(vttClient, /ATRASO_CARTAO_MS/, "O cartão só aparece depois de uma
 assert.match(vttClient, /aguardandoCartaoRef/, "Gesto sem dados espera, não abre um cartão incompleto.");
 assert.match(vttClient, /\{cartaoHover && dadosCartao && \(/, "A montagem exige os dados.");
 assert.match(cartao, /dados: SelectedTokenHudData;/, "E o tipo do componente proíbe montar sem eles — a regra vira tipo, não convenção.");
-assert.match(vttClient, /CARENCIA_CARTAO_MS/, "E some com carência — sem ela não dá pra levar o mouse até os pips.");
+assert.match(vttClient, /fecharCartaoToken/, "O cartão por clique tem fechamento explícito, não depende de hover.");
 
 // ABRIR FICHA no menu contextual do token — a porta que o HUD tinha
 // ("Ficha", ao lado de desfazer/refazer) e que precisava de um lugar
