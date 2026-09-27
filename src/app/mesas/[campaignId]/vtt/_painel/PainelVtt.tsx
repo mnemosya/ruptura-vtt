@@ -454,11 +454,18 @@ export function PainelVtt({
     const medir = () => {
       const ocupa = Math.max(0, mesa.getBoundingClientRect().right - aside.getBoundingClientRect().left);
       mesa.style.setProperty("--rv-painel-ocupa", `${Math.round(ocupa)}px`);
+      // Só o painel ABERTO desce até o rodapé; recolhido, a coluna de
+      // abas fica no topo e não disputa o canto de baixo (zoom).
+      mesa.style.setProperty("--rv-painel-aberto-ocupa", aberto ? `${Math.round(ocupa)}px` : "0px");
     };
     medir();
     const ro = new ResizeObserver(medir);
     ro.observe(aside);
-    return () => { ro.disconnect(); mesa.style.setProperty("--rv-painel-ocupa", "0px"); };
+    return () => {
+      ro.disconnect();
+      mesa.style.setProperty("--rv-painel-ocupa", "0px");
+      mesa.style.setProperty("--rv-painel-aberto-ocupa", "0px");
+    };
   }, [aberto]);
 
   const conteudoAba: Record<AbaId, React.ReactNode> = {
