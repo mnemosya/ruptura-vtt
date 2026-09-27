@@ -212,6 +212,45 @@ export function hexParaPixel(h: Hex, tamanho: number): { x: number; y: number } 
   return { x, y };
 }
 
+/**
+ * Centro da grade `largura × altura` em pixels do mundo.
+ *
+ * É também o centro do `viewBox` de `MapaHex` (a folga em volta da
+ * grade é simétrica), ou seja: com `preserveAspectRatio="meet"` este é
+ * o ponto que aparece no MEIO do palco, qualquer que seja o tamanho da
+ * tela. Toda conta de câmera parte daqui.
+ */
+export function centroDaGrade(largura: number, altura: number, tamanho: number): { x: number; y: number } {
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (let r = 0; r < altura; r++) {
+    // Só a primeira e a última célula de cada linha definem o X.
+    for (const q of [0, largura - 1]) {
+      const p = hexParaPixel({ q: q - Math.floor(r / 2), r }, tamanho);
+      minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+      minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+    }
+  }
+  if (!Number.isFinite(minX)) return { x: 0, y: 0 };
+  return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+}
+
+/**
+ * Pan que põe o ponto `alvo` (pixels do mundo) no meio do palco, com
+ * zoom `zoom`. O `<g>` do mapa aplica `translate(pan) scale(zoom)` em
+ * unidades do VIEWBOX, não em pixels de tela — por isso a conta é
+ * contra o centro da grade, nunca contra `getBoundingClientRect()`.
+ */
+export function panParaCentralizar(
+  alvo: { x: number; y: number },
+  zoom: number,
+  largura: number,
+  altura: number,
+  tamanho: number,
+): { x: number; y: number } {
+  const c = centroDaGrade(largura, altura, tamanho);
+  return { x: c.x - alvo.x * zoom, y: c.y - alvo.y * zoom };
+}
+
 /** Inverso de `hexParaPixel` — usado pra saber em que célula o cursor está. */
 export function pixelParaHex(x: number, y: number, tamanho: number): Hex {
   const q = ((Math.sqrt(3) / 3) * x - (1 / 3) * y) / tamanho;

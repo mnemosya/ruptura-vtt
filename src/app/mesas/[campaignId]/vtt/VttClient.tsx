@@ -27,7 +27,7 @@ import { MousePointer2, Ruler, PaintBucket, MapPin, Images, Layers, Menu, Hexago
 import { Plus } from "../../../_design/icons";
 import { MapaHex, TAM, type EstadoVisualToken, type CenaMapa } from "./_mapa/MapaHex";
 import { type AlcaArea, type AreaDesenhavel, type EstadoVisualArea, type GuiaGesto } from "./_mapa/CamadaAreas";
-import { type Hex, type TamanhoCriatura, hexDistancia, hexKey, hexNoRaio, hexIguais, hexParaPixel } from "./_mapa/hex";
+import { type Hex, type TamanhoCriatura, hexDistancia, hexKey, hexNoRaio, hexIguais, hexParaPixel, centroDaGrade, panParaCentralizar } from "./_mapa/hex";
 import { type ObjetoCena } from "./_dados/cenaDemo";
 import {
   type EstadoTrilha, type Janela, type Lado, type ModoCena,
@@ -168,6 +168,8 @@ const ICONE_FERRAMENTA: Record<FerramentaId, typeof MousePointer2> = {
 /** Limites de zoom — mantidos idênticos aos que já existiam antes. */
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 2.4;
+/** Zoom com que toda cena abre (ao entrar na mesa e ao trocar de cena). */
+const ZOOM_ENTRADA = 0.8;
 /**
  * Fator da escala exponencial do zoom pela roda. Multiplicativo (`z *
  * exp(-delta*k)`), não aditivo (`z + delta*k`) — um zoom multiplicativo
@@ -573,6 +575,17 @@ export function VttClient({
   // único estado (via ref) elimina a corrida por construção.
   const estadoCenaRef = useRef<EstadoCenaVtt>(null);
   useEffect(() => { estadoCenaRef.current = estadoCena; }, [estadoCena]);
+
+  /**
+   * Põe um ponto do mundo no meio do palco, zoom intacto. A ÚNICA conta
+   * de câmera — área, token, ping e painel passam todos por aqui.
+   */
+  const centralizarCameraEmPonto = useCallback((alvo: { x: number; y: number }) => {
+    const cena = estadoCenaRef.current?.cena;
+    if (!cena) return;
+    const { zoom: z } = zoomPanRef.current;
+    setPan(panParaCentralizar(alvo, z, cena.largura, cena.altura, TAM));
+  }, []);
 
   // ── RODADAS (trilha de turnos persistida, migration 0088) ────────
   //
@@ -3806,12 +3819,8 @@ export function VttClient({
     setAreaSelecionadaId(id);
     const caixa = caixaDaRegiao(a.regiao);
     const centro = { x: (caixa.minX + caixa.maxX) / 2, y: (caixa.minY + caixa.maxY) / 2 };
-    const palco = document.querySelector(".rv-palco");
-    if (!palco) return;
-    const r = palco.getBoundingClientRect();
-    const { zoom: z } = zoomPanRef.current;
-    setPan({ x: r.width / 2 - centro.x * z, y: r.height / 2 - centro.y * z });
-  }, [areaPorId]);
+    centralizarCameraEmPonto(centro);
+  }, [areaPorId, centralizarCameraEmPonto]);
 
   /**
    * Token que deve receber o destaque de "origem da Aura" agora —
@@ -3837,13 +3846,8 @@ export function VttClient({
     onSelecionarToken(id, false);
     const origem = origemLogicaDoToken(id);
     if (!origem) return;
-    const centro = axialParaMundo(origem, TAM);
-    const palco = document.querySelector(".rv-palco");
-    if (!palco) return;
-    const r = palco.getBoundingClientRect();
-    const { zoom: z } = zoomPanRef.current;
-    setPan({ x: r.width / 2 - centro.x * z, y: r.height / 2 - centro.y * z });
-  }, [onSelecionarToken, origemLogicaDoToken]);
+    centralizarCameraEmPonto(axialParaMundo(origem, TAM));
+  }, [onSelecionarToken, origemLogicaDoToken, centralizarCameraEmPonto]);
 
   const estadoPorToken = useCallback((t: TokenApresentacao): EstadoVisualToken => {
     // Sem combate aberto, nenhum token carrega marca de turno: os anéis
@@ -4319,13 +4323,8 @@ export function VttClient({
    * — não faz sentido ela esperar).
    */
   const centralizarCameraEmHex = useCallback((h: Hex) => {
-    const centro = hexParaPixel(h, TAM);
-    const palco = document.querySelector(".rv-palco");
-    if (!palco) return;
-    const r = palco.getBoundingClientRect();
-    const { zoom: z } = zoomPanRef.current;
-    setPan({ x: r.width / 2 - centro.x * z, y: r.height / 2 - centro.y * z });
-  }, []);
+    centralizarCameraEmPonto(hexParaPixel(h, TAM));
+  }, [centralizarCameraEmPonto]);
 
   /**
    * Trocar de cena recentra a câmera no meio da grade nova.
@@ -4336,18 +4335,21 @@ export function VttClient({
    * para o narrador trocando pelo catálogo (fase 2) e para o jogador
    * sendo levado pelo palco (fase 3) — o mesmo problema nos dois.
    *
-   * A grade é hexagonal com deslocamento por linha: em `r`, o `q`
-   * começa em `-floor(r/2)` (ver `dentroDoMapa`). O centro tem que
-   * respeitar esse deslocamento, senão "meio da largura" cai cada vez
-   * mais à esquerda conforme a cena é alta.
+   * O pan vive em unidades do VIEWBOX (ver `panParaCentralizar`), não
+   * em pixels de tela — a conta antiga usava a largura do palco e
+   * abria a mesa deslocada, com o canto superior esquerdo em destaque.
    */
   const cenaIdCamera = estadoCena?.cena.id;
   const larguraCamera = estadoCena?.cena.largura;
   const alturaCamera = estadoCena?.cena.altura;
   useEffect(() => {
     if (!cenaIdCamera || !larguraCamera || !alturaCamera) return;
-    const r = Math.floor(alturaCamera / 2);
-    centralizarCameraEmHex({ q: -Math.floor(r / 2) + Math.floor(larguraCamera / 2), r });
+    // Entra a 80%, com o mapa inteiro centralizado e um respiro em
+    // volta — não colado nas bordas do palco. As dimensões vêm direto
+    // da cena nova (o `estadoCenaRef` só acompanha num efeito depois).
+    const centro = centroDaGrade(larguraCamera, alturaCamera, TAM);
+    setZoom(ZOOM_ENTRADA);
+    setPan(panParaCentralizar(centro, ZOOM_ENTRADA, larguraCamera, alturaCamera, TAM));
     // Só quando a CENA muda — não a cada ajuste de tamanho pela janela
     // de Configurações, que puxaria a câmera no meio da digitação.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -5671,6 +5673,25 @@ export function VttClient({
   }, [clampZoom, marcarZoomPan]);
 
   /**
+   * Zoom pelos botões +/- — ancorado no MEIO do palco. Mudar só o
+   * `zoom` escalaria em torno da origem do mundo e empurraria o mapa
+   * pro canto superior esquerdo a cada clique.
+   */
+  const zoomPeloBotao = useCallback((passo: number) => {
+    const cena = estadoCenaRef.current?.cena;
+    const { zoom: zAtual, pan: panAtual } = zoomPanRef.current;
+    const novoZoom = clampZoom(+(zAtual + passo).toFixed(2));
+    if (novoZoom === zAtual) return;
+    const meio = cena ? centroDaGrade(cena.largura, cena.altura, TAM) : { x: 0, y: 0 };
+    // Ponto do mundo que está no meio agora continua no meio depois.
+    const alvo = { x: (meio.x - panAtual.x) / zAtual, y: (meio.y - panAtual.y) / zAtual };
+    const novoPan = { x: meio.x - alvo.x * novoZoom, y: meio.y - alvo.y * novoZoom };
+    marcarZoomPan(novoZoom, novoPan);
+    setZoom(novoZoom);
+    setPan(novoPan);
+  }, [clampZoom, marcarZoomPan]);
+
+  /**
    * Pan por arrasto (botão direito). Precisa ser ESTÁVEL: era criada
    * inline na prop (`onPan={(dx, dy) => ...}`), uma função NOVA a cada
    * render de `VttClient` — e é dependência do efeito de arrasto em
@@ -6247,7 +6268,7 @@ export function VttClient({
         <AvisoSincronizacao />
 
         <div className="rv-zoom" role="group" aria-label="Zoom">
-          <button type="button" onClick={() => setZoom((z) => clampZoom(+(z + 0.15).toFixed(2)))} aria-label="Aproximar"><Plus size={14} /></button>
+          <button type="button" onClick={() => zoomPeloBotao(0.15)} aria-label="Aproximar"><Plus size={14} /></button>
           <span>{Math.round(zoom * 100)}%</span>
           <button type="button" onClick={() => setZoom((z) => clampZoom(+(z - 0.15).toFixed(2)))} aria-label="Afastar"><Minus size={14} /></button>
         </div>

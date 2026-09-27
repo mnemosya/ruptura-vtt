@@ -403,7 +403,10 @@
    borda. `overflow: hidden` é o que deixa o raio recortar a primeira e
    a última célula. */
 .rv-zoom {
-  position: absolute; right: 16px; bottom: 16px; z-index: 12;
+  /* `--rv-painel-ocupa` = quanto o painel aberto cobre da borda direita
+     (medido em `PainelVtt`) — sem isto o zoom ficava embaixo dele. */
+  position: absolute; right: calc(var(--rv-painel-ocupa, 0px) + 16px); bottom: 16px; z-index: 12;
+  transition: right .18s ease;
   display: flex; flex-direction: column; align-items: stretch;
   border: 1px solid var(--rv-line); border-radius: var(--rv-r);
   background: var(--rv-panel);
@@ -561,8 +564,11 @@
 }
 .rv-faccao > * { pointer-events: auto; }
 .rv-faccao-espinha { pointer-events: none; }
-.rv-faccao--pj { left: 10px; align-items: flex-start; }
-.rv-faccao--pn { right: 10px; align-items: flex-end; }
+/* Fora de baixo das peças que flutuam nas bordas: à esquerda o trilho
+   de ferramentas (8px de margem + 36px de botão), à direita o painel
+   (aberto ou recolhido, medido em `PainelVtt`). */
+.rv-faccao--pj { left: calc(8px + 36px + 10px); align-items: flex-start; }
+.rv-faccao--pn { right: calc(var(--rv-painel-ocupa, 44px) + 10px); align-items: flex-end; transition: right .18s ease; }
 
 .rv-faccao-cab { display: flex; align-items: center; gap: 7px; padding: 0 4px; }
 .rv-faccao--pn .rv-faccao-cab { flex-direction: row-reverse; }

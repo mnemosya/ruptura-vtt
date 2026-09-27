@@ -441,6 +441,26 @@ export function PainelVtt({
   const aberto = prefs.aberto;
   const abaAtiva = prefs.aba;
 
+  /* O painel FLUTUA por cima do mapa — aberto, com largura escolhida
+     pela pessoa; recolhido, como a coluna de abas. Quanto ele ocupa da
+     borda direita vira `--rv-painel-ocupa` na mesa, pra peças presas
+     nessa borda (controle de zoom, trilho de facção) saírem de baixo
+     dele. Medido, não calculado: acompanha o arrasto de redimensionar
+     e a animação de abrir/fechar sem duplicar regra. */
+  useEffect(() => {
+    const aside = asideRef.current;
+    const mesa = aside?.closest<HTMLElement>(".rv-mesa");
+    if (!aside || !mesa) return;
+    const medir = () => {
+      const ocupa = Math.max(0, mesa.getBoundingClientRect().right - aside.getBoundingClientRect().left);
+      mesa.style.setProperty("--rv-painel-ocupa", `${Math.round(ocupa)}px`);
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(aside);
+    return () => { ro.disconnect(); mesa.style.setProperty("--rv-painel-ocupa", "0px"); };
+  }, [aberto]);
+
   const conteudoAba: Record<AbaId, React.ReactNode> = {
     chat: (
       <ChatTab
