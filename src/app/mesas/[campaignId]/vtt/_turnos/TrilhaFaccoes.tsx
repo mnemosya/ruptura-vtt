@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 /**
  * Trilha de turnos — direção visual "Facções em confronto".
@@ -246,6 +246,7 @@ function Ator({
   // consumada, e o botão precisa DIZER isso em vez de virar no-op.
   const declaracaoTravada = (p.agiuEm.length > 0 && p.fragmentouEm === null) || !!p.incapaz || p.encerrou;
   const resolvido = situacao === "agiu" || situacao === "fora";
+  const jaAgiuNaJanela = p.agiuEm.includes(trilha.janela) && p.fragmentouEm !== trilha.janela;
 
   const motivoAgir = outroAgindo
     ? `${outroAgindo.nome} está em ação.`
@@ -281,7 +282,11 @@ function Ator({
               {restante}
             </span>
           )}
-          {resolvido && <span className="rv-ator-marca" aria-hidden="true">{situacao === "fora" ? "×" : "✓"}</span>}
+          {situacao === "fora" ? (
+            <span className="rv-ator-marca" aria-hidden="true"><X size={11} strokeWidth={2.5} /></span>
+          ) : jaAgiuNaJanela && situacao !== "agindo" ? (
+            <span className="rv-ator-marca" aria-hidden="true"><Check size={11} strokeWidth={2.5} /></span>
+          ) : null}
         </button>
         {situacao === "agindo" && (
           <button type="button" className="rv-ator-cancelar" onClick={onCancelar} aria-label="Cancelar o Agir" title="Cancelar o Agir — nada é gasto">
@@ -297,7 +302,9 @@ function Ator({
             onConcluir={onConcluir}
             onPassar={() => onEncerrar(p.id)}
           />
-        ) : !resolvido ? (
+        ) : situacao !== "fora" ? (
+          /* Fica mesmo depois de agir: a mesa pode fazer o personagem
+             agir de novo (`elegibilidade` com `acaoDireta`). */
           <button
             type="button"
             className="rv-ator-agir"

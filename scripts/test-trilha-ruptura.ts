@@ -259,5 +259,21 @@ ok(
   );
 }
 
+// ── Agir de novo: quem já agiu na janela pode voltar pelo botão ──
+{
+  let e = estadoInicial();
+  e = concluirTurno(assumirTurno(e, "pj1"), 1);
+  // Tira a alternância do caminho: sem ninguém do narrador apto, a vez
+  // continua dos jogadores e a única trava possível seria o "já agiu".
+  e = { ...e, participantes: e.participantes.map((x) => (x.lado === "pn" ? { ...x, encerrou: true } : x)) };
+  const direto = elegibilidade(p(e, "pj1"), e, { acaoDireta: true });
+  const geral = elegibilidade(p(e, "pj1"), e);
+  ok(
+    "18 (já agiu: o Agir segue liberado, mas ele não segura a janela)",
+    direto.apto && !geral.apto && assumirTurno(e, "pj1").agindoId === "pj1",
+    `acaoDireta=${direto.apto}, geral=${geral.apto} (${geral.motivo?.texto})`,
+  );
+}
+
 console.log(`\n${passou} ok, ${falhou} falha(s).`);
 if (falhou > 0) process.exit(1);
