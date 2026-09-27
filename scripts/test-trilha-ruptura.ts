@@ -22,6 +22,7 @@ import {
   type Participante,
   assumirTurno,
   avancarParaLentos,
+  cancelarTurno,
   concluirTurno,
   elegibilidade,
   elegiveisAgora,
@@ -223,6 +224,38 @@ ok(
     "15 (sem fragmentar, entrar nos Lentos exige 3+ PA)",
     !el.apto && el.motivo?.tipo === "janela_incompativel",
     `motivo="${el.motivo?.texto}"`,
+  );
+}
+
+// ── Agir sem declarar: o próprio gesto declara a janela aberta ──
+{
+  let sem = estadoInicial();
+  sem = { ...sem, participantes: sem.participantes.map((x) => ({ ...x, declaracao: null })) };
+  const direto = elegibilidade(p(sem, "pj1"), sem, { acaoDireta: true });
+  ok("16 (sem declaração, o botão Agir fica liberado)", direto.apto, `apto=${direto.apto}`);
+  ok(
+    "16b (quem não declarou não segura a janela aberta)",
+    podeEncerrarJanela(sem),
+    `podeEncerrar=${podeEncerrarJanela(sem)}`,
+  );
+  const depois = assumirTurno(sem, "pj1");
+  ok(
+    "16c (agir grava a declaração da janela aberta)",
+    depois.agindoId === "pj1" && p(depois, "pj1").declaracao === "rapidos",
+    `agindo=${depois.agindoId}, declaracao=${p(depois, "pj1").declaracao}`,
+  );
+}
+
+// ── Cancelar o Agir: volta ao estado de antes, nada gasto ─────────
+{
+  const antes = estadoInicial();
+  const cancelado = cancelarTurno(assumirTurno(antes, "pj1"));
+  const q = p(cancelado, "pj1");
+  ok(
+    "17 (cancelar o Agir não gasta PA, não marca que agiu nem mexe na alternância)",
+    cancelado.agindoId === null && q.paGasto === 0 && q.agiuEm.length === 0 && cancelado.ultimoLado === antes.ultimoLado
+      && elegibilidade(q, cancelado).apto,
+    `agindo=${cancelado.agindoId}, paGasto=${q.paGasto}, agiuEm=[${q.agiuEm}]`,
   );
 }
 

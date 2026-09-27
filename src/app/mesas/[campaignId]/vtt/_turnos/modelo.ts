@@ -140,12 +140,19 @@ export interface Elegibilidade {
  * com a mesma função: "quem está apto nesta janela em geral" (usado
  * pra saber se um lado ainda tem gente, e pra listar o outro lado como
  * 'aguardando') e "quem pode ser escolhido neste exato momento".
+ *
+ * `acaoDireta` responde "o botão Agir pode ser apertado?": quem não
+ * declarou nada pode agir mesmo assim — agir com a janela aberta JÁ é
+ * declarar essa janela (`assumirTurno` grava). Fora desse gesto, quem
+ * não declarou continua não contando: não segura a janela aberta
+ * (`podeEncerrarJanela`) nem prende a alternância (`ladoDaVez`).
  */
 export function elegibilidade(
   p: Participante,
   estado: EstadoTrilha,
-  opcoes?: { ignorarAlternancia?: boolean },
+  opcoes?: { ignorarAlternancia?: boolean; acaoDireta?: boolean },
 ): Elegibilidade {
+  if (opcoes?.acaoDireta && p.declaracao === null) p = { ...p, declaracao: estado.janela };
   if (p.incapaz) return { apto: false, motivo: { tipo: "incapaz", texto: p.incapaz.motivo } };
   if (p.encerrou) return { apto: false, motivo: { tipo: "encerrou", texto: "Encerrou a participação nesta rodada." } };
 
@@ -299,8 +306,26 @@ export function declaradosEm(estado: EstadoTrilha, janela: Janela): Participante
 /** Abre o turno de um participante (ele assume a vez). */
 export function assumirTurno(estado: EstadoTrilha, id: string): EstadoTrilha {
   const p = estado.participantes.find((x) => x.id === id);
-  if (!p || !elegibilidade(p, estado).apto) return estado;
-  return { ...estado, agindoId: id };
+  if (!p || !elegibilidade(p, estado, { acaoDireta: true }).apto) return estado;
+  // Agir sem ter declarado declara a janela aberta — é a mesma escolha.
+  if (p.declaracao !== null) return { ...estado, agindoId: id };
+  return {
+    ...estado,
+    agindoId: id,
+    participantes: estado.participantes.map((x) => (x.id === id ? { ...x, declaracao: estado.janela } : x)),
+  };
+}
+
+/**
+ * Desfaz o "Agir" antes de gastar qualquer coisa: fecha a ativação sem
+ * PA gasto, sem marcar que agiu e sem fragmentar — como se o botão não
+ * tivesse sido apertado. Não mexe na alternância (`ultimoLado`), que só
+ * anda quando um turno é CONCLUÍDO. A declaração que o gesto gravou
+ * (se não havia) fica: ela continua editável até o personagem agir.
+ */
+export function cancelarTurno(estado: EstadoTrilha): EstadoTrilha {
+  if (!estado.agindoId) return estado;
+  return { ...estado, agindoId: null };
 }
 
 /**

@@ -31,7 +31,7 @@ import { type Hex, type TamanhoCriatura, hexDistancia, hexKey, hexNoRaio, hexIgu
 import { type ObjetoCena } from "./_dados/cenaDemo";
 import {
   type EstadoTrilha, type Janela, type Lado, type ModoCena,
-  assumirTurno, avancarParaLentos, concluirTurno, declarar, elegibilidade,
+  assumirTurno, avancarParaLentos, cancelarTurno, concluirTurno, declarar, elegibilidade,
   encerrarParticipacao, proximaRodada,
 } from "./_turnos/modelo";
 import {
@@ -3857,7 +3857,7 @@ export function VttClient({
     return {
       selecionado: selecionadosIds.has(t.id), sobCursor: false, alvo: false,
       turnoAtual: !!trilha && trilha.agindoId === t.id,
-      podeAgir: !!p && !!trilha && elegibilidade(p, trilha).apto,
+      podeAgir: !!p && !!trilha && elegibilidade(p, trilha, { acaoDireta: true }).apto,
       jaAgiu: !!p && !!trilha && p.agiuEm.includes(trilha.janela) && p.fragmentouEm !== trilha.janela,
       fragmentado: !!p && p.fragmentouEm !== null,
       origemDeAura: t.id === tokenOrigemAuraId,
@@ -6270,7 +6270,7 @@ export function VttClient({
         <div className="rv-zoom" role="group" aria-label="Zoom">
           <button type="button" onClick={() => zoomPeloBotao(0.15)} aria-label="Aproximar"><Plus size={14} /></button>
           <span>{Math.round(zoom * 100)}%</span>
-          <button type="button" onClick={() => setZoom((z) => clampZoom(+(z - 0.15).toFixed(2)))} aria-label="Afastar"><Minus size={14} /></button>
+          <button type="button" onClick={() => zoomPeloBotao(-0.15)} aria-label="Afastar"><Minus size={14} /></button>
         </div>
 
         {/* ── TRILHA — núcleo no topo + trilhos das duas facções nas
@@ -6283,6 +6283,7 @@ export function VttClient({
             onDeclarar={(id, janela) => mutarTrilha((t) => declarar(t, id, janela))}
             onAssumir={(id) => mutarTrilha((t) => assumirTurno(t, id))}
             onConcluir={(pa) => mutarTrilha((t) => concluirTurno(t, pa))}
+            onCancelar={() => mutarTrilha(cancelarTurno)}
             onEncerrar={(id) => mutarTrilha((t) => encerrarParticipacao(t, id))}
             onAvancarJanela={() => mutarTrilha((t) => avancarParaLentos(t))}
             onProximaRodada={() => mutarTrilha((t) => proximaRodada(t))}

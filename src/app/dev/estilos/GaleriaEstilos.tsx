@@ -278,6 +278,7 @@ function TrilhaDeFaccoes() {
           onDeclarar={SEM_EFEITO}
           onAssumir={SEM_EFEITO}
           onConcluir={SEM_EFEITO}
+          onCancelar={SEM_EFEITO}
           onEncerrar={SEM_EFEITO}
           onAvancarJanela={SEM_EFEITO}
           onProximaRodada={SEM_EFEITO}
