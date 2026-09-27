@@ -527,9 +527,11 @@
 /* A janela é o TÍTULO da placa: é a linha que responde o que pode ser
    declarado agora, e as outras duas a qualificam. */
 .rv-rodadas-janela {
-  font-family: var(--rv-display), sans-serif;
-  font-size: 14px; font-weight: 400; line-height: 1.15;
-  letter-spacing: .01em; color: #dbe6f5;
+  font-family: var(--font-mono), monospace;
+  font-size: 14px; font-weight: 300; line-height: 1.15;
+  letter-spacing: .01em; /* Meio-termo entre o texto e o texto apagado: legível sem o branco
+     quase puro, que brigava com o resto da placa. */
+  color: color-mix(in srgb, var(--rv-ink) 55%, var(--rv-ink-dim));
   white-space: nowrap;
 }
 
