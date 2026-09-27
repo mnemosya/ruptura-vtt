@@ -40,6 +40,7 @@ import {
   pisoPeNegativo,
   advanceCollapseSegment,
   stabilizeCollapse,
+  confirmReturnAfterCollapseOutcome,
   resolveCollapseEndRound,
   resolveCollapseAdditionalDamage,
   MAX_COLLAPSE_SEGMENTS,
@@ -301,6 +302,11 @@ import { CharacterSheetTabs, type TabId } from "./components/CharacterSheetTabs"
 import { CharacterConsole } from "../../ficha/_console/CharacterConsole";
 import { ConsoleErrorBoundary } from "../../ficha/_console/ConsoleErrorBoundary";
 import { useConsoleCloseOverride } from "../../ficha/_console/ConsoleCloseContext";
+import { PainelAcaoToken, type OpcaoAcaoToken } from "../../mesas/[campaignId]/vtt/_shell/PainelAcaoToken";
+import { PainelRolagem } from "../../ficha/_console/panels/PainelRolagem";
+import { contextoAcaoTokenAction } from "../../mesas/[campaignId]/vtt/_painel/acoes/targetsPainel";
+import type { AlvoAcaoToken, ContextoAcaoToken, PedidoAcaoToken } from "../../mesas/[campaignId]/vtt/_dominio/targets";
+import { deriveItemUseKind, getItemUsePreview, getItemUsePaCost } from "../../../lib/character/itemUse";
 import { registrarRolagemPericiaAction } from "../../mesas/[campaignId]/vtt/_painel/acoes/rolagemPainel";
 import type { TurnWindow } from "../../../lib/table/turnTrack";
 import type { ConsoleApi, ConsolePin, TermoDeRegra } from "../../ficha/_console/types";
@@ -350,6 +356,8 @@ const RECURSO_LABELS: Record<keyof CharacterResources, string> = {
 };
 
 interface Props {
+  acaoToken?: PedidoAcaoToken | null;
+  alvosNoMapa?: AlvoAcaoToken[];
   regras: CharacterRulesPayload | null;
   usandoFallback: boolean;
   personagensIniciais: CharacterRecord[];
@@ -447,6 +455,8 @@ function parseRecursoAtual(rawValue: number, piso = 0): number {
 }
 
 export default function CharacterSheetClient({
+  acaoToken,
+  alvosNoMapa = [],
   regras,
   usandoFallback,
   personagensIniciais,
@@ -1622,7 +1632,7 @@ export default function CharacterSheetClient({
    * tudo combinado num único `setCharacter`, para nunca existir um
    * estado intermediário inconsistente.
    */
-  function updateRecursoAtual(id: keyof CharacterResources, rawValue: number) {
+  function updateRecursoAtual(id: keyof CharacterResources, rawValue: number, opcoes?: { confirmarRetorno?: boolean }) {
     const anterior = character.recursos_atuais?.[id] ?? 0;
     const novo = parseRecursoAtual(rawValue, id === "pe" ? pisoPeNegativo(derivados.pe_max) : 0);
 
@@ -1635,7 +1645,15 @@ export default function CharacterSheetClient({
         { derived: derivados, rules: regras, reactionRules, talents: talentsIniciais },
       );
 
-      setCharacter(result.character);
+      const retornoConfirmado = opcoes?.confirmarRetorno === true && (
+        id === "pv" && character.colapso?.desfecho === "morte" && novo >= 1
+        || id === "pe" && character.colapso?.desfecho === "coma" && novo >= pisoPeNegativo(derivados.pe_max) + 1
+      );
+      const finalCharacter = retornoConfirmado
+        ? confirmReturnAfterCollapseOutcome(result.character, nowIso)
+        : result.character;
+      characterRef.current = finalCharacter;
+      setCharacter(finalCharacter);
       if (novo !== anterior) {
         addLogEntry("recurso", `${RECURSO_LABELS[id]}: ${anterior} → ${novo}`);
       }
@@ -1652,6 +1670,10 @@ export default function CharacterSheetClient({
       if (result.meta.collapseEnded) {
         addLogEntry("recurso", `Colapso encerrado por cura — cicatriz pendente.`);
         void persistCollapseEvent("collapse_ended", { tipo: result.meta.collapseEnded, motivo: "cura" });
+      }
+      if (retornoConfirmado) {
+        addLogEntry("recurso", `${character.colapso?.desfecho === "morte" ? "Morte" : "Coma"} encerrado por retorno confirmado — personagem volta à atividade; cicatriz pendente.`);
+        void persistCollapseEvent("collapse_ended", { tipo: id, motivo: "retorno_confirmado", desfechoAnterior: character.colapso?.desfecho });
       }
       if ((result.meta.collapseAdvanceLogs?.length ?? 0) > 0) {
         for (const line of result.meta.collapseAdvanceLogs ?? []) addLogEntry("recurso", line);
@@ -1720,6 +1742,42 @@ export default function CharacterSheetClient({
     setCharacter(result.character);
     addLogEntry("recurso", `Colapso — segmento avançado manualmente: ${result.segmentos}/${MAX_COLLAPSE_SEGMENTS}.`);
     void persistCollapseEvent("collapse_advanced", { segmentos: result.segmentos, motivo: "manual", tipo: character.colapso?.tipo ?? null });
+  }
+
+  /** Atalho do Console em 3/3 — resolve só o teste decisivo, sem encerrar a rodada. */
+  async function handleResolveCollapseDecisiveTest(dados: number[]) {
+    const current = characterRef.current;
+    if (!current.colapso?.ativo || current.colapso.estabilizado || current.colapso.segmentos < MAX_COLLAPSE_SEGMENTS) return;
+
+    const result = resolveCollapseEndRound({
+      character: current,
+      rules: regras?.colapso,
+      round: current.current_round ?? 1,
+      scene: current.current_scene ?? 1,
+      nowIso: new Date().toISOString(),
+      dados,
+    });
+
+    characterRef.current = result.character;
+    setCharacter(result.character);
+    for (const line of result.logs) addLogEntry("recurso", line);
+    for (const warning of result.warnings) addLogEntry("recurso", `⚠ ${warning}`);
+
+    if (selectedCampaignId) {
+      for (const entry of result.tableLogs) {
+        try {
+          await addLog({
+            campaignId: selectedCampaignId,
+            characterId: characterId ?? undefined,
+            type: entry.type,
+            visibility: "public",
+            payload: { ...entry.payload, characterId, characterNome: current.nome },
+          });
+        } catch {
+          avisarFalhaLogMesa();
+        }
+      }
+    }
   }
 
   /**
@@ -3637,7 +3695,7 @@ export default function CharacterSheetClient({
    * Remoção de condição (checkpoint pós-v0.61): `options.selectedConditionInstanceId`
    * vem do seletor do card quando há várias condições compatíveis ativas.
    */
-  async function handleUseItem(instanceId: string, options?: { selectedConditionInstanceId?: string }) {
+  async function handleUseItem(instanceId: string, options?: { selectedConditionInstanceId?: string }, contexto?: ContextoAcaoToken) {
     const current = characterRef.current;
     const instance = (current.inventario ?? []).find((i) => i.id === instanceId);
     if (!instance) return;
@@ -3734,8 +3792,9 @@ export default function CharacterSheetClient({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
           type: "item_used",
-          visibility: "public",
+          visibility: contexto?.logVisibility ?? "public",
           payload: {
+            ...contexto,
             characterId,
             characterNome: current.nome,
             itemInstanceId: instanceId,
@@ -4367,7 +4426,7 @@ export default function CharacterSheetClient({
    * da mente; o narrador resolve pelas ferramentas de /dev/table. Sem
    * PA/Mana suficiente, não muda nada e só avisa. Exige magia aprendida.
    */
-  async function handleCastSpell(slug: string) {
+  async function handleCastSpell(slug: string, contexto?: ContextoAcaoToken) {
     const current = characterRef.current;
     const spell = spellsIniciais.find((s) => s.slug === slug);
     if (!spell) return;
@@ -4380,6 +4439,7 @@ export default function CharacterSheetClient({
       addLogEntry("recurso", result.reason ?? "Conjuração não realizada.");
       return;
     }
+    if (result.reason) addLogEntry("recurso", result.reason);
     // Paramédico › Ritmo de Campo (checkpoint talentos, Fase 7) — "armado" pelo jogador
     // confirmando que esta magia é de cura; -1 PA real (mín. respeitado) no custo já pago.
     let characterAposMagia = result.character;
@@ -4455,8 +4515,9 @@ export default function CharacterSheetClient({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
           type: "spell_cast",
-          visibility: "public",
+          visibility: contexto?.logVisibility ?? "public",
           payload: {
+            ...contexto,
             characterId,
             characterNome: current.nome,
             spellSlug: spell.slug,
@@ -4492,8 +4553,9 @@ export default function CharacterSheetClient({
             campaignId: selectedCampaignId,
             characterId: characterId ?? undefined,
             type: "spell_attack_used",
-            visibility: "public",
+            visibility: contexto?.logVisibility ?? "public",
             payload: {
+              ...contexto,
               characterId,
               characterNome: current.nome,
               spellSlug: spell.slug,
@@ -5031,7 +5093,7 @@ export default function CharacterSheetClient({
     if (saindoDaEvolucao) void persistEvolucao(characterRef.current);
   }
 
-  async function handleUseAction(actionId: string) {
+  async function handleUseAction(actionId: string, armaId?: string | null, contexto?: ContextoAcaoToken) {
     const nowMs = Date.now();
     const lastExecution = lastActionExecutionRef.current;
     if (
@@ -5078,7 +5140,7 @@ export default function CharacterSheetClient({
 
     // Resolve arma/perícia/dano ANTES de gastar PA: se a munição bloquear,
     // o PA não pode ter sido gasto (regra do checkpoint).
-    const attackWeaponInstanceId = temEfeitoAtaque ? effectiveSelectedAttackWeaponId : null;
+    const attackWeaponInstanceId = temEfeitoAtaque ? (armaId === undefined ? effectiveSelectedAttackWeaponId : armaId) : null;
     const attackWeaponInstance: InventoryItemInstance | null = attackWeaponInstanceId
       ? (currentCharacter.inventario ?? []).find((i) => i.id === attackWeaponInstanceId) ?? null
       : null;
@@ -5217,7 +5279,7 @@ export default function CharacterSheetClient({
     // condição/toggle de postura persistem sozinhas quando conectado a
     // mesa/personagem salvo (ver persistAutomatedActionExecution acima).
     // Atacar entra na mesma regra quando consome munição/flecha (inventário mudou).
-    if (result.removedConditions.length > 0 || result.postureChange || attackLogFields.ammoConsumed) {
+    if (contexto || result.removedConditions.length > 0 || result.postureChange || attackLogFields.ammoConsumed) {
       await persistAutomatedActionExecution(characterRef.current);
     }
 
@@ -5241,6 +5303,7 @@ export default function CharacterSheetClient({
     // bruto do conteúdo evita "Ativar Postura Ofensiva: ... — encerrou
     // Postura Ofensiva" (confuso).
     addLogEntry("acao_combate", `${item.nome}: ${custoResumo}${removidasResumo}${posturaResumo}.${pendenciasResumo}`);
+    for (const aviso of result.warnings) addLogEntry("acao_combate", aviso);
     for (const lembrete of result.reminders) {
       addLogEntry("acao_combate", `Lembrete: ${lembrete}`);
     }
@@ -5269,8 +5332,9 @@ export default function CharacterSheetClient({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
           type: "action_used",
-          visibility: "public",
+          visibility: contexto?.logVisibility ?? "public",
           payload: {
+            ...contexto,
             characterId,
             characterNome: currentCharacter.nome,
             actionId: actionContent.id,
@@ -5311,6 +5375,7 @@ export default function CharacterSheetClient({
       actionExecutionLockRef.current = false;
       setExecutingActionId(null);
     }
+    return true;
   }
 
   /**
@@ -5481,6 +5546,7 @@ export default function CharacterSheetClient({
   // `null` na rota /ficha normal; vira `router.back()` só quando esta
   // árvore está montada dentro da rota interceptada do modal.
   const consoleCloseOverride = useConsoleCloseOverride();
+  const [rolagemToken, setRolagemToken] = useState<{ pericia: string; nome: string; visibilidade: "public" | "gm" } | null>(null);
 
   // Modo product (/ficha): antes de mostrar qualquer ficha, exige o
   // personagem já resolvido por campanha+id (ver
@@ -5505,6 +5571,31 @@ export default function CharacterSheetClient({
   const estocarStatusFicha = getEstocarAvailability(character, talentsIniciais);
 
   const consoleApi: ConsoleApi = {
+    escalpos: {
+      catalogo: escalposIniciais,
+      erro: escalposError,
+      instalar: handleInstallEscalpo,
+      remover: handleRemoveEscalpo,
+      comEfeitoAutomatico: installedEscalpoIdsWithEffect,
+    },
+    magias: {
+      spells: spellsIniciais,
+      catalogError: spellsError,
+      magiasAprendidas: character.magias_aprendidas ?? [],
+      niveisVertente: character.niveis_vertente ?? {},
+      sheetMode,
+      onLearn: handleLearnSpell,
+      onForget: handleForgetSpell,
+      onCast: handleCastSpell,
+      onCastWithFusion: handleCastSpellWithFusion,
+      onRollDamage: handleRollSpellDamage,
+      onSetVertenteLevel: handleSetVertenteLevel,
+      spellRangeAreaMultiplier: getTalentSpellRangeAreaMultiplier(character, talentsIniciais, "ataque"),
+      canalizar: (() => {
+        const st = getCanalizarState(character, talentsIniciais);
+        return st.acquired ? { available: !st.usedThisRound, manaAtual: character.recursos_atuais?.mana ?? 0 } : null;
+      })(),
+    },
     gravacao: { estado: saveState, erro: errorMessage },
     character,
     derivados,
@@ -5685,7 +5776,7 @@ export default function CharacterSheetClient({
       };
     },
 
-    editarRecurso: (id, valor) => updateRecursoAtual(id, valor),
+    editarRecurso: (id, valor, opcoes) => updateRecursoAtual(id, valor, opcoes),
     editarIntegridade: (valor) => updateRecursoAtual("integridade", valor),
     ajustarPa: (delta) => ajustarPaConsole(delta),
     ajustarReacoes: (delta) => ajustarReacoesConsole(delta),
@@ -5696,6 +5787,7 @@ export default function CharacterSheetClient({
     podeUsarSobrecarga: !(character.ruptura_pendente ?? false),
 
     avancarColapso: handleAdvanceCollapseSegmentManual,
+    aplicarTesteDecisivoColapso: (dados) => void handleResolveCollapseDecisiveTest(dados),
     estabilizarColapso: handleStabilizeCollapse,
 
     equiparNoSlot: (instanceId: string, slot: BodySlotId) => {
@@ -5794,6 +5886,65 @@ export default function CharacterSheetClient({
     erro: saveState === "error" ? errorMessage : null,
   };
 
+
+  if (acaoToken) {
+    let opcoes: OpcaoAcaoToken[] = [];
+    if (acaoToken.categoria === "atacar" && attackActionContent) {
+      const acao = actionConsoleItems.find(a => a.id === attackActionContent.id);
+      opcoes = attackWeaponCandidates.map(c => {
+        const modelo = itemsIniciais.find(i => i.slug === c.itemSlug) ?? null;
+        const resolucao = resolveAttackDetails(character, attackActionContent, modelo);
+        const municao = c.instanceId && modelo?.usesAmmunition ? checkAttackAmmoBlock(character, itemsIniciais, { weaponInstanceId: c.instanceId }) : null;
+        return { id: c.instanceId ?? "__desarmado__", nome: c.nome, custo: acao?.custoLabel ?? "Custo indisponível", aviso: acao?.warning, alvo: "obrigatorio", pericia: resolucao.skill,
+          fatos: [{ rotulo: "Dano-base", valor: resolucao.danoBase ?? "—" }, { rotulo: "Perícia", valor: regras?.pericias.find(p => p.id === resolucao.skill)?.nome ?? resolucao.skill ?? "—" }],
+          detalhe: "Após confirmar, abre a rolagem. Defesa e aplicação de dano permanecem manuais.",
+          bloqueio: !acao?.enabled ? acao?.disabledReason ?? "Ação indisponível." : municao ? "Munição indisponível; confira arma e aljava na ficha." : !resolucao.skill ? "Perícia de ataque não definida no catálogo." : null };
+      });
+    } else if (acaoToken.categoria === "conjurar") {
+      opcoes = spellsIniciais.filter(s => s.status === "published" && isSpellLearned(character, s.slug)).map(s => {
+        const teste = castSpell({ character, spell: s, paMax: derivados.pa_max, manaMax: derivados.mana_max });
+        return { id: s.slug, nome: s.nome, custo: `${s.estatisticas.custo_pa} PA · ${s.estatisticas.custo_mana ?? "não definido"} Mana`, alvo: "opcional",
+          fatos: [{ rotulo: "Alcance", valor: s.estatisticas.alcanceTexto ?? "—" }],
+          detalhe: "Resistências e efeitos no alvo são resolvidos manualmente.", aviso: teste.ok ? teste.reason : undefined, bloqueio: teste.ok ? null : teste.reason };
+      });
+    } else if (acaoToken.categoria === "item") {
+      opcoes = (character.inventario ?? []).flatMap(i => {
+        const m = catalogoItens.get(i.itemSlug);
+        if (!m || !deriveItemUseKind(m)) return [];
+        const preview = getItemUsePreview(m, character);
+        const proprio = deriveItemUseKind(m) === "pharmacy";
+        const custoPa = getItemUsePaCost(m);
+        const paAtual = Math.max(0, derivados.pa_max - (character.estado_jogo?.pa_gastos ?? 0));
+        return [{ id: i.id, nome: `${i.itemNome || m.nome} · ${i.quantidade} un.`, alvo: proprio ? "proprio" : "opcional",
+          custo: `${custoPa ?? m.custoPaUsoTexto ?? "conforme regra do item"} PA · consome 1 uso`,
+          aviso: custoPa != null && custoPa > paAtual ? `PA insuficiente (atual: ${paAtual}, necessário: ${custoPa}). A ação pode ser executada.` : undefined,
+          detalhe: [...preview.automatic, ...preview.manual, ...(proprio ? ["Uso em si mesmo. Uso em aliados permanece no fluxo da ficha."] : [])].join(" "),
+          bloqueio: i.quantidade <= 0 ? "Sem estoque." : preview.blockedReason } satisfies OpcaoAcaoToken];
+      });
+    }
+    const executar = async (opcao: OpcaoAcaoToken, alvoId: string | null) => {
+      const r = await contextoAcaoTokenAction(acaoToken.tokenId, alvoId);
+      if (!r.ok || !r.dados) throw new Error(r.erro ?? "Contexto indisponível.");
+      if (r.dados.actorCharacterId !== characterId || r.dados.campaignId !== selectedCampaignId) throw new Error("O personagem mudou. Reabra as ações do token.");
+      const antes = characterRef.current;
+      if (acaoToken.categoria === "atacar") {
+        if (!attackActionContent || !getAttackWeaponCandidates(antes, itemsIniciais).some(c => (c.instanceId ?? "__desarmado__") === opcao.id)) throw new Error("Arma indisponível.");
+        const ok = await handleUseAction(attackActionContent.id, opcao.id === "__desarmado__" ? null : opcao.id, r.dados);
+        if (!ok) throw new Error("Ataque bloqueado. Confira PA, condições e munição.");
+        if (opcao.pericia) setRolagemToken({ pericia: opcao.pericia, nome: `Atacar · ${opcao.nome}${r.dados.alvoNome ? ` → ${r.dados.alvoNome}` : ""}`, visibilidade: r.dados.logVisibility });
+      } else if (acaoToken.categoria === "conjurar") await handleCastSpell(opcao.id, r.dados);
+      else await handleUseItem(opcao.id, undefined, r.dados);
+      if (characterRef.current === antes) throw new Error("Ação não executada. Confira os recursos e as condições de uso na ficha.");
+    };
+    return <>
+      <PainelAcaoToken key={`${acaoToken.tokenId}:${acaoToken.categoria}`} pedido={acaoToken} nome={character.nome} opcoes={opcoes} alvos={alvosNoMapa}
+        erroCatalogo={acaoToken.categoria === "atacar" ? combatActionsError : acaoToken.categoria === "conjurar" ? spellsError : itemsError}
+        erroGravacao={consoleApi.erro} onExecutar={executar}
+        onConcluir={() => { if (acaoToken.categoria !== "atacar") consoleCloseOverride?.(); }}
+        onFechar={() => { setRolagemToken(null); consoleCloseOverride?.(); }} />
+      {rolagemToken && <PainelRolagem api={consoleApi} prefill={{ tipo: "pericia", periciaId: rolagemToken.pericia }} acaoToken={rolagemToken} onFechar={() => { setRolagemToken(null); consoleCloseOverride?.(); }} />}
+    </>;
+  }
 
   return (
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>

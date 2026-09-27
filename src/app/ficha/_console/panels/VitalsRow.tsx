@@ -1,21 +1,9 @@
 "use client";
 
-/**
- * Colapso + Recursos v2 (spec Figma) — Colapso é um card único
- * (label + pips losangulares + badge de morte/coma + botão
- * Estabilizar); Recursos segue o mesmo padrão em 3 camadas de
- * Perícias (Card externo → Box título → Card interno), com uma linha
- * por recurso (badge do ícone, barra contínua e valor editável com
- * botões −/+).
- *
- * A edição do valor usa `ResourceValueCard` (compartilhado com o
- * console minimizado — `MinimizedDockContent`) para não duplicar a
- * lógica de parsing/gravação; os botões −/+ do prompt são um atalho
- * de ±1 em cima da mesma ação (`editarRecurso` grava valor absoluto).
- */
+/** Vitais com faixa integrada de Colapso; ações usam as mutações existentes. */
 
 import { useEffect, useRef, useState } from "react";
-import { Brain, Eye, EyeOff, HeartPulse, Zap } from "lucide-react";
+import { Activity, Brain, Dices, Eye, EyeOff, HeartPulse, ShieldCheck, ShieldPlus, Skull, Zap } from "lucide-react";
 import { MAX_COLLAPSE_SEGMENTS, pisoPeNegativo } from "../../../../lib/character";
 import { useClickGuard } from "../useClickGuard";
 import { CabecalhoModulo } from "./CabecalhoModulo";
@@ -430,41 +418,20 @@ export function ResourceControls({
   );
 }
 
-/**
- * Losango de Colapso — mesma geometria de PA/Reações, paleta vermelha.
- * Cores vêm do CSS (`.rc-colpip`, via `data-on`), não de atributos
- * inline: é o que deixa o hover ser uma transição de cor pura, igual
- * ao `DiamondPip` compartilhado. Um path só pelo mesmo motivo — path
- * de fill + path de stroke separados fazem o hover pintar em duas
- * origens diferentes (o bug do "efeito duplo" já visto nos atributos).
- */
-function ColapsoPip({ cheio }: { cheio: boolean }) {
-  return (
-    <svg className="rc-colpip" data-on={cheio} viewBox="0 0 19 18" aria-hidden="true">
-      <path d="M18.2725 9L9.5 17.3105L0.726562 9L9.5 0.688477L18.2725 9Z" />
-    </svg>
-  );
-}
-
-function SkullIcon() {
-  return (
-    <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
-      <g stroke="#FF3C50" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4.5 6.50006C4.77614 6.50006 5 6.2762 5 6.00006C5 5.72392 4.77614 5.50006 4.5 5.50006C4.22386 5.50006 4 5.72392 4 6.00006C4 6.2762 4.22386 6.50006 4.5 6.50006Z" />
-        <path d="M7.5 6.50006C7.77614 6.50006 8 6.2762 8 6.00006C8 5.72392 7.77614 5.50006 7.5 5.50006C7.22386 5.50006 7 5.72392 7 6.00006C7 6.2762 7.22386 6.50006 7.5 6.50006Z" />
-        <path d="M4 10.0001V11.0001H8V10.0001" />
-        <path d="M6.25 8.50006L6 8.00006L5.75 8.50006H6.25Z" />
-        <path d="M8 10.0001C8.18835 9.99994 8.37283 9.94664 8.53221 9.84628C8.6916 9.74592 8.8194 9.60259 8.9009 9.43279C8.9824 9.263 9.0143 9.07363 8.99291 8.8865C8.97152 8.69937 8.89772 8.52209 8.78 8.37506C9.35299 7.82121 9.74748 7.10883 9.91289 6.32928C10.0783 5.54972 10.0071 4.73853 9.70838 3.99972C9.40968 3.26091 8.8971 2.62816 8.23638 2.18261C7.57566 1.73706 6.79691 1.49902 6 1.49902C5.20309 1.49902 4.42435 1.73706 3.76362 2.18261C3.1029 2.62816 2.59033 3.26091 2.29162 3.99972C1.99292 4.73853 1.92171 5.54972 2.08712 6.32928C2.25252 7.10883 2.64702 7.82121 3.22 8.37506C3.10228 8.52209 3.02848 8.69937 3.00709 8.8865C2.98571 9.07363 3.0176 9.263 3.0991 9.43279C3.18061 9.60259 3.30841 9.74592 3.46779 9.84628C3.62717 9.94664 3.81165 9.99994 4 10.0001" />
-      </g>
-    </svg>
-  );
-}
-
-export function VitalsRow({ api, onEstabilizar }: { api: ConsoleApi; onEstabilizar: () => void }) {
+export function VitalsRow({ api, onEditarRecurso, onEstabilizar, onTesteDecisivo }: { api: ConsoleApi; onEditarRecurso: (id: RecursoEditavel, valor: number) => void; onEstabilizar: () => void; onTesteDecisivo: () => void }) {
   const { character, derivados } = api;
   const colapso = character.colapso;
-  const segmentos = colapso?.segmentos ?? 0;
-  const noFim = segmentos >= MAX_COLLAPSE_SEGMENTS;
+  const segmentos = Math.max(0, Math.min(MAX_COLLAPSE_SEGMENTS, colapso?.segmentos ?? 0));
+  const desfecho = colapso?.desfecho;
+  const encerrado = desfecho === "morte" || desfecho === "coma";
+  const estabilizado = !encerrado && !!colapso?.estabilizado;
+  const mental = colapso?.tipo === "pe";
+  const estado = encerrado ? desfecho : estabilizado ? "estabilizado" : segmentos >= MAX_COLLAPSE_SEGMENTS ? "critico" : "ativo";
+  const detalhe = encerrado
+    ? desfecho === "morte" ? "Morto" : "Em coma"
+    : estabilizado ? "Estabilizado · avanço suspenso"
+    : segmentos >= MAX_COLLAPSE_SEGMENTS ? "Teste decisivo a cada fim de rodada"
+    : mental ? "PE no limite · em curso" : "PV a zero · em curso";
   const guard = useClickGuard();
 
   const maximos: Record<RecursoEditavel, number> = {
@@ -482,54 +449,55 @@ export function VitalsRow({ api, onEstabilizar }: { api: ConsoleApi; onEstabiliz
             max: maximos[id],
             atual: character.recursos_atuais?.[id] ?? maximos[id],
           }))}
-          onEdit={api.editarRecurso}
+          onEdit={onEditarRecurso}
         />
       </div>
-
-      {colapso?.ativo && (
-        <div className="rc-ncol-wrap">
-          <div
-            className="rc-ncol-card"
-            aria-label={`Colapso: ${colapso.tipo === "pe" ? "mental" : "físico"}${colapso.estabilizado ? ", estável" : ""}`}
-          >
-          <CabecalhoModulo id="ID://COLAPSO" />
-          <div className="rc-ncol-mid">
-            <div className="rc-ncol-pips">
-              {Array.from({ length: MAX_COLLAPSE_SEGMENTS }, (_, i) => {
-                const preenchido = i < segmentos;
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    className="rc-ncol-pip"
-                    onClick={() => guard(api.avancarColapso)}
-                    disabled={preenchido}
-                    aria-label={`Colapso segmento ${i + 1} de ${MAX_COLLAPSE_SEGMENTS}${preenchido ? " (atingido)" : ""}`}
-                  >
-                    <ColapsoPip cheio={preenchido} />
-                  </button>
-                );
-              })}
+      {(colapso?.ativo || encerrado) && (
+        <section className="rc-collapse-band" data-state={estado} data-mental={mental}
+          aria-label={`Colapso ${mental ? "mental" : "físico"}`} data-testid="console-colapso">
+          <div className="rc-collapse-identity">
+            <span className="rc-collapse-name"><Activity aria-hidden="true" />Colapso {mental ? "mental" : "físico"}</span>
+            <span className="rc-collapse-detail" role="status">{detalhe}</span>
+          </div>
+          <div className="rc-collapse-meter">
+            <div className="rc-collapse-meter-head"><span>Segmentos</span><span>{segmentos} / {MAX_COLLAPSE_SEGMENTS}</span></div>
+            <div className="rc-collapse-track">
+              {Array.from({ length: MAX_COLLAPSE_SEGMENTS }, (_, i) => (
+                <button key={i} type="button" className="rc-collapse-segment"
+                  data-filled={i < segmentos}
+                  disabled={i !== segmentos || estabilizado || encerrado || !colapso?.ativo}
+                  onClick={() => guard(api.avancarColapso)}
+                  aria-label={i < segmentos ? `Segmento ${i + 1} atingido` : `Avançar Colapso para o segmento ${i + 1}`}>
+                  <span aria-hidden="true" />
+                </button>
+              ))}
             </div>
-            {noFim && (
-              <span className="rc-ncol-morte" title={colapso?.desfecho === "morte" ? "Morte" : "Coma"}>
-                <SkullIcon />
-              </span>
-            )}
           </div>
-          <button
-            type="button"
-            className="rc-ncol-estabilizar"
-            onClick={onEstabilizar}
-            disabled={!colapso?.ativo}
-            title="Estabilizar Colapso — interrompe o avanço, não cura"
-            aria-label="Estabilizar Colapso"
-            data-testid="console-estabilizar"
-          >
-            Estabilizar
-          </button>
-          </div>
-        </div>
+          {encerrado ? (
+            <span className="rc-collapse-outcome"><Skull aria-hidden="true" />{desfecho === "morte" ? "Morto" : "Em coma"}</span>
+          ) : estabilizado ? (
+            <span className="rc-collapse-outcome"><ShieldCheck aria-hidden="true" />Estabilizado</span>
+          ) : segmentos >= MAX_COLLAPSE_SEGMENTS ? (
+            <div className="rc-collapse-actions">
+              <button type="button" className="rc-collapse-resolve" onClick={onTesteDecisivo}
+                title="Fazer o teste decisivo do 3º segmento"
+                aria-label="Fazer teste decisivo de Colapso" data-testid="console-teste-decisivo-colapso">
+                <Dices aria-hidden="true" />Fazer teste
+              </button>
+              <button type="button" className="rc-collapse-stabilize rc-collapse-stabilize--secondary" onClick={onEstabilizar}
+                title="Estabilizar Colapso — interrompe o avanço, não cura"
+                aria-label="Estabilizar Colapso" data-testid="console-estabilizar">
+                <ShieldPlus aria-hidden="true" />Estabilizar
+              </button>
+            </div>
+          ) : (
+            <button type="button" className="rc-collapse-stabilize" onClick={onEstabilizar}
+              title="Estabilizar Colapso — interrompe o avanço, não cura"
+              aria-label="Estabilizar Colapso" data-testid="console-estabilizar">
+              <ShieldPlus aria-hidden="true" />Estabilizar
+            </button>
+          )}
+        </section>
       )}
     </div>
   );

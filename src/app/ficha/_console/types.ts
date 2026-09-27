@@ -11,6 +11,9 @@
  */
 
 import type { WalletId } from "../../../lib/character/inventory";
+import type { ComponentProps } from "react";
+import type { SpellsTab } from "../../dev/character-sheet/components/SpellsTab";
+import type { TechnicalContentItem } from "../../../lib/content";
 import type {
   ActiveCondition,
   Character,
@@ -38,6 +41,15 @@ export type RecursoEditavel = "pv" | "pe" | "mana";
 export type ConsoleModo = "jogo" | "evolucao";
 
 export interface ConsoleApi {
+  escalpos: {
+    catalogo: TechnicalContentItem[];
+    erro: string | null;
+    instalar: (contentId: string) => void;
+    remover: (instanceId: string) => void;
+    comEfeitoAutomatico: Set<string>;
+  };
+  /** Catálogo e ações de magia compartilhados com a ficha. */
+  magias: ComponentProps<typeof SpellsTab>;
   /** Estado atual do personagem (fonte única — vem do client). */
   character: Character;
   /** Derivados já calculados por `computeDerivedStats`. */
@@ -110,7 +122,7 @@ export interface ConsoleApi {
   }) => RupturaRollResult;
 
   /** Grava PV/PE/Mana — passa por `updateRecursoAtual` (cura automática + colapso). */
-  editarRecurso: (id: RecursoEditavel, valor: number) => void;
+  editarRecurso: (id: RecursoEditavel, valor: number, opcoes?: { confirmarRetorno?: boolean }) => void;
   /** Idem, para a trilha de Integridade (mesmo `updateRecursoAtual`, chave "integridade"). */
   editarIntegridade: (valor: number) => void;
 
@@ -126,6 +138,7 @@ export interface ConsoleApi {
   podeUsarSobrecarga: boolean;
 
   avancarColapso: () => void;
+  aplicarTesteDecisivoColapso: (dados: number[]) => void;
   estabilizarColapso: () => void;
 
   /** Move um item entre mochila/equipado/empunhado/acesso rápido. */

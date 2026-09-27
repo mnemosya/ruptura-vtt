@@ -563,17 +563,13 @@ export function IdentityAside({
               <AvatarUserIcon />
             </span>
           )}
-          {/* VÉU DE TROCA — só quando JÁ HÁ imagem, e é o mesmo gesto do
-              retrato do HUD (`.rv-hud-portrait__lapis`): a imagem é o
-              alvo, e o ícone de trocar aparece por cima dela no hover.
-              Vazio, o hover continua como era — ali o ícone de usuário
-              já ocupa o centro e um véu por cima dele não diria nada
-              que o próprio quadro vazio não diga. */}
-          {avatarUrl && (
-            <span className="rc-avatar-troca" aria-hidden="true">
-              <ImageUp size={22} strokeWidth={1.6} />
-            </span>
-          )}
+          {/* Um único affordance de upload nos dois estados: a foto ou a
+              silhueta continuam sendo o conteúdo do quadro, enquanto o
+              mesmo véu e ícone aparecem no hover/foco para indicar a
+              ação de escolher outra imagem. */}
+          <span className="rc-avatar-troca" aria-hidden="true">
+            <ImageUp size={22} strokeWidth={1.6} />
+          </span>
         </span>
         <input
           type="file"

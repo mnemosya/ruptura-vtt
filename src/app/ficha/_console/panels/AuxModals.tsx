@@ -7,7 +7,7 @@
  * existente. Podem ser trocados sem alterar a lógica que os alimenta.
  */
 
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Check, TriangleAlert, X } from "lucide-react";
 import { Plus as ConsolePlus } from "../../../_design/icons";
 import type { RupturaRollResult } from "../../../../lib/dice/types";
@@ -64,7 +64,7 @@ function Aux({
  * cards do personagem: título mono, faixa de identificação, conteúdo
  * rente às bordas e rodapé fixo.
  */
-function ConsolePicker({
+export function ConsolePicker({
   titulo,
   id,
   modulo,
@@ -72,6 +72,9 @@ function ConsolePicker({
   onFechar,
   children,
   rodape,
+  modal = true,
+  testId,
+  arrastavel = false,
 }: {
   titulo: string;
   id: string;
@@ -80,9 +83,39 @@ function ConsolePicker({
   onFechar: () => void;
   children: ReactNode;
   rodape?: ReactNode;
+  modal?: boolean;
+  testId?: string;
+  /** Opt-in: mantém os seletores existentes parados; ações do token podem ser movidas para liberar o mapa. */
+  arrastavel?: boolean;
 }) {
   const tituloId = useId();
   const centro = useCentroDoConsole();
+  const janelaRef = useRef<HTMLElement>(null);
+  const gestoRef = useRef<{ x: number; y: number } | null>(null);
+  const [deslocamento, setDeslocamento] = useState({ x: 0, y: 0 });
+
+  function iniciarArrasto(event: React.PointerEvent<HTMLElement>) {
+    if (!arrastavel || (event.target as Element).closest("button, a, input, select, textarea")) return;
+    gestoRef.current = { x: event.clientX, y: event.clientY };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+  function moverArrasto(event: React.PointerEvent<HTMLElement>) {
+    const gesto = gestoRef.current;
+    const janela = janelaRef.current;
+    if (!gesto || !janela) return;
+    const dx = event.clientX - gesto.x, dy = event.clientY - gesto.y;
+    const caixa = janela.getBoundingClientRect();
+    const margem = 8;
+    const ajustadoX = Math.max(margem - caixa.left, Math.min(dx, window.innerWidth - margem - caixa.right));
+    const ajustadoY = Math.max(margem - caixa.top, Math.min(dy, window.innerHeight - margem - caixa.bottom));
+    setDeslocamento(p => ({ x: p.x + ajustadoX, y: p.y + ajustadoY }));
+    gestoRef.current = { x: event.clientX, y: event.clientY };
+  }
+  function terminarArrasto(event: React.PointerEvent<HTMLElement>) {
+    if (!gestoRef.current) return;
+    gestoRef.current = null;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+  }
 
   useEffect(() => {
     function fecharComEscape(event: KeyboardEvent) {
@@ -97,20 +130,30 @@ function ConsolePicker({
 
   return (
     <div
-      className="rc-picker-backdrop"
+      className="rc-picker-backdrop rc-cursor-scope"
+      data-nao-modal={!modal || undefined}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onFechar();
+        if (modal && event.target === event.currentTarget) onFechar();
       }}
     >
       <section
+        ref={janelaRef}
         className="rc-picker"
+        data-testid={testId}
         data-tamanho={tamanho}
         role="dialog"
-        aria-modal="true"
+        aria-modal={modal}
         aria-labelledby={tituloId}
-        style={centro ? { position: "absolute", left: centro.x, top: centro.y, transform: "translate(-50%, -50%)" } : undefined}
+        style={centro || arrastavel ? {
+          position: "absolute",
+          left: centro?.x ?? window.innerWidth / 2,
+          top: centro?.y ?? window.innerHeight / 2,
+          transform: `translate(calc(-50% + ${deslocamento.x}px), calc(-50% + ${deslocamento.y}px))`,
+        } : undefined}
       >
-        <header className="rc-picker-cab">
+        <header className="rc-picker-cab" data-arrastavel={arrastavel || undefined}
+          onPointerDown={iniciarArrasto} onPointerMove={moverArrasto}
+          onPointerUp={terminarArrasto} onPointerCancel={terminarArrasto}>
           <h2 id={tituloId}>{titulo}</h2>
           <button type="button" className="rc-picker-fechar" onClick={onFechar} aria-label={`Fechar ${titulo.toLowerCase()}`}>
             <X size={15} aria-hidden="true" />

@@ -51,10 +51,22 @@ import { useCentroDoConsole } from "../useCentroDoConsole";
 
 const SEM_PERICIA = "";
 
+function InfoCanonica({ label, valor }: { label: string; valor: string }) {
+  return (
+    <div>
+      <span style={{ display: "block", fontFamily: DISPLAY, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.16em", color: INK_FAINT }}>{label}</span>
+      <div style={{ marginTop: 4, minHeight: 32, display: "flex", alignItems: "center", padding: "6px 9px", borderRadius: 4, border: "1px solid #243b50", background: "#101b2a", color: INK, fontFamily: BODY, fontSize: 12 }}>
+        {valor}
+      </div>
+    </div>
+  );
+}
+
 /** O que o clique no Console pediu — o estado inicial do painel. */
 export type PrefillRolagem =
   | { tipo: "atributo"; atributoId: keyof CharacterAttributes }
   | { tipo: "pericia"; periciaId: string }
+  | { tipo: "colapso"; atributoId: keyof CharacterAttributes; cd: number }
   /**
    * `acao` é o NOME da ação defensiva escolhida — "Aparar",
    * "Esquivar", "Bloquear", "Resistir". Sem ele a rolagem chega na
@@ -64,10 +76,11 @@ export type PrefillRolagem =
    */
   | { tipo: "defesa"; periciaId: string; acao: string };
 
-export function PainelRolagem({ api, prefill, onFechar }: {
+export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
   api: ConsoleApi;
   prefill: PrefillRolagem;
   onFechar: () => void;
+  acaoToken?: { nome: string; visibilidade: "public" | "gm" };
 }) {
   const mesa = api.mesa;
   // "Narrador" no seletor de visibilidade só existe pra quem é
@@ -85,14 +98,15 @@ export function PainelRolagem({ api, prefill, onFechar }: {
   const atributos = api.regras?.atributos ?? [];
   const pericias = api.regras?.pericias ?? [];
 
+  const testeColapso = prefill.tipo === "colapso";
   const atributoInicial: keyof CharacterAttributes =
-    prefill.tipo === "atributo" ? prefill.atributoId : api.atributoDaPericia(prefill.periciaId);
-  const periciaInicial = prefill.tipo === "atributo" ? SEM_PERICIA : prefill.periciaId;
+    prefill.tipo === "atributo" || prefill.tipo === "colapso" ? prefill.atributoId : api.atributoDaPericia(prefill.periciaId);
+  const periciaInicial = prefill.tipo === "atributo" || prefill.tipo === "colapso" ? SEM_PERICIA : prefill.periciaId;
 
   const [atributoId, setAtributoId] = useState<string>(atributoInicial);
   const [periciaId, setPericiaId] = useState<string>(periciaInicial);
   const [mods, setMods] = useState(0);
-  const [cdInput, setCdInput] = useState("");
+  const [cdInput, setCdInput] = useState(prefill.tipo === "colapso" ? String(prefill.cd) : "");
   const [visibilidade, setVisibilidade] = useState<TableLogVisibility>("public");
   const [adv, setAdv] = useState(false);
   const [carga, setCarga] = useState(0);
@@ -109,7 +123,7 @@ export function PainelRolagem({ api, prefill, onFechar }: {
 
   const valorAtributo = api.character.atributos[atributoId as keyof CharacterAttributes] ?? 0;
   const nd8 = valorAtributo;
-  const podeRolar = nd8 > 0 && !rolando && !!rolarNaMesa;
+  const podeRolar = nd8 > 0 && !rolando && !!rolarNaMesa && !((testeColapso || acaoToken) && resultado);
 
   const opcoesAtributo = atributos.map((a) => ({
     id: a.id,
@@ -125,7 +139,7 @@ export function PainelRolagem({ api, prefill, onFechar }: {
   ];
 
   const doRoll = useCallback(async (forca: number) => {
-    if (rolando || nd8 <= 0 || !rolarNaMesa) return;
+    if (rolando || nd8 <= 0 || !rolarNaMesa || (acaoToken && resultado)) return;
     setRolando(true);
     setLanded(false);
     setResultado(null);
@@ -147,19 +161,24 @@ export function PainelRolagem({ api, prefill, onFechar }: {
       modificador: mods + (info?.penalidade ?? 0),
       cd: cdNum != null && Number.isFinite(cdNum) ? cdNum : null,
       dados,
-      visibilidade,
-      intencao: prefill.tipo === "defesa" ? { tipo: "DEFESA", nome: prefill.acao } : null,
+      visibilidade: acaoToken?.visibilidade ?? visibilidade,
+      intencao: acaoToken ? { tipo: "ATAQUE", nome: acaoToken.nome } : prefill.tipo === "defesa"
+        ? { tipo: "DEFESA", nome: prefill.acao }
+        : prefill.tipo === "colapso" ? { tipo: "COLAPSO", nome: "Teste decisivo" } : null,
     });
 
     setResultado(r);
+    if (testeColapso) api.aplicarTesteDecisivoColapso(r.dados);
     setRolando(false);
     setLanded(true);
     setTimeout(() => setLanded(false), 500);
-  }, [api, atributoId, cdInput, mods, nd8, periciaId, prefill, rolando, rolarNaMesa, visibilidade]);
+  }, [api, atributoId, cdInput, mods, nd8, periciaId, prefill, rolando, rolarNaMesa, testeColapso, visibilidade, acaoToken, resultado]);
 
   // Com o cabeçalho fora, é a linha de modo da janela que diz quando a
   // rolagem é uma DEFESA — e isso não pode sumir: defesa gasta Reação.
-  const modo = prefill.tipo === "defesa"
+  const modo = prefill.tipo === "colapso"
+    ? "colapso · teste decisivo"
+    : prefill.tipo === "defesa"
     ? "defesa · gasta 1 reação ao rolar"
     : "d8 · maior dado + perícia + modificadores";
 
@@ -178,14 +197,20 @@ export function PainelRolagem({ api, prefill, onFechar }: {
         <Stack gap={16}>
           {/* Uma grade só: Atributo · Perícia · Modificadores. A perícia
               leva mais espaço — os nomes dela são mais longos. */}
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.35fr) auto", gap: 12, alignItems: "end" }}>
+          {testeColapso ? (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <InfoCanonica label="Atributo" valor={opcoesAtributo.find((item) => item.id === atributoId)?.rotulo ?? atributoId} />
+              <InfoCanonica label="Perícia" valor="Sem perícia" />
+              <InfoCanonica label="CD" valor={cdInput} />
+            </div>
+          ) : <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.35fr) auto", gap: 12, alignItems: "end" }}>
             <Select label="Atributo" value={atributoId} onChange={setAtributoId} options={opcoesAtributo} disabled={rolando} />
             <Select label="Perícia" value={periciaId} onChange={setPericiaId} options={opcoesPericia} disabled={rolando} />
             <div>
               <span style={{ display: "block", fontFamily: DISPLAY, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.16em", color: INK_FAINT }}>Mod.</span>
               <div style={{ marginTop: 4 }}><Stepper value={mods} onChange={setMods} /></div>
             </div>
-          </div>
+          </div>}
 
           <div style={{ borderRadius: 4, padding: 14, background: "#0c1420", border: "1px solid #16233a" }}>
             <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -248,13 +273,13 @@ export function PainelRolagem({ api, prefill, onFechar }: {
           )}
 
           <RollButton
-            label={rolando ? "Rolando…" : resultado ? "Rolar de novo" : `Rolar ${nd8}d8`}
+            label={rolando ? "Rolando…" : testeColapso && resultado ? "Resultado aplicado" : resultado ? "Rolar de novo" : `Rolar ${nd8}d8`}
             disabled={!podeRolar}
             onRoll={doRoll}
             onChargeChange={setCarga}
           />
 
-          <div>
+          {!testeColapso && <div>
             <button
               type="button"
               onClick={() => setAdv((v) => !v)}
@@ -265,9 +290,10 @@ export function PainelRolagem({ api, prefill, onFechar }: {
               </GroupLabel>
             </button>
             {adv && <div style={{ paddingTop: 4 }}><CampoCD value={cdInput} onChange={setCdInput} /></div>}
-          </div>
+          </div>}
 
-          {mesa && <SeletorVisibilidade valor={visibilidade} onChange={setVisibilidade} ehNarrador={ehNarrador} />}
+          {mesa && !acaoToken && <SeletorVisibilidade valor={visibilidade} onChange={setVisibilidade} ehNarrador={ehNarrador} />}
+          {acaoToken && <p style={{ color: INK_FAINT, fontFamily: MONO, fontSize: 11 }}>{acaoToken.nome} · {acaoToken.visibilidade === "gm" ? "Somente narrador" : "Público"}</p>}
         </Stack>
       </MolduraRolagem>
       </div>

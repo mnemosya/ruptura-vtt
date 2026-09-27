@@ -24,7 +24,7 @@ const RECURSOS: { id: RecursoEditavel; tag: string; cor: string }[] = (["pv", "p
   cor: COR_RECURSO[id],
 }));
 
-export function MinimizedDockContent({ api, avatarUrl }: { api: ConsoleApi; avatarUrl: string | null }) {
+export function MinimizedDockContent({ api, avatarUrl, onEditarRecurso }: { api: ConsoleApi; avatarUrl: string | null; onEditarRecurso: (id: RecursoEditavel, valor: number) => void }) {
   const { character, derivados } = api;
   const maximos: Record<RecursoEditavel, number> = {
     pv: derivados.pv_max,
@@ -59,7 +59,7 @@ export function MinimizedDockContent({ api, avatarUrl }: { api: ConsoleApi; avat
                   className="rc-dock-val"
                   inputClassName="rc-dock-input"
                   testIdPrefix="console-dock-res"
-                  onGravar={(v) => api.editarRecurso(id, v)}
+                  onGravar={(v) => onEditarRecurso(id, v)}
                 />
               </div>
             );
