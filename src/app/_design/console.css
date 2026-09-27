@@ -3675,8 +3675,11 @@
 }
 .rc-sensor-name {
   overflow: hidden;
-  font-family: var(--font-rajdhani), sans-serif;
-  font-size: 13px; font-weight: 500; color: var(--rc-text);
+  /* Mono, como as colunas técnicas ao lado. 11px/400: a JetBrains Mono
+     é bem mais larga e alta que a Rajdhani condensada — em 13px/500 o
+     nome ficava visualmente muito maior que o resto da tabela. */
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px; font-weight: 400; color: var(--rc-text);
   white-space: nowrap; text-overflow: ellipsis;
 }
 /* `display: block` para o `text-overflow` funcionar — num item flex o
