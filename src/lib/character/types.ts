@@ -1108,6 +1108,10 @@ export interface SkillDefinition {
   atributo_primario: string;
   valor_minimo: number;
   valor_maximo: number;
+  /** Resumo de uma linha (tooltip da ficha). Opcional: regras antigas não trazem. */
+  descricao_curta?: string;
+  /** Atributos que também valem, e em que situação. */
+  atributos_alternativos?: { atributo: string; contexto: string }[];
 }
 
 export interface DerivedDefinition {

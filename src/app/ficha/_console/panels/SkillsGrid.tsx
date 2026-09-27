@@ -29,12 +29,80 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import type { CharacterAttributes } from "../../../../lib/character";
+import { createPortal } from "react-dom";
+import type { CharacterAttributes, SkillDefinition } from "../../../../lib/character";
 import type { ConsoleApi } from "../types";
 import { PassoValor } from "./ModoEvolucao";
 import { CabecalhoModulo } from "./CabecalhoModulo";
 
 const ABREV: Record<string, string> = { corpo: "C", mente: "M", animo: "A" };
+const NOME_ATRIBUTO: Record<string, string> = { corpo: "Corpo", mente: "Mente", animo: "Ânimo" };
+
+/** Distância entre a linha e o balão, e a folga mínima da borda da tela. */
+const DICA_AFASTAMENTO = 6;
+const DICA_MARGEM_TELA = 8;
+/** Espera do hover antes de mostrar — passar o mouse pela tabela não
+    pode ir acendendo balão. Vale também ao trocar de linha com um já
+    aberto. Foco de teclado não espera. */
+const DICA_ATRASO_MS = 500;
+
+interface DicaPericia {
+  skill: SkillDefinition;
+  /** Retângulo da linha na tela, no instante do hover/foco. */
+  ancora: { left: number; top: number; bottom: number; width: number };
+}
+
+/**
+ * Resumo da perícia no hover/foco da linha: a frase curta e, embaixo,
+ * o atributo base e o(s) secundário(s) — com o contexto em que valem no
+ * `title` do chip. Portal no `body` com posição fixa porque a tabela
+ * pode cortar o que sai dela; a classe `rc-cursor-scope` traz junto os
+ * tokens de cor do Console, que moram nela.
+ */
+function DicaPericiaBalao({ dica }: { dica: DicaPericia }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const { width, height } = el.getBoundingClientRect();
+    const { ancora } = dica;
+    // Abaixo da linha por padrão; em cima quando não cabe.
+    const abaixo = ancora.bottom + DICA_AFASTAMENTO;
+    const top = abaixo + height > window.innerHeight - DICA_MARGEM_TELA
+      ? ancora.top - DICA_AFASTAMENTO - height
+      : abaixo;
+    const left = Math.min(
+      Math.max(DICA_MARGEM_TELA, ancora.left),
+      window.innerWidth - DICA_MARGEM_TELA - width,
+    );
+    setPos({ left, top });
+  }, [dica]);
+
+  const { skill } = dica;
+  const primario = skill.atributo_primario;
+  const alternativos = skill.atributos_alternativos ?? [];
+  return createPortal(
+    <div
+      ref={ref}
+      className="rc-cursor-scope rc-pericia-dica"
+      role="tooltip"
+      id={`rc-pericia-dica-${skill.id}`}
+      style={pos ? { left: pos.left, top: pos.top } : { left: -9999, top: -9999 }}
+    >
+      {skill.descricao_curta && <p className="rc-pericia-dica-texto">{skill.descricao_curta}</p>}
+      <p className="rc-pericia-dica-atributos">
+        <span data-attr={primario}>{NOME_ATRIBUTO[primario] ?? primario}</span>
+        {alternativos.map((alt) => (
+          <span key={alt.atributo} data-attr={alt.atributo} data-secundario="true" title={alt.contexto}>
+            {NOME_ATRIBUTO[alt.atributo] ?? alt.atributo}
+          </span>
+        ))}
+      </p>
+    </div>,
+    document.body,
+  );
+}
 
 /** Abaixo disto o nome da perícia começa a ser cortado. */
 const LARGURA_MINIMA_COLUNA = 220;
@@ -57,6 +125,33 @@ export function SkillsGrid({ api, onRolar }: { api: ConsoleApi; onRolar: (perici
   const ordenadas = [...definicoes].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
   const evolucao = api.modo === "evolucao";
+  const [dica, setDica] = useState<DicaPericia | null>(null);
+  const atrasoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelarAtraso = () => {
+    if (atrasoRef.current) clearTimeout(atrasoRef.current);
+    atrasoRef.current = null;
+  };
+  const abrirDica = (skill: SkillDefinition, alvo: HTMLElement, imediato = false) => {
+    if (!skill.descricao_curta && !skill.atributo_primario) return;
+    cancelarAtraso();
+    const mostrar = () => {
+      const r = alvo.getBoundingClientRect();
+      setDica({ skill, ancora: { left: r.left, top: r.top, bottom: r.bottom, width: r.width } });
+    };
+    if (imediato) mostrar();
+    else atrasoRef.current = setTimeout(mostrar, DICA_ATRASO_MS);
+  };
+  const fecharDica = () => {
+    cancelarAtraso();
+    setDica(null);
+  };
+  useEffect(() => cancelarAtraso, []);
+  // Rolar a lista ou a janela deixaria o balão preso na posição antiga.
+  useEffect(() => {
+    if (!dica) return;
+    window.addEventListener("scroll", fecharDica, true);
+    return () => window.removeEventListener("scroll", fecharDica, true);
+  }, [dica]);
   const medidaRef = useRef<HTMLDivElement>(null);
   const [colunas, setColunas] = useState(2);
 
@@ -124,6 +219,8 @@ export function SkillsGrid({ api, onRolar }: { api: ConsoleApi; onRolar: (perici
                       className="rc-sensor-row"
                       data-attr={attr}
                       data-editando="true"
+                      onMouseEnter={(e) => abrirDica(skill, e.currentTarget)}
+                      onMouseLeave={fecharDica}
                       data-testid={`console-pericia-${skill.id}`}
                     >
                       {celulas}
@@ -147,7 +244,14 @@ export function SkillsGrid({ api, onRolar }: { api: ConsoleApi; onRolar: (perici
                     type="button"
                     className="rc-sensor-row"
                     data-attr={attr}
-                    onClick={() => onRolar(skill.id)}
+                    onClick={() => { fecharDica(); onRolar(skill.id); }}
+                    onMouseEnter={(e) => abrirDica(skill, e.currentTarget)}
+                    onMouseLeave={fecharDica}
+                    // Só foco de TECLADO: o clique também foca o botão, e aí
+                    // o balão pularia na hora, sem a espera do hover.
+                    onFocus={(e) => { if (e.currentTarget.matches(":focus-visible")) abrirDica(skill, e.currentTarget, true); }}
+                    onBlur={fecharDica}
+                    aria-describedby={dica?.skill.id === skill.id ? `rc-pericia-dica-${skill.id}` : undefined}
                     data-testid={`console-pericia-${skill.id}`}
                     aria-label={`Rolar ${skill.nome}: ${dados}d8, valor ${valor}`}
                   >
@@ -160,6 +264,7 @@ export function SkillsGrid({ api, onRolar }: { api: ConsoleApi; onRolar: (perici
           ))}
         </div>
       </div>
+      {dica && <DicaPericiaBalao dica={dica} />}
     </div>
   );
 }

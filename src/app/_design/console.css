@@ -3669,6 +3669,41 @@
 .rc-sensor-row[data-attr="mente"] { --rc-skill-cor: #6a49bc; }
 .rc-sensor-row[data-attr="animo"] { --rc-skill-cor: #0596b7; }
 
+/* Resumo da perícia no hover/foco (`DicaPericiaBalao`, SkillsGrid).
+   Compacto: a frase curta e, embaixo, o atributo base cheio e os
+   secundários só em contorno. Fixo e em portal — a tabela corta o que
+   sai dela. */
+.rc-pericia-dica {
+  position: fixed; z-index: 1000; max-width: 260px;
+  padding: 8px 10px;
+  background: #0d1826; border: 1px solid var(--rc-line);
+  border-radius: 4px 10px 4px 10px; corner-shape: round bevel round bevel;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+.rc-pericia-dica p { margin: 0; }
+.rc-pericia-dica-texto {
+  /* Mono como os nomes na tabela; 11px pelo mesmo motivo (a JetBrains
+     Mono é bem maior que a Rajdhani no mesmo corpo). */
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; font-weight: 300; line-height: 1.45;
+  color: var(--rc-text);
+}
+.rc-pericia-dica-atributos { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px !important; }
+.rc-pericia-dica-texto + .rc-pericia-dica-atributos { padding-top: 6px; border-top: 1px solid var(--rc-line-soft); }
+.rc-pericia-dica-atributos span {
+  --rc-dica-cor: var(--rc-dim);
+  padding: 1px 6px; border-radius: 3px;
+  font: 600 10px var(--font-mono), monospace; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--rc-text-forte);
+  background: color-mix(in srgb, var(--rc-dica-cor) 35%, transparent);
+  border: 1px solid var(--rc-dica-cor);
+}
+.rc-pericia-dica-atributos span[data-attr="corpo"] { --rc-dica-cor: #23903c; }
+.rc-pericia-dica-atributos span[data-attr="mente"] { --rc-dica-cor: #6a49bc; }
+.rc-pericia-dica-atributos span[data-attr="animo"] { --rc-dica-cor: #0596b7; }
+/* Secundário: só o contorno — é alternativa, não o padrão da perícia. */
+.rc-pericia-dica-atributos span[data-secundario] { background: transparent; color: var(--rc-dim); }
+
 .rc-sensor-index {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 8px; font-weight: 600; color: #587587;
