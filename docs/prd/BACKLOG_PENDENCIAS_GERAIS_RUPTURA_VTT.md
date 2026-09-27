@@ -48,13 +48,13 @@ Esta triagem considera o código existente, não apenas a lista de desejos:
 
 | Recorte | Quantidade |
 |---|---:|
-| Total de tarefas | 73 |
+| Total de tarefas | 75 |
 | Prontas | 36 |
 | Prontas após dependência | 3 |
-| Bloqueadas por regra, contrato ou referência indispensável | 34 |
+| Bloqueadas por regra, contrato ou referência indispensável | 36 |
 | Em validação | 0 |
 | P0 | 14 |
-| P1 | 43 |
+| P1 | 45 |
 | P2 | 15 |
 | P3 | 1 |
 
@@ -75,6 +75,7 @@ CONT-01 ──> CONT-02 ──> CONT-03
 INV-01 ──> INV-02 ──> EQP-02
 
 TOK-02 ──> TOK-03
+TOK-06 ──> TOK-07
 
 CHAT-02 ──> CHAT-03
 
@@ -1163,6 +1164,28 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 - **Dependências:** nenhuma.
 - **Critérios de aceite:** token colossal pode virar para a esquerda e para a direita por todos os controles atualmente suportados; indicador/retrato muda para a direção escolhida; `direcao` persiste após recarregar e sincroniza em outros clientes; a pegada continua com 13 células válidas e não produz colisão falsa; tokens dos demais tamanhos não sofrem regressão; há teste específico para seis rotações consecutivas e para concorrência/revisão.
 - **Dúvidas antes da implementação:** o defeito ocorre no menu contextual, nos atalhos Q/E, durante o posicionamento inicial ou em todos esses caminhos? A intenção é apenas virar a direção visual ou também oferecer novamente a ação separada “Girar a forma”?
+
+### TOK-06 — Criar sistema de alvos no mapa inspirado no Foundry VTT
+
+- **Status:** Implementação inicial entregue; validação ampliada pendente.
+- **Decisões e entrega (2026-09-27):** Shift + botão direito marca/desmarca o alvo do participante; Shift + esquerdo mantém seleção múltipla e clique simples mantém o cartão de status. Todos veem marcações de tokens autorizados. Até 32 alvos por participante/cena, renovados enquanto a cena está aberta e expirados após 90 s sem renovação. Menu contextual oferece alternativa; Shift+F10 abre o menu do token focado. Migration `0149_vtt_targets.sql` aplicada; teste com dois clientes cobre marcação, sincronização, remoção por autor, token oculto, controle e cena privada.
+- **Descrição:** permitir que cada jogador marque um ou mais tokens como alvo no mapa, com interação rápida e feedback visual inequívoco, seguindo a ergonomia do sistema de targets do Foundry VTT sem copiar sua identidade visual. O alvo deve servir como contexto canônico para ataques, magias e outras ações.
+- **Área afetada:** mapa, tokens, seleção/interação, realtime, permissões, acessibilidade e estado da sessão.
+- **Prioridade sugerida:** P1
+- **Dependências:** definir o contrato e o ciclo de vida do alvo; integrar com seleção existente sem confundir “selecionado”, “controlado” e “marcado como alvo”.
+- **Critérios de aceite:** jogador pode adicionar e remover alvos por mouse e teclado; é possível distinguir visualmente seleção, controle e alvo; múltiplos alvos seguem regra explícita; estado sincroniza em tempo real apenas com o público autorizado; token removido, ocultado ou trocado de cena sai da lista sem estado órfão; interface informa quantidade e identidade dos alvos; ações podem consumir a lista de alvos por contrato estável; testes cobrem concorrência, reconexão, mudança de cena e token exclusivo do narrador.
+- **Dúvidas antes da implementação:** o alvo é privado por jogador, visível ao narrador ou público para todos? Qual gesto será usado — duplo clique, modificador + clique, menu contextual ou ferramenta dedicada? Há limite de alvos? O estado persiste após recarregar, troca de turno ou troca de cena? O narrador pode definir ou limpar alvos de outra pessoa? Tokens ocultos podem continuar como alvo depois de deixarem de ser visíveis?
+
+### TOK-07 — Adicionar atalhos de ações ao token com aplicação nos alvos
+
+- **Status:** Implementação inicial entregue; resolução ampliada pendente.
+- **Decisões e entrega (2026-09-27):** radial sem ícones via seção Ações rápidas do menu ou Shift+A, somente em token vinculado/controlado; Atacar, Conjurar, Usar item e Fechar. Botões 78×36, JetBrains Mono 10 px, chanfros com fio íntegro e tokens de hover do Console. Janela não modal: escolher arma/magia/item → conferir custo/alvo → confirmar. Reutiliza os handlers da ficha e valida contexto no servidor. Ataque abre a rolagem existente; alvo entra nos logs. Primeiro recorte usa um alvo por ação; farmácia rápida é uso em si mesmo. Defesa, aplicação de dano/efeitos, alcance e linha de efeito não ganharam automações novas; seguem as limitações do fluxo original. Toque e resolução de múltiplos alvos ficam pendentes.
+- **Descrição:** oferecer no token do personagem um acesso rápido a ações frequentes, como “Atacar” e “Conjurar magia”, usando os alvos marcados no mapa para abrir e executar o fluxo correspondente sem exigir a abertura completa da ficha.
+- **Área afetada:** token, cartão/menu contextual, ficha do personagem, combate, magia, rolagens, chat e sistema de alvos.
+- **Prioridade sugerida:** P1
+- **Dependências:** TOK-06; catálogo canônico de ações da ficha; contratos existentes de ataque, magia, custo de recursos e resolução de defesa/reação.
+- **Critérios de aceite:** atalho só aparece para token com ficha vinculada e para usuário autorizado; lista ações realmente disponíveis ao personagem; ação informa quando exige alvo e impede execução ambígua; um ou vários alvos são encaminhados conforme a regra da ação; alcance, linha de efeito, custo e recursos usam as mesmas validações do fluxo completo; resultado segue para os cards e logs existentes; usar o atalho não cria uma segunda implementação das regras de ataque ou magia; teclado, toque e foco são suportados.
+- **Dúvidas antes da implementação:** o atalho abre uma paleta genérica, favoritos configuráveis ou botões fixos? Quais ações entram no primeiro recorte além de atacar e conjurar magia? Como escolher arma, técnica ou magia quando houver mais de uma? A ação pode ser iniciada sem alvo para escolhê-lo depois? Área de efeito usa targets individuais, template no mapa ou ambos? Quem confirma gasto de recurso e resolução quando há múltiplos alvos?
 
 ## 12. Ajustes visuais do VTT
 
