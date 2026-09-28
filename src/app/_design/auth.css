@@ -31,6 +31,7 @@
 .rv-root *::after { box-sizing: border-box; }
 
 .rv-root {
+  box-sizing: border-box;
   position: relative;
   width: 100%;
   min-height: 100vh;
@@ -112,11 +113,6 @@
 }
 
 /* ---------- HUD da viewport ---------- */
-.rv-vp-corner { position: absolute; width: 20px; height: 20px; z-index: 4; pointer-events: none; }
-.rv-vp-corner-tl { top: 20px; left: 20px; border-top: 1.5px solid rgba(0, 212, 255, 0.35); border-left: 1.5px solid rgba(0, 212, 255, 0.35); }
-.rv-vp-corner-tr { top: 20px; right: 20px; border-top: 1.5px solid rgba(0, 212, 255, 0.35); border-right: 1.5px solid rgba(0, 212, 255, 0.35); }
-.rv-vp-corner-bl { bottom: 20px; left: 20px; border-bottom: 1.5px solid rgba(0, 212, 255, 0.35); border-left: 1.5px solid rgba(0, 212, 255, 0.35); }
-.rv-vp-corner-br { bottom: 20px; right: 20px; border-bottom: 1.5px solid rgba(0, 212, 255, 0.35); border-right: 1.5px solid rgba(0, 212, 255, 0.35); }
 
 .rv-coord {
   position: absolute; font-family: var(--font-mono), monospace; font-size: 9px; color: rgba(0, 212, 255, 0.35);
@@ -125,8 +121,19 @@
 .rv-coord-tl { top: 24px; left: 24px; border-top: 1px solid rgba(0, 212, 255, 0.25); border-left: 1px solid rgba(0, 212, 255, 0.25); }
 .rv-coord-br { bottom: 24px; right: 24px; border-bottom: 1px solid rgba(0, 212, 255, 0.25); border-right: 1px solid rgba(0, 212, 255, 0.25); text-align: right; }
 
+/* As leituras moram DENTRO da faixa inferior da moldura desenhada no
+   fundo (`auth-hud.jpg`, 1672×941). O recorte da faixa vai de x≈595 a
+   x≈1035 e de y≈899 a y≈927 — centro em (817, 913), que NÃO é o meio
+   da imagem (836): o recorte é deslocado pra esquerda. O fundo é `cover` + centralizado, então 1px da imagem vale
+   `--rv-hud-px` na tela e a imagem fica centrada na vertical: o centro
+   da faixa fica a `50% - (913 - 941/2) × escala` do rodapé e a
+   `(817 - 836) × escala` do meio da tela. O
+   `translateY(50%)` põe o MEIO do texto nessa linha. Em tela muito
+   larga o `cover` corta a própria faixa pra fora da viewport; o piso
+   de 18px mantém as leituras visíveis nesse caso. */
 .rv-readings {
-  position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%);
+  --rv-hud-px: max(100vw / 1672, 100vh / 941);
+  position: absolute; bottom: max(18px, calc(50% - 442.5 * var(--rv-hud-px))); left: calc(50% - 19 * var(--rv-hud-px)); transform: translate(-50%, 50%);
   font-family: var(--font-mono), monospace; font-size: 8.5px; letter-spacing: 0.08em;
   line-height: 1; z-index: 4; pointer-events: none; display: flex; gap: 32px; white-space: nowrap;
 }
@@ -135,11 +142,12 @@
 .rv-val--amber { color: #f5a200; }
 
 @media (max-width: 900px) {
-  .rv-coord, .rv-readings, .rv-vp-corner { display: none; }
+  .rv-coord, .rv-readings { display: none; }
 }
 
 /* ---------- Painel ---------- */
 .rv-panel-wrap {
+  min-width: 0;
   position: relative; z-index: 5; width: min(472px, 100%); padding: 3px;
   border: 1px solid rgba(0, 212, 255, 0.1); border-radius: 2px;
   animation: rv-panel-enter 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
@@ -157,10 +165,38 @@
 .rv-stripe-r { right: 3px; background: linear-gradient(180deg, rgba(56, 193, 212, 0.2) 0%, #38c1d4 18%, rgba(56, 193, 212, 0.12) 53%, #e6a52e 87%, rgba(230, 165, 46, 0.2) 100%); }
 
 .rv-panel {
+  min-width: 0;
   position: relative; background: rgba(13, 21, 28, 0.82); border: 1px solid rgba(0, 212, 255, 0.25);
   border-radius: 2px; padding: 34px 48px 32px; display: flex; flex-direction: column; gap: 26px; align-items: center;
   overflow: hidden; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  /* Teto de altura: com conteúdo extra (cadastro + cartão do convite)
+     o painel passava da viewport e desmontava o layout. Acima do teto,
+     rola por dentro, com a barra de rolagem escondida. O teto é só
+     relativo à viewport (80%), pra acompanhar qualquer altura de tela. */
+  max-height: 80dvh;
+  overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: none;
 }
+.rv-panel::-webkit-scrollbar { display: none; }
+/* Degradê na borda de baixo: sem scrollbar, é o que avisa que ainda há
+   conteúdo. É o último item do painel, grudado no fundo (`sticky`), e
+   some ao chegar ao fim da rolagem (scroll-driven animation na timeline do painel, `scroll(nearest)`). Quando o
+   painel não rola, a timeline fica inativa e vale a opacidade base, 0
+   — o degradê só existe quando há o que rolar. */
+.rv-panel::after {
+  content: ""; position: sticky; bottom: -32px; z-index: 4;
+  align-self: stretch; flex-shrink: 0;
+  height: 56px; margin: calc(-56px - 26px) -48px -32px;
+  background: linear-gradient(to bottom, rgba(13, 21, 28, 0), rgba(13, 21, 28, 0.96) 85%);
+  pointer-events: none; opacity: 0;
+  animation: rv-panel-fim linear both;
+  animation-timeline: scroll(nearest);
+}
+@keyframes rv-panel-fim {
+  0%, 88% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.rv-panel > * { flex-shrink: 0; }
 
 .rv-deco { position: absolute; left: 4px; right: 4px; display: flex; flex-direction: column; gap: 1px; align-items: center; pointer-events: none; z-index: 2; }
 .rv-deco-top { top: 0; }
@@ -266,7 +302,7 @@
 .rv-input-wrap:hover { background: rgba(14, 107, 127, 0.14); }
 .rv-input-wrap:focus-within {
   border-color: #0e6b7f; background: rgba(14, 107, 127, 0.14);
-  box-shadow: inset 0 0 14px rgba(0, 212, 255, 0.06), 0 0 0 1px rgba(0, 212, 255, 0.1);
+  box-shadow: inset 0 0 14px rgba(0, 212, 255, 0.06);
 }
 .rv-input-wrap--err { border-color: rgba(255, 60, 80, 0.5) !important; box-shadow: 0 0 0 1px rgba(255, 60, 80, 0.12) !important; }
 .rv-input-icon { position: absolute; left: 13px; color: #418292; display: flex; pointer-events: none; }
@@ -462,3 +498,72 @@
 .auth-submit-btn:hover:not(:disabled) { filter: brightness(1.18); }
 .auth-submit-btn:active:not(:disabled) { transform: scale(0.98); filter: brightness(1.3); }
 .auth-submit-btn:focus-visible { outline: 1px solid rgba(0, 212, 255, 0.7); outline-offset: 3px; }
+
+/* Controles da autenticação: recorte e fio diagonal usam a mesma geometria.
+   O foco altera o contorno inteiro, sem depender de outline externo recortado. */
+.rv-segmented, .rv-seg-btn, .rv-input-wrap, .rv-alert, .rv-submit, .auth-submit-btn {
+  --control-notch: 8px;
+  --control-outline: transparent;
+  position: relative;
+  border-radius: 4px;
+  clip-path: polygon(0 0, calc(100% - var(--control-notch)) 0,
+    100% var(--control-notch), 100% 100%, var(--control-notch) 100%,
+    0 calc(100% - var(--control-notch)));
+  border-color: var(--control-outline);
+}
+.rv-segmented::after, .rv-seg-btn::after, .rv-input-wrap::after,
+.rv-alert::after, .rv-submit::after, .auth-submit-btn::after {
+  content: ""; position: absolute; inset: -1px; pointer-events: none; z-index: 2;
+  background:
+    linear-gradient(45deg, transparent calc(50% - 1px), var(--control-outline) calc(50% - 1px) 50%, transparent 50%) top right / var(--control-notch) var(--control-notch) no-repeat,
+    linear-gradient(45deg, transparent 50%, var(--control-outline) 50% calc(50% + 1px), transparent calc(50% + 1px)) bottom left / var(--control-notch) var(--control-notch) no-repeat;
+}
+.rv-segmented { --control-notch: 12px; --control-outline: rgba(0, 212, 255, 0.1); }
+.rv-input-wrap { --control-outline: rgba(14, 107, 127, 0.6); }
+.rv-input-wrap:focus-within { --control-outline: #54acbe; border-color: var(--control-outline); }
+.rv-input-wrap--err { --control-outline: rgba(255, 60, 80, 0.5); }
+.rv-input-wrap--err:focus-within { --control-outline: #ff5a6e; border-color: var(--control-outline) !important; }
+.rv-seg-btn--active-cyan, .rv-submit--cyan, .auth-submit-btn--cyan { --control-outline: #3a94ac; }
+.rv-seg-btn--active-amber, .rv-submit--amber, .auth-submit-btn--amber { --control-outline: #a97a30; }
+.rv-alert--error { --control-outline: rgba(255, 50, 70, 0.22); }
+.rv-alert--success { --control-outline: rgba(0, 220, 130, 0.22); }
+.rv-alert--info { --control-outline: rgba(0, 212, 255, 0.22); }
+.rv-seg-btn:focus-visible, .rv-submit:focus-visible, .auth-submit-btn:focus-visible {
+  --control-outline: #9beaff;
+  outline: none;
+  box-shadow: inset 0 0 14px rgba(0, 212, 255, 0.22);
+}
+.rv-seg-amber:focus-visible, .rv-submit--amber:focus-visible, .auth-submit-btn--amber:focus-visible {
+  --control-outline: #ffd48f;
+  box-shadow: inset 0 0 14px rgba(230, 165, 46, 0.22);
+}
+
+/* ---------- Convite (/join/[token]) ----------
+   Mesma moldura do login; o que muda é o assunto do painel — a
+   campanha do convite — e o título, que é uma frase e não a marca. */
+.rv-join-titulo {
+  font-family: var(--font-orbitron), sans-serif; font-size: clamp(20px, 6vw, 26px); font-weight: 800;
+  letter-spacing: 0.08em; line-height: 1.25; margin: 0; text-transform: uppercase; color: #d3ecf7;
+  text-shadow: 0 0 30px rgba(0, 212, 255, 0.12);
+}
+.rv-join-sub { font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: 0.16em; color: rgba(84, 172, 190, 0.8); margin: 0; }
+.rv-join-faixa { display: flex; flex-direction: column; gap: 12px; width: 100%; position: relative; z-index: 3; }
+.rv-join-campanha {
+  display: flex; flex-direction: column; gap: 6px; padding: 14px 16px;
+  background: rgba(0, 212, 255, 0.04); border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 2px 8px 2px 8px; corner-shape: round bevel round bevel;
+}
+.rv-join-campanha-nome {
+  font-family: var(--font-rajdhani), sans-serif; font-size: 20px; font-weight: 700; color: #eaf7ff;
+  letter-spacing: 0.02em; overflow-wrap: anywhere;
+}
+.rv-join-papel { font-family: var(--font-mono), monospace; font-size: 9.5px; letter-spacing: 0.16em; color: rgba(84, 172, 190, 0.8); }
+.rv-join-texto { font-family: var(--font-rajdhani), sans-serif; font-size: 14px; line-height: 1.5; color: rgba(184, 216, 232, 0.8); margin: 0; }
+.rv-join-texto strong { color: #d3ecf7; }
+.rv-join-acoes { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
+.rv-join-voltar {
+  align-self: center; padding: 4px 2px; font-family: var(--font-mono), monospace; font-size: 10px;
+  letter-spacing: 0.15em; color: rgba(84, 172, 190, 0.7); text-decoration: none; transition: color 0.18s;
+}
+.rv-join-voltar:hover { color: rgba(84, 172, 190, 1); }
+.rv-join-voltar:focus-visible { outline: 1px solid rgba(0, 212, 255, 0.5); outline-offset: 2px; }

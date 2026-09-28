@@ -18,7 +18,7 @@
  *   - "RECUPERAR SENHA" sem ação: agora chama `requestPasswordReset`.
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -209,10 +209,73 @@ function AuthCursor() {
   );
 }
 
+/**
+ * Casca visual das telas de acesso: fundo, cantos, leituras e o painel
+ * chanfrado. O `LoginForm` e as telas de convite (`/join/[token]`)
+ * montam o conteúdo dentro dela — é o que mantém as duas no mesmo
+ * design system.
+ */
+export function AuthMoldura({ children, rodape }: { children: ReactNode; rodape?: ReactNode }) {
+  return (
+    <div className="rv-root">
+      <AuthCursor />
+
+      <div className="rv-bg" aria-hidden="true">
+        <div className="rv-img-wrap">
+          <div className="rv-img" />
+          <div className="rv-img-tint" />
+          <div className="rv-img-grad" />
+          <div className="rv-img-mask" />
+        </div>
+      </div>
+      <div className="rv-scan-sweep" aria-hidden="true" />
+
+      <div className="rv-coord rv-coord-tl" aria-hidden="true">
+        <div>39°42′22″N // 104°59′14″W</div>
+        <div>ALT: 1609m // SETOR: VOSEK-07</div>
+      </div>
+      <div className="rv-coord rv-coord-br" aria-hidden="true">
+        <div>RUPTURA VTT ENGINE v0.0.1</div>
+        <div>SYS.RUPTURA v1.2 // NÓ: <span className="rv-val--amber">AUTH-01</span></div>
+      </div>
+      <div className="rv-readings" aria-hidden="true">
+        <div>MALHA<span className="rv-val">&nbsp;ONLINE</span></div>
+        <div>ASSINATURA<span className="rv-val">&nbsp;MASCARADA</span></div>
+        <div>NÓ<span className="rv-val--amber">&nbsp;AUTH-01</span></div>
+      </div>
+
+      <div className="rv-panel-wrap">
+        <div className="rv-stripe rv-stripe-l" aria-hidden="true" />
+        <div className="rv-stripe rv-stripe-r" aria-hidden="true" />
+        <main className="rv-panel">
+          <div className="rv-deco rv-deco-top" aria-hidden="true">
+            <div className="rv-deco-line-a" />
+            <div className="rv-deco-line-b" />
+          </div>
+          <div className="rv-deco rv-deco-bottom" aria-hidden="true">
+            <div className="rv-deco-line-b" />
+            <div className="rv-deco-line-a" />
+          </div>
+          <div className="rv-panel-scan" aria-hidden="true" />
+
+          {children}
+
+          <div className="rv-foot">
+            <span className="rv-foot-line" aria-hidden="true" />
+            <span className="rv-foot-txt">{rodape ?? <>RUPTURA VTT v0.0.1 // ACESSO RESTRITO</>}</span>
+            <span className="rv-foot-line" aria-hidden="true" />
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
 export function LoginForm({
   redirectTo,
   context,
   lockedEmail,
+  faixa,
 }: {
   redirectTo: string;
   context: "prod" | "dev";
@@ -223,6 +286,8 @@ export function LoginForm({
    * ser feito fora deste fluxo.
    */
   lockedEmail?: string;
+  /** Bloco extra entre o cabeçalho e o formulário (ex.: o convite que trouxe a pessoa até aqui). */
+  faixa?: ReactNode;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>("login");
@@ -318,51 +383,22 @@ export function LoginForm({
   const submitting = busy || feedback.kind === "success";
 
   return (
-    <div className="rv-root">
-      <AuthCursor />
-
-      <div className="rv-bg" aria-hidden="true">
-        <div className="rv-img-wrap">
-          <div className="rv-img" />
-          <div className="rv-img-tint" />
-          <div className="rv-img-grad" />
-          <div className="rv-img-mask" />
-        </div>
-      </div>
-      <div className="rv-scan-sweep" aria-hidden="true" />
-
-      <div className="rv-vp-corner rv-vp-corner-tl" aria-hidden="true" />
-      <div className="rv-vp-corner rv-vp-corner-tr" aria-hidden="true" />
-      <div className="rv-vp-corner rv-vp-corner-bl" aria-hidden="true" />
-      <div className="rv-vp-corner rv-vp-corner-br" aria-hidden="true" />
-      <div className="rv-coord rv-coord-tl" aria-hidden="true">
-        <div>39°42′22″N // 104°59′14″W</div>
-        <div>ALT: 1609m // SETOR: VOSEK-07</div>
-      </div>
-      <div className="rv-coord rv-coord-br" aria-hidden="true">
-        <div>RUPTURA VTT ENGINE v0.0.1</div>
-        <div>SYS.RUPTURA v1.2 // NÓ: <span className="rv-val--amber">AUTH-01</span></div>
-      </div>
-      <div className="rv-readings" aria-hidden="true">
-        <div>MALHA<span className="rv-val">&nbsp;ONLINE</span></div>
-        <div>ASSINATURA<span className="rv-val">&nbsp;MASCARADA</span></div>
-        <div>NÓ<span className="rv-val--amber">&nbsp;AUTH-01</span></div>
-      </div>
-
-      <div className="rv-panel-wrap">
-        <div className="rv-stripe rv-stripe-l" aria-hidden="true" />
-        <div className="rv-stripe rv-stripe-r" aria-hidden="true" />
-        <main className="rv-panel">
-          <div className="rv-deco rv-deco-top" aria-hidden="true">
-            <div className="rv-deco-line-a" />
-            <div className="rv-deco-line-b" />
-          </div>
-          <div className="rv-deco rv-deco-bottom" aria-hidden="true">
-            <div className="rv-deco-line-b" />
-            <div className="rv-deco-line-a" />
-          </div>
-          <div className="rv-panel-scan" aria-hidden="true" />
-
+    <AuthMoldura
+      rodape={
+        <>
+              {context === "dev" ? (
+                <>
+                  MODO DEV //{" "}
+                  <Link href="/dev/auth/status" className="rv-foot-link">STATUS DE AUTH</Link>
+                  {" · "}
+                  <Link href="/dev/table" className="rv-foot-link">/DEV/TABLE</Link>
+                </>
+              ) : (
+                <>RUPTURA VTT v0.0.1 // ACESSO RESTRITO</>
+              )}
+            </>
+      }
+    >
           <div className="rv-header">
             <div className="rv-brand">
               <div className="rv-badge">
@@ -408,6 +444,8 @@ export function LoginForm({
               </button>
             </div>
           </div>
+
+          {faixa}
 
           <form id="rv-form" key={formKey} onSubmit={handleSubmit} noValidate className="rv-form">
             <div className="rv-fields">
@@ -512,24 +550,6 @@ export function LoginForm({
             </button>
           </form>
 
-          <div className="rv-foot">
-            <span className="rv-foot-line" aria-hidden="true" />
-            <span className="rv-foot-txt">
-              {context === "dev" ? (
-                <>
-                  MODO DEV //{" "}
-                  <Link href="/dev/auth/status" className="rv-foot-link">STATUS DE AUTH</Link>
-                  {" · "}
-                  <Link href="/dev/table" className="rv-foot-link">/DEV/TABLE</Link>
-                </>
-              ) : (
-                <>RUPTURA VTT v0.0.1 // ACESSO RESTRITO</>
-              )}
-            </span>
-            <span className="rv-foot-line" aria-hidden="true" />
-          </div>
-        </main>
-      </div>
-    </div>
+    </AuthMoldura>
   );
 }
