@@ -17,14 +17,16 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Archive, Check, ChevronDown, Folder, FolderOpen, Pencil, Trash2, Undo2, X } from "lucide-react";
+import { Check, ChevronDown, Folder, FolderOpen, X } from "lucide-react";
 import type { PastaCena } from "../../../../../lib/vtt/sceneStorage";
-import { useDicaFlutuante } from "../_shell/DicaFlutuante";
+import { MenuPasta, posicaoNoCursor, type PosicaoMenu } from "./MenuPasta";
 
 export interface PropsLinhaPasta {
   pasta: PastaCena;
   /** Quantas cenas estão DIRETAMENTE nela — o que o narrador acha lá dentro. */
   quantidade: number;
+  /** Quantas subpastas ela tem — elas moram DENTRO dela, junto das cenas. */
+  subpastas?: number;
   /** Esta é a pasta cujo conteúdo está na grade. */
   aberta: boolean;
   ocupada: boolean;
@@ -56,24 +58,48 @@ export interface PropsLinhaPasta {
   /** Uma cena está sendo arrastada e paira sobre esta pasta. */
   alvoDeArrasto: boolean;
   onDragOver: (e: React.DragEvent) => void;
-  onDragLeave: () => void;
+  onDragLeave: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
+  /** Arrastar a PASTA — pra dentro de outra, ou pra fora (raiz). */
+  arrastavel?: boolean;
+  arrastando?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragEnd?: () => void;
 }
 
 export function LinhaPasta(p: PropsLinhaPasta) {
-  const dicaRenomear = useDicaFlutuante("Renomear a pasta");
-  const dicaArquivar = useDicaFlutuante("Arquivar a pasta e o conteúdo — dá pra voltar");
-  const dicaDesarquivar = useDicaFlutuante("Devolver a pasta ao catálogo");
-  const dicaExcluir = useDicaFlutuante("Excluir a pasta e tudo dentro dela");
   const [editando, setEditando] = useState(false);
   const [rascunho, setRascunho] = useState(p.pasta.nome);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
   const [confirmacao, setConfirmacao] = useState("");
   const campoRef = useRef<HTMLInputElement | null>(null);
+  /**
+   * MENU DE CONTEXTO — botão direito em qualquer lugar da pasta,
+   * cabeçalho ou lista aberta.
+   *
+   * Os quatro ícones que moravam aqui eram de HOVER: invisíveis até o
+   * mouse chegar, e num trilho estreito eles ainda disputavam a largura
+   * com o nome da pasta, que é a razão da linha existir. Botão direito
+   * é o gesto que já se tenta em árvore de arquivos — e, ao contrário
+   * dos ícones, alcança a lista de cenas inteira quando ela está
+   * aberta, que é onde se está quando se decide arquivar ou renomear.
+   *
+   * `fixed` e posicionado no CURSOR: o trilho é uma coluna com
+   * `overflow-y: auto`, e caixa de rolagem recorta o que sai dela —
+   * mesma razão do menu do cartão de cena.
+   */
+  const [menu, setMenu] = useState<PosicaoMenu | null>(null);
 
   useEffect(() => { if (!editando) setRascunho(p.pasta.nome); }, [p.pasta.nome, editando]);
   useEffect(() => { if (editando) campoRef.current?.select(); }, [editando]);
   useEffect(() => { if (!confirmandoExclusao) setConfirmacao(""); }, [confirmandoExclusao]);
+
+  /* O menu nasce no cursor, corrigido pra não sair da janela. */
+  function abrirMenu(e: React.MouseEvent) {
+    if (p.ocupada || editando) return;
+    e.preventDefault();
+    setMenu(posicaoNoCursor(e));
+  }
 
   function confirmar() {
     const limpo = rascunho.trim();
@@ -88,15 +114,27 @@ export function LinhaPasta(p: PropsLinhaPasta) {
       data-aberta={p.aberta || undefined}
       data-nivel={p.pasta.nivel}
       data-alvo={p.alvoDeArrasto || undefined}
+      data-arrastando={p.arrastando || undefined}
+      draggable={p.arrastavel && !editando ? true : undefined}
+      onDragStart={p.onDragStart}
+      onDragEnd={p.onDragEnd}
       data-testid="pasta-linha"
       data-pasta-id={p.pasta.id}
       onDragOver={p.onDragOver}
       onDragLeave={p.onDragLeave}
       onDrop={p.onDrop}
+      onContextMenu={abrirMenu}
     >
       <span className="rv-pasta-cabeca">
+      {/* O GLIFO DIZ O ESTADO, como na pasta de personagens: fechado
+          enquanto ela é só um nome na coluna, ABERTO quando o conteúdo
+          dela está à vista — seja porque a lista expandiu aqui mesmo,
+          seja porque ela é a pasta em que se está. E aberto também sob
+          um arrasto que paira: é a pasta que vai receber.
+          Sem isto o ícone era o mesmo nos três casos, e a única marca
+          de "estou aqui" era a borda âmbar da caixa. */}
       <span className="rv-pasta-icone" aria-hidden="true">
-        {p.alvoDeArrasto ? <FolderOpen size={15} /> : <Folder size={15} />}
+        {p.alvoDeArrasto || p.aberta || p.expandida ? <FolderOpen size={15} /> : <Folder size={15} />}
       </span>
 
       {editando ? (
@@ -134,58 +172,8 @@ export function LinhaPasta(p: PropsLinhaPasta) {
 
       {p.erro && <span className="rv-cena-erro" role="alert">{p.erro}</span>}
 
-      {/* DICA FLUTUANTE, não a `.rv-dica` presa ao botão: o trilho é
-          uma coluna com `overflow-y: auto`, e overflow num eixo recorta
-          nos DOIS — a dica abria pra esquerda e era cortada pela borda
-          da coluna. `useDicaFlutuante` mede o alvo e desenha em
-          `position: fixed`, fora de qualquer caixa que recorte, com o
-          MESMO visual da folha (o `title` nativo resolvia o recorte mas
-          trazia o desenho do sistema). */}
-      <span className="rv-cena-acoes">
-        {p.arquivada && p.onDesarquivar && (
-          <button
-            type="button" className="rv-cena-mini-btn" data-testid="pasta-desarquivar"
-            aria-label={`Devolver a pasta "${p.pasta.nome}" ao catálogo`}
-            disabled={p.ocupada} onClick={p.onDesarquivar}
-            {...dicaDesarquivar.alvo}
-          >
-            <Undo2 size={15} aria-hidden />
-            {dicaDesarquivar.dica}
-          </button>
-        )}
-        {!p.arquivada && p.onArquivar && (
-          <button
-            type="button" className="rv-cena-mini-btn" data-testid="pasta-arquivar"
-            aria-label={`Arquivar a pasta "${p.pasta.nome}" e o conteúdo dela`}
-            disabled={p.ocupada} onClick={p.onArquivar}
-            {...dicaArquivar.alvo}
-          >
-            <Archive size={15} aria-hidden />
-            {dicaArquivar.dica}
-          </button>
-        )}
-        <button
-          type="button" className="rv-cena-mini-btn" data-testid="pasta-renomear"
-          aria-label={`Renomear a pasta "${p.pasta.nome}"`}
-          disabled={p.ocupada} onClick={() => setEditando(true)}
-          {...dicaRenomear.alvo}
-        >
-          <Pencil size={15} aria-hidden />
-          {dicaRenomear.dica}
-        </button>
-        <button
-          type="button" className="rv-cena-mini-btn" data-testid="pasta-excluir"
-          aria-label={`Excluir a pasta "${p.pasta.nome}" e tudo dentro dela`}
-          disabled={p.ocupada} onClick={() => setConfirmandoExclusao(true)}
-          {...dicaExcluir.alvo}
-        >
-          <Trash2 size={15} aria-hidden />
-          {dicaExcluir.dica}
-        </button>
-      </span>
-
-      {/* EXPANSOR — contagem e chevron são um alvo só, no canto direito,
-          DEPOIS das ações. Ele não abre a pasta: abre a lista dela aqui
+      {/* EXPANSOR — contagem e chevron são um alvo só, no canto direito.
+          Ele não abre a pasta: abre a lista dela aqui
           mesmo. Não pode ser filho do botão de abrir (botão dentro de
           botão é HTML inválido, e o clique ficaria ambíguo), então são
           dois irmãos com áreas separadas. */}
@@ -194,14 +182,21 @@ export function LinhaPasta(p: PropsLinhaPasta) {
         data-testid="pasta-expandir"
         aria-expanded={p.expandida}
         aria-label={p.expandida ? `Recolher as cenas de "${p.pasta.nome}"` : `Ver as cenas de "${p.pasta.nome}"`}
-        disabled={p.ocupada || p.quantidade === 0}
+        disabled={p.ocupada || (p.quantidade === 0 && (p.subpastas ?? 0) === 0)}
         onClick={p.onAlternarExpansao}
       >
         <span className="rv-pasta-contagem">
-          {p.quantidade === 0 ? "vazia" : p.quantidade === 1 ? "1 cena" : `${p.quantidade} cenas`}
+          {(() => {
+            const subs = p.subpastas ?? 0;
+            const partes: string[] = [];
+            if (p.quantidade > 0) partes.push(p.quantidade === 1 ? "1 cena" : `${p.quantidade} cenas`);
+            if (subs > 0) partes.push(subs === 1 ? "1 pasta" : `${subs} pastas`);
+            return partes.length === 0 ? "vazia" : partes.join(" · ");
+          })()}
         </span>
         <ChevronDown size={13} aria-hidden="true" />
       </button>
+
       </span>
 
       {/* CONFIRMAÇÃO em bloco próprio, abaixo do cabeçalho — não mais
@@ -260,6 +255,22 @@ export function LinhaPasta(p: PropsLinhaPasta) {
       )}
 
       {p.expandida && p.cenas}
+
+      {menu && (
+        <MenuPasta
+          posicao={menu}
+          ocupada={p.ocupada}
+          expandida={p.expandida}
+          quantidade={p.quantidade}
+          onFechar={() => setMenu(null)}
+          onAbrir={p.onAbrir}
+          onAlternarExpansao={p.onAlternarExpansao}
+          onRenomear={() => setEditando(true)}
+          onExcluir={() => setConfirmandoExclusao(true)}
+          onArquivar={!p.arquivada ? p.onArquivar : undefined}
+          onDesarquivar={p.arquivada ? p.onDesarquivar : undefined}
+        />
+      )}
     </li>
   );
 }

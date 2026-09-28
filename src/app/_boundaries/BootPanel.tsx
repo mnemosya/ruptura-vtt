@@ -94,6 +94,7 @@
 export function BootPanel({
   label,
   continuacao = false,
+  variante = "padrao",
 }: {
   label: string;
   /**
@@ -106,18 +107,51 @@ export function BootPanel({
    * ordem — é o mecanismo mais simples e não precisa de `!important`.
    */
   continuacao?: boolean;
+  /** Terminal sequencial usado somente na entrada e na cena da campanha. */
+  variante?: "padrao" | "campaign-terminal";
 }) {
+  const terminalDaCampanha = variante === "campaign-terminal";
+
   return (
     <div
-      className="mo-boot-in"
+      className={`mo-boot-in${terminalDaCampanha ? " mo-boot-in--terminal" : ""}`}
       style={continuacao ? { animationDelay: "0ms", animationDuration: "0.01ms" } : undefined}
     >
-      <div className="mo-boot" role="status">
-        <span className="mo-boot-label">
-          {label}
-          <span className="mo-boot-caret" aria-hidden="true" />
-        </span>
-        <span className="mo-boot-bar" aria-hidden="true" />
+      <div
+        className={`mo-boot${terminalDaCampanha ? " mo-boot--terminal" : ""}`}
+        role="status"
+      >
+        {terminalDaCampanha ? (
+          <>
+            <span className="mo-boot-sr">{label}</span>
+            <span className="mo-boot-terminal-head" aria-hidden="true">
+              <span>RUPTURA://CONSOLE</span>
+              <span className="mo-boot-terminal-session">SESSION_INIT</span>
+            </span>
+            <span className="mo-boot-terminal-channel" aria-hidden="true">
+              CANAL SEGURO / SOLICITAÇÃO DE ACESSO
+            </span>
+            <span className="mo-boot-terminal-log" aria-hidden="true">
+              <span className="mo-boot-terminal-row mo-boot-terminal-row--1">
+                <b>$</b><span>auth --operator current</span><i /><em>OK</em>
+              </span>
+              <span className="mo-boot-terminal-row mo-boot-terminal-row--2">
+                <b>›</b><span>connect scene://campaign</span><i /><em>OK</em>
+              </span>
+              <span className="mo-boot-terminal-row mo-boot-terminal-row--3">
+                <b>›</b><span>sincronizando presença</span><i /><em>OK</em>
+              </span>
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="mo-boot-label">
+              {label}
+              <span className="mo-boot-caret" aria-hidden="true" />
+            </span>
+            <span className="mo-boot-bar" aria-hidden="true" />
+          </>
+        )}
       </div>
     </div>
   );

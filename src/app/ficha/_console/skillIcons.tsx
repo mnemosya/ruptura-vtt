@@ -1,57 +1,58 @@
 /**
  * Ícone por perícia — 21 IDs reais de `regras_personagem.pericias`
  * (não nomes bonitos inventados). Cada ícone é a melhor correspondência
- * semântica disponível no Lucide para o glifo do design; não é uma
- * cópia pixel-a-pixel do ícone original do Figma (não temos acesso ao
- * arquivo fonte dos ícones, só ao render) — trocável depois sem mexer
- * em mais nada.
+ * semântica disponível no Lucide ou o SVG original do design.
  */
 
+import type { ComponentType } from "react";
 import {
   Sparkles,
   Palette,
-  Target,
   Dna,
   Smile,
   Cog,
-  Feather,
   MessagesSquare,
-  Frown,
-  Sigma,
-  Swords,
-  Footprints,
+  Angry,
   Eye,
   Crosshair,
   Brain,
-  Zap,
   Bot,
   Users,
-  Atom,
-  Dumbbell,
   Heart,
-  type LucideIcon,
 } from "lucide-react";
+import {
+  BalisticaFigmaIcon,
+  FurtividadeFigmaIcon,
+  LogicaFigmaIcon,
+  LutaFigmaIcon,
+  MobilidadeFigmaIcon,
+  ReflexosFigmaIcon,
+  TecnomagiaFigmaIcon,
+  VigorFigmaIcon,
+} from "./figmaSkillIcons";
 
-export const SKILL_ICONS: Record<string, LucideIcon> = {
+type SkillIcon = ComponentType<{ size?: number; strokeWidth?: number }>;
+
+export const SKILL_ICONS: Record<string, SkillIcon> = {
   arcanismo: Sparkles,
   artes: Palette,
-  balistica: Target,
+  balistica: BalisticaFigmaIcon,
   biologia: Dna,
   carisma: Smile,
   engenharia: Cog,
-  furtividade: Feather,
+  furtividade: FurtividadeFigmaIcon,
   influencia: MessagesSquare,
-  intimidacao: Frown,
-  logica: Sigma,
-  luta: Swords,
-  mobilidade: Footprints,
+  intimidacao: Angry,
+  logica: LogicaFigmaIcon,
+  luta: LutaFigmaIcon,
+  mobilidade: MobilidadeFigmaIcon,
   percepcao: Eye,
   precisao: Crosshair,
   psicologia: Brain,
-  reflexos: Zap,
+  reflexos: ReflexosFigmaIcon,
   robotica: Bot,
   sociedade: Users,
-  tecnomagia: Atom,
-  vigor: Dumbbell,
+  tecnomagia: TecnomagiaFigmaIcon,
+  vigor: VigorFigmaIcon,
   vontade: Heart,
 };

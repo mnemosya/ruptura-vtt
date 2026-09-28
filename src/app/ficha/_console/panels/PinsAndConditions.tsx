@@ -1,17 +1,20 @@
 "use client";
 
 /**
- * Pins (3 slots, abaixo das Perícias) e Condições (rodapé direito).
+ * Pins (6 slots, abaixo das Perícias) e Condições (rodapé direito).
  *
  * O pin guarda apenas uma REFERÊNCIA tipada (`tipo` + `ref`), nunca uma
  * cópia dos dados da entidade — abrir o pin delega ao fluxo do objeto
- * referenciado. O limite de 3 é estrutural: são exatamente 3 posições.
+ * referenciado. O limite é estrutural: são exatamente 6 posições, duas
+ * fileiras de 3.
  */
 
-import { Plus, X } from "lucide-react";
+import { X } from "lucide-react";
+import { Plus } from "../../../_design/icons";
 import type { ConsoleApi, ConsolePin } from "../types";
+import { CabecalhoModulo } from "./CabecalhoModulo";
 
-const LIMITE_PINS = 3;
+const LIMITE_PINS = 6;
 
 export function PinsRow({ api, onAbrirPin }: { api: ConsoleApi; onAbrirPin: (pin: ConsolePin) => void }) {
   const slots = Array.from({ length: LIMITE_PINS }, (_, i) => api.pins[i] ?? null);
@@ -40,8 +43,8 @@ export function PinsRow({ api, onAbrirPin }: { api: ConsoleApi; onAbrirPin: (pin
             </button>
           </div>
         ) : (
-          <div key={`vazio-${i}`} className="rc-pin" role="listitem">
-            <Plus size={14} strokeWidth={1.6} aria-hidden="true" style={{ color: "rgba(184, 216, 232, 0.7)" }} />
+          <div key={`vazio-${i}`} className="rc-pin" role="listitem" data-cursor-action="true">
+            <Plus className="rc-pin-empty-icon" size={14} strokeWidth={1.6} aria-hidden="true" />
             <span className="rc-pin-empty-txt">Espaço livre</span>
           </div>
         ),
@@ -99,8 +102,12 @@ export function ConditionsControls({
 
   return (
     <div className="rc-ncond-wrap" data-variant={variant} aria-busy={busy || undefined}>
-      <span className="rc-ncond-caption">Condições</span>
       <section className="rc-ncond-card" aria-label="Condições">
+        {/* O cabeçalho canônico substitui o título solto: ele já diz
+            que módulo é este, e no mesmo lugar de todos os outros. */}
+        {variant === "console"
+          ? <CabecalhoModulo id="ID://ESTADOS" mod="MOD.STATUS // 02" />
+          : <span className="rc-ncond-titulo">Condições</span>}
         {conditions.length === 0 && <p className="rc-ncond-vazio">Nenhuma condição ativa.</p>}
         {conditions.map((c) => (
           <span key={c.id} className="rc-ncond-tag">

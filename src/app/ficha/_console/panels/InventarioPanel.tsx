@@ -1,0 +1,772 @@
+"use client";
+
+/**
+ * Aba INVENTÁRIO — a lista de itens do personagem, com detalhe ao lado.
+ *
+ * A disposição vem do desenho (nó 159:40520), que está copiado fiel na
+ * galeria de estilos (`/dev/estilos`, aba "Inventário (Figma)") e
+ * traduzido para a paleta do Console na aba ao lado. Aqui é a versão
+ * VIVA: os mesmos blocos, com dados reais e as ações ligadas.
+ *
+ * Três coisas que este painel NÃO faz, de propósito:
+ *
+ *   - não calcula regra. Espaços ocupados, capacidade e o que pesa
+ *     vêm prontos de `api.carga` (regra em `lib/character/carga.ts`);
+ *     mover, usar, somar e descartar são chamadas de `api`, que por
+ *     sua vez chamam fluxos que já logam e salvam.
+ *
+ *   - não mantém glossário. Os termos grifados dentro dos textos saem
+ *     de `api.glossario`, que é conteúdo publicado.
+ *
+ *   - não tem arte por item. O desenho usa uma ilustração por item, mas
+ *     esse acervo ainda não existe.
+ */
+
+import { useMemo, useState } from "react";
+import {
+  Search,
+  Trash2,
+} from "lucide-react";
+import { espacosDoItem } from "../../../../lib/character/carga";
+import type { InventoryItemInstance, ItemContent, ItemLoadoutState } from "../../../../lib/character";
+import type { WalletId } from "../../../../lib/character/inventory";
+import { TextoComRegras } from "../TextoComRegras";
+import { TermoComDica } from "../TermoComDica";
+import { BODY_SLOT_LABELS, itemCabeNoSlot, type BodySlotId } from "../slots";
+import type { ConsoleApi } from "../types";
+import { CabecalhoModulo } from "./CabecalhoModulo";
+
+/**
+ * Categoria → VERTENTE. A cor de um item é a vertente dele, e essa
+ * paleta já é canônica no VTT (`--rv-vertente-cor`, vtt.css — a mesma
+ * do disco do token e da trilha de rodadas). Nenhum hexadecimal de
+ * tipo mora neste arquivo.
+ *
+ * As dez categorias publicadas caem nas seis vertentes: munição segue
+ * a arma que alimenta (cinética); armadura segue escudo (material);
+ * ferramenta, dispositivo e veículo são o guarda-chuva "utilitário"
+ * (sináptica).
+ */
+const VERTENTE_DA_CATEGORIA: Record<string, string> = {
+  arma: "cinetica",
+  municao: "cinetica",
+  explosivo: "energetico",
+  vertina: "cognitivo",
+  escudo: "material",
+  armadura: "material",
+  farmacia: "somatico",
+  ferramenta: "sinaptica",
+  dispositivo: "sinaptica",
+  veiculo: "sinaptica",
+};
+
+/** Os quatro filtros do desenho. "Equipado" junta os três estados de porte no corpo. */
+type FiltroId = "mochila" | "equipado" | "abrigo" | "todos";
+
+const FILTROS: { id: FiltroId; label: string; estados: ItemLoadoutState[] | null }[] = [
+  { id: "mochila", label: "Mochila", estados: ["mochila"] },
+  // "Equipado" cobre equipado + empunhado + acesso rápido: do ponto de
+  // vista de quem olha a aba, os três são "está comigo, pronto pra uso".
+  { id: "equipado", label: "Equipado", estados: ["equipado", "empunhado", "acesso_rapido"] },
+  { id: "abrigo", label: "Abrigo", estados: ["abrigo"] },
+  { id: "todos", label: "Todos", estados: null },
+];
+
+const ROTULO_DO_ESTADO: Record<ItemLoadoutState, string> = {
+  equipado: "Equipado",
+  empunhado: "Empunhado",
+  acesso_rapido: "Acesso rápido",
+  mochila: "Mochila",
+  abrigo: "Abrigo",
+};
+
+/**
+ * Para onde "Mover" pode mandar um item.
+ *
+ * `slot` presente = vai pelo paper doll (`api.equiparNoSlot`), que já
+ * trata armadura/escudo pelo fluxo defensivo; a compatibilidade sai de
+ * `itemCabeNoSlot`, a MESMA regra que a aba de Equipamentos usa (uma
+ * vertina não cabe em arma primária porque a categoria dela não é
+ * "arma"). `estado` presente = mudança direta de loadout.
+ *
+ * Os slots de ARMADURA (cabeça, tronco, braços, pernas) e o de escudo
+ * não estão aqui de propósito: quem veste armadura é o paper doll, que
+ * mostra o corpo e a sobreposição. Repetir isso numa lista sem corpo
+ * seria uma segunda porta pior para a mesma coisa.
+ *
+ * "Mochila" não estava na lista pedida, mas entrou: sem ela um item
+ * mandado ao abrigo não teria como voltar.
+ */
+const DESTINOS: {
+  id: string;
+  label: string;
+  slot?: BodySlotId;
+  estado?: ItemLoadoutState;
+  /** Sem caminho no servidor ainda — aparece, mas não clica. */
+  indisponivel?: string;
+}[] = [
+  { id: "arma_primaria", label: "Arma primária", slot: "arma_primaria" },
+  { id: "arma_secundaria", label: "Arma secundária", slot: "arma_secundaria" },
+  { id: "acesso_rapido_1", label: "Acesso rápido 1", slot: "acesso_rapido_1" },
+  { id: "acesso_rapido_2", label: "Acesso rápido 2", slot: "acesso_rapido_2" },
+  { id: "mochila", label: "Mochila", estado: "mochila" },
+  { id: "abrigo", label: "Abrigo", estado: "abrigo" },
+  /* O BANDO ainda não recebe item do personagem. O servidor tem só o
+     caminho inverso (`transferirItemBandoAction`, bando → personagem, e
+     só para o narrador); mandar item PARA o bando não existe em ação
+     nenhuma. Fica visível e travado com o motivo — esconder daria a
+     entender que o destino não existe no jogo, quando o que falta é a
+     ação. */
+  { id: "bando", label: "Bando", indisponivel: "O bando ainda não recebe item do personagem." },
+];
+
+const OCULTAVEL_ROTULO: Record<string, string> = {
+  sim: "Sim",
+  parcial: "Parcialmente",
+  nao: "Não",
+};
+
+/**
+ * Ocultável? — e a lacuna de conteúdo por trás disto.
+ *
+ * `ocultavel` existe no payload SÓ de armadura e escudo. Nenhuma arma
+ * declara o campo, e a linha precisa aparecer para elas.
+ *
+ * ⚠ REGRA A CONFIRMAR: na ausência do campo, a resposta sai da
+ * `classe_porte`. Ocultar é uma pergunta de TAMANHO, e porte é o único
+ * dado de tamanho que o item tem — leve esconde, pesada não esconde,
+ * média esconde mal. Isso devolve Adaga (leve) = "Sim", que é o que o
+ * dono do sistema afirmou, e Metralhadora (pesada) = "Não". Mas é
+ * DERIVAÇÃO, não dado: no dia em que as armas declararem `ocultavel`,
+ * o campo manda e esta tabela sai de cena.
+ *
+ * `null` = não dá para responder (item sem porte e sem o campo, caso
+ * dos consumíveis) — e aí a linha não aparece, em vez de mostrar um
+ * traço que não informa nada.
+ */
+const OCULTAVEL_POR_PORTE: Record<string, string> = {
+  leve: "Sim",
+  media: "Parcialmente",
+  pesada: "Não",
+};
+
+function descricaoDeOcultavel(modelo: ItemContent | undefined): string | null {
+  if (!modelo) return null;
+  if (modelo.ocultavel) return OCULTAVEL_ROTULO[modelo.ocultavel] ?? modelo.ocultavel;
+  if (modelo.classePorte) return OCULTAVEL_POR_PORTE[modelo.classePorte] ?? null;
+  return null;
+}
+
+/**
+ * CARTEIRA (INV-03) — leitura e edição do contrato `carteira` que já
+ * existe (PRD 13.1: três saldos separados, nunca uma soma única).
+ *
+ * O campo aceita as três formas de mexer no saldo, porque as três são
+ * gestos reais: o valor final (`900`), um delta (`+250`, `-150`) e uma
+ * conta escrita por cima do que já estava lá (`3000-555`).
+ *
+ * A terceira existe porque o campo abre COM o saldo dentro: clicar no
+ * valor e continuar digitando produz `3000-555` naturalmente, e a
+ * primeira versão recusava justamente esse caso — o mais provável de
+ * todos.
+ *
+ * A conta é resolvida NO ENVIO, contra o saldo que está na ficha
+ * naquele instante, e o que vai para o servidor é o valor absoluto.
+ * Mandar o delta faria o resultado depender de quando a tela
+ * renderizou.
+ *
+ * A escrita segue o caminho de qualquer alteração de ficha, que
+ * revalida controle no servidor — nenhuma porta nova.
+ *
+ * Aretz em destaque, porque é a moeda corrente. CDI e CDI craqueada só
+ * aparecem quando há saldo: três zeros lado a lado dariam a impressão
+ * de três carteiras vazias, quando na verdade a pessoa só nunca
+ * encostou nas outras duas.
+ */
+function Carteira({ carteira, onDefinir }: {
+  carteira?: { aretz_informal: number; cdi: number; cdi_craqueada: number };
+  onDefinir: (walletId: WalletId, valor: number) => void;
+}) {
+  const fmt = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+  const [editando, setEditando] = useState(false);
+  const [texto, setTexto] = useState("");
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  const secundarias = carteira
+    ? ([["CDI", "cdi"], ["CDI craqueada", "cdi_craqueada"]] as const)
+        .filter(([, id]) => carteira[id] > 0)
+    : [];
+
+  function abrir() {
+    if (!carteira) return;
+    setTexto(String(carteira.aretz_informal));
+    setAviso(null);
+    setEditando(true);
+  }
+
+  function confirmar() {
+    if (!carteira) { setEditando(false); return; }
+    // Separador de milhar do que já estava na tela sai fora; espaços
+    // também, para `3000 - 555` valer o mesmo que `3000-555`.
+    const bruto = texto.trim().replace(/\./g, "").replace(/\s+/g, "");
+    if (!/^[+-]?\d+([+-]\d+)*$/.test(bruto)) {
+      // Recusa em silêncio seria pior: quem digitou "50 aretz" precisa
+      // saber por que o número não mudou.
+      setAviso("Use um número, ou some e subtraia: +250, -150, 3000-555.");
+      return;
+    }
+    /* Duas leituras, e as duas precisam funcionar porque as duas são
+       gestos reais.
+       Começando com sinal (`+250`), é DELTA sobre o saldo: é o que se
+       digita depois de limpar o campo.
+       Sem sinal inicial (`3000-555`), é uma CONTA a resolver: é o que
+       sai naturalmente de clicar no valor e continuar digitando, já que
+       o campo abre com o saldo dentro. A versão anterior recusava esse
+       caso, que é justamente o mais provável. */
+    const termos = (bruto.match(/[+-]?\d+/g) ?? []).map(Number);
+    const soma = termos.reduce((a, b) => a + b, 0);
+    const alvo = /^[+-]/.test(bruto) ? carteira.aretz_informal + soma : soma;
+    onDefinir("aretz_informal", alvo);
+    setEditando(false);
+    setAviso(null);
+  }
+
+  return (
+    <div className="rc-inv-carteira" data-testid="console-carteira">
+      <div className="rc-inv-carteira-linha">
+        <span className="rc-inv-carteira-rot">Aretz</span>
+        {editando ? (
+          <input
+            className="rc-inv-carteira-campo"
+            autoFocus
+            /* Cursor no FIM, e nada selecionado.
+               Selecionar tudo faria o saldo desaparecer no primeiro
+               caractere digitado — quem digita `+500` veria o `3485`
+               sumir e poderia achar que perdeu o valor. Com o cursor no
+               fim, o saldo anterior fica à vista e a conta se escreve
+               por cima dele: `3485+500`. */
+            onFocus={(e) => {
+              const n = e.currentTarget.value.length;
+              e.currentTarget.setSelectionRange(n, n);
+            }}
+            value={texto}
+            inputMode="text"
+            aria-label="Saldo em aretz — um número, ou uma conta como +250, -150 ou 3000-555"
+            data-testid="console-carteira-campo"
+            onChange={(e) => { setTexto(e.target.value); setAviso(null); }}
+            onBlur={confirmar}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); confirmar(); }
+              if (e.key === "Escape") { e.preventDefault(); setEditando(false); setAviso(null); }
+            }}
+          />
+        ) : (
+          <button type="button" className="rc-inv-carteira-val" onClick={abrir}
+            disabled={!carteira} data-vazio={carteira ? undefined : true}
+            title={carteira ? "Editar saldo — aceita contas: +250, -150, 3000-555" : undefined}
+            data-testid="console-carteira-aretz">
+            {carteira && <span className="rc-inv-carteira-simbolo" aria-hidden="true">₳</span>}
+            {carteira ? fmt(carteira.aretz_informal) : "—"}
+          </button>
+        )}
+      </div>
+      {aviso && <p className="rc-inv-carteira-aviso" role="alert">{aviso}</p>}
+      {secundarias.length > 0 && (
+        <div className="rc-inv-carteira-outras">
+          {secundarias.map(([rotulo, id]) => (
+            <span key={id}><span className="rc-inv-carteira-rot">{rotulo}</span> {fmt(carteira![id])}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function InventarioPanel({ api }: { api: ConsoleApi }) {
+  const [filtro, setFiltro] = useState<FiltroId>("mochila");
+  const [busca, setBusca] = useState("");
+  const [selecionadoId, setSelecionadoId] = useState<string | null>(null);
+
+  const inventario = api.character.inventario ?? [];
+
+  const visiveis = useMemo(() => {
+    const def = FILTROS.find((f) => f.id === filtro)!;
+    const termo = busca.trim().toLocaleLowerCase("pt-BR");
+    return inventario.filter((i) => {
+      if (def.estados && !def.estados.includes(i.estado)) return false;
+      if (!termo) return true;
+      const modelo = api.catalogo.get(i.itemSlug);
+      return (
+        i.itemNome.toLocaleLowerCase("pt-BR").includes(termo) ||
+        (modelo?.categoria_label ?? i.categoria).toLocaleLowerCase("pt-BR").includes(termo)
+      );
+    });
+  }, [inventario, filtro, busca, api.catalogo]);
+
+  /* A seleção segue o que está à vista: trocar de filtro ou buscar não
+     pode deixar o painel de detalhe mostrando um item que sumiu da
+     grade. Derivar em vez de guardar evita um efeito de sincronização. */
+  const selecionado: InventoryItemInstance | null =
+    visiveis.find((i) => i.id === selecionadoId) ?? visiveis[0] ?? null;
+  const modeloSelecionado = selecionado ? api.catalogo.get(selecionado.itemSlug) : undefined;
+
+  const { ocupados, capacidade, excedido } = api.carga;
+
+  return (
+    /* MESMA moldura e mesmo cabeçalho canônico da aba de Equipamentos:
+       as duas abas são o par "o que eu tenho". O antigo
+       `.rc-eq-caption` já não existe no CSS e deixava "Inventário"
+       solto acima da moldura. */
+    <section aria-label="Inventário" className="rc-eq-outer">
+      <div className="rc-eq-card-outer rc-inv-moldura">
+        <CabecalhoModulo id="ID://INVENTÁRIO" mod="MOD.INV // 05" />
+    <div className="rc-inv" data-testid="console-inventario">
+      {/* As abas ATRAVESSAM as duas colunas, como no desenho: elas
+          dizem o recorte da tela inteira, não só da lista. */}
+      <div className="rc-inv-abas" role="tablist" aria-label="Onde o item está">
+        {FILTROS.map((f) => {
+          const n = f.estados
+            ? inventario.filter((i) => f.estados!.includes(i.estado)).length
+            : inventario.length;
+          return (
+            <button
+              key={f.id}
+              type="button"
+              role="tab"
+              aria-selected={filtro === f.id}
+              className="rc-inv-aba"
+              data-ativo={filtro === f.id || undefined}
+              onClick={() => setFiltro(f.id)}
+            >
+              {f.label}
+              <span className="rc-inv-aba-n">{n}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* A capacidade pertence à Mochila e ocupa uma faixa própria sob
+          as abas. Assim ela não parece parte da busca nem da grade, e
+          some por inteiro nos estados que não participam da carga. */}
+      {filtro === "mochila" && (
+        <div className="rc-inv-cap">
+          <div
+            className="rc-inv-medidor"
+            role="meter"
+            aria-valuenow={ocupados}
+            aria-valuemin={0}
+            aria-valuemax={capacidade}
+            aria-label={`${ocupados} de ${capacidade} espaços ocupados`}
+            data-excedido={excedido || undefined}
+          >
+            {Array.from({ length: capacidade }, (_, i) => (
+              <span key={i} className="rc-inv-medidor-un" data-cheio={i < ocupados || undefined} />
+            ))}
+          </div>
+          <span className="rc-inv-cap-num">
+            <strong>{ocupados}</strong>
+            <span className="rc-inv-cap-resto">/{capacidade} espaços</span>
+          </span>
+        </div>
+      )}
+
+      <div className="rc-inv-corpo">
+        <div className="rc-inv-lista">
+          <div className="rc-inv-busca-linha">
+            <div className="rc-inv-busca">
+              <Search size={14} aria-hidden="true" />
+              <input
+                type="search"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar item..."
+                aria-label="Buscar item no inventário"
+              />
+            </div>
+          </div>
+
+          <div className="rc-inv-rolo">
+            <div className="rc-inv-grade">
+              {visiveis.map((instancia) => {
+                const modelo = api.catalogo.get(instancia.itemSlug);
+                const categoria = modelo?.categoria ?? instancia.categoria;
+                const espacos = espacosDoItem(modelo);
+                return (
+                  <button
+                    key={instancia.id}
+                    type="button"
+                    className="rc-inv-card"
+                    data-vertente={VERTENTE_DA_CATEGORIA[categoria] ?? "nenhuma"}
+                    data-selecionado={selecionado?.id === instancia.id || undefined}
+                    aria-pressed={selecionado?.id === instancia.id}
+                    onClick={() => setSelecionadoId(instancia.id)}
+                  >
+                    {/* Na grade, o item é identificado pelo texto. O ícone
+                        aparece apenas no painel de detalhe, depois que o
+                        item é selecionado. */}
+                    <span className="rc-inv-card-face">
+                      <span className="rc-inv-card-nome">{instancia.itemNome}</span>
+                      <span className="rc-inv-card-footer">
+                        <span className="rc-inv-card-cat">
+                          <span
+                            className="rc-inv-card-espacos"
+                            role="img"
+                            aria-label={`${espacos} ${espacos === 1 ? "espaço" : "espaços"} por item`}
+                          >
+                            {Array.from({ length: espacos }, (_, i) => <i key={i} aria-hidden="true" />)}
+                          </span>
+                          <span>{modelo?.categoria_label ?? categoria}</span>
+                        </span>
+                        <span className="rc-inv-qtd"><small>×</small>{instancia.quantidade}</span>
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+              {visiveis.length === 0 && (
+                <p className="rc-inv-vazio">
+                  {busca.trim()
+                    ? "Nenhum item corresponde à busca."
+                    : filtro === "abrigo"
+                      ? "Nada guardado no abrigo."
+                      : "Nenhum item aqui."}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <Carteira carteira={api.character.carteira} onDefinir={api.definirCarteira} />
+        </div>
+
+        <div className="rc-inv-detalhe">
+          {selecionado ? (
+            <DetalheDoItem
+              key={selecionado.id}
+              api={api}
+              instancia={selecionado}
+              modelo={modeloSelecionado}
+            />
+          ) : (
+            <p className="rc-inv-vazio">Selecione um item para ver o detalhe.</p>
+          )}
+        </div>
+      </div>
+    </div>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * O dano como o sistema o escreve: "1d6 cortante ou perfurante".
+ *
+ * Três casos, nesta ordem. Subtipo FIXO (`subtipo_dano`, ex.: a
+ * carabina é perfurante) manda. Senão, os subtipos que o portador
+ * ESCOLHE na hora (`subtipos_dano_possiveis`, ex.: a adaga corta ou
+ * perfura) entram unidos por "ou". Só quando não há nenhum subtipo é
+ * que o tipo aparece — "físico" e "energético" são a família, e dizer
+ * "1d6 físico cortante" seria dizer duas vezes a mesma coisa, sendo a
+ * primeira a menos informativa.
+ */
+function descricaoDoDano(modelo: ItemContent | undefined): { dado: string; tipo: string | null } | null {
+  if (!modelo?.danoBase) return null;
+  const dado = modelo.danoBase;
+  if (modelo.subtipoDano) return { dado, tipo: modelo.subtipoDano };
+  if (modelo.subtiposDanoPossiveis.length > 0) {
+    return { dado, tipo: modelo.subtiposDanoPossiveis.join(" ou ") };
+  }
+  return { dado, tipo: modelo.tipoDano };
+}
+
+/** O alcance como se lê: "Adjacente", "Adjacente (até 2 m)", "10 m (máx 20 m)". */
+function descricaoDoAlcance(modelo: ItemContent | undefined): string | null {
+  const a = modelo?.alcance;
+  if (!a) return null;
+  if (a.tipo === "adjacente") {
+    return a.estendidoM != null ? `Adjacente (até ${a.estendidoM} m)` : "Adjacente";
+  }
+  if (a.tipo === "distancia" && a.eficazM != null) {
+    return a.maxM != null ? `${a.eficazM} m (máx ${a.maxM} m)` : `${a.eficazM} m`;
+  }
+  return a.tipo;
+}
+
+function DetalheDoItem({
+  api,
+  instancia,
+  modelo,
+}: {
+  api: ConsoleApi;
+  instancia: InventoryItemInstance;
+  modelo: ItemContent | undefined;
+}) {
+  const categoria = modelo?.categoria ?? instancia.categoria;
+  /* Descartar é irreversível e fica a um clique do contador — pedir
+     confirmação é o mínimo. O estado é local ao item selecionado
+     (`key` no pai reinicia ao trocar de item), então trocar de item
+     com a confirmação aberta não deixa ela pendurada no próximo. */
+  const [confirmandoDescarte, setConfirmandoDescarte] = useState(false);
+  const [movendo, setMovendo] = useState(false);
+
+  /* "Usar" só existe pra item que o conteúdo declara como usável —
+     custo de PA estruturado ou cargas. Botão que não faz nada é pior
+     que botão ausente, então ele fica desabilitado com o motivo. */
+  const podeUsar = modelo != null && (modelo.custoPaUso != null || modelo.cargasMax != null);
+
+  /* O destaque é a estatística que define o item: dano pra arma, custo
+     de PA pra consumível. Sem nenhuma das duas o bloco não aparece —
+     uma célula grande com um traço dentro é pior que nada. */
+  const dano = descricaoDoDano(modelo);
+  const principal =
+    dano != null
+      ? { rot: "Dano", val: dano.dado, sufixo: dano.tipo }
+      : modelo?.custoPaUso != null
+        ? { rot: "PA", val: String(modelo.custoPaUso), sufixo: null }
+        : null;
+
+  /* Propriedades, alcance e ocultável são a segunda tabela: o que a
+     arma FAZ, separado do que ela custa. As propriedades vêm com dica,
+     como ação e condição — só que soltas, não dentro de uma frase. */
+  const propriedades = api.propriedadesDoItem(instancia.id);
+  const alcance = descricaoDoAlcance(modelo);
+  const ocultavel = descricaoDeOcultavel(modelo);
+  const temSegundaTabela = propriedades.length > 0 || alcance != null || ocultavel != null;
+
+  const lado: { rot: string; val: string }[] = [
+    { rot: "Espaços/item", val: String(espacosDoItem(modelo)) },
+    ...(modelo?.preco != null ? [{ rot: "Preço base", val: `₳ ${modelo.preco}` }] : []),
+  ];
+
+  const linhas: { rot: string; val: string }[] = [];
+  if (modelo?.alcanceArremessoMetros != null)
+    linhas.push({ rot: "Alcance", val: `${modelo.alcanceArremessoMetros} metros` });
+  if (modelo?.areaMetros != null) linhas.push({ rot: "Alvo", val: `${modelo.areaMetros} m de raio` });
+  if (modelo?.custoPaUsoTexto) linhas.push({ rot: "Duração", val: modelo.custoPaUsoTexto });
+  if (modelo?.municaoMax != null) linhas.push({ rot: "Munição", val: String(modelo.municaoMax) });
+  /* "Tipo de dano" saiu: ele agora vive junto do dado, onde se lê de
+     uma vez ("1d6 cortante ou perfurante"). "Onde está" saiu porque as
+     abas já respondem isso, e o botão de mover diz o destino. */
+
+  return (
+    <div className="rc-inv-det" data-vertente={VERTENTE_DA_CATEGORIA[categoria] ?? "nenhuma"}>
+      <div className="rc-inv-det-cab">
+        <div className="rc-inv-det-titulo">
+          <h3>{instancia.itemNome}</h3>
+          <div className="rc-inv-etiquetas">
+            <span className="rc-inv-etiqueta">{modelo?.categoria_label ?? categoria}</span>
+            {modelo?.raridade && <span className="rc-inv-etiqueta">{modelo.raridade}</span>}
+          </div>
+        </div>
+      </div>
+
+      {modelo?.descricao_curta && (
+        /* O tooltip de regra está ligado e testado, mas HOJE ele quase
+           não aparece: o `descricao_curta` dos 120 itens é texto de
+           sabor e nenhum cita uma ação ou condição capitalizada. Quem
+           tem os termos é o texto de EFEITO, e no payload atual
+           `estatisticas.efeito` vem como slug ("restringe_movimento"),
+           não como frase. Quando o conteúdo trouxer a frase, é ela que
+           entra aqui e o grifo aparece sozinho. */
+        <TextoComRegras
+          className="rc-inv-det-desc"
+          texto={modelo.descricao_curta}
+          glossario={api.glossario}
+        />
+      )}
+
+      <div className="rc-inv-det-blocos">
+        {principal && (
+          <div className="rc-inv-destaque">
+            <div className="rc-inv-destaque-principal">
+              <span className="rc-inv-rot">{principal.rot}</span>
+              <span className="rc-inv-val">
+                {principal.val}
+                {/* O tipo de dano é qualificador do dado, não outro dado:
+                    entra menor e mais apagado pra não competir com ele. */}
+                {principal.sufixo && <em className="rc-inv-val-sufixo">{principal.sufixo}</em>}
+              </span>
+            </div>
+            <div className="rc-inv-destaque-lado">
+              {lado.map((l) => (
+                <div key={l.rot} className="rc-inv-mini">
+                  <span className="rc-inv-rot">{l.rot}</span>
+                  <span className="rc-inv-val">{l.val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(linhas.length > 0 || !principal) && (
+        <dl className="rc-inv-linhas">
+          {!principal &&
+            lado.map((l) => (
+              <div key={l.rot} className="rc-inv-linha">
+                <dt>{l.rot}</dt>
+                <dd>{l.val}</dd>
+              </div>
+            ))}
+          {linhas.map((l) => (
+            <div key={l.rot} className="rc-inv-linha">
+              <dt>{l.rot}</dt>
+              <dd>{l.val}</dd>
+            </div>
+          ))}
+        </dl>
+        )}
+
+        {temSegundaTabela && (
+          <dl className="rc-inv-linhas">
+            {propriedades.length > 0 && (
+              <div className="rc-inv-linha">
+                <dt>Propriedades</dt>
+                <dd className="rc-inv-linha-termos">
+                  {propriedades.map((p) => (
+                    <TermoComDica key={p.slug} termo={p} className="rc-termo rc-termo--prop">
+                      {p.nome}
+                    </TermoComDica>
+                  ))}
+                </dd>
+              </div>
+            )}
+            {alcance && (
+              <div className="rc-inv-linha">
+                <dt>Alcance</dt>
+                <dd>{alcance}</dd>
+              </div>
+            )}
+            {ocultavel && (
+              <div className="rc-inv-linha">
+                <dt>Ocultável?</dt>
+                <dd>{ocultavel}</dd>
+              </div>
+            )}
+          </dl>
+        )}
+      </div>
+
+      {/* Preso embaixo: a descrição pode rolar, e as ações do item não
+          podem sumir junto com ela. */}
+      <div className="rc-inv-det-rodape">
+        <div className="rc-inv-stepper">
+          <button
+            type="button"
+            className="rc-inv-passo"
+            onClick={() => api.ajustarQuantidade(instancia.id, -1)}
+            disabled={instancia.quantidade <= 1}
+            aria-label="Diminuir quantidade"
+          >
+            −
+          </button>
+          <span aria-live="polite">{instancia.quantidade}</span>
+          <button
+            type="button"
+            className="rc-inv-passo"
+            onClick={() => api.ajustarQuantidade(instancia.id, +1)}
+            aria-label="Aumentar quantidade"
+          >
+            +
+          </button>
+          {/* Descartar mora AQUI, não na linha de botões: o desenho tem
+              duas ações naquela linha e um terceiro botão espremia a
+              primária de 230 para 177. E descartar é da mesma família
+              que o contador — as duas respondem "quanto disto eu
+              tenho", sendo o descarte o zero. */}
+          <button
+            type="button"
+            className="rc-inv-stepper-descartar"
+            onClick={() => setConfirmandoDescarte(true)}
+            aria-label={`Descartar ${instancia.itemNome}`}
+            title="Descartar o item inteiro"
+          >
+            <Trash2 size={14} aria-hidden="true" />
+          </button>
+        </div>
+
+        {movendo && (
+          <div className="rc-inv-mover" role="dialog" aria-label="Mover item para">
+            <p className="rc-inv-mover-cab">Mover para</p>
+            <div className="rc-inv-mover-lista">
+              {DESTINOS.map((d) => {
+                const cabe = d.slot ? itemCabeNoSlot(modelo, d.slot) : true;
+                const jaEsta = d.estado != null && instancia.estado === d.estado;
+                const motivo = d.indisponivel
+                  ? d.indisponivel
+                  : !cabe
+                    ? `${modelo?.categoria_label ?? categoria} não vai para ${d.label.toLocaleLowerCase("pt-BR")}.`
+                    : jaEsta
+                      ? "O item já está aqui."
+                      : null;
+                return (
+                  <button
+                    key={d.id}
+                    type="button"
+                    className="rc-inv-mover-op"
+                    disabled={motivo != null}
+                    title={motivo ?? undefined}
+                    onClick={() => {
+                      setMovendo(false);
+                      if (d.slot) api.equiparNoSlot(instancia.id, d.slot);
+                      else if (d.estado) api.moverItemPara(instancia.id, d.estado);
+                    }}
+                  >
+                    {d.label}
+                    {motivo && <span className="rc-inv-mover-motivo">{motivo}</span>}
+                  </button>
+                );
+              })}
+            </div>
+            <button type="button" className="rc-inv-btn" onClick={() => setMovendo(false)}>
+              Cancelar
+            </button>
+          </div>
+        )}
+
+        {confirmandoDescarte && (
+          <div className="rc-inv-confirma" role="alertdialog" aria-label="Confirmar descarte">
+            <p>
+              Descartar <strong>{instancia.itemNome}</strong>
+              {instancia.quantidade > 1 ? ` (${instancia.quantidade} unidades)` : ""}? Não dá para desfazer.
+            </p>
+            <div className="rc-inv-confirma-acoes">
+              <button type="button" className="rc-inv-btn" onClick={() => setConfirmandoDescarte(false)}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="rc-inv-btn rc-inv-btn--perigo"
+                autoFocus
+                onClick={() => {
+                  setConfirmandoDescarte(false);
+                  api.descartarItem(instancia.id);
+                }}
+              >
+                Descartar
+              </button>
+            </div>
+          </div>
+        )}
+        <div className="rc-inv-det-acoes">
+          <button
+            type="button"
+            className="rc-inv-btn rc-inv-btn--primaria"
+            disabled={!podeUsar}
+            title={podeUsar ? undefined : "Este item não declara uso automatizável."}
+            onClick={() => api.usarItem(instancia.id)}
+          >
+            Usar
+          </button>
+          <button
+            type="button"
+            className="rc-inv-btn rc-inv-btn--mover"
+            aria-haspopup="dialog"
+            aria-expanded={movendo}
+            onClick={() => setMovendo((v) => !v)}
+          >
+            Mover
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

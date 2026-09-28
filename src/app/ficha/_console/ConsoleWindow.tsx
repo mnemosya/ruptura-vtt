@@ -265,29 +265,31 @@ export function ConsoleWindow({
                   className="rc-winbtn"
                   onClick={win.minimizar}
                   aria-label="Minimizar console"
-                  title="Minimizar"
                 >
                   <Minus size={15} />
+                  <span className="rc-winbtn-dica" role="tooltip">Minimizar</span>
                 </button>
                 <button
                   type="button"
                   className="rc-winbtn"
                   onClick={win.alternarMaximizar}
                   aria-label={win.mode === "maximized" ? "Restaurar console" : "Maximizar console"}
-                  title={win.mode === "maximized" ? "Restaurar" : "Maximizar"}
                   data-testid="console-maximizar"
                 >
                   {win.mode === "maximized" ? <Minimize2 size={13} /> : <Square size={13} />}
+                  <span className="rc-winbtn-dica" role="tooltip">
+                    {win.mode === "maximized" ? "Restaurar" : "Maximizar"}
+                  </span>
                 </button>
                 <button
                   type="button"
                   className="rc-winbtn rc-winbtn--close"
                   onClick={fechar}
                   aria-label="Fechar console"
-                  title="Fechar"
                   data-foco-inicial
                 >
                   <X size={16} />
+                  <span className="rc-winbtn-dica" role="tooltip">Fechar</span>
                 </button>
               </div>
             </div>
@@ -335,20 +337,20 @@ export function ConsoleWindow({
               className="rc-winbtn"
               onClick={win.restaurar}
               aria-label="Restaurar console"
-              title="Restaurar"
               data-testid="console-restaurar"
             >
               {/* Cantos se afastando — comunica expansão, não "desfazer". */}
               <Maximize2 size={14} />
+              <span className="rc-winbtn-dica rc-winbtn-dica--acima" role="tooltip">Restaurar</span>
             </button>
             <button
               type="button"
               className="rc-winbtn rc-winbtn--close"
               onClick={fechar}
               aria-label="Fechar console"
-              title="Fechar"
             >
               <X size={14} />
+              <span className="rc-winbtn-dica rc-winbtn-dica--acima" role="tooltip">Fechar</span>
             </button>
           </div>
         </div>

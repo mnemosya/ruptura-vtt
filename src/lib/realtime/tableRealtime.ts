@@ -211,8 +211,27 @@ export function subscribeToCharacterRealtime(params: {
     .channel(buildCharacterChannelName(params.characterId))
     .on(
       "postgres_changes",
-      { event: "UPDATE", schema: "public", table: "characters", filter: `id=eq.${params.characterId}` },
-      (payload) => params.onChange(payload as unknown as RealtimeEventLike),
+      // SEM FILTRO no servidor, e recorte do personagem AQUI.
+      //
+      // O Realtime RECUSA filtro nesta tabela: pedindo `id=eq.<uuid>`
+      // ele responde `Unable to subscribe to changes with given
+      // parameters. Exception: ERROR P0001 invalid column for filter
+      // id` — e o canal inteiro morre. A ficha não recebe mais NADA.
+      //
+      // Mesmo caso do `vtt_scene_images` (RT-01): não é a coluna, é a
+      // tabela — `id` existe, está publicada, e a tabela tem replica
+      // identity FULL. O sintoma aponta para o cache de esquema do
+      // serviço, não para o schema do banco.
+      //
+      // E é silencioso: a recusa chega como frame `system` no
+      // WebSocket, o cliente não lança nada, e a ficha segue com cara
+      // de saudável enquanto deixa de sincronizar.
+      { event: "UPDATE", schema: "public", table: "characters" },
+      (payload) => {
+        const novo = (payload as { new?: { id?: string } }).new;
+        if (novo?.id !== params.characterId) return;
+        params.onChange(payload as unknown as RealtimeEventLike);
+      },
     )
     .subscribe((status) => params.onStatusChange?.(mapSupabaseChannelStatus(status)));
 
@@ -237,8 +256,16 @@ export function subscribeToCampaignCharactersRealtime(params: {
     .channel(`${buildCampaignChannelName(params.campaignId)}:characters`)
     .on(
       "postgres_changes",
-      { event: "*", schema: "public", table: "characters", filter: `campaign_id=eq.${params.campaignId}` },
-      (payload) => params.onChange(payload as unknown as RealtimeEventLike),
+      // Sem filtro, pela mesma razão do canal do personagem acima: o
+      // Realtime recusa QUALQUER filtro nesta tabela, e a recusa mata o
+      // canal inteiro em silêncio. O recorte por campanha acontece aqui.
+      { event: "*", schema: "public", table: "characters" },
+      (payload) => {
+        const linha = ((payload as { new?: { campaign_id?: string } }).new
+          ?? (payload as { old?: { campaign_id?: string } }).old);
+        if (linha?.campaign_id !== params.campaignId) return;
+        params.onChange(payload as unknown as RealtimeEventLike);
+      },
     )
     .subscribe((status) => params.onStatusChange?.(mapSupabaseChannelStatus(status)));
 

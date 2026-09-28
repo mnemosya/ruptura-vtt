@@ -37,7 +37,16 @@ const JANELAS: { nome: string; tecla: string; rotulo: string; botao?: string; se
   { nome: "rodadas", tecla: "r", rotulo: "Ferramenta Rodadas" },
   { nome: "marcar", tecla: "d", rotulo: "Ferramenta Marcar" },
   { nome: "camadas", tecla: "", rotulo: "Camadas do mapa", botao: "Camadas do mapa" },
-  { nome: "cena", tecla: "", rotulo: "Configurações da cena", botao: "Configurações da cena" },
+  // "Configurações da cena" SAIU — a janela não existe mais, e o que
+  // ela fazia (renomear, tamanho, camadas) mora hoje no cartão da cena
+  // dentro do catálogo. `VttClient` registra a saída ao explicar de
+  // onde veio o aviso de encolher: "veio da janela 'Configurações da
+  // Cena', que saiu".
+  //
+  // Enquanto a linha ficou aqui, o check clicava num botão inexistente,
+  // esperava 30s e morria — levando junto as janelas listadas depois
+  // dela, que existem e funcionam. Um alvo morto numa lista não é
+  // neutro: ele mata os vizinhos.
   { nome: "token", tecla: "", rotulo: "", botao: "Adicionar token", seletor: '.rv-janela-token' },
 ];
 
@@ -46,7 +55,12 @@ async function capturar(page: Page, j: { nome: string; tecla: string; rotulo: st
   await page.waitForTimeout(150);
   // Nem toda janela é ferramenta: Camadas, Adicionar token e
   // Configurações da Cena abrem por botão da barra, não por atalho.
-  if (j.botao) await page.locator(`button[aria-label="${j.botao}"]`).click();
+  // Casamento por PREFIXO, não por igualdade: todo botão do trilho
+  // carrega o atalho de teclado no rótulo ("Camadas do mapa (C)",
+  // "Adicionar token (N)"). O sufixo é apresentação — o teste quer o
+  // botão, não a tecla que o aciona — e exigir igualdade fazia o
+  // seletor não casar com nada.
+  if (j.botao) await page.locator(`button[aria-label^="${j.botao}"]`).click();
   else await page.keyboard.press(j.tecla);
   const janela = j.seletor ? page.locator(j.seletor) : page.locator(`section[aria-label="${j.rotulo}"]`);
   try {
@@ -60,7 +74,7 @@ async function capturar(page: Page, j: { nome: string; tecla: string; rotulo: st
   // As janelas de BOTÃO são alternadas, não trocadas: sem fechar aqui,
   // a próxima abre por cima e a captura pega a de baixo.
   if (j.botao && !j.seletor) {
-    await page.locator(`button[aria-label="${j.botao}"]`).click();
+    await page.locator(`button[aria-label^="${j.botao}"]`).click();
     await page.waitForTimeout(200);
   }
   console.log(`ok - ${j.nome}`);
@@ -146,7 +160,7 @@ async function main() {
   const page = await context.newPage();
 
   try {
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
     for (const j of JANELAS) await capturar(page, j);
     await capturarRodadasAtivo(page);

@@ -19,7 +19,8 @@
  */
 
 import { useState } from "react";
-import { Archive, FolderPlus, ImagePlus, Plus } from "lucide-react";
+import { Archive, FolderPlus, ImagePlus } from "lucide-react";
+import { Plus } from "../../_design/icons";
 import { GavetaCasca } from "../../mesas/[campaignId]/vtt/_cenas/GavetaCasca";
 import { CartaoCena } from "../../mesas/[campaignId]/vtt/_cenas/CartaoCena";
 import { LinhaPasta } from "../../mesas/[campaignId]/vtt/_cenas/LinhaPasta";

@@ -69,6 +69,14 @@ export interface ItemContent {
   categoria_label?: string;
   /** subtipo do modelo (ex.: "corpo_a_corpo" em armas) — usado só para checar `restricao_subtipo` de runa. */
   subtipo?: string;
+  /**
+   * `estatisticas.classe_porte` — vocabulário canônico M46 ("leve" |
+   * "media" | "pesada"), presente em 55 dos 120 itens publicados.
+   * `null` nos outros (consumíveis, munição, kits, veículos). É o
+   * insumo da conversão porte → espaços, que vive em `carga.ts` — este
+   * campo só LÊ o dado, não decide quanto ele custa.
+   */
+  classePorte: string | null;
   raridade?: string;
   preco: number;
   descricao_curta?: string;
@@ -117,6 +125,14 @@ export interface ItemContent {
   tipoDano: string | null;
   /** `estatisticas.subtipo_dano` (ex.: "perfurante"). `null` se ausente. */
   subtipoDano: string | null;
+  /**
+   * `estatisticas.subtipos_dano_possiveis` — armas que o portador
+   * ESCOLHE como golpeia (adaga, espada, alabarda: "cortante" ou
+   * "perfurante"). Vazio quando o item não dá escolha. Complementa
+   * `subtipoDano`, que é o subtipo FIXO: um item tem um ou outro,
+   * nunca os dois.
+   */
+  subtiposDanoPossiveis: string[];
   /** `estatisticas.pericia_teste` (ex.: "luta", "balistica", "precisao") — perícia declarada pelo conteúdo para o teste de ataque. `null` se ausente. */
   periciaAtaque: string | null;
   /** `estatisticas.soma_atributo` (ex.: "corpo") — atributo somado ao teste de ataque, se o conteúdo declarar. `null` se ausente/não aplicável. */
@@ -129,6 +145,19 @@ export interface ItemContent {
   areaMetros: number | null;
   /** `estatisticas.alcance_arremesso_m` (granadas) — alcance de arremesso em metros, só para exibição. `null` se ausente. */
   alcanceArremessoMetros: number | null;
+  /**
+   * `estatisticas.alcance` das armas — objeto, não número:
+   * `{tipo:"adjacente", estendido_m?}` para corpo a corpo, ou
+   * `{tipo:"distancia", eficaz_m, max_m, penalidade_alem_eficaz}` para
+   * as de distância. `null` quando o item não declara alcance.
+   */
+  alcance: {
+    tipo: string;
+    estendidoM: number | null;
+    eficazM: number | null;
+    maxM: number | null;
+    penalidadeAlemEficaz: number | null;
+  } | null;
   /** `estatisticas.cargas_max` (consumíveis de farmácia/granadas com carga própria) — `null` = item usa `quantidade` da instância como consumo direto. */
   cargasMax: number | null;
   /** `estatisticas.pericia_teste` no contexto de USO do item (ex.: "biologia" em farmácia) — mesmo campo bruto de `periciaAtaque`, mas nomeado para o contexto de uso, nunca inferido. `null` se ausente. */
@@ -188,15 +217,29 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
     danoBase: typeof estatisticas?.dado_dano === "string" ? estatisticas.dado_dano : null,
     tipoDano: typeof estatisticas?.tipo_dano === "string" ? estatisticas.tipo_dano : null,
     subtipoDano: typeof estatisticas?.subtipo_dano === "string" ? estatisticas.subtipo_dano : null,
+    subtiposDanoPossiveis: asStringArray(estatisticas?.subtipos_dano_possiveis),
     periciaAtaque: typeof estatisticas?.pericia_teste === "string" ? estatisticas.pericia_teste : null,
     atributoAtaque: typeof estatisticas?.soma_atributo === "string" ? estatisticas.soma_atributo : null,
     custoPaUso: typeof estatisticas?.custo_pa === "number" ? estatisticas.custo_pa : null,
     custoPaUsoTexto: typeof estatisticas?.custo_pa === "string" ? estatisticas.custo_pa : null,
     areaMetros: typeof estatisticas?.area_m === "number" ? estatisticas.area_m : null,
     alcanceArremessoMetros: typeof estatisticas?.alcance_arremesso_m === "number" ? estatisticas.alcance_arremesso_m : null,
+    alcance: (() => {
+      const bruto = estatisticas?.alcance as Record<string, unknown> | undefined;
+      if (!bruto || typeof bruto !== "object" || typeof bruto.tipo !== "string") return null;
+      const num = (v: unknown) => (typeof v === "number" ? v : null);
+      return {
+        tipo: bruto.tipo,
+        estendidoM: num(bruto.estendido_m),
+        eficazM: num(bruto.eficaz_m),
+        maxM: num(bruto.max_m),
+        penalidadeAlemEficaz: num(bruto.penalidade_alem_eficaz),
+      };
+    })(),
     cargasMax: typeof estatisticas?.cargas_max === "number" ? estatisticas.cargas_max : null,
     periciaUso: typeof estatisticas?.pericia_teste === "string" ? estatisticas.pericia_teste : null,
     alvoUso: typeof estatisticas?.alvo === "string" ? estatisticas.alvo : null,
+    classePorte: typeof estatisticas?.classe_porte === "string" ? estatisticas.classe_porte : null,
     payloadAutomacao: raw.payload_automacao,
     status: String(raw.status ?? "published"),
   };
@@ -224,9 +267,24 @@ export const WALLET_LABELS: Record<WalletId, string> = {
 // Instância de item no inventário — loadout simples (PRD 13.3).
 // ---------------------------------------------------------------------
 
-export type ItemLoadoutState = "equipado" | "empunhado" | "acesso_rapido" | "mochila";
+/**
+ * Onde a instância está. Os quatro primeiros são formas de CARREGAR
+ * (todos pesam — ver `ESTADOS_QUE_OCUPAM` em carga.ts); "abrigo" é o
+ * que ficou guardado fora do corpo e por isso não pesa.
+ *
+ * "abrigo" entrou junto com a aba Inventário do Console, que tem
+ * Mochila / Equipado / Abrigo / Todos como filtros. Sem ele o terceiro
+ * filtro não teria o que filtrar. Instâncias antigas nunca têm esse
+ * valor, então nada precisa de migração: o default continua "mochila".
+ *
+ * NÃO foi adicionado ao vocabulário de efeitos
+ * (`effectDraftTypes.ts`): lá o enum descreve o que um EFEITO pode
+ * exigir do loadout, e "guardado em casa" não é estado que efeito
+ * consulte.
+ */
+export type ItemLoadoutState = "equipado" | "empunhado" | "acesso_rapido" | "mochila" | "abrigo";
 
-export const ITEM_LOADOUT_STATES: readonly ItemLoadoutState[] = ["equipado", "empunhado", "acesso_rapido", "mochila"];
+export const ITEM_LOADOUT_STATES: readonly ItemLoadoutState[] = ["equipado", "empunhado", "acesso_rapido", "mochila", "abrigo"];
 
 export interface InstalledRune {
   id: string;
@@ -1427,6 +1485,15 @@ export function getItemMitAtual(instance: InventoryItemInstance, item?: Pick<Ite
  * checkpoint não modela; nunca soma MIT/PD de dois itens). Inicializa
  * `mitAtual`/`pdAtual` no máximo do modelo só se a instância ainda não
  * tiver um valor próprio (preserva dano já registrado ao reequipar).
+ *
+ * ARMADURA TAMBÉM MUDA DE `estado`, e isso não é detalhe: a projeção
+ * dos slots do corpo (`projectBodySlots`, no Console) filtra armadura
+ * por `estado === "equipado"`, enquanto o escudo ela acha por
+ * `equipadoDefensivo`. Como esta função só marcava a flag defensiva,
+ * a armadura virava fonte de MIT mas NUNCA aparecia em Cabeça/Tronco/
+ * Braços/Pernas — o slot continuava dizendo "Equipar" depois de
+ * equipar. Vestir é as duas coisas ao mesmo tempo: a peça está no
+ * corpo (estado) e é a que conta para a defesa (flag).
  */
 export function equipDefensiveItem(character: Character, instanceId: string, item: ItemContent): Character {
   const slot: DefensiveEquipmentSlot | null =
@@ -1442,12 +1509,21 @@ export function equipDefensiveItem(character: Character, instanceId: string, ite
         ...i,
         equipadoDefensivo: true,
         equipamentoSlot: slot,
+        // Só a ARMADURA passa a "equipado": escudo é empunhado, e o
+        // estado dele é resolvido pelo loadout (mão secundária).
+        estado: slot === "armadura" ? ("equipado" as ItemLoadoutState) : i.estado,
         mitAtual: slot === "armadura" ? i.mitAtual ?? item.mitMax ?? undefined : i.mitAtual,
         pdAtual: slot === "escudo" ? i.pdAtual ?? item.pdMax ?? undefined : i.pdAtual,
       };
     }
     if (i.equipamentoSlot === slot && i.equipadoDefensivo) {
-      return { ...i, equipadoDefensivo: false };
+      // A peça deslocada sai do corpo junto com a flag — senão ela
+      // continuaria ocupando a região na projeção dos slots.
+      return {
+        ...i,
+        equipadoDefensivo: false,
+        estado: slot === "armadura" ? ("mochila" as ItemLoadoutState) : i.estado,
+      };
     }
     return i;
   });
@@ -1455,10 +1531,24 @@ export function equipDefensiveItem(character: Character, instanceId: string, ite
   return { ...character, inventario: nextInventario };
 }
 
-/** Desequipa uma instância — nunca apaga `mitAtual`/`pdAtual` (histórico de dano preservado até reequipar). */
+/**
+ * Desequipa uma instância — nunca apaga `mitAtual`/`pdAtual` (histórico
+ * de dano preservado até reequipar). A ARMADURA volta para a mochila
+ * no mesmo gesto, pelo mesmo motivo de `equipDefensiveItem`: se só a
+ * flag caísse, a peça sumiria da defesa mas continuaria desenhada no
+ * slot do corpo.
+ */
 export function unequipDefensiveItem(character: Character, instanceId: string): Character {
   const inventario = character.inventario ?? [];
-  const next = inventario.map((i) => (i.id === instanceId ? { ...i, equipadoDefensivo: false } : i));
+  const next = inventario.map((i) =>
+    i.id === instanceId
+      ? {
+          ...i,
+          equipadoDefensivo: false,
+          estado: i.equipamentoSlot === "armadura" ? ("mochila" as ItemLoadoutState) : i.estado,
+        }
+      : i,
+  );
   return { ...character, inventario: next };
 }
 

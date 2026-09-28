@@ -218,14 +218,20 @@ export function GeneralTab({
       })()}
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-        <button onClick={onSave} disabled={saveState === "saving"} style={buttonStyle}>
-          {saveState === "saving" ? "Salvando…" : "Salvar personagem"}
-        </button>
+        {/* "Salvar personagem" SAIU.
+            Ele ficava na página de baixo, coberto pela janela do
+            Console — medido em (440,413), dentro da área que o Console
+            ocupa. Quem editava PV ali não tinha como salvar sem fechar
+            a ficha, e nada avisava que havia mudança pendente.
+            Agora tudo grava sozinho; a evolução, que é permanente,
+            grava ao sair do modo pelo ✓. O estado de gravação continua
+            visível abaixo — some o passo manual, não o retorno. */}
         {mode === "dev" && (
           <button onClick={onNew} style={buttonStyle}>
             Novo personagem
           </button>
         )}
+        {saveState === "saving" && <span style={{ fontSize: 13, opacity: 0.75 }}>Salvando…</span>}
         {saveState === "saved" && <span style={{ fontSize: 13, color: "#4caf50" }}>✓ Salvo</span>}
         {saveState === "error" && <span style={{ fontSize: 13, color: "#ff6b6b" }}>Erro: {errorMessage}</span>}
       </div>

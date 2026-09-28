@@ -20,7 +20,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronsDown } from "lucide-react";
 import { useCampaignSession } from "../../_shell/CampaignRealtimeProvider";
 import type { TableLogVisibility } from "../../../../../lib/table";
 import {
@@ -44,19 +44,24 @@ import { aplicarDanoDoAtaqueAction } from "./acoes/combatePainel";
 import { EstadoErro, EstadoVazio } from "./Estados";
 
 /** Acento das rolagens feitas pelo chat — o mesmo ciano do composer. */
+/**
+ * A partir de quanto o atalho "Ir para o fim" aparece — o MAIOR entre
+ * este número e uma tela cheia do feed. Fixo sozinho, ele aparecia
+ * cedo demais num painel alto e tarde demais num baixo.
+ */
+const DISTANCIA_ATALHO = 600;
+
 const ACENTO_ROLAGEM_CHAT = "#35c7d8";
 
 export function ChatTab({
   visivel,
   personagemDoTokenSelecionado,
-  onContador,
   onFocarToken,
   fixtureVisual,
 }: {
   visivel: boolean;
   /** Personagem do token selecionado no mapa, só quando a conta pode controlá-lo. Nunca autoriza nada sozinho. */
   personagemDoTokenSelecionado: { id: string; nome: string } | null;
-  onContador: (n: number | null) => void;
   /** Ação EXPLÍCITA de centralizar a câmera — a única exceção ao invariante de não mexer na cena. */
   onFocarToken?: (tokenId: string) => void;
   /**
@@ -79,6 +84,47 @@ export function ChatTab({
   const [visibilidade, setVisibilidade] = useState<TableLogVisibility>("public");
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
   const [temNovas, setTemNovas] = useState(false);
+  /**
+   * ESTADO DA ROLAGEM DO FEED — daqui sai o atalho de voltar pro fim.
+   *
+   * O feed NÃO tem véu nas pontas, ao contrário das outras listas. Foi
+   * tentado e removido: com a bandeja de dados flutuando no pé dele,
+   * nenhuma posição do degradê ficou boa. Quem diz que há mais
+   * conversa é o atalho "ir para o fim".
+   *
+   * `longe` não é "não está no fim": subir dois cartões pra reler algo
+   * e continuar lendo não pede atalho nenhum, e um botão aparecendo ao
+   * primeiro giro da roda vira ruído. A partir de uma tela inteira de
+   * distância (`DISTANCIA_ATALHO`) a coisa muda: aí voltar rolando é
+   * trabalho, e o atalho passa a valer mais que o silêncio.
+   */
+  const [rolagem, setRolagem] = useState({ rolavel: false, inicio: true, fim: true, longe: false });
+  /* Espelho síncrono de `rolagem` — ver `medirRolagem`. */
+  const rolagemRef = useRef(rolagem);
+  rolagemRef.current = rolagem;
+  /**
+   * A ALTURA DA BANDEJA, medida.
+   *
+   * O feed precisa dela em dois lugares — o respiro de baixo e o ponto
+   * onde o véu descansa — e ela MUDA: recolhida são ~37px, aberta
+   * passa de 300. Com o número cravado na folha, abrir a bandeja punha
+   * o véu no meio dela e o fim da conversa debaixo dela.
+   */
+  const bandejaRef = useRef<HTMLDivElement>(null);
+  const [alturaBandeja, setAlturaBandeja] = useState(37);
+  useEffect(() => {
+    const el = bandejaRef.current;
+    if (!el) return;
+    // A altura CRUA da bandeja, sem folga somada: é a linha do topo
+    // dela que o véu tem que encostar, e qualquer acréscimo aqui vira
+    // uma faixa chapada entre os dois. O respiro do feed soma a folga
+    // por conta própria, na folha.
+    const observador = new ResizeObserver(() => {
+      setAlturaBandeja(Math.round(el.getBoundingClientRect().height));
+    });
+    observador.observe(el);
+    return () => observador.disconnect();
+  }, []);
   const [ultimoIdVisto, setUltimoIdVisto] = useState<string | null>(null);
   const [aplicandoId, setAplicandoId] = useState<string | null>(null);
   const [errosPorCartao, setErrosPorCartao] = useState<Record<string, string>>({});
@@ -148,9 +194,6 @@ export function ChatTab({
 
   const naoLidos = useMemo(() => contarNaoLidos(cartoes, ultimoIdVisto), [cartoes, ultimoIdVisto]);
 
-  useEffect(() => {
-    onContador(naoLidos > 0 ? naoLidos : null);
-  }, [naoLidos, onContador]);
 
   // ── Scroll ─────────────────────────────────────────────────────
   //
@@ -190,9 +233,42 @@ export function ChatTab({
     }
   }, [visivel, idDoFim]);
 
+  /* O que a folha e o atalho precisam saber — medido de verdade, nunca
+     deduzido da contagem de cartões (um cartão expandido muda a altura
+     sem mudar a contagem). */
+  function medirRolagem(el: HTMLDivElement) {
+    const faltando = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const proximo = {
+      // 1px de folga: alturas fracionárias fazem a conta parar a meio
+      // pixel do fim, e sem ela o véu de baixo nunca sumia.
+      rolavel: el.scrollHeight - el.clientHeight > 1,
+      inicio: el.scrollTop <= 1,
+      fim: faltando <= 1,
+      longe: faltando > Math.max(DISTANCIA_ATALHO, el.clientHeight),
+    };
+    // Compara ANTES de chamar `setRolagem`: esta medida roda a cada
+    // render (efeito sem dependências), e o chat re-renderiza a cada
+    // quadro de pan do mapa. Um `setRolagem(updater)` por render — mesmo
+    // devolvendo o valor igual — enfileirava um update dentro de efeito
+    // por quadro, e num arrasto longo o React acusava "Maximum update
+    // depth exceeded" (apontando pro `setPan` do mapa).
+    const a = rolagemRef.current;
+    if (a.rolavel === proximo.rolavel && a.inicio === proximo.inicio
+      && a.fim === proximo.fim && a.longe === proximo.longe) return;
+    setRolagem(proximo);
+  }
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) medirRolagem(el);
+    // Uma medida por render: cartão que expande, aba que volta e feed
+    // que cresce são todos "a altura agora é outra".
+  });
+
   function aoRolar() {
     const el = scrollRef.current;
     if (!el) return;
+    medirRolagem(el);
     noFimRef.current = estaNoFim(el.scrollTop, el.scrollHeight, el.clientHeight);
     scrollSalvoRef.current = el.scrollTop;
     if (noFimRef.current) {
@@ -403,7 +479,11 @@ export function ChatTab({
           é o que ancora o botão logo acima do composer sem depender de
           adivinhar a altura dele (que muda quando os chips quebram). */}
       <div className="rv-pn-chat-feedwrap">
-      <div className="rv-pn-chat-scroll" ref={scrollRef} onScroll={aoRolar} data-testid="painel-chat-scroll">
+      <div
+        className="rv-pn-chat-scroll" ref={scrollRef} onScroll={aoRolar}
+        style={{ "--pn-bandeja-altura": `${alturaBandeja}px` } as React.CSSProperties}
+        data-testid="painel-chat-scroll"
+      >
         {todos.length === 0 ? (
           <EstadoVazio testId="painel-chat-vazio">Nenhum evento nesta campanha ainda.</EstadoVazio>
         ) : (
@@ -422,16 +502,41 @@ export function ChatTab({
         )}
       </div>
 
-      {temNovas && (
-        <button type="button" className="rv-pn-chat-novas" onClick={irParaOFim} data-testid="painel-chat-novas">
-          <ChevronDown size={12} aria-hidden="true" /> Novas mensagens
-        </button>
-      )}
+      {/* O QUE FLUTUA SOBRE O FEED — o atalho de rolagem e a bandeja de
+          dados, nesta ordem, empilhados no pé da conversa.
+
+          A bandeja era uma FAIXA entre o feed e o composer: uma barra
+          fixa cortando a coluna em dois, que roubava altura da leitura
+          o tempo todo pra um painel que se usa de vez em quando. Por
+          cima, ela ocupa o lugar dela só enquanto interessa — e o feed
+          volta a ser a coluna inteira.
+
+          A casca não recebe clique (`pointer-events: none`), só os
+          filhos: senão a faixa transparente em volta da bandeja
+          bloquearia o cartão que estivesse embaixo. */}
+      <div className="rv-pn-chat-sobreposto">
+        {temNovas ? (
+          <button type="button" className="rv-pn-chat-novas" onClick={irParaOFim} data-testid="painel-chat-novas">
+            <ChevronDown size={12} aria-hidden="true" /> Novas mensagens
+          </button>
+        ) : rolagem.longe && (
+          /* O MESMO BOTÃO, sem variante de estilo: os dois ocupam o mesmo
+             lugar e levam ao mesmo lugar. O que muda é a FRASE — "novas
+             mensagens" quando chegou algo, "ir para o fim" quando só se
+             subiu muito —, que é a única diferença real entre os casos. */
+          <button
+            type="button" className="rv-pn-chat-novas"
+            onClick={irParaOFim} data-testid="painel-chat-voltar-fim"
+          >
+            <ChevronsDown size={15} aria-hidden="true" /> Ir para o fim
+          </button>
+        )}
+        <div className="pn-bandeja-dados" ref={bandejaRef}>
+          <BandejaDados campaignId={campaignId} personagemSugerido={personagemDoTokenSelecionado} />
+        </div>
+      </div>
       </div>
 
-      <div className="pn-bandeja-dados">
-        <BandejaDados campaignId={campaignId} personagemSugerido={personagemDoTokenSelecionado} />
-      </div>
 
       <Composer
         papel={role}

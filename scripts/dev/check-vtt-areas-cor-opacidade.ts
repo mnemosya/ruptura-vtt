@@ -29,6 +29,7 @@ import type { ConsoleMessage } from "playwright";
 import { chromium, type BrowserContext, type Page } from "playwright";
 import { Client } from "pg";
 import { BASE_URL } from "./authSession";
+import { garantirAlcancavel, recolherPainelDaSessao } from "./painelDaSessao";
 
 loadDotenv({ path: ".env.local" });
 
@@ -132,8 +133,14 @@ async function main() {
 
   const narrador = await contextoDe(narradorEmail!, narradorSenha!);
   const P = narrador.page;
-  await P.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await P.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await P.waitForSelector(".rv-ferramentas", { timeout: 20000 });
+  // O PAINEL DA SESSÃO SAI DA FRENTE antes de qualquer gesto no mapa.
+  // Ele flutua sobre a metade direita, e as células de coluna alta que
+  // estes critérios usam ficam debaixo dele — o helper de célula
+  // empurra o mapa, mas não tem para onde empurrar contra um painel
+  // fixo. Medido: "Célula (20,5) está coberta por DIV.rv-pn-chat-scroll".
+  await recolherPainelDaSessao(P);
   await P.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Áreas"]').click();
   await P.waitForSelector('[data-testid="painel-areas"]', { timeout: 8000 });
 
@@ -151,7 +158,14 @@ async function main() {
   await garantirAparenciaAberta();
   await P.locator('[data-testid="area-cor-roxo"]').click();
   await P.locator('[data-testid="area-campo-opacidade"]').fill("0.6");
-  const c0 = await celula(P, 10, 5), c1 = await celula(P, 14, 5);
+  // As duas pontas do arrasto precisam estar ALCANÇÁVEIS: o painel da
+  // sessão flutua sobre o mapa e a coluna 14 pode cair fora da
+  // viewport. Sem isso o gesto acontece no vazio, prévia nenhuma é
+  // desenhada, e a falha aparece como "a cor escolhida não aparece na
+  // prévia" — culpando a cor por uma prévia que nunca existiu.
+  const c1 = await garantirAlcancavel(P, () => celula(P, 14, 5).catch(() => null));
+  if (!c1) throw new Error("célula (14,5) inalcançável mesmo afastando o zoom");
+  const c0 = await celula(P, 10, 5);
   await arrastar(P, c0, c1);
   const fillPrevia = await P.locator('.rv-camada-areas .rv-area--previa path').first().getAttribute("fill");
   const opacidadePrevia = await P.locator('.rv-camada-areas .rv-area--previa path').first().getAttribute("fill-opacity");
@@ -172,7 +186,7 @@ async function main() {
 
   // ── 3. Outra sessão recebe a cor/opacidade sem reload ────────────
   const jogador = await contextoDe(jogadorEmail!, jogadorSenha!);
-  await jogador.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await jogador.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await jogador.page.waitForSelector(".rv-camada-areas .rv-area", { timeout: 20000 });
   const fillJogador = await jogador.page.locator('.rv-camada-areas .rv-area path').first().getAttribute("fill");
   registrar("3 (outra sessão recebe a MESMA cor persistida)", fillJogador === "#8b5cf6", `fill=${fillJogador}`);
@@ -183,6 +197,16 @@ async function main() {
   // rola dentro do corpo. Rolar até o item ANTES de clicar é o que
   // torna o clique determinístico (em vez de depender de o item já
   // estar na faixa visível).
+  // "Áreas na cena" abre RECOLHIDA por padrão, mesmo já havendo áreas —
+  // os ícones da lista não existem no DOM até alguém expandir. Sem
+  // isto, o clique esperava por um elemento que o painel ainda não
+  // tinha desenhado, e o sintoma (um `waitForSelector` num testid com
+  // uuid) não diz nada sobre a lista estar fechada.
+  const listaFechada = (await P.locator('[data-testid="area-lista"]').count()) === 0;
+  if (listaFechada) {
+    await P.locator('[data-testid="area-lista-toggle"]').click();
+    await P.waitForSelector('[data-testid="area-lista"]', { timeout: 5000 });
+  }
   await P.locator(`[data-testid="area-editar-${id}"]`).scrollIntoViewIfNeeded();
   await P.locator(`[data-testid="area-editar-${id}"]`).click();
   await P.waitForFunction(() => document.querySelector('[data-testid="painel-areas"]')?.getAttribute("data-fase") === "editando", null, { timeout: 6000 });

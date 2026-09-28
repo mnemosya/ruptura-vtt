@@ -77,6 +77,12 @@ export interface TokenVtt {
   tamanho: "pequeno" | "medio" | "grande" | "enorme" | "colossal";
   /** Rotação em passos de 60°, 0-5. Presets padrão são rotacionados a partir disto no domínio — nunca persistidos já rotacionados. */
   orientacao: number;
+  /**
+   * Para onde o token OLHA (0–5). Separada de `orientacao` (0135): a
+   * pegada é regra — muda o que ele ocupa e pode ser recusada —, o
+   * olhar é ficção, livre e sem colisão.
+   */
+  direcao: number;
   /** Offsets axiais relativos à âncora — só quando a pegada NÃO é o preset da categoria. `null` = usa o preset de `tamanho`. */
   pegadaPersonalizada: { q: number; r: number }[] | null;
   bloqueado: boolean;
@@ -110,6 +116,15 @@ export interface TokenVtt {
   retratoEfetivoId: string | null;
   pvAtual: number | null;
   pvMax: number | null;
+  /**
+   * PE e MANA do token SEM ficha (migration 0133). Com ficha vinculada
+   * os três recursos vêm da ficha canônica e estas colunas ficam nulas
+   * — um token não pode ter dois PVs.
+   */
+  peAtual: number | null;
+  peMax: number | null;
+  manaAtual: number | null;
+  manaMax: number | null;
   condicoes: string[];
   /** Flags só chegam a narrador/controlador; observador recebe null. */
   pvPublico: boolean | null;
@@ -1173,6 +1188,29 @@ export async function moverTokens(params: {
  * pegada na orientação nova e valida limites/bloqueio/colisão contra
  * ela — o cliente nunca decide sozinho que uma rotação é válida.
  */
+/**
+ * VIRAR o token — só o olhar. Sem colisão: mudar de direção não move
+ * célula nenhuma, e por isso esta escrita nunca é recusada por
+ * "posição indisponível" (0135). Girar a FORMA continua em
+ * `rotacionarToken`, que valida.
+ */
+export async function apontarToken(params: {
+  tokenId: string;
+  direcao: number;
+  revisionEsperada: number;
+}): Promise<ResultadoEscritaToken> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("apontar_vtt_token", {
+    p_token_id: params.tokenId,
+    p_direcao: params.direcao,
+    p_expected_revision: params.revisionEsperada,
+  }).single();
+  if (error) return { ok: false, erro: error.message };
+  if (!data) return { ok: false, erro: "Giro recusado pelo servidor." };
+  const token = linhaParaTokenVtt(data as Record<string, unknown>);
+  return { ok: true, revision: token.revision, token };
+}
+
 export async function rotacionarToken(params: {
   tokenId: string;
   orientacao: number;
@@ -1225,6 +1263,7 @@ function linhaParaTokenVtt(linha: Record<string, unknown>): TokenVtt {
     r: linha.r as number,
     tamanho: linha.tamanho as TokenVtt["tamanho"],
     orientacao: linha.orientacao as number,
+    direcao: (linha.direcao as number | null) ?? 0,
     pegadaPersonalizada: (linha.pegada_personalizada as { q: number; r: number }[] | null) ?? null,
     bloqueado: linha.bloqueado as boolean,
     visivel: linha.visivel as boolean,
@@ -1235,6 +1274,10 @@ function linhaParaTokenVtt(linha: Record<string, unknown>): TokenVtt {
     offsetR: Number(linha.offset_r ?? 0) || 0,
     pvAtual: (linha.pv_atual as number | null) ?? null,
     pvMax: (linha.pv_max as number | null) ?? null,
+    peAtual: (linha.pe_atual as number | null) ?? null,
+    peMax: (linha.pe_max as number | null) ?? null,
+    manaAtual: (linha.mana_atual as number | null) ?? null,
+    manaMax: (linha.mana_max as number | null) ?? null,
     condicoes: (linha.condicoes as string[] | null) ?? [],
     pvPublico: typeof linha.pv_publico === "boolean" ? linha.pv_publico : null,
     pePublico: typeof linha.pe_publico === "boolean" ? linha.pe_publico : null,
@@ -1314,6 +1357,8 @@ export async function criarToken(params: {
   vertente: string;
   tamanho: TokenVtt["tamanho"];
   orientacao: number;
+  /** Para onde ele nasce olhando (0–5) — livre, nunca valida colisão. */
+  direcao: number;
   pegadaPersonalizada: { q: number; r: number }[] | null;
   q: number;
   r: number;
@@ -1323,6 +1368,10 @@ export async function criarToken(params: {
   retratoUrl: string | null;
   pvAtual: number | null;
   pvMax: number | null;
+  peAtual: number | null;
+  peMax: number | null;
+  manaAtual: number | null;
+  manaMax: number | null;
   condicoes: string[];
 }): Promise<ResultadoEscritaToken> {
   const client = await getScopedTableClient();
@@ -1335,6 +1384,7 @@ export async function criarToken(params: {
     p_vertente: params.vertente,
     p_tamanho: params.tamanho,
     p_orientacao: params.orientacao,
+    p_direcao: params.direcao,
     p_pegada_personalizada: params.pegadaPersonalizada,
     p_q: params.q,
     p_r: params.r,
@@ -1344,6 +1394,10 @@ export async function criarToken(params: {
     p_retrato_url: params.retratoUrl,
     p_pv_atual: params.pvAtual,
     p_pv_max: params.pvMax,
+    p_pe_atual: params.peAtual,
+    p_pe_max: params.peMax,
+    p_mana_atual: params.manaAtual,
+    p_mana_max: params.manaMax,
     p_condicoes: params.condicoes,
   }).single();
   if (error) return { ok: false, erro: error.message };
@@ -1364,6 +1418,10 @@ export async function atualizarToken(params: {
   retratoUrl: string | null;
   pvAtual: number | null;
   pvMax: number | null;
+  peAtual: number | null;
+  peMax: number | null;
+  manaAtual: number | null;
+  manaMax: number | null;
   condicoes: string[];
   revisionEsperada: number;
 }): Promise<ResultadoEscritaToken> {
@@ -1410,6 +1468,10 @@ export async function editarToken(params: {
   retratoUrl: string | null;
   pvAtual: number | null;
   pvMax: number | null;
+  peAtual: number | null;
+  peMax: number | null;
+  manaAtual: number | null;
+  manaMax: number | null;
   condicoes: string[];
   tamanho: TokenVtt["tamanho"];
   revisionEsperada: number;
@@ -1425,6 +1487,10 @@ export async function editarToken(params: {
     p_retrato_url: params.retratoUrl,
     p_pv_atual: params.pvAtual,
     p_pv_max: params.pvMax,
+    p_pe_atual: params.peAtual,
+    p_pe_max: params.peMax,
+    p_mana_atual: params.manaAtual,
+    p_mana_max: params.manaMax,
     p_condicoes: params.condicoes,
     p_tamanho: params.tamanho,
     p_expected_revision: params.revisionEsperada,

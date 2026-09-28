@@ -72,6 +72,17 @@ export function detectCollapseOnResourceChange(
   before: ResourceSnapshot,
   after: ResourceSnapshot,
   nowIso: string,
+  /**
+   * PISO do PE — o valor negativo em que o Colapso mental dispara.
+   * PE pode ficar negativo até −⌈pe_max/2⌉, e é ao ATINGIR esse limite
+   * (não ao cruzar o zero) que o Colapso começa: entre 0 e o piso o
+   * personagem está se arrebentando, não desmaiado.
+   *
+   * Zero por padrão, que é o comportamento antigo — os caminhos que
+   * só mexem em PV (ataque, condições de fim de rodada, talentos)
+   * passam o PE inalterado e nunca chegam nesta comparação.
+   */
+  pisoPe = 0,
 ): CollapseDetectionResult {
   const colapso = character.colapso;
   const warnings: string[] = [];
@@ -90,7 +101,7 @@ export function detectCollapseOnResourceChange(
         warnings,
       };
     }
-    if (before.pe > 0 && after.pe <= 0) {
+    if (before.pe > pisoPe && after.pe <= pisoPe) {
       return {
         character: {
           ...character,
@@ -110,11 +121,11 @@ export function detectCollapseOnResourceChange(
   if (colapso.tipo === "pv" && before.pv <= 0 && after.pv >= 1) {
     return { character: endCollapseByHealing(character, nowIso), started: false, ended: true, tipo: "pv", warnings };
   }
-  if (colapso.tipo === "pe" && before.pe <= 0 && after.pe >= 1) {
+  if (colapso.tipo === "pe" && before.pe <= pisoPe && after.pe >= pisoPe + 1) {
     return { character: endCollapseByHealing(character, nowIso), started: false, ended: true, tipo: "pe", warnings };
   }
 
-  if (colapso.tipo === "pv" && before.pe > 0 && after.pe <= 0) {
+  if (colapso.tipo === "pv" && before.pe > pisoPe && after.pe <= pisoPe) {
     warnings.push("PE também caiu a 0 durante um colapso de PV já ativo — sem regra de colapso duplo no PRD; nada foi alterado além do registrado.");
   }
   if (colapso.tipo === "pe" && before.pv > 0 && after.pv <= 0) {
@@ -171,15 +182,33 @@ export function endCollapseByHealing(character: Character, nowIso: string): Char
   };
 }
 
+/** Retorno narrativamente confirmado depois de morte/coma; nunca é chamado só porque um número mudou. */
+export function confirmReturnAfterCollapseOutcome(character: Character, nowIso: string): Character {
+  if (!character.colapso?.desfecho) return character;
+  return {
+    ...character,
+    colapso: {
+      ...character.colapso,
+      ativo: false,
+      desfecho: null,
+      encerradoEm: nowIso,
+      cicatrizPendente: true,
+      ultimoEvento: "retorno_confirmado",
+    },
+    condicoes_ativas: endCollapseInconsciente(character.condicoes_ativas ?? [], nowIso),
+  };
+}
+
 // ---------------------------------------------------------------------
 // Fim de rodada automático (checkpoint v0.51) — teste/avanço/desfecho
 // data-driven a partir de `regras_personagem.colapso`.
 // ---------------------------------------------------------------------
 
-/** Rola "maior de Nd8" (teste de atributo puro do Ruptura, PRD 6.x) com RNG injetável. */
-function rollHighestD8(quantidade: number, rng: () => number): { dados: number[]; maior: number } {
+/** Rola "maior de Nd8" ou consome faces já roladas pela arena 3D. */
+function rollHighestD8(quantidade: number, rng: () => number, faces?: number[]): { dados: number[]; maior: number } {
   const n = Math.max(0, Math.trunc(quantidade));
-  const dados = Array.from({ length: n }, () => 1 + Math.floor(rng() * 8));
+  const fornecidos = (faces ?? []).slice(0, n).map((face) => Math.max(1, Math.min(8, Math.trunc(face))));
+  const dados = [...fornecidos, ...Array.from({ length: Math.max(0, n - fornecidos.length) }, () => 1 + Math.floor(rng() * 8))];
   return { dados, maior: dados.length > 0 ? Math.max(...dados) : 0 };
 }
 
@@ -255,8 +284,9 @@ function resolveThirdSegmentTest(params: {
   scene: number;
   nowIso: string;
   rng: () => number;
+  dados?: number[];
 }): CollapseEndRoundResult {
-  const { character, colapso, rules, gatilho, atributoId, atributoValor, segmentos, round, scene, nowIso, rng } = params;
+  const { character, colapso, rules, gatilho, atributoId, atributoValor, segmentos, round, scene, nowIso, rng, dados } = params;
   const tipo = colapso.tipo === "pe" ? "pe" : "pv";
   const threshold = parseTerceiroSegmentoThreshold(rules);
 
@@ -273,7 +303,7 @@ function resolveThirdSegmentTest(params: {
     };
   }
 
-  const { dados, maior } = rollHighestD8(atributoValor, rng);
+  const { dados: dadosRolados, maior } = rollHighestD8(atributoValor, rng, dados);
   const mantem = maior >= threshold;
   const recursoLabel = tipo === "pv" ? "Corpo" : "Mente";
 
@@ -284,7 +314,7 @@ function resolveThirdSegmentTest(params: {
       outcome: "third_segment_survived",
       tipo,
       atributo: atributoId,
-      rollDados: dados,
+      rollDados: dadosRolados,
       rollTotal: maior,
       threshold,
       segmentosBefore: colapso.segmentos,
@@ -317,7 +347,7 @@ function resolveThirdSegmentTest(params: {
     outcome: desfecho === "morte" ? "death" : "coma",
     tipo,
     atributo: atributoId,
-    rollDados: dados,
+    rollDados: dadosRolados,
     rollTotal: maior,
     threshold,
     segmentosBefore: colapso.segmentos,
@@ -356,6 +386,8 @@ export function resolveCollapseEndRound(params: {
   scene: number;
   nowIso: string;
   rng?: () => number;
+  /** Faces já exibidas pela arena 3D; usadas no teste decisivo quando o personagem já está em 3/3. */
+  dados?: number[];
 }): CollapseEndRoundResult {
   const { character, rules, round, scene, nowIso } = params;
   const rng = params.rng ?? Math.random;
@@ -394,7 +426,7 @@ export function resolveCollapseEndRound(params: {
   // Já no último segmento (sobreviveu ao teste imediato numa rodada anterior) — reteste imediato.
   if (segBefore >= maxSegments) {
     return resolveThirdSegmentTest({
-      character, colapso, rules: rules!, gatilho, atributoId, atributoValor, segmentos: segBefore, round, scene, nowIso, rng,
+      character, colapso, rules: rules!, gatilho, atributoId, atributoValor, segmentos: segBefore, round, scene, nowIso, rng, dados: params.dados,
     });
   }
 

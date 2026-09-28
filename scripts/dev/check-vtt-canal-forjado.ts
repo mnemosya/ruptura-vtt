@@ -171,6 +171,7 @@ async function main() {
       p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_pegada_personalizada: null,
       p_q: 0, p_r: 0, p_character_id: null, p_visivel: true, p_bloqueado: false,
       p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+      p_direcao: 0, p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     });
     await esperarMs(1500);
     ok(

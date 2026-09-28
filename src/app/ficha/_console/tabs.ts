@@ -5,7 +5,7 @@
  * componentes.
  *
  * Ícones escolhidos por relação semântica com cada aba (não genéricos):
- * Backpack para Mochila, Wand2 para Magias, BrainCircuit para Escalpos
+ * Backpack para Inventário, Wand2 para Magias, BrainCircuit para Escalpos
  * (implantes cibernéticos), IdCard para Identidade (antigo nome
  * "Características" — traços/identidade do personagem).
  *
@@ -27,7 +27,11 @@ export interface ConsoleTabDef {
 
 export const ABAS: ConsoleTabDef[] = [
   { id: "equipamentos", label: "Equipamentos", Icon: LayoutGrid },
-  { id: "mochila", label: "Mochila", Icon: Backpack },
+  // O id continua `mochila` (é o que o estado e os testes usam) e o
+  // ícone continua a mochila; o que muda é o NOME: a aba mostra o
+  // inventário inteiro — mochila, equipado e abrigo —, e chamá-la de
+  // "Mochila" nomeava uma das três abas de dentro dela.
+  { id: "mochila", label: "Inventário", Icon: Backpack },
   { id: "magias", label: "Magias", Icon: Wand2 },
   { id: "escalpos", label: "Escalpos", Icon: BrainCircuit },
   { id: "caracteristicas", label: "Identidade", Icon: IdCard },

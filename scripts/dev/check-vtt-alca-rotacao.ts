@@ -32,6 +32,43 @@
  * Uso: npx tsx scripts/dev/check-vtt-alca-rotacao.ts (servidor dev já
  * rodando em localhost:3000).
  */
+/*
+ * REESCRITO PARA `direcao` em 2026-09-21 (ALCA-01).
+ *
+ * A alça mudou de significado: girava a FORMA da pegada (`orientacao`),
+ * hoje muda o OLHAR (`direcao`). Girar a forma virou ação de menu
+ * (`rotacionar_vtt_token`), porque mudar as células ocupadas pode ser
+ * recusado por terreno ou por outro token — e uma recusa no meio de um
+ * gesto contínuo é pior que uma recusa num menu.
+ *
+ * O que mudou aqui:
+ *
+ *  · toda leitura do resultado do gesto passou de `orientacao` para
+ *    `direcao`, inclusive as escritas diretas que simulam "alguém mudou
+ *    por fora" — o halo lê `token.direcao` (`orientacaoExibida` em
+ *    `MapaHex`), então é essa coluna que ele reflete;
+ *
+ *  · os critérios de PRÉVIA INVÁLIDA (10/10b por colisão, 11/11b por
+ *    borda, 12/12b por terreno bloqueado) foram APOSENTADOS. Não é
+ *    ajuste de coluna: a alça não tem mais estado inválido. `MapaHex`
+ *    monta o gesto com `valida: true` fixo, e o comentário ao lado diz
+ *    por quê — "Nunca vermelho: virar não pode ser recusado". Quem
+ *    cobre a recusa ao girar a FORMA é `check-vtt-pegada-reparo`.
+ *
+ * Continua cobrindo o que não existe em nenhum outro lugar: a alça só
+ * aparece em token selecionado e some com seleção múltipla ou sem
+ * permissão; o alvo de toque é maior que o círculo visível; arrastar
+ * não move o token; teclado completo (Tab, setas, Q/E, Home) com uma
+ * RPC por gesto; undo/redo como operação única; Esc como no-op seguro.
+ *
+ * TRÊS CRITÉRIOS AINDA FALHAM, e não são de coluna — são mecânica de
+ * gesto, ainda não diagnosticada: o critério 8 (vários ângulos antes de
+ * soltar), o 22-9 (a prévia não muda durante o arrasto: medido
+ * `prévia=1, origem=1`) e o 22-15/16 (hover disparando requisição).
+ * O arquivo oscila entre 43 e 46 critérios ok entre execuções, o que
+ * sugere que parte disso é tempo, não comportamento.
+ */
+
 
 import { randomUUID } from "node:crypto";
 import { config as loadDotenv } from "dotenv";
@@ -40,6 +77,7 @@ import type { ConsoleMessage } from "playwright";
 import { chromium, type BrowserContext, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
 import { hexParaPixel, hexRotacionar } from "../../src/app/mesas/[campaignId]/vtt/_mapa/hex";
+import { garantirTokenAlcancavel } from "./painelDaSessao";
 
 loadDotenv({ path: ".env.local" });
 function requireEnv(nome: string): string {
@@ -136,14 +174,14 @@ async function contextoDe(email: string, senha: string): Promise<{ context: Brow
   return { context, page, close: () => browser.close() };
 }
 
-type TokenLinha = { id: string; nome: string; sigla: string; tamanho: string; q: number; r: number; orientacao: number; revision: number };
+type TokenLinha = { id: string; nome: string; sigla: string; tamanho: string; q: number; r: number; orientacao: number; direcao: number; revision: number };
 
 async function criarTokenFixture(params: { nome: string; sigla: string; tamanho: string; q: number; r: number; characterId?: string | null }): Promise<TokenLinha> {
   const { data, error } = await admin.from("vtt_tokens").insert({
     scene_id: sceneId, campaign_id: campaignId, nome: params.nome, sigla: params.sigla, lado: "pn",
-    tamanho: params.tamanho, orientacao: 0, q: params.q, r: params.r, visivel: true,
+    tamanho: params.tamanho, orientacao: 0, direcao: 0, q: params.q, r: params.r, visivel: true,
     character_id: params.characterId ?? null,
-  }).select("id, nome, sigla, tamanho, q, r, orientacao, revision").single();
+  }).select("id, nome, sigla, tamanho, q, r, orientacao, direcao, revision").single();
   if (error) throw new Error(`Falha ao criar token fixture: ${error.message}`);
   return data as TokenLinha;
 }
@@ -210,7 +248,7 @@ async function main() {
   let ignorarErrosDeProposito = false;
   page.on("console", (m) => { if (!ignorarErrosDeProposito && erroRelevante(m)) erros.push(m.text().slice(0, 500)); });
   page.on("pageerror", (e) => { if (!ignorarErrosDeProposito) erros.push(`pageerror: ${e.message}`); });
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
 
   // --- 1/2: alça aparece em assimétrico único selecionado, não aparece em simétrico ---
@@ -246,7 +284,7 @@ async function main() {
   // --- 3: sem permissão (sessão jogador, token narrador-only) ---
   {
     const { page: jogadorPage, close: closeJogador } = await contextoDe(jogadorEmail!, jogadorSenha!);
-    await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
     await selecionarToken(jogadorPage, tokGrande.id);
     const semPermissao = (await jogadorPage.locator(".rv-token-alca-rotacao-toque").count()) === 0;
@@ -259,12 +297,33 @@ async function main() {
     const tok = await criarTokenFixture({ nome: "Girável", sigla: "GV", tamanho: "grande", q: 15, r: 12 });
     await page.reload({ waitUntil: "networkidle" });
     await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
+    // ALCANCE ANTES DE SELECIONAR, nesta ordem.
+    //
+    // O token nasce em (15,12) e pode cair fora da viewport, ou debaixo
+    // do painel da sessão. Selecionar primeiro significa clicar onde ele
+    // não está: a seleção não acontece, a alça — que só é desenhada para
+    // token selecionado — nunca aparece, e o erro saía três linhas
+    // adiante como "Cannot read properties of null (reading 'x')",
+    // apontando para a leitura e não para o clique que falhou.
+    await garantirTokenAlcancavel(page, "GV");
     await selecionarToken(page, tok.id);
 
     const centroTok = await centroDoToken(page, tok.id);
+    if (!centroTok) {
+      registrar("5-18 (geometria da alça)", false, "token fora de alcance mesmo após afastar o zoom");
+      throw new Error("token GV inalcançável");
+    }
     const posAlcaRepouso = await centroDaAlca(page);
     registrar("18 (alvo de toque presente e maior que o círculo visível)", !!posAlcaRepouso, `presente=${!!posAlcaRepouso}`);
-    const v0 = { x: posAlcaRepouso!.x - centroTok.x, y: posAlcaRepouso!.y - centroTok.y };
+    // A alça pode não existir — e aí o `!` logo abaixo estourava com
+    // "Cannot read properties of null (reading 'x')", que não diz QUAL
+    // coisa faltou. Falhar aqui, nomeando, vale mais que um TypeError
+    // três linhas adiante.
+    if (!posAlcaRepouso) {
+      registrar("5-18 (geometria da alça)", false, "alça de rotação ausente — token selecionado? narrador controla este token?");
+      throw new Error("alça de rotação ausente");
+    }
+    const v0 = { x: posAlcaRepouso.x - centroTok.x, y: posAlcaRepouso.y - centroTok.y };
 
     async function posParaOrientacaoRelativa(passos: number) {
       const v = rotacionarVetor(v0, passos);
@@ -273,7 +332,7 @@ async function main() {
 
     // 5/6: arrastar ao redor encaixa numa das 6 orientações; o token NÃO se move.
     const alvo2 = await posParaOrientacaoRelativa(2);
-    await page.mouse.move(posAlcaRepouso!.x, posAlcaRepouso!.y);
+    await page.mouse.move(posAlcaRepouso.x, posAlcaRepouso.y);
     await page.mouse.down();
     await page.mouse.move(centroTok.x + (alvo2.x - centroTok.x) * 0.5, centroTok.y + (alvo2.y - centroTok.y) * 0.5, { steps: 5 });
     await page.mouse.move(alvo2.x, alvo2.y, { steps: 8 });
@@ -288,11 +347,11 @@ async function main() {
       const { data } = await admin.from("vtt_tokens").select("revision").eq("id", tok.id).single();
       return (data?.revision ?? 0) > tok.revision;
     }, 5000);
-    const { data: aposSoltar1 } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
+    const { data: aposSoltar1 } = await admin.from("vtt_tokens").select("direcao, revision").eq("id", tok.id).single();
     registrar(
       "7 (soltar numa orientação diferente e válida chama exatamente UMA RPC — revisão sobe 1, orientação bate o alvo exato)",
-      aposSoltar1?.revision === tok.revision + 1 && aposSoltar1?.orientacao === 2,
-      `revisão ${tok.revision}→${aposSoltar1?.revision}, orientação ${tok.orientacao}→${aposSoltar1?.orientacao} (esperado 2)`,
+      aposSoltar1?.revision === tok.revision + 1 && aposSoltar1?.direcao === 2,
+      `revisão ${tok.revision}→${aposSoltar1?.revision}, orientação ${tok.direcao}→${aposSoltar1?.direcao} (esperado 2)`,
     );
 
     // 8: passar por VÁRIOS ângulos antes de soltar ainda é uma RPC só.
@@ -300,7 +359,7 @@ async function main() {
     // ABSOLUTA `o` (v0 foi capturado quando o token nasceu em orientacao=0,
     // e a âncora nunca se move — só o ângulo muda) — nunca um deslocamento
     // relativo à orientação atual.
-    const orientacaoAntes8 = aposSoltar1!.orientacao;
+    const orientacaoAntes8 = aposSoltar1!.direcao;
     const revisaoAntes8 = aposSoltar1!.revision;
     const alvoAbsoluto8 = (orientacaoAntes8 + 3) % 6;
     const alca8 = await centroDaAlca(page);
@@ -319,11 +378,11 @@ async function main() {
       const { data } = await admin.from("vtt_tokens").select("revision").eq("id", tok.id).single();
       return (data?.revision ?? 0) > revisaoAntes8;
     }, 5000);
-    const { data: aposSoltar8 } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
+    const { data: aposSoltar8 } = await admin.from("vtt_tokens").select("direcao, revision").eq("id", tok.id).single();
     registrar(
       "8 (passar por vários ângulos antes de soltar ainda chama só UMA RPC — revisão sobe exatamente 1, pousa no alvo final)",
-      aposSoltar8?.revision === revisaoAntes8 + 1 && aposSoltar8?.orientacao === alvoAbsoluto8,
-      `revisão ${revisaoAntes8}→${aposSoltar8?.revision}, orientação→${aposSoltar8?.orientacao} (esperado ${alvoAbsoluto8})`,
+      aposSoltar8?.revision === revisaoAntes8 + 1 && aposSoltar8?.direcao === alvoAbsoluto8,
+      `revisão ${revisaoAntes8}→${aposSoltar8?.revision}, orientação→${aposSoltar8?.direcao} (esperado ${alvoAbsoluto8})`,
     );
 
     // 9: soltar na MESMA orientação não chama RPC nenhuma — precisa ser
@@ -342,7 +401,7 @@ async function main() {
     // aumenta o bastante) sem jamais mudar de setor — prova mais robusta
     // que uma viagem de ida e volta entre dois pontos calculados
     // independentemente.
-    const orientacaoAntes9 = aposSoltar8!.orientacao;
+    const orientacaoAntes9 = aposSoltar8!.direcao;
     const revisaoAntes9 = aposSoltar8!.revision;
     const posAtual9 = await posParaOrientacaoRelativa(orientacaoAntes9);
     const direcao9 = { x: posAtual9.x - centroTok.x, y: posAtual9.y - centroTok.y };
@@ -360,34 +419,34 @@ async function main() {
     // subiu. Se um gesto de rotação estiver na verdade sendo lido como
     // ARRASTO do token, quem muda é q/r/offset — e o critério precisa
     // conseguir apontar isso em vez de só acusar a revisão.
-    const { data: aposSoltar9 } = await admin.from("vtt_tokens").select("orientacao, revision, q, r, offset_q, offset_r").eq("id", tok.id).single();
+    const { data: aposSoltar9 } = await admin.from("vtt_tokens").select("direcao, revision, q, r, offset_q, offset_r").eq("id", tok.id).single();
     registrar(
       "9 (soltar na MESMA orientação não chama RPC nenhuma — revisão intocada)",
-      aposSoltar9?.revision === revisaoAntes9 && aposSoltar9?.orientacao === orientacaoAntes9,
-      `revisão ${revisaoAntes9}→${aposSoltar9?.revision}, orientação ${orientacaoAntes9}→${aposSoltar9?.orientacao}, hex=(${aposSoltar9?.q},${aposSoltar9?.r}) offset=(${aposSoltar9?.offset_q},${aposSoltar9?.offset_r})`,
+      aposSoltar9?.revision === revisaoAntes9 && aposSoltar9?.direcao === orientacaoAntes9,
+      `revisão ${revisaoAntes9}→${aposSoltar9?.revision}, orientação ${orientacaoAntes9}→${aposSoltar9?.direcao}, hex=(${aposSoltar9?.q},${aposSoltar9?.r}) offset=(${aposSoltar9?.offset_q},${aposSoltar9?.offset_r})`,
     );
 
     // 17: undo/redo tratam a rotação como UMA operação.
-    const orientacaoAntesUndo = aposSoltar9!.orientacao;
+    const orientacaoAntesUndo = aposSoltar9!.direcao;
     const revisaoAntesUndo = aposSoltar9!.revision;
     await page.keyboard.press("Control+z");
     await esperarAte(async () => {
       const { data } = await admin.from("vtt_tokens").select("revision").eq("id", tok.id).single();
       return (data?.revision ?? 0) > revisaoAntesUndo;
     }, 5000);
-    const { data: aposUndo } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
-    const undoUmaOperacao = aposUndo?.revision === revisaoAntesUndo + 1 && aposUndo?.orientacao !== orientacaoAntesUndo;
+    const { data: aposUndo } = await admin.from("vtt_tokens").select("direcao, revision").eq("id", tok.id).single();
+    const undoUmaOperacao = aposUndo?.revision === revisaoAntesUndo + 1 && aposUndo?.direcao !== orientacaoAntesUndo;
     await page.keyboard.press("Control+Shift+z");
     await esperarAte(async () => {
       const { data } = await admin.from("vtt_tokens").select("revision").eq("id", tok.id).single();
       return (data?.revision ?? 0) > (aposUndo?.revision ?? 0);
     }, 5000);
-    const { data: aposRedo } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
-    const redoUmaOperacao = aposRedo?.revision === (aposUndo!.revision) + 1 && aposRedo?.orientacao === orientacaoAntesUndo;
+    const { data: aposRedo } = await admin.from("vtt_tokens").select("direcao, revision").eq("id", tok.id).single();
+    const redoUmaOperacao = aposRedo?.revision === (aposUndo!.revision) + 1 && aposRedo?.direcao === orientacaoAntesUndo;
     registrar(
       "17 (undo/redo tratam a rotação por alça como UMA operação — uma revisão por passo, orientação exata)",
       undoUmaOperacao && redoUmaOperacao,
-      `undo: revisão ${revisaoAntesUndo}→${aposUndo?.revision}, orientação→${aposUndo?.orientacao} (esperado≠${orientacaoAntesUndo}); redo: revisão→${aposRedo?.revision}, orientação→${aposRedo?.orientacao} (esperado=${orientacaoAntesUndo})`,
+      `undo: revisão ${revisaoAntesUndo}→${aposUndo?.revision}, orientação→${aposUndo?.direcao} (esperado≠${orientacaoAntesUndo}); redo: revisão→${aposRedo?.revision}, orientação→${aposRedo?.direcao} (esperado=${orientacaoAntesUndo})`,
     );
   }
 
@@ -410,11 +469,11 @@ async function main() {
       const { data } = await admin.from("vtt_tokens").select("revision").eq("id", tok.id).single();
       return (data?.revision ?? 0) > tok.revision;
     }, 5000);
-    const { data: aposClique } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
+    const { data: aposClique } = await admin.from("vtt_tokens").select("direcao, revision").eq("id", tok.id).single();
     registrar(
       "15 (clique simples na alça gira exatamente um passo de 60° no sentido horário)",
-      aposClique?.revision === tok.revision + 1 && aposClique?.orientacao === ((tok.orientacao + 1) % 6),
-      `orientação ${tok.orientacao}→${aposClique?.orientacao} (esperado ${(tok.orientacao + 1) % 6}), revisão ${tok.revision}→${aposClique?.revision}`,
+      aposClique?.revision === tok.revision + 1 && aposClique?.direcao === ((tok.direcao + 1) % 6),
+      `orientação ${tok.direcao}→${aposClique?.direcao} (esperado ${(tok.direcao + 1) % 6}), revisão ${tok.revision}→${aposClique?.revision}`,
     );
   }
 
@@ -443,11 +502,11 @@ async function main() {
     const alcaSumiu = (await page.locator(".rv-token-alca-rotacao").count()) === 0;
     await page.mouse.up(); // solta depois do Esc — não deveria persistir nada
     await page.waitForTimeout(400);
-    const { data: aposEsc } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
+    const { data: aposEsc } = await admin.from("vtt_tokens").select("direcao, revision").eq("id", tok.id).single();
     registrar(
       "13 (Esc cancela o gesto sem RPC — orientação/revisão intocadas, alça some por desseleção global)",
-      alcaSumiu && aposEsc?.orientacao === tok.orientacao && aposEsc?.revision === tok.revision,
-      `alçaAusenteAposEsc=${alcaSumiu}, orientação=${aposEsc?.orientacao}, revisão=${aposEsc?.revision}`,
+      alcaSumiu && aposEsc?.direcao === tok.direcao && aposEsc?.revision === tok.revision,
+      `alçaAusenteAposEsc=${alcaSumiu}, orientação=${aposEsc?.direcao}, revisão=${aposEsc?.revision}`,
     );
   }
 
@@ -468,109 +527,38 @@ async function main() {
     const gestoLimpo = (await page.locator(".rv-token-alca-rotacao").getAttribute("data-valida")) === null;
     await page.mouse.up();
     await page.waitForTimeout(300);
-    const { data: aposCancel } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
+    const { data: aposCancel } = await admin.from("vtt_tokens").select("direcao, revision").eq("id", tok.id).single();
     registrar(
       "14 (pointercancel limpa o gesto com segurança — sem RPC, sem estado preso)",
-      gestoLimpo && aposCancel?.orientacao === tok.orientacao && aposCancel?.revision === tok.revision,
-      `gestoLimpo=${gestoLimpo}, orientação=${aposCancel?.orientacao}, revisão=${aposCancel?.revision}`,
+      gestoLimpo && aposCancel?.direcao === tok.direcao && aposCancel?.revision === tok.revision,
+      `gestoLimpo=${gestoLimpo}, orientação=${aposCancel?.direcao}, revisão=${aposCancel?.revision}`,
     );
   }
 
   // --- 10: colisão com outro token deixa a prévia inválida e não persiste ---
-  {
-    // Vizinho em cada uma das 6 direções ADJACENTES de verdade (distância 1,
-    // não 2 — "grande" só estende 1 célula além da âncora, então um vizinho
-    // 2 passos longe nunca colide com nenhuma orientação).
-    const centro = { q: 17, r: 5 };
-    const tok = await criarTokenFixture({ nome: "Colide", sigla: "CO", tamanho: "grande", q: centro.q, r: centro.r });
-    const vizinhos = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
-    for (const [dq, dr] of vizinhos) {
-      await criarTokenFixture({ nome: `Vizinho ${dq},${dr}`, sigla: "VZ", tamanho: "pequeno", q: centro.q + dq, r: centro.r + dr });
-    }
-    await page.reload({ waitUntil: "networkidle" });
-    await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
-    await selecionarToken(page, tok.id);
-    const centroTok = await centroDoToken(page, tok.id);
-    const alca = await centroDaAlca(page);
-    const v0 = { x: alca!.x - centroTok.x, y: alca!.y - centroTok.y };
-    // tenta cada uma das outras 5 orientações até achar uma marcada inválida.
-    let achouInvalida = false;
-    await page.mouse.move(alca!.x, alca!.y);
-    await page.mouse.down();
-    for (let passo = 1; passo <= 5 && !achouInvalida; passo++) {
-      const v = rotacionarVetor(v0, passo);
-      await page.mouse.move(centroTok.x + v.x, centroTok.y + v.y, { steps: 4 });
-      await page.waitForTimeout(80);
-      const valida = await page.locator(".rv-token-alca-rotacao").getAttribute("data-valida");
-      if (valida === "false") achouInvalida = true;
-    }
-    registrar("10 (girar na direção de um vizinho marca a prévia como inválida)", achouInvalida, `achouInvalida=${achouInvalida}`);
-    await page.mouse.up();
-    await page.waitForTimeout(400);
-    const { data: aposColisao } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
-    registrar("10b (nada persiste ao soltar numa orientação inválida por colisão)", aposColisao?.orientacao === tok.orientacao && aposColisao?.revision === tok.revision, `orientação=${aposColisao?.orientacao}, revisão=${aposColisao?.revision}`);
-  }
+  /*
+   * APOSENTADO: a alça não tem estado inválido.
+   *
+   * Estes critérios afirmavam que girar contra um vizinho, contra a
+   * borda ou sobre terreno bloqueado marcava a prévia como INVÁLIDA, e
+   * que nada persistia ao soltar ali. Isso descrevia a alça de quando
+   * ela girava a FORMA da pegada — mudar as células ocupadas pode
+   * esbarrar em alguma coisa, e por isso podia ser recusado.
+   *
+   * A alça hoje muda `direcao`, o olhar. E virar não esbarra em nada:
+   * `MapaHex` monta o gesto com `valida: true` fixo, tanto ao iniciar
+   * quanto a cada passo, e o comentário ao lado da cor diz o porquê com
+   * todas as letras — "Nunca vermelho: virar não pode ser recusado".
+   *
+   * Não há como um teste provar que a prévia fica inválida quando ela
+   * nunca fica. Girar a FORMA continua podendo ser recusado, mas isso
+   * virou ação de menu (`rotacionar_vtt_token`) e não passa por aqui —
+   * quem cobre a recusa é `check-vtt-pegada-reparo`.
+   */
 
   // --- 11: borda inválida ---
-  {
-    // Âncora EXATAMENTE no canto (0,0) — `dentroDoMapa` exige q>=qMin(r) e
-    // r>=0; qualquer vizinho com q<0 ou r<0 estoura, e várias das 6
-    // orientações do triângulo "grande" incluem essas direções.
-    const tok = await criarTokenFixture({ nome: "Borda", sigla: "BD", tamanho: "grande", q: 0, r: 0 });
-    await page.reload({ waitUntil: "networkidle" });
-    await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
-    await selecionarToken(page, tok.id);
-    const centroTok = await centroDoToken(page, tok.id);
-    const alca = await centroDaAlca(page);
-    const v0 = { x: alca!.x - centroTok.x, y: alca!.y - centroTok.y };
-    let achouInvalida = false;
-    await page.mouse.move(alca!.x, alca!.y);
-    await page.mouse.down();
-    for (let passo = 1; passo <= 5 && !achouInvalida; passo++) {
-      const v = rotacionarVetor(v0, passo);
-      await page.mouse.move(centroTok.x + v.x, centroTok.y + v.y, { steps: 4 });
-      await page.waitForTimeout(80);
-      const valida = await page.locator(".rv-token-alca-rotacao").getAttribute("data-valida");
-      if (valida === "false") achouInvalida = true;
-    }
-    registrar("11 (perto da borda, pelo menos uma orientação fica marcada inválida)", achouInvalida, `achouInvalida=${achouInvalida}`);
-    await page.mouse.up();
-    await page.waitForTimeout(400);
-    const { data: aposBorda } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
-    registrar("11b (nada persiste ao soltar numa orientação inválida por borda)", aposBorda?.orientacao === tok.orientacao && aposBorda?.revision === tok.revision, `orientação=${aposBorda?.orientacao}, revisão=${aposBorda?.revision}`);
-  }
 
   // --- 12: terreno bloqueado ---
-  {
-    const centro = { q: 5, r: 15 };
-    const tok = await criarTokenFixture({ nome: "Bloqueado", sigla: "BL", tamanho: "grande", q: centro.q, r: centro.r });
-    const vizinhos = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
-    for (const [dq, dr] of vizinhos) {
-      await admin.from("vtt_terrain").upsert({ scene_id: sceneId, campaign_id: campaignId, q: centro.q + dq, r: centro.r + dr, tipo: "bloqueado" });
-    }
-    await page.reload({ waitUntil: "networkidle" });
-    await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
-    await esperarAte(async () => (await page.locator(".rv-terreno-real--bloqueado").count()) >= 6, 5000);
-    await selecionarToken(page, tok.id);
-    const centroTok = await centroDoToken(page, tok.id);
-    const alca = await centroDaAlca(page);
-    const v0 = { x: alca!.x - centroTok.x, y: alca!.y - centroTok.y };
-    let achouInvalida = false;
-    await page.mouse.move(alca!.x, alca!.y);
-    await page.mouse.down();
-    for (let passo = 1; passo <= 5 && !achouInvalida; passo++) {
-      const v = rotacionarVetor(v0, passo);
-      await page.mouse.move(centroTok.x + v.x, centroTok.y + v.y, { steps: 4 });
-      await page.waitForTimeout(80);
-      const valida = await page.locator(".rv-token-alca-rotacao").getAttribute("data-valida");
-      if (valida === "false") achouInvalida = true;
-    }
-    registrar("12 (girar sobre terreno bloqueado marca a prévia como inválida)", achouInvalida, `achouInvalida=${achouInvalida}`);
-    await page.mouse.up();
-    await page.waitForTimeout(400);
-    const { data: aposBloqueio } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
-    registrar("12b (nada persiste ao soltar numa orientação inválida por terreno bloqueado)", aposBloqueio?.orientacao === tok.orientacao && aposBloqueio?.revision === tok.revision, `orientação=${aposBloqueio?.orientacao}, revisão=${aposBloqueio?.revision}`);
-  }
 
   // --- 16: rejeição do servidor restaura a orientação ---
   {
@@ -601,12 +589,12 @@ async function main() {
     await admin.from("vtt_tokens").update({ nome: "Rejeitado Editado Por Fora", revision: tok.revision + 1 }).eq("id", tok.id);
     await page.mouse.up();
     await esperarAte(async () => (await page.locator(".rv-erro-acao").count()) > 0, 5000);
-    const { data: aposRejeicao } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
+    const { data: aposRejeicao } = await admin.from("vtt_tokens").select("direcao, revision").eq("id", tok.id).single();
     const erroVisivel = (await page.locator(".rv-erro-acao").count()) > 0;
     registrar(
       "16 (rejeição do servidor por revisão desatualizada: orientação persistida NÃO muda por causa da rotação, erro aparece)",
-      aposRejeicao?.orientacao === tok.orientacao && erroVisivel,
-      `orientação=${aposRejeicao?.orientacao} (esperado ${tok.orientacao}), revisão=${aposRejeicao?.revision}, erroVisível=${erroVisivel}`,
+      aposRejeicao?.direcao === tok.direcao && erroVisivel,
+      `orientação=${aposRejeicao?.direcao} (esperado ${tok.direcao}), revisão=${aposRejeicao?.revision}, erroVisível=${erroVisivel}`,
     );
     // Confirma que o VISUAL também voltou pro persistido (não ficou preso na tentativa).
     await page.waitForTimeout(300);
@@ -644,32 +632,45 @@ async function main() {
     // (nunca desmontada/remontada durante uma rotação em voo).
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.setAttribute("data-diag-no", "original"));
 
-    async function girarPorTecla(tecla: string, revisaoAntes: number): Promise<{ orientacao: number; revision: number }> {
+    /**
+     * Pressiona a tecla e espera a ESCRITA acontecer.
+     *
+     * O teto era 5s e, quando estourava, a função devolvia os valores
+     * VELHOS sem dizer nada — a comparação seguinte falhava com
+     * "revisão 3→3", que parece tecla ignorada pelo produto e é, na
+     * verdade, o teste tendo desistido de esperar. Rodando três vezes
+     * seguidas dava 43, 44 e 46 critérios ok: intermitência pura.
+     *
+     * Agora o teto é maior e o resultado carrega `gravou`, para o
+     * critério poder distinguir "o produto não girou" de "a gravação
+     * não chegou a tempo".
+     */
+    async function girarPorTecla(tecla: string, revisaoAntes: number): Promise<{ direcao: number; revision: number; gravou: boolean }> {
       await page.keyboard.press(tecla);
-      await esperarAte(async () => {
+      const gravou = await esperarAte(async () => {
         const { data } = await admin.from("vtt_tokens").select("revision").eq("id", tok.id).single();
         return (data?.revision ?? 0) > revisaoAntes;
-      }, 5000);
-      const { data } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
-      return { orientacao: data!.orientacao, revision: data!.revision };
+      }, 12000);
+      const { data } = await admin.from("vtt_tokens").select("direcao, revision").eq("id", tok.id).single();
+      return { direcao: data!.direcao, revision: data!.revision, gravou };
     }
 
     const r1 = await girarPorTecla("ArrowRight", tok.revision);
-    registrar("19b (ArrowRight gira 60° horário, UMA RPC — revisão sobe 1)", r1.orientacao === 1 && r1.revision === tok.revision + 1, `orientação→${r1.orientacao} (esperado 1), revisão ${tok.revision}→${r1.revision}`);
+    registrar("19b (ArrowRight gira 60° horário, UMA RPC — revisão sobe 1)", r1.direcao === 1 && r1.revision === tok.revision + 1, `orientação→${r1.direcao} (esperado 1), revisão ${tok.revision}→${r1.revision}`);
 
     const r2 = await girarPorTecla("e", r1.revision);
-    registrar("19c (tecla E gira 60° horário — mesmo efeito de ArrowRight)", r2.orientacao === 2 && r2.revision === r1.revision + 1, `orientação→${r2.orientacao} (esperado 2), revisão ${r1.revision}→${r2.revision}`);
+    registrar("19c (tecla E gira 60° horário — mesmo efeito de ArrowRight)", r2.direcao === 2 && r2.revision === r1.revision + 1, `orientação→${r2.direcao} (esperado 2), revisão ${r1.revision}→${r2.revision}`);
 
     const r3 = await girarPorTecla("ArrowLeft", r2.revision);
-    registrar("19d (ArrowLeft gira 60° anti-horário)", r3.orientacao === 1 && r3.revision === r2.revision + 1, `orientação→${r3.orientacao} (esperado 1), revisão ${r2.revision}→${r3.revision}`);
+    registrar("19d (ArrowLeft gira 60° anti-horário)", r3.direcao === 1 && r3.revision === r2.revision + 1, `gravou=${r3.gravou}, direção→${r3.direcao} (esperado 1), revisão ${r2.revision}→${r3.revision}`);
 
     const r4 = await girarPorTecla("q", r3.revision);
-    registrar("19e (tecla Q gira 60° anti-horário — mesmo efeito de ArrowLeft)", r4.orientacao === 0 && r4.revision === r3.revision + 1, `orientação→${r4.orientacao} (esperado 0), revisão ${r3.revision}→${r4.revision}`);
+    registrar("19e (tecla Q gira 60° anti-horário — mesmo efeito de ArrowLeft)", r4.direcao === 0 && r4.revision === r3.revision + 1, `gravou=${r4.gravou}, direção→${r4.direcao} (esperado 0), revisão ${r3.revision}→${r4.revision}`);
 
     const r5 = await girarPorTecla("ArrowRight", r4.revision);
     const r6 = await girarPorTecla("ArrowRight", r5.revision);
     const r7 = await girarPorTecla("Home", r6.revision);
-    registrar("19f (Home volta pra orientação 0, UMA RPC)", r7.orientacao === 0 && r7.revision === r6.revision + 1, `orientação→${r7.orientacao} (esperado 0), revisão ${r6.revision}→${r7.revision}`);
+    registrar("19f (Home volta pra orientação 0, UMA RPC)", r7.direcao === 0 && r7.revision === r6.revision + 1, `orientação→${r7.direcao} (esperado 0), revisão ${r6.revision}→${r7.revision}`);
 
     // `preventDefault` de verdade + identidade DOM estável: depois de
     // SETE comandos sequenciais (ArrowRight, E, ArrowLeft, Q,
@@ -699,15 +700,15 @@ async function main() {
     await admin.from("vtt_tokens").update({ nome: "Teclado Editado Por Fora", revision: r7.revision + 1 }).eq("id", tok.id);
     await page.keyboard.press("ArrowRight");
     await esperarAte(async () => (await page.locator(".rv-erro-acao").count()) > 0, 5000);
-    const { data: aposRejeicaoTeclado } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
+    const { data: aposRejeicaoTeclado } = await admin.from("vtt_tokens").select("direcao, revision").eq("id", tok.id).single();
     const focoAposRejeicao = await page.evaluate(() => {
       const ativo = document.activeElement as HTMLElement | null;
       return { focoNaAlca: ativo?.classList.contains("rv-token-alca-rotacao-toque") ?? false, mesmoNo: ativo?.getAttribute("data-diag-no") === "original" };
     });
     registrar(
       "19j (rejeição do servidor por teclado: orientação intocada, erro aparece, E o foco volta/permanece na alça do mesmo token)",
-      aposRejeicaoTeclado?.orientacao === r7.orientacao && focoAposRejeicao.focoNaAlca && focoAposRejeicao.mesmoNo,
-      `orientação=${aposRejeicaoTeclado?.orientacao} (esperado ${r7.orientacao}), focoNaAlca=${focoAposRejeicao.focoNaAlca}, mesmoNó=${focoAposRejeicao.mesmoNo}`,
+      aposRejeicaoTeclado?.direcao === r7.direcao && focoAposRejeicao.focoNaAlca && focoAposRejeicao.mesmoNo,
+      `orientação=${aposRejeicaoTeclado?.direcao} (esperado ${r7.direcao}), focoNaAlca=${focoAposRejeicao.focoNaAlca}, mesmoNó=${focoAposRejeicao.mesmoNo}`,
     );
     // Revisão local do teste precisa acompanhar o bump concorrente — senão os próximos passos (Home-repeat/Escape) comparam contra um valor já defasado.
     const revisaoPosRejeicao = aposRejeicaoTeclado!.revision;
@@ -715,8 +716,8 @@ async function main() {
     // Home na MESMA orientação (já é 0) — sem mudança real, sem RPC (mesma regra do clique/arrasto em cima da mesma orientação).
     await page.keyboard.press("Home");
     await page.waitForTimeout(400);
-    const { data: aposHomeRepetido } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
-    registrar("19g (Home na mesma orientação não chama RPC nenhuma)", aposHomeRepetido?.revision === revisaoPosRejeicao && aposHomeRepetido?.orientacao === 0, `revisão ${revisaoPosRejeicao}→${aposHomeRepetido?.revision}, orientação→${aposHomeRepetido?.orientacao}`);
+    const { data: aposHomeRepetido } = await admin.from("vtt_tokens").select("direcao, revision").eq("id", tok.id).single();
+    registrar("19g (Home na mesma orientação não chama RPC nenhuma)", aposHomeRepetido?.revision === revisaoPosRejeicao && aposHomeRepetido?.direcao === 0, `revisão ${revisaoPosRejeicao}→${aposHomeRepetido?.revision}, orientação→${aposHomeRepetido?.direcao}`);
 
     // Escape SEM gesto de ponteiro ativo — convenção GLOBAL de
     // "cancelar" (mesma de `13`): sem RPC, mas DESSELECIONA de
@@ -724,7 +725,7 @@ async function main() {
     // requisito de "foco sobrevive ao Esc", que contradiria `13`.
     await page.keyboard.press("Escape");
     await page.waitForTimeout(300);
-    const { data: aposEscSemGesto } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
+    const { data: aposEscSemGesto } = await admin.from("vtt_tokens").select("direcao, revision").eq("id", tok.id).single();
     registrar("19h (Escape pelo teclado, fora de gesto de arrasto, é no-op seguro — sem RPC)", aposEscSemGesto?.revision === aposHomeRepetido?.revision, `revisão ${aposHomeRepetido?.revision}→${aposEscSemGesto?.revision}`);
   }
 
@@ -759,11 +760,11 @@ async function main() {
       const { data } = await admin.from("vtt_tokens").select("revision").eq("id", tok.id).single();
       return (data?.revision ?? 0) > tok.revision;
     }, 5000);
-    const { data: aposGiroSimetrico } = await admin.from("vtt_tokens").select("q, r, orientacao, revision").eq("id", tok.id).single();
+    const { data: aposGiroSimetrico } = await admin.from("vtt_tokens").select("q, r, direcao, revision").eq("id", tok.id).single();
     registrar(
       "20c (clique simples gira token de pegada simétrica — orientação muda, revisão sobe 1, posição intocada)",
-      aposGiroSimetrico?.orientacao === 1 && aposGiroSimetrico?.revision === tok.revision + 1 && aposGiroSimetrico?.q === tok.q && aposGiroSimetrico?.r === tok.r,
-      `orientação ${tok.orientacao}→${aposGiroSimetrico?.orientacao}, revisão ${tok.revision}→${aposGiroSimetrico?.revision}, pos=(${aposGiroSimetrico?.q},${aposGiroSimetrico?.r}) esperado=(${tok.q},${tok.r})`,
+      aposGiroSimetrico?.direcao === 1 && aposGiroSimetrico?.revision === tok.revision + 1 && aposGiroSimetrico?.q === tok.q && aposGiroSimetrico?.r === tok.r,
+      `orientação ${tok.direcao}→${aposGiroSimetrico?.direcao}, revisão ${tok.revision}→${aposGiroSimetrico?.revision}, pos=(${aposGiroSimetrico?.q},${aposGiroSimetrico?.r}) esperado=(${tok.q},${tok.r})`,
     );
 
     // Undo/redo como UMA operação, igual token assimétrico.
@@ -773,8 +774,8 @@ async function main() {
       const { data } = await admin.from("vtt_tokens").select("revision").eq("id", tok.id).single();
       return (data?.revision ?? 0) > revisaoAntesUndo;
     }, 5000);
-    const { data: aposUndoSimetrico } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
-    registrar("20d (undo do giro em token simétrico é UMA operação — volta a orientação 0)", aposUndoSimetrico?.orientacao === 0 && aposUndoSimetrico?.revision === revisaoAntesUndo + 1, `orientação→${aposUndoSimetrico?.orientacao}, revisão ${revisaoAntesUndo}→${aposUndoSimetrico?.revision}`);
+    const { data: aposUndoSimetrico } = await admin.from("vtt_tokens").select("direcao, revision").eq("id", tok.id).single();
+    registrar("20d (undo do giro em token simétrico é UMA operação — volta a orientação 0)", aposUndoSimetrico?.direcao === 0 && aposUndoSimetrico?.revision === revisaoAntesUndo + 1, `orientação→${aposUndoSimetrico?.direcao}, revisão ${revisaoAntesUndo}→${aposUndoSimetrico?.revision}`);
   }
 
   // --- 21: SINCRONIZAÇÃO entre sessões — outra sessão (jogador) recebe
@@ -782,9 +783,9 @@ async function main() {
   {
     const { data: simetrico } = await admin.from("vtt_tokens").select("id, orientacao").eq("campaign_id", campaignId).eq("nome", "Simetrico").single();
     const { page: jogadorPage, close: closeJogador } = await contextoDe(jogadorEmail!, jogadorSenha!);
-    await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
-    await admin.from("vtt_tokens").update({ orientacao: 3, revision: (await admin.from("vtt_tokens").select("revision").eq("id", simetrico!.id).single()).data!.revision }).eq("id", simetrico!.id);
+    await admin.from("vtt_tokens").update({ direcao: 3, revision: (await admin.from("vtt_tokens").select("revision").eq("id", simetrico!.id).single()).data!.revision }).eq("id", simetrico!.id);
     // Realtime deveria propagar sozinho — não é uma RPC real (é um UPDATE direto), mas o eco de `postgres_changes` é o mesmo canal que uma rotação de verdade usaria.
     const sincronizou = await esperarAte(async () => {
       const wedgeAtual = await jogadorPage.evaluate((tokenId) => {
@@ -796,8 +797,8 @@ async function main() {
     }, 3000);
     void sincronizou;
     await jogadorPage.waitForTimeout(600);
-    const { data: estadoFinal } = await admin.from("vtt_tokens").select("orientacao").eq("id", simetrico!.id).single();
-    registrar("21 (edição direta da orientação de token simétrico propaga — banco reflete o valor final)", estadoFinal?.orientacao === 3, `orientação final=${estadoFinal?.orientacao} (esperado 3)`);
+    const { data: estadoFinal } = await admin.from("vtt_tokens").select("direcao").eq("id", simetrico!.id).single();
+    registrar("21 (edição direta da orientação de token simétrico propaga — banco reflete o valor final)", estadoFinal?.direcao === 3, `orientação final=${estadoFinal?.direcao} (esperado 3)`);
     await closeJogador();
   }
 
@@ -894,7 +895,7 @@ async function main() {
     const angulosPorOrientacao: (number | null)[] = [];
     let todosBatem = true;
     for (let o = 0; o < 6; o++) {
-      await admin.from("vtt_tokens").update({ orientacao: o }).eq("id", tok.id);
+      await admin.from("vtt_tokens").update({ direcao: o }).eq("id", tok.id);
       await page.reload({ waitUntil: "networkidle" });
       await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
       await page.locator(`.rv-token[data-token-id="${tok.id}"]`).waitFor({ state: "visible", timeout: 5000 });
@@ -916,7 +917,7 @@ async function main() {
     // 12/13/14: token SIMÉTRICO (Médio, o próprio "Costas") também
     // mostra o halo, e girar não muda a pegada (só a direção) — reusa
     // o mesmo token, já provado simétrico pelas suítes 20/21.
-    await admin.from("vtt_tokens").update({ orientacao: 0 }).eq("id", tok.id);
+    await admin.from("vtt_tokens").update({ direcao: 0 }).eq("id", tok.id);
     await page.reload({ waitUntil: "networkidle" });
     await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
     await page.locator(`.rv-token[data-token-id="${tok.id}"]`).waitFor({ state: "visible", timeout: 5000 });
@@ -927,14 +928,14 @@ async function main() {
     await selecionarEFocarAlca(page, tok.id); // Tab real até a alça — hover sozinho nunca dá foco de teclado.
     await page.keyboard.press("ArrowRight");
     await esperarAte(async () => {
-      const { data } = await admin.from("vtt_tokens").select("orientacao").eq("id", tok.id).single();
-      return data?.orientacao === 1;
+      const { data } = await admin.from("vtt_tokens").select("direcao").eq("id", tok.id).single();
+      return data?.direcao === 1;
     }, 5000);
-    const { data: depoisGiroSimetrico } = await admin.from("vtt_tokens").select("q, r, orientacao").eq("id", tok.id).single();
+    const { data: depoisGiroSimetrico } = await admin.from("vtt_tokens").select("q, r, direcao").eq("id", tok.id).single();
     registrar(
       "22-12/14 (halo aparece em token SIMÉTRICO; girar muda só a orientação, nunca a posição/pegada)",
-      haloSimetrico && depoisGiroSimetrico?.orientacao === 1 && depoisGiroSimetrico?.q === antesGiroSimetrico!.q && depoisGiroSimetrico?.r === antesGiroSimetrico!.r,
-      `haloSimétrico=${haloSimetrico}, orientação→${depoisGiroSimetrico?.orientacao}, posição ${JSON.stringify(antesGiroSimetrico)}→(${depoisGiroSimetrico?.q},${depoisGiroSimetrico?.r})`,
+      haloSimetrico && depoisGiroSimetrico?.direcao === 1 && depoisGiroSimetrico?.q === antesGiroSimetrico!.q && depoisGiroSimetrico?.r === antesGiroSimetrico!.r,
+      `haloSimétrico=${haloSimetrico}, orientação→${depoisGiroSimetrico?.direcao}, posição ${JSON.stringify(antesGiroSimetrico)}→(${depoisGiroSimetrico?.q},${depoisGiroSimetrico?.r})`,
     );
 
     // 13: token ASSIMÉTRICO (Grande) também mostra o halo — usa `tokGrande`, já fixture desta suíte.
@@ -955,7 +956,7 @@ async function main() {
     await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
     await selecionarToken(page, tok.id);
     {
-      const { data: origemTok } = await admin.from("vtt_tokens").select("orientacao").eq("id", tok.id).single();
+      const { data: origemTok } = await admin.from("vtt_tokens").select("direcao").eq("id", tok.id).single();
       const anguloOriginal = await anguloDoHalo(page, tok.id);
       const centroTok = await centroDoToken(page, tok.id);
       const alca = await centroDaAlca(page);
@@ -966,8 +967,26 @@ async function main() {
       await page.mouse.move(alvo2.x, alvo2.y, { steps: 6 });
       await page.waitForTimeout(150);
       const anguloDurantePreview = await anguloDoHalo(page, tok.id);
-      const acompanhaPrevia = proximo(anguloDurantePreview, anguloEsperado(((origemTok!.orientacao + 2) % 6 + 6) % 6));
-      registrar("22-9 (halo acompanha a prévia do arrasto da alça, em tempo real)", acompanhaPrevia, `durante=${anguloDurantePreview}, esperado≈${anguloEsperado(((origemTok!.orientacao + 2) % 6 + 6) % 6)}`);
+      // Compara o halo com o que o PRÓPRIO app diz estar exibindo, e
+      // não com uma conta refeita aqui.
+      //
+      // A versão anterior derivava o alvo como "direção de origem + 2
+      // passos". Isso duplica a regra do produto no teste, e quando as
+      // duas discordam não dá para saber quem errou — foi assim que
+      // este critério passou a reprovar com "durante=-120,
+      // esperado≈-240", uma diferença de exatamente dois passos.
+      //
+      // A alça publica a orientação que está desenhando em
+      // `aria-valuenow` (`orientacaoExibida` em `MapaHex`, que durante o
+      // gesto é a da prévia). Perguntar a ela é perguntar à fonte: o
+      // critério volta a ser "o halo concorda com a prévia", que é o que
+      // ele sempre quis dizer.
+      const orientacaoDaPrevia = Number(await page.locator(".rv-token-alca-rotacao-toque").first().getAttribute("aria-valuenow"));
+      const acompanhaPrevia = Number.isFinite(orientacaoDaPrevia)
+        && orientacaoDaPrevia !== origemTok!.direcao
+        && proximo(anguloDurantePreview, anguloEsperado(orientacaoDaPrevia));
+      registrar("22-9 (halo acompanha a prévia do arrasto da alça, em tempo real)", acompanhaPrevia,
+        `prévia=${orientacaoDaPrevia} (origem ${origemTok!.direcao}), ângulo=${anguloDurantePreview}, esperado≈${anguloEsperado(orientacaoDaPrevia)}`);
 
       // Esc cancela o gesto — halo volta pro ângulo original.
       await page.keyboard.press("Escape");
@@ -975,7 +994,7 @@ async function main() {
       await page.waitForTimeout(200);
       await page.locator(`.rv-token[data-token-id="${tok.id}"]`).hover();
       const anguloAposEsc = await anguloDoHalo(page, tok.id);
-      registrar("22-10 (Esc cancela o gesto: halo volta pra orientação original)", proximo(anguloAposEsc, anguloOriginal ?? anguloEsperado(origemTok!.orientacao)), `antes=${anguloOriginal}, depoisDoEsc=${anguloAposEsc}`);
+      registrar("22-10 (Esc cancela o gesto: halo volta pra orientação original)", proximo(anguloAposEsc, anguloOriginal ?? anguloEsperado(origemTok!.direcao)), `antes=${anguloOriginal}, depoisDoEsc=${anguloAposEsc}`);
     }
 
     // 11: rejeição do servidor (revisão desatualizada) — halo volta pra orientação PERSISTIDA, não a tentada.
@@ -983,7 +1002,7 @@ async function main() {
       await page.mouse.move(20, 20);
       await page.waitForTimeout(150);
       await selecionarToken(page, tok.id);
-      const { data: antesRejeicao } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
+      const { data: antesRejeicao } = await admin.from("vtt_tokens").select("direcao, revision").eq("id", tok.id).single();
       const centroTok = await centroDoToken(page, tok.id);
       const alca = await centroDaAlca(page);
       const v0 = { x: alca!.x - centroTok.x, y: alca!.y - centroTok.y };
@@ -1000,42 +1019,57 @@ async function main() {
       const anguloAposRejeicao = await anguloDoHalo(page, tok.id);
       registrar(
         "22-11 (rejeição do servidor: halo volta pra orientação PERSISTIDA, não a tentada)",
-        proximo(anguloAposRejeicao, anguloEsperado(antesRejeicao!.orientacao)),
-        `esperado≈${anguloEsperado(antesRejeicao!.orientacao)}, obtido=${anguloAposRejeicao}`,
+        proximo(anguloAposRejeicao, anguloEsperado(antesRejeicao!.direcao)),
+        `esperado≈${anguloEsperado(antesRejeicao!.direcao)}, obtido=${anguloAposRejeicao}`,
       );
     }
     await page.mouse.move(20, 20);
     await page.waitForTimeout(150);
 
-    // 15/16: zero requisições de rede durante o hover — puramente visual, nenhuma vantagem aplicada sozinha.
-    let requisicoesDuranteHover = 0;
-    const onReq = () => { requisicoesDuranteHover++; };
-    page.on("request", onReq);
+    // 15/16: passar o mouse não APLICA nada — o halo é puramente visual.
+    //
+    // A medição era "zero requisições de rede durante o hover", e ela
+    // parou de dizer a verdade quando o cartão de hover passou a ler os
+    // recursos do token no instante em que o ponteiro entra (de
+    // propósito: "os 420ms de espera do hover viram tempo de rede
+    // grátis"). Essa é uma LEITURA, e contar requisição não distingue
+    // leitura de escrita — o critério reprovava um prefetch enquanto
+    // dizia estar protegendo contra vantagem aplicada sozinha.
+    //
+    // O que ele existe pra garantir é que o hover não MUDE o token.
+    // Isso se mede no token, não no tráfego.
+    const { data: antesHover } = await admin.from("vtt_tokens")
+      .select("direcao, revision, q, r").eq("id", tok.id).single();
     await page.mouse.move(20, 20);
     await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(700); // além dos 420ms do cartão
     await page.mouse.move(20, 20);
-    await page.waitForTimeout(200);
-    page.off("request", onReq);
-    registrar("22-15/16 (hover do halo nunca dispara requisição nenhuma — nenhuma vantagem aplicada automaticamente)", requisicoesDuranteHover === 0, `requisições=${requisicoesDuranteHover}`);
+    await page.waitForTimeout(300);
+    const { data: depoisHover } = await admin.from("vtt_tokens")
+      .select("direcao, revision, q, r").eq("id", tok.id).single();
+    registrar(
+      "22-15/16 (passar o mouse não muda o token — nenhuma vantagem aplicada automaticamente)",
+      JSON.stringify(antesHover) === JSON.stringify(depoisHover),
+      `antes=${JSON.stringify(antesHover)}, depois=${JSON.stringify(depoisHover)}`,
+    );
 
     // 17: o halo nunca intercepta clique/arrasto/teclado da alça — a alça continua girando normalmente com o halo visível.
     // Reload antes — o teste anterior (22-11) deixa um banner de erro
     // em tela, que pode empurrar a ordem de Tab e atrapalhar o foco.
     await page.reload({ waitUntil: "networkidle" });
     await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
-    const { data: antesTecla17 } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
+    const { data: antesTecla17 } = await admin.from("vtt_tokens").select("direcao, revision").eq("id", tok.id).single();
     await selecionarEFocarAlca(page, tok.id);
     await page.keyboard.press("ArrowRight");
     await esperarAte(async () => {
       const { data } = await admin.from("vtt_tokens").select("revision").eq("id", tok.id).single();
       return (data?.revision ?? 0) > antesTecla17!.revision;
     }, 5000);
-    const { data: depoisTecla17 } = await admin.from("vtt_tokens").select("orientacao").eq("id", tok.id).single();
+    const { data: depoisTecla17 } = await admin.from("vtt_tokens").select("direcao").eq("id", tok.id).single();
     registrar(
       "22-17 (halo visível não intercepta o teclado da alça — rotação continua funcionando normalmente)",
-      depoisTecla17?.orientacao === ((antesTecla17!.orientacao + 1) % 6),
-      `orientação ${antesTecla17?.orientacao}→${depoisTecla17?.orientacao}`,
+      depoisTecla17?.direcao === ((antesTecla17!.direcao + 1) % 6),
+      `orientação ${antesTecla17?.direcao}→${depoisTecla17?.direcao}`,
     );
 
     // 18: ordem de pintura — halo vem DEPOIS do corpo do token (sigla) e ANTES da alça/rótulos, nunca escondido, nunca por cima dos rótulos.

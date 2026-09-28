@@ -49,6 +49,7 @@ import { chromium, type Browser, type BrowserContext, type Page } from "playwrig
 import { BASE_URL } from "./authSession";
 import { hexParaPixel } from "../../src/app/mesas/[campaignId]/vtt/_mapa/hex";
 import { TAM } from "../../src/app/mesas/[campaignId]/vtt/_mapa/MapaHex";
+import { garantirTokenAlcancavel, recolherPainelDaSessao } from "./painelDaSessao";
 
 loadDotenv({ path: ".env.local" });
 
@@ -301,8 +302,13 @@ async function main() {
   const errosNarrador: string[] = [];
   narradorPage.on("console", (m) => { if (erroRelevante(m)) errosNarrador.push(m.text().slice(0, 400)); });
 
-  await narradorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await narradorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await narradorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
+  // O painel da sessão flutua sobre o mapa: sem recolher, um token à
+  // direita fica debaixo dele e o `pointerdown` do arraste vai parar no
+  // chat. Medido aqui: a origem do arraste do critério 4/5 caía em
+  // `pn-composer-campo`.
+  await recolherPainelDaSessao(narradorPage);
   {
     const { data } = await admin.from("vtt_scenes").select("id").eq("campaign_id", campaignId).maybeSingle();
     sceneId = data?.id ?? null;
@@ -317,6 +323,12 @@ async function main() {
     await admin.from("vtt_scenes").update({ largura: LARGURA_CENA, altura: ALTURA_CENA }).eq("id", sceneId);
     await narradorPage.reload({ waitUntil: "networkidle" });
     await narradorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
+    await recolherPainelDaSessao(narradorPage);
+  // O painel da sessão flutua sobre o mapa: sem recolher, um token à
+  // direita fica debaixo dele e o `pointerdown` do arraste vai parar no
+  // chat. Medido aqui: a origem do arraste do critério 4/5 caía em
+  // `pn-composer-campo`.
+  await recolherPainelDaSessao(narradorPage);
   }
   registrar("0b (cena semeada e dimensionada pra fixture)", !!sceneId, `sceneId=${sceneId}, ${LARGURA_CENA}x${ALTURA_CENA}`);
 
@@ -356,8 +368,16 @@ async function main() {
   // antes de ele existir.
   await narradorPage.reload({ waitUntil: "networkidle" });
   await narradorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
-  await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  // O painel da sessão flutua sobre o mapa: sem recolher, um token à
+  // direita fica debaixo dele e o `pointerdown` do arraste vai parar no
+  // chat. Medido aqui: a origem do arraste do critério 4/5 caía em
+  // `pn-composer-campo`.
+  await recolherPainelDaSessao(narradorPage);
+  await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
+  // Mesma razão da sessão do narrador: o jogador também arrasta o
+  // próprio token (critério 13a), e também o fazia por cima do painel.
+  await recolherPainelDaSessao(jogadorPage);
   registrar("0c (token pj da fixture criado e vinculado)", true, `sigla=${tokenJogador.sigla}, pos=(${tokenJogador.q},${tokenJogador.r})`);
 
   const siglaJogador = tokenJogador.sigla;
@@ -417,6 +437,11 @@ async function main() {
   }
   await narradorPage.reload({ waitUntil: "networkidle" });
   await narradorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
+  // O painel da sessão flutua sobre o mapa: sem recolher, um token à
+  // direita fica debaixo dele e o `pointerdown` do arraste vai parar no
+  // chat. Medido aqui: a origem do arraste do critério 4/5 caía em
+  // `pn-composer-campo`.
+  await recolherPainelDaSessao(narradorPage);
 
   const { data: todosNarrador } = await admin.from("vtt_tokens").select("id,sigla,q,r,revision").eq("campaign_id", campaignId).is("character_id", null).order("sigla", { ascending: true });
   if (!todosNarrador || todosNarrador.length < 6) {
@@ -636,6 +661,41 @@ async function main() {
     const destino = { q: origem.q + 4 * direcaoQSegura(origem, 4), r: origem.r };
     const pOrigemMundo = hexParaPixel(origem, TAM);
     const pDestinoMundo = hexParaPixel(destino, TAM);
+    // RESTAURA A VISTA do jogador antes de medir as caixas.
+    //
+    // A esta altura o mapa dele está deslocado — medido:
+    // `translate(369.8 241)` com escala 1 —, e o token em (7,2), que a
+    // fixture posiciona no centro da cena de propósito, cai em x≈1489
+    // numa viewport de 1280. Fora da tela. O `mouse.move` é limitado à
+    // janela, então o arrasto acontecia no vazio e o token não saía do
+    // lugar; a falha aparecia como "o jogador não move o próprio
+    // token", que sugere autorização e não enquadramento.
+    //
+    // Recarregar é o reset: zoom e pan vivem em estado de React e não
+    // são persistidos. O painel volta aberto, então recolhe de novo.
+    await jogadorPage.reload({ waitUntil: "networkidle" });
+    await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
+    await recolherPainelDaSessao(jogadorPage);
+    // AFASTA ATÉ O TOKEN CABER NA TELA.
+    //
+    // O enquadramento inicial do jogador não mostra a coluna 7, onde a
+    // fixture põe o token dele — medido: caixa em x≈1489 numa viewport
+    // de 1280, com o mapa em `translate(369.8 241)` e escala 1. Fora da
+    // tela, e o `mouse.move` é limitado à janela: o arrasto acontecia no
+    // vazio e o token não saía do lugar. A falha aparecia como "o
+    // jogador não move o próprio token", que sugere autorização.
+    //
+    // Recolher o painel não resolve (medido: a caixa não muda) e
+    // recarregar também não — não é estado herdado, é enquadramento.
+    // Afastar traz o mapa inteiro para dentro; a condição de parada é o
+    // token estar alcançável, não um número fixo de cliques.
+    for (let i = 0; i < 5; i++) {
+      const b = await boxDoToken(jogadorPage, siglaJogador);
+      const vp = jogadorPage.viewportSize()!;
+      if (b && b.x > 0 && b.x < vp.width && b.y > 0 && b.y < vp.height) break;
+      await jogadorPage.locator('.rv-zoom button[aria-label="Afastar"]').click();
+      await jogadorPage.waitForTimeout(120);
+    }
     const box = await boxDoToken(jogadorPage, siglaJogador);
     const boxDestino = await boxDaCelula(jogadorPage, destino);
     if (box && boxDestino) {
@@ -692,6 +752,13 @@ async function main() {
   // --- 15/16. Pan continua funcionando durante a animação; o token animado não inicia outro arrasto ---
   {
     await narradorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
+    // A esta altura o critério 13 já recarregou e mexeu no enquadramento
+    // desta sessão. Sem garantir alcance, o arrasto de tokF acontecia no
+    // vazio e o token ficava na origem — e a falha aparecia só no 16b,
+    // como "o token não chega no destino apesar da tentativa de novo
+    // arrasto", culpando a proteção contra arrasto duplo por um
+    // movimento que nunca começou.
+    await garantirTokenAlcancavel(narradorPage, tokF.sigla);
     const box = await boxDoToken(narradorPage, tokF.sigla);
     const destino = { q: tokF.q + 6 * direcaoQSegura(tokF, 6), r: tokF.r };
     const pDestinoMundo = hexParaPixel(destino, TAM);
@@ -734,7 +801,7 @@ async function main() {
       registrar(
         "16b (apesar da tentativa de novo arrasto, o token chega no destino original certo)",
         linhaFinal?.q === destino.q && linhaFinal?.r === destino.r && !!fimVisual && perto(fimVisual, pDestinoMundo, 0.5),
-        `banco=(${linhaFinal?.q},${linhaFinal?.r}), visual=${JSON.stringify(fimVisual)}`,
+        `banco=(${linhaFinal?.q},${linhaFinal?.r}) esperado=(${destino.q},${destino.r}), visual=${JSON.stringify(fimVisual)} esperadoPx=${JSON.stringify(pDestinoMundo)}`,
       );
     } else {
       registrar("15/16 (pan + arrasto bloqueado durante animação)", false, "token/célula sem bounding box");
@@ -744,6 +811,7 @@ async function main() {
   // --- 17. Outro token continua interativo enquanto o primeiro anima ---
   {
     const { data: tokAAtual } = await admin.from("vtt_tokens").select("id,sigla,q,r,revision").eq("id", tokA.id).maybeSingle();
+    await garantirTokenAlcancavel(narradorPage, tokAAtual!.sigla);
     const box = await boxDoToken(narradorPage, tokAAtual!.sigla);
     // 1 célula a OESTE, não a leste: a essa altura (após 1/2/8/9), tokA
     // está em (19,9) — a leste fica (20,9), ocupada pela pegada
@@ -773,6 +841,41 @@ async function main() {
     const origem = { q: antes!.q, r: antes!.r };
     const destino = { q: origem.q + 4 * direcaoQSegura(origem, 4), r: origem.r };
     const pOrigemMundo = hexParaPixel(origem, TAM);
+    // RESTAURA A VISTA do jogador antes de medir as caixas.
+    //
+    // A esta altura o mapa dele está deslocado — medido:
+    // `translate(369.8 241)` com escala 1 —, e o token em (7,2), que a
+    // fixture posiciona no centro da cena de propósito, cai em x≈1489
+    // numa viewport de 1280. Fora da tela. O `mouse.move` é limitado à
+    // janela, então o arrasto acontecia no vazio e o token não saía do
+    // lugar; a falha aparecia como "o jogador não move o próprio
+    // token", que sugere autorização e não enquadramento.
+    //
+    // Recarregar é o reset: zoom e pan vivem em estado de React e não
+    // são persistidos. O painel volta aberto, então recolhe de novo.
+    await jogadorPage.reload({ waitUntil: "networkidle" });
+    await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
+    await recolherPainelDaSessao(jogadorPage);
+    // AFASTA ATÉ O TOKEN CABER NA TELA.
+    //
+    // O enquadramento inicial do jogador não mostra a coluna 7, onde a
+    // fixture põe o token dele — medido: caixa em x≈1489 numa viewport
+    // de 1280, com o mapa em `translate(369.8 241)` e escala 1. Fora da
+    // tela, e o `mouse.move` é limitado à janela: o arrasto acontecia no
+    // vazio e o token não saía do lugar. A falha aparecia como "o
+    // jogador não move o próprio token", que sugere autorização.
+    //
+    // Recolher o painel não resolve (medido: a caixa não muda) e
+    // recarregar também não — não é estado herdado, é enquadramento.
+    // Afastar traz o mapa inteiro para dentro; a condição de parada é o
+    // token estar alcançável, não um número fixo de cliques.
+    for (let i = 0; i < 5; i++) {
+      const b = await boxDoToken(jogadorPage, siglaJogador);
+      const vp = jogadorPage.viewportSize()!;
+      if (b && b.x > 0 && b.x < vp.width && b.y > 0 && b.y < vp.height) break;
+      await jogadorPage.locator('.rv-zoom button[aria-label="Afastar"]').click();
+      await jogadorPage.waitForTimeout(120);
+    }
     const box = await boxDoToken(jogadorPage, siglaJogador);
     const boxDestino = await boxDaCelula(jogadorPage, destino);
     if (box && boxDestino) {
@@ -911,13 +1014,18 @@ async function main() {
       expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
     }]);
     const pageReduzido = await contextoReduzido.newPage();
-    await pageReduzido.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await pageReduzido.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await pageReduzido.waitForSelector(".rv-ferramentas", { timeout: 15000 });
     await pageReduzido.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
 
     const { data: tokAAtual } = await admin.from("vtt_tokens").select("id,sigla,q,r").eq("id", tokA.id).maybeSingle();
     const destino = { q: tokAAtual!.q + 5 * direcaoQSegura(tokAAtual!, 5), r: tokAAtual!.r };
     const pDestinoMundo = hexParaPixel(destino, TAM);
+    // Mesma garantia das outras sessões: esta página é NOVA (contexto
+    // próprio, com `prefers-reduced-motion`), então nasce com o painel
+    // aberto e o enquadramento padrão — as duas coisas que tiram o
+    // token do alcance do mouse.
+    await garantirTokenAlcancavel(pageReduzido, tokAAtual!.sigla);
     const box = await boxDoToken(pageReduzido, tokAAtual!.sigla);
     const boxDestino = await boxDaCelula(pageReduzido, destino);
     if (box && boxDestino) {

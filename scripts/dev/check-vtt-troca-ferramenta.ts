@@ -26,6 +26,8 @@ import { createClient } from "@supabase/supabase-js";
 import { chromium, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
 import { decidirTrocaFerramenta } from "../../src/app/mesas/[campaignId]/vtt/_ferramentas/controlador";
+import { continuarParaPosicionar, escolherTamanhoDoToken } from "./gerenciadorDeToken";
+import { garantirAlcancavel } from "./painelDaSessao";
 
 loadDotenv({ path: ".env.local" });
 function requireEnv(nome: string): string {
@@ -89,16 +91,19 @@ async function limpar() {
 
 async function abrirCriarConfigurando(page: Page, indiceCelula: number) {
   await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
-  const box = await page.locator(".rv-camada-grade path").nth(indiceCelula).boundingBox();
-  await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2, { button: "right" });
+  // O clique DIREITO precisa chegar ao mapa: o painel da sessão flutua
+  // sobre a metade direita, e a célula pode cair fora da viewport de
+  // 1280. Caindo no painel, nenhum menu de contexto abre — e a falha
+  // aparecia como "esperando o item 'Adicionar token'", que sugere item
+  // renomeado e não gesto perdido.
+  const ponto = await garantirAlcancavel(page, async () => {
+    const caixa = await page.locator(".rv-camada-grade path").nth(indiceCelula).boundingBox();
+    return caixa ? { x: caixa.x + caixa.width / 2, y: caixa.y + caixa.height / 2 } : null;
+  });
+  if (!ponto) throw new Error(`Célula ${indiceCelula} inalcançável mesmo afastando o zoom`);
+  await page.mouse.click(ponto.x, ponto.y, { button: "right" });
   await page.locator(".rv-menu-item", { hasText: "Adicionar token" }).click();
   await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
-}
-async function continuarParaPosicionar(page: Page, nome: string) {
-  await page.locator(".rv-gerenciador-token input[type=text]").first().fill(nome);
-  await page.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Continuar para posicionar" }).click();
-  await page.waitForSelector(".rv-escolha-posicao", { timeout: 5000 });
-  await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 });
 }
 
 async function main() {
@@ -120,7 +125,7 @@ async function main() {
   const page = await context.newPage();
   const erros: string[] = [];
   page.on("console", (m) => { if (m.type() === "error" && !m.text().includes("favicon")) erros.push(m.text().slice(0, 400)); });
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
 
   // --- 1: clicar noutra ferramenta durante o posicionamento cancela e troca ---
@@ -128,7 +133,14 @@ async function main() {
     await abrirCriarConfigurando(page, 40);
     await continuarParaPosicionar(page, "Troca Botão");
     await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Medir"]').click();
-    const aindaPosicionando = await page.locator(".rv-escolha-posicao").count();
+    // O sinal de "ainda posicionando" é a CAMADA NO MAPA, não a barra.
+    //
+    // Era `.rv-escolha-posicao`, que hoje só é renderizada com
+    // `fluxoToken?.fase === "erro"` — no caminho normal ela nunca
+    // existe, então a contagem dava zero tanto com o posicionamento
+    // vivo quanto cancelado. O critério não conseguia distinguir os
+    // dois estados que ele existe para distinguir.
+    const aindaPosicionando = await page.locator(".rv-camada-posicionamento-token").count();
     const ferramentaAtiva = await page.locator('.rv-ferramentas .rv-ferr-btn[aria-pressed="true"]').getAttribute("aria-label");
     const { data: naoCriado } = await admin.from("vtt_tokens").select("id").eq("campaign_id", campaignId).eq("nome", "Troca Botão");
     registrar(
@@ -144,7 +156,7 @@ async function main() {
     await abrirCriarConfigurando(page, 55);
     await continuarParaPosicionar(page, "Troca Teclado");
     await page.keyboard.press("d"); // atalho de Marcar
-    const aindaPosicionando = await page.locator(".rv-escolha-posicao").count();
+    const aindaPosicionando = await page.locator(".rv-camada-posicionamento-token").count();
     const ferramentaAtiva = await page.locator('.rv-ferramentas .rv-ferr-btn[aria-pressed="true"]').getAttribute("aria-label");
     const { data: naoCriado } = await admin.from("vtt_tokens").select("id").eq("campaign_id", campaignId).eq("nome", "Troca Teclado");
     registrar(
@@ -162,7 +174,7 @@ async function main() {
     // "Interagir" já é a ferramenta ativa (setada logo acima) — pressionar "v" de novo não deve cancelar.
     await page.keyboard.press("v");
     await page.waitForTimeout(200);
-    const aindaPosicionando = await page.locator(".rv-escolha-posicao").count();
+    const aindaPosicionando = await page.locator(".rv-camada-posicionamento-token").count();
     const ferramentaAtiva = await page.locator('.rv-ferramentas .rv-ferr-btn[aria-pressed="true"]').getAttribute("aria-label");
     registrar(
       "3 (atalho da ferramenta já ativa não cancela o posicionamento)",
@@ -170,7 +182,6 @@ async function main() {
       `aindaPosicionando=${aindaPosicionando === 1 ? "sim" : "não"}, ferramentaAtiva="${ferramentaAtiva}"`,
     );
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
   }
 
   // --- 4: Esc continua cancelando (regressão) ---
@@ -178,7 +189,6 @@ async function main() {
     await abrirCriarConfigurando(page, 85);
     await continuarParaPosicionar(page, "Esc Continua");
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
     const { data: naoCriado } = await admin.from("vtt_tokens").select("id").eq("campaign_id", campaignId).eq("nome", "Esc Continua");
     registrar("4 (Esc continua cancelando o posicionamento, sem persistir nada)", (naoCriado ?? []).length === 0, `criados=${(naoCriado ?? []).length}`);
   }
@@ -186,7 +196,7 @@ async function main() {
   // --- 5: Q/E continuam reservados à rotação (não trocam de ferramenta) ---
   {
     await abrirCriarConfigurando(page, 95);
-    await page.selectOption("#rv-campo-tamanho", "grande");
+    await escolherTamanhoDoToken(page, "grande");
     await continuarParaPosicionar(page, "Q E Rotacao");
     const box = await page.locator(".rv-camada-grade path").nth(95).boundingBox();
     await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2, { steps: 3 });
@@ -195,14 +205,13 @@ async function main() {
     await page.keyboard.press("e");
     await page.waitForTimeout(150);
     const orientacaoDepois = await page.locator(".rv-camada-posicionamento-token").getAttribute("data-orientacao");
-    const aindaPosicionando = await page.locator(".rv-escolha-posicao").count();
+    const aindaPosicionando = await page.locator(".rv-camada-posicionamento-token").count();
     registrar(
       "5 (Q/E rotaciona o fantasma sem trocar de ferramenta nem cancelar)",
       orientacaoAntes !== orientacaoDepois && aindaPosicionando === 1,
       `orientação ${orientacaoAntes}→${orientacaoDepois}, aindaPosicionando=${aindaPosicionando === 1}`,
     );
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
   }
 
   registrar("6 (nenhum warning/erro novo no console durante toda a sessão)", erros.length === 0, JSON.stringify(erros));

@@ -1142,7 +1142,7 @@ const ACENTO_DA_FAIXA: Record<ResultKey, AcentoCartao> = {
   sucesso_critico: "ok",
   sucesso_padrao: "cy",
   sucesso_limitado: "am",
-  falha_limitada: "magenta",
+  falha_limitada: "am",
   falha: "perigo",
   falha_critica: "perigo",
 };
@@ -1158,10 +1158,15 @@ export function acentoDoCartao(cartao: CartaoFeed): AcentoCartao {
          Os hexes batem exatamente com os de `RESULTS`, então as duas
          pontas do card saem na mesma cor, não em duas parecidas.
          Sem classificação (bandeja livre, ou teste sem CD) sobra o
-         veredito binário, que é tudo que o evento registrou. */
+         veredito binário, que é tudo que o evento registrou — e ali o
+         sucesso é CIANO, não verde, pela mesma razão que na faixa
+         (`FaixaSoma`): verde é o topo, reservado ao crítico, e uma soma
+         contra CD não tem crítico. Verde aqui pintava de "crítico"
+         qualquer acerto raspado, e ainda punha espinha verde ao lado de
+         faixa ciana no mesmo card. */
       if (cartao.teste?.classificacao) return ACENTO_DA_FAIXA[cartao.teste.classificacao];
       if (cartao.teste) return "neutro";
-      return cartao.sucesso === true ? "ok" : cartao.sucesso === false ? "perigo" : "cy";
+      return cartao.sucesso === false ? "perigo" : "cy";
     case "referencia":
       return "cy";
     case "uso":

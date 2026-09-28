@@ -33,9 +33,6 @@ import { listCampaignRoster, listLogsForViewer, type CampaignRosterEntry } from 
 import type { TableLogEntry } from "../../../lib/table";
 import { CampaignRealtimeProvider } from "./_shell/CampaignRealtimeProvider";
 import { CampaignShell } from "./_shell/CampaignShell";
-import { SessionPanel } from "./_shell/SessionPanel";
-import { TurnTrackDock } from "./_shell/TurnTrackDock";
-import { SyncAlert } from "./_shell/SyncAlert";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -130,14 +127,12 @@ export default async function CampaignLayout({ children, params }: LayoutProps) 
       initialErrors={initialErrors}
       realtimeAccessToken={authTokens?.access_token ?? null}
     >
-      <CampaignShell
-        campaignId={access.campaign.id}
-        campaignName={access.campaign.name}
-        role={access.role}
-        painelSessao={<SessionPanel />}
-        turnTrackDock={<TurnTrackDock />}
-        avisoSync={<SyncAlert />}
-      >
+      {/* A casca não desenha mais nada (ver `CampaignShell`): o log, os
+          participantes, o nome da campanha e o aviso de sincronização
+          agora moram DENTRO da mesa, que é a única tela. O que ela
+          ainda faz é prover Console, dados e trilha — e o escopo de
+          cor. */}
+      <CampaignShell campaignId={access.campaign.id}>
         {children}
       </CampaignShell>
     </CampaignRealtimeProvider>

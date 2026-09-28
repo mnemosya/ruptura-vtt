@@ -153,7 +153,14 @@ ok(
     c.kind === "rolagem" && rotulos === "Mente,Percepção,MOD,ND" && c.total === 8,
     rotulos,
   );
-  ok("R2 (falha usa acento vermelho; sucesso usa verde)", acentoDoCartao(c) === "perigo", acentoDoCartao(c));
+  ok("R2 (falha usa acento vermelho)", acentoDoCartao(c) === "perigo", acentoDoCartao(c));
+  // O sucesso da rolagem LIVRE é ciano, não verde: verde é o topo
+  // (crítico), e uma soma contra CD não tem crítico — a mesma regra que
+  // `FaixaSoma` aplica na faixa do mesmo card.
+  {
+    const ganhou = { ...c, sucesso: true } as typeof c;
+    ok("R2b (sucesso da rolagem livre é ciano — verde fica pro crítico)", acentoDoCartao(ganhou) === "cy", acentoDoCartao(ganhou));
+  }
   ok("R3 (dados individuais ficam disponíveis para o bloco recolhível)", c.dados.length === 3 && c.maior === 7, JSON.stringify(c.dados));
   ok("R4 (o tipo do teste sai do que o payload de fato tem)", c.tipoTeste === "TESTE DE PERÍCIA", c.tipoTeste);
 
@@ -318,7 +325,9 @@ ok(
   })) as CartaoRolagem;
   const acentos = [
     ["sucesso_critico", "ok"], ["sucesso_padrao", "cy"], ["sucesso_limitado", "am"],
-    ["falha_limitada", "magenta"], ["falha", "perigo"], ["falha_critica", "perigo"],
+    // As duas LIMITADAS dividem o âmbar: são o mesmo degrau da régua,
+    // e o que as separa é o ícone e a palavra.
+    ["falha_limitada", "am"], ["falha", "perigo"], ["falha_critica", "perigo"],
   ] as const;
   const errados = acentos.filter(([k, esperado]) => acentoDoCartao(faixa(k, k.startsWith("sucesso"))) !== esperado);
   ok(

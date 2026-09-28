@@ -130,8 +130,6 @@ const ESPINHA: Partial<Record<JanelaId, { indice: string; acento: string }>> = {
   imagens:   { indice: "10", acento: "#7f9bd1" },
 };
 
-const CANTOS = ["tl", "tr", "bl", "br"] as const;
-
 export function JanelaFerramenta({
   id, indice, acento, icone, titulo, modo, modoAtributos, rotulo, rotuloFechar, aoFechar,
   recolhido, aoAlternarRecolhido, rotuloRecolher, acoesCabecalho,
@@ -238,9 +236,6 @@ export function JanelaFerramenta({
         ["--jf-acento" as string]: cor,
       }}
     >
-      {CANTOS.map((c) => (
-        <span key={c} className="rv-fp-canto" data-canto={c} aria-hidden="true" />
-      ))}
       <span className="rv-fp-espinha" aria-hidden="true">
         <span className="rv-fp-espinha-indice">{indice ?? espinha?.indice ?? "--"}</span>
         <span className="rv-fp-espinha-codigo">{titulo}</span>

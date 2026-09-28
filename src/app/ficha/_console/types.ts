@@ -10,6 +10,10 @@
  * removido sem levar lógica junto.
  */
 
+import type { WalletId } from "../../../lib/character/inventory";
+import type { ComponentProps } from "react";
+import type { SpellsTab } from "../../dev/character-sheet/components/SpellsTab";
+import type { TechnicalContentItem } from "../../../lib/content";
 import type {
   ActiveCondition,
   Character,
@@ -22,6 +26,8 @@ import type {
 import type { RupturaRollResult } from "../../../lib/dice/types";
 import type { TableLogVisibility } from "../../../lib/table";
 import type { BodySlotId } from "./slots";
+import type { ItemLoadoutState } from "../../../lib/character/inventory";
+import type { ResumoDeCarga } from "../../../lib/character/carga";
 
 export type RecursoEditavel = "pv" | "pe" | "mana";
 
@@ -35,6 +41,15 @@ export type RecursoEditavel = "pv" | "pe" | "mana";
 export type ConsoleModo = "jogo" | "evolucao";
 
 export interface ConsoleApi {
+  escalpos: {
+    catalogo: TechnicalContentItem[];
+    erro: string | null;
+    instalar: (contentId: string) => void;
+    remover: (instanceId: string) => void;
+    comEfeitoAutomatico: Set<string>;
+  };
+  /** Catálogo e ações de magia compartilhados com a ficha. */
+  magias: ComponentProps<typeof SpellsTab>;
   /** Estado atual do personagem (fonte única — vem do client). */
   character: Character;
   /** Derivados já calculados por `computeDerivedStats`. */
@@ -42,6 +57,19 @@ export interface ConsoleApi {
   regras: CharacterRulesPayload | null;
   /** Catálogo publicado, indexado por slug — para ler dados do modelo do item. */
   catalogo: Map<string, ItemContent>;
+
+  /**
+   * Estado da gravação automática, para o Console poder DIZER quando
+   * falhou.
+   *
+   * Não é enfeite: desde que a ficha passou a gravar sozinha, não há
+   * mais um "Salvar personagem" para a pessoa apertar de novo quando dá
+   * errado. Antes esse retorno vivia numa faixa na página de baixo —
+   * que o Console cobria, e que foi removida junto com ela. Sem trazer
+   * o estado para cá, uma gravação que falha some sem deixar rastro, e
+   * a pessoa continua jogando achando que a ficha está salva.
+   */
+  gravacao: { estado: "idle" | "saving" | "saved" | "error"; erro: string | null };
 
   /** Rola um atributo (Nd8, maior dado) usando o motor real e registra no log. */
   rolarAtributo: (id: keyof CharacterAttributes) => RupturaRollResult;
@@ -94,7 +122,7 @@ export interface ConsoleApi {
   }) => RupturaRollResult;
 
   /** Grava PV/PE/Mana — passa por `updateRecursoAtual` (cura automática + colapso). */
-  editarRecurso: (id: RecursoEditavel, valor: number) => void;
+  editarRecurso: (id: RecursoEditavel, valor: number, opcoes?: { confirmarRetorno?: boolean }) => void;
   /** Idem, para a trilha de Integridade (mesmo `updateRecursoAtual`, chave "integridade"). */
   editarIntegridade: (valor: number) => void;
 
@@ -110,6 +138,7 @@ export interface ConsoleApi {
   podeUsarSobrecarga: boolean;
 
   avancarColapso: () => void;
+  aplicarTesteDecisivoColapso: (dados: number[]) => void;
   estabilizarColapso: () => void;
 
   /** Move um item entre mochila/equipado/empunhado/acesso rápido. */
@@ -120,6 +149,37 @@ export interface ConsoleApi {
   definirPd: (instanceId: string, valor: number) => void;
   /** Recarga real (carregador ou aljava compartilhada). */
   recarregar: (instanceId: string) => void;
+
+  // ── Inventário (aba Inventário) ───────────────────────────────────
+  /**
+   * Move a instância entre os CINCO estados de loadout, incluindo
+   * "abrigo". Difere de `equiparNoSlot`/`desequipar`, que existem para
+   * o paper doll e decidem o estado a partir do slot do corpo; aqui
+   * quem escolhe o estado é quem chama, porque a aba Inventário mexe
+   * em estados que não têm slot (mochila, abrigo).
+   */
+  moverItemPara: (instanceId: string, estado: ItemLoadoutState) => void;
+  /** Usa o item — consome carga/quantidade e aplica o que o conteúdo automatiza. */
+  usarItem: (instanceId: string) => void;
+  /** Ajusta a quantidade da pilha. Nunca abaixo de 1 — para zerar, `descartarItem`. */
+  ajustarQuantidade: (instanceId: string, delta: number) => void;
+  /** Remove a instância inteira do inventário. */
+  descartarItem: (instanceId: string) => void;
+  /** Espaços ocupados e capacidade — a regra vive em `lib/character/carga.ts`. */
+  carga: ResumoDeCarga;
+  /**
+   * Propriedades resolvidas de UMA instância (do modelo, das runas
+   * instaladas e das técnicas) já no formato de termo com dica. Sai de
+   * `deriveItemProperties`; o Console não interpreta propriedade.
+   */
+  propriedadesDoItem: (instanceId: string) => TermoDeRegra[];
+  /**
+   * Termos de regra citáveis dentro de um texto — ações de combate e
+   * condições publicadas. É o que alimenta o tooltip de "Resistir" ou
+   * "Atordoado" no meio da descrição de um item. Vem do conteúdo
+   * real; o Console não mantém glossário próprio.
+   */
+  glossario: TermoDeRegra[];
 
   adicionarCondicao: (input: { conditionId: string | null; nome: string; descricao: string; origem: string; duracao: string }) => void;
   removerCondicao: (id: string) => void;
@@ -137,7 +197,24 @@ export interface ConsoleApi {
    * Em Modo Jogo o próprio handler recusa — a UI só esconde o controle.
    */
   editarAtributo: (id: keyof CharacterAttributes, valor: number) => void;
+  /**
+   * Define o saldo de uma carteira (INV-03). Valor ABSOLUTO — a soma e
+   * a subtração são resolvidas por quem chama, para que o resultado
+   * dependa do que foi pedido e não do estado que o campo tinha quando
+   * a tela renderizou.
+   *
+   * A escrita vai pelo mesmo caminho de qualquer outra alteração da
+   * ficha (`update_character_sheet_payload`), que revalida controle e
+   * participação ativa no servidor.
+   */
+  definirCarteira: (walletId: WalletId, valor: number) => void;
   editarPericia: (id: string, valor: number) => void;
+  /**
+   * Renomeia a personagem. Vale em qualquer modo — nome não é evolução,
+   * é identificação, e corrigir um erro de digitação não devia exigir
+   * destravar a ficha.
+   */
+  editarNome: (nome: string) => void;
   /** PM de evolução — `null` quando a ficha nunca registrou PM. */
   pm: { disponivel: number; total: number } | null;
 
@@ -169,6 +246,21 @@ export interface ConsolePin {
   ref: string;
   nome: string;
   info?: string;
+}
+
+/**
+ * Um termo de regra com dica. Os três tipos vêm de conteúdo
+ * publicado: `combat_action` (28), `condition` (17) e `property` (14).
+ * Ação e condição são procuradas DENTRO de um texto (ver
+ * `termosDeRegra.ts`); propriedade aparece solta, listada no item que
+ * a tem. O `nome` é o que se lê; a `descricao` é o que o tooltip
+ * mostra.
+ */
+export interface TermoDeRegra {
+  tipo: "acao" | "condicao" | "propriedade";
+  slug: string;
+  nome: string;
+  descricao: string | null;
 }
 
 export interface SlotOcupado {

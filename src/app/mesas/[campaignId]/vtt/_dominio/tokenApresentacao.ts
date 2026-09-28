@@ -23,7 +23,8 @@ import type { Hex, TamanhoCriatura } from "../_mapa/hex";
 import type { CondicaoSlug } from "../_dados/cenaDemo";
 
 export type LadoToken = "pj" | "pn" | "neutro";
-export type VertenteToken = "somatico" | "cognitivo" | "material" | "energetico" | "nenhuma";
+export type VertenteToken =
+  | "somatico" | "cognitivo" | "material" | "energetico" | "cinetica" | "sinaptica" | "nenhuma";
 
 export interface TokenApresentacao {
   /** `vtt_tokens.id` — identidade canônica. Nunca casado por sigla/nome. */
@@ -43,6 +44,8 @@ export interface TokenApresentacao {
    */
   offset: Hex;
   orientacao: number;
+  /** Para onde ele OLHA (0–5) — livre, não muda as células ocupadas. */
+  direcao: number;
   pegadaPersonalizada: Hex[] | null;
   retrato: string | null;
   /** Id do arquivo PRÓPRIO do token — `null` quando o retrato é herdado, externo, ou não existe. */
@@ -58,6 +61,11 @@ export interface TokenApresentacao {
   /** `null` = sem PV definido (a UI deve tratar como "sem barra de vida", não como 0). */
   pv: number | null;
   pvMax: number | null;
+  /** PE e Mana PRÓPRIOS (migration 0133); nulos quando o token tem ficha. */
+  pe: number | null;
+  peMax: number | null;
+  mana: number | null;
+  manaMax: number | null;
   condicoes: CondicaoSlug[];
   visivel: boolean;
   bloqueado: boolean;
@@ -69,7 +77,9 @@ export interface TokenApresentacao {
   revision: number;
 }
 
-const VERTENTES_VALIDAS: readonly VertenteToken[] = ["somatico", "cognitivo", "material", "energetico", "nenhuma"];
+const VERTENTES_VALIDAS: readonly VertenteToken[] = [
+  "somatico", "cognitivo", "material", "energetico", "cinetica", "sinaptica", "nenhuma",
+];
 const CONDICOES_VALIDAS: readonly CondicaoSlug[] = [
   "atordoado", "caido", "cego", "surdo", "lento", "sangrando", "queimando",
   "envenenado", "saturado", "insaturado", "imobilizado", "agarrado",
@@ -98,12 +108,18 @@ export function tokenApresentacaoDe(t: {
   offsetQ?: number;
   offsetR?: number;
   orientacao: number;
+  /** Para onde ele OLHA (0–5) — livre, não muda as células ocupadas. */
+  direcao: number;
   pegadaPersonalizada: Hex[] | null;
   retratoUrl: string | null;
   retratoImageId: string | null;
   retratoEfetivoId: string | null;
   pvAtual: number | null;
   pvMax: number | null;
+  peAtual: number | null;
+  peMax: number | null;
+  manaAtual: number | null;
+  manaMax: number | null;
   condicoes: string[];
   visivel: boolean;
   bloqueado: boolean;
@@ -132,6 +148,7 @@ export function tokenApresentacaoDe(t: {
     /** Onde DENTRO da célula âncora desenhar — ver `TokenVtt.offsetQ`. */
     offset: { q: t.offsetQ ?? 0, r: t.offsetR ?? 0 },
     orientacao: t.orientacao,
+    direcao: t.direcao ?? t.orientacao,
     pegadaPersonalizada: t.pegadaPersonalizada,
     // A precedência é do BANCO, não daqui: a 0101 garante que só uma
     // das duas origens está preenchida por vez. Resolver na ordem é
@@ -147,6 +164,10 @@ export function tokenApresentacaoDe(t: {
       : "nenhum",
     pv: t.pvAtual,
     pvMax: t.pvMax,
+    pe: t.peAtual,
+    peMax: t.peMax,
+    mana: t.manaAtual,
+    manaMax: t.manaMax,
     condicoes: condicoesValidas(t.condicoes),
     visivel: t.visivel,
     bloqueado: t.bloqueado,

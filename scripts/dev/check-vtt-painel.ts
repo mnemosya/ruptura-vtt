@@ -1,7 +1,7 @@
 /**
  * Browser check do PAINEL LATERAL da Mesa (`vtt/_painel/`) — moldura,
  * Chat, Personagens, Participantes, Bando e Compêndio contra a rota
- * real `/mesas/[campaignId]/vtt`, com duas sessões autenticadas
+ * real `/mesas/[campaignId]`, com duas sessões autenticadas
  * (narrador e jogador) e dados reais no banco.
  *
  * É o par do teste determinístico `scripts/test-vtt-painel.ts` (lógica
@@ -287,7 +287,7 @@ async function limpar() {
 
 /** Abre a Mesa e espera o painel existir. */
 async function abrirMesa(page: Page, id = campaignId) {
-  await page.goto(`${BASE_URL}/mesas/${id}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${id}`, { waitUntil: "networkidle" });
   await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
 }
 
@@ -387,11 +387,13 @@ async function main() {
     );
   }
   {
-    const badgeEstatico = await narrador.locator('[data-testid="painel-aba-badge-chat"]').textContent().catch(() => null);
+    // As badges de contagem saíram das abas. O critério vira o
+    // contrário do que era: nenhuma pode existir.
+    const badges = await narrador.locator('[data-testid^="painel-aba-badge-"]').count();
     registrar(
-      "1a2 (o badge estático '3' do Chat sumiu — contador é real ou ausente)",
-      badgeEstatico === null || badgeEstatico !== "3",
-      `badge=${badgeEstatico ?? "(nenhum)"}`,
+      "1a2 (nenhuma badge de contagem nas abas)",
+      badges === 0,
+      `badges=${badges}`,
     );
   }
   {
@@ -428,10 +430,34 @@ async function main() {
   {
     // Painel recolhido não pode cobrir o mapa: o SVG tem que continuar
     // recebendo o clique na sua área.
-    const svgBox = await narrador.locator(".rv-mapa").boundingBox();
+    // O critério mudou de pergunta, porque a resposta antiga virou
+    // mentira sobre o desenho.
+    //
+    // Ele exigia que o mapa terminasse antes de onde o painel começa.
+    // Isso descrevia o layout DOCADO, que não existe mais: o painel
+    // flutua sobre o mapa de propósito, aberto e recolhido, e o CSS diz
+    // por quê ("docado, o espaço dele saía da largura do mapa e a
+    // margem virava uma tira do fundo da mesa"). Sobrepor é o desenho.
+    //
+    // O que o comentário original de fato queria garantir continua
+    // valendo e está escrito ali: "o SVG tem que continuar recebendo o
+    // clique na sua área". Com o painel recolhido, a área que ele
+    // ocupava aberto tem que voltar a ser mapa clicável — e é isso que
+    // se afirma agora, perguntando à página quem está no ponto.
+    //
+    // A pergunta não é acadêmica: medido em
+    // `check-vtt-movimento-consultivo`, um token em q=15 ficava debaixo
+    // do painel ABERTO e o `pointerdown` ia para o chat, não para o
+    // token.
     const painelBox = await narrador.locator('[data-testid="painel-vtt"]').boundingBox();
-    const naoSobrepoe = !!svgBox && !!painelBox && svgBox.x + svgBox.width <= painelBox.x + 2;
-    registrar("1f (painel recolhido não fica por cima do mapa)", naoSobrepoe, `mapaFim=${Math.round((svgBox?.x ?? 0) + (svgBox?.width ?? 0))}, painelIni=${Math.round(painelBox?.x ?? 0)}`);
+    const pontoLiberado = { x: Math.round((painelBox?.x ?? 0) - 40), y: Math.round((painelBox?.y ?? 0) + 120) };
+    const quemEsta = await narrador.evaluate(([x, y]) => {
+      const el = document.elementFromPoint(x, y) as Element | null;
+      return { mapa: !!el?.closest?.(".rv-mapa"), painel: !!el?.closest?.(".rv-painel"), cls: (el?.getAttribute("class") ?? "").slice(0, 40) };
+    }, [pontoLiberado.x, pontoLiberado.y]);
+    registrar("1f (recolhido, a área que o painel ocupava volta a ser mapa clicável)",
+      quemEsta.mapa && !quemEsta.painel,
+      `ponto=(${pontoLiberado.x},${pontoLiberado.y}), mapa=${quemEsta.mapa}, painel=${quemEsta.painel}, elemento="${quemEsta.cls}"`);
   }
   {
     // Reabre pela própria aba (a faixa recolhida é o que reabre) e
@@ -614,15 +640,16 @@ async function main() {
     // reassinar o canal depois de tudo que esta suíte já fez. O
     // diagnóstico inclui o estado de sincronização mostrado pela
     // própria aba, pra distinguir "lento" de "canal caído".
-    const badgeApareceu =
-      gravouDoJogador &&
-      (await esperarAte(async () => (await narrador.locator('[data-testid="painel-aba-badge-chat"]').count()) > 0, 40000));
-    const badge = badgeApareceu ? await narrador.locator('[data-testid="painel-aba-badge-chat"]').textContent() : null;
+    // O critério 2h checava a BADGE de não lidos aparecendo com outra
+    // aba à frente. Sem badge não há sinal observável nesse estado — o
+    // que a entrega por Realtime tem de verificável é a mensagem
+    // CHEGAR, e é isso que 2c2 faz logo abaixo. Um critério sem
+    // observável é um critério que passa sozinho.
     const sincDegradada = (await narrador.locator(".rv-pn-estado--indisponivel").count()) > 0;
     registrar(
-      "2h (contador REAL de não lidos aparece na aba Chat quando outra aba está à frente)",
-      badgeApareceu,
-      `badge=${badge ?? "(nenhum)"}, gravou=${gravouDoJogador}, sincDegradada=${sincDegradada}`,
+      "2h (a gravação do jogador foi aceita, pré-requisito da entrega por Realtime)",
+      gravouDoJogador,
+      `gravou=${gravouDoJogador}, sincDegradada=${sincDegradada}`,
     );
 
     await irParaAba(narrador, "chat");
@@ -630,12 +657,11 @@ async function main() {
       async () => ((await narrador.locator('[data-testid="painel-chat-scroll"]').textContent()) ?? "").includes(novaDoJogador),
       40000,
     );
-    const badgeZerou = await esperarAte(async () => (await narrador.locator('[data-testid="painel-aba-badge-chat"]').count()) === 0, 15000);
     const dupes = await narrador.locator('[data-testid="painel-feed-mensagem"]').filter({ hasText: novaDoJogador }).count();
     registrar(
-      "2c2 (realtime entre duas sessões: chega uma vez só, e ler zera o contador)",
-      chegou && badgeZerou && dupes === 1,
-      `chegou=${chegou}, zerou=${badgeZerou}, ocorrencias=${dupes}`,
+      "2c2 (realtime entre duas sessões: chega uma vez só)",
+      chegou && dupes === 1,
+      `chegou=${chegou}, ocorrencias=${dupes}`,
     );
 
     // ═══════════════ 3c/5d — visão do JOGADOR ═══════════════
@@ -713,9 +739,20 @@ async function main() {
     }
 
     await irParaAba(narrador, "personagens");
-    await narrador.locator('[data-testid="painel-personagens-atualizar"]').click();
-    await narrador.waitForTimeout(600);
-    const nomes = await narrador.locator('[data-testid="painel-personagens-linha"] .rv-pn-linha-nome').allTextContents();
+    // O botão "Atualizar" foi REMOVIDO de propósito, e o comentário do
+    // `PersonagensTab` diz por quê: "a lista recarrega sozinha a cada
+    // ação e a cada abertura, então o botão só dava a entender que ela
+    // poderia estar velha".
+    //
+    // O critério é sobre o que a lista MOSTRA, não sobre como ela
+    // recarrega — então ele passa a reabrir a aba, que é o gesto que
+    // uma pessoa faria hoje, e espera os nomes aparecerem por condição
+    // em vez de por um tempo fixo que não significa nada.
+    await irParaAba(narrador, "chat");
+    await irParaAba(narrador, "personagens");
+    const linhas = narrador.locator('[data-testid="painel-personagens-linha"] .rv-pn-linha-nome');
+    await linhas.first().waitFor({ timeout: 8000 });
+    const nomes = await linhas.allTextContents();
     registrar(
       "3a (diretório lista DOCUMENTOS persistentes — os dois personagens da campanha)",
       nomes.includes("Mara Venn") && nomes.includes("Corvo do Jammer"),
@@ -746,7 +783,13 @@ async function main() {
     await arrastarPara(
       narrador,
       narrador.locator('[data-testid="painel-personagens-linha"][data-tipo="pn"]').first(),
-      narrador.locator('[data-testid="painel-tabpanel-personagens"] .rv-pn-solta-pasta').first(),
+      // A zona de solta deixou de ser um elemento próprio: hoje quem
+      // aceita o arrasto é o CABEÇALHO da pasta
+      // (`painel-personagens-pasta`, com `onArrastarSobre`/`onSoltar`
+      // em `PersonagensTab`). `.rv-pn-solta-pasta` não existe mais em
+      // lugar nenhum do app — só aqui —, e o check ficava 30s esperando
+      // por ele antes de derrubar a suíte inteira.
+      narrador.locator('[data-testid="painel-personagens-pasta"]').first(),
     );
     const moveu = await esperarAte(async () => {
       const { data } = await admin
@@ -813,23 +856,19 @@ async function main() {
       narrador.locator('[data-testid="painel-personagens-linha"]').filter({ hasText: "Mara Venn" }).first(),
       narrador.locator(".rv-mapa-camada").first(),
     );
-    const entrouNoFluxo = await esperarAte(async () => (await narrador.locator(".rv-escolha-posicao").count()) === 1);
-    registrar("3g1 (soltar no mapa entra no fluxo CANÔNICO de posicionamento, não cria token direto)", entrouNoFluxo, `fluxo=${entrouNoFluxo}`);
+    // SOLTAR JÁ CRIA. A fase de posicionamento saiu deste caminho: o
+    // arrasto é a escolha do lugar, e a prévia sob o ponteiro é o que
+    // diz onde. O que se confere aqui é o EFEITO — a linha no banco —,
+    // e não mais uma faixa de interface no meio do gesto.
+    const confirmou = await esperarAte(async () => {
+      const { data } = await admin
+        .from("vtt_tokens").select("id")
+        .eq("campaign_id", campaignId).eq("character_id", personagemDoJogador);
+      return (data?.length ?? 0) === (antes.data?.length ?? 0) + 1;
+    }, 8000);
+    registrar("3g1 (soltar no mapa cria o token na célula solta, sem segunda etapa)", confirmou, `criou=${confirmou}`);
 
-    if (entrouNoFluxo) {
-      // Confirma numa célula livre — o mesmo clique de sempre.
-      const celulas = narrador.locator(".rv-celula");
-      const total = await celulas.count();
-      let confirmou = false;
-      for (let i = 0; i < Math.min(total, 40) && !confirmou; i++) {
-        const box = await celulas.nth(i).boundingBox();
-        if (!box) continue;
-        await narrador.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-        const valida = await narrador.locator(".rv-camada-posicionamento-token").getAttribute("data-valida");
-        if (valida !== "true") continue;
-        await narrador.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-        confirmou = await esperarAte(async () => (await narrador.locator(".rv-escolha-posicao").count()) === 0, 6000);
-      }
+    {
       const { data: depois } = await admin
         .from("vtt_tokens")
         .select("id, character_id, nome")
@@ -1177,7 +1216,15 @@ async function main() {
         campaign_id: campaignId,
         type: "rolagem_pericia",
         visibility: "public",
-        payload: { characterNome: "Mara Venn", atributo: "Mente", atributoValor: 6, pericia: "Percepção", periciaValor: 3, modificador: 0, dificuldade: 10, total: 8, sucesso: false, dados: [7, 3, 6] },
+        // `maiorDado` e `classificacaoMargem` são o que faz o cartão
+        // desenhar a FAIXA DE TESTE em vez de cair no desenho de soma.
+        // O payload daqui era anterior a eles (a regra está escrita em
+        // `contratos.ts`: "sem isso — bandeja livre, ou um log antigo
+        // anterior a `maiorDado` — o card cai no desenho de módulos"),
+        // então o critério media o caminho de compatibilidade achando
+        // que media o principal. Os números agora fecham entre si:
+        // maior 7 + perícia 3 + mod 0 = 10... contra CD 12, falha.
+        payload: { characterNome: "Mara Venn", atributo: "Mente", atributoValor: 6, pericia: "Percepção", periciaValor: 3, modificador: 0, dificuldade: 12, maiorDado: 7, classificacaoMargem: "falha", total: 10, sucesso: false, dados: [7, 3, 6] },
       },
       {
         campaign_id: campaignId,
@@ -1189,12 +1236,27 @@ async function main() {
     await narrador.waitForTimeout(2500);
     const temRolagem = (await narrador.locator('[data-testid="painel-feed-rolagem"]').count()) >= 1;
     const temDivisor = (await narrador.locator('[data-testid="painel-feed-divisor"]').count()) >= 1;
+    // O cartão de rolagem deixou de ser montado com "módulos"
+    // (`.pn-modulo-rotulo`, um bloquinho por parcela) e passou a usar a
+    // FAIXA DE RESULTADO do rolador — a mesma peça que a ferramenta de
+    // dados desenha, com o veredito no título, a conta numa linha de
+    // parcelas e o total à direita.
+    //
+    // Duas consequências pro critério. Os módulos não existem mais, e
+    // `painel-feed-resultado` marca SÓ O NÚMERO, de propósito ("quem lê
+    // espera só o número", em `ResultadoRolagem.tsx`) — procurar
+    // "falha" dentro dele era procurar no lugar errado. O veredito e a
+    // conta são lidos do cartão inteiro.
     const resultado = (await narrador.locator('[data-testid="painel-feed-resultado"]').first().textContent()) ?? "";
-    const modulos = await narrador.locator('[data-testid="painel-feed-rolagem"] .pn-modulo-rotulo').allTextContents();
+    const cartao = ((await narrador.locator('[data-testid="painel-feed-rolagem"]').first().textContent()) ?? "")
+      .replace(/\s+/g, " ").trim();
     registrar(
-      "9b (rolagem usa RollCard com módulos e faixa de resultado)",
-      temRolagem && resultado.includes("8") && resultado.toLowerCase().includes("falha") && modulos.length >= 3,
-      `resultado="${resultado.replace(/\s+/g, " ").trim()}", modulos=${modulos.join(",")}`,
+      "9b (rolagem usa a faixa de resultado: total, veredito e a conta que o produziu)",
+      temRolagem
+        && resultado.trim() === "10"
+        && /falha/i.test(cartao)
+        && /maior/i.test(cartao) && /percep/i.test(cartao) && /cd/i.test(cartao),
+      `total="${resultado.trim()}", cartão="${cartao.slice(0, 160)}"`,
     );
     registrar("9c (evento de combate usa DIVISOR compacto)", temDivisor, `divisores=${await narrador.locator('[data-testid="painel-feed-divisor"]').count()}`);
     // O divisor precisa ser MENOR que um card — é ritmo, não evento.

@@ -33,7 +33,6 @@
  */
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { X } from "lucide-react";
 import { PainelAbas } from "./PainelAbas";
 import { ChatTab } from "./ChatTab";
 import { PersonagensTab } from "./PersonagensTab";
@@ -43,6 +42,29 @@ import { CompendioTab } from "./CompendioTab";
 import { LimiteErroAba } from "./LimiteErroAba";
 import { TransferenciaBando, type AlvoTransferencia } from "./TransferenciaBando";
 import { useConsoleDaMesa } from "../../_shell/ConsoleDaMesa";
+import dynamic from "next/dynamic";
+import { useJanelasDaMesa } from "../_shell/JanelasDaMesa";
+/**
+ * AS JANELAS QUE VIERAM DAS PÁGINAS CHEGAM SOB DEMANDA.
+ *
+ * Elas eram rotas: cada uma só baixava quando alguém ia até lá. Ao
+ * virarem janelas com `import` normal, o código passou a viajar JUNTO
+ * COM A MESA — e medido, não suposto: o editor de rascunhos arrasta a
+ * árvore de `admin/biblioteca` (0,69 MB em dev) para dentro do pacote
+ * de quem só quer abrir o mapa.
+ *
+ * `dynamic` devolve o que a rota dava de graça, sem mudar o
+ * comportamento: elas já só RENDERIZAM quando abertas
+ * (`janelas.aberta(...)`), então o carregamento acompanha exatamente o
+ * mesmo gesto. `ssr: false` porque nenhuma delas tem o que dizer no
+ * servidor — todas leem por ação depois de montar.
+ */
+const JanelaMercado = dynamic(() => import("./janelas/JanelaMercado").then((m) => m.JanelaMercado), { ssr: false });
+const JanelaLivro = dynamic(() => import("./janelas/JanelaLivro").then((m) => m.JanelaLivro), { ssr: false });
+const JanelaConfiguracoes = dynamic(() => import("./janelas/JanelaConfiguracoes").then((m) => m.JanelaConfiguracoes), { ssr: false });
+const JanelaConteudo = dynamic(() => import("./janelas/JanelaConteudo").then((m) => m.JanelaConteudo), { ssr: false });
+const JanelaOrganizador = dynamic(() => import("./janelas/organizador/JanelaOrganizador").then((m) => m.JanelaOrganizador), { ssr: false });
+const JanelaNovoPersonagem = dynamic(() => import("./janelas/JanelaNovoPersonagem").then((m) => m.JanelaNovoPersonagem), { ssr: false });
 import { JanelaAcessoPersonagem, JanelaJogadoresConvites } from "./janelas/JanelasAdmin";
 import { JanelaInterna } from "./ui/JanelaInterna";
 import type { ItemTransferivel } from "./bandoModelo";
@@ -59,6 +81,24 @@ import "./painel.css";
 
 /** Abaixo disto o painel deixa de ser coluna e vira drawer sobre o mapa. */
 const LARGURA_DRAWER_PX = 1100;
+/**
+ * Quanto é preciso passar ALÉM do mínimo, arrastando a alça pra
+ * direita, pra que soltar recolha o painel.
+ *
+ * 8px — o bastante pra separar um empurrão de um tremor de mão, e nada
+ * além disso. Era 40, e 40 criava um limbo: o painel já estava
+ * deslizando e desbotando (o gesto já dizia "vou fechar") mas soltar
+ * ali não fechava nada. Quem arrastou e parou no meio não mudou de
+ * ideia — só não sabia que faltava chão. Agora o MOVIMENTO é o
+ * compromisso: se ele começou, soltar recolhe.
+ */
+const LIMIAR_RECOLHER = 8;
+/**
+ * Até quantos pixels de movimento um gesto na alça ainda conta como
+ * CLIQUE. Acima disso ele é arrasto, e quem decide é a distância
+ * percorrida — não o tempo, que castigaria quem clica devagar.
+ */
+const MOVIMENTO_CLIQUE = 4;
 
 export function PainelVtt({
   campaignId,
@@ -66,6 +106,7 @@ export function PainelVtt({
   ehNarrador,
   personagemDoTokenSelecionado,
   onAdicionarPersonagemACena,
+  onArrastarPersonagem,
   onFocarToken,
   fixtureVisual,
 }: {
@@ -76,6 +117,8 @@ export function PainelVtt({
   personagemDoTokenSelecionado: { id: string; nome: string } | null;
   /** Inicia o fluxo CANÔNICO de criação de token vinculado (posicionamento no mapa). */
   onAdicionarPersonagemACena: (p: PersonagemArrastado) => void;
+  /** Repassado ao diretório: quem está sendo arrastado pro mapa. */
+  onArrastarPersonagem?: (p: PersonagemArrastado | null) => void;
   /**
    * Centraliza a câmera num token. É a ÚNICA ação do painel autorizada
    * a mexer na cena, e só a partir de um controle explicitamente
@@ -137,18 +180,6 @@ export function PainelVtt({
     return () => mq.removeEventListener("change", aplicar);
   }, []);
 
-  const [contadores, setContadores] = useState<Partial<Record<AbaId, number | null>>>({});
-  const definirContador = useCallback((aba: AbaId, n: number | null) => {
-    setContadores((c) => (c[aba] === n ? c : { ...c, [aba]: n }));
-  }, []);
-  // Uma referência ESTÁVEL por aba — passar `(n) => definirContador("chat", n)`
-  // inline recriaria a função a cada render e o `useEffect` de cada aba
-  // dispararia em loop.
-  const contadorChat = useCallback((n: number | null) => definirContador("chat", n), [definirContador]);
-  const contadorPersonagens = useCallback((n: number | null) => definirContador("personagens", n), [definirContador]);
-  const contadorParticipantes = useCallback((n: number | null) => definirContador("participantes", n), [definirContador]);
-  const contadorBando = useCallback((n: number | null) => definirContador("bando", n), [definirContador]);
-  const contadorCompendio = useCallback((n: number | null) => definirContador("compendio", n), [definirContador]);
 
   const asideRef = useRef<HTMLElement | null>(null);
   const idBase = useId();
@@ -169,6 +200,16 @@ export function PainelVtt({
 
   const recolher = useCallback(() => {
     atualizarPrefs({ aberto: false });
+    focarAbaAtiva(prefs.aba);
+  }, [atualizarPrefs, focarAbaAtiva, prefs.aba]);
+
+  /**
+   * REABRIR ONDE PAROU. Não passa por `selecionar` de propósito: aquilo
+   * é "vá para esta seção", e aqui não há seção nova — só o painel
+   * voltando ao tamanho que tinha.
+   */
+  const expandir = useCallback(() => {
+    atualizarPrefs({ aberto: true });
     focarAbaAtiva(prefs.aba);
   }, [atualizarPrefs, focarAbaAtiva, prefs.aba]);
 
@@ -210,41 +251,130 @@ export function PainelVtt({
   // ── Redimensionamento por arrasto ──────────────────────────────
   const arrastandoRef = useRef(false);
   const inicioRef = useRef({ x: 0, largura: 0 });
+  /** O quanto o ponteiro andou neste gesto — é isto que separa clique de arrasto. */
+  const andouRef = useRef(0);
   const [redimensionando, setRedimensionando] = useState(false);
+  /**
+   * O arrasto já passou do ponto em que soltar RECOLHE.
+   *
+   * DOIS lugares pro mesmo fato, e não por descuido: o estado pinta o
+   * aviso, a REF decide. `pointerup` pode chegar no mesmo lote do
+   * `pointermove` que cruzou o limiar — aí o handler ainda enxerga o
+   * estado ANTERIOR e não recolhe nada, que é exatamente o "às vezes
+   * não fecha, fica parado e volta pro ciano". A ref é escrita na hora,
+   * sem esperar render.
+   */
+  const vaiRecolherRef = useRef(false);
+  const [vaiRecolher, setVaiRecolher] = useState(false);
+  /**
+   * QUANTO O ARRASTO JÁ PASSOU DO MÍNIMO, em pixels.
+   *
+   * No batente o painel simplesmente parava, e continuar puxando não
+   * fazia nada — a mão andava e a tela não, que é a sensação de coisa
+   * travada. Daqui pra frente a largura continua presa (é o que fica
+   * salvo), mas o painel ACOMPANHA: desliza pra fora e desbota junto,
+   * até sumir. O gesto passa a mostrar o que vai acontecer enquanto
+   * acontece, em vez de anunciar por um fio de 1px.
+   */
+  const [excedente, setExcedente] = useState(0);
 
+  /** Como desligar os ouvintes do arrasto em curso — nulo fora dele. */
+  const desligarArrastoRef = useRef<(() => void) | null>(null);
+  /* Se o painel sair de cena no meio de um arrasto, os ouvintes vão junto. */
+  useEffect(() => () => desligarArrastoRef.current?.(), []);
+
+  /**
+   * O GESTO INTEIRO VIVE NA JANELA, não na alça, e os ouvintes são
+   * presos JÁ no `pointerdown`.
+   *
+   * Duas correções na mesma decisão:
+   *
+   *   1. antes o gesto morava nos handlers React do elemento, com
+   *      `setPointerCapture` segurando o ponteiro. Quando essa captura
+   *      se perde — e ela se perde: o elemento re-renderiza, o ponteiro
+   *      sai da janela, o sistema entrega o gesto a outra coisa — o
+   *      `pointerup` nunca chega. Como é ele quem limpa tudo, o painel
+   *      FICAVA no meio do caminho: deslizado, translúcido, nem aberto
+   *      nem recolhido, e sem nada que o trouxesse de volta. O
+   *      fantasma. No `window` não há captura a perder: o `pointerup`
+   *      acontece em algum lugar, sempre;
+   *   2. e a inscrição é aqui, não num `useEffect` que reage ao estado:
+   *      o efeito só rodaria no render seguinte, e todo movimento antes
+   *      dele se perderia — o arrasto começava mudo.
+   */
   const aoPressionarAlca = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       e.preventDefault();
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      desligarArrastoRef.current?.();
       arrastandoRef.current = true;
       inicioRef.current = { x: e.clientX, largura: prefs.largura };
+      andouRef.current = 0;
       setRedimensionando(true);
-    },
-    [prefs.largura],
-  );
 
-  const aoMoverAlca = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!arrastandoRef.current) return;
-    // A alça fica na borda ESQUERDA do painel: arrastar pra esquerda
-    // AUMENTA a largura, daí o sinal invertido.
-    const proposta = inicioRef.current.largura - (e.clientX - inicioRef.current.x);
-    setPrefs((atual) => ({ ...atual, largura: limitarLarguraPainel(proposta) }));
-  }, []);
+      const mover = (ev: PointerEvent) => {
+        // A alça fica na borda ESQUERDA do painel: arrastar pra esquerda
+        // AUMENTA a largura, daí o sinal invertido.
+        andouRef.current = Math.max(andouRef.current, Math.abs(ev.clientX - inicioRef.current.x));
+        const proposta = inicioRef.current.largura - (ev.clientX - inicioRef.current.x);
+        // PASSAR DO MÍNIMO É O GESTO DE FECHAR: o menor painel que
+        // existe é nenhum painel. Daí pra frente a largura fica presa e
+        // o que anda é o painel inteiro, deslizando e desbotando.
+        vaiRecolherRef.current = proposta < LARGURA_MIN - LIMIAR_RECOLHER;
+        setVaiRecolher(vaiRecolherRef.current);
+        setExcedente(Math.max(0, LARGURA_MIN - proposta));
+        setPrefs((atual) => ({ ...atual, largura: limitarLarguraPainel(proposta) }));
+      };
 
-  const aoSoltarAlca = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!arrastandoRef.current) return;
-      arrastandoRef.current = false;
-      setRedimensionando(false);
-      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
-      // Só grava no fim do gesto — não uma escrita em `localStorage`
-      // por frame de arrasto.
-      setPrefs((atual) => {
-        salvarPreferenciasPainel(chave, atual);
-        return atual;
-      });
+      /** `confirmar` = o gesto terminou por vontade de quem arrasta. */
+      const encerrar = (confirmar: boolean) => {
+        desligar();
+        arrastandoRef.current = false;
+        setRedimensionando(false);
+        setExcedente(0);
+        // CLIQUE SIMPLES TAMBÉM RECOLHE. A alça é a borda do painel, e
+        // clicar numa borda pra fechar o que ela delimita é o gesto
+        // curto da mesma intenção do arrasto longo — quem só quer o
+        // mapa inteiro não deveria ter que percorrer 400px pra pedir
+        // isso. O arrasto continua sendo arrasto: só conta como clique
+        // o que andou menos de `MOVIMENTO_CLIQUE`.
+        const recolhe = confirmar
+          && (vaiRecolherRef.current || andouRef.current < MOVIMENTO_CLIQUE);
+        vaiRecolherRef.current = false;
+        setVaiRecolher(false);
+        setPrefs((atual) => {
+          // Recolhendo, a largura gravada é a de ANTES do arrasto:
+          // reabrir devolve o painel como ele era, não espremido no
+          // mínimo. Nos dois casos a escrita é uma só, no fim do gesto
+          // — não uma por frame.
+          const proximo = recolhe
+            ? { ...atual, largura: inicioRef.current.largura, aberto: false }
+            : atual;
+          salvarPreferenciasPainel(chave, proximo);
+          return proximo;
+        });
+        if (recolhe) focarAbaAtiva(prefs.aba);
+      };
+
+      const soltou = () => encerrar(true);
+      // CANCELAR não é soltar: o sistema abortou o gesto e a intenção
+      // nunca foi declarada — fechar ali seria fechar por acidente.
+      const abortou = () => encerrar(false);
+
+      function desligar() {
+        window.removeEventListener("pointermove", mover);
+        window.removeEventListener("pointerup", soltou);
+        window.removeEventListener("pointercancel", abortou);
+        window.removeEventListener("blur", abortou);
+        desligarArrastoRef.current = null;
+      }
+
+      window.addEventListener("pointermove", mover);
+      window.addEventListener("pointerup", soltou);
+      window.addEventListener("pointercancel", abortou);
+      window.addEventListener("blur", abortou);
+      desligarArrastoRef.current = desligar;
     },
-    [chave],
+    [prefs.largura, prefs.aba, chave, focarAbaAtiva, setPrefs],
   );
 
   /** Teclado na alça: setas ajustam de 10 em 10 px, Home/End vão aos limites. */
@@ -268,11 +398,20 @@ export function PainelVtt({
   // Todo destino que ANTES era `router.push`/`<Link>` virou uma destas.
   // Nenhuma troca a URL, nenhuma remonta o VTT.
   const [acessoDe, setAcessoDe] = useState<string | null>(null);
-  const [convitesAberto, setConvitesAberto] = useState(false);
-  const [bandoAberto, setBandoAberto] = useState(false);
-  const [compendioAberto, setCompendioAberto] = useState(false);
-  const [participantesAberto, setParticipantesAberto] = useState(false);
-  const [personagensAberto, setPersonagensAberto] = useState(false);
+  /* QUEM ESTÁ ABERTO mora no contexto, não aqui: o menu da mesa abre
+     as mesmas janelas do outro lado da tela (ver `JanelasDaMesa`). O
+     painel continua sendo quem as DESENHA. */
+  const janelas = useJanelasDaMesa();
+  const convitesAberto = janelas.aberta("convites");
+  const bandoAberto = janelas.aberta("bando");
+  const compendioAberto = janelas.aberta("compendio");
+  const participantesAberto = janelas.aberta("participantes");
+  const personagensAberto = janelas.aberta("personagens");
+  const setConvitesAberto = (v: boolean) => (v ? janelas.abrir("convites") : janelas.fechar("convites"));
+  const setBandoAberto = (v: boolean) => (v ? janelas.abrir("bando") : janelas.fechar("bando"));
+  const setCompendioAberto = (v: boolean) => (v ? janelas.abrir("compendio") : janelas.fechar("compendio"));
+  const setParticipantesAberto = (v: boolean) => (v ? janelas.abrir("participantes") : janelas.fechar("participantes"));
+  const setPersonagensAberto = (v: boolean) => (v ? janelas.abrir("personagens") : janelas.fechar("personagens"));
 
   /**
    * A ficha não é mais janela DO PAINEL: quem a hospeda é a casca da
@@ -302,12 +441,38 @@ export function PainelVtt({
   const aberto = prefs.aberto;
   const abaAtiva = prefs.aba;
 
+  /* O painel FLUTUA por cima do mapa — aberto, com largura escolhida
+     pela pessoa; recolhido, como a coluna de abas. Quanto ele ocupa da
+     borda direita vira `--rv-painel-ocupa` na mesa, pra peças presas
+     nessa borda (controle de zoom, trilho de facção) saírem de baixo
+     dele. Medido, não calculado: acompanha o arrasto de redimensionar
+     e a animação de abrir/fechar sem duplicar regra. */
+  useEffect(() => {
+    const aside = asideRef.current;
+    const mesa = aside?.closest<HTMLElement>(".rv-mesa");
+    if (!aside || !mesa) return;
+    const medir = () => {
+      const ocupa = Math.max(0, mesa.getBoundingClientRect().right - aside.getBoundingClientRect().left);
+      mesa.style.setProperty("--rv-painel-ocupa", `${Math.round(ocupa)}px`);
+      // Só o painel ABERTO desce até o rodapé; recolhido, a coluna de
+      // abas fica no topo e não disputa o canto de baixo (zoom).
+      mesa.style.setProperty("--rv-painel-aberto-ocupa", aberto ? `${Math.round(ocupa)}px` : "0px");
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(aside);
+    return () => {
+      ro.disconnect();
+      mesa.style.setProperty("--rv-painel-ocupa", "0px");
+      mesa.style.setProperty("--rv-painel-aberto-ocupa", "0px");
+    };
+  }, [aberto]);
+
   const conteudoAba: Record<AbaId, React.ReactNode> = {
     chat: (
       <ChatTab
         visivel={aberto && abaAtiva === "chat"}
         personagemDoTokenSelecionado={personagemDoTokenSelecionado}
-        onContador={contadorChat}
         onFocarToken={onFocarToken}
         fixtureVisual={fixtureVisual?.chat}
       />
@@ -317,8 +482,8 @@ export function PainelVtt({
         campaignId={campaignId}
         visivel={aberto && abaAtiva === "personagens"}
         ehNarrador={ehNarrador}
-        onContador={contadorPersonagens}
         onAdicionarACena={onAdicionarPersonagemACena}
+        onArrastarPersonagem={onArrastarPersonagem}
         onAbrirConsole={abrirConsole}
         onConfigurarAcesso={setAcessoDe}
         onPrecarregarConsole={aquecerConsole}
@@ -332,7 +497,6 @@ export function PainelVtt({
         campaignId={campaignId}
         visivel={aberto && abaAtiva === "participantes"}
         ehNarrador={ehNarrador}
-        onContador={contadorParticipantes}
         onAbrirConvites={() => setConvitesAberto(true)}
         onAbrirConsole={abrirConsole}
         onAbrirJanela={() => setParticipantesAberto(true)}
@@ -343,7 +507,6 @@ export function PainelVtt({
       <BandoTab
         campaignId={campaignId}
         visivel={aberto && abaAtiva === "bando"}
-        onContador={contadorBando}
         onEnviarParaPersonagem={(item: ItemTransferivel) => setTransferencia({ item, personagem: null })}
         recarregarSinal={sinalRecarregarBando}
         onAbrirJanela={() => setBandoAberto(true)}
@@ -354,7 +517,6 @@ export function PainelVtt({
       <CompendioTab
         campaignId={campaignId}
         visivel={aberto && abaAtiva === "compendio"}
-        onContador={contadorCompendio}
         onAbrirJanela={() => setCompendioAberto(true)}
         fixtureVisual={fixtureVisual?.compendio}
       />
@@ -379,6 +541,7 @@ export function PainelVtt({
         data-drawer={ehDrawer ? "true" : undefined}
         data-hidratado={hidratado ? "true" : undefined}
         data-redimensionando={redimensionando ? "true" : undefined}
+        data-vai-recolher={vaiRecolher ? "true" : undefined}
         // Largura INLINE, não por classe: `vtt.css` já declara
         // `.rv-painel[data-aberto="true"] { width: 316px }` com a mesma
         // especificidade da regra equivalente de `painel.css`, e qual
@@ -388,13 +551,38 @@ export function PainelVtt({
         // ele ainda respeita o teto de viewport.
         style={
           aberto
-            ? { width: ehDrawer ? `min(${prefs.largura}px, 88vw)` : `${prefs.largura}px` }
+            ? {
+                width: ehDrawer ? `min(${prefs.largura}px, 88vw)` : `${prefs.largura}px`,
+                // O painel sai de cena PELO LADO em que está sendo
+                // empurrado, e some no caminho. A opacidade cai mais
+                // devagar que o deslize (o teto é .78 de perda): some o
+                // bastante pra dizer "já era", não tanto que o conteúdo
+                // desapareça antes de a decisão ser tomada.
+                ...(excedente > 0
+                  ? {
+                      transform: `translateX(${excedente}px)`,
+                      // O desbotamento acompanha o arrasto INTEIRO, sem
+                      // piso que o faça parecer emperrado no meio: quem
+                      // continua puxando continua vendo o painel ir
+                      // embora. 170px é a distância em que ele some de
+                      // vez — larga o bastante pra ser um gradiente, e
+                      // não um corte.
+                      opacity: Math.max(0.04, 1 - excedente / 170),
+                    }
+                  : null),
+              }
             : undefined
         }
         aria-label="Painel da sessão"
         data-testid="painel-vtt"
       >
-        {aberto && !ehDrawer && (
+        {/* A ALÇA VALE TAMBÉM NO MODO GAVETA. Ela era exclusiva do painel
+            ancorado, e numa janela estreita — justamente onde a largura
+            do painel mais custa — simplesmente não existia: não havia
+            como encolher nem como puxar. O drawer já respeita o teto de
+            88vw, então arrastar aqui continua não tendo como estourar a
+            tela. */}
+        {aberto && (
           <div
             className="rv-painel-alca"
             role="separator"
@@ -405,9 +593,6 @@ export function PainelVtt({
             aria-valuemax={LARGURA_MAX}
             tabIndex={0}
             onPointerDown={aoPressionarAlca}
-            onPointerMove={aoMoverAlca}
-            onPointerUp={aoSoltarAlca}
-            onPointerCancel={aoSoltarAlca}
             onKeyDown={aoTeclarAlca}
             data-testid="painel-alca"
           />
@@ -416,9 +601,9 @@ export function PainelVtt({
         <PainelAbas
           abaAtiva={abaAtiva}
           aberto={aberto}
-          contadores={contadores}
           onSelecionar={selecionar}
           onRecolher={recolher}
+          onExpandir={expandir}
           idPainelDe={idPainelDe}
         />
 
@@ -435,20 +620,14 @@ export function PainelVtt({
               hidden={!aberto || abaAtiva !== id}
               data-testid={`painel-tabpanel-${id}`}
             >
-              {/* Sem título: a aba selecionada já diz onde você está —
-                  repetir "CHAT LOG" logo abaixo dela era uma linha de
-                  altura gasta pra não dizer nada de novo. O nome
-                  acessível do painel continua vindo da própria aba
-                  (`aria-labelledby`), então nada se perde pra quem usa
-                  leitor de tela. O cabeçalho sobrevive SÓ no modo
-                  gaveta, onde ele carrega o botão de fechar. */}
-              {ehDrawer && (
-                <header className="rv-painel-cab">
-                  <button type="button" className="rv-painel-fechar" onClick={recolher} aria-label="Fechar painel">
-                    <X size={15} />
-                  </button>
-                </header>
-              )}
+              {/* SEM CABEÇALHO, em nenhum modo. Ele já tinha perdido o
+                  título (a aba selecionada diz onde você está, e
+                  repetir "CHAT LOG" abaixo dela gastava uma linha pra
+                  não dizer nada novo) e sobrevivia só no modo gaveta
+                  pra carregar um × de fechar — um segundo botão pro que
+                  o "recolher" da fileira de abas já faz, sozinho numa
+                  faixa de largura inteira. O nome acessível do painel
+                  continua vindo da própria aba (`aria-labelledby`). */}
               <LimiteErroAba chaveReset={id} rotuloAba={ROTULO_ABA[id]}>
                 {conteudoAba[id]}
               </LimiteErroAba>
@@ -459,6 +638,38 @@ export function PainelVtt({
 
       {/* Janelas internas — o que antes era navegação. */}
       <JanelaJogadoresConvites campaignId={campaignId} aberta={convitesAberto} onFechar={() => setConvitesAberto(false)} />
+
+      {/* AS QUE ERAM PÁGINA. Mesmo lugar das outras: montadas aqui,
+          abertas de qualquer porta (painel ou menu da mesa). */}
+      {janelas.aberta("mercado") && (
+        <JanelaMercado
+          campaignId={campaignId}
+          ehNarrador={ehNarrador}
+          // A loja é a aba Inventário da ficha — o Mercado sempre foi
+          // isto com um seletor na frente.
+          onAbrirFicha={(id) => consoleDaMesa?.abrir(id, "inventario")}
+          onFechar={() => janelas.fechar("mercado")}
+        />
+      )}
+      {janelas.aberta("novo-personagem") && (
+        <JanelaNovoPersonagem
+          campaignId={campaignId}
+          onAbrirFicha={(id) => consoleDaMesa?.abrir(id)}
+          onFechar={() => janelas.fechar("novo-personagem")}
+        />
+      )}
+      {janelas.aberta("livro") && (
+        <JanelaLivro campaignId={campaignId} onFechar={() => janelas.fechar("livro")} />
+      )}
+      {ehNarrador && janelas.aberta("conteudo") && (
+        <JanelaConteudo campaignId={campaignId} onFechar={() => janelas.fechar("conteudo")} />
+      )}
+      {ehNarrador && janelas.aberta("organizador") && (
+        <JanelaOrganizador campaignId={campaignId} onFechar={() => janelas.fechar("organizador")} />
+      )}
+      {ehNarrador && janelas.aberta("configuracoes") && (
+        <JanelaConfiguracoes campaignId={campaignId} onFechar={() => janelas.fechar("configuracoes")} />
+      )}
       <JanelaAcessoPersonagem campaignId={campaignId} characterId={acessoDe} onFechar={() => setAcessoDe(null)} />
       {bandoAberto && (
         <JanelaInterna aberta titulo="Bando" largura={620} altura={620} onFechar={() => setBandoAberto(false)} testId="painel-janela-bando">
@@ -468,7 +679,6 @@ export function PainelVtt({
             <BandoTab
               campaignId={campaignId}
               visivel
-              onContador={() => {}}
               onEnviarParaPersonagem={(item: ItemTransferivel) => setTransferencia({ item, personagem: null })}
               recarregarSinal={sinalRecarregarBando}
             />
@@ -479,7 +689,7 @@ export function PainelVtt({
         <JanelaInterna aberta titulo="Compêndio" largura={680} altura={620} onFechar={() => setCompendioAberto(false)} testId="painel-janela-compendio">
           {/* Mesma aba, com mais espaço — nada de uma segunda implementação do Compêndio. */}
           <div className="rv-pn-aba" style={{ height: "100%" }}>
-            <CompendioTab campaignId={campaignId} visivel onContador={() => {}} />
+            <CompendioTab campaignId={campaignId} visivel />
           </div>
         </JanelaInterna>
       )}
@@ -491,7 +701,6 @@ export function PainelVtt({
               campaignId={campaignId}
               visivel
               ehNarrador={ehNarrador}
-              onContador={() => {}}
               onAbrirConvites={() => setConvitesAberto(true)}
               onAbrirConsole={abrirConsole}
             />
@@ -506,8 +715,8 @@ export function PainelVtt({
               campaignId={campaignId}
               visivel
               ehNarrador={ehNarrador}
-              onContador={() => {}}
               onAdicionarACena={onAdicionarPersonagemACena}
+              onArrastarPersonagem={onArrastarPersonagem}
               onAbrirConsole={abrirConsole}
               onConfigurarAcesso={setAcessoDe}
               onPrecarregarConsole={aquecerConsole}

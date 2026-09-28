@@ -17,7 +17,8 @@
  * um resultado, e um resultado se desenha de um jeito só.
  */
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { PolyDie } from "./PolyDie";
 import { CARGA_MAX_MS } from "./lancamento";
 import { Check, Chevron, Cross, Dice, DoubleCheck, Half, Warn } from "./icones";
@@ -28,7 +29,7 @@ import type { TableLogVisibility } from "../../../../../lib/table";
 
 export const DISPLAY = "var(--font-chakra), 'Chakra Petch', sans-serif";
 export const MONO = "var(--font-mono), 'JetBrains Mono', monospace";
-export const BODY = "var(--font-inter), Inter, sans-serif";
+export const BODY = "var(--font-rajdhani), Rajdhani, sans-serif";
 
 export const INK = "#d6e4f5";
 export const INK_DIM = "#7f95b3";
@@ -73,10 +74,49 @@ export const RESULTS: Record<ResultKey, { label: string; accent: Accent; Icon: t
   sucesso_critico: { label: "Sucesso Crítico", accent: ACCENTS.good, Icon: DoubleCheck },
   sucesso_padrao: { label: "Sucesso Padrão", accent: ACCENTS.cyan, Icon: Check },
   sucesso_limitado: { label: "Sucesso Limitado", accent: ACCENTS.amber, Icon: Half },
-  falha_limitada: { label: "Falha Limitada", accent: ACCENTS.magenta, Icon: Warn },
+  /* ÂMBAR, e não magenta: as duas faixas LIMITADAS são o mesmo lugar da
+     régua — o meio, onde nada se resolve de vez —, e o magenta punha a
+     falha limitada numa família de cor que não aparece em mais nada da
+     leitura de resultado. O que separa uma da outra é o ícone (meia
+     marca no sucesso, aviso na falha) e a palavra. */
+  falha_limitada: { label: "Falha Limitada", accent: ACCENTS.amber, Icon: Warn },
   falha: { label: "Falha", accent: ACCENTS.danger, Icon: Cross },
   falha_critica: { label: "Falha Crítica", accent: ACCENTS.danger, Icon: Cross },
 };
+
+/**
+ * HOVER para quem é desenhado INLINE.
+ *
+ * A bandeja e seus controles não têm folha de estilo própria: são
+ * estilos inline, porque os mesmos componentes rodam no VTT, no Console
+ * da ficha e na página `/dev/dados`, e nenhuma folha cobre as três. Sem
+ * um `:hover` possível, tudo ali era mudo ao mouse — só os dados
+ * respondiam, e por um `onMouseEnter` escrito à mão (o mesmo truque,
+ * repetido).
+ *
+ * Guarda o valor anterior NO ELEMENTO (via `WeakMap`) e o devolve na
+ * saída — apagar a propriedade não serviria: ela veio do `style` do
+ * React, que não a reescreve se as props não mudaram.
+ */
+const estiloAnterior = new WeakMap<HTMLElement, Record<string, string>>();
+export function aoPassarMouse(estilos: Record<string, string>) {
+  return {
+    onMouseEnter: (e: { currentTarget: HTMLElement }) => {
+      const el = e.currentTarget;
+      const antes: Record<string, string> = {};
+      for (const [prop, valor] of Object.entries(estilos)) {
+        antes[prop] = el.style.getPropertyValue(prop);
+        el.style.setProperty(prop, valor);
+      }
+      estiloAnterior.set(el, antes);
+    },
+    onMouseLeave: (e: { currentTarget: HTMLElement }) => {
+      const el = e.currentTarget;
+      const antes = estiloAnterior.get(el);
+      for (const prop of Object.keys(estilos)) el.style.setProperty(prop, antes?.[prop] ?? "");
+    },
+  };
+}
 
 /** Pilha vertical (equivalente ao `space-y-*` do design). */
 export function Stack({ gap, children, style }: { gap: number; children: ReactNode; style?: CSSProperties }) {
@@ -183,29 +223,63 @@ export function DadosRolados({ dados, maiorDado, size = 46, landed = false, dim 
  * dados são somados e nenhum vale mais que o outro — por isso nenhum
  * acende, a menos que a rolagem diga que o modo foi "maior".
  */
-export function DadosLivres({ termos, maior, size = 40, landed = false }: {
+export function DadosLivres({ termos, maior, size = 40, landed = false, acento }: {
   termos: readonly { faces: number; valor: number }[];
   /** Valor que "venceu" no modo maior-dado; `null`/ausente na soma. */
   maior?: number | null;
   size?: number;
   landed?: boolean;
+  /**
+   * Acento dos dados que VALEM — a mesma regra de `DadosRolados`: quem
+   * tem veredito passa o acento da faixa, pra que o dado aceso e o
+   * veredito não discordem. Sem veredito (rolagem sem CD) fica o
+   * arcano, que é a cor da rolagem livre em repouso.
+   */
+  acento?: Accent;
 }) {
-  const cor = ACCENTS.arcane;
+  const cor = acento ?? ACCENTS.arcane;
   const maiorIdx = maior == null ? -1 : termos.findIndex((t) => t.valor === maior);
+  /* SOMA leva "+" entre os dados; MAIOR não. Na soma os dados formam
+     uma conta, e o "+" é o que diz que o número grande à direita saiu
+     dali — sem ele a fileira lia como uma coleção de resultados soltos.
+     No modo maior não há conta nenhuma: um dado vence, e um "+" ali
+     afirmaria uma soma que não vai acontecer.
+
+     O vão encolhe de 8 pra 5 quando o sinal entra: com 8 de cada lado o
+     "+" ficava boiando entre os dados em vez de ligar os dois. */
+  const somando = maior == null;
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: somando ? 5 : 8 }}>
       {termos.map((t, i) => (
-        <PolyDie
-          key={i}
-          sides={t.faces}
-          value={t.valor}
-          active={i === maiorIdx}
-          landed={landed}
-          rollIndex={i}
-          accent={cor.hex}
-          soft={cor.soft}
-          size={size}
-        />
+        <Fragment key={i}>
+          {somando && i > 0 && (
+            /* O TAMANHO ACOMPANHA O DADO (60% dele), e não um px fixo:
+               a mesma fileira é desenhada a 40px no feed e menor na
+               bandeja, e um valor fixo sumia do lado do dado grande.
+
+               A COR é `#43597c`, o contorno do dado PARADO em
+               `PolyDie` — de propósito mais apagada que os dados, que
+               na soma ficam todos acesos. O "+" é pontuação: liga os
+               números sem competir com eles. Acompanhando o acento ele
+               virava mais um elemento aceso na fileira. */
+            <span aria-hidden="true" style={{ flex: "none", fontFamily: MONO, fontSize: Math.round(size * 0.6), fontWeight: 400, lineHeight: 1, color: "#43597c" }}>+</span>
+          )}
+          <PolyDie
+            sides={t.faces}
+            value={t.valor}
+            /* NA SOMA TODOS CONTAM, então todos ficam acesos — o mesmo
+               realce que o vencedor recebe no modo maior. Apagados, os
+               dados diziam "nenhum destes importa" bem em cima da conta
+               que o total à direita acabou de fazer com eles. No modo
+               maior segue só o vencedor: ali um dado de fato vence. */
+            active={somando || i === maiorIdx}
+            landed={landed}
+            rollIndex={i}
+            accent={cor.hex}
+            soft={cor.soft}
+            size={size}
+          />
+        </Fragment>
       ))}
     </div>
   );
@@ -236,19 +310,36 @@ export function FaixaSoma({ base, modificador, total, cd, modo = "sum", nota, te
 }) {
   const temCd = cd != null;
   const passou = temCd && total >= cd;
-  const acento = !temCd ? ACCENTS.slate : passou ? ACCENTS.good : ACCENTS.danger;
+  /* CIANO no sucesso, e não verde. É a mesma regra do teste de Ruptura
+     logo acima (`RESULTS`): o VERDE é o TOPO — `sucesso_critico` —, e o
+     sucesso comum fica com o ciano estrutural. Uma soma contra CD não
+     tem crítico, então ela nunca chega no verde: passar da CD aqui é
+     sucesso padrão, e pintá-lo de verde dizia "crítico" pra qualquer
+     acerto raspado. A falha continua vermelha, como lá. */
+  const acento = !temCd ? ACCENTS.slate : passou ? ACCENTS.cyan : ACCENTS.danger;
+  /* O MESMO ÍCONE DE VEREDITO do teste (`RESULTS`): ✓ pra sucesso, ✗ pra
+     falha. O dado fica só pro caso SEM CD, que é o único aqui que não
+     tem veredito nenhum — e aí ele diz "isto é uma rolagem, não um
+     resultado", que é exatamente o que a faixa neutra significa.
+
+     Antes a soma trazia o dado sempre: ao lado de um teste no feed, o
+     mesmo "passou da CD" aparecia com dois desenhos diferentes, como se
+     fossem respostas de naturezas distintas. São a mesma resposta — o
+     teste só tem mais degraus. */
+  const Icone = !temCd ? Dice : passou ? Check : Cross;
   return (
     <FaixaChassi
       acento={acento}
-      icone={<Dice width={17} height={17} style={{ color: acento.hex, flexShrink: 0 }} />}
+      icone={<Icone width={17} height={17} style={{ color: acento.hex, flexShrink: 0 }} />}
       titulo={temCd ? (passou ? "Sucesso" : "Falha") : "Sem CD definida"}
       nota={nota}
       total={total}
       testIdTotal={testId}
       parcelas={<>
-        <Parcela>{modo === "high" ? "maior" : "soma"} {seg(String(base), ACCENTS.cyan.hex)}</Parcela>
-        <Parcela>+ mod {seg(modificador >= 0 ? `+${modificador}` : String(modificador))}</Parcela>
-        {temCd && <Parcela>· cd {seg(String(cd), ACCENTS.amber.hex)}</Parcela>}
+        {/* Mesma regra do teste: a base e a CD seguem o acento da faixa. */}
+        <Parcela>{modo === "high" ? "maior" : "soma"} {seg(String(base), acento.hex)}</Parcela>
+        <Parcela>+ mod {seg(modificador >= 0 ? `+${modificador}` : String(modificador), acento.hex)}</Parcela>
+        {temCd && <Parcela>· cd {seg(String(cd), acento.hex)}</Parcela>}
       </>}
     />
   );
@@ -360,12 +451,19 @@ export function FaixaResultado({ r, nota, testIdTotal }: {
       total={r.total}
       testIdTotal={testIdTotal}
       parcelas={<>
-        <Parcela>maior {seg(String(r.maiorDado), ACCENTS.cyan.hex)}</Parcela>
+        {/* TODA a conta sai no acento da FAIXA, não num ciano e num
+            âmbar fixos. Os números são de onde o veredito nasce —
+            pintados de outra cor, a faixa dizia "falha limitada" em
+            âmbar com um "5" ciano de sucesso logo abaixo. Os RÓTULOS
+            ("maior", "+ mod", "· cd") ficam no cinza: é o contraste
+            entre eles e os números que faz a linha ser lida como uma
+            conta, e não como um bloco colorido. */}
+        <Parcela>maior {seg(String(r.maiorDado), acento.hex)}</Parcela>
         {r.pericia
-          ? <Parcela>+ {r.pericia.toLowerCase()} {seg(`+${r.periciaValor}`)}</Parcela>
+          ? <Parcela>+ {r.pericia.toLowerCase()} {seg(`+${r.periciaValor}`, acento.hex)}</Parcela>
           : <Parcela>· sem perícia</Parcela>}
-        <Parcela>+ mod {seg(r.modificador >= 0 ? `+${r.modificador}` : String(r.modificador))}</Parcela>
-        {r.cd != null && <Parcela>· cd {seg(String(r.cd), ACCENTS.amber.hex)}</Parcela>}
+        <Parcela>+ mod {seg(r.modificador >= 0 ? `+${r.modificador}` : String(r.modificador), acento.hex)}</Parcela>
+        {r.cd != null && <Parcela>· cd {seg(String(r.cd), acento.hex)}</Parcela>}
       </>}
     />
   );
@@ -382,8 +480,6 @@ export function FaixaResultado({ r, nota, testIdTotal }: {
 /*  janela sem cor nenhuma. Os valores abaixo são os MESMOS da folha,  */
 /*  já resolvidos.                                                     */
 /* ================================================================== */
-
-const CANTOS = ["tl", "tr", "bl", "br"] as const;
 
 /** Quanto da janela precisa continuar dentro da tela depois de arrastada. */
 const MARGEM_ALCANCAVEL = 48;
@@ -449,7 +545,7 @@ function useArrasto() {
   return { desloc, iniciarArrasto, arrastando, refJanela };
 }
 
-/** Casca de janela de ferramenta: brackets nos cantos, espinha vertical e cabeçalho. */
+/** Casca de janela de ferramenta: espinha vertical e cabeçalho. */
 export function MolduraRolagem({ indice, codigo, titulo, modo, acento = ACCENTS.cyan.hex, largura = 470, aoFechar, rotuloFechar, children, testId }: {
   /** Número da espinha, no formato de dois dígitos das outras ferramentas. */
   indice: string;
@@ -466,14 +562,6 @@ export function MolduraRolagem({ indice, codigo, titulo, modo, acento = ACCENTS.
   testId?: string;
 }) {
   const { desloc, iniciarArrasto, arrastando, refJanela } = useArrasto();
-  const canto = (c: (typeof CANTOS)[number]): CSSProperties => ({
-    position: "absolute", zIndex: 2, width: 11, height: 11, pointerEvents: "none", opacity: 0.55,
-    borderColor: acento,
-    ...(c === "tl" ? { left: 6, top: 6, borderLeft: "1px solid", borderTop: "1px solid" } : {}),
-    ...(c === "tr" ? { right: 6, top: 6, borderRight: "1px solid", borderTop: "1px solid" } : {}),
-    ...(c === "bl" ? { left: 6, bottom: 6, borderLeft: "1px solid", borderBottom: "1px solid" } : {}),
-    ...(c === "br" ? { right: 6, bottom: 6, borderRight: "1px solid", borderBottom: "1px solid" } : {}),
-  });
   return (
     <section
       ref={refJanela}
@@ -492,8 +580,6 @@ export function MolduraRolagem({ indice, codigo, titulo, modo, acento = ACCENTS.
         fontSize: 12, color: INK,
       }}
     >
-      {CANTOS.map((c) => <span key={c} aria-hidden="true" style={canto(c)} />)}
-
       {/* A espinha também arrasta: é a segunda alça natural da janela
           (a barra vertical inteira, à esquerda), e quem pega a janela
           por ali espera que ela venha junto. */}
@@ -635,10 +721,12 @@ export function Select({ label, value, onChange, options, disabled = false }: {
 export function Stepper({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   const fmt = value > 0 ? `+${value}` : `${value}`;
   return (
-    <div style={{ display: "inline-flex", alignItems: "center", borderRadius: 2, border: "1px solid #1c2b45" }}>
-      <button type="button" onClick={() => onChange(value - 1)} style={{ padding: "6px 12px", border: 0, background: "transparent", cursor: "pointer", fontFamily: MONO, fontSize: 14, color: INK_DIM }}>−</button>
+    <div className="rv-dados-stepper" style={{ display: "inline-flex", alignItems: "center", borderRadius: 2, border: "1px solid #1c2b45" }}>
+      <button type="button" onClick={() => onChange(value - 1)} {...aoPassarMouse({ background: "rgba(255,255,255,.05)", color: INK })}
+        style={{ padding: "6px 12px", border: 0, background: "transparent", cursor: "pointer", fontFamily: MONO, fontSize: 14, color: INK_DIM, transition: "background .14s, color .14s" }}>−</button>
       <span style={{ minWidth: 40, textAlign: "center", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: value === 0 ? "#8ea0bd" : value > 0 ? ACCENTS.good.hex : ACCENTS.danger.hex }}>{fmt}</span>
-      <button type="button" onClick={() => onChange(value + 1)} style={{ padding: "6px 12px", border: 0, background: "transparent", cursor: "pointer", fontFamily: MONO, fontSize: 14, color: INK_DIM }}>+</button>
+      <button type="button" onClick={() => onChange(value + 1)} {...aoPassarMouse({ background: "rgba(255,255,255,.05)", color: INK })}
+        style={{ padding: "6px 12px", border: 0, background: "transparent", cursor: "pointer", fontFamily: MONO, fontSize: 14, color: INK_DIM, transition: "background .14s, color .14s" }}>+</button>
     </div>
   );
 }
@@ -656,7 +744,8 @@ export function CampoCD({ value, onChange }: { value: string; onChange: (v: stri
       </span>
       <input type="number" inputMode="numeric" min={1} max={99} value={value} placeholder="—"
         onChange={(e) => onChange(e.target.value)}
-        style={{ width: 80, borderRadius: 2, background: "transparent", padding: "6px 8px", textAlign: "right", fontFamily: MONO, fontSize: 13, fontWeight: 700, border: "1px solid #1c2b45", color: ACCENTS.amber.hex, outline: "none" }} />
+        {...aoPassarMouse({ "border-color": "#2a3b58" })}
+        style={{ width: 80, borderRadius: 2, background: "transparent", padding: "6px 8px", textAlign: "right", fontFamily: MONO, fontSize: 13, fontWeight: 700, border: "1px solid #1c2b45", color: ACCENTS.amber.hex, outline: "none", transition: "border-color .14s" }} />
     </label>
   );
 }
@@ -690,6 +779,17 @@ export function RollButton({ label, solid = false, disabled = false, onRoll, onC
   const [carregando, setCarregando] = useState(false);
   const [batendo, setBatendo] = useState(false);
   const [aneis, setAneis] = useState<{ id: number }[]>([]);
+  /**
+   * VIS-02 — os anéis do charge crescem 1,5× e eram cortados.
+   *
+   * Eles nasciam dentro do próprio botão, e qualquer ancestral que
+   * rolasse (`.rc-body`, `.rv-dados-corpo`) recorta o que passa da
+   * borda. Desenhá-los no `body`, sobre a caixa medida do botão, tira o
+   * recorte sem mexer no scroll de quem os hospeda — e sem ampliar área
+   * clicável, porque a camada inteira é `pointer-events: none`.
+   */
+  const botaoRef = useRef<HTMLButtonElement>(null);
+  const [caixaBotao, setCaixaBotao] = useState<DOMRect | null>(null);
   const [estourando, setEstourando] = useState(false);
   const carregandoRef = useRef(false);
   const disparadoRef = useRef(true); // começa "já disparado": nada solto sem antes ter pressionado
@@ -727,6 +827,7 @@ export function RollButton({ label, solid = false, disabled = false, onRoll, onC
       setBatendo(true);
       setTimeout(() => setBatendo(false), 80);
       const id = idAnelRef.current++;
+      setCaixaBotao(botaoRef.current?.getBoundingClientRect() ?? null);
       setAneis((r) => [...r, { id }]);
       setTimeout(() => setAneis((r) => r.filter((x) => x.id !== id)), 900);
       timerBatidaRef.current = setTimeout(bater, intervalo);
@@ -825,17 +926,26 @@ export function RollButton({ label, solid = false, disabled = false, onRoll, onC
       {estourando && (
         <div className="rup-burst-flash" aria-hidden="true" style={{ position: "absolute", inset: 0, borderRadius: 2, background: corDaCarga(cargaRef.current), zIndex: 20, pointerEvents: "none" }} />
       )}
-      {/* anéis de batimento emanando do botão */}
-      {aneis.map((anel) => (
-        <div key={anel.id} aria-hidden="true"
-          style={{
-            position: "absolute", inset: -2, borderRadius: 2, pointerEvents: "none",
-            border: `1px solid ${corCarga}`,
-            animation: `rup-charge-ring ${Math.max(0.38, 0.75 - carga * 0.37)}s ease-out forwards`,
-          }}
-        />
-      ))}
-      <button type="button" disabled={disabled}
+      {/* Anéis de batimento — desenhados no `body`, sobre a caixa do
+          botão, para não serem cortados pelo container que rola. */}
+      {aneis.length > 0 && caixaBotao && typeof document !== "undefined" && createPortal(
+        <div aria-hidden="true" style={{
+          position: "fixed", left: caixaBotao.left - 2, top: caixaBotao.top - 2,
+          width: caixaBotao.width + 4, height: caixaBotao.height + 4,
+          pointerEvents: "none", zIndex: 940,
+        }}>
+          {aneis.map((anel) => (
+            <div key={anel.id} style={{
+              position: "absolute", inset: 0, borderRadius: 2, pointerEvents: "none",
+              border: `1px solid ${corCarga}`,
+              animation: `rup-charge-ring ${Math.max(0.38, 0.75 - carga * 0.37)}s ease-out forwards`,
+            }} />
+          ))}
+        </div>,
+        document.body,
+      )}
+      <button type="button" disabled={disabled} ref={botaoRef}
+        data-testid="charge-lancar"
         data-carregando-forca={carregando ? "true" : undefined}
         onPointerDown={aoPressionar} onPointerUp={aoSoltarPonteiro}
         onPointerCancel={aoCancelarPonteiro} onLostPointerCapture={aoCancelarPonteiro}
@@ -888,7 +998,12 @@ export function SeletorVisibilidade({ valor, onChange, ehNarrador }: {
         const on = o.v === valor;
         return (
           <button key={o.v} type="button" onClick={() => onChange(o.v)} aria-pressed={on} title={o.dica}
+            /* O LIGADO não reage: ele já está aceso no ciano, e mexer
+               nele no hover só embaralharia "selecionado" com "sob o
+               cursor". */
+            {...(on ? {} : aoPassarMouse({ "border-color": "#2a3b58", color: "#9fb3d1", background: "rgba(255,255,255,.04)" }))}
             style={{
+              transition: "border-color .14s, color .14s, background .14s",
               flex: 1, borderRadius: 2, padding: "5px 6px", cursor: "pointer",
               fontFamily: DISPLAY, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em",
               color: on ? ACCENTS.cyan.hex : "#6f83a3", background: on ? ACCENTS.cyan.soft : "transparent",
@@ -901,4 +1016,3 @@ export function SeletorVisibilidade({ valor, onChange, ehNarrador }: {
     </div>
   );
 }
-

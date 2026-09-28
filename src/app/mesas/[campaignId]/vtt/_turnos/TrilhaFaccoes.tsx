@@ -1,5 +1,7 @@
 "use client";
 
+import { Check, X } from "lucide-react";
+
 /**
  * Trilha de turnos — direção visual "Facções em confronto".
  *
@@ -62,6 +64,7 @@ export interface TrilhaFaccoesProps {
   onDeclarar: (id: string, janela: Janela) => void;
   onAssumir: (id: string) => void;
   onConcluir: (pa: number) => void;
+  onCancelar: () => void;
   onEncerrar: (id: string) => void;
   onAvancarJanela: () => void;
   onProximaRodada: () => void;
@@ -82,7 +85,7 @@ const ORDEM_SITUACAO: Record<Situacao, number> = { agindo: 0, apto: 1, aguardand
 
 function situacaoDe(p: Participante, trilha: EstadoTrilha): Situacao {
   if (trilha.agindoId === p.id) return "agindo";
-  const el = elegibilidade(p, trilha);
+  const el = elegibilidade(p, trilha, { acaoDireta: true });
   if (el.apto) return "apto";
   // Barrado SÓ pela alternância é espera, não conclusão — vale mesmo
   // pra quem já agiu numa janela anterior e volta de fragmentação.
@@ -111,22 +114,19 @@ function ordenarTrilho(participantes: Participante[], trilha: EstadoTrilha): Par
  *
  * "R"/"L" eram opacos: a inicial não diz o que a janela É, e o custo em
  * PA — que é a informação com a qual o jogador decide — ficava só no
- * `title`. Aqui o botão mostra GLIFO + TETO (`⚡ ≤2`, `◆ 3+`): o número
- * é a regra, o glifo dá a leitura rápida, e nenhum dos dois precisa da
- * palavra inteira ocupando o trilho. O texto completo continua no
+ * `title`. Aqui o botão mostra só o TETO (`≤2`, `3+`): o número é a
+ * regra, e não precisa da palavra inteira ocupando o trilho. O texto completo continua no
  * `title`/`aria-label`, que é onde ele não custa largura.
  *
  * Os números vêm de `TETO_PA`/`PISO_PA`, não de literais — se a regra
  * mudar, o botão muda junto.
  */
-const DECLARACAO: Record<Janela, { glifo: string; teto: string; descricao: string }> = {
+const DECLARACAO: Record<Janela, { teto: string; descricao: string }> = {
   rapidos: {
-    glifo: "⚡",
     teto: `≤${TETO_PA.rapidos}`,
     descricao: `Declarar turno rápido — ações de até ${TETO_PA.rapidos} PA`,
   },
   lentos: {
-    glifo: "◆",
     teto: `${PISO_PA.lentos}+`,
     descricao: `Declarar turno lento — ações de ${PISO_PA.lentos} PA ou mais`,
   },
@@ -176,6 +176,7 @@ export function TrilhaFaccoes(props: TrilhaFaccoesProps) {
           onDeclarar={props.onDeclarar}
           onAssumir={props.onAssumir}
           onConcluir={props.onConcluir}
+          onCancelar={props.onCancelar}
           onEncerrar={props.onEncerrar}
           onFocar={props.onFocar}
         />
@@ -186,13 +187,13 @@ export function TrilhaFaccoes(props: TrilhaFaccoesProps) {
 
 function Faccao({
   lado, ativa, prontos, participantes, trilha, tokenPorId, selecionadoId, ehNarrador, agindo,
-  onDeclarar, onAssumir, onConcluir, onEncerrar, onFocar,
+  onDeclarar, onAssumir, onConcluir, onCancelar, onEncerrar, onFocar,
 }: {
   lado: Lado; ativa: boolean; prontos: number; participantes: Participante[];
   trilha: EstadoTrilha; tokenPorId: Map<string, TokenApresentacao>; selecionadoId: string | null;
   ehNarrador: boolean; agindo: Participante | null;
   onDeclarar: (id: string, j: Janela) => void; onAssumir: (id: string) => void;
-  onConcluir: (pa: number) => void; onEncerrar: (id: string) => void; onFocar: (id: string) => void;
+  onConcluir: (pa: number) => void; onCancelar: () => void; onEncerrar: (id: string) => void; onFocar: (id: string) => void;
 }) {
   return (
     <aside className={`rv-faccao rv-faccao--${lado}`} data-ativa={ativa} aria-label={`${ROTULO_LADO[lado]} — ativação`}>
@@ -214,6 +215,7 @@ function Faccao({
             onDeclarar={onDeclarar}
             onAssumir={onAssumir}
             onConcluir={onConcluir}
+            onCancelar={onCancelar}
             onEncerrar={onEncerrar}
             onFocar={onFocar}
           />
@@ -226,14 +228,14 @@ function Faccao({
 
 function Ator({
   p, token, trilha, selecionado, ehNarrador, outroAgindo,
-  onDeclarar, onAssumir, onConcluir, onEncerrar, onFocar,
+  onDeclarar, onAssumir, onConcluir, onCancelar, onEncerrar, onFocar,
 }: {
   p: Participante; token: TokenApresentacao | undefined; trilha: EstadoTrilha;
   selecionado: boolean; ehNarrador: boolean; outroAgindo: Participante | null;
   onDeclarar: (id: string, j: Janela) => void; onAssumir: (id: string) => void;
-  onConcluir: (pa: number) => void; onEncerrar: (id: string) => void; onFocar: (id: string) => void;
+  onConcluir: (pa: number) => void; onCancelar: () => void; onEncerrar: (id: string) => void; onFocar: (id: string) => void;
 }) {
-  const el = elegibilidade(p, trilha);
+  const el = elegibilidade(p, trilha, { acaoDireta: true });
   const situacao = situacaoDe(p, trilha);
   const restante = paRestante(p);
   // Mesma política de controle do dock anterior: jogador escolhe por
@@ -244,6 +246,7 @@ function Ator({
   // consumada, e o botão precisa DIZER isso em vez de virar no-op.
   const declaracaoTravada = (p.agiuEm.length > 0 && p.fragmentouEm === null) || !!p.incapaz || p.encerrou;
   const resolvido = situacao === "agiu" || situacao === "fora";
+  const jaAgiuNaJanela = p.agiuEm.includes(trilha.janela) && p.fragmentouEm !== trilha.janela;
 
   const motivoAgir = outroAgindo
     ? `${outroAgindo.nome} está em ação.`
@@ -258,31 +261,50 @@ function Ator({
       data-sel={selecionado}
       data-frag={p.fragmentouEm !== null}
     >
-      <button
-        type="button"
-        className="rv-ator-retrato"
-        data-vertente={token?.vertente ?? "nenhuma"}
-        aria-pressed={selecionado}
-        aria-label={`${p.nome} — selecionar e centralizar no mapa`}
-        title={`${p.nome} · ${restante}/${p.paTotal} PA${el.apto ? " · pode agir" : el.motivo ? ` · ${el.motivo.texto}` : ""}`}
-        onClick={() => onFocar(p.id)}
-      >
-        {token?.retrato ? <img src={token.retrato} alt="" /> : <span>{token?.sigla ?? p.nome.slice(0, 2).toUpperCase()}</span>}
-        {/* PA fragmentado: badge pequeno no retrato, com o que sobrou
-            pra gastar no retorno (regra 5). Só existe quando fragmentou
-            de verdade — nunca um contador genérico de PA. */}
-        {p.fragmentouEm !== null && restante > 0 && (
-          <span className="rv-ator-frag" title={`Fragmentou nos turnos ${p.fragmentouEm === "rapidos" ? "rápidos" : "lentos"} — restam ${restante} PA`}>
-            {restante}
-          </span>
+      {/* Caixa do retrato: âncora do "×" de cancelar o Agir, que não pode
+          ser filho do retrato (botão dentro de botão é HTML inválido). */}
+      <div className="rv-ator-retrato-caixa">
+        <button
+          type="button"
+          className="rv-ator-retrato"
+          data-vertente={token?.vertente ?? "nenhuma"}
+          aria-pressed={selecionado}
+          aria-label={`${p.nome} — selecionar e centralizar no mapa`}
+          title={`${p.nome} · ${restante}/${p.paTotal} PA${el.apto ? " · pode agir" : el.motivo ? ` · ${el.motivo.texto}` : ""}`}
+          onClick={() => onFocar(p.id)}
+        >
+          {token?.retrato ? <img src={token.retrato} alt="" /> : <span>{token?.sigla ?? p.nome.slice(0, 2).toUpperCase()}</span>}
+          {/* PA fragmentado: badge pequeno no retrato, com o que sobrou
+              pra gastar no retorno (regra 5). Só existe quando fragmentou
+              de verdade — nunca um contador genérico de PA. */}
+          {p.fragmentouEm !== null && restante > 0 && (
+            <span className="rv-ator-frag" title={`Fragmentou nos turnos ${p.fragmentouEm === "rapidos" ? "rápidos" : "lentos"} — restam ${restante} PA`}>
+              {restante}
+            </span>
+          )}
+          {situacao === "fora" ? (
+            <span className="rv-ator-marca" aria-hidden="true"><X size={11} strokeWidth={2.5} /></span>
+          ) : jaAgiuNaJanela && situacao !== "agindo" ? (
+            <span className="rv-ator-marca" aria-hidden="true"><Check size={11} strokeWidth={2.5} /></span>
+          ) : null}
+        </button>
+        {situacao === "agindo" && (
+          <button type="button" className="rv-ator-cancelar" onClick={onCancelar} aria-label="Cancelar o Agir" title="Cancelar o Agir — nada é gasto">
+            <X size={11} strokeWidth={2.5} />
+          </button>
         )}
-        {resolvido && <span className="rv-ator-marca" aria-hidden="true">{situacao === "fora" ? "×" : "✓"}</span>}
-      </button>
+      </div>
 
       <div className="rv-ator-acoes">
         {situacao === "agindo" ? (
-          <span className="rv-ator-ativo">Ativo</span>
-        ) : !resolvido ? (
+          <Resolucao
+            paDoTurno={Math.max(1, tetoPaAgora(p, trilha.janela) === Infinity ? restante : tetoPaAgora(p, trilha.janela))}
+            onConcluir={onConcluir}
+            onPassar={() => onEncerrar(p.id)}
+          />
+        ) : situacao !== "fora" ? (
+          /* Fica mesmo depois de agir: a mesa pode fazer o personagem
+             agir de novo (`elegibilidade` com `acaoDireta`). */
           <button
             type="button"
             className="rv-ator-agir"
@@ -294,7 +316,8 @@ function Ator({
           </button>
         ) : null}
 
-        {!resolvido && (
+        {/* Quem já está agindo já está NA janela — declarar não se aplica. */}
+        {!resolvido && situacao !== "agindo" && (
           <div className="rv-ator-declara" role="group" aria-label={`Janela declarada por ${p.nome}`}>
             {(["rapidos", "lentos"] as Janela[]).map((j) => (
               <BotaoDeclarar
@@ -310,13 +333,6 @@ function Ator({
         )}
       </div>
 
-      {situacao === "agindo" && (
-        <Resolucao
-          paDoTurno={Math.max(1, tetoPaAgora(p, trilha.janela) === Infinity ? restante : tetoPaAgora(p, trilha.janela))}
-          onConcluir={onConcluir}
-          onPassar={() => onEncerrar(p.id)}
-        />
-      )}
     </li>
   );
 }
@@ -341,8 +357,9 @@ function Ator({
 function Resolucao({ paDoTurno, onConcluir, onPassar }: { paDoTurno: number; onConcluir: (pa: number) => void; onPassar: () => void }) {
   return (
     <div className="rv-ator-resolucao">
-      <button type="button" className="rv-btn rv-btn--pri" onClick={() => onConcluir(paDoTurno)}>Concluir</button>
-      <button type="button" className="rv-btn rv-btn--ghost" onClick={onPassar}>Passar</button>
+      {/* Concluir É o "Agir" do momento seguinte — mesma peça, mesma classe. */}
+      <button type="button" className="rv-ator-agir" onClick={() => onConcluir(paDoTurno)}>Concluir</button>
+      <button type="button" className="rv-ator-passar" onClick={onPassar}>Passar</button>
     </div>
   );
 }
@@ -389,7 +406,6 @@ function BotaoDeclarar({
         onBlur={() => setDica(null)}
         onClick={onDeclarar}
       >
-        <span aria-hidden="true">{d.glifo}</span>
         {d.teto}
       </button>
       {dica && (

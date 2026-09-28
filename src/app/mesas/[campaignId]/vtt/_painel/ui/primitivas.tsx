@@ -9,10 +9,10 @@
  * componentes que o painel precisa e que o Console não expõe como
  * primitiva reutilizável:
  *
- *   · `Modulo`      ← anatomia de `.rc-skill` (badge de ícone com
+ *   · `Modulo`      ← anatomia do antigo card de perícia (badge de ícone com
  *                     borda própria + corpo com label mono + valor)
  *   · `Chip`        ← `.rc-ncond-tag` / `.rc-dock-tag`
- *   · `Caption`     ← `.rc-caption` / `.rc-nres-caption` (selo de seção)
+ *   · `Caption`     ← `.rc-caption` (selo de seção)
  *   · `FaixaResultado` ← trilha de recurso `.rc-nres-track` virada em
  *                     faixa de resultado forte
  *   · `BotaoTecnico`← `.rc-ghost` / `.rc-ncol-estabilizar`

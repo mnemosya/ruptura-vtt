@@ -25,6 +25,7 @@
 
 import { detectCollapseOnResourceChange, resolveCollapseAdditionalDamage } from "./collapse";
 import { resolveDamageWithMitPd, type DefenseSourceInput } from "./defense";
+import { applyDamageThroughTemporaryPv } from "./temporaryPv";
 import type { Character, CollapseRulesPayload } from "./types";
 import {
   deriveItemProperties,
@@ -260,14 +261,11 @@ export function applyMarginBasedAttackDamage(params: {
   const damageAfterMargin = Math.max(0, rawDamage + params.marginDamageModifier);
   const finalDamage = Math.max(0, damageAfterMargin - mit);
 
-  const pvBefore = params.character.recursos_atuais?.pv ?? 0;
+  const damage = applyDamageThroughTemporaryPv(params.character, finalDamage);
+  const pvBefore = damage.pvBefore;
   const peAtual = params.character.recursos_atuais?.pe ?? 0;
-  const pvAfter = Math.max(0, pvBefore - finalDamage);
-
-  const withDamage: Character = {
-    ...params.character,
-    recursos_atuais: { ...params.character.recursos_atuais, pv: pvAfter },
-  };
+  const pvAfter = damage.pvAfter;
+  const withDamage = damage.character;
 
   const collapse = detectCollapseOnResourceChange(
     withDamage,
@@ -279,11 +277,11 @@ export function applyMarginBasedAttackDamage(params: {
   let finalCharacter = collapse.character;
   let collapseAdvanceLogs: string[] = [];
   let collapseAdvanceTableLogs: { type: string; payload: Record<string, unknown> }[] = [];
-  if (!collapse.started && !collapse.ended && finalDamage > 0) {
+  if (!collapse.started && !collapse.ended && damage.appliedToPv > 0) {
     const additional = resolveCollapseAdditionalDamage({
       character: finalCharacter,
       resource: "pv",
-      damageAmount: finalDamage,
+      damageAmount: damage.appliedToPv,
       rules: params.collapseRules,
       round: params.round,
       scene: params.scene,
@@ -401,14 +399,11 @@ export function applyAttackDamage(params: {
     shield: shieldInput,
   });
 
-  const pvBefore = params.character.recursos_atuais?.pv ?? 0;
+  const damage = applyDamageThroughTemporaryPv(params.character, resolved.finalDamage);
+  const pvBefore = damage.pvBefore;
   const peAtual = params.character.recursos_atuais?.pe ?? 0;
-  const pvAfter = Math.max(0, pvBefore - resolved.finalDamage);
-
-  let withDamage: Character = {
-    ...params.character,
-    recursos_atuais: { ...params.character.recursos_atuais, pv: pvAfter },
-  };
+  const pvAfter = damage.pvAfter;
+  let withDamage = damage.character;
 
   // Persiste o MIT/PD atualizado na instância equipada (checkpoint v0.58) — só quando algo foi de fato absorvido.
   if (params.defense?.armadura && resolved.mitigatedByMit > 0) {
@@ -428,11 +423,11 @@ export function applyAttackDamage(params: {
   let finalCharacter = collapse.character;
   let collapseAdvanceLogs: string[] = [];
   let collapseAdvanceTableLogs: { type: string; payload: Record<string, unknown> }[] = [];
-  if (!collapse.started && !collapse.ended && resolved.finalDamage > 0) {
+  if (!collapse.started && !collapse.ended && damage.appliedToPv > 0) {
     const additional = resolveCollapseAdditionalDamage({
       character: finalCharacter,
       resource: "pv",
-      damageAmount: resolved.finalDamage,
+      damageAmount: damage.appliedToPv,
       rules: params.collapseRules,
       round: params.round,
       scene: params.scene,

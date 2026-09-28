@@ -156,7 +156,7 @@ assert.equal(manualFallenResult.character.condicoes_ativas?.[0]?.ativa, false);
 
 const insufficientPa = characterWith([], 3, 0);
 const insufficientPaResult = execute("atacar", insufficientPa);
-assert.equal(insufficientPaResult.character, insufficientPa, "PA insuficiente não pode alterar o personagem.");
+assert.ok((insufficientPaResult.character.estado_jogo?.pa_gastos ?? 0) > 3, "PA insuficiente avisa, mas registra o custo da ação.");
 assert.match(insufficientPaResult.warnings[0] ?? "", /PA insuficiente/);
 
 const insufficientReaction = characterWith([], 0, 1);

@@ -58,6 +58,36 @@ export function VerNoMapaChip() {
   );
 }
 
+/**
+ * O QUE ESTÁ ACONTECENDO COM A GRAVAÇÃO — só quando há o que dizer.
+ *
+ * A ficha grava sozinha desde 2026-09-21, e com isso não existe mais um
+ * "Salvar personagem" para a pessoa apertar de novo quando algo falha.
+ * Esse retorno vivia numa faixa na página de baixo, que o Console cobria
+ * e que foi removida junto com ela.
+ *
+ * CALADO no caminho feliz, de propósito. Um selo permanente de "salvo"
+ * vira ruído e deixa de ser lido justamente quando muda — o que precisa
+ * chamar atenção é a FALHA. Enquanto grava, avisa discretamente; se
+ * falhou, diz e carrega o motivo no `title`.
+ */
+export function GravacaoChip({ estado, erro }: { estado: "idle" | "saving" | "saved" | "error"; erro: string | null }) {
+  if (estado === "idle" || estado === "saved") return null;
+  const falhou = estado === "error";
+  return (
+    <span
+      className="rc-modo-chip"
+      data-testid="console-gravacao"
+      data-erro={falhou ? "true" : undefined}
+      role={falhou ? "alert" : "status"}
+      title={falhou ? (erro ?? "A ficha não conseguiu salvar.") : "Salvando a ficha…"}
+      style={falhou ? { color: "#ff5f74", borderColor: "#5a2424" } : { opacity: 0.75 }}
+    >
+      {falhou ? "não salvou" : "salvando…"}
+    </span>
+  );
+}
+
 export function ModoChip({ modo, onAlternar }: { modo: ConsoleModo; onAlternar: (m: ConsoleModo) => void }) {
   const evolucao = modo === "evolucao";
   return (

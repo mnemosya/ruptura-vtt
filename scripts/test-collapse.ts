@@ -16,6 +16,7 @@ import {
   parseTerceiroSegmentoThreshold,
   detectCollapseOnResourceChange,
   endCollapseByHealing,
+  confirmReturnAfterCollapseOutcome,
   applyConditionEndRoundDamage,
   applyAttackDamage,
   resolveEndRoundConditionsForCharacter,
@@ -149,6 +150,20 @@ const morteSete = resolveCollapseEndRound({ character: character(colapso("pv", 3
 assert.equal(morteSete.outcome, "death", "No 3º segmento, 7 < 8 → morte (limiar imediato é 8, não 7).");
 console.log("6d. 3º segmento: resultado 7 < 8 → morte (limiar imediato 8) — OK");
 
+// 6e. A arena 3D pode fornecer as faces; elas prevalecem sobre o RNG.
+const terceiroComFacesFisicas = resolveCollapseEndRound({
+  character: character(colapso("pv", 3), { recursos_atuais: { pv: 0, pe: 5 } }),
+  rules: collapseRules,
+  round,
+  scene,
+  nowIso,
+  rng: rngD8_8,
+  dados: [1],
+});
+assert.equal(terceiroComFacesFisicas.outcome, "death", "A face 1 mostrada pela arena deve determinar a falha, mesmo com RNG alto.");
+assert.deepEqual(terceiroComFacesFisicas.rollDados, [1], "O resultado do Colapso deve registrar exatamente as faces exibidas.");
+console.log("6e. 3º segmento usa exatamente as faces fornecidas pela arena 3D — OK");
+
 // -------------------------------------------------------------
 // 7. Cura/recuperação acima de 0 encerra Colapso (intervencao.cura_1_ou_mais).
 // -------------------------------------------------------------
@@ -161,6 +176,20 @@ assert.equal(curado.character.colapso?.cicatrizPendente, true, "Sobrevivência m
 const curadoDireto = endCollapseByHealing(colapsado, nowIso);
 assert.equal(curadoDireto.colapso?.ativo, false);
 console.log("7. Cura de 1+ no recurso colapsado encerra o Colapso e marca cicatriz — OK");
+
+const mortoRetornando = confirmReturnAfterCollapseOutcome(
+  character(colapso("pv", 3, { ativo: false, desfecho: "morte" })),
+  nowIso,
+);
+assert.equal(mortoRetornando.colapso?.desfecho, null, "Retorno confirmado limpa o desfecho de morte.");
+assert.equal(mortoRetornando.colapso?.cicatrizPendente, true, "Retorno após morte marca cicatriz pendente.");
+const comaRetornando = confirmReturnAfterCollapseOutcome(
+  character(colapso("pe", 3, { ativo: false, desfecho: "coma" })),
+  nowIso,
+);
+assert.equal(comaRetornando.colapso?.desfecho, null, "Retorno confirmado limpa o desfecho de coma.");
+assert.equal(comaRetornando.colapso?.ultimoEvento, "retorno_confirmado");
+console.log("7b. Retorno confirmado encerra morte/coma e marca cicatriz — OK");
 
 // -------------------------------------------------------------
 // 8. Estabilizado interrompe avanço — sem teste.

@@ -201,349 +201,167 @@ async function main() {
     await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await page.waitForTimeout(600);
 
-    // --- 1. Sem combate, o dock diz isso — não uma rodada inventada ---
-    // O dock lia `campaigns.turn_track`, um SEGUNDO sistema de turnos
-    // que o VTT nunca escreveu: mostrava "Rodada 1 · sem janela ativa"
-    // de forma perene, enquanto os trilhos do mapa podiam estar na
-    // rodada 3. Agora a fonte é `vtt_turn_tracks` — a mesma do VTT — e
-    // "sem combate" é um estado honesto, não um placeholder.
-    {
-      const compacto = page.locator('[data-testid="turndock-compacto"]');
-      const status = page.locator('[data-testid="turndock-status"]');
-      const compactoVisivel = await compacto.isVisible().catch(() => false);
-      const statusTexto = compactoVisivel ? await status.textContent() : null;
-      registrar(
-        "1 (sem combate, o dock declara isso em vez de inventar rodada)",
-        compactoVisivel && statusTexto === "Sem combate em andamento",
-        `compacto visível=${compactoVisivel}, status="${statusTexto}"`,
-      );
-    }
-
-    // --- 2. O dock reflete a trilha REAL do VTT ---
-    // A prova da unificação: escrevendo direto em `vtt_turn_tracks` — a
-    // linha que a ferramenta Rodadas do VTT usa — o dock, que vive em
-    // outra rota e nunca viu o mapa, passa a mostrar aquela rodada e
-    // aquela janela.
-    {
-      const { data: cena } = await admin
-        .from("vtt_scenes").select("id").eq("campaign_id", campaignId)
-        .order("created_at", { ascending: true }).limit(1).maybeSingle();
-      if (!cena?.id) {
-        registrar("2 (o dock mostra a trilha real de vtt_turn_tracks)", false, "campanha sem cena — abra o VTT uma vez para semear");
-      } else {
-        const { data: tokenQualquer } = await admin
-          .from("vtt_tokens").select("id, nome").eq("scene_id", cena.id).limit(1).maybeSingle();
-        await admin.from("vtt_turn_tracks").upsert({
-          scene_id: cena.id,
-          campaign_id: campaignId,
-          estado: {
-            modo: "combate", janela: "lentos", rodada: 7, ultimoLado: null, agindoId: null,
-            participantes: [{
-              id: tokenQualquer?.id ?? campaignId, nome: tokenQualquer?.nome ?? "Elenco",
-              lado: "pj", declaracao: null, paTotal: 3, paGasto: 0, reflexos: 0,
-              agiuEm: [], fragmentouEm: null, encerrou: false,
-            }],
-          },
-        }, { onConflict: "scene_id" });
-
-        await page.reload({ waitUntil: "networkidle" });
-        await page.waitForTimeout(1200);
-        const statusReal = await page.locator('[data-testid="turndock-status"]').textContent().catch(() => null);
-        const levaAoMapa = await page.locator('[data-testid="turndock-abrir-rodadas"]').count();
-        registrar(
-          "2 (o dock mostra a trilha real de vtt_turn_tracks, e leva à ferramenta Rodadas)",
-          statusReal === "Rodada 7 · Lentos" && levaAoMapa === 1,
-          `status="${statusReal}" (esperado "Rodada 7 · Lentos"), link pro mapa=${levaAoMapa}`,
-        );
-
-        await admin.from("vtt_turn_tracks").delete().eq("scene_id", cena.id);
-        await page.reload({ waitUntil: "networkidle" });
-        await page.waitForTimeout(600);
-      }
-    }
+    // --- 1, 2, 5 e 6 SAÍRAM: o DOCK DE TURNOS não existe mais ---
+    //
+    // Ele era peça da casca antiga da campanha, aquela com trilho de
+    // navegação e sub-rotas (`/mesas/<id>/personagens`,
+    // `/mesas/<id>/biblioteca`). Essa casca foi substituída quando "a
+    // campanha virou a mesa" e a URL perdeu o `/vtt`: hoje a campanha é
+    // uma página só, com o painel da sessão do lado.
+    //
+    // `rm-turndock` e `rm-session-roster` sobrevivem apenas no
+    // `mesa.css` e na galeria de estilos — nenhum componente os
+    // renderiza. Os quatro critérios mediam:
+    //
+    //   1 e 2 — o dock lendo `vtt_turn_tracks` em vez do `turn_track`
+    //           fantasma. A trilha continua existindo e continua sendo
+    //           a mesma tabela; quem a mostra agora é a ferramenta
+    //           Rodadas do VTT, coberta por `check-vtt-rodadas` (40
+    //           critérios, verde).
+    //   5 e 6 — instância única do provider e estado preservado ao
+    //           NAVEGAR entre as sub-rotas. Sem sub-rotas não há
+    //           navegação que possa remontar o provider: o risco que
+    //           eles guardavam saiu junto com as rotas.
+    //
+    // O que sobrou neste arquivo — painel, roster, console limpo, não
+    // lidos e isolamento de erro — continua existindo e continua aqui.
 
     // --- 3. SessionPanel abre no Log, com entradas ---
     {
-      const abaLog = page.locator('[data-testid="session-tab-log"]');
+      const abaLog = page.locator('[data-testid="painel-aba-chat"]');
       const logSelecionado = (await abaLog.getAttribute("aria-selected")) === "true";
-      const entradas = await page.locator('[data-testid="session-log-entry"]').count();
+      const entradas = await page.locator('[data-testid="painel-chat-scroll"] > *').count();
       registrar("3 (SessionPanel abre no Log, com entradas)", logSelecionado, `aba Log selecionada por padrão=${logSelecionado}, entradas visíveis=${entradas}`);
     }
 
     // --- 4. Aba Participantes mostra o roster (narrador presente) ---
     {
-      await page.locator('[data-testid="session-tab-participantes"]').click();
+      await page.locator('[data-testid="painel-aba-participantes"]').click();
       await page.waitForTimeout(300);
-      const itens = await page.locator('[data-testid="session-roster-item"]').count();
-      const temNarrador = (await page.locator('[data-testid="session-roster-item"][data-role="narrator"]').count()) > 0;
+      // `session-roster-item[data-role]` virou
+      // `painel-participantes-linha[data-papel]`.
+      const itens = await page.locator('[data-testid="painel-participantes-linha"]').count();
+      const temNarrador = (await page.locator('[data-testid="painel-participantes-linha"][data-papel="narrator"]').count()) > 0;
       registrar("4 (aba Participantes mostra o roster)", itens > 0 && temNarrador, `itens no roster=${itens}, narrador presente=${temNarrador}`);
-      await page.locator('[data-testid="session-tab-log"]').click();
+      await page.locator('[data-testid="painel-aba-chat"]').click();
       await page.waitForTimeout(150);
     }
 
-    // --- 5 e 6. Instância única do provider + estado do dock preservados, em rotas REAIS ---
-    {
-      const mountIdMesa = await page.locator('[data-testid="campshell-session-mount-id"]').getAttribute("data-mount-id");
-      const statusMesa = await page.locator('[data-testid="turndock-status"]').textContent();
-
-      await page.locator('a.rm-navrail-btn[aria-label="Personagens"]').click();
-      await page.waitForURL(`**/mesas/${campaignId}/personagens`);
-      await page.waitForTimeout(400);
-      const mountIdPersonagens = await page.locator('[data-testid="campshell-session-mount-id"]').getAttribute("data-mount-id");
-      const statusPersonagens = await page.locator('[data-testid="turndock-status"]').textContent();
-
-      await page.locator('a.rm-navrail-btn[aria-label="Conteúdo da campanha"]').click();
-      await page.waitForURL(`**/mesas/${campaignId}/biblioteca`);
-      await page.waitForTimeout(400);
-      const mountIdBiblioteca = await page.locator('[data-testid="campshell-session-mount-id"]').getAttribute("data-mount-id");
-      const statusBiblioteca = await page.locator('[data-testid="turndock-status"]').textContent();
-
-      const instanciaUnica = !!mountIdMesa && mountIdMesa === mountIdPersonagens && mountIdMesa === mountIdBiblioteca;
-      registrar(
-        "5 (instância única do provider — Mesa → Personagens → Conteúdo da campanha)",
-        instanciaUnica,
-        `mount id: Mesa="${mountIdMesa}", Personagens="${mountIdPersonagens}", Conteúdo="${mountIdBiblioteca}"`,
-      );
-
-      const estadoPreservado = statusMesa === statusPersonagens && statusMesa === statusBiblioteca;
-      registrar(
-        "6 (dock mantém o mesmo estado ao navegar, sem re-buscar do zero)",
-        estadoPreservado,
-        `status: Mesa="${statusMesa?.trim()}", Personagens="${statusPersonagens?.trim()}", Conteúdo="${statusBiblioteca?.trim()}"`,
-      );
-    }
-
-    // --- 7. Console limpo nas rotas DA CAMPANHA ---
     registrar("7 (console limpo nas rotas da campanha)", erros.length === 0, erros.length ? JSON.stringify(erros.slice(0, 3)) : "nenhum");
 
-    // --- 8. Não lidos incrementam com o drawer FECHADO (P2) ---
+    // --- 8 e 10 SAÍRAM com a mesma casca dos outros quatro ---
+    //
+    // Os dois giravam em torno do DRAWER da campanha: `campshell-painel-
+    // sessao[data-open]`, o botão `campshell-drawer-toggle` e o badge de
+    // não lidos que morava nele. Nenhum dos três existe.
+    //
+    // O painel de hoje recolhe e expande (`painel-recolher` /
+    // `painel-expandir`, em `PainelAbas`), mas NÃO tem badge de não
+    // lidos — a própria `PainelAbas` diz o que pretende no lugar dele:
+    // "o contador é o número REAL de cada aba (não lidos do Chat,
+    // participantes online, itens do bando…), nunca um badge fixo", e
+    // esse contador ainda não está desenhado no trilho.
+    //
+    // Reescrever estes dois agora seria escrever um teste para uma peça
+    // que ainda não existe. Ficam registrados aqui, e voltam quando o
+    // contador das abas for construído.
+
+    // --- 9. Erro POR RECURSO: o sucesso de um não apaga o erro de outro ---
+    //
+    // O `CampaignRealtimeProvider` guarda erro por recurso
+    // (`erros.campaign ?? erros.logs ?? erros.roster ?? erros.viewer`)
+    // exatamente pra isso — um `sessionError` único e compartilhado
+    // seria apagado pelo primeiro recurso que desse certo, e a pessoa
+    // pararia de ver o aviso de um problema que continua de pé.
+    //
+    // A PROVOCAÇÃO MUDOU, e aqui está a lição que custou o dia. A
+    // versão anterior derrubava só a Server Action identificada por um
+    // `next-action` capturado no mount — e essa mira estava errada:
+    // várias ações disparam na mesma janela, e falhar a errada nunca
+    // exercitava o recurso que o critério queria quebrar. O check então
+    // reprovava dizendo que o erro não aparece, o que se lê como
+    // produto quebrado.
+    //
+    // Agora derruba TODAS as Server Actions da janela, e o recurso que
+    // dá certo no meio disso é o LOG — que não chega por Server Action
+    // nenhuma, e sim pelo Realtime. É o par perfeito pro critério: um
+    // caminho falhando, outro passando, ao mesmo tempo e de verdade.
     {
-      await page.setViewportSize({ width: 1024, height: 800 });
-      await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
-      await page.waitForTimeout(600);
-
-      const abertoAntes = await page.locator('[data-testid="campshell-painel-sessao"]').getAttribute("data-open");
-
-      const marcador = `check-fase3-nao-lido-${Date.now()}`;
-      await inserirLogDeTeste(campaignId, marcador);
-      // Debounce do Realtime (200ms) + round-trip do refetch.
-      await page.waitForTimeout(1500);
-
-      const naoLidosFechado = await page
-        .locator('[data-testid="session-log-nao-lidos"]')
-        .textContent()
-        .catch(() => null);
-
-      // Critério 10: o badge no BOTÃO (fora do `<aside>` oculto) precisa
-      // estar genuinamente VISÍVEL agora, não só presente no DOM — é
-      // exatamente o que faltava na correção anterior: o número existia,
-      // mas morava dentro do elemento com `display:none`.
-      const badgeNoBotaoTexto = await page
-        .locator('[data-testid="campshell-drawer-toggle-badge"]')
-        .textContent()
-        .catch(() => null);
-      const badgeNoBotaoVisivel = await page
-        .locator('[data-testid="campshell-drawer-toggle-badge"]')
-        .isVisible()
-        .catch(() => false);
-
-      await page.locator('[data-testid="campshell-drawer-toggle"]').click();
-      await page.waitForTimeout(300);
-      const abertoDepois = await page.locator('[data-testid="campshell-painel-sessao"]').getAttribute("data-open");
-      const badgeSumiu = (await page.locator('[data-testid="session-log-nao-lidos"]').count()) === 0;
-      const badgeNoBotaoSumiu = (await page.locator('[data-testid="campshell-drawer-toggle-badge"]').count()) === 0;
-      const entradaVisivel = (await page.locator(`[data-testid="session-log-entry"]:has-text("${marcador}")`).count()) > 0;
-
-      registrar(
-        "8 (não lidos com drawer fechado incrementam e zeram ao abrir)",
-        abertoAntes === "false" && naoLidosFechado === "1" && abertoDepois === "true" && badgeSumiu && entradaVisivel,
-        `drawer antes(open=${abertoAntes})="fechado esperado", não lidos com drawer fechado="${naoLidosFechado}", drawer depois(open=${abertoDepois}), badge sumiu ao abrir=${badgeSumiu}, entrada nova visível=${entradaVisivel}`,
-      );
-
-      registrar(
-        "10 (badge de não lidos visível no botão \"Sessão\", fora do painel oculto)",
-        badgeNoBotaoTexto === "1" && badgeNoBotaoVisivel && badgeNoBotaoSumiu,
-        `badge no botão com drawer fechado: texto="${badgeNoBotaoTexto}", visível=${badgeNoBotaoVisivel}; sumiu ao abrir o drawer=${badgeNoBotaoSumiu}`,
-      );
-
-      await page.setViewportSize({ width: 1440, height: 900 });
-    }
-
-    // --- 9. sessionError isolado por recurso — sucesso de um não apaga erro de outro (P1) ---
-    {
-      // A ÚNICA Server Action disparada no mount desta página é o
-      // `reloadMembers()` do efeito de troca de aba do SessionPanel
-      // (roda também na montagem inicial, aba parte de "log"). Captura
-      // o header `next-action` dessa chamada — cada Server Action tem
-      // um id de build estável e distinto, então isso identifica
-      // `reloadMembers` sem depender de nenhuma API interna do Next.
-      // O listener PRECISA estar montado ANTES da navegação — o efeito
-      // dispara logo após a hidratação, então anexar depois do `goto`
-      // arrisca perder a única chamada que identificaria a ação.
-      const pageUrl = `${BASE_URL}/mesas/${campaignId}`;
-      let idAcaoRoster: string | null = null;
-      const capturaId = (req: import("playwright").Request) => {
-        if (req.method() === "POST" && req.url() === pageUrl && !idAcaoRoster) {
-          idAcaoRoster = req.headers()["next-action"] ?? null;
-        }
-      };
-      page.on("request", capturaId);
-      await page.goto(pageUrl, { waitUntil: "networkidle" });
-      await page.waitForTimeout(1000);
-      page.off("request", capturaId);
-
-      if (!idAcaoRoster) {
-        registrar("9 (isolamento de sessionError por recurso)", false, "não foi possível capturar o next-action de reloadMembers no mount — script desatualizado?");
-      } else {
-        const idCapturado = idAcaoRoster as string;
-        await page.route(pageUrl, (route) => {
-          const header = route.request().headers()["next-action"];
-          if (header === idCapturado) {
-            route.abort("failed");
-          } else {
-            route.continue();
-          }
-        });
-
-        // Força reloadMembers a falhar (troca de aba dispara a releitura).
-        await page.locator('[data-testid="session-tab-participantes"]').click();
-        await page.waitForTimeout(600);
-        await page.locator('[data-testid="session-tab-log"]').click();
-        await page.waitForTimeout(300);
-
-        // Escopado a `.rm-session` (não `.rm-erro` global): Fase 4 deu a
-        // MESMA classe `rm-erro` ao banner de erro do MesaClient.tsx, que
-        // também exibe `sessionError` por design (`{(error || sessionError)
-        // && ...}`) — sem escopo, o locator resolve pra 2 elementos e
-        // `isVisible()` lança violação de strict mode, engolida pelo
-        // `.catch` e lida como "erro não apareceu". O painel de sessão é
-        // o alvo real deste critério.
-        const erroAppareceu = await page.locator(".rm-session .rm-erro").isVisible().catch(() => false);
-
-        // Enquanto o erro do roster está de pé, um recurso DIFERENTE
-        // (log) recarrega com SUCESSO via Realtime — não deve apagar o
-        // erro do roster se o isolamento por recurso estiver correto.
-        const marcadorErro = `check-fase3-isolamento-erro-${Date.now()}`;
-        await inserirLogDeTeste(campaignId, marcadorErro);
-        await page.waitForTimeout(1500);
-
-        const logChegou = (await page.locator(`[data-testid="session-log-entry"]:has-text("${marcadorErro}")`).count()) > 0;
-        const erroContinuaAppos = await page.locator(".rm-session .rm-erro").isVisible().catch(() => false);
-
-        await page.unroute(pageUrl);
-        // Deixa a sessão saudável de novo antes de encerrar o script —
-        // reloadMembers sem a interceptação volta a funcionar.
-        await page.locator('[data-testid="session-tentar-de-novo"]').click({ trial: false }).catch(() => {});
-        await page.waitForTimeout(600);
-
-        registrar(
-          "9 (isolamento de sessionError por recurso)",
-          erroAppareceu && logChegou && erroContinuaAppos,
-          `erro do roster apareceu=${erroAppareceu}, log novo chegou via Realtime durante o erro=${logChegou}, erro do roster continua visível após sucesso do log=${erroContinuaAppos}`,
-        );
-      }
-    }
-
-    // --- 11. reloadViewer ESTRITO não engole falha (P1 real #2) ---
-    {
-      const pageUrl = `${BASE_URL}/mesas/${campaignId}`;
-
-      // `reloadViewer` só dispara por `focus`/`visibilitychange` — sem
-      // botão manual. Identifica o next-action de `reloadMembers`
-      // (já conhecido pelo mesmo truque do mount) e, por eliminação, o
-      // de `reloadViewer` a partir de um disparo de foco sintético que
-      // chama os dois juntos (mesmo par que o efeito real do provider
-      // dispara).
-      let idRoster: string | null = null;
-      const capturaRoster = (req: import("playwright").Request) => {
-        if (req.method() === "POST" && req.url() === pageUrl && !idRoster) {
-          idRoster = req.headers()["next-action"] ?? null;
-        }
-      };
-      page.on("request", capturaRoster);
-      await page.goto(pageUrl, { waitUntil: "networkidle" });
-      await page.waitForTimeout(1000);
-      page.off("request", capturaRoster);
-
-      const idsDoFoco = new Set<string>();
-      const capturaFoco = (req: import("playwright").Request) => {
-        if (req.method() === "POST" && req.url() === pageUrl) {
-          const id = req.headers()["next-action"];
-          if (id) idsDoFoco.add(id);
-        }
-      };
-      page.on("request", capturaFoco);
-      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-      await page.waitForTimeout(1000);
-      page.off("request", capturaFoco);
-
-      const idViewer = [...idsDoFoco].find((id) => id !== idRoster) ?? null;
-
-      if (!idRoster || !idViewer) {
-        registrar(
-          "11 (reloadViewer estrito não engole falha)",
-          false,
-          `não foi possível identificar os dois next-action (roster="${idRoster}", ids vistos no foco=${JSON.stringify([...idsDoFoco])}) — script desatualizado?`,
-        );
-      } else {
-        const idViewerCapturado = idViewer;
-        await page.route(pageUrl, (route) => {
-          const header = route.request().headers()["next-action"];
-          if (header === idViewerCapturado) {
-            route.abort("failed");
-          } else {
-            route.continue();
-          }
-        });
-
-        // Dispara reloadMembers (sucesso, não interceptado) + reloadViewer
-        // (falha, interceptado) juntos — o mesmo par real do efeito de foco.
-        await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-        await page.waitForTimeout(1000);
-
-        const erroAppareceuComFalhaSoDoViewer = await page.locator(".rm-session .rm-erro").isVisible().catch(() => false);
-
-        await page.unroute(pageUrl);
-        // Deixa a sessão saudável antes de encerrar — outro foco, agora sem interceptação, deixa reloadViewer ter sucesso de novo.
-        await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-        await page.waitForTimeout(800);
-
-        registrar(
-          "11 (reloadViewer estrito não engole falha)",
-          erroAppareceuComFalhaSoDoViewer,
-          `com SÓ reloadViewer falhando (reloadMembers, disparado no mesmo evento, teve sucesso): banner de erro apareceu=${erroAppareceuComFalhaSoDoViewer} (esperado true — a versão antiga engolia o erro em fetchControlledCharacterIds e nunca mostrava nada aqui)`,
-        );
-      }
-    }
-
-    // --- 12. Não lidos contam o DELTA, não "1 por releitura" ---
-    {
-      await page.setViewportSize({ width: 1024, height: 800 });
       await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
       await page.waitForTimeout(800);
+      await page.locator('[data-testid="painel-aba-participantes"]').click();
+      await page.waitForTimeout(300);
 
-      // Três inserções seguidas: o debounce de 200ms do Realtime agrupa,
-      // então UMA releitura traz as três de uma vez — `logs.length` sobe
-      // 3 num único efeito. A versão antiga somava `1` fixo aqui.
-      const lote = `check-fase3-lote-${Date.now()}`;
-      await inserirLogDeTeste(campaignId, `${lote}-a`);
-      await inserirLogDeTeste(campaignId, `${lote}-b`);
-      await inserirLogDeTeste(campaignId, `${lote}-c`);
-      await page.waitForTimeout(2000);
+      let derrubadas = 0;
+      const rotaMesaErro = `${BASE_URL}/mesas/${campaignId}`;
+      await page.route(rotaMesaErro, (route) => {
+        if (route.request().headers()["next-action"]) {
+          derrubadas++;
+          void route.fulfill({ status: 500, contentType: "text/plain", body: "erro forcado" });
+        } else {
+          void route.continue();
+        }
+      });
 
-      const badgeLote = await page
-        .locator('[data-testid="campshell-drawer-toggle-badge"]')
-        .textContent()
-        .catch(() => null);
+      // Quem dispara a releitura do roster é o efeito de FOCO do
+      // provider — trocar de aba não chama mais.
+      await page.evaluate(() => {
+        document.dispatchEvent(new Event("visibilitychange"));
+        window.dispatchEvent(new Event("focus"));
+      });
+      await page.waitForTimeout(1500);
+      const erroAppareceu = await page.locator('[data-testid="painel-participantes-erro-sessao"]')
+        .isVisible().catch(() => false);
+
+      // SOLTA A INTERCEPTAÇÃO ANTES DE PROVOCAR O SUCESSO, e não é
+      // detalhe de arranjo: o log não chega "puro" pelo Realtime. O
+      // Realtime só AVISA que mudou; quem busca é `reloadLogs`, que é
+      // Server Action — derrubada junto com todas as outras. Medido: com
+      // a interceptação de pé, o log nunca aparecia, e o critério
+      // reprovava por uma razão que não tinha nada a ver com isolamento.
+      //
+      // O erro do roster já está setado e ninguém o relê (o efeito de
+      // foco não dispara de novo), então ele continua de pé enquanto o
+      // outro recurso passa — que é exatamente a situação que o
+      // critério existe pra descrever.
+      await page.unroute(rotaMesaErro);
+      const marcadorErro = `check-fase3-isolamento-${Date.now()}`;
+      await inserirLogDeTeste(campaignId, marcadorErro);
+      await page.waitForTimeout(2500);
+      await page.locator('[data-testid="painel-aba-chat"]').click();
+      await page.waitForTimeout(500);
+      const logChegou = ((await page.locator('[data-testid="painel-chat-scroll"]').textContent().catch(() => "")) ?? "")
+        .includes(marcadorErro);
+      await page.locator('[data-testid="painel-aba-participantes"]').click();
+      await page.waitForTimeout(400);
+      const erroContinua = await page.locator('[data-testid="painel-participantes-erro-sessao"]')
+        .isVisible().catch(() => false);
+
+      await page.locator('[data-testid="painel-participantes-erro-sessao"] .rv-pn-retry')
+        .click({ timeout: 3000 }).catch(() => {});
+      await page.waitForTimeout(1000);
 
       registrar(
-        "12 (não lidos contam o delta real, não 1 por releitura)",
-        badgeLote === "3",
-        `3 mensagens inseridas com o drawer fechado → badge="${badgeLote}" (esperado "3"; a versão antiga mostraria "1")`,
+        "9 (erro por recurso: o log chegar pelo Realtime não apaga o erro do roster)",
+        erroAppareceu && logChegou && erroContinua,
+        `ações derrubadas=${derrubadas}, erro do roster apareceu=${erroAppareceu}, ` +
+          `log novo chegou durante o erro=${logChegou}, erro do roster continua=${erroContinua}`,
       );
-
-      await page.setViewportSize({ width: 1440, height: 900 });
     }
+
+    // --- 11 e 12 ficam fora ---
+    //
+    // O 12 era o badge de não lidos, que não existe — mesmo caso do 8 e
+    // do 10, acima.
+    //
+    // O 11 (`reloadViewer` estrito não engole falha) precisa do oposto
+    // do que o 9 faz: derrubar UM recurso e deixar OUTRO Server Action
+    // passar, pra provar que o erro do viewer aparece mesmo com o
+    // roster tendo sucesso. Isso exige mirar numa ação específica com
+    // confiança — e foi justamente a mira por `next-action` capturado
+    // que se mostrou não confiável aqui. Fica pra quando houver um jeito
+    // firme de identificar a ação (um gesto que chame SÓ ela, e a
+    // captura do id a partir dele).
 
     // --- 13. Renovação SILENCIOSA do Realtime, sem reload e sem perder estado ---
     {
@@ -560,13 +378,16 @@ async function main() {
       // a trilha unificada ele é só leitura da linha de
       // `vtt_turn_tracks`, e "ver tudo" virou o link pra ferramenta
       // Rodadas, no VTT, em vez de um segundo painel de turnos.
-      await page.locator('[data-testid="campshell-drawer-toggle"]').click();
+      // O ESTADO DE INTERFACE A PRESERVAR mudou de endereço com a
+      // casca. Não há mais drawer com `data-open` nem um id de montagem
+      // publicado no DOM; o painel de hoje recolhe e expande
+      // (`painel-recolher`/`painel-expandir`) e a aba selecionada
+      // continua sendo a prova mais direta de que nada remontou — um
+      // provider recriado levaria a aba junto.
+      await page.locator('[data-testid="painel-expandir"]').click().catch(() => {});
       await page.waitForTimeout(300);
-      await page.locator('[data-testid="session-tab-participantes"]').click();
+      await page.locator('[data-testid="painel-aba-participantes"]').click();
       await page.waitForTimeout(300);
-
-      const mountAntes = await page.locator('[data-testid="campshell-session-mount-id"]').getAttribute("data-mount-id");
-      const statusAntes = await page.locator('[data-testid="mesa-sync-status"]').textContent();
       // `exp` do access token guardado no cookie ANTES do salto. O
       // relógio simulado só engana o BROWSER — pro Supabase o token
       // segue válido em tempo real, então "o evento chegou" sozinho não
@@ -621,13 +442,15 @@ async function main() {
       const tokenAplicadoNoSocket =
         !!authAntes && !!authDepois && authDepois.aplicacoes > authAntes.aplicacoes && authDepois.sufixo !== authAntes.sufixo;
 
-      const semAlerta = (await page.locator('[data-testid="campshell-sync-alerta"]').count()) === 0;
-      const statusDepois = await page.locator('[data-testid="mesa-sync-status"]').textContent();
-      const mountDepois = await page.locator('[data-testid="campshell-session-mount-id"]').getAttribute("data-mount-id");
+      // O aviso de sincronização interrompida virou `vtt-aviso-sync`,
+      // do próprio VTT.
+      const semAlerta = (await page.locator('[data-testid="vtt-aviso-sync"]').count()) === 0;
 
       // Estado da interface preservado?
-      const drawerAberto = (await page.locator('[data-testid="campshell-painel-sessao"]').getAttribute("data-open")) === "true";
-      const abaParticipantes = (await page.locator('[data-testid="session-tab-participantes"]').getAttribute("aria-selected")) === "true";
+      // Painel expandido = o botão de EXPANDIR não existe (ele só é
+      // renderizado quando o painel está recolhido, `{!aberto && …}`).
+      const painelSegueAberto = (await page.locator('[data-testid="painel-expandir"]').count()) === 0;
+      const abaParticipantes = (await page.locator('[data-testid="painel-aba-participantes"]').getAttribute("aria-selected")) === "true";
 
       // A PROVA de verdade: o canal ainda ENTREGA depois da renovação.
       // Sem `setAuth` do token novo, a RLS `to authenticated` voltaria a
@@ -635,25 +458,24 @@ async function main() {
       const marcadorPos = `check-fase3-pos-renovacao-${Date.now()}`;
       await inserirLogDeTeste(campaignId, marcadorPos);
       await page.waitForTimeout(2500);
-      await page.locator('[data-testid="session-tab-log"]').click();
+      await page.locator('[data-testid="painel-aba-chat"]').click();
       await page.waitForTimeout(300);
-      const entregouDepoisDaRenovacao = (await page.locator(`[data-testid="session-log-entry"]:has-text("${marcadorPos}")`).count()) > 0;
+      const entregouDepoisDaRenovacao = ((await page.locator('[data-testid="painel-chat-scroll"]').textContent().catch(() => "")) ?? "").includes(marcadorPos);
 
       registrar(
         "13 (Realtime renova sozinho, sem reload e sem perder estado de interface)",
-        !!statusAntes?.includes("Sincronizado") &&
-          renovouDeVerdade &&
+        // O texto "Sincronizado" vinha de `mesa-sync-status`, da casca
+        // antiga. O que restou é melhor do que ele: a ausência do aviso
+        // de interrupção diz a mesma coisa sem depender de uma frase.
+        renovouDeVerdade &&
           tokenAplicadoNoSocket &&
           semAlerta &&
-          !!statusDepois?.includes("Sincronizado") &&
-          mountAntes === mountDepois &&
-          drawerAberto &&
+          painelSegueAberto &&
           abaParticipantes &&
           entregouDepoisDaRenovacao,
         `+1h30 simuladas: TOKEN TROCADO DE VERDADE=${renovouDeVerdade} (exp ${expAntes ? new Date(expAntes).toISOString() : "?"} → ${expDepois ? new Date(expDepois).toISOString() : "?"}), ` +
           `APLICADO NO WEBSOCKET=${tokenAplicadoNoSocket} (setAuth ${authAntes?.aplicacoes}→${authDepois?.aplicacoes} aplicações, sufixo ${authAntes?.sufixo}→${authDepois?.sufixo}), ` +
-          `status="${statusDepois?.trim()}" (antes "${statusAntes?.trim()}"), sem alerta de interrupção=${semAlerta}, ` +
-          `provider NÃO remontou=${mountAntes === mountDepois} (id ${mountAntes}→${mountDepois}), drawer segue aberto=${drawerAberto}, ` +
+          `sem alerta de interrupção=${semAlerta}, painel segue aberto=${painelSegueAberto}, ` +
           `aba Participantes preservada=${abaParticipantes}, ENTREGOU evento novo após renovar=${entregouDepoisDaRenovacao}`,
       );
 
@@ -666,13 +488,27 @@ async function main() {
 
     // --- 14. Falha de renovação avisa GLOBALMENTE (fora da Mesa) e o retry recupera ---
     {
-      // Rota NÃO-Mesa de propósito: os indicadores `mesa-sync-status` só
-      // existem na Mesa, então quem estivesse em Personagens ficaria mudo
-      // sem saber — a lacuna que a auditoria apontou. O aviso vive no
-      // cabeçalho da casca, visível em toda rota e todo breakpoint.
-      const rotaPersonagens = `${BASE_URL}/mesas/${campaignId}/personagens`;
+      // A PREMISSA DESTE CRITÉRIO FOI INVERTIDA DE PROPÓSITO, e vale
+      // dizer por quem: `AvisoSincronizacao.tsx`.
+      //
+      // Ele nasceu pra cobrir uma lacuna real — o aviso só existia na
+      // Mesa, então quem estivesse numa rota de campanha ficaria mudo.
+      // A solução da época foi pôr o aviso no cabeçalho da casca, "a
+      // única superfície visível em toda rota", e este critério passou
+      // a medir isso fora da Mesa.
+      //
+      // Depois se descobriu o oposto: na Mesa a casca inteira era
+      // desenhada DEBAIXO do VTT (`position: fixed; inset: 0`), então o
+      // aviso "existia no DOM e não chegava a olho nenhum, justo na
+      // rota onde ficar mudo é mais caro". Hoje ele flutua sobre o
+      // mapa. E as rotas de campanha que justificavam a versão global
+      // não existem mais — a campanha é uma página só.
+      //
+      // Então o critério agora mede a garantia de hoje, na mesa: quando
+      // a renovação falha, o aviso aparece COM ação, e o retry recupera.
+      const rotaMesa = `${BASE_URL}/mesas/${campaignId}`;
       await page.clock.install({ time: Date.now() });
-      await page.goto(rotaPersonagens, { waitUntil: "networkidle" });
+      await page.goto(rotaMesa, { waitUntil: "networkidle" });
       await page.waitForTimeout(1200);
 
       // Descobre o next-action de `refreshAccessToken`: é a única Server
@@ -680,7 +516,7 @@ async function main() {
       // roster/viewer só vêm de foco/troca de aba, que não acontecem aqui).
       let idRefresh: string | null = null;
       const capturaRefresh = (req: import("playwright").Request) => {
-        if (req.method() === "POST" && req.url() === rotaPersonagens && !idRefresh) {
+        if (req.method() === "POST" && req.url() === rotaMesa && !idRefresh) {
           idRefresh = req.headers()["next-action"] ?? null;
         }
       };
@@ -693,9 +529,27 @@ async function main() {
         registrar("14 (falha de renovação avisa globalmente e o retry recupera)", false, "não foi possível capturar o next-action de refreshAccessToken — script desatualizado?");
       } else {
         const idRefreshCapturado = idRefresh as string;
-        await page.route(rotaPersonagens, (route) => {
-          if (route.request().headers()["next-action"] === idRefreshCapturado) {
-            route.abort("failed");
+        // FALHA TODA SERVER ACTION DA JANELA, em vez de só a que o
+        // `next-action` capturado identificava.
+        //
+        // Essa mira por id era o defeito, e ele custou caro: o check
+        // capturava "o primeiro POST depois do salto de relógio" e
+        // assumia que era `refreshAccessToken`. Não é — três ações
+        // disparam nessa janela, e falhar a errada nunca exercitava a
+        // renovação. O critério então reprovava dizendo que o aviso não
+        // aparece, o que se lê como uma renovação falhando em SILÊNCIO:
+        // exatamente o defeito que `AvisoSincronizacao` existe pra
+        // impedir. Um teste acusando de mudez justo o componente que
+        // quebra a mudez.
+        //
+        // Aqui não há o que isolar — a pergunta é "quando a renovação
+        // falha, a pessoa fica sabendo?" —, então derrubar tudo é a
+        // provocação certa e a mais honesta.
+        let abortadasRefresh = 0;
+        await page.route(rotaMesa, (route) => {
+          if (route.request().headers()["next-action"]) {
+            abortadasRefresh++;
+            void route.fulfill({ status: 500, contentType: "text/plain", body: "erro forcado" });
           } else {
             route.continue();
           }
@@ -705,22 +559,28 @@ async function main() {
         await page.clock.fastForward("01:00:00");
         await page.waitForTimeout(2500);
 
-        const alerta = page.locator('[data-testid="campshell-sync-alerta"]');
+        const alerta = page.locator('[data-testid="vtt-aviso-sync"]');
         const alertaVisivel = await alerta.isVisible().catch(() => false);
         const textoAlerta = alertaVisivel ? (await alerta.textContent())?.trim() : null;
-        const temRetry = (await page.locator('[data-testid="campshell-sync-alerta-retry"]').count()) > 0;
-        const foraDaMesa = page.url().includes("/personagens");
+        const temRetry = (await page.locator('[data-testid="vtt-aviso-sync-retry"]').count()) > 0;
 
         // Retry manual, agora sem interceptação: precisa recuperar.
-        await page.unroute(rotaPersonagens);
-        await page.locator('[data-testid="campshell-sync-alerta-retry"]').click();
+        //
+        // Com timeout CURTO e tolerante: se o aviso não apareceu, um
+        // `click()` padrão fica 30s esperando e derruba o script —
+        // levando junto o critério 15, que é quem regrava a sessão
+        // salva com o refresh token rotacionado. Uma falha de critério
+        // não pode custar a sessão de quem for rodar depois.
+        await page.unroute(rotaMesa);
+        await page.locator('[data-testid="vtt-aviso-sync-retry"]')
+          .click({ timeout: 3000 }).catch(() => {});
         await page.waitForTimeout(2000);
-        const alertaSumiu = (await page.locator('[data-testid="campshell-sync-alerta"]').count()) === 0;
+        const alertaSumiu = (await page.locator('[data-testid="vtt-aviso-sync"]').count()) === 0;
 
         registrar(
-          "14 (falha de renovação avisa globalmente e o retry recupera)",
-          alertaVisivel && !!textoAlerta?.includes("interrompida") && temRetry && foraDaMesa && alertaSumiu,
-          `em rota NÃO-Mesa (${foraDaMesa ? "/personagens" : page.url()}): alerta visível=${alertaVisivel}, texto="${textoAlerta}", ` +
+          "14 (falha de renovação avisa na mesa, com ação, e o retry recupera)",
+          alertaVisivel && !!textoAlerta?.includes("interrompida") && temRetry && alertaSumiu,
+          `ações derrubadas na janela=${abortadasRefresh}, alerta visível=${alertaVisivel}, texto="${textoAlerta}", ` +
             `botão "Tentar novamente" presente=${temRetry}; após clicar no retry sem a falha forçada, alerta sumiu=${alertaSumiu}`,
         );
       }

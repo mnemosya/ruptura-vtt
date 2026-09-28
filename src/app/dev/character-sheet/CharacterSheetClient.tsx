@@ -37,8 +37,10 @@ import {
   getOverloadWillTestRule,
   applyStunFromFailedWillTest,
   detectCollapseOnResourceChange,
+  pisoPeNegativo,
   advanceCollapseSegment,
   stabilizeCollapse,
+  confirmReturnAfterCollapseOutcome,
   resolveCollapseEndRound,
   resolveCollapseAdditionalDamage,
   MAX_COLLAPSE_SEGMENTS,
@@ -202,6 +204,8 @@ import {
   getToqueDeMidasModifiersForTarget,
   markToqueDeMidasUsed,
   removeItemFromInventory,
+  adjustItemQuantity,
+  deriveItemProperties,
   removeQuantityFromInventory,
   useItemOnCharacter,
   useItemOnAlly,
@@ -298,9 +302,15 @@ import { CharacterSheetTabs, type TabId } from "./components/CharacterSheetTabs"
 import { CharacterConsole } from "../../ficha/_console/CharacterConsole";
 import { ConsoleErrorBoundary } from "../../ficha/_console/ConsoleErrorBoundary";
 import { useConsoleCloseOverride } from "../../ficha/_console/ConsoleCloseContext";
+import { PainelAcaoToken, type OpcaoAcaoToken } from "../../mesas/[campaignId]/vtt/_shell/PainelAcaoToken";
+import { PainelRolagem } from "../../ficha/_console/panels/PainelRolagem";
+import { contextoAcaoTokenAction } from "../../mesas/[campaignId]/vtt/_painel/acoes/targetsPainel";
+import type { AlvoAcaoToken, ContextoAcaoToken, PedidoAcaoToken } from "../../mesas/[campaignId]/vtt/_dominio/targets";
+import { deriveItemUseKind, getItemUsePreview, getItemUsePaCost } from "../../../lib/character/itemUse";
 import { registrarRolagemPericiaAction } from "../../mesas/[campaignId]/vtt/_painel/acoes/rolagemPainel";
 import type { TurnWindow } from "../../../lib/table/turnTrack";
-import type { ConsoleApi, ConsolePin } from "../../ficha/_console/types";
+import type { ConsoleApi, ConsolePin, TermoDeRegra } from "../../ficha/_console/types";
+import { resumoDeCarga } from "../../../lib/character/carga";
 import type { BodySlotId } from "../../ficha/_console/slots";
 import { GeneralTab } from "./components/GeneralTab";
 import { AttributesTab } from "./components/AttributesTab";
@@ -346,6 +356,8 @@ const RECURSO_LABELS: Record<keyof CharacterResources, string> = {
 };
 
 interface Props {
+  acaoToken?: PedidoAcaoToken | null;
+  alvosNoMapa?: AlvoAcaoToken[];
   regras: CharacterRulesPayload | null;
   usandoFallback: boolean;
   personagensIniciais: CharacterRecord[];
@@ -432,12 +444,19 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /** Recurso atual: inteiro, sem teto (pode passar do máximo), nunca negativo. */
-function parseRecursoAtual(rawValue: number): number {
-  if (!Number.isFinite(rawValue)) return 0;
-  return Math.max(0, Math.trunc(rawValue));
+/**
+ * `piso` existe por causa do PE: ele é o único recurso que continua
+ * contando abaixo de zero (até −⌈pe_max/2⌉, ver `pisoPeNegativo`).
+ * PV e Mana seguem parando em zero.
+ */
+function parseRecursoAtual(rawValue: number, piso = 0): number {
+  if (!Number.isFinite(rawValue)) return piso;
+  return Math.max(piso, Math.trunc(rawValue));
 }
 
 export default function CharacterSheetClient({
+  acaoToken,
+  alvosNoMapa = [],
   regras,
   usandoFallback,
   personagensIniciais,
@@ -1177,7 +1196,6 @@ export default function CharacterSheetClient({
     );
     setCharacter(proximo);
     addLogEntry("recurso", `Evolução — ${descricao}.`);
-    void persistEvolucao(proximo);
     void persistEvolutionEvent(proximo, "ajuste", 0, descricao, antes, depois);
   }
 
@@ -1204,7 +1222,6 @@ export default function CharacterSheetClient({
     );
     setCharacter(proximo);
     addLogEntry("recurso", `Evolução — ${descricao}.`);
-    void persistEvolucao(proximo);
     void persistEvolutionEvent(proximo, "ajuste", 0, descricao, antes, depois);
   }
 
@@ -1214,7 +1231,6 @@ export default function CharacterSheetClient({
     const result = gainPm(character, quantidade, descricao, nowIso);
     setCharacter(result.character);
     addLogEntry("recurso", `PM recebido: +${result.entry.quantidade} (${result.entry.descricao}).`);
-    void persistEvolucao(result.character);
     void persistEvolutionEvent(result.character, "ganho", result.entry.quantidade, result.entry.descricao, result.entry.antes, result.entry.depois);
   }
 
@@ -1225,7 +1241,6 @@ export default function CharacterSheetClient({
     setCharacter(result.character);
     addLogEntry("recurso", `PM gasto: -${result.entry.quantidade} (${result.entry.descricao}).`);
     if (result.warnings.length > 0) addLogEntry("recurso", result.warnings[0]);
-    void persistEvolucao(result.character);
     void persistEvolutionEvent(result.character, "gasto", result.entry.quantidade, result.entry.descricao, result.entry.antes, result.entry.depois);
   }
 
@@ -1570,7 +1585,13 @@ export default function CharacterSheetClient({
       nowIso,
     );
     const baseAposCura: Character = { ...base, condicoes_ativas: condsAposCura };
-    const colapso = detectCollapseOnResourceChange(baseAposCura, beforePvPe, afterPvPe, nowIso);
+    const colapso = detectCollapseOnResourceChange(
+      baseAposCura,
+      beforePvPe,
+      afterPvPe,
+      nowIso,
+      pisoPeNegativo(derivados.pe_max),
+    );
 
     let finalCharacter = colapso.character;
     let collapseAdvance: ReturnType<typeof resolveCollapseAdditionalDamage> | null = null;
@@ -1611,9 +1632,9 @@ export default function CharacterSheetClient({
    * tudo combinado num único `setCharacter`, para nunca existir um
    * estado intermediário inconsistente.
    */
-  function updateRecursoAtual(id: keyof CharacterResources, rawValue: number) {
+  function updateRecursoAtual(id: keyof CharacterResources, rawValue: number, opcoes?: { confirmarRetorno?: boolean }) {
     const anterior = character.recursos_atuais?.[id] ?? 0;
-    const novo = parseRecursoAtual(rawValue);
+    const novo = parseRecursoAtual(rawValue, id === "pe" ? pisoPeNegativo(derivados.pe_max) : 0);
 
     if (id === "pv" || id === "pe" || id === "mana") {
       const nowIso = new Date().toISOString();
@@ -1624,7 +1645,15 @@ export default function CharacterSheetClient({
         { derived: derivados, rules: regras, reactionRules, talents: talentsIniciais },
       );
 
-      setCharacter(result.character);
+      const retornoConfirmado = opcoes?.confirmarRetorno === true && (
+        id === "pv" && character.colapso?.desfecho === "morte" && novo >= 1
+        || id === "pe" && character.colapso?.desfecho === "coma" && novo >= pisoPeNegativo(derivados.pe_max) + 1
+      );
+      const finalCharacter = retornoConfirmado
+        ? confirmReturnAfterCollapseOutcome(result.character, nowIso)
+        : result.character;
+      characterRef.current = finalCharacter;
+      setCharacter(finalCharacter);
       if (novo !== anterior) {
         addLogEntry("recurso", `${RECURSO_LABELS[id]}: ${anterior} → ${novo}`);
       }
@@ -1641,6 +1670,10 @@ export default function CharacterSheetClient({
       if (result.meta.collapseEnded) {
         addLogEntry("recurso", `Colapso encerrado por cura — cicatriz pendente.`);
         void persistCollapseEvent("collapse_ended", { tipo: result.meta.collapseEnded, motivo: "cura" });
+      }
+      if (retornoConfirmado) {
+        addLogEntry("recurso", `${character.colapso?.desfecho === "morte" ? "Morte" : "Coma"} encerrado por retorno confirmado — personagem volta à atividade; cicatriz pendente.`);
+        void persistCollapseEvent("collapse_ended", { tipo: id, motivo: "retorno_confirmado", desfechoAnterior: character.colapso?.desfecho });
       }
       if ((result.meta.collapseAdvanceLogs?.length ?? 0) > 0) {
         for (const line of result.meta.collapseAdvanceLogs ?? []) addLogEntry("recurso", line);
@@ -1709,6 +1742,42 @@ export default function CharacterSheetClient({
     setCharacter(result.character);
     addLogEntry("recurso", `Colapso — segmento avançado manualmente: ${result.segmentos}/${MAX_COLLAPSE_SEGMENTS}.`);
     void persistCollapseEvent("collapse_advanced", { segmentos: result.segmentos, motivo: "manual", tipo: character.colapso?.tipo ?? null });
+  }
+
+  /** Atalho do Console em 3/3 — resolve só o teste decisivo, sem encerrar a rodada. */
+  async function handleResolveCollapseDecisiveTest(dados: number[]) {
+    const current = characterRef.current;
+    if (!current.colapso?.ativo || current.colapso.estabilizado || current.colapso.segmentos < MAX_COLLAPSE_SEGMENTS) return;
+
+    const result = resolveCollapseEndRound({
+      character: current,
+      rules: regras?.colapso,
+      round: current.current_round ?? 1,
+      scene: current.current_scene ?? 1,
+      nowIso: new Date().toISOString(),
+      dados,
+    });
+
+    characterRef.current = result.character;
+    setCharacter(result.character);
+    for (const line of result.logs) addLogEntry("recurso", line);
+    for (const warning of result.warnings) addLogEntry("recurso", `⚠ ${warning}`);
+
+    if (selectedCampaignId) {
+      for (const entry of result.tableLogs) {
+        try {
+          await addLog({
+            campaignId: selectedCampaignId,
+            characterId: characterId ?? undefined,
+            type: entry.type,
+            visibility: "public",
+            payload: { ...entry.payload, characterId, characterNome: current.nome },
+          });
+        } catch {
+          avisarFalhaLogMesa();
+        }
+      }
+    }
   }
 
   /**
@@ -3626,7 +3695,7 @@ export default function CharacterSheetClient({
    * Remoção de condição (checkpoint pós-v0.61): `options.selectedConditionInstanceId`
    * vem do seletor do card quando há várias condições compatíveis ativas.
    */
-  async function handleUseItem(instanceId: string, options?: { selectedConditionInstanceId?: string }) {
+  async function handleUseItem(instanceId: string, options?: { selectedConditionInstanceId?: string }, contexto?: ContextoAcaoToken) {
     const current = characterRef.current;
     const instance = (current.inventario ?? []).find((i) => i.id === instanceId);
     if (!instance) return;
@@ -3723,8 +3792,9 @@ export default function CharacterSheetClient({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
           type: "item_used",
-          visibility: "public",
+          visibility: contexto?.logVisibility ?? "public",
           payload: {
+            ...contexto,
             characterId,
             characterNome: current.nome,
             itemInstanceId: instanceId,
@@ -4356,7 +4426,7 @@ export default function CharacterSheetClient({
    * da mente; o narrador resolve pelas ferramentas de /dev/table. Sem
    * PA/Mana suficiente, não muda nada e só avisa. Exige magia aprendida.
    */
-  async function handleCastSpell(slug: string) {
+  async function handleCastSpell(slug: string, contexto?: ContextoAcaoToken) {
     const current = characterRef.current;
     const spell = spellsIniciais.find((s) => s.slug === slug);
     if (!spell) return;
@@ -4369,6 +4439,7 @@ export default function CharacterSheetClient({
       addLogEntry("recurso", result.reason ?? "Conjuração não realizada.");
       return;
     }
+    if (result.reason) addLogEntry("recurso", result.reason);
     // Paramédico › Ritmo de Campo (checkpoint talentos, Fase 7) — "armado" pelo jogador
     // confirmando que esta magia é de cura; -1 PA real (mín. respeitado) no custo já pago.
     let characterAposMagia = result.character;
@@ -4444,8 +4515,9 @@ export default function CharacterSheetClient({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
           type: "spell_cast",
-          visibility: "public",
+          visibility: contexto?.logVisibility ?? "public",
           payload: {
+            ...contexto,
             characterId,
             characterNome: current.nome,
             spellSlug: spell.slug,
@@ -4481,8 +4553,9 @@ export default function CharacterSheetClient({
             campaignId: selectedCampaignId,
             characterId: characterId ?? undefined,
             type: "spell_attack_used",
-            visibility: "public",
+            visibility: contexto?.logVisibility ?? "public",
             payload: {
+              ...contexto,
               characterId,
               characterNome: current.nome,
               spellSlug: spell.slug,
@@ -4954,11 +5027,73 @@ export default function CharacterSheetClient({
    * escrito, então o histórico registrava uma mudança que o personagem
    * não tinha.
    */
+  /**
+   * AUTOSAVE DO CONSOLE — tudo que muda a ficha grava sozinho.
+   *
+   * ── Por que virou automático ────────────────────────────────────
+   * O modelo antigo era "local até Salvar personagem". Ele não se
+   * sustentava: o Console é uma JANELA sobre a página da ficha, e o
+   * botão "Salvar personagem" fica na página DE BAIXO — coberto.
+   * Medido: o botão existe em (440,413), dentro da área que o Console
+   * ocupa. Para salvar era preciso fechar a ficha para salvar a ficha.
+   *
+   * O resultado era perda silenciosa: editar PV mostrava 8/11 no card,
+   * o banco seguia em 11, e recarregar devolvia 11/11 — sem aviso
+   * nenhum de que havia algo pendente. O `persistEvolucao` já era um
+   * remendo disso ("o Console vive dentro do VTT e da ficha, onde não
+   * existe botão Salvar personagem nenhum"); isto estende a mesma
+   * conclusão ao resto.
+   *
+   * ── Por que um efeito, e não 148 chamadas ───────────────────────
+   * São 148 pontos que chamam `setCharacter`. Passar por cada um é
+   * convite a esquecer um — e o que se esquece é justamente o que
+   * perde dados em silêncio. Um lugar só, olhando o resultado.
+   *
+   * ── A guarda ────────────────────────────────────────────────────
+   * `lastSyncedCharacterRef` é o último payload conhecido como igual ao
+   * banco, e já era mantido por leitura e gravação canônicas. Comparar
+   * contra ele evita regravar o que acabou de CHEGAR do servidor
+   * (carga inicial, refetch por Realtime) — sem isso, cada eco viraria
+   * uma escrita nova, e duas fichas abertas ficariam se regravando em
+   * looping.
+   *
+   * ── O Modo Evolução fica de fora, de propósito ──────────────────
+   * Subir atributo e perícia é mudança PERMANENTE e cara. Ela continua
+   * pedindo confirmação — sair do modo pelo ✓ é o commit.
+   */
+  useEffect(() => {
+    if (sheetMode === "evolucao") return;
+    if (JSON.stringify(character) === JSON.stringify(lastSyncedCharacterRef.current)) return;
+    const id = setTimeout(() => { void persistCharacterAuto(characterRef.current, "Mudança na ficha"); }, 400);
+    return () => clearTimeout(id);
+    // `character` é a única dependência de verdade: o resto é lido de
+    // refs, que não disparam efeito e sempre trazem o valor atual.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character, sheetMode]);
+
   async function persistEvolucao(nextCharacter: Character) {
     await persistCharacterAuto(nextCharacter, "Evolução aplicada");
   }
 
-  async function handleUseAction(actionId: string) {
+  /**
+   * SAIR DO MODO EVOLUÇÃO É O COMMIT.
+   *
+   * Antes cada passo de +/− gravava sozinho, e não havia como recuar:
+   * clicar errado num atributo já era permanente. Subir atributo e
+   * perícia é a mudança mais cara da ficha — ela merece um gesto de
+   * confirmação, e o ✓ do chip já era esse gesto na cabeça de quem usa.
+   *
+   * Entrar no modo não grava nada. Os passos ficam no estado local, o
+   * autosave geral não toca neles (ele para em `sheetMode === "evolucao"`),
+   * e sair pelo ✓ grava tudo de uma vez.
+   */
+  function alternarModo(proximo: SheetMode) {
+    const saindoDaEvolucao = sheetMode === "evolucao" && proximo !== "evolucao";
+    setSheetMode(proximo);
+    if (saindoDaEvolucao) void persistEvolucao(characterRef.current);
+  }
+
+  async function handleUseAction(actionId: string, armaId?: string | null, contexto?: ContextoAcaoToken) {
     const nowMs = Date.now();
     const lastExecution = lastActionExecutionRef.current;
     if (
@@ -5005,7 +5140,7 @@ export default function CharacterSheetClient({
 
     // Resolve arma/perícia/dano ANTES de gastar PA: se a munição bloquear,
     // o PA não pode ter sido gasto (regra do checkpoint).
-    const attackWeaponInstanceId = temEfeitoAtaque ? effectiveSelectedAttackWeaponId : null;
+    const attackWeaponInstanceId = temEfeitoAtaque ? (armaId === undefined ? effectiveSelectedAttackWeaponId : armaId) : null;
     const attackWeaponInstance: InventoryItemInstance | null = attackWeaponInstanceId
       ? (currentCharacter.inventario ?? []).find((i) => i.id === attackWeaponInstanceId) ?? null
       : null;
@@ -5144,7 +5279,7 @@ export default function CharacterSheetClient({
     // condição/toggle de postura persistem sozinhas quando conectado a
     // mesa/personagem salvo (ver persistAutomatedActionExecution acima).
     // Atacar entra na mesma regra quando consome munição/flecha (inventário mudou).
-    if (result.removedConditions.length > 0 || result.postureChange || attackLogFields.ammoConsumed) {
+    if (contexto || result.removedConditions.length > 0 || result.postureChange || attackLogFields.ammoConsumed) {
       await persistAutomatedActionExecution(characterRef.current);
     }
 
@@ -5168,6 +5303,7 @@ export default function CharacterSheetClient({
     // bruto do conteúdo evita "Ativar Postura Ofensiva: ... — encerrou
     // Postura Ofensiva" (confuso).
     addLogEntry("acao_combate", `${item.nome}: ${custoResumo}${removidasResumo}${posturaResumo}.${pendenciasResumo}`);
+    for (const aviso of result.warnings) addLogEntry("acao_combate", aviso);
     for (const lembrete of result.reminders) {
       addLogEntry("acao_combate", `Lembrete: ${lembrete}`);
     }
@@ -5196,8 +5332,9 @@ export default function CharacterSheetClient({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
           type: "action_used",
-          visibility: "public",
+          visibility: contexto?.logVisibility ?? "public",
           payload: {
+            ...contexto,
             characterId,
             characterNome: currentCharacter.nome,
             actionId: actionContent.id,
@@ -5238,6 +5375,7 @@ export default function CharacterSheetClient({
       actionExecutionLockRef.current = false;
       setExecutingActionId(null);
     }
+    return true;
   }
 
   /**
@@ -5375,10 +5513,40 @@ export default function CharacterSheetClient({
   // personagem real (nunca aparecia em /dev/character-sheet, que nunca
   // passa por esse bloqueio: lá `mode` é sempre "dev").
   const catalogoItens = useMemo(() => new Map(itemsIniciais.map((i) => [i.slug, i])), [itemsIniciais]);
+
+  /* Espaços ocupados/capacidade. A regra inteira (porte → espaços,
+     capacidade total, o que pesa e o que não pesa) vive em
+     `lib/character/carga.ts`; aqui é só a leitura memoizada. */
+  const cargaAtual = useMemo(
+    () => resumoDeCarga(character, catalogoItens),
+    [character, catalogoItens],
+  );
+
+  /* Glossário para os tooltips de regra dentro de textos: as ações de
+     combate e as condições publicadas, achatadas num formato só. Vem
+     de conteúdo real — nada é escrito à mão aqui. */
+  const glossarioDeRegras = useMemo<TermoDeRegra[]>(
+    () => [
+      ...combatActionsIniciais.map((a) => ({
+        tipo: "acao" as const,
+        slug: a.slug,
+        nome: a.nome,
+        descricao: a.descricao_curta ?? a.descricao_longa ?? null,
+      })),
+      ...condicoesDisponiveis.map((c) => ({
+        tipo: "condicao" as const,
+        slug: c.slug,
+        nome: c.nome,
+        descricao: c.descricao_curta ?? null,
+      })),
+    ],
+    [combatActionsIniciais, condicoesDisponiveis],
+  );
   // Também precisa vir antes do return de bloqueio — mesma regra acima.
   // `null` na rota /ficha normal; vira `router.back()` só quando esta
   // árvore está montada dentro da rota interceptada do modal.
   const consoleCloseOverride = useConsoleCloseOverride();
+  const [rolagemToken, setRolagemToken] = useState<{ pericia: string; nome: string; visibilidade: "public" | "gm" } | null>(null);
 
   // Modo product (/ficha): antes de mostrar qualquer ficha, exige o
   // personagem já resolvido por campanha+id (ver
@@ -5403,6 +5571,32 @@ export default function CharacterSheetClient({
   const estocarStatusFicha = getEstocarAvailability(character, talentsIniciais);
 
   const consoleApi: ConsoleApi = {
+    escalpos: {
+      catalogo: escalposIniciais,
+      erro: escalposError,
+      instalar: handleInstallEscalpo,
+      remover: handleRemoveEscalpo,
+      comEfeitoAutomatico: installedEscalpoIdsWithEffect,
+    },
+    magias: {
+      spells: spellsIniciais,
+      catalogError: spellsError,
+      magiasAprendidas: character.magias_aprendidas ?? [],
+      niveisVertente: character.niveis_vertente ?? {},
+      sheetMode,
+      onLearn: handleLearnSpell,
+      onForget: handleForgetSpell,
+      onCast: handleCastSpell,
+      onCastWithFusion: handleCastSpellWithFusion,
+      onRollDamage: handleRollSpellDamage,
+      onSetVertenteLevel: handleSetVertenteLevel,
+      spellRangeAreaMultiplier: getTalentSpellRangeAreaMultiplier(character, talentsIniciais, "ataque"),
+      canalizar: (() => {
+        const st = getCanalizarState(character, talentsIniciais);
+        return st.acquired ? { available: !st.usedThisRound, manaAtual: character.recursos_atuais?.mana ?? 0 } : null;
+      })(),
+    },
+    gravacao: { estado: saveState, erro: errorMessage },
     character,
     derivados,
     regras,
@@ -5417,6 +5611,7 @@ export default function CharacterSheetClient({
     definirModo: setSheetMode,
     editarAtributo: updateAtributo,
     editarPericia: updatePericia,
+    editarNome: (nome) => setCharacter((prev) => ({ ...prev, nome })),
     pm:
       character.pm_total == null && character.pm_disponivel == null
         ? null
@@ -5581,7 +5776,7 @@ export default function CharacterSheetClient({
       };
     },
 
-    editarRecurso: (id, valor) => updateRecursoAtual(id, valor),
+    editarRecurso: (id, valor, opcoes) => updateRecursoAtual(id, valor, opcoes),
     editarIntegridade: (valor) => updateRecursoAtual("integridade", valor),
     ajustarPa: (delta) => ajustarPaConsole(delta),
     ajustarReacoes: (delta) => ajustarReacoesConsole(delta),
@@ -5592,6 +5787,7 @@ export default function CharacterSheetClient({
     podeUsarSobrecarga: !(character.ruptura_pendente ?? false),
 
     avancarColapso: handleAdvanceCollapseSegmentManual,
+    aplicarTesteDecisivoColapso: (dados) => void handleResolveCollapseDecisiveTest(dados),
     estabilizarColapso: handleStabilizeCollapse,
 
     equiparNoSlot: (instanceId: string, slot: BodySlotId) => {
@@ -5617,6 +5813,63 @@ export default function CharacterSheetClient({
     definirPd: handleSetPdAtual,
     recarregar: handleReloadWeapon,
 
+    /* Inventário. Nenhuma regra nova mora aqui: cada uma destas é a
+       porta para um fluxo que já existia e já loga/salva. */
+    moverItemPara: (instanceId, estado) => {
+      const instancia = character.inventario?.find((i) => i.id === instanceId);
+      // Armadura/escudo ATIVOS têm MIT/PD vivos; tirá-los do corpo passa
+      // pelo fluxo defensivo, senão a fonte de MIT some sem desligar.
+      if (instancia?.equipadoDefensivo && estado !== "equipado") {
+        handleUnequipDefensive(instanceId);
+      }
+      handleSetItemEstado(instanceId, estado);
+    },
+    usarItem: (instanceId) => void handleUseItem(instanceId),
+    /**
+     * Saldo de carteira (INV-03). Mesmo padrão das demais mutações da
+     * ficha: altera o personagem em memória e deixa a persistência
+     * para o salvamento, que passa por `update_character_sheet_payload`
+     * — a RPC revalida controle e participação ativa no servidor.
+     *
+     * Nunca negativo: saldo devedor não existe no contrato (PRD 13.1),
+     * e deixar um número abaixo de zero aqui criaria um estado que o
+     * resto do sistema não sabe ler.
+     */
+    definirCarteira: (walletId, valor) => {
+      const atual = characterRef.current.carteira ?? { aretz_informal: 0, cdi: 0, cdi_craqueada: 0 };
+      const novo = Math.max(0, Math.round(valor));
+      if (atual[walletId] === novo) return;
+      const next = { ...characterRef.current, carteira: { ...atual, [walletId]: novo } };
+      characterRef.current = next;
+      setCharacter(next);
+    },
+    ajustarQuantidade: (instanceId, delta) => {
+      const next = adjustItemQuantity(characterRef.current, instanceId, delta);
+      characterRef.current = next;
+      setCharacter(next);
+    },
+    descartarItem: handleRemoveItem,
+    carga: cargaAtual,
+    glossario: glossarioDeRegras,
+    /* As propriedades saem inteiras de `deriveItemProperties` — modelo,
+       runas instaladas e técnicas juntas, já resolvidas. Aqui só vira
+       termo com dica; o Console não interpreta propriedade. */
+    propriedadesDoItem: (instanceId: string) => {
+      const instancia = character.inventario?.find((i) => i.id === instanceId);
+      if (!instancia) return [];
+      return deriveItemProperties({
+        instance: instancia,
+        item: itemsIniciais.find((m) => m.slug === instancia.itemSlug),
+        properties: propertiesIniciais,
+        runes: runesIniciais,
+      }).map((p) => ({
+        tipo: "propriedade" as const,
+        slug: p.slug,
+        nome: p.label,
+        descricao: p.description ?? null,
+      }));
+    },
+
     adicionarCondicao: (input) => void handleAddCondition(input),
     removerCondicao: (id) => void handleRemoveCondition(id),
     condicoesDisponiveis: condicoesDisponiveis.map((c) => ({
@@ -5633,6 +5886,65 @@ export default function CharacterSheetClient({
     erro: saveState === "error" ? errorMessage : null,
   };
 
+
+  if (acaoToken) {
+    let opcoes: OpcaoAcaoToken[] = [];
+    if (acaoToken.categoria === "atacar" && attackActionContent) {
+      const acao = actionConsoleItems.find(a => a.id === attackActionContent.id);
+      opcoes = attackWeaponCandidates.map(c => {
+        const modelo = itemsIniciais.find(i => i.slug === c.itemSlug) ?? null;
+        const resolucao = resolveAttackDetails(character, attackActionContent, modelo);
+        const municao = c.instanceId && modelo?.usesAmmunition ? checkAttackAmmoBlock(character, itemsIniciais, { weaponInstanceId: c.instanceId }) : null;
+        return { id: c.instanceId ?? "__desarmado__", nome: c.nome, custo: acao?.custoLabel ?? "Custo indisponível", aviso: acao?.warning, alvo: "obrigatorio", pericia: resolucao.skill,
+          fatos: [{ rotulo: "Dano-base", valor: resolucao.danoBase ?? "—" }, { rotulo: "Perícia", valor: regras?.pericias.find(p => p.id === resolucao.skill)?.nome ?? resolucao.skill ?? "—" }],
+          detalhe: "Após confirmar, abre a rolagem. Defesa e aplicação de dano permanecem manuais.",
+          bloqueio: !acao?.enabled ? acao?.disabledReason ?? "Ação indisponível." : municao ? "Munição indisponível; confira arma e aljava na ficha." : !resolucao.skill ? "Perícia de ataque não definida no catálogo." : null };
+      });
+    } else if (acaoToken.categoria === "conjurar") {
+      opcoes = spellsIniciais.filter(s => s.status === "published" && isSpellLearned(character, s.slug)).map(s => {
+        const teste = castSpell({ character, spell: s, paMax: derivados.pa_max, manaMax: derivados.mana_max });
+        return { id: s.slug, nome: s.nome, custo: `${s.estatisticas.custo_pa} PA · ${s.estatisticas.custo_mana ?? "não definido"} Mana`, alvo: "opcional",
+          fatos: [{ rotulo: "Alcance", valor: s.estatisticas.alcanceTexto ?? "—" }],
+          detalhe: "Resistências e efeitos no alvo são resolvidos manualmente.", aviso: teste.ok ? teste.reason : undefined, bloqueio: teste.ok ? null : teste.reason };
+      });
+    } else if (acaoToken.categoria === "item") {
+      opcoes = (character.inventario ?? []).flatMap(i => {
+        const m = catalogoItens.get(i.itemSlug);
+        if (!m || !deriveItemUseKind(m)) return [];
+        const preview = getItemUsePreview(m, character);
+        const proprio = deriveItemUseKind(m) === "pharmacy";
+        const custoPa = getItemUsePaCost(m);
+        const paAtual = Math.max(0, derivados.pa_max - (character.estado_jogo?.pa_gastos ?? 0));
+        return [{ id: i.id, nome: `${i.itemNome || m.nome} · ${i.quantidade} un.`, alvo: proprio ? "proprio" : "opcional",
+          custo: `${custoPa ?? m.custoPaUsoTexto ?? "conforme regra do item"} PA · consome 1 uso`,
+          aviso: custoPa != null && custoPa > paAtual ? `PA insuficiente (atual: ${paAtual}, necessário: ${custoPa}). A ação pode ser executada.` : undefined,
+          detalhe: [...preview.automatic, ...preview.manual, ...(proprio ? ["Uso em si mesmo. Uso em aliados permanece no fluxo da ficha."] : [])].join(" "),
+          bloqueio: i.quantidade <= 0 ? "Sem estoque." : preview.blockedReason } satisfies OpcaoAcaoToken];
+      });
+    }
+    const executar = async (opcao: OpcaoAcaoToken, alvoId: string | null) => {
+      const r = await contextoAcaoTokenAction(acaoToken.tokenId, alvoId);
+      if (!r.ok || !r.dados) throw new Error(r.erro ?? "Contexto indisponível.");
+      if (r.dados.actorCharacterId !== characterId || r.dados.campaignId !== selectedCampaignId) throw new Error("O personagem mudou. Reabra as ações do token.");
+      const antes = characterRef.current;
+      if (acaoToken.categoria === "atacar") {
+        if (!attackActionContent || !getAttackWeaponCandidates(antes, itemsIniciais).some(c => (c.instanceId ?? "__desarmado__") === opcao.id)) throw new Error("Arma indisponível.");
+        const ok = await handleUseAction(attackActionContent.id, opcao.id === "__desarmado__" ? null : opcao.id, r.dados);
+        if (!ok) throw new Error("Ataque bloqueado. Confira PA, condições e munição.");
+        if (opcao.pericia) setRolagemToken({ pericia: opcao.pericia, nome: `Atacar · ${opcao.nome}${r.dados.alvoNome ? ` → ${r.dados.alvoNome}` : ""}`, visibilidade: r.dados.logVisibility });
+      } else if (acaoToken.categoria === "conjurar") await handleCastSpell(opcao.id, r.dados);
+      else await handleUseItem(opcao.id, undefined, r.dados);
+      if (characterRef.current === antes) throw new Error("Ação não executada. Confira os recursos e as condições de uso na ficha.");
+    };
+    return <>
+      <PainelAcaoToken key={`${acaoToken.tokenId}:${acaoToken.categoria}`} pedido={acaoToken} nome={character.nome} opcoes={opcoes} alvos={alvosNoMapa}
+        erroCatalogo={acaoToken.categoria === "atacar" ? combatActionsError : acaoToken.categoria === "conjurar" ? spellsError : itemsError}
+        erroGravacao={consoleApi.erro} onExecutar={executar}
+        onConcluir={() => { if (acaoToken.categoria !== "atacar") consoleCloseOverride?.(); }}
+        onFechar={() => { setRolagemToken(null); consoleCloseOverride?.(); }} />
+      {rolagemToken && <PainelRolagem api={consoleApi} prefill={{ tipo: "pericia", periciaId: rolagemToken.pericia }} acaoToken={rolagemToken} onFechar={() => { setRolagemToken(null); consoleCloseOverride?.(); }} />}
+    </>;
+  }
 
   return (
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
@@ -5659,12 +5971,15 @@ export default function CharacterSheetClient({
       >
         Abrir Console do Personagem
       </button>
-      <p style={{ opacity: 0.6, fontSize: 13, marginBottom: 4 }}>
-        {mode === "dev"
-          ? '/dev/character-sheet — ficha mínima (dev). Edição é local até clicar em "Salvar personagem".'
-          : 'Ficha. Edição é local até clicar em "Salvar personagem".'}
-      </p>
-      {characterId && (
+      {/* A legenda dizia 'Edição é local até clicar em "Salvar
+          personagem"'. Desde o autosave isso é falso, e o botão não
+          existe mais. Só sobrou o aviso do ambiente de dev. */}
+      {mode === "dev" && (
+        <p style={{ opacity: 0.6, fontSize: 13, marginBottom: 4 }}>
+          /dev/character-sheet — ficha mínima (dev).
+        </p>
+      )}
+      {mode === "dev" && characterId && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
           <span data-testid="ficha-sync-status" style={{ fontSize: 11, color: describeRealtimeStatus(characterSyncStatus, "ficha").cor }}>
             ● {describeRealtimeStatus(characterSyncStatus, "ficha").texto}
@@ -5677,7 +5992,7 @@ export default function CharacterSheetClient({
           </button>
         </div>
       )}
-      {saveState === "error" && errorMessage && (
+      {mode === "dev" && saveState === "error" && errorMessage && (
         // Checkpoint v0.65 — visível em QUALQUER aba (não só Geral), já
         // que a persistência automática de ações do Console pode falhar
         // enquanto o jogador está na aba Ações. A mudança local já
@@ -5712,12 +6027,12 @@ export default function CharacterSheetClient({
           </button>
         </div>
       )}
-      {usandoFallback && (
+      {mode === "dev" && usandoFallback && (
         <p style={{ color: "#f5a623", fontSize: 13, marginBottom: 16 }}>
           ⚠ regras_personagem não veio do banco — usando fórmulas de fallback temporárias.
         </p>
       )}
-      {autoHealBanner && (
+      {mode === "dev" && autoHealBanner && (
         <div
           data-testid="auto-heal-banner"
           style={{
@@ -5749,6 +6064,27 @@ export default function CharacterSheetClient({
           </button>
         </div>
       )}
+      {/* ══ A FICHA ANTIGA ═════════════════════════════════════════
+          Só em `dev`. Em PRODUTO ela não é mais renderizada.
+
+          Ela ficava montada EMBAIXO do Console, que abre automaticamente
+          em `/ficha` — e isso não era neutro: 18 controles interativos
+          ficavam cobertos pela janela, entre eles "Salvar personagem",
+          medido em (440,413), dentro da área do Console. Quem editava PV
+          não tinha como salvar sem fechar a ficha para salvar a ficha, e
+          nada avisava que havia mudança pendente.
+
+          O Console é a ficha hoje. A de baixo é trabalho antigo, e
+          mantê-la montada só criava uma segunda interface invisível
+          competindo com a primeira.
+
+          O que NÃO vem aqui dentro, de propósito: o estado de
+          sincronização, o aviso de erro de gravação, o banner de
+          auto-heal e o diálogo de conflito remoto. Aqueles não são "a
+          página velha" — são retorno sobre o que está acontecendo com
+          ESTE personagem, e sumir com eles devolveria a falha silenciosa
+          que o autosave acabou de resolver. ══ */}
+      {mode !== "product" && (<>
 
       <ActiveStateStrip
         condicoes={character.condicoes_ativas ?? []}
@@ -5766,7 +6102,7 @@ export default function CharacterSheetClient({
         activeTab={activeTab}
         personagensCount={personagens.length}
         onChange={setActiveTab}
-        hiddenTabs={mode === "product" ? (["personagens", "debug"] as const) : undefined}
+
       />
 
       {activeTab === "geral" && (
@@ -5779,7 +6115,7 @@ export default function CharacterSheetClient({
           saveState={saveState}
           errorMessage={errorMessage}
           sheetMode={sheetMode}
-          onModeChange={setSheetMode}
+          onModeChange={alternarModo}
           onNomeChange={(value) => setCharacter((prev) => ({ ...prev, nome: value }))}
           onSave={handleSave}
           onNew={handleNew}
@@ -6176,6 +6512,7 @@ export default function CharacterSheetClient({
           usandoFallback={usandoFallback}
         />
       )}
+      </>)}
     </main>
   );
 }

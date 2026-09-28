@@ -33,8 +33,6 @@
 import type { ReactNode } from "react";
 import type { Acento } from "./primitivas";
 
-const CANTOS = ["tl", "tr", "bl", "br"] as const;
-
 export interface CartaoBaseProps {
   /** Rótulo do TIPO — "TESTE DE PERÍCIA", "ATAQUE", "CONDIÇÃO APLICADA". */
   tipo: string;
@@ -105,10 +103,6 @@ export function CartaoBase({
       data-testid={testId}
       {...atributos}
     >
-      {CANTOS.map((c) => (
-        <span key={c} className={`pn-cartao-canto pn-cartao-canto--${c}`} aria-hidden="true" />
-      ))}
-
       <div className="pn-cartao-layout">
         <div className="pn-cartao-espinha" aria-hidden="true">
           {icone && <span className="pn-cartao-ico">{icone}</span>}

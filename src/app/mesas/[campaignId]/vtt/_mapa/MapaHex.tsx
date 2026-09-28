@@ -17,11 +17,10 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Crosshair, FileText, Navigation, TriangleAlert } from "lucide-react";
+import { GLIFO_DO_SINAL, SINAIS_MARCA } from "../_dominio/sinaisDeMarca";
 import {
   type Hex,
   TAMANHOS,
-  ancoraFrontalDaPegada,
   contornoDaPegada,
   hexIguais,
   hexKey,
@@ -79,13 +78,9 @@ import { elementoEhEditavel } from "../_ferramentas/controlador";
 
 /** Glifo de cada tipo de sinal — a MESMA tabela de ícones que
     `PainelMarcar` usa nos botões, para que mapa e janela nunca mostrem
-    desenhos diferentes pro mesmo sinal. */
-const GLIFO_DO_SINAL: Record<string, typeof Crosshair> = {
-  alvo: Crosshair,
-  perigo: TriangleAlert,
-  rota: Navigation,
-  nota: FileText,
-};
+    desenhos diferentes pro mesmo sinal — agora de verdade: a tabela é
+    a mesma, importada de `_dominio/sinaisDeMarca`, e não mais uma cópia
+    ao lado da outra. */
 /** Lado do glifo em unidades do mapa (o hex tem raio `TAM`). */
 const TAM_GLIFO_SINAL = 19;
 import {
@@ -107,6 +102,9 @@ import { type PontoAxial, mundoParaAxial } from "../_dominio/escalaMapa";
 import { type CantoImagem, CamadaImagens } from "./CamadaImagens";
 import { type ImagemCena, alturaEfetivaM, pxPorMetro, retanguloDaImagem } from "../_dominio/imagemCena";
 import { useAnimacaoToken } from "./useAnimacaoToken";
+
+/** Anel e selo de quem já agiu na janela — neutro, sem a cor do lado. */
+const COR_JA_AGIU = "#5f7492";
 
 export const TAM = 26; // raio do hexágono em px do mundo
 
@@ -145,11 +143,17 @@ export interface EstadoVisualToken {
   origemDeAura: boolean;
 }
 
+/* A PALETA DAS VERTENTES. Energética passou de ciano a LARANJA e o
+   ciano foi pra sináptica — o ciano é a cor estrutural do chassi
+   inteiro, e uma vertente vestida com ela não se lia como vertente,
+   se lia como "selecionado". */
 const COR_VERTENTE: Record<TokenApresentacao["vertente"], string> = {
   somatico: "#2f9e56",
   cognitivo: "#8b5cf6",
-  energetico: "#00d4ff",
   material: "#f5a200",
+  energetico: "#f07a1f",
+  cinetica: "#e0455f",
+  sinaptica: "#35c7d8",
   nenhuma: "#6b7f8c",
 };
 
@@ -238,14 +242,11 @@ export interface PropsMapaHex {
   celulasRealce: Hex[];
   tipoRealce: "alcance" | "area" | "movimento" | "objeto" | null;
   onSelecionarToken: (id: string, aditivo: boolean) => void;
-  /**
-   * Hover de token. A ÂNCORA (retângulo do token na tela, do
-   * `getBoundingClientRect` do próprio `<g>`) vem junto porque quem
-   * desenha o cartão de hover (`VttClient`) precisa ancorá-lo no token
-   * — e medir o elemento é exato, enquanto refazer a conta de
-   * mundo→tela aqui fora seria uma segunda implementação do zoom/pan.
-   */
-  onHoverToken: (id: string | null, ancora?: { x: number; y: number; width: number; height: number }) => void;
+  onHoverToken: (id: string | null) => void;
+  /** Clique concluído sem arrasto. A âncora medida mantém o cartão
+   * alinhado ao disco mesmo com zoom/pan. */
+  onAtivarCartaoToken: (id: string, ancora: { x: number; y: number; width: number; height: number }) => void;
+  onFecharCartaoToken: () => void;
   onClicarCelula?: (h: Hex) => void;
 
   /**
@@ -313,23 +314,6 @@ export interface PropsMapaHex {
    * de tudo, então nenhum token chega a receber o evento.
    */
   areasEscolhendoToken?: boolean;
-  /**
-   * Âncora (em coordenadas do MUNDO) dos botões contextuais de
-   * confirmar/descartar. Este componente converte pra coordenadas de
-   * TELA e devolve por `onAncoraAcoes` — é o único lugar que conhece o
-   * CTM/zoom/pan, então a conversão mora aqui, uma vez.
-   */
-  areasAncoraAcoes?: { x: number; y: number } | null;
-  onAncoraAcoesTela?: (p: { x: number; y: number } | null) => void;
-  /**
-   * Conversor MUNDO → TELA para os botões de edição rápida — exposto
-   * como FUNÇÃO (não uma âncora única) porque agora pode existir mais
-   * de um botão simultâneo (área selecionada + área em hover, cada uma
-   * com o seu). Quem chama decide QUANTAS âncoras converter; este
-   * componente só sabe reconstruir a função sempre que zoom/pan/CTM
-   * mudam — é o único lugar que conhece esse estado.
-   */
-  onConversorEdicaoRapidaTela?: (conversor: ((mundo: { x: number; y: number }) => { x: number; y: number }) | null) => void;
   /**
    * Conversor TELA → HEX exposto pra quem precisa reagir a um evento
    * cujo alvo NÃO é este SVG — hoje só o arrasto HTML5 vindo do painel
@@ -487,6 +471,8 @@ export interface PropsMapaHex {
    * movimento total do gesto ficou abaixo do limiar de arrasto.
    */
   onMenuContextual?: (info: { clientX: number; clientY: number; tokenId: string | null; hex: Hex }) => void;
+  /** Shift + botão direito: alterna target sem seleção, cartão ou pan. */
+  onAlternarAlvo?: (tokenId: string) => void;
 
   /**
    * Fantasma ao vivo do POSICIONAMENTO de um token novo (fluxo de
@@ -610,6 +596,8 @@ export function MapaHex({
   tipoRealce,
   onSelecionarToken,
   onHoverToken,
+  onAtivarCartaoToken,
+  onFecharCartaoToken,
   onClicarCelula,
   terrenoReal,
   ferramenta = "interagir",
@@ -634,6 +622,7 @@ export function MapaHex({
   onPingCelula,
   onPan,
   onMenuContextual,
+  onAlternarAlvo,
   onWheelZoom,
   movimentosVisuais,
   onAnimacaoConcluida,
@@ -650,9 +639,6 @@ export function MapaHex({
   areasGuia,
   areasCandidatoSnap,
   areasEscolhendoToken = false,
-  areasAncoraAcoes,
-  onAncoraAcoesTela,
-  onConversorEdicaoRapidaTela,
   onConversorHexDaTela,
   areasParaHover,
   onHoverAreaEditavel,
@@ -774,6 +760,11 @@ export function MapaHex({
   // puxar o token visivelmente de volta pra origem logo depois dele
   // chegar no destino certo).
   const arrastoRef = useRef<typeof arrasto>(null);
+  // Coordenada de tela em que o gesto começou. O cartão do token só
+  // fecha quando o ponteiro realmente cruza o limiar de arrasto — não
+  // no pointerdown — para o clique simples continuar alternando o
+  // cartão normalmente.
+  const inicioArrastoTelaRef = useRef<{ x: number; y: number; cartaoFechado: boolean } | null>(null);
 
   /**
    * ACOMPANHANTES do arrasto em grupo — congelados no INÍCIO do gesto,
@@ -789,6 +780,7 @@ export function MapaHex({
   useEffect(() => { acompanhantesRef.current = acompanhantes; }, [acompanhantes]);
   const encerrarArrasto = useCallback(() => {
     arrastoRef.current = null;
+    inicioArrastoTelaRef.current = null;
     acompanhantesRef.current = [];
     setArrasto(null);
     setAcompanhantes([]);
@@ -843,7 +835,7 @@ export function MapaHex({
    * alheio junto, e perder o gesto por causa disso seria pior que mover
    * só o que é seu.
    */
-  const iniciarArrasto = useCallback((tokenId: string, origem: Hex): boolean => {
+  const iniciarArrasto = useCallback((tokenId: string, origem: Hex, clientX: number, clientY: number): boolean => {
     if (ferramenta !== "interagir") return false;
     if (podeMoverToken && !podeMoverToken(tokenId)) return false;
     const emGrupo = onSoltarTokens && (idsSelecionados?.includes(tokenId) ?? false)
@@ -853,6 +845,7 @@ export function MapaHex({
       : [];
     const inicial = iniciarArrastoToken(tokenId, origem);
     arrastoRef.current = inicial;
+    inicioArrastoTelaRef.current = { x: clientX, y: clientY, cartaoFechado: false };
     const seguidores = emGrupo.map((t) => ({
       tokenId: t.id,
       deslocamento: { q: t.pos.q - origem.q, r: t.pos.r - origem.r },
@@ -875,6 +868,7 @@ export function MapaHex({
   // `pointerId` é roteado pra ele, não importa onde o cursor esteja).
   type EstadoRotacaoAlca = {
     tokenId: string;
+    /** DIREÇÃO (olhar), não pegada — ver o comentário da alça. */
     orientacaoInicial: number;
     orientacaoAtual: number;
     valida: boolean;
@@ -904,30 +898,12 @@ export function MapaHex({
     return melhor;
   }, []);
 
-  /**
-   * Bloqueio/colisão pra uma orientação CANDIDATA do token em rotação —
-   * próprio token excluído da colisão. Nunca reimplementa geometria: só
-   * combina `pegadaEfetiva`/`projetarPegada`/`pegadaBloqueada`/
-   * `pegadasSobrepoem`, todas do domínio.
-   *
-   * A BORDA da cena não entra: um token pode estar fora da grade (é
-   * área de trabalho legítima — ver `posicaoDoGrupoValida` em
-   * `_dominio/arrastoToken.ts`), e girar quem está lá tem que
-   * funcionar. Exigir a pegada dentro do mapa deixaria esses tokens
-   * girando só por sorte de posição.
-   */
-  const validarOrientacaoAlca = useCallback((t: TokenApresentacao, novaOrientacao: number): boolean => {
-    const pegadaCandidata = pegadaEfetiva({ categoria: t.tamanho, orientacao: novaOrientacao, pegadaPersonalizada: t.pegadaPersonalizada });
-    const celulas = projetarPegada(t.pos, pegadaCandidata);
-    if (terrenoReal && pegadaBloqueada(terrenoReal, celulas)) return false;
-    const celulasOutros: Hex[] = [];
-    for (const outro of cena.tokens) {
-      if (outro.id === t.id) continue;
-      const pegadaOutro = pegadaEfetiva({ categoria: outro.tamanho, orientacao: outro.orientacao, pegadaPersonalizada: outro.pegadaPersonalizada });
-      celulasOutros.push(...projetarPegada(outro.pos, pegadaOutro));
-    }
-    return !pegadasSobrepoem(celulas, celulasOutros);
-  }, [cena.tokens, terrenoReal]);
+  /* SEM VALIDAÇÃO AQUI (0135). A alça virou o OLHAR, e olhar não ocupa
+     célula nenhuma: não há terreno pra bloquear nem token pra
+     atropelar, e por isso nenhuma direção pode ser recusada. Girar a
+     FORMA — que de fato muda o que o token ocupa — saiu deste gesto e
+     virou uma ação própria no menu do token, onde a recusa faz
+     sentido. */
 
   const iniciarRotacaoAlca = useCallback((t: TokenApresentacao, e: React.PointerEvent) => {
     if (ferramenta !== "interagir") return;
@@ -936,9 +912,16 @@ export function MapaHex({
     // o `pointerdown` ainda passaria pela árvore normal de eventos
     // antes da captura entrar em vigor.
     e.stopPropagation();
-    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    /* A CAPTURA PODE FALHAR e não é motivo pra derrubar a mesa: o
+       ponteiro some entre o `pointerdown` e esta linha (um `pointercancel`
+       do sistema, uma caneta levantada, um evento sintético de teste) e
+       o navegador lança `NotFoundError`. O gesto sem captura ainda
+       funciona enquanto o cursor ficar sobre a alça; sem o `try`, a
+       exceção subia até o boundary e a página inteira virava tela de
+       erro. */
+    try { (e.currentTarget as Element).setPointerCapture(e.pointerId); } catch { /* segue sem captura */ }
     const inicial: EstadoRotacaoAlca = {
-      tokenId: t.id, orientacaoInicial: t.orientacao, orientacaoAtual: t.orientacao, valida: true,
+      tokenId: t.id, orientacaoInicial: t.direcao, orientacaoAtual: t.direcao, valida: true,
       inicioClientXY: { x: e.clientX, y: e.clientY }, moveuSignificativamente: false,
     };
     rotacaoAlcaRef.current = inicial;
@@ -964,11 +947,10 @@ export function MapaHex({
     // ainda; é exatamente o que permite distinguir clique de arrasto
     // no soltar (ver `soltarRotacaoAlca`).
     const novaOrientacao = moveuSignificativamente ? anguloParaOrientacao(dx, dy) : atual.orientacaoAtual;
-    const valida = validarOrientacaoAlca(t, novaOrientacao);
-    const novo: EstadoRotacaoAlca = { ...atual, orientacaoAtual: novaOrientacao, valida, moveuSignificativamente };
+    const novo: EstadoRotacaoAlca = { ...atual, orientacaoAtual: novaOrientacao, valida: true, moveuSignificativamente };
     rotacaoAlcaRef.current = novo;
     setRotacaoAlca(novo);
-  }, [cena.tokens, pontoMundo, anguloParaOrientacao, validarOrientacaoAlca]);
+  }, [cena.tokens, pontoMundo, anguloParaOrientacao]);
 
   const finalizarRotacaoAlca = useCallback((confirmar: boolean) => {
     const atual = rotacaoAlcaRef.current;
@@ -981,19 +963,19 @@ export function MapaHex({
     // célula; um clique nunca cruzou o limiar, então `orientacaoAtual`
     // ainda é igual à inicial — o passo de 60° é aplicado por cima
     // dela aqui, não durante o movimento.
-    const t = cena.tokens.find((x) => x.id === atual.tokenId);
     if (!atual.moveuSignificativamente) {
       const passoClique = ((atual.orientacaoInicial + 1) % 6 + 6) % 6;
-      if (t && validarOrientacaoAlca(t, passoClique)) onRotacaoAlcaSolta?.(atual.tokenId, passoClique);
+      onRotacaoAlcaSolta?.(atual.tokenId, passoClique);
       return;
     }
-    if (!atual.valida) return; // prévia inválida — nunca persiste
     if (atual.orientacaoAtual === atual.orientacaoInicial) return; // sem mudança real — nunca chama RPC
     onRotacaoAlcaSolta?.(atual.tokenId, atual.orientacaoAtual);
-  }, [cena.tokens, validarOrientacaoAlca, onRotacaoAlcaSolta]);
+  }, [onRotacaoAlcaSolta]);
 
   const soltarRotacaoAlca = useCallback((e: React.PointerEvent) => {
-    (e.currentTarget as Element).releasePointerCapture(e.pointerId);
+    // Mesma razão do `setPointerCapture`: soltar uma captura que já não
+    // existe lança, e o gesto já terminou de qualquer forma.
+    try { (e.currentTarget as Element).releasePointerCapture(e.pointerId); } catch { /* já solta */ }
     finalizarRotacaoAlca(true);
   }, [finalizarRotacaoAlca]);
   // `pointercancel`/perda de captura — encerra com segurança, SEM
@@ -1294,6 +1276,12 @@ export function MapaHex({
     if (!arrasto) return;
 
     function mover(e: PointerEvent) {
+      const inicioTela = inicioArrastoTelaRef.current;
+      if (inicioTela && !inicioTela.cartaoFechado
+        && Math.hypot(e.clientX - inicioTela.x, e.clientY - inicioTela.y) >= LIMIAR_ARRASTO_PX) {
+        inicioTela.cartaoFechado = true;
+        onFecharCartaoToken();
+      }
       const p = pontoMundo(e.clientX, e.clientY);
       if (!p) return;
       const hex = pixelParaHex(p.x, p.y, TAM);
@@ -1684,15 +1672,17 @@ export function MapaHex({
   // direito ARRASTADO" (pan) pela distância total percorrida — o
   // mesmo limiar de `LIMIAR_ARRASTO_PX` usado pra distinguir clique de
   // arrasto em qualquer outro gesto deste arquivo.
-  const panOrigemRef = useRef<{ x: number; y: number } | null>(null);
+  const panOrigemRef = useRef<{ x: number; y: number; targetId: string | null; shift: boolean } | null>(null);
   const panDistanciaRef = useRef(0);
   const onPointerDownSvg = useCallback((e: React.PointerEvent) => {
     if (e.button !== 2) return;
     e.preventDefault();
-    panOrigemRef.current = { x: e.clientX, y: e.clientY };
+    onFecharCartaoToken();
+    const targetId=(e.target as Element).closest('.rv-token')?.getAttribute('data-token-id')??null;
+    panOrigemRef.current = { x: e.clientX, y: e.clientY, targetId, shift:e.shiftKey };
     panDistanciaRef.current = 0;
-    if (onPan) panRef.current = { x: e.clientX, y: e.clientY };
-  }, [onPan]);
+    if (onPan && !(e.shiftKey && targetId && onAlternarAlvo)) panRef.current = { x: e.clientX, y: e.clientY };
+  }, [onPan, onFecharCartaoToken, onAlternarAlvo]);
 
   // Espelho síncrono de `pontoMundo` — ele muda de referência a cada
   // tick de pan (depende de `pan.x/y`), e é EXATAMENTE esse tick que
@@ -1707,7 +1697,7 @@ export function MapaHex({
   useEffect(() => { pontoMundoRef.current = pontoMundo; }, [pontoMundo]);
 
   useEffect(() => {
-    if (!onPan && !onMenuContextual) return;
+    if (!onPan && !onMenuContextual && !onAlternarAlvo) return;
     function mover(e: PointerEvent) {
       if (panOrigemRef.current) {
         panDistanciaRef.current = Math.hypot(e.clientX - panOrigemRef.current.x, e.clientY - panOrigemRef.current.y);
@@ -1722,12 +1712,14 @@ export function MapaHex({
       // Botão direito solto sem ter arrastado (praticamente) nada —
       // era um CLIQUE, não um pan: abre o menu contextual no que
       // estiver sob o cursor (token ou célula vazia).
-      if (onMenuContextual && panOrigemRef.current && panDistanciaRef.current < LIMIAR_ARRASTO_PX) {
+      if (e.button===2 && panOrigemRef.current && panDistanciaRef.current < LIMIAR_ARRASTO_PX) {
         const alvo = document.elementFromPoint(e.clientX, e.clientY);
         const tokenId = alvo?.closest(".rv-token")?.getAttribute("data-token-id") ?? null;
         const p = pontoMundoRef.current(e.clientX, e.clientY);
         const hex = p ? pixelParaHex(p.x, p.y, TAM) : { q: 0, r: 0 };
-        onMenuContextual({ clientX: e.clientX, clientY: e.clientY, tokenId, hex });
+        if(panOrigemRef.current.shift && panOrigemRef.current.targetId && onAlternarAlvo) {
+          if(tokenId===panOrigemRef.current.targetId)onAlternarAlvo(tokenId);
+        } else onMenuContextual?.({ clientX: e.clientX, clientY: e.clientY, tokenId, hex });
       }
       panRef.current = null;
       panOrigemRef.current = null;
@@ -1741,7 +1733,7 @@ export function MapaHex({
     // `pontoMundo` de propósito FORA desta lista — ver o comentário do
     // `pontoMundoRef` acima. `zoom` fica: não muda por pixel de pan
     // (só pela roda), então não gera a mesma reinscrição por tick.
-  }, [onPan, onMenuContextual, zoom]);
+  }, [onPan, onMenuContextual, onAlternarAlvo, zoom]);
 
   // ── Zoom pela roda do mouse/trackpad ─────────────────────────────
   // Listener NATIVO (não `onWheel` do React) — o listener sintético do
@@ -1768,11 +1760,12 @@ export function MapaHex({
       e.preventDefault();
       const p = pontoMundo(e.clientX, e.clientY);
       if (!p) return;
+      onFecharCartaoToken();
       onWheelZoom!(normalizarDeltaWheel(e), p);
     }
     svg.addEventListener("wheel", aoRolar, { passive: false });
     return () => svg.removeEventListener("wheel", aoRolar);
-  }, [onWheelZoom, pontoMundo]);
+  }, [onWheelZoom, pontoMundo, onFecharCartaoToken]);
 
   /**
    * Hover do botão de edição rápida — geometria REAL de cada área
@@ -2078,7 +2071,15 @@ export function MapaHex({
   // gesto ficaria presa numa posição/célula que não é mais a de baixo
   // do cursor. Mais simples e robusto que recalcular "o que há agora
   // sob o cursor": só limpar.
-  useEffect(() => { setHint(null); }, [pan.x, pan.y, zoom]);
+  //
+  // Só chama `setHint` se HÁ hint: um `setHint(null)` incondicional a
+  // cada quadro de pan enfileirava um update dentro de efeito por quadro
+  // (o React nem sempre descarta o valor igual no meio de uma sequência
+  // de renders), e num arrasto longo isso estourava o "Maximum update
+  // depth exceeded" apontando pro `setPan`.
+  const hintRef = useRef(hint);
+  hintRef.current = hint;
+  useEffect(() => { if (hintRef.current) setHint(null); }, [pan.x, pan.y, zoom]);
 
   const hintParaCelula = useCallback((c: Hex): Omit<HintMapa, "x" | "y"> | null => {
     const real = terrenoReal?.get(hexKey(c));
@@ -2107,7 +2108,7 @@ export function MapaHex({
     if (!areasInteracao || e.button !== 0) return;
     const axial = axialDoEvento(e.clientX, e.clientY);
     if (!axial) return;
-    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    try { (e.currentTarget as Element).setPointerCapture(e.pointerId); } catch { /* segue sem captura */ }
     gestoAreaRef.current = true;
     areasInteracao.onPressionar(axial, { x: e.clientX, y: e.clientY }, { altKey: e.altKey, metaKey: e.metaKey, pointerId: e.pointerId });
   }, [areasInteracao, axialDoEvento]);
@@ -2122,7 +2123,7 @@ export function MapaHex({
   const areaPointerUp = useCallback((e: React.PointerEvent) => {
     if (!areasInteracao) return;
     if ((e.currentTarget as Element).hasPointerCapture?.(e.pointerId)) {
-      (e.currentTarget as Element).releasePointerCapture(e.pointerId);
+      try { (e.currentTarget as Element).releasePointerCapture(e.pointerId); } catch { /* já solta */ }
     }
     if (!gestoAreaRef.current) return;
     gestoAreaRef.current = false;
@@ -2140,7 +2141,7 @@ export function MapaHex({
 
   const alcaPointerDown = useCallback((id: string, e: React.PointerEvent) => {
     if (!onAreaAlcaMover) return;
-    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    try { (e.currentTarget as Element).setPointerCapture(e.pointerId); } catch { /* segue sem captura */ }
     alcaAtivaRef.current = id;
   }, [onAreaAlcaMover]);
 
@@ -2155,7 +2156,7 @@ export function MapaHex({
 
   const alcaPointerUp = useCallback((e: React.PointerEvent) => {
     if ((e.currentTarget as Element).hasPointerCapture?.(e.pointerId)) {
-      (e.currentTarget as Element).releasePointerCapture(e.pointerId);
+      try { (e.currentTarget as Element).releasePointerCapture(e.pointerId); } catch { /* já solta */ }
     }
     if (!alcaAtivaRef.current) return;
     alcaAtivaRef.current = null;
@@ -2168,45 +2169,10 @@ export function MapaHex({
     onAreaAlcaCancelar?.();
   }, [onAreaAlcaCancelar]);
 
-  /**
-   * Âncora dos botões contextuais: MUNDO → TELA. Recalculada quando a
-   * âncora, o zoom ou o pan mudam — é o que faz o grupo de botões
-   * acompanhar o mapa em vez de ficar preso numa coordenada morta.
-   */
-  useEffect(() => {
-    if (!onAncoraAcoesTela) return;
-    if (!areasAncoraAcoes) { onAncoraAcoesTela(null); return; }
-    const svg = svgRef.current;
-    const ctm = svg?.getScreenCTM();
-    if (!svg || !ctm) { onAncoraAcoesTela(null); return; }
-    const pt = svg.createSVGPoint();
-    pt.x = areasAncoraAcoes.x * zoom + pan.x;
-    pt.y = areasAncoraAcoes.y * zoom + pan.y;
-    const tela = pt.matrixTransform(ctm);
-    onAncoraAcoesTela({ x: tela.x, y: tela.y });
-  }, [areasAncoraAcoes?.x, areasAncoraAcoes?.y, zoom, pan.x, pan.y, onAncoraAcoesTela, areasAncoraAcoes]);
-
-  /**
-   * Conversor MUNDO → TELA reutilizável pros botões de edição rápida —
-   * pode haver mais de um simultâneo (seleção + hover), então em vez de
-   * converter UMA âncora este efeito expõe a FUNÇÃO de conversão em si;
-   * quem chama converte quantas âncoras precisar, cada botão com a sua
-   * posição independente. Reconstruída sempre que zoom/pan/CTM mudam —
-   * mesma regra de recálculo de `onAncoraAcoesTela` acima.
-   */
-  useEffect(() => {
-    if (!onConversorEdicaoRapidaTela) return;
-    const svg = svgRef.current;
-    const ctm = svg?.getScreenCTM();
-    if (!svg || !ctm) { onConversorEdicaoRapidaTela(null); return; }
-    onConversorEdicaoRapidaTela((mundo: { x: number; y: number }) => {
-      const pt = svg.createSVGPoint();
-      pt.x = mundo.x * zoom + pan.x;
-      pt.y = mundo.y * zoom + pan.y;
-      const tela = pt.matrixTransform(ctm);
-      return { x: tela.x, y: tela.y };
-    });
-  }, [zoom, pan.x, pan.y, onConversorEdicaoRapidaTela]);
+  /* A conversão MUNDO → TELA dos botões flutuantes (ações de área,
+     edição rápida) mora em `VttClient` (`mundoParaTela`), que já tem
+     zoom/pan — devolver daqui por `setState` a cada quadro de pan
+     estourava o limite de updates encadeados do React. */
 
   /**
    * Conversor TELA → HEX (ver a prop). Reconstruído junto com o de
@@ -2241,6 +2207,16 @@ export function MapaHex({
       aria-label={`Mapa da cena ${cena.nome}, grade hexagonal de ${cena.largura} por ${cena.altura} metros`}
       onPointerDown={onPointerDownSvg}
       onContextMenu={(e) => { if (onPan || onMenuContextual) e.preventDefault(); }}
+      onKeyDown={(e) => {
+        if (e.key !== "ContextMenu" && !(e.shiftKey && e.key === "F10")) return;
+        const elemento = (e.target as Element).closest('.rv-token');
+        const id = elemento?.getAttribute('data-token-id');
+        const token = cena.tokens.find(t => t.id === id);
+        if (!elemento || !token || !onMenuContextual) return;
+        e.preventDefault();
+        const r = elemento.getBoundingClientRect();
+        onMenuContextual({ clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, tokenId: token.id, hex: token.pos });
+      }}
     >
       <defs>
         {/* Piso: gradiente + ruído. É o que evita o "cinza vazio". */}
@@ -2459,25 +2435,19 @@ export function MapaHex({
           const x0 = minX + m, y0 = minY + m;
           const x1 = maxX - m, y1 = maxY - m;
           const eco = 4;                     // distância da segunda linha
-          const braco = TAM * 0.7;           // comprimento de cada perna da cantoneira
-          const cantos = [
-            { x: x0, y: y0, dx: 1, dy: 1 },
-            { x: x1, y: y0, dx: -1, dy: 1 },
-            { x: x1, y: y1, dx: -1, dy: -1 },
-            { x: x0, y: y1, dx: 1, dy: -1 },
-          ];
+          /* RAIO EM PIXELS DE TELA, como o palco. Dividir por `zoom` é
+             o mesmo que `vector-effect: non-scaling-stroke` faz com a
+             espessura: a moldura vive dentro do `<g>` que escala, e um
+             raio em unidades de mundo viraria um canto enorme com zoom
+             alto e reto com zoom baixo — o canto tem que ser o mesmo
+             que o do palco em qualquer aproximação. */
+          const r = 4 / zoom;
           return (
             <g className="rv-moldura-mapa" pointerEvents="none">
-              <rect x={x0} y={y0} width={x1 - x0} height={y1 - y0}
+              <rect x={x0} y={y0} width={x1 - x0} height={y1 - y0} rx={r} ry={r}
                 fill="none" stroke="#1c2b45" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
-              <rect x={x0 + eco} y={y0 + eco} width={x1 - x0 - eco * 2} height={y1 - y0 - eco * 2}
+              <rect x={x0 + eco} y={y0 + eco} width={x1 - x0 - eco * 2} height={y1 - y0 - eco * 2} rx={r} ry={r}
                 fill="none" stroke="#16233a" strokeWidth={1} opacity={0.75} vectorEffect="non-scaling-stroke" />
-              {cantos.map((c, i) => (
-                <path key={i}
-                  d={`M ${c.x + c.dx * braco} ${c.y} L ${c.x} ${c.y} L ${c.x} ${c.y + c.dy * braco}`}
-                  fill="none" stroke="#45b8c9" strokeWidth={1.5} strokeLinecap="square"
-                  opacity={0.2} vectorEffect="non-scaling-stroke" />
-              ))}
             </g>
           );
         })()}
@@ -2615,7 +2585,9 @@ export function MapaHex({
                       há, e o círculo só competia com o glifo. */}
                   <g transform={`translate(${-TAM_GLIFO_SINAL / 2} ${-TAM_GLIFO_SINAL / 2})`} style={{ color: m.cor }}>
                     {(() => {
-                      const Glifo = GLIFO_DO_SINAL[m.sinal] ?? FileText;
+                      // Sinal desconhecido cai no primeiro da tabela em vez de sumir:
+                      // uma marca que existe no banco precisa aparecer no mapa.
+                      const Glifo = GLIFO_DO_SINAL[m.sinal] ?? SINAIS_MARCA[0].Icone;
                       return <Glifo width={TAM_GLIFO_SINAL} height={TAM_GLIFO_SINAL} strokeWidth={1.7} />;
                     })()}
                   </g>
@@ -2884,7 +2856,9 @@ export function MapaHex({
                 ferramenta={ferramenta}
                 onSelecionar={tokensBloqueados ? () => {} : onSelecionarToken}
                 onHover={onHoverToken}
-                onIniciarArrasto={tokensBloqueados ? undefined : () => iniciarArrasto(t.id, t.pos)}
+                onAtivarCartao={onAtivarCartaoToken}
+                onFecharCartao={onFecharCartaoToken}
+                onIniciarArrasto={tokensBloqueados ? undefined : (clientX, clientY) => iniciarArrasto(t.id, t.pos, clientX, clientY)}
                 onIniciarMedicao={(clientX, clientY) => iniciarMedicao(t.pos, clientX, clientY, 0)}
                 movimentoVisual={movimentoDesteToken}
                 onAnimacaoConcluida={onAnimacaoConcluida}
@@ -2981,7 +2955,7 @@ export function MapaHex({
           <rect
             className="rv-captura-posicionamento"
             x={minX} y={minY} width={maxX - minX} height={maxY - minY}
-            fill="transparent" style={{ cursor: "crosshair" }}
+            fill="transparent"
             onPointerMove={onMoverPosicionamento ? (e) => {
               const p = pontoMundo(e.clientX, e.clientY);
               if (p) onMoverPosicionamento(pixelParaHex(p.x, p.y, TAM));
@@ -3387,6 +3361,8 @@ function Token({
   ferramenta,
   onSelecionar,
   onHover,
+  onAtivarCartao,
+  onFecharCartao,
   onIniciarArrasto,
   onIniciarMedicao,
   movimentoVisual,
@@ -3404,9 +3380,18 @@ function Token({
   opacoReduzido?: boolean;
   ferramenta?: PropsMapaHex["ferramenta"];
   onSelecionar: (id: string, aditivo: boolean) => void;
-  onHover: (id: string | null, ancora?: { x: number; y: number; width: number; height: number }) => void;
+  /**
+   * `opcoes.imediato` pula a carência de fechamento do cartão. A
+   * carência existe pra deixar o ponteiro viajar do token até o cartão
+   * (o caminho entre os dois passa por fora dos dois); quando quem
+   * pediu o fechamento é um CONTROLE que está debaixo do cartão, como
+   * a alça de rotação, esperar 200ms é esperar o clique ser comido.
+   */
+  onHover: (id: string | null) => void;
+  onAtivarCartao: (id: string, ancora: { x: number; y: number; width: number; height: number }) => void;
+  onFecharCartao: () => void;
   /** Devolve SE o arrasto começou — o `pointerdown` precisa disso pra saber se pode adiar a decisão sobre a seleção (ver o handler). */
-  onIniciarArrasto?: () => boolean;
+  onIniciarArrasto?: (clientX: number, clientY: number) => boolean;
   onIniciarMedicao?: (clientX: number, clientY: number) => void;
   movimentoVisual?: MovimentoVisualToken;
   onAnimacaoConcluida?: (tokenId: string, movementId: string, destino?: Hex) => void;
@@ -3422,6 +3407,7 @@ function Token({
   onTeclaAlcaRotacao?: (e: React.KeyboardEvent) => void;
 }) {
   const gRef = useRef<SVGGElement>(null);
+  const inicioCliqueRef = useRef<{ x: number; y: number } | null>(null);
   useAnimacaoToken({
     gRef,
     movimento: movimentoVisual,
@@ -3455,20 +3441,15 @@ function Token({
   // orientação (pegada desenhada, indicador de direção, a própria
   // alça) usa a CANDIDATA local — nunca a persistida — sem tocar
   // `token.orientacao` de verdade até o servidor confirmar.
-  const orientacaoExibida = emGestoDeRotacao ? estadoAlcaRotacao!.orientacaoAtual : token.orientacao;
-  const pegadaExibida = emGestoDeRotacao
-    ? pegadaEfetiva({ categoria: token.tamanho, orientacao: orientacaoExibida, pegadaPersonalizada: token.pegadaPersonalizada })
-    : pegada;
-  const corGestoRotacao = emGestoDeRotacao ? (estadoAlcaRotacao!.valida ? "#22d3aa" : "#ff5f74") : null;
-  // Âncora frontal: ANCORADA numa aresta real da pegada exibida (nunca
-  // um ângulo solto ao redor do corpo) — indicador, halo e alça de
-  // rotação todos derivam daqui, então giram e trocam de aresta juntos
-  // conforme a pegada muda (tamanho, orientação, prévia de rotação).
+  /* A PEGADA NÃO GIRA COM A ALÇA (0135): as células que o token ocupa
+     são decisão de posicionamento, e mexer nelas por causa de um olhar
+     empurrava criatura grande pra fora do corredor. O que gira é a
+     DIREÇÃO — a seta, o halo e a própria alça. */
+  const orientacaoExibida = emGestoDeRotacao ? estadoAlcaRotacao!.orientacaoAtual : token.direcao;
+  const pegadaExibida = pegada;
+  /* Nunca vermelho: virar não pode ser recusado. */
+  const corGestoRotacao = emGestoDeRotacao ? "#35c8f0" : null;
   const origemMecanicaExibida = useMemo(() => origemMecanica(pegadaExibida), [pegadaExibida]);
-  const ancoraFrontal = useMemo(
-    () => ancoraFrontalDaPegada(pegadaExibida, origemMecanicaExibida, orientacaoExibida, TAM),
-    [pegadaExibida, origemMecanicaExibida, orientacaoExibida],
-  );
   const escala = TAMANHOS[token.tamanho].escala;
   const raio = TAM * 0.82 * escala;
   const cor = COR_VERTENTE[token.vertente];
@@ -3478,6 +3459,7 @@ function Token({
   // fingir 0/0.
   const temPv = token.pv !== null && token.pvMax !== null && token.pvMax > 0;
 
+  const jaAgiuMarca = estado.jaAgiu && !estado.turnoAtual;
   const classes = [
     "rv-token",
     `rv-token--${token.lado}`,
@@ -3515,7 +3497,7 @@ function Token({
       opacity={opacoReduzido ? 0.35 : undefined}
       tabIndex={0}
       role="button"
-      aria-label={`${token.nome}, ${token.lado === "pj" ? "aliado" : token.lado === "pn" ? "hostil" : "neutro"}${temPv ? `, PV ${token.pv} de ${token.pvMax}` : ""}${token.condicoes.length ? `, condições: ${token.condicoes.map((c) => CONDICOES[c].rotulo).join(", ")}` : ""}${token.visivel ? "" : ", oculto"}`}
+      aria-label={`${token.nome}, ${token.lado === "pj" ? "aliado" : token.lado === "pn" ? "hostil" : "neutro"}${temPv ? `, PV ${token.pv} de ${token.pvMax}` : ""}${token.condicoes.length ? `, condições: ${token.condicoes.map((c) => CONDICOES[c].rotulo).join(", ")}` : ""}${token.visivel ? "" : ", oculto"}${estado.alvo ? ", marcado como alvo" : ""}`}
       // Seleção + início de arraste no MESMO evento (pointerdown), não
       // em onClick — onClick dispararia DE NOVO no soltar do mesmo
       // gesto (mousedown+mouseup no mesmo alvo geram click), chamando
@@ -3532,6 +3514,7 @@ function Token({
       // competindo pelo mesmo token ao mesmo tempo.
       onPointerDown={(e) => {
         if (e.button !== 0) return;
+        inicioCliqueRef.current = { x: e.clientX, y: e.clientY };
         if (ferramenta === "medir") { onIniciarMedicao?.(e.clientX, e.clientY); return; }
         // Pressionar um token QUE JÁ ESTÁ SELECIONADO, dentro de uma
         // seleção múltipla, NÃO colapsa a seleção aqui: colapsar seria
@@ -3541,20 +3524,29 @@ function Token({
         // pro fim do gesto: soltar SEM ter andado colapsa a seleção
         // neste token (ver `soltar()`), soltar depois de andar move o
         // grupo. Shift continua sendo alternância, sempre.
-        const comecouArrasto = !movimentoVisual && (onIniciarArrasto?.() ?? false);
+        const comecouArrasto = !movimentoVisual && (onIniciarArrasto?.(e.clientX, e.clientY) ?? false);
         if (estado.selecionado && !e.shiftKey && comecouArrasto) return;
         onSelecionar(token.id, e.shiftKey);
       }}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelecionar(token.id, e.shiftKey); } }}
-      onMouseEnter={(e) => {
-        // Mede o DISCO, não o grupo (ver o comentário na `<circle>` da
-        // base). `getBoundingClientRect` de um elemento SVG já devolve
-        // a caixa em coordenadas de tela, com zoom e pan aplicados —
-        // por isso medir, em vez de refazer a conta de mundo→tela.
+      onClick={(e) => {
+        const inicio = inicioCliqueRef.current;
+        inicioCliqueRef.current = null;
+        if (ferramenta !== "interagir" || e.shiftKey || !inicio) return;
+        if (Math.hypot(e.clientX - inicio.x, e.clientY - inicio.y) > 4) return;
         const alvo = e.currentTarget.querySelector("[data-token-disco]") ?? e.currentTarget;
         const r = alvo.getBoundingClientRect();
-        onHover(token.id, { x: r.x, y: r.y, width: r.width, height: r.height });
+        onAtivarCartao(token.id, { x: r.x, y: r.y, width: r.width, height: r.height });
       }}
+      onKeyDown={(e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        onSelecionar(token.id, e.shiftKey);
+        if (ferramenta !== "interagir" || e.shiftKey) return;
+        const alvo = e.currentTarget.querySelector("[data-token-disco]") ?? e.currentTarget;
+        const r = alvo.getBoundingClientRect();
+        onAtivarCartao(token.id, { x: r.x, y: r.y, width: r.width, height: r.height });
+      }}
+      onMouseEnter={() => onHover(token.id)}
       onMouseLeave={() => onHover(null)}
     >
       {/* Pegada: realce discreto de TODA célula ocupada, em coordenadas
@@ -3627,11 +3619,14 @@ function Token({
           turno e o selo "OCULTO", então a caixa dele é bem maior que o
           token e o centro dela não é o centro do token — ancorar ali
           deixava o cartão visivelmente torto. */}
-      <circle data-token-disco="" r={raio} fill="#0d141b" stroke={cor} strokeWidth={estado.selecionado ? 3 : 2}
-        strokeDasharray={token.lado === "neutro" ? "5 4" : undefined} />
+      {/* Já agiu: o anel "descansa" — tracejado e neutro, sem a cor do
+          lado. O token em si não apaga nem é riscado: apagado + riscado
+          lia como morto (ver o selo de visto mais abaixo). */}
+      <circle data-token-disco="" r={raio} fill="#0d141b" stroke={jaAgiuMarca ? COR_JA_AGIU : cor} strokeWidth={estado.selecionado ? 3 : 2}
+        strokeDasharray={jaAgiuMarca ? "4 3" : token.lado === "neutro" ? "5 4" : undefined} />
       {/* PN: anel serrilhado por FORMA (não só cor) */}
       {token.lado === "pn" && (
-        <circle r={raio - 3.5} fill="none" stroke={cor} strokeWidth="1.4" strokeDasharray="2 3" opacity="0.9" />
+        <circle r={raio - 3.5} fill="none" stroke={jaAgiuMarca ? COR_JA_AGIU : cor} strokeWidth="1.4" strokeDasharray="2 3" opacity="0.9" />
       )}
 
       {/* ── Retrato ───────────────────────────────────────────────────
@@ -3687,29 +3682,39 @@ function Token({
           token virado pro sul não pode ter a cunha ou a alça cobrindo
           a fileira de condições. */}
       {(() => {
-        // Fallback defensivo — só acionado se `ancoraFrontalDaPegada`
-        // devolver `null` (pegada vazia, o que nunca deveria acontecer
-        // na prática: todo token tem ao menos a própria célula). Mesma
-        // conta antiga, só pra nunca deixar de renderizar nada.
+        // A direção canônica em pixels — `hexRotacionar({q:1,r:0}, d)` é
+        // a MESMA rotação que o domínio usa pra pegada e pro movimento
+        // entre vizinhos, então as 6 direções do indicador são
+        // exatamente as 6 dos hexes adjacentes.
         const direcaoBruta = hexParaPixel(hexRotacionar({ q: 1, r: 0 }, orientacaoExibida), TAM);
         const normaBruta = Math.hypot(direcaoBruta.x, direcaoBruta.y) || 1;
         const angBruto = Math.atan2(direcaoBruta.y / normaBruta, direcaoBruta.x / normaBruta);
 
-        // Ângulo visual: da ARESTA real escolhida (indicador/halo/alça
-        // giram e trocam de aresta juntos), nunca de um ângulo solto
-        // ao redor do corpo — ver `ancoraFrontalDaPegada` em `hex.ts`.
-        const ang = ancoraFrontal?.anguloVisual ?? angBruto;
+        /* A DIREÇÃO GIRA AO REDOR DO DISCO, não do contorno da pegada.
+           Isto antes se ancorava numa QUINA REAL da pegada
+           (`ancoraFrontalDaPegada`), e fazia sentido enquanto girar
+           significava girar a FORMA: a farpa marcava a aresta que tinha
+           acabado de mudar de lugar. Agora que a direção é só o olhar
+           (0135), as junções atrapalham de duas formas:
+
+           · elas não seguem a grade das 6 direções, então duas direções
+             canônicas diferentes caíam na MESMA junção — arrastar a
+             alça parecia não alcançar todas as seis;
+           · numa pegada grande a junção fica longe do corpo, e a alça
+             ia parar num canto do contorno enquanto o halo continuava
+             desenhado em volta do disco. Os dois diziam direções
+             diferentes ao mesmo tempo.
+
+           Com o ângulo canônico, farpa, halo e alça saem do mesmo
+           ponto e cobrem as 6 direções de hexes vizinhos. */
+        const ang = angBruto;
         const ux = Math.cos(ang), uy = Math.sin(ang);
         const perpX = Math.cos(ang + Math.PI / 2) * 3.5, perpY = Math.sin(ang + Math.PI / 2) * 3.5;
         // Ponto médio da aresta frontal, convertido pro referencial
         // LOCAL deste `<g>` (que já está transladado pra `origemLocal`
         // — ver o `<g transform=...>` logo acima na árvore).
-        const meioLocal = ancoraFrontal
-          ? { x: ancoraFrontal.pontoMedio.x - origemLocal.x, y: ancoraFrontal.pontoMedio.y - origemLocal.y }
-          : { x: ux * (raio + 5), y: uy * (raio + 5) };
-        const alcaLocal = ancoraFrontal
-          ? { x: ancoraFrontal.posicaoAlca.x - origemLocal.x, y: ancoraFrontal.posicaoAlca.y - origemLocal.y }
-          : { x: ux * (raio + 22), y: uy * (raio + 22) };
+        const meioLocal = { x: ux * (raio + 5), y: uy * (raio + 5) };
+        const alcaLocal = { x: ux * (raio + 22), y: uy * (raio + 22) };
         // Indicador: pequena farpa saindo da própria aresta, apontando
         // pela normal — nunca mais o "raio do corpo + 5px" solto.
         const pontaX = meioLocal.x + ux * 5, pontaY = meioLocal.y + uy * 5;
@@ -3745,7 +3750,9 @@ function Token({
                   transform={`rotate(${anguloHaloGraus})`}
                 />
                 <circle
-                  r={raioHalo} fill="none" stroke={corGestoRotacao ?? cor} strokeWidth={4} opacity={0.55}
+                  r={raioHalo} fill="none" stroke={corGestoRotacao ?? cor}
+                  strokeWidth={estado.sobCursor ? 4.5 : 4}
+                  opacity={estado.sobCursor ? 0.68 : 0.55}
                   strokeDasharray={dashHalo} strokeLinecap="round"
                   transform={`rotate(${anguloHaloGraus})`}
                 />
@@ -3779,7 +3786,29 @@ function Token({
                 transparente) — mouse, caneta, touch E teclado (foco +
                 setas/E/Q/Home) usam o MESMO elemento. */}
             {mostrarAlca && onIniciarAlcaRotacao && (
-              <g className="rv-token-alca-rotacao" data-valida={emGestoDeRotacao ? estadoAlcaRotacao!.valida : undefined}>
+              <g
+                className="rv-token-alca-rotacao"
+                data-valida={emGestoDeRotacao ? estadoAlcaRotacao!.valida : undefined}
+                /* O CARTÃO DE HOVER SAI DA FRENTE DA ALÇA.
+                   
+                   A alça fica DENTRO do `<g>` do token, então pousar
+                   nela conta como pousar no token e abre o cartão. E o
+                   cartão é ancorado acima do disco — que é exatamente
+                   onde a alça está quando o token olha pra cima. Ele
+                   abria em cima dela e comia o `pointerdown`: girar
+                   com o mouse ficava impossível, e como o cartão tem
+                   os botões de PV/PE/Mana, a pressão podia cair num
+                   deles e MUDAR um recurso no lugar de girar.
+                   
+                   A regra já estava escrita em `VttClient` ("um gesto
+                   de mapa tira o cartão da frente na hora: ele é ajuda
+                   passiva, nunca obstáculo"); faltava a alça ser
+                   tratada como o controle que é. Sair dela devolve o
+                   cartão, reancorado no disco — quem só passou por
+                   cima a caminho do token não perde nada. */
+                onMouseEnter={() => onHover(null)}
+                onMouseLeave={() => onHover(token.id)}
+              >
                 <line x1={meioLocal.x} y1={meioLocal.y} x2={alcaLocal.x} y2={alcaLocal.y}
                   stroke={corAlca} strokeWidth="1.5" strokeDasharray="2 2" opacity="0.85" pointerEvents="none" />
                 <circle cx={alcaLocal.x} cy={alcaLocal.y} r={4.5} fill={corAlca} stroke="#0b141c" strokeWidth="1.2" pointerEvents="none" />
@@ -3794,7 +3823,11 @@ function Token({
                   aria-valuemin={0} aria-valuemax={5} aria-valuenow={orientacaoExibida}
                   aria-valuetext={`Orientação ${orientacaoExibida + 1} de 6`}
                   style={{ cursor: emGestoDeRotacao ? "grabbing" : "grab" }}
-                  onPointerDown={(e) => { if (e.button === 0) onIniciarAlcaRotacao(e); }}
+                  onPointerDown={(e) => {
+                    if (e.button !== 0) return;
+                    onFecharCartao();
+                    onIniciarAlcaRotacao(e);
+                  }}
                   onPointerMove={onMoverAlcaRotacao}
                   onPointerUp={onSoltarAlcaRotacao}
                   onPointerCancel={onCancelarAlcaRotacao}
@@ -3816,12 +3849,13 @@ function Token({
           e continua sendo anunciado no `aria-label`: pra quem usa
           leitor de tela, aquele rótulo é o cartão. */}
 
-      {/* já agiu: dessaturação + barra diagonal */}
-      {estado.jaAgiu && !estado.turnoAtual && (
-        <>
-          <circle r={raio} fill="#070b10" opacity="0.5" />
-          <line x1={-raio * 0.75} y1={raio * 0.75} x2={raio * 0.75} y2={-raio * 0.75} stroke="#8fa3b0" strokeWidth="2" opacity="0.85" />
-        </>
+      {/* já agiu: selo de visto neutro no canto — "cumpriu a vez", não
+          "saiu de combate". Mesma cor apagada do anel. */}
+      {jaAgiuMarca && (
+        <g transform={`translate(${raio * 0.72} ${-raio * 0.72})`} aria-hidden="true">
+          <circle r={7.5} fill="#0b1a22" stroke={COR_JA_AGIU} strokeWidth="1.2" />
+          <path d="M-3.2 0.2 L-1 2.4 L3.3 -2" fill="none" stroke="#9fb2c9" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </g>
       )}
 
       {/* fragmentado: meia-lua âmbar (PA guardado) */}
@@ -3890,19 +3924,16 @@ function Token({
         </g>
       )}
 
-      {/* condições: glifos em arco embaixo */}
+      {/* O mapa mostra só o resumo. A lista detalhada vive no cartão
+          HTML de hover do token, fora do SVG, e portanto não encolhe
+          nem cresce com o zoom do mapa. */}
       {token.condicoes.length > 0 && (
-        <g className="rv-token-condicoes" transform={`translate(0 ${raio + 11})`}>
-          {token.condicoes.slice(0, 4).map((c, i, arr) => {
-            const larg = 13;
-            const x = (i - (arr.length - 1) / 2) * larg;
-            return (
-              <g key={c} transform={`translate(${x} 0)`}>
-                <circle r={5.6} fill="#0d141b" stroke="#f5a200" strokeWidth="1" />
-                <text className="rv-token-cond" textAnchor="middle" y={2.4}>{CONDICOES[c].glifo}</text>
-              </g>
-            );
-          })}
+        <g
+          className="rv-token-condicao-resumo"
+          transform={`translate(${raio * 0.72} ${raio * 0.72})`}
+          aria-label={`${token.condicoes.length} ${token.condicoes.length === 1 ? "condição" : "condições"}: ${token.condicoes.map((c) => CONDICOES[c].rotulo).join(", ")}`}
+        >
+          <circle className="rv-token-condicao-badge" r={4.5} />
         </g>
       )}
 

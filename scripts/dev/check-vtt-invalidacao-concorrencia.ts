@@ -115,7 +115,7 @@ async function main() {
   page.on("console", (m) => { if (erroRelevante(m)) erros.push(m.text().slice(0, 600)); });
   page.on("pageerror", (e) => erros.push(`pageerror: ${e.message}`));
 
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
   {
     const { data } = await admin.from("vtt_scenes").select("id").eq("campaign_id", campaignId).maybeSingle();
@@ -136,9 +136,9 @@ async function main() {
 
     const disparo = cliNarrador.rpc("create_vtt_token", {
       p_scene_id: sceneId, p_campaign_id: campaignId, p_nome: "Concorrência A", p_sigla: "CA",
-      p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_pegada_personalizada: null,
+      p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_direcao: 0, p_pegada_personalizada: null,
       p_q: 0, p_r: 0, p_character_id: null, p_visivel: true, p_bloqueado: false,
-      p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+      p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null, p_condicoes: [],
     });
     const escritaTerreno = admin.from("vtt_terrain").upsert({ scene_id: sceneId, campaign_id: campaignId, q: 3, r: 3, tipo: "dificil" });
     await Promise.all([disparo, escritaTerreno]);
@@ -166,9 +166,9 @@ async function main() {
 
     const disparo = cliNarrador.rpc("create_vtt_token", {
       p_scene_id: sceneId, p_campaign_id: campaignId, p_nome: "Concorrência B", p_sigla: "CB2",
-      p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_pegada_personalizada: null,
+      p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_direcao: 0, p_pegada_personalizada: null,
       p_q: 1, p_r: 1, p_character_id: null, p_visivel: true, p_bloqueado: false,
-      p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+      p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null, p_condicoes: [],
     });
     const escritaMarca = admin.from("vtt_marks").insert({
       scene_id: sceneId, campaign_id: campaignId, autor_id: narradorId,
@@ -201,9 +201,9 @@ async function main() {
     // o Realtime por um evento que nunca teve o que anunciar.
     await exigirRpc("criar o token da concorrência", cliNarrador.rpc("create_vtt_token", {
       p_scene_id: sceneId, p_campaign_id: campaignId, p_nome: "Concorrência C", p_sigla: "CC",
-      p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_pegada_personalizada: null,
+      p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_direcao: 0, p_pegada_personalizada: null,
       p_q: 2, p_r: 2, p_character_id: null, p_visivel: true, p_bloqueado: false,
-      p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+      p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null, p_condicoes: [],
     }));
     await page.waitForTimeout(2000);
     const { data: aindaLa } = await admin.from("vtt_terrain").select("tipo").eq("scene_id", sceneId).eq("q", 7).eq("r", 7).maybeSingle();
@@ -219,15 +219,15 @@ async function main() {
     await cliNarrador.auth.signInWithPassword({ email: narradorEmail!, password: narradorSenha! });
     const chamada1 = cliNarrador.rpc("create_vtt_token", {
       p_scene_id: sceneId, p_campaign_id: campaignId, p_nome: "Sobreposta D", p_sigla: "SD",
-      p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_pegada_personalizada: null,
+      p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_direcao: 0, p_pegada_personalizada: null,
       p_q: 4, p_r: 0, p_character_id: null, p_visivel: true, p_bloqueado: false,
-      p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+      p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null, p_condicoes: [],
     });
     const chamada2 = cliNarrador.rpc("create_vtt_token", {
       p_scene_id: sceneId, p_campaign_id: campaignId, p_nome: "Sobreposta E", p_sigla: "SE",
-      p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_pegada_personalizada: null,
+      p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_direcao: 0, p_pegada_personalizada: null,
       p_q: 5, p_r: 0, p_character_id: null, p_visivel: true, p_bloqueado: false,
-      p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+      p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null, p_condicoes: [],
     });
     await Promise.all([chamada1, chamada2]); // duas invalidações quase simultâneas, cada uma dispara sua própria releitura
     await page.waitForTimeout(2500);
@@ -246,13 +246,20 @@ async function main() {
     await cliNarrador.auth.signInWithPassword({ email: narradorEmail!, password: narradorSenha! });
     const disparo = cliNarrador.rpc("create_vtt_token", {
       p_scene_id: sceneId, p_campaign_id: campaignId, p_nome: "Desmontagem", p_sigla: "DM",
-      p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_pegada_personalizada: null,
+      p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_direcao: 0, p_pegada_personalizada: null,
       p_q: 6, p_r: 0, p_character_id: null, p_visivel: true, p_bloqueado: false,
-      p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+      p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null, p_condicoes: [],
     });
     // Navega ANTES da releitura provavelmente ter terminado — o
     // `montadoRef` precisa impedir a aplicação da resposta tardia.
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "domcontentloaded" });
+    //
+    // O destino é `/mesas`, não `/mesas/<id>/personagens`: aquela rota
+    // NÃO EXISTE (não há segmento `personagens` sob `[campaignId]`), e
+    // o 404 dela sujava o console — justamente o que este critério
+    // afirma estar limpo. O critério é sobre DESMONTAR com uma
+    // releitura em voo; qualquer rota válida serve, e sair da mesa
+    // desmonta tanto quanto.
+    await page.goto(`${BASE_URL}/mesas`, { waitUntil: "domcontentloaded" });
     await disparo;
     await page.waitForTimeout(2000);
     const novosErros = erros.slice(errosAntes);

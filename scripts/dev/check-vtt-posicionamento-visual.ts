@@ -22,6 +22,7 @@ import { config as loadDotenv } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { chromium, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
+import { escolherTamanhoDoToken } from "./gerenciadorDeToken";
 
 loadDotenv({ path: ".env.local" });
 function requireEnv(nome: string): string {
@@ -120,13 +121,23 @@ async function abrirCriarConfigurando(page: Page, indiceCelula = 40) {
     // o menu do hex vazio deixa de ser uma porta possível. O botão da
     // barra é a outra porta real, e é a que o cenário precisa — ele
     // testa o LAYOUT do formulário, não por onde ele foi aberto.
-    await page.locator('.rv-ferr-btn[aria-label="Adicionar token"]').click();
+    await page.locator('.rv-ferr-btn[aria-label^="Adicionar token"]').click();
   }
   await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
 }
 async function continuarParaPosicionar(page: Page) {
   await page.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Continuar para posicionar" }).click();
-  await page.waitForSelector(".rv-escolha-posicao", { timeout: 5000 });
+  // A faixa "Escolha uma posição" saiu — quem diz que o posicionamento
+  // começou é a CAMADA do fantasma no mapa, que é o que a pessoa vê.
+  // A CAMADA SÓ EXISTE COM ÂNCORA, e a âncora nasce do ponteiro sobre
+  // uma célula: `posicionamentoToken?.ativo && posicionamentoToken.ancora`
+  // em `MapaHex`. Esperar a camada ANTES de mover o mouse é esperar por
+  // algo que, por construção, ainda não pode ter sido desenhado — e o
+  // sintoma (um `waitForSelector` estourando numa classe que existe no
+  // código) não diz nada disso.
+  const primeira = await page.locator(".rv-camada-grade path").first().boundingBox();
+  if (primeira) await page.mouse.move(primeira.x + primeira.width / 2, primeira.y + primeira.height / 2, { steps: 3 });
+  await page.waitForSelector(".rv-camada-posicionamento-token", { timeout: 5000 });
   await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 });
 }
 async function celulaBox(page: Page, indice: number) {
@@ -163,7 +174,7 @@ async function main() {
     expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
   }]);
   const page = await context.newPage();
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
   const { data: sceneRow } = await admin.from("vtt_scenes").select("id, largura, altura").eq("campaign_id", campaignId).single();
   sceneId = sceneRow!.id;
@@ -172,7 +183,7 @@ async function main() {
   {
     await abrirCriarConfigurando(page, 60);
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Visual Médio");
-    await page.selectOption("#rv-campo-tamanho", "medio");
+    await escolherTamanhoDoToken(page, "medio");
     await page.screenshot({ path: path.join(DIR_SHOTS, "01-formulario-medio.png") });
     const nomeBox = await page.locator(".rv-gerenciador-token input[type=text]").first().boundingBox();
     const siglaBox = await page.locator('.rv-gerenciador-token input[maxlength="3"]').boundingBox();
@@ -182,27 +193,36 @@ async function main() {
     registrar("1 (formulário Médio: Nome/Sigla lado a lado sem sobreposição, modal dentro da viewport)", semSobreposicao && dentroDaViewport, `semSobreposicao=${semSobreposicao}, dentroDaViewport=${dentroDaViewport}`);
   }
 
+
   // ── 2: formulário Grande ─────────────────────────────────────────
   {
-    await page.selectOption("#rv-campo-tamanho", "grande");
+    await escolherTamanhoDoToken(page, "grande");
     await page.screenshot({ path: path.join(DIR_SHOTS, "02-formulario-grande.png") });
-    const tamanhoBox = await page.locator("#rv-campo-tamanho").boundingBox();
-    const previewBox = await page.locator(".rv-gerenciador-token .rv-pegada-preview").boundingBox();
+    // A caixa do GRUPO segmentado ocupa o lugar que o `<select>` ocupava.
+    const tamanhoBox = await page.locator('.rv-segmentado[aria-label="Tamanho"]').boundingBox();
+    // `.rv-pegada-preview` não existe mais: a prévia virou o RETRATO
+    // da peça, `.rv-token-pegada`, com a contagem de hexes ao lado.
+    const previewBox = await page.locator(".rv-gerenciador-token .rv-token-pegada").boundingBox();
     const semSobreposicao = !sobrepoe(tamanhoBox!, previewBox!);
-    const dicaOrientacao = await page.locator(".rv-gerenciador-token .rv-field-ajuda", { hasText: "orientação da pegada poderá ser ajustada" }).count();
+    const dicaOrientacao = await page.locator(".rv-gerenciador-token .rv-field-ajuda", { hasText: "orientação da pegada é escolhida no mapa" }).count();
     registrar("2 (formulário Grande: campo Tamanho e preview lado a lado, dica de orientação futura presente)", semSobreposicao && dicaOrientacao > 0, `semSobreposicao=${semSobreposicao}, dica=${dicaOrientacao > 0}`);
   }
 
   // ── 3: "Mais opções" aberto ──────────────────────────────────────
   {
-    await page.locator("summary", { hasText: "Identidade ampliada" }).click();
+    await page.locator("summary", { hasText: "Retrato, vida e estado" }).click();
     await page.waitForTimeout(150);
     await page.screenshot({ path: path.join(DIR_SHOTS, "03-mais-opcoes-aberto.png") });
-    const vertenteVisivel = await page.locator('.rv-gerenciador-token label:has-text("Vertente")').isVisible();
-    const imagemVisivel = await page.locator('.rv-gerenciador-token label:has-text("Imagem do token")').isVisible();
-    const pvVisivel = await page.locator('.rv-gerenciador-token fieldset:has-text("Pontos de Vida")').isVisible();
-    const condicoesVisivel = await page.locator('.rv-gerenciador-token fieldset:has-text("Condições")').isVisible();
-    registrar("3 ('Identidade ampliada' aberta: Vertente/Imagem/PV/Condições visíveis)", vertenteVisivel && imagemVisivel && pvVisivel && condicoesVisivel, `vertente=${vertenteVisivel}, imagem=${imagemVisivel}, pv=${pvVisivel}, condicoes=${condicoesVisivel}`);
+    // Os três viraram `<fieldset><legend>`, não `<label>`: são GRUPOS de
+    // controles, não um campo só. E "Pontos de Vida" virou "Recursos",
+    // que é o que o grupo passou a conter (PV, PE e Mana). O critério é
+    // sobre o que a seção MOSTRA quando abre — segue valendo, com os
+    // nomes de hoje.
+    const vertenteVisivel = await page.locator('.rv-gerenciador-token legend:has-text("Vertente")').isVisible();
+    const imagemVisivel = await page.locator('.rv-gerenciador-token legend:has-text("Imagem do token")').isVisible();
+    const pvVisivel = await page.locator('.rv-gerenciador-token legend:has-text("Recursos")').isVisible();
+    const condicoesVisivel = await page.locator('.rv-gerenciador-token legend:has-text("Condições")').first().isVisible();
+    registrar("3 ('Retrato, vida e estado' aberta: Vertente/Imagem/Recursos/Condições visíveis)", vertenteVisivel && imagemVisivel && pvVisivel && condicoesVisivel, `vertente=${vertenteVisivel}, imagem=${imagemVisivel}, pv=${pvVisivel}, condicoes=${condicoesVisivel}`);
     page.once("dialog", (d) => d.accept());
     await page.keyboard.press("Escape");
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
@@ -213,7 +233,7 @@ async function main() {
     await page.setViewportSize({ width: 380, height: 700 });
     await abrirCriarConfigurando(page, 55);
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Visual Estreito");
-    await page.locator("summary", { hasText: "Identidade ampliada" }).click();
+    await page.locator("summary", { hasText: "Retrato, vida e estado" }).click();
     await page.screenshot({ path: path.join(DIR_SHOTS, "04-viewport-estreita.png") });
     const rodapeBox = await page.locator(".rv-modal-rodape").boundingBox();
     const rodapeDentro = rodapeBox!.x >= 0 && rodapeBox!.x + rodapeBox!.width <= 380;
@@ -239,13 +259,13 @@ async function main() {
     const idx = await encontrarCelulaValida(page, 100);
     await page.screenshot({ path: path.join(DIR_SHOTS, "05-preview-valido.png") });
     const valida = await page.locator(".rv-camada-posicionamento-token").getAttribute("data-valida");
-    const barraBox = await page.locator(".rv-escolha-posicao").boundingBox();
-    const fantasmaBox = await page.locator(".rv-camada-posicionamento-token").boundingBox();
-    const semSobreposicaoComBarra = !barraBox || !fantasmaBox || !sobrepoe(barraBox, fantasmaBox);
-    registrar("5 (preview válido no mapa: verde, sem sobrepor a barra de instrução)", valida === "true" && semSobreposicaoComBarra, `valida=${valida}, semSobreposicaoComBarra=${semSobreposicaoComBarra}`);
+    // A faixa de instrução saiu do fluxo (só o ERRO ainda usa aquela
+    // casca), então não há mais o que não sobrepor: o critério é o
+    // preview existir e estar válido.
+    registrar("5 (preview válido no mapa: verde)", valida === "true", `valida=${valida}`);
     void idx;
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
+    await page.waitForSelector(".rv-camada-posicionamento-token", { state: "detached", timeout: 3000 });
   }
 
   // ── 6: preview sobre token ───────────────────────────────────────
@@ -268,7 +288,7 @@ async function main() {
     const valida = await page.locator(".rv-camada-posicionamento-token").getAttribute("data-valida");
     registrar("6 (preview sobre token existente: inválido/vermelho)", valida === "false", `valida=${valida}`);
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
+    await page.waitForSelector(".rv-camada-posicionamento-token", { state: "detached", timeout: 3000 });
     await admin.from("vtt_tokens").delete().eq("sigla", "OB").eq("campaign_id", campaignId);
   }
 
@@ -304,7 +324,7 @@ async function main() {
     const valida = await page.locator(".rv-camada-posicionamento-token").getAttribute("data-valida");
     registrar("7 (preview em terreno bloqueado: inválido/vermelho)", achou && valida === "false", `achouCelula66=${achou}, valida=${valida}`);
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
+    await page.waitForSelector(".rv-camada-posicionamento-token", { state: "detached", timeout: 3000 });
     await admin.from("vtt_terrain").delete().eq("scene_id", sceneId).eq("q", 6).eq("r", 6);
   }
 
@@ -312,7 +332,7 @@ async function main() {
   {
     await abrirCriarConfigurando(page, 0);
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Visual Borda");
-    await page.selectOption("#rv-campo-tamanho", "colossal"); // 12 células — na quina do mapa, ao menos uma cai fora
+    await escolherTamanhoDoToken(page, "colossal"); // 13 células — na quina do mapa, ao menos uma cai fora
     await continuarParaPosicionar(page);
     await moverParaCelula(page, 0); // primeira célula da grade — canto do mapa
     await page.screenshot({ path: path.join(DIR_SHOTS, "08-preview-fora-da-borda.png") });
@@ -320,14 +340,14 @@ async function main() {
     const celulasFantasma = await page.locator(".rv-camada-posicionamento-token path").count();
     registrar("8 (preview fora da borda: inválido, mesmo com pegada Colossal completa desenhada)", valida === "false" && celulasFantasma > 0, `valida=${valida}, célulasDesenhadas=${celulasFantasma}`);
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
+    await page.waitForSelector(".rv-camada-posicionamento-token", { state: "detached", timeout: 3000 });
   }
 
   // ── 9: Grande rotacionado ────────────────────────────────────────
   {
     await abrirCriarConfigurando(page, 150);
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Visual Grande Girado");
-    await page.selectOption("#rv-campo-tamanho", "grande");
+    await escolherTamanhoDoToken(page, "grande");
     await continuarParaPosicionar(page);
     const idx = await encontrarCelulaValida(page, 150);
     await page.keyboard.press("e");
@@ -338,14 +358,14 @@ async function main() {
     registrar("9 (Grande rotacionado: orientação mudou, seta de direção visível)", orientacao === "1" && setaPresente > 0, `orientacao=${orientacao}, seta=${setaPresente}`);
     void idx;
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
+    await page.waitForSelector(".rv-camada-posicionamento-token", { state: "detached", timeout: 3000 });
   }
 
   // ── 10: Colossal rotacionado ─────────────────────────────────────
   {
     await abrirCriarConfigurando(page, 160);
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Visual Colossal Girado");
-    await page.selectOption("#rv-campo-tamanho", "colossal");
+    await escolherTamanhoDoToken(page, "colossal");
     await continuarParaPosicionar(page);
     const idx = await encontrarCelulaValida(page, 160);
     await page.keyboard.press("e");
@@ -357,10 +377,13 @@ async function main() {
     // seta de orientação, que mora dentro de `<defs><marker>` aninhado
     // num `<g>` filho — não é uma célula da pegada.
     const celulas = await page.locator(".rv-camada-posicionamento-token > path").count();
-    registrar("10 (Colossal rotacionado: orientação mudou, 12 células ainda desenhadas)", orientacao === "2" && celulas === 12, `orientacao=${orientacao}, células=${celulas}`);
+    // 13, não 12: `_dominio/pegada.ts` documenta a forma — "colossal: 13
+    // células em ESTRELA, as 7 do enorme mais as 6". O check carregava
+    // um número de antes dessa forma existir.
+    registrar("10 (Colossal rotacionado: orientação mudou, 13 células ainda desenhadas)", orientacao === "2" && celulas === 13, `orientacao=${orientacao}, células=${celulas}`);
     void idx;
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
+    await page.waitForSelector(".rv-camada-posicionamento-token", { state: "detached", timeout: 3000 });
   }
 
   // ── 11: erro de servidor sem perda do rascunho ───────────────────

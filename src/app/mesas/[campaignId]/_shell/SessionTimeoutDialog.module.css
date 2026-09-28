@@ -1,0 +1,227 @@
+.dialog {
+  --modal-notch: var(--rv-notch, 10px);
+  --modal-line: var(--rv-line, #182338);
+  --modal-line-soft: var(--rv-line-2, #16233a);
+  --modal-line-strong: var(--rv-line-strong, #1c2b45);
+  --modal-line-hover: var(--rv-line-hover, #243352);
+  --modal-panel: var(--rv-panel, #0c1420);
+  --modal-panel-2: var(--rv-panel-2, #111d31);
+  --modal-cyan: var(--rv-cy, #45b8c9);
+  --modal-amber: var(--rv-am, #cf9a3e);
+  --modal-danger: var(--rv-dg, #d15068);
+  --modal-danger-soft: var(--rv-dg-soft, rgba(209, 80, 104, .09));
+  --modal-ink: var(--rv-ink, #d6e4f5);
+  --modal-dim: var(--rv-ink-dim, #7f95b3);
+  --modal-faint: var(--rv-ink-faint, #4f6285);
+
+  position: relative;
+  margin: auto;
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 0;
+  border: 1px solid var(--modal-line);
+  border-radius: 0;
+  background: linear-gradient(160deg, #0b1424, #080e19);
+  color: var(--modal-ink);
+  box-shadow: var(--rv-shadow-win, 0 30px 70px rgba(0, 0, 0, .55));
+  font-family: var(--rv-body, var(--font-rajdhani), system-ui, sans-serif);
+  clip-path: polygon(0 0, calc(100% - var(--modal-notch)) 0, 100% var(--modal-notch), 100% 100%, var(--modal-notch) 100%, 0 calc(100% - var(--modal-notch)));
+  corner-shape: square bevel square bevel;
+}
+
+.status,
+.error,
+.actions button {
+  border-radius: 0 var(--modal-notch) 0 var(--modal-notch);
+  corner-shape: square bevel square bevel;
+}
+
+/* O recorte come a borda CSS nas diagonais. Recompomos exatamente os
+   dois segmentos, usando o mesmo padrão dos cards do Console. */
+.dialog::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(45deg, transparent calc(50% - 1px), var(--modal-line) calc(50% - 1px) 50%, transparent 50%) top right / var(--modal-notch) var(--modal-notch) no-repeat,
+    linear-gradient(45deg, transparent 50%, var(--modal-line) 50% calc(50% + 1px), transparent calc(50% + 1px)) bottom left / var(--modal-notch) var(--modal-notch) no-repeat;
+}
+
+.dialog::backdrop {
+  background: rgba(4, 7, 12, .72);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 15px;
+  border-bottom: 1px solid var(--modal-line-soft);
+  background: rgba(255, 255, 255, .015);
+}
+
+.label,
+.code,
+.statusLabel {
+  font-family: var(--rv-mono, var(--font-mono), ui-monospace, monospace);
+  text-transform: uppercase;
+}
+
+.label {
+  color: var(--modal-cyan);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .16em;
+}
+
+.code {
+  color: var(--modal-faint);
+  font-size: 9px;
+  letter-spacing: .12em;
+  white-space: nowrap;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 22px 18px;
+}
+
+.dialog h2 {
+  margin: 0;
+  color: var(--modal-ink);
+  font-family: var(--rv-display, var(--font-chakra), system-ui, sans-serif);
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.dialog p { margin: 0; }
+
+.description {
+  color: var(--modal-dim);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--modal-amber) 32%, transparent);
+  border-radius: var(--rv-r, 4px);
+  background: color-mix(in srgb, var(--modal-amber) 7%, transparent);
+}
+
+.statusLabel {
+  color: color-mix(in srgb, var(--modal-amber) 85%, var(--modal-ink));
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .13em;
+}
+
+.dialog .countdown {
+  flex: none;
+  color: var(--modal-amber);
+  font-family: var(--rv-mono, var(--font-mono), ui-monospace, monospace);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .04em;
+}
+
+.dialog .hint {
+  color: var(--modal-faint);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.error {
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb, var(--modal-danger) 45%, transparent);
+  border-radius: var(--rv-r, 4px);
+  background: var(--modal-danger-soft);
+  color: color-mix(in srgb, var(--modal-danger) 68%, white);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 11px 14px;
+  border-top: 1px solid var(--modal-line-soft);
+  background: rgba(255, 255, 255, .015);
+}
+
+.actions button {
+  min-width: 0;
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid var(--modal-line-strong);
+  border-radius: var(--rv-r, 4px);
+  background: var(--modal-panel-2);
+  color: var(--modal-dim);
+  font-family: var(--rv-display, var(--font-chakra), system-ui, sans-serif);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .14s, background .14s, border-color .14s;
+}
+
+.actions button:not(:disabled):hover {
+  border-color: var(--modal-line-hover);
+  background: color-mix(in srgb, var(--modal-panel-2) 88%, var(--modal-cyan));
+  color: var(--modal-ink);
+}
+
+.actions .danger {
+  border-color: color-mix(in srgb, var(--modal-danger) 45%, transparent);
+  background: var(--modal-danger-soft);
+  color: color-mix(in srgb, var(--modal-danger) 68%, white);
+}
+
+.actions .danger:not(:disabled):hover {
+  border-color: var(--modal-danger);
+  background: color-mix(in srgb, var(--modal-danger) 16%, transparent);
+  color: color-mix(in srgb, var(--modal-danger) 48%, white);
+}
+
+.actions button:focus-visible {
+  outline: 2px solid var(--modal-cyan);
+  outline-offset: -3px;
+}
+
+.actions .danger:focus-visible { outline-color: var(--modal-danger); }
+.actions button:disabled { opacity: .38; cursor: not-allowed; }
+
+@media (max-width: 480px) {
+  .code { display: none; }
+  .body { padding: 18px 16px 16px; }
+  .status { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .actions { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .actions button { transition: none; }
+}

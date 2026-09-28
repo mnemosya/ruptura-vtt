@@ -38,6 +38,19 @@ export interface PropsParametrosCena {
   cena: DadosCartaoCena;
   ocupada: boolean;
   erro: string | null;
+  /**
+   * Quantas peças ficariam fora da grade com o tamanho em edição —
+   * herdado da janela "Configurações da Cena", que era a única que
+   * avisava antes de encolher.
+   *
+   * OPCIONAL de propósito: contar peças exige os tokens e objetos da
+   * cena, e o cliente só tem os da cena ABERTA. Configurando outra do
+   * catálogo não há o que contar, e o aviso simplesmente não aparece —
+   * melhor calado que chutando zero como se fosse seguro.
+   */
+  foraDaGrade?: number;
+  /** Avisa o tamanho enquanto se digita, pra quem conta o que fica de fora. Só faz sentido na cena aberta. */
+  onMudarTamanho?: (largura: number, altura: number) => void;
   onSalvar: (v: ValoresParametros) => void;
   onFechar: () => void;
 }
@@ -109,6 +122,15 @@ export function ParametrosCena(p: PropsParametrosCena) {
     if (porCelula <= 0) return MIN;
     return Math.max(MIN, Math.min(MAX, Math.round(px / porCelula)));
   };
+
+  // A CONTAGEM segue o que está digitado. Efeito, e não chamada
+  // dentro do `onConfirmar` de cada campo: são quatro campos que mexem
+  // em largura/altura (células e pixels, dois eixos), e avisar em cada
+  // um deles é a mesma linha repetida quatro vezes.
+  const avisarTamanho = p.onMudarTamanho;
+  useEffect(() => {
+    avisarTamanho?.(v.largura, v.altura);
+  }, [avisarTamanho, v.largura, v.altura]);
 
   return (
     <section className="rv-gav-folha" aria-label={`Parâmetros de ${p.cena.nome}`} data-testid="cena-parametros">
@@ -264,6 +286,16 @@ export function ParametrosCena(p: PropsParametrosCena) {
           {v.largura} × {v.altura} células = {v.largura} × {v.altura} metros de terreno.
           Os pixels só servem para encaixar um mapa pronto.
         </p>
+        {/* ENCOLHER NÃO APAGA. O aviso existe pra pessoa saber o que
+            some de vista antes de salvar, não pra impedir — por isso é
+            nota, não bloqueio do botão. */}
+        {(p.foraDaGrade ?? 0) > 0 && (
+          <p className="rv-cena-estado" data-tipo="erro" data-testid="cena-aviso-fora-da-grade">
+            {p.foraDaGrade} {p.foraDaGrade === 1 ? "peça fica" : "peças ficam"} fora da grade com este
+            tamanho. Nada é apagado — {p.foraDaGrade === 1 ? "ela volta" : "elas voltam"} a aparecer se
+            você aumentar de novo.
+          </p>
+        )}
 
         <p className="rv-gav-folha-secao">Aparência da grade</p>
         {/* A prévia é a razão de este bloco existir aqui e não num

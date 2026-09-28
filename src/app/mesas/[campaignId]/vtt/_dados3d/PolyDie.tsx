@@ -114,6 +114,22 @@ function shapeFor(sides: number): Shape {
   }
 }
 
+/**
+ * Clareia um hex na direção do branco, mantendo o matiz. Aceita só
+ * `#rrggbb`; qualquer outra coisa volta como veio, porque `accent` é
+ * uma prop pública e um dia pode chegar como `rgba()` ou token.
+ */
+function clarear(cor: string, quanto: number): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(cor.trim());
+  if (!m) return cor;
+  const n = Number.parseInt(m[1], 16);
+  const canal = (deslocamento: number) => {
+    const v = (n >> deslocamento) & 0xff;
+    return Math.round(v + (255 - v) * quanto);
+  };
+  return `rgb(${canal(16)}, ${canal(8)}, ${canal(0)})`;
+}
+
 export function PolyDie({
   sides,
   value,
@@ -151,7 +167,16 @@ export function PolyDie({
   const s = shapeFor(sides);
   const stroke = active ? accent : dim ? "#2a3b58" : "#43597c";
   const fill = active ? soft : "transparent";
-  const textColor = active ? accent : dim ? "#42597c" : "#a9b9d4";
+  /* O NÚMERO um degrau ACIMA do contorno, não na mesma tinta. No dado
+     aceso o dígito saía exatamente na cor do traço que o cerca, e as
+     duas coisas se misturavam — pior no d100, onde três dígitos
+     encostam nas facetas.
+
+     CLAREIA, não escurece: o dado vive sobre fundo quase preto, então
+     puxar pro branco é o que ganha contraste. Escurecer separava as
+     duas tintas, mas contra o preto por baixo, e o número ficava menos
+     legível do que estava — foi testado e desfeito. */
+  const textColor = active ? clarear(accent, 0.34) : dim ? "#42597c" : "#a9b9d4";
   const landAnim = landed ? { animationDelay: `${Math.min(rollIndex, 6) * 0.04}s` } : undefined;
   /* face padrão = valor máximo do dado */
   const displayValue = value ?? sides;
@@ -176,7 +201,12 @@ export function PolyDie({
       aria-hidden="true"
     >
       <g transform={transform}>
-        <g fill={fill} stroke={stroke} strokeWidth={4.5 / k} strokeLinejoin="round">{s.outer}</g>
+        {/* `fillOpacity` MULTIPLICA o alfa do `soft` em vez de trocar a
+            cor por outra: o mesmo `soft` pinta o fundo da faixa de
+            resultado, e mexer nele lá fora escureceria as duas coisas.
+            Aqui o miolo pede menos peso — com o alfa cheio, uma fileira
+            inteira de dados acesos virava uma mancha de cor. */}
+        <g fill={fill} fillOpacity={active ? 0.35 : 1} stroke={stroke} strokeWidth={4.5 / k} strokeLinejoin="round">{s.outer}</g>
         <g fill="none" stroke={stroke} strokeWidth={2.5 / k} strokeLinejoin="round" strokeLinecap="round" opacity={0.45}>{s.facets}</g>
         {!semValor && (
           <text x="50" y={s.ty} textAnchor="middle" dominantBaseline="central" fontFamily="var(--font-mono), 'JetBrains Mono', monospace" fontSize={30 / k} fontWeight="700" fill={textColor}>

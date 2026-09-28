@@ -39,7 +39,6 @@ export function ParticipantesTab({
   campaignId,
   visivel,
   ehNarrador,
-  onContador,
   onAbrirConvites,
   onAbrirConsole,
   onAbrirJanela,
@@ -48,7 +47,6 @@ export function ParticipantesTab({
   campaignId: string;
   visivel: boolean;
   ehNarrador: boolean;
-  onContador: (n: number | null) => void;
   /** Abre "Jogadores e convites" em janela interna — nunca navega. */
   onAbrirConvites: () => void;
   /** Abre a ficha de um personagem controlado, dentro do VTT. */
@@ -115,10 +113,6 @@ export function ParticipantesTab({
 
   // O contador da aba representa QUEM ESTÁ ONLINE — e só existe quando
   // a presença é confiável. Sem presença, a aba não mostra número
-  // nenhum (nunca o total do roster fingindo ser "online").
-  useEffect(() => {
-    onContador(online);
-  }, [online, onContador]);
 
   const temPresenca = presencaDisponivel(presenceSyncStatus);
 
@@ -243,9 +237,6 @@ export function ParticipantesTab({
             const acento = selecionado.role === "narrator" ? "var(--rv-am)" : "var(--rv-cy)";
             return (
               <div className="rv-fg-card" data-testid="painel-participantes-detalhe" style={{ "--fg-a": acento } as React.CSSProperties}>
-                <div className="rv-fg-brackets" aria-hidden="true">
-                  <span className="rv-fg-bk-tl" /><span className="rv-fg-bk-tr" /><span className="rv-fg-bk-bl" /><span className="rv-fg-bk-br" />
-                </div>
                 <div className="rv-fg-espinha">
                   <span className="rv-fg-espinha-topo">{iniciaisDe(selecionado.displayName)}</span>
                   <span className="rv-fg-espinha-rotulo">Player</span>

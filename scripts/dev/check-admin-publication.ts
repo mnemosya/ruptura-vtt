@@ -4,27 +4,84 @@
  * (`authSession.ts`, `.auth/admin-session.json`), roda headless, usa
  * `data-testid` estáveis e limpa o que criou.
  *
- * ⚠️ EXECUÇÃO BLOQUEADA NESTE AMBIENTE (mesmo conflito de arquitetura do
- * esbuild das etapas anteriores). O núcleo transacional (publicar,
- * incrementar versão, changelog, consumir rascunho, conflito de hash,
- * versão otimista, arquivar) foi verificado DIRETAMENTE por SQL contra o
- * banco (função `publish_content_draft`/`archive_content_document`), com
- * rollback forçado e zero resíduo — ver checkpoint §Verificações. Este
- * script existe para quando o ambiente puder rodar `tsx`/Playwright.
+ * LIMPEZA: automática e completa no INÍCIO de cada execução
+ * (`limparPublicadoDeTeste`): changelog, documentos e rascunhos com o
+ * prefixo de teste. Não sobra SQL para rodar à mão.
  *
- * LIMPEZA: rascunhos criados são excluídos pela UI. Conteúdo PUBLICADO de
+ * Rascunhos criados são excluídos pela UI. Conteúdo PUBLICADO de
  * teste é ARQUIVADO (a superfície RLS admin não tem hard-delete de
- * publicado, por design). Para remover de vez as linhas de teste e o
- * changelog, rode o SQL no rodapé deste arquivo com o prefixo abaixo.
+ * publicado, por design) e some na limpeza da execução seguinte.
  *
  * Uso: npm run check:admin-publication
  */
 
 import assert from "node:assert/strict";
+import { config as loadDotenv } from "dotenv";
+import { Client } from "pg";
 import { chromium, type Page } from "playwright";
 import { BASE_URL, SESSION_FILE, assertAdminSessionValid, requireSessaoSalva, sessaoSalvaExiste } from "./authSession";
+import { aceitarDialogos } from "./rascunhoDeEdicao";
 
 const PREFIXO = "zz_e2e_etapa5_";
+
+loadDotenv({ path: ".env.local" });
+
+/**
+ * Apaga o que execuções anteriores deixaram publicado com o prefixo de
+ * teste, ANTES de começar.
+ *
+ * O check publica conteúdo, e publicar não tem desfazer pela interface —
+ * a limpeza no fim só conseguia ARQUIVAR, e imprimia um SQL para a
+ * pessoa rodar à mão. Ninguém rodava. Na execução seguinte o slug já
+ * existia, a criação era recusada, e o check morria num
+ * `waitForURL` que nunca chegava: falhava por causa de si mesmo.
+ *
+ * Limpar no INÍCIO, e não no fim, é o que torna isso irrelevante — não
+ * importa como a execução anterior terminou.
+ */
+/** Quantos rascunhos com o prefixo de teste ainda existem. */
+async function contarRascunhosDeTeste(): Promise<number> {
+  const url = process.env.SUPABASE_DB_URL;
+  if (!url) return -1;
+  const db = new Client({ connectionString: url, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 15000 });
+  await db.connect();
+  try {
+    const r = await db.query("select count(*)::int as n from content_drafts where slug like $1", [`${PREFIXO}%`]);
+    return r.rows[0]?.n ?? 0;
+  } catch {
+    return -1;
+  } finally {
+    await db.end();
+  }
+}
+
+async function limparPublicadoDeTeste(): Promise<number> {
+  const url = process.env.SUPABASE_DB_URL;
+  if (!url) return 0;
+  const db = new Client({ connectionString: url, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 15000 });
+  await db.connect();
+  try {
+    let total = 0;
+    // O changelog sai PRIMEIRO, e por `document_id` (`<tipo>:<slug>`) em
+    // vez de `slug`: ele não tem essa coluna. Ficava de fora até aqui —
+    // o rodapé deste arquivo mandava apagá-lo à mão, e ninguém apagava.
+    // Três linhas de execuções antigas sobreviviam a cada limpeza e
+    // derrubavam a publicação da execução seguinte.
+    try {
+      const r = await db.query("delete from content_changelog where document_id like $1", [`%${PREFIXO}%`]);
+      total += r.rowCount ?? 0;
+    } catch { /* tabela pode não existir nesta versão do schema */ }
+    for (const tabela of ["content_documents", "content_drafts"]) {
+      try {
+        const r = await db.query(`delete from ${tabela} where slug like $1`, [`${PREFIXO}%`]);
+        total += r.rowCount ?? 0;
+      } catch { /* tabela pode não existir nesta versão do schema */ }
+    }
+    return total;
+  } finally {
+    await db.end();
+  }
+}
 
 async function criarRascunhoNovoSpell(page: Page, slug: string): Promise<string> {
   await page.goto(`${BASE_URL}/admin/biblioteca/rascunhos/novo`, { waitUntil: "domcontentloaded" });
@@ -46,9 +103,10 @@ async function publicar(page: Page, draftId: string, resumo: string): Promise<vo
 async function excluirRascunhoSeExistir(page: Page, draftId: string): Promise<void> {
   const resp = await page.goto(`${BASE_URL}/admin/biblioteca/rascunhos/${draftId}`, { waitUntil: "domcontentloaded" });
   if (!resp || resp.status() === 404) return;
-  page.on("dialog", (d) => d.accept());
+  aceitarDialogos(page);
   const botao = page.locator('[data-testid="rascunho-excluir"]');
-  if ((await botao.count()) > 0) await botao.click();
+  if ((await botao.count()) === 0) return;
+  await botao.click();
 }
 
 async function main(): Promise<void> {
@@ -56,6 +114,9 @@ async function main(): Promise<void> {
     requireSessaoSalva();
     return;
   }
+  const restos = await limparPublicadoDeTeste();
+  if (restos > 0) console.log(`0. Resíduo de execução anterior removido (${restos} linha(s))`);
+
   const slug = `${PREFIXO}magia`;
   const browser = await chromium.launch({ headless: true });
   const draftsCriados: string[] = [];
@@ -72,8 +133,22 @@ async function main(): Promise<void> {
     const ctx = await browser.newContext({ storageState: SESSION_FILE });
     const page = await ctx.newPage();
     const erros: string[] = [];
-    page.on("console", (m) => m.type() === "error" && erros.push(m.text()));
-    page.on("dialog", (d) => d.accept());
+    /* O passo 8 navega de propósito para um rascunho que não existe, e a
+       rota responde 404 de verdade — o navegador registra isso como erro
+       de console. Contar esse 404 como "console sujo" reprovaria o check
+       justamente por ele ter funcionado. Só este, e só ali. */
+    let esperando404 = false;
+    page.on("console", (m) => {
+      if (m.type() !== "error") return;
+      const texto = m.text();
+      if (esperando404 && texto.includes("404")) return;
+      erros.push(texto);
+    });
+    // `once`, não `on`: registrado DENTRO desta função, cada chamada
+  // acrescentava mais um handler à página, e o segundo estourava com
+  // "Cannot accept dialog which is already handled". Um handler por
+  // exclusão é exatamente o que se quer, e é o que `once` dá.
+  page.once("dialog", (d) => d.accept());
     await assertAdminSessionValid(page);
 
     // 2/3. Cria rascunho novo e publica como 1.0.0.
@@ -92,7 +167,9 @@ async function main(): Promise<void> {
     console.log("2-7. Rascunho novo publicado como 1.0.0 e aparece na Biblioteca — OK");
 
     // 8. Rascunho deixou de existir após publicação.
+    esperando404 = true;
     const respDraft = await page.goto(`${BASE_URL}/admin/biblioteca/rascunhos/${draft1}`, { waitUntil: "domcontentloaded" });
+    esperando404 = false;
     assert.ok(respDraft && respDraft.status() === 404, "8. Rascunho deveria ter sido consumido (404) após publicar.");
     console.log("8. Rascunho consumido após publicação — OK");
 
@@ -129,13 +206,20 @@ async function main(): Promise<void> {
 
     console.log("\n=== CHECKS DE PUBLICAÇÃO PASSARAM ===");
   } finally {
-    // 20. Limpeza — exclui rascunhos criados. Conteúdo publicado de teste
-    // fica arquivado (sem hard-delete no admin); use o SQL do rodapé.
+    /* 20. Limpeza. O conteúdo PUBLICADO não sai por aqui — publicar não
+       tem desfazer no admin —, e por isso a limpeza de verdade acontece
+       no INÍCIO da próxima execução (`limparPublicadoDeTeste`), direto no
+       banco. Aqui só saem os rascunhos. */
     try {
       const ctx = await browser.newContext({ storageState: SESSION_FILE });
       const page = await ctx.newPage();
       for (const id of draftsCriados) await excluirRascunhoSeExistir(page, id);
-      console.log(`20. Rascunhos de teste removidos (${draftsCriados.length}). Conteúdo publicado de teste ficou arquivado — rode o SQL abaixo para remover de vez.`);
+      // Conta o que REALMENTE sobrou, em vez do tamanho da lista de
+      // criados: o log anterior dizia "removidos (1)" mesmo quando o
+      // rascunho já tinha sido consumido pela publicação, e eu quase
+      // concluí, a partir dele, que publicar não estava apagando nada.
+      const sobraram = await contarRascunhosDeTeste();
+      console.log(`20. Limpeza: ${draftsCriados.length} rascunho(s) criados nesta execução, ${sobraram} ainda no banco.`);
     } catch {
       /* best-effort */
     }
@@ -149,9 +233,3 @@ main().catch((err) => {
   process.exit(1);
 });
 
-/*
--- Limpeza definitiva das linhas de teste (rode no SQL editor / psql):
-delete from content_changelog where document_id like 'spell:zz_e2e_etapa5_%';
-delete from content_documents  where slug like 'zz_e2e_etapa5_%';
-delete from content_drafts     where slug like 'zz_e2e_etapa5_%';
-*/

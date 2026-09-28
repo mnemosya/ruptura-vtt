@@ -16,7 +16,7 @@ const HEX_D =
 
 export const ATTR_HEX_STYLE: Record<keyof CharacterAttributes, { fill: string; stroke: string; strokeOpacity: number }> = {
   corpo: { fill: "#0D2324", stroke: "#26FF00", strokeOpacity: 0.14 },
-  mente: { fill: "#1B2339", stroke: "#6A4ABD", strokeOpacity: 0.55 },
+  mente: { fill: "#1B2339", stroke: "#6A4ABD", strokeOpacity: 0.45 },
   animo: { fill: "#0E2431", stroke: "#00D4FF", strokeOpacity: 0.14 },
 };
 

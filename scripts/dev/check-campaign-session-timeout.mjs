@@ -1,0 +1,102 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { config } from 'dotenv';
+import { Client } from 'pg';
+config({ path: '.env.local', quiet: true });
+const db = new Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 15000 });
+try {
+  assert.ok(process.env.SUPABASE_DB_URL);
+  await db.connect();
+  await db.query('begin');
+  const { rows: [existing] } = await db.query("select to_regclass('public.campaign_session_heartbeats') as relation");
+  if (!existing.relation) await db.query(readFileSync('supabase/migrations/0138_campaign_session_timeout.sql', 'utf8').replace(/^begin;\s*/i, '').replace(/commit;\s*$/i, ''));
+  const { rows: users } = await db.query('select id from auth.users limit 2');
+  assert.equal(users.length, 2);
+  const campaign = randomUUID();
+  await db.query('insert into public.campaigns(id,name,owner_id) values($1,$2,$3)', [campaign, 'Fixture transacional timeout', users[0].id]);
+  const identity = async id => {
+    await db.query('reset role');
+    await db.query("select set_config('request.jwt.claim.sub',$1,true), set_config('request.jwt.claims',$2,true)", [id, JSON.stringify({ sub: id, role: 'authenticated' })]);
+    await db.query('set local role authenticated');
+  };
+  const denied = async operation => {
+    await db.query('savepoint denied');
+    let failed = false;
+    try { await operation(); } catch { failed = true; }
+    await db.query('rollback to savepoint denied');
+    assert.ok(failed, 'A operação deveria ser recusada');
+  };
+  const heartbeat = () => db.query('select public.heartbeat_campaign_session($1)', [campaign]);
+  const evaluate = async () => {
+    await db.query('reset role');
+    await db.query('select public.evaluate_campaign_session_timeout($1)', [campaign]);
+  };
+  const read = async () => (await db.query('select *, confirmation_deadline::text as deadline_text from public.campaign_online_sessions where campaign_id=$1 order by started_at desc limit 1', [campaign])).rows[0];
+  const keep = s => db.query('select public.continue_campaign_session($1,$2,$3)', [campaign, s.id, s.deadline_text]);
+  const age = async (minutes, deadline = null) => {
+    await db.query('reset role');
+    await db.query("update public.campaign_online_sessions set started_at=clock_timestamp()-interval '2 hours', empty_since=clock_timestamp()-make_interval(mins=>$2), confirmation_deadline=$3 where campaign_id=$1 and ended_at is null", [campaign, minutes, deadline]);
+  };
+  await identity(users[1].id);
+  await denied(heartbeat);
+  await db.query('reset role');
+  await db.query("insert into public.campaign_members(campaign_id,user_id,role,status) values($1,$2,'player','active')", [campaign, users[1].id]);
+  await identity(users[0].id);
+  await db.query('select public.set_campaign_online_session($1,true,null)', [campaign]);
+  await heartbeat();
+  await denied(() => db.query('select public.sweep_campaign_session_timeouts()'));
+  await denied(() => db.query('select public.evaluate_campaign_session_timeout($1)', [campaign]));
+  await denied(() => db.query('insert into public.campaign_session_heartbeats(campaign_id,user_id) values($1,$2)', [campaign, users[1].id]));
+  await age(29);
+  await evaluate();
+  assert.equal((await read()).confirmation_deadline, null, 'Não deve antecipar o aviso');
+  await age(31);
+  await evaluate();
+  const warning = await read();
+  assert.equal(warning.ended_at, null);
+  assert.ok(Math.abs(warning.confirmation_deadline.getTime() - Date.now() - 600000) < 10000, 'Aviso com 10 minutos');
+  await identity(users[1].id);
+  await denied(() => keep(warning));
+  await identity(users[0].id);
+  await keep(warning);
+  assert.equal((await read()).confirmation_deadline, null);
+  await denied(() => keep(warning));
+  assert.ok(Math.abs((await read()).empty_since.getTime() - Date.now()) < 10000, 'Continuar reinicia prazo');
+  await age(31);
+  await evaluate();
+  await identity(users[1].id);
+  await heartbeat();
+  assert.equal((await read()).confirmation_deadline, null, 'Jogador cancela aviso');
+  assert.equal((await read()).empty_since, null);
+  await db.query('reset role');
+  await db.query("update public.campaign_session_heartbeats set seen_at=clock_timestamp()-interval '5 minutes' where campaign_id=$1 and user_id=$2", [campaign, users[1].id]);
+  await evaluate();
+  assert.ok(Math.abs(Date.now() - (await read()).empty_since.getTime() - 180000) < 10000, 'Ausência começa após tolerância do heartbeat');
+  await age(31);
+  await evaluate();
+  assert.ok((await read()).confirmation_deadline);
+  await age(41, new Date(Date.now() - 1000));
+  const expired = await read();
+  await identity(users[0].id);
+  await denied(() => keep(expired));
+  await identity(users[1].id);
+  await heartbeat();
+  assert.ok((await read()).ended_at, 'Retorno tardio não ressuscita sessão');
+  await identity(users[0].id);
+  await db.query('select public.set_campaign_online_session($1,true,null)', [campaign]);
+  await denied(() => keep(warning));
+  await age(31);
+  await db.query("update public.campaign_session_heartbeats set seen_at=clock_timestamp()-interval '5 minutes' where campaign_id=$1", [campaign]);
+  await evaluate();
+  assert.ok((await read()).ended_at, 'Sem narrador encerra aos 30 minutos');
+  const { rows: jobs } = await db.query("select schedule, active from cron.job where jobname='ruptura-session-timeouts'");
+  assert.deepEqual(jobs, [{ schedule: '* * * * *', active: true }]);
+  console.log('OK: 30 + 10 minutos, tolerância de conexão, retorno de jogador, reinício do prazo, confirmação expirada/duplicada, nova sessão, permissões e agendador. Tudo revertido.');
+} catch (error) {
+  console.error(error.message);
+  process.exitCode = 1;
+} finally {
+  await db.query('rollback').catch(() => {});
+  await db.end();
+}

@@ -33,13 +33,16 @@
 import assert from "node:assert/strict";
 import { chromium, type Page } from "playwright";
 import { BASE_URL, SESSION_FILE, assertAdminSessionValid, requireSessaoSalva, sessaoSalvaExiste } from "./authSession";
+import { limparEAnunciar } from "./residuoDeConteudo";
+import { salvarRascunho, aceitarDialogos } from "./rascunhoDeEdicao";
 
 async function excluirRascunhoSeExistir(page: Page, draftId: string): Promise<void> {
   const resp = await page.goto(`${BASE_URL}/admin/biblioteca/rascunhos/${draftId}`, { waitUntil: "domcontentloaded" });
   if (!resp || resp.status() === 404) return;
-  page.on("dialog", (d) => d.accept());
+  aceitarDialogos(page);
   const botao = page.locator('[data-testid="rascunho-excluir"]');
-  if ((await botao.count()) > 0) await botao.click();
+  if ((await botao.count()) === 0) return;
+  await botao.click();
 }
 
 async function main(): Promise<void> {
@@ -47,6 +50,7 @@ async function main(): Promise<void> {
     requireSessaoSalva();
     return;
   }
+  await limparEAnunciar();
   const browser = await chromium.launch({ headless: true });
   const draftsCriados: string[] = [];
 
@@ -68,12 +72,18 @@ async function main(): Promise<void> {
 
     await page.locator('[data-testid="novo-efeito-tipo-item"]').selectOption("efeito_temporario");
     await page.locator('[data-testid="novo-efeito-adicionar-item"]').click();
+    // Gatilho e alvo são obrigatórios em QUALQUER efeito. Sem eles o
+    // salvamento é RECUSADO — e a falha aparecia dois passos adiante,
+    // com a cara de "o campo não persistiu", acusando o app de perder
+    // dados que ele nunca chegou a aceitar.
+    await page.locator('[data-testid="efeito-gatilho"]').selectOption("ao_usar");
+    await page.locator('[data-testid="efeito-alvo"]').selectOption("alvo_principal");
     await page.locator('[data-testid="efeito-temporario-duracao-tipo"]').selectOption("rounds");
     await page.locator('[data-testid="efeito-temporario-duracao-rodadas"]').fill("1");
     await page.locator('[data-testid="efeito-temporario-acumulavel"]').check();
     await page.locator('[data-testid="efeito-temporario-max-pilhas"]').fill("3");
     await page.locator('[data-testid="efeito-temporario-politica-reaplicacao"]').selectOption("acumular_pilha");
-    await page.locator('[data-testid="rascunho-salvar"]').click();
+    await salvarRascunho(page);
     await page.reload({ waitUntil: "domcontentloaded" });
     assert.equal(await page.locator('[data-testid="efeito-temporario-max-pilhas"]').inputValue(), "3", "Máximo de pilhas deveria persistir após recarregar.");
     console.log("1-7. Efeito temporário (item): criado, +1/Luta, 1 rodada, máx. 3 pilhas, acumular_pilha, persiste após reload — OK");
@@ -86,6 +96,14 @@ async function main(): Promise<void> {
     await page.waitForURL(/\/admin\/biblioteca\/rascunhos\/[0-9a-f-]{36}/, { timeout: 10000 });
     const draftTalentoId = page.url().split("/").pop()!;
     draftsCriados.push(draftTalentoId);
+    // Uso limitado é controle DE UM EFEITO, não do talento: sem efeito
+    // adicionado, o controle não existe na página e o check morria
+    // esperando por ele. Um efeito qualquer serve — o que se verifica
+    // aqui é a cadência, não o tipo.
+    await page.locator('[data-testid="novo-efeito-tipo-nivel-1"]').selectOption("dano");
+    await page.locator('[data-testid="novo-efeito-adicionar-nivel-1"]').click();
+    await page.locator('[data-testid="efeito-gatilho"]').first().selectOption("ao_usar");
+    await page.locator('[data-testid="efeito-alvo"]').first().selectOption("alvo_principal");
     await page.locator('[data-testid="efeito-uso-limitado-ativo"]').first().check();
     await page.locator('[data-testid="efeito-uso-limitado-max"]').first().fill("1");
     await page.locator('[data-testid="efeito-uso-limitado-cadencia"]').first().selectOption("cena");

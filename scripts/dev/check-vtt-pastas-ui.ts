@@ -92,9 +92,9 @@ async function main() {
   const page = await ctx.newPage();
 
   try {
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
-    await page.locator('[data-testid="barra-cenas"]').click();
+    await page.locator('[data-testid="cena-chip"]').click();
     await page.waitForSelector('[data-testid="cenas-lista"]', { timeout: 15000 });
 
     console.log("\n— Criar pasta —");
@@ -218,15 +218,33 @@ async function main() {
       .screenshot({ path: "scripts/dev/.artefatos-visuais/catalogo-cenas-pastas.png" });
 
     console.log("\n— Excluir a pasta não apaga a cena —");
-    await linhaPasta(page, "Ato I").locator('[data-testid="pasta-excluir"]').click();
+    // As ações da pasta saíram da fila de ícones de hover e viraram
+    // MENU DE CONTEXTO: o gesto agora é botão direito na linha.
+    await linhaPasta(page, "Ato I").click({ button: "right" });
+    await page.locator('[data-testid="pasta-menu"] [data-testid="pasta-excluir"]').click();
+    await page.locator('[data-testid="pasta-excluir-campo"]').fill("Ato I");
     await page.locator('[data-testid="pasta-excluir-confirmar"]').click();
     await page.waitForFunction(
       () => document.querySelectorAll('[data-testid="pasta-linha"]').length === 0,
       undefined, { timeout: 15000 },
     );
     criterio("a pasta some", (await nomesPastas(page)).length === 0);
-    criterio("e a cena que estava dentro voltou para a raiz",
-      (await nomesCenas(page)).includes("Torre do Sino"), (await nomesCenas(page)).join(" | "));
+    // EXCLUIR A PASTA APAGA AS CENAS DE DENTRO — e isso é o desenho,
+    // não um efeito colateral.
+    //
+    // O critério antigo esperava que a cena "voltasse para a raiz".
+    // `delete_vtt_scene_folder` faz outra coisa, de propósito: apaga as
+    // cenas da pasta e poupa APENAS o palco, que sobe para a pasta-mãe
+    // ("O PALCO é poupado e sobe pro pai da pasta apagada"). Há até uma
+    // guarda que recusa a exclusão se ela apagaria a última cena
+    // utilizável da campanha.
+    //
+    // É por isso que a confirmação pede o NOME da pasta digitado: a
+    // ação é destrutiva. Um critério que espera preservação estaria
+    // dando à pessoa a impressão oposta da verdadeira.
+    const cenasDepois = await nomesCenas(page);
+    criterio("e a cena que estava dentro foi apagada junto (ação destrutiva, por desenho)",
+      !cenasDepois.includes("Torre do Sino"), cenasDepois.join(" | "));
 
   } finally {
     await ctx.close().catch(() => {});

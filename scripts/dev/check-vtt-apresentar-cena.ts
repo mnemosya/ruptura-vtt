@@ -52,14 +52,22 @@ async function palcoDoBanco(campaignId: string): Promise<string | null> {
 }
 
 /** O nome da cena que ESTA aba está mostrando, lido do bloco de cena. */
+// O bloco de cena virou um CHIP no rodapé do palco
+// (`cena-chip`), e a classe `.rv-cena` não existe mais em lugar
+// nenhum do app. Todo `waitFor` por ela esperava 25s e morria — nos
+// dois checks que a usavam, antes da primeira asserção de verdade.
+//
+// O chip tem duas formas, botão pro narrador (abre o catálogo) e
+// parágrafo pra quem não é; o `data-testid` é o mesmo nos dois, que
+// é justamente o que um teste quer.
 async function cenaNaTela(page: Page): Promise<string> {
-  return (await page.locator(".rv-cena").first().textContent())?.trim() ?? "";
+  return (await page.locator('[data-testid="cena-chip"] .rv-cena-chip__nome').first().textContent())?.trim() ?? "";
 }
 
 async function esperarCenaNaTela(page: Page, nome: string, ms = 20000): Promise<boolean> {
   try {
     await page.waitForFunction(
-      (n) => document.querySelector(".rv-cena")?.textContent?.includes(n) === true,
+      (n) => document.querySelector('[data-testid="cena-chip"] .rv-cena-chip__nome')?.textContent?.includes(n) === true,
       nome, { timeout: ms },
     );
     return true;
@@ -79,7 +87,7 @@ async function abrirMesa(
     expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
   }]);
   const page = await ctx.newPage();
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
   return { ctx, page };
 }
@@ -141,7 +149,7 @@ async function main() {
     // É o que torna o teste seguinte honesto: se ele estivesse na
     // mesma cena que vai apresentar, "o narrador não se moveu" passaria
     // sozinho.
-    await narrador.page.locator('[data-testid="barra-cenas"]').click();
+    await narrador.page.locator('[data-testid="cena-chip"]').click();
     await narrador.page.waitForSelector('[data-testid="cenas-lista"]', { timeout: 5000 });
     await narrador.page.locator('[data-testid="cena-cartao"]').filter({ hasText: "Ponte Quebrada" })
       .locator('[data-testid="cena-abrir"]').click();

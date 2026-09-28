@@ -18,6 +18,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { config as loadDotenv } from "dotenv";
+import { garantirAlcancavel } from "./painelDaSessao";
 import { createClient } from "@supabase/supabase-js";
 import type { ConsoleMessage } from "playwright";
 import { chromium, type Page } from "playwright";
@@ -78,8 +79,18 @@ async function configurarFixture(): Promise<{ tokenId: string }> {
   await admin.from("campaigns").insert({ id: campaignId, name: "VTT Camadas Visuais", owner_id: dNarrador.user.id });
   criados.campanhas.push(campaignId);
 
-  const { data: cena } = await admin.from("vtt_scenes").insert({ campaign_id: campaignId, nome: "Cena Camadas", largura: 16, altura: 16 }).select("id").single();
+  // O erro do insert era descartado, e o `cena!.id` estourava três
+  // linhas depois com "Cannot read properties of null" — sem dizer o
+  // que o banco tinha recusado.
+  const { data: cena, error: errC } = await admin.from("vtt_scenes").insert({ campaign_id: campaignId, nome: "Cena Camadas", largura: 16, altura: 16 }).select("id").single();
+  if (errC) throw new Error(`Falha ao criar cena fixture: ${errC.message}`);
   sceneId = cena!.id as string;
+
+  // Sem esta linha a campanha não tem PALCO, a mesa abre sem o VTT e o
+  // check morria esperando `.rv-ferramentas` aparecer — quinze segundos
+  // de espera por uma barra que nunca ia ser montada.
+  await admin.from("vtt_campaign_stage")
+    .insert({ campaign_id: campaignId, presented_scene_id: sceneId, updated_by: dNarrador.user.id });
 
   // Um JOGADOR de verdade na mesa — o painel de Camadas é decisão do
   // narrador e não pode nem aparecer pra ele.
@@ -170,7 +181,7 @@ async function main() {
   const erros: string[] = [];
   page.on("console", (m) => { if (erroRelevante(m)) erros.push(m.text().slice(0, 400)); });
   page.on("pageerror", (e) => erros.push(`pageerror: ${e.message}`));
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
   await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
 
@@ -182,9 +193,25 @@ async function main() {
   // CTM real, nunca um pixel de tela "chutado". Prova ao mesmo tempo a
   // seleção (dispara setor traseiro + cunha + alça) e que nenhum
   // elemento decorativo por cima da sigla intercepta o clique.
-  const pontoAncora = await pontoMundoParaTela(page, hexParaPixel({ q: 8, r: 7 }, TAM));
-  await page.mouse.click(pontoAncora.x, pontoAncora.y);
-  await page.waitForTimeout(150);
+  // O painel da sessão FLUTUA sobre o mapa, e a âncora deste token
+  // caía debaixo dele: `elementFromPoint` no ponto devolvia
+  // `rv-pn-chat-scroll`. O clique acontecia sem erro nenhum e ia pro
+  // chat — e o que reprovava era a seleção, três critérios adiante,
+  // levando junto halo, alça e PV (que só existem com o token
+  // selecionado). O mesmo veneno já documentado em `painelDaSessao.ts`.
+  //
+  // `garantirAlcancavel` recebe a medição como FUNÇÃO porque afastar o
+  // zoom move o ponto: medir uma vez e reusar daria a coordenada
+  // antiga.
+  const pontoAncora = await garantirAlcancavel(page, () =>
+    pontoMundoParaTela(page, hexParaPixel({ q: 8, r: 7 }, TAM)));
+  registrar("2a0 (a âncora do token está livre do painel da sessão)", pontoAncora !== null,
+    pontoAncora ? `x=${Math.round(pontoAncora.x)}, y=${Math.round(pontoAncora.y)}` : "coberta ou fora da viewport");
+  await page.mouse.click(pontoAncora!.x, pontoAncora!.y);
+  await page.waitForFunction(
+    (tid) => !!document.querySelector(`.rv-token[data-token-id="${tid}"].is-sel`),
+    tokenId, { timeout: 5000 },
+  ).catch(() => {});
 
   // --- 1: ordem estrutural das 7 camadas conceituais, dentro do próprio token. ---
   // Em SVG, ordem no DOM = ordem de pintura: cada seletor abaixo precisa
@@ -206,7 +233,6 @@ async function main() {
       halo: todos.findIndex((el) => el.matches(".rv-token-halo-frontal")),
       orientacao: todos.findIndex((el) => el.matches(".rv-token-orientacao")),
       alca: todos.findIndex((el) => el.matches(".rv-token-alca-rotacao")),
-      pv: todos.findIndex((el) => el.matches(".rv-token-pv")),
       oculto: todos.findIndex((el) => el.matches(".rv-token-oculto")),
       travado: todos.findIndex((el) => el.matches(".rv-token-travado")),
       condicoes: todos.findIndex((el) => el.matches(".rv-token-condicoes")),
@@ -224,11 +250,28 @@ async function main() {
     `base=${c.base} sigla=${c.sigla} halo=${c.halo} orientacao=${c.orientacao} alca=${c.alca}`,
   );
 
-  const rotacaoAntesDeRotulos = c.alca < c.pv && c.pv < c.oculto && c.oculto < c.travado && c.travado < c.condicoes;
+  const rotacaoAntesDeRotulos = c.alca < c.oculto && c.oculto < c.travado && c.travado < c.condicoes;
   registrar(
-    "1c (camada 6→7: alça de rotação vem ANTES de PV/oculto/travado/condições — rótulos sempre no topo, nunca escondidos atrás da rotação)",
+    "1c (camada 6→7: alça de rotação vem ANTES de oculto/travado/condições — rótulos sempre no topo, nunca escondidos atrás da rotação)",
     rotacaoAntesDeRotulos,
-    `alca=${c.alca} pv=${c.pv} oculto=${c.oculto} travado=${c.travado} condicoes=${c.condicoes}`,
+    `alca=${c.alca} oculto=${c.oculto} travado=${c.travado} condicoes=${c.condicoes}`,
+  );
+
+  // A BARRA DE PV saiu do token, de propósito, e o comentário que ficou
+  // no lugar dela diz por quê: mostrava só PV, só por aproximação, e
+  // para QUALQUER um que enxergasse o token — inclusive quando o
+  // recurso não estava público. Quem mostra número exato hoje é o
+  // cartão de hover, sob a mesma autorização do servidor.
+  //
+  // O que NÃO podia sumir junto é o anúncio pra leitor de tela: sem a
+  // barra, o `aria-label` é o cartão de quem não enxerga o mapa. Era
+  // esse o valor que `.rv-token-pv` protegia, e é ele que continua
+  // sendo testado aqui.
+  const rotuloPv = await tokenLocator.getAttribute("aria-label");
+  registrar(
+    "1d (sem barra de PV no token, o PV continua anunciado no aria-label — o rótulo é o cartão de quem usa leitor de tela)",
+    (rotuloPv ?? "").includes("PV 2 de 10"),
+    JSON.stringify(rotuloPv),
   );
 
   // --- 2: rótulos decorativos nunca interceptam clique — pointer-events:none confirmado por getComputedStyle, não só por leitura de código. ---
@@ -317,10 +360,10 @@ async function main() {
   // pela porta dos fundos — então nem o botão da barra existe pra ele.
   {
     const jog = await contextoDe(jogadorEmail!, jogadorSenha!);
-    await jog.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await jog.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await jog.page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
-    const botaoJogador = await jog.page.locator('button[aria-label="Camadas do mapa"]').count();
-    const janelaJogador = await jog.page.locator('section[aria-label="Camadas do mapa"]').count();
+    const botaoJogador = await jog.page.locator('button[aria-label^="Camadas do mapa"]').count();
+    const janelaJogador = await jog.page.locator('section[aria-label^="Camadas do mapa"]').count();
     registrar(
       "5 (Camadas não existe pro jogador — nem botão, nem janela)",
       botaoJogador === 0 && janelaJogador === 0,
@@ -337,10 +380,10 @@ async function main() {
   // `vtt_tokens.visivel`.
   {
     const nar = await contextoDe(narradorEmail!, narradorSenha!);
-    await nar.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await nar.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await nar.page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
-    await nar.page.locator('button[aria-label="Camadas do mapa"]').click();
-    await nar.page.waitForSelector('section[aria-label="Camadas do mapa"]', { timeout: 10000 });
+    await nar.page.locator('button[aria-label^="Camadas do mapa"]').click();
+    await nar.page.waitForSelector('section[aria-label^="Camadas do mapa"]', { timeout: 10000 });
     await nar.page.locator('button[aria-label="Ocultar camada Tokens"]').click();
     await nar.page.waitForTimeout(1200);
 
@@ -378,7 +421,7 @@ async function main() {
     await nar.close();
 
     const jog2 = await contextoDe(jogadorEmail!, jogadorSenha!);
-    await jog2.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await jog2.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await jog2.page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
     await jog2.page.waitForTimeout(800);
     const displayJogador = await jog2.page.locator(".rv-camada-tokens").first()
@@ -398,7 +441,7 @@ async function main() {
   // âncora, e é ela que terreno, colisão e alcance enxergam.
   {
     const nar = await contextoDe(narradorEmail!, narradorSenha!);
-    await nar.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await nar.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await nar.page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
 
     const { data: antes } = await admin

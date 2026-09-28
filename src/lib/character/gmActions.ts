@@ -18,6 +18,7 @@
 
 import { applyAutoHealRemoval } from "./autoHeal";
 import { detectCollapseOnResourceChange, type ResourceSnapshot } from "./collapse";
+import { applyDamageThroughTemporaryPv } from "./temporaryPv";
 import type { ActiveCondition, Character, CharacterResources } from "./types";
 
 const RECURSOS_PADRAO: Required<Pick<CharacterResources, "pv" | "pe" | "mana" | "integridade">> = {
@@ -43,10 +44,11 @@ export interface GmDamageResult {
 export function applyGmDamage(character: Character, resource: "pv" | "pe", amount: number, nowIso: string): GmDamageResult {
   const recursos = { ...RECURSOS_PADRAO, ...character.recursos_atuais };
   const before = recursos[resource];
-  const after = Math.max(0, before - Math.max(0, Math.trunc(amount)));
+  const pvDamage = resource === "pv" ? applyDamageThroughTemporaryPv(character, amount) : null;
+  const after = pvDamage?.pvAfter ?? Math.max(0, before - Math.max(0, Math.trunc(amount)));
   const beforePvPe: ResourceSnapshot = { pv: recursos.pv, pe: recursos.pe };
   const afterPvPe: ResourceSnapshot = { ...beforePvPe, [resource]: after };
-  const baseChar: Character = { ...character, recursos_atuais: { ...recursos, [resource]: after } };
+  const baseChar: Character = pvDamage?.character ?? { ...character, recursos_atuais: { ...recursos, [resource]: after } };
   const colapso = detectCollapseOnResourceChange(baseChar, beforePvPe, afterPvPe, nowIso);
   return { character: colapso.character, before, after };
 }

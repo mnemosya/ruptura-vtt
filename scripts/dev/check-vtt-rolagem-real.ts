@@ -27,6 +27,7 @@ import { config as loadDotenv } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { chromium, type ConsoleMessage, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
+import { garantirAlcancavel } from "./painelDaSessao";
 
 loadDotenv({ path: ".env.local" });
 
@@ -176,7 +177,7 @@ async function main() {
   page.on("console", (m) => { if (erroRelevante(m)) errosConsole.push(m.text()); });
 
   try {
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
 
     // ── 9 — sem token selecionado, o teste não inventa ficha ────────
@@ -186,7 +187,19 @@ async function main() {
     ok("9 (sem token selecionado o teste explica, não inventa atributo)", semFicha > 0, `aviso=${semFicha}`);
 
     // ── seleciona o token do personagem ────────────────────────────
-    await page.locator(".rv-token").first().click();
+    // O token pode nascer fora da viewport, e aí `locator.click()` fica
+    // 30s esperando "visible, enabled and stable" e mata a suíte sem
+    // dizer que o problema é de enquadramento — todos os critérios
+    // abaixo dependem deste clique. `garantirAlcancavel` recolhe o
+    // painel, afasta o zoom até caber, e remede a cada tentativa
+    // (afastar move tudo).
+    const pontoToken = await garantirAlcancavel(page, async () => {
+      const b = await page.locator(".rv-token").first().boundingBox();
+      return b ? { x: b.x + b.width / 2, y: b.y + b.height / 2 } : null;
+    });
+    ok("9b (o token do personagem está ao alcance do ponteiro)", pontoToken !== null,
+      pontoToken ? "" : "coberto pelo painel ou fora da viewport");
+    await page.mouse.click(pontoToken!.x, pontoToken!.y);
     // Espera a FICHA chegar, não um relógio: `lerContextoRolagemAction`
     // é uma ida ao servidor e, com a rota recém-compilada, passa muito
     // dos 900ms fixos que estavam aqui — os seletores ainda nem

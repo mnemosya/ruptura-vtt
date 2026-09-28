@@ -9,9 +9,24 @@
  * `pointer-events: none` (via CSS) de propósito: os dados são só
  * espetáculo, o mapa por baixo continua clicável/arrastável enquanto
  * eles caem.
+ *
+ * DICE-01 — o overlay sai do palco e vai para o `body`, por portal.
+ *
+ * Antes era filho de `.rv-palco`, que é `overflow: hidden`: o recorte
+ * mantinha os dados longe da barra de ferramentas e do painel, mas
+ * também os escondia atrás de qualquer janela aberta, e confinava a
+ * queda a uma faixa à direita para que nenhum dado assentasse embaixo
+ * da janela "Rolar Dados" — não havia como ver o resultado.
+ *
+ * Indo para o `body` acima de tudo, o problema que motivava o recorte
+ * deixa de existir: o dado que cai sobre uma janela aparece SOBRE ela.
+ * E continua sem bloquear nada, porque `pointer-events: none` vale para
+ * a camada inteira — cobrir um controle por um instante é diferente de
+ * impedir o clique nele.
  */
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { PhysicsDiceArena, type PhysicsDieResult } from "./ArenaDados";
 import { usePedidoMesaDados } from "./ContextoMesaDados";
 
@@ -36,7 +51,11 @@ export function MesaDadosOverlay({ zoomMapa }: { zoomMapa?: number } = {}) {
     return () => { timersRef.current.forEach(clearTimeout); timersRef.current = []; };
   }, [token]);
 
-  if (!ctx?.pedido) return null;
+  // Portal só existe depois da hidratação; no servidor não há `body`.
+  const [montado, setMontado] = useState(false);
+  useEffect(() => { setMontado(true); }, []);
+
+  if (!ctx?.pedido || !montado) return null;
   const { pedido } = ctx;
 
   const aoAssentar = (results: PhysicsDieResult[]) => {
@@ -50,7 +69,7 @@ export function MesaDadosOverlay({ zoomMapa }: { zoomMapa?: number } = {}) {
     );
   };
 
-  return (
+  return createPortal(
     <div className="rv-mesa-dados-overlay" data-saindo={saindo || undefined} aria-hidden="true">
       <PhysicsDiceArena
         dice={pedido.dice}
@@ -61,6 +80,7 @@ export function MesaDadosOverlay({ zoomMapa }: { zoomMapa?: number } = {}) {
         zoomMapa={zoomMapa}
         onSettled={aoAssentar}
       />
-    </div>
+    </div>,
+    document.body,
   );
 }

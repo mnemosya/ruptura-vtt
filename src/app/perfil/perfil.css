@@ -1,0 +1,69 @@
+/* Perfil de usuário (NET-01). Serve às duas entradas: a página cheia em
+   /perfil e o modal interceptado sob /mesas. */
+
+.rv-perfil-pagina { min-height: 100dvh; display: flex; align-items: flex-start; justify-content: center; padding: 48px 16px; }
+
+.rv-perfil {
+  width: 100%; max-width: 560px; padding: 22px 24px 24px;
+  background: rgba(8, 20, 27, 0.92); border: 1px solid rgba(84, 172, 190, 0.28); border-radius: 3px;
+  color: rgba(216, 238, 248, 0.9);
+}
+.rv-perfil--vazio { padding: 28px 24px; color: rgba(184, 216, 232, 0.8); font-size: 14px; line-height: 1.6; }
+
+.rv-perfil-cab { display: flex; align-items: center; gap: 14px; padding-bottom: 16px; border-bottom: 1px solid rgba(84, 172, 190, 0.18); }
+.rv-perfil-face {
+  flex: none; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 3px;
+  background: rgba(0, 212, 255, 0.08); border: 1px solid rgba(84, 172, 190, 0.28); color: rgba(207, 234, 246, 0.85);
+}
+.rv-perfil-ident { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.rv-perfil-nome {
+  margin: 0; font-family: var(--font-orbitron), sans-serif; font-weight: 700; font-size: 19px;
+  letter-spacing: 0.04em; overflow-wrap: anywhere;
+}
+.rv-perfil-conta {
+  margin-left: auto; flex: none; font-size: 12px; letter-spacing: 0.06em; text-decoration: none;
+  color: rgba(0, 212, 255, 0.9); border: 1px solid rgba(84, 172, 190, 0.3); border-radius: 3px; padding: 6px 10px;
+}
+.rv-perfil-conta:hover, .rv-perfil-conta:focus-visible { background: rgba(0, 212, 255, 0.1); }
+
+.rv-perfil-secao { margin-top: 18px; }
+.rv-perfil-secao-titulo {
+  display: flex; align-items: center; gap: 7px; margin: 0 0 10px;
+  font-family: var(--font-orbitron), sans-serif; font-weight: 500; font-size: 11px;
+  letter-spacing: 0.22em; text-transform: uppercase; color: rgba(150, 174, 186, 0.85);
+}
+.rv-perfil-vazio-nota { margin: 0; font-size: 13px; color: rgba(150, 174, 186, 0.8); }
+.rv-perfil-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.rv-perfil-linha {
+  display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: baseline;
+  padding: 10px 12px; border: 1px solid rgba(84, 172, 190, 0.16); border-radius: 3px;
+  background: rgba(0, 212, 255, 0.04);
+}
+.rv-perfil-campanha { font-size: 14px; color: rgba(216, 238, 248, 0.92); text-decoration: none; }
+.rv-perfil-campanha:hover, .rv-perfil-campanha:focus-visible { text-decoration: underline; }
+.rv-perfil-papel { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(150, 174, 186, 0.85); }
+.rv-perfil-papel[data-papel="narrator"] { color: rgba(240, 190, 90, 0.9); }
+.rv-perfil-personagens { grid-column: 1 / -1; font-size: 12px; color: rgba(184, 216, 232, 0.72); }
+.rv-perfil-personagens em { font-style: italic; color: rgba(150, 174, 186, 0.6); }
+
+/* Modal — mesma caixa, sobre o véu. */
+.rv-perfil-veu {
+  position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 24px 16px;
+  background: rgba(2, 8, 12, 0.72); backdrop-filter: blur(2px);
+}
+.rv-perfil-caixa { position: relative; width: 100%; max-width: 560px; }
+.rv-perfil-caixa:focus { outline: none; }
+.rv-perfil-fechar {
+  position: absolute; top: 10px; right: 10px; z-index: 1; display: grid; place-items: center;
+  width: 30px; height: 30px; border-radius: 3px; cursor: pointer;
+  background: transparent; border: 1px solid transparent; color: rgba(150, 174, 186, 0.8);
+}
+.rv-perfil-fechar:hover, .rv-perfil-fechar:focus-visible {
+  border-color: rgba(84, 172, 190, 0.35); color: rgba(216, 238, 248, 0.95);
+}
+
+@media (max-width: 520px) {
+  .rv-perfil { padding: 18px 16px 20px; }
+  .rv-perfil-cab { flex-wrap: wrap; }
+  .rv-perfil-conta { margin-left: 0; }
+}

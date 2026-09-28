@@ -16,13 +16,10 @@
  *
  *  - ENTRANDO NA CAMPANHA VINDO DE FORA (do dashboard, ou por link
  *    direto): aqui o `layout.tsx` da campanha ainda está resolvendo
- *    acesso, log e roster, então a casca ainda NÃO existe — não há
- *    `.rm-shell-main` pra `min-height: 100%` resolver contra. Mesmo
- *    caso-limite aceito de `(global)/loading.tsx`: o painel perde a
- *    centralização vertical perfeita só nesse instante único (aparece
- *    perto do topo, sem quebra), porque não há chrome nenhum ali pra
- *    excluir de qualquer jeito — é o único carregamento do app que
- *    aparece sozinho, e é inerente à ordem de resolução do layout.
+ *    acesso, log e roster, então a casca ainda NÃO existe. A variante
+ *    `--campaign` usa `100dvh` nesse instante; quando a casca chega,
+ *    volta a medir 100% da área real de conteúdo. O painel permanece
+ *    centralizado nos dois contextos, sem salto vertical.
  *
  * Este fallback NÃO tem duração mínima garantida — o React pode
  * removê-lo a qualquer momento, assim que o conteúdo real fica pronto.
@@ -35,8 +32,8 @@ import { BootPanel } from "../../_boundaries/BootPanel";
 
 export default function CampaignLoading() {
   return (
-    <main className="mo-boot-stage mo-scope" aria-busy="true" data-testid="campaign-loading">
-      <BootPanel label="Carregando mesa" />
+    <main className="mo-boot-stage mo-boot-stage--campaign mo-scope" aria-busy="true" data-testid="campaign-loading">
+      <BootPanel label="Carregando mesa" variante="campaign-terminal" />
     </main>
   );
 }

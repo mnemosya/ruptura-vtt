@@ -119,7 +119,17 @@
 
 /* ═══════════════════════ MOLDURA ═══════════════════════ */
 
+/* `overflow: hidden` existe pro painel ABERTO — é ele que tem conteúdo
+   rolável pra conter. RECOLHIDO o painel é só um trilho de 52px, e o
+   recorte não continha nada: recortava as DICAS das abas, que abrem pra
+   esquerda, fora da faixa. Eram invisíveis por isso, não por falta de
+   estilo. */
 .rv-painel { height: 100%; min-height: 0; overflow: hidden; }
+/* RECOLHIDO ele é uma peça flutuante de altura do CONTEÚDO — o
+   `height: 100%` acima vale pro painel docado, que É a lateral da
+   janela. Sem isto a coluna de 6 abas esticava os 900px da tela com um
+   vazio embaixo. */
+.rv-painel[data-aberto="false"] { overflow: visible; height: auto; background: transparent; border-left: none; }
 .rv-painel[data-hidratado="true"] { transition: width var(--mo-dur-enter, .18s) var(--mo-ease-out, ease); }
 .rv-painel[data-redimensionando="true"] { transition: none; user-select: none; }
 @media (prefers-reduced-motion: reduce) {
@@ -127,64 +137,116 @@
   .rv-painel *, .rv-painel *::before, .rv-painel *::after { transition: none !important; animation: none !important; }
 }
 
-/* Faixa de abas — cabeçalho técnico, como a topbar do Console. */
+/* Faixa de abas — cabeçalho técnico, como a topbar do Console. Mais
+   alta e com vão entre as abas: elas são a mesma peça dos trilhos de
+   ferramentas e do Console, mas DEITADAS e com mais espaço, porque
+   aqui a largura sobra e é a altura que é escassa. */
 .rv-painel[data-aberto="true"] .rv-painel-abas {
-  height: 42px; padding: 0 6px;
-  background: var(--pn-cab);
+  height: 48px; padding: 0 8px; gap: 8px;
+  /* HERDA o painel: `--pn-cab` é mais escuro que ele e, num cartão
+     flutuante, a faixa escura no topo lia como outra peça grudada. O
+     fio de baixo já separa cabeçalho de conteúdo. */
+  background: transparent;
   border-bottom: 1px solid var(--pn-line);
   overflow: visible;
 }
 .rv-painel[data-aberto="false"] .rv-painel-abas { background: transparent; }
 
-.rv-aba {
-  width: 34px; height: 34px; border-radius: 2px;
-  color: var(--rv-ink-faint);
-  border: 1px solid transparent; background: transparent;
+/* A MESMA PEÇA dos outros dois trilhos (`.rv-ferr-btn` no mapa,
+   `.rc-tabrail-btn` no Console): caixa de canto reto, borda própria,
+   fundo escuro. Elas já tinham sido igualadas uma vez — ao estado
+   ANTIGO da barra de ferramentas, que depois mudou e deixou estas
+   para trás. Selecionado é selecionado: não faz sentido cada trilho
+   da mesa dizer isso de um jeito.
+
+   O que muda aqui é a FORMA, não a linguagem: deitadas, mais altas e
+   dividindo a largura, porque nesta faixa sobra largura e falta
+   altura. */
+/* CLASSE DUPLICADA: `.rv-aba` também existe no `vtt.css` (a ESTRUTURA
+   mora lá, cor e estado moram aqui), e com a mesma especificidade quem
+   vence é a ordem das folhas — que era a de lá. Sem a duplicata, borda,
+   fundo e raio declarados aqui não chegavam à tela. */
+/* QUADRADA quando recolhida — 36px, o mesmo do `.rv-ferr-btn`: ali ela
+   é um trilho vertical de ícones como o das ferramentas, e 34×38 lia
+   como retângulo. A altura de 38 e a largura dividida valem só no modo
+   expandido, onde a faixa é deitada (ver a regra logo abaixo). */
+.rv-aba.rv-aba {
+  /* 36×36 — EXATAMENTE `.rv-ferr-btn`. Era 34, e os 2px de diferença
+     não se liam como escolha: ícone, raio, borda e vão já eram os
+     mesmos, então a aba parecia o botão de ferramenta ligeiramente
+     encolhido. Duas faixas de ícones em lados opostos da mesma tela
+     são a mesma peça. */
+  width: 36px; height: 36px; border-radius: var(--rv-r-peca);
+  color: #7f95b3;
+  border: 1px solid rgba(0, 212, 255, .15);
+  background: #0c1526;
   transition: color .14s, background .14s, border-color .14s;
 }
-/* Hover é NEUTRO: só a tinta acende e a superfície sobe um degrau
-   (`--rv-raise`, o mesmo clareado translúcido das espinhas). Antes ele
-   usava o mesmo `--rv-cy-soft` da aba ATIVA, e as duas ficavam quase
-   idênticas — passar o mouse parecia selecionar. O acento fica
-   reservado à seleção, que é o único estado que precisa gritar. */
-.rv-aba:hover { color: var(--rv-ink); background: var(--rv-raise); }
-/* Aba ativa: EXATAMENTE o mesmo estado de uma ferramenta selecionada na
-   barra da esquerda (`.rv-ferr-btn[aria-pressed="true"]`) — tinta
-   ciano, fundo `--rv-cy-soft` e o fio de 1px em volta. Selecionado é
-   selecionado: não faz sentido a barra de ferramentas dizer isso de um
-   jeito e a barra de abas de outro. */
-.rv-aba[aria-selected="true"] {
-  color: var(--pn-cy);
-  background: var(--rv-cy-soft);
-  border-color: color-mix(in srgb, var(--pn-cy) 22%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pn-cy) 22%, transparent);
+/* Deitadas, elas esticam: a altura sobe pra 38 e a largura se divide
+   (a divisão vem do `vtt.css`, que já faz `flex: 1 1 0` no aberto). */
+.rv-painel[data-aberto="true"] .rv-aba.rv-aba { height: 38px; }
+/* Hover e ativo compartilham a borda; o que os separa é a FORÇA do
+   mesmo fundo (.09 contra .14) e o brilho.
+   O ativo era `#123640` CHAPADO — opaco, ele não era o mesmo azul mais
+   forte, era outra superfície, e puxava o olho mais que a aba merece
+   num painel onde o conteúdo é que importa. Translúcido, os dois
+   estados passam a ser o mesmo gesto em duas intensidades. */
+/* Duas camadas, pelo mesmo motivo do trilho de ferramentas: recolhido,
+   o painel é uma fileira de peças SOBRE O MAPA, e uma lavagem posta no
+   lugar do `#0c1526` deixaria os hexágonos aparecerem por dentro da
+   aba. A lavagem vai por cima; a peça continua opaca. */
+.rv-aba.rv-aba:hover {
+  color: #d3f4ff; border-color: #108bac;
+  background: linear-gradient(rgba(0, 212, 255, .09), rgba(0, 212, 255, .09)), #0c1526;
 }
-.rv-aba[aria-selected="true"]:hover { color: var(--pn-cy); background: color-mix(in srgb, var(--pn-cy) 14%, transparent); }
+.rv-aba.rv-aba[aria-selected="true"] {
+  color: var(--pn-cy);
+  border-color: #108bac;
+  background: linear-gradient(rgba(0, 212, 255, .14), rgba(0, 212, 255, .14)), #0c1526;
+  box-shadow: 0 0 9px rgba(0, 212, 255, .25);
+}
+.rv-aba.rv-aba[aria-selected="true"]:hover {
+  color: var(--pn-cy);
+  background: linear-gradient(rgba(0, 212, 255, .14), rgba(0, 212, 255, .14)), #0c1526;
+}
 /* A barra grossa de seleção (2px colada na borda da faixa) saiu: com o
    fio em volta da aba ela virava um segundo anúncio do mesmo estado. */
 .rv-aba:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 2px; }
+/* EXPANDIR — mesma casca das abas, mas não é uma delas: não seleciona
+   nada, devolve o painel. Fica um pouco apagado em repouso pra não
+   disputar com a aba ativa, que é quem diz ONDE você vai voltar. */
+.rv-aba.rv-aba--expandir { color: var(--pn-dim); }
+.rv-aba.rv-aba--expandir:hover { color: var(--pn-cy); }
 
-/* Badge — mono, pequeno, contraste alto. Âmbar = atenção (não lidos);
-   ciano = informação. */
-.rv-aba-badge {
-  top: -3px; right: -3px; min-width: 15px; height: 15px; padding: 0 4px;
-  border-radius: var(--pn-radius);
-  background: var(--pn-am); color: #10202b;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; font-weight: 700; letter-spacing: 0;
-}
-.rv-aba-badge[data-tom="info"] { background: var(--rv-cy); color: #04141c; }
 
+/* A ALÇA É INVISÍVEL ATÉ O HOVER, então o que ela tem pra ser achada é
+   o TAMANHO e o cursor. Ela ficava 3px pra FORA do painel, e esses 3px
+   caem sobre o mapa — que desenha por cima: de uma faixa de 7px,
+   sobravam 4 que respondiam ao clique. Agora ela mora inteira dentro da
+   borda, e são 10px que nenhum outro elemento disputa. */
 .rv-painel-alca {
-  position: absolute; left: -3px; top: 0; bottom: 0; width: 7px; z-index: 3;
+  position: absolute; left: 0; top: 0; bottom: 0; width: 10px; z-index: 3;
   cursor: col-resize; background: transparent; touch-action: none;
 }
 .rv-painel-alca::after {
-  content: ""; position: absolute; left: 3px; top: 0; bottom: 0; width: 1px;
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 1px;
   background: transparent; transition: background .14s;
 }
 .rv-painel-alca:hover::after, .rv-painel-alca:focus-visible::after { background: var(--pn-cy); }
 .rv-painel-alca:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: -2px; }
+/* ARRASTOU ALÉM DO LIMIAR: soltar aqui RECOLHE. O fio da alça troca de
+   cor antes de o gesto terminar — sem esse aviso, o painel sumiria de
+   repente e pareceria um bug, não uma escolha. `--pn-perigo` é a mesma
+   cor que o × de fechar já usava no hover: é a cor de "isto some". */
+.rv-painel[data-vai-recolher="true"] .rv-painel-alca::after { background: var(--pn-perigo); }
+/* O recuo do painel NÃO é um degrau fixo: ele acompanha o arrasto,
+   deslizando e desbotando pixel a pixel (o `transform` e a `opacity`
+   vêm inline, de `PainelVtt`). Aqui só fica a VOLTA: soltar antes do
+   limiar devolve o painel ao lugar com um respiro, senão ele salta.
+   Durante o arrasto a transição é desligada — ela ia atrasar o painel
+   em relação à mão, que é justamente o que se quer evitar. */
+.rv-painel { transition: transform .16s ease-out, opacity .16s ease-out; }
+.rv-painel[data-redimensionando="true"] { transition: none; }
 
 /* Drawer — flutua sobre a borda direita, SEM véu (o mapa continua
    clicável). `100dvh` é o que sobrevive ao teclado virtual no celular. */
@@ -201,24 +263,6 @@
 .rv-painel-tabpanel { display: flex; flex: 1; flex-direction: column; height: 100%; min-height: 0; overflow: hidden; }
 .rv-painel-tabpanel[hidden] { display: none; }
 
-.rv-painel-cab {
-  flex: none; display: flex; align-items: center; gap: 8px;
-  padding: 8px 9px 6px;
-  border-bottom: 1px solid var(--pn-line-hair);
-}
-.rv-painel-titulo {
-  flex: 1; margin: 0; padding: 0;
-  font-family: var(--rv-display);
-  font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--rv-cy);
-}
-.rv-painel-fechar {
-  width: 24px; height: 24px; flex: none; display: grid; place-items: center;
-  border: 1px solid var(--pn-line-soft); border-radius: var(--pn-radius);
-  background: transparent; color: var(--pn-dim); cursor: pointer;
-}
-.rv-painel-fechar:hover { border-color: var(--pn-perigo); color: var(--pn-perigo); }
-.rv-painel-fechar:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 2px; }
 
 /* Estrutura interna de cada aba: cabeçalho e rodapé fixos, só o miolo
    rola. É a regra que mantém o composer sempre inteiramente visível.
@@ -229,8 +273,15 @@
   container-type: inline-size; container-name: pnaba;
 }
 .rv-pn-scroll {
+  /* A cor com que o véu de rolagem se funde (`[data-rolavel]` no
+     chassi) — o fundo do próprio painel. */
+  --rv-veu-cor: #080f1e;   /* o fundo do painel (`.rv-painel`) */
+  --rv-veu-recuo: 8px;     /* o padding abaixo, que o véu precisa cobrir */
   flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden;
-  padding: 6px 8px 8px; scrollbar-width: thin;
+  /* 8px nos quatro lados — o mesmo número do vão entre os cartões. Era
+     6px em cima e 8 nos outros, diferença que ninguém pediu e que
+     desalinhava o primeiro cartão do resto da coluna. */
+  padding: 8px; scrollbar-width: thin;
 }
 .rv-pn-rodape {
   flex: none; display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
@@ -352,13 +403,18 @@
    primária carrega o acento. Antes toda a família vinha acentuada
    (`--pn-a-line` no fio, `--pn-a` na tinta), então "Atualizar" gritava
    tanto quanto "Criar personagem" e a hierarquia do rodapé sumia. */
-.pn-btn {
+.pn-btn.pn-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 6px 11px; min-height: 26px;
-  border: 1px solid var(--rv-line-strong); border-radius: 2px;
-  background: var(--rv-sunken); color: var(--rv-ink-dim);
-  font-family: var(--rv-display);
-  font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  border: 1px solid var(--rv-line-strong); border-radius: var(--rv-r);
+  background: #0c1526; color: var(--rv-ink-dim);
+  /* CORPO, e não display: em caixa alta e com espaçamento, o Chakra
+     Petch pesava demais pra um botão secundário de painel — ele
+     competia com o nome do personagem ao lado. A classe segue
+     duplicada porque `.rm-root button` continua lá; o que mudou foi a
+     família pedida, não o mecanismo. */
+  font-family: var(--rv-body);
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
   cursor: pointer; text-decoration: none;
   transition: background .14s, border-color .14s, color .14s;
 }
@@ -384,6 +440,7 @@
 /* PAINEL TÉCNICO — `.rc-panel`, canto cortado. */
 .pn-painel {
   position: relative; padding: 8px 10px;
+  border-radius: 4px 0 4px 0;
   border: 1px solid var(--pn-line-soft); background: var(--pn-panel);
   clip-path: polygon(0 0, calc(100% - var(--pn-notch)) 0, 100% var(--pn-notch), 100% 100%, var(--pn-notch) 100%, 0 calc(100% - var(--pn-notch)));
 }
@@ -548,34 +605,60 @@
   text-align: center; overflow-wrap: anywhere;
 }
 
+/* OS DOIS BOTÕES FLUTUANTES DO FEED — "novas mensagens" e "ir para o
+   fim" — são A MESMA PEÇA, sem variante nenhuma: mesmo tamanho, mesmo
+   respiro, mesmo canto, mesmo fio, mesma tinta. Eles ocupam o mesmo
+   lugar na tela e levam ao mesmo lugar no feed; o que muda é só a
+   FRASE, que é o que de fato difere entre os dois casos.
+
+   RAIO PRÓPRIO nos quatro cantos: a peça flutua solta sobre o feed, e
+   o 4px do chassi — pensado pra peça encostada em outra — deixava cara
+   de retângulo cortado. */
 .rv-pn-chat-novas {
   position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 2;
-  display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
-  border: 1px solid var(--pn-cy); border-radius: var(--pn-radius);
-  background: var(--rv-panel); color: var(--pn-cy);
+  display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px;
+  /* FIO NEUTRO, tinta ciana. O fio ciano veio do aviso de novas e era
+     o que sobrava quando os dois viraram a mesma peça: uma moldura
+     acesa em volta de um botão que só leva ao fim da lista. O ciano
+     fica no texto e no ícone, que é onde ele diz "clique aqui". */
+  border: 1px solid var(--pn-line-soft); border-radius: var(--rv-r-md);
+  background: #101b33; color: var(--pn-cy);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
-  cursor: pointer; box-shadow: 0 4px 14px rgba(0, 0, 0, .5);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  cursor: pointer; box-shadow: 0 6px 18px rgba(0, 0, 0, .6);
+  transition: border-color .14s, background .14s, color .14s;
 }
+.rv-pn-chat-novas svg { width: 15px; height: 15px; }
+.rv-pn-chat-novas:hover { background: #16233f; border-color: color-mix(in srgb, var(--pn-cy) 45%, transparent); }
 .rv-pn-chat-novas:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 2px; }
+/* VOLTAR PRO FIM é o mesmo botão com outro recado: ninguém chegou, só
+   se subiu muito. Neutro no TOM — o ciano é do aviso de NOVIDADE, e
+   usá-lo aqui mandaria a pessoa descer achando que perdeu algo — mas
+   não no TAMANHO: ele é a saída de quem se perdeu no meio de um feed
+   longo, e no corpo do aviso de novas (3px de respiro, 10px de fonte)
+   ficava uma etiqueta que não se lia como botão. */
+
 
 /* ── COMPOSER ─────────────────────────────────────────────────── */
 .pn-composer {
   flex: none; display: flex; flex-direction: column; gap: 5px;
   padding: 6px 8px 8px;
   border-top: 1px solid var(--pn-line);
-  background: var(--rv-sunken);
+  /* O fundo das PEÇAS, o mesmo dos cartões — `--rv-sunken` era o tom
+     de sulco, de quando o painel era uma coluna e o composer um rebaixo
+     dentro dela. */
+  background: #0c1526;
 }
 .pn-composer-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 /* `padding: 2px 6px` com fonte em caixa alta e `letter-spacing` deixava
    o texto encostado no fio dos dois lados — o chip parecia recortado.
    Altura própria (`min-height`) em vez de depender só da linha. */
-.pn-chipbtn {
+.pn-chipbtn.pn-chipbtn {
   display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; min-height: 26px; max-width: 100%;
-  border: 1px solid var(--pn-a-line); border-radius: 2px;
+  border: 1px solid var(--pn-a-line); border-radius: var(--rv-r);
   background: var(--pn-a-soft); color: var(--pn-a);
   font-family: var(--rv-display);
-  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
   transition: border-color .14s, background .14s;
 }
 .pn-chipbtn:hover { border-color: var(--pn-a); }
@@ -596,15 +679,28 @@
   position: relative;
   flex: 1; min-width: 0; display: flex; align-items: flex-start;
   padding: 8px 12px;
-  border: 1px solid var(--rv-line, #182338); border-radius: 2px;
+  border: 1px solid var(--rv-line, #182338); border-radius: var(--rv-r);
   background: var(--rv-panel, #0c1420);
-  transition: border-color .14s;
+  transition: border-color .14s, background .14s;
 }
 .pn-composer-campo::before {
   content: "\203a"; flex: none;
   padding-right: 8px;
   color: #35c7d8; font: 400 10px/15px var(--font-mono), monospace;
   pointer-events: none;
+}
+/* HOVER antes do foco: o campo é um alvo grande e mudo, e sem resposta
+   nenhuma ao passar o mouse ele lia como uma caixa desenhada, não como
+   algo em que se clica pra escrever.
+
+   O MESMO tratamento dos cartões do feed — borda `#2a3b58` e um sopro
+   de 1,5% de branco no fundo —, porque o composer está logo abaixo
+   deles na mesma coluna. `--rv-line-strong` sozinho não dava: é um
+   degrau só acima do fio parado, e num campo desta largura a diferença
+   não se lê. O ciano continua reservado pro FOCO. */
+.pn-composer-campo:hover {
+  border-color: #2a3b58;
+  background: linear-gradient(rgba(255, 255, 255, .015), rgba(255, 255, 255, .015)), var(--rv-panel, #0c1420);
 }
 .pn-composer-campo:focus-within { border-color: color-mix(in srgb, #35c7d8 55%, transparent); }
 /* `.rv-painel textarea { font-family: inherit }` (lá em cima nesta
@@ -630,7 +726,7 @@
 .pn-composer-enviar {
   flex: none; width: 36px; height: 36px; align-self: flex-end;
   display: grid; place-items: center;
-  border: 1px solid #1c4a52; border-radius: 2px;
+  border: 1px solid #1c4a52; border-radius: var(--rv-r);
   background: #0b1924; color: #35c7d8; cursor: pointer;
   transition: background .14s, border-color .14s;
 }
@@ -644,9 +740,26 @@
 
 /* ═══ CHAT B — dossiê de campo do protótipo, sobre dados reais ═══ */
 .rv-painel .rv-pn-chat { background: linear-gradient(160deg, rgba(11,19,34,.96), rgba(8,14,25,.98)); }
-.rv-pn-chat .rv-pn-chat-scroll { padding: 9px 10px 10px; gap: 7px; }
+/* UM VÃO SÓ, 8px — o mesmo número do padding do container e o mesmo que
+   a lista de personagens usa. Eram 9/10/10 de padding e 7 de gap: três
+   números para dizer "um respiro", e nenhum deles igual ao do lado. */
+.rv-pn-chat .rv-pn-chat-scroll {
+  /* A BANDEJA RECOLHIDA ocupa o pé da coluna e o feed tem que contar
+     com ela em dois lugares: no respiro de baixo (senão o último
+     cartão nasce debaixo dela) e no ponto onde o véu descansa. Um
+     número só pros dois — `--pn-bandeja-altura` é a altura dela mais
+     o vão até o composer. */
+  --pn-bandeja-altura: 37px;
+  /* 16 = os 8 do respiro da coluna mais os 8 do vão entre a bandeja e
+     o composer, que a medida não inclui. */
+  padding: 8px 8px calc(var(--pn-bandeja-altura) + 16px); gap: 8px;
+}
+/* SEM VÉU no feed. Tentado e removido: a bandeja de dados flutua no pé
+   dele e nenhuma posição do degradê ficou boa. O atalho "ir para o
+   fim" é o que avisa que há mais conversa. */
 .rv-pn-chat .pn-cartao {
   padding: 8px 9px 8px 34px;
+  border-radius: 4px 0 4px 0;
   border-color: rgba(43,63,94,.72);
   background: linear-gradient(145deg, rgba(11,19,34,.97), rgba(7,13,23,.98));
   clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
@@ -679,7 +792,7 @@
 .rv-pn-chat .pn-cartao-autor { text-transform: uppercase; letter-spacing: .06em; font-size: 10px; }
 .rv-pn-chat .pn-cartao-corpo { padding-top: 2px; }
 .rv-pn-chat .pn-cartao-acoes { padding-top: 2px; border-top: 1px solid var(--pn-line-hair); }
-.rv-pn-chat .pn-btn[data-primario="true"] { clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px)); }
+.rv-pn-chat .pn-btn[data-primario="true"] { border-radius: 2px 0 2px 0; clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px)); }
 
 /* MENSAGEM — Figma "FioCardB", nó 469:7881.
    Duas faixas empilhadas: cabeçalho com fundo próprio e corpo com a
@@ -699,8 +812,35 @@
 .rv-pn-chat .pn-msg {
   flex: none;
   gap: 0; padding: 0; overflow: hidden;
-  border: 1px solid var(--rv-line-2); border-radius: 2px;
-  background: linear-gradient(180deg, #0b1322, #080e19); clip-path: none;
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
+  /* O MESMO FUNDO DOS CARTÕES DE PERSONAGEM (`#0c1526`, o da aba
+     parada). Era um gradiente escurecendo pro pé (`#0b1322`→`#080e19`),
+     de quando o feed tinha fundo próprio; no painel de hoje ele deixava
+     os cartões do chat mais escuros que os do diretório, e as duas
+     listas parecem peças do mesmo painel.
+
+     A ESPINHA e o cabeçalho continuam um degrau acima porque usam
+     `--rv-raise` — um clareado TRANSLÚCIDO, não um hex —, então a
+     proporção entre os dois se mantém sozinha sobre o fundo novo. */
+  background: #0c1526; clip-path: none;
+  transition: border-color .14s, background .14s;
+}
+/* HOVER: o fio sobe pro `--rv-line-strong` e o fundo ganha um degrau —
+   o mesmo `--rv-raise` (clareado translúcido) que a espinha e o
+   cabeçalho do cartão já usam, então o cartão inteiro sobe junto sem
+   inventar cor nova.
+
+   Só a borda não bastava: num feed de cartões empilhados, uma linha de
+   1px mudando de tom some no meio das outras bordas. Ainda assim fica
+   longe de um botão — nada de acento, nada de ciano: o cartão do chat
+   não é clicável, e o hover só diz qual mensagem está sob o cursor. */
+.rv-pn-chat .pn-msg:hover, .rv-pn-chat .pn-cartao:hover {
+  /* O PESO FICA NA BORDA. O fundo é só um sopro — 1,5% de branco por
+     cima do fundo do cartão (duas paradas iguais num gradiente é como
+     se sobrepõe uma camada translúcida a um hex). Com 4% a mancha
+     chamava mais atenção que a mensagem que ela deveria destacar. */
+  border-color: #2a3b58;
+  background: linear-gradient(rgba(255, 255, 255, .015), rgba(255, 255, 255, .015)), #0c1526;
 }
 /* O desenho não tem fio de acento; ele sobrevive SÓ onde carrega
    informação que o cabeçalho não dá: narração e mensagem privada. */
@@ -748,7 +888,10 @@
 
 .rv-pn-chat .pn-composer {
   padding: 8px 10px 10px; border-top-color: rgba(28,43,69,.9);
-  background: linear-gradient(180deg, rgba(8,14,25,.92), rgba(6,11,20,.98));
+  /* O FUNDO DOS CARTÕES (`#0c1526`): o composer é a peça de baixo da
+     mesma coluna, e o degradê quase preto que ele tinha o afundava —
+     lia como o fim do painel, não como o campo em que se escreve. */
+  background: #0c1526;
 }
 /* Campo e botão de enviar NÃO têm mais sobrescrita aqui: as cores do
    Figma (`#0c1420`/`#182338` no campo, `#0b1924`/`#1c4a52` no botão)
@@ -756,7 +899,7 @@
    era inversão minha, não do design. */
 
 /* Chat · B original — ShellB/dossiê, sem reaproveitar o card compacto anterior. */
-.rv-pn-chat .pn-cartao { display:block; padding:0; border:1px solid var(--rv-line-2); border-radius:2px; background:linear-gradient(180deg,#0b1322,#080e19); clip-path:none; overflow:visible; }
+.rv-pn-chat .pn-cartao { display:block; padding:0; border:1px solid var(--rv-line-2); border-radius:var(--rv-r); background:#0c1526; clip-path:none; overflow:visible; transition:border-color .14s, background .14s; }
 .rv-pn-chat .pn-cartao::before,.rv-pn-chat .pn-cartao::after { content:none; }
 .pn-cartao-layout { display:flex; min-width:0; }
 /* Fundo da espinha: o MESMO TOKEN da espinha das janelas de ferramenta
@@ -795,15 +938,54 @@
 .pn-cartao-canto--br{bottom:4px;right:4px;border-bottom-width:1px;border-right-width:1px}
 .rv-pn-chat .pn-modulos { gap:8px; }.rv-pn-chat .pn-modulo { background:transparent; border-color:transparent; padding:3px 0; }.rv-pn-chat .pn-modulo-rotulo { font-size:8.5px; letter-spacing:.16em; }.rv-pn-chat .pn-modulo-valor { font-size:14px; }
 .rv-pn-chat .pn-faixa { border-radius:0; }
-/* Bandeja de Dados — a moldura é do design (`chat % dice tray`), que a
-   desenha inteira no componente; aqui só reservamos a faixa do chat. */
-.pn-bandeja-dados { flex: none; margin: 10px 10px 0; }
+/* ── O QUE FLUTUA SOBRE O FEED ───────────────────────────────────────
+   O atalho de rolagem e a Bandeja de Dados, empilhados no pé da
+   conversa e POR CIMA dela.
+
+   A bandeja era uma faixa fixa entre o feed e o composer: uma barra
+   cortando a coluna em dois, roubando altura da leitura o tempo todo
+   por um painel que se abre de vez em quando. Sobreposta, ela só ocupa
+   espaço enquanto interessa.
+
+   A casca é transparente ao clique; só os filhos recebem. Senão a
+   faixa vazia em volta da bandeja bloquearia o cartão embaixo dela. */
+.rv-pn-chat-sobreposto {
+  /* ENCOSTADA NO PÉ: a bandeja é a peça de cima do composer, não uma
+     caixa boiando sobre o feed. Grudada, as duas leem como um bloco só
+     de "o que eu faço", e o feed fica inteiro acima delas. */
+  /* MARGEM LATERAL de 8px, alinhada com o padding do feed: a bandeja
+     nasce na mesma coluna dos cartões, e não sangrando de borda a
+     borda. Embaixo ela continua encostada — é ali que ela se junta ao
+     composer. */
+  position: absolute; left: 8px; right: 8px; bottom: 0; z-index: 3;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  pointer-events: none;
+}
+.rv-pn-chat-sobreposto > * { pointer-events: auto; }
+/* Dentro da pilha o botão não se posiciona sozinho — quem ancora é a
+   casca, e é ela que garante que ele fique ACIMA da bandeja. */
+.rv-pn-chat-sobreposto .rv-pn-chat-novas { position: static; transform: none; margin-bottom: 0; }
+/* A moldura da bandeja é do design (`chat % dice tray`), desenhada
+   inteira no componente; daqui sai só a largura e a sombra que a
+   descola do feed. */
+.pn-bandeja-dados {
+  flex: none; width: 100%; margin: 0;
+  /* A sombra sobe, não desce: embaixo dela está o composer, encostado.
+     Uma sombra pra baixo cairia sobre a peça que ela toca. */
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, .55);
+}
+/* Encostada, ela perde os cantos e o fio de baixo — é ali que ela se
+   funde com o composer. */
+.rv-pn-chat-sobreposto .rv-bandeja-casca {
+  border-radius: var(--rv-r) var(--rv-r) 0 0;
+  border-bottom: none;
+}
 
 /* Menu compacto ancorado (autoria/visibilidade/contexto) — popover
    próprio, nunca um <select> nativo. */
 .pn-menu {
   position: fixed; z-index: 520; min-width: 172px; max-width: 264px; padding: 4px;
-  border: 1px solid var(--pn-line, var(--rv-line-max)); border-radius: 1px;
+  border: 1px solid var(--pn-line, var(--rv-line-max)); border-radius: var(--rv-r-sm);
   background: var(--rv-panel); box-shadow: 0 18px 40px rgba(0, 0, 0, .6);
   display: flex; flex-direction: column; gap: 1px;
   max-height: 52vh; overflow-y: auto;
@@ -811,7 +993,7 @@
 }
 .pn-menu-item {
   display: flex; align-items: center; gap: 7px; width: 100%; padding: 6px 8px;
-  border: none; border-radius: 1px; background: transparent; color: inherit;
+  border: none; border-radius: var(--rv-r-sm); background: transparent; color: inherit;
   text-align: left; cursor: pointer; font: inherit; font-size: 12.5px;
 }
 .pn-menu-item:hover, .pn-menu-item:focus-visible { background: var(--rv-cy-soft); color: #eaf6ff; }
@@ -829,34 +1011,165 @@
 
 /* ═══════════════════════ DIRETÓRIOS ═══════════════════════ */
 
+/* ── Tamanhos do diretório: +1px depois da troca de Inter por Rajdhani.
+   Rajdhani tem altura-de-x menor, então o MESMO `font-size` lê menor na
+   tela — o texto não encolheu, a fonte é que ocupa menos. O passo
+   repõe a leitura de antes sem mexer no ritmo entre os elementos, que
+   subiram todos juntos. */
 .rv-pn-busca {
   flex: none; display: flex; align-items: center; gap: 6px; margin: 6px 8px; padding: 5px 8px;
   border: 1px solid var(--pn-line-soft); border-radius: var(--pn-radius);
-  background: var(--pn-inset); color: var(--pn-dim); transition: border-color .14s;
+  /* `#0c1526` como as abas e os cartões: no painel flutuante, tudo que
+     se clica ou se digita é PEÇA, e peça tem a mesma superfície.
+     `--pn-inset` era o tom de campo rebaixado, de quando o painel era
+     uma coluna e o campo um sulco dentro dela. */
+  background: #0c1526; color: var(--pn-dim); transition: border-color .14s;
 }
 .rv-pn-busca:focus-within { border-color: var(--pn-cy); }
 .rv-pn-busca-input {
   flex: 1; min-width: 0; border: none; background: transparent; color: var(--pn-txt-forte);
-  font-family: var(--rv-body); font-size: 12.5px;
+  font-family: var(--rv-body); font-size: 13.5px;
+}
+/* O PLACEHOLDER É DO VTT, não do navegador. Sem regra, ele herdava o
+   cinza-padrão do agente do usuário — mais claro e com outro peso que
+   todo o resto do painel, o que fazia o campo parecer de outro
+   produto. `--pn-dim` é o mesmo tom dos rótulos vizinhos. */
+.rv-pn-busca-input::placeholder {
+  color: var(--pn-dim); opacity: 1; font-family: var(--rv-body); font-size: 13.5px;
 }
 .rv-pn-busca-input:focus-visible { outline: none; }
 .rv-pn-busca-input::-webkit-search-cancel-button { display: none; }
 .rv-pn-busca-limpar { flex: none; display: flex; border: none; background: transparent; color: var(--pn-dim); cursor: pointer; padding: 1px; }
 .rv-pn-busca-limpar:hover { color: var(--pn-txt-forte); }
 
-.rv-pn-filtros { flex: none; display: flex; align-items: center; gap: 6px; padding: 0 8px 6px; flex-wrap: wrap; }
-.rv-pn-select, .rv-pn-input {
-  padding: 3px 6px; border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
-  background: var(--pn-inset); color: var(--pn-txt-forte);
-  font-family: var(--font-mono), ui-monospace, monospace; font-size: 10px;
+/* UM VÃO SÓ NO PAINEL: 8px, o mesmo do padding do container. Antes
+   eram 6px entre cartões, 6px entre os controles e paddings de 6 e 8
+   misturados — três medidas quase iguais que só somavam ruído. Com um
+   número só, coluna, linha e cartão respiram na mesma cadência.
+
+   LINHA 1: a busca ocupa o que sobra, a ordenação tem largura própria
+   e fica encostada na direita.
+
+   A MARGEM É DA LINHA, não da busca. `.rv-pn-busca` traz `margin: 6px
+   8px` de quando vivia sozinha; mantida aqui, ela virava altura da
+   linha e o `stretch` do select copiava os 41px em vez dos 29px do
+   campo. Zerada, os dois esticam para a mesma altura — a do campo, que
+   é o mais alto — e ela continua acompanhando se o campo mudar. */
+.rv-pn-linha-busca { flex: none; display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; padding: 8px 8px 0; }
+/* QUEBRA EM VEZ DE ESPREMER. Na janela larga de Personagens a coluna da
+   lista tem 200px — lá a busca e a ordenação lado a lado sobravam 98px
+   pro campo, com o texto cortado no meio. A base de 150px é o ponto em
+   que o campo ainda lê "Buscar personagem"; abaixo disso a ordenação
+   desce pra linha de baixo, que é o mesmo arranjo de antes. */
+.rv-pn-linha-busca .rv-pn-busca { flex: 1 1 150px; min-width: 0; margin: 0; }
+/* MESMA ALTURA da busca. O select vem do bloco de filtros, que é mais
+   baixo (22px contra 29px); lado a lado na mesma faixa, a diferença
+   lia como desalinhamento. `align-self: stretch` copia a altura em vez
+   de repetir o número — se o campo de busca mudar de tamanho, o select
+   acompanha sozinho. */
+/* NUNCA ENCOLHE. Com `flex: 0 1 auto` ele cedia largura pro campo de
+   busca e "Manual" virava "Ma" — um seletor que não deixa ler a opção
+   escolhida não é um seletor. Quem cede é a busca, que tem base de
+   150px e quebra de linha quando não cabe. */
+.rv-pn-linha-busca .rv-pn-select { flex: none; padding-block: 0; }
+
+/* LINHA 2: criar à esquerda, switch à direita. */
+.rv-pn-filtros { flex: none; display: flex; align-items: center; gap: 8px; padding: 8px; flex-wrap: wrap; }
+/* Criar ancora na ESQUERDA — é a ação principal da faixa. Quebra junto
+   com ela: em coluna estreita os dois botões não cabem lado a lado. */
+.rv-pn-filtros-acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+/* O switch de recursos herda o interruptor do VTT (`.rv-fp-switch`) e
+   só encolhe: a coluna do painel é estreita, e o alvo de 34×19 do
+   formulário come metade da largura útil. */
+/* CLASSE DUPLICADA de propósito. `.rv-fp-switch` mora em `vtt.css` e
+   tem a mesma especificidade que `.rv-pn-switch`; empatadas, quem
+   ganha é a ordem das folhas — e era a de lá, então o `padding: 6px
+   2px` do formulário voltava e colava o switch na borda esquerda.
+   Repetir a classe desempata sem inventar um seletor falso.
+
+   Ele vive na linha dos botões de criar, encostado na direita: os dois
+   lados da faixa são "o que eu faço com a lista", e o switch é o único
+   que não cria nada. O `padding` zerado deixa a margem por conta da
+   linha (`.rv-pn-filtros`), pra ele encostar onde os outros encostam. */
+.rv-pn-switch.rv-pn-switch { padding: 0; margin-left: auto; font-size: 12px; gap: 7px; }
+.rv-pn-switch .rv-fp-switch-tr { width: 26px; height: 15px; }
+.rv-pn-switch .rv-fp-switch-tr::after { width: 11px; height: 11px; }
+.rv-pn-switch input:checked + .rv-fp-switch-tr::after { transform: translateX(11px); }
+/* SEM CAIXA ALTA. Os rótulos em versalete do painel nomeiam SEÇÕES; um
+   interruptor é controle, e gritar o nome dele o fazia disputar
+   atenção com os cabeçalhos sem ser um. */
+.rv-pn-switch .rv-fp-switch-txt {
+  font-family: var(--rv-body);
+  font-size: 12.5px; font-weight: 600; letter-spacing: normal; text-transform: none; color: var(--pn-dim);
 }
+.rv-pn-switch input:checked ~ .rv-fp-switch-txt { color: var(--pn-txt-forte); }
+.rv-pn-select.rv-pn-select, .rv-pn-input.rv-pn-input {
+  padding: 3px 6px; border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
+  background: #0c1526; color: var(--pn-txt-forte);
+  /* CORPO. Monoespaçado é a fonte de NÚMERO e metadado; "A–Z" e
+     "Manual" são palavras, e em JetBrains elas ficavam largas e
+     técnicas demais pro que o controle faz. */
+  font-family: var(--rv-body); font-size: 11px;
+}
+/* `appearance: none` pelo mesmo motivo do checkbox: com `auto`, o
+   select é desenhado pelo SISTEMA — caixa clara, seta própria, cantos
+   arredondados — e a borda e o fundo daqui viram sugestão que o macOS
+   ignora. Era o último controle do painel com cara de outro produto.
+   A seta passa a ser nossa, em SVG no fundo, na cor dos rótulos. */
+/* A COR É A DOS VIZINHOS. Branco (`--pn-txt-forte`) é o tom do
+   CONTEÚDO — o nome do personagem, o texto digitado na busca. Este
+   select é controle, como os botões de criar, o switch e o placeholder
+   ao lado, e todos estão em `--pn-dim`; sozinho em branco, ele pesava
+   mais que a lista que ordena. */
+/* CLASSE DUPLICADA aqui também, e por um motivo diferente do de cima:
+   a regra base usa o ATALHO `background`, que zera `background-image`
+   junto. Duplicada lá e não aqui, ela vencia e apagava a seta — o
+   select ficava sem indicação de que abre. */
+.rv-pn-select.rv-pn-select {
+  appearance: none; -webkit-appearance: none;
+  color: var(--pn-dim);
+  padding-right: 20px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%237f95b3' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+}
+.rv-pn-select.rv-pn-select:hover { border-color: var(--pn-line-soft); }
 .rv-pn-select:focus-visible, .rv-pn-input:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 1px; }
+/* No RODAPÉ ele vai pra borda direita: "Abrir Personagens" é a ação da
+   faixa, o filtro é o acessório — separados pelas pontas, ninguém
+   procura um achando que é o outro. */
+.rv-pn-rodape .rv-pn-check { margin-left: auto; }
 .rv-pn-check {
   display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
   font-family: var(--rv-display);
-  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--pn-dim);
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--pn-dim);
 }
-.rv-pn-check input { accent-color: var(--pn-cy); width: 12px; height: 12px; }
+/* A CAIXA É DESENHADA. `accent-color` só tinge o controle nativo, que
+   continua com o quadrado arredondado e o contorno claro do sistema —
+   o único elemento do painel que não parecia do painel. Aqui ela vira
+   um quadrado de canto reto com a linha e o ciano do resto. */
+.rv-pn-check input {
+  appearance: none; -webkit-appearance: none;
+  flex: none; width: 13px; height: 13px; margin: 0;
+  border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
+  background: var(--pn-inset); cursor: pointer;
+  display: grid; place-items: center;
+  transition: border-color .14s, background .14s;
+}
+.rv-pn-check:hover input { border-color: var(--pn-cy); }
+.rv-pn-check input:checked {
+  border-color: var(--pn-cy);
+  background: color-mix(in srgb, var(--pn-cy) 18%, var(--pn-inset));
+}
+/* O tique é desenhado com borda, não com glifo: fonte de ícone aqui
+   traria mais uma família tipográfica só pra este caractere. */
+.rv-pn-check input:checked::after {
+  content: ""; width: 3px; height: 6px; margin-top: -1px;
+  border: solid var(--pn-cy); border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+.rv-pn-check input:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 1px; }
 .rv-pn-campo { display: flex; flex-direction: column; gap: 4px; margin-top: 9px; }
 .rv-pn-campo > span {
   font-family: var(--rv-display);
@@ -864,12 +1177,12 @@
 }
 
 .rv-pn-chips { flex: none; display: flex; flex-wrap: wrap; gap: 3px; padding: 0 8px 6px; }
-.rv-pn-chip {
+.rv-pn-chip.rv-pn-chip {
   display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px;
   border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
-  background: var(--pn-inset); color: var(--pn-dim);
+  background: #0c1526; color: var(--pn-dim);
   font-family: var(--rv-display);
-  font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
 }
 .rv-pn-chip:hover { color: var(--pn-txt-forte); border-color: var(--pn-line-soft); }
 .rv-pn-chip[aria-pressed="true"] { background: var(--rv-cy-soft); color: var(--pn-cy); border-color: var(--pn-line); }
@@ -877,32 +1190,222 @@
 .rv-pn-chip-n { font-size: 10px; opacity: .75; }
 
 .rv-pn-no { display: flex; flex-direction: column; }
-.rv-pn-grupo { display: flex; align-items: center; gap: 4px; margin-top: 7px; }
-.rv-pn-grupo-btn {
-  flex: 1; min-width: 0; display: flex; align-items: center; gap: 5px; padding: 3px 2px;
-  border: none; background: transparent; color: var(--pn-dim);
+/* ── A PASTA ENGOLE O CONTEÚDO ───────────────────────────────────────
+   A borda deixa de ser do cabeçalho e passa a ser do BLOCO INTEIRO: o
+   cartão da pasta cresce e os personagens ficam dentro dele. Antes a
+   pasta era um cartão e os personagens outros, empilhados logo abaixo —
+   "estar dentro" era uma informação que só o respiro contava, e respiro
+   não é contenção.
+
+   O cabeçalho perde caixa própria porque ele passou a SER o topo desta:
+   duas bordas aninhadas a 1px de distância viram uma linha dupla. */
+.rv-pn-scroll--pers .rv-pn-no:has(> [data-testid="painel-personagens-pasta"]) {
+  margin-top: 7px; margin-bottom: 14px;
+  border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
+  /* UM DEGRAU ABAIXO das peças (`#0c1526`): a pasta CONTÉM cartões, e
+     container mais escuro que o conteúdo é o que faz o conteúdo
+     parecer estar dentro dele. Igual aos dois, a pasta e os cartões
+     dela viravam uma mancha só. */
+  background: #0a1120;
+  overflow: hidden;
+  transition: border-color .14s, background .14s;
+}
+/* HOVER: quem acende é o BLOCO, mas só quando o mouse está no
+   CABEÇALHO. O cabeçalho não tem mais caixa própria — a borda e o
+   fundo são do bloco —, então o `:hover` dele precisa subir até aqui.
+   E `:hover` no bloco inteiro acenderia a pasta quando o mouse passa
+   por um personagem lá dentro, que é o cartão do personagem, não o
+   dela. A lavagem é metade da do alvo de arrasto e sem o fio interno
+   dele: hover e "solta aqui" continuam dizendo coisas diferentes. */
+.rv-pn-scroll--pers .rv-pn-no:has(> [data-testid="painel-personagens-pasta"]:hover) {
+  border-color: color-mix(in srgb, var(--pn-cy) 35%, var(--pn-line-soft));
+  background: color-mix(in srgb, var(--pn-cy) 6%, #0a1120);
+}
+.rv-pn-scroll--pers .rv-pn-no > [data-testid="painel-personagens-pasta"] {
+  margin-top: 0; border: none; border-radius: 0; background: transparent;
+}
+/* SEM FIO separando cabeçalho e conteúdo. A borda do bloco já fecha o
+   conjunto, e uma linha atravessando por dentro dividia em dois o que
+   a mudança inteira existiu pra unir. O respiro de 8px basta. */
+/* O conteúdo engolido ganha o respiro POR DENTRO da borda. */
+.rv-pn-scroll--pers .rv-pn-no > [data-testid="painel-personagens-pasta"] ~ * {
+  margin: 8px;
+}
+/* ALVO DE SOLTA: QUEM ACENDE É O CONTAINER.
+   Nunca o cartão sob o cursor — acender um personagem específico dizia
+   que o arrastado entraria DENTRO dele, o que não existe. O que o
+   gesto decide é em qual container o personagem vai parar: numa pasta,
+   ou de volta na raiz.
+
+   A raiz não tem caixa própria, então quem acende é a área da lista,
+   por dentro. */
+.rv-pn-scroll--pers[data-alvo-raiz="true"] {
+  box-shadow: inset 0 0 0 1px var(--pn-cy);
+  background: color-mix(in srgb, var(--pn-cy) 6%, transparent);
+}
+
+/* A LINHA DE INSERÇÃO diz em que LUGAR DA FILA o arrastado entra — o
+   container responde "onde vai parar", isto responde "em que posição".
+   Marca o cartão sob o cursor, porque soltar insere ANTES dele.
+
+   DUAS TENTATIVAS ERRADAS, e as duas valem registro porque a segunda
+   nasceu de consertar a primeira pelo lado errado:
+
+   1. Fio absoluto em `top: -4px`, "pra não ocupar espaço". Invisível —
+      e não por ser fino: o cartão tem `overflow: hidden` (é o que faz o
+      avatar encostar na borda), então qualquer coisa desenhada FORA da
+      caixa é recortada. Estava lá, e o navegador cortava.
+   2. Empurrar a lista 10px pra abrir espaço. Aí a caixa crescia e
+      encolhia a cada tremida do mouse — a lista inteira pulava
+      enquanto se arrasta, que é pior que um indicador discreto.
+
+   O que funciona é desenhar POR DENTRO da borda de cima do cartão:
+   visível porque não é recortada, e sem mexer no layout porque não
+   ocupa espaço. Tracejada porque marca uma posição PREVISTA — contínuo
+   leria como "isto termina aqui".
+
+   Vale igual na raiz e dentro da pasta — é a mesma fila nos dois. */
+.rv-pn-scroll--pers .rv-pn-linha[data-insercao] {
+  border-top-color: transparent;
+}
+.rv-pn-scroll--pers .rv-pn-linha[data-insercao]::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 0;
+  /* Fina e translúcida: ela acompanha o cursor e some no instante
+     seguinte, então precisa ser lida de relance sem competir com o
+     cartão que marca. O brilho compensa a transparência — sem ele,
+     1,5px a 65% sumiria contra o fundo escuro. */
+  border-top: 1.5px dashed color-mix(in srgb, var(--pn-cy) 65%, transparent);
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--pn-cy) 45%, transparent));
+}
+/* DESCENDO, o fio vai pro pé do cartão: a peça entra DEPOIS dele (ver
+   `moverNaFila`). Desenhar sempre no topo faria o indicador apontar um
+   lugar e a solta entregar outro. */
+.rv-pn-scroll--pers .rv-pn-linha[data-insercao="depois"]::after {
+  top: auto; bottom: 0;
+}
+
+
+/* O realce de alvo é do BLOCO agora: era do cabeçalho, que não tem mais
+   borda pra acender. */
+.rv-pn-scroll--pers .rv-pn-no:has(> [data-testid="painel-personagens-pasta"][data-alvo="true"]) {
+  border-color: var(--pn-cy);
+  background: color-mix(in srgb, var(--pn-cy) 12%, var(--pn-inset));
+}
+/* A PASTA TEM CORPO. Ela era texto pálido solto sobre o fundo, sem
+   caixa nem linha — do lado de cartões com borda e avatar, lia como
+   legenda, não como o container que é. E agora ela é ARRASTÁVEL:
+   alvo de arrasto precisa parecer uma peça que se pega, senão não se
+   descobre que dá pra pegar.
+
+   Continua mais discreta que os cartões — é caminho, não destino. */
+.rv-pn-grupo {
+  display: flex; align-items: center; gap: 4px; margin-top: 7px;
+  /* O recuo da árvore é MARGEM, não padding: como padding ele somava ao
+     do botão e o respiro da esquerda ficava maior que o de cima. */
+  margin-left: var(--pn-recuo-grupo, 0px);
+  border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
+  background: var(--pn-inset);
+  transition: border-color .14s, background .14s, opacity .14s;
+}
+/* HOVER: fundo e borda acendem junto com o nome. A lavagem é a mesma
+   do alvo de arrasto em 6% — metade dela, e sem o `box-shadow` que
+   marca o alvo —, pra que passar o mouse nunca se confunda com "solta
+   aqui". */
+.rv-pn-grupo:hover {
+  border-color: color-mix(in srgb, var(--pn-cy) 35%, var(--pn-line-soft));
+  background: color-mix(in srgb, var(--pn-cy) 6%, var(--pn-inset));
+}
+/* A pasta em trânsito fica translúcida — o lugar de onde ela saiu
+   continua visível enquanto se escolhe onde ela entra. */
+.rv-pn-grupo[data-arrastando="true"] { opacity: .45; }
+/* O ALVO do arrasto: a linha de cima acende, porque é ali que a pasta
+   vai entrar — a de baixo desce. */
+/* ALVO. Serve pros dois arrastos que chegam aqui — outra pasta (muda de
+   posição) e um personagem (entra na pasta) —, e é o mesmo realce de
+   propósito: o que muda é o que se está arrastando, não o que a pasta
+   vira. */
+.rv-pn-grupo[data-alvo="true"] {
+  border-color: var(--pn-cy);
+  background: color-mix(in srgb, var(--pn-cy) 12%, var(--pn-inset));
+  box-shadow: inset 0 0 0 1px var(--pn-cy);
+}
+.rv-pn-grupo-btn.rv-pn-grupo-btn {
+  /* MESMO respiro nos quatro lados, e generoso: a pasta virou um
+     cartão de verdade — alvo de arrasto e container — e cartão
+     apertado não parece que cabe coisa dentro. */
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 12px;
+  /* `--pn-txt` como o nome do personagem: a pasta nomeia um conjunto
+     deles e não pode gritar mais alto que o conjunto. */
+  border: none; background: transparent; color: var(--pn-txt);
   font-family: var(--rv-display);
-  font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
   text-align: left; cursor: pointer;
 }
 .rv-pn-grupo-btn--estatico { cursor: default; }
+.rv-pn-grupo-glifo { color: var(--pn-cy); }
 .rv-pn-grupo-btn:hover { color: var(--pn-cy); }
 .rv-pn-grupo-btn:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 2px; }
 .rv-pn-grupo-rotulo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rv-pn-grupo-contagem { font-size: 10px; opacity: .7; }
+.rv-pn-grupo-contagem { font-size: 12px; opacity: .7; }
+/* `margin-left: auto` joga o chevron pra borda: entre o nome e ele fica
+   o vazio, que é o que deixa claro que os dois não são a mesma coisa —
+   um diz QUAL pasta, o outro diz se ela está aberta. */
+.rv-pn-grupo-chevron {
+  display: flex; flex: none; margin-left: auto; color: var(--pn-dim);
+  transform: rotate(-90deg); transition: transform .16s, color .14s;
+}
+.rv-pn-grupo-chevron[data-aberto="true"] { transform: rotate(0deg); }
+.rv-pn-grupo-btn:hover .rv-pn-grupo-chevron { color: var(--pn-cy); }
 .rv-pn-grupo-glifo { display: flex; flex: none; }
-.rv-pn-grupo-acoes { display: flex; gap: 2px; flex: none; }
+.rv-pn-grupo-acoes { display: flex; gap: 2px; flex: none; padding-right: 6px; }
+
+/* A PRÉVIA DE ARRASTO do painel — o cartão que acompanha o cursor.
+   É a miniatura que o navegador desenharia sozinho, e que precisou ser
+   desligada por causa do mapa (ver o comentário em `PersonagensTab`).
+   Desenhada por nós, ela pode existir SÓ AQUI: sobre o mapa, quem diz o
+   que está sendo levado é a prévia do token na grade.
+
+   `pointer-events: none` é obrigatório, não enfeite: sem isso o próprio
+   cartão vira o elemento sob o cursor e o alvo do arrasto passa a ser
+   ele. E `z-index` acima do painel porque ele sai da coluna. */
+.rv-pn-arrasto-previa {
+  position: fixed; z-index: 120; pointer-events: none;
+  display: flex; align-items: center; gap: 8px;
+  max-width: 260px; padding: 7px 10px 7px 7px;
+  border: 1px solid color-mix(in srgb, var(--pn-cy) 45%, transparent);
+  border-radius: var(--pn-radius);
+  background: color-mix(in srgb, var(--pn-cy) 10%, #0a1120);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .5);
+  /* Levemente translúcido: é uma peça EM TRÂNSITO, não uma que chegou. */
+  opacity: .92;
+}
+/* O ROSTO da peça em trânsito — o mesmo da linha, e por isso com a
+   mesma caixa: quadrada, com o retrato cobrindo tudo e a sigla como
+   fallback quando não há avatar. */
+.rv-pn-arrasto-face {
+  flex: none; display: grid; place-items: center; overflow: hidden;
+  width: 30px; height: 30px; border-radius: var(--pn-radius);
+  background: color-mix(in srgb, var(--pn-cy) 18%, transparent);
+  color: var(--pn-cy);
+  font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700;
+}
+/* PN é do narrador — mesma distinção de cor que a lista faz. */
+.rv-pn-arrasto-face[data-tipo="pn"] {
+  background: color-mix(in srgb, var(--rv-dg) 18%, transparent); color: var(--rv-dg);
+}
+.rv-pn-arrasto-face-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rv-pn-arrasto-nome {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--rv-ink); font-size: 12.5px;
+}
 
 .rv-pn-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .rv-pn-personagens { opacity: .85; text-transform: none; letter-spacing: 0; }
 
-.rv-pn-solta-pasta {
-  margin: 2px 0 3px; padding: 3px 7px;
-  border: 1px dashed var(--pn-line-hair); border-radius: var(--pn-radius); color: var(--pn-dim);
-  font-family: var(--rv-display);
-  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; text-align: center; opacity: .4;
-}
-.rv-pn-solta-pasta[data-ativo="true"] { opacity: 1; border-color: var(--pn-cy); color: var(--pn-cy); }
+/* A faixa "Soltar aqui para mover" saiu: a PASTA é o alvo, e uma zona
+   separada pra dizer isso era uma segunda porta pro mesmo cômodo —
+   ocupava uma linha embaixo de cada pasta aberta, permanentemente, pra
+   um gesto que acontece de vez em quando. */
 
 /* ═══════════════════════ ESTADOS ═══════════════════════ */
 
@@ -931,7 +1434,7 @@
 .rv-pn-tag {
   flex: none; display: inline-flex; align-items: center;
   padding: 1px 5px;
-  border: 1px solid var(--rv-line-2); border-radius: 2px;
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
   background: var(--rv-sunken);
   color: var(--rv-ink-dim);
   font-family: var(--font-mono), ui-monospace, monospace;
@@ -958,7 +1461,7 @@
 
 /* Esqueleto — geometria próxima do conteúdo final, nunca um spinner
    central solitário. */
-.pn-skel { background: var(--rv-raise); border-radius: 1px; }
+.pn-skel { background: var(--rv-raise); border-radius: var(--rv-r-sm); }
 .pn-skel[data-brilho="true"] { animation: pn-skel 1.2s ease-in-out infinite; }
 @keyframes pn-skel { 0%, 100% { opacity: .5; } 50% { opacity: .85; } }
 @media (prefers-reduced-motion: reduce) { .pn-skel[data-brilho="true"] { animation: none; } }
@@ -1037,7 +1540,7 @@
 
 .rv-fg-card {
   position: relative; display: flex; flex-direction: column; overflow: hidden;
-  height: 100%; min-height: 0; border-radius: 2px;
+  height: 100%; min-height: 0; border-radius: var(--rv-r);
   background: linear-gradient(160deg, #0b1424, #080e19);
   border: 1px solid color-mix(in srgb, var(--fg-a, #45b8c9) 27%, #18263f);
 }
@@ -1094,7 +1597,7 @@
   width: 4px; height: 4px; border-radius: 50%; background: var(--fg-a, #45b8c9); font-style: normal;
 }
 .rv-fg-cab-selo {
-  flex: none; padding: 4px 10px; border-radius: 2px;
+  flex: none; padding: 4px 10px; border-radius: var(--rv-r);
   font-family: var(--rv-display);
   font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--fg-a, #45b8c9);
@@ -1106,7 +1609,7 @@
 /* Lista à esquerda — cartão fino com cabeçalho + linhas. */
 .rv-fg-lista-card {
   display: flex; flex-direction: column; overflow: hidden; height: 100%; min-height: 0;
-  border-radius: 2px; background: linear-gradient(160deg, #0b1424, #080e19); border: 1px solid #18263f;
+  border-radius: var(--rv-r); background: linear-gradient(160deg, #0b1424, #080e19); border: 1px solid #18263f;
 }
 .rv-fg-lista-cab { padding: 14px 16px 10px; border-bottom: 1px solid #16233a; }
 .rv-fg-lista-titulo {
@@ -1122,10 +1625,19 @@
 /* Linha — avatar + nome/subtítulo + marca, com barra de acento quando selecionada. */
 .rv-pn-linha {
   position: relative; display: flex; width: 100%; align-items: center; gap: 12px;
-  padding: 10px 12px; border-radius: 2px; border: 1px solid #16233a; background: transparent;
+  /* `--pn-recuo` vem do componente e carrega o nível da árvore. */
+  padding: 10px 12px 10px var(--pn-recuo, 12px); border-radius: var(--rv-r); border: 1px solid #16233a; background: transparent;
   text-align: left; cursor: pointer; transition: background .14s, border-color .14s;
 }
 .rv-pn-linha:hover { border-color: #1c2b45; }
+/* O NOME acompanha o hover, igual ao do cartão de pasta
+   (`.rv-pn-grupo-btn:hover`): o cartão inteiro é clicável, e só a
+   borda mudando não dizia que aquilo abre alguma coisa.
+   E acompanha no ACENTO DA LINHA (`--fg-a`), não num ciano fixo: o PN
+   é vermelho na etiqueta, na barra de seleção e no avatar — o nome
+   virando ciano no hover era a única peça da linha trocando de
+   família bem na hora em que o olho está nela. */
+.rv-pn-linha:hover .rv-pn-linha-nome { color: var(--fg-a, var(--pn-cy)); }
 .rv-pn-linha:focus-visible { outline: 2px solid var(--rv-cy); outline-offset: 1px; }
 .rv-pn-linha[data-sel="true"] {
   border-color: color-mix(in srgb, var(--fg-a, #45b8c9) 47%, transparent);
@@ -1137,9 +1649,161 @@
 }
 .rv-pn-face {
   flex: none; display: flex; height: 36px; width: 36px; align-items: center; justify-content: center;
-  border-radius: 2px; font-family: var(--rv-display); font-size: 11px; font-weight: 700;
+  border-radius: var(--rv-r); font-family: var(--rv-display); font-size: 11px; font-weight: 700;
   border: 1px solid #1c2b45; color: #4f6285; background: transparent;
 }
+/* ── A LINHA DA ABA PERSONAGENS ──────────────────────────────────────
+   Escopada em `.rv-pn-scroll--pers` de propósito: `LinhaDiretorio` é a
+   mesma de Bando e Compêndio, e ali a face pequena continua certa —
+   são listas de ITENS, não de rostos.
+
+   O avatar passa a ocupar a ALTURA INTEIRA do cartão, quadrado por
+   `aspect-ratio`, encostado nas bordas. Pra isso o padding sai da
+   linha e vai pro conteúdo: padding na linha deixaria uma faixa de
+   fundo em volta do rosto, e "altura inteira" viraria "quase". */
+/* ALTURA MÍNIMA de 56px: é o avatar que identifica o personagem aqui,
+   e com a linha no tamanho do texto (41px) o rosto saía pequeno demais
+   pra reconhecer de relance — menor que o disco do token no mapa, que
+   é justamente a imagem com que se compara. 56px deixa o rosto no
+   mesmo porte do token. Com os recursos ligados a linha passa disso
+   sozinha e o mínimo não pesa. */
+/* O MESMO FUNDO DA ABA PARADA (`#0c1526`). Transparente, o cartão era
+   um vazio com borda — a lista lia como uma grade desenhada sobre o
+   painel, não como uma pilha de peças. Cartão e aba são a mesma coisa
+   aqui: superfície que se clica. */
+.rv-pn-scroll--pers .rv-pn-linha {
+  align-items: stretch; gap: 0; padding: 0; overflow: hidden; min-height: 56px;
+  background-color: #0c1526;
+  background-image:
+    linear-gradient(90deg, color-mix(in srgb, var(--fg-a, #45b8c9) 16%, transparent), rgba(22, 79, 106, 0.08)),
+    linear-gradient(90deg, color-mix(in srgb, var(--fg-a, #45b8c9) 4%, transparent), transparent 45%);
+  background-repeat: no-repeat;
+  background-size: 0% 100%, 100% 100%;
+  transition:
+    background-size 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* Mesmo gesto das linhas do Console: a luz varre da esquerda para a
+   direita, enquanto um fio de 1px é desenhado por cima da própria
+   borda. O fio ocupa a altura inteira — não nasce como um traço curto
+   paralelo ao contorno. */
+.rv-pn-scroll--pers .rv-pn-linha::before {
+  content: "";
+  /* `left: 0` porque o card recorta o conteúdo: em `-1px` o próprio
+     overflow esconderia o fio. Assim ele cobre o pixel interno da
+     borda, sem criar uma segunda linha ao lado. */
+  position: absolute; left: 0; top: 0; bottom: 0; z-index: 2;
+  width: 1px;
+  background: color-mix(in srgb, var(--fg-a, #45b8c9) 65%, #fff);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--fg-a, #45b8c9) 70%, transparent);
+  opacity: 0;
+  transform: scaleY(0); transform-origin: top;
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.1s ease-out;
+  pointer-events: none;
+}
+.rv-pn-scroll--pers .rv-pn-linha:hover,
+.rv-pn-scroll--pers .rv-pn-linha:focus-visible {
+  background-size: 100% 100%, 100% 100%;
+  border-color: color-mix(in srgb, var(--fg-a, #45b8c9) 26%, transparent);
+}
+.rv-pn-scroll--pers .rv-pn-linha:hover::before,
+.rv-pn-scroll--pers .rv-pn-linha:focus-visible::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+/* O SELECIONADO tem que vencer o fundo acima — as duas regras empatam
+   em especificidade (`.rv-pn-scroll--pers .rv-pn-linha` contra
+   `.rv-pn-linha[data-sel]`) e, empatadas, ganha a que vem depois: o
+   realce sumia. O acento agora é misturado SOBRE a cor do cartão, e
+   não sobre transparente, que era o que ele supunha antes. */
+.rv-pn-scroll--pers .rv-pn-linha[data-sel="true"] {
+  background: color-mix(in srgb, var(--fg-a, #45b8c9) 12%, #0c1526);
+}
+/* O recuo da árvore vira MARGEM do cartão inteiro. Como padding, ele
+   empurrava o avatar pra dentro e deixava uma faixa de fundo à
+   esquerda do rosto — o cartão precisa começar no avatar.
+
+   `width: auto` junto, e não é detalhe: a base declara `width: 100%`,
+   que num item esticado resolve pra largura CHEIA do container — a
+   margem então era somada por fora e o cartão de dentro da pasta
+   vazava 12px pela direita. Com `auto`, o esticamento do flex dá a
+   largura e desconta as margens, que é o que "ocupar o que sobra"
+   quer dizer. */
+/* DENTRO da pasta o recuo é a própria caixa: a borda e os 8px de
+   respiro já dizem "isto está aninhado", e somar a escada de 12px por
+   nível empurraria o cartão pra dentro duas vezes. Fora dela não há
+   caixa, e aí o recuo é o que resta pra contar o nível — mas na raiz
+   ele é zero de qualquer jeito. */
+.rv-pn-scroll--pers .rv-pn-linha { width: auto; }
+/* A PASTA NÃO RECUA. Ela é o cabeçalho do bloco, não um item dentro
+   dele: recuada, ficava mais estreita que os cartões que anuncia e
+   parecia subordinada a eles. O nível se lê pelo aninhamento do bloco
+   inteiro — que continua recuando pelos itens. */
+.rv-pn-scroll--pers .rv-pn-grupo { margin-left: 0; }
+/* A altura vem do `stretch`; a LARGURA é um número por modo, e não
+   `aspect-ratio`, porque aspect-ratio num item esticado é circular: a
+   altura sai do esticamento, a largura sairia da altura, e a altura da
+   linha sai da largura do conteúdo. O navegador resolveu esse laço com
+   um avatar de 513px. Os dois números são as alturas medidas da linha
+   menos as bordas: 41px com o switch desligado, 69px com ele ligado. */
+.rv-pn-scroll--pers .rv-pn-face {
+  align-self: stretch; width: 54px; height: auto;
+  border: none; border-right: 1px solid #1c2b45; border-radius: 0;
+}
+.rv-pn-scroll--pers[data-recursos="true"] .rv-pn-face { width: 70px; }
+/* A sigla acompanha a caixa maior: 11px num quadrado de 54 ficava
+   perdida no meio, e ela é o substituto do rosto pra quem não tem
+   avatar — precisa ter o mesmo peso de leitura. */
+.rv-pn-scroll--pers .rv-pn-face { font-size: 15px; letter-spacing: .04em; }
+.rv-pn-scroll--pers .rv-pn-linha[data-sel="true"] .rv-pn-face {
+  border-right-color: color-mix(in srgb, var(--fg-a, #45b8c9) 55%, transparent);
+}
+/* O vão fica DEPOIS da borda do avatar — é ela que separa, e o espaço
+   é o respiro entre a divisória e o texto. 16px: a divisória já é um
+   traço forte e pede mais ar do que um vão entre elementos soltos —
+   com 8px o nome encostava nela, e com 12px ainda ficava apertado.
+
+   CENTRADO na vertical: com os recursos desligados o texto é uma linha
+   só dentro de um cartão de 56px, e encostado no topo ele ficava
+   desalinhado do rosto ao lado. Com os recursos ligados o conteúdo
+   preenche a altura e centrar não muda nada — por isso vale sempre, em
+   vez de depender do modo. */
+.rv-pn-scroll--pers .rv-pn-linha-texto {
+  /* O 12 da direita não é simetria: sem ele a barra e a fração
+     encostavam na borda do cartão, porque tirar o padding da LINHA
+     (pro avatar encostar) tirou junto o respiro do outro lado. Quando
+     há marca, este mesmo espaço vira o vão entre texto e marca. */
+  padding: 9px 12px 9px 16px;
+  /* GRADE de duas colunas, e não pilha: o "PN" é uma etiqueta do NOME,
+     não uma segunda linha de informação — embaixo, ele roubava altura
+     do cartão e parecia um subtítulo com conteúdo próprio. Na mesma
+     linha, encostado à direita, ele qualifica o nome sem disputar com
+     ele. A terceira faixa (recursos) atravessa as duas colunas. */
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: center;
+}
+.rv-pn-scroll--pers .rv-pn-linha-marca { padding: 9px 12px 9px 0; }
+/* Os dois vãos do RITMO da lista, escopados como o resto do cartão:
+   Bando e Compêndio usam a mesma `.rv-pn-lista` e o mesmo rodapé de
+   linha, mas com face pequena e sem barras — o respiro que esta aba
+   pede lá só afastaria itens que já estão espaçados. */
+.rv-pn-scroll--pers .rv-pn-linha-sub {
+  grid-column: 2; grid-row: 1; align-self: center;
+  margin-top: 0; margin-left: 10px; white-space: nowrap;
+}
+.rv-pn-scroll--pers .rv-pn-linha-rodape { grid-column: 1 / -1; }
+
+/* O NOME CORTA COM RETICÊNCIAS. `.rv-pn-linha-nome` é `display: flex`
+   — herança de quando o subtítulo morava dentro dele —, e
+   `text-overflow` não vale pra caixa flex: na janela estreita o nome
+   era decepado no meio da letra, sem sinal de que continuava. Hoje o
+   subtítulo é irmão, então bloco basta. */
+.rv-pn-scroll--pers .rv-pn-linha-nome { display: block; }
+.rv-pn-scroll--pers .rv-pn-lista { gap: 8px; }
+.rv-pn-scroll--pers .rv-pn-linha-rodape { margin-top: 8px; }
+
+/* O avatar PREENCHE a face inteira; a borda da face vira a moldura. */
+.rv-pn-face:has(.rv-pn-face-img) { padding: 0; overflow: hidden; }
+.rv-pn-face-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rv-pn-linha[data-sel="true"] .rv-pn-face {
   color: var(--fg-a, #45b8c9);
   border-color: color-mix(in srgb, var(--fg-a, #45b8c9) 55%, transparent);
@@ -1148,42 +1812,53 @@
 .rv-pn-linha-texto { min-width: 0; flex: 1; }
 .rv-pn-linha-nome {
   display: flex; align-items: baseline; gap: 8px;
-  font-family: var(--rv-body); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-  color: var(--pn-txt-forte); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--rv-body); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  /* `--pn-txt`, e não `--pn-txt-forte`: uma lista inteira no branco mais
+     alto do painel vira uma parede de texto de mesmo peso, e o realce
+     deixa de realçar nada. Um degrau abaixo continua sendo CONTEÚDO —
+     bem longe do `--pn-dim` dos rótulos e botões em volta, que é o que
+     separa o que se lê do que se opera. */
+  color: var(--pn-txt); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: color .14s;
 }
 .rv-pn-linha-sub {
   margin-top: 4px; font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--pn-dim);
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--pn-dim);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .rv-pn-linha-marca { flex: none; }
 .rv-pn-linha-rodape { display: block; margin-top: 5px; }
 
-/* Barra de PV compacta DENTRO da linha do diretório — mesma anatomia da
-   `.rv-fg-barra` do dossiê, só mais fina, com a fração ao lado. */
-.rv-pn-linha-pv { display: flex; align-items: center; gap: 6px; }
-.rv-pn-linha-pv-trilha { position: relative; height: 4px; flex: 1; min-width: 0; overflow: hidden; border-radius: 1px; background: #16233a; }
-.rv-pn-linha-pv-trilha i {
-  display: block; height: 100%; border-radius: 1px; background: var(--fg-a, #45b8c9);
-  box-shadow: 0 0 5px color-mix(in srgb, var(--fg-a, #45b8c9) 53%, transparent);
+/* Barras de recurso DENTRO da linha do diretório — mesma anatomia da
+   `.rv-fg-barra` do dossiê, só mais fina, com o rótulo antes e a fração
+   depois. A cor vem de `--rec-cor`, que o componente define a partir de
+   `coresRecurso.ts` — as mesmas do Console. */
+.rv-pn-linha-rec { display: flex; align-items: center; gap: 6px; }
+.rv-pn-linha-rec + .rv-pn-linha-rec { margin-top: 3px; }
+.rv-pn-linha-rec-tag {
+  flex: none; width: 20px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9px; font-weight: 700; letter-spacing: .08em;
+  color: var(--rec-cor);
 }
-.rv-pn-linha-pv-fracao {
+.rv-pn-linha-rec-trilha { position: relative; height: 4px; flex: 1; min-width: 0; overflow: hidden; border-radius: var(--rv-r-sm); background: #16233a; }
+.rv-pn-linha-rec-trilha i {
+  display: block; height: 100%; border-radius: var(--rv-r-sm); background: var(--rec-cor);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--rec-cor) 53%, transparent);
+}
+.rv-pn-linha-rec-fracao {
   flex: none; font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px; font-weight: 700; color: var(--pn-dim);
 }
-.rv-pn-linha-pv-fracao[data-baixo="true"] { color: var(--rv-dg); }
-.rv-pn-linha-cond {
-  display: block; margin-top: 3px;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--rv-am);
-}
-
+/* PV baixo avisa pela FRAÇÃO, em âmbar: a barra já é vermelha, e
+   escurecer um vermelho pra dizer "agora é grave" não se lê. */
+.rv-pn-linha-rec-fracao[data-baixo="true"] { color: var(--rv-am); }
 /* Barra de recurso (HpBar/BarMeter) — fina, contínua, com glow. Só
    aqui: o resto do painel usa células discretas de propósito (ver
    `.pn-recurso`); a referência mostra PV/PE/Mana como trilha contínua. */
-.rv-fg-barra { position: relative; height: 6px; width: 100%; overflow: hidden; border-radius: 1px; background: #16233a; }
+.rv-fg-barra { position: relative; height: 6px; width: 100%; overflow: hidden; border-radius: var(--rv-r-sm); background: #16233a; }
 .rv-fg-barra i {
-  display: block; height: 100%; border-radius: 1px; background: var(--fg-a, #45b8c9);
+  display: block; height: 100%; border-radius: var(--rv-r-sm); background: var(--fg-a, #45b8c9);
   box-shadow: 0 0 6px color-mix(in srgb, var(--fg-a, #45b8c9) 53%, transparent);
 }
 
@@ -1191,7 +1866,7 @@
 .rv-fg-statgrid { display: grid; gap: 6px; grid-template-columns: repeat(var(--rv-fg-cols, 5), minmax(0, 1fr)); }
 .rv-fg-statcell {
   display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px;
-  border-radius: 2px; border: 1px solid #16233a; background: #0c1420;
+  border-radius: var(--rv-r); border: 1px solid #16233a; background: #0c1420;
 }
 .rv-fg-statcell b {
   font-family: var(--font-mono), ui-monospace, monospace;
@@ -1203,7 +1878,7 @@
 }
 
 /* StatTile — barra de acento à esquerda + rótulo + número grande colorido. */
-.rv-fg-stattile { position: relative; overflow: hidden; border-radius: 2px; padding: 12px; background: #0c1420; border: 1px solid #16233a; }
+.rv-fg-stattile { position: relative; overflow: hidden; border-radius: var(--rv-r); padding: 12px; background: #0c1420; border: 1px solid #16233a; }
 .rv-fg-stattile::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--fg-a, #45b8c9); }
 .rv-fg-stattile-inner { padding-left: 8px; }
 .rv-fg-stattile-rotulo {
@@ -1223,7 +1898,7 @@
 .rv-fg-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .rv-fg-chip {
   display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; max-width: 100%;
-  border-radius: 2px; font-family: var(--rv-display);
+  border-radius: var(--rv-r); font-family: var(--rv-display);
   font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
   color: var(--fg-a, #45b8c9);
   border: 1px solid color-mix(in srgb, var(--fg-a, #45b8c9) 44%, transparent);
@@ -1232,7 +1907,7 @@
 
 /* Linha de pips (reputação) — quadrados discretos, acesos até o valor. */
 .rv-fg-pips { display: flex; gap: 4px; }
-.rv-fg-pip { width: 10px; height: 10px; border-radius: 2px; background: #16233a; }
+.rv-fg-pip { width: 10px; height: 10px; border-radius: var(--rv-r); background: #16233a; }
 .rv-fg-pip[data-on="true"] {
   background: var(--fg-a, #cf9a3e);
   box-shadow: 0 0 4px color-mix(in srgb, var(--fg-a, #cf9a3e) 66%, transparent);
@@ -1259,7 +1934,7 @@
 .rv-fg-tab:focus-visible { outline: 2px solid var(--rv-cy); outline-offset: 2px; }
 
 .rv-fg-linha-longa {
-  display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 2px; border: 1px solid #16233a;
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--rv-r); border: 1px solid #16233a;
 }
 .rv-fg-linha-longa-ponto { width: 6px; height: 6px; flex: none; border-radius: 50%; }
 .rv-fg-texto {
@@ -1324,7 +1999,7 @@
 .pn-jan-dock {
   position: fixed; right: 14px; bottom: 14px; z-index: 481;
   display: flex; align-items: center; gap: 8px; padding: 6px 10px;
-  border: 1px solid var(--rv-line-max); border-radius: 1px;
+  border: 1px solid var(--rv-line-max); border-radius: var(--rv-r-sm);
   background: var(--rv-panel-grad); box-shadow: -18px 0 40px rgba(0, 0, 0, .45);
   color: var(--rv-ink); cursor: pointer;
   font-family: var(--rv-display);
@@ -1349,4 +2024,135 @@
 /* Em viewport pequena a janela interna vira quase tela cheia. */
 @media (max-width: 820px), (max-height: 640px) {
   .pn-jan:not(.pn-dialogo) { inset: 8px !important; width: auto !important; height: auto !important; }
+}
+
+/* ── Organizador da campanha (CONT-03) ──────────────────────────────
+   Lista à esquerda, detalhe à direita. Sem árvore e sem pastas: a
+   taxonomia de CONT-01 não tem hierarquia, e desenhar uma obrigaria a
+   inventar um pai para cada item. */
+.rv-org { display: grid; grid-template-columns: minmax(280px, 360px) 1fr; gap: 0; height: 100%; min-height: 0; }
+.rv-org-lista {
+  display: flex; flex-direction: column; min-height: 0; gap: 10px;
+  padding-right: 14px; border-right: 1px solid rgba(84, 172, 190, 0.16);
+}
+.rv-org-criar, .rv-org-filtros { display: flex; flex-direction: column; gap: 7px; flex: none; }
+
+.rv-org-busca {
+  display: flex; align-items: center; gap: 7px; padding: 6px 9px; border-radius: 3px;
+  background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(84, 172, 190, 0.22); color: var(--txt-dim);
+}
+.rv-org-busca input {
+  flex: 1; min-width: 0; background: none; border: 0; outline: none; color: var(--txt);
+  font: inherit; font-size: 12px;
+}
+.rv-org-busca:focus-within { border-color: rgba(0, 212, 255, 0.55); }
+
+.rv-org-chip {
+  padding: 3px 9px; border-radius: 999px; cursor: pointer; font-size: 11px; letter-spacing: 0.04em;
+  background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(84, 172, 190, 0.22); color: var(--txt-dim);
+}
+.rv-org-chip:hover { border-color: rgba(84, 172, 190, 0.45); color: var(--txt); }
+.rv-org-chip:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.6); outline-offset: 1px; }
+.rv-org-chip[data-ativo] { background: rgba(0, 212, 255, 0.16); border-color: rgba(0, 212, 255, 0.6); color: #d8eef8; }
+.rv-org-chip[data-ativo][data-acento="am"] { background: rgba(240, 190, 90, 0.16); border-color: rgba(240, 190, 90, 0.6); color: #f6e6c6; }
+
+.rv-org-itens { list-style: none; margin: 0; padding: 0; overflow-y: auto; min-height: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.rv-org-vazio { padding: 16px 4px; font-size: 12px; color: var(--txt-dim); line-height: 1.6; }
+.rv-org-item {
+  width: 100%; display: grid; grid-template-columns: auto 1fr auto; gap: 4px 8px; align-items: baseline;
+  padding: 8px 10px; border-radius: 3px; cursor: pointer; text-align: left;
+  background: transparent; border: 1px solid transparent; color: var(--txt);
+}
+.rv-org-item:hover { background: rgba(0, 212, 255, 0.06); border-color: rgba(84, 172, 190, 0.22); }
+.rv-org-item:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.6); outline-offset: -2px; }
+.rv-org-item--sel { background: rgba(0, 212, 255, 0.1); border-color: rgba(0, 212, 255, 0.45); }
+.rv-org-item-tipo {
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(150, 174, 186, 0.9);
+}
+.rv-org-item-titulo { font-size: 13px; overflow-wrap: anywhere; }
+.rv-org-item-etiquetas { grid-column: 2 / -1; font-size: 11px; color: rgba(150, 174, 186, 0.75); }
+
+/* O selo de estado não é decoração: o narrador vê rascunho e publicado
+   na mesma lista, e sem ele não dá para saber o que a mesa já leu. */
+.rv-org-selo {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 999px;
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
+}
+.rv-org-selo[data-estado="rascunho"] { background: rgba(240, 190, 90, 0.14); color: rgba(240, 200, 120, 0.95); }
+.rv-org-selo[data-estado="publicado"] { background: rgba(0, 212, 255, 0.14); color: rgba(150, 224, 250, 0.95); }
+.rv-org-selo[data-estado="arquivado"] { background: rgba(150, 174, 186, 0.14); color: rgba(180, 198, 208, 0.9); }
+
+.rv-org-detalhe { padding-left: 16px; overflow-y: auto; min-height: 0; }
+.rv-org-nenhuma { display: flex; align-items: center; gap: 8px; padding-top: 24px; font-size: 13px; color: var(--txt-dim); }
+.rv-org-det { display: flex; flex-direction: column; gap: 10px; }
+.rv-org-det-cab { display: flex; flex-direction: column; gap: 3px; }
+.rv-org-det-tipo { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(150, 174, 186, 0.9); }
+.rv-org-det-titulo { margin: 0; font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
+
+.rv-org-campo { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--txt-dim); }
+.rv-org-campo input, .rv-org-campo textarea {
+  padding: 7px 9px; border-radius: 3px; font: inherit; font-size: 13px; color: var(--txt);
+  background: rgba(0, 212, 255, 0.04); border: 1px solid rgba(84, 172, 190, 0.22); resize: vertical;
+}
+.rv-org-campo input:focus, .rv-org-campo textarea:focus { outline: none; border-color: rgba(0, 212, 255, 0.55); }
+
+.rv-org-det-acoes { display: flex; flex-wrap: wrap; gap: 7px; }
+.rv-org-det-acoes--fim { margin-top: 6px; padding-top: 12px; border-top: 1px solid rgba(84, 172, 190, 0.16); }
+.rv-org-vis { display: flex; flex-direction: column; gap: 8px; }
+.rv-org-nota { margin: 0; font-size: 11.5px; line-height: 1.55; color: var(--txt-dim); }
+.rv-org-segredo summary { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: var(--txt-dim); }
+.rv-org-segredo summary:hover { color: var(--txt); }
+.rv-org-pessoas { list-style: none; margin: 8px 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.rv-org-pessoas label { display: flex; align-items: center; gap: 7px; font-size: 12.5px; cursor: pointer; }
+
+.rv-org-relacoes { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.rv-org-relacao {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 3px; cursor: pointer;
+  font-size: 12px; background: rgba(0, 212, 255, 0.05);
+  border: 1px solid rgba(84, 172, 190, 0.22); color: var(--txt);
+}
+.rv-org-relacao:hover { border-color: rgba(0, 212, 255, 0.5); }
+.rv-org-relacao:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.6); outline-offset: 1px; }
+
+@media (max-width: 860px) {
+  .rv-org { grid-template-columns: 1fr; }
+  .rv-org-lista { border-right: 0; padding-right: 0; }
+  .rv-org-detalhe { padding-left: 0; border-top: 1px solid rgba(84, 172, 190, 0.16); padding-top: 12px; }
+}
+
+/* Participantes do registro de sessão (CONT-04). Quem foi excluído à
+   mão continua visível, apagado — some da lista revelada, não da
+   ferramenta de quem corrige. */
+.rv-org-participantes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.rv-org-participantes li {
+  display: flex; align-items: center; gap: 9px; padding: 6px 9px; border-radius: 3px;
+  background: rgba(0, 212, 255, 0.04); border: 1px solid rgba(84, 172, 190, 0.18); font-size: 12.5px;
+}
+.rv-org-participantes li[data-incluido="false"] { opacity: 0.5; }
+.rv-org-participantes li[data-incluido="false"] .rv-org-part-nome { text-decoration: line-through; }
+.rv-org-part-nome { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.rv-org-part-horas {
+  display: inline-flex; align-items: center; gap: 4px; flex: none;
+  font-size: 11px; color: rgba(150, 174, 186, 0.85); font-variant-numeric: tabular-nums;
+}
+.rv-org-part-manual {
+  display: inline-flex; align-items: center; gap: 3px; flex: none; padding: 1px 6px; border-radius: 999px;
+  font-size: 10px; letter-spacing: 0.06em; background: rgba(240, 190, 90, 0.14); color: rgba(240, 200, 120, 0.95);
+}
+.rv-org-part-btn {
+  flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 3px; cursor: pointer;
+  background: transparent; border: 1px solid rgba(84, 172, 190, 0.28); color: var(--txt-dim);
+}
+.rv-org-part-btn:hover:not(:disabled) { border-color: rgba(0, 212, 255, 0.55); color: var(--txt); }
+.rv-org-part-btn:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.6); outline-offset: 1px; }
+.rv-org-part-btn:disabled { opacity: 0.45; cursor: default; }
+.rv-org-part-nome[data-carregando] { color: rgba(150, 174, 186, 0.5); }
+
+/* CHAR-02 — o campo do DIÁLOGO usa corpo de leitura, não o corpo
+   compacto dos filtros. `.rv-pn-input` está em 11px porque serve aos
+   seletores da faixa de filtros, onde a densidade é o ponto; num modal
+   em que a pessoa digita o nome de um personagem, 11px é pequeno
+   demais para o que se está escrevendo. */
+.pn-dialogo .rv-pn-input.rv-pn-input {
+  font-size: 13px; padding: 6px 8px;
 }

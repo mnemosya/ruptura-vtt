@@ -18,7 +18,7 @@
  * cena é outra entidade, com HUD próprio).
  */
 
-import { Search, X } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
 import type { KeyboardEvent, ReactNode } from "react";
 import { BotaoTecnico } from "./ui/primitivas";
 
@@ -71,6 +71,13 @@ export function CabecalhoGrupo({
   nivel = 0,
   onMenuContextual,
   testId,
+  arrastavel,
+  onArrastarInicio,
+  onArrastarFim,
+  onArrastarSobre,
+  onSoltar,
+  alvoDeSolta,
+  arrastando,
 }: {
   rotulo: string;
   contagem?: number;
@@ -81,16 +88,51 @@ export function CabecalhoGrupo({
   nivel?: number;
   onMenuContextual?: (e: React.MouseEvent) => void;
   testId?: string;
+  /* ARRASTO DA PRÓPRIA PASTA — pra mudar de posição entre as irmãs.
+     Opcional porque o Bando usa este mesmo cabeçalho pra grupos por
+     categoria, que não têm ordem própria pra mexer. */
+  arrastavel?: boolean;
+  onArrastarInicio?: (e: React.DragEvent) => void;
+  onArrastarFim?: () => void;
+  onArrastarSobre?: (e: React.DragEvent) => void;
+  onSoltar?: (e: React.DragEvent) => void;
+  alvoDeSolta?: boolean;
+  arrastando?: boolean;
 }) {
   const conteudo = (
     <>
       {glifo && <span className="rv-pn-grupo-glifo" aria-hidden="true">{glifo}</span>}
       <span className="rv-pn-grupo-rotulo">{rotulo}</span>
       {contagem != null && <span className="rv-pn-grupo-contagem">{contagem}</span>}
+      {/* O CHEVRON só existe quando a pasta RECOLHE. Fica no fim, e
+          gira: apontando pra baixo quando está aberta, pra direita
+          quando fechada — a mesma leitura de toda árvore. O
+          `aria-expanded` do botão já dizia isso pro leitor de tela; o
+          chevron é a metade que faltava pra quem enxerga. */}
+      {onAlternar && (
+        <span className="rv-pn-grupo-chevron" data-aberto={aberto ? "true" : undefined} aria-hidden="true">
+          <ChevronDown size={13} />
+        </span>
+      )}
     </>
   );
   return (
-    <div className="rv-pn-grupo" style={{ paddingLeft: 6 + nivel * 12 }} onContextMenu={onMenuContextual} data-testid={testId}>
+    <div
+      className="rv-pn-grupo"
+      /* O recuo da árvore vai como VARIÁVEL, pelo mesmo motivo da linha:
+         `paddingLeft` inline vence a folha, e aí o padding do cabeçalho
+         não tem como ser igual nos dois eixos. */
+      style={{ "--pn-recuo-grupo": `${nivel * 12}px` } as React.CSSProperties}
+      onContextMenu={onMenuContextual}
+      data-testid={testId}
+      draggable={arrastavel}
+      onDragStart={onArrastarInicio}
+      onDragEnd={onArrastarFim}
+      onDragOver={onArrastarSobre}
+      onDrop={onSoltar}
+      data-alvo={alvoDeSolta ? "true" : undefined}
+      data-arrastando={arrastando ? "true" : undefined}
+    >
       {onAlternar ? (
         <button type="button" className="rv-pn-grupo-btn" aria-expanded={aberto} onClick={onAlternar}>
           {conteudo}
@@ -120,6 +162,8 @@ export interface LinhaDiretorioProps {
   onAbrir?: () => void;
   /** Aquecimento no hover/foco — usado para pré-carregar o Console antes do clique. */
   onAquecer?: () => void;
+  /** Encerra uma prévia temporária quando ponteiro/foco deixa a linha. */
+  onEsfriar?: () => void;
   onMenuContextual?: (e: React.MouseEvent) => void;
   /** HTML5 drag — só quando a linha de fato pode ser arrastada pra algum destino autorizado. */
   arrastavel?: boolean;
@@ -128,9 +172,13 @@ export interface LinhaDiretorioProps {
   /** A linha aceita algo sendo solto sobre ela (item do Bando caindo num personagem). */
   onSoltar?: (e: React.DragEvent) => void;
   onArrastarSobre?: (e: React.DragEvent) => void;
+  /** O arrasto SAIU desta linha — sem isto o realce fica aceso pra trás. */
+  onArrastarSaiu?: () => void;
   alvoDeSolta?: boolean;
   testId?: string;
-  atributos?: Record<string, string>;
+  /** `undefined` num valor OMITE o atributo — é como se liga e desliga
+      uma marca de estado sem precisar de prop nova pra cada uma. */
+  atributos?: Record<string, string | undefined>;
 }
 
 /**
@@ -149,12 +197,14 @@ export function LinhaDiretorio({
   acento = "var(--rv-cy)",
   onAbrir,
   onAquecer,
+  onEsfriar,
   onMenuContextual,
   arrastavel,
   onArrastarInicio,
   onArrastarFim,
   onSoltar,
   onArrastarSobre,
+  onArrastarSaiu,
   alvoDeSolta,
   testId,
   atributos,
@@ -169,7 +219,12 @@ export function LinhaDiretorio({
   return (
     <li
       className="rv-pn-linha"
-      style={{ paddingLeft: 12 + nivel * 12, "--fg-a": acento } as React.CSSProperties}
+      /* A indentação vai como VARIÁVEL, não como `paddingLeft` inline:
+         estilo inline vence qualquer folha, e a aba Personagens precisa
+         zerar o padding pra encostar o avatar na borda do cartão. Quem
+         decide onde o recuo entra é o CSS — aqui só se diz de quanto
+         ele é. */
+      style={{ "--pn-recuo": `${12 + nivel * 12}px`, "--fg-a": acento } as React.CSSProperties}
       data-sel={selecionado ? "true" : undefined}
       data-alvo={alvoDeSolta ? "true" : undefined}
       role={onAbrir ? "button" : undefined}
@@ -177,12 +232,15 @@ export function LinhaDiretorio({
       onClick={onAbrir}
       onKeyDown={aoTeclar}
       onPointerEnter={onAquecer}
+      onPointerLeave={onEsfriar}
       onFocus={onAquecer}
+      onBlur={onEsfriar}
       onContextMenu={onMenuContextual}
       draggable={arrastavel}
       onDragStart={onArrastarInicio}
       onDragEnd={onArrastarFim}
       onDragOver={onArrastarSobre}
+      onDragLeave={onArrastarSaiu}
       onDrop={onSoltar}
       data-testid={testId}
       {...atributos}

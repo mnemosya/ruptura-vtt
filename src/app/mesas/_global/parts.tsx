@@ -60,7 +60,13 @@ export function campaignCoverStyle(id: string): CSSProperties {
   const posY = 20 + ((h >> 3) % 60);
   const scale = 130 + ((h >> 6) % 60);
   return {
-    backgroundImage: `linear-gradient(140deg, ${campaignAccent(id)}, rgba(7,9,15,0.1)), url('/brand/app-hud.png')`,
+    // `.jpg`, não `.png`: o arquivo em `public/brand/` sempre foi
+    // `app-hud.jpg`, e os outros dois lugares que usam essa textura
+    // (`app.css`, `mesa.css`) já pediam a extensão certa. Só aqui pedia
+    // `.png` — a textura não carregava nos cards de campanha, e cada
+    // render deixava um 404 no console. Achado por um check que
+    // afirmava "console sem erros" e vinha reprovando por isto.
+    backgroundImage: `linear-gradient(140deg, ${campaignAccent(id)}, rgba(7,9,15,0.1)), url('/brand/app-hud.jpg')`,
     backgroundSize: `auto, ${scale}% auto`,
     backgroundPosition: `center, ${posX}% ${posY}%`,
   };
@@ -82,40 +88,6 @@ export function relativeTime(iso: string | null | undefined): string {
   if (diffMo < 12) return `há ${diffMo} ${diffMo === 1 ? "mês" : "meses"}`;
   const diffY = Math.round(diffMo / 12);
   return `há ${diffY} ${diffY === 1 ? "ano" : "anos"}`;
-}
-
-// =====================================================================
-// MOCK TEMPORÁRIO — presença online e descrição de campanha
-//
-// Não existe rastreamento de presença (quem está conectado agora) em
-// nenhum lugar do projeto — só dado de banco via postgres_changes,
-// nunca Supabase Presence/`channel.track()`. E `campaigns` nunca teve
-// coluna de descrição. As duas funções abaixo existem só para a
-// interface do card em destaque bater com o design visual enquanto o
-// backend de verdade não existe — por pedido explícito do usuário
-// ("faz um estado temporário... depois a gente faz o backend").
-//
-// Quando existir Presence real e a coluna de descrição, isso tudo some
-// e os valores passam a vir de `data`/`campaign` como qualquer outro
-// campo real do banco.
-// =====================================================================
-
-/** MOCK — número "online" plausível e estável (não é dado real). */
-export function mockOnlineCount(campaignId: string, total: number): number {
-  if (total <= 0) return 0;
-  const h = hashCode(campaignId);
-  const ratio = 0.35 + (h % 50) / 100; // ~35%–85% do total, estável por campanha
-  return Math.max(1, Math.min(total, Math.round(total * ratio)));
-}
-
-/** MOCK — a campanha "está online" se a presença simulada é > 0. */
-export function mockIsOnline(campaignId: string, total: number): boolean {
-  return mockOnlineCount(campaignId, total) > 0;
-}
-
-/** MOCK — texto de descrição, já que `campaigns` não tem essa coluna ainda. */
-export function mockCampaignDescription(): string {
-  return "Descrição da campanha ainda não é um campo real no banco — texto de exemplo até essa coluna existir.";
 }
 
 export function DecoTop() {

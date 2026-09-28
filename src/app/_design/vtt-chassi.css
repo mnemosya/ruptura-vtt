@@ -89,16 +89,29 @@
   /* ── Tipografia ─────────────────────────────────────────────────
      `display` (Chakra Petch) para título, rótulo e botão em caixa
      alta; `mono` (JetBrains Mono) para número e metadado; `body`
-     (Inter) para texto corrido. As três já entram por `next/font` no
-     layout raiz — nada é buscado de CDN. Rajdhani continua como
-     fallback para o que a mesa ainda não migrou. */
+     (Rajdhani) para texto corrido. As três entram por `next/font` no
+     layout raiz — nada é buscado de CDN.
+
+     O corpo era INTER, e saiu do produto: o Console da ficha sempre
+     escreveu em Rajdhani, então a mesa e a ficha usavam duas fontes de
+     texto diferentes pela mesma razão nenhuma — e quem abre o Console
+     por cima do mapa via as duas lado a lado. Rajdhani já era o
+     fallback declarado aqui; virou a escolha. */
   --rv-display: var(--font-chakra), var(--font-rajdhani), system-ui, sans-serif;
-  --rv-body: var(--font-inter), var(--font-rajdhani), system-ui, sans-serif;
+  --rv-body: var(--font-rajdhani), system-ui, sans-serif;
   --rv-mono: var(--font-mono), ui-monospace, monospace;
 
   /* ── Geometria ──────────────────────────────────────────────── */
-  --rv-r: 2px;
+  --rv-r-sm: 1px;
+  --rv-r: 4px;
   --rv-r-lg: 3px;
+  /* As "peças" flutuantes do VTT — trilhos, palco, painel — e tudo que
+     acompanha o canto delas. Um degrau acima do raio dos controles. */
+  --rv-r-peca: 4px;
+  /* O raio do CARTÃO — superfície grande com imagem sangrando até a
+     borda, onde 4px ainda lê como canto reto. */
+  --rv-r-md: 6px;
+  --rv-r-xl: 8px;
   --rv-r-pill: 999px;
   --rv-notch: 10px;
   --rv-notch-sm: 6px;
@@ -107,6 +120,125 @@
   --rv-shadow-win: 0 30px 70px rgba(0, 0, 0, 0.55);
   --rv-shadow-pop: 0 18px 40px rgba(0, 0, 0, 0.6);
   --rv-shadow-card: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+/* =====================================================================
+   CHANFRO GLOBAL DO VTT
+
+   As superfícies reais do VTT — controles, cards, menus, modais e
+   janelas — usam a geometria de `.rup-clip`: superior esquerdo e
+   inferior direito com raio de 4px; superior direito e inferior
+   esquerdo cortados. Filhos internos (ícones, SVGs, imagens, texto e wrappers)
+   ficam deliberadamente fora: chanfro pertence à CASCA, nunca ao seu
+   conteúdo. A dimensão continua vindo da escala consolidada entre
+   `rup-clip` e `rup-clip-sm`.
+   `corner-shape` faz a própria borda acompanhar o mesmo polígono;
+   diferente de aplicar `clip-path` cegamente, não amputa o fio, o
+   outline de foco nem a pintura dos estados hover/selecionado.
+
+   A lista repete as raízes acima porque menus, janelas, gavetas, modais
+   e dados são portais montados diretamente no `body`. Sem elas, só o
+   palco receberia a geometria e o mesmo componente mudaria de linguagem
+   ao sair para um portal.
+
+   Os recortes assimétricos já consolidados (`rup-clip` e os cards do
+   Console) continuam usando seu polígono próprio; esta regra não os
+   reinterpreta nem substitui suas diagonais reconstruídas. */
+:is(.pn-jan, .pn-menu, .rv-gaveta),
+:is(
+  .rv-mesa,
+  .pn-jan,
+  .pn-menu,
+  .rv-modal-fundo,
+  .rv-gaveta,
+  .rup-mesa-arena,
+  .rv-mesa-dados-overlay
+) :is(
+  button,
+  input:not([type="range"]):not([type="radio"]):not([type="checkbox"]):not([type="color"]):not([type="file"]),
+  select,
+  textarea,
+  [role="button"],
+  [role="tab"],
+  [role="menu"],
+  [role="menuitem"],
+  [role="menuitemradio"],
+  [role="dialog"],
+  [role="alertdialog"],
+  .rv-card,
+  .rv-modal,
+  .rv-fp,
+  .rv-gaveta,
+  .pn-cartao,
+  .pn-card,
+  .pn-jan,
+  .pn-menu
+):not(:is(
+  .rv-ferr-btn,
+  .rc-tabrail-btn,
+  .rc-winbtn,
+  .rv-jan-btn,
+  .rv-fp-fechar,
+  .pn-jan-btn,
+  .rv-modal-fechar,
+  .rv-colocar-imagem__fechar,
+  .rv-biblioteca__fechar,
+  .rv-gav-fechar,
+  .rv-cena-btn-icone,
+  .rv-cena-palco,
+  .rc-picker-fechar,
+  .rc-arma-swap,
+  .rc-arma-fechar,
+  .rv-ator-retrato,
+  .rv-ator-declara button
+)):not(button[aria-label]:has(svg)) {
+  /* ordem: superior esquerdo, superior direito, inferior direito,
+     inferior esquerdo — exatamente `rup-clip`. */
+  border-radius: 4px var(--rv-notch, 10px) 4px var(--rv-notch, 10px) !important;
+  corner-shape: round bevel round bevel;
+}
+
+/* Caixas compostas só por ícone são exceção deliberada. O pictograma
+   já concentra toda a leitura dentro de uma área pequena; chanfrar a
+   caixa em volta reduz área útil e cria ruído. Inclui os dois trilhos,
+   controles de janela e ações quadradas de fechar/trocar.
+   O retrato do trilho de facção (`.rv-ator-retrato`) também fica fora
+   da regra acima, mas não entra aqui: ele é CIRCULAR (`vtt.css`). O
+   mesmo vale pros botõezinhos de declarar janela (`.rv-ator-declara`):
+   18px de altura, o chanfro comia o próprio glifo — ficam no raio
+   simples do `vtt.css`. */
+.rv-ferr-btn,
+.rc-tabrail-btn,
+.rc-winbtn,
+.rv-jan-btn,
+.rv-fp-fechar,
+.pn-jan-btn,
+.rv-modal-fechar,
+.rv-colocar-imagem__fechar,
+.rv-biblioteca__fechar,
+.rv-gav-fechar,
+.rv-cena-btn-icone,
+.rc-picker-fechar,
+.rc-arma-swap,
+.rc-arma-fechar,
+button[aria-label]:has(svg) {
+  border-radius: var(--rv-r-peca, 4px) !important;
+  corner-shape: round !important;
+}
+
+/* A variante compacta já consolidada continua em 6px. A especificidade
+   e o `!important` existem somente para vencer a normalização global
+   acima sem depender da ordem em que a folha do componente é carregada. */
+:is(
+  .rv-mesa,
+  .pn-jan,
+  .pn-menu,
+  .rv-modal-fundo,
+  .rv-gaveta,
+  .rup-mesa-arena,
+  .rv-mesa-dados-overlay
+) .rup-clip-sm {
+  border-radius: 2px var(--rv-notch-sm, 6px) 2px var(--rv-notch-sm, 6px) !important;
 }
 
 /* =====================================================================
@@ -123,15 +255,64 @@
 /* Barra de rolagem invisível até o hover. */
 .rup-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; }
 .rup-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
-.rup-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; }
+.rup-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: var(--rv-r-peca); }
 .rup-scroll:hover { scrollbar-color: #2a3f5f transparent; }
 .rup-scroll:hover::-webkit-scrollbar-thumb { background: #223351; }
 
 /* Chanfro angular do chassi. */
+/* ── VÉU DE ROLAGEM ──────────────────────────────────────────────────
+   O degradê nas pontas de uma lista que rola: diz que há mais conteúdo
+   sem depender de a barra de rolagem ser notada.
+
+   `position: sticky` e não camada de `background`: as listas do produto
+   têm cartões de fundo OPACO, e a sombra clássica de
+   `background-attachment: local` fica atrás deles — só aparece nos vãos.
+   Foi tentado e não se via.
+
+   Quem liga e desliga é `useRolagemVelada` (mede de verdade): numa
+   lista que cabe inteira não aparece véu nenhum, e cada ponta some ao
+   se chegar nela. `--rv-veu-cor` é o fundo de quem hospeda — sem ele o
+   degradê iria pro fundo errado. */
+[data-rolavel]::before,
+[data-rolavel]::after {
+  content: ""; position: sticky; z-index: 2; pointer-events: none;
+  display: block; height: var(--rv-veu-altura, 26px);
+  /* `flex: none` porque num container FLEX-COLUNA o véu vira item, e
+     item encolhe no eixo principal quando o conteúdo transborda — que
+     é justamente o caso de toda lista que rola. A altura de 26px ia a
+     ZERO e o véu existia sem aparecer. Foi assim que ele sumiu no feed
+     do chat. */
+  flex: none;
+  transition: opacity .14s;
+}
+/* Altura ZERO no fluxo: o véu "empresta" a faixa da ponta e devolve
+   com a margem negativa. */
+/* `--rv-veu-recuo` é o PADDING VERTICAL de quem rola. Sem ele o véu
+   gruda na borda do conteúdo e sobra uma faixa do padding por baixo —
+   um fio de cartão aparecendo embaixo do degradê, que é exatamente o
+   que ele existe pra não deixar acontecer. Puxando o sticky pra fora
+   pelo tamanho do padding, o véu encosta na borda de verdade. */
+[data-rolavel]::before {
+  top: calc(var(--rv-veu-recuo, 0px) * -1);
+  margin-bottom: calc(var(--rv-veu-altura, 26px) * -1);
+  background: linear-gradient(var(--rv-veu-cor, var(--rv-ground)), transparent);
+}
+[data-rolavel]::after {
+  bottom: calc(var(--rv-veu-recuo, 0px) * -1);
+  margin-top: calc(var(--rv-veu-altura, 26px) * -1);
+  background: linear-gradient(transparent, var(--rv-veu-cor, var(--rv-ground)));
+}
+/* Nas pontas o véu daquele lado some: no início não há nada acima, no
+   fim não há nada abaixo — e um véu permanente ali vira vinheta. */
+[data-inicio]::before,
+[data-fim]::after { opacity: 0; }
+
 .rup-clip {
+  border-radius: 4px 0 4px 0;
   clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
 }
 .rup-clip-sm {
+  border-radius: 2px 0 2px 0;
   clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
 }
 
@@ -299,7 +480,7 @@
   scrollbar-width: thin; scrollbar-color: transparent transparent;
 }
 :is(.rv-jan-corpo, .rv-fp-corpo, .pn-jan-corpo, .rv-modal-corpo)::-webkit-scrollbar { width: 8px; }
-:is(.rv-jan-corpo, .rv-fp-corpo, .pn-jan-corpo, .rv-modal-corpo)::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; }
+:is(.rv-jan-corpo, .rv-fp-corpo, .pn-jan-corpo, .rv-modal-corpo)::-webkit-scrollbar-thumb { background: transparent; border-radius: var(--rv-r-peca); }
 :is(.rv-jan-corpo, .rv-fp-corpo, .pn-jan-corpo, .rv-modal-corpo):hover { scrollbar-color: #2a3f5f transparent; }
 :is(.rv-jan-corpo, .rv-fp-corpo, .pn-jan-corpo, .rv-modal-corpo):hover::-webkit-scrollbar-thumb { background: #223351; }
 

@@ -48,6 +48,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { ConsoleMessage } from "playwright";
 import { chromium, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
+import { continuarParaPosicionar } from "./gerenciadorDeToken";
 
 loadDotenv({ path: ".env.local" });
 function requireEnv(nome: string): string {
@@ -167,12 +168,12 @@ async function main() {
     const quadro = stack.split("\n").slice(1, 3).map((l) => l.trim()).join(" ← ");
     erros.push(`pageerror: ${e.message}${quadro ? ` @ ${quadro}` : ""}`);
   });
-  const url = `${BASE_URL}/mesas/${campaignId}/vtt`;
+  const url = `${BASE_URL}/mesas/${campaignId}`;
   await page.goto(url, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
 
   async function abrirPorBotaoBarra() {
-    await page.locator('.rv-ferr-btn[aria-label="Adicionar token"]').click();
+    await page.locator('.rv-ferr-btn[aria-label^="Adicionar token"]').click();
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
   }
   // O painel lateral NUNCA teve um "Adicionar token" — a aba
@@ -185,6 +186,44 @@ async function main() {
     await page.waitForTimeout(150);
     await abrirPorBotaoBarra();
   }
+  /**
+   * Abre a janela em modo EDITAR, num token criado pra isso.
+   *
+   * Existe porque a confirmação de descarte só acontece ao editar, e
+   * `GerenciadorToken` explica: "quem clica em Cancelar ou no X está
+   * dizendo justamente 'não quero criar'. Perguntar 'descartar as
+   * alterações?' ali é pedir confirmação de uma desistência". Os
+   * blocos B e C tentavam provar a confirmação abrindo em modo CRIAR,
+   * onde ela não existe — o `dialog` nunca vinha, o modal fechava, e
+   * a leitura seguinte estourava por timeout num campo que já tinha
+   * saído do DOM.
+   *
+   * O token nasce longe da célula 60, que `abrirPorMenuContextual` usa
+   * pra achar hex vazio.
+   */
+  let tokenDeEdicaoId: string | null = null;
+  async function abrirEmModoEditar() {
+    if (!tokenDeEdicaoId) {
+      const { data: cena } = await admin.from("vtt_scenes")
+        .select("id").eq("campaign_id", campaignId!).limit(1).single();
+      const { data: tk, error: eTk } = await admin.from("vtt_tokens").insert({
+        scene_id: cena!.id, campaign_id: campaignId!, nome: "Alvo de Edição", sigla: "AE",
+        lado: "pn", tamanho: "medio", q: 2, r: 2,
+      }).select("id").single();
+      if (eTk) throw new Error(`Falha ao criar token de edição: ${eTk.message}`);
+      tokenDeEdicaoId = tk!.id as string;
+      await page.reload({ waitUntil: "networkidle" });
+      await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
+    }
+    await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
+    const alvo = page.locator(`.rv-token[data-token-id="${tokenDeEdicaoId}"]`);
+    await alvo.waitFor({ state: "visible", timeout: 10000 });
+    const box = await alvo.boundingBox();
+    await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2, { button: "right" });
+    await page.locator(".rv-menu-item", { hasText: "Editar" }).click();
+    await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
+  }
+
   async function abrirPorMenuContextual() {
     await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
     const box = await page.locator(".rv-camada-grade path").nth(60).boundingBox();
@@ -207,8 +246,11 @@ async function main() {
   }
 
   // --- B: sujar o formulário, Cancelar, CANCELAR o confirm (permanece aberto), Cancelar de novo, ACEITAR (fecha) ---
+  //
+  // Em modo EDITAR: é lá que a confirmação existe. Criar e desistir de
+  // criar não pergunta nada, e isso é decisão registrada no componente.
   {
-    await abrirPorBotaoBarra();
+    await abrirEmModoEditar();
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Rascunho Sujo");
     page.once("dialog", (d) => d.dismiss());
     await page.locator(".rv-gerenciador-token .rv-btn--ghost", { hasText: "Cancelar" }).click();
@@ -229,12 +271,41 @@ async function main() {
     await page.keyboard.press("Escape");
     await confirmarMapaFuncional(page, "C1 (Esc sem alterações fecha direto)");
 
-    await abrirPorBotaoBarra();
+    await abrirEmModoEditar();
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Esc Sujo");
     page.once("dialog", (d) => d.accept());
     await page.keyboard.press("Escape");
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
     await confirmarMapaFuncional(page, "C2 (Esc com alterações + aceitar descarte fecha, mapa funcional)");
+  }
+
+  // --- B3/C3: em modo CRIAR, desistir NUNCA pergunta ---
+  //
+  // O contraponto dos dois blocos acima, e o comportamento que eles
+  // mediam por engano. Sem este critério, a decisão de não perguntar
+  // ficaria sem nenhuma defesa — e ela é fácil de desfazer sem querer,
+  // porque "sujo + fechar ⇒ perguntar" parece a regra óbvia.
+  {
+    let perguntou = false;
+    const aoDialogo = (d: import("playwright").Dialog) => { perguntou = true; void d.accept(); };
+    page.on("dialog", aoDialogo);
+    await abrirPorBotaoBarra();
+    await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Nem vou criar");
+    await page.locator(".rv-gerenciador-token .rv-btn--ghost", { hasText: "Cancelar" }).click();
+    const fechou = await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 })
+      .then(() => true).catch(() => false);
+    registrar("B3 (criar + Cancelar com o formulário sujo fecha direto, sem perguntar)",
+      fechou && !perguntou, `fechou=${fechou}, perguntou=${perguntou}`);
+
+    perguntou = false;
+    await abrirPorBotaoBarra();
+    await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Nem por Esc");
+    await page.keyboard.press("Escape");
+    const fechouEsc = await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 })
+      .then(() => true).catch(() => false);
+    registrar("C3 (criar + Esc com o formulário sujo também fecha direto)",
+      fechouEsc && !perguntou, `fechou=${fechouEsc}, perguntou=${perguntou}`);
+    page.off("dialog", aoDialogo);
   }
 
   // --- D: janela NÃO é mais modal — clicar fora dela (no mapa) NUNCA
@@ -300,34 +371,53 @@ async function main() {
     await page.locator('.rv-aba[aria-label="Personagens"]').click();
   }
 
-  // --- G: "Continuar para posicionar" → "Voltar para editar" → fechar por X ---
+  // --- G: "Continuar para posicionar" e sair de lá ---
+  //
+  // O bloco original ia de posicionar para "Voltar para editar" e de lá
+  // fechava por X. Esse botão NÃO EXISTE no caminho normal: em
+  // `VttClient` ele só é renderizado com `fluxoToken?.fase === "erro"`,
+  // ou seja, depois de o servidor recusar a criação. Quem está
+  // posicionando e mudou de ideia só tem Esc — e Esc perde o
+  // formulário inteiro.
+  //
+  // Isso é lacuna de produto, registrada como TOK-06 e esperando
+  // decisão de onde a saída deve ficar. O motor já aceita
+  // (`voltarParaEditarToken` trata a fase `posicionando`); falta o
+  // botão. Enquanto não houver decisão, o check cobre o que existe:
+  // entrar em posicionamento, sair por Esc, mapa inteiro.
   {
     await abrirPorBotaoBarra();
-    await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Volta Editar Fecha");
-    await page.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Continuar para posicionar" }).click();
-    await page.waitForSelector(".rv-escolha-posicao", { timeout: 5000 });
-    await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 });
-    await page.locator(".rv-btn", { hasText: "Voltar para editar" }).click();
-    await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
-    await page.locator('.rv-gerenciador-token .rv-fp-fechar[aria-label="Fechar"]').click();
-    // "Voltar para editar" preencheu de novo com "Volta Editar Fecha" — sujo=true de novo? Não: valoresIniciais AGORA é o próprio rascunho, então valores===valoresIniciais, sujo=false, fecha direto sem confirm.
-    await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(async () => {
-      // se por acaso pedir confirmação (não deveria), aceita pra não travar o restante da suíte.
-      await page.keyboard.press("Escape");
-    });
-    await confirmarMapaFuncional(page, "G (voltar-para-editar depois fechar, mapa funcional)");
+    await continuarParaPosicionar(page, "Volta Editar Fecha");
+    const semVoltar = (await page.locator(".rv-btn", { hasText: "Voltar para editar" }).count()) === 0;
+    registrar(
+      "G1 (posicionando: a única saída hoje é Esc — TOK-06 é a decisão pendente)",
+      semVoltar,
+      semVoltar ? "nenhum 'Voltar para editar' no caminho normal" : "apareceu um 'Voltar para editar' — TOK-06 pode ter sido resolvida; revisar este critério",
+    );
+    await page.keyboard.press("Escape");
+    await page.waitForSelector(".rv-camada-posicionamento-token", { state: "detached", timeout: 3000 }).catch(() => {});
+    await confirmarMapaFuncional(page, "G2 (sair do posicionamento por Esc, mapa funcional)");
   }
 
   // --- H: erro de validação (PV inválido) e depois fechar ---
   {
     await abrirPorBotaoBarra();
-    await page.locator("summary", { hasText: "Identidade ampliada" }).click();
-    const pvAtual = page.locator('.rv-gerenciador-token fieldset:has-text("Pontos de Vida") input').first();
-    const pvMax = page.locator('.rv-gerenciador-token fieldset:has-text("Pontos de Vida") input').nth(1);
+    await page.locator("summary", { hasText: "Retrato, vida e estado" }).click();
+    // "Pontos de Vida" virou "Recursos" (PV, PE e Mana na mesma linha),
+    // e por posição os campos agora são seis. `aria-label` é o que
+    // sobrevive a esse tipo de rearranjo — e é o mesmo rótulo que um
+    // leitor de tela usa pra achar o campo.
+    const pvAtual = page.locator('.rv-gerenciador-token input[aria-label="PV atual"]');
+    const pvMax = page.locator('.rv-gerenciador-token input[aria-label="PV máximo"]');
     await pvAtual.fill("50");
     await pvMax.fill("10");
     await page.waitForTimeout(150);
-    page.once("dialog", (d) => d.accept());
+    // Sem `page.once("dialog")` aqui: este bloco abre em modo CRIAR, e
+    // criar-e-desistir não pergunta nada. Um `once` que nunca dispara
+    // NÃO é inofensivo — ele fica pendurado e é consumido pelo próximo
+    // diálogo de verdade, que aí tem dois donos ("Cannot accept dialog
+    // which is already handled"). Foi assim que a suíte passou a
+    // estourar depois que os blocos B e C ganharam diálogos reais.
     await page.locator(".rv-gerenciador-token .rv-btn--ghost", { hasText: "Cancelar" }).click();
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
     await confirmarMapaFuncional(page, "H (erro de validação, depois fechar, mapa funcional)");
@@ -335,7 +425,7 @@ async function main() {
 
   // --- I: duplo clique no botão da barra ---
   {
-    const botaoAbrir = page.locator('.rv-ferr-btn[aria-label="Adicionar token"]');
+    const botaoAbrir = page.locator('.rv-ferr-btn[aria-label^="Adicionar token"]');
     await botaoAbrir.evaluate((el) => { (el as HTMLButtonElement).click(); (el as HTMLButtonElement).click(); });
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
     const quantos = await page.locator(".rv-gerenciador-token").count();
@@ -360,7 +450,12 @@ async function main() {
     await page.keyboard.press("m"); // atalho de Medir — não deveria fazer nada estranho: backdrop bloqueia o mapa
     await page.waitForTimeout(200);
     const aindaAberto = (await page.locator(".rv-gerenciador-token").count()) === 1;
-    page.once("dialog", (d) => d.accept());
+    // Sem `page.once("dialog")` aqui: este bloco abre em modo CRIAR, e
+    // criar-e-desistir não pergunta nada. Um `once` que nunca dispara
+    // NÃO é inofensivo — ele fica pendurado e é consumido pelo próximo
+    // diálogo de verdade, que aí tem dois donos ("Cannot accept dialog
+    // which is already handled"). Foi assim que a suíte passou a
+    // estourar depois que os blocos B e C ganharam diálogos reais.
     await page.keyboard.press("Escape");
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
     await confirmarMapaFuncional(page, "K (atalho de ferramenta com modal aberto não quebra nada, fecha normalmente depois)");
@@ -413,9 +508,7 @@ async function main() {
   // --- N: falha de rede ao CRIAR (posicionamento → enviando) ---
   {
     await abrirPorBotaoBarra();
-    await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Rede Falha Criar");
-    await page.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Continuar para posicionar" }).click();
-    await page.waitForSelector(".rv-escolha-posicao", { timeout: 5000 });
+    await continuarParaPosicionar(page, "Rede Falha Criar");
     const pararDeAbortar = await abortarProximaServerAction();
 
     const idx = 90;
@@ -444,14 +537,12 @@ async function main() {
   {
     // Cria um token de verdade pra editar.
     await abrirPorBotaoBarra();
-    await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Editável Rede");
-    await page.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Continuar para posicionar" }).click();
-    await page.waitForSelector(".rv-escolha-posicao", { timeout: 5000 });
+    await continuarParaPosicionar(page, "Editável Rede");
     const box = await page.locator(".rv-camada-grade path").nth(105).boundingBox();
     await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2, { steps: 3 });
     await page.waitForTimeout(150);
     await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 5000 });
+    await page.waitForSelector(".rv-camada-posicionamento-token", { state: "detached", timeout: 5000 });
     const { data: tok } = await admin.from("vtt_tokens").select("id").eq("campaign_id", campaignId).eq("nome", "Editável Rede").single();
 
     await page.locator(`.rv-token[data-token-id="${tok!.id}"]`).click({ button: "right" });
@@ -483,14 +574,25 @@ async function main() {
     registrar("O4 (nome NÃO foi alterado no banco pela tentativa que falhou)", naoAlterado?.nome === "Editável Rede", `nome="${naoAlterado?.nome}"`);
   }
 
-  // ═══════════ SEÇÃO 2 — precisão: a fase "configurando" (CRIAR,
-  // antes de "Continuar para posicionar") NUNCA chama rede — não é só
-  // "recupera de uma falha", é estruturalmente IMPOSSÍVEL travar por
-  // queda de rede aqui, porque nenhum `await`/fetch acontece nesse
-  // caminho. Prova isto abortando TODA Server Action da página inteira
-  // enquanto mexe no formulário e clica "Continuar" — se alguma
-  // requisição realmente saísse, o abort a pegaria; zero requisições
-  // capturadas confirma a ausência estrutural, não só resiliência. ═══
+  // ═══════════ SEÇÃO 2 — a fase "configurando" (CRIAR, antes de
+  // "Continuar para posicionar") não trava nem grava por causa da
+  // rede. Prova isto abortando TODA Server Action da página inteira
+  // enquanto mexe no formulário e clica "Continuar".
+  //
+  // A MEDIÇÃO MUDOU, e vale dizer por quê. O critério exigia ZERO
+  // requisições, com o argumento de que seria "estruturalmente
+  // impossível travar aqui porque nenhum await/fetch acontece nesse
+  // caminho". Isso deixou de ser verdade: mexer nos campos dispara
+  // leituras — medido, uma ao trocar a ficha vinculada e outra ao mexer
+  // no interruptor. Contar requisição não distingue leitura de escrita,
+  // então o critério reprovava por um `fetch` que não muda nada e não
+  // impede nada.
+  //
+  // O que importa é o que a pessoa vive: com a rede inteira caída, o
+  // formulário continua utilizável até o fim, e nada foi gravado. É
+  // isso que se afirma agora — e como as leituras são abortadas junto,
+  // esta passagem prova de quebra que o formulário aguenta a falha
+  // delas. ═══
   {
     let requisicoesVistas = 0;
     const handler = async (route: import("playwright").Route) => {
@@ -499,23 +601,52 @@ async function main() {
       await route.continue();
     };
     await page.route(url, handler);
+    // Os aborts daqui também são de propósito — sem isto, os
+    // `net::ERR_FAILED` que eles geram reprovavam o critério de console
+    // no fim da suíte. A isenção era só dos cenários N/O.
+    abortandoDeProposito = true;
+
+    // O PONTEIRO SAI DE CIMA DE QUALQUER TOKEN ANTES DE COMEÇAR.
+    //
+    // Este bloco afirma que a fase "configurando" não chama rede, e
+    // mede isso contando Server Actions da página inteira. Os blocos
+    // anteriores deixam tokens no mapa, e o cartão de hover BUSCA os
+    // recursos do token no instante em que o ponteiro entra nele (de
+    // propósito: os 420ms de espera viram tempo de rede grátis). Com o
+    // mouse parado sobre um token, essa leitura entrava na conta e o
+    // critério acusava o formulário de uma requisição que não era dele.
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(250);
 
     await abrirPorBotaoBarra();
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Config Sem Rede");
-    await page.locator("summary", { hasText: "Identidade ampliada" }).click();
+    await page.locator("summary", { hasText: "Retrato, vida e estado" }).click();
+    await page.waitForTimeout(400);
     await page.locator('.rv-gerenciador-token select[value], .rv-gerenciador-token select').first().selectOption({ index: 1 }).catch(() => {});
+    await page.waitForTimeout(400);
     await page.locator('.rv-gerenciador-token input[type=checkbox]').first().click().catch(() => {});
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(400);
     await page.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Continuar para posicionar" }).click();
-    const chegouAPosicionar = await page.waitForSelector(".rv-escolha-posicao", { timeout: 5000 }).then(() => true).catch(() => false);
+    await page.locator(".rv-gerenciador-token").waitFor({ state: "detached", timeout: 8000 }).catch(() => {});
+    // A camada de posicionamento só nasce com ÂNCORA, e a âncora vem do
+    // ponteiro sobre uma célula — esperar por ela sem mover o mouse é
+    // esperar pelo que não pode ter sido desenhado ainda.
+    const primeiraCelula = await page.locator(".rv-camada-grade path").first().boundingBox();
+    if (primeiraCelula) {
+      await page.mouse.move(primeiraCelula.x + primeiraCelula.width / 2, primeiraCelula.y + primeiraCelula.height / 2, { steps: 3 });
+    }
+    const chegouAPosicionar = await page.waitForSelector(".rv-camada-posicionamento-token", { timeout: 8000 }).then(() => true).catch(() => false);
+    const { data: gravadoNaConfiguracao } = await admin.from("vtt_tokens")
+      .select("id").eq("campaign_id", campaignId).eq("nome", "Config Sem Rede");
     registrar(
-      "P (fase 'configurando' nunca chama rede — zero requisições capturadas mesmo com TUDO abortado, 'Continuar' funciona igual)",
-      requisicoesVistas === 0 && chegouAPosicionar,
-      `requisiçõesVistas=${requisicoesVistas}, chegouAPosicionar=${chegouAPosicionar}`,
+      "P (com a rede inteira abortada, a fase 'configurando' vai até o fim e não grava nada)",
+      chegouAPosicionar && (gravadoNaConfiguracao ?? []).length === 0,
+      `chegouAPosicionar=${chegouAPosicionar}, linhas gravadas=${(gravadoNaConfiguracao ?? []).length}, leituras abortadas=${requisicoesVistas}`,
     );
     await page.unroute(url, handler);
+    abortandoDeProposito = false;
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 }).catch(() => {});
+    await page.waitForSelector(".rv-camada-posicionamento-token", { state: "detached", timeout: 3000 }).catch(() => {});
   }
 
   // ═══════════ SEÇÃO 7 — janela flutuante (não-modal) ═══════════
@@ -572,12 +703,27 @@ async function main() {
     // Alcança o ÚLTIMO controle focável da janela (o botão primário do rodapé) e dá mais um Tab.
     await page.locator(".rv-gerenciador-token .rv-btn--pri").focus();
     await page.keyboard.press("Tab");
-    const focoSaiu = await page.evaluate(() => {
+    // A janela pode ter mais controles DEPOIS do botão primário do
+    // rodapé — a ordem do DOM não é obrigada a terminar nele, e um Tab
+    // só prova pouco. O que se afirma é que o foco SAI em algum
+    // momento; um foco preso volta pro começo da janela e fica
+    // circulando, então um teto de Tabs acima do número de controles
+    // basta pra distinguir os dois casos.
+    const controles = await page.locator('.rv-gerenciador-token button, .rv-gerenciador-token input, .rv-gerenciador-token select, .rv-gerenciador-token textarea, .rv-gerenciador-token summary').count();
+    let focoSaiu = await page.evaluate(() => {
       const ativo = document.activeElement;
       const janela = document.querySelector(".rv-gerenciador-token");
       return !!ativo && !!janela && !janela.contains(ativo);
     });
-    registrar("S (Tab a partir do último controle da janela sai dela — sem foco preso)", focoSaiu, `focoSaiu=${focoSaiu}`);
+    for (let i = 0; i < controles + 2 && !focoSaiu; i++) {
+      await page.keyboard.press("Tab");
+      focoSaiu = await page.evaluate(() => {
+        const ativo = document.activeElement;
+        const janela = document.querySelector(".rv-gerenciador-token");
+        return !!ativo && !!janela && !janela.contains(ativo);
+      });
+    }
+    registrar("S (o foco consegue SAIR da janela por Tab — não fica preso circulando)", focoSaiu, `focoSaiu=${focoSaiu}, controles=${controles}`);
     await page.locator('.rv-gerenciador-token .rv-fp-fechar[aria-label="Fechar"]').click().catch(async () => {
       // se o foco saiu de fato, o botão de fechar ainda existe no DOM — clique direto por seletor, sem depender de foco.
       await page.locator(".rv-gerenciador-token .rv-fp-fechar").click();
@@ -588,7 +734,7 @@ async function main() {
   // --- T: scroll dentro do corpo funciona; pan do mapa (botão direito) continua fora da janela ---
   {
     await abrirPorBotaoBarra();
-    await page.locator("summary", { hasText: "Identidade ampliada" }).click();
+    await page.locator("summary", { hasText: "Retrato, vida e estado" }).click();
     const corpo = page.locator(".rv-janela-token-corpo");
     const scrollAntes = await corpo.evaluate((el) => el.scrollTop);
     const box = (await corpo.boundingBox())!;

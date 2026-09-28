@@ -68,7 +68,7 @@ async function main() {
   const page = await context.newPage();
 
   try {
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
     await page.locator('[data-testid="painel-aba-personagens"]').click();
     await page.waitForSelector('[data-testid="painel-personagens-linha"]', { timeout: 15000 });
@@ -158,12 +158,12 @@ async function main() {
     await page.screenshot({ path: "scripts/dev/.artefatos-visuais/console-ancorado.png" });
     // ─── A ficha aberta a partir de Personagens é a MESMA janela da
     // mesa: não navega, não troca a URL, não traz barra própria.
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "networkidle" });
-    await page.waitForSelector(`[data-testid="personagens-abrir-ficha-${p1}"]`, { timeout: 20000 });
+    await page.goto(`${BASE_URL}/mesas/personagens`, { waitUntil: "networkidle" });
+    await page.waitForSelector(`a.ra-charcard[href*="characterId=${p1}"]`, { timeout: 20000 });
     await page.waitForTimeout(3500); // aquecimento em ocioso
     const urlAntes = page.url();
     const t2 = Date.now();
-    await page.locator(`[data-testid="personagens-abrir-ficha-${p1}"]`).click();
+    await page.locator(`a.ra-charcard[href*="characterId=${p1}"]`).click();
     await page.waitForSelector('[data-testid="console-window"]', { timeout: 60000 });
     const dePersonagens = await page.evaluate(() => ({
       mudouAUrl: false,

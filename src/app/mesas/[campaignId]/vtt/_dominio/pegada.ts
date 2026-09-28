@@ -27,13 +27,11 @@
  *   - enorme: 7 células — âncora (centro) + os 6 vizinhos (anel raio 1
  *     completo). Simétrico: rotacionar não muda o conjunto ocupado,
  *     porque rotacionar as 6 direções só as permuta.
- *   - colossal: 12 células — as 7 do "enorme" MAIS as 5 primeiras
- *     células do anel de raio 2 (em ordem horária, começando no offset
- *     `2×SW`) — uma extensão conectada e sem buraco, não o anel de 12
- *     células sozinho (que deixaria o centro vazio) nem o disco de
- *     raio 2 inteiro (que seria 19). Construído por código a partir de
- *     `anelHex` (mesma função usada nos testes), nunca digitado à mão
- *     como lista solta — ver `PRESETS_POR_CATEGORIA`.
+ *   - colossal: 13 células em ESTRELA — as 7 do "enorme" mais as 6
+ *     PONTAS do anel de raio 2. Simétrico como o enorme: girar só
+ *     permuta as direções. Construído por código a partir de `anelHex`
+ *     (mesma função usada nos testes), nunca digitado à mão como lista
+ *     solta — ver `PRESETS_POR_CATEGORIA`.
  *
  * `hexNoRaio`/`hexVizinhos` de `_mapa/hex.ts` cobrem discos e anéis
  * geométricos genéricos (Medir, áreas) — este arquivo é especificamente
@@ -91,7 +89,14 @@ const DIRECOES: Hex[] = [
 const PEGADA_PEQUENO_MEDIO: Pegada = [{ q: 0, r: 0 }];
 const PEGADA_GRANDE: Pegada = [{ q: 0, r: 0 }, DIRECOES[0], DIRECOES[5]]; // âncora + E + SE — mutuamente adjacentes, formação triangular.
 const PEGADA_ENORME: Pegada = [{ q: 0, r: 0 }, ...anelHex(1)];
-const PEGADA_COLOSSAL: Pegada = [{ q: 0, r: 0 }, ...anelHex(1), ...anelHex(2).slice(0, 5)];
+/* ESTRELA de 13: âncora + anel 1 + as 6 PONTAS do anel 2 (uma a cada
+   duas células). Era o "enorme" mais as 5 primeiras do anel 2 — um
+   caroço torto, que mudava de forma a cada giro. Anéis de hexágono têm
+   1, 7 e 19 células: não existe arranjo de 12 com simetria de 6 lados,
+   então a saída foi trocar a contagem, não torcer o desenho. Uma
+   célula a mais, simetria perfeita, e nenhum tamanho além do Grande
+   segue tendo pegada que muda ao girar. */
+const PEGADA_COLOSSAL: Pegada = [{ q: 0, r: 0 }, ...anelHex(1), ...anelHex(2).filter((_, i) => i % 2 === 0)];
 
 const PRESETS_POR_CATEGORIA: Record<CategoriaTamanho, Pegada> = {
   pequeno: PEGADA_PEQUENO_MEDIO,

@@ -17,7 +17,8 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
-import { ChevronDown, Minus, Plus } from "lucide-react";
+import { ChevronDown, Minus } from "lucide-react";
+import { Plus } from "../../_design/icons";
 import { MapaHex, type CenaMapa, type EstadoVisualToken } from "../../mesas/[campaignId]/vtt/_mapa/MapaHex";
 import type { AreaDesenhavel } from "../../mesas/[campaignId]/vtt/_mapa/CamadaAreas";
 import { AcoesAreaFlutuantes } from "../../mesas/[campaignId]/vtt/_shell/AcoesAreaFlutuantes";
@@ -34,8 +35,8 @@ const SEM_EFEITO = () => {};
 function token(id: string, nome: string, sigla: string, lado: "pj" | "pn", q: number, r: number, extra: Partial<TokenApresentacao> = {}): TokenApresentacao {
   return {
     id, nome, sigla, lado, vertente: "energetico", tamanho: "medio",
-    pos: { q, r }, offset: { q: 0, r: 0 }, orientacao: 0,
-    pegadaPersonalizada: null, retrato: null, pv: 20, pvMax: 20,
+    pos: { q, r }, offset: { q: 0, r: 0 }, orientacao: 0, direcao: 0,
+    pegadaPersonalizada: null, retrato: null, pv: 20, pvMax: 20, pe: null, peMax: null, mana: null, manaMax: null,
     condicoes: [], visivel: true, bloqueado: false, characterId: null,
     pvPublico: true, pePublico: false, manaPublica: true, podeControlar: true, revision: 1,
     ...extra,
@@ -206,6 +207,8 @@ export function VitrineMapa() {
           onSelecionarCaixa={selecionarCaixa}
           ferramenta="interagir"
           onHoverToken={setHover}
+          onAtivarCartaoToken={() => undefined}
+          onFecharCartaoToken={() => undefined}
           areas={areas}
           areasMostrarCelulas={mostrarCelulas}
           areasMostrarHalos

@@ -66,21 +66,21 @@ export const TABLIST_W = 53;
 /**
  * Soma de tudo que fica ACIMA/ABAIXO da coluna 1 na vertical, dentro
  * da janela — topbar (44) + borda+padding de `.rc-window` (1+1 * 2 =
- * 4) + padding de `.rc-body` (24 * 2 = 48). É o que converte "altura
+ * 4) + padding de `.rc-body` (16 * 2 = 32). É o que converte "altura
  * medida da coluna 1" em "altura de janela equivalente" — ver
  * `registrarAlturaColuna1` em `useConsoleWindow.ts`.
  */
-export const CHROME_VERTICAL = 44 + 4 + 48;
+export const CHROME_VERTICAL = 44 + 4 + 32;
 
 /**
  * Igual a `CHROME_VERTICAL`, mas pra largura — borda+padding de
- * `.rc-window` (4) + padding horizontal de `.rc-body` (48). NÃO inclui
+ * `.rc-window` (4) + padding horizontal de `.rc-body` (32). NÃO inclui
  * `TABLIST_W`: o trilho fica fora de `.rc-window`, então quem soma o
  * trilho é só quem precisa da largura TOTAL visível (maximizar/resize
  * pela direita), não a conversão "largura do grid → largura da
  * janela".
  */
-export const CHROME_HORIZONTAL = 4 + 48;
+export const CHROME_HORIZONTAL = 4 + 32;
 
 /** Frações de viewport usadas só no abrir (spec: não temos porquê
  * encostar nas bordas da tela quando o conteúdo é menor que isso). */

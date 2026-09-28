@@ -49,6 +49,7 @@ const ESTADO_LABELS: Record<ItemLoadoutState, string> = {
   empunhado: "Empunhado",
   acesso_rapido: "Acesso rápido",
   mochila: "Mochila",
+  abrigo: "Abrigo",
 };
 
 /**

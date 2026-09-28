@@ -34,13 +34,13 @@ import {
   type ItemTransferivel,
 } from "./bandoModelo";
 import { lerBandoPainelAction, removerItemBandoAction, type BandoPainel, type ItemBandoPainel } from "./acoes/bandoPainel";
+import { useRolagemVelada } from "../_shell/useRolagemVelada";
 import { comecarLeitura, dadosDoEstado, falharLeitura, type EstadoAba } from "./tipos";
 import { DialogoConfirmar } from "./ui/Dialogo";
 
 export function BandoTab({
   campaignId,
   visivel,
-  onContador,
   onEnviarParaPersonagem,
   recarregarSinal,
   onAbrirJanela,
@@ -48,7 +48,6 @@ export function BandoTab({
 }: {
   campaignId: string;
   visivel: boolean;
-  onContador: (n: number | null) => void;
   /** Abre a escolha explícita de personagem autorizado (o painel não adivinha destino). */
   onEnviarParaPersonagem: (item: ItemTransferivel) => void;
   /** Muda quando uma transferência concluída lá fora exige releitura desta aba. */
@@ -63,6 +62,8 @@ export function BandoTab({
    */
   fixtureVisual?: BandoPainel;
 }) {
+  /* O degradê nas pontas da lista — ver `useRolagemVelada`. */
+  const veuDaLista = useRolagemVelada<HTMLDivElement>();
   const [estado, setEstado] = useState<EstadoAba<BandoPainel>>({ fase: "ocioso" });
   const [consulta, setConsulta] = useState("");
   const [detalheId, setDetalheId] = useState<string | null>(null);
@@ -104,9 +105,6 @@ export function BandoTab({
   const grupos = useMemo(() => (dados ? agruparPorCategoria(dados.itens, consulta) : []), [dados, consulta]);
   const totalVisivel = useMemo(() => grupos.reduce((n, g) => n + g.itens.length, 0), [grupos]);
 
-  useEffect(() => {
-    onContador(dados ? totalDeUnidades(dados.itens) : null);
-  }, [dados, onContador]);
 
   const detalhe = useMemo(
     () => (detalheId ? (dados?.itens.find((i) => i.id === detalheId) ?? null) : null),
@@ -160,7 +158,7 @@ export function BandoTab({
             testId="painel-bando-busca"
           />
 
-          <div className="rv-pn-scroll" data-testid="painel-bando-scroll">
+          <div {...veuDaLista.atributos} className="rv-pn-scroll" data-testid="painel-bando-scroll">
             {estado.fase === "carregando" && <EstadoCarregando testId="painel-bando-carregando" />}
             {estado.fase === "erro" && (
               <EstadoErro mensagem={estado.mensagem} onTentarDeNovo={carregar} testId="painel-bando-erro" />
@@ -223,9 +221,6 @@ export function BandoTab({
           )}
           {detalhe && (
             <div className="rv-fg-card" data-testid="painel-bando-detalhe" style={{ "--fg-a": "var(--rv-am)" } as React.CSSProperties}>
-              <div className="rv-fg-brackets" aria-hidden="true">
-                <span className="rv-fg-bk-tl" /><span className="rv-fg-bk-tr" /><span className="rv-fg-bk-bl" /><span className="rv-fg-bk-br" />
-              </div>
               <div className="rv-fg-espinha">
                 <span className="rv-fg-espinha-topo">{detalhe.nome.slice(0, 2).toUpperCase()}</span>
                 <span className="rv-fg-espinha-rotulo">Item</span>

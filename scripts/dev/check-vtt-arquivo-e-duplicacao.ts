@@ -55,7 +55,11 @@ async function noMenu(page: Page, cena: string, item: string) {
 }
 
 async function cenaNaTela(page: Page): Promise<string> {
-  return (await page.locator(".rv-cena").first().textContent())?.trim() ?? "";
+  // `.rv-cena` não existe mais: o bloco de cena virou o CHIP do rodapé
+  // do palco (`cena-chip`). O check morria aqui, DEPOIS de imprimir "10
+  // critérios ok, 0 falhas" — a exceção caía no `main().catch`, saía com
+  // código 1, e quem lesse só a linha de veredito veria um check verde.
+  return (await page.locator('[data-testid="cena-chip"] .rv-cena-chip__nome').first().textContent())?.trim() ?? "";
 }
 
 async function main() {
@@ -118,9 +122,9 @@ async function main() {
   const page = await ctx.newPage();
 
   try {
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
-    await page.locator('[data-testid="barra-cenas"]').click();
+    await page.locator('[data-testid="cena-chip"]').click();
     await page.waitForSelector('[data-testid="cenas-lista"]', { timeout: 5000 });
 
     console.log("\n— A miniatura —");
@@ -173,16 +177,33 @@ async function main() {
       !(await cenaNaTela(page)).includes("(cópia)"));
 
     console.log("\n— Arquivar e a aba de arquivo —");
-    criterio("sem arquivo, o botão do arquivo não existe",
-      await page.locator('[data-testid="cenas-ver-arquivo"]').count() === 0);
+    // O botão do arquivo deixou de APARECER e SUMIR: ele está sempre
+    // ali, desabilitado enquanto não há nada arquivado
+    // (`disabled={arquivadas.length === 0 && ...}`). Um controle que
+    // some e volta faz a barra dançar; desabilitado, ele também ensina
+    // que o arquivo existe antes de haver o primeiro.
+    //
+    // A troca derrubou três critérios de uma vez, e o segundo e o
+    // terceiro foram pelo motivo mais traiçoeiro: a espera entre eles
+    // era "o botão existir no DOM". Como ele passou a existir SEMPRE, a
+    // espera voltava na hora — antes de a cena ter sido arquivada — e
+    // os dois critérios mediam o catálogo velho. Uma espera que não
+    // espera.
+    criterio("sem nada arquivado, o botão do arquivo existe mas fica desabilitado",
+      await page.locator('[data-testid="cenas-ver-arquivo"][disabled]').count() === 1);
     await noMenu(page, "Ponte Quebrada (cópia)", "cena-arquivar");
+    // Agora a espera é pelo estado que a ação produz: o botão habilitado
+    // e contando um.
     await page.waitForFunction(
-      () => document.querySelector('[data-testid="cenas-ver-arquivo"]') !== null,
+      () => {
+        const b = document.querySelector('[data-testid="cenas-ver-arquivo"]') as HTMLButtonElement | null;
+        return !!b && !b.disabled && b.textContent?.includes("(1)") === true;
+      },
       undefined, { timeout: 15000 },
     );
     criterio("a arquivada sai do catálogo",
       !(await nomes(page)).includes("Ponte Quebrada (cópia)"), (await nomes(page)).join(" | "));
-    criterio("e o botão do arquivo aparece contando 1",
+    criterio("e o botão do arquivo conta 1",
       (await page.locator('[data-testid="cenas-ver-arquivo"]').textContent())?.includes("(1)") === true);
 
     await page.locator('[data-testid="cenas-ver-arquivo"]').click();
@@ -214,14 +235,14 @@ async function main() {
     console.log("\n— Arquivar a cena que o narrador está OLHANDO —");
     await cartao(page, "Casa de Máquinas").locator('[data-testid="cena-abrir"]').click();
     await page.waitForFunction(
-      () => document.querySelector(".rv-cena")?.textContent?.includes("Casa de Máquinas") === true,
+      () => document.querySelector('[data-testid="cena-chip"] .rv-cena-chip__nome')?.textContent?.includes("Casa de Máquinas") === true,
       undefined, { timeout: 15000 },
     );
     criterio("ele está na Casa de Máquinas", (await cenaNaTela(page)).includes("Casa de Máquinas"));
     await noMenu(page, "Casa de Máquinas", "cena-arquivar");
     criterio("arquivar tira ele de lá e o leva ao palco",
       await page.waitForFunction(
-        () => document.querySelector(".rv-cena")?.textContent?.includes("Doca Norte") === true,
+        () => document.querySelector('[data-testid="cena-chip"] .rv-cena-chip__nome')?.textContent?.includes("Doca Norte") === true,
         undefined, { timeout: 20000 },
       ).then(() => true).catch(() => false),
       `ficou em [${await cenaNaTela(page)}]`);

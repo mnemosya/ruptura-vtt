@@ -92,12 +92,14 @@ export function DialogoTexto({
   const { ref, fechar, montado } = useMoldura(onCancelar, aberto);
   const [valor, setValor] = useState(valorInicial);
   const [marcado, setMarcado] = useState(marcacao?.inicial ?? false);
+  const enviando = useRef(false);
   const campoRef = useRef<HTMLInputElement>(null);
   const idCampo = useId();
   const idTitulo = useId();
 
   useEffect(() => {
-    if (!aberto) return;
+    if (!aberto) { enviando.current = false; return; }
+    enviando.current = false;
     setValor(valorInicial);
     setMarcado(marcacao?.inicial ?? false);
     const t = requestAnimationFrame(() => {
@@ -112,6 +114,13 @@ export function DialogoTexto({
   const confirmar = () => {
     const v = valor.trim();
     if (!v) return;
+    // Guarda contra confirmação repetida. Quem fecha o diálogo é o
+    // chamador, num setState — e o React só aplica isso ao DOM depois
+    // da tarefa atual, então dois cliques rápidos (ou Enter seguido de
+    // clique) acertam o MESMO botão ainda presente e disparam a ação
+    // duas vezes. Com o guarda, a segunda não sai.
+    if (enviando.current) return;
+    enviando.current = true;
     onConfirmar(v, marcado);
   };
 

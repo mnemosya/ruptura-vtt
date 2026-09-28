@@ -100,8 +100,24 @@ async function main() {
   try {
     // `domcontentloaded` + espera pelo alvo: a mesa mantém conexões de
     // Realtime abertas, e `networkidle` nunca chega.
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "domcontentloaded" });
-    await page.locator(`[data-testid="personagens-abrir-ficha-${p1}"]`).click({ timeout: 60000 });
+    // ENTRA PELA MESA, não pela lista global de Personagens.
+    //
+    // Este check ROLA dados, e rolar exige a mesa: `podeRolar` em
+    // `PainelRolagem` depende de `useRolarNaMesa`, que vem do contexto
+    // dos dados 3D. Esse contexto só existe dentro do VTT — abrindo a
+    // ficha por fora dele, o botão "Rolar Nd8" nasce desabilitado, e o
+    // `click()` do Playwright ficava esperando "enabled" até o timeout.
+    // O check parecia quebrado e estava só no lugar errado.
+    //
+    // O caminho de verdade é o que uma pessoa faz: abrir a mesa, achar
+    // o personagem na aba Personagens do painel, abrir a ficha dali.
+    await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "domcontentloaded" });
+    await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 60000 });
+    await page.locator('.rv-aba[aria-label="Personagens"]').click();
+    const linha = page.locator(`[data-testid="painel-personagens-linha"][data-character-id="${p1}"]`);
+    await linha.waitFor({ state: "visible", timeout: 30000 });
+    await linha.click({ button: "right" });
+    await page.locator(".rv-menu-item", { hasText: "Abrir ficha" }).click();
     await page.waitForSelector('[data-testid="console-window"]', { timeout: 60000 });
     await page.waitForTimeout(600);
 

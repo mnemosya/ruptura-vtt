@@ -38,6 +38,17 @@ export interface PropsMiniCartaoCena {
   totalJogadores: number;
   ocupada: boolean;
   onAbrir: () => void;
+  /**
+   * O ARRASTO. A miniatura era o único lugar onde uma cena aparecia sem
+   * poder ser pega: dentro de uma pasta expandida no trilho, tirá-la
+   * dali exigia abrir a pasta pra achar o cartão grande. O gesto é o
+   * mesmo do cartão grande, e os alvos também (outra pasta, "Todas", a
+   * área da pasta aberta).
+   */
+  arrastavel?: boolean;
+  arrastando?: boolean;
+  onArrastarInicio?: (e: React.DragEvent) => void;
+  onArrastarFim?: () => void;
 }
 
 /**
@@ -69,7 +80,14 @@ export function MiniCartaoCena(p: PropsMiniCartaoCena) {
   });
 
   return (
-    <li className="rv-minicena" data-vista={p.vista || undefined}>
+    <li
+      className="rv-minicena"
+      data-vista={p.vista || undefined}
+      data-arrastando={p.arrastando || undefined}
+      draggable={p.arrastavel || undefined}
+      onDragStart={p.onArrastarInicio}
+      onDragEnd={p.onArrastarFim}
+    >
       <button
         type="button" className="rv-minicena-btn"
         disabled={p.ocupada}

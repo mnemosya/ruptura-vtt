@@ -54,6 +54,7 @@ import {
   type AberturaConsole,
 } from "../acoes/consolePainel";
 import type { DadosConsole } from "../../../../../../lib/console/dadosConsole";
+import type { AlvoAcaoToken, PedidoAcaoToken } from "../../_dominio/targets";
 
 /**
  * `CharacterSheetClient` puxa a ficha inteira (abas, motores, ícones).
@@ -121,14 +122,39 @@ function EsqueletoConsole() {
   );
 }
 
+/**
+ * A aba pedida, se ela existir de verdade — string de fora nunca vira
+ * `TabId` no grito. A lista é COPIADA (e não importada de
+ * `dev/character-sheet/components/CharacterSheetTabs`) de propósito:
+ * aquele módulo arrasta a árvore inteira do console de desenvolvimento
+ * pra dentro do pacote da mesa, e o preço é alto pra uma validação de
+ * quinze strings. A ficha valida de novo do lado dela.
+ */
+const ABAS_DA_FICHA = [
+  "geral", "atributos", "pericias", "recursos", "condicoes", "talentos", "magias",
+  "inventario", "biblioteca", "acoes", "rolagens", "log", "mesa", "personagens", "debug",
+] as const;
+
+function abaValida(aba: string | null | undefined): string | undefined {
+  if (!aba) return undefined;
+  return (ABAS_DA_FICHA as readonly string[]).includes(aba) ? aba : undefined;
+}
+
 export function ConsoleNoVtt({
   campaignId,
   characterId,
+  abaInicial,
+  acaoToken,
+  alvosNoMapa,
   onFechar,
 }: {
   campaignId: string;
   /** `null` = janela fechada. */
   characterId: string | null;
+  /** Em qual aba a ficha abre — ver `ApiConsoleDaMesa.abrir`. */
+  abaInicial?: string | null;
+  acaoToken?: PedidoAcaoToken | null;
+  alvosNoMapa?: AlvoAcaoToken[];
   onFechar: () => void;
 }) {
   const consoleDaMesa = useConsoleDaMesa();
@@ -137,11 +163,14 @@ export function ConsoleNoVtt({
   const [erro, setErro] = useState<string | null>(null);
   /** Id já carregado — evita refazer tudo quando o mesmo personagem é reaberto. */
   const carregadoRef = useRef<string | null>(null);
+  const pedidoAtualRef = useRef(characterId);
+  pedidoAtualRef.current = characterId;
 
   const carregar = useCallback(
     async (id: string) => {
       setErro(null);
       const r = await abrirConsoleAction(campaignId, id);
+      if (pedidoAtualRef.current !== id) return;
       if (!r.ok || !r.dados) {
         setErro(r.erro ?? "Falha ao abrir o Console.");
         return;
@@ -149,6 +178,7 @@ export function ConsoleNoVtt({
       setAbertura(r.dados);
       carregadoRef.current = id;
       const cat = await buscarCatalogos(campaignId);
+      if (pedidoAtualRef.current !== id) return;
       if (cat) setCatalogos(cat);
     },
     [campaignId],
@@ -164,7 +194,7 @@ export function ConsoleNoVtt({
 
   if (!characterId) return null;
 
-  const pronto = abertura && catalogos && !catalogos.erroFatal;
+  const pronto = abertura && abertura.personagem.id === characterId && catalogos && !catalogos.erroFatal;
 
   // "Ver no mapa" precisa das DUAS pontas: um mapa montado (só o VTT
   // registra a câmera) e o personagem posicionado na cena. Faltando
@@ -188,6 +218,9 @@ export function ConsoleNoVtt({
           data-janela-turno={abertura.janelaDeTurno ?? "fora"}
         >
           <CharacterSheetClient
+            key={characterId}
+            acaoToken={acaoToken}
+            alvosNoMapa={alvosNoMapa}
             regras={catalogos.regras}
             usandoFallback={catalogos.usandoFallback}
             personagensIniciais={[abertura.personagem]}
@@ -212,6 +245,7 @@ export function ConsoleNoVtt({
             escalposError={catalogos.escalposError}
             companionModelsIniciais={catalogos.companionModels}
             companionModelsError={catalogos.companionModelsError}
+            initialTab={abaValida(abaInicial) as never}
             initialCampaignId={campaignId}
             initialCharacterId={characterId}
             janelaDeTurno={abertura.janelaDeTurno}
@@ -227,10 +261,11 @@ export function ConsoleNoVtt({
   return (
     <JanelaInterna
       aberta
-      titulo="Console do Personagem"
+      modal={!acaoToken}
+      titulo={acaoToken ? "Ações do token" : "Console do Personagem"}
       subtitulo={abertura?.personagem.name}
-      largura={980}
-      altura={720}
+      largura={acaoToken ? 420 : 980}
+      altura={acaoToken ? 460 : 720}
       onFechar={onFechar}
       testId="painel-console-shell"
     >

@@ -19,13 +19,16 @@
 import assert from "node:assert/strict";
 import { chromium, type Page } from "playwright";
 import { BASE_URL, SESSION_FILE, assertAdminSessionValid, requireSessaoSalva, sessaoSalvaExiste } from "./authSession";
+import { limparEAnunciar } from "./residuoDeConteudo";
+import { salvarRascunho, aceitarDialogos } from "./rascunhoDeEdicao";
 
 async function excluirRascunhoSeExistir(page: Page, draftId: string): Promise<void> {
   const resp = await page.goto(`${BASE_URL}/admin/biblioteca/rascunhos/${draftId}`, { waitUntil: "domcontentloaded" });
   if (!resp || resp.status() === 404) return;
-  page.on("dialog", (d) => d.accept());
+  aceitarDialogos(page);
   const botao = page.locator('[data-testid="rascunho-excluir"]');
-  if ((await botao.count()) > 0) await botao.click();
+  if ((await botao.count()) === 0) return;
+  await botao.click();
 }
 
 async function main(): Promise<void> {
@@ -33,6 +36,7 @@ async function main(): Promise<void> {
     requireSessaoSalva();
     return;
   }
+  await limparEAnunciar();
   const browser = await chromium.launch({ headless: true });
   const draftsCriados: string[] = [];
 
@@ -65,6 +69,11 @@ async function main(): Promise<void> {
     await card.waitFor();
     console.log("2. Efeito teste/resistência adicionado — OK");
 
+    // Gatilho e alvo são obrigatórios em QUALQUER efeito, e o check não
+    // os preenchia — o salvamento era recusado, e a falha só aparecia
+    // três passos adiante, como "deveria manter 1 card após recarregar".
+    await card.locator('[data-testid="efeito-gatilho"]').selectOption("ao_usar");
+    await card.locator('[data-testid="efeito-alvo"]').selectOption("alvo_principal");
     await card.locator('[data-testid="teste-resistencia-pericia"]').selectOption("vigor");
     await card.locator('[data-testid="teste-resistencia-cd-tipo"]').selectOption("derivada");
     const formulaTexto = await card.locator('[data-testid="teste-resistencia-cd-formula"]').textContent();
@@ -82,7 +91,7 @@ async function main(): Promise<void> {
 
     console.log("6/7. Condição em falha e dano em falha crítica — cobertura mínima via campos já testados na Etapa 4");
 
-    await page.locator('[data-testid="rascunho-salvar"]').click();
+    await salvarRascunho(page);
     await page.waitForTimeout(500);
     await page.reload({ waitUntil: "domcontentloaded" });
     assert.equal(await page.locator('[data-testid="efeito-editor-card"][data-effect-type="teste_resistencia"]').count(), 1, "8/9. Deveria manter exatamente 1 card após salvar/recarregar.");

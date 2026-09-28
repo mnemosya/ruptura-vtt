@@ -41,6 +41,7 @@ import type { ConsoleMessage } from "playwright";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
 import { pegadaEfetiva, projetarPegada, type CategoriaTamanho } from "../../src/app/mesas/[campaignId]/vtt/_dominio/pegada";
+import { recolherPainelDaSessao } from "./painelDaSessao";
 
 loadDotenv({ path: ".env.local" });
 
@@ -266,7 +267,7 @@ async function main() {
   const erros: string[] = [];
   page.on("console", (m) => { if (erroRelevante(m)) erros.push(m.text().slice(0, 400)); });
 
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
 
   const { data: cbAntes } = await admin.from("vtt_tokens").select("id,sigla,q,r,tamanho,orientacao,revision").eq("campaign_id", campaignId).eq("sigla", "CB").maybeSingle();
@@ -344,17 +345,35 @@ async function main() {
     // bloqueio nenhum), o que faria a rota estrita "achar caminho" de
     // cara e nunca exercitar a camada de relaxamento — mascarando
     // exatamente o comportamento que este teste existe pra provar.
-    await esperarAte(async () => (await page.locator(".rv-terreno-real--bloqueado").count()) >= 1, 5000);
+    // ASSERÇÃO, não espera muda: `await esperarAte(...)` sem verificar o
+    // retorno deixa o teste seguir como se o terreno tivesse chegado.
+    // Se ele não chegou, o arrasto acontece sobre um mapa sem bloqueio
+    // nenhum e a falha aparece adiante como "a regra consultiva não
+    // desenhou o aviso" — culpando a regra por um bloqueio que o
+    // cliente nunca viu.
+    const terrenoChegou = await esperarAte(async () => (await page.locator(".rv-terreno-real--bloqueado").count()) >= 1, 5000);
+    registrar("T2b-pre (o bloqueio pintado chega ao cliente por Realtime, sem reload)", terrenoChegou, `chegou=${terrenoChegou}`);
     const origemBox = await boxDoToken(page, "B1");
     const destinoBox = await boxDaCelula(page, destino);
     let avisoTexto: string | null = null;
     let linhasAmbar = 0;
     let destaquesCelula = 0;
     if (origemBox && destinoBox) {
+      // O painel da sessão flutua sobre o mapa, e este token está
+      // debaixo dele: medido, `elementFromPoint` na origem do arraste
+      // devolvia `rv-pn-chat-scroll`. O `pointerdown` ia para o chat,
+      // nada se movia, e a falha aparecia como "a regra consultiva não
+      // desenhou a linha âmbar nem o aviso".
+      await recolherPainelDaSessao(page, origemBox);
       await page.mouse.move(origemBox.x, origemBox.y);
       await page.mouse.down();
       await page.mouse.move(destinoBox.x, destinoBox.y, { steps: 10 });
-      await page.waitForTimeout(200);
+      // Espera a prévia da rota EXISTIR antes de ler os indicadores.
+      // Eram 200ms fixos: quando a rota demorava mais que isso, a
+      // leitura pegava a tela antes de o cliente ter desenhado
+      // qualquer coisa, e os três indicadores davam zero — o que se
+      // parece exatamente com "a regra consultiva não funciona".
+      await page.locator(".rv-camada-rota-preview line").first().waitFor({ state: "attached", timeout: 5000 });
       // A pegada INTEIRA agora é projetada por passo (`bloqueiosNaRota`,
       // `_dominio/pathfindingHex.ts`) — o segmento fica âmbar mesmo
       // quando só uma célula SECUNDÁRIA do footprint (não a âncora)
@@ -444,16 +463,33 @@ async function main() {
     return null;
   }
 
-  // ── R1: rotação válida entra 1x no histórico ────────────────────
+  /*
+   * A ALÇA APONTA; QUEM GIRA A FORMA É O MENU.
+   *
+   * Estes critérios afirmavam que a alça muda `orientacao`. Isso
+   * descreve um desenho que foi substituído de propósito, e o motivo
+   * está escrito em `VttClient.tsx`: "GIRAR A FORMA — a pegada, não o
+   * olhar. [...] mudar a forma muda as células ocupadas e pode esbarrar
+   * em terreno ou noutro token. É por isso que ela ficou FORA da alça e
+   * virou ação de menu — ali a recusa é uma resposta legítima, e não uma
+   * surpresa no meio de um gesto contínuo."
+   *
+   * Hoje a alça chama `apontar_vtt_token` e mexe em `direcao`; a forma
+   * continua em `rotacionar_vtt_token`, pelo menu. Verificar `orientacao`
+   * depois de usar a alça é verificar a coluna errada — e o sintoma era
+   * cruel: a revisão SUBIA (a escrita de `direcao` aconteceu), então
+   * parecia que a rotação tinha sido salva e revertida.
+   */
+  // ── R1: apontar pela alça entra 1x no histórico ─────────────────
   {
     await selecionarCB();
-    const { data: antes } = await admin.from("vtt_tokens").select("orientacao,revision").eq("id", cbAntes.id).single();
+    const { data: antes } = await admin.from("vtt_tokens").select("direcao,orientacao,revision").eq("id", cbAntes.id).single();
     const desfazerAntes = await page.locator(SELETOR_DESFAZER).isDisabled();
     await girarDireita();
     const habilitouATempo = await esperarDesfazer(true);
-    const { data: depois } = await admin.from("vtt_tokens").select("orientacao,revision").eq("id", cbAntes.id).single();
+    const { data: depois } = await admin.from("vtt_tokens").select("direcao,orientacao,revision").eq("id", cbAntes.id).single();
     const desfazerDepois = await page.locator(SELETOR_DESFAZER).isDisabled();
-    registrar("R1a (rotação válida: orientação muda e revisão sobe 1 no banco)", depois?.orientacao === ((antes!.orientacao + 1) % 6) && depois?.revision === antes!.revision + 1, `antes=${JSON.stringify(antes)}, depois=${JSON.stringify(depois)}`);
+    registrar("R1a (apontar pela alça: direção muda um passo e revisão sobe 1 no banco)", depois?.direcao === (((antes!.direcao ?? 0) + 1) % 6) && depois?.revision === antes!.revision + 1, `antes=${JSON.stringify(antes)}, depois=${JSON.stringify(depois)}`);
     registrar("R1b (rotação válida entra no histórico: desfazer estava desabilitado, agora está habilitado)", desfazerAntes === true && habilitouATempo && desfazerDepois === false, `desfazer antes=${desfazerAntes}, habilitou a tempo=${habilitouATempo}, depois=${desfazerDepois}`);
 
     // Desfaz de verdade e confirma que volta pra orientação original.
@@ -476,14 +512,14 @@ async function main() {
     await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
     await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
     await selecionarCB();
-    const { data: antes } = await admin.from("vtt_tokens").select("orientacao,revision").eq("id", cbAntes.id).single();
+    const { data: antes } = await admin.from("vtt_tokens").select("direcao,orientacao,revision").eq("id", cbAntes.id).single();
     const desfazerAntes = await page.locator(SELETOR_DESFAZER).isDisabled();
     await girarDireita();
     // Recusa esperada — não há estado positivo pra esperar (o botão
     // continua desabilitado o tempo todo), então espera o round-trip
     // de rede assentar em vez de um timeout arbitrário.
     await page.waitForLoadState("networkidle", { timeout: 3000 }).catch(() => {});
-    const { data: depois } = await admin.from("vtt_tokens").select("orientacao,revision").eq("id", cbAntes.id).single();
+    const { data: depois } = await admin.from("vtt_tokens").select("direcao,orientacao,revision").eq("id", cbAntes.id).single();
     const desfazerDepois = await page.locator(SELETOR_DESFAZER).isDisabled();
     registrar("R2a (rotação pra fora do mapa é recusada pelo servidor: orientação/revisão inalteradas)", depois?.orientacao === antes!.orientacao && depois?.revision === antes!.revision, `antes=${JSON.stringify(antes)}, depois=${JSON.stringify(depois)}`);
     registrar("R2b (rotação recusada NÃO entra no histórico: desfazer continua desabilitado)", desfazerAntes === true && desfazerDepois === true, `desfazer antes=${desfazerAntes}, depois=${desfazerDepois}`);
@@ -496,7 +532,7 @@ async function main() {
     await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
     await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
     await selecionarCB();
-    const { data: antes } = await admin.from("vtt_tokens").select("orientacao,revision").eq("id", cbAntes.id).single();
+    const { data: antes } = await admin.from("vtt_tokens").select("direcao,orientacao,revision").eq("id", cbAntes.id).single();
     const desfazerAntes = await page.locator(SELETOR_DESFAZER).isDisabled();
     // Mudança concorrente "de outra sessão" — bumpa a revisão sem
     // passar pela UI, exatamente o cenário que a checagem de revisão
@@ -504,7 +540,7 @@ async function main() {
     await admin.from("vtt_tokens").update({ revision: antes!.revision + 1 }).eq("id", cbAntes.id);
     await girarDireita();
     await page.waitForLoadState("networkidle", { timeout: 3000 }).catch(() => {});
-    const { data: depois } = await admin.from("vtt_tokens").select("orientacao,revision").eq("id", cbAntes.id).single();
+    const { data: depois } = await admin.from("vtt_tokens").select("direcao,orientacao,revision").eq("id", cbAntes.id).single();
     const desfazerDepois = await page.locator(SELETOR_DESFAZER).isDisabled();
     registrar("R3a (revisão desatualizada: servidor recusa, orientação continua a mesma)", depois?.orientacao === antes!.orientacao, `antes=${JSON.stringify(antes)}, depois=${JSON.stringify(depois)}`);
     registrar("R3b (rotação recusada por revisão desatualizada NÃO entra no histórico)", desfazerAntes === true && desfazerDepois === true, `desfazer antes=${desfazerAntes}, depois=${desfazerDepois}`);
@@ -517,7 +553,7 @@ async function main() {
     await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
     await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
     await selecionarCB();
-    const { data: antes } = await admin.from("vtt_tokens").select("orientacao,revision").eq("id", cbAntes.id).single();
+    const { data: antes } = await admin.from("vtt_tokens").select("direcao,orientacao,revision").eq("id", cbAntes.id).single();
     // Três pedidos em rajada. Este critério já cobrou "revisão sobe
     // EXATAMENTE 1": o produto DESCARTAVA os dois seguintes enquanto o
     // primeiro estava em voo, e quem pedia três passos ganhava um. Três
@@ -536,7 +572,7 @@ async function main() {
     // Deixa a rajada ASSENTAR: se houvesse concorrência, as chamadas
     // extras chegariam depois desta primeira e apareceriam aqui.
     await page.waitForLoadState("networkidle", { timeout: 3000 }).catch(() => {});
-    const { data: depois } = await admin.from("vtt_tokens").select("orientacao,revision").eq("id", cbAntes.id).single();
+    const { data: depois } = await admin.from("vtt_tokens").select("direcao,orientacao,revision").eq("id", cbAntes.id).single();
     const passos = depois!.revision - antes!.revision;
     // O que este critério guarda é a AUSÊNCIA DE CONCORRÊNCIA: cada
     // escrita que aconteceu foi um passo limpo de 60°, com a revisão
@@ -547,8 +583,8 @@ async function main() {
     // e é `check-vtt-alca-rotacao.ts` (19b–19e, uma tecla por vez) que
     // prova que nenhuma tecla se perde.
     registrar(
-      "R4 (rajada de rotação: cada escrita é um passo limpo de 60°, revisão e orientação na mesma conta — zero concorrência)",
-      passos >= 1 && passos <= 3 && depois?.orientacao === ((antes!.orientacao + passos) % 6),
+      "R4 (rajada na alça: cada escrita é um passo limpo de 60°, revisão e direção na mesma conta — zero concorrência)",
+      passos >= 1 && passos <= 3 && depois?.direcao === (((antes!.direcao ?? 0) + passos) % 6),
       `antes=${JSON.stringify(antes)}, depois=${JSON.stringify(depois)}, passos=${passos}`,
     );
   }

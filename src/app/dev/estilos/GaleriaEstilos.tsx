@@ -30,7 +30,9 @@ import { TrilhaFaccoes } from "../../mesas/[campaignId]/vtt/_turnos/TrilhaFaccoe
    copiado: duas fixtures do mesmo HUD envelheceriam em ritmos
    diferentes, e a que ninguém abre é a que passa a mentir. */
 import { VitrineCartaoToken } from "./GaleriaCartaoToken";
-import { VitrineCamadas, VitrineCena, VitrineDados, VitrineMarcar, VitrineMedir, VitrineMoldura as VitrineMolduraJanela } from "./GaleriaJanelas";
+import { DialogFigma } from "./GaleriaInventarioFigma";
+import { InventarioFiel } from "./GaleriaInventarioFiel";
+import { VitrineCamadas, VitrineDados, VitrineMarcar, VitrineMedir, VitrineMoldura as VitrineMolduraJanela } from "./GaleriaJanelas";
 import { VitrineGaveta, VitrineLadrilho, VitrineParametros } from "./GaleriaCenas";
 import {
   VitrineAreas, VitrineGerenciadorToken, VitrineMenuContextual, VitrineObjetos, VitrineTerreno,
@@ -77,8 +79,8 @@ function trilha(over: Partial<EstadoTrilha> = {}): EstadoTrilha {
 function token(id: string, nome: string, sigla: string, lado: Lado): TokenApresentacao {
   return {
     id, nome, sigla, lado, vertente: "energetico", tamanho: "medio",
-    pos: { q: 0, r: 0 }, offset: { q: 0, r: 0 }, orientacao: 0,
-    pegadaPersonalizada: null, retrato: null, retratoImageId: null, origemRetrato: "nenhum", pv: null, pvMax: null,
+    pos: { q: 0, r: 0 }, offset: { q: 0, r: 0 }, orientacao: 0, direcao: 0,
+    pegadaPersonalizada: null, retrato: null, retratoImageId: null, origemRetrato: "nenhum", pv: null, pvMax: null, pe: null, peMax: null, mana: null, manaMax: null,
     condicoes: [], visivel: true, bloqueado: false, characterId: null,
     pvPublico: true, pePublico: false, manaPublica: true, podeControlar: true, revision: 1,
   };
@@ -276,6 +278,7 @@ function TrilhaDeFaccoes() {
           onDeclarar={SEM_EFEITO}
           onAssumir={SEM_EFEITO}
           onConcluir={SEM_EFEITO}
+          onCancelar={SEM_EFEITO}
           onEncerrar={SEM_EFEITO}
           onAvancarJanela={SEM_EFEITO}
           onProximaRodada={SEM_EFEITO}
@@ -287,6 +290,22 @@ function TrilhaDeFaccoes() {
 }
 
 function montarPecas(campaignId: string | null): Peca[] { return [
+  { chave: "inventario-figma", grupo: "Console do personagem", rotulo: "Inventário (Figma)", render: () => (
+    <Secao
+      titulo="Aba Inventário — cópia fiel do Figma"
+      sub={<>Transcrição do nó <code>159:40520</code> sem nenhuma conversão: cores do arquivo (a paleta ANTIGA do Console), medidas absolutas e os ícones exportados do próprio desenho. É RÉGUA de comparação, não peça de produto — ver <code>GaleriaInventarioFigma.tsx</code>.</>}
+    >
+      <div className="gal-figma-palco-scroll"><div className="gal-figma-palco"><DialogFigma /></div></div>
+    </Secao>
+  ) },
+  { chave: "inventario", grupo: "Console do personagem", rotulo: "Inventário", render: () => (
+    <Secao
+      titulo="Aba Inventário"
+      sub={<>A estrutura do desenho com as cores do Console: mesma geometria da cópia fiel ao lado, gerada do mesmo nó, com as cores passando por uma tabela de tradução (a paleta do arquivo é a ANTIGA, aposentada em <code>3d6a9c6</code>). Componente: <code>GaleriaInventarioFiel.tsx</code>.</>}
+    >
+      <div className="gal-figma-palco-scroll"><div className="gal-figma-palco"><InventarioFiel /></div></div>
+    </Secao>
+  ) },
   { chave: "primitivas", grupo: "Vocabulário", rotulo: "Primitivas", render: () => (
     <Secao titulo="Primitivas do painel" sub={<>O vocabulário compartilhado por cards, abas e janelas. Componente: <code>_painel/ui/primitivas.tsx</code>.</>}>
       <VitrinePrimitivas />
@@ -375,11 +394,6 @@ function montarPecas(campaignId: string | null): Peca[] { return [
   { chave: "jan-camadas", grupo: "Janelas de ferramenta", rotulo: "Camadas", render: () => (
     <Secao titulo="Camadas do mapa" sub={<>Visível e bloqueada por camada, separadas em cena e ferramentas — conteúdo escondido some pra mesa mas o narrador continua vendo; ferramenta escondida some pra todo mundo. Componente: <code>_shell/PainelCamadas.tsx</code>.</>}>
       <VitrineCamadas />
-    </Secao>
-  ) },
-  { chave: "jan-cena", grupo: "Janelas de ferramenta", rotulo: "Cena", render: () => (
-    <Secao titulo="Cena" sub={<>Nome, local, resumo e tamanho da grade, com o aviso do que ficaria de fora ao encolher. Componente: <code>_shell/PainelCena.tsx</code>.</>}>
-      <VitrineCena />
     </Secao>
   ) },
   { chave: "jan-terreno", grupo: "Janelas de ferramenta", rotulo: "Terreno", render: () => (

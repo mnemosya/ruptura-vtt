@@ -65,7 +65,12 @@
 
   position: fixed; inset: 0;
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr) auto;
+  /* UMA COLUNA SÓ: o mapa. As duas faixas que o grid reservava — 58px
+     pras ferramentas e `auto` pro painel — sumiram junto com o fato de
+     elas serem docadas. Tudo FLUTUA sobre o mapa agora, e reservar
+     espaço deixava uma tira do fundo da mesa entre o mapa e a peça: era
+     ela a faixa preta ao lado do painel. */
+  grid-template-columns: minmax(0, 1fr);
   background: var(--rv-ground);
   color: var(--txt);
   font-family: var(--rv-body);
@@ -140,18 +145,94 @@
 .rv-dica--fixa[data-lado="pn"] { transform: translate(-100%, -50%); }
 
 /* ── Ferramentas ─────────────────────────────────────────── */
+/* O TRILHO DE FERRAMENTAS usa o mesmo botão do trilho de abas do
+   Console (`.rc-tabrail-btn`, em `_design/console.css`): quadrado de
+   36px com borda própria, fundo escuro e cantos retos. São a mesma
+   coisa — uma coluna de ícones que escolhe o que a superfície mostra —
+   e desenhá-las diferente fazia a mesa parecer dois produtos colados.
+
+   Os valores estão repetidos aqui, e não importados: as duas folhas
+   são independentes (`console.css` roda também fora do VTT, na ficha),
+   e um import cruzado só pra seis declarações traria a cascata inteira
+   de uma pra dentro da outra. */
+/* COLUNA FLUTUANTE. Era uma faixa colada na borda, de cima a baixo,
+   com o mapa começando depois dela. Agora é uma peça sobre o mapa:
+   solta 8px das bordas, com altura do CONTEÚDO e canto de 8px. O mapa
+   aparece em volta, que é o que faz dela um objeto na mesa em vez de
+   uma parede da janela. */
 .rv-ferramentas {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 10px 0; background: var(--rv-sunken); border-right: 1px solid var(--linha-2); z-index: 20;
+  position: absolute; left: 8px; top: 8px; z-index: 20;
+  /* SEM CAIXA — teste. Cada botão já tem borda e fundo próprios; a
+     caixa em volta era uma segunda moldura em cima de uma coluna que
+     já se lê sozinha. */
+  border: none; border-radius: var(--rv-r-xl);
+  display: flex; flex-direction: column; align-items: center;
+  /* Itens ficam próximos entre si; as divisórias mantêm a folga maior
+     por meio da margem própria de `.rv-ferr-sep`. */
+  gap: 6px;
+  padding: 0; background: transparent;
+  /* SEM `overflow`, e isso é regra, não descuido. As dicas de cada
+     ferramenta são filhas do botão e saem PELO LADO; uma caixa de
+     rolagem recortaria todas elas — e `overflow-y` sozinho não existe:
+     quando um eixo deixa de ser `visible`, o outro vira `auto` junto.
+     Foi assim que a rolagem que eu tinha posto aqui apagou as dicas do
+     trilho inteiro.
+
+     Como não há rolagem, o trilho precisa CABER; o vão fixo de 6px
+     mantém a coluna compacta mesmo nas janelas mais baixas. */
 }
 .rv-ferr-btn {
   position: relative; width: 36px; height: 36px; flex: none;
   display: flex; align-items: center; justify-content: center;
-  border: none; border-radius: var(--rv-r); background: transparent; color: #63798a; cursor: pointer;
-  transition: color .14s, background .14s;
+  /* Sem fundo nem borda no container, são ELES as peças visíveis — a
+     forma e a cor da peça é que carregam a linguagem.
+
+     O fundo é um degrau ACIMA do fundo do VTT (`#070e1c`), e sólido:
+     translúcido, ele deixava a arte do mapa atravessar e cada botão
+     mudava de tom conforme o que passava por baixo. Um pouco mais claro
+     que o mapa, a peça se separa dele sem precisar de moldura. */
+  border: 1px solid rgba(0, 212, 255, .15); border-radius: var(--rv-r-peca);
+  background: #0c1526; color: #7f95b3; cursor: pointer;
+  transition: color .14s, background .14s, border-color .14s;
 }
-.rv-ferr-btn:hover { color: #cfe6f2; background: rgba(255,255,255,.055); }
-.rv-ferr-btn[aria-pressed="true"] { color: var(--cy); background: var(--rv-cy-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cy) 22%, transparent); }
+/* A BORDA DO HOVER É A DO ATIVO. O que separa "estou passando por
+   cima" de "é esta" passa a ser o fundo e o brilho, não uma terceira
+   borda — antes o trilho tinha três tons de contorno, e o do meio não
+   significava nada que os outros dois já não dissessem. */
+/* A LAVAGEM VEM POR CIMA DO FUNDO, não no lugar dele. `background`
+   com uma cor translúcida SUBSTITUI o `#0c1526` da peça, e o trilho
+   flutua sobre o mapa: o botão realçado virava uma janela para os
+   hexágonos. Duas camadas — gradiente chapado da lavagem sobre a cor
+   sólida — dão o mesmo tom com a peça ainda opaca. */
+.rv-ferr-btn:hover {
+  color: #d3f4ff; border-color: #108bac;
+  background: linear-gradient(rgba(0, 212, 255, .09), rgba(0, 212, 255, .09)), #0c1526;
+}
+/* ATIVO EM CIANO. O realce continua sendo borda + fundo + brilho, como
+   no Console; o que muda é o ícone, que era quase branco e agora é a
+   cor da marca — a mesma leitura à distância nas duas superfícies. */
+.rv-ferr-btn[aria-pressed="true"] {
+  /* TRANSLÚCIDO, como a aba selecionada do painel. `#123640` chapado
+     não era o mesmo azul mais forte: era outra superfície, e num trilho
+     de doze botões a peça ligada pesava mais que o mapa atrás dela.
+     .14 contra os .09 do hover mantém a hierarquia com um gesto só. */
+  color: var(--cy); border-color: #108bac;
+  background: linear-gradient(rgba(0, 212, 255, .14), rgba(0, 212, 255, .14)), #0c1526;
+  box-shadow: 0 0 9px rgba(0, 212, 255, .25);
+}
+/* PRESSIONADO — dura o gesto e acaba com ele.
+   Distinto de `[aria-pressed="true"]`, que é ESTADO: aquele diz "a
+   ferramenta é esta", e enquanto o dedo está em cima a informação é
+   outra, "estou apertando". Sem ele, apertar um botão do trilho não
+   dava retorno nenhum até a ferramenta trocar.
+   .20 sobre os .14 do ligado e os .09 do hover — a mesma escada, e a
+   mesma receita que `.rc-tabrail-btn:active` já usava no Console.
+   Era a última assimetria entre os dois trilhos: o Console tinha os
+   quatro estados por exigência do CON-02, o VTT tinha três. */
+.rv-ferr-btn:active:not(:disabled) {
+  border-color: #108bac;
+  background: linear-gradient(rgba(0, 212, 255, .2), rgba(0, 212, 255, .2)), #0c1526;
+}
 .rv-ferr-btn:focus-visible, .rv-aba:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 .rv-ferr-menu { color: #8ba3b4; }
 .rv-ferr-sep { width: 20px; height: 1px; background: rgba(255,255,255,.08); margin: 5px 0; }
@@ -166,10 +247,16 @@
    moldura aparecia como uma mudança de cor. Token próprio: `--rv-ground`
    segue servindo o chrome (selects, botões, modais), que não muda. */
 .rv-mesa { --rv-mapa-fundo: #070e1c; }
-.rv-palco { position: relative; min-width: 0; overflow: hidden; background: var(--rv-mapa-fundo); }
+/* O MAPA TEM CANTO, como as peças que flutuam sobre ele. Com os
+   trilhos soltos das bordas, o palco deixou de ser "o que sobra entre
+   as barras" e virou uma superfície própria — e superfície com canto
+   reto encostada na janela lê como fundo da página, não como peça. O
+   `overflow: hidden` que já existia é quem recorta o conteúdo na
+   curva. */
+.rv-palco { position: relative; min-width: 0; overflow: hidden; border-radius: var(--rv-r-peca); background: var(--rv-mapa-fundo); }
 .rv-mapa-camada { position: absolute; inset: 0; }
 .rv-mapa {
-  width: 100%; height: 100%; display: block; cursor: crosshair;
+  width: 100%; height: 100%; display: block;
   /* Qualquer arrasto real (Medir, pan, seleção por caixa) passa o
      cursor por cima de texto SVG (siglas de token, rótulos "×2",
      distância da régua) — sem isto, o navegador trata isso como
@@ -187,15 +274,21 @@
    Fica acima do mapa (`z-index`) mas abaixo das janelas de ferramenta,
    e nunca cobre os trilhos de facção — eles terminam em
    `bottom: 108px`, este começa em 12. */
-.rv-cena-chip {
+/* CLASSE DUPLICADA — mesma armadilha do `.rv-btn` logo abaixo:
+   `.rm-root button` (classe + ELEMENTO) vence uma classe sozinha e
+   força `font-family: inherit`, então a fonte pedida aqui nunca valia.
+   Duas vezes a mesma classe empata em força e desempata pela ordem. */
+.rv-cena-chip.rv-cena-chip {
   position: absolute; left: 10px; bottom: 12px; z-index: 14;
   display: inline-flex; align-items: center; gap: 8px;
   max-width: min(520px, calc(100% - 40px));
   margin: 0; padding: 8px 12px;
-  border: 1px solid var(--rv-line); border-radius: 2px;
+  border: 1px solid var(--rv-line); border-radius: var(--rv-r);
   background: var(--rv-panel);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; line-height: 15px;
+  /* +1px como o resto do que trocou de fonte — ver a nota de tamanhos
+     no `painel.css`. */
+  font-size: 11px; line-height: 15px;
   color: var(--rv-ink-dim);
   cursor: pointer;
   transition: border-color .14s, background .14s;
@@ -262,8 +355,13 @@
 .rv-token:focus { outline: none; }
 .rv-token:focus-visible circle:nth-of-type(1) { stroke: #fff; stroke-width: 3.5; }
 .rv-token-sigla { font-family: var(--font-mono), monospace; font-weight: 700; fill: #eef7fc; pointer-events: none; }
-.rv-token-cond { font-size: 10px; fill: var(--am); pointer-events: none; }
-.rv-token.is-agiu { opacity: .62; }
+.rv-token-condicao-badge {
+  fill: var(--am);
+  stroke: #0d141b;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--am) 55%, transparent));
+}
+.rv-token:focus-visible .rv-token-condicao-badge { stroke: #0d141b; stroke-width: 1.5; }
 .rv-token-aura { animation: rv-pulso 1.9s ease-in-out infinite; }
 .rv-token-apto { animation: rv-gira 9s linear infinite; }
 .rv-token-alvo { animation: rv-pulso 1.3s ease-in-out infinite; }
@@ -304,9 +402,13 @@
    borda. `overflow: hidden` é o que deixa o raio recortar a primeira e
    a última célula. */
 .rv-zoom {
-  position: absolute; right: 16px; bottom: 16px; z-index: 12;
+  /* `--rv-painel-aberto-ocupa` = quanto o painel ABERTO cobre da borda
+     direita (medido em `PainelVtt`). Recolhido vale 0: a coluna de abas
+     mora no topo, e o zoom volta pro canto em vez de flutuar no meio. */
+  position: absolute; right: calc(var(--rv-painel-aberto-ocupa, 0px) + 16px); bottom: 16px; z-index: 12;
+  transition: right .18s ease;
   display: flex; flex-direction: column; align-items: stretch;
-  border: 1px solid var(--rv-line); border-radius: 2px;
+  border: 1px solid var(--rv-line); border-radius: var(--rv-r);
   background: var(--rv-panel);
   box-shadow: var(--sombra);
   overflow: hidden;
@@ -357,15 +459,21 @@
   --rv-rod-cor: var(--cy);
   position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 14;
   /* Largura pelo CONTEÚDO, com teto: o estado de repouso é só duas
-     linhas curtas e o com ação carrega "Janela concluída" + o botão na
-     mesma fileira. Fixar uma largura só faz um dos dois mentir — o
+     linhas curtas e o com ação ganha o botão à direita, na mesma
+     fileira. Fixar uma largura só faz um dos dois mentir — o
      primeiro fica largo demais, o segundo estoura (o botão saía por
      cima do colchete da direita). O teto continua deixando os dois
      trilhos de facção respirarem nas laterais. */
   width: max-content;
-  min-width: 268px; max-width: min(430px, calc(100% - 220px));
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 15px 30px 15px; border-radius: 4px;
+  max-width: min(430px, calc(100% - 220px));
+  display: flex; align-items: center; justify-content: center; gap: 24px;
+  /* Mesmo respiro em volta toda — sem largura mínima, que só abria
+     vazio nas laterais. */
+  padding: 15px;
+  /* Chanfro das peças do VTT (`vtt-chassi.css`): a regra global só pega
+     controles, e a placa é uma `section`. */
+  border-radius: 4px var(--rv-notch, 10px) 4px var(--rv-notch, 10px);
+  corner-shape: round bevel round bevel;
   border: 1px solid #1b2a44;
   background: linear-gradient(160deg, #101b2e, #0a1220);
   box-shadow: 0 24px 48px rgba(0, 0, 0, .55), 0 4px 12px rgba(0, 0, 0, .4);
@@ -413,43 +521,43 @@
   color: color-mix(in srgb, var(--rv-rod-cor) 78%, transparent);
 }
 .rv-rodadas-modo {
-  padding: 1px 6px; border-radius: 2px; letter-spacing: .1em;
+  padding: 1px 6px; border-radius: var(--rv-r); letter-spacing: .1em;
   background: color-mix(in srgb, var(--am) 22%, transparent); color: var(--am);
 }
 /* A janela é o TÍTULO da placa: é a linha que responde o que pode ser
    declarado agora, e as outras duas a qualificam. */
 .rv-rodadas-janela {
-  font-family: var(--rv-display), sans-serif;
-  font-size: 14px; font-weight: 400; line-height: 1.15;
-  letter-spacing: .01em; color: #dbe6f5;
+  font-family: var(--font-mono), monospace;
+  font-size: 14px; font-weight: 300; line-height: 1.15;
+  letter-spacing: .01em; /* Meio-termo entre o texto e o texto apagado: legível sem o branco
+     quase puro, que brigava com o resto da placa. */
+  color: color-mix(in srgb, var(--rv-ink) 55%, var(--rv-ink-dim));
   white-space: nowrap;
 }
 
-/* Rodapé: régua, estado à esquerda, ação à direita. */
-.rv-rodadas-pe {
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  align-self: stretch; margin-top: 10px; padding-top: 12px;
-  border-top: 1px solid #1b2a44;
-}
+.rv-rodadas-nucleo { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+/* Estado só pra leitor de tela — de quem é a vez já se lê nos trilhos. */
 .rv-rodadas-estado {
-  font-family: var(--font-mono), monospace; font-size: 10px;
-  letter-spacing: .16em; text-transform: uppercase; color: #5f7492;
-  /* Uma linha: quebrado em duas ele empurra a fileira pra baixo e a
-     placa passa a ter duas alturas conforme o texto do estado. */
-  text-align: left; white-space: nowrap;
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
-.rv-rodadas-estado[data-lado="pj"] { color: #7fc9db; }
-.rv-rodadas-estado[data-lado="pn"] { color: #d98a97; }
-.rv-rodadas-estado[data-lado="livre"] { color: #5f7492; }
 .rv-rodadas-avanca {
   flex: none; padding: 9px 18px; cursor: pointer;
   border: 1px solid color-mix(in srgb, var(--rv-rod-cor) 55%, transparent);
-  border-radius: 2px; background: transparent;
-  font-family: var(--rv-display), sans-serif;
-  font-size: 10px; font-weight: 400; letter-spacing: .12em; text-transform: uppercase;
+  border-radius: var(--rv-r); background: transparent;
+  letter-spacing: .08em; text-transform: uppercase;
   color: var(--rv-rod-cor);
   transition: background .14s, border-color .14s;
 }
+/* Fonte mono. Duas classes porque `.rm-root button { font: inherit }`
+   (classe + elemento) vence uma classe só e devolvia a Rajdhani. */
+.rv-rodadas .rv-rodadas-avanca { font: 700 10px var(--font-mono), monospace; }
+/* Mesma armadilha nos botões do trilho: Agir/Concluir e Passar saíam
+   em Rajdhani. Os de declarar janela (`≤2`/`3+`) ficam de fora de
+   propósito — o `≤` em mono fica esquisito; vão pra Rajdhani. */
+.rv-ator .rv-ator-agir,
+.rv-ator .rv-ator-passar { font-family: var(--font-mono), monospace; }
+.rv-ator .rv-ator-declara button { font-family: var(--font-rajdhani), "Rajdhani", sans-serif; font-size: 12px; }
 .rv-rodadas-avanca:hover { background: color-mix(in srgb, var(--rv-rod-cor) 12%, transparent); border-color: var(--rv-rod-cor); }
 .rv-rodadas-avanca:focus-visible { outline: 2px solid var(--rv-rod-cor); outline-offset: 2px; }
 
@@ -462,8 +570,11 @@
 }
 .rv-faccao > * { pointer-events: auto; }
 .rv-faccao-espinha { pointer-events: none; }
-.rv-faccao--pj { left: 10px; align-items: flex-start; }
-.rv-faccao--pn { right: 10px; align-items: flex-end; }
+/* Fora de baixo das peças que flutuam nas bordas: à esquerda o trilho
+   de ferramentas (8px de margem + 36px de botão), à direita o painel
+   (aberto ou recolhido, medido em `PainelVtt`). */
+.rv-faccao--pj { left: calc(8px + 36px + 10px); align-items: flex-start; }
+.rv-faccao--pn { right: calc(var(--rv-painel-ocupa, 44px) + 10px); align-items: flex-end; transition: right .18s ease; }
 
 .rv-faccao-cab { display: flex; align-items: center; gap: 7px; padding: 0 4px; }
 .rv-faccao--pn .rv-faccao-cab { flex-direction: row-reverse; }
@@ -474,7 +585,7 @@
 }
 .rv-faccao-conta {
   min-width: 17px; height: 17px; padding: 0 4px;
-  display: grid; place-items: center; border-radius: 999px;
+  display: grid; place-items: center; border-radius: var(--rv-r-pill);
   background: rgba(255,255,255,.07); color: var(--txt-dim);
   font-family: var(--font-mono), monospace; font-size: 10px; transition: background .16s, color .16s;
 }
@@ -496,20 +607,29 @@
   display: flex; flex-direction: column; gap: 9px;
   overflow-y: auto; overflow-x: hidden; scrollbar-width: thin;
 }
-.rv-faccao--pn .rv-faccao-lista { align-items: flex-end; }
+/* Folga pro selo do retrato, que sai 7px pra FORA do trilho — a lista
+   corta o eixo X (`overflow-x: hidden`). Margem negativa + padding do
+   mesmo tamanho: ganha a folga sem mover retrato nem espinha. Topo
+   também, pelo selo que sobe 3px acima do primeiro retrato. */
+.rv-faccao--pj .rv-faccao-lista { margin-left: -10px; padding-left: 10px; margin-top: -4px; padding-top: 6px; }
+.rv-faccao--pn .rv-faccao-lista { align-items: flex-end; margin-right: -10px; padding-right: 10px; margin-top: -4px; padding-top: 6px; }
 .rv-faccao-lista::-webkit-scrollbar { width: 4px; }
-.rv-faccao-lista::-webkit-scrollbar-thumb { background: rgba(255,255,255,.16); border-radius: 999px; }
+.rv-faccao-lista::-webkit-scrollbar-thumb { background: rgba(255,255,255,.16); border-radius: var(--rv-r-pill); }
 .rv-faccao-vazio { padding: 4px 6px; font-size: 10.5px; color: var(--txt-dim); text-shadow: 0 2px 10px rgba(0,0,0,.9); }
 
 /* ── Slot de personagem ── */
 .rv-ator {
   position: relative; display: grid; grid-template-columns: auto auto; align-items: center;
   gap: 7px; padding: 3px; border-radius: 32px;
+  /* Colado no retrato: quando alguém age, a caixa Concluir/Passar
+     alarga a coluna inteira, os slots esticam junto e, sem isto, a
+     sobra ia pro vão entre o retrato e os botões. No lado PN (`rtl`)
+     `start` é a direita — o mesmo "colado" espelhado. */
+  justify-content: start;
   transition: opacity .16s, background .16s;
 }
 .rv-faccao--pn .rv-ator { grid-template-columns: auto auto; direction: rtl; }
 .rv-faccao--pn .rv-ator > * { direction: ltr; }
-.rv-ator[data-situacao="agindo"] { grid-template-columns: auto; justify-items: center; background: var(--rv-am-soft); border-radius: var(--rv-r); padding: 6px; }
 .rv-ator[data-situacao="aguardando"] { opacity: .74; }
 .rv-ator[data-situacao="agiu"], .rv-ator[data-situacao="fora"] { opacity: .42; }
 .rv-ator[data-situacao="agiu"]:hover, .rv-ator[data-situacao="fora"]:hover,
@@ -523,6 +643,11 @@
   font: 700 12px var(--font-mono), monospace;
   transition: border-color .16s, box-shadow .16s, transform .12s;
 }
+/* Sempre circular. Duas classes + `!important` porque o retrato é um
+   botão com `aria-label`: quando ganha um svg (o check do selo), cai na
+   exceção `button[aria-label]:has(svg)` de `vtt-chassi.css`, que força
+   4px com `!important` — e o avatar virava quadrado. */
+.rv-ator .rv-ator-retrato { border-radius: 50% !important; corner-shape: round !important; }
 .rv-ator-retrato img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 .rv-faccao--pj .rv-ator-retrato { border-color: color-mix(in srgb, var(--cy) 22%, transparent); }
 .rv-faccao--pn .rv-ator-retrato { border-color: color-mix(in srgb, var(--dg) 30%, transparent); background: #241520; }
@@ -538,29 +663,38 @@
 .rv-ator[data-sel="true"] .rv-ator-retrato { box-shadow: 0 0 0 3px var(--rv-cy-soft), 0 0 20px color-mix(in srgb, var(--cy) 22%, transparent); border-color: #7ce6ff; }
 .rv-faccao--pn .rv-ator[data-sel="true"] .rv-ator-retrato { box-shadow: 0 0 0 3px var(--rv-dg-soft), 0 0 20px color-mix(in srgb, var(--dg) 30%, transparent); border-color: #ff9aa8; }
 /* Em ação agora */
-.rv-ator[data-situacao="agindo"] .rv-ator-retrato { border-color: var(--am); box-shadow: 0 0 0 3px var(--rv-am-soft), 0 0 22px color-mix(in srgb, var(--am) 30%, transparent); }
+/* Halo de quem age: cor do LADO (ciano jogadores, vermelho narrador). */
+.rv-ator[data-situacao="agindo"] .rv-ator-retrato { border-color: var(--cy); box-shadow: 0 0 0 3px var(--rv-cy-soft), 0 0 22px color-mix(in srgb, var(--cy) 30%, transparent); }
+.rv-faccao--pn .rv-ator[data-situacao="agindo"] .rv-ator-retrato { border-color: var(--dg); box-shadow: 0 0 0 3px var(--rv-dg-soft), 0 0 22px color-mix(in srgb, var(--dg) 30%, transparent); }
 .rv-ator[data-situacao="agiu"] .rv-ator-retrato, .rv-ator[data-situacao="fora"] .rv-ator-retrato { filter: grayscale(.55); }
 
 /* PA guardado por fragmentação — badge pequeno NO retrato (regra 5). */
 .rv-ator-frag {
   position: absolute; right: -3px; bottom: -3px; min-width: 18px; height: 18px; padding: 0 4px;
-  display: grid; place-items: center; border-radius: 999px;
+  display: grid; place-items: center; border-radius: var(--rv-r-pill);
   background: var(--am); color: #14100a; font: 700 10px var(--font-mono), monospace;
   box-shadow: 0 0 0 2px #0b1219;
 }
+/* Selo do retrato (check de quem agiu, × de quem saiu) — mesma peça do
+   "×" de cancelar (`.rv-ator-cancelar`): 20px, anel e ícone neutros,
+   mesmo canto — do lado de FORA do trilho: esquerda nos jogadores,
+   direita no narrador. Os dois nunca aparecem juntos. */
 .rv-ator-marca {
-  position: absolute; right: -3px; top: -3px; width: 17px; height: 17px;
+  /* Desconta a borda do retrato: a marca mora DENTRO dele, e o
+     "×" na caixa em volta — assim os dois caem no mesmo ponto. */
+  position: absolute; top: -3px; left: -7px; width: 20px; height: 20px;
   display: grid; place-items: center; border-radius: 50%;
-  background: #1c2a32; color: #8fa8b5; font-size: 10px; line-height: 1;
+  border: 1px solid #4f6285;
+  background: #0b1a22; color: var(--rv-ink-dim);
   box-shadow: 0 0 0 2px #0b1219;
 }
+.rv-faccao--pn .rv-ator-marca { left: auto; right: -7px; }
 
 /* `stretch`: a coluna de ações tem a largura do seu item mais largo (o
    par de declaração), e o "Agir" acompanha em vez de ficar um retângulo
    menor desalinhado em cima dele. Vale pros dois trilhos — nada de
    alinhar por borda de cada lado. */
 .rv-ator-acoes { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
-.rv-ator[data-situacao="agindo"] .rv-ator-acoes { align-items: center; }
 
 .rv-ator-agir {
   min-height: 24px; padding: 2px 10px; cursor: pointer;
@@ -576,10 +710,6 @@
 .rv-faccao--pn .rv-ator-agir:hover:not(:disabled) { border-color: color-mix(in srgb, var(--dg) 30%, transparent); background: color-mix(in srgb, var(--dg) 30%, transparent); color: #fff0f2; }
 .rv-faccao--pn .rv-ator-agir:focus-visible { outline-color: var(--dg); }
 
-.rv-ator-ativo {
-  padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--am) 30%, transparent); color: var(--am);
-  font: 700 10px var(--font-mono), monospace; letter-spacing: .12em; text-transform: uppercase;
-}
 
 /* Declaração de janela (regra: só entra na janela que declarou). Dois
    alvos minúsculos no próprio slot — substituem o menu "+ Declarar" e
@@ -598,9 +728,6 @@
   font: 700 10px var(--font-mono), monospace; line-height: 1; white-space: nowrap;
   transition: background .14s, color .14s, border-color .14s, opacity .14s;
 }
-/* O glifo é decorativo (`aria-hidden`) e não pode empurrar o número:
-   fica na mesma altura de caixa, sem herdar a métrica da fonte mono. */
-.rv-ator-declara button > span { font-size: 10px; line-height: 1; }
 .rv-ator-declara button:hover:not(:disabled) { color: var(--txt-forte); background: var(--rv-raise); border-color: var(--linha-hover); }
 .rv-ator-declara button:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 .rv-ator-declara button:disabled { opacity: .3; cursor: not-allowed; }
@@ -622,12 +749,38 @@
 /* Concluir/Passar e nada mais — sem escolha de PA (ver `Resolucao` em
    `_turnos/TrilhaFaccoes.tsx`). Sem o seletor, a caixa encolheu pra
    pouco mais que a largura do próprio slot. */
-.rv-ator-resolucao {
-  grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 5px;
-  margin-top: 3px; padding: 6px;
-  border-radius: var(--rv-r); background: rgba(10,16,23,.94); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--am) 30%, transparent);
+/* Toma o lugar do "Agir", na mesma coluna — sem caixa própria. */
+.rv-ator-resolucao { display: flex; gap: 4px; }
+/* No narrador o slot é espelhado: Concluir (a ação principal) fica
+   colado no retrato, que ali está à direita. */
+.rv-faccao--pn .rv-ator-resolucao { flex-direction: row-reverse; }
+/* Passar: a mesma métrica do Agir/Concluir, sem preenchimento. */
+.rv-ator-passar {
+  min-height: 24px; padding: 2px 10px; cursor: pointer;
+  border: 1px solid transparent; border-radius: var(--rv-r); background: transparent; color: var(--txt-dim);
+  font: 700 10px var(--font-mono), monospace; letter-spacing: .08em; text-transform: uppercase;
+  transition: color .14s, border-color .14s;
 }
-.rv-ator-resolucao .rv-btn { padding: 4px 10px; font-size: 11px; }
+.rv-ator-passar:hover { color: var(--txt-forte); border-color: var(--linha-hover); }
+.rv-ator-passar:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+/* "×" de cancelar o Agir: selinho no canto de cima do retrato, do
+   lado de FORA do trilho (espelhado no PN), onde os outros selos
+   (`.rv-ator-marca`) nunca aparecem enquanto alguém age. */
+.rv-ator-retrato-caixa { position: relative; }
+/* Duas classes: vence o `border-radius: 4px !important` que a folha
+   global dá a botões só de ícone (`vtt-chassi.css`). */
+.rv-ator-retrato-caixa .rv-ator-cancelar {
+  position: absolute; top: -2px; left: -6px; z-index: 1;
+  width: 20px; height: 20px; padding: 0; cursor: pointer;
+  display: grid; place-items: center;
+  border: 1px solid #4f6285; border-radius: 50% !important;
+  background: #0b1a22; color: var(--rv-ink-dim);
+  box-shadow: 0 0 0 2px #0b1219;
+  transition: color .14s, border-color .14s;
+}
+.rv-faccao--pn .rv-ator-retrato-caixa .rv-ator-cancelar { left: auto; right: -6px; }
+.rv-ator-cancelar:hover { filter: brightness(1.35); color: var(--txt-forte); }
+.rv-ator-cancelar:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 
 @media (prefers-reduced-motion: reduce) {
   .rv-ator-retrato:hover { transform: none; }
@@ -642,7 +795,7 @@
   .rv-ator-retrato { width: 40px; height: 40px; font-size: 11px; }
   .rv-faccao--pj .rv-faccao-espinha { left: 24px; }
   .rv-faccao--pn .rv-faccao-espinha { right: 24px; }
-  .rv-rodadas { min-width: 236px; padding: 12px 20px 13px; }
+  .rv-rodadas { padding: 12px; }
 }
 @media (max-width: 760px) {
   /* Aqui o HUD ocupa a largura toda do rodapé (não só a esquerda),
@@ -655,11 +808,9 @@
      ninguém pode agir — esconder o controle esconderia a regra. Só
      encolhem, e o teto de PA (a informação da decisão) fica. */
   .rv-ator-declara button { height: 16px; padding: 0 3px; font-size: 10px; }
-  .rv-ator-declara button > span { font-size: 10px; }
-  .rv-rodadas { top: 6px; min-width: 200px; padding: 10px 16px 11px; }
+  .rv-rodadas { top: 6px; padding: 10px; }
   .rv-rodadas-janela { font-size: 13px; }
-  .rv-rodadas-pe { flex-direction: column; align-items: stretch; gap: 8px; }
-  .rv-rodadas-estado { text-align: center; }
+  .rv-rodadas { gap: 14px; }
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -735,9 +886,48 @@
    O `<nav>` e os `<button>` são os MESMOS elementos nos dois estados —
    só a direção do flex e a posição (`order`) mudam via CSS, então a
    aba selecionada e o estado do React nunca se perdem na troca. */
-.rv-painel { display: flex; background: var(--rv-sunken); border-left: 1px solid var(--linha-2); z-index: 20; flex: none; }
-.rv-painel[data-aberto="true"] { flex-direction: column; width: 316px; }
-.rv-painel[data-aberto="false"] { flex-direction: row; width: 52px; }
+/* O FUNDO DO PAINEL é mais AZUL que o `--rv-sunken` (`#070d17`) que
+   usava, e um fio mais claro. Aquele tom é quase neutro — ao lado do
+   mapa, que é francamente azul, ele lia como preto sujo. `#080f1e`
+   mantém a hierarquia (continua bem abaixo das peças, em `#0c1526`) e
+   pertence à mesma família de cor da superfície vizinha. */
+/* DEGRADÊ, e não uma cor chapada: o painel é uma coluna alta, e o pé
+   dela é onde ficam as coisas que se operam (o composer do Chat, a
+   faixa de "Abrir personagens"). Escurecendo pro fim, a coluna ganha
+   um chão — e o que flutua por cima dele, inclusive o véu de rolagem,
+   passa a ter de onde emergir. 88% do percurso é onde a mudança começa
+   a se ver: mais cedo, o fundo dos cartões do meio já divergia do
+   fundo da coluna. */
+.rv-painel {
+  display: flex; z-index: 20; flex: none;
+  background: linear-gradient(180deg, #080f1e 0%, #080f1e 55%, #060b16 100%);
+}
+/* ABERTO ele é uma PEÇA, como as abas e como o mapa: solto 8px das
+   bordas e com o mesmo canto de 4px. Era uma coluna colada na janela
+   com um fio à esquerda — ao lado de um mapa arredondado e flutuante,
+   ele virava a única superfície que ainda encostava na borda.
+
+   A borda passa a ser inteira: `border-left` sozinho é fio de divisa
+   entre colunas coladas, e não sobra divisa nenhuma quando as duas se
+   separam.
+
+   `height: auto` porque `painel.css` fixa `height: 100%` — que somado
+   às margens de cima e de baixo estourava 16px pra fora da tela. */
+.rv-painel[data-aberto="true"] {
+  /* FLUTUA, como o recolhido e como o trilho de ferramentas. Docado, o
+     espaço dele saía da largura do mapa e a margem virava uma tira do
+     fundo da mesa; por cima, a folga de 8px mostra MAPA. */
+  position: absolute; right: 8px; top: 8px; bottom: 8px;
+  flex-direction: column; width: 316px; height: auto;
+  border: 1px solid var(--linha-2); border-radius: var(--rv-r-peca);
+}
+.rv-painel[data-aberto="false"] {
+  /* Mesma peça do trilho de ferramentas, do outro lado: flutua sobre o
+     mapa, altura do conteúdo, canto de 8px. Expandido ela volta a ser
+     coluna docada — ali ela É a lateral da janela, não um objeto. */
+  position: absolute; right: 8px; top: 8px; width: auto;
+  flex-direction: row; border: none; border-radius: var(--rv-r-xl); background: transparent;
+}
 
 .rv-painel-abas { display: flex; align-items: center; gap: 3px; flex: none; }
 .rv-painel[data-aberto="true"] .rv-painel-abas {
@@ -750,14 +940,23 @@
      fora da faixa de 52px. */
 }
 /* Expandido, as abas dividem a largura em partes iguais em vez de
-   ficarem espremidas à esquerda com um vazio no resto da barra. */
+   ficarem espremidas à esquerda com um vazio no resto da barra. Elas
+   crescem, mas só até onde o "recolher" começa: é o conjunto que ocupa
+   a barra, não os cinco botões mais ele. */
 .rv-painel[data-aberto="true"] .rv-aba { flex: 1 1 0; width: auto; min-width: 0; }
 /* O espaçador que empurrava o "recolher" pra direita perde a função —
    com as abas ocupando tudo, ele só roubaria largura delas. */
 .rv-painel[data-aberto="true"] .rv-aba-fim { display: none; }
-/* O "recolher" NÃO é uma aba: mantém o tamanho de ícone e fica no fim. */
-.rv-painel[data-aberto="true"] .rv-aba--recolher { flex: 0 0 auto; width: 36px; }
-.rv-painel[data-aberto="false"] .rv-painel-abas { order: 1; flex-direction: column; width: 52px; padding: 10px 0; }
+/* O "recolher" NÃO é uma aba: mantém o tamanho de ícone e fica no fim.
+   O vão até o grupo é MEDIDO (16px de margem sobre os 8px de `gap` da
+   fileira = 24px): colado, ele lia como a sexta aba; empurrado pela
+   sobra, ia parar longe demais pra ainda ser a mesma fileira. */
+.rv-painel[data-aberto="true"] .rv-aba--recolher { flex: 0 0 auto; width: 36px; margin-left: 16px; }
+/* RECOLHIDO, a faixa é um trilho vertical como o das ferramentas — e
+   usa o mesmo vão de 6px. Sem ele as abas ficavam encostadas umas nas
+   outras, e com borda própria isso vira uma coluna de caixas coladas
+   em vez de peças separadas. */
+.rv-painel[data-aberto="false"] .rv-painel-abas { order: 1; flex-direction: column; gap: 8px; width: auto; padding: 0; }
 
 /* Só a ESTRUTURA da aba mora aqui; cor e estado vivem em
    `_painel/painel.css`, que é a folha do painel.
@@ -772,16 +971,22 @@
   border: none; border-radius: var(--rv-r); background: transparent;
   cursor: pointer; transition: color .14s, background .14s;
 }
-.rv-aba-badge { position: absolute; top: -2px; right: -2px; min-width: 15px; height: 15px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--am); color: #10202b; font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700; }
+/* Mesmos valores de `.rv-ferr-sep`, e não por acaso: ver o comentário
+   em `PainelAbas`. */
+.rv-aba-sep { width: 20px; height: 1px; flex: none; background: rgba(255,255,255,.08); margin: 5px 0; }
 .rv-aba-fim { flex: 1; }
 /* A dica (`.rv-dica`) por padrão abre pra ESQUERDA (`.rv-painel .rv-dica`,
    acima) — certo pra faixa vertical na borda direita. Com a barra
    horizontal no topo (expandido), abrir pra baixo é o que faz sentido
    geometricamente; mais específico que a regra padrão, então vence. */
 .rv-painel[data-aberto="true"] .rv-aba .rv-dica { left: 50%; right: auto; top: calc(100% + 10px); transform: translateX(-50%); }
+/* O ÚLTIMO BOTÃO DA FILEIRA é a exceção: centrada nele, a dica vaza 33px
+   pela borda direita da tela — o painel encosta ali, e metade de uma
+   caixa de 120px não tem onde caber. Ela se alinha pela DIREITA do
+   botão, que é a única borda que não sai. */
+.rv-painel[data-aberto="true"] .rv-aba--recolher .rv-dica { left: auto; right: 0; transform: none; }
 
 .rv-painel-corpo { width: 100%; display: flex; flex-direction: column; min-height: 0; order: 2; }
-.rv-painel-titulo { margin: 0; padding: 14px 16px 10px; font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--txt-dim); }
 
 .rv-chat { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .rv-msg { padding: 9px 11px; border-radius: var(--rv-r); background: rgba(255,255,255,.04); }
@@ -798,7 +1003,7 @@
 .rv-rol-dados i { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: var(--rv-r); background: rgba(255,255,255,.06); font-family: var(--font-mono), monospace; font-size: 10px; font-style: normal; color: var(--txt-dim); }
 .rv-rol-dados i.is-maior { background: color-mix(in srgb, var(--cy) 22%, transparent); color: var(--cy); }
 .rv-rol-n { font-size: 11px; color: var(--txt-dim); }
-.rv-rol-margem { width: 100%; margin-top: 4px; padding: 3px 9px; border-radius: 999px; background: var(--rv-ok-soft); color: var(--ok); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-family: var(--font-mono), monospace; text-align: center; }
+.rv-rol-margem { width: 100%; margin-top: 4px; padding: 3px 9px; border-radius: var(--rv-r-pill); background: var(--rv-ok-soft); color: var(--ok); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-family: var(--font-mono), monospace; text-align: center; }
 
 /* O rodapé de chat e a lista genérica (`.rv-chat-form`, `.rv-lista*`)
    que moravam aqui saíram com o painel de dados fictícios: o Chat real
@@ -810,12 +1015,16 @@
 .rv-dot[data-on="true"] { background: var(--ok); box-shadow: 0 0 7px color-mix(in srgb, var(--ok) 30%, transparent); }
 
 /* ── Fundação funcional das ferramentas (estado persistido) ────── */
-.rv-mesa--carregando { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 100vh; background: #0a0e14; color: var(--txt-dim); font-size: 13px; }
+/* A tela de espera da mesa: só o palco escuro e, no meio, o painel de
+   carga compartilhado (`BootPanel`) — o `.mo-boot-stage` de dentro é
+   quem centraliza. */
+.rv-mesa--carregando { display: flex; align-items: center; justify-content: center; width: 100%; height: 100vh; background: #0a0e14; color: var(--txt-dim); font-size: 13px; }
+.rv-mesa-erro { max-width: 40ch; text-align: center; line-height: 1.5; }
 .rv-spin { animation: rv-spin 1s linear infinite; color: var(--cy); }
 @keyframes rv-spin { to { transform: rotate(360deg); } }
 
 /* `z-index: 90` explícito — alerta VERDADEIRAMENTE global, precisa ficar acima até da janela flutuante de token (45) e no mesmo patamar do backdrop de confirmação destrutiva (`.rv-modal-fundo`, 80). */
-.rv-erro-acao { bottom: 16px; left: 50%; transform: translateX(-50%); top: auto; padding: 9px 16px; border-radius: 999px; background: var(--rv-dg-soft); border: 1px solid color-mix(in srgb, var(--dg) 30%, transparent); color: #ffd7dc; font-size: 12px; cursor: pointer; max-width: 70vw; text-align: center; z-index: 90; }
+.rv-erro-acao { bottom: 16px; left: 50%; transform: translateX(-50%); top: auto; padding: 9px 16px; border-radius: var(--rv-r-pill); background: var(--rv-dg-soft); border: 1px solid color-mix(in srgb, var(--dg) 30%, transparent); color: #ffd7dc; font-size: 12px; cursor: pointer; max-width: 70vw; text-align: center; z-index: 90; }
 
 .rv-ferr-btn:disabled { opacity: .35; cursor: not-allowed; }
 
@@ -865,7 +1074,7 @@
 .rv-menu-contextual {
   --jf-acento: var(--rv-cy, var(--cy));
   position: fixed; z-index: 70; min-width: 216px; padding: 6px 6px 6px 42px;
-  border: 1px solid var(--rv-line-2, #16233a); border-radius: 2px;
+  border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r);
   background: linear-gradient(180deg, #0b1322, #080e19);
   box-shadow: var(--sombra);
   display: flex; flex-direction: column; gap: 1px;
@@ -942,8 +1151,6 @@
 @media (max-width: 560px) {
   .rv-gerenciador-token .rv-field--nome,
   .rv-gerenciador-token .rv-field--estreito { flex: 1 1 100%; }
-  .rv-gerenciador-token .rv-form-linha--tamanho { align-items: stretch; }
-  .rv-gerenciador-token .rv-pegada-preview { align-self: center; }
   .rv-gerenciador-token .rv-modal-rodape { flex-wrap: wrap; }
   .rv-gerenciador-token .rv-modal-rodape .rv-btn { flex: 1 1 auto; justify-content: center; min-width: 0; }
 }
@@ -967,10 +1174,9 @@
 .rv-field--check > span { text-transform: none; letter-spacing: 0; font-size: 12px; color: var(--txt); }
 fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
-.rv-pegada-preview { flex: none; display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: var(--rv-r); background: rgba(255,255,255,.04); }
 /* Nome ocupa mais espaço que Sigla na mesma linha (~75/25 em telas largas) — Sigla já tem largura fixa via `.rv-field--estreito`, Nome só precisa "crescer mais" que o padrão `flex:1`. */
 .rv-field--nome { flex: 3; }
-.rv-condicoes-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 12px; }
+.rv-condicoes-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; }
 
 .rv-form-aviso { margin: 0; padding: 7px 10px; border-radius: var(--rv-r); background: var(--rv-dg-soft); color: #ffb3bd; font-size: 11.5px; }
 
@@ -997,7 +1203,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
      encolher. O piso de 120px que havia aqui fazia o par estourar a
      linha e o rótulo longo ("Uma célula (1 m)") quebrar em duas. */
   flex: 1 1 0; min-width: 0; padding: 10px 12px; text-align: center; cursor: pointer;
-  border: 1px solid var(--rv-line-2, #16233a); border-radius: 2px; background: transparent;
+  border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r); background: transparent;
   font-family: var(--rv-display), sans-serif;
   font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
   color: #c3d2e8;
@@ -1012,7 +1218,6 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-segmentado-item:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 1px; }
 
 /* ── Tamanho + preview abstrato ───────────────────────────────── */
-.rv-form-linha--tamanho { align-items: flex-start; }
 
 /* Aviso não-bloqueante durante o POSICIONAMENTO de um token novo no
    mapa (fluxo de criação em duas etapas) — sem `.rv-modal-fundo`
@@ -1065,12 +1270,199 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-janela-token-cab { cursor: grab; user-select: none; touch-action: none; }
 .rv-janela-token-cab:active { cursor: grabbing; }
 .rv-janela-token-corpo { flex: 1 1 auto; min-height: 0; }
+
+/* ── A PRÉVIA DO TOKEN ───────────────────────────────────────────────
+   Criar token é criar uma COISA VISUAL, e o formulário não mostrava
+   nenhuma: o único desenho era a forma abstrata da pegada, que só diz
+   algo pros tamanhos de vários hexes. Aqui o disco sai como vai sair no
+   mapa — anel na cor do lado, retrato ou sigla, nome, tamanho e barra
+   de vida quando há PV.
+
+   GRUDADA NO TOPO (`sticky`): é ela que muda a cada campo, e uma prévia
+   que sai de vista enquanto se rola o formulário não é prévia. */
+.rv-token-previa {
+  position: sticky; top: 0; z-index: 3;
+  display: flex; align-items: center; gap: 12px;
+  margin: -2px -2px 4px; padding: 10px 12px;
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
+  background: #0c1526;
+}
+/* DUAS PERGUNTAS, DOIS DESENHOS: o disco responde "de que lado ele
+   está" (PJ/PN/neutro, a cor do lado) e a PEGADA responde "de que
+   vertente ele é" (a cor que o token leva pro mapa). Vestir os dois da
+   mesma cor faria a prévia responder duas vezes a mesma coisa. */
+.rv-token-disco {
+  flex: none; width: 52px; height: 52px; display: grid; place-items: center;
+  border-radius: var(--rv-r-pill); overflow: hidden;
+  border: 2px solid var(--rv-lado-cor, var(--rv-slate));
+  background: color-mix(in srgb, var(--rv-lado-cor, var(--rv-slate)) 12%, #070d17);
+  color: var(--rv-lado-cor, var(--rv-slate));
+}
+.rv-token-disco[data-lado="neutro"] { border-style: dashed; }
+
+/* A paleta, uma vez só — vale pro disco, pra pegada e pras fichas. */
+[data-vertente="somatico"] { --rv-vertente-cor: #2f9e56; }
+[data-vertente="cognitivo"] { --rv-vertente-cor: #8b5cf6; }
+[data-vertente="material"] { --rv-vertente-cor: #f5a200; }
+[data-vertente="energetico"] { --rv-vertente-cor: #f07a1f; }
+[data-vertente="cinetica"] { --rv-vertente-cor: #e0455f; }
+[data-vertente="sinaptica"] { --rv-vertente-cor: #35c7d8; }
+[data-vertente="nenhuma"] { --rv-vertente-cor: #6b7f8c; }
+/* As MESMAS cores da etiqueta de lado na trilha de rodadas — o token é
+   a mesma criatura nos dois lugares. */
+.rv-token-disco[data-lado="pj"], .rv-token-lado[data-lado="pj"] { --rv-lado-cor: #45b8c9; }
+.rv-token-disco[data-lado="pn"], .rv-token-lado[data-lado="pn"] { --rv-lado-cor: #e0455f; }
+.rv-token-disco[data-lado="neutro"], .rv-token-lado[data-lado="neutro"] { --rv-lado-cor: #8ea0bd; }
+.rv-token-disco img { width: 100%; height: 100%; object-fit: cover; }
+.rv-token-disco-sigla { font-family: var(--rv-display), sans-serif; font-size: 15px; font-weight: 700; letter-spacing: .04em; }
+.rv-token-previa-txt { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.rv-token-previa-nome {
+  font-family: var(--rv-display), sans-serif; font-size: 13px; font-weight: 700;
+  letter-spacing: .04em; text-transform: uppercase; color: var(--rv-ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rv-token-previa-meta {
+  font-family: var(--font-mono), monospace; font-size: 9.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--rv-ink-faint);
+}
+.rv-token-previa-pv {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono), monospace; font-size: 10px; color: var(--rv-ink-dim);
+}
+.rv-token-previa-pv-trilha {
+  flex: 1; max-width: 96px; height: 4px; border-radius: var(--rv-r-pill);
+  background: var(--rv-line-strong); overflow: hidden;
+}
+.rv-token-previa-pv-trilha > span { display: block; height: 100%; background: #e0455e; }
+/* A PEGADA fica na prévia, e não perdida ao lado do campo de tamanho:
+   ela é parte do retrato da peça — quantos hexes ela come no mapa. */
+.rv-token-pegada {
+  flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-family: var(--font-mono), monospace; font-size: 9px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--rv-ink-faint);
+}
+/* A COR DA VERTENTE vai no SVG, não no container: o container também
+   pinta o rótulo ("1 hex"), e ele é legenda — fica no cinza. O `color`
+   do container vinha depois na folha e apagava o da vertente; era por
+   isso que o hexágono não mudava de cor. */
+.rv-token-pegada svg { color: var(--rv-vertente-cor, #35c8f0); }
+
+/* LADO — ficha com a marca da cor. É a cor que distingue os três no
+   mapa, e ela não aparecia em lugar nenhum do formulário. */
+.rv-token-lado { display: flex; align-items: center; justify-content: center; gap: 7px; }
+/* A marca serve às duas fichas — lado e vertente —, e cada uma define
+   a sua cor na própria variável. */
+.rv-token-lado-marca {
+  width: 9px; height: 9px; flex: none; border-radius: var(--rv-r-pill);
+  background: var(--rv-lado-cor);
+}
+.rv-token-lado[aria-checked="true"] { border-color: var(--rv-lado-cor); color: var(--rv-ink); }
+
+/* TAMANHO — rótulo e medida empilhados na mesma ficha: o nome diz a
+   categoria, a medida diz o que ela significa em metros. */
+.rv-token-tamanho { display: flex; flex-direction: column; gap: 2px; padding: 8px 6px; }
+.rv-token-tamanho strong { font-size: 11px; }
+.rv-token-tamanho span {
+  font-family: var(--font-mono), monospace; font-size: 8.5px; letter-spacing: .06em;
+  color: var(--rv-ink-faint);
+}
+.rv-token-tamanho[aria-checked="true"] span { color: inherit; }
+
+/* As duas travas viram CHAVES lado a lado: eram cartões de duas linhas
+   com parágrafo de apoio, pra dizer o que cabe no rótulo. */
+.rv-token-chaves { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.rv-token-chave { padding: 0; }
+
+/* Campo de NÚMERO — três dígitos, não um CEP. A largura de campo de
+   texto fazia dois PVs ocuparem a linha inteira. */
+.rv-field--num { flex: 0 1 108px; }
+.rv-token-recursos { gap: 10px; flex-wrap: wrap; }
+
+/* ── OS TRÊS RECURSOS, LADO A LADO ───────────────────────────────────
+   Uma linha só: PV, PE e Mana, cada um com o par atual/máximo. Seis
+   campos empilhados custavam a altura de um formulário inteiro para
+   guardar seis números de três dígitos — e os três recursos são a
+   MESMA informação repetida, que lê melhor em coluna paralela do que
+   em lista. */
+/* O VÃO É O QUE SOBRA. `space-between` reparte a folga entre os três
+   em vez de deixá-la toda no fim da linha: os grupos encostam nas duas
+   bordas do formulário e o bloco lê como uma faixa, não como três
+   coisas amontoadas à esquerda. `gap` vira o PISO — na janela estreita,
+   quando não há folga pra repartir, ele é o que impede os campos de se
+   tocarem. */
+.rv-token-recursos-linha {
+  display: flex; flex-wrap: wrap;
+  justify-content: space-between; gap: 14px;
+}
+.rv-token-rec { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+/* O rótulo leva a COR do recurso — a mesma da barra que ele vira no
+   mapa e no cartão do token. É ela que liga o campo ao que se vê. */
+.rv-token-rec__rot {
+  font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--rec, var(--rv-ink-dim));
+}
+.rv-token-rec__rot[data-recurso="pv"] { --rec: #ab3141; }
+.rv-token-rec__rot[data-recurso="pe"] { --rec: #6a49bc; }
+.rv-token-rec__rot[data-recurso="mana"] { --rec: #05a1c3; }
+/* A BARRA entre os dois campos diz "atual de máximo" sem gastar dois
+   rótulos — é a mesma fração que o cartão do token mostra. */
+.rv-token-rec__par { display: flex; align-items: center; gap: 4px; }
+.rv-token-rec__barra { color: var(--rv-ink-faint); font-family: var(--font-mono), monospace; font-size: 11px; }
+.rv-janela-token .rv-token-rec input[type="number"] {
+  width: 56px; margin-top: 0; padding: 8px 6px; text-align: center;
+}
+.rv-token-recursos-linha[data-desabilitada] { opacity: .5; }
+
+/* ── A IMAGEM NA CRIAÇÃO ─────────────────────────────────────────────
+   O mesmo disco do editor de retrato, e pelo mesmo motivo: é a forma
+   do token no mapa, e o alvo de troca é ele próprio. Xadrez por baixo
+   pra transparência não passar por fundo branco. */
+.rv-token-imagem { display: flex; align-items: center; gap: 12px; }
+.rv-token-imagem__disco {
+  flex: none; width: 56px; height: 56px; padding: 0;
+  display: grid; place-items: center; overflow: hidden; cursor: pointer;
+  border: 2px solid var(--rv-line-strong); border-radius: var(--rv-r-pill);
+  color: var(--rv-ink-faint);
+  background-color: var(--rv-sunken);
+  background-image:
+    linear-gradient(45deg, rgba(255,255,255,.035) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.035) 75%),
+    linear-gradient(45deg, rgba(255,255,255,.035) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.035) 75%);
+  background-size: 14px 14px; background-position: 0 0, 7px 7px;
+  transition: border-color .14s, color .14s;
+}
+.rv-token-imagem__disco:hover { border-color: var(--rv-cy); color: var(--rv-cy); }
+.rv-token-imagem__disco:focus-visible { outline: 2px solid var(--rv-cy); outline-offset: 2px; }
+.rv-token-imagem__disco img { width: 100%; height: 100%; object-fit: cover; }
+.rv-token-imagem__lado { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+/* O "ou um endereço" é a OUTRA origem, não a continuação do bloco de
+   cima: ele precisa do mesmo respiro que separa duas seções, senão o
+   rótulo cola no disco e os dois leem como uma coisa só. */
+.rv-token-imagem + .rv-field { margin-top: 16px; }
+
+/* VERTENTE — ficha com a marca da cor, a mesma que o token leva pro
+   mapa (`COR_VERTENTE`, em `_mapa/MapaHex.tsx`). Num `select` a cor não
+   aparecia: escolhia-se um nome e descobria-se a cor depois. */
+.rv-token-vertentes { gap: 6px; }
+.rv-token-vertente {
+  flex: 0 1 auto; display: flex; align-items: center; gap: 6px; padding: 7px 10px;
+  --rv-lado-cor: var(--rv-vertente-cor, var(--rv-slate));
+}
+.rv-token-vertente[aria-checked="true"] { border-color: var(--rv-vertente-cor); color: var(--rv-ink); }
+
 @media (max-width: 560px) {
   .rv-janela-token { max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); }
 }
 
 /* ── Mais opções — disclosure nativo ───────────────────────────── */
-.rv-mais-opcoes { border-top: 1px solid var(--linha-2); padding-top: 10px; display: flex; flex-direction: column; gap: 12px; }
+/* MESMO RESPIRO DOS GRUPOS DE CIMA (18px): aqui dentro moram quatro
+   seções com título próprio — imagem, recursos, vertente e condições —
+   e com 12px elas encostavam umas nas outras, lidas como uma lista só
+   de campos soltos em vez de quatro blocos. */
+.rv-mais-opcoes { border-top: 1px solid var(--linha-2); padding-top: 14px; display: flex; flex-direction: column; gap: 18px; }
+/* O vão entre título e conteúdo vem da regra de `legend` mais abaixo
+   (`.rv-janela-token .rv-field > legend`), que vale pros dois níveis. */
+.rv-mais-opcoes-chevron { margin-left: auto; transition: transform .16s; }
+.rv-mais-opcoes[open] > summary .rv-mais-opcoes-chevron { transform: rotate(180deg); }
 .rv-mais-opcoes > summary {
   cursor: pointer; font-size: 11px; font-weight: 700; color: var(--cy); text-transform: uppercase; letter-spacing: .05em;
   list-style: none; display: flex; align-items: center; gap: 5px;
@@ -1081,16 +1473,6 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-mais-opcoes > summary:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 
 /* ── Visível/Travado — cartões com texto completo, nunca só o checkbox ── */
-.rv-cartoes-flag { display: flex; flex-direction: column; gap: 6px; }
-.rv-cartao-flag {
-  display: flex; align-items: flex-start; gap: 9px; padding: 8px 10px; border-radius: var(--rv-r);
-  background: rgba(255,255,255,.04); cursor: pointer;
-}
-.rv-cartao-flag:hover { background: rgba(255,255,255,.07); }
-.rv-cartao-flag input { margin-top: 2px; width: 15px; height: 15px; flex: none; }
-.rv-cartao-flag div { display: flex; flex-direction: column; gap: 1px; }
-.rv-cartao-flag strong { font-size: 12px; color: var(--txt-forte); }
-.rv-cartao-flag span { font-size: 10.5px; color: var(--txt-dim); line-height: 1.35; }
 
 /* ── Imagem — preview pequeno, nunca quebra o layout se falhar ───── */
 .rv-imagem-preview { display: flex; align-items: center; gap: 8px; }
@@ -1098,11 +1480,19 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 /* ── Condições — grade compacta, item inteiro clicável ────────────── */
 .rv-limpar-condicoes { align-self: flex-start; padding: 3px 9px; font-size: 10.5px; }
-.rv-condicao-item {
-  display: flex; align-items: center; gap: 7px; padding: 5px 6px; border-radius: var(--rv-r); cursor: pointer; font-size: 11.5px; color: var(--txt);
+/* A condição é um INTERRUPTOR (`.rv-fp-switch`), como nas janelas de
+   ferramenta — o tamanho e a trilha vêm de lá; daqui sai só o respiro
+   da linha e o tom do rótulo desligado. */
+.rv-condicao-item { padding: 2px 0; }
+/* A FONTE É A DO CORPO. O rótulo herdava o desenho do interruptor das
+   janelas de ferramenta — display, caixa alta, `letter-spacing` largo —
+   que serve pra UM rótulo de opção e vira ruído numa grade de doze
+   nomes com glifo na frente. */
+.rv-condicao-item .rv-fp-switch-txt {
+  font-family: var(--rv-body); font-size: 12px; font-weight: 500;
+  text-transform: none; letter-spacing: 0; color: var(--txt);
 }
-.rv-condicao-item:hover { background: rgba(255,255,255,.05); }
-.rv-condicao-item input { width: 15px; height: 15px; flex: none; }
+.rv-condicao-item input:checked ~ .rv-fp-switch-txt { color: var(--txt-forte); }
 
 /* ── Painel de camadas ─────────────────────────────────────────── */
 /* Camadas usa a casca comum (`JanelaFerramenta`) desde a transcrição
@@ -1227,7 +1617,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer;
 }
 .rv-area-campo input[type="range"]::-webkit-slider-runnable-track {
-  height: 4px; border-radius: 999px;
+  height: 4px; border-radius: var(--rv-r-pill);
   background: linear-gradient(
     90deg,
     var(--jf-acento, #45b8c9) 0 var(--rv-slider-pct, 50%),
@@ -1235,18 +1625,18 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   );
 }
 .rv-area-campo input[type="range"]::-moz-range-track {
-  height: 4px; border-radius: 999px; background: #1c2b45;
+  height: 4px; border-radius: var(--rv-r-pill); background: #1c2b45;
 }
 .rv-area-campo input[type="range"]::-moz-range-progress {
-  height: 4px; border-radius: 999px; background: var(--jf-acento, #45b8c9);
+  height: 4px; border-radius: var(--rv-r-pill); background: var(--jf-acento, #45b8c9);
 }
 .rv-area-campo input[type="range"]::-webkit-slider-thumb {
   appearance: none; -webkit-appearance: none;
-  width: 16px; height: 16px; margin-top: -6px; border: none; border-radius: 999px;
+  width: 16px; height: 16px; margin-top: -6px; border: none; border-radius: var(--rv-r-pill);
   background: #f4f8fc; box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
 }
 .rv-area-campo input[type="range"]::-moz-range-thumb {
-  width: 16px; height: 16px; border: none; border-radius: 999px;
+  width: 16px; height: 16px; border: none; border-radius: var(--rv-r-pill);
   background: #f4f8fc; box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
 }
 .rv-area-campo input[type="range"]:focus-visible { outline: none; }
@@ -1315,7 +1705,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* Autoria discreta — só diz "é sua", nunca o nome de quem NÃO é você. */
 .rv-area-autoria {
   flex: none; font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
-  padding: 1px 5px; border-radius: 999px; background: var(--rv-cy-soft); color: var(--cy);
+  padding: 1px 5px; border-radius: var(--rv-r-pill); background: var(--rv-cy-soft); color: var(--cy);
 }
 .rv-area-item-acoes { display: flex; gap: 2px; }
 .rv-area-item-acoes button {
@@ -1550,7 +1940,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   padding: 11px 12px 12px; overflow-y: auto; min-height: 0;
 }
 .rv-fp-corpo::-webkit-scrollbar { width: 5px; }
-.rv-fp-corpo::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: 999px; }
+.rv-fp-corpo::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: var(--rv-r-pill); }
 
 /* Grupo rotulado — dá a hierarquia que a barra horizontal não tinha. */
 .rv-fp-grupo { display: flex; flex-direction: column; gap: 6px; }
@@ -1622,6 +2012,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    linha só sem espremer cada alvo abaixo do confortável). */
 .rv-fp-tamanhos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
 .rv-fp-tamanhos .rv-fp-seg-btn { flex: none; }
+
 /* Favo do tamanho do pincel — comunica a forma, não só o número. */
 .rv-fp-favo { display: block; }
 .rv-fp-favo polygon { fill: currentColor; opacity: .28; transition: opacity .12s; }
@@ -1693,7 +2084,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-fp-trecho {
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 2px 7px 2px 3px; border-radius: 999px;
+  padding: 2px 7px 2px 3px; border-radius: var(--rv-r-pill);
   background: rgba(9,14,20,.5); font-size: 10.5px; color: var(--txt);
 }
 /* Número do trecho: quem lê "3 · 4 m" precisa saber que é o TERCEIRO
@@ -1776,7 +2167,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-fp-obj-props { display: flex; flex-wrap: wrap; gap: 4px; }
 .rv-fp-tag {
-  font-size: 10px; letter-spacing: .04em; padding: 2px 7px; border-radius: 999px;
+  font-size: 10px; letter-spacing: .04em; padding: 2px 7px; border-radius: var(--rv-r-pill);
   background: rgba(255,255,255,.08); color: var(--txt-dim);
 }
 .rv-fp-tag--cy { background: var(--rv-cy-soft); color: var(--cy); }
@@ -1789,8 +2180,8 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-pd-topo { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .rv-fp-pd-rot { font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--txt-dim); }
 .rv-fp-pd-val { font-family: var(--font-mono), monospace; font-size: 12.5px; color: var(--txt-forte); }
-.rv-fp-pd-barra { height: 6px; border-radius: 999px; background: rgba(255,255,255,.09); overflow: hidden; }
-.rv-fp-pd-fill { height: 100%; border-radius: 999px; background: var(--cy); transition: width .18s; }
+.rv-fp-pd-barra { height: 6px; border-radius: var(--rv-r-pill); background: rgba(255,255,255,.09); overflow: hidden; }
+.rv-fp-pd-fill { height: 100%; border-radius: var(--rv-r-pill); background: var(--cy); transition: width .18s; }
 .rv-fp-pd-fill[data-nivel="medio"] { background: var(--am); }
 .rv-fp-pd-fill[data-nivel="baixo"] { background: var(--dg); }
 .rv-fp-pd-destruido { font-size: 10.5px; color: var(--dg); }
@@ -1829,7 +2220,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-fp-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
 .rv-fp-switch-tr {
-  flex: 0 0 auto; width: 34px; height: 19px; border-radius: 999px;
+  flex: 0 0 auto; width: 34px; height: 19px; border-radius: var(--rv-r-pill);
   background: rgba(255,255,255,.12); position: relative; transition: background .14s;
 }
 .rv-fp-switch-tr::after {
@@ -1841,7 +2232,17 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-switch input:focus-visible + .rv-fp-switch-tr { outline: 2px solid var(--cy); outline-offset: 2px; }
 .rv-fp-switch input:disabled + .rv-fp-switch-tr { opacity: .45; }
 .rv-fp-switch-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.rv-fp-switch-sub { font-size: 10px; color: var(--txt-dim); line-height: 1.2; }
+/* VIS-01 — o rótulo do interruptor entra na mesma voz dos outros
+   rótulos do VTT: display, caixa alta, espaçado. É `text-transform`, e
+   não texto em maiúsculas no TSX, para que o nome acessível continue
+   sendo lido como palavra e não soletrado por leitor de tela.
+   A legenda (`--sub`) fica de fora: ela é frase, não rótulo.
+   Nomes próprios têm exceção já declarada em `.rv-condicao-item`. */
+.rv-fp-switch-txt > span:not(.rv-fp-switch-sub) {
+  font-family: var(--rv-display), sans-serif; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.rv-fp-switch-sub { font-size: 10px; color: var(--txt-dim); line-height: 1.2; text-transform: none; letter-spacing: 0; }
 
 .rv-fp-erro {
   margin: 0; padding: 7px 9px; border-radius: var(--rv-r); font-size: 11.5px; line-height: 1.35;
@@ -1883,10 +2284,12 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    é estado da mesa, não da ferramenta. Distinto de `aria-pressed`
    (ferramenta selecionada), que continua sendo o realce forte. */
 .rv-ferr-btn[data-ativo="true"] { color: var(--am); }
-.rv-ferr-btn[data-ativo="true"]:not([aria-pressed="true"]) { background: var(--rv-am-soft); }
+.rv-ferr-btn[data-ativo="true"]:not([aria-pressed="true"]) {
+  background: linear-gradient(var(--rv-am-soft), var(--rv-am-soft)), #0c1526;
+}
 .rv-ferr-badge {
   position: absolute; right: 1px; top: 1px; min-width: 14px; height: 14px; padding: 0 3px;
-  display: grid; place-items: center; border-radius: 999px;
+  display: grid; place-items: center; border-radius: var(--rv-r-pill);
   background: var(--am); color: #14100a; font: 700 10px var(--font-mono), monospace;
   box-shadow: 0 0 0 2px var(--rv-sunken);
 }
@@ -2018,7 +2421,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   max-height: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
 .rv-fp-espinha-ponto {
-  width: 6px; height: 6px; border-radius: 999px;
+  width: 6px; height: 6px; border-radius: var(--rv-r-pill);
   background: var(--jf-acento); box-shadow: 0 0 6px var(--jf-acento);
 }
 
@@ -2038,7 +2441,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   color: var(--rv-ink-faint); font: 10px var(--font-mono), monospace;
   letter-spacing: .14em; text-transform: uppercase;
 }
-.rv-fp-modo::before { content: ""; flex: none; width: 4px; height: 4px; border-radius: 999px; background: var(--jf-acento); }
+.rv-fp-modo::before { content: ""; flex: none; width: 4px; height: 4px; border-radius: var(--rv-r-pill); background: var(--jf-acento); }
 .rv-fp-fechar {
   width: 24px; height: 24px; border: 1px solid var(--rv-line-strong);
   border-radius: var(--rv-r); background: transparent; color: var(--rv-ink-faint);
@@ -2068,9 +2471,16 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    telas estreitas (a janela tem até 470px de largura) e o teto em %
    evita reservar espaço demais em telas bem largas. */
 .rv-mesa-dados-overlay {
-  position: absolute; top: 0; bottom: 0; right: 0;
-  left: clamp(580px, 42%, 640px);
-  z-index: 15; pointer-events: none;
+  /* DICE-01 — viewport inteira, acima de tudo, e atravessável.
+     A faixa à direita existia para o dado não assentar embaixo da
+     janela "Rolar Dados"; agora ele cai SOBRE ela, e a restrição
+     perdeu o motivo. `fixed` porque o overlay passou a ser filho do
+     `body` (portal), não mais do palco recortado.
+     900 fica acima do Console maximizado (520) e do cabeçalho de
+     /ficha (510). `pointer-events: none` é o que separa "cobrir por um
+     instante" de "impedir o clique": nada abaixo deixa de responder. */
+  position: fixed; inset: 0;
+  z-index: 900; pointer-events: none;
 }
 .rv-mesa-dados-overlay[data-saindo="true"] { animation: rv-dados-saida .32s ease forwards; }
 @keyframes rv-dados-saida { to { opacity: 0; } }
@@ -2080,6 +2490,10 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    fora do painel. */
 .rv-dados-rolando { display: inline-flex; animation: rv-dados-pulso 1.05s ease-in-out infinite; }
 @keyframes rv-dados-pulso { 0%, 100% { opacity: .32; } 50% { opacity: .8; } }
+/* A casca da Bandeja de Dados — o raio saiu do estilo inline pra que
+   quem a hospeda possa encostá-la em outra peça (ver `.pn-bandeja-dados`
+   no painel). Fora do chat ela é uma caixa solta e arredondada. */
+.rv-bandeja-casca { border-radius: var(--rv-r); }
 .rv-dados-status { font-family: var(--font-mono), monospace; font-size: 10px; text-transform: uppercase; letter-spacing: .14em; color: var(--txt-dim); }
 
 /* Força carregada até 100% — feedback discreto, não uma festa. Some
@@ -2170,7 +2584,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-placa {
   position: relative; overflow: hidden; padding: 10px 12px;
   display: flex; flex-direction: column; gap: 5px;
-  background: #0c1420; border: 1px solid #16233a; border-radius: 2px;
+  background: #0c1420; border: 1px solid #16233a; border-radius: var(--rv-r);
 }
 .rv-fp-placa::before {
   content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 2px;
@@ -2196,7 +2610,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-seg-btn {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   padding: 12px; text-align: center;
-  border: 1px solid #16233a; border-radius: 2px; background: transparent;
+  border: 1px solid #16233a; border-radius: var(--rv-r); background: transparent;
   transition: border-color .14s, background .14s, color .14s;
 }
 /* A borda do hover segue o ACENTO DA FERRAMENTA, não um azul fixo.
@@ -2239,7 +2653,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-opcoes { display: flex; flex-direction: column; gap: 8px; }
 .rv-fp-opcao {
   position: relative; gap: 16px; padding: 12px;
-  border: 1px solid #16233a; border-radius: 2px; background: transparent;
+  border: 1px solid #16233a; border-radius: var(--rv-r); background: transparent;
   box-shadow: none; color: #c3d2e8;
   transition: border-color .14s, background .14s, color .14s;
 }
@@ -2294,14 +2708,14 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-tecla {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 22px; padding: 4px 6px;
-  border: 1px solid #2a3b58; border-radius: 2px; background: #0c1420;
+  border: 1px solid #2a3b58; border-radius: var(--rv-r); background: #0c1420;
   font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 500; color: #7f95b3;
 }
 
 /* ── NoteRow (instrução e aviso) ── */
 .rv-fp-instrucao, .rv-fp-medida-aviso {
   display: flex; align-items: center; gap: 10px; margin: 0;
-  padding: 8px 12px; border-radius: 2px;
+  padding: 8px 12px; border-radius: var(--rv-r);
   border: 1px solid color-mix(in srgb, var(--rv-nota-cor, var(--jf-acento, #35c7d8)) 16%, transparent);
   border-left: 2px solid var(--rv-nota-cor, var(--jf-acento, #35c7d8));
   background: color-mix(in srgb, var(--rv-nota-cor, var(--jf-acento, #35c7d8)) 6%, transparent);
@@ -2323,7 +2737,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-fp-campo input[type="text"], .rv-fp-campo input[type="number"], .rv-fp-campo select {
   margin-top: 6px; padding: 8px 12px;
-  border: 1px solid #16233a; border-radius: 2px; background: transparent;
+  border: 1px solid #16233a; border-radius: var(--rv-r); background: transparent;
   font-size: 12px; color: #d6e4f5;
 }
 .rv-fp-campo input:focus-visible, .rv-fp-campo select:focus-visible {
@@ -2347,7 +2761,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-rodape .rv-btn.rv-fp-primaria {
   margin-left: auto;
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 10px 20px; border-radius: 2px;
+  padding: 10px 20px; border-radius: var(--rv-r);
   border: 1px solid color-mix(in srgb, var(--jf-acento, #35c7d8) 53%, transparent);
   background: color-mix(in srgb, var(--jf-acento, #35c7d8) 9%, transparent);
   color: var(--jf-acento, #35c7d8);
@@ -2361,7 +2775,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-trechos { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .rv-fp-trecho {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 8px; border: 1px solid #16233a; border-radius: 2px; background: #0c1420;
+  padding: 4px 8px; border: 1px solid #16233a; border-radius: var(--rv-r); background: #0c1420;
 }
 .rv-fp-trecho-n {
   font-family: var(--font-mono), monospace; font-size: 10px; color: #4f6285;
@@ -2406,7 +2820,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-area-tipos { gap: 8px; }
 .rv-area-tipo {
   position: relative; gap: 6px; padding: 12px 8px;
-  border: 1px solid #16233a; border-radius: 2px;
+  border: 1px solid #16233a; border-radius: var(--rv-r);
   background: transparent; box-shadow: none; color: #c3d2e8;
 }
 .rv-area-tipo:hover { background: transparent; border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent); color: #d6e4f5; }
@@ -2435,7 +2849,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-area-campo input[type="number"], .rv-area-campo input[type="text"],
 .rv-area-campo select, .rv-area-busca {
-  padding: 8px 12px; border: 1px solid #16233a; border-radius: 2px;
+  padding: 8px 12px; border: 1px solid #16233a; border-radius: var(--rv-r);
   background: transparent; font-size: 12px; color: #d6e4f5;
 }
 .rv-area-campo input:focus-visible, .rv-area-campo select:focus-visible, .rv-area-busca:focus-visible {
@@ -2449,27 +2863,27 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* CheckRow */
 .rv-area-check {
   gap: 10px; padding: 10px 12px;
-  border: 1px solid #16233a; border-radius: 2px;
+  border: 1px solid #16233a; border-radius: var(--rv-r);
   font-size: 12px; color: #d6e4f5;
 }
 .rv-area-check input { accent-color: var(--jf-acento, #35c7d8); width: 16px; height: 16px; }
 
 /* NoteRow */
 .rv-area-instrucao, .rv-area-dica {
-  margin: 0; padding: 8px 12px; border-radius: 2px;
+  margin: 0; padding: 8px 12px; border-radius: var(--rv-r);
   border: 1px solid color-mix(in srgb, var(--jf-acento, #35c7d8) 16%, transparent);
   border-left: 2px solid var(--jf-acento, #35c7d8);
   background: color-mix(in srgb, var(--jf-acento, #35c7d8) 6%, transparent);
   font-size: 11px; line-height: 1.4; color: #7f95b3;
 }
 .rv-area-aviso, .rv-area-fixo {
-  margin: 0; padding: 8px 12px; border-radius: 2px;
+  margin: 0; padding: 8px 12px; border-radius: var(--rv-r);
   border: 1px solid rgba(224, 165, 58, .16); border-left: 2px solid #e0a53a;
   background: rgba(224, 165, 58, .06);
   font-size: 11px; line-height: 1.4; color: #7f95b3;
 }
 .rv-area-erro {
-  margin: 0; padding: 8px 12px; border-radius: 2px;
+  margin: 0; padding: 8px 12px; border-radius: var(--rv-r);
   border: 1px solid rgba(224, 69, 95, .16); border-left: 2px solid #e0455f;
   background: rgba(224, 69, 95, .06); font-size: 11px; color: #e0455f;
 }
@@ -2477,7 +2891,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* Readout — o resumo da forma */
 .rv-area-resumo-forma, .rv-area-regua, .rv-area-valor-fixo {
   position: relative; overflow: hidden; margin: 0; padding: 10px 12px 10px 18px;
-  background: #0c1420; border: 1px solid #16233a; border-radius: 2px;
+  background: #0c1420; border: 1px solid #16233a; border-radius: var(--rv-r);
   font-family: var(--font-mono), monospace; font-size: 12px; color: #d6e4f5;
 }
 .rv-area-resumo-forma::before, .rv-area-regua::before, .rv-area-valor-fixo::before {
@@ -2491,7 +2905,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-presets { gap: 8px; }
 .rv-fp-preset {
   position: relative; gap: 6px; padding: 12px 8px;
-  border: 1px solid #16233a; border-radius: 2px;
+  border: 1px solid #16233a; border-radius: var(--rv-r);
   background: transparent; box-shadow: none; color: #c3d2e8;
   font-family: var(--rv-display), sans-serif;
   font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
@@ -2511,7 +2925,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 /* MiniTag */
 .rv-fp-tag {
-  padding: 2px 6px; border: 1px solid #1c2b45; border-radius: 2px; background: transparent;
+  padding: 2px 6px; border: 1px solid #1c2b45; border-radius: var(--rv-r); background: transparent;
   font-family: var(--rv-display), sans-serif;
   font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: #7f95b3;
 }
@@ -2525,7 +2939,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* A ficha do preset — o painel de leitura do estudo, com a barra de acento. */
 .rv-fp-obj {
   position: relative; overflow: hidden; gap: 8px; padding: 12px 12px 12px 18px;
-  background: #0c1420; border: 1px solid #16233a; border-radius: 2px;
+  background: #0c1420; border: 1px solid #16233a; border-radius: var(--rv-r);
 }
 .rv-fp-obj::before {
   content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 2px;
@@ -2575,7 +2989,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* Segmented — modo do combate e lado que emboscou */
 .rv-rodadas-modos { gap: 8px; }
 .rv-rodadas-modo, .rv-rodadas-lado {
-  padding: 10px 12px; border: 1px solid #16233a; border-radius: 2px; background: transparent;
+  padding: 10px 12px; border: 1px solid #16233a; border-radius: var(--rv-r); background: transparent;
   /* Sem o texto de apoio (virou dica flutuante) sobrou só o nome:
      alinhado à esquerda ele ficava encostado numa borda de uma caixa
      larga. Centralizado, os dois cards do par leem como um segmentado. */
@@ -2634,7 +3048,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-rodadas-lista { display: flex; flex-direction: column; gap: 8px; }
 .rv-rodadas-item {
   display: flex; align-items: center; gap: 12px;
-  padding: 10px 12px; border: 1px solid #16233a; border-radius: 2px;
+  padding: 10px 12px; border: 1px solid #16233a; border-radius: var(--rv-r);
   background: transparent; cursor: pointer;
   transition: border-color .14s, background .14s;
 }
@@ -2647,7 +3061,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-rodadas-sigla {
   flex: none; display: grid; place-items: center;
-  width: 30px; height: 30px; border-radius: 2px;
+  width: 30px; height: 30px; border-radius: var(--rv-r);
   border: 1px solid color-mix(in srgb, var(--jf-acento, #35c7d8) 30%, transparent);
   background: color-mix(in srgb, var(--jf-acento, #35c7d8) 8%, transparent);
   font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700;
@@ -2666,7 +3080,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 /* Etiqueta do lado — a cor é a do lado, não a da ferramenta. */
 .rv-rodadas-item-lado {
-  flex: none; padding: 3px 8px; border-radius: 2px;
+  flex: none; padding: 3px 8px; border-radius: var(--rv-r);
   border: 1px solid color-mix(in srgb, var(--rv-lado-cor) 45%, transparent);
   font-family: var(--rv-display), sans-serif;
   font-size: 10px; font-weight: 700; letter-spacing: .14em;
@@ -2694,7 +3108,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-rodadas-modo { flex: 1 1 auto; }
 .rv-rodadas-modo-dica {
   position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 5;
-  padding: 8px 10px; border-radius: 2px;
+  padding: 8px 10px; border-radius: var(--rv-r);
   border: 1px solid #2a3b58; background: #0c1420;
   box-shadow: 0 8px 20px rgba(0, 0, 0, .55);
   /* Frase, não etiqueta: caixa mista, sem tracking, na tipografia das
@@ -2717,19 +3131,19 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 /* NoteRow */
 .rv-rodadas-vazio {
-  padding: 8px 12px; border-radius: 2px;
+  padding: 8px 12px; border-radius: var(--rv-r);
   border: 1px solid color-mix(in srgb, var(--jf-acento, #35c7d8) 16%, transparent);
   border-left: 2px solid var(--jf-acento, #35c7d8);
   background: color-mix(in srgb, var(--jf-acento, #35c7d8) 6%, transparent);
   font-size: 11px; line-height: 1.4; color: #7f95b3;
 }
 .rv-rodadas-aviso {
-  margin: 0; padding: 8px 12px; border-radius: 2px;
+  margin: 0; padding: 8px 12px; border-radius: var(--rv-r);
   border: 1px solid rgba(224, 165, 58, .16); border-left: 2px solid #e0a53a;
   background: rgba(224, 165, 58, .06); font-size: 11px; color: #7f95b3;
 }
 .rv-rodadas-erro {
-  padding: 8px 12px; border-radius: 2px;
+  padding: 8px 12px; border-radius: var(--rv-r);
   border: 1px solid rgba(224, 69, 95, .16); border-left: 2px solid #e0455f;
   background: rgba(224, 69, 95, .06); font-size: 11px; color: #e0455f;
 }
@@ -2749,7 +3163,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* Regra da janela — nota de duas linhas: o nome e o que ele permite. */
 .rv-rodadas-regra {
   display: flex; flex-direction: column; gap: 4px;
-  padding: 12px 14px; border-radius: 2px;
+  padding: 12px 14px; border-radius: var(--rv-r);
   border: 1px solid color-mix(in srgb, var(--jf-acento, #e0a53a) 22%, transparent);
   background: color-mix(in srgb, var(--jf-acento, #e0a53a) 7%, transparent);
 }
@@ -2767,7 +3181,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    sem caixote de marcar: aqui não se escolhe elenco, se administra. */
 .rv-rodadas-linha {
   display: flex; align-items: center; gap: 12px;
-  padding: 10px 12px; border-radius: 2px;
+  padding: 10px 12px; border-radius: var(--rv-r);
   border: 1px solid color-mix(in srgb, var(--rv-lado-cor) 22%, transparent);
   background: transparent;
   transition: border-color .14s, background .14s;
@@ -2797,7 +3211,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-rodadas-mini, .rv-rodadas-olho {
   display: grid; place-items: center;
   width: 26px; height: 26px; padding: 0;
-  border: 1px solid #1c2b45; border-radius: 2px;
+  border: 1px solid #1c2b45; border-radius: var(--rv-r);
   background: transparent; color: #4f6285; cursor: pointer;
   transition: color .14s, border-color .14s, background .14s;
 }
@@ -2825,7 +3239,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    próprio botão, porque o corpo da janela rola e recorta. */
 .rv-rodadas-dica {
   position: fixed; z-index: 60; pointer-events: none;
-  max-width: 220px; padding: 6px 9px; border-radius: 2px;
+  max-width: 220px; padding: 6px 9px; border-radius: var(--rv-r);
   border: 1px solid #2a3b58; background: #0c1420;
   box-shadow: 0 8px 20px rgba(0, 0, 0, .55);
   font-size: 11px; line-height: 1.35; color: #c3d2e8; text-align: left;
@@ -2880,11 +3294,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-camadas-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .rv-camadas-item {
   display: flex; align-items: center; gap: 12px;
-  padding: 10px 12px; border: 1px solid #16233a; border-radius: 2px;
+  padding: 10px 12px; border: 1px solid #16233a; border-radius: var(--rv-r);
 }
 .rv-camadas-sigla {
   flex: none; display: flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px; border-radius: 2px;
+  width: 32px; height: 32px; border-radius: var(--rv-r);
   border: 1px solid rgba(69, 184, 201, .27);
   font-family: var(--rv-display), sans-serif;
   font-size: 10px; font-weight: 700; color: #45b8c9;
@@ -2892,7 +3306,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-camadas-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; }
 .rv-camadas-nome {
   font-family: var(--rv-display), sans-serif;
-  font-size: 12px; font-weight: 600; color: #d6e4f5;
+  font-size: 11px; font-weight: 600; color: #d6e4f5;
+  /* Mesma caixa alta dos demais rótulos do VTT. O tamanho cai 1px
+     porque caixa alta ocupa mais largura, e a lista tem nomes longos
+     ("OBJETOS / COBERTURAS") que não podem truncar. */
+  text-transform: uppercase; letter-spacing: .07em;
 }
 .rv-camadas-sub {
   font-family: var(--font-mono), monospace;
@@ -2909,7 +3327,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-camadas-item[data-oculta] .rv-camadas-nome { color: #6f83a3; }
 .rv-camadas-btn {
   flex: none; display: flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border: 1px solid #16233a; border-radius: 2px;
+  width: 28px; height: 28px; border: 1px solid #16233a; border-radius: var(--rv-r);
   background: transparent; color: #6f83a3; cursor: pointer;
   transition: color .14s, border-color .14s;
 }
@@ -2951,7 +3369,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    desgirado por dentro. É o que deixa escolher a cor OLHANDO. */
 .rv-fp-previa {
   display: flex; align-items: center; gap: 18px;
-  padding: 16px; border-radius: 2px;
+  padding: 16px; border-radius: var(--rv-r);
   /* A cor da MARCA escolhida, não o acento da ferramenta. O rosa que
      aparecia aqui era o acento da janela Marcar vazando por cima de
      uma prévia que existe justamente pra mostrar a cor selecionada. */
@@ -2960,7 +3378,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-fp-previa-marca {
   flex: none; display: flex; align-items: center; justify-content: center;
-  width: 44px; height: 44px; border-radius: 2px; transform: rotate(45deg);
+  width: 44px; height: 44px; border-radius: var(--rv-r); transform: rotate(45deg);
   border: 1px solid var(--marca, #45b8c9);
   background: color-mix(in srgb, var(--marca, #45b8c9) 9%, transparent);
   color: var(--marca, #45b8c9);
@@ -2979,7 +3397,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    opaca e ganha contorno; as outras recuam pra .45. */
 .rv-fp-cores { display: flex; gap: 8px; }
 .rv-fp-cor {
-  flex: 1 1 0; height: 32px; border: none; border-radius: 2px; cursor: pointer;
+  flex: 1 1 0; height: 32px; border: none; border-radius: var(--rv-r); cursor: pointer;
   background: var(--marca, #45b8c9); opacity: .45;
   outline: none; transition: opacity .14s, box-shadow .14s;
 }
@@ -2990,7 +3408,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* CheckRow */
 .rv-fp-check {
   display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; border: 1px solid #16233a; border-radius: 2px; cursor: pointer;
+  padding: 10px 12px; border: 1px solid #16233a; border-radius: var(--rv-r); cursor: pointer;
 }
 .rv-fp-check:hover { border-color: #1c2b45; }
 .rv-fp-check input { width: 16px; height: 16px; flex: none; accent-color: var(--jf-acento, #45b8c9); cursor: pointer; }
@@ -3022,50 +3440,20 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    de tela e pros testes — muda só a pele. */
 .rv-fp-check input[type="checkbox"],
 .rv-area-check input[type="checkbox"],
-.rv-janela-token .rv-cartao-flag input[type="checkbox"] {
-  appearance: none; -webkit-appearance: none;
-  flex: none; position: relative; margin: 0;
-  width: 40px; height: 22px; border-radius: 999px;
-  border: none; background: #1c2b45;
-  cursor: pointer;
-  transition: background .2s cubic-bezier(.4, 0, .2, 1);
-}
 .rv-fp-check input[type="checkbox"]::after,
 .rv-area-check input[type="checkbox"]::after,
-.rv-janela-token .rv-cartao-flag input[type="checkbox"]::after {
-  content: ""; position: absolute; left: 2px; top: 2px;
-  width: 18px; height: 18px; border-radius: 999px;
-  background: #f4f8fc;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
-  transition: transform .2s cubic-bezier(.4, 0, .2, 1);
-}
 .rv-fp-check input[type="checkbox"]:checked,
 .rv-area-check input[type="checkbox"]:checked,
-.rv-janela-token .rv-cartao-flag input[type="checkbox"]:checked {
-  background: var(--jf-acento, #45b8c9);
-}
 .rv-fp-check input[type="checkbox"]:checked::after,
 .rv-area-check input[type="checkbox"]:checked::after,
-.rv-janela-token .rv-cartao-flag input[type="checkbox"]:checked::after {
-  transform: translateX(18px);
-}
 .rv-fp-check input[type="checkbox"]:hover,
 .rv-area-check input[type="checkbox"]:hover,
-.rv-janela-token .rv-cartao-flag input[type="checkbox"]:hover { background: #24365a; }
 .rv-fp-check input[type="checkbox"]:checked:hover,
 .rv-area-check input[type="checkbox"]:checked:hover,
-.rv-janela-token .rv-cartao-flag input[type="checkbox"]:checked:hover {
-  background: color-mix(in srgb, var(--jf-acento, #45b8c9) 85%, #fff);
-}
 .rv-fp-check input[type="checkbox"]:focus-visible,
 .rv-area-check input[type="checkbox"]:focus-visible,
-.rv-janela-token .rv-cartao-flag input[type="checkbox"]:focus-visible {
-  outline: 2px solid var(--jf-acento, #45b8c9); outline-offset: 2px;
-}
 .rv-fp-check input[type="checkbox"]:disabled,
 .rv-area-check input[type="checkbox"]:disabled,
-.rv-janela-token .rv-cartao-flag input[type="checkbox"]:disabled { opacity: .4; cursor: not-allowed; }
-.rv-janela-token .rv-cartao-flag input[type="checkbox"] { margin-top: 1px; }
 
 /* Campo — o `Field` do estudo: rótulo EM CIMA (display 8px, `.16em`),
    input logo abaixo com 6px de respiro. A versão em linha que tentei
@@ -3074,7 +3462,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-campo { display: flex; flex-direction: column; }
 .rv-fp-campo input[type="text"], .rv-fp-campo input[type="number"], .rv-fp-campo textarea {
   width: 100%; min-width: 0; margin-top: 6px;
-  padding: 8px 12px; border: 1px solid #16233a; border-radius: 2px;
+  padding: 8px 12px; border: 1px solid #16233a; border-radius: var(--rv-r);
   background: transparent; font: inherit; font-size: 12px; color: #d6e4f5;
 }
 .rv-fp-campo textarea { resize: vertical; line-height: 1.4; }
@@ -3100,16 +3488,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   background: linear-gradient(160deg, #0b1424, #080e19);
   border: 1px solid #18263f;
   box-shadow: 0 30px 70px rgba(0, 0, 0, .55);
-  border-radius: 2px;
+  border-radius: var(--rv-r);
 }
 /* Rótulo de `select` e de linha composta (Tamanho) — mesma etiqueta do
    `Field`, senão ele herda o corpo do formulário e vira título. */
-.rv-janela-token .rv-form-linha--tamanho .rv-field > label,
-.rv-janela-token .rv-field > label[for] {
-  font-family: var(--rv-display), sans-serif;
-  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: #4f6285;
-}
-.rv-janela-token .rv-modal-corpo { padding: 16px; gap: 20px; }
+.rv-janela-token .rv-modal-corpo { padding: 16px; gap: 16px; }
 
 /* Field / SelectField */
 .rv-janela-token .rv-field { gap: 0; }
@@ -3121,11 +3504,18 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   font-family: var(--rv-display), sans-serif;
   font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: #4f6285;
 }
+/* O PLACEHOLDER É DO VTT, não do navegador: sem regra ele herdava o
+   cinza e a fonte do agente do usuário — outro peso, outro tom, e o
+   campo parecia de outro produto. */
+.rv-janela-token .rv-field input::placeholder {
+  color: #4f6285; opacity: 1;
+  font-family: var(--rv-body); font-size: 12px; letter-spacing: 0;
+}
 .rv-janela-token .rv-field input[type="text"],
 .rv-janela-token .rv-field input[type="number"],
 .rv-janela-token .rv-field select {
   margin-top: 6px; padding: 8px 12px;
-  border: 1px solid #16233a; border-radius: 2px; background: transparent;
+  border: 1px solid #16233a; border-radius: var(--rv-r); background: transparent;
   font-size: 12px; color: #d6e4f5;
 }
 .rv-janela-token .rv-field input:focus-visible,
@@ -3161,20 +3551,27 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 /* CheckRow — as bandeiras de comportamento (visível, travado…) */
 .rv-janela-token .rv-cartoes-flag { gap: 8px; }
-.rv-janela-token .rv-cartao-flag {
-  gap: 10px; padding: 10px 12px;
-  border: 1px solid #16233a; border-radius: 2px; background: transparent;
-}
-.rv-janela-token .rv-cartao-flag:hover { background: transparent; border-color: #1c2b45; }
-.rv-janela-token .rv-cartao-flag input { width: 16px; height: 16px; accent-color: #45b8c9; }
-.rv-janela-token .rv-cartao-flag strong { font-size: 12px; font-weight: 400; color: #d6e4f5; }
-.rv-janela-token .rv-cartao-flag span {
-  font-size: 11px; line-height: 1.4; color: #7f95b3;
-}
 
 /* Section — "Mais opções" é o disclosure que agrupa o resto */
-.rv-janela-token .rv-mais-opcoes { border-top: none; padding-top: 0; gap: 10px; }
-.rv-janela-token .rv-mais-opcoes > summary {
+/* 18px, como os grupos de cima: este bloco NÃO é um grupo com quatro
+   campos, é quatro SEÇÕES com título próprio (imagem, recursos,
+   vertente, condições). Os 10px que estavam aqui — herdados de quando
+   ele era uma lista de campos soltos — colavam uma na outra. */
+/* `.rv-mais-opcoes.rv-fp-grupo` — as duas classes, porque o elemento
+   TEM as duas e a regra de `.rv-fp-grupo` vem depois nesta folha: com
+   uma classe só, o `gap: 8px` dela ganhava por ordem e as quatro
+   seções ficavam coladas. */
+/* `gap` NÃO CHEGA NO CONTEÚDO DE UM `<details>`: o navegador embrulha
+   tudo que vem depois do `<summary>` numa caixa anônima, então o
+   container de flex tem DOIS itens (o resumo e esse embrulho) — o vão
+   caía entre os dois e nunca entre as seções lá dentro. Era isso que
+   fazia o número não ter efeito por mais que eu aumentasse.
+   Com margem nos filhos, o vão volta a ser entre eles. */
+.rv-janela-token .rv-mais-opcoes.rv-fp-grupo { border-top: none; padding-top: 0; gap: 0; }
+.rv-janela-token .rv-mais-opcoes > :not(summary) { margin-top: 16px; }
+.rv-janela-token .rv-mais-opcoes-chevron { margin-left: auto; transition: transform .16s; }
+.rv-mais-opcoes[open] > summary .rv-mais-opcoes-chevron { transform: rotate(180deg); }
+.rv-mais-opcoes > summary {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--rv-display), sans-serif;
   font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: #4f6285;
@@ -3214,7 +3611,33 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-janela-token .rv-fp-cab button { cursor: pointer; }
 /* Numeração das seções: o contador vive no CORPO, como nas outras. */
 .rv-janela-token .rv-modal-corpo { counter-reset: rvfpsec; }
-.rv-janela-token .rv-fp-grupo { counter-increment: rvfpsec; display: flex; flex-direction: column; gap: 10px; }
+.rv-janela-token .rv-fp-grupo { counter-increment: rvfpsec; display: flex; flex-direction: column; gap: 8px; }
+/* O `<legend>` VOLTA PRO FLUXO. `float: left; width: 100%` é o truque
+   antigo e ainda o único que funciona: por padrão o navegador tira o
+   legend do fluxo e o desenha POR CIMA da borda do fieldset — e é ele
+   que engolia o vão de 32px entre uma seção e a anterior. O vão
+   existia; o título subia pra dentro dele.
+
+   Com o float, o legend passa a ocupar a própria linha, o fieldset
+   começa onde o título começa, e o vão aparece ONDE se pede: entre a
+   última coisa de uma seção e o título da seguinte. */
+.rv-janela-token fieldset.rv-field > legend { float: left; width: 100%; padding: 0; }
+
+/* LEGEND NÃO É ITEM DE FLEX. Num `<fieldset>`, o `<legend>` é
+   posicionado pelo navegador acima da caixa e fica FORA do fluxo de
+   flex — o `gap` do grupo simplesmente não se aplica a ele. Era por
+   isso que "01 LADO" e "02 TAMANHO" (que são fieldsets) apareciam
+   colados nas fichas, enquanto "03 CONTROLE" (um div com span)
+   respirava. A margem devolve o vão a eles. */
+/* E `margin-bottom` NO LEGEND não resolve: fora do fluxo, a margem
+   dele não empurra o conteúdo do fieldset de forma confiável. Quem
+   ganha o vão é o PRIMEIRO IRMÃO depois dele. */
+/* DENTRO do bloco, curto: 8px do título ao conteúdo. Título e conteúdo
+   são a mesma coisa, e afastá-los desfaz o par. O que separa uma seção
+   da outra é o vão de FORA (32px no corpo da janela) — é a diferença
+   entre os dois números que faz a coluna ter blocos em vez de linhas. */
+.rv-janela-token .rv-fp-grupo > legend + *,
+.rv-janela-token fieldset.rv-field > legend + * { margin-top: 8px; }
 .rv-janela-token .rv-fp-rotulo {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--rv-display), sans-serif;
@@ -3247,7 +3670,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-janela-token .rv-modal-rodape .rv-btn--ghost:hover { color: #7f95b3; background: transparent; }
 .rv-janela-token .rv-modal-rodape .rv-btn--pri {
   margin-left: auto;
-  padding: 10px 20px; border-radius: 2px;
+  padding: 10px 20px; border-radius: var(--rv-r);
   border: 1px solid rgba(69, 184, 201, .53); background: rgba(69, 184, 201, .09);
   color: #45b8c9;
   font-family: var(--rv-display), sans-serif;
@@ -3256,13 +3679,12 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-janela-token .rv-modal-rodape .rv-btn--pri::before { content: "▹"; opacity: .7; margin-right: 8px; }
 .rv-janela-token .rv-modal-rodape .rv-btn--pri:hover:not(:disabled) { border-color: #45b8c9; }
 .rv-janela-token .rv-form-aviso {
-  margin: 0; padding: 8px 12px; border-radius: 2px;
+  margin: 0; padding: 8px 12px; border-radius: var(--rv-r);
   border: 1px solid rgba(224, 165, 58, .16); border-left: 2px solid #e0a53a;
   background: rgba(224, 165, 58, .06);
   font-size: 11px; line-height: 1.4; color: #7f95b3;
 }
-.rv-janela-token .rv-pegada-preview { background: #0c1420; border: 1px solid #16233a; border-radius: 2px; }
-.rv-janela-token .rv-imagem-preview { border: 1px solid #16233a; border-radius: 2px; }
+.rv-janela-token .rv-imagem-preview { border: 1px solid #16233a; border-radius: var(--rv-r); }
 /* Quatro ladrilhos numa fileira só — o `grid-cols-4` do estudo. */
 .rv-fp-seg--4 { grid-auto-flow: unset; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 /* Quatro cards numa linha só cabiam espremendo o respiro lateral pra
@@ -3279,7 +3701,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* `select` dentro de campo segue o mesmo tratamento do input. */
 .rv-fp-campo select {
   width: 100%; min-width: 0; margin-top: 6px;
-  padding: 8px 12px; border: 1px solid #16233a; border-radius: 2px;
+  padding: 8px 12px; border: 1px solid #16233a; border-radius: var(--rv-r);
   background: transparent; font: inherit; font-size: 12px; color: #d6e4f5;
 }
 .rv-fp-campo select:focus-visible {
@@ -3381,7 +3803,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   margin: 0; font-size: 10.5px; line-height: 1.45; color: var(--rv-ink-faint);
 }
 .rv-imagens-nota kbd {
-  padding: 1px 4px; border: 1px solid var(--rv-line-2); border-radius: 2px;
+  padding: 1px 4px; border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
   background: var(--rv-sunken); color: var(--rv-ink-dim);
   font-family: var(--font-mono), monospace; font-size: 9.5px; font-weight: 700;
 }
@@ -3393,7 +3815,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    o resto do VTT. */
 .rv-imagens-item {
   display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 8px;
-  padding: 5px 6px; border: 1px solid var(--rv-line-2); border-radius: 2px;
+  padding: 5px 6px; border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
   background: var(--rv-sunken);
   transition: border-color .14s, background .14s;
 }
@@ -3405,7 +3827,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-imagens-item[data-invisivel="true"] { opacity: .55; }
 .rv-imagens-item__miniatura {
   width: 40px; height: 40px; padding: 0; overflow: hidden;
-  border: 1px solid var(--rv-line-2); border-radius: 2px;
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
   background: var(--rv-ground); display: grid; place-items: center; cursor: pointer;
 }
 .rv-imagens-item__miniatura img { width: 100%; height: 100%; object-fit: cover; }
@@ -3429,7 +3851,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   position: relative;
   width: 26px; height: 26px; padding: 0; flex: none;
   display: flex; align-items: center; justify-content: center;
-  border: 1px solid transparent; border-radius: 2px;
+  border: 1px solid transparent; border-radius: var(--rv-r);
   background: transparent; color: var(--rv-ink-dim); cursor: pointer;
   transition: color .14s, border-color .14s, background .14s;
 }
@@ -3451,7 +3873,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    "sem resultados" do painel. */
 .rv-imagens-vazio {
   margin: 0; padding: 14px 10px; text-align: center;
-  border: 1px dashed var(--rv-line-2); border-radius: 2px;
+  border: 1px dashed var(--rv-line-2); border-radius: var(--rv-r);
   font-family: var(--font-mono), monospace;
   font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
   color: var(--rv-ink-faint);
@@ -3499,11 +3921,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-arrastando-imagem {
   position: absolute; inset: 10px; z-index: 40; pointer-events: none;
   display: grid; place-items: center;
-  border: 2px dashed rgba(127,155,209,.75); border-radius: 8px;
+  border: 2px dashed rgba(127,155,209,.75); border-radius: var(--rv-r-xl);
   background: rgba(10,14,20,.55);
 }
 .rv-arrastando-imagem span {
-  padding: 8px 16px; border-radius: 4px;
+  padding: 8px 16px; border-radius: var(--rv-r-peca);
   background: rgba(10,14,20,.9); border: 1px solid rgba(127,155,209,.5);
   color: #cfe0f7; font: 700 12px var(--rv-display);
   letter-spacing: .12em; text-transform: uppercase;
@@ -3520,7 +3942,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   display: flex; flex-direction: column; gap: 14px;
   width: min(380px, calc(100vw - 32px)); max-height: calc(100dvh - 48px);
   padding: 16px;
-  border: 1px solid var(--rv-line-2); border-radius: 2px;
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
   background: linear-gradient(180deg, #0b1322, #080e19);
   box-shadow: 0 20px 56px rgba(0, 0, 0, .7);
 }
@@ -3538,7 +3960,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   letter-spacing: .14em; text-transform: uppercase;
 }
 .rv-colocar-imagem__modo::before {
-  content: ""; flex: none; width: 4px; height: 4px; border-radius: 999px; background: var(--jf-acento, var(--cy));
+  content: ""; flex: none; width: 4px; height: 4px; border-radius: var(--rv-r-pill); background: var(--jf-acento, var(--cy));
 }
 .rv-colocar-imagem__fechar {
   /* `padding: 0` é obrigatório: o padding de fábrica do <button> é
@@ -3546,7 +3968,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
      direita do centro. `place-items: center` centra dentro da CAIXA DE
      CONTEÚDO, que o padding já deixou torta. */
   width: 24px; height: 24px; padding: 0; flex: none; display: grid; place-items: center;
-  border: 1px solid var(--rv-line-strong); border-radius: 2px;
+  border: 1px solid var(--rv-line-strong); border-radius: var(--rv-r);
   background: transparent; color: var(--rv-ink-faint); cursor: pointer;
   transition: color .14s, border-color .14s;
 }
@@ -3558,7 +3980,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    transparente ou fundo branco — e a diferença só aparece no mapa. */
 .rv-colocar-imagem__preview {
   display: grid; place-items: center; max-height: 190px; overflow: hidden;
-  border: 1px solid var(--rv-line-2); border-radius: 2px;
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
   background-color: #0d1219;
   background-image:
     linear-gradient(45deg, rgba(255,255,255,.04) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.04) 75%),
@@ -3576,7 +3998,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-colocar-imagem__chip {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 10px;
-  border: 1px solid var(--rv-line-2); border-radius: 2px;
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
   background: transparent; color: var(--rv-ink-dim);
   font-family: var(--rv-display), sans-serif;
   font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
@@ -3603,7 +4025,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   color: var(--rv-ink-dim);
 }
 .rv-colocar-imagem__instrucao::before {
-  content: ""; flex: none; width: 4px; height: 4px; margin-top: 5px; border-radius: 999px;
+  content: ""; flex: none; width: 4px; height: 4px; margin-top: 5px; border-radius: var(--rv-r-pill);
   background: var(--jf-acento, var(--cy));
 }
 .rv-colocar-imagem__medida {
@@ -3617,7 +4039,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-colocar-imagem__aviso,
 .rv-colocar-imagem__erro {
   margin: 0; padding: 8px 10px;
-  border-radius: 2px;
+  border-radius: var(--rv-r);
   font-family: var(--font-mono), monospace;
   font-size: 9.5px; line-height: 1.55; letter-spacing: .06em; text-transform: uppercase;
 }
@@ -3661,17 +4083,17 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer;
 }
 .rv-imagens-ajuste__campo input[type="range"]::-webkit-slider-runnable-track {
-  height: 4px; border-radius: 999px; background: var(--rv-line-strong);
+  height: 4px; border-radius: var(--rv-r-pill); background: var(--rv-line-strong);
 }
-.rv-imagens-ajuste__campo input[type="range"]::-moz-range-track { height: 4px; border-radius: 999px; background: var(--rv-line-strong); }
-.rv-imagens-ajuste__campo input[type="range"]::-moz-range-progress { height: 4px; border-radius: 999px; background: var(--jf-acento, var(--cy)); }
+.rv-imagens-ajuste__campo input[type="range"]::-moz-range-track { height: 4px; border-radius: var(--rv-r-pill); background: var(--rv-line-strong); }
+.rv-imagens-ajuste__campo input[type="range"]::-moz-range-progress { height: 4px; border-radius: var(--rv-r-pill); background: var(--jf-acento, var(--cy)); }
 .rv-imagens-ajuste__campo input[type="range"]::-webkit-slider-thumb {
   appearance: none; -webkit-appearance: none;
-  width: 14px; height: 14px; margin-top: -5px; border: none; border-radius: 999px;
+  width: 14px; height: 14px; margin-top: -5px; border: none; border-radius: var(--rv-r-pill);
   background: #f4f8fc; box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
 }
 .rv-imagens-ajuste__campo input[type="range"]::-moz-range-thumb {
-  width: 14px; height: 14px; border: none; border-radius: 999px;
+  width: 14px; height: 14px; border: none; border-radius: var(--rv-r-pill);
   background: #f4f8fc; box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
 }
 .rv-imagens-ajuste__campo input[type="range"]:focus-visible { outline: none; }
@@ -3684,7 +4106,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-imagens-ajuste__camada button,
 .rv-imagens-ajuste__proporcao {
   flex: 1 1 0; min-width: 0; padding: 7px 10px;
-  border: 1px solid var(--rv-line-2); border-radius: 2px;
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
   background: transparent; color: var(--rv-ink-dim);
   font-family: var(--rv-display), sans-serif;
   font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
@@ -3737,7 +4159,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   display: flex; flex-direction: column; gap: 14px;
   width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 48px);
   padding: 16px;
-  border: 1px solid var(--rv-line-2); border-radius: 2px;
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
   background: linear-gradient(180deg, #0b1322, #080e19);
   box-shadow: 0 20px 56px rgba(0, 0, 0, .7);
 }
@@ -3755,12 +4177,12 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   letter-spacing: .14em; text-transform: uppercase;
 }
 .rv-biblioteca__modo::before {
-  content: ""; flex: none; width: 4px; height: 4px; border-radius: 999px; background: var(--jf-acento, var(--cy));
+  content: ""; flex: none; width: 4px; height: 4px; border-radius: var(--rv-r-pill); background: var(--jf-acento, var(--cy));
 }
 .rv-biblioteca__fechar {
   /* Ver `.rv-colocar-imagem__fechar`: sem `padding: 0` o X sai do centro. */
   width: 24px; height: 24px; padding: 0; flex: none; display: grid; place-items: center;
-  border: 1px solid var(--rv-line-strong); border-radius: 2px;
+  border: 1px solid var(--rv-line-strong); border-radius: var(--rv-r);
   background: transparent; color: var(--rv-ink-faint); cursor: pointer;
   transition: color .14s, border-color .14s;
 }
@@ -3780,7 +4202,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-biblioteca__chip {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 10px;
-  border: 1px solid var(--rv-line-2); border-radius: 2px;
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
   background: transparent; color: var(--rv-ink-dim);
   font-family: var(--rv-display), sans-serif;
   font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
@@ -3804,14 +4226,14 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   color: var(--rv-ink-dim);
 }
 .rv-biblioteca__instrucao::before {
-  content: ""; flex: none; width: 4px; height: 4px; border-radius: 999px;
+  content: ""; flex: none; width: 4px; height: 4px; border-radius: var(--rv-r-pill);
   background: var(--jf-acento, var(--cy));
 }
 
 /* Selo de uso sobre a miniatura. */
 .rv-biblioteca__selo {
   position: absolute; left: 4px; bottom: 4px;
-  padding: 1px 5px; border-radius: 2px;
+  padding: 1px 5px; border-radius: var(--rv-r);
   background: rgba(8, 12, 18, .88);
   font-family: var(--font-mono), monospace;
   font-size: 8px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
@@ -3828,7 +4250,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-biblioteca__excluir {
   position: absolute; top: 10px; right: 10px; z-index: 2;
   display: grid; place-items: center; width: 22px; height: 22px; padding: 0;
-  border: 1px solid color-mix(in srgb, var(--rv-dg) 45%, transparent); border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--rv-dg) 45%, transparent); border-radius: var(--rv-r);
   background: rgba(8, 12, 18, .86); color: var(--rv-dg);
   cursor: pointer; opacity: 0; pointer-events: none;
   transition: opacity .12s, color .14s, border-color .14s, background .14s;
@@ -3846,7 +4268,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-biblioteca__confirmar {
   position: absolute; inset: 0; z-index: 3;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
-  padding: 8px; border: 1px solid color-mix(in srgb, var(--rv-dg) 45%, transparent); border-radius: 2px;
+  padding: 8px; border: 1px solid color-mix(in srgb, var(--rv-dg) 45%, transparent); border-radius: var(--rv-r);
   background: rgba(8, 12, 18, .95);
 }
 .rv-biblioteca__confirmar p {
@@ -3855,7 +4277,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-biblioteca__confirmar div { display: flex; flex-direction: column; gap: 4px; width: 100%; }
 .rv-biblioteca__confirmar button {
-  padding: 5px 8px; border: 1px solid transparent; border-radius: 2px;
+  padding: 5px 8px; border: 1px solid transparent; border-radius: var(--rv-r);
   background: transparent; color: var(--rv-ink-dim);
   font-family: var(--rv-display), sans-serif;
   font-size: 9.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; cursor: pointer;
@@ -3873,14 +4295,14 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    porque é resposta a um clique que aconteceu ali embaixo. */
 .rv-biblioteca__erro {
   margin: 0; padding: 8px 10px;
-  border: 1px solid color-mix(in srgb, var(--rv-dg) 45%, transparent); border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--rv-dg) 45%, transparent); border-radius: var(--rv-r);
   background: var(--rv-dg-soft); color: #ffb3bd;
   font-size: 11px; line-height: 1.4;
 }
 .rv-biblioteca__estado {
   margin: 0; padding: 22px 10px;
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  border: 1px dashed var(--rv-line-2); border-radius: 2px;
+  border: 1px dashed var(--rv-line-2); border-radius: var(--rv-r);
   font-family: var(--font-mono), monospace;
   font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
   color: var(--rv-ink-faint);
@@ -3895,7 +4317,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    dela seria um segundo clique para a mesma decisão. */
 .rv-biblioteca__item {
   width: 100%; display: flex; flex-direction: column; gap: 4px;
-  padding: 6px; border: 1px solid var(--rv-line-2); border-radius: 2px;
+  padding: 6px; border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
   background: var(--rv-sunken); cursor: pointer; text-align: left;
   transition: border-color .14s, background .14s;
 }
@@ -3907,7 +4329,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-biblioteca__item:disabled { opacity: .45; cursor: not-allowed; }
 .rv-biblioteca__miniatura {
   position: relative; display: block; aspect-ratio: 1 / 1; overflow: hidden;
-  border-radius: 2px; background: var(--rv-ground);
+  border-radius: var(--rv-r); background: var(--rv-ground);
 }
 .rv-biblioteca__miniatura img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rv-biblioteca__medida {
@@ -3972,9 +4394,26 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   box-shadow: 0 24px 64px rgba(0, 0, 0, .72);
   --jf-acento: #cf9a3e;
 }
+/* O BOTÃO PRINCIPAL DA GAVETA É ÂMBAR. `.rv-btn--pri` nasce ciano
+   porque ciano é a cor da mesa; aqui dentro a cor é `--jf-acento`, e
+   "Nova cena" e "Criar pasta" eram as duas únicas peças que ainda
+   falavam a língua de fora — bem no alto da janela, que é onde o tema
+   se declara. */
+.rv-gaveta .rv-btn--pri {
+  border-color: color-mix(in srgb, var(--jf-acento) 53%, transparent);
+  background: color-mix(in srgb, var(--jf-acento) 9%, transparent);
+  color: var(--jf-acento);
+}
+.rv-gaveta .rv-btn--pri:hover:not(:disabled) {
+  border-color: var(--jf-acento);
+  background: color-mix(in srgb, var(--jf-acento) 14%, transparent);
+  color: var(--jf-acento);
+}
+.rv-gaveta .rv-btn--pri:focus-visible { outline-color: var(--jf-acento); }
+
 .rv-gaveta[data-em-linha] {
   position: relative; z-index: 0; inset: auto;
-  height: 560px; border: 1px solid var(--rv-line-2); border-radius: 2px;
+  height: 560px; border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
 }
 
 /* A alça: metade dentro, metade fora, encostada na borda de baixo. O
@@ -4021,7 +4460,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   letter-spacing: .14em; text-transform: uppercase;
 }
 .rv-gav-modo::before {
-  content: ""; flex: none; width: 4px; height: 4px; border-radius: 999px; background: var(--jf-acento);
+  content: ""; flex: none; width: 4px; height: 4px; border-radius: var(--rv-r-pill); background: var(--jf-acento);
 }
 /* A busca tem largura FIXA e quem cresce é o vão depois dela: um campo
    que estica até onde couber vira uma faixa de 700px num monitor largo,
@@ -4037,10 +4476,16 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-gav-cab .rv-btn:focus-visible .rv-dica,
 .rv-gav-fechar:hover .rv-dica,
 .rv-gav-fechar:focus-visible .rv-dica { opacity: 1; transition-delay: .35s; }
+/* O FUNDO DAS PEÇAS (`#0c1526`) nos botões do cabeçalho — "Nova
+   pasta", "Arquivo" e o X. Transparentes, eles eram só um fio no vazio
+   ao lado de uma busca e de cartões com superfície própria; no painel a
+   regra já é essa (aba, cartão, busca e botão dividem a mesma
+   superfície). */
+.rv-gav-cab .rv-btn:not(.rv-btn--pri) { background: #0c1526; }
 .rv-gav-fechar {
   width: 28px; height: 28px; flex: none; padding: 0; display: grid; place-items: center;
-  border: 1px solid var(--rv-line-strong); border-radius: 2px;
-  background: transparent; color: var(--rv-ink-faint); cursor: pointer;
+  border: 1px solid var(--rv-line-strong); border-radius: var(--rv-r);
+  background: #0c1526; color: var(--rv-ink-faint); cursor: pointer;
   transition: color .14s, border-color .14s;
 }
 .rv-gav-fechar:hover { color: var(--rv-ink); border-color: var(--rv-line-hover, var(--jf-acento)); }
@@ -4055,25 +4500,97 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* ── Três colunas ────────────────────────────────────────────────── */
 .rv-gav-corpo { flex: 1 1 auto; min-height: 0; display: flex; }
 
+/* ── A BARRA DE ROLAGEM DA GAVETA ────────────────────────────────────
+   SEMPRE VISÍVEL, e não só no hover como a do chassi (`.rup-scroll`):
+   aqui a coluna de pastas e a grade de mapas passam do fim da tela sem
+   nenhum outro sinal de que há mais coisa embaixo — e uma barra que só
+   aparece quando o mouse já está lá dentro não avisa ninguém.
+
+   Fina (5px), no tom da ferramenta, e SEM TRILHO: o sulco cinza atrás
+   do polegar desenhava uma segunda coluna ao lado do conteúdo. */
+.rv-gav-trilho, .rv-gav-conteudo, .rv-pasta-cenas {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--jf-acento) 45%, transparent) transparent;
+}
+.rv-gav-trilho::-webkit-scrollbar,
+.rv-gav-conteudo::-webkit-scrollbar,
+.rv-pasta-cenas::-webkit-scrollbar { width: 5px; }
+.rv-gav-trilho::-webkit-scrollbar-track,
+.rv-gav-conteudo::-webkit-scrollbar-track,
+.rv-pasta-cenas::-webkit-scrollbar-track { background: transparent; }
+.rv-gav-trilho::-webkit-scrollbar-thumb,
+.rv-gav-conteudo::-webkit-scrollbar-thumb,
+.rv-pasta-cenas::-webkit-scrollbar-thumb {
+  border-radius: var(--rv-r-pill);
+  background: color-mix(in srgb, var(--jf-acento) 45%, transparent);
+}
+.rv-gav-trilho:hover::-webkit-scrollbar-thumb,
+.rv-gav-conteudo:hover::-webkit-scrollbar-thumb,
+.rv-pasta-cenas:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--jf-acento) 70%, transparent);
+}
+
 .rv-gav-trilho {
   flex: 0 0 230px; min-width: 0; overflow-y: auto;
-  display: flex; flex-direction: column; gap: 3px;
-  padding: 14px 12px; border-right: 1px solid var(--rv-line-2);
+  display: flex; flex-direction: column; gap: 8px;
+  /* Mais ar em cima e embaixo: as pastas viraram CARTÕES, e cartão
+     encostado na borda da coluna parece cortado. */
+  padding: 20px 12px; border-right: 1px solid var(--rv-line-2);
 }
-.rv-gav-pastas { display: flex; flex-direction: column; gap: 3px; margin: 0; padding: 0; list-style: none; }
-/* A hierarquia é o RECUO DO CONTEÚDO, não da caixa: recuar a linha
-   inteira deixava cada nível com uma largura diferente e a coluna
-   virava uma escada de retângulos de tamanhos variados. */
-/* `nivel` vem do banco começando em 1 (a pasta de raiz é 1, não 0), e
-   é por isso que o recuo começa no 2. */
-.rv-pasta-linha[data-nivel="2"] .rv-pasta-icone { margin-left: 14px; }
-.rv-pasta-linha[data-nivel="3"] .rv-pasta-icone { margin-left: 28px; }
-.rv-pasta-linha[data-nivel="4"] .rv-pasta-icone { margin-left: 42px; }
+/* 8px entre pastas — o mesmo vão que o painel usa entre cartões. Com 3
+   elas se tocavam e o fio de uma parecia a borda de baixo da outra. */
+.rv-gav-pastas { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+/* SEM RECUO. A hierarquia era um `margin-left` crescente no ícone, com
+   as subpastas na MESMA lista das de raiz — "dentro" dito só por 14px
+   de escada. Não era dentro de nada: a caixa da mãe terminava acima
+   delas, e uma subpasta lia como pasta de raiz mal alinhada.
+   Agora a subpasta mora DENTRO da caixa da mãe, no mesmo lugar dos
+   mini-cartões de cena, e o recuo não tem mais o que dizer. */
+.rv-pasta-subpastas {
+  /* Mesmo respiro por dentro da borda que `.rv-pasta-cenas` usa — as
+     duas coisas que vivem dentro de uma pasta se alinham entre si. */
+  list-style: none; margin: 0 8px 8px; padding: 0;
+  display: flex; flex-direction: column; gap: 8px;
+}
+/* A subpasta é mais discreta que a mãe: fundo um degrau acima do dela,
+   pra que a caixa de dentro se leia como conteúdo e não como uma
+   segunda pasta de raiz que por acaso caiu ali. */
+.rv-pasta-subpastas > .rv-pasta-linha { background: var(--rv-raise); }
+/* O cabeçalho aperta um pouco: caixa dentro de caixa com o mesmo
+   respiro dos dois lados fica com o dobro de ar na borda. */
+.rv-pasta-subpastas > .rv-pasta-linha > .rv-pasta-cabeca { padding: 9px 10px; }
+
+/* A RAIZ ACENDE INTEIRA. Ela não tem caixa própria — é o vazio à volta
+   dos cartões —, então quem acende é a área, por dentro: o mesmo
+   recurso que a lista de Personagens usa pro container de raiz. É por
+   aqui que se tira algo de uma pasta. */
+.rv-gav-trilho[data-alvo-raiz] {
+  box-shadow: inset 0 0 0 1px var(--jf-acento);
+  background: color-mix(in srgb, var(--jf-acento) 6%, transparent);
+}
 
 .rv-gav-conteudo {
   flex: 1 1 auto; min-width: 0; overflow-y: auto;
-  display: flex; flex-direction: column; gap: 12px;
+  display: flex; flex-direction: column;
   padding: 14px 16px;
+}
+/* A ÁREA DA PASTA ABERTA como alvo: soltar no vazio entre os cartões
+   põe a cena (ou a pasta) DENTRO da pasta que está aberta. Mesmo
+   vocabulário da raiz — fio por dentro e lavagem —, porque é a mesma
+   pergunta respondida do outro lado. */
+.rv-gav-area[data-alvo] {
+  box-shadow: inset 0 0 0 1px var(--jf-acento);
+  background: color-mix(in srgb, var(--jf-acento) 6%, transparent);
+  border-radius: var(--rv-r);
+}
+
+/* A ÁREA da pasta aberta — uma caixa só, porque ela é o alvo do botão
+   direito que abre o menu da pasta. Ela é que carrega a coluna (o
+   `.rv-gav-conteudo` ficou só com a rolagem e o respiro), senão o
+   `gap` se aplicaria a um filho único e a grade não esticaria. */
+.rv-gav-area {
+  flex: 1 1 auto; min-height: 0; min-width: 0;
+  display: flex; flex-direction: column; gap: 12px;
 }
 
 /* ── A grade de mapas ────────────────────────────────────────────── */
@@ -4085,11 +4602,69 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   gap: 12px; margin: 0; padding: 0; list-style: none; align-content: start;
 }
 
+/* A GRADE DE SUBPASTAS — o que está dentro da pasta aberta e leva a
+   outro lugar. Mesma coluna da grade de cenas, altura menor: pasta é
+   caminho, cena é destino, e dois cartões do mesmo tamanho fariam as
+   duas coisas parecerem equivalentes. Vem antes das cenas, e o vão de
+   16px embaixo é o que separa "onde dá pra ir" de "o que tem aqui". */
+.rv-subpasta-grade {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px; margin: 0 0 16px; padding: 0; list-style: none; align-content: start;
+}
+.rv-subpasta-cartao {
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r-md);
+  background: var(--rv-ground-2);
+  transition: border-color .14s, background .14s, opacity .14s, box-shadow .14s;
+  cursor: grab;
+}
+.rv-subpasta-cartao:active { cursor: grabbing; }
+.rv-subpasta-cartao:hover {
+  border-color: color-mix(in srgb, var(--jf-acento) 35%, var(--rv-line-strong));
+  background: color-mix(in srgb, var(--jf-acento) 6%, var(--rv-ground-2));
+}
+/* Em trânsito, e ALVO: as mesmas duas respostas da linha do trilho e da
+   aba Personagens — translúcido de onde saiu, fio interno onde entra. */
+.rv-subpasta-cartao[data-arrastando] { opacity: .45; }
+.rv-subpasta-cartao[data-alvo] {
+  border-color: var(--jf-acento);
+  background: color-mix(in srgb, var(--jf-acento) 16%, transparent);
+  box-shadow: inset 0 0 0 1px var(--jf-acento);
+}
+.rv-subpasta-cartao[data-alvo] .rv-subpasta-icone { color: var(--jf-acento); }
+.rv-subpasta-btn {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 12px; border: none; background: none; cursor: pointer;
+  text-align: left; color: var(--rv-ink-dim);
+}
+.rv-subpasta-btn:disabled { opacity: .5; cursor: default; }
+.rv-subpasta-btn:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: -2px; border-radius: var(--rv-r-md); }
+.rv-subpasta-icone { flex: none; display: flex; color: var(--jf-acento); transition: color .14s; }
+/* Mesma tipografia do nome no trilho — é a mesma coisa em outro lugar. */
+.rv-subpasta-nome {
+  flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--rv-display), sans-serif; font-size: 12px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase;
+  transition: color .14s;
+}
+.rv-subpasta-btn:hover .rv-subpasta-nome { color: var(--rv-ink); }
+.rv-subpasta-contagem {
+  flex: none;
+  font-family: var(--font-mono), monospace; font-size: 9px;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--rv-ink-faint);
+}
+
 .rv-cena-ladrilho {
   position: relative;
   display: flex; flex-direction: column;
-  border: 1px solid var(--rv-line-2); border-radius: 2px;
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r-md);
   background: var(--rv-raise);
+  /* SEM ISTO O CANTO ERA RETO. O `.rv-cena-palco` é um filho de canto
+     reto encostado nas quatro bordas do topo, e filho não respeita o
+     raio do pai sozinho — a imagem passava por cima do arredondamento
+     e o cartão inteiro parecia quadrado.
+     O menu do cartão não é clipado por isto: ele é `position: fixed`,
+     posicionado por medição justamente porque a coluna rola. */
+  overflow: hidden;
   transition: border-color .14s, background .14s, transform .14s;
 }
 /* O hover CLAREIA o ladrilho inteiro — imagem incluída — no tom da
@@ -4112,7 +4687,24 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    mostrar, e duas cores iguais a desfariam. */
 .rv-cena-ladrilho[data-vista] { border-color: var(--jf-acento); }
 .rv-cena-ladrilho[data-arrastando] { opacity: .4; }
-.rv-cena-ladrilho[data-alvo] { border-color: var(--jf-acento); box-shadow: inset 3px 0 0 0 var(--jf-acento); }
+/* A LINHA DE INSERÇÃO — a mesma da aba Personagens, virada de lado
+   porque aqui a fila é uma GRADE: soltar insere ANTES deste ladrilho,
+   então ela marca a borda ESQUERDA dele.
+
+   Pontilhada porque marca uma posição PREVISTA — contínua leria como
+   "isto termina aqui". Desenhada POR DENTRO da borda: o ladrilho tem
+   `overflow: hidden` (é o que faz a miniatura encostar), e qualquer
+   coisa desenhada fora da caixa seria recortada. O brilho compensa a
+   transparência: 1,5px a 65% sumiria contra o fundo escuro. */
+.rv-cena-ladrilho[data-alvo] { border-color: color-mix(in srgb, var(--jf-acento) 45%, var(--rv-line-2)); }
+/* `::before` porque o `::after` do ladrilho já é a lavagem de hover —
+   duas coisas diferentes não cabem no mesmo pseudo-elemento. */
+.rv-cena-ladrilho[data-alvo]::before {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 0;
+  border-left: 1.5px dashed color-mix(in srgb, var(--jf-acento) 65%, transparent);
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--jf-acento) 45%, transparent));
+  pointer-events: none; z-index: 2;
+}
 /* Jogador pairando: alvo VERDE, nunca o âmbar de reordenar. Os dois
    gestos passam pelo mesmo ladrilho e fazem coisas incomparáveis. */
 .rv-cena-ladrilho[data-alvo-jogador] {
@@ -4121,13 +4713,28 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 .rv-cena-palco {
   position: relative; display: block; width: 100%; padding: 0;
+  /* O RAIO TAMBÉM AQUI, além do `overflow: hidden` do ladrilho. Duas
+     defesas pro mesmo canto: o clip do pai resolve no caso normal, mas
+     basta um filho com `transform`, `filter` ou camada própria pra
+     escapar dele — e a imagem do mapa tem os três em jogo (hover
+     clareia, arquivada aplica `grayscale`). O raio próprio não depende
+     de clip nenhum. */
+  border-radius: var(--rv-r-md) var(--rv-r-md) 0 0;
   border: none; border-bottom: 1px solid var(--rv-line-2);
   background: var(--rv-ground); cursor: pointer;
   aspect-ratio: 16 / 10; overflow: hidden;
 }
+/* O card de cena é uma miniatura editorial, não um controle técnico:
+   mantém os cantos superiores arredondados e não recebe o chanfro
+   global aplicado aos botões do VTT. */
+.rv-gaveta .rv-cena-palco {
+  border-radius: var(--rv-r-md) var(--rv-r-md) 0 0 !important;
+  corner-shape: round !important;
+  clip-path: none !important;
+}
 .rv-cena-palco:disabled { cursor: default; }
 .rv-cena-palco:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: -2px; }
-.rv-cena-mini-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rv-cena-mini-img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: inherit; }
 .rv-cena-inicial {
   position: absolute; inset: 0; display: grid; place-items: center;
   color: var(--rv-line-strong);
@@ -4144,7 +4751,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-cena-selo {
   display: inline-flex; align-items: center; gap: 4px; flex: none;
-  padding: 3px 7px; border-radius: 2px;
+  padding: 3px 7px; border-radius: var(--rv-r);
   background: rgba(6, 10, 18, .88);
   font-family: var(--font-mono), monospace; font-size: 8.5px; font-weight: 700;
   letter-spacing: .1em; text-transform: uppercase;
@@ -4161,7 +4768,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-cena-jogador {
   display: inline-flex; align-items: center; flex: none;
-  padding: 2px 6px; border-radius: 2px;
+  padding: 2px 6px; border-radius: var(--rv-r);
   font-family: var(--font-mono), monospace; font-size: 8.5px;
   letter-spacing: .06em; text-transform: uppercase; color: var(--rv-ink-dim);
   background: rgba(6, 10, 18, .88); box-shadow: inset 0 0 0 1px var(--rv-line-2);
@@ -4215,7 +4822,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-cena-acoes {
   position: absolute; right: 6px; top: 6px; z-index: 2;
   display: flex; align-items: center; gap: 2px;
-  padding: 2px; border-radius: 2px;
+  padding: 2px; border-radius: var(--rv-r);
   background: rgba(6, 10, 18, .92); border: 1px solid var(--rv-line-2);
   opacity: 0; transition: opacity .12s;
 }
@@ -4226,7 +4833,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   position: relative;
   display: inline-flex; align-items: center; justify-content: center;
   width: 26px; height: 26px; padding: 0; flex: none;
-  border: 1px solid transparent; border-radius: 2px; background: none;
+  border: 1px solid transparent; border-radius: var(--rv-r); background: none;
   color: var(--rv-ink-dim); cursor: pointer;
   transition: color .14s, border-color .14s, background .14s;
 }
@@ -4256,7 +4863,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
      vazava ~20px da caixa que o contém — foi o que aconteceu no campo
      de confirmar exclusão. */
   box-sizing: border-box;
-  padding: 6px 9px; border-radius: 2px;
+  padding: 6px 9px; border-radius: var(--rv-r);
   border: 1px solid var(--rv-line-strong);
   background: var(--rv-ground); color: var(--rv-ink);
   font-family: var(--rv-display), sans-serif; font-size: 12px;
@@ -4264,8 +4871,30 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-cena-campo::placeholder { color: var(--rv-ink-faint); }
 .rv-cena-campo:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: 1px; border-color: transparent; }
 
-.rv-cena-nova { display: flex; align-items: center; gap: 5px; }
-.rv-cena-nova .rv-cena-campo { min-width: 200px; }
+/* O CAMPO E O BOTÃO NÃO SÃO A MESMA COISA: um é onde se digita, o
+   outro é o que decide. 5px os deixava colados como se fossem um
+   controle só; 12px é o mesmo vão que separa os botões do cabeçalho de
+   um grupo para o outro. "Cancelar" continua ao lado de "Criar pasta" —
+   os dois SÃO a mesma decisão, em dois sentidos. */
+.rv-cena-nova { display: flex; align-items: center; gap: 12px; }
+.rv-cena-nova .rv-btn + .rv-btn { margin-left: -6px; }
+/* MESMA CAIXA DA BUSCA. O campo de nome usava o cinza dos campos de
+   formulário e a fonte de display a 12px, do lado de uma busca em
+   Rajdhani 13,5px sobre `#0c1526` — dois campos de texto, na mesma
+   janela, dizendo que eram coisas diferentes. São o mesmo gesto:
+   escrever um nome. */
+.rv-cena-nova .rv-cena-campo {
+  min-width: 260px;
+  padding: 5px 9px;
+  background: #0c1526; border-color: var(--rv-line-strong);
+  color: var(--rv-ink);
+  font-family: var(--rv-body); font-size: 13.5px;
+}
+.rv-cena-nova .rv-cena-campo::placeholder {
+  color: var(--rv-ink-faint); opacity: 1;
+  font-family: var(--rv-body); font-size: 13.5px;
+}
+.rv-cena-nova .rv-cena-campo:focus-visible { outline: none; border-color: var(--jf-acento); }
 
 /* A linha que duplicar, excluir e "quem joga aqui" abrem DENTRO do
    ladrilho. Separada por um fio: é uma pergunta nova, não mais um
@@ -4285,7 +4914,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-cena-estado[data-testid="cenas-vazio"] {
   padding: 28px 16px; text-align: center; justify-content: center; line-height: 1.6;
-  border: 1px dashed var(--rv-line-2); border-radius: 2px;
+  border: 1px dashed var(--rv-line-2); border-radius: var(--rv-r);
 }
 .rv-cena-estado[data-tipo="aviso"] {
   border-color: color-mix(in srgb, var(--rv-am) 45%, transparent);
@@ -4295,19 +4924,292 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-cena-estado[data-tipo="erro"] {
   padding: 9px 10px; text-transform: none; letter-spacing: .04em; line-height: 1.5;
   border: 1px solid color-mix(in srgb, var(--rv-dg) 45%, transparent);
-  border-radius: 2px; background: var(--rv-dg-soft); color: var(--rv-dg);
+  border-radius: var(--rv-r); background: var(--rv-dg-soft); color: var(--rv-dg);
 }
 
 /* "O narrador mudou a cena" — irmão de `.rv-erro-acao` na posição e na
    forma, e diferente na cor: isto não é falha, é a mesa andando. */
 .rv-aviso-palco {
   bottom: 16px; left: 50%; transform: translateX(-50%); top: auto;
-  padding: 9px 16px; border-radius: 999px;
+  padding: 9px 16px; border-radius: var(--rv-r-pill);
   background: color-mix(in srgb, var(--cy) 14%, var(--rv-ground));
   border: 1px solid color-mix(in srgb, var(--cy) 40%, transparent);
   color: var(--txt); font-size: 12px; cursor: pointer;
   max-width: 70vw; text-align: center; z-index: 90;
 }
+
+/* ── JANELAS QUE ERAM PÁGINA ─────────────────────────────────────────
+   Livro, Mercado, Configurações e Conteúdo da campanha. Elas moram
+   dentro de `JanelaInterna`, então aqui só o MIOLO — a casca, o
+   arrastar e o fechar já são da janela. */
+
+/* O LIVRO — sumário e leitura, uma coluna que rola. */
+.rv-livro { display: flex; flex-direction: column; gap: 12px; min-height: 0; height: 100%; overflow-y: auto; padding: 14px 16px; }
+.rv-livro-voltar {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 8px; border: 1px solid transparent; border-radius: var(--rv-r);
+  background: none; color: var(--cy); cursor: pointer;
+  font-family: var(--font-mono), monospace; font-size: 9.5px;
+  letter-spacing: .1em; text-transform: uppercase;
+}
+.rv-livro-voltar:hover { border-color: color-mix(in srgb, var(--cy) 40%, transparent); }
+.rv-livro-sumario { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.rv-livro-item {
+  width: 100%; display: flex; flex-direction: column; gap: 4px;
+  padding: 12px; border: 1px solid var(--linha-2); border-radius: var(--rv-r-md);
+  background: var(--rv-ground-2); text-align: left; cursor: pointer;
+  transition: border-color .14s, background .14s;
+}
+.rv-livro-item:hover {
+  border-color: color-mix(in srgb, var(--cy) 35%, var(--linha-forte));
+  background: color-mix(in srgb, var(--cy) 6%, var(--rv-ground-2));
+}
+.rv-livro-item-nome {
+  font-family: var(--rv-display), sans-serif; font-size: 12px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--txt-forte);
+}
+.rv-livro-item-resumo { font-size: 12.5px; color: var(--txt-dim); }
+.rv-livro-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.rv-livro-tag {
+  padding: 1px 6px; border-radius: var(--rv-r-pill);
+  border: 1px solid var(--linha-2); color: var(--rv-ink-faint);
+  font-family: var(--font-mono), monospace; font-size: 8.5px;
+  letter-spacing: .08em; text-transform: uppercase;
+}
+/* A LEITURA tem medida de texto própria: linha longa demais cansa, e a
+   janela é larga porque o sumário precisa disso. */
+.rv-livro-texto { display: flex; flex-direction: column; gap: 14px; max-width: 62ch; font-size: 13.5px; line-height: 1.6; color: var(--txt); }
+.rv-livro-titulo { margin: 0; font-family: var(--rv-display), sans-serif; font-size: 16px; color: var(--txt-forte); }
+.rv-livro-resumo { margin: 0; color: var(--txt-dim); font-size: 12.5px; }
+.rv-livro-texto p { margin: 0; }
+.rv-livro-salto, .rv-livro-entidade {
+  display: block; width: 100%; text-align: left;
+  padding: 9px 11px; border: 1px solid var(--linha-2); border-radius: var(--rv-r);
+  background: var(--rv-raise); color: var(--txt-dim); font: inherit;
+}
+.rv-livro-salto { cursor: pointer; color: var(--cy); }
+.rv-livro-salto:hover { border-color: color-mix(in srgb, var(--cy) 40%, transparent); }
+.rv-livro-paginacao { display: flex; justify-content: space-between; gap: 8px; padding-top: 10px; border-top: 1px solid var(--linha-2); }
+
+/* O MERCADO — uma lista de carteiras, nada mais. */
+.rv-mercado { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; height: 100%; min-height: 0; overflow-y: auto; }
+.rv-mercado-nota { margin: 0; color: var(--txt-dim); font-size: 12.5px; }
+.rv-mercado-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rv-mercado-item {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 11px 12px; border: 1px solid var(--linha-2); border-radius: var(--rv-r-md);
+  background: var(--rv-ground-2); color: var(--txt); text-align: left; cursor: pointer;
+  font-family: var(--rv-body); font-size: 13px;
+  transition: border-color .14s, background .14s;
+}
+.rv-mercado-item:hover {
+  border-color: color-mix(in srgb, var(--am) 40%, var(--linha-forte));
+  background: color-mix(in srgb, var(--am) 7%, var(--rv-ground-2));
+}
+.rv-mercado-item svg { flex: none; color: var(--am); }
+.rv-mercado-nome { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rv-mercado-acao {
+  flex: none; color: var(--am);
+  font-family: var(--font-mono), monospace; font-size: 9px;
+  letter-spacing: .1em; text-transform: uppercase;
+}
+
+/* CONFIGURAÇÕES — um campo e o estado dele. */
+.rv-config-mesa { display: flex; flex-direction: column; gap: 6px; padding: 16px; }
+.rv-config-rotulo {
+  font-family: var(--rv-display), sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--txt-dim);
+}
+/* Altura reservada: o estado aparece e some a cada digitada, e sem
+   reserva o campo pularia junto. */
+.rv-config-estado { margin: 0; min-height: 16px; font-size: 11px; color: var(--txt-dim); }
+.rv-config-estado [data-ok] { color: var(--ok); }
+.rv-config-estado [data-erro] { color: var(--dg); }
+.rv-config-nota { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--linha-2); color: var(--rv-ink-faint); font-size: 11.5px; line-height: 1.5; }
+
+/* CONTEÚDO DA CAMPANHA — a tabela é a de antes (classes `rm-*`, que o
+   `.rm-root` aqui dentro mantém vivas); o que é daqui é a moldura. */
+.rv-conteudo { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; height: 100%; min-height: 0; overflow-y: auto; }
+.rv-conteudo-nota { margin: 0; color: var(--txt-dim); font-size: 12.5px; line-height: 1.5; }
+.rv-conteudo-titulo { margin: 0; font-family: var(--rv-display), sans-serif; font-size: 15px; color: var(--txt-forte); }
+.rv-conteudo-versoes {
+  display: flex; flex-wrap: wrap; gap: 14px;
+  font-family: var(--font-mono), monospace; font-size: 10px; color: var(--rv-ink-faint);
+}
+/* O que era `<a href>` pra outra rota virou botão: mesma aparência de
+   link, porque o gesto continua sendo "ir para". */
+.rv-conteudo-link {
+  align-self: flex-start; padding: 0; border: none; background: none;
+  color: var(--cy); cursor: pointer; font: inherit; font-size: 12.5px;
+}
+.rv-conteudo-link:hover { text-decoration: underline; }
+
+/* O ASSISTENTE DE CRIAÇÃO veio de uma PÁGINA, com as classes `rm-*` da
+   casca. `.rm-root` aqui dentro mantém os tokens daquela paleta vivos
+   (era exatamente o que faltava pras cores caírem no valor inicial);
+   o que esta regra faz é só dar a ele a coluna que rola. */
+.rv-novo-personagem { height: 100%; min-height: 0; overflow-y: auto; padding: 4px 8px; }
+/* A página tinha `max-width: 720px` e margem automática — dentro da
+   janela isso vira respiro duplo. */
+.rv-novo-personagem .rm-page { max-width: none; margin: 0; padding: 12px; }
+
+/* ── MENU DA MESA ────────────────────────────────────────────────────
+   `fixed` e posicionado por medição, como os outros menus do VTT: o
+   trilho flutua sobre o mapa e nada aqui pode depender do fluxo. */
+.rv-menu-mesa {
+  position: fixed; z-index: 95;
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 8px; border-radius: var(--rv-r-md);
+  background: var(--rv-panel-grad);
+  border: 1px solid var(--linha-forte);
+  box-shadow: var(--sombra);
+}
+/* O cabeçalho é IDENTIDADE, não ação: nome da mesa e papel, que
+   perderam o lugar junto com o cabeçalho da casca. */
+.rv-menu-mesa-cab {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 10px 8px 0;
+  background: linear-gradient(140deg, color-mix(in srgb, var(--cy) 5%, transparent), transparent 85%);
+}
+.rv-menu-mesa-identidade { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rv-menu-mesa-eyebrow, .rv-menu-mesa-section {
+  font-family: var(--rv-display), sans-serif; font-size: 11px; font-weight: 600;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--txt-dim);
+}
+.rv-menu-mesa-section { padding: 10px 8px 3px; }
+.rv-menu-mesa-nome {
+  flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--rv-display), sans-serif; font-size: 20px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--txt-forte);
+}
+.rv-menu-mesa-papel {
+  flex: none; padding: 2px 7px; border-radius: var(--rv-r-pill);
+  border: 1px solid color-mix(in srgb, var(--cy) 40%, transparent);
+  color: var(--cy);
+  font-family: var(--font-mono), monospace; font-size: 8.5px;
+  letter-spacing: .1em; text-transform: uppercase;
+}
+.rv-menu-mesa-papel[data-papel="narrator"] {
+  border-color: color-mix(in srgb, var(--am) 45%, transparent); color: var(--am);
+}
+.rv-menu-mesa-grupo { display: flex; flex-direction: column; gap: 2px; }
+.rv-session { border-top: 1px solid var(--linha-2); border-bottom: 1px solid var(--linha-2); padding: 12px 0; }
+.rv-session-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rv-session-status { display: flex; align-items: center; gap: 7px; font-family: var(--rv-display), sans-serif; font-size: 13px; font-weight: 600; letter-spacing: .06em; color: var(--txt-dim); }
+.rv-session-status[data-online="true"] { color: #77cdb5; }
+.rv-session-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex: none; }
+.rv-session-time { margin: 4px 0 0 12px; color: var(--txt-dim); font-size: 11px; }
+.rv-session-toggle, .rv-session-button { font-family: var(--rv-display), sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; color: #a9b9cb; }
+.rv-session-toggle { display: flex; align-items: center; gap: 6px; border: 1px solid #3a4b60; background: transparent; padding: 7px 8px; border-radius: var(--rv-r); white-space: nowrap; }
+.rv-session-toggle:hover { color: #f5a5ad; border-color: #8a505c; }
+.rv-session-toggle--start { padding: 7px 8px; border-color: color-mix(in srgb, var(--am) 40%, transparent); background: color-mix(in srgb, var(--am) 12%, transparent); color: var(--am); }
+.rv-session-toggle--start:hover { color: var(--am); background: color-mix(in srgb, var(--am) 20%, transparent); }
+.rv-session-question { margin: 0 0 7px; color: var(--txt-forte); font-size: 14px; font-weight: 500; }
+/* Aviso de "aparecendo offline": informativo, não erro — cor de aviso
+   sem o peso vermelho de uma falha, e ícone alinhado ao topo porque o
+   texto ocupa três linhas na largura do menu. */
+.rv-session-aviso {
+  display: flex; gap: 7px; align-items: flex-start; margin: 8px 0 10px; padding: 8px 9px;
+  border: 1px solid rgba(150, 174, 186, 0.28); border-radius: 3px;
+  background: rgba(150, 174, 186, 0.07);
+  font-size: 12px; line-height: 1.55; color: var(--txt-dim);
+}
+.rv-session-aviso svg { flex: none; margin-top: 2px; }
+.rv-session-note { margin: 8px 0 12px; font-size: 12px; line-height: 1.6; color: var(--txt-dim); }
+.rv-session-actions { display: flex; gap: 8px; }
+.rv-session-button { padding: 8px; border: 1px solid var(--linha-forte); border-radius: var(--rv-r); background: var(--rv-panel-grad); white-space: nowrap; }
+.rv-session-actions .rv-session-button { flex: 1; }
+.rv-session-button:not(:disabled):hover { background: #1b2b3e; border-color: #647e9c; color: #dce6f3; }
+.rv-session-button--danger { background: #44262f; color: #ffd4db; border-color: #8a505c; }
+.rv-session-button--danger:not(:disabled):hover { background: #5b303c; border-color: #ba7383; color: #ffe5ea; }
+.rv-session button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.rv-session button:disabled { opacity: .55; cursor: wait; }
+.rv-menu-mesa-sep { height: 1px; margin: 2px 6px; background: var(--linha-2); }
+.rv-menu-mesa-item {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 7px 8px; border-radius: var(--rv-r);
+  background: none; text-align: left;
+  color: var(--txt-dim); text-decoration: none; cursor: pointer;
+  /* MESMO tratamento do item do menu contextual (`.rv-menu-item`):
+     são os dois menus da mesa, e a diferença de voz entre eles — um
+     em corpo de texto 13px, o outro em display caixa-alta — fazia
+     parecerem de produtos diferentes. Um passo acima dos 10px de lá,
+     porque este menu é o da moldura e sustenta rótulos mais longos. */
+  font-family: var(--rv-display), sans-serif;
+  font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
+  transition: background .14s, color .14s;
+}
+/* O QUE AINDA NÃO TEM JANELA aparece, apagado, com o selo. Esconder
+   daria a entender que aquilo não existe; linkar pra página velha
+   mandaria embora da mesa. Dizer "em breve" é a única das três
+   respostas que é verdade. */
+.rv-menu-mesa-item[data-por-vir] { cursor: default; color: var(--rv-ink-faint); }
+.rv-menu-mesa-item[data-por-vir]:hover { background: none; color: var(--rv-ink-faint); }
+.rv-menu-mesa-item[data-por-vir] svg { opacity: .55; }
+.rv-menu-mesa-selo {
+  margin-left: auto; flex: none;
+  font-family: var(--font-mono), monospace; font-size: 8px;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--rv-ink-faint);
+  opacity: .8;
+}
+.rv-menu-mesa-item svg { flex: none; color: var(--txt-dim); transition: color .14s; }
+/* HOVER NO VOCABULÁRIO DA MESA: borda, lavagem e TEXTO no ciano — o
+   mesmo par que ferramenta, aba e menu de cartão usam. O item ganhava
+   só a lavagem, com o texto indo pro branco: lia como "selecionado",
+   não como "é aqui que o cursor está". A borda transparente em repouso
+   é o que deixa a troca não mexer no layout. */
+.rv-menu-mesa-item { border: 1px solid transparent; }
+.rv-menu-mesa-item:hover {
+  border-color: color-mix(in srgb, var(--cy) 45%, transparent);
+  background: color-mix(in srgb, var(--cy) 10%, transparent);
+  color: var(--cy);
+}
+.rv-menu-mesa-item:hover svg { color: var(--cy); }
+.rv-menu-mesa-item:focus-visible { outline: 2px solid var(--cy); outline-offset: -2px; }
+/* A Mesa é onde já se está — marcada, e sem o convite de hover. */
+.rv-menu-mesa-item[aria-current="page"] { color: var(--cy); }
+.rv-menu-mesa-item[aria-current="page"] svg { color: var(--cy); }
+/* A nota é rodapé, não item: ela explica o preço dos itens acima. */
+.rv-menu-mesa-nota {
+  margin: 2px 2px 0; padding: 7px 6px 2px;
+  border-top: 1px solid var(--linha-2);
+  color: var(--rv-ink-faint); font-size: 10.5px; line-height: 1.45;
+}
+
+/* O AVISO DE SINCRONIZAÇÃO. Topo do palco, porque o rodapé já é do chip
+   da cena e do aviso comum — e porque é pra cima que se olha quando
+   algo está errado. Cor por estado: âmbar se um clique resolve,
+   vermelho se é preciso entrar de novo. */
+.rv-aviso-sync {
+  top: 16px; left: 50%; transform: translateX(-50%); bottom: auto;
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 12px 9px 14px; border-radius: var(--rv-r-pill);
+  max-width: min(70vw, 560px); z-index: 90;
+  font-size: 12px; color: var(--txt);
+  background: color-mix(in srgb, var(--rv-aviso-cor) 14%, var(--rv-ground));
+  border: 1px solid color-mix(in srgb, var(--rv-aviso-cor) 45%, transparent);
+}
+.rv-aviso-sync { --rv-aviso-cor: var(--am); }
+/* Sessão expirada não se resolve com insistência — muda de cor porque
+   muda de ação. */
+.rv-aviso-sync[data-estado="precisa_login"] { --rv-aviso-cor: var(--dg); }
+.rv-aviso-sync > svg { flex: none; color: var(--rv-aviso-cor); }
+.rv-aviso-sync-txt { min-width: 0; }
+.rv-aviso-sync-acao {
+  flex: none; display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: var(--rv-r);
+  border: 1px solid color-mix(in srgb, var(--rv-aviso-cor) 50%, transparent);
+  background: color-mix(in srgb, var(--rv-aviso-cor) 12%, transparent);
+  color: var(--rv-aviso-cor); cursor: pointer;
+  font-family: var(--rv-display), sans-serif; font-size: 10.5px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; text-decoration: none;
+  transition: background .14s, border-color .14s;
+}
+.rv-aviso-sync-acao:hover {
+  border-color: var(--rv-aviso-cor);
+  background: color-mix(in srgb, var(--rv-aviso-cor) 20%, transparent);
+}
+.rv-aviso-sync-acao:focus-visible { outline: 2px solid var(--rv-aviso-cor); outline-offset: 2px; }
 
 /* ── Menu do ladrilho ────────────────────────────────────────────── */
 .rv-cena-menu-casca { position: relative; display: inline-flex; }
@@ -4316,14 +5218,14 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-cena-menu {
   position: fixed; z-index: 80;
   display: flex; flex-direction: column; width: 176px; padding: 4px;
-  border-radius: 2px;
+  border-radius: var(--rv-r);
   background: linear-gradient(180deg, #0b1322, #080e19);
   border: 1px solid var(--rv-line-2);
   box-shadow: var(--sombra, 0 8px 24px rgba(0,0,0,.45));
 }
 .rv-cena-menu-item {
   display: flex; align-items: center; gap: 8px; width: 100%;
-  padding: 7px 9px; border: none; border-radius: 2px; background: none;
+  padding: 7px 9px; border: none; border-radius: var(--rv-r); background: none;
   color: var(--rv-ink-dim); text-align: left; cursor: pointer;
   font-family: var(--rv-display), sans-serif;
   font-size: 10.5px; font-weight: 600; letter-spacing: .06em;
@@ -4354,7 +5256,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-pasta-sep { color: var(--rv-line-strong); }
 .rv-pasta-degrau {
   display: flex; align-items: center; gap: 8px;
-  border: 1px solid transparent; background: none; padding: 6px 8px; border-radius: 2px;
+  border: 1px solid transparent; background: none; padding: 6px 8px; border-radius: var(--rv-r);
   font-family: var(--font-mono), monospace; font-size: 9.5px;
   letter-spacing: .1em; text-transform: uppercase;
   color: var(--rv-ink-faint); cursor: pointer; text-align: left;
@@ -4366,21 +5268,46 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    linha de pasta como as outras (ver `GerenciadorCenas`), então estas
    duas regras não têm mais alvo lá. O degrau segue existindo no
    BREADCRUMB, onde nunca teve `data-raiz`. */
+/* ENQUANTO ALGO É ARRASTADO, a trilha se anuncia. Ela sempre foi a
+   saída — é por ela que uma cena (e agora uma pasta) sai de onde está —
+   mas um degrau de 9,5px parado não se oferece como alvo, e quem
+   arrastava não tinha onde soltar: o gesto existia e não aparecia.
+   Pontilhado, o mesmo vocabulário da linha de inserção: "cabe aqui". */
+.rv-pasta-caminho[data-recebendo] .rv-pasta-degrau {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--jf-acento) 45%, transparent);
+  color: var(--rv-ink-dim);
+}
 /* Realce de soltura: o degrau vira alvo enquanto uma cena paira. */
-.rv-pasta-degrau[data-alvo] {
+/* O ALVO escolhido tem que ganhar do "cabe aqui" pontilhado que a
+   trilha inteira veste durante o arrasto — e o pontilhado nasce de um
+   seletor com uma classe a mais, então este precisa alcançá-lo. */
+.rv-pasta-degrau[data-alvo],
+.rv-pasta-caminho[data-recebendo] .rv-pasta-degrau[data-alvo] {
   background: color-mix(in srgb, var(--jf-acento) 22%, transparent);
-  border-color: var(--jf-acento); color: var(--rv-ink);
+  border-color: var(--jf-acento); border-style: solid; color: var(--rv-ink);
+  box-shadow: inset 0 0 0 1px var(--jf-acento);
 }
 .rv-pasta-degrau:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: 1px; }
 
+/* A MESMA BUSCA DA ABA PERSONAGENS (`.rv-pn-busca`): mesmo respiro
+   (5/8), mesmo vão de 6, e o fundo `#0c1526` das PEÇAS — no painel e na
+   gaveta, tudo que se clica ou se digita tem a mesma superfície. Aqui
+   ela vinha rebaixada (`--rv-ground`), de quando campo era sulco. */
 .rv-cena-busca-casca {
-  display: flex; align-items: center; gap: 8px;
-  padding: 0 10px; border-radius: 2px;
-  border: 1px solid var(--rv-line-strong); background: var(--rv-ground);
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 8px; border-radius: var(--rv-r);
+  border: 1px solid var(--rv-line-strong); background: #0c1526;
   color: var(--rv-ink-faint);
 }
 .rv-cena-busca-casca:focus-within { border-color: var(--jf-acento); color: var(--jf-acento); }
-.rv-cena-busca { width: 100%; border: none; background: none; padding: 8px 0; }
+.rv-cena-busca {
+  width: 100%; border: none; background: none; padding: 0;
+  border-radius: 0 !important; corner-shape: round !important; clip-path: none !important;
+  color: var(--rv-ink); font-family: var(--rv-body); font-size: 13.5px;
+}
+/* O PLACEHOLDER É DO VTT, não do navegador — mesma regra da busca do painel. */
+.rv-cena-busca::placeholder { color: var(--rv-ink-faint); opacity: 1; font-family: var(--rv-body); font-size: 13.5px; }
 .rv-cena-busca:focus-visible { outline: none; }
 .rv-cena-busca::-webkit-search-cancel-button { filter: grayscale(1) opacity(.5); cursor: pointer; }
 
@@ -4388,14 +5315,26 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* A linha da pasta virou DUAS coisas empilhadas: o cabeçalho (ícone,
    nome, ações e expansor) e, quando aberta, a lista de cenas dela. Por
    isso o `<li>` é coluna e o cabeçalho é que é a linha. */
+/* O MESMO CARTÃO DA PASTA DE PERSONAGENS (`.rv-pn-grupo`): caixa
+   própria com fio e fundo um degrau abaixo das peças, e a lista de
+   cenas ENGOLIDA por ela — o respiro por dentro da borda, não embaixo
+   dela. Aqui a pasta era um fantasma (fundo e borda transparentes até
+   o hover) do lado de mini cartões com imagem: lia como texto solto,
+   não como o container que ela é. */
 .rv-pasta-linha {
   display: flex; flex-direction: column; align-items: stretch;
-  padding: 6px 8px; border-radius: 2px;
-  background: transparent; border: 1px solid transparent;
+  padding: 0; border-radius: var(--rv-r);
+  background: var(--rv-ground-2); border: 1px solid var(--rv-line-2);
   transition: background .14s, border-color .14s;
 }
-.rv-pasta-cabeca { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.rv-pasta-linha:hover { background: var(--rv-raise); border-color: var(--rv-line-2); }
+/* O respiro de 12px é do CABEÇALHO, não da caixa: a lista de cenas
+   precisa encostar na borda pra ficar "dentro", e padding na caixa
+   deixaria uma faixa em volta dela. */
+.rv-pasta-cabeca { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 12px; }
+.rv-pasta-linha:hover {
+  border-color: color-mix(in srgb, var(--jf-acento) 35%, var(--rv-line-strong));
+  background: color-mix(in srgb, var(--jf-acento) 6%, var(--rv-ground-2));
+}
 .rv-pasta-linha[data-aberta] { border-color: color-mix(in srgb, var(--jf-acento) 40%, transparent); }
 .rv-pasta-linha[data-alvo] {
   background: color-mix(in srgb, var(--jf-acento) 16%, transparent);
@@ -4408,7 +5347,10 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   display: flex; align-items: center; gap: 8px;
   border: none; background: none; padding: 0; margin: 0;
   text-align: left; color: var(--rv-ink-dim); cursor: pointer;
-  font-family: var(--rv-display), sans-serif; font-size: 11.5px; font-weight: 600;
+  /* MESMA TIPOGRAFIA do nome da pasta de personagens: display, 12px,
+     700, caixa alta e `letter-spacing` largo. */
+  font-family: var(--rv-display), sans-serif; font-size: 12px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase;
   transition: color .14s;
 }
 .rv-pasta-nome:hover, .rv-pasta-nome[aria-current="page"] { color: var(--rv-ink); }
@@ -4426,7 +5368,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-pasta-expandir {
   flex: 0 0 auto; margin-left: auto;
   display: flex; align-items: center; gap: 4px;
-  padding: 2px 4px; border: 1px solid transparent; border-radius: 2px;
+  padding: 2px 4px; border: 1px solid transparent; border-radius: var(--rv-r);
   background: none; color: var(--rv-ink-faint); cursor: pointer;
   transition: color .14s, border-color .14s, background .14s;
 }
@@ -4439,14 +5381,40 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    estados está valendo. */
 .rv-pasta-expandir svg { transition: transform .16s; }
 .rv-pasta-expandir[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+/* AS AÇÕES DA PASTA ABERTA — nova subpasta e o ⋮ — encostadas na
+   DIREITA da trilha. `margin-left: auto` no primeiro dos dois abre o
+   vazio entre eles e o caminho: caminho é navegação, aquilo é o que se
+   faz com a pasta, e coladas as duas coisas leriam como uma lista só.
+   Elas ficam VISÍVEIS, não de hover — criar subpasta não tem outro
+   caminho, e gesto escondido é gesto que só existe pra quem já sabe. */
+.rv-pasta-acao-dentro { margin-left: auto; }
+
+/* ARRASTO DE PASTA — mesmas regras da aba Personagens, na cor deste
+   catálogo. A pasta em trânsito fica translúcida (o lugar de onde ela
+   saiu continua visível enquanto se escolhe onde ela entra) e o alvo
+   ganha o fio interno que o hover não tem, pra que passar o mouse nunca
+   se confunda com "solta aqui". */
+/* A pasta em trânsito fica translúcida — o lugar de onde ela saiu
+   continua visível enquanto se escolhe onde ela entra. */
+.rv-pasta-linha[data-arrastando] { opacity: .45; }
+/* E ela vira alvo de PEGAR: o cursor precisa dizer que dá pra arrastar
+   antes de alguém tentar. */
+.rv-pasta-linha[draggable="true"] { cursor: grab; }
+.rv-pasta-linha[draggable="true"]:active { cursor: grabbing; }
+/* O ALVO. O fio interno é o que o hover NÃO tem: passar o mouse e
+   "solta aqui" precisam continuar dizendo coisas diferentes, e é essa
+   a diferença — a mesma regra da aba Personagens, na cor daqui. */
+.rv-pasta-linha[data-alvo] { box-shadow: inset 0 0 0 1px var(--jf-acento); }
+/* O ícone abre junto (a linha já troca Folder por FolderOpen) e acende:
+   a pasta que vai receber é a que está de boca aberta. */
+.rv-pasta-linha[data-alvo] .rv-pasta-icone { color: var(--jf-acento); }
+.rv-pasta-linha[data-alvo] .rv-pasta-nome { color: var(--rv-ink); }
 /* As ações da pasta também são de hover: a coluna fica limpa, e o que
    se faz com pasta o tempo todo é ENTRAR nela. */
-.rv-pasta-linha .rv-cena-acoes {
-  position: static; opacity: 0; padding: 0; border: none; background: none;
-}
-.rv-pasta-linha:hover .rv-cena-acoes,
-.rv-pasta-linha:focus-within .rv-cena-acoes { opacity: 1; }
-.rv-pasta-linha .rv-cena-mini-btn { width: 22px; height: 22px; }
+/* A fila de ícones de ação SAIU da pasta: virou menu de contexto
+   (botão direito), que alcança também a lista de cenas aberta. Ver
+   `_cenas/LinhaPasta.tsx`. */
 /* ── Lista de cenas dentro da pasta ──────────────────────────────
    ROLAGEM PRÓPRIA com teto: o trilho já é uma coluna rolável, e uma
    pasta com trinta cenas empurraria as pastas seguintes pra fora do
@@ -4455,33 +5423,90 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-pasta-cenas {
   /* Sem recuo: a lista já está VISUALMENTE dentro da pasta (ela abre
      debaixo dela e some junto), e o recuo só comia largura de uma
-     coluna que já é estreita. */
-  list-style: none; margin: 6px 0 2px; padding: 0;
-  display: flex; flex-direction: column; gap: 2px;
-  max-height: 200px; overflow-y: auto;
+     coluna que já é estreita. A margem de 8px é o respiro POR DENTRO
+     da borda da pasta — o mesmo da lista engolida em Personagens. */
+  /* BLOCO, e não flex com `gap`: os véus de rolagem abaixo são
+     pseudo-elementos em fluxo, e num flex eles viravam itens — cada um
+     ganhando o `gap` de 8px e deslocando a lista inteira. Com o vão
+     feito por margem entre irmãos, eles não custam espaço nenhum. */
+  list-style: none; margin: 0 8px 8px; padding: 0;
+  display: block;
+  /* O TETO CORTA UM CARTÃO NO MEIO, de propósito: 3 cartões inteiros
+     (56 + 8 de vão = 64 cada) mais 32px do quarto. Meio cartão à mostra
+     é o sinal mais direto de "tem mais coisa aqui embaixo" que uma
+     lista pode dar — com a lista terminando rente à borda, quem não
+     reparou na barra de rolagem conclui que aquilo é tudo. */
+  max-height: 224px; overflow-y: auto;
+  /* O véu vem do chassi (`[data-rolavel]`); daqui só sai a cor com que
+     ele se funde, que é o fundo da pasta. */
+  --rv-veu-cor: var(--rv-ground-2);
 }
+.rv-pasta-cenas > .rv-minicena + /* A miniatura agora se pega — e responde como todo o resto do
+   catálogo: translúcida em trânsito, cursor de pegar em repouso. */
+.rv-minicena[draggable="true"] { cursor: grab; }
+.rv-minicena[draggable="true"]:active { cursor: grabbing; }
+.rv-minicena[data-arrastando] { opacity: .45; }
+.rv-minicena { margin-top: 8px; }
 .rv-minicena { min-width: 0; }
 .rv-minicena-btn {
-  width: 100%; min-width: 0;
-  display: flex; align-items: center; gap: 7px;
-  padding: 3px 5px; border: 1px solid transparent; border-radius: 2px;
-  background: none; color: var(--rv-ink-dim); cursor: pointer; text-align: left;
+  /* 56px como o cartão de personagem: é a IMAGEM que identifica a cena
+     aqui, e numa linha do tamanho do texto o mapa saía pequeno demais
+     pra reconhecer de relance. */
+  width: 100%; min-width: 0; min-height: 56px;
+  display: flex; align-items: center; gap: 0;
+  /* SEM PADDING na linha: o mapa encosta nas bordas e ocupa a altura
+     inteira, como o avatar do cartão de personagem. Padding aqui
+     deixaria uma faixa de fundo em volta dele, e "altura inteira"
+     viraria "quase". O respiro passa pro NOME. */
+  padding: 0; overflow: hidden;
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
+  /* `#0c1526`, o fundo das peças — o mesmo do cartão de personagem. */
+  background: #0c1526; color: var(--rv-ink-dim); cursor: pointer; text-align: left;
   font-family: var(--rv-display), sans-serif; font-size: 11px;
   transition: background .12s, border-color .12s, color .12s;
 }
-.rv-minicena-btn:hover { background: var(--rv-raise); border-color: var(--rv-line-2); color: var(--rv-ink); }
+.rv-minicena-btn:hover {
+  background: color-mix(in srgb, var(--jf-acento) 16%, #0c1526);
+  border-color: color-mix(in srgb, var(--jf-acento) 45%, transparent);
+  color: var(--rv-ink);
+}
+/* Na cena aberta o hover continua sendo do TEMA DELA (âmbar), não o da
+   ferramenta: ela já é âmbar parada, e trocar de família no hover leria
+   como outro estado. */
+.rv-minicena[data-vista] .rv-minicena-btn:hover {
+  background: color-mix(in srgb, var(--rv-am) 16%, #0c1526);
+  border-color: color-mix(in srgb, var(--rv-am) 60%, transparent);
+}
 .rv-minicena-btn:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: 1px; }
 .rv-minicena-btn:disabled { opacity: .5; cursor: not-allowed; }
-.rv-minicena[data-vista] .rv-minicena-btn { border-color: color-mix(in srgb, var(--rv-am) 40%, transparent); }
+/* A CENA EM QUE SE ESTÁ: fundo do tema a 8%, metade do hover (16%). O
+   hover é passageiro e pode ser mais forte; este é permanente e fica
+   embaixo do cursor o tempo todo — se os dois tivessem o mesmo peso,
+   passar o mouse por cima dela não diria nada. */
+.rv-minicena[data-vista] .rv-minicena-btn {
+  border-color: color-mix(in srgb, var(--rv-am) 40%, transparent);
+  background: color-mix(in srgb, var(--rv-am) 8%, #0c1526);
+}
 /* O RETÂNGULO é a cena: mesma ideia do cartão grande, onde o mapa é a
    superfície inteira. Aqui ele encolhe pra um selo de 26×18 — o
    bastante pra reconhecer um mapa já visto. */
+/* ALTURA INTEIRA e encostado à esquerda, com a divisória à direita
+   fazendo o corte — a mesma regra do avatar em `.rv-pn-scroll--pers`.
+   A largura é um número (34px), e não `aspect-ratio`: proporção num
+   item esticado é circular (a altura vem do esticamento, a largura
+   viria da altura, e a altura da linha viria do conteúdo). */
 .rv-minicena-mapa {
-  flex: 0 0 auto; width: 26px; height: 18px; overflow: hidden;
+  flex: 0 0 auto; align-self: stretch; width: 54px; overflow: hidden;
   display: grid; place-items: center;
-  border: 1px solid var(--rv-line-2); border-radius: 1px;
+  border: none; border-right: 1px solid var(--rv-line-2); border-radius: 0;
   background: var(--rv-sunken);
 }
+/* O respiro que saiu da linha entra aqui. */
+.rv-minicena-nome, .rv-minicena-selos { margin-right: 0; }
+/* 16px depois da divisória, como em Personagens: a divisória já é um
+   traço forte e pede mais ar do que um vão entre elementos soltos. */
+.rv-minicena-nome { padding: 9px 0 9px 16px; font-size: 13px; }
+.rv-minicena-selos { padding-right: 6px; margin-left: 6px; }
 .rv-minicena-mapa img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rv-minicena-inicial {
   font-family: var(--rv-display), sans-serif; font-size: 9px; font-weight: 700;
@@ -4515,7 +5540,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-pasta-confirma {
   display: flex; flex-direction: column; gap: 6px;
   margin-top: 6px; padding: 6px 8px;
-  border: 1px solid color-mix(in srgb, var(--rv-dg) 45%, transparent); border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--rv-dg) 45%, transparent); border-radius: var(--rv-r);
   background: color-mix(in srgb, var(--rv-dg) 10%, transparent);
 }
 .rv-pasta-confirma-acoes { display: flex; gap: 6px; }
@@ -4539,7 +5564,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-gav-jogadores-lista { display: flex; flex-direction: column; gap: 3px; margin: 0; padding: 0; list-style: none; }
 .rv-gav-jogador {
   display: flex; align-items: center; gap: 8px;
-  padding: 6px 8px; border-radius: 2px;
+  padding: 6px 8px; border-radius: var(--rv-r);
   border: 1px solid var(--rv-line-2); background: var(--rv-raise);
   cursor: grab; transition: border-color .14s, background .14s;
 }
@@ -4548,7 +5573,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-gav-jogador[data-atribuido] { border-color: color-mix(in srgb, var(--jf-acento) 45%, transparent); }
 .rv-gav-jogador-sigla {
   flex: none; width: 26px; height: 26px; display: grid; place-items: center;
-  border-radius: 2px; background: var(--rv-ground);
+  border-radius: var(--rv-r); background: var(--rv-ground);
   box-shadow: inset 0 0 0 1px var(--rv-line-2);
   color: var(--rv-ink-dim);
   font-family: var(--rv-display), sans-serif; font-size: 12px; font-weight: 700;
@@ -4584,7 +5609,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-cena-jogador-opcao {
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 4px 8px; border-radius: 2px;
+  padding: 4px 8px; border-radius: var(--rv-r);
   border: 1px solid var(--rv-line-2); background: var(--rv-raise);
   font-family: var(--rv-display), sans-serif; font-size: 11px;
   color: var(--rv-ink-dim); cursor: pointer;
@@ -4652,7 +5677,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    um bloco de altura fixa sem isto é o primeiro a ser espremido, e 54px
    viravam 2px — a prévia sumia justamente na folha mais cheia. */
 .rv-gav-grade-previa {
-  height: 54px; flex: none; border-radius: 2px; border: 1px solid var(--rv-line-2);
+  height: 54px; flex: none; border-radius: var(--rv-r); border: 1px solid var(--rv-line-2);
   background-color: #0d1219;
   background-image:
     linear-gradient(45deg, rgba(255,255,255,.05) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.05) 75%),
@@ -4687,7 +5712,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer;
 }
 .rv-gav-faixa:focus { outline: none; }
-.rv-gav-faixa:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: 2px; border-radius: 2px; }
+.rv-gav-faixa:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: 2px; border-radius: var(--rv-r); }
 
 /* O TRECHO PERCORRIDO, no WebKit, não tem pseudo-elemento próprio — o
    trilho é um só. Então é o próprio trilho que vira um gradiente de
@@ -4699,7 +5724,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    desconto, o preenchimento adianta o polegar no começo e atrasa no
    fim — visível justamente nos extremos, onde se confere. */
 .rv-gav-faixa::-webkit-slider-runnable-track {
-  height: 3px; border: none; border-radius: 999px;
+  height: 3px; border: none; border-radius: var(--rv-r-pill);
   background: linear-gradient(
     to right,
     var(--jf-acento) 0 calc(6px + var(--faixa-pct, 0%) * 0.01 * (100% - 12px)),
@@ -4707,23 +5732,23 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   );
 }
 .rv-gav-faixa::-moz-range-track {
-  height: 3px; border: none; border-radius: 999px; background: var(--rv-line-strong);
+  height: 3px; border: none; border-radius: var(--rv-r-pill); background: var(--rv-line-strong);
 }
 /* O trecho PERCORRIDO só existe no Firefox como pseudo-elemento; no
    WebKit o trilho é um só, e a leitura fica por conta do polegar. */
 .rv-gav-faixa::-moz-range-progress {
-  height: 3px; border-radius: 999px; background: var(--jf-acento);
+  height: 3px; border-radius: var(--rv-r-pill); background: var(--jf-acento);
 }
 .rv-gav-faixa::-webkit-slider-thumb {
   appearance: none; -webkit-appearance: none;
   width: 12px; height: 12px; margin-top: -4.5px;
-  border: none; border-radius: 999px; background: var(--jf-acento);
+  border: none; border-radius: var(--rv-r-pill); background: var(--jf-acento);
   box-shadow: 0 1px 3px rgba(0,0,0,.5);
   transition: transform .12s;
 }
 .rv-gav-faixa::-moz-range-thumb {
   width: 12px; height: 12px;
-  border: none; border-radius: 999px; background: var(--jf-acento);
+  border: none; border-radius: var(--rv-r-pill); background: var(--jf-acento);
   box-shadow: 0 1px 3px rgba(0,0,0,.5);
 }
 .rv-gav-faixa:hover::-webkit-slider-thumb { transform: scale(1.15); }
@@ -4739,7 +5764,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    pule de tamanho ao trocar um mapa alto por um largo. */
 .rv-gav-mapa-previa {
   display: grid; place-items: center; flex: none; height: 190px; overflow: hidden;
-  border: 1px solid var(--rv-line-2); border-radius: 2px;
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
   background-color: #0d1219;
   background-image:
     linear-gradient(45deg, rgba(255,255,255,.04) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.04) 75%),
@@ -4760,7 +5785,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-gav-mapa-vazio {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   flex: none; width: 100%; min-height: 108px; padding: 16px;
-  border: 1px dashed var(--rv-line-strong); border-radius: 2px;
+  border: 1px dashed var(--rv-line-strong); border-radius: var(--rv-r);
   background: rgba(255,255,255,.015); color: var(--rv-ink-faint);
   cursor: pointer; text-align: center;
   transition: border-color .14s, color .14s, background .14s;
@@ -4779,7 +5804,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 .rv-gav-atalhos { display: flex; gap: 4px; flex: none; }
 .rv-gav-atalho {
-  padding: 5px 8px; border-radius: 2px;
+  padding: 5px 8px; border-radius: var(--rv-r);
   border: 1px solid var(--rv-line-2); background: transparent; color: var(--rv-ink-dim);
   font-family: var(--font-mono), monospace; font-size: 9.5px; letter-spacing: .06em;
   cursor: pointer; transition: color .14s, border-color .14s, background .14s;
@@ -4795,7 +5820,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    precisa ser visível pra ser aceito de propósito. */
 .rv-gav-conta {
   display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
-  margin: 0; padding: 9px 10px; border-radius: 2px;
+  margin: 0; padding: 9px 10px; border-radius: var(--rv-r);
   border: 1px solid var(--rv-line-2); background: var(--rv-raise);
   font-family: var(--font-mono), monospace; font-size: 9.5px; line-height: 1.6;
   letter-spacing: .06em; text-transform: uppercase; color: var(--rv-ink-dim);
@@ -4829,7 +5854,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* Recusa da leitura do arquivo — acontece ANTES de existir folha. */
 .rv-gav-erro-flutuante {
   position: absolute; right: 16px; bottom: 16px; z-index: 12; margin: 0;
-  padding: 9px 12px; border-radius: 2px;
+  padding: 9px 12px; border-radius: var(--rv-r);
   border: 1px solid color-mix(in srgb, var(--rv-dg) 45%, transparent);
   background: var(--rv-dg-soft); color: var(--rv-dg);
   font-family: var(--font-mono), monospace; font-size: 9.5px;
@@ -4840,7 +5865,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    dizendo que virou outro e por quê. */
 .rv-gav-folha-ajuste {
   display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
-  margin: 0; padding: 8px 10px; border-radius: 2px;
+  margin: 0; padding: 8px 10px; border-radius: var(--rv-r);
   border: 1px solid color-mix(in srgb, var(--rv-am) 40%, transparent);
   background: color-mix(in srgb, var(--rv-am) 10%, transparent);
   color: var(--rv-am);
@@ -4876,7 +5901,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    parecerem a mesma. */
 .rv-cena-jogador {
   display: inline-flex; align-items: center; flex: none;
-  padding: 2px 6px; border-radius: 2px;
+  padding: 2px 6px; border-radius: var(--rv-r);
   font-family: var(--font-mono), monospace; font-size: 8.5px;
   letter-spacing: .06em; text-transform: uppercase; color: var(--rv-ink-faint);
   background: var(--rv-raise); box-shadow: inset 0 0 0 1px var(--rv-line-2);
@@ -4894,7 +5919,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 .rv-cena-jogador-opcao {
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 4px 8px; border-radius: 2px;
+  padding: 4px 8px; border-radius: var(--rv-r);
   border: 1px solid var(--rv-line-2); background: var(--rv-raise);
   font-family: var(--rv-display), sans-serif; font-size: 11px;
   color: var(--rv-ink-dim); cursor: pointer;
@@ -4937,16 +5962,83 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   position: fixed; z-index: 60;
   /* Largura por CONTEÚDO: o cartão de "só o nome" tem metade da
      largura do completo, e forçar os dois ao mesmo tamanho deixaria o
-     primeiro com um vazio à direita do nome. */
-  width: max-content; max-width: 300px;
+     primeiro com um vazio à direita do nome.
+
+     O TETO é a largura da linha de recurso, que é a peça mais larga
+     que ele hospeda: 26 (rótulo) + 80 (barra) + 40 (fração) + 35 (os
+     dois botões de 16 com 3 de vão) + 18 (três vãos de 6) = 199, mais
+     os 24 de padding = 223. Arredondado pra 225. Acima disso só cresce
+     o NOME, e um cartão que estica pelo nome faz a coluna de números
+     dançar de token pra token. */
+  width: max-content; max-width: 225px;
   display: flex; flex-direction: column;
-  padding: 8px 10px;
-  border: 1px solid #18263f; border-radius: var(--rv-r);
-  background: var(--rv-panel-grad);
+  /* 12px NOS QUATRO LADOS (Figma 478:1619). Eram 8/10 — respiro de
+     etiqueta, e este cartão virou um painel com três barras editáveis
+     dentro. */
+  padding: 12px;
+  /* FUNDO CHAPADO, e não o gradiente do chassi: o cartão é pequeno e
+     flutua sobre o mapa, onde um degradê de 160° só rende uma mancha
+     mais clara num canto.
+
+     `#101c32` é COMPENSADO, não o valor do desenho: o alvo é
+     `#111b2c`, e o conta-gotas lia `#121a26` na tela — o navegador
+     converte sRGB pro perfil do monitor e o Figma não, então o mesmo
+     hex sai mais escuro e menos azul aqui. Somando de volta o desvio
+     medido (R −1, G +1, B +6), este é o número que RENDERIZA como o
+     do desenho. */
+  border: 1px solid #18263f; border-radius: 6px;
+  background: #101c32;
   box-shadow: 0 16px 20px rgba(0, 0, 0, .5);
   /* A entrada é curta de propósito: o cartão já custou a espera do
      hover, e uma animação longa em cima disso leria como lentidão. */
   animation: rv-cartao-token-entra .12s ease-out;
+}
+/* Seta ancorada no centro real do token. Duas camadas triangulares
+   reproduzem borda e fundo do cartão sem fresta ou linha atravessando
+   a junção. O lado acompanha a decisão de posicionamento do cartão. */
+.rv-cartao-token__seta {
+  position: absolute;
+  z-index: 1;
+  width: 14px;
+  height: 8px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.rv-cartao-token__seta::before,
+.rv-cartao-token__seta::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+}
+.rv-cartao-token[data-seta-lado="acima"] .rv-cartao-token__seta {
+  bottom: -8px;
+}
+.rv-cartao-token[data-seta-lado="acima"] .rv-cartao-token__seta::before {
+  border-top: 8px solid #18263f;
+}
+.rv-cartao-token[data-seta-lado="acima"] .rv-cartao-token__seta::after {
+  left: 1px;
+  top: -1px;
+  border-left-width: 6px;
+  border-right-width: 6px;
+  border-top: 7px solid #101c32;
+}
+.rv-cartao-token[data-seta-lado="abaixo"] .rv-cartao-token__seta {
+  top: -8px;
+}
+.rv-cartao-token[data-seta-lado="abaixo"] .rv-cartao-token__seta::before {
+  border-bottom: 8px solid #18263f;
+}
+.rv-cartao-token[data-seta-lado="abaixo"] .rv-cartao-token__seta::after {
+  left: 1px;
+  top: 1px;
+  border-left-width: 6px;
+  border-right-width: 6px;
+  border-bottom: 7px solid #101c32;
 }
 @keyframes rv-cartao-token-entra {
   from { opacity: 0; transform: translateY(3px); }
@@ -4954,6 +6046,28 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .rv-cartao-token { animation: none; }
+}
+
+/* CABEÇALHO — nome e lado nas pontas. */
+.rv-cartao-token__cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* O FIO SÓ EXISTE QUANDO HÁ O QUE SEPARAR. Ele fecha o cabeçalho do
+   bloco de barras — e no cartão de quem não vê recurso nenhum não há
+   bloco: sobra o nome, e uma linha embaixo dele seria a moldura de um
+   conteúdo que não existe.
+   O atributo é explícito porque a seta também é filha do cartão e não
+   deve, sozinha, criar um divisor sob o cabeçalho. */
+.rv-cartao-token__cab[data-com-conteudo] {
+  padding-bottom: 8px; border-bottom: 1px solid #18263f;
+}
+/* A ETIQUETA DE LADO fica no MESMO tamanho e entreletra do nome, um
+   degrau abaixo na tinta (47% contra 88%): ela qualifica o nome, não
+   disputa com ele. Corpo e não display — o nome é o que tem peso de
+   título nesta linha. */
+.rv-cartao-token__lado {
+  flex: none;
+  font-family: var(--rv-body); font-weight: 500;
+  font-size: 12px; line-height: 18px; letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(211, 244, 255, .47);
 }
 
 .rv-cartao-token__nome {
@@ -4965,16 +6079,116 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-.rv-cartao-token__recursos { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; }
+/* 8px acima, agora que o fio do cabeçalho é quem separa — os 12 de
+   antes faziam o trabalho que a linha faz melhor. */
+.rv-cartao-token__recursos { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; }
+
+/* CONDIÇÕES — parte do mesmo cartão, não um segundo tooltip em SVG.
+   Assim a escala, a casca e o ritmo permanecem idênticos aos Recursos
+   em qualquer zoom do mapa. */
+.rv-cartao-token__condicoes {
+  padding-top: 8px;
+}
+.rv-cartao-token__recursos + .rv-cartao-token__condicoes {
+  margin-top: 8px;
+  border-top: 1px solid #18263f;
+}
+.rv-cartao-token__secao-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 15px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgba(211, 244, 255, .72);
+  cursor: pointer;
+  transition: color .12s ease;
+}
+.rv-cartao-token__secao-cab:hover { color: var(--rv-ink); }
+.rv-cartao-token__secao-cab:focus-visible {
+  outline: 1px solid var(--rv-cy);
+  outline-offset: 4px;
+  border-radius: var(--rv-r);
+}
+.rv-cartao-token__secao-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono), monospace;
+  color: rgba(211, 244, 255, .47);
+}
+.rv-cartao-token__secao-meta svg {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .14s ease;
+}
+.rv-cartao-token__condicoes[data-expandida] .rv-cartao-token__secao-meta svg {
+  transform: rotate(180deg);
+}
+.rv-cartao-token__condicoes-lista {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 10px;
+  min-width: 199px;
+  padding-top: 8px;
+}
+.rv-cartao-token__condicao {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 7px;
+  color: var(--rv-ink-dim);
+  font-family: var(--rv-body), sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 18px;
+}
+.rv-cartao-token__condicao-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border: 1px solid color-mix(in srgb, var(--am) 30%, #18263f);
+  border-radius: var(--rv-r);
+  background: color-mix(in srgb, var(--am) 7%, #0d182a);
+  color: var(--am);
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+}
 
 .rv-cartao-token__linha {
-  display: grid; align-items: center; gap: 6px;
-  /* 26 / 80 / 40 são as medidas do Figma, e são fixas de propósito: as
-     três linhas precisam alinhar rótulo, barra e número em coluna, e
-     uma barra elástica faria a coluna do número dançar conforme o
-     rótulo ("Mana" é mais largo que "PV"). */
-  grid-template-columns: 26px 80px 40px auto;
+  display: grid; align-items: center; gap: 8px;
+  /* 26 pro rótulo e 72 pro grupo de controle (16 + 40 + 16) — FIXOS,
+     porque são eles que precisam ficar parados: o número não pode
+     mudar de largura quando o PV vai de "8/11" pra "12/12", e o "+"
+     não pode sair de debaixo do dedo de quem está clicando nele.
+
+     Quem estica é a BARRA. O nome no cabeçalho às vezes é mais largo
+     que a linha de recurso e empurra o cartão até o teto de 225 — com
+     a terceira coluna em `auto`, era ela que absorvia a sobra, e o
+     grupo de controle deslizava pra direita conforme o nome do token.
+     Barra elástica é inofensiva: ela já é uma régua proporcional. */
+  grid-template-columns: 26px minmax(80px, 1fr) 72px;
 }
+/* O grupo é COLADO: os dois botões tocam o número, e é esse toque que
+   diz que eles mexem naquele valor e não em outro. */
+.rv-cartao-token__ctrl { display: flex; align-items: center; }
 .rv-cartao-token__linha[aria-busy="true"] { opacity: .72; }
 
 /* Cada linha carrega o próprio acento; o resto da folha lê só as duas
@@ -4997,12 +6211,12 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 
 .rv-cartao-token__trilho {
-  position: relative; display: block; height: 4px; border-radius: 999px;
+  position: relative; display: block; height: 4px; border-radius: var(--rv-r-pill);
   background: rgba(150, 190, 215, .1);
   overflow: hidden;
 }
 .rv-cartao-token__barra {
-  display: block; height: 100%; border-radius: 999px;
+  display: block; height: 100%; border-radius: var(--rv-r-pill);
   background: var(--rec); box-shadow: 0 0 6px 0 var(--rec-glow);
   transition: width .18s ease-out;
 }
@@ -5018,10 +6232,21 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    começar zerando a aparência de botão do navegador. */
 .rv-cartao-token__val {
   display: flex; align-items: center; justify-content: center;
+  /* 40px FIXOS, como no desenho: a fração cresce de "8/11" pra "12/12"
+     conforme se joga, e uma largura por conteúdo empurraria os botões
+     de lugar a cada ponto de vida — o "+" mudaria de posição debaixo do
+     dedo de quem está clicando nele. */
+  width: 40px; flex: none;
   padding: 0; border: none; background: none;
   font-family: var(--font-mono), monospace; font-size: 10px; line-height: 15px;
   color: var(--rv-ink-dim);
 }
+/* CLASSE DUPLICADA pra empatar com `.rm-root button { font-family:
+   inherit }` (classe + elemento), que vinha DEPOIS e trocava o mono da
+   fração pela fonte do corpo — o rótulo "PV" ao lado saía em JetBrains
+   e o "8/11" em Rajdhani, na mesma linha. Mesma armadilha que o painel
+   já tinha documentado. */
+.rv-cartao-token__val.rv-cartao-token__val { font-family: var(--font-mono), monospace; }
 button.rv-cartao-token__val { cursor: text; }
 button.rv-cartao-token__val:hover:not(:disabled) { color: var(--rv-ink); }
 button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; border-radius: var(--rv-r); }
@@ -5034,7 +6259,6 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
 }
 .rv-cartao-token__input:focus-visible { outline: 1px solid var(--rv-cy); outline-offset: 0; }
 
-.rv-cartao-token__pips { display: flex; gap: 3px; }
 .rv-cartao-token__pip {
   display: flex; align-items: center; justify-content: center;
   width: 16px; height: 16px; padding: 0;
@@ -5042,11 +6266,25 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
   background: var(--rv-panel); color: var(--rv-ink-dim); cursor: pointer;
   transition: color .12s, border-color .12s;
 }
-.rv-cartao-token__pip:hover:not(:disabled) { color: var(--rv-ink); border-color: var(--rv-line-hover); }
+/* HOVER EM CIANO — a caixa e o glifo juntos. O fio neutro que ele
+   tinha dizia "isto é clicável" com a mesma voz da borda parada; o
+   ciano é a cor de ação do chassi, e é ela que responde ao ponteiro no
+   resto do VTT. */
+.rv-cartao-token__pip:hover:not(:disabled) {
+  color: var(--rv-cy);
+  border-color: color-mix(in srgb, var(--rv-cy) 55%, transparent);
+  background: color-mix(in srgb, var(--rv-cy) 10%, var(--rv-panel));
+}
 .rv-cartao-token__pip:disabled { opacity: .4; cursor: not-allowed; }
 .rv-cartao-token__pip:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+/* 10px, e não 9: o botão tem 16 com 1 de borda, então sobram 14 de
+   conteúdo — um ícone ímpar ali é centrado em 3,5px de cada lado, e
+   meio pixel de deslocamento borra o traço de forma assimétrica. É o
+   que fazia o − e o + parecerem fora do lugar dentro da caixa. Com 10,
+   a folga é 2 inteiro dos dois lados. A geometria do desenho
+   acompanhou (viewBox 0 0 10 10). */
 .rv-cartao-token__pip svg {
-  width: 9px; height: 9px; fill: none;
+  width: 10px; height: 10px; fill: none;
   stroke: currentColor; stroke-width: 1.5; stroke-linecap: round;
 }
 
@@ -5055,9 +6293,19 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
    o HUD não existe mais um canto ao qual ancorá-lo, e o editor é uma
    tarefa de foco — enquanto ele está aberto, é o que a pessoa está
    fazendo. */
+/* A CASCA FALTAVA. Isto aqui só posicionava: o editor era desenhado
+   direto sobre o mapa, sem fundo, sem fio e sem respiro — os hexágonos
+   apareciam por trás do conteúdo e as peças dele pareciam soltas na
+   tela. É uma JANELA, e janela do VTT tem superfície própria: o mesmo
+   fundo, o mesmo fio e a mesma sombra das outras (`.rv-janela-token`,
+   `.rv-fp`). */
 .rv-retrato-editor-flutuante {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  z-index: 70; max-width: min(520px, calc(100% - 32px));
+  z-index: 70; width: min(340px, calc(100% - 32px));
+  padding: 16px;
+  border: 1px solid #18263f; border-radius: var(--rv-r-peca);
+  background: linear-gradient(160deg, #0b1424, #080e19);
+  box-shadow: var(--rv-shadow-win, 0 30px 70px rgba(0, 0, 0, .55));
 }
 
 /* ── Boundary de erro da mesa (`vtt/error.tsx`) ──────────────────────
@@ -5068,7 +6316,7 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
 .rv-erro-mesa {
   max-width: 460px; display: flex; flex-direction: column; gap: 10px;
   padding: 22px 24px;
-  border: 1px solid var(--rv-line); border-radius: 2px;
+  border: 1px solid var(--rv-line); border-radius: var(--rv-r);
   background: var(--rv-panel-grad); box-shadow: var(--rv-shadow-win);
 }
 .rv-erro-mesa__selo {
@@ -5102,3 +6350,63 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
 }
 /* O chevron diz que o botão ABRE algo, e é secundário ao rótulo. */
 .rv-btn-chevron { margin-left: 1px; opacity: .7; }
+
+/* Lista de nomes na confirmação de remoção em lote (TOK-04). "Remover 7
+   tokens" não deixa conferir se a seleção é a que se pensava. */
+.rv-modal-lista {
+  margin: 8px 0 0; padding: 8px 10px; border-radius: var(--rv-r);
+  background: rgba(255, 255, 255, .04); font-size: 12px; line-height: 1.5;
+  color: var(--txt-dim); max-height: 140px; overflow-y: auto;
+}
+
+/* ── Chanfro real das cascas de seleção ─────────────────────────────
+   Não usa `corner-shape`: o navegador do produto pode ignorá-lo e
+   deixar apenas um border-radius grande. Este é o padrão consolidado
+   do Console — polígono de 10px + reconstrução dos dois fios que o
+   `clip-path` recorta. */
+:is(.rv-cena-busca-casca, .rv-dados-tabs, .rv-dados-modo, .rv-dados-stepper, .rv-fp-tamanhos .rv-fp-seg-btn, .rv-fp-preset) {
+  --rv-selecao-chanfro: var(--rv-notch, 10px);
+  --rv-selecao-fio: #16233a;
+  position: relative;
+  border-radius: 4px 0 4px 0 !important;
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--rv-selecao-chanfro)) 0,
+    100% var(--rv-selecao-chanfro),
+    100% 100%,
+    var(--rv-selecao-chanfro) 100%,
+    0 calc(100% - var(--rv-selecao-chanfro))
+  );
+}
+
+:is(.rv-cena-busca-casca, .rv-dados-tabs, .rv-dados-modo, .rv-dados-stepper, .rv-fp-tamanhos .rv-fp-seg-btn, .rv-fp-preset)::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  background:
+    linear-gradient(45deg,
+      transparent calc(50% - 1px),
+      var(--rv-selecao-fio) calc(50% - 1px) 50%,
+      transparent 50%
+    ) top right / var(--rv-selecao-chanfro) var(--rv-selecao-chanfro) no-repeat,
+    linear-gradient(45deg,
+      transparent 50%,
+      var(--rv-selecao-fio) 50% calc(50% + 1px),
+      transparent calc(50% + 1px)
+    ) bottom left / var(--rv-selecao-chanfro) var(--rv-selecao-chanfro) no-repeat;
+}
+
+.rv-cena-busca-casca:focus-within {
+  --rv-selecao-fio: var(--jf-acento, #35c7d8);
+}
+
+.rv-fp-tamanhos .rv-fp-seg-btn:hover,
+.rv-fp-preset:hover {
+  --rv-selecao-fio: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent);
+}
+
+.rv-fp-tamanhos .rv-fp-seg-btn[aria-pressed="true"],
+.rv-fp-preset[aria-pressed="true"] {
+  --rv-selecao-fio: var(--jf-acento, #35c7d8);
+}

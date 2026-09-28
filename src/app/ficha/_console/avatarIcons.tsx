@@ -4,25 +4,14 @@
  * hover), cada um com o próprio gradiente embutido via `<linearGradient>`
  * + `mix-blend-mode: screen`, exatamente como no arquivo original.
  *
+ * O heptágono do quadro (`AvatarHexPolygon`) saiu junto com a forma:
+ * o retrato virou o leitor QUADRADO do módulo biométrico, e o fio do
+ * quadro agora é um `border` em `.rc-avatar-fill` (ver console.css).
+ *
  * IDs de gradiente prefixados com `rc-avatar-` para nunca colidir com
  * outro SVG da página (o documento inteiro compartilha um único espaço
  * de IDs).
  */
-
-/**
- * Polígono do avatar — heptágono EXATO do prompt (7 lados, não o
- * hexágono usado antes), viewBox 206×201. Só a borda (`stroke`) vem
- * daqui — o preenchimento é `.rc-avatar-fill` (mesma cor, já
- * recortada no mesmo heptágono via `clip-path`), para não pintar por
- * cima do avatar/ícone quando o SVG fica acima na pilha.
- */
-export function AvatarHexPolygon() {
-  return (
-    <svg className="rc-avatar-poly" viewBox="0 0 206 201" preserveAspectRatio="none" aria-hidden="true">
-      <path d="M184.904 40.0664L205.168 128.852L148.389 200.052H57.3208L0.540527 128.852L20.8052 40.0664L102.855 0.553711L184.904 40.0664Z" />
-    </svg>
-  );
-}
 
 export function AvatarUserIcon() {
   return (

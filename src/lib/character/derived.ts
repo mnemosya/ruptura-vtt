@@ -130,3 +130,48 @@ export function computeDerivedStats(
   if (manaBonusRuptura) result.mana_max += manaBonusRuptura;
   return result;
 }
+
+/**
+ * Resolve UM derivado por id, inclusive um que não esteja em
+ * `DERIVED_IDS` — serve para regras que o conteúdo pode publicar sem
+ * que a ficha mínima as conheça de antemão (o caso concreto é
+ * `espacos_max`, ver `carga.ts`).
+ *
+ * `null` quando o id não existe no payload: não há fallback aqui de
+ * propósito. `DERIVED_IDS` tem fallback porque a ficha não funciona
+ * sem PV; um derivado que a ficha não conhece só existe se o conteúdo
+ * o publicar, e inventar um número seria pior que dizer que não tem.
+ *
+ * Usa o MESMO interpretador de `computeDerivedStats`, então uma
+ * fórmula que referencie outro derivado resolve normalmente.
+ */
+export function computeDerivedById(
+  id: string,
+  atributos: CharacterAttributes,
+  regras: CharacterRulesPayload | null,
+): number | null {
+  const formulas = new Map<string, FormulaNode>();
+  for (const def of regras?.derivados ?? []) formulas.set(def.id, def.formula);
+  for (const basico of DERIVED_IDS) {
+    if (!formulas.has(basico)) formulas.set(basico, FALLBACK_DERIVED_FORMULAS[basico]);
+  }
+  if (!formulas.has(id)) return null;
+
+  const cache = new Map<string, number>();
+  const resolving = new Set<string>();
+  const attrs = atributos as unknown as Record<string, number>;
+
+  function resolve(alvo: string): number {
+    if (cache.has(alvo)) return cache.get(alvo)!;
+    if (resolving.has(alvo)) throw new Error(`Referência circular ao calcular o derivado "${alvo}".`);
+    const formula = formulas.get(alvo);
+    if (!formula) throw new Error(`Nenhuma fórmula encontrada para o derivado "${alvo}".`);
+    resolving.add(alvo);
+    const value = evaluateNode(formula, attrs, resolve);
+    resolving.delete(alvo);
+    cache.set(alvo, value);
+    return value;
+  }
+
+  return resolve(id);
+}

@@ -52,6 +52,7 @@ import {
   type DetalheCompendio,
   type ResumoCompendio,
 } from "./acoes/compendioPainel";
+import { useRolagemVelada } from "../_shell/useRolagemVelada";
 import { comecarLeitura, dadosDoEstado, falharLeitura, type EstadoAba } from "./tipos";
 
 /** Espera antes de disparar a busca no servidor — evita uma ida por tecla digitada. */
@@ -60,13 +61,11 @@ const ATRASO_BUSCA_MS = 250;
 export function CompendioTab({
   campaignId,
   visivel,
-  onContador,
   onAbrirJanela,
   fixtureVisual,
 }: {
   campaignId: string;
   visivel: boolean;
-  onContador: (n: number | null) => void;
   /** Abre o Compêndio completo em JANELA INTERNA. `undefined` quando ESTA instância já é a janela. */
   onAbrirJanela?: () => void;
   /**
@@ -77,6 +76,8 @@ export function CompendioTab({
    */
   fixtureVisual?: ResumoCompendio[];
 }) {
+  /* O degradê nas pontas da lista — ver `useRolagemVelada`. */
+  const veuDaLista = useRolagemVelada<HTMLDivElement>();
   const [resumo, setResumo] = useState<EstadoAba<ResumoCompendio[]>>({ fase: "ocioso" });
   const [categoria, setCategoria] = useState<CategoriaCompendio | null>(null);
   const [consulta, setConsulta] = useState("");
@@ -106,10 +107,6 @@ export function CompendioTab({
   // jogo e não pede ação nenhuma — um "99+" permanente na faixa de
   // ícones seria exatamente o badge decorativo que este trabalho
   // veio remover (o "3" fixo do Chat). Chat conta não lidos,
-  // Participantes conta quem está online; aqui não há o que contar.
-  useEffect(() => {
-    onContador(null);
-  }, [onContador]);
 
   // Busca com atraso, cache e descarte de resposta velha. O `seq`
   // garante que uma resposta mais LENTA de uma consulta anterior nunca
@@ -210,7 +207,7 @@ export function CompendioTab({
             })}
           </div>
 
-          <div className="rv-pn-scroll" data-testid="painel-compendio-scroll">
+          <div {...veuDaLista.atributos} className="rv-pn-scroll" data-testid="painel-compendio-scroll">
             {resumo.fase === "carregando" && <EstadoCarregando testId="painel-compendio-carregando" />}
             {resumo.fase === "erro" && <EstadoErro mensagem={resumo.mensagem} onTentarDeNovo={carregarResumo} testId="painel-compendio-erro" />}
 
@@ -306,9 +303,6 @@ export function CompendioTab({
           )}
           {mostrandoDetalhe && detalheAtual && (
             <div className="rv-fg-card" data-testid="painel-compendio-detalhe" style={{ "--fg-a": ACENTO_CATEGORIA[detalheAtual.categoria] } as React.CSSProperties}>
-              <div className="rv-fg-brackets" aria-hidden="true">
-                <span className="rv-fg-bk-tl" /><span className="rv-fg-bk-tr" /><span className="rv-fg-bk-bl" /><span className="rv-fg-bk-br" />
-              </div>
               <div className="rv-fg-espinha">
                 <span className="rv-fg-espinha-topo">§</span>
                 <span className="rv-fg-espinha-rotulo">Verbete</span>

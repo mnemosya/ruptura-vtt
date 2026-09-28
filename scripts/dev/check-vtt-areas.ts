@@ -2,7 +2,7 @@
  * Browser check da ferramenta ÁREAS do VTT — interações REAIS de mouse
  * e teclado do Playwright (nunca só `dispatchEvent`, que não
  * representa captura de ponteiro nem o caminho de eventos do React),
- * contra a rota real `/mesas/[campaignId]/vtt`.
+ * contra a rota real `/mesas/[campaignId]`.
  *
  * Cobre:
  *   1.  Ferramenta Áreas visível pro narrador; INVISÍVEL pro jogador
@@ -36,6 +36,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { ConsoleMessage } from "playwright";
 import { chromium, type BrowserContext, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
+import { recolherPainelDaSessao } from "./painelDaSessao";
 
 loadDotenv({ path: ".env.local" });
 
@@ -196,6 +197,35 @@ async function celula(page: Page, col: number, row: number): Promise<{ x: number
 }
 
 /**
+ * As DUAS pontas de um arrasto, medidas contra o MESMO enquadramento.
+ *
+ * `celula()` empurra o mapa quando a célula está coberta ou fora da
+ * tela — e é isso que torna medir duas em sequência uma armadilha: a
+ * segunda medição pode mover o mapa e deixar a primeira apontando para
+ * onde a célula NÃO está mais. O arrasto então começa no lugar errado.
+ *
+ * Achado assim: um arrasto de quatro células mostrava "0 m" na régua, e
+ * o painel ficava numa fase sem o botão que o passo seguinte esperava.
+ * Parecia bug do desenho de área; era um ponto velho.
+ *
+ * Aqui as duas são remedidas até o mapa não se mexer entre elas.
+ */
+async function duasCelulas(
+  page: Page,
+  a: { col: number; row: number },
+  b: { col: number; row: number },
+): Promise<[{ x: number; y: number }, { x: number; y: number }]> {
+  for (let tentativa = 0; tentativa < 4; tentativa++) {
+    const antes = await page.locator("svg.rv-mapa > g").getAttribute("transform");
+    const pa = await celula(page, a.col, a.row);
+    const pb = await celula(page, b.col, b.row);
+    const depois = await page.locator("svg.rv-mapa > g").getAttribute("transform");
+    if (antes === depois) return [pa, pb];
+  }
+  throw new Error(`Não foi possível medir (${a.col},${a.row}) e (${b.col},${b.row}) no mesmo enquadramento`);
+}
+
+/**
  * Pan com o botão direito, por um deslocamento EXATO.
  *
  * O gesto começa num ponto do mapa que esteja livre e cabe na janela
@@ -231,6 +261,13 @@ async function arrastar(page: Page, de: { x: number; y: number }, ate: { x: numb
 }
 
 async function abrirAreas(page: Page) {
+  // O PAINEL DA SESSÃO SAI DA FRENTE antes de qualquer gesto no mapa.
+  // Ele flutua sobre a metade direita, e as células de coluna alta que
+  // estes critérios usam ficam debaixo dele — o helper de célula
+  // empurra o mapa, mas não tem para onde empurrar contra um painel
+  // fixo. Medido: "Célula (20,5) está coberta por DIV.rv-pn-chat-scroll".
+  await recolherPainelDaSessao(page);
+
   await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Áreas"]').click();
   await page.waitForSelector('[data-testid="painel-areas"]', { timeout: 8000 });
 }
@@ -297,7 +334,7 @@ async function main() {
   registrar("0 (fixture: campanha + narrador + jogador)", true, `campanha=${campaignId}`);
 
   const narrador = await contextoDe(narradorEmail!, narradorSenha!);
-  await narrador.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await narrador.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await narrador.page.waitForSelector(".rv-ferramentas", { timeout: 20000 });
   const P = narrador.page;
 
@@ -347,8 +384,13 @@ async function main() {
   }
 
   const jogador = await contextoDe(jogadorEmail!, jogadorSenha!);
-  await jogador.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await jogador.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await jogador.page.waitForSelector(".rv-ferramentas", { timeout: 20000 });
+  // O painel também sai da frente NA SESSÃO DO JOGADOR: os critérios de
+  // sincronização medem células na página dele, e `abrirAreas` só
+  // recolhia o do narrador. Medido: "Célula (16,6) segue coberta por
+  // DIV.rv-pn-chat-scroll" — a célula era do jogador.
+  await recolherPainelDaSessao(jogador.page);
   {
     // Migration 0083: criação é aberta a qualquer participante da
     // campanha — sem autorização explícita, o jogador já vê a ferramenta.
@@ -417,8 +459,7 @@ async function main() {
     // Traço fino: mesma origem/direção, células ATRAVESSADAS.
     await escolherTipo(P, "linha");
     await P.locator('[data-testid="area-modo-traco_fino"]').click();
-    const a = await celula(P, 9, 7);
-    const b = await celula(P, 15, 7);
+    const [a, b] = await duasCelulas(P, { col: 9, row: 7 }, { col: 15, row: 7 });
     await arrastar(P, a, b);
     const celulasFino = await P.locator('.rv-camada-areas .rv-area--previa').getAttribute("data-celulas-afetadas");
     registrar("6 (exceção da Linha — traço fino destaca as células ATRAVESSADAS, sem exigir 50%)", Number(celulasFino) >= 6, `${celulasFino} células atravessadas`);
@@ -655,6 +696,24 @@ async function main() {
     registrar("16a (zoom não muda NENHUM resultado da regra dos 50%)", antes === zoomAlto && antes === zoomBaixo, `${antes} | ${zoomAlto} | ${zoomBaixo}`);
     const arcoAindaArco = await P.locator('.rv-camada-areas .rv-area[data-area-tipo="esfera"] path').first().getAttribute("d");
     registrar("16b (em zoom baixo a esfera continua um círculo verdadeiro, não degraus)", !!arcoAindaArco && arcoAindaArco.includes("A"), (arcoAindaArco ?? "").slice(0, 40));
+
+    // RESTAURA A VISTA antes de seguir.
+    //
+    // Este bloco deixa o mapa deslocado (o critério 13b panoramiza e
+    // afirma que o transform deixou de ser `translate(0 0)`) e com três
+    // passos líquidos de zoom para fora. Tudo que vem depois calcula
+    // coordenadas de ponteiro supondo a vista inicial — e passou a
+    // errar o alvo: alças caíam fora da viewport, e arrastes que
+    // deveriam desenhar metros desenhavam "0 m", levando o painel a
+    // uma fase que não tem o botão esperado. Três sintomas diferentes,
+    // uma causa só, e nenhuma delas defeito do app.
+    //
+    // Recarregar é o reset mais confiável: zoom e pan vivem em estado
+    // de React e não são persistidos (só as preferências de ferramenta
+    // vão para o `localStorage`), então a página volta enquadrada.
+    await P.reload({ waitUntil: "domcontentloaded" });
+    await P.waitForSelector(".rv-ferramentas", { timeout: 20000 });
+    await abrirAreas(P);
   }
 
   // ── 14. Edição, visibilidade, duplicação e exclusão ──────────────
@@ -676,8 +735,14 @@ async function main() {
     // Editando também mostra os botões flutuantes e a régua de medida —
     // MESMO comportamento de quando está criando.
     await P.waitForSelector('[data-testid="area-acoes-flutuantes"]', { timeout: 5000 });
-    const rotulosEditando = await P.locator('[data-testid="area-acoes-flutuantes"] .rv-area-acao-rotulo').allInnerTexts();
-    registrar("14b2 (editando mostra os botões flutuantes com rótulos Salvar/Cancelar)", rotulosEditando.includes("Salvar") && rotulosEditando.includes("Cancelar"), JSON.stringify(rotulosEditando));
+    // Comparação sem caixa: `allInnerTexts` devolve o texto RENDERIZADO,
+    // e o CSS desenha estes rótulos em caixa alta — chegava
+    // ["SALVAR","CANCELAR"] e a comparação com "Salvar" reprovava um
+    // botão que estava certo. O critério é sobre QUAIS botões aparecem,
+    // não sobre como o CSS os desenha.
+    const rotulosEditando = (await P.locator('[data-testid="area-acoes-flutuantes"] .rv-area-acao-rotulo').allInnerTexts())
+      .map((t) => t.trim().toLowerCase());
+    registrar("14b2 (editando mostra os botões flutuantes com rótulos Salvar/Cancelar)", rotulosEditando.includes("salvar") && rotulosEditando.includes("cancelar"), JSON.stringify(rotulosEditando));
     const medidaVisivel = await P.locator('[data-testid="area-acoes-medida"]').count();
     registrar("14b3 (a régua de medida fica visível editando, igual ao criar)", medidaVisivel === 1, `${medidaVisivel}`);
 
@@ -810,7 +875,22 @@ async function main() {
     // Clica na alça de "largura" pra focá-la (mesmo elemento que o
     // arraste de ponteiro usa) e usa Shift+Seta (passo maior) — sem
     // NENHUM arraste de mouse.
-    await P.locator('.rv-area-alca--largura [role="slider"]').click();
+    // `focus()`, não `click()`.
+    //
+    // O critério é "a alça responde a Shift+Seta SEM nenhum arraste de
+    // ponteiro", e o clique existia só para dar foco — mas trazia junto
+    // uma dependência que não é do critério: o elemento precisa estar
+    // dentro da viewport. E a esta altura ele não está, por culpa deste
+    // mesmo teste: o critério 13b panoramiza o mapa e o 16 dá três
+    // passos líquidos de zoom para fora, sem restaurar a vista.
+    //
+    // Medido: com o mapa no estado inicial a alça fica em x≈1253, y≈487
+    // numa viewport de 1760×1000 — no meio da tela, clicável. Não há
+    // defeito de posicionamento; havia estado herdado.
+    //
+    // Focar sem ponteiro é mais fiel ao que o critério afirma do que
+    // clicar, além de não depender de onde o mapa parou.
+    await P.locator('.rv-area-alca--largura [role="slider"]').focus();
     const focoAntes = await P.evaluate(() => document.activeElement?.getAttribute("aria-label"));
     await P.keyboard.press("Shift+ArrowUp");
     await P.waitForTimeout(150);
@@ -886,8 +966,7 @@ async function main() {
   // ── 20. Guia visual durante o arraste ───────────────────────────
   {
     await escolherTipo(P, "esfera");
-    const a = await celula(P, 14, 4);
-    const b = await celula(P, 18, 4);
+    const [a, b] = await duasCelulas(P, { col: 14, row: 4 }, { col: 18, row: 4 });
     await P.mouse.move(a.x, a.y);
     await P.mouse.down();
     await P.mouse.move(b.x, b.y, { steps: 8 });
@@ -915,8 +994,7 @@ async function main() {
     const marcado = await P.locator('[data-testid="area-campo-snap"]').isChecked();
     registrar("21 (snap angular de 15° vem LIGADO por padrão)", marcado, `marcado=${marcado}`);
 
-    const a = await celula(P, 12, 6);
-    const b = await celula(P, 17, 7);
+    const [a, b] = await duasCelulas(P, { col: 12, row: 6 }, { col: 17, row: 7 });
     await arrastar(P, a, b);
     await P.waitForTimeout(120);
     const dir = Number(await P.locator('[data-testid="area-campo-direcao"]').inputValue());
@@ -941,8 +1019,7 @@ async function main() {
   // ── 22. Modificador de precisão livre (Alt / Meta) ──────────────
   {
     await escolherTipo(P, "esfera");
-    const a = await celula(P, 12, 9);
-    const b = await celula(P, 16, 10);
+    const [a, b] = await duasCelulas(P, { col: 12, row: 9 }, { col: 16, row: 10 });
 
     // Sem modificador → inteiro.
     await arrastar(P, a, b);

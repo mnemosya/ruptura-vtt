@@ -23,21 +23,19 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  MousePointer2, Ruler, PaintBucket, MapPin, Images,
-  Settings, Layers, Menu, Hexagon, Swords,
-  Plus, Minus, Undo2, Redo2, Loader2,
-  UserPlus, Box,
-  Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2,
-  Dices, Clapperboard,
-  ImageUp , ScrollText , ChevronDown } from "lucide-react";
+import { MousePointer2, Ruler, PaintBucket, MapPin, Images, Layers, Menu, Hexagon, Swords, Minus, Undo2, Redo2, Loader2, UserPlus, Box, Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2, Dices, ImageUp, ScrollText, ChevronDown } from "lucide-react";
+import { Plus } from "../../../_design/icons";
 import { MapaHex, TAM, type EstadoVisualToken, type CenaMapa } from "./_mapa/MapaHex";
+import { useTargets } from "./_realtime/useTargets";
+import { Crosshair } from "lucide-react";
+import { AcoesRapidasToken } from "./_shell/AcoesRapidasToken";
+import type { CategoriaAcaoToken } from "./_dominio/targets";
 import { type AlcaArea, type AreaDesenhavel, type EstadoVisualArea, type GuiaGesto } from "./_mapa/CamadaAreas";
-import { type Hex, type TamanhoCriatura, hexDistancia, hexKey, hexNoRaio, hexIguais, hexParaPixel } from "./_mapa/hex";
+import { type Hex, type TamanhoCriatura, hexDistancia, hexKey, hexNoRaio, hexIguais, hexParaPixel, centroDaGrade, panParaCentralizar } from "./_mapa/hex";
 import { type ObjetoCena } from "./_dados/cenaDemo";
 import {
   type EstadoTrilha, type Janela, type Lado, type ModoCena,
-  assumirTurno, avancarParaLentos, concluirTurno, declarar, elegibilidade,
+  assumirTurno, avancarParaLentos, cancelarTurno, concluirTurno, declarar, elegibilidade,
   encerrarParticipacao, proximaRodada,
 } from "./_turnos/modelo";
 import {
@@ -73,14 +71,14 @@ import {
   garantirCenaSemente, lerCenaAtiva, lerCenaAction, lerCenaApresentadaAction, lerPalcoAction,
   lerMinhaCenaAction,
   moverTokenAction, moverTokensAction, obterUsuarioAtualAction,
-  pintarTerrenoAction, criarMarcaAction, apagarMarcaAction, rotacionarTokenAction,
+  pintarTerrenoAction, criarMarcaAction, apagarMarcaAction, rotacionarTokenAction, apontarTokenAction,
   criarMedicaoAction, apagarMedicaoAction, limparMedicoesAction,
   obterControleAction, criarTokenAction, editarTokenAction,
   duplicarTokenAction, removerTokenAction, definirFlagsTokenAction, enviarPingAction, listarPersonagensAction,
   criarAreaAction, atualizarAreaAction, duplicarAreaAction, removerAreaAction, lerObjetosCenaAction,
   iniciarTrilhaAction, atualizarTrilhaAction, encerrarTrilhaAction, lerTrilhaAction,
   criarObjetoAction, removerObjetoAction, atualizarObjetoAction, moverObjetoAction, danificarObjetoAction,
-  type AtualizarObjetoParams, definirCamadasCenaAction, salvarConfigCenaAction } from "./_acoes/sceneActions";
+  type AtualizarObjetoParams, definirCamadasCenaAction } from "./_acoes/sceneActions";
 import { refreshAccessToken } from "../../../../lib/auth/actions";
 import { pegadaEfetiva, projetarPegada, pegadasSobrepoem, origemMecanica } from "./_dominio/pegada";
 import {
@@ -126,19 +124,28 @@ import {
   subscribeToVttAreasChanged, subscribeToCamadasDaCena, subscribeToVttPalco,
   subscribeToVttAtribuicoes } from "./_realtime/vttRealtime";
 import { useCampaignCharacterControllersRealtime } from "../../../../lib/realtime/useCampaignRealtime";
-import { GerenciadorToken, type ValoresFormularioToken, sugerirSigla } from "./_shell/GerenciadorToken";
+import { GerenciadorToken, type ValoresFormularioToken, sugerirSigla, tamanhoTemOrientacaoVariavel } from "./_shell/GerenciadorToken";
 import { MenuContextual, type ItemMenuContextual } from "./_shell/MenuContextual";
 import { ProvedorJanelasFerramenta } from "./_shell/JanelaFerramenta";
 import { PainelCamadas, type EstadoCamadas, CAMADAS_PADRAO, camadasDeJson } from "./_shell/PainelCamadas";
 import { PainelMarcar, type CorMarcaUi, type SinalMarcaUi, type DuracaoMarcaUi } from "./_shell/PainelMarcar";
-import { PainelCena, type ValoresCena } from "./_shell/PainelCena";
 import { GerenciadorCenas } from "./_cenas/GerenciadorCenas";
 import { esquecerCenaVista, gravarCenaVista, lerCenaVista } from "./_cenas/modelo";
 import { CartaoTokenHover } from "./_shell/CartaoTokenHover";
 import { useConsoleDaMesa } from "../_shell/ConsoleDaMesa";
+import { BootPanel } from "../../../_boundaries/BootPanel";
+import { AvisoSincronizacao } from "./_shell/AvisoSincronizacao";
+import { MenuDaMesa, posicaoAoLadoDe, type PosicaoMenuMesa } from "./_shell/MenuDaMesa";
+import { ProvedorJanelasDaMesa } from "./_shell/JanelasDaMesa";
 import { readSelectedTokenHudAction } from "./_acoes/hudActions";
 import type { SelectedTokenHudData } from "../../../../lib/vtt/hudTypes";
 import { EditorRetratoToken } from "./_shell/EditorRetratoToken";
+import {
+  definirRetratoImagemAction,
+  finalizarUploadRetratoAction,
+  reservarUploadAction,
+} from "./_acoes/imageActions";
+import { enviarParaUrlAssinada, type ImagemPreparada } from "../../../../lib/vtt/imagePreparation";
 import { PainelVtt } from "./_painel/PainelVtt";
 import {
   MIME_PERSONAGEM_ARRASTADO,
@@ -165,6 +172,8 @@ const ICONE_FERRAMENTA: Record<FerramentaId, typeof MousePointer2> = {
 /** Limites de zoom — mantidos idênticos aos que já existiam antes. */
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 2.4;
+/** Zoom com que toda cena abre (ao entrar na mesa e ao trocar de cena). */
+const ZOOM_ENTRADA = 0.8;
 /**
  * Fator da escala exponencial do zoom pela roda. Multiplicativo (`z *
  * exp(-delta*k)`), não aditivo (`z + delta*k`) — um zoom multiplicativo
@@ -220,6 +229,37 @@ type FluxoToken =
  * posicionamento o token ainda não existe, então a mensagem nunca pode
  * soar como se ele já estivesse ali.
  */
+/**
+ * O rascunho de token que nasce de um personagem arrastado do painel.
+ * Fora do componente porque é uma CONVERSÃO — personagem em token —, e
+ * porque dois caminhos a usam: soltar no mapa (que cria na hora) e
+ * abrir o formulário.
+ */
+function rascunhoDePersonagem(p: PersonagemArrastado): ValoresFormularioToken {
+  return {
+    nome: p.nome,
+    sigla: p.sigla || sugerirSigla(p.nome),
+    lado: p.tipo === "pn" ? "pn" : "pj",
+    vertente: "nenhuma",
+    tamanho: "medio",
+    orientacao: 0,
+    q: 0,
+    r: 0,
+    characterId: p.characterId,
+    visivel: true,
+    bloqueado: false,
+    retratoUrl: null,
+    retratoArquivo: null,
+    pvAtual: null,
+    pvMax: null,
+    peAtual: null,
+    peMax: null,
+    manaAtual: null,
+    manaMax: null,
+    condicoes: [],
+  };
+}
+
 function validarPosicaoToken(params: {
   tamanho: TamanhoCriatura; orientacao: number; ancora: Hex; largura: number; altura: number;
   terreno: MapaTerreno; ocupadosPorOutros: ReadonlySet<string>;
@@ -305,40 +345,28 @@ export function VttClient({
   const [selecionadoId, setSelecionadoId] = useState<string | null>(null);
   const [selecionadosIds, setSelecionadosIds] = useState<Set<string>>(new Set());
   const [hoverId, setHoverId] = useState<string | null>(null);
+  const [radialTokenId, setRadialTokenId] = useState<string | null>(null);
+  const fecharRadial = useCallback(() => setRadialTokenId(null), []);
   /** Token cujo retrato está sendo trocado — aberto pelo menu contextual (ver `itensMenuContextual`). */
   const [editandoRetratoDe, setEditandoRetratoDe] = useState<string | null>(null);
-  /**
-   * CARTÃO DE HOVER do token (substituto do HUD de seleção).
-   *
-   * Aparece depois de uma PARADA deliberada do ponteiro sobre o token
-   * — passar por cima a caminho de outra coisa não abre nada. E some
-   * com uma carência, não na hora: sem ela seria impossível levar o
-   * mouse do token até o cartão pra clicar num pip, porque o caminho
-   * entre os dois passa por fora dos dois.
-   */
-  const ATRASO_CARTAO_MS = 420;
-  const CARENCIA_CARTAO_MS = 200;
+  /** Cartão de detalhes do token — aberto por clique, nunca por hover. */
   const [cartaoHover, setCartaoHover] = useState<{ tokenId: string; ancora: { x: number; y: number; width: number; height: number } } | null>(null);
-  const timerCartaoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sobreCartaoRef = useRef(false);
   /**
    * Recursos por token, já lidos. Existe por causa de uma coisa que se
    * vê na mesa e não no código: o cartão abria com o NOME e as barras
    * entravam depois, quando a leitura voltava — o cartão crescia na
    * cara de quem olhava.
    *
-   * A busca agora começa no instante em que o ponteiro ENTRA no token,
-   * não quando o cartão abre: os 420ms de espera do hover viram tempo
-   * de rede grátis. E o que já foi lido fica guardado, então voltar a
-   * um token que você já olhou é instantâneo — com uma releitura em
-   * segundo plano, porque o valor pode ter mudado desde então.
+   * O que já foi lido fica guardado, então voltar a um token que você
+   * já abriu é instantâneo — com releitura em segundo plano, porque o
+   * valor pode ter mudado desde então.
    */
   const dadosCartaoRef = useRef<Map<string, SelectedTokenHudData>>(new Map());
   const [dadosCartao, setDadosCartao] = useState<SelectedTokenHudData | null>(null);
 
   /**
-   * Gesto que já cumpriu a espera do hover mas ainda não tem os dados —
-   * o cartão fica ESPERANDO, sem aparecer.
+   * Clique que ainda não tem os dados — o cartão fica esperando, sem
+   * aparecer.
    *
    * O cartão de "só o nome" é um estado REAL (quem não tem permissão
    * nenhuma vê exatamente isso), então mostrá-lo enquanto a leitura
@@ -368,41 +396,48 @@ export function VttClient({
     });
   }, [campaignId]);
 
-  const limparTimerCartao = useCallback(() => {
-    if (timerCartaoRef.current) { clearTimeout(timerCartaoRef.current); timerCartaoRef.current = null; }
+  const aoHoverToken = useCallback((id: string | null) => setHoverId(id), []);
+
+  const fecharCartaoToken = useCallback(() => {
+    aguardandoCartaoRef.current = null;
+    setCartaoHover(null);
+    setDadosCartao(null);
   }, []);
 
-  const aoHoverToken = useCallback((id: string | null, ancora?: { x: number; y: number; width: number; height: number }) => {
-    setHoverId(id);
-    limparTimerCartao();
-    if (id && ancora) {
-      buscarRecursosDoToken(id);
-      timerCartaoRef.current = setTimeout(() => {
-        const jaTem = dadosCartaoRef.current.get(id);
-        if (jaTem) {
-          setDadosCartao(jaTem);
-          setCartaoHover({ tokenId: id, ancora });
-          return;
-        }
-        // Sem dados ainda: o cartão NÃO abre — fica esperando a
-        // resposta (ver `aguardandoCartaoRef`).
-        aguardandoCartaoRef.current = { tokenId: id, ancora };
-      }, ATRASO_CARTAO_MS);
+  const aoAtivarCartaoToken = useCallback((id: string, ancora: { x: number; y: number; width: number; height: number }) => {
+    if (cartaoHover?.tokenId === id) {
+      fecharCartaoToken();
       return;
     }
-    // Saiu do token: desiste de qualquer abertura pendente (senão uma
-    // resposta atrasada abriria o cartão de um token que o ponteiro já
-    // deixou) e fecha o aberto — mas só se o ponteiro também não
-    // estiver dentro DELE, que é o que permite ir do token até os pips.
-    aguardandoCartaoRef.current = null;
-    timerCartaoRef.current = setTimeout(() => {
-      if (!sobreCartaoRef.current) setCartaoHover(null);
-    }, CARENCIA_CARTAO_MS);
-  }, [limparTimerCartao, buscarRecursosDoToken]);
 
-  // Um gesto de mapa (arrastar token, pan, zoom, abrir menu) tira o
-  // cartão da frente na hora: ele é ajuda passiva, nunca obstáculo.
-  useEffect(() => () => limparTimerCartao(), [limparTimerCartao]);
+    const jaTem = dadosCartaoRef.current.get(id);
+    if (jaTem) {
+      aguardandoCartaoRef.current = null;
+      setDadosCartao(jaTem);
+      setCartaoHover({ tokenId: id, ancora });
+    } else {
+      setCartaoHover(null);
+      setDadosCartao(null);
+      aguardandoCartaoRef.current = { tokenId: id, ancora };
+    }
+    buscarRecursosDoToken(id);
+  }, [cartaoHover?.tokenId, buscarRecursosDoToken, fecharCartaoToken]);
+
+  useEffect(() => {
+    const aoPointerDown = (e: PointerEvent) => {
+      const alvo = e.target as Element | null;
+      if (alvo?.closest?.(".rv-cartao-token, .rv-token")) return;
+      fecharCartaoToken();
+    };
+    const aoTeclar = (e: KeyboardEvent) => { if (e.key === "Escape") fecharCartaoToken(); };
+    document.addEventListener("pointerdown", aoPointerDown, true);
+    window.addEventListener("keydown", aoTeclar);
+    return () => {
+      document.removeEventListener("pointerdown", aoPointerDown, true);
+      window.removeEventListener("keydown", aoTeclar);
+    };
+  }, [fecharCartaoToken]);
+
   const [modoTerreno, setModoTerreno] = useState<TipoTerreno | null>("dificil");
   const [raioPincelTerreno, setRaioPincelTerreno] = useState(0); // 0/1/2 → 1/7/19 células (hexNoRaio)
   const [modoPincelTerreno, setModoPincelTerreno] = useState<"pincel" | "balde">("pincel");
@@ -433,6 +468,13 @@ export function VttClient({
 
   // ── Estado persistido (banco) ────────────────────────────────────
   const [estadoCena, setEstadoCena] = useState<EstadoCenaVtt>(null);
+  // O cartão é uma sobreposição do modo de interação e de uma cena
+  // específica. Trocar qualquer um dos dois invalida tanto o conteúdo
+  // quanto a posição usada como âncora, inclusive quando a troca vem
+  // de realtime e não de um clique local.
+  useEffect(() => {
+    fecharCartaoToken();
+  }, [ferramenta, estadoCena?.cena.id, fecharCartaoToken]);
 
   /**
    * IMAGENS da cena. Todo o assunto — lista, URLs assinadas, preparo em
@@ -520,6 +562,13 @@ export function VttClient({
   // sempre no servidor (`pode_editar_vtt_area`).
   const ferramentasDisponiveis = useMemo(() => ferramentasParaPapel(ehNarrador), [ehNarrador]);
 
+  /**
+   * O MENU DA MESA. Com a casca da campanha fora desta rota, ele é a
+   * porta pra tudo que não é o mapa — inclusive pra fora da mesa.
+   */
+  const [menuMesa, setMenuMesa] = useState<PosicaoMenuMesa | null>(null);
+  const botaoMenuMesaRef = useRef<HTMLButtonElement | null>(null);
+
   // A cena inteira, sempre fresca — lida por comandos de undo/redo/
   // movimento NO MOMENTO em que rodam, nunca capturada no fechamento
   // (a revisão muda a cada escrita, e um comando pode ser desfeito
@@ -532,6 +581,17 @@ export function VttClient({
   // único estado (via ref) elimina a corrida por construção.
   const estadoCenaRef = useRef<EstadoCenaVtt>(null);
   useEffect(() => { estadoCenaRef.current = estadoCena; }, [estadoCena]);
+
+  /**
+   * Põe um ponto do mundo no meio do palco, zoom intacto. A ÚNICA conta
+   * de câmera — área, token, ping e painel passam todos por aqui.
+   */
+  const centralizarCameraEmPonto = useCallback((alvo: { x: number; y: number }) => {
+    const cena = estadoCenaRef.current?.cena;
+    if (!cena) return;
+    const { zoom: z } = zoomPanRef.current;
+    setPan(panParaCentralizar(alvo, z, cena.largura, cena.altura, TAM));
+  }, []);
 
   // ── RODADAS (trilha de turnos persistida, migration 0088) ────────
   //
@@ -1049,6 +1109,18 @@ export function VttClient({
     [estadoCena, imgs.urls],
   );
   const tokenPorId = useMemo(() => new Map(tokensApresentacao.map((t) => [t.id, t])), [tokensApresentacao]);
+  const idsTargetsVisiveis = useMemo(() => new Set(tokenPorId.keys()), [tokenPorId]);
+  const targets = useTargets(campaignId, estadoCena?.cena.id ?? null, usuarioId, idsTargetsVisiveis);
+  const meusAlvos = useMemo(() => targets.meus.flatMap(id => {
+    const t = tokenPorId.get(id);
+    return t ? [{ tokenId: id, characterId: t.characterId ?? null, nome: t.nome }] : [];
+  }), [targets.meus, tokenPorId]);
+  // Realtime pode remover/ocultar um token enquanto o cartão dele está
+  // aberto. Sem esta guarda, sobrava um cartão órfão ancorado onde o
+  // token existia antes.
+  useEffect(() => {
+    if (cartaoHover && !tokenPorId.has(cartaoHover.tokenId)) fecharCartaoToken();
+  }, [cartaoHover, tokenPorId, fecharCartaoToken]);
   /**
    * Objetos PERSISTIDOS no formato que a camada de mapa já desenha
    * (sombra, faces, rachadura de dano, hint) — reaproveitar aquele
@@ -2033,7 +2105,7 @@ export function VttClient({
     if (rotacoesPendentesRef.current.has(tokenId)) {
       rotacaoEnfileiradaRef.current.set(tokenId, novaOrientacao);
       const anterior = orientacaoPedidaRef.current.get(tokenId);
-      orientacaoPedidaRef.current.set(tokenId, { de: anterior?.de ?? token.orientacao, para: novaOrientacao });
+      orientacaoPedidaRef.current.set(tokenId, { de: anterior?.de ?? token.direcao, para: novaOrientacao });
       return;
     }
 
@@ -2042,7 +2114,7 @@ export function VttClient({
     // em qualquer um deles enquanto o eco do banco não chegou faz a
     // chamada partir de um ponto que já não é o atual — a RPC é
     // recusada por concorrência, e o undo volta pro lugar errado.
-    const orientacaoAtual = orientacaoBase(tokenId, token.orientacao);
+    const orientacaoAtual = orientacaoBase(tokenId, token.direcao);
     // Orientação igual à que já foi pedida: nunca chama RPC à toa (vale
     // tanto pro clique de 60° quanto pra alça, soltar onde já estava).
     if (novaOrientacao === orientacaoAtual) return;
@@ -2053,8 +2125,8 @@ export function VttClient({
       rotacoesPendentesRef.current.add(tokenId);
       try {
         const revision = estadoCenaRef.current?.tokens.find((t) => t.id === tokenId)?.revision ?? token!.revision;
-        setEstadoCena((c) => c ? { ...c, tokens: c.tokens.map((t) => t.id === tokenId ? { ...t, orientacao: para } : t) } : c);
-        const r = await rotacionarTokenAction({ campaignId, tokenId, orientacao: para, revisionEsperada: revision });
+        setEstadoCena((c) => c ? { ...c, tokens: c.tokens.map((t) => t.id === tokenId ? { ...t, direcao: para } : t) } : c);
+        const r = await apontarTokenAction({ campaignId, tokenId, direcao: para, revisionEsperada: revision });
         if (r.ok && r.dados) {
           setEstadoCena((c) => c ? { ...c, tokens: c.tokens.map((t) => t.id === tokenId ? { ...t, revision: r.dados!.revision } : t) } : c);
           setErroAcao(null);
@@ -2063,7 +2135,7 @@ export function VttClient({
         // Recusado: reverte a orientação otimista pra onde ESTA chamada
         // específica começou — nunca um valor fixo, senão desfazer/
         // refazer reverteria pro lugar errado quando a chamada falha.
-        setEstadoCena((c) => c ? { ...c, tokens: c.tokens.map((t) => t.id === tokenId ? { ...t, orientacao: desde } : t) } : c);
+        setEstadoCena((c) => c ? { ...c, tokens: c.tokens.map((t) => t.id === tokenId ? { ...t, direcao: desde } : t) } : c);
         // Recusa: o desenho já voltou pra `desde`, que é a verdade —
         // manter uma base "pedida" aqui só faria o próximo passo sair
         // de um lugar que o servidor negou.
@@ -2094,7 +2166,7 @@ export function VttClient({
     aplicar(orientacaoAtual, novaOrientacao).then((sucesso) => {
       if (sucesso) {
         executarComando({
-          rotulo: `rotacionar ${token.nome}`,
+          rotulo: `virar ${token.nome}`,
           autorId: usuarioId ?? "",
           executar: () => aplicar(orientacaoAtual, novaOrientacao).then(() => {}),
           desfazer: () => aplicar(novaOrientacao, orientacaoAtual).then(() => {}),
@@ -2112,7 +2184,7 @@ export function VttClient({
       // `escoarFila` só roda no caminho de sucesso do `.then`.
       rotacaoEnfileiradaRef.current.delete(tokenId);
       orientacaoPedidaRef.current.delete(tokenId);
-      setErroAcao("Falha de rede: a rotação não foi salva.");
+      setErroAcao("Falha de rede: a direção não foi salva.");
     });
   }, [campaignId, executarComando, orientacaoBase, tokenPorId, usuarioId]);
 
@@ -2132,9 +2204,31 @@ export function VttClient({
     // Base = a última orientação PEDIDA, se houver uma em voo/na fila.
     // Segurar E gira seis vezes e volta ao início, em vez de girar uma
     // vez só porque as outras cinco partiram todas da mesma base velha.
-    const novaOrientacao = ((orientacaoBase(tokenId, token.orientacao) + direcao) % 6 + 6) % 6;
+    const novaOrientacao = ((orientacaoBase(tokenId, token.direcao) + direcao) % 6 + 6) % 6;
     aplicarRotacaoAbsoluta(tokenId, novaOrientacao);
   }, [tokenPorId, orientacaoBase, aplicarRotacaoAbsoluta]);
+
+  /**
+   * GIRAR A FORMA — a pegada, não o olhar.
+   *
+   * Um passo de 60° na `orientacao`, pela RPC que VALIDA
+   * (`rotacionar_vtt_token`): mudar a forma muda as células ocupadas e
+   * pode esbarrar em terreno ou noutro token. É por isso que ela ficou
+   * fora da alça e virou ação de menu — ali a recusa é uma resposta
+   * legítima, e não uma surpresa no meio de um gesto contínuo.
+   */
+  const girarFormaDoToken = useCallback(async (tokenId: string) => {
+    const token = estadoCenaRef.current?.tokens.find((t) => t.id === tokenId);
+    if (!token) return;
+    const nova = (token.orientacao + 1) % 6;
+    const r = await rotacionarTokenAction({ campaignId, tokenId, orientacao: nova, revisionEsperada: token.revision });
+    if (!r.ok || !r.dados) { setErroAcao(r.erro ?? "A forma não cabe girada nesta posição."); return; }
+    setEstadoCena((c) => (c ? {
+      ...c,
+      tokens: c.tokens.map((t) => (t.id === tokenId ? { ...t, orientacao: nova, revision: r.dados!.revision } : t)),
+    } : c));
+    setErroAcao(null);
+  }, [campaignId]);
 
   // Alça de rotação arrastada no mapa (`MapaHex`, gesto local com
   // `setPointerCapture`) — solta numa orientação ABSOLUTA já validada
@@ -2170,9 +2264,39 @@ export function VttClient({
    * `/ficha`, que continua existindo.
    */
   const consoleDaMesa = useConsoleDaMesa();
+  const definirAlvosNoMapa = consoleDaMesa?.definirAlvosNoMapa;
+  const fecharAcaoToken = consoleDaMesa?.fecharAcaoToken;
+  useEffect(() => () => { fecharAcaoToken?.(); definirAlvosNoMapa?.([]); }, [estadoCena?.cena.id, fecharAcaoToken, definirAlvosNoMapa]);
+  useEffect(() => { definirAlvosNoMapa?.(meusAlvos); }, [definirAlvosNoMapa, meusAlvos]);
+  useEffect(() => { setRadialTokenId(null); }, [estadoCena?.cena.id]);
+  const abrirRadial = useCallback((id: string) => {
+    const t = tokenPorId.get(id);
+    if (!t?.characterId || !t.podeControlar || !consoleDaMesa) return;
+    fecharCartaoToken();
+    setMenuContextual(null);
+    consoleDaMesa.aquecer();
+    setRadialTokenId(id);
+  }, [tokenPorId, consoleDaMesa, fecharCartaoToken]);
+  const escolherAcaoToken = (categoria: CategoriaAcaoToken) => {
+    const t = radialTokenId ? tokenPorId.get(radialTokenId) : null;
+    if (t?.characterId && t.podeControlar) consoleDaMesa?.abrirAcaoToken(t.characterId, { tokenId: t.id, categoria });
+    fecharRadial();
+  };
+  useEffect(() => {
+    const ouvir = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || elementoEhEditavel(document.activeElement as HTMLElement | null)) return;
+      if (e.shiftKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "a" && selecionadoId) {
+        e.preventDefault(); abrirRadial(selecionadoId);
+      }
+    };
+    window.addEventListener("keydown", ouvir);
+    return () => window.removeEventListener("keydown", ouvir);
+  }, [abrirRadial, selecionadoId]);
   const fluxoTokenRef = useRef(fluxoToken);
   useEffect(() => { fluxoTokenRef.current = fluxoToken; }, [fluxoToken]);
   const [confirmandoRemocao, setConfirmandoRemocao] = useState<TokenApresentacao | null>(null);
+  /** Remoção em LOTE (TOK-04) — separada da única para o texto poder dizer quantos. */
+  const [confirmandoRemocaoLote, setConfirmandoRemocaoLote] = useState<TokenApresentacao[] | null>(null);
 
   useEffect(() => {
     if (!ehNarrador) return;
@@ -2191,8 +2315,10 @@ export function VttClient({
     return {
       nome: "", sigla: "", lado: "pn", vertente: "nenhuma",
       tamanho: "medio", orientacao: 0, q: 0, r: 0,
-      characterId: null, visivel: true, bloqueado: false, retratoUrl: null,
-      pvAtual: null, pvMax: null, condicoes: [],
+      characterId: null, visivel: true, bloqueado: false, retratoUrl: null, retratoArquivo: null,
+      pvAtual: null, pvMax: null,
+      peAtual: null, peMax: null, manaAtual: null, manaMax: null,
+      condicoes: [],
     };
   }
   function valoresDeToken(t: TokenApresentacao): ValoresFormularioToken {
@@ -2200,14 +2326,18 @@ export function VttClient({
       nome: t.nome, sigla: t.sigla, lado: t.lado, vertente: t.vertente,
       tamanho: t.tamanho, orientacao: t.orientacao, q: t.pos.q, r: t.pos.r,
       characterId: t.characterId, visivel: t.visivel, bloqueado: t.bloqueado, retratoUrl: t.retrato,
-      pvAtual: t.pv, pvMax: t.pvMax, condicoes: [...t.condicoes],
+      // Editar não sobe arquivo: o retrato de um token que já existe se
+      // troca pelo editor próprio, que tem o id e a revisão em mãos.
+      retratoArquivo: null,
+      pvAtual: t.pv, pvMax: t.pvMax,
+      peAtual: t.pe, peMax: t.peMax, manaAtual: t.mana, manaMax: t.manaMax,
+      condicoes: [...t.condicoes],
     };
   }
 
   /** Fecha as janelas de botão — parte da regra de UMA JANELA POR VEZ. */
   const fecharJanelasDeBotao = useCallback(() => {
     setPainelCamadasAberto(false);
-    setPainelCenaAberto(false);
     setPainelCenasAberto(false);
   }, []);
 
@@ -2236,27 +2366,19 @@ export function VttClient({
    * persistência de token — e o documento do diretório não é movido
    * nem substituído: o token é uma instância da cena vinculada a ele.
    */
+  /**
+   * Quem está sendo arrastado do painel, enquanto o arrasto dura.
+   *
+   * É REF e não estado: só o `dragover` lê, e ele já dispara dezenas de
+   * vezes por segundo — um `setState` por quadro do gesto rerenderizaria
+   * a mesa inteira pra não mudar nada na tela.
+   */
+  const personagemArrastadoRef = useRef<PersonagemArrastado | null>(null);
+
   const iniciarTokenDePersonagem = useCallback((p: PersonagemArrastado, ancora: Hex | null = null) => {
     if (!estadoCena || !ehNarrador) return;
-    const rascunho: ValoresFormularioToken = {
-      nome: p.nome,
-      sigla: p.sigla || sugerirSigla(p.nome),
-      lado: p.tipo === "pn" ? "pn" : "pj",
-      vertente: "nenhuma",
-      tamanho: "medio",
-      orientacao: 0,
-      q: 0,
-      r: 0,
-      characterId: p.characterId,
-      visivel: true,
-      bloqueado: false,
-      retratoUrl: null,
-      pvAtual: null,
-      pvMax: null,
-      condicoes: [],
-    };
     setFerramenta("interagir");
-    setFluxoToken({ fase: "posicionando", rascunho, ancora, orientacao: 0 });
+    setFluxoToken({ fase: "posicionando", rascunho: rascunhoDePersonagem(p), ancora, orientacao: 0 });
   }, [estadoCena, ehNarrador]);
 
 
@@ -2306,7 +2428,10 @@ export function VttClient({
       const revisaoAtual = estadoCenaRef.current?.tokens.find((t) => t.id === tokenId)?.revision ?? tokenAtual!.revision;
       const r = await editarTokenAction({
         campaignId, tokenId, nome: v.nome, sigla: v.sigla, lado: v.lado, vertente: v.vertente,
-        characterId: v.characterId, retratoUrl: v.retratoUrl, pvAtual: v.pvAtual, pvMax: v.pvMax,
+        characterId: v.characterId, retratoUrl: v.retratoUrl,
+        pvAtual: v.pvAtual, pvMax: v.pvMax,
+        peAtual: v.peAtual, peMax: v.peMax,
+        manaAtual: v.manaAtual, manaMax: v.manaMax,
         condicoes: v.condicoes, tamanho: v.tamanho, revisionEsperada: revisaoAtual,
       });
       if (!r.ok || !r.dados) return { ok: false, erro: r.erro };
@@ -2433,11 +2558,10 @@ export function VttClient({
     if (nova !== "imagens") imgs.setSelecionadaId(null);
     if (nova !== "terreno") setUltimoGestoTerrenoCelulas(null);
     // UMA JANELA POR VEZ: entre ferramentas isso já era automático (a
-    // janela é a ferramenta ativa), mas Camadas, Configurações da cena
-    // e o Catálogo são janelas de BOTÃO e ficavam abertas por cima.
-    // Abrir uma ferramenta fecha as três.
+    // janela é a ferramenta ativa), mas Camadas e o Catálogo são
+    // janelas de BOTÃO e ficavam abertas por cima. Abrir uma
+    // ferramenta fecha as duas.
     setPainelCamadasAberto(false);
-    setPainelCenaAberto(false);
     setPainelCenasAberto(false);
     setFerramenta(nova);
   }, [ferramenta, cancelarPosicionamento]);
@@ -2466,45 +2590,84 @@ export function VttClient({
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
     setArrastandoPersonagem(true);
-    // Feedback ao vivo: o fantasma de posicionamento (se já estiver
-    // ativo) segue o cursor pelo mesmo caminho de sempre.
     const hex = conversorHexRef.current?.(e.clientX, e.clientY) ?? null;
-    if (hex) moverPosicionamento(hex);
+    if (!hex) return;
+    /* A PRÉVIA COMEÇA AQUI, não no clique. Enquanto o arrasto passa
+       por cima do mapa, o token já aparece na célula sob o ponteiro —
+       com a cor, o tamanho e a validação de sempre. Antes isto só
+       movia um fantasma que ainda não existia: a fase de posicionar
+       começava ao SOLTAR, e durante o arrasto o mapa não dizia nada
+       sobre o que ia acontecer nem onde.
+
+       A carga vem do painel por prop (`personagemArrastadoRef`): no
+       `dragover` o navegador não deixa ler o `dataTransfer`, só os
+       tipos. */
+    const arrastado = personagemArrastadoRef.current;
+    if (!fluxoTokenRef.current && arrastado) {
+      setFerramenta("interagir");
+      setFluxoToken({ fase: "posicionando", rascunho: rascunhoDePersonagem(arrastado), ancora: hex, orientacao: 0 });
+      return;
+    }
+    moverPosicionamento(hex);
   }, [ehNarrador, moverPosicionamento]);
 
-  const aoSoltarNoMapa = useCallback((e: React.DragEvent) => {
-    setArrastandoPersonagem(false);
-    if (!ehNarrador) return;
-    const bruto = e.dataTransfer.getData(MIME_PERSONAGEM_ARRASTADO);
-    const personagem = bruto ? desserializarPersonagemArrastado(bruto) : null;
-    if (!personagem) return;
-    e.preventDefault();
-    const hex = conversorHexRef.current?.(e.clientX, e.clientY) ?? null;
-    iniciarTokenDePersonagem(personagem, hex);
-  }, [ehNarrador, iniciarTokenDePersonagem]);
+  /**
+   * ENVIA O RETRATO de um token recém-criado — os mesmos três passos do
+   * editor (`EditorRetratoToken`): reservar pela intenção, `PUT` na
+   * capability, finalizar. Aqui eles rodam DEPOIS da criação porque a
+   * autorização da reserva é sobre um token que precisa existir.
+   *
+   * Não bloqueia nem desfaz nada: se o envio falhar, o token continua
+   * no mapa com a sigla e o aviso conta o que aconteceu. Desfazer a
+   * criação por causa da imagem seria perder o gesto inteiro por causa
+   * do acessório.
+   */
+  const enviarRetratoDoRascunho = useCallback(async (tokenId: string, revision: number, imagem: ImagemPreparada) => {
+    try {
+      const reserva = await reservarUploadAction(campaignId, imagem.sha256, "retrato", tokenId);
+      if (!reserva.ok || !reserva.dados) throw new Error(reserva.erro ?? "Não foi possível preparar o envio.");
 
-  const girarPosicionamento = useCallback((direcao: 1 | -1) => {
-    setFluxoToken((f) => {
-      if (!f || (f.fase !== "posicionando" && f.fase !== "erro")) return f;
-      // Todo token tem orientação — mesmo pegada simétrica só muda pra
-      // qual direção o token olha, nunca as células ocupadas. Nunca
-      // gatear isto por "a forma muda ao girar" (`tamanhoTemOrientacaoVariavel`
-      // responde uma pergunta diferente: se a pegada é simétrica, não
-      // se o token PODE girar).
-      return { ...f, orientacao: ((f.orientacao + direcao) % 6 + 6) % 6 };
-    });
-  }, []);
+      // Conteúdo repetido já está lá: liga direto, sem subir de novo.
+      let fim;
+      if (reserva.dados.reutilizado) {
+        fim = await definirRetratoImagemAction(campaignId, tokenId, reserva.dados.assetId, revision);
+      } else {
+        await enviarParaUrlAssinada(reserva.dados.uploadUrl!, imagem.blob);
+        fim = await finalizarUploadRetratoAction(campaignId, reserva.dados.reservaId!, imagem.sha256, tokenId, revision);
+      }
+      if (!fim.ok) throw new Error(fim.erro ?? "Não foi possível concluir o envio.");
 
-  // Guarda contra duplo clique — a SEGUNDA chamada, disparada antes do
-  // primeiro `setFluxoToken({fase:"enviando",...})` sequer commitar,
-  // precisa ser descartada; a checagem de fase sozinha não bastaria
-  // porque as duas chamadas podem rodar no MESMO evento de clique
-  // duplo, antes de qualquer re-render.
-  const confirmandoPosicaoRef = useRef(false);
+      const salvo = fim.dados as { revision?: number; retrato_image_id?: string | null } | null;
+      if (salvo && typeof salvo.revision === "number") {
+        const novaRevisao = salvo.revision;
+        const novoId = salvo.retrato_image_id ?? null;
+        setEstadoCena((c) => (c ? {
+          ...c,
+          tokens: c.tokens.map((tk) => (tk.id === tokenId ? {
+            ...tk, revision: novaRevisao, retratoImageId: novoId, retratoEfetivoId: novoId ?? tk.retratoEfetivoId,
+          } : tk)),
+        } : c));
+      }
+    } catch (e) {
+      setErroAcao(e instanceof Error
+        ? `O token foi criado, mas a imagem não subiu: ${e.message}`
+        : "O token foi criado, mas a imagem não subiu.");
+    } finally {
+      URL.revokeObjectURL(imagem.previewUrl);
+    }
+  }, [campaignId]);
 
-  const confirmarPosicionamento = useCallback((hex: Hex) => {
-    const f = fluxoTokenRef.current;
-    if (!f || (f.fase !== "posicionando" && f.fase !== "erro")) return;
+  /**
+   * CRIA O TOKEN numa âncora — a única porta pra `create_vtt_token`.
+   *
+   * Recebe o rascunho em vez de lê-lo do estado porque quem solta um
+   * personagem no mapa cria NA HORA, sem passar pela fase de
+   * posicionamento: naquele instante o rascunho ainda não foi pro
+   * estado, e esperar um render pra ler de volta o que já se tem em
+   * mãos seria inventar uma ida e volta.
+   */
+  const criarTokenEm = useCallback((rascunho: ValoresFormularioToken, hex: Hex, orientacao: number) => {
+    const f = { rascunho, orientacao };
     if (!estadoCena) return;
     if (confirmandoPosicaoRef.current) return;
 
@@ -2521,10 +2684,19 @@ export function VttClient({
     criarTokenAction({
       campaignId, sceneId: estadoCena.cena.id,
       nome: f.rascunho.nome, sigla: f.rascunho.sigla, lado: f.rascunho.lado, vertente: f.rascunho.vertente,
-      tamanho: f.rascunho.tamanho, orientacao: f.orientacao, pegadaPersonalizada: null,
+      tamanho: f.rascunho.tamanho, orientacao: f.orientacao,
+      // Nasce OLHANDO pro mesmo lado que a forma aponta: no
+      // posicionamento o Q/E gira a criatura inteira — forma e olhar
+      // juntos —, e separá-los ali faria o token nascer torto em
+      // relação ao fantasma que a pessoa acabou de mirar.
+      direcao: f.orientacao,
+      pegadaPersonalizada: null,
       q: hex.q, r: hex.r, characterId: f.rascunho.characterId,
       visivel: f.rascunho.visivel, bloqueado: f.rascunho.bloqueado, retratoUrl: f.rascunho.retratoUrl,
-      pvAtual: f.rascunho.pvAtual, pvMax: f.rascunho.pvMax, condicoes: f.rascunho.condicoes,
+      pvAtual: f.rascunho.pvAtual, pvMax: f.rascunho.pvMax,
+      peAtual: f.rascunho.peAtual, peMax: f.rascunho.peMax,
+      manaAtual: f.rascunho.manaAtual, manaMax: f.rascunho.manaMax,
+      condicoes: f.rascunho.condicoes,
     }).then((r) => {
       confirmandoPosicaoRef.current = false;
       if (!r.ok || !r.dados) {
@@ -2535,6 +2707,12 @@ export function VttClient({
         return;
       }
       mesclarTokenNoEstado(r.dados.token);
+      // O RETRATO SOBE DEPOIS, porque só agora existe um id pra ligá-lo.
+      // Falhar aqui não desfaz o token: ele nasceu, está no mapa, e o
+      // que faltou é a cara — que se troca pelo menu quando quiser.
+      if (f.rascunho.retratoArquivo) {
+        void enviarRetratoDoRascunho(r.dados.token.id, r.dados.token.revision, f.rascunho.retratoArquivo);
+      }
       // Criação NÃO entra em undo/redo: `create_vtt_token` sempre gera
       // um id NOVO — um "redo" depois de desfazer via remoção criaria
       // outro token com OUTRO id, quebrando qualquer coisa que tenha
@@ -2561,6 +2739,56 @@ export function VttClient({
       setFluxoToken({ fase: "erro", rascunho: f.rascunho, ancora: hex, orientacao: f.orientacao, mensagem: e instanceof Error ? `Falha de rede: ${e.message}` : "Falha de rede ao criar o token. Tente novamente." });
     });
   }, [campaignId, estadoCena, terrenoReal, ocupadosExcluindo, mesclarTokenNoEstado]);
+
+  const aoSoltarNoMapa = useCallback((e: React.DragEvent) => {
+    setArrastandoPersonagem(false);
+    if (!ehNarrador) return;
+    const bruto = e.dataTransfer.getData(MIME_PERSONAGEM_ARRASTADO);
+    const personagem = bruto ? desserializarPersonagemArrastado(bruto) : null;
+    if (!personagem) return;
+    e.preventDefault();
+    const hex = conversorHexRef.current?.(e.clientX, e.clientY) ?? null;
+    /* SOLTOU, ESTÁ POSTO. O arrasto JÁ é a escolha do lugar: o cursor
+       muda ao entrar no mapa, o fantasma segue o ponteiro e o hex sob
+       ele é o destino. Pedir um clique depois disso era perguntar de
+       novo o que a pessoa acabou de responder — e a fase de girar,
+       ali, valia pra um token médio que não tem lado nenhum pra onde
+       olhar.
+
+       Sem hex (soltou fora da grade) cai no fluxo de sempre: o
+       fantasma aparece e o clique escolhe. */
+    if (hex) {
+      setFerramenta("interagir");
+      criarTokenEm(rascunhoDePersonagem(personagem), hex, 0);
+      return;
+    }
+    iniciarTokenDePersonagem(personagem, hex);
+  }, [ehNarrador, iniciarTokenDePersonagem, criarTokenEm]);
+
+  const girarPosicionamento = useCallback((direcao: 1 | -1) => {
+    setFluxoToken((f) => {
+      if (!f || (f.fase !== "posicionando" && f.fase !== "erro")) return f;
+      // Todo token tem orientação — mesmo pegada simétrica só muda pra
+      // qual direção o token olha, nunca as células ocupadas. Nunca
+      // gatear isto por "a forma muda ao girar" (`tamanhoTemOrientacaoVariavel`
+      // responde uma pergunta diferente: se a pegada é simétrica, não
+      // se o token PODE girar).
+      return { ...f, orientacao: ((f.orientacao + direcao) % 6 + 6) % 6 };
+    });
+  }, []);
+
+  // Guarda contra duplo clique — a SEGUNDA chamada, disparada antes do
+  // primeiro `setFluxoToken({fase:"enviando",...})` sequer commitar,
+  // precisa ser descartada; a checagem de fase sozinha não bastaria
+  // porque as duas chamadas podem rodar no MESMO evento de clique
+  // duplo, antes de qualquer re-render.
+  const confirmandoPosicaoRef = useRef(false);
+
+  const confirmarPosicionamento = useCallback((hex: Hex) => {
+    const f = fluxoTokenRef.current;
+    if (!f || (f.fase !== "posicionando" && f.fase !== "erro")) return;
+    criarTokenEm(f.rascunho, hex, f.orientacao);
+  }, [criarTokenEm]);
 
   // Esc cancela; Q/E gira (só quando a pegada é assimétrica) — ativo
   // só durante "posicionando"/"erro" (nunca durante "enviando": uma
@@ -2658,9 +2886,19 @@ export function VttClient({
   // ── Ocultar/revelar e travar/destravar — `set_vtt_token_flags`
   // (narrador-only). Entram em undo/redo (reversão exata: flag volta
   // ao valor de antes, sempre revalidado pelo servidor).
-  const definirFlagsHandler = useCallback((tokenId: string, campo: "visivel" | "bloqueado") => {
+  const definirFlagsHandler = useCallback((
+    tokenId: string,
+    campo: "visivel" | "bloqueado",
+    /**
+     * Valor ALVO. Omitido, alterna — que é o gesto de um token só.
+     * Aplicado a VÁRIOS, alternar é errado: numa seleção mista, metade
+     * iria para o lado oposto da outra e o resultado dependeria do
+     * estado anterior de cada um, não do que foi pedido.
+     */
+    alvo?: boolean,
+  ): Promise<boolean> => {
     const t = tokenPorId.get(tokenId);
-    if (!t) return;
+    if (!t) return Promise.resolve(false);
     async function aplicar(visivel: boolean, bloqueado: boolean): Promise<boolean> {
       const r = await definirFlagsTokenAction({ campaignId, tokenId, visivel, bloqueado });
       if (!r.ok) { setErroAcao(r.erro ?? "Alteração recusada."); return false; }
@@ -2669,17 +2907,48 @@ export function VttClient({
       return true;
     }
     const antes = { visivel: t.visivel, bloqueado: t.bloqueado };
-    const depois = { ...antes, [campo]: !antes[campo] };
-    aplicar(depois.visivel, depois.bloqueado).then((sucesso) => {
-      if (!sucesso) return;
+    const depois = { ...antes, [campo]: alvo ?? !antes[campo] };
+    if (depois[campo] === antes[campo]) return Promise.resolve(true); // já está como se quer
+    // Devolve a promessa: quem aplica a VÁRIOS tokens precisa esperar
+    // um terminar antes do próximo, senão as chamadas partem todas do
+    // mesmo instantâneo e só a última sobrevive no estado.
+    return aplicar(depois.visivel, depois.bloqueado).then((sucesso) => {
+      if (!sucesso) return false;
       executarComando({
         rotulo: `${campo === "visivel" ? (depois.visivel ? "revelar" : "ocultar") : (depois.bloqueado ? "travar" : "destravar")} ${t.nome}`,
         autorId: usuarioId ?? "",
         executar: () => aplicar(depois.visivel, depois.bloqueado).then(() => {}),
         desfazer: () => aplicar(antes.visivel, antes.bloqueado).then(() => {}),
       });
+      return true;
     });
   }, [campaignId, tokenPorId, executarComando, usuarioId]);
+
+  /**
+   * Flags em LOTE (TOK-04). Fala com o servidor direto, em vez de
+   * reusar `definirFlagsHandler`.
+   *
+   * Aquele é feito para um token: alterna, registra um comando de
+   * desfazer por token e resolve depois disso. Encadeado numa seleção,
+   * a segunda chamada ficava pendente sem nunca resolver — o lote
+   * parava no primeiro, silenciosamente. Aqui o estado ALVO é
+   * explícito, o resultado de cada token é observável, e quem falha é
+   * nomeado.
+   */
+  const aplicarFlagsLote = useCallback(async (
+    alvo: TokenApresentacao,
+    campos: { visivel?: boolean; bloqueado?: boolean },
+  ): Promise<boolean> => {
+    const visivel = campos.visivel ?? alvo.visivel;
+    const bloqueado = campos.bloqueado ?? alvo.bloqueado;
+    if (visivel === alvo.visivel && bloqueado === alvo.bloqueado) return true;
+    const r = await definirFlagsTokenAction({ campaignId, tokenId: alvo.id, visivel, bloqueado });
+    if (!r.ok) return false;
+    setEstadoCena((c) => c
+      ? { ...c, tokens: c.tokens.map((x) => x.id === alvo.id ? { ...x, visivel, bloqueado, revision: r.dados!.revision } : x) }
+      : c);
+    return true;
+  }, [campaignId]);
 
   // Limpa TODA referência solta a um token que deixou de existir pra
   // este cliente (removido de verdade, OU ocultado — pro jogador as
@@ -3438,7 +3707,6 @@ export function VttClient({
     setEstadoAreas((e) => (e.fase === "ociosa" ? e : AREAS_OCIOSA));
     setAreaSelecionadaId(null);
     setCandidatoSnapId(null);
-    setAncoraAcoesTela(null);
     setHoverAreaId(null);
   }, [ferramenta]);
 
@@ -3590,12 +3858,8 @@ export function VttClient({
     setAreaSelecionadaId(id);
     const caixa = caixaDaRegiao(a.regiao);
     const centro = { x: (caixa.minX + caixa.maxX) / 2, y: (caixa.minY + caixa.maxY) / 2 };
-    const palco = document.querySelector(".rv-palco");
-    if (!palco) return;
-    const r = palco.getBoundingClientRect();
-    const { zoom: z } = zoomPanRef.current;
-    setPan({ x: r.width / 2 - centro.x * z, y: r.height / 2 - centro.y * z });
-  }, [areaPorId]);
+    centralizarCameraEmPonto(centro);
+  }, [areaPorId, centralizarCameraEmPonto]);
 
   /**
    * Token que deve receber o destaque de "origem da Aura" agora —
@@ -3621,13 +3885,8 @@ export function VttClient({
     onSelecionarToken(id, false);
     const origem = origemLogicaDoToken(id);
     if (!origem) return;
-    const centro = axialParaMundo(origem, TAM);
-    const palco = document.querySelector(".rv-palco");
-    if (!palco) return;
-    const r = palco.getBoundingClientRect();
-    const { zoom: z } = zoomPanRef.current;
-    setPan({ x: r.width / 2 - centro.x * z, y: r.height / 2 - centro.y * z });
-  }, [onSelecionarToken, origemLogicaDoToken]);
+    centralizarCameraEmPonto(axialParaMundo(origem, TAM));
+  }, [onSelecionarToken, origemLogicaDoToken, centralizarCameraEmPonto]);
 
   const estadoPorToken = useCallback((t: TokenApresentacao): EstadoVisualToken => {
     // Sem combate aberto, nenhum token carrega marca de turno: os anéis
@@ -3637,7 +3896,10 @@ export function VttClient({
     return {
       selecionado: selecionadosIds.has(t.id), sobCursor: false, alvo: false,
       turnoAtual: !!trilha && trilha.agindoId === t.id,
-      podeAgir: !!p && !!trilha && elegibilidade(p, trilha).apto,
+      // Anel "pode agir" segue a REGRA de turno (quem ainda deve agir
+      // nesta janela), não o botão Agir — que ficou liberado até pra
+      // quem já agiu e faria o anel girar em todo token.
+      podeAgir: !!p && !!trilha && elegibilidade(p, trilha, { ignorarAlternancia: true }).apto,
       jaAgiu: !!p && !!trilha && p.agiuEm.includes(trilha.janela) && p.fragmentouEm !== trilha.janela,
       fragmentado: !!p && p.fragmentouEm !== null,
       origemDeAura: t.id === tokenOrigemAuraId,
@@ -3694,39 +3956,39 @@ export function VttClient({
     return ancoraDaRegiao(regiao);
   }, [estadoAreas]);
 
-  const [ancoraAcoesTela, setAncoraAcoesTelaRaw] = useState<{ x: number; y: number } | null>(null);
   /**
-   * O mapa reconstrói a âncora de TELA a cada mudança de zoom/pan e
-   * entrega um objeto NOVO mesmo quando as coordenadas são as mesmas.
-   * Guardar isso direto marcava o estado como mudado a cada roda do
-   * mouse e fazia a cascata (card → obstáculos → posição dos lápis)
-   * rodar de novo sem nada ter mudado de fato — exatamente o tipo de
-   * update em cadeia que estoura o limite de profundidade do React.
-   * Comparar por VALOR corta a cadeia na origem.
+   * MUNDO → TELA pros botões que flutuam sobre o mapa (ações de área,
+   * edição rápida). Calculado AQUI, a partir do zoom/pan que este
+   * componente já guarda — antes o mapa devolvia a conversão por
+   * `setState` num efeito a cada quadro de pan, e num arrasto longo essa
+   * cadeia de updates dentro de efeito estourava o "Maximum update
+   * depth exceeded" (apontando pro `setPan`). O CTM do svg não depende
+   * de pan/zoom (eles moram no `<g>` de dentro), então ler o DOM na hora
+   * da chamada é seguro.
    */
-  const setAncoraAcoesTela = useCallback((nova: { x: number; y: number } | null) => {
-    setAncoraAcoesTelaRaw((atual) => {
-      if (atual === nova) return atual;
-      if (!atual || !nova) return nova;
-      return atual.x === nova.x && atual.y === nova.y ? atual : nova;
-    });
-  }, []);
+  const mundoParaTela = useMemo(() => {
+    const z = zoom, pa = pan;
+    return (mundo: { x: number; y: number }): { x: number; y: number } | null => {
+      const svg = document.querySelector<SVGSVGElement>(".rv-palco svg.rv-mapa");
+      const ctm = svg?.getScreenCTM();
+      if (!svg || !ctm) return null;
+      const pt = svg.createSVGPoint();
+      pt.x = mundo.x * z + pa.x;
+      pt.y = mundo.y * z + pa.y;
+      const tela = pt.matrixTransform(ctm);
+      return { x: tela.x, y: tela.y };
+    };
+  }, [zoom, pan]);
+  const ancoraAcoesTela = useMemo(
+    () => (ancoraAcoesArea ? mundoParaTela(ancoraAcoesArea) : null),
+    [ancoraAcoesArea, mundoParaTela],
+  );
 
   // ── Edição rápida de área persistida, direto no mapa ─────────────
   // Geometria real (hover), independente da ferramenta ativa — o
   // efeito em `MapaHex.tsx` só reage com "areas"/"interagir" e limpa
   // sozinho fora delas.
   const [hoverAreaId, setHoverAreaId] = useState<string | null>(null);
-  // Conversor MUNDO→TELA (pan/zoom/CTM), exposto pelo mapa — usado pra
-  // converter a âncora de QUALQUER área candidata, não só uma.
-  const [conversorEdicaoRapidaTela, setConversorEdicaoRapidaTelaRaw] = useState<((mundo: { x: number; y: number }) => { x: number; y: number }) | null>(null);
-  // `useState` trata um valor QUE É função como updater funcional — pra
-  // guardar a função em si (não o resultado de chamá-la) é preciso
-  // envolvê-la, senão o React chama o conversor com o estado anterior
-  // (`null` na primeira vez) em vez de guardá-lo.
-  const setConversorEdicaoRapidaTela = useCallback((c: ((mundo: { x: number; y: number }) => { x: number; y: number }) | null) => {
-    setConversorEdicaoRapidaTelaRaw(() => c);
-  }, []);
 
   const areasParaHover = useMemo(
     () => areasResolvidas.filter((a) => a.visivel).map((a) => ({ id: a.id, regiao: a.regiao })),
@@ -3839,9 +4101,11 @@ export function VttClient({
   }, [idsExibidosEdicaoRapida, areaPorId]);
 
   const ancorasEdicaoRapidaTela = useMemo(() => {
-    if (!conversorEdicaoRapidaTela) return [];
-    return ancorasEdicaoRapidaMundo.map((a) => ({ id: a.id, ponto: conversorEdicaoRapidaTela(a.ponto) }));
-  }, [ancorasEdicaoRapidaMundo, conversorEdicaoRapidaTela]);
+    return ancorasEdicaoRapidaMundo.flatMap((a) => {
+      const ponto = mundoParaTela(a.ponto);
+      return ponto ? [{ id: a.id, ponto }] : [];
+    });
+  }, [ancorasEdicaoRapidaMundo, mundoParaTela]);
 
   // Ordem de prioridade fixa pro desempate de posição — a selecionada
   // primeiro, resto por id (determinístico, nunca depende do ponteiro).
@@ -4005,10 +4269,11 @@ export function VttClient({
   const restaurarCamadasPadrao = useCallback(() => { void aplicarCamadas(CAMADAS_PADRAO); }, [aplicarCamadas]);
 
   // ── CONFIGURAÇÕES DA CENA ────────────────────────────────────────
-  // O botão da barra existia sem `onClick` desde sempre. Agora abre a
-  // janela, e a escrita passa por `set_vtt_scene_config` (migration
-  // 0097): narrador-only e revisão conferida no servidor.
-  const [painelCenaAberto, setPainelCenaAberto] = useState(false);
+  // A janela própria saiu junto com o botão do trilho: os parâmetros de
+  // QUALQUER cena — inclusive a aberta — se editam pelo cartão dela no
+  // catálogo, que já fazia tudo o que ela fazia e mais (cor, opacidade
+  // e tamanho de célula). A escrita continua em `set_vtt_scene_config`
+  // (migration 0097): narrador-only e revisão conferida no servidor.
   const [painelCenasAberto, setPainelCenasAberto] = useState(false);
   /**
    * Abrir/fechar o catálogo de cenas — DOIS gatilhos, um caminho só: o
@@ -4031,21 +4296,27 @@ export function VttClient({
     const abrir = !painelCenasAberto;
     if (abrir) trocarFerramenta("interagir");
     setPainelCamadasAberto(false);
-    setPainelCenaAberto(false);
     setPainelCenasAberto(abrir);
   }, [painelCenasAberto, trocarFerramenta]);
-  const [salvandoCena, setSalvandoCena] = useState(false);
-  const [erroConfigCena, setErroConfigCena] = useState<string | null>(null);
+
+  /**
+   * Camadas, pelo botão OU pelo atalho C — uma porta só, pra que as
+   * duas façam exatamente a mesma coisa.
+   *
+   * Ordem importa: `trocarFerramenta` também fecha as janelas de botão,
+   * então ele vem ANTES — senão o `false` dele chegaria depois e a
+   * janela nunca abriria. E nada de efeito colateral dentro do updater
+   * de `setState`: o de `setPainelCenasAberto` foi o que quebrou antes
+   * (ver o critério 19 de `test-vtt-controlador.ts`).
+   */
+  const alternarCamadas = useCallback(() => {
+    const abrir = !painelCamadasAberto;
+    if (abrir) trocarFerramenta("interagir");
+    setPainelCenasAberto(false);
+    setPainelCamadasAberto(abrir);
+  }, [painelCamadasAberto, trocarFerramenta]);
   /** Tamanho em EDIÇÃO — só pra contar o que ficaria fora da grade. */
   const [tamanhoEmEdicao, setTamanhoEmEdicao] = useState<{ largura: number; altura: number } | null>(null);
-
-  const valoresCena: ValoresCena = useMemo(() => ({
-    nome: estadoCena?.cena.nome ?? "",
-    local: estadoCena?.cena.local ?? "",
-    resumo: estadoCena?.cena.resumo ?? "",
-    largura: estadoCena?.cena.largura ?? 0,
-    altura: estadoCena?.cena.altura ?? 0,
-  }), [estadoCena?.cena.nome, estadoCena?.cena.local, estadoCena?.cena.resumo, estadoCena?.cena.largura, estadoCena?.cena.altura]);
 
   /**
    * Quantas peças ficariam fora da grade com o tamanho em edição.
@@ -4067,27 +4338,12 @@ export function VttClient({
     return tokensFora + objetosFora;
   }, [estadoCena, tamanhoEmEdicao]);
 
-  const salvarCena = useCallback(async (v: ValoresCena) => {
-    if (!estadoCena) return;
-    setSalvandoCena(true);
-    setErroConfigCena(null);
-    try {
-      const r = await salvarConfigCenaAction({
-        campaignId, sceneId: estadoCena.cena.id,
-        nome: v.nome, local: v.local.trim() || null, resumo: v.resumo.trim() || null,
-        largura: v.largura, altura: v.altura,
-        revisionEsperada: estadoCena.cena.revision,
-      });
-      if (r.ok && r.dados) {
-        setEstadoCena((atual) => (atual ? { ...atual, cena: r.dados!.cena } : atual));
-        setTamanhoEmEdicao(null);
-      } else {
-        setErroConfigCena(r.erro ?? "Não foi possível salvar a cena.");
-      }
-    } finally {
-      setSalvandoCena(false);
-    }
-  }, [campaignId, estadoCena]);
+  /* A ESCRITA da config saiu daqui junto com a janela: quem salva
+     nome, local, resumo, tamanho, cor, opacidade e célula é o catálogo
+     (`salvarParametros`, em `_cenas/GerenciadorCenas.tsx`), pela mesma
+     RPC `set_vtt_scene_config` e com a mesma revisão otimista. O que
+     restou deste lado é só a PRÉVIA: o tamanho em edição chega pelo
+     `onMudarTamanho` do catálogo e alimenta a contagem acima. */
 
   // ── Ping — efêmero: nunca persistido, nunca entra em undo/redo, nunca
   // cria marca. `autorId` de cada evento vem do SERVIDOR (`vtt_ping` RPC
@@ -4111,13 +4367,8 @@ export function VttClient({
    * — não faz sentido ela esperar).
    */
   const centralizarCameraEmHex = useCallback((h: Hex) => {
-    const centro = hexParaPixel(h, TAM);
-    const palco = document.querySelector(".rv-palco");
-    if (!palco) return;
-    const r = palco.getBoundingClientRect();
-    const { zoom: z } = zoomPanRef.current;
-    setPan({ x: r.width / 2 - centro.x * z, y: r.height / 2 - centro.y * z });
-  }, []);
+    centralizarCameraEmPonto(hexParaPixel(h, TAM));
+  }, [centralizarCameraEmPonto]);
 
   /**
    * Trocar de cena recentra a câmera no meio da grade nova.
@@ -4128,18 +4379,21 @@ export function VttClient({
    * para o narrador trocando pelo catálogo (fase 2) e para o jogador
    * sendo levado pelo palco (fase 3) — o mesmo problema nos dois.
    *
-   * A grade é hexagonal com deslocamento por linha: em `r`, o `q`
-   * começa em `-floor(r/2)` (ver `dentroDoMapa`). O centro tem que
-   * respeitar esse deslocamento, senão "meio da largura" cai cada vez
-   * mais à esquerda conforme a cena é alta.
+   * O pan vive em unidades do VIEWBOX (ver `panParaCentralizar`), não
+   * em pixels de tela — a conta antiga usava a largura do palco e
+   * abria a mesa deslocada, com o canto superior esquerdo em destaque.
    */
   const cenaIdCamera = estadoCena?.cena.id;
   const larguraCamera = estadoCena?.cena.largura;
   const alturaCamera = estadoCena?.cena.altura;
   useEffect(() => {
     if (!cenaIdCamera || !larguraCamera || !alturaCamera) return;
-    const r = Math.floor(alturaCamera / 2);
-    centralizarCameraEmHex({ q: -Math.floor(r / 2) + Math.floor(larguraCamera / 2), r });
+    // Entra a 80%, com o mapa inteiro centralizado e um respiro em
+    // volta — não colado nas bordas do palco. As dimensões vêm direto
+    // da cena nova (o `estadoCenaRef` só acompanha num efeito depois).
+    const centro = centroDaGrade(larguraCamera, alturaCamera, TAM);
+    setZoom(ZOOM_ENTRADA);
+    setPan(panParaCentralizar(centro, ZOOM_ENTRADA, larguraCamera, alturaCamera, TAM));
     // Só quando a CENA muda — não a cada ajuste de tamanho pela janela
     // de Configurações, que puxaria a câmera no meio da digitação.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -4261,13 +4515,101 @@ export function VttClient({
     }
     const t = tokenPorId.get(tokenId);
     if (!t) return [];
-    // Rotacionar aparece pra TODO token — mesmo pegada simétrica
-    // (Pequeno/Médio/Enorme) tem orientação, só que girar muda pra
-    // qual direção ele está "olhando" em vez de mudar células ocupadas.
+
+    /* SELEÇÃO MÚLTIPLA (TOK-04). Clicar com o direito sobre um token
+       que faz parte de uma seleção opera o CONJUNTO — clicar num item
+       selecionado e ver o menu de um só era o engano mais provável.
+
+       As ações são as mesmas de um token, aplicadas a cada um: um menu
+       de lote que inventasse semântica própria (girar a formação,
+       bloquear "de outro jeito") faria o mesmo verbo significar duas
+       coisas conforme quantos tokens estivessem marcados.
+
+       Em particular VIRAR gira cada token no próprio eixo, não a
+       formação: virar é só o olhar e nunca move célula (0135); girar a
+       formação MOVERIA tokens de célula, o que é operação de movimento,
+       com colisão e autorização próprias.
+
+       Não é atômico no servidor — são N chamadas. Por isso o erro é
+       relatado por token, e não como um "falhou" genérico que deixaria
+       o narrador sem saber quais passaram. */
+    const doLote = selecionadosIds.has(tokenId) && selecionadosIds.size > 1;
+    if (doLote) {
+      const alvos = [...selecionadosIds].map((id) => tokenPorId.get(id)).filter((x): x is TokenApresentacao => !!x);
+      const n = alvos.length;
+      const todosOcultos = alvos.every((a) => !a.visivel);
+      const todosBloqueados = alvos.every((a) => a.bloqueado);
+      const emLote = async (rotulo: string, fn: (t: TokenApresentacao) => Promise<boolean | void> | void) => {
+        /* EM PARALELO, e isso é consequência de uma decisão anterior:
+           cada ação do lote pede um estado ABSOLUTO ("fique oculto"),
+           não uma alternância ("inverta"). Com valor absoluto a ordem
+           deixa de importar, e duas chamadas para o mesmo token dariam
+           o mesmo resultado.
+
+           Sequencial foi tentado e não serve: encadeadas, a segunda
+           chamada ficava pendente sem nunca resolver e o lote parava no
+           primeiro token, em silêncio. `allSettled` também garante que
+           uma recusa não interrompa as outras — quem falhou é nomeado
+           no fim, e o resto foi aplicado. */
+        const falhas: string[] = [];
+        const resultados = await Promise.allSettled(alvos.map((alvo) => fn(alvo)));
+        resultados.forEach((r, i) => {
+          if (r.status === "rejected" || r.value === false) falhas.push(alvos[i].nome);
+        });
+        // Nomes, não contagem: "falhou em 2 de 7" não diz quais ficaram
+        // para trás, e é justamente isso que precisa ser refeito à mão.
+        if (falhas.length) {
+          setErroAcao(`${rotulo}: recusado em ${falhas.length} de ${n} — ${falhas.join(", ")}.`);
+        }
+      };
+      const itensLote: ItemMenuContextual[] = [
+        { id: "lote-girar-esq", rotulo: `Virar à esquerda (${n})`, icone: <RotateCcw size={14} />,
+          onSelecionar: () => void emLote("Virar", (a) => onRotacionarToken(a.id, -1)) },
+        { id: "lote-girar-dir", rotulo: `Virar à direita (${n})`, icone: <RotateCw size={14} />,
+          onSelecionar: () => void emLote("Virar", (a) => onRotacionarToken(a.id, 1)) },
+      ];
+      if (ehNarrador) {
+        itensLote.push(
+          { id: "lote-duplicar", rotulo: `Duplicar (${n})`, icone: <Copy size={14} />, separadorAntes: true,
+            onSelecionar: () => void emLote("Duplicar", (a) => duplicarTokenHandler(a.id)) },
+          /* O rótulo diz o que VAI acontecer, não o estado atual: com
+             a seleção misturada, "Ocultar" some com todos em vez de
+             inverter cada um — inverter faria o resultado depender do
+             estado anterior de cada token, não do que foi pedido. */
+          { id: "lote-ocultar", rotulo: `${todosOcultos ? "Revelar" : "Ocultar"} (${n})`,
+            icone: todosOcultos ? <Eye size={14} /> : <EyeOff size={14} />, separadorAntes: true,
+            onSelecionar: () => void emLote("Visibilidade", (a) => aplicarFlagsLote(a, { visivel: todosOcultos })) },
+          { id: "lote-bloquear", rotulo: `${todosBloqueados ? "Desbloquear" : "Bloquear"} (${n})`,
+            icone: todosBloqueados ? <Unlock size={14} /> : <Lock size={14} />,
+            onSelecionar: () => void emLote("Bloqueio", (a) => aplicarFlagsLote(a, { bloqueado: !todosBloqueados })) },
+          { id: "lote-remover", rotulo: `Remover (${n})`, icone: <Trash2 size={14} />, perigoso: true, separadorAntes: true,
+            onSelecionar: () => setConfirmandoRemocaoLote(alvos) },
+        );
+      }
+      return itensLote;
+    }
+
+    // VIRAR aparece pra TODO token: é só o olhar, não move célula
+    // nenhuma, e por isso nunca é recusado (0135).
     const itensGiro: ItemMenuContextual[] = [
-      { id: "girar-esq", rotulo: "Rotacionar à esquerda", icone: <RotateCcw size={14} />, onSelecionar: () => onRotacionarToken(tokenId, -1) },
-      { id: "girar-dir", rotulo: "Rotacionar à direita", icone: <RotateCw size={14} />, onSelecionar: () => onRotacionarToken(tokenId, 1) },
+      { id: "girar-esq", rotulo: "Virar à esquerda", icone: <RotateCcw size={14} />, onSelecionar: () => onRotacionarToken(tokenId, -1) },
+      { id: "girar-dir", rotulo: "Virar à direita", icone: <RotateCw size={14} />, onSelecionar: () => onRotacionarToken(tokenId, 1) },
     ];
+    /* GIRAR A FORMA é outra coisa, e só existe onde muda alguma: o
+       triângulo do Grande (e pegadas personalizadas) é a única forma
+       que ocupa células diferentes ao rodar — pequeno/médio/enorme/
+       colossal são simétricos, e ali a ação seria um botão que não faz
+       nada. Aqui a recusa faz sentido: mudar a forma pode esbarrar em
+       terreno ou noutro token, e o servidor valida. */
+    const formaGira = t.pegadaPersonalizada !== null || tamanhoTemOrientacaoVariavel(t.tamanho);
+    const itensForma: ItemMenuContextual[] = formaGira && ehNarrador
+      ? [{
+          id: "girar-forma",
+          rotulo: "Girar a forma",
+          icone: <Hexagon size={14} />,
+          onSelecionar: () => void girarFormaDoToken(tokenId),
+        }]
+      : [];
     // ABRIR FICHA — só quando ESTE token tem ficha ligada e a pessoa
     // controla o personagem. É a mesma condição que o HUD usava pra
     // mostrar o botão "Ficha" (`characterId` + `canControl`), e a
@@ -4285,6 +4627,16 @@ export function VttClient({
           },
         }]
       : [];
+
+    // Ficha é navegação; ações/targets formam sua própria seção.
+    const temFicha = itemFicha.length > 0;
+    if (t.characterId && t.podeControlar && consoleDaMesa) itemFicha.push({
+      id: "acoes-rapidas", rotulo: "Ações rápidas · Shift+A", icone: <Swords size={14} />, separadorAntes: temFicha,
+      onSelecionar: () => abrirRadial(tokenId),
+    });
+    itemFicha.push({ id: "target", rotulo: targets.meus.includes(tokenId) ? "Desmarcar alvo" : "Marcar alvo",
+      icone: <Crosshair size={14} />, separadorAntes: temFicha && itemFicha.length === 1,
+      onSelecionar: () => { void targets.alternar(tokenId); } });
 
     // ALTERAR RETRATO — a única porta que o JOGADOR tem pra isso.
     // Ela era o retrato do HUD ("o retrato é o botão"), e sumiu junto
@@ -4304,6 +4656,7 @@ export function VttClient({
         itemRetrato,
         { id: "duplicar", rotulo: "Duplicar", icone: <Copy size={14} />, onSelecionar: () => duplicarTokenHandler(tokenId) },
         ...itensGiro.map((item, i) => (i === 0 ? { ...item, separadorAntes: true } : item)),
+        ...itensForma,
         { id: "ocultar", rotulo: t.visivel ? "Ocultar" : "Revelar", icone: t.visivel ? <EyeOff size={14} /> : <Eye size={14} />, onSelecionar: () => definirFlagsHandler(tokenId, "visivel"), separadorAntes: true },
         { id: "bloquear", rotulo: t.bloqueado ? "Desbloquear" : "Bloquear", icone: t.bloqueado ? <Unlock size={14} /> : <Lock size={14} />, onSelecionar: () => definirFlagsHandler(tokenId, "bloqueado") },
         { id: "remover", rotulo: "Remover", icone: <Trash2 size={14} />, perigoso: true, onSelecionar: () => setConfirmandoRemocao(t), separadorAntes: true },
@@ -5310,6 +5663,8 @@ export function VttClient({
   // ── Atalhos globais ────────────────────────────────────────────
   useEffect(() => {
     function ouvir(e: KeyboardEvent) {
+      if (e.defaultPrevented) return;
+      if (e.key === "Escape" && document.querySelector('.rv-token-actions')) return;
       const acao = interpretarAtalho(
         { key: e.key, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, alvoEhEditavel: elementoEhEditavel(document.activeElement as HTMLElement | null) },
         ferramentasDisponiveis,
@@ -5325,10 +5680,15 @@ export function VttClient({
       }
       else if (acao.tipo === "undo") desfazer();
       else if (acao.tipo === "redo") refazer();
+      // Os dois são do NARRADOR — mesma regra dos botões, que também não
+      // aparecem pro jogador. O servidor recusa de qualquer jeito; isto
+      // é só o teclado concordando com a tela.
+      else if (acao.tipo === "adicionar-token") { if (ehNarrador && estadoCenaRef.current) abrirCriarToken(); }
+      else if (acao.tipo === "camadas") { if (ehNarrador) alternarCamadas(); }
     }
     window.addEventListener("keydown", ouvir);
     return () => window.removeEventListener("keydown", ouvir);
-  }, [ferramentasDisponiveis, desfazer, refazer, trocarFerramenta]);
+  }, [ferramentasDisponiveis, desfazer, refazer, trocarFerramenta, ehNarrador, abrirCriarToken, alternarCamadas]);
 
   // Ferramenta ativa some da barra (ex.: papel mudou) — nunca fica presa numa ferramenta invisível. Passa por `trocarFerramenta` como qualquer outra troca — nunca um `setFerramenta` divergente.
   useEffect(() => { if (!ferramentasDisponiveis.includes(ferramenta)) trocarFerramenta("interagir"); }, [ferramentasDisponiveis, ferramenta, trocarFerramenta]);
@@ -5369,6 +5729,25 @@ export function VttClient({
   }, [clampZoom, marcarZoomPan]);
 
   /**
+   * Zoom pelos botões +/- — ancorado no MEIO do palco. Mudar só o
+   * `zoom` escalaria em torno da origem do mundo e empurraria o mapa
+   * pro canto superior esquerdo a cada clique.
+   */
+  const zoomPeloBotao = useCallback((passo: number) => {
+    const cena = estadoCenaRef.current?.cena;
+    const { zoom: zAtual, pan: panAtual } = zoomPanRef.current;
+    const novoZoom = clampZoom(+(zAtual + passo).toFixed(2));
+    if (novoZoom === zAtual) return;
+    const meio = cena ? centroDaGrade(cena.largura, cena.altura, TAM) : { x: 0, y: 0 };
+    // Ponto do mundo que está no meio agora continua no meio depois.
+    const alvo = { x: (meio.x - panAtual.x) / zAtual, y: (meio.y - panAtual.y) / zAtual };
+    const novoPan = { x: meio.x - alvo.x * novoZoom, y: meio.y - alvo.y * novoZoom };
+    marcarZoomPan(novoZoom, novoPan);
+    setZoom(novoZoom);
+    setPan(novoPan);
+  }, [clampZoom, marcarZoomPan]);
+
+  /**
    * Pan por arrasto (botão direito). Precisa ser ESTÁVEL: era criada
    * inline na prop (`onPan={(dx, dy) => ...}`), uma função NOVA a cada
    * render de `VttClient` — e é dependência do efeito de arrasto em
@@ -5388,17 +5767,84 @@ export function VttClient({
   }, [marcarZoomPan]);
 
   if (carregandoCena) {
-    return <div className="rv-mesa rv-mesa--carregando"><Loader2 className="rv-spin" size={28} /><span>Carregando cena…</span></div>;
+    /* O mesmo componente de carga do resto do produto (`BootPanel`),
+       usando aqui a variante terminal exclusiva da campanha. A mesa
+       mostrava um círculo girando com legenda, uma segunda linguagem de
+       espera sem relação com a casca em que aparecia.
+       `mo-scope` no palco porque as escalas `--mo-*` são declaradas por
+       escopo, nunca em `:root`. */
+    return (
+      <div className="rv-mesa rv-mesa--carregando">
+        <div className="mo-boot-stage mo-boot-stage--campaign mo-scope">
+          <BootPanel label="Carregando cena" variante="campaign-terminal" />
+        </div>
+      </div>
+    );
   }
   if (erroCena) {
-    return <div className="rv-mesa rv-mesa--carregando"><span>{erroCena}</span></div>;
+    // O erro NÃO usa o painel de carga: ele não é espera, é desfecho.
+    return <div className="rv-mesa rv-mesa--carregando"><span className="rv-mesa-erro">{erroCena}</span></div>;
   }
+
+  /* AS FERRAMENTAS DE JANELA DESCEM. "Imagens" e "Rodadas" abrem um
+     painel; não mudam o que o clique no mapa faz. O lugar delas é o
+     último grupo, junto de "Adicionar token" e "Camadas" — que também
+     abrem coisa. O grupo de cima volta a ser só o ponteiro.
+
+     Elas continuam sendo FERRAMENTAS de verdade (`aria-pressed`, atalho
+     I e R, e o realce de rodada em andamento), então o botão é o mesmo
+     — só muda de vizinho. */
+  /**
+   * O TRILHO É DIVIDIDO POR PAPEL, não por tipo de gesto.
+   *
+   * Ele separava "ferramentas do ponteiro" de "ferramentas que abrem
+   * janela" — distinção verdadeira, mas que não é a pergunta de quem
+   * olha o trilho. A pergunta é QUEM PODE O QUÊ: o jogador via dois
+   * grupos, um cheio e outro com uma peça só, e a divisória entre eles
+   * separava coisas que, pra ele, eram a mesma coisa.
+   *
+   * Agora são quatro seções: o menu da mesa, o que TODO MUNDO usa, o
+   * que é SÓ DO NARRADOR, e desfazer/refazer. Pro jogador a terceira
+   * não existe — nem ela, nem a divisória dela, senão sobrariam dois
+   * traços seguidos anunciando um grupo vazio.
+   */
+  const FERRAMENTAS_SO_DO_NARRADOR: readonly FerramentaId[] = ["terreno", "objetos", "imagens"];
+  const ferramentasDeTodos = ferramentasDisponiveis.filter((id) => !FERRAMENTAS_SO_DO_NARRADOR.includes(id));
+  const ferramentasDoNarrador = ferramentasDisponiveis.filter((id) => FERRAMENTAS_SO_DO_NARRADOR.includes(id));
+  const botaoDeFerramenta = (id: FerramentaId) => {
+    const Icone = ICONE_FERRAMENTA[id];
+    return (
+      <button key={id} type="button" className="rv-ferr-btn" aria-pressed={ferramenta === id}
+        // Rodadas em andamento deixam o ícone ACESO mesmo com
+        // outra ferramenta ativa: é estado da mesa, não da
+        // ferramenta — e é o que responde "tem combate rolando?"
+        // sem abrir nada.
+        data-ativo={id === "rodadas" && trilha !== null}
+        aria-label={id === "rodadas" && trilha
+          ? `${ROTULO_FERRAMENTA[id]} (${ATALHO_FERRAMENTA[id]}) — rodada ${trilha.rodada} em andamento`
+          : `${ROTULO_FERRAMENTA[id]} (${ATALHO_FERRAMENTA[id]})`}
+        onClick={() => trocarFerramenta(id)}>
+        <Icone size={17} strokeWidth={1.6} />
+        {id === "rodadas" && trilha && <span className="rv-ferr-badge" aria-hidden="true">{trilha.rodada}</span>}
+        <span className="rv-dica">
+          {ROTULO_FERRAMENTA[id]}
+          {id === "rodadas" && trilha ? ` · rodada ${trilha.rodada}` : ""}
+          <kbd>{ATALHO_FERRAMENTA[id]}</kbd>
+        </span>
+      </button>
+    );
+  };
 
   return (
     // `ProvedorMesaDados` subiu pra `CampaignShell`: o Console também
     // rola na mesa, e ele é janela da casca, não do VTT. Aqui fica só
     // o PALCO (`MesaDadosOverlay`, mais abaixo), que é o que desenha.
     <ProvedorJanelasFerramenta campaignId={campaignId} usuarioId={usuarioId}>
+    {/* As janelas da mesa (Personagens, Bando, Compêndio, Participantes,
+        Jogadores e convites) são abertas de DOIS lugares — do painel e
+        do menu da mesa, em lados opostos da tela. O estado fica aqui em
+        cima, onde os dois alcançam. */}
+    <ProvedorJanelasDaMesa>
     <div
       className="rv-mesa"
       /* A aparência da GRADE é da cena (0122) e chega ao SVG por
@@ -5410,100 +5856,89 @@ export function VttClient({
         "--rv-grade-opacidade": estadoCena?.cena.gradeOpacidade ?? undefined,
       } as React.CSSProperties}
     >
-      {/* ═══ ESQUERDA — 4 ferramentas por papel ═══ */}
+      {/* ═══ ESQUERDA — quatro seções, divididas por PAPEL ═══ */}
       <aside ref={ferramentasRef} className="rv-ferramentas" aria-label="Ferramentas do mapa">
-        <button type="button" className="rv-ferr-btn rv-ferr-menu" aria-label="Menu da mesa"><Menu size={17} /></button>
-        <span className="rv-ferr-sep" />
-        {ferramentasDisponiveis.map((id) => {
-          const Icone = ICONE_FERRAMENTA[id];
-          return (
-            <button key={id} type="button" className="rv-ferr-btn" aria-pressed={ferramenta === id}
-              // Rodadas em andamento deixam o ícone ACESO mesmo com
-              // outra ferramenta ativa: é estado da mesa, não da
-              // ferramenta — e é o que responde "tem combate rolando?"
-              // sem abrir nada.
-              data-ativo={id === "rodadas" && trilha !== null}
-              aria-label={id === "rodadas" && trilha
-                ? `${ROTULO_FERRAMENTA[id]} (${ATALHO_FERRAMENTA[id]}) — rodada ${trilha.rodada} em andamento`
-                : `${ROTULO_FERRAMENTA[id]} (${ATALHO_FERRAMENTA[id]})`}
-              onClick={() => trocarFerramenta(id)}>
-              <Icone size={17} strokeWidth={1.6} />
-              {id === "rodadas" && trilha && <span className="rv-ferr-badge" aria-hidden="true">{trilha.rodada}</span>}
-              <span className="rv-dica">
-                {ROTULO_FERRAMENTA[id]}
-                {id === "rodadas" && trilha ? ` · rodada ${trilha.rodada}` : ""}
-                <kbd>{ATALHO_FERRAMENTA[id]}</kbd>
-              </span>
-            </button>
-          );
-        })}
-        <span className="rv-ferr-sep" />
-        <button type="button" className="rv-ferr-btn" aria-label="Desfazer (Ctrl+Z)" disabled={historico.desfazer.length === 0} onClick={desfazer}><Undo2 size={17} /></button>
-        <button type="button" className="rv-ferr-btn" aria-label="Refazer (Ctrl+Shift+Z)" disabled={historico.refazer.length === 0} onClick={refazer}><Redo2 size={17} /></button>
-        <span className="rv-ferr-sep" />
-        {ehNarrador && (
-          <button type="button" className="rv-ferr-btn" aria-label="Adicionar token" onClick={() => estadoCena && abrirCriarToken()}>
-            <UserPlus size={17} />
-          </button>
+        {/* 1. A MESA. Ainda sem função definida — o lugar dela é este,
+               longe das ferramentas, porque o que ela vai fazer (sair
+               pra "Minhas campanhas", voltar pro início) não age sobre
+               o mapa. */}
+        <button
+          ref={botaoMenuMesaRef}
+          type="button" className="rv-ferr-btn rv-ferr-menu"
+          aria-label="Menu da mesa" aria-haspopup="menu" aria-expanded={menuMesa !== null}
+          data-testid="vtt-menu-mesa-btn"
+          onClick={() => setMenuMesa((a) => (a ? null : posicaoAoLadoDe(botaoMenuMesaRef.current)))}
+        >
+          <Menu size={17} />
+          <span className="rv-dica">Menu da mesa</span>
+        </button>
+        {menuMesa && (
+          <MenuDaMesa posicao={menuMesa} onFechar={() => setMenuMesa(null)} disparadorRef={botaoMenuMesaRef} />
         )}
-        {/* Camadas é decisão de quem conduz a cena: o narrador dita o
-            que está no mapa e o que dá pra mexer. Não aparece pro
-            jogador — nem o botão, nem a janela.
+        <span className="rv-ferr-sep" />
 
-            `data-tipo="janela"`: os dois botões abaixo ABREM UMA JANELA,
-            não trocam a ferramenta do ponteiro. Compartilham `aria-pressed`
-            com as ferramentas (os dois são alternáveis), então sem esta
-            marca a única forma de distinguir seria pelo rótulo. */}
+        {/* 2. O QUE TODO MUNDO USA. */}
+        {ferramentasDeTodos.map(botaoDeFerramenta)}
+
+        {/* 3. SÓ O NARRADOR — e a divisória vem JUNTO, dentro da mesma
+               condição: sem isso o jogador via dois traços colados,
+               anunciando um grupo que não existe pra ele. */}
         {ehNarrador && (
-          <button
-            ref={botaoCamadasRef} type="button" className="rv-ferr-btn" data-tipo="janela"
-            aria-pressed={painelCamadasAberto} aria-label="Camadas do mapa"
-            // Ordem importa: `trocarFerramenta` também fecha as janelas
-            // de botão, então ele vem ANTES — senão o `false` dele
-            // chegaria depois e a janela nunca abriria.
-            onClick={() => {
-              const abrir = !painelCamadasAberto;
-              if (abrir) trocarFerramenta("interagir");
-              setPainelCenaAberto(false);
-              setPainelCenasAberto(false);
-              setPainelCamadasAberto(abrir);
-            }}
-          ><Layers size={17} /></button>
+          <>
+            <span className="rv-ferr-sep" />
+            <button type="button" className="rv-ferr-btn" aria-label="Adicionar token (N)" onClick={() => estadoCena && abrirCriarToken()}>
+              <UserPlus size={17} />
+              <span className="rv-dica">Adicionar token<kbd>N</kbd></span>
+            </button>
+            {/* Camadas é decisão de quem conduz a cena: o narrador dita
+                o que está no mapa e o que dá pra mexer.
+
+                `data-tipo="janela"`: este botão ABRE UMA JANELA, não
+                troca a ferramenta do ponteiro. Compartilha
+                `aria-pressed` com as ferramentas (os dois são
+                alternáveis), então sem esta marca a única forma de
+                distinguir seria pelo rótulo. */}
+            <button
+              ref={botaoCamadasRef} type="button" className="rv-ferr-btn" data-tipo="janela"
+              aria-pressed={painelCamadasAberto} aria-label="Camadas do mapa (C)"
+              onClick={alternarCamadas}
+            >
+              <Layers size={17} />
+              <span className="rv-dica">Camadas do mapa<kbd>C</kbd></span>
+            </button>
+            {ferramentasDoNarrador.map(botaoDeFerramenta)}
+          </>
         )}
-        {/* CATÁLOGO DE CENAS — só o narrador. O jogador não tem o botão
-            porque não tem o catálogo: `list_vtt_scenes` não conta a ele
-            que existem outras cenas, e esconder o botão é só a UI
-            concordando com o que o servidor já decidiu. */}
-        {ehNarrador && (
-          <button
-            type="button" className="rv-ferr-btn" data-tipo="janela"
-            aria-pressed={painelCenasAberto} aria-label="Catálogo de cenas"
-            data-testid="barra-cenas"
-            onClick={alternarCatalogoCenas}
-          ><Clapperboard size={17} /></button>
-        )}
-        {/* Configurar a cena é do narrador — nome, local e tamanho da
-            grade valem pra mesa inteira. O botão ficou sem `onClick`
-            desde que existe; agora abre a janela. */}
-        {ehNarrador && (
-          <button
-            type="button" className="rv-ferr-btn" data-tipo="janela"
-            aria-pressed={painelCenaAberto} aria-label="Configurações da cena"
-            onClick={() => {
-              const abrir = !painelCenaAberto;
-              if (abrir) trocarFerramenta("interagir");
-              setPainelCamadasAberto(false);
-              setPainelCenasAberto(false);
-              setPainelCenaAberto(abrir);
-            }}
-          >
-            <Settings size={17} />
-          </button>
-        )}
+
+        <span className="rv-ferr-sep" />
+        {/* 4. DESFAZER/REFAZER POR ÚLTIMO. Eles não escolhem nada —
+               desfazem o que as outras fizeram —, e no meio do trilho
+               separavam dois grupos que pertencem juntos.
+
+               A dica é DESENHADA (`.rv-dica`), não o `title` do
+               navegador: os botões de ferramenta sempre tiveram a sua,
+               e sem ela estes ficavam mudos no hover — só o leitor de
+               tela sabia o que eram. */}
+        <button type="button" className="rv-ferr-btn" aria-label="Desfazer (Ctrl+Z)" disabled={historico.desfazer.length === 0} onClick={desfazer}>
+          <Undo2 size={17} />
+          <span className="rv-dica">Desfazer<kbd>Ctrl+Z</kbd></span>
+        </button>
+        <button type="button" className="rv-ferr-btn" aria-label="Refazer (Ctrl+Shift+Z)" disabled={historico.refazer.length === 0} onClick={refazer}>
+          <Redo2 size={17} />
+          <span className="rv-dica">Refazer<kbd>Ctrl+Shift+Z</kbd></span>
+        </button>
+        {/* CENAS e CONFIGURAÇÕES DA CENA saíram daqui. Nenhuma das duas
+            é uma ferramenta do ponteiro, e as duas já tinham porta
+            própria mais perto de onde se usa: o catálogo abre pelo chip
+            da cena ativa no rodapé do palco, e os parâmetros de cada
+            cena abrem pelo "Configurar" do cartão dela, dentro do
+            catálogo. O trilho volta a ser só o que age sobre o mapa. */}
       </aside>
 
       {/* ═══ PALCO — mapa em tela cheia, tudo flutua por cima ═══ */}
       <main className="rv-palco" ref={palcoRef} data-arrastando-arquivo={arrastandoArquivo || undefined}>
+        {radialTokenId && tokenPorId.get(radialTokenId)?.podeControlar && <AcoesRapidasToken tokenId={radialTokenId} nome={tokenPorId.get(radialTokenId)!.nome} onEscolher={escolherAcaoToken} onFechar={fecharRadial} />}
+        {targets.erro && <div className="rv-target-status" role="status">{targets.erro}</div>}
         {/* O contêiner do mapa é quem recebe o arrasto vindo do painel
             (`dragover`/`drop` não chegam dentro do `<svg>`). Só reage
             ao MIME do diretório de personagens — arrastar qualquer
@@ -5514,12 +5949,20 @@ export function VttClient({
           className="rv-mapa-camada"
           data-arrastando-personagem={arrastandoPersonagem ? "true" : undefined}
           onDragOver={aoArrastarSobreMapa}
-          onDragLeave={() => setArrastandoPersonagem(false)}
+          /* SAIU DO MAPA sem soltar: a prévia vai junto. Deixá-la
+             acesa prenderia a mesa numa fase de posicionamento que
+             ninguém pediu — o arrasto continua vivo e pode terminar
+             numa pasta do painel, que é outro destino legítimo. */
+          onDragLeave={() => {
+            setArrastandoPersonagem(false);
+            if (personagemArrastadoRef.current && fluxoTokenRef.current?.fase === "posicionando") setFluxoToken(null);
+          }}
           onDrop={aoSoltarNoMapa}
         >
           <MapaHex
             cena={cenaExibida} zoom={zoom} pan={pan}
-            selecionadoId={selecionadoId} hoverId={hoverId} alvoIds={[]}
+            selecionadoId={selecionadoId} hoverId={hoverId} alvoIds={targets.todos}
+            onAlternarAlvo={targets.alternar}
             estadoPorToken={estadoPorToken}
             ancoraPonteiroRef={ancoraPonteiroRef}
             conversorPontoRef={conversorPontoRef}
@@ -5533,6 +5976,8 @@ export function VttClient({
             celulasRealce={ferramenta === "objetos" ? celulasObjetoPendente : []}
             tipoRealce={ferramenta === "objetos" ? "objeto" : null}
             onSelecionarToken={onSelecionarToken} onHoverToken={aoHoverToken}
+            onAtivarCartaoToken={aoAtivarCartaoToken}
+            onFecharCartaoToken={fecharCartaoToken}
             terrenoReal={terrenoReal}
             ferramenta={ferramenta}
             podeMoverToken={podeMoverToken}
@@ -5580,9 +6025,6 @@ export function VttClient({
             areasGuia={guiaAreaAtual}
             areasCandidatoSnap={candidatoSnapPonto}
             areasEscolhendoToken={estadoAreas.fase === "escolhendo_token_da_aura"}
-            areasAncoraAcoes={ancoraAcoesArea}
-            onAncoraAcoesTela={setAncoraAcoesTela}
-            onConversorEdicaoRapidaTela={setConversorEdicaoRapidaTela}
             onConversorHexDaTela={guardarConversorHex}
             areasParaHover={areasParaHover}
             onHoverAreaEditavel={setHoverAreaId}
@@ -5875,10 +6317,16 @@ export function VttClient({
           </div>
         )}
 
+        {/* NO TOPO, centralizado: o rodapé já é do chip da cena e do
+            aviso comum, e o topo é pra onde o olho vai quando algo
+            está errado. Fora do trilho (esquerda) e do painel
+            (direita). */}
+        <AvisoSincronizacao />
+
         <div className="rv-zoom" role="group" aria-label="Zoom">
-          <button type="button" onClick={() => setZoom((z) => clampZoom(+(z + 0.15).toFixed(2)))} aria-label="Aproximar"><Plus size={14} /></button>
+          <button type="button" onClick={() => zoomPeloBotao(0.15)} aria-label="Aproximar"><Plus size={14} /></button>
           <span>{Math.round(zoom * 100)}%</span>
-          <button type="button" onClick={() => setZoom((z) => clampZoom(+(z - 0.15).toFixed(2)))} aria-label="Afastar"><Minus size={14} /></button>
+          <button type="button" onClick={() => zoomPeloBotao(-0.15)} aria-label="Afastar"><Minus size={14} /></button>
         </div>
 
         {/* ── TRILHA — núcleo no topo + trilhos das duas facções nas
@@ -5891,6 +6339,7 @@ export function VttClient({
             onDeclarar={(id, janela) => mutarTrilha((t) => declarar(t, id, janela))}
             onAssumir={(id) => mutarTrilha((t) => assumirTurno(t, id))}
             onConcluir={(pa) => mutarTrilha((t) => concluirTurno(t, pa))}
+            onCancelar={() => mutarTrilha(cancelarTurno)}
             onEncerrar={(id) => mutarTrilha((t) => encerrarParticipacao(t, id))}
             onAvancarJanela={() => mutarTrilha((t) => avancarParaLentos(t))}
             onProximaRodada={() => mutarTrilha((t) => proximaRodada(t))}
@@ -5930,7 +6379,39 @@ export function VttClient({
                 previewAtual={t.retrato}
                 origem={t.origemRetrato}
                 nomePersonagem={null}
-                onConcluido={(o) => { if (!o?.manterAberto) setEditandoRetratoDe(null); }}
+                onConcluido={(o) => {
+                  /* APLICA NA HORA o que a RPC devolveu. O canal de
+                     Realtime (`tokens_changed`) também avisa, e continua
+                     valendo pros OUTROS na mesa — mas quem acabou de
+                     salvar não pode ficar esperando o próprio eco pra
+                     ver a cara que escolheu. Era esse o sintoma: o
+                     retrato só aparecia depois de recarregar a página.
+
+                     `retratoEfetivoId` entra junto: é ele que o mapa
+                     desenha e o que entra na leva de assinatura — sem
+                     ele, o token ficaria com a sigla mesmo com o id
+                     novo no lugar certo. */
+                  if (o?.salvo) {
+                    const s = o.salvo;
+                    setEstadoCena((c) => (c ? {
+                      ...c,
+                      tokens: c.tokens.map((tk) => (tk.id === t.id ? {
+                        ...tk,
+                        revision: s.revision,
+                        retratoImageId: s.retratoImageId,
+                        retratoUrl: s.retratoUrl,
+                        /* Ao REMOVER: se o efetivo era o retrato do
+                           próprio token, ele some; se era herdado da
+                           ficha, continua valendo. A RPC não devolve o
+                           efetivo — esta é a única conta possível aqui,
+                           e o eco do Realtime reconcilia o resto. */
+                        retratoEfetivoId: s.retratoImageId
+                          ?? (tk.retratoEfetivoId === tk.retratoImageId ? null : tk.retratoEfetivoId),
+                      } : tk)),
+                    } : c));
+                  }
+                  if (!o?.manterAberto) setEditandoRetratoDe(null);
+                }}
                 onCancelar={() => setEditandoRetratoDe(null)}
               />
             </div>
@@ -5952,25 +6433,9 @@ export function VttClient({
             tokenId={cartaoHover.tokenId}
             ancora={cartaoHover.ancora}
             dados={dadosCartao}
+            lado={tokenPorId.get(cartaoHover.tokenId)?.lado}
+            condicoes={tokenPorId.get(cartaoHover.tokenId)?.condicoes}
             onDadosAtualizados={(d) => { dadosCartaoRef.current.set(cartaoHover.tokenId, d); setDadosCartao(d); }}
-            onEntrar={() => { sobreCartaoRef.current = true; limparTimerCartao(); }}
-            onSair={() => {
-              sobreCartaoRef.current = false;
-              limparTimerCartao();
-              timerCartaoRef.current = setTimeout(() => setCartaoHover(null), CARENCIA_CARTAO_MS);
-            }}
-          />
-        )}
-
-        {painelCenaAberto && ehNarrador && estadoCena && (
-          <PainelCena
-            valoresIniciais={valoresCena}
-            foraDaGrade={pecasForaDaGrade}
-            salvando={salvandoCena}
-            erro={erroConfigCena}
-            onSalvar={(v) => void salvarCena(v)}
-            onMudarTamanho={(largura, altura) => setTamanhoEmEdicao({ largura, altura })}
-            onFechar={() => { setPainelCenaAberto(false); setTamanhoEmEdicao(null); setErroConfigCena(null); }}
           />
         )}
 
@@ -5993,6 +6458,13 @@ export function VttClient({
             cenaVistaRevision={estadoCena?.cena.revision}
             versaoPalco={versaoPalco}
             onAbrir={abrirCena}
+            /* O AVISO DE ENCOLHER veio da janela "Configurações da
+               Cena", que saiu. Ele só existe pra cena ABERTA: contar
+               peças fora da grade exige os tokens e objetos dela, e o
+               cliente não carrega os das outras. `onMudarTamanho` é o
+               que alimenta essa contagem — não mexe no mapa. */
+            foraDaGrade={pecasForaDaGrade}
+            onMudarTamanho={(largura, altura) => setTamanhoEmEdicao({ largura, altura })}
             /* A cena aberta muda de tamanho/grade SEM reler: a gaveta
                entrega a linha que a RPC devolveu, e o mapa redesenha no
                mesmo quadro. Reabrir não serviria — `trocarParaCena` sai
@@ -6000,7 +6472,7 @@ export function VttClient({
             onCenaConfigurada={(cena) => setEstadoCena((e) => (
               e && e.cena.id === cena.id ? { ...e, cena } : e
             ))}
-            onFechar={() => setPainelCenasAberto(false)}
+            onFechar={() => { setPainelCenasAberto(false); setTamanhoEmEdicao(null); }}
           />
         )}
 
@@ -6035,6 +6507,13 @@ export function VttClient({
         ehNarrador={ehNarrador}
         personagemDoTokenSelecionado={personagemDoTokenSelecionado}
         onAdicionarPersonagemACena={iniciarTokenDePersonagem}
+        onArrastarPersonagem={(p) => {
+          personagemArrastadoRef.current = p;
+          // Fim do arrasto sem drop no mapa (soltou no painel, ou
+          // cancelou com Esc): a prévia que o `dragover` acendeu não
+          // pode ficar para trás.
+          if (!p && fluxoTokenRef.current?.fase === "posicionando") setFluxoToken(null);
+        }}
         onFocarToken={focarTokenPeloPainel}
       />
 
@@ -6063,29 +6542,58 @@ export function VttClient({
         />
       )}
 
-      {/* ── Posicionamento de token novo — aviso pequeno, não-bloqueante
-          (nunca `.rv-modal-fundo`: cliques no mapa/trilho continuam
-          passando, só a célula clicada é interceptada por
-          `MapaHex.posicionamentoToken`). ── */}
-      {fluxoToken && (fluxoToken.fase === "posicionando" || fluxoToken.fase === "enviando" || fluxoToken.fase === "erro") && (
-        <div className="rv-escolha-posicao" role="status" aria-live="polite" data-fase={fluxoToken.fase}>
-          {fluxoToken.fase === "erro" ? (
-            <span role="alert">{fluxoToken.mensagem} Escolha outra posição ou tente de novo.</span>
-          ) : (
-            <span>
-              {fluxoToken.rascunho.nome.trim()
-                ? <>Escolha uma posição para <strong>{fluxoToken.rascunho.nome}</strong>.</>
-                : "Escolha uma posição para o novo token."}
-              {" "}Clique para confirmar. Esc para cancelar. Q/E para girar.
-            </span>
-          )}
+      {/* A FAIXA DE POSICIONAMENTO SAIU. Ela narrava o gesto — "clique
+          para confirmar, Esc para cancelar, Q/E para girar" — enquanto
+          o mapa já mostrava o token na célula sob o ponteiro. A prévia
+          É a instrução: ela diz o que vai ser posto e onde, que é tudo
+          o que a frase dizia em palavras.
+
+          Esc continua cancelando (o listener é global, nunca foi da
+          faixa) e o clique continua confirmando no caminho do
+          formulário. */}
+      {/* O ERRO FICA. Ele não narra gesto nenhum: diz que o servidor
+          recusou a criação, e sem ele a falha seria um token que
+          simplesmente não aparece. */}
+      {fluxoToken?.fase === "erro" && (
+        <div className="rv-escolha-posicao" role="status" aria-live="polite" data-fase="erro">
+          <span role="alert">{fluxoToken.mensagem} Escolha outra posição ou tente de novo.</span>
           <div className="rv-escolha-posicao-acoes">
-            <button type="button" className="rv-btn rv-btn--ghost" onClick={voltarParaEditarToken} disabled={fluxoToken.fase === "enviando"}>Voltar para editar</button>
-            <button type="button" className="rv-btn rv-btn--ghost" onClick={cancelarPosicionamento} disabled={fluxoToken.fase === "enviando"}>Cancelar (Esc)</button>
+            <button type="button" className="rv-btn rv-btn--ghost" onClick={voltarParaEditarToken}>Voltar para editar</button>
+            <button type="button" className="rv-btn rv-btn--ghost" onClick={cancelarPosicionamento}>Cancelar (Esc)</button>
           </div>
         </div>
       )}
 
+      {confirmandoRemocaoLote && (
+        <div className="rv-modal-fundo" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setConfirmandoRemocaoLote(null); }}>
+          <div className="rv-modal rv-modal--confirmar" role="alertdialog" aria-modal="true"
+            aria-label={`Remover ${confirmandoRemocaoLote.length} tokens`} data-testid="vtt-confirmar-remocao-lote">
+            <header className="rv-modal-cab">
+              <h2>Remover {confirmandoRemocaoLote.length} tokens</h2>
+              <button type="button" className="rv-modal-fechar" aria-label="Fechar" onClick={() => setConfirmandoRemocaoLote(null)}>×</button>
+            </header>
+            <div className="rv-modal-corpo">
+              {/* Nomear quem sai: "remover 7 tokens" não deixa conferir
+                  se a seleção é a que se pensava. */}
+              <p>Remover da cena? Esta ação não pode ser desfeita.</p>
+              <p className="rv-modal-lista">{confirmandoRemocaoLote.map((x) => x.nome).join(", ")}</p>
+            </div>
+            <footer className="rv-modal-rodape">
+              <button type="button" className="rv-btn rv-btn--ghost" onClick={() => setConfirmandoRemocaoLote(null)}>Cancelar</button>
+              <button type="button" className="rv-btn rv-btn--perigo" data-testid="vtt-confirmar-remocao-lote-ok"
+                onClick={() => {
+                  const ts = confirmandoRemocaoLote;
+                  setConfirmandoRemocaoLote(null);
+                  // Uma de cada vez: disparadas juntas, as remoções não
+                  // surtiam efeito (ver a nota de ocultar/bloquear acima).
+                  void (async () => { for (const x of ts) await removerTokenHandler(x.id); })();
+                }}>
+                Remover
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
       {confirmandoRemocao && (
         <div className="rv-modal-fundo" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setConfirmandoRemocao(null); }}>
           <div className="rv-modal rv-modal--confirmar" role="alertdialog" aria-modal="true" aria-label={`Remover ${confirmandoRemocao.nome}`}>
@@ -6106,6 +6614,7 @@ export function VttClient({
         </div>
       )}
     </div>
+    </ProvedorJanelasDaMesa>
     </ProvedorJanelasFerramenta>
   );
 }

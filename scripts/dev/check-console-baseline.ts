@@ -224,14 +224,13 @@ async function descobrirAlvo(page: Page): Promise<{ campaignId: string; characte
     .find(Boolean);
   if (!campaignId) throw new Error("Nenhuma campanha encontrada em /mesas — sessão expirada? Rode refresh-admin-session.ts");
 
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "domcontentloaded" });
-  // "Abrir ficha" deixou de ser link: o Console virou janela da casca
-  // da campanha, não rota (`_shell/ConsoleDaMesa.tsx`). O id do
-  // personagem sai do próprio `data-testid`, que não mudou.
-  const botaoFicha = page.locator('[data-testid^="personagens-abrir-ficha-"]').first();
+  await page.goto(`${BASE_URL}/mesas/personagens`, { waitUntil: "domcontentloaded" });
+  // O cartão do personagem voltou a ser LINK, e é dele que sai o id —
+  // do `href`, não de um `data-testid` por ID, que não existe mais.
+  const botaoFicha = page.locator('a.ra-charcard[href*="characterId="]').first();
   await botaoFicha.waitFor({ state: "attached", timeout: 20000 });
-  const testid = await botaoFicha.getAttribute("data-testid");
-  const characterId = testid?.match(/personagens-abrir-ficha-([0-9a-f-]{36})/i)?.[1];
+  const href = await botaoFicha.getAttribute("href");
+  const characterId = href?.match(/characterId=([0-9a-f-]{36})/i)?.[1];
   if (!characterId) throw new Error(`Nenhum personagem encontrado na campanha ${campaignId}`);
   return { campaignId, characterId };
 }
@@ -253,15 +252,31 @@ async function main() {
       // --- Cena A: rota DIRETA /ficha (sem mesa.css na árvore) ---
       await page.goto(`${BASE_URL}/ficha?campaignId=${campaignId}&characterId=${characterId}`, { waitUntil: "domcontentloaded" });
       await page.waitForSelector(".rc-window", { state: "visible", timeout: 10000 });
+      // O CABEÇALHO CHEGA DEPOIS DA JANELA, e esperar só por `.rc-window`
+      // capturava a cena no intervalo entre as duas: `.rc-fichaheader`
+      // saía como AUSENTE nas três viewports da rota direta, embora ele
+      // exista ali (`check-fichaheader-portal-fix`, critério 4a, mede a
+      // caixa dele em y=0 no mesmo endereço).
+      //
+      // Isso é pior que um número errado. Uma linha de base que afirma
+      // "este elemento não existe nesta cena" PARA de acusar o dia em
+      // que ele sumir de verdade — o check continuaria verde
+      // exatamente na regressão que ele foi escrito pra pegar.
+      //
+      // O header é montado por PORTAL (é o assunto inteiro de
+      // `FichaHeader.tsx`), então ele não nasce junto com a janela:
+      // esperar por ele é esperar pela cena estar montada, não por um
+      // atraso arbitrário.
+      await page.waitForSelector(".rc-fichaheader", { state: "attached", timeout: 10000 });
       await esperarAnimacoes(page);
       retratos[`${vp.nome}/direta`] = await capturar(page, SELETORES, PROPRIEDADES, CUSTOM_PROPS);
 
       // --- Cena B: a JANELA sobre a campanha (mesa.css montado junto —
       // é aqui que um vazamento de token apareceria). Não navega mais:
       // o que se espera é a janela aparecer com a URL intacta. ---
-      await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "domcontentloaded" });
-      await page.locator(`[data-testid="personagens-abrir-ficha-${characterId}"]`).waitFor({ state: "visible", timeout: 20000 });
-      await page.locator(`[data-testid="personagens-abrir-ficha-${characterId}"]`).click();
+      await page.goto(`${BASE_URL}/mesas/personagens`, { waitUntil: "domcontentloaded" });
+      await page.locator(`a.ra-charcard[href*="characterId=${characterId}"]`).waitFor({ state: "visible", timeout: 20000 });
+      await page.locator(`a.ra-charcard[href*="characterId=${characterId}"]`).click();
       await page.waitForSelector(".rc-window", { state: "visible", timeout: 30000 });
       await esperarAnimacoes(page);
       retratos[`${vp.nome}/modal`] = await capturar(page, SELETORES, PROPRIEDADES, CUSTOM_PROPS);

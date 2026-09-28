@@ -3,12 +3,9 @@
 /**
  * Pip losangular compartilhado (PA/Reações e trilhas de MIT/PD dos
  * Equipamentos) — MESMA geometria e paleta cyan nos dois lugares,
- * padronizado a pedido do usuário. Um único path (não dois, como as
- * versões antigas em `IdentityAside`/`EquipmentPanel`) para que
- * default→hover seja SEMPRE uma transição de cor pura via CSS —
- * misturar "2 paths no preenchido" com "1 path no vazio" foi o que
- * causou o bug do "efeito duplo" no hover dos atributos; aqui evita-se
- * o mesmo problema de origem.
+ * padronizado a pedido do usuário. Como a Integridade, o estado cheio
+ * usa duas camadas: silhueta externa preenchida e contorno interno.
+ * Vazio e preview usam apenas o contorno interno.
  *
  * Estados via `data-on`/`data-preview` + CSS, nunca inline style.
  * Hover em preenchido = "remover" (fica avermelhado); hover em vazio =
@@ -32,7 +29,8 @@ export function DiamondPip({
 }) {
   return (
     <svg className="rc-diapip" data-on={cheio} data-preview={preview} viewBox="0 0 12 12" width={size} height={size} aria-hidden="true">
-      <path d="M11.293 6L6 11.293L0.707031 6L6 0.707031L11.293 6Z" />
+      {cheio && !preview && <path className="rc-diapip-outer" d="M12 6L6 12L0 6L6 0L12 6Z" />}
+      <path className="rc-diapip-inset" d="M11.293 6L6 11.293L0.707031 6L6 0.707031L11.293 6Z" />
     </svg>
   );
 }

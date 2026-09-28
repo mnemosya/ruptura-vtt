@@ -994,6 +994,42 @@ function formatProfileEvent(payload: Record<string, unknown>): string {
  * formatadores acima. Nunca cai em JSON cru — tipos não reconhecidos
  * usam `formatGenericLog`.
  */
+/**
+ * CHAT-01 — três tipos que eram ESCRITOS e caíam no genérico.
+ *
+ * `formatGenericLog` degrada com elegância, e por isso a falta não
+ * aparecia: o card saía legível, só que montado por despejo de campos
+ * em vez de frase. O inventário executável
+ * (`scripts/dev/check-chat-catalogo.mjs`) é que trouxe os três à tona.
+ */
+function formatAttackDamageApplied(payload: Record<string, unknown>): string {
+  const alvo = typeof payload.alvoNome === "string" ? payload.alvoNome : "Alvo";
+  const dano = typeof payload.dano === "number" ? payload.dano : null;
+  const antes = typeof payload.pvAntes === "number" ? payload.pvAntes : null;
+  const depois = typeof payload.pvDepois === "number" ? payload.pvDepois : null;
+  const pv = antes !== null && depois !== null ? ` — PV ${antes} → ${depois}` : "";
+  if (dano === null) return `Dano aplicado em ${alvo}${pv}.`;
+  // Zero é resultado, não ausência: mitigação que segurou tudo é
+  // informação de combate, e some se o texto disser só "dano aplicado".
+  if (dano === 0) return `${alvo} não perdeu PV: o dano foi inteiramente mitigado${pv}.`;
+  return `${alvo} sofreu ${dano} de dano${pv}.`;
+}
+
+function formatTurnEnded(payload: Record<string, unknown>): string {
+  const janela = typeof payload.window === "number" ? payload.window : null;
+  return janela !== null ? `Turno encerrado (janela ${janela}).` : "Turno encerrado.";
+}
+
+function formatTurnTrackNarratorUpdate(payload: Record<string, unknown>): string {
+  const proxima = payload.nextTurnTrack;
+  if (proxima === null || proxima === undefined) return "O narrador limpou a trilha de turnos.";
+  return `O narrador ajustou a trilha de turnos.`;
+}
+
+function alvoTokenNoLog(payload: Record<string, unknown>): string {
+  return typeof payload.alvoNome === "string" && payload.alvoTokenId ? ` Alvo: ${payload.alvoNome}.` : "";
+}
+
 export function formatTableLogEntry(entry: TableLogEntry): string {
   if (entry.type === "chat") return chatText(entry.payload);
   if (entry.type === "rolagem_pericia" || entry.type === "rolagem_expressao") return formatRolagem(entry.payload);
@@ -1005,7 +1041,7 @@ export function formatTableLogEntry(entry: TableLogEntry): string {
   if (entry.type.startsWith("collapse_")) return formatCollapse(entry.payload);
   if (entry.type === "round_ended" || entry.type === "scene_ended" || entry.type === "scene_rupture_pending") return formatRoundOrScene(entry.type, entry.payload);
   if (entry.type === "character_evolution") return formatEvolution(entry.payload);
-  if (entry.type === "action_used") return formatActionUsed(entry.payload);
+  if (entry.type === "action_used") return formatActionUsed(entry.payload) + alvoTokenNoLog(entry.payload);
   if (entry.type === "condition_end_round_damage") return formatConditionEndRoundDamage(entry.payload);
   if (entry.type === "condition_end_round_check_created") return formatConditionCheckCreated(entry.payload);
   if (entry.type === "condition_end_round_check_resolved") return formatConditionCheckResolved(entry.payload);
@@ -1021,16 +1057,19 @@ export function formatTableLogEntry(entry: TableLogEntry): string {
   if (entry.type === "scene_effect_expired") return formatSceneEffectExpired(entry.payload);
   if (entry.type === "attack_resolved") return formatAttackResolved(entry.payload);
   if (entry.type === "defense_reaction_used") return formatDefenseReactionUsed(entry.payload);
-  if (entry.type === "item_used") return formatItemUsed(entry.payload);
+  if (entry.type === "item_used") return formatItemUsed(entry.payload) + alvoTokenNoLog(entry.payload);
   if (entry.type === "talent_used") return formatTalentUsed(entry.payload);
-  if (entry.type === "spell_cast") return formatSpellCast(entry.payload);
+  if (entry.type === "spell_cast") return formatSpellCast(entry.payload) + alvoTokenNoLog(entry.payload);
   if (entry.type === "character_state_change") return formatCharacterStateChange(entry.payload);
   if (entry.type === "inventory_transfer") return formatInventoryTransfer(entry.payload);
-  if (entry.type === "spell_attack_used") return formatSpellAttackUsed(entry.payload);
+  if (entry.type === "spell_attack_used") return formatSpellAttackUsed(entry.payload) + alvoTokenNoLog(entry.payload);
   if (entry.type === "spell_attack_resolved") return formatSpellAttackResolved(entry.payload);
   if (entry.type === "temporary_effect_added" || entry.type === "temporary_effect_removed" || entry.type === "temporary_effect_expired") {
     return formatTemporaryEffectLog(entry.type, entry.payload);
   }
   if (entry.type === "compendio_compartilhado") return formatCompendioCompartilhado(entry.payload);
+  if (entry.type === "attack_damage_applied") return formatAttackDamageApplied(entry.payload);
+  if (entry.type === "turn_ended") return formatTurnEnded(entry.payload);
+  if (entry.type === "turn_track_narrator_update") return formatTurnTrackNarratorUpdate(entry.payload);
   return formatGenericLog(entry.type, entry.payload);
 }

@@ -299,4 +299,42 @@ assert.equal(resultadoColapsoComMit.pvAfter, 0, "PV 1 - 5 de dano final nunca fi
 assert.equal(resultadoColapsoComMit.collapseStarted, true, "PV chegando a 0 aciona Colapso mesmo com dano mitigado.");
 console.log("9. Colapso usa o dano final já mitigado pelo MIT/PD, não o dano bruto do dado — OK");
 
+// -------------------------------------------------------------
+// 10. PV temporário é consumido antes do PV normal.
+// -------------------------------------------------------------
+const alvoComPvTemporario = {
+  ...alvo,
+  recursos_atuais: { ...alvo.recursos_atuais, pv: 10, pe: 10, pv_temporario: 5 },
+};
+const primeiroGolpeTemporario = applyAttackDamage({
+  character: alvoComPvTemporario,
+  formula: "1d6",
+  damageType: "fisico",
+  nowIso: "2026-07-04T10:00:00.000Z",
+  rng: rngFixo,
+});
+assert.equal(primeiroGolpeTemporario.character.recursos_atuais?.pv_temporario, 1);
+assert.equal(primeiroGolpeTemporario.pvAfter, 10, "Dano totalmente absorvido pelo PV temporário não reduz PV normal.");
+assert.equal(primeiroGolpeTemporario.collapseStarted, false, "Absorção temporária não inicia Colapso.");
+
+const segundoGolpeTemporario = applyAttackDamage({
+  character: primeiroGolpeTemporario.character,
+  formula: "1d6",
+  damageType: "fisico",
+  nowIso: "2026-07-04T10:00:01.000Z",
+  rng: rngFixo,
+});
+assert.equal(segundoGolpeTemporario.character.recursos_atuais?.pv_temporario, 0);
+assert.equal(segundoGolpeTemporario.pvAfter, 7, "Excesso após consumir PV temporário reduz o PV normal.");
+
+const golpeEmPvZero = applyAttackDamage({
+  character: { ...alvoComPvTemporario, recursos_atuais: { pv: 0, pe: 10, pv_temporario: 0 } },
+  formula: "1d6",
+  damageType: "fisico",
+  nowIso: "2026-07-04T10:00:02.000Z",
+  rng: rngFixo,
+});
+assert.equal(golpeEmPvZero.pvAfter, 0, "Dano que alcança um alvo em PV 0 mantém o recurso limitado a zero.");
+console.log("10. PV temporário é consumido antes do PV normal — OK");
+
 console.log("\ntest-attack-resolution — todos os cenários passaram.");

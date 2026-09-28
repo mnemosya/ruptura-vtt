@@ -21,6 +21,8 @@
  */
 
 import { redirect } from "next/navigation";
+import { readOnlineSession } from "../../../lib/campaign/onlineSessionActions";
+import { readNetworkPresence } from "../../../lib/campaign/userProfileActions";
 import { getCurrentUser } from "../../../lib/auth/session";
 import {
   getCampaignParticipantInfo,
@@ -65,9 +67,16 @@ export default async function MesasPage() {
     const todas: Campaign[] = await listCampaigns();
     minhasCampanhas = await Promise.all(
       todas.map(async (campaign): Promise<CampaignCardData> => {
+        const sessionResult = await readOnlineSession(campaign.id);
+        const sessionFields = {
+          latestSession: sessionResult.session,
+          sessionError: sessionResult.error,
+          narratorOnline: sessionResult.narratorOnline,
+          playerCount: sessionResult.playerCount,
+        };
         if (campaign.owner_id === user.id) {
           const extras = await loadNarratorExtras(campaign.id);
-          return { campaign, role: "narrator", controlledCharacterCount: null, ...extras };
+          return { campaign, role: "narrator", controlledCharacterCount: null, ...extras, ...sessionFields };
         }
         let controlledCharacterCount = 0;
         try {
@@ -77,6 +86,7 @@ export default async function MesasPage() {
         }
         return {
           campaign,
+          ...sessionFields,
           role: "player",
           controlledCharacterCount,
           // RLS: quem é só jogador enxerga apenas a própria linha em
@@ -92,11 +102,18 @@ export default async function MesasPage() {
     errorMessage = err instanceof Error ? err.message : "Erro desconhecido ao carregar campanhas.";
   }
 
+  // Presença de toda a Rede numa consulta só — antes o painel mostrava
+  // "Online" fixo para a própria conta e "offline" fixo para o resto.
+  const rede = await readNetworkPresence();
+
   return (
     <MesasDashboardClient
       campanhasIniciais={minhasCampanhas}
       errorInicial={errorMessage}
+      currentUserId={user.id}
       currentUserName={user.displayName ?? (user.email ?? "Você").split("@")[0]}
+      presencaDaRede={rede.presence}
+      presencaIndisponivel={!!rede.error}
     />
   );
 }

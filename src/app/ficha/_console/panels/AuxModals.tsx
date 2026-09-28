@@ -7,17 +7,35 @@
  * existente. Podem ser trocados sem alterar a lógica que os alimenta.
  */
 
-import { useState, type ReactNode } from "react";
-import { TriangleAlert } from "lucide-react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { Check, TriangleAlert, X } from "lucide-react";
+import { Plus as ConsolePlus } from "../../../_design/icons";
 import type { RupturaRollResult } from "../../../../lib/dice/types";
 import {
   ACCENTS, BODY, DISPLAY, DadosRolados, FaixaResultado, GroupLabel, INK, INK_FAINT, Leitura, MONO,
   MolduraRolagem, RESULTS, Stack, type ResultKey,
 } from "../../../mesas/[campaignId]/vtt/_dados3d/ResultadoRolagem";
 import type { InventoryItemInstance, ItemContent } from "../../../../lib/character";
-import { BODY_SLOT_LABELS, type BodySlotId } from "../slots";
+import { BODY_SLOT_LABELS, itensCompativeisComSlot, type BodySlotId } from "../slots";
+import { useCentroDoConsole } from "../useCentroDoConsole";
+import type { ConsoleApi } from "../types";
 
-function Aux({ titulo, onFechar, children }: { titulo: string; onFechar: () => void; children: ReactNode }) {
+function Aux({
+  titulo,
+  onFechar,
+  cabecalho,
+  plano,
+  children,
+}: {
+  titulo: string;
+  onFechar: () => void;
+  /** Substitui o `<h2>` por uma faixa própria — ver a janela da arma. */
+  cabecalho?: ReactNode;
+  /** Sem recuo interno: quem desenha as seções é o conteúdo. */
+  plano?: boolean;
+  children: ReactNode;
+}) {
+  const centro = useCentroDoConsole();
   return (
     <div
       className="rc-aux-backdrop"
@@ -25,11 +43,166 @@ function Aux({ titulo, onFechar, children }: { titulo: string; onFechar: () => v
         if (e.target === e.currentTarget) onFechar();
       }}
     >
-      <div className="rc-aux" role="dialog" aria-modal="true" aria-label={titulo}>
-        <h2>{titulo}</h2>
+      <div
+        className="rc-aux"
+        role="dialog"
+        aria-modal="true"
+        aria-label={titulo}
+        data-plano={plano ? "true" : undefined}
+        style={centro ? { position: "absolute", left: centro.x, top: centro.y, transform: "translate(-50%, -50%)" } : undefined}
+      >
+        {cabecalho ?? <h2>{titulo}</h2>}
         {children}
       </div>
     </div>
+  );
+}
+
+/**
+ * Casca dos seletores definitivos do Console. Diferente de `Aux`, que
+ * ainda atende vários placeholders, esta peça replica a anatomia dos
+ * cards do personagem: título mono, faixa de identificação, conteúdo
+ * rente às bordas e rodapé fixo.
+ */
+export function ConsolePicker({
+  titulo,
+  id,
+  modulo,
+  tamanho = "normal",
+  onFechar,
+  children,
+  rodape,
+  modal = true,
+  testId,
+  arrastavel = false,
+}: {
+  titulo: string;
+  id: string;
+  modulo: string;
+  tamanho?: "normal" | "largo";
+  onFechar: () => void;
+  children: ReactNode;
+  rodape?: ReactNode;
+  modal?: boolean;
+  testId?: string;
+  /** Opt-in: mantém os seletores existentes parados; ações do token podem ser movidas para liberar o mapa. */
+  arrastavel?: boolean;
+}) {
+  const tituloId = useId();
+  const centro = useCentroDoConsole();
+  const janelaRef = useRef<HTMLElement>(null);
+  const gestoRef = useRef<{ x: number; y: number } | null>(null);
+  const [deslocamento, setDeslocamento] = useState({ x: 0, y: 0 });
+
+  function iniciarArrasto(event: React.PointerEvent<HTMLElement>) {
+    if (!arrastavel || (event.target as Element).closest("button, a, input, select, textarea")) return;
+    gestoRef.current = { x: event.clientX, y: event.clientY };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+  function moverArrasto(event: React.PointerEvent<HTMLElement>) {
+    const gesto = gestoRef.current;
+    const janela = janelaRef.current;
+    if (!gesto || !janela) return;
+    const dx = event.clientX - gesto.x, dy = event.clientY - gesto.y;
+    const caixa = janela.getBoundingClientRect();
+    const margem = 8;
+    const ajustadoX = Math.max(margem - caixa.left, Math.min(dx, window.innerWidth - margem - caixa.right));
+    const ajustadoY = Math.max(margem - caixa.top, Math.min(dy, window.innerHeight - margem - caixa.bottom));
+    setDeslocamento(p => ({ x: p.x + ajustadoX, y: p.y + ajustadoY }));
+    gestoRef.current = { x: event.clientX, y: event.clientY };
+  }
+  function terminarArrasto(event: React.PointerEvent<HTMLElement>) {
+    if (!gestoRef.current) return;
+    gestoRef.current = null;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+  }
+
+  useEffect(() => {
+    function fecharComEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      onFechar();
+    }
+    window.addEventListener("keydown", fecharComEscape, true);
+    return () => window.removeEventListener("keydown", fecharComEscape, true);
+  }, [onFechar]);
+
+  return (
+    <div
+      className="rc-picker-backdrop rc-cursor-scope"
+      data-nao-modal={!modal || undefined}
+      onMouseDown={(event) => {
+        if (modal && event.target === event.currentTarget) onFechar();
+      }}
+    >
+      <section
+        ref={janelaRef}
+        className="rc-picker"
+        data-testid={testId}
+        data-tamanho={tamanho}
+        role="dialog"
+        aria-modal={modal}
+        aria-labelledby={tituloId}
+        style={centro || arrastavel ? {
+          position: "absolute",
+          left: centro?.x ?? window.innerWidth / 2,
+          top: centro?.y ?? window.innerHeight / 2,
+          transform: `translate(calc(-50% + ${deslocamento.x}px), calc(-50% + ${deslocamento.y}px))`,
+        } : undefined}
+      >
+        <header className="rc-picker-cab" data-arrastavel={arrastavel || undefined}
+          onPointerDown={iniciarArrasto} onPointerMove={moverArrasto}
+          onPointerUp={terminarArrasto} onPointerCancel={terminarArrasto}>
+          <h2 id={tituloId}>{titulo}</h2>
+          <button type="button" className="rc-picker-fechar" onClick={onFechar} aria-label={`Fechar ${titulo.toLowerCase()}`}>
+            <X size={15} aria-hidden="true" />
+          </button>
+        </header>
+        <div className="rc-picker-modulo" aria-hidden="true">
+          <span>{id}</span>
+          <span>{modulo}</span>
+        </div>
+        <div className="rc-picker-corpo">{children}</div>
+        {rodape !== undefined && <footer className="rc-picker-rodape">{rodape}</footer>}
+      </section>
+    </div>
+  );
+}
+
+function PickerOption({
+  indice,
+  nome,
+  selecionado,
+  atalho,
+  mostrarMarca = true,
+  onClick,
+}: {
+  indice: number;
+  nome: string;
+  selecionado: boolean;
+  atalho?: string;
+  mostrarMarca?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="rc-picker-opcao"
+      aria-pressed={selecionado}
+      aria-keyshortcuts={atalho}
+      onClick={onClick}
+    >
+      <span className="rc-picker-indice" data-atalho={atalho ? "true" : undefined} aria-hidden="true">
+        {atalho ?? String(indice + 1).padStart(2, "0")}
+      </span>
+      <span className="rc-picker-nome">{nome}</span>
+      {mostrarMarca && (
+        <span className="rc-picker-marca" aria-hidden="true">
+          {selecionado ? <Check size={14} /> : <ConsolePlus size={14} strokeWidth={1.6} />}
+        </span>
+      )}
+    </button>
   );
 }
 
@@ -86,6 +259,7 @@ export function RollResultModal({
   personagem?: string | null;
   onFechar: () => void;
 }) {
+  const centro = useCentroDoConsole();
   const nd8 = resultado.atributoValor;
   const natureza = defesa
     ? "Defesa"
@@ -103,7 +277,9 @@ export function RollResultModal({
 
   return (
     <div style={CAMADA_ROLAGEM}>
-      <div style={{ pointerEvents: "auto" }}>
+      <div style={centro
+        ? { position: "absolute", left: centro.x, top: centro.y, transform: "translate(-50%, -50%)", pointerEvents: "auto" }
+        : { pointerEvents: "auto" }}>
       <MolduraRolagem
         indice="01"
         codigo="Rolagem"
@@ -149,7 +325,7 @@ export function RollResultModal({
           </div>
         </div>
 
-        <div style={{ borderRadius: 2, padding: 14, background: "#0c1420", border: "1px solid #16233a" }}>
+        <div style={{ borderRadius: 4, padding: 14, background: "#0c1420", border: "1px solid #16233a" }}>
           <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: INK_FAINT }}>
               Pool · <span style={{ color: "#35c7d8" }}>{nd8}d8</span> · maior dado
@@ -272,30 +448,68 @@ const LABEL_DEFESA: Record<TipoDefesa, string> = {
  * em vez de rolar direto.
  */
 export function DefensePickerModal({ onEscolher, onFechar }: { onEscolher: (tipo: TipoDefesa) => void; onFechar: () => void }) {
+  const [selecionada, setSelecionada] = useState<TipoDefesa | null>(null);
+
+  // Os atalhos existem SÓ enquanto esta janela está montada. A captura
+  // interrompe os atalhos do VTT por baixo do modal, e a tecla já segue
+  // para o fluxo real (inclusive o segundo passo de Resistir), sem
+  // exigir o botão do rodapé.
+  useEffect(() => {
+    function escolherPorAtalho(event: KeyboardEvent) {
+      if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      const alvo = event.target;
+      if (alvo instanceof HTMLInputElement || alvo instanceof HTMLTextAreaElement || alvo instanceof HTMLSelectElement) return;
+      const indice = Number(event.key) - 1;
+      const tipo = TIPOS_DEFESA[indice];
+      if (!tipo) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      onEscolher(tipo);
+    }
+    window.addEventListener("keydown", escolherPorAtalho, true);
+    return () => window.removeEventListener("keydown", escolherPorAtalho, true);
+  }, [onEscolher]);
+
   return (
-    <Aux titulo="Rolar defesa" onFechar={onFechar}>
-      <p className="rc-vazio">Escolha a defesa usada nesta reação.</p>
-      <div className="rc-aux-lista">
-        {TIPOS_DEFESA.map((tipo) => (
-          <button key={tipo} type="button" className="rc-aux-item" onClick={() => onEscolher(tipo)}>
-            <span>{LABEL_DEFESA[tipo]}</span>
+    <ConsolePicker
+      titulo="Rolar defesa"
+      id="ID://DEFESA"
+      modulo="MOD.DEFENSE // 05"
+      onFechar={onFechar}
+      rodape={(
+        <>
+          <span className="rc-picker-status">
+            {selecionada ? `Defesa selecionada: ${LABEL_DEFESA[selecionada]}` : "Teclas 1–4 abrem a rolagem"}
+          </span>
+          <button
+            type="button"
+            className="rc-picker-aplicar"
+            disabled={!selecionada}
+            onClick={() => selecionada && onEscolher(selecionada)}
+          >
+            <img className="rc-defesa-escudo" src="/console/icons/shield-defense.svg" alt="" aria-hidden="true" />
+            Rolar defesa
           </button>
+        </>
+      )}
+    >
+      <div className="rc-picker-grade" data-impar="false">
+        {TIPOS_DEFESA.map((tipo, indice) => (
+          <PickerOption
+            key={tipo}
+            indice={indice}
+            nome={LABEL_DEFESA[tipo]}
+            selecionado={selecionada === tipo}
+            atalho={String(indice + 1)}
+            onClick={() => setSelecionada(tipo)}
+          />
         ))}
       </div>
-      <div className="rc-aux-acoes">
-        <button type="button" className="rc-ghost" onClick={onFechar}>
-          Cancelar
-        </button>
-      </div>
-    </Aux>
+    </ConsolePicker>
   );
 }
 
-/**
- * Segundo passo só de "Resistir": a regra deixa a critério do
- * narrador qual perícia se aplica ("firmeza muscular" = Vigor,
- * "agilidade" = Mobilidade) — sem isso não dá pra saber qual rolar.
- */
+/** Segundo passo de Resistir: escolhe a perícia antes de abrir a rolagem. */
 export function ResistirAtributoModal({
   onEscolher,
   onFechar,
@@ -304,22 +518,29 @@ export function ResistirAtributoModal({
   onFechar: () => void;
 }) {
   return (
-    <Aux titulo="Resistir" onFechar={onFechar}>
-      <p className="rc-vazio">O narrador indica qual das duas opções se aplica nesta situação.</p>
-      <div className="rc-aux-lista">
-        <button type="button" className="rc-aux-item" onClick={() => onEscolher("vigor")}>
-          <span>Vigor — robustez, suportar impacto ou pressão física</span>
-        </button>
-        <button type="button" className="rc-aux-item" onClick={() => onEscolher("mobilidade")}>
-          <span>Mobilidade — maleabilidade, evitar o efeito com agilidade</span>
-        </button>
+    <ConsolePicker
+      titulo="Resistir"
+      id="ID://DEFESA"
+      modulo="MOD.DEFENSE // 05"
+      onFechar={onFechar}
+    >
+      <div className="rc-picker-grade" data-colunas="1">
+        <PickerOption
+          indice={0}
+          nome="Vigor (robustez, suportar impacto ou pressão física)"
+          selecionado={false}
+          mostrarMarca={false}
+          onClick={() => onEscolher("vigor")}
+        />
+        <PickerOption
+          indice={1}
+          nome="Mobilidade (maleabilidade, evitar o efeito com agilidade)"
+          selecionado={false}
+          mostrarMarca={false}
+          onClick={() => onEscolher("mobilidade")}
+        />
       </div>
-      <div className="rc-aux-acoes">
-        <button type="button" className="rc-ghost" onClick={onFechar}>
-          Cancelar
-        </button>
-      </div>
-    </Aux>
+    </ConsolePicker>
   );
 }
 
@@ -366,45 +587,169 @@ export function BackpackPickerModal({
 }
 
 /** Janela de ataque — placeholder ligado aos dados reais da arma. */
+/**
+ * JANELA DA ARMA — o que abre ao clicar num slot de arma equipada.
+ *
+ * Duas vistas dentro da MESMA janela (a do Console, `Aux`, a mesma de
+ * Condições e de Rolar defesa — nada de uma moldura nova):
+ *
+ *   FICHA    identidade, trilho de dados (perícia, dano, tipo) e as
+ *            ações — rolar ataque abre o Painel de Rolagem prefilhado,
+ *            que é por onde TODA rolagem do Console passa.
+ *   TROCAR   as armas compatíveis que estão na mochila, mais a saída
+ *            "remover do slot".
+ *
+ * Trocar de arma sem fechar e reabrir é o ponto: o slot de arma é o
+ * lugar onde se troca de arma, e antes era preciso desequipar num
+ * canto para equipar no outro.
+ */
 export function AttackModal({
   instancia,
   modelo,
+  slot,
+  api,
+  onRolarPericia,
   onFechar,
 }: {
   instancia: InventoryItemInstance;
   modelo: ItemContent;
+  slot: BodySlotId;
+  api: ConsoleApi;
+  /** Abre o Painel de Rolagem com a perícia de ataque já escolhida. */
+  onRolarPericia: (periciaId: string) => void;
   onFechar: () => void;
 }) {
+  const [trocando, setTrocando] = useState(false);
+  const candidatos = itensCompativeisComSlot(api.character.inventario ?? [], api.catalogo, slot);
+  const dano = [modelo.danoBase, modelo.subtipoDano ?? modelo.tipoDano].filter(Boolean).join(" ");
+  const rotuloSlot = slot === "arma_primaria" ? "Arma primária" : "Arma secundária";
+
   return (
-    <Aux titulo={`Ataque — ${instancia.itemNome}`} onFechar={onFechar}>
-      <div className="rc-aux-lista">
-        {modelo.danoBase && (
-          <span className="rc-aux-item">
-            <span>Dano</span>
-            <span className="rc-num">
-              {modelo.danoBase} {modelo.tipoDano ?? ""}
-            </span>
+    <Aux
+      titulo={`${instancia.itemNome} — ${rotuloSlot}`}
+      onFechar={onFechar}
+      plano
+      cabecalho={
+        <div className="rc-arma-cab">
+          <span className="rc-arma-cab-id">
+            WEAPON://<b>{instancia.itemNome}</b>
           </span>
-        )}
-        {modelo.periciaAtaque && (
-          <span className="rc-aux-item">
-            <span>Perícia de ataque</span>
-            <span className="rc-num">{modelo.periciaAtaque}</span>
-          </span>
-        )}
-        {modelo.propertySlugs.length > 0 && (
-          <span className="rc-aux-item">
-            <span>Propriedades</span>
-            <span className="rc-num">{modelo.propertySlugs.join(", ")}</span>
-          </span>
-        )}
-      </div>
-      <p className="rc-vazio">A janela de ataque definitiva entra no lugar deste painel.</p>
-      <div className="rc-aux-acoes">
-        <button type="button" className="rc-ghost" onClick={onFechar}>
-          Fechar
-        </button>
-      </div>
+          <button
+            type="button"
+            className="rc-arma-swap"
+            data-ativo={trocando || undefined}
+            onClick={() => setTrocando((v) => !v)}
+          >
+            {trocando ? "Voltar" : "Trocar"}
+          </button>
+          <button type="button" className="rc-arma-fechar" onClick={onFechar} aria-label="Fechar">
+            ×
+          </button>
+        </div>
+      }
+    >
+
+      {!trocando ? (
+        <>
+          <div className="rc-arma-ident">
+            <div>
+              <div className="rc-arma-nome">{instancia.itemNome}</div>
+              <div className="rc-arma-sub">{[modelo.categoria, modelo.raridade].filter(Boolean).join(" // ")}</div>
+            </div>
+            {modelo.propertySlugs.length > 0 && (
+              <span className="rc-arma-tag">{modelo.propertySlugs.join(" · ")}</span>
+            )}
+          </div>
+
+          <div className="rc-arma-trilho">
+            <div className="rc-arma-celula">
+              <span className="rc-arma-rotulo">Perícia</span>
+              <span className="rc-arma-valor">{modelo.periciaAtaque ?? "—"}</span>
+            </div>
+            <div className="rc-arma-celula">
+              <span className="rc-arma-rotulo">Dano</span>
+              <span className="rc-arma-valor">{dano || "—"}</span>
+            </div>
+            <div className="rc-arma-celula">
+              <span className="rc-arma-rotulo">Tipo</span>
+              <span className="rc-arma-valor">{modelo.subtipoDano ?? modelo.tipoDano ?? "—"}</span>
+            </div>
+          </div>
+
+          <div className="rc-arma-acoes">
+            <button
+              type="button"
+              className="rc-arma-acao rc-arma-acao--primaria"
+              disabled={!modelo.periciaAtaque}
+              onClick={() => modelo.periciaAtaque && onRolarPericia(modelo.periciaAtaque)}
+            >
+              <span className="rc-arma-acao-titulo">Rolar ataque</span>
+              <span className="rc-arma-acao-meta">
+                {modelo.periciaAtaque ? `Teste de ${modelo.periciaAtaque}` : "Sem perícia de ataque"}
+              </span>
+            </button>
+            {/* O DANO é leitura, não botão: o Console só sabe rolar
+                atributo, perícia e defesa — não existe rolagem de
+                expressão de dano no motor, e um botão que abrisse o
+                painel com a perícia no lugar do dano prometeria uma
+                coisa e faria outra. */}
+            <div className="rc-arma-acao rc-arma-acao--dado">
+              <span className="rc-arma-acao-titulo">{dano || "—"}</span>
+              <span className="rc-arma-acao-meta">Dano do golpe</span>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="rc-arma-lista">
+            <div className="rc-arma-opcao" data-atual="true">
+              <span className="rc-arma-opcao-info">
+                <span className="rc-arma-opcao-nome">{instancia.itemNome}</span>
+                <span className="rc-arma-opcao-meta">Equipado</span>
+              </span>
+              <button type="button" className="rc-arma-equipar" disabled>
+                Atual
+              </button>
+            </div>
+            {candidatos.map((cand) => {
+              const m = api.catalogo.get(cand.itemSlug);
+              return (
+                <div className="rc-arma-opcao" key={cand.id}>
+                  <span className="rc-arma-opcao-info">
+                    <span className="rc-arma-opcao-nome">{cand.itemNome}</span>
+                    <span className="rc-arma-opcao-meta">
+                      {[m?.danoBase, m?.subtipoDano ?? m?.tipoDano].filter(Boolean).join(" ") || "Na mochila"}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    className="rc-arma-equipar"
+                    onClick={() => {
+                      api.equiparNoSlot(cand.id, slot);
+                      onFechar();
+                    }}
+                  >
+                    Equipar
+                  </button>
+                </div>
+              );
+            })}
+            {candidatos.length === 0 && <p className="rc-vazio">Nenhuma arma compatível na mochila.</p>}
+          </div>
+          <div className="rc-arma-remover">
+            <button
+              type="button"
+              className="rc-arma-desequipar"
+              onClick={() => {
+                api.desequipar(instancia.id);
+                onFechar();
+              }}
+            >
+              Remover do slot
+            </button>
+          </div>
+        </>
+      )}
     </Aux>
   );
 }
@@ -443,41 +788,68 @@ export function ConditionPickerModal({
   onFechar,
 }: {
   disponiveis: { slug: string; nome: string; descricao_curta?: string }[];
-  onAplicar: (c: { slug: string; nome: string }) => void;
+  onAplicar: (condicoes: { slug: string; nome: string }[]) => void;
   onFechar: () => void;
 }) {
-  const [busca, setBusca] = useState("");
-  const filtradas = disponiveis.filter((c) => c.nome.toLowerCase().includes(busca.trim().toLowerCase()));
+  const [selecionadas, setSelecionadas] = useState<Set<string>>(() => new Set());
+  const [aplicando, setAplicando] = useState(false);
+  const exibidas = disponiveis.slice(0, 40);
+  const total = selecionadas.size;
+
+  function alternar(slug: string) {
+    setSelecionadas((atuais) => {
+      const proximas = new Set(atuais);
+      if (proximas.has(slug)) proximas.delete(slug);
+      else proximas.add(slug);
+      return proximas;
+    });
+  }
+
+  function aplicarSelecionadas() {
+    if (aplicando || total === 0) return;
+    setAplicando(true);
+    onAplicar(exibidas.filter((condicao) => selecionadas.has(condicao.slug)));
+  }
 
   return (
-    <Aux titulo="Adicionar condição" onFechar={onFechar}>
-      <input
-        className="rc-aux-item"
-        placeholder="Buscar condição…"
-        value={busca}
-        onChange={(e) => setBusca(e.target.value)}
-        aria-label="Buscar condição"
-      />
-      {filtradas.length === 0 ? (
-        <p className="rc-vazio" style={{ marginTop: 10 }}>
-          {disponiveis.length === 0
-            ? "A Biblioteca de condições não está disponível — nenhuma lista local é usada no lugar."
-            : "Nenhuma condição corresponde à busca."}
-        </p>
+    <ConsolePicker
+      titulo="Adicionar condição"
+      id="ID://ESTADOS"
+      modulo="MOD.STATUS // 02"
+      tamanho="largo"
+      onFechar={onFechar}
+      rodape={(
+        <>
+          <span className="rc-picker-status">
+            {total === 0 ? "Nenhuma condição selecionada" : total === 1 ? "1 condição selecionada" : `${total} condições selecionadas`}
+          </span>
+          <button
+            type="button"
+            className="rc-picker-aplicar"
+            disabled={total === 0 || aplicando}
+            onClick={aplicarSelecionadas}
+          >
+            <Check size={13} aria-hidden="true" />
+            Aplicar
+          </button>
+        </>
+      )}
+    >
+      {exibidas.length === 0 ? (
+        <p className="rc-picker-vazio">A Biblioteca de condições não está disponível — nenhuma lista local é usada no lugar.</p>
       ) : (
-        <div className="rc-aux-lista">
-          {filtradas.slice(0, 40).map((c) => (
-            <button key={c.slug} type="button" className="rc-aux-item" onClick={() => onAplicar(c)}>
-              <span>{c.nome}</span>
-            </button>
+        <div className="rc-picker-grade" data-impar={exibidas.length % 2 !== 0 ? "true" : "false"}>
+          {exibidas.map((condicao, indice) => (
+            <PickerOption
+              key={condicao.slug}
+              indice={indice}
+              nome={condicao.nome}
+              selecionado={selecionadas.has(condicao.slug)}
+              onClick={() => alternar(condicao.slug)}
+            />
           ))}
         </div>
       )}
-      <div className="rc-aux-acoes">
-        <button type="button" className="rc-ghost" onClick={onFechar}>
-          Fechar
-        </button>
-      </div>
-    </Aux>
+    </ConsolePicker>
   );
 }

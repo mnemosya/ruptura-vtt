@@ -8,9 +8,9 @@
  * todo caso — e a pessoa só descobre DEPOIS de subir, porque o lugar
  * onde ela escolheu o arquivo não tem a forma.
  *
- * Então a prévia aqui é recortada por um CÍRCULO, e não por um quadrado
- * "que dá pra imaginar". Um só formato: ficha e mapa pedem a mesma
- * imagem, e a pessoa não deveria enquadrar duas vezes de jeitos
+ * Então a prévia aqui é recortada pela MESMA forma do destino — hoje o
+ * quadrado do módulo biométrico. Um só formato: ficha e mapa pedem a
+ * mesma imagem, e a pessoa não deveria enquadrar duas vezes de jeitos
  * diferentes para o mesmo rosto.
  *
  * ── O QUE ELE DEVOLVE ───────────────────────────────────────────────
@@ -32,6 +32,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { RotateCcw, ZoomIn } from "lucide-react";
+import { useCentroDoConsole } from "./useCentroDoConsole";
 
 /** Lado da janela de enquadramento, em pixels de tela. */
 const JANELA = 240;
@@ -43,8 +44,6 @@ export interface RecorteEscolhido {
 }
 
 /** Cantos em bracket — os mesmos quatro da janela de ferramenta. */
-const CANTOS = ["tl", "tr", "bl", "br"] as const;
-
 /** "RETRATO-MARA.PNG · 132 KB" — nome (cortado se for longo) e peso. */
 function descricaoDoArquivo(arquivo: File): string {
   const nome = arquivo.name.length > 28 ? `${arquivo.name.slice(0, 25)}…` : arquivo.name;
@@ -83,21 +82,27 @@ function descricaoDoArquivo(arquivo: File): string {
  * janela (o `HudCursor` continua desenhando o anél por baixo).
  */
 export function JanelaRecorte({
-  erro, ...props
+  erro, centralizarNoConsole = false, ...props
 }: Parameters<typeof RecorteImagem>[0] & {
   /** Falha do envio, mostrada no rodapé sem tirar a janela do lugar. */
   erro?: string | null;
+  /** Na ficha, ancora a janela no centro visual do Console; no VTT continua no centro da viewport. */
+  centralizarNoConsole?: boolean;
 }) {
   const titulo = "Enquadrar o avatar";
+  const centroConsole = useCentroDoConsole();
   const [montado, setMontado] = useState(false);
   useEffect(() => { setMontado(true); }, []);
   if (!montado) return null;
 
   return createPortal(
-    <div className="rc-cursor-scope rc-recorte-janela" role="dialog" aria-modal="true" aria-label={titulo}>
-      {CANTOS.map((c) => (
-        <span key={c} className="rc-recorte-janela__canto" data-canto={c} aria-hidden="true" />
-      ))}
+    <div
+      className="rc-cursor-scope rc-recorte-janela"
+      role="dialog"
+      aria-modal="true"
+      aria-label={titulo}
+      style={centralizarNoConsole && centroConsole ? { left: centroConsole.x, top: centroConsole.y } : undefined}
+    >
       <span className="rc-recorte-janela__espinha" aria-hidden="true">
         <span className="rc-recorte-janela__indice">::</span>
         <span className="rc-recorte-janela__codigo">Avatar</span>
@@ -109,8 +114,8 @@ export function JanelaRecorte({
           {/* A linha de modo das janelas de ferramenta diz o ESTADO
               ("pronto", "medindo"). Aqui o estado útil é QUAL arquivo
               está na mesa — nome e peso, que é o que a pessoa precisa
-              para saber se pegou o arquivo certo. "Círculo do avatar"
-              só repetia o que a própria prévia mostra. */}
+              para saber se pegou o arquivo certo. Descrever a forma do
+              recorte só repetiria o que a própria prévia mostra. */}
           <p className="rc-recorte-janela__modo">{descricaoDoArquivo(props.arquivo)}</p>
         </header>
         <RecorteImagem {...props} />
@@ -234,10 +239,12 @@ export function RecorteImagem({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={url} alt="" style={estiloImagem} draggable={false} />
         </div>
-        <div
-          className="rc-recorte__dentro"
-          style={{ clipPath: "circle(50% at 50% 50%)" }}
-        >
+        {/* QUADRADO, como o destino. A prévia é recortada pela MESMA
+            forma que o avatar tem na ficha — era um círculo enquanto o
+            quadro do avatar era heptagonal, e desde que ele virou o
+            leitor quadrado do módulo biométrico o círculo passou a
+            mentir sobre o que seria cortado. */}
+        <div className="rc-recorte__dentro">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={url} alt="Prévia do enquadramento" style={estiloImagem} draggable={false} />
         </div>

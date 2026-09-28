@@ -32,13 +32,16 @@
 import assert from "node:assert/strict";
 import { chromium, type Page } from "playwright";
 import { BASE_URL, SESSION_FILE, assertAdminSessionValid, requireSessaoSalva, sessaoSalvaExiste } from "./authSession";
+import { limparEAnunciar } from "./residuoDeConteudo";
+import { salvarRascunho, aceitarDialogos } from "./rascunhoDeEdicao";
 
 async function excluirRascunhoSeExistir(page: Page, draftId: string): Promise<void> {
   const resp = await page.goto(`${BASE_URL}/admin/biblioteca/rascunhos/${draftId}`, { waitUntil: "domcontentloaded" });
   if (!resp || resp.status() === 404) return;
-  page.on("dialog", (d) => d.accept());
+  aceitarDialogos(page);
   const botao = page.locator('[data-testid="rascunho-excluir"]');
-  if ((await botao.count()) > 0) await botao.click();
+  if ((await botao.count()) === 0) return;
+  await botao.click();
 }
 
 async function main(): Promise<void> {
@@ -46,6 +49,7 @@ async function main(): Promise<void> {
     requireSessaoSalva();
     return;
   }
+  await limparEAnunciar();
   const browser = await chromium.launch({ headless: true });
   const draftsCriados: string[] = [];
 
@@ -68,7 +72,19 @@ async function main(): Promise<void> {
     await page.locator('[data-testid="runa-slot-arma"]').check();
     await page.locator('[data-testid="novo-efeito-tipo-rune"]').selectOption("modificar_teste");
     await page.locator('[data-testid="novo-efeito-adicionar-rune"]').click();
-    await page.locator('[data-testid="rascunho-salvar"]').click();
+    // Gatilho e alvo são obrigatórios em QUALQUER efeito. Sem eles o
+    // salvamento é RECUSADO — e a falha aparecia dois passos adiante,
+    // com a cara de "o campo não persistiu", acusando o app de perder
+    // dados que ele nunca chegou a aceitar.
+    await page.locator('[data-testid="efeito-gatilho"]').selectOption("ao_usar");
+    await page.locator('[data-testid="efeito-alvo"]').selectOption("alvo_principal");
+    // `modificar_teste` exige valor numérico no modo "bonus" e ao menos
+    // um alvo (tag, perícia ou ação). Sem isso o salvamento é recusado —
+    // e a recusa aparecia depois como "raridade não persistiu", que
+    // acusava um campo que nada tinha a ver com o problema.
+    await page.locator('[data-testid="modificar-teste-valor"]').fill("1");
+    await page.locator('[data-testid="modificar-teste-pericia"]').selectOption({ index: 1 });
+    await salvarRascunho(page);
     await page.reload({ waitUntil: "domcontentloaded" });
     assert.equal(await page.locator('[data-testid="runa-raridade"]').inputValue(), "raro", "Raridade deveria persistir após recarregar.");
     console.log("1-5. Runa: criada, raridade/slot editados, efeito adicionado, persiste após reload — OK");

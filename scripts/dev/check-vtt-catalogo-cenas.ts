@@ -133,11 +133,11 @@ async function main() {
   const jogadoresCriados: string[] = [];
 
   try {
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
 
     console.log("\n— A janela —");
-    const botao = page.locator('[data-testid="barra-cenas"]');
+    const botao = page.locator('[data-testid="cena-chip"]');
     criterio("o narrador tem o botão do catálogo", await botao.count() === 1);
     await botao.click();
     await page.waitForSelector('[data-testid="janela-cenas"]', { timeout: 5000 });
@@ -190,7 +190,7 @@ async function main() {
     criterio("e o palco continua onde estava", await palcoDoBanco(campaignId) === doca);
 
     console.log("\n— Criar —");
-    await page.locator('[data-testid="barra-cenas"]').click();
+    await page.locator('[data-testid="cena-chip"]').click();
     await page.waitForSelector('[data-testid="cenas-lista"]', { timeout: 5000 });
     await page.locator('[data-testid="cena-nova"]').click();
     // "Nova cena" virou menu: a criação do zero é o primeiro item.
@@ -293,9 +293,18 @@ async function main() {
     await page.locator('[data-testid="cena-nova-do-zero"]').click();
     await page.locator('[data-testid="cena-nova-nome"]').fill("Cena Que Não Nasce");
     await page.locator('[data-testid="cena-nova-confirmar"]').click();
+    // O erro aparece NA FOLHA de nova cena, não no catálogo.
+    //
+    // O check esperava `cenas-erro`, que é o estado de erro do
+    // CATÁLOGO (recarregar a lista falhou). A rejeição ao criar cai em
+    // `setErroNova`, e isso é desenhado em dois lugares: dentro da
+    // folha (`.rv-cena-estado[data-tipo="erro"]`) e como aviso
+    // flutuante (`.rv-gav-erro-flutuante`). Esperar o elemento errado
+    // fazia um `catch` que existe e funciona parecer ausente.
+    const alvoErro = '.rv-gav-erro-flutuante, .rv-cena-estado[data-tipo="erro"], [data-testid="cenas-erro"]';
     let erroVisivel = false;
     try {
-      await page.waitForSelector('[data-testid="cenas-erro"]', { timeout: 10000 });
+      await page.waitForSelector(alvoErro, { timeout: 10000 });
       erroVisivel = true;
     } catch { /* segue como falha */ }
     criterio("a rejeição vira mensagem na janela", erroVisivel);
@@ -323,10 +332,13 @@ async function main() {
       expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
     }]);
     const pageJog = await ctxJog.newPage();
-    await pageJog.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await pageJog.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await pageJog.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
+    // O jogador TEM o chip da cena ativa — como texto. O que ele não
+    // tem é a versão clicável: `list_vtt_scenes` não conta a ele que
+    // existem outras cenas, então não há catálogo pra abrir.
     criterio("o jogador não tem o botão do catálogo",
-      await pageJog.locator('[data-testid="barra-cenas"]').count() === 0);
+      await pageJog.locator('button[data-testid="cena-chip"]').count() === 0);
     criterio("e continua na cena apresentada, não na do narrador",
       (await pageJog.textContent("body"))?.includes("Doca Norte") === true);
     await ctxJog.close();

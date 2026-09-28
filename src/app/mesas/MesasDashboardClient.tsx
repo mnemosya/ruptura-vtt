@@ -12,13 +12,10 @@
  * capa e cor de acento não existem no banco e por isso não foram
  * fingidas aqui.
  *
- * Exceção deliberada, só no card em destaque: status "ONLINE" (sempre
- * mostrado ali, incondicional), contagem online/total e descrição da
- * campanha usam MOCKS temporários (`OnlineTag`/`mockOnlineCount`/
- * `mockCampaignDescription` em `_global/parts.tsx`) — pedido explícito
- * do usuário para a interface bater com o design antes do backend
- * (presença real, coluna de descrição) existir. Ver o comentário na
- * origem dessas funções.
+ * Hero e atividade derivam de campaign_online_sessions, e a contagem de
+ * participantes vem dos batimentos autenticados (0139) — conexão real,
+ * nunca número simulado. Quando a consulta falha, o hero diz que não
+ * sabe; "não deu para saber" jamais é exibido como "não tem ninguém".
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -26,17 +23,25 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createCampaign } from "../../lib/table/storage";
 import type { Campaign } from "../../lib/table";
+import type { OnlineSession } from "../../lib/campaign/onlineSessionActions";
 import { usePushToast } from "./_global/GlobalShell";
 import { usePresence } from "../_design/usePresence";
 import {
   DecoBottom, DecoTop, OnlineTag, PageHead, RoleBadge, SectionHead,
-  campaignCoverStyle, mockCampaignDescription, mockOnlineCount, relativeTime,
+  campaignCoverStyle, relativeTime,
 } from "./_global/parts";
+import { textoDeParticipantes } from "./_global/participantes";
 import {
   Activity, AlertTriangle, ChevronRight, Clock, Plus, RotateCw, ScrollText, Search, Spinner, User, Users, X,
 } from "../_design/icons";
 
 export interface CampaignCardData {
+  latestSession?: OnlineSession | null;
+  sessionError?: string;
+  /** Narrador com batimento recente (2 min). Ausente quando a leitura falhou. */
+  narratorOnline?: boolean;
+  /** Jogadores ativos com batimento recente, sem contar o narrador. */
+  playerCount?: number;
   campaign: Campaign;
   role: "narrator" | "player";
   /** Só relevante para role="player" — quantos personagens a conta controla nesta campanha. null para narrador (não se aplica). */
@@ -60,11 +65,18 @@ const FILTERS: { id: Filter; label: string }[] = [
 export default function MesasDashboardClient({
   campanhasIniciais,
   errorInicial,
+  currentUserId,
   currentUserName,
+  presencaDaRede,
+  presencaIndisponivel,
 }: {
   campanhasIniciais: CampaignCardData[];
   errorInicial: string | null;
+  currentUserId: string;
   currentUserName: string;
+  /** Presença real por conta. Vazio quando a leitura falhou. */
+  presencaDaRede: Record<string, boolean>;
+  presencaIndisponivel: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -126,7 +138,22 @@ export default function MesasDashboardClient({
     });
   }, [campanhas, filter, search]);
 
-  const [destaque, ...resto] = filtradas;
+  const destaque = [...filtradas]
+    .filter((item) => !item.sessionError && item.latestSession?.ended_at === null)
+    .sort((a, b) => b.latestSession!.started_at.localeCompare(a.latestSession!.started_at) || a.campaign.id.localeCompare(b.campaign.id))[0];
+  const resto = filtradas.filter((item) => item.campaign.id !== destaque?.campaign.id);
+
+  useEffect(() => {
+    const refresh = () => { if (document.visibilityState === "visible") router.refresh(); };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    const timer = window.setInterval(refresh, 30000);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+      window.clearInterval(timer);
+    };
+  }, [router]);
 
   function handleCreated(data: CampaignCardData) {
     setCampanhas((prev) => [data, ...prev]);
@@ -236,6 +263,7 @@ export default function MesasDashboardClient({
       {!error && filtradas.length > 0 && (
         <div className="ra2-home-cols">
           <div className="ra2-col">
+            {campanhas.some((item) => item.sessionError) && <p role="status" className="ra-muted">Não foi possível atualizar o estado de algumas sessões. Tentaremos novamente automaticamente.</p>}
             {destaque && <FeaturedCampaign data={destaque} />}
             {resto.length > 0 && (
               <>
@@ -259,7 +287,8 @@ export default function MesasDashboardClient({
 
           <aside className="ra2-side" aria-label="Painel lateral">
             <ActivityPanel campanhas={campanhas} />
-            <NetworkPanel campanhas={campanhas} currentUserName={currentUserName} />
+            <NetworkPanel campanhas={campanhas} currentUserId={currentUserId} currentUserName={currentUserName}
+              presenca={presencaDaRede} indisponivel={presencaIndisponivel} />
           </aside>
         </div>
       )}
@@ -276,7 +305,10 @@ export default function MesasDashboardClient({
 
 // ── Destaque ────────────────────────────────────────────────────────
 function FeaturedCampaign({ data }: { data: CampaignCardData }) {
-  const { campaign, role, memberCount } = data;
+  const { campaign, role, narratorOnline, playerCount } = data;
+  const sabido = narratorOnline !== undefined && playerCount !== undefined;
+  const total = sabido ? playerCount + (narratorOnline ? 1 : 0) : null;
+  const descricao = textoDeParticipantes(narratorOnline, playerCount);
   return (
     <section className="ra2-featured" aria-label="Campanha em destaque" data-testid="dash-mesa-destaque">
       <DecoTop />
@@ -290,32 +322,22 @@ function FeaturedCampaign({ data }: { data: CampaignCardData }) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 560 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {/* MOCK temporário — o card em destaque sempre mostra "online"
-                (é o que a referência de design mostra); não depende da
-                contagem do chip abaixo, que pode legitimamente ser 0/0
-                numa campanha nova. Ver comentário na origem de
-                mockOnlineCount em _global/parts.tsx (sem Presence real
-                ainda). */}
             <OnlineTag />
             <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
               <h2 className="ra2-featured-title">{campaign.name}</h2>
-              {memberCount !== null && (
-                <span className="ra2-count-chip">
-                  <User size={12} strokeWidth={1.5} />
-                  <span style={{ color: "#cfeaf6" }}>{mockOnlineCount(campaign.id, memberCount)}</span>
-                  <em>/{memberCount}</em>
-                </span>
-              )}
+              <span className="ra2-featured-pessoas" data-testid="dash-destaque-participantes"
+                title={descricao} aria-label={descricao}>
+                <Users size={14} strokeWidth={1.4} aria-hidden="true" />
+                <span aria-hidden="true">{sabido ? total : "—"}</span>
+              </span>
             </div>
           </div>
-          {/* MOCK temporário — `campaigns` não tem coluna de descrição
-              ainda; ver mockCampaignDescription em _global/parts.tsx. */}
-          <p className="ra2-featured-desc">{mockCampaignDescription()}</p>
+          <p className="ra2-featured-desc">Sessão iniciada em <time dateTime={data.latestSession!.started_at}>{new Date(data.latestSession!.started_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</time></p>
         </div>
 
         <div style={{ maxWidth: 280, marginTop: "auto" }}>
           <Link
-            href={`/mesas/${campaign.id}/vtt`}
+            href={`/mesas/${campaign.id}`}
             data-testid={`dash-abrir-${campaign.id}`}
             className="ra2-primary ra2-btn-block"
             aria-label={`${role === "narrator" ? "Entrar na" : "Abrir"} campanha ${campaign.name}`}
@@ -351,7 +373,7 @@ function CampaignCard({ data }: { data: CampaignCardData }) {
             </span>
           </div>
           <Link
-            href={`/mesas/${campaign.id}/vtt`}
+            href={`/mesas/${campaign.id}`}
             data-testid={`dash-abrir-${campaign.id}`}
             className="ra2-primary ra2-btn-block"
             aria-label={`${role === "narrator" ? "Entrar na" : "Abrir"} campanha ${campaign.name}`}
@@ -369,8 +391,8 @@ function CampaignCard({ data }: { data: CampaignCardData }) {
 // ── Painéis laterais ────────────────────────────────────────────────
 function ActivityPanel({ campanhas }: { campanhas: CampaignCardData[] }) {
   const rows = useMemo(
-    () => [...campanhas]
-      .sort((a, b) => (b.campaign.updated_at ?? "").localeCompare(a.campaign.updated_at ?? ""))
+    () => campanhas.filter((item) => !item.sessionError && item.latestSession)
+      .sort((a, b) => b.latestSession!.started_at.localeCompare(a.latestSession!.started_at) || a.campaign.id.localeCompare(b.campaign.id))
       .slice(0, 4),
     [campanhas],
   );
@@ -391,7 +413,7 @@ function ActivityPanel({ campanhas }: { campanhas: CampaignCardData[] }) {
                 <span style={{ paddingTop: 6 }}><span className="ra-diamond" aria-hidden="true" /></span>
                 <div className="ra2-panel-row-main">
                   <strong title={row.campaign.name}>{row.campaign.name}</strong>
-                  <span>última sessão {relativeTime(row.campaign.updated_at)}</span>
+                  <span>Última sessão: <time dateTime={row.latestSession!.started_at}>{new Date(row.latestSession!.started_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</time></span>
                 </div>
               </div>
             </div>
@@ -403,12 +425,19 @@ function ActivityPanel({ campanhas }: { campanhas: CampaignCardData[] }) {
   );
 }
 
-function NetworkPanel({ campanhas, currentUserName }: { campanhas: CampaignCardData[]; currentUserName: string }) {
+function NetworkPanel({ campanhas, currentUserId, currentUserName, presenca, indisponivel }: {
+  campanhas: CampaignCardData[];
+  currentUserId: string;
+  currentUserName: string;
+  presenca: Record<string, boolean>;
+  indisponivel: boolean;
+}) {
   const people = useMemo(() => {
     const map = new Map<string, string>();
-    campanhas.forEach((c) => c.people.forEach((p) => map.set(p.userId, p.name)));
+    // A própria conta já é a primeira linha; sem isto o narrador apareceria duas vezes.
+    campanhas.forEach((c) => c.people.forEach((p) => { if (p.userId !== currentUserId) map.set(p.userId, p.name); }));
     return Array.from(map.entries()).map(([userId, name]) => ({ userId, name }));
-  }, [campanhas]);
+  }, [campanhas, currentUserId]);
 
   const somenteJogador = campanhas.length > 0 && campanhas.every((c) => c.role === "player");
 
@@ -417,27 +446,34 @@ function NetworkPanel({ campanhas, currentUserName }: { campanhas: CampaignCardD
       <div className="ra2-panel-title">
         <Users size={12} strokeWidth={1.4} /> Rede
       </div>
+      {/* Cada pessoa vira um link de verdade para o perfil: dentro de
+          /mesas a navegação é interceptada e abre em modal, e o mesmo
+          endereço colado numa aba nova abre a página cheia. A linha
+          inteira é o alvo, então Enter e Espaço funcionam sem
+          `onKeyDown` improvisado. */}
       <div className="ra2-people">
-        <div className="ra2-person">
-          <span className="ra2-person-avatar" aria-hidden="true"><User size={14} strokeWidth={1.3} /></span>
-          <div className="ra2-person-main">
-            <span className="ra2-person-name">{currentUserName}</span>
-            <span className="ra-online">
-              <span className="ra-online-dot" aria-hidden="true" />
-              <span className="ra-online-txt">Online</span>
-            </span>
-          </div>
-        </div>
-
-        {people.map((p) => (
-          <div key={p.userId} className="ra2-person ra2-person--off">
-            <span className="ra2-person-avatar" aria-hidden="true"><User size={14} strokeWidth={1.3} /></span>
-            <div className="ra2-person-main">
-              <span className="ra2-person-name">{p.name}</span>
-              <span className="ra2-person-off">offline</span>
-            </div>
-          </div>
-        ))}
+        {[{ userId: currentUserId, name: currentUserName, eu: true },
+          ...people.map((p) => ({ ...p, eu: false }))].map((p) => {
+          const online = presenca[p.userId] === true;
+          return (
+            <Link key={p.userId} href={`/perfil?userId=${p.userId}`}
+              className={`ra2-person ra2-person--link${online ? "" : " ra2-person--off"}`}
+              data-testid={p.eu ? "rede-pessoa-eu" : "rede-pessoa"}>
+              <span className="ra2-person-avatar" aria-hidden="true"><User size={14} strokeWidth={1.3} /></span>
+              <div className="ra2-person-main">
+                <span className="ra2-person-name">{p.name}{p.eu ? " (você)" : ""}</span>
+                {indisponivel
+                  ? <span className="ra2-person-off">status indisponível</span>
+                  : online
+                    ? <span className="ra-online">
+                        <span className="ra-online-dot" aria-hidden="true" />
+                        <span className="ra-online-txt">Online</span>
+                      </span>
+                    : <span className="ra2-person-off">offline</span>}
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
       {people.length === 0 && (

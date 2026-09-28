@@ -76,7 +76,7 @@ async function main() {
     const erros: string[] = [];
     page.on("console", (m) => { if (m.type() === "error" && !m.text().includes("favicon")) erros.push(m.text()); });
 
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
 
     // Abre o Console pelo diretório.
@@ -143,9 +143,17 @@ async function main() {
     // sozinho. Antes disso a alteração ficava só no estado do React e
     // sumia — enquanto o log de evolução em `table_logs` seguia
     // registrando uma mudança que o personagem não tinha.
-    const { data: gravado } = await admin
-      .from("characters").select("payload").eq("id", p1).maybeSingle();
-    const payload = (gravado?.payload ?? {}) as { atributos?: Record<string, number>; pericias?: Record<string, number> };
+    // A gravação sai ao SAIR do modo evolução, e é uma ida ao
+    // servidor — ler o banco no tique seguinte ao clique é corrida.
+    // Espera o valor chegar; se não chegar, o critério reprova igual,
+    // e aí é defeito de gravação de verdade.
+    let payload: { atributos?: Record<string, number>; pericias?: Record<string, number> } = {};
+    for (let i = 0; i < 40; i++) {
+      const { data } = await admin.from("characters").select("payload").eq("id", p1).maybeSingle();
+      payload = (data?.payload ?? {}) as { atributos?: Record<string, number>; pericias?: Record<string, number> };
+      if (payload.atributos?.corpo === 4 && payload.pericias?.balistica === 3) break;
+      await page.waitForTimeout(250);
+    }
     ok(
       "8 (a evolução foi GRAVADA no banco, não só na tela)",
       payload.atributos?.corpo === 4 && payload.pericias?.balistica === 3,

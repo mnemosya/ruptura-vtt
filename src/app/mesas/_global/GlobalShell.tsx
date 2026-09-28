@@ -28,9 +28,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LinkPending, NavPendingProvider } from "../../_design/NavPending";
 import { BootMinDurationOverlay } from "../../_boundaries/BootMinDurationOverlay";
+import { setAppearOffline } from "../../../lib/campaign/presencePreferenceActions";
 import { signOut } from "../../../lib/auth/actions";
 import {
-  AlertTriangle, BookText, CheckCircle, ChevronDown, LayoutGrid, LogOut, Menu,
+  AlertTriangle, BookText, CheckCircle, ChevronDown, Eye, EyeOff, LayoutGrid, LogOut, Menu,
   PanelLeftClose, PanelLeftOpen, Plus, Spinner, Ticket, User, UserCog, Users, X,
 } from "../../_design/icons";
 import "../../_design/app.css";
@@ -79,7 +80,45 @@ export function usePushToast() {
  * implementação paralela — o Console não passa por `GlobalShell`, mas
  * precisa do mesmo cursor HUD do resto do VTT.
  */
+/**
+ * SÓ UM cursor HUD desenha por vez, em toda a aplicação.
+ *
+ * O Console monta o seu próprio porque também roda sozinho em `/ficha`,
+ * onde não há casca de campanha. Aberto dentro da campanha — ou sobre
+ * Personagens, pelo modal interceptado — já existe outro, e dois anéis
+ * perseguindo o mesmo ponteiro com a mesma interpolação aparecem como
+ * cursor duplicado.
+ *
+ * O registro é de MÓDULO, e não um contexto de React, porque o modal de
+ * ficha vive no slot paralelo `@modal`: ele não é descendente da casca
+ * que desenhou o primeiro cursor, e nenhum contexto desceria até lá.
+ *
+ * Quem chega primeiro desenha. Se esse sair, os demais são avisados e o
+ * próximo assume — senão fechar a casca deixaria todo mundo sem cursor.
+ */
+const instanciasDeCursor: symbol[] = [];
+const ouvintesDeCursor = new Set<() => void>();
+function avisarCursores() { for (const f of [...ouvintesDeCursor]) f(); }
+
 export function HudCursor({ enabled }: { enabled: boolean }) {
+  const id = useRef<symbol>(undefined as unknown as symbol);
+  if (id.current === undefined) id.current = Symbol("hud-cursor");
+  const [desenha, setDesenha] = useState(false);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const meu = id.current;
+    instanciasDeCursor.push(meu);
+    const recalcular = () => setDesenha(instanciasDeCursor[0] === meu);
+    ouvintesDeCursor.add(recalcular);
+    avisarCursores();
+    return () => {
+      ouvintesDeCursor.delete(recalcular);
+      const i = instanciasDeCursor.indexOf(meu);
+      if (i >= 0) instanciasDeCursor.splice(i, 1);
+      avisarCursores();
+    };
+  }, [enabled]);
   const dotRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
   const mouse = useRef({ x: -300, y: -300 });
@@ -88,14 +127,14 @@ export function HudCursor({ enabled }: { enabled: boolean }) {
   const hovering = useRef(false);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !desenha) return;
     if (!window.matchMedia("(pointer: fine)").matches) return;
 
     const onMove = (e: MouseEvent) => {
       mouse.current = { x: e.clientX, y: e.clientY };
       if (dotRef.current) dotRef.current.style.transform = `translate(${e.clientX - 3}px, ${e.clientY - 3}px)`;
       const target = e.target as HTMLElement | null;
-      const hoverable = target?.closest?.("button, a, input, select, textarea, [role='tab'], [role='button'], label");
+      const hoverable = target?.closest?.("button, a, input, select, textarea, [role='tab'], [role='button'], [data-cursor-action='true'], label");
       if (hoverable && !hovering.current) {
         hovering.current = true;
         ringRef.current?.classList.add("ra-cursor-ring--hover");
@@ -110,8 +149,16 @@ export function HudCursor({ enabled }: { enabled: boolean }) {
       if (ringRef.current) ringRef.current.style.transform = `translate(${ring.current.x - 17}px, ${ring.current.y - 17}px)`;
       raf.current = requestAnimationFrame(tick);
     };
-    const onDown = () => ringRef.current?.classList.add("ra-cursor-ring--click");
-    const onUp = () => ringRef.current?.classList.remove("ra-cursor-ring--click");
+    // O anel e o PONTO viram âmbar juntos: o clique é um só gesto, e o
+    // ponto é a parte do cursor que se olha.
+    const onDown = () => {
+      ringRef.current?.classList.add("ra-cursor-ring--click");
+      dotRef.current?.classList.add("ra-cursor-dot--click");
+    };
+    const onUp = () => {
+      ringRef.current?.classList.remove("ra-cursor-ring--click");
+      dotRef.current?.classList.remove("ra-cursor-dot--click");
+    };
 
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mousedown", onDown);
@@ -123,9 +170,9 @@ export function HudCursor({ enabled }: { enabled: boolean }) {
       window.removeEventListener("mouseup", onUp);
       cancelAnimationFrame(raf.current);
     };
-  }, [enabled]);
+  }, [enabled, desenha]);
 
-  if (!enabled) return null;
+  if (!enabled || !desenha) return null;
   return (
     <>
       <div ref={dotRef} className="ra-cursor-dot" aria-hidden="true" />
@@ -133,6 +180,7 @@ export function HudCursor({ enabled }: { enabled: boolean }) {
     </>
   );
 }
+
 
 function useParallax(ref: React.RefObject<HTMLDivElement | null>, strength: number, enabled: boolean) {
   useEffect(() => {
@@ -181,10 +229,13 @@ function rotaAtiva(pathname: string): NavKey | null {
 export function GlobalShell({
   userEmail,
   displayName,
+  aparecerOfflineInicial = false,
   children,
 }: {
   userEmail: string;
   displayName: string | null;
+  /** "Aparecer offline" lido no servidor — é preferência de CONTA, não deste navegador. */
+  aparecerOfflineInicial?: boolean;
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -195,6 +246,8 @@ export function GlobalShell({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [aparecerOffline, setAparecerOffline] = useState(aparecerOfflineInicial);
+  const [presencaOcupada, setPresencaOcupada] = useState(false);
   const [prefs, setPrefs] = useState<VisualPrefs>({ reduceMotion: false, highContrast: false });
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastSeq = useRef(0);
@@ -259,6 +312,28 @@ export function GlobalShell({
   // Navegar fecha o drawer (o Link já trocou a rota).
   useEffect(() => { setDrawerOpen(false); setMenuOpen(false); }, [pathname]);
 
+  /**
+   * A preferência é da CONTA, não deste navegador — por isso não vai
+   * para o localStorage junto das preferências visuais, e por isso um
+   * `router.refresh()` no fim: as projeções de presença são calculadas
+   * no servidor e precisam ser recalculadas com o novo valor.
+   */
+  async function handleAparecerOffline() {
+    if (presencaOcupada) return;
+    const proximo = !aparecerOffline;
+    setPresencaOcupada(true);
+    setAparecerOffline(proximo); // otimista: o menu responde na hora
+    const resultado = await setAppearOffline(proximo);
+    setPresencaOcupada(false);
+    if (!resultado.ok) {
+      setAparecerOffline(!proximo);
+      pushToast("error", resultado.error);
+      return;
+    }
+    pushToast("success", proximo ? "Você está aparecendo offline." : "Você voltou a aparecer online.");
+    router.refresh();
+  }
+
   async function handleSignOut() {
     setSigningOut(true);
     await signOut();
@@ -296,10 +371,6 @@ export function GlobalShell({
             <div className="ra-bg-grid" />
             <div className="ra-bg-vignette" />
           </div>
-          <div className="ra-vp-corner ra-vp-tl" aria-hidden="true" />
-          <div className="ra-vp-corner ra-vp-tr" aria-hidden="true" />
-          <div className="ra-vp-corner ra-vp-bl" aria-hidden="true" />
-          <div className="ra-vp-corner ra-vp-br" aria-hidden="true" />
 
           <div className="ra2-shell">
             {/*
@@ -329,7 +400,9 @@ export function GlobalShell({
                   ) : (
                     <span className="ra2-brand-full">
                       <span className="ra2-brand-name">RUPTURA</span>
-                      <span className="ra2-brand-sub" style={{ display: "block" }}>VTT ENGINE v0.0.1</span>
+                      <span className="ra2-brand-sub" style={{ display: "block" }}>
+                        VTT ENGINE v{process.env.NEXT_PUBLIC_APP_VERSION ?? "0.0.0"}
+                      </span>
                     </span>
                   )}
                 </Link>
@@ -418,9 +491,12 @@ export function GlobalShell({
                   >
                     <span className="ra2-profile-avatar" aria-hidden="true"><User size={15} strokeWidth={1.4} /></span>
                     <span className="ra2-profile-name">{shortName}</span>
-                    <span className="ra-online">
+                    {/* A etiqueta era "Online" fixo — dizia a mesma coisa
+                        para quem tinha acabado de se esconder. */}
+                    <span className="ra-online" data-offline={aparecerOffline || undefined}
+                      data-testid="topbar-presenca">
                       <span className="ra-online-dot" aria-hidden="true" />
-                      <span className="ra-online-txt">Online</span>
+                      <span className="ra-online-txt">{aparecerOffline ? "Offline" : "Online"}</span>
                     </span>
                     <ChevronDown size={14} className={`ra2-chevron${menuOpen ? " ra2-chevron--up" : ""}`} />
                   </button>
@@ -440,6 +516,19 @@ export function GlobalShell({
                       <Link href="/mesas/conta" role="menuitem" className="ra-menu-item" data-testid="account-nav-conta">
                         <UserCog size={15} /> Conta e preferências
                       </Link>
+                      <button
+                        type="button"
+                        role="menuitemcheckbox"
+                        aria-checked={aparecerOffline}
+                        className="ra-menu-item"
+                        data-testid="account-aparecer-offline"
+                        onClick={handleAparecerOffline}
+                        disabled={presencaOcupada}
+                      >
+                        {aparecerOffline ? <EyeOff size={15} /> : <Eye size={15} />}
+                        Aparecer offline
+                        <span className="ra-menu-estado" aria-hidden="true">{aparecerOffline ? "Ligado" : "Desligado"}</span>
+                      </button>
                       <button
                         type="button"
                         role="menuitem"

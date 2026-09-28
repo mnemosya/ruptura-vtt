@@ -17,6 +17,8 @@ import { createClient } from "@supabase/supabase-js";
 import type { ConsoleMessage } from "playwright";
 import { chromium, type BrowserContext, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
+import { garantirTokenAlcancavel, garantirAlcancavel } from "./painelDaSessao";
+import { continuarParaPosicionar, escolherTamanhoDoToken } from "./gerenciadorDeToken";
 
 loadDotenv({ path: ".env.local" });
 function requireEnv(nome: string): string {
@@ -138,7 +140,7 @@ async function main() {
   const { page: narradorPage, close: closeNarrador } = await contextoDe(narradorEmail!, narradorSenha!);
   const errosNarrador: string[] = [];
   narradorPage.on("console", (m) => { if (erroRelevante(m)) errosNarrador.push(m.text().slice(0, 600)); });
-  await narradorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await narradorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await narradorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
   {
     const { data } = await admin.from("vtt_scenes").select("id").eq("campaign_id", campaignId).maybeSingle();
@@ -149,7 +151,7 @@ async function main() {
   const { page: jogadorPage, close: closeJogador } = await contextoDe(jogadorEmail!, jogadorSenha!);
   const errosJogador: string[] = [];
   jogadorPage.on("console", (m) => { if (erroRelevante(m)) errosJogador.push(m.text().slice(0, 600)); });
-  await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
 
   // --- 1. Criar: narrador cria um token pelo menu contextual — jogador vê aparecer sem reload ---
@@ -164,14 +166,23 @@ async function main() {
     // formulário e abre o fantasma no mapa — a criação de verdade só
     // acontece no clique da célula, abaixo.
     await narradorPage.locator('.rv-gerenciador-token .rv-btn--pri', { hasText: "Continuar para posicionar" }).click();
-    await narradorPage.waitForSelector(".rv-escolha-posicao", { timeout: 5000 });
     await narradorPage.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 });
     await narradorPage.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2, { steps: 3 });
     await narradorPage.waitForTimeout(150);
     await narradorPage.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
-    await narradorPage.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 5000 });
-    const { data } = await admin.from("vtt_tokens").select("id").eq("campaign_id", campaignId).eq("nome", "Sentinela Sync").maybeSingle();
-    tokenId = data?.id ?? "";
+    // ESPERA a linha existir, em vez de ler uma vez logo depois do
+    // clique. O clique só DISPARA a criação; ler o banco no instante
+    // seguinte é uma corrida, e quando ela era perdida `tokenId` ficava
+    // vazio — e aí todos os critérios seguintes mediam `eq("id", "")`,
+    // reprovando com "antes=null, depois=null" como se o produto não
+    // tivesse gravado nada. Seis critérios com a cara de defeito de
+    // sincronização, por uma leitura apressada aqui.
+    await esperarAte(async () => {
+      const { data } = await admin.from("vtt_tokens")
+        .select("id").eq("campaign_id", campaignId).eq("nome", "Sentinela Sync").maybeSingle();
+      tokenId = data?.id ?? "";
+      return !!tokenId;
+    }, 10000);
     const apareceuNoJogador = await esperarAte(async () => (await contarSiglas(jogadorPage)).includes("SS"), 6000);
     registrar("1 (criar: token aparece no jogador sem reload)", !!tokenId && apareceuNoJogador, `tokenId=${tokenId.slice(0, 8)}, apareceu=${apareceuNoJogador}`);
   }
@@ -196,7 +207,7 @@ async function main() {
     const nomeInput = narradorPage.locator(".rv-gerenciador-token input[type=text]").first();
     await nomeInput.fill("");
     await nomeInput.fill("Sentinela Editada");
-    await narradorPage.selectOption("#rv-campo-tamanho", "grande"); // muda tamanho JUNTO com o nome, na mesma confirmação
+    await escolherTamanhoDoToken(narradorPage, "grande"); // muda tamanho JUNTO com o nome, na mesma confirmação
     await narradorPage.locator('.rv-gerenciador-token .rv-btn--pri', { hasText: "Salvar" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 5000 });
     const { data: linha } = await admin.from("vtt_tokens").select("nome, tamanho, revision").eq("id", tokenId).single();
@@ -219,7 +230,7 @@ async function main() {
     await narradorPage.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2, { button: "right" });
     await narradorPage.locator(".rv-menu-item", { hasText: "Editar" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
-    await narradorPage.selectOption("#rv-campo-tamanho", "medio");
+    await escolherTamanhoDoToken(narradorPage, "medio");
     await narradorPage.locator('.rv-gerenciador-token .rv-btn--pri', { hasText: "Salvar" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 5000 });
     const { data: depoisDeVoltar } = await admin.from("vtt_tokens").select("tamanho, revision").eq("id", tokenId).single();
@@ -261,7 +272,13 @@ async function main() {
     const boxEditar = await tokenLocator.boundingBox();
     await narradorPage.mouse.click(boxEditar!.x + boxEditar!.width / 2, boxEditar!.y + boxEditar!.height / 2, { button: "right" });
     await narradorPage.locator(".rv-menu-item", { hasText: "Editar" }).click();
-    await narradorPage.locator(".rv-gerenciador-token label", { hasText: "Vincular a uma ficha" }).locator("select").selectOption({ label: "PJ do teste de sync" });
+    // O rótulo virou "Ficha vinculada" quando o campo mudou de grupo —
+    // ele morava em "Ficha & escala" e foi pra "Controle", junto das
+    // duas travas, porque as três respondem a mesma pergunta ("quem
+    // pode mexer nisto?"). O texto antigo não existe mais em lugar
+    // nenhum, e `selectOption` ficava 30s esperando um `select` que
+    // nunca ia ser encontrado.
+    await narradorPage.locator(".rv-gerenciador-token label", { hasText: "Ficha vinculada" }).locator("select").selectOption({ label: "PJ do teste de sync" });
     await narradorPage.locator('.rv-gerenciador-token .rv-btn--pri', { hasText: "Salvar" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 5000 });
     const { data: vinculado } = await admin.from("vtt_tokens").select("character_id").eq("id", tokenId).single();
@@ -319,7 +336,11 @@ async function main() {
     await narradorPage.locator(".rv-menu-item", { hasText: "Remover" }).click();
     await narradorPage.locator(".rv-modal--confirmar .rv-btn--perigo", { hasText: "Remover" }).click();
     const sumiuNarrador = await esperarAte(async () => !(await contarSiglas(narradorPage)).includes("SS"), 5000);
-    const sumiuJogador = await esperarAte(async () => !(await contarSiglas(jogadorPage)).includes("SS"), 5000);
+    // 5s era apertado pra propagação de um DELETE até a outra sessão —
+    // o critério reprovava com "jogador=false" de vez em quando, e isso
+    // se lê como o Realtime não ter entregue a remoção. Espera por
+    // condição, com teto maior; se de fato não chegar, reprova igual.
+    const sumiuJogador = await esperarAte(async () => !(await contarSiglas(jogadorPage)).includes("SS"), 10000);
     const { data: aindaExiste } = await admin.from("vtt_tokens").select("id").eq("id", tokenId).maybeSingle();
     registrar("5 (remover: some dos dois DOMs, linha desaparece do banco)", sumiuNarrador && sumiuJogador && !aindaExiste, `narrador=${sumiuNarrador}, jogador=${sumiuJogador}, banco=${!aindaExiste}`);
   }
@@ -351,10 +372,23 @@ async function main() {
     const jogadorViuFormaAntiga = await esperarAte(async () => (await jogadorPage.locator(`.rv-token[data-token-id="${tokenPegadaId}"] .rv-token-pegada`).count()) > 0, 6000);
     registrar("pegada-live-0 (fixture: jogador enxerga a pegada personalizada 2 células antes da edição)", jogadorViuFormaAntiga, `viu=${jogadorViuFormaAntiga}`);
 
-    await narradorPage.locator(`.rv-token[data-token-id="${tokenPegadaId}"]`).click({ button: "right" });
+    // O token nasce em (8,12) e, com o enquadramento inicial da cena,
+    // essa célula pode cair FORA da viewport — `locator.click()` então
+    // fica esperando "visible, enabled and stable" por 30s e morre, sem
+    // dizer que o problema é de enquadramento. `garantirTokenAlcancavel`
+    // recolhe o painel e afasta o zoom até a sigla caber na janela.
+    const alcancavel = await garantirTokenAlcancavel(narradorPage, "PL");
+    registrar("pegada-live-0b (o token com pegada personalizada está ao alcance do ponteiro do narrador)",
+      alcancavel, alcancavel ? "" : "fora da viewport mesmo depois de afastar o zoom");
+    const caixaPegada = await narradorPage.locator(`.rv-token[data-token-id="${tokenPegadaId}"]`).boundingBox();
+    await narradorPage.mouse.click(
+      caixaPegada!.x + caixaPegada!.width / 2,
+      caixaPegada!.y + caixaPegada!.height / 2,
+      { button: "right" },
+    );
     await narradorPage.locator(".rv-menu-item", { hasText: "Editar" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
-    await narradorPage.selectOption("#rv-campo-tamanho", "medio");
+    await escolherTamanhoDoToken(narradorPage, "medio");
     await narradorPage.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Salvar" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 5000 });
 
@@ -384,13 +418,23 @@ async function main() {
     await narradorPage.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
     // Nome/sigla ficam vazios de propósito — não preenche nada.
     await narradorPage.locator('.rv-gerenciador-token .rv-btn--pri', { hasText: "Continuar para posicionar" }).click();
-    await narradorPage.waitForSelector(".rv-escolha-posicao", { timeout: 5000 });
     await narradorPage.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2, { steps: 3 });
     await narradorPage.waitForTimeout(150);
     await narradorPage.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
-    await narradorPage.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 5000 });
 
-    const { data: criado } = await admin.from("vtt_tokens").select("id, nome, sigla").eq("campaign_id", campaignId).like("nome", "#%").order("created_at", { ascending: false }).limit(1).single();
+    // Mesma corrida do critério 1: o clique DISPARA a criação, e ler o
+    // banco no instante seguinte às vezes chega antes da linha. Aqui o
+    // sintoma era pior — `single()` devolvia `null` e o `criado!.nome`
+    // estourava um TypeError que derrubava a suíte inteira, levando
+    // junto os críterios de ping que vêm depois.
+    let criado: { id: string; nome: string; sigla: string } | null = null;
+    await esperarAte(async () => {
+      const { data } = await admin.from("vtt_tokens").select("id, nome, sigla")
+        .eq("campaign_id", campaignId).like("nome", "#%")
+        .order("created_at", { ascending: false }).limit(1).maybeSingle();
+      criado = (data as { id: string; nome: string; sigla: string } | null) ?? null;
+      return !!criado;
+    }, 10000);
     registrar("nome-auto-live-1 (banco: nome automático '#N' de verdade, sigla derivada)", /^#\d+$/.test(criado!.nome) && criado!.sigla === criado!.nome.slice(1), `nome="${criado!.nome}", sigla="${criado!.sigla}"`);
 
     const jogadorViu = await esperarAte(async () => (await jogadorPage.locator(`.rv-token[data-token-id="${criado!.id}"] text.rv-token-sigla`).textContent().catch(() => null)) === criado!.sigla, 6000);
@@ -405,8 +449,18 @@ async function main() {
   // gesto global, igual Foundry/Roll20 — segura e solta na MESMA
   // célula, sem arrastar. ---
   {
-    const box = await jogadorPage.locator(".rv-camada-grade path").nth(30).boundingBox();
-    await jogadorPage.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    // O gesto de ping é ponteiro de verdade, então o ponto tem que
+    // estar livre do painel da sessão E dentro da viewport — as duas
+    // armadilhas de `painelDaSessao.ts`. Sem isto o `pointerdown` ia
+    // pro chat, nenhum ping nascia, e o critério dizia "o narrador não
+    // viu o ping", que soa como falha de Realtime.
+    const pontoPing = await garantirAlcancavel(jogadorPage, async () => {
+      const b = await jogadorPage.locator(".rv-camada-grade path").nth(30).boundingBox();
+      return b ? { x: b.x + b.width / 2, y: b.y + b.height / 2 } : null;
+    });
+    registrar("8a (a célula do ping está livre e dentro da tela do jogador)", pontoPing !== null,
+      pontoPing ? "" : "coberta pelo painel ou fora da viewport");
+    await jogadorPage.mouse.move(pontoPing!.x, pontoPing!.y);
     await jogadorPage.mouse.down();
     await jogadorPage.waitForTimeout(600); // > DURACAO_SEGURAR_PING_MS (400ms, `_mapa/MapaHex.tsx`)
     const apareceu = await esperarAte(async () => (await narradorPage.locator(".rv-ping").count()) > 0, 4000);
@@ -455,7 +509,7 @@ async function main() {
   // mesa esconde pra mesa. O narrador segue vendo o que escondeu, só
   // atenuado — ele precisa saber o que está lá; o jogador não vê.
   {
-    await narradorPage.locator('.rv-ferr-btn[aria-label="Camadas do mapa"]').click();
+    await narradorPage.locator('.rv-ferr-btn[aria-label^="Camadas do mapa"]').click();
     await narradorPage.evaluate(() => {
       const b = [...document.querySelectorAll(".rv-camadas-item")].find((li) => li.querySelector(".rv-camadas-nome")?.textContent === "Tokens")?.querySelector('button[aria-label^="Ocultar"], button[aria-label^="Mostrar"]') as HTMLButtonElement | undefined;
       b?.click();

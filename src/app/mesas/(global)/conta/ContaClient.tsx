@@ -122,7 +122,10 @@ export default function ContaClient({
           style={{
             width: 82, height: 82, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
             border: "1px solid rgba(0,212,255,.35)", background: "rgba(0,212,255,.06)", color: "#418292",
-            clipPath: "polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))",
+            // O chanfro saiu com os demais da área autenticada. Este
+            // estava INLINE, e por isso escapou de uma varredura que só
+            // olhou as folhas de estilo.
+            borderRadius: "var(--ra-r)",
             boxShadow: "0 0 20px rgba(0,212,255,.16)",
           }}
         >

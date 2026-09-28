@@ -140,23 +140,40 @@ export interface Elegibilidade {
  * com a mesma função: "quem está apto nesta janela em geral" (usado
  * pra saber se um lado ainda tem gente, e pra listar o outro lado como
  * 'aguardando') e "quem pode ser escolhido neste exato momento".
+ *
+ * `acaoDireta` responde "o botão Agir pode ser apertado?": quem não
+ * declarou nada pode agir mesmo assim — agir com a janela aberta JÁ é
+ * declarar essa janela (`assumirTurno` grava) — e quem já agiu nesta
+ * janela pode agir de novo. O botão não tem trava de regra: nem teto,
+ * piso, PA restante, participação encerrada, declaração da outra janela
+ * ou alternância. Só incapacidade barra (e, na interface, outra
+ * ativação aberta). A regra segue inteira pra quem SEGURA a janela e
+ * pra de quem é a vez. Fora desse gesto, quem
+ * não declarou continua não contando: não segura a janela aberta
+ * (`podeEncerrarJanela`) nem prende a alternância (`ladoDaVez`).
  */
 export function elegibilidade(
   p: Participante,
   estado: EstadoTrilha,
-  opcoes?: { ignorarAlternancia?: boolean },
+  opcoes?: { ignorarAlternancia?: boolean; acaoDireta?: boolean },
 ): Elegibilidade {
+  if (opcoes?.acaoDireta && p.declaracao === null) p = { ...p, declaracao: estado.janela };
   if (p.incapaz) return { apto: false, motivo: { tipo: "incapaz", texto: p.incapaz.motivo } };
-  if (p.encerrou) return { apto: false, motivo: { tipo: "encerrou", texto: "Encerrou a participação nesta rodada." } };
+  // O botão Agir (`acaoDireta`) não trava por PA nem por ter encerrado:
+  // a mesa decide se o personagem age de novo. Só incapaz barra.
+  const livre = !!opcoes?.acaoDireta;
+  if (p.encerrou && !livre) return { apto: false, motivo: { tipo: "encerrou", texto: "Encerrou a participação nesta rodada." } };
 
   const restante = paRestante(p);
-  if (restante <= 0) return { apto: false, motivo: { tipo: "sem_pa", texto: "Sem PA restante nesta rodada." } };
+  if (restante <= 0 && !livre) return { apto: false, motivo: { tipo: "sem_pa", texto: "Sem PA restante nesta rodada." } };
 
   const jaAgiuNestaJanela = p.agiuEm.includes(estado.janela);
   const voltandoDeFragmento = p.fragmentouEm !== null && p.fragmentouEm !== estado.janela;
 
   // Já agiu nesta janela e não é um retorno de fragmentação → fora.
-  if (jaAgiuNestaJanela && !voltandoDeFragmento) {
+  // Exceto pelo botão Agir (`acaoDireta`): a mesa pode fazer o mesmo
+  // personagem agir de novo — ele só não SEGURA a janela aberta.
+  if (jaAgiuNestaJanela && !voltandoDeFragmento && !opcoes?.acaoDireta) {
     return {
       apto: false,
       motivo: { tipo: "ja_agiu_na_janela", texto: `Já agiu nos turnos ${estado.janela === "rapidos" ? "rápidos" : "lentos"}.` },
@@ -164,12 +181,12 @@ export function elegibilidade(
   }
 
   // Quem fragmentou nos Rápidos só retorna nos Lentos (regra 5).
-  if (p.fragmentouEm === "rapidos" && estado.janela === "rapidos" && jaAgiuNestaJanela) {
+  if (p.fragmentouEm === "rapidos" && estado.janela === "rapidos" && jaAgiuNestaJanela && !opcoes?.acaoDireta) {
     return { apto: false, motivo: { tipo: "fragmentacao_gasta", texto: "Fragmentou nos rápidos — retorna nos turnos lentos." } };
   }
 
   const teto = tetoPaAgora(p, estado.janela);
-  if (teto <= 0) {
+  if (teto <= 0 && !opcoes?.acaoDireta) {
     return {
       apto: false,
       motivo: { tipo: "janela_incompativel", texto: "Atingiu o teto de PA da janela em que começou." },
@@ -179,7 +196,7 @@ export function elegibilidade(
   // Nos Lentos, quem ainda não agiu na rodada precisa de 3+ PA
   // disponíveis pra entrar (piso da janela). Quem está VOLTANDO de
   // fragmentação é exceção explícita — ele entra com o que sobrou.
-  if (estado.janela === "lentos" && !voltandoDeFragmento && restante < PISO_PA.lentos) {
+  if (estado.janela === "lentos" && !voltandoDeFragmento && restante < PISO_PA.lentos && !livre) {
     return {
       apto: false,
       motivo: { tipo: "janela_incompativel", texto: `Turnos lentos exigem ${PISO_PA.lentos}+ PA; restam ${restante}.` },
@@ -189,7 +206,7 @@ export function elegibilidade(
   // Precisa ter declarado a janela que está em resolução. Quem
   // declarou o outro grupo não está "indisponível por regra" — está
   // esperando a vez do grupo dele, e a interface diz isso.
-  if (p.declaracao !== null && p.declaracao !== estado.janela && !voltandoDeFragmento) {
+  if (p.declaracao !== null && p.declaracao !== estado.janela && !voltandoDeFragmento && !livre) {
     return {
       apto: false,
       motivo: {
@@ -202,7 +219,7 @@ export function elegibilidade(
     return { apto: false, motivo: { tipo: "janela_incompativel", texto: "Ainda não declarou turno." } };
   }
 
-  if (opcoes?.ignorarAlternancia) return { apto: true };
+  if (opcoes?.ignorarAlternancia || livre) return { apto: true };
 
   // Emboscada: o lado surpreendente age inteiro, sem alternar (regra 6).
   if (estado.modo === "emboscada") {
@@ -299,8 +316,27 @@ export function declaradosEm(estado: EstadoTrilha, janela: Janela): Participante
 /** Abre o turno de um participante (ele assume a vez). */
 export function assumirTurno(estado: EstadoTrilha, id: string): EstadoTrilha {
   const p = estado.participantes.find((x) => x.id === id);
-  if (!p || !elegibilidade(p, estado).apto) return estado;
-  return { ...estado, agindoId: id };
+  if (!p || !elegibilidade(p, estado, { acaoDireta: true }).apto) return estado;
+  // Agir declara a janela aberta — é a mesma escolha (inclusive pra
+  // quem tinha declarado a outra e age aqui assim mesmo).
+  if (p.declaracao === estado.janela) return { ...estado, agindoId: id };
+  return {
+    ...estado,
+    agindoId: id,
+    participantes: estado.participantes.map((x) => (x.id === id ? { ...x, declaracao: estado.janela } : x)),
+  };
+}
+
+/**
+ * Desfaz o "Agir" antes de gastar qualquer coisa: fecha a ativação sem
+ * PA gasto, sem marcar que agiu e sem fragmentar — como se o botão não
+ * tivesse sido apertado. Não mexe na alternância (`ultimoLado`), que só
+ * anda quando um turno é CONCLUÍDO. A declaração que o gesto gravou
+ * (se não havia) fica: ela continua editável até o personagem agir.
+ */
+export function cancelarTurno(estado: EstadoTrilha): EstadoTrilha {
+  if (!estado.agindoId) return estado;
+  return { ...estado, agindoId: null };
 }
 
 /**

@@ -48,11 +48,14 @@ import { DecoTop } from "./deco";
 import { IdentityAside } from "./panels/IdentityAside";
 import { VitalsRow } from "./panels/VitalsRow";
 import { EquipmentPanel } from "./panels/EquipmentPanel";
+import { InventarioPanel } from "./panels/InventarioPanel";
+import { MagiasPanel } from "./panels/MagiasPanel";
+import { EscalposPanel } from "./panels/EscalposPanel";
 import { SkillsGrid } from "./panels/SkillsGrid";
 import { TabRail } from "./panels/TabRail";
 import { MinimizedDockContent } from "./panels/MinimizedDockContent";
 import { PinsRow, ConditionsPanel } from "./panels/PinsAndConditions";
-import { ModoChip, VerNoMapaChip } from "./panels/ModoEvolucao";
+import { ModoChip, VerNoMapaChip, GravacaoChip } from "./panels/ModoEvolucao";
 import {
   AttackModal,
   BackpackPickerModal,
@@ -69,18 +72,19 @@ import type { ViewMode } from "./viewMode";
 import { FOCO_MAX_W, FOCO_ALTURA_INICIAL } from "./geometry";
 import { PainelRolagem, type PrefillRolagem } from "./panels/PainelRolagem";
 import type { ConsoleApi, ConsolePin } from "./types";
-import type { CharacterAttributes, InventoryItemInstance, ItemContent } from "../../../lib/character";
+import { parseTerceiroSegmentoThreshold, pisoPeNegativo, type CharacterAttributes, type InventoryItemInstance, type ItemContent } from "../../../lib/character";
 
 /** Estado do modal auxiliar aberto no momento (um por vez). */
 type Aux =
   | { tipo: "rolagem"; prefill: PrefillRolagem }
   | { tipo: "surto" }
   | { tipo: "mochila"; slot: BodySlotId }
-  | { tipo: "ataque"; instancia: InventoryItemInstance; modelo: ItemContent }
+  | { tipo: "ataque"; instancia: InventoryItemInstance; modelo: ItemContent; slot: BodySlotId }
   | { tipo: "recarga"; instancia: InventoryItemInstance }
   | { tipo: "condicao" }
   | { tipo: "defesa" }
   | { tipo: "resistir-atributo" }
+  | { tipo: "retorno-colapso"; recurso: "pv" | "pe"; valor: number; desfecho: "morte" | "coma" }
   | { tipo: "aviso"; titulo: string; mensagem: string }
   | null;
 
@@ -250,6 +254,29 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
   function rolarPericia(id: string) {
     setAux({ tipo: "rolagem", prefill: { tipo: "pericia", periciaId: id } });
   }
+  function rolarTesteDecisivoColapso() {
+    const tipo = api.character.colapso?.tipo;
+    const gatilho = api.regras?.colapso?.gatilhos?.find((item) => item.recurso === tipo);
+    const atributoId = gatilho?.teste_fim_rodada.atributo;
+    const cd = parseTerceiroSegmentoThreshold(api.regras?.colapso);
+    if ((atributoId !== "corpo" && atributoId !== "mente" && atributoId !== "animo") || cd == null) {
+      setAux({ tipo: "aviso", titulo: "Teste de Colapso", mensagem: "A regra canônica do teste decisivo está incompleta." });
+      return;
+    }
+    setAux({ tipo: "rolagem", prefill: { tipo: "colapso", atributoId, cd } });
+  }
+  function editarRecursoComConfirmacao(id: "pv" | "pe" | "mana", valor: number) {
+    const colapso = api.character.colapso;
+    const atual = api.character.recursos_atuais?.[id] ?? 0;
+    const pisoPe = pisoPeNegativo(api.derivados.pe_max);
+    const retornaDaMorte = id === "pv" && colapso?.desfecho === "morte" && atual <= 0 && valor >= 1;
+    const retornaDoComa = id === "pe" && colapso?.desfecho === "coma" && atual <= pisoPe && valor >= pisoPe + 1;
+    if (retornaDaMorte || retornaDoComa) {
+      setAux({ tipo: "retorno-colapso", recurso: id, valor, desfecho: retornaDaMorte ? "morte" : "coma" });
+      return;
+    }
+    api.editarRecurso(id, valor);
+  }
   function onAdicionarCondicao() {
     setAux({ tipo: "condicao" });
   }
@@ -297,14 +324,20 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
               é o primeiro filho, então `top: 0` daqui cai exatamente na
               borda de cima dele. A aba de Equipamentos tem a sua
               própria, no `.rc-eq-card-outer`. */}
-          {aba !== "equipamentos" && <DecoTop />}
+          {aba !== "equipamentos" && aba !== "mochila" && aba !== "magias" && aba !== "escalpos" && <DecoTop />}
           <div className="rc-tabpanel" role="tabpanel" ref={tabpanelRef}>
-            {aba === "equipamentos" ? (
+            {aba === "mochila" ? (
+              <InventarioPanel api={api} />
+            ) : aba === "magias" ? (
+              <MagiasPanel api={api} />
+            ) : aba === "escalpos" ? (
+              <EscalposPanel api={api} />
+            ) : aba === "equipamentos" ? (
               <EquipmentPanel
                 slots={projecao.slots}
                 api={api}
                 onAbrirVazio={(slot) => setAux({ tipo: "mochila", slot })}
-                onAbrirAtaque={(instancia, modelo) => setAux({ tipo: "ataque", instancia, modelo })}
+                onAbrirAtaque={(instancia, modelo, slot) => setAux({ tipo: "ataque", instancia, modelo, slot })}
                 onUsarItem={(instancia, modelo) =>
                   setAux({
                     tipo: "aviso",
@@ -346,10 +379,15 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
           onRolarDefesa={() => setAux({ tipo: "defesa" })}
         />
         <div className="rc-foco-personagem-col2">
-          <VitalsRow api={api} onEstabilizar={api.estabilizarColapso} />
+          <VitalsRow api={api} onEditarRecurso={editarRecursoComConfirmacao} onEstabilizar={api.estabilizarColapso} onTesteDecisivo={rolarTesteDecisivoColapso} />
           <div className="rc-center-lower">
-            <SkillsGrid api={api} onRolar={rolarPericia} />
+            {/* Estados ANTES de Perícias: a coluna do meio é a leitura
+                do corpo (vitais → estados) antes da leitura do que se
+                sabe fazer. Condição ativa muda como toda rolagem da
+                tabela abaixo se resolve; ler isso depois de escolher a
+                perícia é tarde. */}
             <ConditionsPanel api={api} onAdicionar={onAdicionarCondicao} onDetalhes={onDetalhesCondicao} />
+            <SkillsGrid api={api} onRolar={rolarPericia} />
             <PinsRow api={api} onAbrirPin={onAbrirPin} />
             {api.erro && (
               <p className="rc-vazio" role="alert" style={{ color: "#ffc4cf" }}>
@@ -370,11 +408,12 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
         titulo="Console do Personagem"
         titlebarExtra={
           <>
+            <GravacaoChip estado={api.gravacao.estado} erro={api.gravacao.erro} />
             <VerNoMapaChip />
             <ModoChip modo={api.modo} onAlternar={api.definirModo} />
           </>
         }
-        dockContent={<MinimizedDockContent api={api} avatarUrl={avatarUrl} />}
+        dockContent={<MinimizedDockContent api={api} avatarUrl={avatarUrl} onEditarRecurso={editarRecursoComConfirmacao} />}
         tablist={<TabRail aba={aba} onChangeAba={escolherAba} viewMode={viewMode} onChangeViewMode={alternarViewMode} />}
         larguraMaximaFixa={viewMode === "foco" ? FOCO_MAX_W : undefined}
         alturaFallbackInicial={viewMode === "foco" ? FOCO_ALTURA_INICIAL : undefined}
@@ -394,13 +433,13 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
               onRolarDefesa={() => setAux({ tipo: "defesa" })}
             />
 
-            <VitalsRow api={api} onEstabilizar={api.estabilizarColapso} />
+            <VitalsRow api={api} onEditarRecurso={editarRecursoComConfirmacao} onEstabilizar={api.estabilizarColapso} onTesteDecisivo={rolarTesteDecisivoColapso} />
 
             {/* Antigo lugar de Equipamentos — agora Perícias, fixo, fora
                 do sistema de abas. Fixados e Condições acompanham. */}
             <div className="rc-center-lower">
-              <SkillsGrid api={api} onRolar={rolarPericia} />
               <ConditionsPanel api={api} onAdicionar={onAdicionarCondicao} onDetalhes={onDetalhesCondicao} />
+              <SkillsGrid api={api} onRolar={rolarPericia} />
               <PinsRow api={api} onAbrirPin={onAbrirPin} />
               {api.erro && (
                 <p className="rc-vazio" role="alert" style={{ color: "#ffc4cf" }}>
@@ -427,6 +466,7 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
           não tem isso. */}
       {avatarParaRecortar && (
         <JanelaRecorte
+          centralizarNoConsole
           erro={avatarErro}
           arquivo={avatarParaRecortar}
           ocupado={avatarEnviando}
@@ -440,7 +480,7 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
         // REABRIR preenchida com a nova, não continuar mostrando a
         // anterior (o estado interno nasce do `prefill`).
         <PainelRolagem
-          key={aux.prefill.tipo === "atributo" ? `a:${aux.prefill.atributoId}` : `${aux.prefill.tipo}:${aux.prefill.periciaId}`}
+          key={aux.prefill.tipo === "pericia" || aux.prefill.tipo === "defesa" ? `${aux.prefill.tipo}:${aux.prefill.periciaId}` : `${aux.prefill.tipo}:${aux.prefill.atributoId}`}
           api={api}
           prefill={aux.prefill}
           onFechar={() => setAux(null)}
@@ -471,7 +511,19 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
         />
       )}
 
-      {aux?.tipo === "ataque" && <AttackModal instancia={aux.instancia} modelo={aux.modelo} onFechar={() => setAux(null)} />}
+      {aux?.tipo === "ataque" && (
+        <AttackModal
+          instancia={aux.instancia}
+          modelo={aux.modelo}
+          slot={aux.slot}
+          api={api}
+          // A rolagem de ataque entra pelo MESMO caminho de qualquer
+          // outra do Console: o Painel de Rolagem, prefilhado com a
+          // perícia da arma — nada de um motor paralelo aqui dentro.
+          onRolarPericia={(periciaId) => setAux({ tipo: "rolagem", prefill: { tipo: "pericia", periciaId } })}
+          onFechar={() => setAux(null)}
+        />
+      )}
 
       {aux?.tipo === "recarga" && (
         <ConfirmModal
@@ -485,11 +537,27 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
         />
       )}
 
+      {aux?.tipo === "retorno-colapso" && (
+        <ConfirmModal
+          titulo="Retornar à atividade?"
+          mensagem={aux.desfecho === "morte"
+            ? `${api.character.nome || "Este personagem"} está morto. Recuperar PV para ${aux.valor} fará o personagem voltar à atividade. Confirmar?`
+            : `${api.character.nome || "Este personagem"} está em coma. Recuperar PE para ${aux.valor} fará o personagem despertar e voltar à atividade. Confirmar?`}
+          onConfirmar={() => {
+            api.editarRecurso(aux.recurso, aux.valor, { confirmarRetorno: true });
+            setAux(null);
+          }}
+          onFechar={() => setAux(null)}
+        />
+      )}
+
       {aux?.tipo === "condicao" && (
         <ConditionPickerModal
           disponiveis={api.condicoesDisponiveis}
-          onAplicar={(c) => {
-            api.adicionarCondicao({ conditionId: c.slug, nome: c.nome, descricao: "", origem: "Console", duracao: "" });
+          onAplicar={(condicoes) => {
+            for (const c of condicoes) {
+              api.adicionarCondicao({ conditionId: c.slug, nome: c.nome, descricao: "", origem: "Console", duracao: "" });
+            }
             setAux(null);
           }}
           onFechar={() => setAux(null)}

@@ -302,8 +302,41 @@ export function subscribeToVttScene(params: {
       // Só as COLOCAÇÕES entram no canal. `vtt_image_assets` fica fora
       // da publicação de propósito (0099): publicar o arquivo vazaria a
       // existência de asset que nenhuma colocação visível expõe.
-      { event: "*", schema: "public", table: "vtt_scene_images", filter: `scene_id=eq.${params.sceneId}` },
-      () => params.onImagensInvalidadas(),
+      // SEM FILTRO no servidor, e recorte da cena AQUI no cliente.
+      //
+      // Não é preferência de estilo: o Realtime RECUSA qualquer filtro
+      // nesta tabela. Pedindo `scene_id=eq.<uuid>` ele responde
+      //
+      //   Unable to subscribe to changes with given parameters.
+      //   Exception: ERROR P0001 (raise_exception)
+      //   invalid column for filter scene_id
+      //
+      // e o mesmo acontece com `campaign_id` — ou seja, não é a coluna,
+      // é a tabela (as duas existem e estão publicadas, com replica
+      // identity FULL). O sintoma aponta para o cache de esquema do
+      // serviço de Realtime, não para o schema do banco.
+      //
+      // O estrago não ficava nesta ligação. Todas as assinaturas de
+      // `postgres_changes` deste canal vivem no MESMO canal, e uma
+      // ligação recusada DERRUBA O CANAL INTEIRO: terreno, marcas,
+      // medições, áreas, objetos e cenas paravam de chegar juntos, em
+      // silêncio. Medido: terreno pintado pelo narrador não chegava ao
+      // jogador em 10s; sem esta ligação com filtro, chega em 622ms.
+      //
+      // Era invisível para quem pintava — o autor vê pelo estado local
+      // e não desconfia. Quem estava do outro lado ficava com o mapa
+      // velho até recarregar, e a regra consultiva de movimento parava
+      // de avisar sobre bloqueios que já existiam.
+      { event: "*", schema: "public", table: "vtt_scene_images" },
+      (payload) => {
+        // O recorte que o filtro do servidor faria. RLS já garante que
+        // só chega linha que esta pessoa pode ler; isto evita releitura
+        // à toa por cena/campanha que não é a que está aberta.
+        const novo = payload.new as Record<string, unknown> | null;
+        const velho = payload.old as Record<string, unknown> | null;
+        const daCena = novo?.scene_id === params.sceneId || velho?.scene_id === params.sceneId;
+        if (daCena) params.onImagensInvalidadas();
+      },
     )
     .on(
       "postgres_changes",

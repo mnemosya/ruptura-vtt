@@ -59,12 +59,28 @@ function nonNegativeInteger(value: number): number {
   return Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
 }
 
+/**
+ * PISO do PE: −⌈pe_max/2⌉. PV e Mana param em zero; o PE é o único
+ * recurso que continua contando para baixo depois dele, e é ao chegar
+ * NESTE valor que o Colapso mental dispara (ver `collapse.ts`).
+ */
+export function pisoPeNegativo(peMax: number): number {
+  const max = Number.isFinite(peMax) && peMax > 0 ? Math.trunc(peMax) : 0;
+  return -Math.max(1, Math.ceil(max / 2));
+}
+
+function inteiroComPiso(value: number, piso: number): number {
+  return Number.isFinite(value) ? Math.max(piso, Math.trunc(value)) : piso;
+}
+
 function applyResourceMutation(
   character: Character,
   mutation: Extract<ConsoleMutation, { type: "resource" }>,
   context: ConsoleMutationContext,
 ): ConsoleMutationResult {
-  const value = nonNegativeInteger(mutation.value);
+  const pisoPe = pisoPeNegativo(context.derived.pe_max);
+  const value =
+    mutation.resource === "pe" ? inteiroComPiso(mutation.value, pisoPe) : nonNegativeInteger(mutation.value);
   if (mutation.resource === "mana") {
     return {
       character: {
@@ -87,7 +103,7 @@ function applyResourceMutation(
     mutation.nowIso,
   );
   const afterHealing: Character = { ...character, condicoes_ativas: conditionsAfterHealing };
-  const collapse = detectCollapseOnResourceChange(afterHealing, before, after, mutation.nowIso);
+  const collapse = detectCollapseOnResourceChange(afterHealing, before, after, mutation.nowIso, pisoPe);
 
   let next = collapse.character;
   let collapseAdvance: ReturnType<typeof resolveCollapseAdditionalDamage> | null = null;

@@ -183,7 +183,6 @@ const BOTOES: Botao[] = [
   { c: "rv-area-item-nome", n: 1, sis: "rv", folha: "vtt.css", papel: "Nome clicável na lista de áreas", rotulo: "Cone de Compressão" },
   { c: "rv-area-edicao-rapida-btn", n: 1, sis: "rv", folha: "vtt.css", papel: "Editar área, flutuando sobre o mapa", icone: "Pencil" },
   { c: "rv-aba", n: 1, sis: "rv", folha: "vtt-chassi.css", papel: "Aba do chassi", rotulo: "Chat" },
-  { c: "rv-painel-fechar", n: 1, sis: "rv", folha: "painel.css", papel: "Recolher o painel lateral", icone: "X" },
   { c: "rv-pn-chat-novas", n: 1, sis: "rv", folha: "painel.css", papel: "Aviso flutuante sobre o feed", rotulo: "Novas mensagens", icone: "ChevronDown" },
   { c: "rv-pn-chip", n: 1, sis: "rv", folha: "painel.css", papel: "Chip clicável na lista", rotulo: "Arcana" },
   { c: "rv-pn-busca-limpar", n: 1, sis: "rv", folha: "painel.css", papel: "Limpar a busca", icone: "X" },
@@ -214,7 +213,7 @@ const BOTOES: Botao[] = [
   { c: "rc-ncond-x", n: 1, sis: "rc", folha: "console.css", papel: "Remover condição", icone: "X" },
   { c: "rc-ncond-add", n: 1, sis: "rc", folha: "console.css", papel: "Adicionar condição", rotulo: "Adicionar", icone: "Plus" },
   { c: "rc-eq-pipbtn", n: 1, sis: "rc", folha: "console.css", papel: "Pip de equipamento", rotulo: "◆" },
-  { c: "rc-skill", n: 1, sis: "rc", folha: "console.css", papel: "Perícia — clicar rola", rotulo: "Luta" },
+  { c: "rc-sensor-row", n: 1, sis: "rc", folha: "console.css", papel: "Perícia — clicar rola", rotulo: "Luta" },
   { c: "rc-nres-eye", n: 1, sis: "rc", folha: "vtt.css", papel: "Tornar recurso público/privado", icone: "Eye" },
   { c: "rc-ncol-pip", n: 1, sis: "rc", folha: "console.css", papel: "Pip de segmento de colapso", rotulo: "◆" },
   { c: "rc-ncol-estabilizar", n: 1, sis: "rc", folha: "console.css", papel: "Estabilizar o colapso", rotulo: "Estabilizar" },
@@ -367,9 +366,6 @@ export function RepetidosChips() {
         <Especime classe="rc-ncond-tag" folha="_design/console.css" raiz="rc-window-wrap">
           <div className="gal-esp-linha"><span className="rc-ncond-tag">Sangrando</span></div>
         </Especime>
-        <Especime classe="rc-skill-tag" folha="_design/console.css" raiz="rc-window-wrap">
-          <div className="gal-esp-linha"><span className="rc-skill-tag">Luta</span></div>
-        </Especime>
       </Fileira>
     </>
   );
@@ -454,7 +450,7 @@ export function RepetidosAbas() {
         <EspecimeIsolado classe="rm-session-tab" folha="_design/mesa.css" sistema="mesa" familia="abas" altura={80} />
         <Especime classe="rv-aba" folha="vtt-chassi.css" raiz="rv-mesa">
           <div className="gal-esp-linha">
-            <button type="button" className="rv-aba" aria-selected="true">Aba<span className="rv-aba-badge">2</span></button>
+            <button type="button" className="rv-aba" aria-selected="true">Aba</button>
             <button type="button" className="rv-aba">Outra</button>
           </div>
         </Especime>
