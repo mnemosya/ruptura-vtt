@@ -238,7 +238,7 @@
       "pontos_totais": 25,
       "maximo_na_criacao": 3,
       "maximo_absoluto": 5,
-      "total_pericias": 21
+      "total_pericias": 22
     },
     "status": "published",
     "versao": "1.1.0",
@@ -484,8 +484,8 @@
       "atributos": [
         "mente"
       ],
-      "descricao_curta": "Conhecimento teórico e prático sobre o arcano, vertentes e efeitos mágicos.",
-      "descricao_longa": "Arcanismo cobre leitura de estruturas mágicas, análise de resíduos arcanos, identificação de feitiços e interpretação de fenômenos ligados ao uso da magia.",
+      "descricao_curta": "Conhecimento teórico e prático do arcano, suas Vertentes e seus efeitos.",
+      "descricao_longa": "Arcanismo representa o conhecimento teórico e prático sobre o arcano, suas Vertentes e seus efeitos. A perícia abrange a leitura de estruturas mágicas, a análise de resíduos e a interpretação de fenômenos relacionados à magia.\nEm jogo, Arcanismo permite identificar feitiços em andamento, reconhecer padrões de canalização, examinar assinaturas arcanas, avaliar ruínas tecnomágicas e estudar mutações causadas pelo excesso de arcano.",
       "tags": [
         "analise",
         "arcano",
@@ -503,9 +503,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "artes",
@@ -514,8 +514,8 @@
         "animo",
         "corpo"
       ],
-      "descricao_curta": "Capacidade criativa e expressiva em performance, produção estética e manipulação simbólica.",
-      "descricao_longa": "Artes cobre música, dança, pintura, encenação, apresentações públicas, impacto cultural e uso criativo para inspirar, distrair ou manipular audiência.",
+      "descricao_curta": "Criatividade e expressão em performances, obras e manipulações simbólicas.",
+      "descricao_longa": "Artes representa a capacidade criativa e expressiva do personagem, seja em performances, produções estéticas ou manipulações simbólicas. Abrange música, dança, pintura, encenação e outras formas de expressão.\nEm jogo, Artes permite impressionar, inspirar ou distrair por meio da criatividade, além de produzir obras, reconhecer estilos e identificar autoria, falsificações, alterações ou mensagens ocultas.",
       "tags": [
         "criatividade",
         "expressao",
@@ -538,9 +538,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "balistica",
@@ -549,8 +549,8 @@
         "corpo",
         "mente"
       ],
-      "descricao_curta": "Controle e eficiência no uso de armas de disparo, armas de fogo e armas de energia.",
-      "descricao_longa": "Balística cobre ataques à distância com armas de fogo ou energia, postura, controle de recuo, cálculo de trajetória, identificação de calibres, modificações e análise de disparos.",
+      "descricao_curta": "Domínio de armas de disparo: postura, recuo, trajetória, armas e munições.",
+      "descricao_longa": "Balística representa o domínio de armas de disparo, desde pistolas compactas até armamentos pesados. A perícia abrange postura, controle de recuo, cálculo de trajetória e conhecimento sobre armas e munições.\nEm jogo, Balística é usada para realizar ataques à distância, identificar calibres e modificações ou reconstruir disparos a partir de projéteis, impactos e trajetórias.",
       "tags": [
         "arma_de_fogo",
         "arma_energetica",
@@ -574,9 +574,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "biologia",
@@ -584,11 +584,10 @@
       "atributos": [
         "mente"
       ],
-      "descricao_curta": "Estudo de organismos vivos, fisiologia, toxicologia, genética e medicina.",
-      "descricao_longa": "Biologia cobre tratar ferimentos, diagnosticar doenças, aplicar primeiros socorros, identificar toxinas e conduzir experimentos com tecidos orgânicos.",
+      "descricao_curta": "Estudo dos organismos vivos: anatomia, genética, patógenos e toxinas.",
+      "descricao_longa": "Biologia representa o estudo dos organismos vivos, de seus sistemas e dos processos que os compõem. A perícia abrange anatomia, fisiologia, genética, microbiologia, toxicologia e outras formas de análise biológica.\nEm jogo, Biologia permite analisar tecidos e fluidos, identificar organismos, patógenos e toxinas, examinar material genético, compreender mutações e avaliar alterações biológicas provocadas pelo arcano. Também serve de base para aplicações Bióticas voltadas à análise ou alteração de propriedades biológicas.",
       "tags": [
         "ciencia",
-        "medicina",
         "pericia",
         "somatica",
         "toxicologia",
@@ -604,9 +603,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "carisma",
@@ -614,8 +613,8 @@
       "atributos": [
         "animo"
       ],
-      "descricao_curta": "Presença magnética, empatia espontânea e impacto imediato sobre outras pessoas.",
-      "descricao_longa": "Carisma aparece em primeiras impressões, simpatia, confiança, motivação de aliados e desarme de hostilidade pela presença pessoal.",
+      "descricao_curta": "Presença magnética que atrai atenção, desperta empatia e inspira confiança.",
+      "descricao_longa": "Carisma representa a presença magnética do personagem e sua capacidade de atrair atenção ou despertar empatia. Não depende de técnica ou argumentação, mas do impacto imediato que causa nos outros.\nEm jogo, Carisma permite conquistar simpatia, inspirar confiança, motivar aliados, desarmar hostilidades ou deixar alguém à vontade para que se expresse espontaneamente.",
       "tags": [
         "empatia",
         "pericia",
@@ -632,9 +631,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "engenharia",
@@ -642,8 +641,8 @@
       "atributos": [
         "mente"
       ],
-      "descricao_curta": "Conhecimento aplicado em construção, manutenção, adaptação e sabotagem de estruturas físicas.",
-      "descricao_longa": "Engenharia cobre projetar construções, reforçar defesas, criar armadilhas, sabotar infraestrutura, reparar equipamentos e sustentar efeitos da vertente Material.",
+      "descricao_curta": "Construção, reparo e sabotagem de estruturas, mecanismos e infraestruturas.",
+      "descricao_longa": "Engenharia representa o conhecimento aplicado à construção, manutenção e adaptação de estruturas e mecanismos. A perícia combina teoria e prática na manipulação planejada de materiais e infraestruturas.\nEm jogo, Engenharia permite projetar construções, reforçar defesas, criar armadilhas, realizar reparos, sabotar instalações ou examinar danos e mecanismos para determinar como foram produzidos. Também serve de base para magias da Vertente Material.",
       "tags": [
         "construcao",
         "material",
@@ -661,9 +660,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "furtividade",
@@ -671,8 +670,8 @@
       "atributos": [
         "corpo"
       ],
-      "descricao_curta": "Habilidade de evitar atenção, se esconder, apagar sinais e se mover sem ser percebido.",
-      "descricao_longa": "Furtividade cobre se esgueirar em áreas vigiadas, escapar sem chamar atenção, esconder-se em combate, disfarçar sons e apagar rastros.",
+      "descricao_curta": "Passar despercebido: esconder-se, seguir alguém e apagar rastros.",
+      "descricao_longa": "Furtividade representa a capacidade de permanecer fora da atenção alheia, evitando ser visto, ouvido ou percebido. A perícia envolve controle dos movimentos, da respiração e do posicionamento no ambiente.\nEm jogo, Furtividade permite atravessar áreas vigiadas, esconder-se, escapar sem chamar atenção, observar ou seguir alguém sem ser percebido, disfarçar sons e apagar rastros.",
       "tags": [
         "discricao",
         "movimento",
@@ -689,9 +688,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "influencia",
@@ -700,8 +699,8 @@
         "mente",
         "animo"
       ],
-      "descricao_curta": "Habilidade de moldar opiniões e controlar interações sociais por discurso, persuasão ou manipulação.",
-      "descricao_longa": "Influência cobre negociações, discursos, interrogatórios, convencimento direto, manipulação de grupos e algumas magias Cognitivas ligadas a discurso e percepção social.",
+      "descricao_curta": "Conduzir interações e moldar opiniões por discurso, persuasão ou manipulação.",
+      "descricao_longa": "Influência representa a capacidade de conduzir interações e moldar opiniões por meio de discurso, persuasão ou manipulação. Pode se apoiar tanto na lógica argumentativa quanto na intensidade emocional.\nEm jogo, Influência é usada em negociações, entrevistas e interrogatórios, seja para obter cooperação, extrair informações, desarmar conflitos ou induzir decisões. Também serve de base para algumas magias Cognitivas ligadas ao discurso e à percepção social.",
       "tags": [
         "cognitiva",
         "manipulacao",
@@ -724,9 +723,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "intimidacao",
@@ -735,8 +734,8 @@
         "animo",
         "corpo"
       ],
-      "descricao_curta": "Capacidade de impor medo, pressão ou desconforto por presença emocional ou força física.",
-      "descricao_longa": "Intimidação aparece em interrogatórios, confrontos sociais e negociações onde ameaça, violência ou demonstração de poder mudam o resultado.",
+      "descricao_curta": "Impor medo e pressão pela presença emocional ou pela ameaça física.",
+      "descricao_longa": "Intimidação representa a capacidade de impor medo, pressão ou desconforto por meio da presença emocional ou da ameaça física. Abrange desde um olhar ameaçador até uma demonstração explícita de violência.\nEm jogo, Intimidação permite pressionar alguém durante um interrogatório ou uma negociação, romper sua resistência, controlar uma multidão pelo medo ou encerrar um conflito pela demonstração de poder.",
       "tags": [
         "medo",
         "pericia",
@@ -758,9 +757,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "logica",
@@ -768,8 +767,8 @@
       "atributos": [
         "mente"
       ],
-      "descricao_curta": "Raciocínio estruturado, dedução e resolução de problemas objetivos.",
-      "descricao_longa": "Lógica cobre enigmas, sequências, códigos, resistência a magias cognitivas, identificação de ilusões e manutenção de clareza diante de distorções psíquicas.",
+      "descricao_curta": "Raciocínio estruturado: enigmas, códigos, evidências e padrões.",
+      "descricao_longa": "Lógica representa a capacidade de raciocinar de forma estruturada, organizar informações e resolver problemas a partir de relações objetivas.\nEm jogo, Lógica permite solucionar enigmas, interpretar sequências, decifrar códigos, relacionar Evidências, reconstruir acontecimentos e identificar padrões, inconsistências ou informações ausentes. Também pode ser usada para reconhecer e resistir a distorções Cognitivas.",
       "tags": [
         "cognitiva",
         "deducao",
@@ -787,9 +786,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "luta",
@@ -798,8 +797,8 @@
         "corpo",
         "mente"
       ],
-      "descricao_curta": "Combate corpo a corpo com armas brancas, técnicas desarmadas, agarrões e imobilizações.",
-      "descricao_longa": "Luta cobre ataques de curto alcance, agarrões, imobilizações, leitura de adversário, conhecimento de escolas marciais, táticas de duelo e história de armas.",
+      "descricao_curta": "Combate corpo a corpo, armado ou desarmado, e manobras como agarrar.",
+      "descricao_longa": "Luta representa o domínio do combate corpo a corpo, incluindo armas brancas e técnicas desarmadas. A perícia envolve força, coordenação, ritmo e leitura dos movimentos do adversário.\nEm jogo, Luta é usada para realizar ataques corpo a corpo, Aparar e executar manobras como agarrar ou imobilizar. Também permite reconhecer golpes, estilos e tradições marciais ou reconstruir um confronto pelas posições, técnicas e marcas deixadas.",
       "tags": [
         "combate",
         "corpo_a_corpo",
@@ -822,9 +821,43 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
+    },
+    {
+      "id": "medicina",
+      "nome": "Medicina",
+      "atributos": [
+        "mente",
+        "corpo"
+      ],
+      "descricao_curta": "Diagnóstico, tratamento e estabilização de ferimentos e doenças.",
+      "descricao_longa": "Medicina representa o conhecimento e a prática relacionados à saúde, ferimentos, doenças e intervenção clínica. A perícia abrange primeiros socorros, diagnóstico, trauma, farmacologia, cirurgia e patologia.\nEm jogo, Medicina permite diagnosticar doenças e ferimentos, estabilizar pacientes, tratar lesões, administrar medicamentos e antídotos, realizar procedimentos médicos e examinar corpos para determinar a natureza ou causa de uma lesão ou morte. Também serve de base para aplicações Bióticas voltadas à cura, estabilização ou restauração das funções do organismo.",
+      "tags": [
+        "ciencia",
+        "medicina",
+        "pericia",
+        "somatica"
+      ],
+      "slug": "medicina",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "mente",
+      "atributos_alternativos": [
+        {
+          "atributo": "corpo",
+          "contexto": "uso contextual conforme ficção e foco da ação"
+        }
+      ],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-09-27",
+      "updated_at": "2026-09-27"
     },
     {
       "id": "mobilidade",
@@ -832,8 +865,8 @@
       "atributos": [
         "corpo"
       ],
-      "descricao_curta": "Agilidade do corpo em movimento, equilíbrio, velocidade e adaptação a terrenos.",
-      "descricao_longa": "Mobilidade cobre correr por superfícies instáveis, atravessar passagens estreitas, escalar, nadar, saltar, mover-se em combate acrobático e resistir a movimento forçado.",
+      "descricao_curta": "Agilidade do corpo: equilíbrio, velocidade, saltos, escalada e acrobacias.",
+      "descricao_longa": "Mobilidade representa a agilidade do corpo, incluindo equilíbrio, velocidade e adaptação a diferentes terrenos. Abrange a coordenação necessária para saltar, escalar, nadar e atravessar obstáculos.\nEm jogo, Mobilidade permite correr por superfícies instáveis, atravessar passagens estreitas e realizar movimentos acrobáticos. Na ação defensiva Resistir, representa escapar de contenções ou deslocamentos forçados por meio de agilidade e controle corporal. Também serve de base para algumas magias Cinéticas que exigem acompanhar os vetores criados.",
       "tags": [
         "agilidade",
         "cinetica",
@@ -851,9 +884,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "percepcao",
@@ -861,8 +894,8 @@
       "atributos": [
         "mente"
       ],
-      "descricao_curta": "Atenção e capacidade de notar detalhes no ambiente por qualquer sentido básico.",
-      "descricao_longa": "Percepção cobre perceber inimigos escondidos, mudanças sutis de cenário, sons abafados, armadilhas e estímulos inesperados.",
+      "descricao_curta": "Atenção aos detalhes pelos sentidos: rastros, esconderijos e armadilhas.",
+      "descricao_longa": "Percepção representa a atenção e a capacidade de notar detalhes por meio da visão, audição, olfato, tato e paladar.\nEm jogo, Percepção permite localizar criaturas escondidas, rastros, compartimentos ocultos, armadilhas e alterações sutis no ambiente, além de reconhecer rapidamente sons, movimentos e outros estímulos inesperados.",
       "tags": [
         "atencao",
         "audicao",
@@ -880,9 +913,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "precisao",
@@ -890,8 +923,8 @@
       "atributos": [
         "corpo"
       ],
-      "descricao_curta": "Controle de mira e execução de movimentos calculados com exatidão.",
-      "descricao_longa": "Precisão cobre arremessos delicados, manipulação de mecanismos sensíveis e direção de vetores ou fluxos de energia em magias Cinéticas e Energéticas.",
+      "descricao_curta": "Movimentos calculados e exatos: disparo, arremesso e mecanismos sensíveis.",
+      "descricao_longa": "Precisão representa a capacidade de executar movimentos calculados com firmeza e exatidão. A perícia envolve coordenação entre olhos e mãos, alinhamento e controle minucioso.\nEm jogo, Precisão é usada para atacar à distância com armas de disparo ou arremesso, manipular mecanismos sensíveis e utilizar um Kit de Lockpicking contra fechaduras mecânicas. Também serve de base para magias Cinéticas e Energéticas que exigem direcionamento preciso.",
       "tags": [
         "arremesso",
         "cinetica",
@@ -911,9 +944,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "psicologia",
@@ -922,8 +955,8 @@
         "mente",
         "animo"
       ],
-      "descricao_curta": "Compreensão da mente humana, emoções, motivações e padrões comportamentais.",
-      "descricao_longa": "Psicologia cobre análise emocional, identificação de motivações ocultas, recuperação de calma e base para magias cognitivas de ilusão, emoção e distorção sensorial.",
+      "descricao_curta": "Compreender mentes e emoções: motivações, comportamentos e depoimentos.",
+      "descricao_longa": "Psicologia representa a compreensão da mente e das emoções, combinando conhecimento técnico com sensibilidade para interpretar comportamentos.\nEm jogo, Psicologia permite reconhecer estados emocionais, motivações e padrões de comportamento, avaliar a coerência de depoimentos ou ajudar alguém a recuperar a calma. Também serve de base para magias Cognitivas ligadas a emoções, ilusões e distorções dos sentidos.",
       "tags": [
         "cognitiva",
         "emocao",
@@ -946,9 +979,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "reflexos",
@@ -956,8 +989,8 @@
       "atributos": [
         "corpo"
       ],
-      "descricao_curta": "Rapidez de reação física e coordenação diante de estímulos inesperados.",
-      "descricao_longa": "Reflexos cobre agir antes do inimigo, agarrar objetos em queda, responder a armadilhas, Desviar e Bloquear.",
+      "descricao_curta": "Resposta rápida a estímulos inesperados; base de Esquivar e Bloquear.",
+      "descricao_longa": "Reflexos representam a rapidez e a coordenação com que o personagem responde a estímulos inesperados.\nEm jogo, Reflexos permitem agir diante de movimentos repentinos, agarrar um objeto em queda ou reagir a disparos e armadilhas. A perícia também serve de base para as ações defensivas Esquivar e Bloquear.",
       "tags": [
         "defensiva",
         "pericia",
@@ -974,9 +1007,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "robotica",
@@ -984,8 +1017,8 @@
       "atributos": [
         "mente"
       ],
-      "descricao_curta": "Construção, manutenção, programação e controle de unidades autônomas ou semiautônomas.",
-      "descricao_longa": "Robótica cobre drones, robôs, máquinas de guerra, comando direto, reconfiguração e subversão de autômatos.",
+      "descricao_curta": "Construir, programar, reparar e controlar unidades autônomas.",
+      "descricao_longa": "Robótica representa o conhecimento necessário para construir, programar, manter e controlar unidades autônomas ou semiautônomas, desde drones utilitários até máquinas de guerra.\nEm jogo, Robótica permite projetar, consertar, reconfigurar ou assumir o controle de unidades, além de recuperar seus registros e identificar interferências ou alterações em seu comportamento.",
       "tags": [
         "drones",
         "pericia",
@@ -1003,19 +1036,18 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "sociedade",
       "nome": "Sociedade",
       "atributos": [
-        "mente",
-        "animo"
+        "mente"
       ],
-      "descricao_curta": "Conhecimento de estruturas sociais, história, política, cultura, protocolos e hierarquias.",
-      "descricao_longa": "Sociedade cobre costumes locais, uniformes, insígnias, gangues, instituições, influência social e navegação em ambientes formais ou caóticos.",
+      "descricao_curta": "História, política, culturas e estruturas sociais, símbolos e hierarquias.",
+      "descricao_longa": "Sociedade representa o conhecimento sobre história, política, culturas e estruturas sociais. A perícia permite interpretar símbolos, protocolos, hierarquias e convenções.\nEm jogo, Sociedade permite reconhecer uniformes, insígnias, gangues e instituições, compreender costumes locais, avaliar a influência de alguém ou prever como determinado grupo reagirá a uma situação.",
       "tags": [
         "cultura",
         "historia",
@@ -1027,20 +1059,15 @@
       "categoria": "pericia",
       "categoria_label": "Perícia",
       "atributo_primario": "mente",
-      "atributos_alternativos": [
-        {
-          "atributo": "animo",
-          "contexto": "quando domínio cultural ou vínculos emocionais fizerem mais sentido"
-        }
-      ],
+      "atributos_alternativos": [],
       "valor_minimo": 0,
       "valor_maximo": 5,
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.4.0",
+      "versao": "1.5.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "tecnomagia",
@@ -1048,8 +1075,8 @@
       "atributos": [
         "mente"
       ],
-      "descricao_curta": "Leitura, operação e manipulação de dispositivos que integram runas e circuitos.",
-      "descricao_longa": "Tecnomagia cobre equipamentos tecnomágicos, invasões em sistemas protegidos, reparos em dispositivos, Tecer a Malha e efeitos da vertente Sináptica.",
+      "descricao_curta": "Operar e manipular dispositivos de runas e circuitos, e sistemas digitais.",
+      "descricao_longa": "Tecnomagia representa o conhecimento necessário para compreender e manipular dispositivos que integram runas e circuitos, desde aparelhos domésticos até computadores e sistemas complexos.\nEm jogo, Tecnomagia permite operar e reparar equipamentos, recuperar dados e utilizar um Kit de Intrusão Digital para superar proteções digitais locais. Também serve de base para a Vertente Sináptica e para Tecer a Malha, conforme as regras próprias de acesso às Tramas.",
       "tags": [
         "malha",
         "pericia",
@@ -1068,9 +1095,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "vigor",
@@ -1078,8 +1105,8 @@
       "atributos": [
         "corpo"
       ],
-      "descricao_curta": "Resistência física contra dor, fadiga, doenças, impactos e ambientes hostis.",
-      "descricao_longa": "Vigor cobre esforço prolongado, suportar ferimentos, atravessar ambientes tóxicos e a ação defensiva Resistir.",
+      "descricao_curta": "Resistência física contra dor, fadiga, doenças e ambientes hostis.",
+      "descricao_longa": "Vigor representa a resistência física do personagem contra dor, fadiga, doenças, impactos e ambientes hostis.\nEm jogo, Vigor permite sustentar esforços prolongados, permanecer de pé apesar de ferimentos e atravessar ambientes tóxicos ou extremos sem sucumbir. Na ação defensiva Resistir, representa suportar um efeito por meio da força e da resistência corporal.",
       "tags": [
         "corpo",
         "defensiva",
@@ -1096,9 +1123,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     },
     {
       "id": "vontade",
@@ -1106,8 +1133,8 @@
       "atributos": [
         "animo"
       ],
-      "descricao_curta": "Força interior e resiliência mental/emocional contra medo, dor psíquica e manipulação arcana.",
-      "descricao_longa": "Vontade cobre resistir a controle mental, pressão emocional, colapso psicológico, Sobrecarga e magias Cognitivas.",
+      "descricao_curta": "Força interior contra medo, pressão emocional e manipulação arcana.",
+      "descricao_longa": "Vontade representa a força interior e a resiliência mental do personagem diante do medo, da pressão emocional e da manipulação arcana.\nEm jogo, Vontade permite resistir a efeitos de controle mental, suportar dor psíquica, preservar a clareza em situações de colapso e enfrentar as consequências de uma Sobrecarga. Também é usada para resistir a magias Cognitivas.",
       "tags": [
         "cognitiva",
         "emocional",
@@ -1125,9 +1152,9 @@
       "maximo_criacao": 3,
       "aparece_na_criacao": true,
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-24",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-09-27"
     }
   ],
   "derivados": [
