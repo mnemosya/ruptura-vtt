@@ -694,7 +694,7 @@
 /* O fio do quadro é o que reage ao hover — antes era o `stroke` do SVG
    virando tracejado; o gesto é o mesmo, só mudou de camada. */
 .rc-avatar:hover .rc-avatar-fill,
-.rc-avatar:focus-visible .rc-avatar-fill { border-color: rgba(0, 212, 255, 0.51); }
+.rc-avatar:focus-visible .rc-avatar-fill { border-style: dashed; border-color: rgba(0, 212, 255, 0.51); }
 .rc-avatar:focus-visible { outline: none; }
 
 /* COM ou SEM imagem, o mesmo gesto do retrato do HUD
@@ -4578,4 +4578,20 @@ button.rc-arma-acao:disabled { opacity: 0.45; cursor: not-allowed; }
   color: var(--rc-danger);
   border-color: color-mix(in srgb, var(--rc-danger) 50%, transparent);
   background: color-mix(in srgb, var(--rc-danger) 6%, transparent);
+}
+
+/* ── Chanfro dos botões de modais e janelas da ficha ──────────────
+   A regra global do VTT (`vtt-chassi.css`) só alcança o que mora
+   dentro das raízes da mesa. A ficha e seus modais (defesa, recorte do
+   avatar, modais auxiliares, confirmação de remover avatar) são
+   portais no `body`, então esses botões ficavam de canto redondo.
+   Mesma geometria do VTT: raio de 4px nos cantos retos, chanfro nos
+   outros dois. Botões só de ícone continuam fora, como no VTT. */
+.rc-picker-aplicar,
+.rc-recorte__acoes button,
+.rc-ghost,
+.rc-aux-item,
+.rc-avatar-confirmar-acoes button {
+  border-radius: 4px 8px 4px 8px !important;
+  corner-shape: round bevel round bevel;
 }

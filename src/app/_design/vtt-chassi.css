@@ -198,6 +198,16 @@
   corner-shape: round bevel round bevel;
 }
 
+/* Peças baixas: o corte fixo de 10px chegava a 40–70% da altura e
+   comia o rótulo. Aqui o chanfro acompanha a altura (~¼ dela), na
+   mesma proporção que a área autenticada já usa. */
+.rv-rodadas-etapa { --rv-notch: 4px; }   /* 14px de altura */
+.pn-cartao-expandir { --rv-notch: 5px; } /* 21px */
+.rv-ator-agir { --rv-notch: 6px; }       /* 24px */
+.pn-chipbtn { --rv-notch: 6px; }         /* 26px */
+.rv-menu-item { --rv-notch: 7px; }       /* 30px */
+.rv-cena-chip { --rv-notch: 8px; }       /* 33px */
+
 /* Caixas compostas só por ícone são exceção deliberada. O pictograma
    já concentra toda a leitura dentro de uma área pequena; chanfrar a
    caixa em volta reduz área útil e cria ruído. Inclui os dois trilhos,

@@ -190,7 +190,7 @@ const BOTOES: Botao[] = [
   { c: "rv-rodadas-modo", n: 1, sis: "rv", folha: "vtt.css", papel: "Modo da trilha de turnos", rotulo: "Combate" },
   { c: "rv-rodadas-lado", n: 1, sis: "rv", folha: "vtt.css", papel: "Lado (facção) do participante", rotulo: "PJ" },
   { c: "rv-rodadas-encerrar", n: 1, sis: "rv", folha: "vtt.css", papel: "Ação destrutiva da janela de Rodadas", rotulo: "Encerrar combate" },
-  { c: "rv-rodadas-avanca", n: 1, sis: "rv", folha: "vtt.css", papel: "Passar para a próxima janela de turno", rotulo: "Avançar janela" },
+  { c: "rv-rodadas-trilha", n: 1, sis: "rv", folha: "vtt.css", papel: "Avançar a janela pela trilha de turnos", rotulo: "Trilha de turnos" },
   { c: "rv-ator-retrato", pai: "rv-faccao rv-faccao--pj", n: 1, sis: "rv", folha: "vtt.css", papel: "Retrato no trilho — seleciona e centraliza", rotulo: "MV" },
   { c: "rv-ator-agir", pai: "rv-faccao rv-faccao--pn", n: 1, sis: "rv", folha: "vtt.css", papel: "Assumir o turno do participante", rotulo: "Agir" },
   { c: "pn-btn", n: 1, sis: "pn", folha: "painel.css", papel: "Botão técnico do painel", rotulo: "Aplicar dano", nota: "O ÚNICO com componente React: BotaoTecnico." },

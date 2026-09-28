@@ -453,22 +453,16 @@
    Placa solta no topo do palco: cantos em colchete, fundo em degradê
    frio e sombra funda, pra ela pousar SOBRE o mapa em vez de fazer
    parte da moldura. A cor de acento é a da janela em vigor — ciano nos
-   Rápidos, âmbar nos Lentos — e ela pinta a etiqueta da rodada, os
-   colchetes e o botão de avançar, que é onde o olho encosta. */
+   Rápidos, âmbar nos Lentos — e ela pinta a etiqueta da rodada e a
+   trilha, que também é o controle de avançar quando a janela termina. */
 .rv-rodadas {
   --rv-rod-cor: var(--cy);
   position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 14;
-  /* Largura pelo CONTEÚDO, com teto: o estado de repouso é só duas
-     linhas curtas e o com ação ganha o botão à direita, na mesma
-     fileira. Fixar uma largura só faz um dos dois mentir — o
-     primeiro fica largo demais, o segundo estoura (o botão saía por
-     cima do colchete da direita). O teto continua deixando os dois
-     trilhos de facção respirarem nas laterais. */
-  width: max-content;
+  /* Largura fixa para as duas janelas; o teto preserva os trilhos de
+     facção nas telas estreitas. */
+  width: 220px;
   max-width: min(430px, calc(100% - 220px));
-  display: flex; align-items: center; justify-content: center; gap: 24px;
-  /* Mesmo respiro em volta toda — sem largura mínima, que só abria
-     vazio nas laterais. */
+  display: flex; align-items: center; justify-content: center;
   padding: 15px;
   /* Chanfro das peças do VTT (`vtt-chassi.css`): a regra global só pega
      controles, e a placa é uma `section`. */
@@ -528,38 +522,53 @@
    declarado agora, e as outras duas a qualificam. */
 .rv-rodadas-janela {
   font-family: var(--font-mono), monospace;
-  font-size: 14px; font-weight: 300; line-height: 1.15;
-  letter-spacing: .01em; /* Meio-termo entre o texto e o texto apagado: legível sem o branco
+  font-size: 14px; font-weight: 500; line-height: 1.15;
+  text-transform: uppercase;
+  letter-spacing: .06em; /* Meio-termo entre o texto e o texto apagado: legível sem o branco
      quase puro, que brigava com o resto da placa. */
   color: color-mix(in srgb, var(--rv-ink) 55%, var(--rv-ink-dim));
   white-space: nowrap;
 }
 
-.rv-rodadas-nucleo { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.rv-rodadas-nucleo { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; }
+.rv-rodadas-trilha {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px;
+  width: 100%; margin-top: 8px;
+}
+.rv-rodadas-etapa {
+  position: relative; width: 100%; height: 14px; padding: 0;
+  border: 0; background: transparent; appearance: none; cursor: pointer;
+}
+.rv-rodadas-etapa:disabled { cursor: default; }
+.rv-rodadas-etapa::after {
+  content: ""; position: absolute; inset: 50% 0 auto;
+  height: 2px; transform: translateY(-50%);
+  background: #2a3b55;
+  transition: transform .16s ease, background .16s ease, box-shadow .16s ease;
+}
+.rv-rodadas-etapa[data-destino="rapidos"] { --rv-etapa-cor: var(--cy); }
+.rv-rodadas-etapa[data-destino="lentos"] { --rv-etapa-cor: var(--am); }
+.rv-rodadas-etapa[aria-current="step"]::after {
+  background: var(--rv-etapa-cor);
+  box-shadow: 0 0 7px var(--rv-etapa-cor);
+}
+.rv-rodadas-etapa:not([aria-current]):is(:hover, :focus-visible)::after {
+  transform: translateY(-50%) scaleY(1.8);
+  background: color-mix(in srgb, var(--rv-etapa-cor) 55%, #2a3b55);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--rv-etapa-cor) 35%, transparent);
+}
+.rv-rodadas-etapa:focus-visible { outline: 1px solid var(--rv-etapa-cor); outline-offset: -2px; }
 /* Estado só pra leitor de tela — de quem é a vez já se lê nos trilhos. */
 .rv-rodadas-estado {
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
-.rv-rodadas-avanca {
-  flex: none; padding: 9px 18px; cursor: pointer;
-  border: 1px solid color-mix(in srgb, var(--rv-rod-cor) 55%, transparent);
-  border-radius: var(--rv-r); background: transparent;
-  letter-spacing: .08em; text-transform: uppercase;
-  color: var(--rv-rod-cor);
-  transition: background .14s, border-color .14s;
-}
-/* Fonte mono. Duas classes porque `.rm-root button { font: inherit }`
-   (classe + elemento) vence uma classe só e devolvia a Rajdhani. */
-.rv-rodadas .rv-rodadas-avanca { font: 700 10px var(--font-mono), monospace; }
 /* Mesma armadilha nos botões do trilho: Agir/Concluir e Passar saíam
    em Rajdhani. Os de declarar janela (`≤2`/`3+`) ficam de fora de
    propósito — o `≤` em mono fica esquisito; vão pra Rajdhani. */
 .rv-ator .rv-ator-agir,
 .rv-ator .rv-ator-passar { font-family: var(--font-mono), monospace; }
 .rv-ator .rv-ator-declara button { font-family: var(--font-rajdhani), "Rajdhani", sans-serif; font-size: 12px; }
-.rv-rodadas-avanca:hover { background: color-mix(in srgb, var(--rv-rod-cor) 12%, transparent); border-color: var(--rv-rod-cor); }
-.rv-rodadas-avanca:focus-visible { outline: 2px solid var(--rv-rod-cor); outline-offset: 2px; }
 
 /* ── Trilho de facção ── */
 .rv-faccao {
