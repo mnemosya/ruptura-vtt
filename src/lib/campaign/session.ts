@@ -44,7 +44,7 @@ import { listControlledCharacters } from "../character/storage";
  *     real (o mesmo padrão que todo outro `reload*` do provider segue).
  */
 export async function fetchControlledCharacterIdsStrict(campaignId: string): Promise<string[]> {
-  const controlados = await listControlledCharacters(campaignId);
+  const controlados = await listControlledCharacters(campaignId, { somenteEditar: true });
   return controlados.filter((c) => !c.archived_at).map((c) => c.id);
 }
 

@@ -60,7 +60,7 @@ export async function lerContextoChatAction(campaignId: string): Promise<Resulta
     const usuario = await getCurrentUser();
     const [roster, personagens] = await Promise.all([
       listCampaignRoster(campaignId),
-      v.acesso.role === "narrator" ? listCharactersForNarratorCampaign(campaignId) : listControlledCharacters(campaignId),
+      v.acesso.role === "narrator" ? listCharactersForNarratorCampaign(campaignId) : listControlledCharacters(campaignId, { somenteEditar: true }),
     ]);
     const minhaLinha = usuario ? roster.find((r) => r.userId === usuario.id) : undefined;
     return {

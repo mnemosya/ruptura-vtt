@@ -2,7 +2,7 @@
 
 /**
  * Janelas internas de administração: "Jogadores e convites" e
- * "Configurar acesso".
+ * "Configurar permissões".
  *
  * As duas eram LINKS que tiravam a pessoa do VTT. Agora abrem na mesma
  * moldura do Console, com mapa e cena intactos por baixo.
@@ -13,14 +13,17 @@
  * operacional quebra a estação diegética.
  */
 
-import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, Link2, Loader2, ShieldCheck, Trash2, UserMinus } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Check, ChevronDown, Copy, Eye, Link2, Loader2, Pencil, ShieldCheck, Trash2, UserMinus, UserPlus, UserRound } from "lucide-react";
+import { MenuAncorado } from "../ui/MenuAncorado";
+import { useDicaPortal } from "../ui/DicaPortal";
+import type { PermissaoPersonagem } from "../../../../../../lib/character/storage";
 import { JanelaInterna } from "../ui/JanelaInterna";
 import { BotaoTecnico, Caption, Chip, Chips, PainelTecnico, Pip } from "../ui/primitivas";
 import { EstadoCarregando, EstadoErro, EstadoVazio } from "../Estados";
 import {
   criarConviteAction,
-  definirControleAction,
+  definirPermissaoAction,
   lerAcessoPersonagemAction,
   lerJogadoresConvitesAction,
   removerParticipanteAction,
@@ -236,6 +239,8 @@ export function JanelaAcessoPersonagem({
   const [dados, setDados] = useState<DadosAcessoPersonagem | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState<string | null>(null);
+  const [ancoraAdicionar, setAncoraAdicionar] = useState<HTMLElement | null>(null);
+  const caixaAdicionar = useRef<HTMLSpanElement>(null);
 
   const carregar = useCallback(async () => {
     if (!characterId) return;
@@ -253,10 +258,25 @@ export function JanelaAcessoPersonagem({
 
   if (!characterId) return null;
 
+  async function aplicar(userId: string, permissao: PermissaoPersonagem | null) {
+    if (!characterId) return;
+    setOcupado(userId);
+    try {
+      const r = await definirPermissaoAction(campaignId, characterId, userId, permissao);
+      if (!r.ok) setErro(r.erro ?? "A operação foi recusada.");
+      else await carregar();
+    } finally {
+      setOcupado(null);
+    }
+  }
+
+  const nomeDe = (userId: string) => dados?.jogadores.find((j) => j.userId === userId)?.displayName ?? "Jogador";
+  const candidatos = dados ? dados.jogadores.filter((j) => !dados.controladores.some((c) => c.userId === j.userId)) : [];
+
   return (
     <JanelaInterna
       aberta
-      titulo="Configurar acesso"
+      titulo="Configurar permissões"
       subtitulo={dados?.personagemNome}
       largura={520}
       altura={460}
@@ -272,47 +292,161 @@ export function JanelaAcessoPersonagem({
         </EstadoVazio>
       ) : (
         <>
-          <Chips>
-            <Chip acento="cy" icone={<ShieldCheck size={10} />}>
-              {dados.controladores.length} controlador(es)
-            </Chip>
-          </Chips>
-          <ul className="rv-pn-lista" style={{ marginTop: 10 }} data-testid="painel-acesso-lista">
-            {dados.jogadores.map((j) => {
-              const controla = dados.controladores.includes(j.userId);
-              return (
-                <li key={j.userId} className="rv-pn-linha" data-sel={controla ? "true" : undefined}>
-                  <span className="rv-pn-face" aria-hidden="true">
-                    {j.displayName.slice(0, 2).toUpperCase()}
-                  </span>
-                  <span className="rv-pn-linha-texto">
-                    <strong className="rv-pn-linha-nome">{j.displayName}</strong>
-                    <span className="rv-pn-linha-sub">{controla ? "Controla este personagem" : "Sem controle"}</span>
-                  </span>
-                  <BotaoTecnico
-                    acento={controla ? "perigo" : "ok"}
-                    ocupado={ocupado === j.userId}
-                    icone={controla ? <UserMinus /> : <ShieldCheck />}
-                    onClick={async () => {
-                      setOcupado(j.userId);
-                      try {
-                        const r = await definirControleAction(campaignId, characterId, j.userId, !controla);
-                        if (!r.ok) setErro(r.erro ?? "A operação foi recusada.");
-                        else await carregar();
-                      } finally {
-                        setOcupado(null);
-                      }
-                    }}
-                    testId="painel-acesso-alternar"
-                  >
-                    {controla ? "Remover" : "Conceder"}
-                  </BotaoTecnico>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="rv-perm-cab">
+            <Chips>
+              <Chip acento="cy" icone={<ShieldCheck size={10} />}>
+                {dados.controladores.length} com acesso
+              </Chip>
+            </Chips>
+            {/* Adicionar escolhe o JOGADOR; entra como Editar (o que
+                "dar um personagem" sempre significou) e a permissão se
+                ajusta na própria linha depois. */}
+            <span ref={caixaAdicionar} style={{ display: "inline-flex" }}>
+              <BotaoTecnico
+                acento="cy"
+                icone={<UserPlus />}
+                onClick={() => setAncoraAdicionar(ancoraAdicionar ? null : caixaAdicionar.current)}
+                testId="painel-acesso-adicionar"
+              >
+                Adicionar
+              </BotaoTecnico>
+            </span>
+          </div>
+          <MenuAncorado
+            ancora={ancoraAdicionar}
+            aberto={ancoraAdicionar !== null}
+            onFechar={() => setAncoraAdicionar(null)}
+            rotulo="Dar acesso a"
+            testId="painel-acesso-adicionar-menu"
+            comDescricao
+            alinhar="fim"
+            // O botão fica SEMPRE — sumir quando todos já têm acesso
+            // fazia parecer que adicionar não existia. Sem candidatos, o
+            // menu diz por quê e pra onde ir.
+            itens={candidatos.length > 0
+              ? candidatos.map((j) => ({
+                  id: j.userId,
+                  rotulo: j.displayName,
+                  descricao: "Entra com permissão de editar.",
+                  icone: <UserRound />,
+                  onSelecionar: () => void aplicar(j.userId, "editar"),
+                }))
+              : [{
+                  id: "ninguem",
+                  rotulo: "Todos já têm acesso",
+                  descricao: "Convide mais jogadores em Jogadores e convites.",
+                  icone: <UserRound />,
+                  desabilitado: true,
+                  onSelecionar: () => {},
+                }]}
+          />
+
+          {dados.controladores.length === 0 ? (
+            <EstadoVazio testId="painel-acesso-ninguem">Ninguém tem acesso a este personagem ainda.</EstadoVazio>
+          ) : (
+            <ul className="rv-pn-lista" style={{ marginTop: 10 }} data-testid="painel-acesso-lista">
+              {dados.controladores.map((c) => {
+                const nome = nomeDe(c.userId);
+                return (
+                  <li key={c.userId} className="rv-pn-linha rv-perm-linha" data-sel="true">
+                    <span className="rv-pn-face" aria-hidden="true">{nome.slice(0, 2).toUpperCase()}</span>
+                    <span className="rv-pn-linha-texto">
+                      <strong className="rv-pn-linha-nome">{nome}</strong>
+                      <span className="rv-pn-linha-sub">Jogador</span>
+                    </span>
+                    <ChipPermissao
+                      valor={c.permissao}
+                      ocupado={ocupado === c.userId}
+                      onMudar={(p) => { if (p !== c.permissao) void aplicar(c.userId, p); }}
+                    />
+                    <BotaoRemoverAcesso
+                      ocupado={ocupado === c.userId}
+                      onRemover={() => void aplicar(c.userId, null)}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </>
       )}
     </JanelaInterna>
+  );
+}
+
+const PERMISSOES: { id: PermissaoPersonagem; rotulo: string; descricao: string; Icone: typeof Eye }[] = [
+  { id: "visualizar", rotulo: "Visualizar", descricao: "Lê a ficha, sem alterar.", Icone: Eye },
+  { id: "editar", rotulo: "Editar", descricao: "Ficha, token e turno.", Icone: Pencil },
+];
+
+/**
+ * A permissão atual como chip; o clique abre o menu padrão do painel
+ * (`MenuAncorado`) com as duas opções e o que cada uma libera — a
+ * diferença precisa ser LIDA antes da escolha, não adivinhada por ícone.
+ */
+function ChipPermissao({ valor, onMudar, ocupado }: {
+  valor: PermissaoPersonagem; onMudar: (p: PermissaoPersonagem) => void; ocupado: boolean;
+}) {
+  const [ancora, setAncora] = useState<HTMLButtonElement | null>(null);
+  const atual = PERMISSOES.find((p) => p.id === valor) ?? PERMISSOES[1];
+  return (
+    <>
+      <button
+        type="button"
+        className="rv-perm-chip"
+        aria-haspopup="menu"
+        aria-expanded={ancora !== null}
+        // Sem `aria-label`: o texto visível já nomeia o botão, e o chassi
+        // trata `button[aria-label]:has(svg)` como botão SÓ de ícone (sem
+        // chanfro). A pergunta vai no `aria-describedby` implícito do menu.
+        title={undefined}
+        disabled={ocupado}
+        onClick={(e) => setAncora(ancora ? null : e.currentTarget)}
+        data-testid="painel-acesso-permissao"
+      >
+        {ocupado ? <Loader2 size={13} className="rv-girando" /> : <atual.Icone size={13} />}
+        <span>{atual.rotulo}</span>
+        <ChevronDown size={13} className="rv-perm-chip-seta" />
+      </button>
+      <MenuAncorado
+        ancora={ancora}
+        aberto={ancora !== null}
+        onFechar={() => setAncora(null)}
+        rotulo="Permissão"
+        comDescricao
+        alinhar="fim"
+        testId="painel-acesso-permissao-menu"
+        itens={PERMISSOES.map((p) => ({
+          id: p.id,
+          rotulo: p.rotulo,
+          descricao: p.descricao,
+          icone: <p.Icone />,
+          selecionado: p.id === valor,
+          onSelecionar: () => onMudar(p.id),
+        }))}
+      />
+    </>
+  );
+}
+
+/** Só ícone, com a dica padrão da mesa — flutuante, pra janela não recortá-la. */
+function BotaoRemoverAcesso({ onRemover, ocupado }: { onRemover: () => void; ocupado: boolean }) {
+  // Portal: dentro da janela, `fixed` não é relativo à tela (ver `DicaPortal`).
+  const { alvo, dica } = useDicaPortal("Remover acesso");
+  return (
+    <>
+      <button
+        type="button"
+        className="rv-perm-remover"
+        aria-label="Remover acesso"
+        disabled={ocupado}
+        onClick={onRemover}
+        data-testid="painel-acesso-remover"
+        {...alvo}
+      >
+        <UserMinus size={15} />
+      </button>
+      {dica}
+    </>
   );
 }

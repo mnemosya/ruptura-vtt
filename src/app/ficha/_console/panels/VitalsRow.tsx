@@ -222,7 +222,7 @@ function LinhaVital({
         </svg>
       </div>
 
-      <div className="rc-vres-numbox">
+      <div className="rc-vres-numbox" data-leitura={!(editable && onEdit) || undefined}>
         <div className="rc-vres-num" data-mudou={pulso ? "true" : undefined}>
           <ResourceValueCard
             atual={atual}
@@ -450,6 +450,8 @@ export function VitalsRow({ api, onEditarRecurso, onEstabilizar, onTesteDecisivo
             atual: character.recursos_atuais?.[id] ?? maximos[id],
           }))}
           onEdit={onEditarRecurso}
+          // Só leitura: some o −/+ e o valor deixa de ser editável.
+          readOnly={api.somenteLeitura}
         />
       </div>
       {(colapso?.ativo || encerrado) && (
@@ -465,7 +467,7 @@ export function VitalsRow({ api, onEditarRecurso, onEstabilizar, onTesteDecisivo
               {Array.from({ length: MAX_COLLAPSE_SEGMENTS }, (_, i) => (
                 <button key={i} type="button" className="rc-collapse-segment"
                   data-filled={i < segmentos}
-                  disabled={i !== segmentos || estabilizado || encerrado || !colapso?.ativo}
+                  disabled={api.somenteLeitura || i !== segmentos || estabilizado || encerrado || !colapso?.ativo}
                   onClick={() => guard(api.avancarColapso)}
                   aria-label={i < segmentos ? `Segmento ${i + 1} atingido` : `Avançar Colapso para o segmento ${i + 1}`}>
                   <span aria-hidden="true" />
@@ -473,7 +475,7 @@ export function VitalsRow({ api, onEditarRecurso, onEstabilizar, onTesteDecisivo
               ))}
             </div>
           </div>
-          {encerrado ? (
+          {api.somenteLeitura && !encerrado && !estabilizado ? null : encerrado ? (
             <span className="rc-collapse-outcome"><Skull aria-hidden="true" />{desfecho === "morte" ? "Morto" : "Em coma"}</span>
           ) : estabilizado ? (
             <span className="rc-collapse-outcome"><ShieldCheck aria-hidden="true" />Estabilizado</span>

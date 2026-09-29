@@ -292,6 +292,7 @@ import type {
   CompanionModelSummary,
 } from "../../../lib/character";
 import type { TechnicalContentItem } from "../../../lib/content";
+import { lerPermissaoNaFicha } from "../../../lib/campaign/sessionActions";
 import { resolverPericia, rollPericia, type PreparedRoll } from "../../../lib/dice";
 import { addLog } from "../../../lib/table/storage";
 import { upsertCrewInventoryItem } from "../../../lib/table/crewInventory";
@@ -532,6 +533,29 @@ export default function CharacterSheetClient({
   // só para o indicador discreto da UI.
   const [characterDataSyncState, setCharacterDataSyncState] = useState<"synced" | "updating" | "pending_remote" | "error">("synced");
   const [characterId, setCharacterId] = useState<string | null>(null);
+  /**
+   * Permissão da conta sobre o personagem aberto (migration 0151). Com
+   * "visualizar" a ficha é SÓ LEITURA: nada grava (as duas rotas de
+   * gravação saem cedo) e o Console trava os controles de edição. O
+   * servidor recusaria de qualquer jeito — isto evita a pessoa editar,
+   * ver a mudança na tela e descobrir no erro de gravação que não podia.
+   */
+  const [permissaoFicha, setPermissaoFicha] = useState<"editar" | "visualizar" | null>(null);
+  // Atalho SÓ DE DESENVOLVIMENTO pra revisar o layout da ficha em modo
+  // leitura sem precisar de uma segunda conta:
+  // `localStorage.setItem("ruptura:forcarLeitura", "1")` e reabrir a ficha.
+  const forcarLeituraDev = process.env.NODE_ENV === "development"
+    && typeof window !== "undefined"
+    && (() => { try { return window.localStorage.getItem("ruptura:forcarLeitura") === "1"; } catch { return false; } })();
+  const somenteLeitura = mode === "product" && (permissaoFicha === "visualizar" || forcarLeituraDev);
+  useEffect(() => {
+    if (mode !== "product" || !characterId) { setPermissaoFicha(null); return; }
+    let vivo = true;
+    lerPermissaoNaFicha(characterId)
+      .then((p) => { if (vivo) setPermissaoFicha(p); })
+      .catch(() => { /* sem resposta: segue editável; o servidor ainda barra a escrita */ });
+    return () => { vivo = false; };
+  }, [mode, characterId]);
   const [personagens, setPersonagens] = useState<CharacterRecord[]>(personagensIniciais);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -866,6 +890,7 @@ export default function CharacterSheetClient({
   }
 
   async function handleSave() {
+    if (somenteLeitura) return;
     // Defesa em profundidade: a ficha real (/ficha) só edita o
     // personagem já resolvido via getCharacterForCampaign — nunca cria
     // um personagem novo/solto. Na prática characterId/selectedCampaignId
@@ -4966,6 +4991,7 @@ export default function CharacterSheetClient({
   async function persistCharacterAuto(nextCharacter: Character, oQueFalhou: string) {
     const isConnected = Boolean(characterId && selectedCampaignId);
     if (!isConnected) return; // Modo local (sem mesa/personagem salvo) — nada a persistir, sem erro.
+    if (somenteLeitura) return; // Quem só visualiza não grava — ver `permissaoFicha`.
 
     // Já tem uma gravação no ar: esta vira a pendente e sai. Quem está
     // em voo grava este payload assim que voltar — nunca duas subindo
@@ -5571,6 +5597,7 @@ export default function CharacterSheetClient({
   const estocarStatusFicha = getEstocarAvailability(character, talentsIniciais);
 
   const consoleApi: ConsoleApi = {
+    somenteLeitura,
     escalpos: {
       catalogo: escalposIniciais,
       erro: escalposError,

@@ -4595,3 +4595,44 @@ button.rc-arma-acao:disabled { opacity: 0.45; cursor: not-allowed; }
   border-radius: 4px 8px 4px 8px !important;
   corner-shape: round bevel round bevel;
 }
+
+/* ── Ficha SOMENTE LEITURA (permissão "visualizar", migration 0151) ──
+   Os controles de edição simplesmente não são renderizados (cada
+   painel olha `api.somenteLeitura`); a leitura — hover, dicas,
+   detalhes — continua inteira. Aqui só o selo da barra de título. */
+.rc-somente-leitura-chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px;
+  border: 1px solid var(--rc-btn-border); border-radius: var(--rc-r-sm);
+  background: var(--rc-btn-bg); color: rgba(234, 247, 255, 0.80);
+  font-family: var(--font-rajdhani), sans-serif; font-size: 13px; font-weight: 600; line-height: 18px;
+  white-space: nowrap;
+}
+
+/* Ajustes de LAYOUT do modo leitura — sem os controles, as grades que
+   reservavam coluna pra eles fecham, e o que era botão perde a cara de
+   clicável. */
+.rc-vres-numbox[data-leitura] { grid-template-columns: minmax(0, 1fr); }
+span.rc-vres-atual { cursor: default; }
+span.rc-vres-atual:hover { background: none; }
+.rc-acao-ctrl[data-leitura] { grid-template-columns: minmax(0, 1fr); }
+.rc-acao-ctrl[data-leitura] .rc-acao-valor { justify-self: center; }
+span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
+.rc-avatar--leitura { cursor: default; }
+.rc-avatar--leitura:hover .rc-avatar-fill { border-style: solid; border-color: rgba(0, 212, 255, 0.14); }
+.rc-nric-attr[data-leitura] { cursor: default; }
+.rc-nric-pip[data-leitura] { cursor: default; }
+/* Equipamentos em leitura: slot vazio e item equipado deixam de ser
+   alvo (sem cursor de clique, sem véu de hover), e o readout de MIT/PD
+   fecha a coluna dos −/+. */
+.rc-eq-vazio, .rc-eq-inner--leitura { cursor: default; }
+.rc-eq-vazio:hover, .rc-eq-inner--leitura:hover { background: transparent; }
+.rc-eq-inner--leitura .rc-eq-nome { cursor: default; }
+.rc-eq-vazio .rc-eq-equipar-txt { color: rgba(214, 228, 245, 0.4); }
+.rc-eq-readout[data-leitura] { grid-template-columns: minmax(0, 1fr); }
+/* Inventário em leitura: a quantidade ocupa a caixa do contador. */
+.rc-inv-stepper[data-leitura] span { border: 1px solid var(--rc-line); gap: 8px; }
+.rc-inv-qtd-rot {
+  font-style: normal; font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #617d8f;
+}
+.rc-inv-carteira-val[data-leitura] { cursor: default; }

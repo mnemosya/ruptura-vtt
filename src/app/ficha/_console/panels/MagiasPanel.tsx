@@ -98,12 +98,13 @@ function DetalheMagia({ spell, publicadas, api }: { spell: SpellContent; publica
       {manuais.map((texto, i) => <TextoComRegras key={i} texto={`Manual: ${texto}`} glossario={api.glossario} className="rc-inv-det-desc" />)}
       {bloqueada && <p className="rc-mag-aviso">Nível de vertente insuficiente para conjurar esta magia.</p>}
     </div>
-    <div className="rc-inv-det-rodape rc-mag-rodape">
+    {/* Só leitura: conjurar, rolar dano e fundir são ações — o rodapé sai inteiro. */}
+    {!api.somenteLeitura && <div className="rc-inv-det-rodape rc-mag-rodape">
       {m.sheetMode === "evolucao" ? <button type="button" className="rc-inv-btn" onClick={() => aprendida ? m.onForget(aprendida.id) : m.onLearn(spell.slug)}>{aprendida ? "Esquecer" : "Aprender"}</button> : <>
         <button type="button" className="rc-inv-btn rc-mag-conjurar" disabled={bloqueada || !aprendida} onClick={() => m.onCast(spell.slug)}>Conjurar</button>
         {dano && <details className="rc-mag-opcoes"><summary>Dano e canalização</summary><div className="rc-mag-opcoes-corpo">{podeCanalizar && <label>Canalizar Potencializar · Mana<input aria-label="Mana para canalizar" type="number" min={0} max={m.canalizar?.manaAtual ?? 0} value={manaCanalizada} onChange={e => setMana(Math.max(0, Math.min(m.canalizar?.manaAtual ?? 0, Math.trunc(Number(e.target.value) || 0))))} /></label>}<button type="button" className="rc-inv-btn" onClick={() => m.onRollDamage(spell.slug, podeCanalizar ? manaCanalizada : 0)}>{dano.dado ? `Rolar dano (${dano.dado})` : `Dano fixo (${dano.valor})`}{podeCanalizar && manaCanalizada > 0 ? ` +${manaCanalizada}` : ""}</button></div></details>}
         {outras.length > 0 && <details className="rc-mag-opcoes"><summary>Fusão · +1 Sobrecarga</summary><div className="rc-mag-opcoes-corpo"><select aria-label="Magia para fundir" value={fundida ? fusao : ""} onChange={e => setFusao(e.target.value)}><option value="">Escolher magia…</option>{outras.map(s => <option key={s.slug} value={s.slug}>{s.nome} ({rotulo(s.vertente)})</option>)}</select><button type="button" className="rc-inv-btn" disabled={bloqueiaFusao} onClick={() => { if (!bloqueiaFusao) { m.onCastWithFusion(spell.slug, fusao); setFusao(""); } }}>Conjurar com Fusão</button>{fundida && bloqueiaFusao && <p className="rc-mag-aviso">Nível de vertente insuficiente para esta fusão.</p>}</div></details>}
       </>}
-    </div>
+    </div>}
   </div>;
 }

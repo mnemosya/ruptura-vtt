@@ -34,6 +34,7 @@ import {
   listCharacterControllers,
   listCharactersForNarratorCampaign,
   revokeCharacterControl,
+  type PermissaoPersonagem,
 } from "../../../../../../lib/character/storage";
 import { exigirNarradorPainel, mensagemDeErro, type ResultadoPainel } from "./comum";
 
@@ -143,9 +144,9 @@ export async function removerParticipanteAction(campaignId: string, userId: stri
 
 export interface DadosAcessoPersonagem {
   personagemNome: string;
-  /** Contas que podem controlar este personagem agora. */
-  controladores: string[];
-  /** Jogadores ativos da campanha, candidatos a controlador. */
+  /** Contas com acesso a este personagem agora, e com qual permissão. */
+  controladores: { userId: string; permissao: PermissaoPersonagem }[];
+  /** Jogadores ativos da campanha — quem ainda não tem acesso é candidato em "Adicionar". */
   jogadores: { userId: string; displayName: string }[];
 }
 
@@ -164,7 +165,9 @@ export async function lerAcessoPersonagemAction(campaignId: string, characterId:
       ok: true,
       dados: {
         personagemNome: personagem.name,
-        controladores: controles.filter((c) => c.character_id === characterId).map((c) => c.user_id),
+        controladores: controles
+          .filter((c) => c.character_id === characterId)
+          .map((c) => ({ userId: c.user_id, permissao: c.permissao ?? "editar" })),
         jogadores: roster.filter((r) => r.role === "player").map((r) => ({ userId: r.userId, displayName: r.displayName })),
       },
     };
@@ -173,19 +176,23 @@ export async function lerAcessoPersonagemAction(campaignId: string, characterId:
   }
 }
 
-export async function definirControleAction(
+/**
+ * Concede (ou troca) a permissão de uma conta sobre o personagem, ou a
+ * remove com `null`. Conceder a quem já tem acesso só muda a permissão.
+ */
+export async function definirPermissaoAction(
   campaignId: string,
   characterId: string,
   userId: string,
-  conceder: boolean,
+  permissao: PermissaoPersonagem | null,
 ): Promise<ResultadoPainel> {
   const v = await exigirNarradorPainel(campaignId);
   if (!v.ok) return { ok: false, erro: v.erro };
   try {
-    if (conceder) await grantCharacterControl(characterId, userId);
+    if (permissao) await grantCharacterControl(characterId, userId, permissao);
     else await revokeCharacterControl(characterId, userId);
     return { ok: true };
   } catch (e) {
-    return { ok: false, erro: mensagemDeErro(e, conceder ? "Falha ao conceder o controle." : "Falha ao remover o controle.") };
+    return { ok: false, erro: mensagemDeErro(e, permissao ? "Falha ao definir a permissão." : "Falha ao remover o acesso.") };
   }
 }

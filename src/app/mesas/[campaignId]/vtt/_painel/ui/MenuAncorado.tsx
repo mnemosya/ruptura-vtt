@@ -41,6 +41,8 @@ export function MenuAncorado({
   itens,
   rotulo,
   testId,
+  comDescricao,
+  alinhar = "inicio",
 }: {
   /** Elemento que abriu o menu — âncora de posição E destino do foco ao fechar. */
   ancora: HTMLElement | null;
@@ -49,6 +51,18 @@ export function MenuAncorado({
   itens: ItemMenu[];
   rotulo: string;
   testId?: string;
+  /**
+   * Mostra a `descricao` de cada item como segunda linha, em vez de só
+   * no `title`. Pra escolhas cuja diferença PRECISA ser lida antes do
+   * clique (ex.: Visualizar × Editar em "Configurar permissões").
+   */
+  comDescricao?: boolean;
+  /**
+   * Qual borda do âncora o menu acompanha. `"fim"` alinha a borda
+   * DIREITA do menu à do botão — pra âncoras encostadas à direita de
+   * uma linha, onde abrir pela esquerda deixava o menu "pendurado".
+   */
+  alinhar?: "inicio" | "fim";
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
@@ -67,10 +81,25 @@ export function MenuAncorado({
     const acima = r.top - alturaEstimada - 6;
     const cabeAbaixo = abaixo + alturaEstimada <= window.innerHeight - MARGEM;
     setPos({
-      left: Math.max(MARGEM, Math.min(r.left, window.innerWidth - larguraEstimada - MARGEM)),
+      left: Math.max(MARGEM, Math.min(
+        alinhar === "fim" ? r.right - larguraEstimada : r.left,
+        window.innerWidth - larguraEstimada - MARGEM,
+      )),
       top: cabeAbaixo ? abaixo : Math.max(MARGEM, acima),
     });
-  }, [aberto, ancora, itens.length]);
+  }, [aberto, ancora, itens.length, alinhar]);
+
+  // A 1ª posição sai de uma largura ESTIMADA (o menu ainda não existe).
+  // Alinhado pela direita, o erro da estimativa vira desalinhamento
+  // visível — então, já montado, mede de verdade e corrige uma vez.
+  useLayoutEffect(() => {
+    if (!aberto || !ancora || !pos || alinhar !== "fim") return;
+    const el = ref.current;
+    if (!el) return;
+    const r = ancora.getBoundingClientRect();
+    const certo = Math.max(MARGEM, Math.min(r.right - el.offsetWidth, window.innerWidth - el.offsetWidth - MARGEM));
+    if (Math.abs(certo - pos.left) > 0.5) setPos({ ...pos, left: certo });
+  }, [aberto, ancora, pos, alinhar]);
 
   const fechar = useCallback(() => {
     onFechar();
@@ -141,14 +170,20 @@ export function MenuAncorado({
             aria-checked={!!item.selecionado}
             className="pn-menu-item"
             disabled={item.desabilitado}
-            title={item.descricao}
+            title={comDescricao ? undefined : item.descricao}
+            data-com-descricao={comDescricao && item.descricao ? "true" : undefined}
             onClick={() => {
               item.onSelecionar();
               fechar();
             }}
           >
             {item.icone}
-            {item.rotulo}
+            {comDescricao && item.descricao ? (
+              <span className="pn-menu-item-texto">
+                <span className="pn-menu-item-rotulo">{item.rotulo}</span>
+                <span className="pn-menu-item-desc">{item.descricao}</span>
+              </span>
+            ) : item.rotulo}
           </button>
         </div>
       ))}

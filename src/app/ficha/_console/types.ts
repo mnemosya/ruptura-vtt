@@ -41,6 +41,13 @@ export type RecursoEditavel = "pv" | "pe" | "mana";
 export type ConsoleModo = "jogo" | "evolucao";
 
 export interface ConsoleApi {
+  /**
+   * Quem abriu só VISUALIZA este personagem (migration 0151): a ficha
+   * se lê inteira, mas nenhum controle de edição, rolagem ou ação
+   * responde — e nada é gravado (`CharacterSheetClient` corta a
+   * gravação na origem).
+   */
+  somenteLeitura?: boolean;
   escalpos: {
     catalogo: TechnicalContentItem[];
     erro: string | null;

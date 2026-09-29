@@ -156,7 +156,7 @@ export async function lerContextoRolagemAction(
 
   try {
     const [personagens, regrasDoc, personagemPedido] = await Promise.all([
-      ehNarrador ? listCharactersForNarratorCampaign(campaignId) : listControlledCharacters(campaignId),
+      ehNarrador ? listCharactersForNarratorCampaign(campaignId) : listControlledCharacters(campaignId, { somenteEditar: true }),
       getCharacterRules().catch(() => null),
       characterId ? getCharacterForCampaign(campaignId, characterId) : Promise.resolve(null),
     ]);

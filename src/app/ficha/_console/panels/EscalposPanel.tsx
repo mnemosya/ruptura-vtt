@@ -93,6 +93,7 @@ function DetalheEscalpo({ registro, api, onInstalar, onRemover }: { registro: Re
       {instancia?.notas && <section className="rc-esc-modulos"><h4>Notas da instalação</h4><p>{instancia.notas}</p></section>}
       {instancia && api.escalpos.comEfeitoAutomatico.has(instancia.id) && <p className="rc-esc-efeito">Modificador passivo aplicado nas rolagens.</p>}
     </div>
-    <div className="rc-inv-det-rodape rc-esc-rodape">{instancia ? <button type="button" className="rc-inv-btn rc-inv-btn--perigo" onClick={onRemover}>Remover registro de instalação</button> : modelo && <button type="button" className="rc-inv-btn" onClick={onInstalar}>Registrar instalação</button>}</div>
+    {/* Só leitura: registrar e remover instalação são ações — o rodapé sai. */}
+    {!api.somenteLeitura && <div className="rc-inv-det-rodape rc-esc-rodape">{instancia ? <button type="button" className="rc-inv-btn rc-inv-btn--perigo" onClick={onRemover}>Remover registro de instalação</button> : modelo && <button type="button" className="rc-inv-btn" onClick={onInstalar}>Registrar instalação</button>}</div>}
   </div>;
 }
