@@ -69,6 +69,7 @@ import {
   arquivarPersonagemPainelAction,
   criarPastaAction,
   criarPersonagemPainelAction,
+  criarMeuPersonagemAction,
   duplicarPersonagemPainelAction,
   lerDiretorioPersonagensAction,
   lerResumoPersonagemAction,
@@ -441,7 +442,7 @@ export function PersonagensTab({
         },
         {
           id: "acesso",
-          rotulo: "Configurar acesso…",
+          rotulo: "Permissões",
           icone: <KeyRound size={14} />,
           separadorAntes: true,
           dica: "Abre a janela de acesso — conceder ou remover controle, sem sair da Mesa.",
@@ -704,11 +705,7 @@ export function PersonagensTab({
                     ) : undefined
                   }
                   marca={
-                    entrada.arquivado ? (
-                      <span className="rv-pn-tag">arquivado</span>
-                    ) : entrada.controladores != null && entrada.controladores > 0 ? (
-                      <span className="rv-pn-tag" title="Controlado por um jogador">controlado</span>
-                    ) : undefined
+                    entrada.arquivado ? <span className="rv-pn-tag">arquivado</span> : undefined
                   }
                   onAbrir={() => onAbrirConsole(entrada.characterId)}
                   onAquecer={() => {
@@ -717,7 +714,12 @@ export function PersonagensTab({
                   }}
                   onEsfriar={encerrarPrevisualizacao}
                   onMenuContextual={(e) => menuDaEntrada(e, entrada)}
-                  arrastavel={podeAdministrar && !entrada.arquivado}
+                  // Jogador também arrasta — pro MAPA, criando o token do
+                  // personagem dele. Soltar em pasta/cartão continua
+                  // exigindo `podeAdministrar` nos destinos.
+                  // Só quem EDITA o personagem arrasta pro mapa — quem
+                  // só visualiza nem começa o gesto (o banco recusaria).
+                  arrastavel={!entrada.arquivado && (podeAdministrar || (!ehNarrador && entrada.podeEditar === true))}
                   onArrastarInicio={(e) => {
                     const carga: PersonagemArrastado = {
                       characterId: entrada.characterId,
@@ -1016,6 +1018,29 @@ export function PersonagensTab({
                   }
                 >
                   <FolderPlus size={13} /> Pasta
+                </BotaoAba>
+              </span>
+            )}
+            {/* O jogador cria do mesmo jeito que o narrador — só o nome —,
+                e o personagem já nasce sob o controle dele. Sem pastas e
+                sem a opção de PN: isso é organização da mesa. */}
+            {!ehNarrador && (
+              <span className="rv-pn-filtros-acoes">
+                <BotaoAba
+                  desabilitado={ocupado}
+                  testId="painel-personagens-criar-jogador"
+                  onClick={() =>
+                    setPedido({
+                      titulo: "Novo personagem",
+                      rotulo: "Nome",
+                      onConfirmar: (nome) => {
+                        void executar(() => criarMeuPersonagemAction(campaignId, nome))
+                          .then((dados) => { if (dados?.id) setPreviaId(dados.id); });
+                      },
+                    })
+                  }
+                >
+                  <UserPlus size={13} /> Personagem
                 </BotaoAba>
               </span>
             )}

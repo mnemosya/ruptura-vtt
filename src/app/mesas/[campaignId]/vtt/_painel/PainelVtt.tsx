@@ -721,7 +721,7 @@ export function PainelVtt({
               onConfigurarAcesso={setAcessoDe}
               onPrecarregarConsole={aquecerConsole}
               onReceberItemDoBando={(item, personagem) => setTransferencia({ item, personagem })}
-            />
+                  />
           </div>
         </JanelaInterna>
       )}

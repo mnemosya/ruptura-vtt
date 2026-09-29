@@ -275,6 +275,7 @@ function TrilhaDeFaccoes() {
           ehNarrador
           tokenPorId={new Map(TOKENS.map((t) => [t.id, t]))}
           selecionadoId="t1"
+          podeComandar={() => true}
           onDeclarar={SEM_EFEITO}
           onAssumir={SEM_EFEITO}
           onConcluir={SEM_EFEITO}

@@ -2584,7 +2584,9 @@ export function VttClient({
   const [arrastandoPersonagem, setArrastandoPersonagem] = useState(false);
 
   const aoArrastarSobreMapa = useCallback((e: React.DragEvent) => {
-    if (!ehNarrador || !e.dataTransfer.types.includes(MIME_PERSONAGEM_ARRASTADO)) return;
+    // Jogador também solta aqui: o painel só deixa ele arrastar os
+    // personagens que controla, e `create_vtt_token` confere de novo.
+    if (!e.dataTransfer.types.includes(MIME_PERSONAGEM_ARRASTADO)) return;
     // `preventDefault` é o que faz o navegador aceitar o drop; sem ele
     // o `onDrop` nunca dispara.
     e.preventDefault();
@@ -2609,7 +2611,7 @@ export function VttClient({
       return;
     }
     moverPosicionamento(hex);
-  }, [ehNarrador, moverPosicionamento]);
+  }, [moverPosicionamento]);
 
   /**
    * ENVIA O RETRATO de um token recém-criado — os mesmos três passos do
@@ -2742,7 +2744,6 @@ export function VttClient({
 
   const aoSoltarNoMapa = useCallback((e: React.DragEvent) => {
     setArrastandoPersonagem(false);
-    if (!ehNarrador) return;
     const bruto = e.dataTransfer.getData(MIME_PERSONAGEM_ARRASTADO);
     const personagem = bruto ? desserializarPersonagemArrastado(bruto) : null;
     if (!personagem) return;
@@ -2763,7 +2764,7 @@ export function VttClient({
       return;
     }
     iniciarTokenDePersonagem(personagem, hex);
-  }, [ehNarrador, iniciarTokenDePersonagem, criarTokenEm]);
+  }, [iniciarTokenDePersonagem, criarTokenEm]);
 
   const girarPosicionamento = useCallback((direcao: 1 | -1) => {
     setFluxoToken((f) => {
@@ -6279,6 +6280,15 @@ export function VttClient({
             erro={estadoAreas.fase === "erro" ? estadoAreas.mensagem : null}
             editando={estadoAreas.fase === "editando"}
             medida={paramsAreaCorrente ? reguaDosParametros(paramsAreaCorrente, TAM) : null}
+            // Mesma autorização do Delete no teclado — o servidor
+            // (`pode_editar_vtt_area`) continua sendo quem decide.
+            onExcluir={(() => {
+              if (estadoAreas.fase !== "editando") return undefined;
+              const id = estadoAreas.areaId;
+              const area = areaPorId.get(id);
+              if (!area || !(ehNarrador || area.criadorId === usuarioId)) return undefined;
+              return () => { void excluirAreaHandler(id); };
+            })()}
           />
         )}
 
@@ -6336,6 +6346,7 @@ export function VttClient({
         {trilha && !trilhaOculta && (
           <TrilhaFaccoes
             trilha={trilha} ehNarrador={ehNarrador} tokenPorId={tokenPorId} selecionadoId={selecionadoId}
+            podeComandar={podeMoverToken}
             onDeclarar={(id, janela) => mutarTrilha((t) => declarar(t, id, janela))}
             onAssumir={(id) => mutarTrilha((t) => assumirTurno(t, id))}
             onConcluir={(pa) => mutarTrilha((t) => concluirTurno(t, pa))}

@@ -22,6 +22,7 @@ import {
   type EstadoTrilha, type Lado,
   DICA_JANELA, ROTULO_JANELA_CURTO,
 } from "./modelo";
+import { useDicaPortal } from "../_painel/ui/DicaPortal";
 
 export interface NucleoRodadaProps {
   trilha: EstadoTrilha;
@@ -33,10 +34,50 @@ export interface NucleoRodadaProps {
   janelaAcabou: boolean;
   onAvancarJanela: () => void;
   onProximaRodada: () => void;
+  /**
+   * Quem conduz a rodada (avança janela/rodada) — só o narrador. Para
+   * os demais a trilha continua legível, mas as etapas não são botões
+   * que respondem. O servidor recusa o avanço de qualquer forma.
+   */
+  podeConduzir?: boolean;
+}
+
+/**
+ * Uma etapa da trilha. `aria-disabled`, e não `disabled`: botão
+ * desabilitado não dispara os eventos de ponteiro, e a DICA com o motivo
+ * da trava é justamente o que a etapa travada tem a dizer. O clique é
+ * barrado aqui mesmo.
+ */
+function Etapa({ destino, atual, rotulo, emAndamento, motivoTrava, onIr }: {
+  destino: "rapidos" | "lentos";
+  atual: boolean;
+  rotulo: string;
+  emAndamento: string;
+  /** `null` = liberada. */
+  motivoTrava: string | null;
+  onIr: () => void;
+}) {
+  const travada = atual || motivoTrava !== null;
+  const { alvo, dica } = useDicaPortal(atual ? emAndamento : motivoTrava ?? rotulo, { lado: "abaixo" });
+  return (
+    <>
+      <button
+        type="button"
+        className="rv-rodadas-etapa"
+        data-destino={destino}
+        aria-label={atual ? emAndamento : motivoTrava ? `${rotulo} — ${motivoTrava}` : rotulo}
+        aria-current={atual ? "step" : undefined}
+        aria-disabled={travada || undefined}
+        onClick={() => { if (!travada) onIr(); }}
+        {...alvo}
+      />
+      {dica}
+    </>
+  );
 }
 
 export function NucleoRodada({
-  trilha, agindo, vez, janelaAcabou, onAvancarJanela, onProximaRodada,
+  trilha, agindo, vez, janelaAcabou, onAvancarJanela, onProximaRodada, podeConduzir = true,
 }: NucleoRodadaProps) {
   const estado = agindo
     ? `${agindo.nome} em ação`
@@ -44,7 +85,10 @@ export function NucleoRodada({
     : vez === "pn" ? "Vez do narrador"
     : janelaAcabou ? "Janela concluída"
     : "Qualquer lado pode abrir";
-  const podeAvancar = janelaAcabou && !agindo;
+  const podeAvancar = podeConduzir && janelaAcabou && !agindo;
+  /* POR QUE está travado, em vez de a barra só não responder: quem
+     está agindo tem precedência (é o que se resolve primeiro). */
+  const motivoTrava = agindo ? `${agindo.nome} ainda está agindo` : "A janela ainda não terminou";
   return (
     <section className="rv-rodadas" aria-label="Rodada e ativação" data-janela={trilha.janela}>
       <div className="rv-rodadas-nucleo">
@@ -59,28 +103,27 @@ export function NucleoRodada({
         <p className="rv-rodadas-janela" data-janela={trilha.janela} title={DICA_JANELA[trilha.janela]}>
           Turnos {ROTULO_JANELA_CURTO[trilha.janela]}
         </p>
-        <div className="rv-rodadas-trilha" role="group" aria-label="Etapas da rodada">
-          <button
-            type="button"
-            className="rv-rodadas-etapa"
-            data-destino="rapidos"
-            aria-label="Ir para turnos rápidos da próxima rodada"
-            aria-current={trilha.janela === "rapidos" ? "step" : undefined}
-            title={trilha.janela === "rapidos" ? "Turnos rápidos em andamento" : podeAvancar ? "Ir para turnos rápidos da próxima rodada" : "Disponível quando a janela terminar"}
-            disabled={trilha.janela === "rapidos" || !podeAvancar}
-            onClick={onProximaRodada}
+        {/* As etapas são o CONTROLE da rodada (avançar janela/rodada) —
+            só existem pra quem conduz. O jogador lê a janela no rótulo
+            acima; a faixa sozinha, sem clique, só repetia isso. */}
+        {podeConduzir && <div className="rv-rodadas-trilha" role="group" aria-label="Etapas da rodada">
+          <Etapa
+            destino="rapidos"
+            atual={trilha.janela === "rapidos"}
+            rotulo="Ir para turnos rápidos da próxima rodada"
+            emAndamento="Turnos rápidos em andamento"
+            motivoTrava={podeAvancar ? null : motivoTrava}
+            onIr={onProximaRodada}
           />
-          <button
-            type="button"
-            className="rv-rodadas-etapa"
-            data-destino="lentos"
-            aria-label="Ir para turnos lentos"
-            aria-current={trilha.janela === "lentos" ? "step" : undefined}
-            title={trilha.janela === "lentos" ? "Turnos lentos em andamento" : podeAvancar ? "Ir para turnos lentos" : "Disponível quando a janela terminar"}
-            disabled={trilha.janela === "lentos" || !podeAvancar}
-            onClick={onAvancarJanela}
+          <Etapa
+            destino="lentos"
+            atual={trilha.janela === "lentos"}
+            rotulo="Ir para turnos lentos"
+            emAndamento="Turnos lentos em andamento"
+            motivoTrava={podeAvancar ? null : motivoTrava}
+            onIr={onAvancarJanela}
           />
-        </div>
+        </div>}
       </div>
       <p className="rv-rodadas-estado" role="status" aria-live="polite">{estado}</p>
     </section>

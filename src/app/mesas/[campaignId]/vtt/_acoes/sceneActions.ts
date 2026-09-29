@@ -933,7 +933,13 @@ export interface CriarTokenParams {
 export async function criarTokenAction(params: CriarTokenParams): Promise<ResultadoAcao<{ token: TokenVtt }>> {
   const v = await exigirAcesso(params.campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
-  if (v.acesso!.role !== "narrator") return { ok: false, erro: "Só o narrador cria tokens." };
+  // Jogador cria token SÓ do próprio personagem (arrastado da aba
+  // Personagens). Quem decide se ele controla o personagem é
+  // `create_vtt_token` (migration 0150), que também força lado/visível/
+  // bloqueado — aqui só barramos o token solto, que é coisa de narrador.
+  if (v.acesso!.role !== "narrator" && !params.characterId) {
+    return { ok: false, erro: "Só o narrador cria tokens sem personagem." };
+  }
 
   const r = await criarToken(params);
   if (!r.ok || !r.token) return { ok: false, erro: r.erro };
@@ -1240,6 +1246,29 @@ export async function atualizarTrilhaAction(params: {
   // Lê o estado ANTERIOR antes de gravar — é a única forma de saber o
   // que MUDOU e emitir evento semântico em vez de despejar a trilha.
   const anterior = await carregarTrilha(params.sceneId).catch(() => null);
+  // CONDUZIR a rodada (trocar de janela, avançar de rodada) é do
+  // narrador. O jogador grava a trilha também — agir e declarar pelos
+  // próprios personagens são escritas dele —, então a recusa não pode
+  // ser "jogador não escreve": é "jogador não mexe no relógio".
+  if (v.acesso?.role !== "narrator" && anterior?.estado) {
+    const antes = anterior.estado as { rodada?: unknown; janela?: unknown };
+    const depois = (params.estado ?? {}) as { rodada?: unknown; janela?: unknown };
+    if (antes.rodada !== depois.rodada || antes.janela !== depois.janela) {
+      return { ok: false, erro: "Só o narrador pode avançar a janela ou a rodada." };
+    }
+    // ATIVAÇÃO: abrir (Agir) ou fechar (Concluir/Passar/Cancelar) o turno
+    // de alguém só vale pra token de personagem que ele EDITA. Sem isto,
+    // o jogador cancelava o Agir de qualquer um — inclusive do narrador.
+    const agindoAntes = (anterior.estado as { agindoId?: string | null }).agindoId ?? null;
+    const agindoDepois = (params.estado as { agindoId?: string | null } | null)?.agindoId ?? null;
+    if (agindoAntes !== agindoDepois) {
+      const tocados = [agindoAntes, agindoDepois].filter((id): id is string => !!id);
+      const meus = await tokensQueControlo(params.campaignId, params.sceneId);
+      if (tocados.some((id) => !meus.has(id))) {
+        return { ok: false, erro: "Você só pode agir pelos personagens que controla." };
+      }
+    }
+  }
   const r = await atualizarTrilha({
     sceneId: params.sceneId, estado: params.estado, revisionEsperada: params.revisionEsperada,
   });
@@ -1255,6 +1284,15 @@ export async function atualizarTrilhaAction(params: {
     }
   }
   return r.ok ? { ok: true, dados: r.trilha ?? null } : { ok: false, erro: r.erro };
+}
+
+/** Ids dos tokens da cena ligados a personagens que a conta logada EDITA (o id do participante da trilha é o do token). */
+async function tokensQueControlo(campaignId: string, sceneId: string): Promise<Set<string>> {
+  const personagens = await fetchControlledCharacterIdsStrict(campaignId);
+  if (personagens.length === 0) return new Set();
+  const client = await getScopedTableClient();
+  const { data } = await client.from("vtt_tokens").select("id").eq("scene_id", sceneId).in("character_id", personagens);
+  return new Set(((data as { id: string }[] | null) ?? []).map((t) => t.id));
 }
 
 /** Rodada corrente de um estado de trilha cru, ou `null` se ilegível. */

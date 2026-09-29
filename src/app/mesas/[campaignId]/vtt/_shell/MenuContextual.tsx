@@ -53,12 +53,12 @@ export function MenuContextual({
 
   useEffect(() => {
     if (!posicao) return;
-    // Foco no primeiro item habilitado — a NAVEGAÇÃO por teclado só
-    // funciona se ALGO dentro do menu tem foco desde a abertura.
-    const id = requestAnimationFrame(() => {
-      const botoes = ref.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
-      botoes?.[0]?.focus();
-    });
+    // Foco no MENU, não no primeiro item. Focar o item o fazia abrir já
+    // "mirado" (fio e fundo de foco) mesmo quando o menu veio do mouse,
+    // como se a escolha já estivesse feita. Com o foco no contêiner, as
+    // setas continuam funcionando (a primeira ↓ entra no primeiro item)
+    // e nada aparece selecionado antes de a pessoa escolher.
+    const id = requestAnimationFrame(() => ref.current?.focus({ preventScroll: true }));
     return () => cancelAnimationFrame(id);
   }, [posicao]);
 
@@ -71,9 +71,13 @@ export function MenuContextual({
         const botoes = Array.from(ref.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ?? []);
         if (botoes.length === 0) return;
         const atual = botoes.indexOf(document.activeElement as HTMLButtonElement);
-        const proximo = e.key === "ArrowDown"
-          ? (atual + 1) % botoes.length
-          : (atual - 1 + botoes.length) % botoes.length;
+        // `atual === -1`: o foco ainda está no contêiner (recém-aberto).
+        // ↓ entra no primeiro item, ↑ no último.
+        const proximo = atual === -1
+          ? (e.key === "ArrowDown" ? 0 : botoes.length - 1)
+          : e.key === "ArrowDown"
+            ? (atual + 1) % botoes.length
+            : (atual - 1 + botoes.length) % botoes.length;
         botoes[proximo]?.focus();
       }
     }
@@ -92,21 +96,29 @@ export function MenuContextual({
 
   const left = Math.min(posicao.x, window.innerWidth - LARGURA_ESTIMADA - MARGEM);
   const top = Math.min(posicao.y, window.innerHeight - itens.length * 34 - 60);
+  /* Com uma ou duas opções a espinha era mais alta que o próprio
+     conteúdo — o código ("TOKEN") e o ponto ciano viravam ruído em
+     volta de um botão só. O menu compacto fica sem ela; o cabeçalho
+     (nome do alvo) continua dizendo sobre o que ele age. */
+  const compacto = itens.length <= 2;
 
   return (
     <div
       ref={ref}
-      className="rv-menu-contextual"
+      className={`rv-menu-contextual${compacto ? " rv-menu-contextual--compacto" : ""}`}
       role="menu"
-      style={{ left: Math.max(MARGEM, left), top: Math.max(MARGEM, top) }}
+      tabIndex={-1}
+      style={{ left: Math.max(MARGEM, left), top: Math.max(MARGEM, top), outline: "none" }}
     >
       {/* A espinha usa literalmente a classe da janela de ferramenta:
           o menu passa a ser a mesma peça de móvel, não um primo parecido. */}
-      <span className="rv-fp-espinha" aria-hidden="true">
-        <span className="rv-fp-espinha-indice">::</span>
-        <span className="rv-fp-espinha-codigo">{codigo}</span>
-        <span className="rv-fp-espinha-ponto" />
-      </span>
+      {!compacto && (
+        <span className="rv-fp-espinha" aria-hidden="true">
+          <span className="rv-fp-espinha-indice">::</span>
+          <span className="rv-fp-espinha-codigo">{codigo}</span>
+          <span className="rv-fp-espinha-ponto" />
+        </span>
+      )}
       {alvo && <p className="rv-menu-cab">{alvo}</p>}
       {itens.map((item, i) => (
         <div key={item.id}>

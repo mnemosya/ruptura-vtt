@@ -993,14 +993,34 @@
 }
 .pn-menu-item {
   display: flex; align-items: center; gap: 7px; width: 100%; padding: 6px 8px;
-  border: none; border-radius: var(--rv-r-sm); background: transparent; color: inherit;
+  border: 1px solid transparent; border-radius: var(--rv-r-sm); background: transparent; color: inherit;
   text-align: left; cursor: pointer; font: inherit; font-size: 12.5px;
+  /* Em repouso um degrau ABAIXO da tinta cheia — como o `.rv-menu-item`
+     do menu do mapa. A tinta cheia (`--rv-ink`) é quase branca e fica
+     pro item mirado. */
+  color: var(--rv-ink-dim);
+  transition: border-color .14s, background .14s, color .14s;
 }
-.pn-menu-item:hover, .pn-menu-item:focus-visible { background: var(--rv-cy-soft); color: #eaf6ff; }
+/* Item mirado: FIO em volta, como o `.rv-menu-item` do menu do mapa —
+   só o fundo não bastava pra dizer qual item está sob o cursor. */
+.pn-menu-item:hover, .pn-menu-item:focus-visible {
+  border-color: color-mix(in srgb, var(--rv-cy) 45%, transparent);
+  background: var(--rv-cy-soft); color: var(--rv-ink);
+}
 .pn-menu-item:focus-visible { outline: 2px solid var(--rv-cy); outline-offset: -2px; }
 .pn-menu-item[aria-checked="true"] { color: var(--rv-cy); }
 .pn-menu-item:disabled { opacity: .4; cursor: not-allowed; }
 .pn-menu-item svg { flex: none; width: 13px; height: 13px; }
+/* Item com descrição (`MenuAncorado comDescricao`): rótulo em cima,
+   o que a opção faz embaixo — o ícone alinha com a PRIMEIRA linha. */
+.pn-menu-item[data-com-descricao="true"] { align-items: flex-start; padding: 7px 9px; }
+.pn-menu-item[data-com-descricao="true"] svg { margin-top: 2px; }
+.pn-menu-item-texto { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pn-menu-item-rotulo {
+  font-family: var(--rv-display); font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+}
+.pn-menu-item-desc { font-size: 11.5px; color: var(--rv-ink-faint); }
+.pn-menu-item:hover .pn-menu-item-desc, .pn-menu-item:focus-visible .pn-menu-item-desc { color: var(--rv-ink-dim); }
 .pn-menu-sep { height: 1px; margin: 3px 4px; background: var(--rv-cy-soft); }
 .pn-menu-cap {
   padding: 5px 8px 3px;
@@ -1673,43 +1693,15 @@
    aqui: superfície que se clica. */
 .rv-pn-scroll--pers .rv-pn-linha {
   align-items: stretch; gap: 0; padding: 0; overflow: hidden; min-height: 56px;
-  background-color: #0c1526;
-  background-image:
-    linear-gradient(90deg, color-mix(in srgb, var(--fg-a, #45b8c9) 16%, transparent), rgba(22, 79, 106, 0.08)),
-    linear-gradient(90deg, color-mix(in srgb, var(--fg-a, #45b8c9) 4%, transparent), transparent 45%);
-  background-repeat: no-repeat;
-  background-size: 0% 100%, 100% 100%;
-  transition:
-    background-size 0.32s cubic-bezier(0.4, 0, 0.2, 1),
-    border-color 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #0c1526;
+  transition: background-color .16s, border-color .16s;
 }
-/* Mesmo gesto das linhas do Console: a luz varre da esquerda para a
-   direita, enquanto um fio de 1px é desenhado por cima da própria
-   borda. O fio ocupa a altura inteira — não nasce como um traço curto
-   paralelo ao contorno. */
-.rv-pn-scroll--pers .rv-pn-linha::before {
-  content: "";
-  /* `left: 0` porque o card recorta o conteúdo: em `-1px` o próprio
-     overflow esconderia o fio. Assim ele cobre o pixel interno da
-     borda, sem criar uma segunda linha ao lado. */
-  position: absolute; left: 0; top: 0; bottom: 0; z-index: 2;
-  width: 1px;
-  background: color-mix(in srgb, var(--fg-a, #45b8c9) 65%, #fff);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--fg-a, #45b8c9) 70%, transparent);
-  opacity: 0;
-  transform: scaleY(0); transform-origin: top;
-  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.1s ease-out;
-  pointer-events: none;
-}
+/* HOVER no acento da linha (`--fg-a`: ciano no PJ, vermelho no PN) —
+   borda e fundo, em cor lisa. Sem fio lateral e sem varredura. */
 .rv-pn-scroll--pers .rv-pn-linha:hover,
 .rv-pn-scroll--pers .rv-pn-linha:focus-visible {
-  background-size: 100% 100%, 100% 100%;
-  border-color: color-mix(in srgb, var(--fg-a, #45b8c9) 26%, transparent);
-}
-.rv-pn-scroll--pers .rv-pn-linha:hover::before,
-.rv-pn-scroll--pers .rv-pn-linha:focus-visible::before {
-  opacity: 1;
-  transform: scaleY(1);
+  border-color: color-mix(in srgb, var(--fg-a, #45b8c9) 55%, transparent);
+  background: color-mix(in srgb, var(--fg-a, #45b8c9) 11%, #0c1526);
 }
 /* O SELECIONADO tem que vencer o fundo acima — as duas regras empatam
    em especificidade (`.rv-pn-scroll--pers .rv-pn-linha` contra
@@ -2155,4 +2147,33 @@
    demais para o que se está escrevendo. */
 .pn-dialogo .rv-pn-input.rv-pn-input {
   font-size: 13px; padding: 6px 8px;
+}
+
+/* CAMPOS DE TEXTO em Chakra Petch — o que se DIGITA (e o placeholder);
+   rótulos e o resto do painel seguem em Rajdhani.
+   `.rv-pn-busca` na frente: `.rm-root input { font-family: inherit }`
+   (mesa.css) é mais específico que a classe sozinha e vencia. */
+.rv-pn-busca .rv-pn-busca-input,
+.rv-pn-busca .rv-pn-busca-input::placeholder,
+input.rv-pn-input.rv-pn-input,
+textarea.rv-pn-input.rv-pn-input {
+  font-family: var(--font-chakra), var(--rv-body), sans-serif;
+}
+
+/* LINHA DE BUSCA (busca + ordenar): as duas peças com o chanfro do VTT
+   no mesmo corte (8px, ~¼ da altura), a mesma altura e um respiro
+   vertical mais confortável. A busca é `div` — a regra global do
+   chassi só alcança controles, então o chanfro dela vem daqui. */
+.rv-pn-linha-busca .rv-pn-busca {
+  --rv-notch: 8px;
+  padding: 8px 14px;
+  border-radius: 4px var(--rv-notch) 4px var(--rv-notch);
+  corner-shape: round bevel round bevel;
+}
+.rv-pn-linha-busca .rv-pn-select.rv-pn-select {
+  --rv-notch: 8px;
+  padding: 8px 28px 8px 13px;
+  font-family: var(--font-chakra), var(--rv-body), sans-serif;
+  /* Mesmo corpo do campo de busca ao lado (`.rv-pn-busca-input`). */
+  font-size: 13.5px;
 }
