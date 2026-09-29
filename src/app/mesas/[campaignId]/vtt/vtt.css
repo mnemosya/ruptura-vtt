@@ -2576,7 +2576,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    Tailwind, então cada utilitário virou declaração — mesmos números,
    mesmos hex.
 
-     ink #d6e4f5 · ink-dim #7f95b3 · ink-faint #4f6285
+     ink #b9c9dc · ink-dim #7f95b3 · ink-faint #4f6285
      linha #16233a · borda de casca #18263f · fundo de placa #0c1420
      linha forte #1c2b45 / #2a3b58 · rótulo de opção #c3d2e8 · ícone #6f83a3
 
@@ -2768,7 +2768,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-campo input[type="text"], .rv-fp-campo input[type="number"], .rv-fp-campo select {
   margin-top: 6px; padding: 8px 12px;
   border: 1px solid #16233a; border-radius: var(--rv-r); background: transparent;
-  font-size: 12px; color: #d6e4f5;
+  font-size: 12px; color: #b9c9dc;
 }
 .rv-fp-campo input:focus-visible, .rv-fp-campo select:focus-visible {
   outline: none; border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 55%, transparent);
@@ -2842,7 +2842,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 /* A seta de dobrar vem ANTES da numeração e some do fluxo do rótulo. */
 .rv-area-secao-cab > svg { order: -1; color: #4f6285; }
-.rv-area-secao-cab:hover { color: #d6e4f5; }
+.rv-area-secao-cab:hover { color: #b9c9dc; }
 .rv-area-secao-corpo { gap: 10px; padding-top: 2px; }
 .rv-area-lista { border-top: none; padding-top: 0; gap: 6px; }
 
@@ -2853,7 +2853,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   border: 1px solid #16233a; border-radius: var(--rv-r);
   background: transparent; box-shadow: none; color: #c3d2e8;
 }
-.rv-area-tipo:hover { background: transparent; border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent); color: #d6e4f5; }
+.rv-area-tipo:hover { background: transparent; border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent); color: #b9c9dc; }
 .rv-area-tipo[aria-pressed="true"] {
   border-color: var(--jf-acento, #35c7d8); box-shadow: none;
   background: color-mix(in srgb, var(--jf-acento, #35c7d8) 9%, transparent);
@@ -2871,7 +2871,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 
 /* Field */
-.rv-area-campo { gap: 10px; font-size: 12px; color: #d6e4f5; }
+.rv-area-campo { gap: 10px; font-size: 12px; color: #b9c9dc; }
 .rv-area-campo > span {
   flex: 0 0 96px;
   font-family: var(--rv-display), sans-serif;
@@ -2880,7 +2880,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-area-campo input[type="number"], .rv-area-campo input[type="text"],
 .rv-area-campo select, .rv-area-busca {
   padding: 8px 12px; border: 1px solid #16233a; border-radius: var(--rv-r);
-  background: transparent; font-size: 12px; color: #d6e4f5;
+  background: transparent; font-size: 12px; color: #b9c9dc;
 }
 .rv-area-campo input:focus-visible, .rv-area-campo select:focus-visible, .rv-area-busca:focus-visible {
   outline: none; border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 55%, transparent);
@@ -2894,7 +2894,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-area-check {
   gap: 10px; padding: 10px 12px;
   border: 1px solid #16233a; border-radius: var(--rv-r);
-  font-size: 12px; color: #d6e4f5;
+  font-size: 12px; color: #b9c9dc;
 }
 .rv-area-check input { accent-color: var(--jf-acento, #35c7d8); width: 16px; height: 16px; }
 
@@ -2922,7 +2922,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-area-resumo-forma, .rv-area-regua, .rv-area-valor-fixo {
   position: relative; overflow: hidden; margin: 0; padding: 10px 12px 10px 18px;
   background: #0c1420; border: 1px solid #16233a; border-radius: var(--rv-r);
-  font-family: var(--font-mono), monospace; font-size: 12px; color: #d6e4f5;
+  font-family: var(--font-mono), monospace; font-size: 12px; color: #b9c9dc;
 }
 .rv-area-resumo-forma::before, .rv-area-regua::before, .rv-area-valor-fixo::before {
   content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 2px;
@@ -2940,7 +2940,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   font-family: var(--rv-display), sans-serif;
   font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
 }
-.rv-fp-preset:hover { background: transparent; border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent); color: #d6e4f5; }
+.rv-fp-preset:hover { background: transparent; border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent); color: #b9c9dc; }
 .rv-fp-preset[aria-pressed="true"] {
   border-color: var(--jf-acento, #35c7d8); box-shadow: none;
   background: color-mix(in srgb, var(--jf-acento, #35c7d8) 9%, transparent);
@@ -2977,7 +2977,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-fp-obj-nome {
   font-family: var(--rv-display), sans-serif;
-  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #d6e4f5;
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #b9c9dc;
 }
 .rv-fp-obj .rv-fp-switch-sub { font-size: 11px; line-height: 1.4; color: #7f95b3; }
 /* `1fr` é `minmax(auto, 1fr)`: com `keep-all`, uma palavra longa
@@ -3100,7 +3100,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-rodadas-item-txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 auto; }
 .rv-rodadas-nome {
   font-family: var(--rv-display), sans-serif;
-  font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #d6e4f5;
+  font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #b9c9dc;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .rv-rodadas-item-sub {
@@ -3246,7 +3246,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   transition: color .14s, border-color .14s, background .14s;
 }
 .rv-rodadas-mini:hover:not(:disabled),
-.rv-rodadas-olho:hover:not(:disabled) { color: #d6e4f5; border-color: #2a3b58; background: rgba(255, 255, 255, .04); }
+.rv-rodadas-olho:hover:not(:disabled) { color: #b9c9dc; border-color: #2a3b58; background: rgba(255, 255, 255, .04); }
 .rv-rodadas-mini:focus-visible,
 .rv-rodadas-olho:focus-visible { outline: 2px solid var(--jf-acento, #e0a53a); outline-offset: 2px; }
 .rv-rodadas-mini:disabled, .rv-rodadas-olho:disabled { opacity: .35; cursor: not-allowed; }
@@ -3336,7 +3336,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-camadas-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; }
 .rv-camadas-nome {
   font-family: var(--rv-display), sans-serif;
-  font-size: 11px; font-weight: 600; color: #d6e4f5;
+  font-size: 11px; font-weight: 600; color: #b9c9dc;
   /* Mesma caixa alta dos demais rótulos do VTT. O tamanho cai 1px
      porque caixa alta ocupa mais largura, e a lista tem nomes longos
      ("OBJETOS / COBERTURAS") que não podem truncar. */
@@ -3361,7 +3361,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   background: transparent; color: #6f83a3; cursor: pointer;
   transition: color .14s, border-color .14s;
 }
-.rv-camadas-btn:hover { color: #d6e4f5; border-color: #1c2b45; }
+.rv-camadas-btn:hover { color: #b9c9dc; border-color: #1c2b45; }
 .rv-camadas-btn[aria-pressed="false"] { color: #4f6285; }
 .rv-camadas-btn:focus-visible { outline: 2px solid var(--jf-acento, #45b8c9); outline-offset: 1px; }
 
@@ -3417,7 +3417,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-previa-txt { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .rv-fp-previa-nome {
   font-family: var(--rv-display), sans-serif;
-  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: #d6e4f5;
+  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: #b9c9dc;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .rv-fp-previa-sub { font-size: 11px; color: #7f95b3; }
@@ -3443,7 +3443,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-check:hover { border-color: #1c2b45; }
 .rv-fp-check input { width: 16px; height: 16px; flex: none; accent-color: var(--jf-acento, #45b8c9); cursor: pointer; }
 .rv-fp-check-txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 auto; }
-.rv-fp-check-nome { font-size: 12px; color: #d6e4f5; }
+.rv-fp-check-nome { font-size: 12px; color: #b9c9dc; }
 .rv-fp-check-sub {
   font-family: var(--font-mono), monospace;
   font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #4f6285;
@@ -3493,7 +3493,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-campo input[type="text"], .rv-fp-campo input[type="number"], .rv-fp-campo textarea {
   width: 100%; min-width: 0; margin-top: 6px;
   padding: 8px 12px; border: 1px solid #16233a; border-radius: var(--rv-r);
-  background: transparent; font: inherit; font-size: 12px; color: #d6e4f5;
+  background: transparent; font: inherit; font-size: 12px; color: #b9c9dc;
 }
 .rv-fp-campo textarea { resize: vertical; line-height: 1.4; }
 .rv-fp-campo input:focus-visible, .rv-fp-campo textarea:focus-visible {
@@ -3546,7 +3546,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-janela-token .rv-field select {
   margin-top: 6px; padding: 8px 12px;
   border: 1px solid #16233a; border-radius: var(--rv-r); background: transparent;
-  font-size: 12px; color: #d6e4f5;
+  font-size: 12px; color: #b9c9dc;
 }
 .rv-janela-token .rv-field input:focus-visible,
 .rv-janela-token .rv-field select:focus-visible {
@@ -3611,7 +3611,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   background: linear-gradient(90deg, #18263f, transparent);
 }
 .rv-janela-token .rv-condicoes-grade { gap: 8px 12px; }
-.rv-janela-token .rv-condicao-item { font-size: 12px; color: #d6e4f5; }
+.rv-janela-token .rv-condicao-item { font-size: 12px; color: #b9c9dc; }
 .rv-janela-token .rv-condicao-item input { accent-color: #45b8c9; }
 .rv-janela-token .rv-camadas-tag { flex: none; }
 
@@ -3732,7 +3732,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-campo select {
   width: 100%; min-width: 0; margin-top: 6px;
   padding: 8px 12px; border: 1px solid #16233a; border-radius: var(--rv-r);
-  background: transparent; font: inherit; font-size: 12px; color: #d6e4f5;
+  background: transparent; font: inherit; font-size: 12px; color: #b9c9dc;
 }
 .rv-fp-campo select:focus-visible {
   outline: none; border-color: color-mix(in srgb, var(--jf-acento, #45b8c9) 55%, transparent);
@@ -6493,3 +6493,10 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
 .rv-dica-portal { --cy: var(--rv-cy); --sombra: 0 10px 28px rgba(0, 0, 0, .5); }
 /* Abaixo do alvo — pra controles no TOPO da tela (núcleo da rodada). */
 .rv-dica--portal[data-lado="abaixo"] { transform: translate(-50%, 8px); }
+
+/* Atalho do item do menu de contexto: a `.rv-dica` de sempre, ao lado
+   do menu, só no hover/foco do item. */
+.rv-menu-item { position: relative; }
+.rv-menu-item-dica { left: calc(100% + 14px); }
+.rv-menu-item:hover .rv-menu-item-dica,
+.rv-menu-item:focus-visible .rv-menu-item-dica { opacity: 1; transition-delay: .35s; }

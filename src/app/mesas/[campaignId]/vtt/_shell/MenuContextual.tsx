@@ -30,6 +30,12 @@ export interface ItemMenuContextual {
   dica?: string;
   /** Glifo à esquerda do rótulo (ícone `lucide-react`, ex.: `<Pencil size={14} />`) — decorativo, `aria-hidden` por conta do próprio ícone. Opcional: um item sem ícone só perde a coluna, nunca desalinha os outros (grid fixo, ver CSS). */
   icone?: ReactNode;
+  /**
+   * Teclas do atalho, uma por entrada (ex.: `["Shift", "A"]`) — mostradas
+   * só no hover/foco, na dica padrão (`.rv-dica`) com `<kbd>`. Nunca
+   * escrever o atalho dentro do `rotulo`.
+   */
+  atalho?: string[];
 }
 
 const LARGURA_ESTIMADA = 216;
@@ -133,6 +139,14 @@ export function MenuContextual({
           >
             <span className="rv-menu-item-icone" aria-hidden="true">{item.icone}</span>
             {item.rotulo}
+            {/* O atalho não disputa espaço com o rótulo: aparece só no
+                hover/foco, na dica padrão da mesa (a mesma da barra de
+                ferramentas), com as teclas em `<kbd>`. */}
+            {item.atalho && (
+              <span className="rv-dica rv-menu-item-dica" role="tooltip">
+                Atalho {item.atalho.map((tecla) => <kbd key={tecla}>{tecla}</kbd>)}
+              </span>
+            )}
           </button>
         </div>
       ))}

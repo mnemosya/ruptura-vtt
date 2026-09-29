@@ -33,7 +33,7 @@
  * rolagem, e o aviso aparece junto do resultado.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { CharacterAttributes } from "../../../../lib/character";
 import type { RupturaRollResult } from "../../../../lib/dice/types";
 import type { TableLogVisibility } from "../../../../lib/table";
@@ -55,7 +55,7 @@ function InfoCanonica({ label, valor }: { label: string; valor: string }) {
   return (
     <div>
       <span style={{ display: "block", fontFamily: DISPLAY, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.16em", color: INK_FAINT }}>{label}</span>
-      <div style={{ marginTop: 4, minHeight: 32, display: "flex", alignItems: "center", padding: "6px 9px", borderRadius: 4, border: "1px solid #243b50", background: "#101b2a", color: INK, fontFamily: BODY, fontSize: 12 }}>
+      <div style={{ marginTop: 4, minHeight: 32, display: "flex", alignItems: "center", padding: "6px 9px", borderRadius: 4, border: "1px solid #243b50", background: "#101b2a", color: INK, fontFamily: MONO, fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase" }}>
         {valor}
       </div>
     </div>
@@ -174,6 +174,21 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
     setTimeout(() => setLanded(false), 500);
   }, [api, atributoId, cdInput, mods, nd8, periciaId, prefill, rolando, rolarNaMesa, testeColapso, visibilidade, acaoToken, resultado]);
 
+  /* Rolagem de uma AÇÃO DO TOKEN (depois de confirmar o ataque) fecha
+     ao clicar fora: ela é o fim de um fluxo que começou no mapa, e o
+     mapa é onde a pessoa volta. A rolagem aberta de DENTRO da ficha
+     continua só com o X — ali o clique fora é no Console, e tem que
+     funcionar sem fechar nada (ver `CAMADA`). */
+  const janelaRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!acaoToken) return;
+    const aoApontar = (e: PointerEvent) => {
+      if (janelaRef.current && !janelaRef.current.contains(e.target as Node)) onFechar();
+    };
+    window.addEventListener("pointerdown", aoApontar);
+    return () => window.removeEventListener("pointerdown", aoApontar);
+  }, [acaoToken, onFechar]);
+
   // Com o cabeçalho fora, é a linha de modo da janela que diz quando a
   // rolagem é uma DEFESA — e isso não pode sumir: defesa gasta Reação.
   const modo = prefill.tipo === "colapso"
@@ -184,7 +199,12 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
 
   return (
     <div style={CAMADA} data-testid="console-rolagem-camada">
-      <div style={{ ...posicao, pointerEvents: "auto" }}>
+      {/* Sem Console pra centralizar (ação do token), `posicao` é a TELA
+          INTEIRA (`inset: 0` + grid centrado) — com `pointer-events:
+          auto` ali, a caixa engolia todo clique no mapa. Quem ocupa a
+          tela deixa passar; só a janela em si recebe clique. */}
+      <div style={{ ...posicao, pointerEvents: centro ? "auto" : "none" }}>
+      <div ref={janelaRef} style={{ pointerEvents: "auto" }}>
       <MolduraRolagem
         indice="01"
         codigo="Rolagem"
@@ -296,6 +316,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
           {acaoToken && <p style={{ color: INK_FAINT, fontFamily: MONO, fontSize: 11 }}>{acaoToken.nome} · {acaoToken.visibilidade === "gm" ? "Somente narrador" : "Público"}</p>}
         </Stack>
       </MolduraRolagem>
+      </div>
       </div>
       {/* `carga` alimenta só o tremor dos dados no botão; nada a mostrar aqui. */}
       <span hidden>{carga}</span>

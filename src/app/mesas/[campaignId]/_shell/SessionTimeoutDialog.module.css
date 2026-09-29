@@ -10,7 +10,7 @@
   --modal-amber: var(--rv-am, #cf9a3e);
   --modal-danger: var(--rv-dg, #d15068);
   --modal-danger-soft: var(--rv-dg-soft, rgba(209, 80, 104, .09));
-  --modal-ink: var(--rv-ink, #d6e4f5);
+  --modal-ink: var(--rv-ink, #b9c9dc);
   --modal-dim: var(--rv-ink-dim, #7f95b3);
   --modal-faint: var(--rv-ink-faint, #4f6285);
 

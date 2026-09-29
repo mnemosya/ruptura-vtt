@@ -31,7 +31,7 @@ export const DISPLAY = "var(--font-chakra), 'Chakra Petch', sans-serif";
 export const MONO = "var(--font-mono), 'JetBrains Mono', monospace";
 export const BODY = "var(--font-rajdhani), Rajdhani, sans-serif";
 
-export const INK = "#d6e4f5";
+export const INK = "#b9c9dc";
 export const INK_DIM = "#7f95b3";
 export const INK_FAINT = "#4f6285";
 
@@ -568,12 +568,15 @@ export function MolduraRolagem({ indice, codigo, titulo, modo, acento = ACCENTS.
       role="group"
       aria-label={titulo}
       data-testid={testId}
+      // Chanfro das janelas da mesa: o raio está aqui, o `corner-shape`
+      // (que o React não tipa) vem da classe, em console.css.
+      className="rv-moldura-rolagem"
       style={{
         transform: `translate(${desloc.x}px, ${desloc.y}px)`,
         position: "relative", width: `min(${largura}px, calc(100vw - 32px))`,
         maxHeight: "min(660px, calc(100dvh - 32px))",
         display: "flex", flexDirection: "column", overflow: "hidden",
-        paddingLeft: 36, borderRadius: 2,
+        paddingLeft: 36, borderRadius: "4px 10px 4px 10px",
         background: "linear-gradient(160deg, #0b1424, #080e19)",
         border: "1px solid #182338",
         boxShadow: "0 30px 70px rgba(0, 0, 0, 0.55)",
@@ -704,7 +707,14 @@ export function Select({ label, value, onChange, options, disabled = false }: {
           onChange={(e) => onChange(e.target.value)}
           style={{
             width: "100%", appearance: "none", borderRadius: 2, border: "1px solid #1c2b45", background: "transparent",
-            padding: "9px 30px 9px 10px", fontFamily: BODY, fontSize: 12, color: disabled ? INK_FAINT : INK,
+            // JetBrains Mono em caixa alta, como os botões das janelas de
+            // ferramenta; 11px porque a mono em caixa alta ocupa mais que
+            // a Rajdhani nos mesmos 12px.
+            // Recuo direito só o bastante pra seta (13px a 8px da borda):
+            // a mono em caixa alta cortava o fim de "CORPO · 1D8" na
+            // coluna estreita do Atributo.
+            padding: "9px 24px 9px 9px", fontFamily: MONO, fontSize: 11, letterSpacing: "0.02em", textTransform: "uppercase",
+            color: disabled ? INK_FAINT : INK,
             outline: "none", cursor: disabled ? "not-allowed" : "pointer",
           }}
           onFocus={(e) => { e.currentTarget.style.borderColor = ACCENTS.cyan.hex + "88"; }}
@@ -993,7 +1003,7 @@ export function SeletorVisibilidade({ valor, onChange, ehNarrador }: {
 }) {
   const opcoes = VISIBILIDADES.filter((o) => o.v !== "gm" || ehNarrador);
   return (
-    <div role="group" aria-label="Quem vê esta rolagem" style={{ display: "flex", gap: 4 }}>
+    <div role="group" aria-label="Quem vê esta rolagem" className="rv-dados-visib" style={{ display: "flex", gap: 4 }}>
       {opcoes.map((o) => {
         const on = o.v === valor;
         return (

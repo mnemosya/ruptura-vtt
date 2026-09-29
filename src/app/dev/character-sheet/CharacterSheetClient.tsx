@@ -5944,7 +5944,7 @@ export default function CharacterSheetClient({
         const paAtual = Math.max(0, derivados.pa_max - (character.estado_jogo?.pa_gastos ?? 0));
         return [{ id: i.id, nome: `${i.itemNome || m.nome} · ${i.quantidade} un.`, alvo: proprio ? "proprio" : "opcional",
           custo: `${custoPa ?? m.custoPaUsoTexto ?? "conforme regra do item"} PA · consome 1 uso`,
-          aviso: custoPa != null && custoPa > paAtual ? `PA insuficiente (atual: ${paAtual}, necessário: ${custoPa}). A ação pode ser executada.` : undefined,
+          aviso: custoPa != null && custoPa > paAtual ? `PA insuficiente (atual: ${paAtual}, necessário: ${custoPa}).` : undefined,
           detalhe: [...preview.automatic, ...preview.manual, ...(proprio ? ["Uso em si mesmo. Uso em aliados permanece no fluxo da ficha."] : [])].join(" "),
           bloqueio: i.quantidade <= 0 ? "Sem estoque." : preview.blockedReason } satisfies OpcaoAcaoToken];
       });

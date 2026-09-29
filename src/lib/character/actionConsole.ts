@@ -416,7 +416,7 @@ export function canPayActionCost(
     const paGastos = character.estado_jogo?.pa_gastos ?? 0;
     const paAtual = Math.max(0, paMax - paGastos);
     if (paAtual < cost.pa) {
-      return { ok: true, warning: `PA insuficiente (atual: ${paAtual}, necessário: ${cost.pa}). A ação pode ser executada.` };
+      return { ok: true, warning: `PA insuficiente (atual: ${paAtual}, necessário: ${cost.pa}).` };
     }
     return { ok: true };
   }

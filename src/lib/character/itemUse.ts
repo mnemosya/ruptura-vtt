@@ -356,7 +356,7 @@ export function useItemOnCharacter(params: {
     return blocked("Sem cargas/quantidade disponíveis para usar este item.");
   }
 
-  const avisoPa = paCost != null && paCost > paBefore ? `PA insuficiente (atual: ${paBefore}, necessário: ${paCost}). A ação pode ser executada.` : null;
+  const avisoPa = paCost != null && paCost > paBefore ? `PA insuficiente (atual: ${paBefore}, necessário: ${paCost}).` : null;
 
   // Remoção de condição é resolvida ANTES do consumo: item de remoção sem alvo válido
   // bloqueia sem gastar carga/PA (browser check do checkpoint pós-v0.61). Só farmácia —
@@ -660,7 +660,7 @@ export function useItemOnAlly(params: {
     return blocked("Sem cargas/quantidade disponíveis para usar este item.");
   }
 
-  const avisoPa = paCost != null && paCost > paBefore ? `PA insuficiente (atual: ${paBefore}, necessário: ${paCost}). A ação pode ser executada.` : null;
+  const avisoPa = paCost != null && paCost > paBefore ? `PA insuficiente (atual: ${paBefore}, necessário: ${paCost}).` : null;
 
   // Remoção de condição resolvida contra o ALVO — nunca contra o usuário. Mesma regra do uso
   // próprio: sem condição compatível ativa NO ALVO, item de remoção não é consumido.

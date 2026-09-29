@@ -1,5 +1,12 @@
 export interface TargetVtt { tokenId: string; autorId: string; expiresAt: string }
-export interface AlvoAcaoToken { tokenId: string; characterId: string | null; nome: string }
+export interface AlvoAcaoToken {
+  tokenId: string; characterId: string | null; nome: string;
+  /** Lado do token no mapa — só apresentação (cor do cartão do alvo). */
+  lado?: string;
+  /** Rosto do cartão do alvo: o retrato do token, ou a sigla sem ele. */
+  retrato?: string | null;
+  sigla?: string;
+}
 export type CategoriaAcaoToken = "atacar" | "conjurar" | "item";
 export interface PedidoAcaoToken {
   tokenId: string;

@@ -726,7 +726,7 @@ export function castSpell(params: {
 
   const custoPa = spell.estatisticas.custo_pa;
 
-  const avisoPa = custoPa > paBefore ? `PA insuficiente (atual: ${paBefore}, necessário: ${custoPa}). A ação pode ser executada.` : undefined;
+  const avisoPa = custoPa > paBefore ? `PA insuficiente (atual: ${paBefore}, necessário: ${custoPa}).` : undefined;
 
   const manaCostUnknown = spell.estatisticas.custo_mana == null;
   const manaAntes = character.recursos_atuais?.mana ?? manaMax;

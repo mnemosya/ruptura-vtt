@@ -85,10 +85,12 @@ export function NucleoRodada({
     : vez === "pn" ? "Vez do narrador"
     : janelaAcabou ? "Janela concluída"
     : "Qualquer lado pode abrir";
-  const podeAvancar = podeConduzir && janelaAcabou && !agindo;
-  /* POR QUE está travado, em vez de a barra só não responder: quem
-     está agindo tem precedência (é o que se resolve primeiro). */
-  const motivoTrava = agindo ? `${agindo.nome} ainda está agindo` : "A janela ainda não terminou";
+  /* O NARRADOR MANDA NO RELÓGIO: nada o impede de trocar de janela ou
+     de rodada — nem alguém agindo, nem a janela por terminar. As duas
+     transições (`avancarParaLentos`, `proximaRodada`) já encerram a
+     ativação em curso. Só a etapa ATUAL não é clicável (não há pra onde
+     ir). `janelaAcabou` segue alimentando o texto de estado; quem não
+     conduz nem vê as etapas (`podeConduzir`). */
   return (
     <section className="rv-rodadas" aria-label="Rodada e ativação" data-janela={trilha.janela}>
       <div className="rv-rodadas-nucleo">
@@ -112,7 +114,7 @@ export function NucleoRodada({
             atual={trilha.janela === "rapidos"}
             rotulo="Ir para turnos rápidos da próxima rodada"
             emAndamento="Turnos rápidos em andamento"
-            motivoTrava={podeAvancar ? null : motivoTrava}
+            motivoTrava={null}
             onIr={onProximaRodada}
           />
           <Etapa
@@ -120,7 +122,7 @@ export function NucleoRodada({
             atual={trilha.janela === "lentos"}
             rotulo="Ir para turnos lentos"
             emAndamento="Turnos lentos em andamento"
-            motivoTrava={podeAvancar ? null : motivoTrava}
+            motivoTrava={null}
             onIr={onAvancarJanela}
           />
         </div>}

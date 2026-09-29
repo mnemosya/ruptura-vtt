@@ -1113,7 +1113,7 @@ export function VttClient({
   const targets = useTargets(campaignId, estadoCena?.cena.id ?? null, usuarioId, idsTargetsVisiveis);
   const meusAlvos = useMemo(() => targets.meus.flatMap(id => {
     const t = tokenPorId.get(id);
-    return t ? [{ tokenId: id, characterId: t.characterId ?? null, nome: t.nome }] : [];
+    return t ? [{ tokenId: id, characterId: t.characterId ?? null, nome: t.nome, lado: t.lado, retrato: t.retrato ?? null, sigla: t.sigla }] : [];
   }), [targets.meus, tokenPorId]);
   // Realtime pode remover/ocultar um token enquanto o cartão dele está
   // aberto. Sem esta guarda, sobrava um cartão órfão ancorado onde o
@@ -2285,13 +2285,19 @@ export function VttClient({
   useEffect(() => {
     const ouvir = (e: KeyboardEvent) => {
       if (e.defaultPrevented || elementoEhEditavel(document.activeElement as HTMLElement | null)) return;
-      if (e.shiftKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "a" && selecionadoId) {
-        e.preventDefault(); abrirRadial(selecionadoId);
-      }
+      if (!e.shiftKey || e.ctrlKey || e.metaKey || e.key.toLowerCase() !== "a") return;
+      if (selecionadoId) { e.preventDefault(); abrirRadial(selecionadoId); return; }
+      // SEM SELEÇÃO: se o jogador EDITA um único personagem e ele tem
+      // token nesta cena, não há dúvida de quem age — abre as ações dele.
+      // Com dois ou mais, adivinhar seria pior que não fazer nada.
+      if (ehNarrador || controlledCharacterIds.length !== 1) return;
+      const doPersonagem = [...tokenPorId.values()].filter((t) => t.characterId === controlledCharacterIds[0] && t.podeControlar);
+      if (doPersonagem.length !== 1) return;
+      e.preventDefault(); abrirRadial(doPersonagem[0].id);
     };
     window.addEventListener("keydown", ouvir);
     return () => window.removeEventListener("keydown", ouvir);
-  }, [abrirRadial, selecionadoId]);
+  }, [abrirRadial, selecionadoId, ehNarrador, controlledCharacterIds, tokenPorId]);
   const fluxoTokenRef = useRef(fluxoToken);
   useEffect(() => { fluxoTokenRef.current = fluxoToken; }, [fluxoToken]);
   const [confirmandoRemocao, setConfirmandoRemocao] = useState<TokenApresentacao | null>(null);
@@ -4632,7 +4638,7 @@ export function VttClient({
     // Ficha é navegação; ações/targets formam sua própria seção.
     const temFicha = itemFicha.length > 0;
     if (t.characterId && t.podeControlar && consoleDaMesa) itemFicha.push({
-      id: "acoes-rapidas", rotulo: "Ações rápidas · Shift+A", icone: <Swords size={14} />, separadorAntes: temFicha,
+      id: "acoes-rapidas", rotulo: "Ações rápidas", atalho: ["Shift", "A"], icone: <Swords size={14} />, separadorAntes: temFicha,
       onSelecionar: () => abrirRadial(tokenId),
     });
     itemFicha.push({ id: "target", rotulo: targets.meus.includes(tokenId) ? "Desmarcar alvo" : "Marcar alvo",

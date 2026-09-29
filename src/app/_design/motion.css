@@ -600,9 +600,9 @@
 .mo-boot-terminal-row--1 em { animation: mo-terminal-ok-1 3.15s steps(1, end) forwards; }
 .mo-boot-terminal-row--2 em { animation: mo-terminal-ok-2 3.15s steps(1, end) forwards; }
 .mo-boot-terminal-row--3 em { animation: mo-terminal-ok-3 3.15s steps(1, end) forwards; }
-@keyframes mo-terminal-row-1 { 0%, 19.9% { opacity: 1; color: #d6e4f5; } 20%, 100% { opacity: 1; color: rgba(129, 152, 172, .9); } }
-@keyframes mo-terminal-row-2 { 0%, 19.9% { opacity: 0; } 20%, 39.9% { opacity: 1; color: #d6e4f5; } 40%, 100% { opacity: 1; color: rgba(129, 152, 172, .9); } }
-@keyframes mo-terminal-row-3 { 0%, 39.9% { opacity: 0; } 40%, 59.9% { opacity: 1; color: #d6e4f5; } 60%, 100% { opacity: 1; color: rgba(129, 152, 172, .9); } }
+@keyframes mo-terminal-row-1 { 0%, 19.9% { opacity: 1; color: #b9c9dc; } 20%, 100% { opacity: 1; color: rgba(129, 152, 172, .9); } }
+@keyframes mo-terminal-row-2 { 0%, 19.9% { opacity: 0; } 20%, 39.9% { opacity: 1; color: #b9c9dc; } 40%, 100% { opacity: 1; color: rgba(129, 152, 172, .9); } }
+@keyframes mo-terminal-row-3 { 0%, 39.9% { opacity: 0; } 40%, 59.9% { opacity: 1; color: #b9c9dc; } 60%, 100% { opacity: 1; color: rgba(129, 152, 172, .9); } }
 @keyframes mo-terminal-caret-1 { 0%, 9.9%, 20%, 100% { opacity: 0; } 10%, 19.9% { opacity: 1; } }
 @keyframes mo-terminal-caret-2 { 0%, 29.9%, 40%, 100% { opacity: 0; } 30%, 39.9% { opacity: 1; } }
 @keyframes mo-terminal-caret-3 { 0%, 49.9%, 60%, 100% { opacity: 0; } 50%, 59.9% { opacity: 1; } }
