@@ -216,6 +216,8 @@
 .rv-cena-chip { --rv-notch: 8px; }       /* 33px */
 .rv-pn-filtros-acoes .pn-btn,             /* 29px — + Personagem, Pasta */
 .rv-pn-rodape .pn-btn { --rv-notch: 7px; } /* 29px — Abrir Personagens… */
+.rv-pn-input { --rv-notch: 6px; }            /* ~22px — campos compactos do painel */
+.pn-dialogo .rv-pn-input { --rv-notch: 7px; } /* ~30px — campo dos diálogos (Nome…) */
 
 /* Caixas compostas só por ícone são exceção deliberada. O pictograma
    já concentra toda a leitura dentro de uma área pequena; chanfrar a
