@@ -985,7 +985,8 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### CHAT-02 — Definir acesso às ações do card
 
-- **Status:** Bloqueada
+- **Status:** Concluída (2026-09-29)
+- **Decisão:** botão direito no card + botão "⋯" no hover/foco (teclado e toque), abrindo o mesmo `MenuContextual`. Ações: Abrir ficha, Fixar/Desafixar, Excluir (com confirmação). Excluir: narrador qualquer card, autor os próprios. Fixar: qualquer membro que vê o card, visível para todos, numa faixa recolhível no topo do chat. Cards agrupados/derivados (resolução, divisor, pendência) não têm menu.
 - **Descrição:** decidir entre menu contextual, botão de opções visível ou abordagem híbrida para excluir, destacar/fixar e futuras ações, considerando descoberta em touch e teclado.
 - **Área afetada:** UX do chat e menu contextual.
 - **Prioridade sugerida:** P1
@@ -995,7 +996,8 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### CHAT-03 — Implementar exclusão e fixação/destaque de cards
 
-- **Status:** Bloqueada
+- **Status:** Concluída (2026-09-29)
+- **Andamento:** migration 0152 (`deleted_at/deleted_by`, `pinned_at/pinned_by`, RPCs `excluir_table_log` e `fixar_table_log`); exclusão lógica filtrada em `listLogs`; realtime passa a ouvir UPDATE de `table_logs`; UI em `feed/MenuCard.tsx` e faixa de fixados no `ChatTab`.
 - **Descrição:** adicionar mutações autorizadas e UI para excluir mensagens/rolagens e fixar/destacar cards conforme padrão aprovado.
 - **Área afetada:** chat, tabela de logs, RLS, realtime e auditoria.
 - **Prioridade sugerida:** P1

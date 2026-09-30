@@ -23,7 +23,7 @@
  */
 
 import { useLayoutEffect, useRef, useState } from "react";
-import { Check, Loader2, Pencil, X } from "lucide-react";
+import { Check, Loader2, Pencil, Trash2, X } from "lucide-react";
 
 export interface PropsAcoesAreaFlutuantes {
   /** Posição de TELA da âncora (já convertida pelo mapa). `null` esconde o grupo. */
@@ -38,13 +38,15 @@ export interface PropsAcoesAreaFlutuantes {
   editando?: boolean;
   /** Régua da dimensão atual (`reguaDosParametros`) — mesma medida que aparece durante o arrasto de criação, agora também visível editando. */
   medida?: string | null;
+  /** Excluir a área em edição (lixeira ao lado de Salvar/Cancelar). Ausente = sem permissão ou criando uma área nova — o botão não aparece. */
+  onExcluir?: () => void;
 }
 
 /** Deslocamento do grupo em relação à âncora, pra não cobrir a borda da forma nem a alça. */
 const DESLOC_X = 14;
 const DESLOC_Y = -14;
 /** Espaço estimado do grupo — usado só pra decidir de que lado ele cabe. */
-const LARGURA_ESTIMADA = 158;
+const LARGURA_ESTIMADA = 196; // com a lixeira de excluir (editando)
 const ALTURA_ESTIMADA = 36;
 /** A régua de medida quebra linha própria (`flex-basis: 100%`) — soma essa altura extra à estimativa quando ela está presente, senão o grupo cresce pra dentro da trilha/HUD sem que o flip perceba. */
 const ALTURA_EXTRA_MEDIDA = 16;
@@ -100,7 +102,7 @@ export function areaUtilDoMapa(): AreaUtil {
   return area;
 }
 
-export function AcoesAreaFlutuantes({ ancoraTela, onManter, onDescartar, persistindo, erro, editando, medida }: PropsAcoesAreaFlutuantes) {
+export function AcoesAreaFlutuantes({ ancoraTela, onManter, onDescartar, persistindo, erro, editando, medida, onExcluir }: PropsAcoesAreaFlutuantes) {
   if (!ancoraTela) return null;
   const pos = posicaoDasAcoes(ancoraTela, areaUtilDoMapa(), !!medida);
   const rotuloConfirmar = editando ? "Salvar" : "Manter";
@@ -138,6 +140,21 @@ export function AcoesAreaFlutuantes({ ancoraTela, onManter, onDescartar, persist
         <X size={15} />
         <span className="rv-area-acao-rotulo">{editando ? "Cancelar" : "Descartar"}</span>
       </button>
+      {/* Só ícone: "Excluir" por extenso competiria com Cancelar, que
+          também "tira" algo — a lixeira diz que é a ÁREA que vai embora. */}
+      {editando && onExcluir && (
+        <button
+          type="button"
+          className="rv-area-acao-flutuante rv-area-acao-flutuante--excluir"
+          data-testid="area-flutuante-excluir"
+          aria-label="Excluir área"
+          title="Excluir área"
+          disabled={persistindo}
+          onClick={onExcluir}
+        >
+          <Trash2 size={15} />
+        </button>
+      )}
       {erro && <p className="rv-area-acao-erro" role="alert" data-testid="area-flutuante-erro">{erro}</p>}
     </div>
   );

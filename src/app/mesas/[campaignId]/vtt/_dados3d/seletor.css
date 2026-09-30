@@ -1,0 +1,182 @@
+/* Seletor das rolagens (`Select` em ResultadoRolagem.tsx) — importado
+   pelo próprio componente, porque ele aparece no VTT E na página /ficha,
+   que não carregam as mesmas folhas. Cores literais pelo mesmo motivo
+   (a lista vive por portal, fora de qualquer escopo de tokens). */
+.rv-seletor-gatilho {
+  display: flex; align-items: center; gap: 6px; width: 100%; margin-top: 4px;
+  min-height: 34px; padding: 0 9px; text-align: left; cursor: pointer;
+  border: 1px solid #1c2b45; background: transparent; color: #b9c9dc;
+  border-radius: 4px 7px 4px 7px !important; corner-shape: round bevel round bevel;
+  font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: .02em; text-transform: uppercase;
+  transition: border-color .14s, background .14s, color .14s;
+}
+.rv-seletor-gatilho:not(:disabled):hover,
+.rv-seletor-gatilho[aria-expanded="true"] { border-color: color-mix(in srgb, #45b8c9 55%, transparent); color: #45b8c9; }
+.rv-seletor-gatilho:focus-visible { outline: 2px solid #45b8c9; outline-offset: 1px; }
+.rv-seletor-gatilho:disabled { color: #4f6285; cursor: not-allowed; }
+.rv-seletor-valor { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; white-space: nowrap; }
+.rv-seletor-nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.rv-dados-painel .rv-seletor-valor { font-size: 12px; font-weight: 600; }
+.rv-seletor-medida { flex: none; font-size: 11px; }
+.rv-seletor-seta { flex: none; color: #4f6285; transition: transform .14s; }
+
+.rv-seletor-lista {
+  position: fixed; z-index: 610; display: flex; flex-direction: column; gap: 2px;
+  max-height: 280px; overflow-y: auto; padding: 6px;
+  border: 1px solid #1c2b45; background: #0b1322; box-shadow: 0 18px 40px rgba(0, 0, 0, .6);
+  border-radius: 4px 10px 4px 10px; corner-shape: round bevel round bevel;
+}
+.rv-seletor-opcao {
+  position: relative; display: flex; align-items: center; gap: 6px; width: 100%; min-height: 30px; padding: 0 12px;
+  text-align: left; white-space: nowrap; cursor: pointer;
+  border: 1px solid transparent; background: transparent; color: #b9c9dc;
+  border-radius: 4px 6px 4px 6px; corner-shape: round bevel round bevel;
+  font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+  transition: border-color .14s, background .14s, color .14s;
+}
+.rv-seletor-opcao:hover,
+.rv-seletor-opcao:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, #45b8c9 45%, transparent);
+  background: color-mix(in srgb, #45b8c9 10%, transparent); color: #45b8c9;
+}
+.rv-seletor-opcao[aria-selected="true"] { color: #45b8c9; background: color-mix(in srgb, #45b8c9 8%, transparent); }
+.rv-seletor-opcao[aria-selected="true"]::before {
+  content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 2px; height: 16px; border-radius: 0 1px 1px 0; background: #45b8c9;
+}
+
+/* Limpar CD — estado visual controlado por pseudo-classes para o fundo
+   não ficar preso quando o clique esvazia e desabilita o botão. */
+.rv-cd-limpar {
+  background: transparent;
+  color: #6f83a3;
+  cursor: pointer;
+  transition: color .14s, background .14s;
+}
+.rv-cd-limpar:not(:disabled):hover,
+.rv-cd-limpar:not(:disabled):focus-visible {
+  outline: none;
+  background: rgba(239, 71, 111, .12);
+  color: #ef476f;
+}
+.rv-cd-limpar:disabled {
+  background: transparent;
+  color: #34435c;
+  cursor: not-allowed;
+}
+
+/* Controle numérico com a MESMA casca do select. O fundo dos botões é
+   uma camada retangular própria; assim o chassi global pode tratar o
+   elemento button sem arredondar visualmente o hover interno. */
+.rv-numero-controle {
+  display: inline-flex;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid #1c2b45;
+  border-radius: 4px 7px 4px 7px !important;
+  corner-shape: round bevel round bevel;
+  background: transparent;
+  transition: border-color .14s, color .14s;
+}
+.rv-numero-controle:hover,
+.rv-numero-controle:focus-within {
+  border-color: color-mix(in srgb, #45b8c9 55%, transparent);
+}
+.rv-numero-controle > input {
+  border-radius: 0 !important;
+  corner-shape: square !important;
+  clip-path: none !important;
+}
+.rv-numero-controle > button {
+  position: relative;
+  isolation: isolate;
+  padding: 6px 12px;
+  border: 0;
+  background: transparent;
+  color: #6f83a3;
+  font-family: var(--font-mono), monospace;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color .14s;
+}
+.rv-numero-controle > button::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: transparent;
+  transition: background .14s;
+}
+.rv-numero-controle > button:hover,
+.rv-numero-controle > button:focus-visible {
+  outline: none;
+  color: #45b8c9;
+}
+.rv-numero-controle > button:hover::before,
+.rv-numero-controle > button:focus-visible::before { background: rgba(69, 184, 201, .1); }
+.rv-numero-controle > button:active {
+  color: #45b8c9;
+}
+.rv-numero-controle > button:active::before { background: rgba(69, 184, 201, .17); }
+.rv-numero-controle > button:first-child::after,
+.rv-numero-controle > button:last-child::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: transparent;
+  transition: background .14s;
+}
+.rv-numero-controle > button:first-child::after { right: 0; }
+.rv-numero-controle > button:last-child::after { left: 0; }
+.rv-numero-controle > button:hover::after,
+.rv-numero-controle > button:focus-visible::after { background: color-mix(in srgb, #45b8c9 55%, transparent); }
+.rv-stepper-editavel > input,
+.rv-cd-controle > input {
+  width: 40px;
+  min-width: 40px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-family: var(--font-mono), monospace;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+.rv-stepper-editavel > input[data-sinal="zero"] { color: #8ea0bd; }
+.rv-stepper-editavel > input[data-sinal="positivo"] { color: #4fae82; }
+.rv-stepper-editavel > input[data-sinal="negativo"] { color: #ef476f; }
+.rv-stepper-editavel > input:focus { background: rgba(255, 255, 255, .025); }
+
+/* CD replica o Stepper de modificador vizinho: − valor +. */
+.rv-cd-controle {
+  align-items: stretch;
+}
+.rv-cd-controle input {
+  color: #f2b84b;
+}
+
+/* Visibilidade da rolagem — estados declarados em CSS, sem o antigo
+   hover cinza aplicado por JavaScript. */
+.rv-dados-visib button {
+  border: 1px solid #1c2b45;
+  background: transparent;
+  color: #6f83a3;
+  transition: border-color .14s, color .14s, background .14s, box-shadow .14s;
+}
+.rv-dados-visib button[aria-pressed="false"]:hover,
+.rv-dados-visib button[aria-pressed="false"]:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, #45b8c9 55%, #1c2b45);
+  background: color-mix(in srgb, #45b8c9 8%, transparent);
+  color: #9de8f2;
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, #45b8c9 45%, transparent);
+}
+.rv-dados-visib button[aria-pressed="true"] {
+  border-color: color-mix(in srgb, #45b8c9 55%, transparent);
+  background: color-mix(in srgb, #45b8c9 9%, transparent);
+  color: #45b8c9;
+}

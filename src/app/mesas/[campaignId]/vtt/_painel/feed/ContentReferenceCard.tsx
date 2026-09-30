@@ -21,6 +21,7 @@ import { BookOpen, Package, Sparkles, Wand2 } from "lucide-react";
 import { CartaoBase } from "../ui/CartaoBase";
 import { Chip, Chips, Modulo, Modulos, PainelTecnico } from "../ui/primitivas";
 import type { AcentoCartao, CartaoReferencia, CartaoUso, SnapshotConteudo } from "./contratos";
+import { cabecalhoDe } from "./CabecalhoPersonagem";
 
 function iconeDaCategoria(categoria: string) {
   if (categoria === "magias") return <Wand2 />;
@@ -60,6 +61,7 @@ export function ContentReferenceCard({
       acento={acento}
       autor={cartao.autoria.nome}
       hora={hora}
+      cabecalho={cabecalhoDe(cartao.autoria, hora, cartao.criadoEm)}
       horaISO={cartao.criadoEm}
       visibilidade={visibilidade}
       expandido={expandido}
@@ -128,6 +130,7 @@ export function ContentUseCard({
       acento={acento}
       autor={cartao.autoria.nome}
       hora={hora}
+      cabecalho={cabecalhoDe(cartao.autoria, hora, cartao.criadoEm)}
       horaISO={cartao.criadoEm}
       visibilidade={visibilidade}
       expandido={expandido}

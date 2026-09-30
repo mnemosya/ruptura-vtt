@@ -32,6 +32,7 @@
 
 import type { ReactNode } from "react";
 import type { Acento } from "./primitivas";
+import { BotaoMenuCard } from "../feed/MenuCard";
 
 export interface CartaoBaseProps {
   /** Rótulo do TIPO — "TESTE DE PERÍCIA", "ATAQUE", "CONDIÇÃO APLICADA". */
@@ -61,6 +62,9 @@ export interface CartaoBaseProps {
   pendente?: boolean;
   testId?: string;
   atributos?: Record<string, string>;
+  /** Faixa no topo do card (o personagem que agiu). Quando existe, ela
+      assume o lugar da linha de autor e hora. */
+  cabecalho?: ReactNode;
 }
 
 /**
@@ -93,6 +97,7 @@ export function CartaoBase({
   pendente,
   testId,
   atributos,
+  cabecalho,
 }: CartaoBaseProps) {
   const temDetalhes = detalhes != null && onAlternarExpandido != null;
   return (
@@ -103,6 +108,7 @@ export function CartaoBase({
       data-testid={testId}
       {...atributos}
     >
+      {cabecalho}
       <div className="pn-cartao-layout">
         <div className="pn-cartao-espinha" aria-hidden="true">
           {icone && <span className="pn-cartao-ico">{icone}</span>}
@@ -117,12 +123,15 @@ export function CartaoBase({
         </div>
 
         <div className="pn-cartao-conteudo">
-          <div className="pn-cartao-cab">
-            <span className="pn-cartao-autor">{autor}</span>
-            <span className="pn-cartao-meta">
-              {hora && <time className="pn-cartao-hora" dateTime={horaISO}>{hora}</time>}
-            </span>
-          </div>
+          {!cabecalho && (
+            <div className="pn-cartao-cab">
+              <span className="pn-cartao-autor">{autor}</span>
+              <span className="pn-cartao-meta">
+                {hora && <time className="pn-cartao-hora" dateTime={horaISO}>{hora}</time>}
+                <BotaoMenuCard />
+              </span>
+            </div>
+          )}
 
           {nome != null && <h3 className="pn-cartao-nome">{nome}</h3>}
           {/* O tipo aparece de novo aqui porque a espinha é `aria-hidden`

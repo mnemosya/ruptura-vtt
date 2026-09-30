@@ -17,14 +17,19 @@ import { CabecalhoModulo } from "./CabecalhoModulo";
 const LIMITE_PINS = 6;
 
 export function PinsRow({ api, onAbrirPin }: { api: ConsoleApi; onAbrirPin: (pin: ConsolePin) => void }) {
-  const slots = Array.from({ length: LIMITE_PINS }, (_, i) => api.pins[i] ?? null);
+  // Só leitura: só os fixados que existem — "Espaço livre +" e o ×
+  // são edição. Sem nenhum fixado, a faixa inteira sai.
+  const slots = api.somenteLeitura
+    ? api.pins.slice(0, LIMITE_PINS)
+    : Array.from({ length: LIMITE_PINS }, (_, i) => api.pins[i] ?? null);
+  if (slots.length === 0) return null;
 
   return (
     <div className="rc-pins" role="list" aria-label="Fixados">
       {slots.map((pin, i) =>
         pin ? (
           <div key={pin.id} className="rc-pin" data-preenchido="true" role="listitem">
-            <button
+            {!api.somenteLeitura && <button
               type="button"
               className="rc-pin-x"
               onClick={() => api.removerPin(pin.id)}
@@ -32,7 +37,7 @@ export function PinsRow({ api, onAbrirPin }: { api: ConsoleApi; onAbrirPin: (pin
               title="Remover"
             >
               <X size={12} />
-            </button>
+            </button>}
             <button
               type="button"
               onClick={() => onAbrirPin(pin)}
@@ -67,9 +72,10 @@ export function ConditionsPanel({
   return (
     <ConditionsControls
       conditions={ativas}
-      onAdd={onAdicionar}
+      // Só leitura: sem Adicionar e sem remover — os detalhes seguem.
+      onAdd={api.somenteLeitura ? undefined : onAdicionar}
       onDetails={onDetalhes}
-      onRemove={api.removerCondicao}
+      onRemove={api.somenteLeitura ? undefined : api.removerCondicao}
     />
   );
 }

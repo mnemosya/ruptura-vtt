@@ -275,6 +275,7 @@ function TrilhaDeFaccoes() {
           ehNarrador
           tokenPorId={new Map(TOKENS.map((t) => [t.id, t]))}
           selecionadoId="t1"
+          podeComandar={() => true}
           onDeclarar={SEM_EFEITO}
           onAssumir={SEM_EFEITO}
           onConcluir={SEM_EFEITO}
@@ -516,6 +517,33 @@ function montarPecas(campaignId: string | null): Peca[] { return [
   { chave: "jan-console", grupo: "Janelas internas", rotulo: "Console no VTT", render: () => (
     <Secao titulo="Janelas internas" sub={<>As quatro janelas internas na mesma casca: Console, convites, acesso e transferência. Componentes: <code>_painel/janelas/*</code> e <code>_painel/TransferenciaBando.tsx</code>.</>}>
       <VitrineJanelasAdmin campaignId={campaignId} />
+    </Secao>
+  ) },
+
+  /* ── entrada por convite ── */
+  { chave: "join-confirmar", grupo: "Convite", rotulo: "Confirmar entrada", render: () => (
+    <Secao titulo="Confirmar entrada" sub={<>Logado e ainda fora da campanha: nada acontece até o clique em Entrar na campanha, que leva sempre à mesa. Componente: <code>join/[token]/JoinTelas.tsx</code>.</>}>
+      <iframe className="gal-esp-frame" style={{ height: 860 }} src="/dev/estilos/especime/join?tela=confirmar" title="Confirmar entrada" />
+    </Secao>
+  ) },
+  { chave: "join-login", grupo: "Convite", rotulo: "Login com convite", render: () => (
+    <Secao titulo="Login com convite" sub={<>Sem sessão: o login de sempre, com a campanha do convite no topo do painel. Componente: <code>join/[token]/JoinTelas.tsx</code>.</>}>
+      <iframe className="gal-esp-frame" style={{ height: 860 }} src="/dev/estilos/especime/join?tela=login" title="Login com convite" />
+    </Secao>
+  ) },
+  { chave: "join-login-email", grupo: "Convite", rotulo: "Convite por e-mail", render: () => (
+    <Secao titulo="Convite por e-mail" sub={<>Convite para um e-mail específico: o campo de e-mail vem travado. Componente: <code>join/[token]/JoinTelas.tsx</code>.</>}>
+      <iframe className="gal-esp-frame" style={{ height: 860 }} src="/dev/estilos/especime/join?tela=login-email" title="Convite por e-mail" />
+    </Secao>
+  ) },
+  { chave: "join-indisponivel", grupo: "Convite", rotulo: "Indisponível", render: () => (
+    <Secao titulo="Indisponível" sub={<>Convite revogado, inativo, expirado ou inexistente — sem revelar a campanha. Componente: <code>join/[token]/JoinTelas.tsx</code>.</>}>
+      <iframe className="gal-esp-frame" style={{ height: 860 }} src="/dev/estilos/especime/join?tela=indisponivel" title="Indisponível" />
+    </Secao>
+  ) },
+  { chave: "join-erro", grupo: "Convite", rotulo: "Erro", render: () => (
+    <Secao titulo="Erro" sub={<>Falha ao consultar o convite. Componente: <code>join/[token]/JoinTelas.tsx</code>.</>}>
+      <iframe className="gal-esp-frame" style={{ height: 860 }} src="/dev/estilos/especime/join?tela=erro" title="Erro" />
     </Secao>
   ) },
 

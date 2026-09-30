@@ -27,6 +27,7 @@ import { CartaoBase } from "../ui/CartaoBase";
 import { Chip, Chips, FaixaResultado, Modulo, Modulos, PainelTecnico } from "../ui/primitivas";
 import type { CartaoDivisor, CartaoEfeito, CartaoPendencia, CartaoResolucao } from "./contratos";
 import { acentoDoCartao } from "./contratos";
+import { cabecalhoDe } from "./CabecalhoPersonagem";
 
 export function CombatDivider({ cartao }: { cartao: CartaoDivisor }) {
   return (
@@ -143,6 +144,7 @@ export function EffectApplicationCard({
       acento={acento}
       autor={cartao.alvo ?? cartao.autoria.nome}
       hora={hora}
+      cabecalho={!cartao.alvo || cartao.alvo === cartao.autoria.nome ? cabecalhoDe(cartao.autoria, hora, cartao.criadoEm) : undefined}
       horaISO={cartao.criadoEm}
       visibilidade={visibilidade}
       expandido={expandido}

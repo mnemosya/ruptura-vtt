@@ -24,7 +24,7 @@
    é a silhueta externa; o preenchimento é uma segunda silhueta interna.
    Não recortamos uma borda CSS: os dois fios diagonais ficam inteiros. */
 .rv-token-actions { position: fixed; width: 0; height: 0; z-index: 490; }
-.rv-token-actions__anel { position: absolute; width: 184px; height: 184px; left: -92px; top: -92px; border: 1px solid var(--rc-btn-border); border-radius: 50%; pointer-events: none; }
+.rv-token-actions__anel { position: absolute; width: 128px; height: 128px; left: -64px; top: -64px; border: 1px solid var(--rc-btn-border); border-radius: 50%; pointer-events: none; }
 .rv-token-actions button, .rv-token-flow button {
   --token-fio: var(--rc-btn-border); --token-fundo: var(--rc-btn-bg);
   position: relative; isolation: isolate; border: 0; background: transparent;
@@ -50,11 +50,22 @@
   --token-fio: var(--rc-btn-border-active); --token-fundo: var(--rc-btn-bg-active);
 }
 .rv-token-actions button:focus-visible, .rv-token-flow button:focus-visible { outline: 2px solid var(--rc-btn-border-hover); outline-offset: 3px; }
-.rv-token-actions button { position: absolute; width: 78px; height: 36px; padding: 0; }
-.rv-token-actions__atacar { left: -39px; top: -116px; }
-.rv-token-actions__conjurar { left: 40px; top: -18px; }
-.rv-token-actions__item { left: -118px; top: -18px; }
-.rv-token-actions__fechar { left: -39px; top: 80px; }
+/* LARGURA DO TEXTO: cada ação tem o tamanho do próprio rótulo (com
+   padding), e não 78px fixos. Por isso a posição é pela BORDA voltada
+   pro token — assim a distância ao disco não muda com o texto. */
+.rv-token-actions button { position: absolute; width: auto; height: 32px; min-height: 32px; padding: 0 14px; white-space: nowrap; font-weight: 600; }
+/* Halo compacto (anel de 128px): Atacar e Fechar acompanham o anel;
+   as ações LATERAIS saem mais pra fora, longe do disco do token.
+   Fechar é só o ícone, num quadrado de 36px. */
+.rv-token-actions__atacar { left: 0; top: -88px; transform: translateX(-50%); }
+.rv-token-actions__conjurar { left: 44px; top: -16px; }
+.rv-token-actions__item { right: 44px; top: -16px; }
+.rv-token-actions button.rv-token-actions__fechar { left: 0; top: 52px; width: 36px; height: 36px; min-height: 36px; padding: 0; transform: translateX(-50%); display: grid; place-items: center; }
+/* Caixa alta e SEM o branco: em repouso um azul apagado; no hover, o
+   acento — o branco ficava reservado pra nada e gritava no mapa. */
+.rv-token-actions button { text-transform: uppercase; letter-spacing: .08em; color: #8fb0c2; }
+.rv-token-actions button:not(:disabled):hover,
+.rv-token-actions button:focus-visible { color: var(--rc-cy); }
 [data-testid="token-acao-painel"] .pn-jan-corpo { padding: 0; }
 .rv-token-flow { display: flex; flex-direction: column; gap: 18px; min-height: 100%; padding: 18px; box-sizing: border-box; font-family: var(--font-rajdhani), sans-serif; font-size: 14px; color: var(--rc-text-forte); }
 .rv-token-flow p, .rv-token-flow h3 { margin: 0; line-height: 1.45; }
@@ -212,7 +223,7 @@
   --rc-line-soft: #16233a;/* --rv-line-2 */
   --rc-surface: rgba(12, 20, 32, 0.96);  /* --rv-panel, com alfa: a janela é flutuante */
   --rc-panel: rgba(17, 29, 49, 0.72);    /* --rv-panel-2 */
-  --rc-text: #d6e4f5;     /* --rv-ink */
+  --rc-text: #b9c9dc;     /* --rv-ink */
   --rc-dim: #7f95b3;      /* --rv-ink-dim */
   --rc-danger: #d15068;   /* --rv-dg */
   --rc-ok: #4fae82;       /* --rv-ok */
@@ -278,7 +289,7 @@
   --rc-line-soft: #16233a;
   --rc-surface: rgba(12, 20, 32, 0.96);
   --rc-panel: rgba(17, 29, 49, 0.72);
-  --rc-text: #d6e4f5;
+  --rc-text: #b9c9dc;
   --rc-dim: #7f95b3;
   --rc-danger: #d15068;
   --rc-ok: #4fae82;
@@ -694,7 +705,7 @@
 /* O fio do quadro é o que reage ao hover — antes era o `stroke` do SVG
    virando tracejado; o gesto é o mesmo, só mudou de camada. */
 .rc-avatar:hover .rc-avatar-fill,
-.rc-avatar:focus-visible .rc-avatar-fill { border-color: rgba(0, 212, 255, 0.51); }
+.rc-avatar:focus-visible .rc-avatar-fill { border-style: dashed; border-color: rgba(0, 212, 255, 0.51); }
 .rc-avatar:focus-visible { outline: none; }
 
 /* COM ou SEM imagem, o mesmo gesto do retrato do HUD
@@ -833,6 +844,8 @@
     0 calc(100% - var(--rc-card-chanfro))
   );
 }
+/* Botões baixos (28px): chanfro proporcional à altura. */
+:is(button.rc-modo-chip, .rc-ncond-add) { --rc-card-chanfro: 6px; }
 :is(
   button.rc-modo-chip,
   .rc-ncond-add,
@@ -1493,11 +1506,19 @@
 .rc-tabrail-btn:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 2px; }
 .rc-tabrail-hint {
   position: absolute; right: calc(100% + 9px); top: 50%; transform: translateY(-50%);
-  padding: 5px 10px; white-space: nowrap;
-  border: 1px solid var(--rc-line);
-  background: rgb(13, 20, 29);
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10.5px; letter-spacing: 0.05em; color: var(--rc-text);
+  /* A `.rv-dica` do VTT: etiqueta em caixa alta, fio e espinha ciano.
+     Literais com fallback porque o Console também roda fora da mesa. */
+  display: flex; align-items: center; padding: 5px 9px 5px 10px; white-space: nowrap;
+  border: 0; border-radius: var(--rv-r, 4px);
+  background: var(--rv-panel, rgba(12, 21, 38, 0.92));
+  box-shadow:
+    inset 0 0 0 1px var(--rv-line-strong, #1c2b45),
+    inset 2px 0 0 var(--rv-cy, #45b8c9),
+    0 10px 28px rgba(0, 0, 0, .5);
+  backdrop-filter: blur(9px);
+  font-family: var(--rv-display, var(--font-chakra)), sans-serif;
+  font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--rv-ink, #b9c9dc);
   opacity: 0; pointer-events: none; z-index: 5;
   transition: opacity 0.12s;
 }
@@ -1570,7 +1591,12 @@
   border-radius: var(--rc-r-card); border: 1px solid rgba(0, 212, 255, 0.14);
   background: rgba(17, 29, 49, 0.70);
   box-sizing: border-box;
+  /* Contêiner do trilho (4 → 2 colunas) e rolagem vertical quando o
+     trilho em duas linhas não cabe junto da silhueta. */
+  container-type: inline-size; container-name: rc-eq;
+  overflow-y: auto; scrollbar-width: none;
 }
+.rc-eq-card-outer::-webkit-scrollbar { display: none; }
 /* `.rc-tabpanel` (pai genérico da aba) já tem a SUA própria borda —
    redundante com a do Card interno acima (mesmo bug que Perícias já
    teve). Só zera quando hospeda Equipamentos; as outras abas, ainda
@@ -1823,12 +1849,16 @@
    As armas ficam mais largas que os acessos rápidos porque é nelas
    que o nome do item é longo. */
 .rc-eq-loadout {
-  display: grid; grid-template-columns: 1.35fr 1.35fr 0.95fr 0.95fr;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px; padding: 12px 16px 16px;
-  align-self: stretch;
+  align-self: stretch; flex: none;
   border-top: 1px solid var(--rc-fio-sutil);
 }
-.rc-eq-loadout > * { width: auto; }
+/* `.rc-eq-loadout .rc-eq-quick` vence o `width: 180px` do card. */
+.rc-eq-loadout > .rc-eq-box, .rc-eq-loadout > .rc-eq-quick { width: auto; min-width: 0; }
+@container rc-eq (max-width: 720px) {
+  .rc-eq-loadout { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 /* Acesso rápido: a MESMA anatomia dos outros slots, na paleta âmbar
    que ele já usava. */
 .rc-eq-quick {
@@ -2175,7 +2205,8 @@
 .rv-token-picker .rc-picker-opcao small:last-child { margin-left: auto; }
 .rv-token-picker [role="alert"] { color: var(--rc-danger); }
 .rv-token-picker button:disabled { opacity: .45; cursor: not-allowed; }
-.rv-token-picker__lista-alvos { background: #0b1623; border: 1px solid #173244; }
+/* A lista de alvos não tem moldura: cada alvo é um CARTÃO próprio (ver
+   `.rv-alvo-cartao`, no fim desta folha), como na aba Personagens. */
 .rv-token-picker .rv-token-picker__alvo-opcao {
   min-height: 46px; padding: 9px 14px; border: 0; border-bottom: 1px solid #173244;
   background-color: transparent; background-image: linear-gradient(90deg, rgba(0, 212, 255, .045), transparent 70%);
@@ -2559,7 +2590,7 @@
   --jr-acento: #45b8c9;      /* = --rc-teal */
   --jr-linha: #16233a;       /* = --rc-line-soft */
   --jr-linha-forte: #1c2b45; /* = --rc-line */
-  --jr-tinta: #d6e4f5;       /* = --rc-text */
+  --jr-tinta: #b9c9dc;       /* = --rc-text */
   --jr-tinta-dim: #7f95b3;   /* = --rc-dim */
   --jr-tinta-fraca: #4f6285; /* --rv-ink-faint */
   --jr-fundo: #070d17;    /* --rv-sunken */
@@ -4094,9 +4125,8 @@
      2px era o único traço grosso do Console. */
   position: absolute; left: -1px;
   top: 50%; transform: translateY(-50%) scaleY(0); transform-origin: top;
-  /* `max(...)`: o Deslocamento é uma linha só e sobrava um traço de
-     7px, curto demais para ler como marcador — 14px é o piso. */
-  width: 1px; height: max(14px, calc(100% - 20px));
+  /* Altura inteira do bloco — o fio é a borda dele no hover. */
+  width: 1px; height: 100%;
   background: var(--rc-bloco-cor);
   opacity: 0;
   transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.1s ease-out, box-shadow 0.15s ease;
@@ -4111,6 +4141,12 @@
   .rc-nric-card > .rc-nric-faixa
 ):hover {
   background-size: 100% 100%, 100% 100%;
+}
+/* A Sobrecarga é o último bloco: o fio para antes do chanfro do card
+   (canto inferior esquerdo), senão sai pela diagonal. */
+.rc-nric-card > .rc-nsob-card::before {
+  top: calc(50% - var(--rc-card-chanfro, 9px) / 2);
+  height: calc(100% - var(--rc-card-chanfro, 9px));
 }
 :is(
   .rc-nric-nome-row,
@@ -4579,3 +4615,149 @@ button.rc-arma-acao:disabled { opacity: 0.45; cursor: not-allowed; }
   border-color: color-mix(in srgb, var(--rc-danger) 50%, transparent);
   background: color-mix(in srgb, var(--rc-danger) 6%, transparent);
 }
+
+/* ── Chanfro dos botões de modais e janelas da ficha ──────────────
+   A regra global do VTT (`vtt-chassi.css`) só alcança o que mora
+   dentro das raízes da mesa. A ficha e seus modais (defesa, recorte do
+   avatar, modais auxiliares, confirmação de remover avatar) são
+   portais no `body`, então esses botões ficavam de canto redondo.
+   Mesma geometria do VTT: raio de 4px nos cantos retos, chanfro nos
+   outros dois. Botões só de ícone continuam fora, como no VTT. */
+.rc-picker-aplicar,
+.rc-recorte__acoes button,
+.rc-ghost,
+.rc-aux-item,
+.rc-avatar-confirmar-acoes button {
+  border-radius: 4px 8px 4px 8px !important;
+  corner-shape: round bevel round bevel;
+}
+
+/* ── Ficha SOMENTE LEITURA (permissão "visualizar", migration 0151) ──
+   Os controles de edição simplesmente não são renderizados (cada
+   painel olha `api.somenteLeitura`); a leitura — hover, dicas,
+   detalhes — continua inteira. Aqui só o selo da barra de título. */
+.rc-somente-leitura-chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px;
+  border: 1px solid var(--rc-btn-border); border-radius: var(--rc-r-sm);
+  background: var(--rc-btn-bg); color: rgba(234, 247, 255, 0.80);
+  font-family: var(--font-rajdhani), sans-serif; font-size: 13px; font-weight: 600; line-height: 18px;
+  white-space: nowrap;
+}
+
+/* Ajustes de LAYOUT do modo leitura — sem os controles, as grades que
+   reservavam coluna pra eles fecham, e o que era botão perde a cara de
+   clicável. */
+.rc-vres-numbox[data-leitura] { grid-template-columns: minmax(0, 1fr); }
+span.rc-vres-atual { cursor: default; }
+span.rc-vres-atual:hover { background: none; }
+.rc-acao-ctrl[data-leitura] { grid-template-columns: minmax(0, 1fr); }
+.rc-acao-ctrl[data-leitura] .rc-acao-valor { justify-self: center; }
+span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
+.rc-avatar--leitura { cursor: default; }
+.rc-avatar--leitura:hover .rc-avatar-fill { border-style: solid; border-color: rgba(0, 212, 255, 0.14); }
+.rc-nric-attr[data-leitura] { cursor: default; }
+.rc-nric-pip[data-leitura] { cursor: default; }
+/* Equipamentos em leitura: slot vazio e item equipado deixam de ser
+   alvo (sem cursor de clique, sem véu de hover), e o readout de MIT/PD
+   fecha a coluna dos −/+. */
+.rc-eq-vazio, .rc-eq-inner--leitura { cursor: default; }
+.rc-eq-vazio:hover, .rc-eq-inner--leitura:hover { background: transparent; }
+.rc-eq-inner--leitura .rc-eq-nome { cursor: default; }
+.rc-eq-vazio .rc-eq-equipar-txt { color: rgba(214, 228, 245, 0.4); }
+.rc-eq-readout[data-leitura] { grid-template-columns: minmax(0, 1fr); }
+/* Inventário em leitura: a quantidade ocupa a caixa do contador. */
+.rc-inv-stepper[data-leitura] span { border: 1px solid var(--rc-line); gap: 8px; }
+.rc-inv-qtd-rot {
+  font-style: normal; font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #617d8f;
+}
+.rc-inv-carteira-val[data-leitura] { cursor: default; }
+
+/* ── Alvo da ação do token — no molde do cartão da aba Personagens ──
+   (`.rv-pn-scroll--pers .rv-pn-linha`): superfície `#0c1526`, fio fino,
+   hover no ACENTO DO LADO (borda + fundo) e o escolhido com a barra
+   lateral de 2px e o tom do acento. Ciano pro PJ, vermelho pro PN — os
+   mesmos valores de `--rv-cy`/`--rv-dg` (literais: o seletor vive por
+   portal, fora de onde esses tokens existem). */
+.rv-token-picker__lista-alvos { display: flex; flex-direction: column; gap: 6px; }
+.rv-alvo-cartao {
+  --fg-a: #45b8c9;
+  position: relative; display: flex; align-items: stretch; gap: 12px; width: 100%; min-height: 48px;
+  padding: 0 14px 0 0; overflow: hidden; text-align: left; cursor: pointer;
+  border: 1px solid #16233a;
+  /* O chanfro do cartão da aba (raio nos cantos retos, corte nos outros). */
+  border-radius: 4px 8px 4px 8px; corner-shape: round bevel round bevel;
+  background: #0c1526; color: #b9c9dc;
+  transition: background-color .16s, border-color .16s, color .16s;
+}
+.rv-alvo-cartao[data-lado="pn"] { --fg-a: #d15068; }
+/* O ROSTO na altura inteira do cartão, encostado à esquerda — como o
+   avatar do cartão da aba Personagens. Sem retrato, a sigla. */
+.rv-alvo-cartao-face {
+  flex: none; width: 48px; align-self: stretch;
+  display: grid; place-items: center; overflow: hidden;
+  border-right: 1px solid #1c2b45; background: #0a1220;
+  font-family: var(--font-rajdhani), sans-serif; font-size: 13px; font-weight: 700; color: #4f6285;
+}
+.rv-alvo-cartao-face img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rv-alvo-cartao-nome {
+  align-self: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+}
+.rv-alvo-cartao:not(:disabled):hover,
+.rv-alvo-cartao:focus-visible {
+  border-color: color-mix(in srgb, var(--fg-a) 55%, transparent);
+  background: color-mix(in srgb, var(--fg-a) 11%, #0c1526);
+  color: var(--fg-a);
+}
+.rv-alvo-cartao[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--fg-a) 47%, transparent);
+  background: color-mix(in srgb, var(--fg-a) 12%, #0c1526);
+  color: var(--fg-a);
+}
+.rv-alvo-cartao[aria-pressed="true"]::before {
+  content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 2px; height: 24px; border-radius: 0 1px 1px 0; background: var(--fg-a);
+}
+.rv-alvo-cartao:focus-visible { outline: 2px solid var(--fg-a); outline-offset: 1px; }
+.rv-alvo-cartao:disabled { opacity: .5; cursor: progress; }
+
+/* Botões das janelas de ferramenta da ficha (seletores `rc-picker`:
+   ação do token, defesa, rolagem…; e os modais auxiliares): JetBrains
+   Mono em caixa alta e texto CIANO — no hover também, sem ir pro branco. */
+.rc-picker-aplicar,
+.rc-picker .rc-ghost,
+.rc-aux .rc-ghost {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--rc-cy);
+}
+.rc-picker-aplicar:hover:not(:disabled),
+.rc-picker .rc-ghost:hover:not(:disabled),
+.rc-aux .rc-ghost:hover:not(:disabled) { color: var(--rc-cy); }
+
+/* O NOME de cada opção dos seletores (Ataque desarmado, Esquivar…) no
+   mesmo registro dos botões: JetBrains Mono em caixa alta. A linha de
+   baixo (custo/aviso) acompanha, um degrau menor. */
+.rc-picker-opcao .rc-picker-nome {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+}
+.rc-picker-opcao .rc-picker-nome small {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase;
+}
+
+/* Janelas de ferramenta (`rc-picker`): a tinta padrão do Console
+   (#d6e4f5) é quase branca e gritava em título, opções e valores.
+   Aqui ela desce um degrau — o ciano segue sendo o que acende. */
+.rc-picker { --rc-text: #aebfd4; --rc-text-forte: #c3d2e3; }
+
+/* O nome da ação escolhida, no resumo do passo "Confirmar": é o dado da
+   janela — em ciano e caixa alta. */
+.rv-token-picker__resumo h3 { color: var(--rc-cy); text-transform: uppercase; letter-spacing: .06em; }
+
+/* Moldura da janela "Rolar Dados" (`MolduraRolagem`): o chanfro das
+   janelas da mesa. O raio vem inline; aqui só a forma dos cantos. */
+.rv-moldura-rolagem { corner-shape: round bevel round bevel; }

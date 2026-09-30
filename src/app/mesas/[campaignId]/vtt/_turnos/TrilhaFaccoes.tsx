@@ -61,6 +61,12 @@ export interface TrilhaFaccoesProps {
   tokenPorId: Map<string, TokenApresentacao>;
   /** Token selecionado no mapa — o retrato correspondente fica marcado. */
   selecionadoId: string | null;
+  /**
+   * Quem pode agir/declarar por este participante (id = id do token).
+   * Narrador: qualquer um. Jogador: só os personagens que ELE controla
+   * (`character_controllers`) — a mesma regra de mover o token no mapa.
+   */
+  podeComandar: (id: string) => boolean;
   onDeclarar: (id: string, janela: Janela) => void;
   onAssumir: (id: string) => void;
   onConcluir: (pa: number) => void;
@@ -159,6 +165,7 @@ export function TrilhaFaccoes(props: TrilhaFaccoesProps) {
         janelaAcabou={janelaAcabou}
         onAvancarJanela={props.onAvancarJanela}
         onProximaRodada={props.onProximaRodada}
+        podeConduzir={ehNarrador}
       />
 
       {(["pj", "pn"] as Lado[]).map((lado) => (
@@ -172,6 +179,7 @@ export function TrilhaFaccoes(props: TrilhaFaccoesProps) {
           tokenPorId={tokenPorId}
           selecionadoId={selecionadoId}
           ehNarrador={ehNarrador}
+          podeComandar={props.podeComandar}
           agindo={agindo}
           onDeclarar={props.onDeclarar}
           onAssumir={props.onAssumir}
@@ -186,12 +194,12 @@ export function TrilhaFaccoes(props: TrilhaFaccoesProps) {
 }
 
 function Faccao({
-  lado, ativa, prontos, participantes, trilha, tokenPorId, selecionadoId, ehNarrador, agindo,
+  lado, ativa, prontos, participantes, trilha, tokenPorId, selecionadoId, ehNarrador, podeComandar, agindo,
   onDeclarar, onAssumir, onConcluir, onCancelar, onEncerrar, onFocar,
 }: {
   lado: Lado; ativa: boolean; prontos: number; participantes: Participante[];
   trilha: EstadoTrilha; tokenPorId: Map<string, TokenApresentacao>; selecionadoId: string | null;
-  ehNarrador: boolean; agindo: Participante | null;
+  ehNarrador: boolean; podeComandar: (id: string) => boolean; agindo: Participante | null;
   onDeclarar: (id: string, j: Janela) => void; onAssumir: (id: string) => void;
   onConcluir: (pa: number) => void; onCancelar: () => void; onEncerrar: (id: string) => void; onFocar: (id: string) => void;
 }) {
@@ -210,7 +218,7 @@ function Faccao({
             token={tokenPorId.get(p.id)}
             trilha={trilha}
             selecionado={selecionadoId === p.id}
-            ehNarrador={ehNarrador}
+            podeComandar={ehNarrador || podeComandar(p.id)}
             outroAgindo={agindo !== null && agindo.id !== p.id ? agindo : null}
             onDeclarar={onDeclarar}
             onAssumir={onAssumir}
@@ -227,20 +235,17 @@ function Faccao({
 }
 
 function Ator({
-  p, token, trilha, selecionado, ehNarrador, outroAgindo,
+  p, token, trilha, selecionado, podeComandar, outroAgindo,
   onDeclarar, onAssumir, onConcluir, onCancelar, onEncerrar, onFocar,
 }: {
   p: Participante; token: TokenApresentacao | undefined; trilha: EstadoTrilha;
-  selecionado: boolean; ehNarrador: boolean; outroAgindo: Participante | null;
+  selecionado: boolean; podeComandar: boolean; outroAgindo: Participante | null;
   onDeclarar: (id: string, j: Janela) => void; onAssumir: (id: string) => void;
   onConcluir: (pa: number) => void; onCancelar: () => void; onEncerrar: (id: string) => void; onFocar: (id: string) => void;
 }) {
   const el = elegibilidade(p, trilha, { acaoDireta: true });
   const situacao = situacaoDe(p, trilha);
   const restante = paRestante(p);
-  // Mesma política de controle do dock anterior: jogador escolhe por
-  // personagens de jogador, narrador escolhe por qualquer um.
-  const podeComandar = p.lado === "pj" || ehNarrador;
   // Espelha o travamento de `declarar` no modelo — quem já resolveu a
   // rodada (e não está voltando de fragmentação) tem declaração
   // consumada, e o botão precisa DIZER isso em vez de virar no-op.
@@ -248,10 +253,7 @@ function Ator({
   const resolvido = situacao === "agiu" || situacao === "fora";
   const jaAgiuNaJanela = p.agiuEm.includes(trilha.janela) && p.fragmentouEm !== trilha.janela;
 
-  const motivoAgir = outroAgindo
-    ? `${outroAgindo.nome} está em ação.`
-    : !podeComandar ? "Só o narrador pode ativar este personagem."
-    : el.motivo?.texto ?? null;
+  const motivoAgir = outroAgindo ? `${outroAgindo.nome} está em ação.` : el.motivo?.texto ?? null;
 
   return (
     <li
@@ -288,14 +290,19 @@ function Ator({
             <span className="rv-ator-marca" aria-hidden="true"><Check size={11} strokeWidth={2.5} /></span>
           ) : null}
         </button>
-        {situacao === "agindo" && (
+        {/* Cancelar o Agir é de quem comanda o personagem — o mesmo
+            critério dos botões de ação ao lado. */}
+        {situacao === "agindo" && podeComandar && (
           <button type="button" className="rv-ator-cancelar" onClick={onCancelar} aria-label="Cancelar o Agir" title="Cancelar o Agir — nada é gasto">
             <X size={11} strokeWidth={2.5} />
           </button>
         )}
       </div>
 
-      <div className="rv-ator-acoes">
+      {/* Sem comando sobre o personagem, não há ações — nem desabilitadas.
+          O retrato continua (dá pra ver a ordem e focar no mapa); os
+          botões só existem pra quem pode apertá-los. */}
+      {podeComandar && <div className="rv-ator-acoes">
         {situacao === "agindo" ? (
           <Resolucao
             paDoTurno={Math.max(1, tetoPaAgora(p, trilha.janela) === Infinity ? restante : tetoPaAgora(p, trilha.janela))}
@@ -308,8 +315,8 @@ function Ator({
           <button
             type="button"
             className="rv-ator-agir"
-            disabled={!el.apto || !podeComandar || outroAgindo !== null}
-            title={el.apto && podeComandar && !outroAgindo ? `Iniciar a ativação de ${p.nome}` : motivoAgir ?? undefined}
+            disabled={!el.apto || outroAgindo !== null}
+            title={el.apto && !outroAgindo ? `Iniciar a ativação de ${p.nome}` : motivoAgir ?? undefined}
             onClick={() => onAssumir(p.id)}
           >
             Agir
@@ -325,13 +332,13 @@ function Ator({
                 janela={j}
                 lado={p.lado}
                 ativo={p.declaracao === j}
-                desabilitado={declaracaoTravada || !podeComandar}
+                desabilitado={declaracaoTravada}
                 onDeclarar={() => onDeclarar(p.id, j)}
               />
             ))}
           </div>
         )}
-      </div>
+      </div>}
 
     </li>
   );

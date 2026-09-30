@@ -190,11 +190,11 @@ async function main(): Promise<void> {
 
     // ── 3. AVANÇAR A JANELA — o que ninguém checava dos dois lados ─
     // Sem ninguém declarado, a janela dos rápidos já nasce concluída e
-    // o núcleo oferece "Resolver Lentos". É o avanço mais comum de uma
+    // a trilha permite resolver os lentos. É o avanço mais comum de uma
     // luta.
     {
       const antes = await leituraDaRodada(sessaoJ.page);
-      await sessaoN.page.locator(".rv-rodadas-avanca").click();
+      await sessaoN.page.locator('.rv-rodadas-etapa[data-destino="lentos"]').click();
       const ms = await esperarAte(async () => (await leituraDaRodada(sessaoJ!.page)).janela === "lentos");
       const depois = await leituraDaRodada(sessaoJ.page);
       registrar(
@@ -212,7 +212,7 @@ async function main(): Promise<void> {
     // decide se as duas pessoas estão na mesma rodada.
     {
       const antes = await leituraDaRodada(sessaoJ.page);
-      await sessaoN.page.locator(".rv-rodadas-avanca").click();
+      await sessaoN.page.locator('.rv-rodadas-etapa[data-destino="rapidos"]').click();
       const ms = await esperarAte(async () => (await leituraDaRodada(sessaoJ!.page)).rodada.includes("Rodada 2"));
       const depois = await leituraDaRodada(sessaoJ.page);
       registrar(

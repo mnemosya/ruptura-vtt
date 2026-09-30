@@ -71,11 +71,11 @@
   -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, #000 30%, transparent 85%);
   mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, #000 30%, transparent 85%);
 }
-/* Fundo específico da tela "Minhas Campanhas" (bg2.png) — escopado ao
-   conteúdo, nunca cobre a sidebar nem a topbar porque vive dentro do
-   próprio wrapper da página (que só existe abaixo/à direita delas),
-   não no `.ra-bg` fixo em tela cheia usado pelo resto da área
-   autenticada. Mesmas camadas de decoração da imagem de fundo da tela
+/* Fundo específico da tela "Minhas Campanhas" (bg2.png) — fixo em tela
+   cheia, passando por baixo da sidebar e da topbar (que são
+   translúcidas). `z-index: -1` o coloca atrás de tudo dentro do
+   contexto de empilhamento do `.ra2-shell`, mas ainda na frente do
+   `.ra-bg` global. Mesmas camadas de decoração da imagem de fundo da tela
    de autenticação (.rv-img/.rv-img-tint/.rv-img-grad/.rv-img-mask):
    leve realce de brilho/saturação, tingimento azul discreto, gradiente
    ciano sutil e vinheta radial. */
@@ -86,7 +86,7 @@
    esse caso; quando o conteúdo é mais alto que a viewport, o wrapper
    cresce normalmente com o conteúdo (min-height, não height fixo). */
 .ra2-page-bg-wrap { position: relative; min-height: 100%; }
-.ra2-page-bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.ra2-page-bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
 .ra2-page-bg-img {
   position: absolute; inset: 0;
   background-image: url('/brand/campaigns-hud.jpg');
@@ -143,8 +143,8 @@
   position: sticky; top: 0; z-index: 30;
   display: flex; align-items: center; justify-content: flex-end; gap: 12px; height: 60px; padding: 0 24px;
   border-bottom: 1px solid rgba(0, 212, 255, 0.1);
-  background: linear-gradient(180deg, rgba(9, 13, 22, 0.92), rgba(9, 13, 22, 0.72));
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  background: linear-gradient(180deg, rgba(9, 13, 22, 0.55), rgba(9, 13, 22, 0.35));
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
 /* `relative`: ancestral de posicionamento pra `.mo-boot-overlay`
    (`BootMinDurationOverlay`), que cobre esta área com
@@ -163,7 +163,8 @@
   display: flex; flex-direction: column; gap: 24px;
   width: 240px; flex-shrink: 0; padding: 20px 24px;
   border-right: 1px solid rgba(0, 212, 255, 0.12);
-  background: linear-gradient(180deg, rgba(9, 13, 22, 0.92), rgba(7, 10, 17, 0.96));
+  background: linear-gradient(180deg, rgba(9, 13, 22, 0.55), rgba(7, 10, 17, 0.65));
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   /* LIMITAÇÃO CONHECIDA e aceita: `width` é propriedade de layout, e
      animá-la custa reflow. É intencional — recolher a sidebar é uma
      mudança de LAYOUT real (o conteúdo ao lado precisa refluir junto);
@@ -309,7 +310,7 @@
 /* ── Menu suspenso da conta ────────────────────────────────────── */
 .ra-menu-anchor { position: relative; }
 .ra-menu {
-  position: absolute; top: 46px; right: 0; width: 240px; z-index: 200;
+  position: absolute; top: calc(100% + 8px); right: 0; width: 240px; z-index: 200;
   background: rgb(15, 19, 27); border: 1px solid rgba(0, 212, 255, 0.28);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 0 30px rgba(0, 60, 90, 0.14);
   /* `mo-pop-in` (motion.css) no lugar do keyframe local `ra-pop`, que
@@ -465,7 +466,7 @@
 
 /* ── Campanha em destaque ──────────────────────────────────────── */
 .ra2-featured {
-  position: relative; width: 100%; min-height: 315px; overflow: hidden; border-radius: 1px;
+  position: relative; width: 100%; min-height: 315px; overflow: hidden; border-radius: 4px;
   background: #0b0f17; transition: box-shadow 0.25s ease;
 }
 .ra2-featured:hover { box-shadow: 0 0 32px rgba(0, 212, 255, 0.14); }
@@ -513,8 +514,8 @@
   font-family: var(--font-rajdhani), sans-serif; font-weight: 500; font-size: 16px; line-height: 24px;
   color: rgba(184, 216, 232, 0.82); max-width: 480px; margin: 0;
 }
-.ra2-featured-frame { position: absolute; inset: 0; border: 1px solid rgba(0, 212, 255, 0.35); pointer-events: none; border-radius: 1px; }
-.ra2-featured-glow { position: absolute; inset: -2px; border: 1px solid rgba(0, 212, 255, 0.18); border-radius: 2px; pointer-events: none; box-shadow: 0 0 12px 0 rgba(0, 212, 255, 0.12); }
+.ra2-featured-frame { position: absolute; inset: 0; border: 1px solid rgba(0, 212, 255, 0.35); pointer-events: none; border-radius: 4px; }
+.ra2-featured-glow { position: absolute; inset: -2px; border: 1px solid rgba(0, 212, 255, 0.18); border-radius: 6px; pointer-events: none; box-shadow: 0 0 12px 0 rgba(0, 212, 255, 0.12); }
 .ra2-count-chip {
   display: inline-flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 3px;
   background: rgba(0, 212, 255, 0.08); border: 1px solid rgba(84, 172, 190, 0.1);
@@ -534,7 +535,7 @@
 .ra2-card { position: relative; width: 100%; transition: transform var(--mo-dur-micro) var(--mo-ease-standard); }
 .ra2-card-inner {
   position: relative; height: 222px; overflow: hidden; background: #0d1119;
-  border: 1px solid rgba(0, 212, 255, 0.16);
+  border: 1px solid rgba(0, 212, 255, 0.16); border-radius: 8px;
   transition: border-color var(--mo-dur-micro) var(--mo-ease-standard), box-shadow var(--mo-dur-micro) var(--mo-ease-standard);
 }
 .ra2-card:hover { transform: translateY(-3px); }
@@ -810,10 +811,8 @@
   .ra2-search,
   .ra2-segmented,
   .ra2-seg,
-  .ra2-featured,
   .ra2-featured-pessoas,
   .ra2-count-chip,
-  .ra2-card-inner,
   .ra2-panel,
   .ra2-person--link,
   .ra2-person-avatar,
@@ -857,10 +856,8 @@
   .ra2-search,
   .ra2-segmented,
   .ra2-seg,
-  .ra2-featured,
   .ra2-featured-pessoas,
   .ra2-count-chip,
-  .ra2-card-inner,
   .ra2-panel,
   .ra2-person--link,
   .ra2-person-avatar,
@@ -893,14 +890,13 @@
     ) bottom left / var(--ra-chanfro) var(--ra-chanfro) no-repeat;
 }
 
-/* Peças compactas não comportam o raio de 4px sem competir com o
-   chanfro. Mantêm a normalização mínima de 2px. */
+/* Peças compactas abaixo mantêm a normalização mínima de 2px.
+   As abas do segmented usam os 4px do bloco compartilhado acima. */
 :is(
   .ra2-brand-mark,
   .ra2-profile-avatar,
   .ra2-person-avatar,
   .ra2-count-chip,
-  .ra2-seg,
   .ra2-person--link,
   .ra-role,
   .ra-tag,
@@ -916,7 +912,11 @@
 .ra2-profile { --ra-chanfro: 7px; --ra-chanfro-fio: rgba(0, 212, 255, 0.16); }
 .ra2-profile:hover { --ra-chanfro-fio: rgba(0, 212, 255, 0.4); }
 .ra2-profile-avatar, .ra2-person-avatar { --ra-chanfro: 5px; --ra-chanfro-fio: rgba(0, 212, 255, 0.3); }
-.ra-menu { --ra-chanfro-fio: rgba(0, 212, 255, 0.28); }
+.ra-menu {
+  /* A regra compartilhada do chanfro vem depois do posicionamento do menu. */
+  position: absolute;
+  --ra-chanfro-fio: rgba(0, 212, 255, 0.28);
+}
 .ra2-primary, .ra-btn { --ra-chanfro-fio: #3a94ac; }
 .ra2-primary:hover:not(:disabled), .ra-btn:hover:not(:disabled) { --ra-chanfro-fio: #6fe0ff; }
 .ra2-primary:active:not(:disabled) { --ra-chanfro-fio: #1db3ce; }
@@ -935,12 +935,12 @@
 .ra2-segmented { --ra-chanfro-fio: rgba(0, 212, 255, 0.1); }
 .ra2-seg { --ra-chanfro: 6px; --ra-chanfro-fio: transparent; }
 .ra2-seg--active { --ra-chanfro-fio: #3a94ac; }
-.ra2-featured { --ra-chanfro: 12px; --ra-chanfro-fio: rgba(0, 212, 255, 0.35); border: 1px solid rgba(0, 212, 255, 0.35); }
+.ra2-featured { border: 1px solid rgba(0, 212, 255, 0.35); }
 .ra2-featured-frame { border: 0; }
 .ra2-featured-pessoas, .ra2-count-chip { --ra-chanfro: 5px; --ra-chanfro-fio: rgba(84, 172, 190, 0.22); }
-.ra2-card-inner { --ra-chanfro-fio: rgba(0, 212, 255, 0.16); }
-.ra2-card:hover .ra2-card-inner { --ra-chanfro-fio: rgba(0, 212, 255, 0.4); }
-.ra2-panel { --ra-chanfro-fio: rgba(0, 212, 255, 0.14); }
+/* Os painéis laterais (Atividade, Rede) mantêm o chanfro, mas os
+   cantos retos acompanham o raio de 8px dos cards de campanha. */
+.ra2-panel { --ra-chanfro-fio: rgba(0, 212, 255, 0.14); border-radius: 8px 0 8px 0; }
 .ra2-person--link { --ra-chanfro: 6px; --ra-chanfro-fio: transparent; }
 .ra2-person--link:hover { --ra-chanfro-fio: rgba(84, 172, 190, 0.28); }
 .ra-role, .ra-tag, .ra-comp-type { --ra-chanfro: 6px; }

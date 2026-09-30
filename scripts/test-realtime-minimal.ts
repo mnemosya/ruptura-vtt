@@ -137,7 +137,7 @@ async function main(): Promise<void> {
   assert.equal(routeRealtimePayload("campaigns", "UPDATE"), "refetch_campaign");
   assert.equal(routeRealtimePayload("campaigns", "INSERT"), "ignore", "campaigns só reage a UPDATE.");
   assert.equal(routeRealtimePayload("table_logs", "INSERT"), "refetch_table_logs");
-  assert.equal(routeRealtimePayload("table_logs", "UPDATE"), "ignore", "table_logs é append-only, sem UPDATE.");
+  assert.equal(routeRealtimePayload("table_logs", "UPDATE"), "refetch_table_logs", "UPDATE = card excluído ou fixado (migration 0152).");
   assert.equal(routeRealtimePayload("tabela_nao_suportada", "UPDATE"), "ignore", "Tabela não suportada deve ser ignorada.");
   console.log("6. Payload routing — OK");
 

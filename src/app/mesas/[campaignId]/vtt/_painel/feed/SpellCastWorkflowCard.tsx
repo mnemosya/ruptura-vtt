@@ -23,6 +23,7 @@ import { Sparkles, Wand2 } from "lucide-react";
 import { CartaoBase } from "../ui/CartaoBase";
 import { BotaoTecnico, Chip, Chips, Modulo, Modulos, PainelTecnico } from "../ui/primitivas";
 import type { AcentoCartao, CartaoMagia, EstadoMagia } from "./contratos";
+import { cabecalhoDe } from "./CabecalhoPersonagem";
 
 const ROTULO_ESTADO: Record<EstadoMagia, string> = {
   conjurada: "Conjurada",
@@ -68,6 +69,7 @@ export function SpellCastWorkflowCard({
       acento="mana"
       autor={cartao.conjurador}
       hora={hora}
+      cabecalho={cabecalhoDe(cartao.autoria, hora, cartao.criadoEm)}
       horaISO={cartao.criadoEm}
       visibilidade={visibilidade}
       estado={

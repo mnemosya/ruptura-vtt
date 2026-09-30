@@ -22,6 +22,7 @@
 import { getScopedTableClient } from "../../../../../../lib/auth/scopedClient";
 import {
   archiveCharacter,
+  createBlankCharacterForSelf,
   createCharacterForCampaign,
   duplicateCharacter,
   getCharacterForCampaign,
@@ -70,6 +71,13 @@ export interface EntradaDiretorio {
    * linha não decora nada.
    */
   controladores: number | null;
+  /**
+   * A conta pode EDITAR este personagem (permissão "editar", migration
+   * 0151) — decide o arrasto pro mapa. Narrador: sempre. Jogador com só
+   * "visualizar": falso, e o cartão não arrasta. Opcional pelos mesmos
+   * motivos do `pv` (fixtures de teste).
+   */
+  podeEditar?: boolean;
   /**
    * PV atual/máximo — o mesmo cálculo do resumo (`lerResumoPersonagemAction`),
    * só que para TODA a lista de uma vez. Opcional: os testes puros
@@ -235,10 +243,12 @@ export async function lerDiretorioPersonagensAction(
 
   try {
     if (v.acesso.role !== "narrator") {
-      const [controlados, regrasDoc] = await Promise.all([
+      const [controlados, editaveis, regrasDoc] = await Promise.all([
         listControlledCharacters(campaignId),
+        listControlledCharacters(campaignId, { somenteEditar: true }),
         getCharacterRules().catch(() => null),
       ]);
+      const idsEditaveis = new Set(editaveis.map((c) => c.id));
       const regras = (regrasDoc?.payload as CharacterRulesPayload | undefined) ?? null;
       const avatares = await avataresAssinados(controlados);
       return {
@@ -256,6 +266,7 @@ export async function lerDiretorioPersonagensAction(
               posicao: i,
               arquivado: false,
               controladores: null,
+              podeEditar: idsEditaveis.has(c.id),
               avatarUrl: (c.avatar_image_id && avatares.get(c.avatar_image_id)) || null,
               ...resumoLeveDoPersonagem(c, regras),
             })),
@@ -503,6 +514,23 @@ export async function criarPersonagemPainelAction(
       };
     }
     const criado = await createCharacterForCampaign(campaignId, personagem);
+    return { ok: true, dados: { id: criado.id } };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Falha ao criar o personagem.") };
+  }
+}
+
+/**
+ * "+ Personagem" do JOGADOR: cria só com o nome e já sob o controle de
+ * quem criou. Sem a opção de PN — personagem do narrador é do narrador.
+ */
+export async function criarMeuPersonagemAction(campaignId: string, nome: string): Promise<ResultadoPainel<{ id: string }>> {
+  const v = await exigirAcessoPainel(campaignId);
+  if (!v.ok) return { ok: false, erro: v.erro };
+  const nomeLimpo = nome.trim();
+  if (!nomeLimpo) return { ok: false, erro: "Dê um nome ao personagem." };
+  try {
+    const criado = await createBlankCharacterForSelf(campaignId, nomeLimpo);
     return { ok: true, dados: { id: criado.id } };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Falha ao criar o personagem.") };

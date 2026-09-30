@@ -28,6 +28,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Eye } from "lucide-react";
 import {
   BYTES_ORIGINAL_MAXIMO,
   ImagemRecusadaError,
@@ -248,10 +249,14 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
   // Clicar num atributo ou numa perícia ABRE a ferramenta já
   // preenchida — não rola. Rolar é o botão: até apertá-lo dá pra
   // trocar a perícia, mexer no modificador e pôr uma CD.
+  // Só leitura: quem visualiza não rola pelo personagem — a perícia e
+  // o atributo continuam com hover e dica, só o clique não abre nada.
   function rolarAtributo(id: keyof CharacterAttributes) {
+    if (api.somenteLeitura) return;
     setAux({ tipo: "rolagem", prefill: { tipo: "atributo", atributoId: id } });
   }
   function rolarPericia(id: string) {
+    if (api.somenteLeitura) return;
     setAux({ tipo: "rolagem", prefill: { tipo: "pericia", periciaId: id } });
   }
   function rolarTesteDecisivoColapso() {
@@ -408,9 +413,15 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
         titulo="Console do Personagem"
         titlebarExtra={
           <>
-            <GravacaoChip estado={api.gravacao.estado} erro={api.gravacao.erro} />
+            {api.somenteLeitura ? (
+              <span className="rc-somente-leitura-chip" title="Você pode ver esta ficha, mas não alterá-la.">
+                <Eye size={12} aria-hidden="true" /> Somente leitura
+              </span>
+            ) : (
+              <GravacaoChip estado={api.gravacao.estado} erro={api.gravacao.erro} />
+            )}
             <VerNoMapaChip />
-            <ModoChip modo={api.modo} onAlternar={api.definirModo} />
+            {!api.somenteLeitura && <ModoChip modo={api.modo} onAlternar={api.definirModo} />}
           </>
         }
         dockContent={<MinimizedDockContent api={api} avatarUrl={avatarUrl} onEditarRecurso={editarRecursoComConfirmacao} />}

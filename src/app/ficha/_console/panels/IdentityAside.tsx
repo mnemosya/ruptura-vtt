@@ -150,6 +150,7 @@ export function PointResourceControls({
   onAlternar,
   disabled = false,
   variant = "console",
+  leitura = false,
 }: {
   rotulo: string;
   disponivel: number;
@@ -157,6 +158,8 @@ export function PointResourceControls({
   onAlternar: (delta: number) => void;
   disabled?: boolean;
   variant?: "console" | "hud";
+  /** Ficha só leitura: mostra as cargas e o valor, sem −/+ nem clique nas cargas. */
+  leitura?: boolean;
 }) {
   const guard = useClickGuard();
   const [hover, setHover] = useState<number | null>(null);
@@ -181,6 +184,13 @@ export function PointResourceControls({
               if (previewValor != null) {
                 if (previewValor > disponivel && i >= disponivel && i < previewValor) preview = "fill";
                 else if (previewValor < disponivel && i >= previewValor && i < disponivel) preview = "empty";
+              }
+              if (leitura) {
+                return (
+                  <span key={i} className="rc-acao-carga" data-gasta={!cheio || undefined}>
+                    <DiamondPip cheio={cheio} size={16} />
+                  </span>
+                );
               }
               return (
                 <button
@@ -214,27 +224,27 @@ export function PointResourceControls({
             })
           )}
       </div>
-      <div className="rc-acao-ctrl">
-        <button
+      <div className="rc-acao-ctrl" data-leitura={leitura || undefined}>
+        {!leitura && <button
           type="button"
           onClick={() => guard(() => onAlternar(1))}
           disabled={disabled || disponivel <= 0}
           aria-label={`Gastar 1 ${rotulo}`}
         >
           −
-        </button>
+        </button>}
         <span className="rc-acao-valor">
           <span className="rc-acao-atual">{disponivel}</span>
           <span className="rc-acao-total">/{total}</span>
         </span>
-        <button
+        {!leitura && <button
           type="button"
           onClick={() => guard(() => onAlternar(-1))}
           disabled={disabled || disponivel >= total}
           aria-label={`Devolver 1 ${rotulo}`}
         >
           +
-        </button>
+        </button>}
       </div>
     </div>
   );
@@ -264,11 +274,14 @@ function TrilhaIntegridade({
   max,
   onDefinir,
   distorcoes,
+  leitura = false,
 }: {
   atual: number;
   max: number;
   onDefinir: (valor: number) => void;
   distorcoes: PendingRuptureChoice[];
+  /** Ficha só leitura: os segmentos mostram o valor, sem clique nem prévia de ajuste. */
+  leitura?: boolean;
 }) {
   const guard = useClickGuard();
   const [hover, setHover] = useState<number | null>(null);
@@ -315,6 +328,13 @@ function TrilhaIntegridade({
             else if (previewValor < atual && i >= previewValor && i < atual) preview = "empty";
           }
           const position: "first" | "middle" | "last" = i === 0 ? "first" : i === total - 1 ? "last" : "middle";
+          if (leitura) {
+            return (
+              <g key={i} className="rc-nric-pip" data-leitura="true" transform={`translate(${i * PIP_WIDTH} 0)`}>
+                <IntegrityPip position={position} cheio={cheio} fraturado={!cheio && atual < 7 && i < 7} />
+              </g>
+            );
+          }
           return (
             <g
               key={i}
@@ -521,6 +541,10 @@ export function IdentityAside({
 }) {
   const { character, derivados } = api;
   const guard = useClickGuard();
+  /* SÓ LEITURA (permissão "visualizar"): os controles de edição e de
+     ação não são renderizados; o que é leitura — valores, dicas, hover
+     — continua. */
+  const leitura = !!api.somenteLeitura;
 
   const integridade = character.recursos_atuais?.integridade ?? derivados.integridade_max;
   const paDisponivel = Math.max(0, derivados.pa_max - (character.estado_jogo?.pa_gastos ?? 0));
@@ -555,6 +579,18 @@ export function IdentityAside({
         <span className="rc-bio-selo">{SELO_RPI[situacaoRpi]}</span>
       </CabecalhoModulo>
       <div className="rc-avatar-wrap">
+      {leitura ? (
+        <div className="rc-avatar rc-avatar--leitura" data-no-drag>
+          <span className="rc-avatar-fill">
+            {avatarUrl && <img src={avatarUrl} alt="" />}
+            {!avatarUrl && (
+              <span className="rc-avatar-ico rc-avatar-ico--user" aria-hidden="true">
+                <AvatarUserIcon />
+              </span>
+            )}
+          </span>
+        </div>
+      ) : (
       <label className="rc-avatar" data-no-drag>
         <span className="rc-avatar-fill">
           {avatarUrl && <img src={avatarUrl} alt="" />}
@@ -580,12 +616,13 @@ export function IdentityAside({
           disabled={avatarOcupado}
         />
       </label>
+      )}
       {/* REMOVER fica FORA do `<label>`: dentro dele, qualquer clique
           — inclusive no botão — abriria o seletor de arquivo, e
           conteúdo interativo dentro de `label` é inválido. Só aparece
           com imagem e no hover/foco do conjunto, como o lápis de edição
           rápida das áreas no mapa. */}
-      {avatarUrl && onAvatarRemover && !confirmandoRemocao && (
+      {avatarUrl && onAvatarRemover && !confirmandoRemocao && !leitura && (
         <button
           type="button"
           className="rc-avatar-remover"
@@ -630,7 +667,11 @@ export function IdentityAside({
       )}
 
         <div className="rc-nric-nome-row">
-          <CampoNome nome={character.nome} onGravar={api.editarNome} />
+          {leitura ? (
+            <span className="rc-nric-nome" title={character.nome}>{character.nome}</span>
+          ) : (
+            <CampoNome nome={character.nome} onGravar={api.editarNome} />
+          )}
           <span
             className="rc-nric-badge"
             data-vazio={!ranking}
@@ -690,7 +731,9 @@ export function IdentityAside({
                 type="button"
                 className="rc-nric-attr"
                 data-attr={id}
-                onClick={() => onRolarAtributo(id)}
+                // Só leitura: o card continua (valor, hover), mas não rola.
+                onClick={leitura ? undefined : () => onRolarAtributo(id)}
+                data-leitura={leitura || undefined}
                 data-testid={`console-attr-${id}`}
                 aria-label={`Rolar ${nome}: ${valor}d8`}
               >
@@ -724,6 +767,7 @@ export function IdentityAside({
           max={derivados.integridade_max}
           onDefinir={api.editarIntegridade}
           distorcoes={character.pending_rupture_choices ?? []}
+          leitura={leitura}
         />
 
         {/* Sobrecarga logo abaixo da Integridade: é o recurso que se
@@ -741,6 +785,13 @@ export function IdentityAside({
             const usada = i < sobrecarga;
             const position: "first" | "middle" | "last" =
               i === 0 ? "first" : i === MAX_OVERLOAD_SURGES_PER_DAY - 1 ? "last" : "middle";
+            if (leitura) {
+              return (
+                <span key={i} className="rc-nsob-pip" aria-label={`Sobrecarga ${i + 1} de ${MAX_OVERLOAD_SURGES_PER_DAY}${usada ? " (usada)" : ""}`}>
+                  <SurgePip position={position} usada={usada} />
+                </span>
+              );
+            }
             return (
               <button
                 key={i}
@@ -761,14 +812,15 @@ export function IdentityAside({
 
       <div className="rc-npr-card">
         <CabecalhoModulo id="ID://AÇÕES" mod="MOD.ACTION // 04" />
-        <PointResourceControls rotulo="PA" disponivel={paDisponivel} max={derivados.pa_max} onAlternar={api.ajustarPa} />
+        <PointResourceControls rotulo="PA" disponivel={paDisponivel} max={derivados.pa_max} onAlternar={api.ajustarPa} leitura={leitura} />
         <PointResourceControls
           rotulo="Reações"
           disponivel={reacoesDisponiveis}
           max={derivados.reacoes_por_rodada}
           onAlternar={api.ajustarReacoes}
+          leitura={leitura}
         />
-        <BotaoDefesa onRolarDefesa={onRolarDefesa} />
+        {!leitura && <BotaoDefesa onRolarDefesa={onRolarDefesa} />}
       </div>
     </aside>
   );

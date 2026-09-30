@@ -183,7 +183,9 @@ function descricaoDeOcultavel(modelo: ItemContent | undefined): string | null {
  * de três carteiras vazias, quando na verdade a pessoa só nunca
  * encostou nas outras duas.
  */
-function Carteira({ carteira, onDefinir }: {
+function Carteira({ carteira, onDefinir, leitura = false }: {
+  /** Só leitura: o saldo como texto, sem abrir a edição. */
+  leitura?: boolean;
   carteira?: { aretz_informal: number; cdi: number; cdi_craqueada: number };
   onDefinir: (walletId: WalletId, valor: number) => void;
 }) {
@@ -261,6 +263,12 @@ function Carteira({ carteira, onDefinir }: {
             }}
           />
         ) : (
+          leitura ? (
+            <span className="rc-inv-carteira-val" data-leitura="true" data-vazio={carteira ? undefined : true} data-testid="console-carteira-aretz">
+              {carteira && <span className="rc-inv-carteira-simbolo" aria-hidden="true">₳</span>}
+              {carteira ? fmt(carteira.aretz_informal) : "—"}
+            </span>
+          ) : (
           <button type="button" className="rc-inv-carteira-val" onClick={abrir}
             disabled={!carteira} data-vazio={carteira ? undefined : true}
             title={carteira ? "Editar saldo — aceita contas: +250, -150, 3000-555" : undefined}
@@ -268,6 +276,7 @@ function Carteira({ carteira, onDefinir }: {
             {carteira && <span className="rc-inv-carteira-simbolo" aria-hidden="true">₳</span>}
             {carteira ? fmt(carteira.aretz_informal) : "—"}
           </button>
+          )
         )}
       </div>
       {aviso && <p className="rc-inv-carteira-aviso" role="alert">{aviso}</p>}
@@ -435,7 +444,7 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
             </div>
           </div>
 
-          <Carteira carteira={api.character.carteira} onDefinir={api.definirCarteira} />
+          <Carteira carteira={api.character.carteira} onDefinir={api.definirCarteira} leitura={api.somenteLeitura} />
         </div>
 
         <div className="rc-inv-detalhe">
@@ -647,6 +656,17 @@ function DetalheDoItem({
 
       {/* Preso embaixo: a descrição pode rolar, e as ações do item não
           podem sumir junto com ela. */}
+      {api.somenteLeitura ? (
+        /* SÓ LEITURA: a quantidade como leitura, no mesmo lugar e na
+           mesma caixa do contador — sem −/+, descarte, Usar e Mover. */
+        <div className="rc-inv-det-rodape" data-leitura="true">
+          <div className="rc-inv-stepper" data-leitura="true">
+            <span aria-label={`Quantidade: ${instancia.quantidade}`}>
+              <em className="rc-inv-qtd-rot">Quantidade</em> {instancia.quantidade}
+            </span>
+          </div>
+        </div>
+      ) : (
       <div className="rc-inv-det-rodape">
         <div className="rc-inv-stepper">
           <button
@@ -767,6 +787,7 @@ function DetalheDoItem({
           </button>
         </div>
       </div>
+      )}
     </div>
   );
 }

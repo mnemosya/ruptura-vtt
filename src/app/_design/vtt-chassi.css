@@ -11,7 +11,7 @@
      hover    #243352   max      #2a3b58
      cyan     #45b8c9   amber    #cf9a3e   danger   #d15068
      magenta  #c25a8c   arcane   #8878d6   good     #4fae82
-     slate    #6f83a3   ink      #d6e4f5   dim      #7f95b3
+     slate    #6f83a3   ink      #b9c9dc   dim      #7f95b3
      faint    #4f6285   soft     accent @ 9%        raio 2–3px
 
    TRÊS CORREÇÕES ESTRUTURAIS que este arquivo carrega, e o motivo:
@@ -44,6 +44,9 @@
    desta lista, nenhum `--rv-*` dela resolveria — e uma superfície sem
    token nenhum não fica "um pouco errada", fica transparente. */
 .rv-gaveta,
+/* Dica flutuante mandada por portal ao `body` (ver `DicaPortal` em
+   `_painel/ui`): sem estar aqui, ela nasce sem nenhum token. */
+.rv-dica-portal,
 .rup-mesa-arena {
   /* ── Fundos ─────────────────────────────────────────────────── */
   --rv-ground: #060a12;
@@ -81,7 +84,7 @@
   --rv-slate-soft: rgba(111, 131, 163, 0.07);
 
   /* ── Texto ──────────────────────────────────────────────────── */
-  --rv-ink: #d6e4f5;
+  --rv-ink: #b9c9dc;
   --rv-ink-dim: #7f95b3;
   --rv-ink-faint: #4f6285;
   --rv-ink-mute: #4a5a78;
@@ -170,6 +173,7 @@
   .rv-fp,
   .rv-gaveta,
   .pn-cartao,
+  .rv-pn-chat .pn-msg,
   .pn-card,
   .pn-jan,
   .pn-menu
@@ -190,13 +194,43 @@
   .rc-arma-swap,
   .rc-arma-fechar,
   .rv-ator-retrato,
-  .rv-ator-declara button
+  .rv-ator-declara button,
+  /* O campo INTERNO da busca: a moldura é da caixa em volta
+     (`.rv-pn-busca`). Chanfrado, o corte do canto inferior esquerdo
+     recortava o pé do cursor de digitação, que parecia "subir". */
+  .rv-pn-busca-input
 )):not(button[aria-label]:has(svg)) {
   /* ordem: superior esquerdo, superior direito, inferior direito,
      inferior esquerdo — exatamente `rup-clip`. */
   border-radius: 4px var(--rv-notch, 10px) 4px var(--rv-notch, 10px) !important;
   corner-shape: round bevel round bevel;
 }
+
+/* Peças baixas: o corte fixo de 10px chegava a 40–70% da altura e
+   comia o rótulo. Aqui o chanfro acompanha a altura (~¼ dela), na
+   mesma proporção que a área autenticada já usa. */
+.rv-rodadas-etapa { --rv-notch: 4px; }   /* 14px de altura */
+.pn-cartao-expandir { --rv-notch: 5px; } /* 21px */
+.rv-ator-agir { --rv-notch: 6px; }       /* 24px */
+.pn-chipbtn { --rv-notch: 6px; }         /* 26px */
+.rv-menu-item { --rv-notch: 7px; }       /* 30px */
+.rv-menu-mesa-item { --rv-notch: 7px; }  /* ~32px — itens do menu da mesa */
+.rv-cena-chip { --rv-notch: 8px; }       /* 33px */
+.rv-pn-filtros-acoes .pn-btn,             /* 29px — + Personagem, Pasta */
+.rv-pn-rodape .pn-btn { --rv-notch: 7px; } /* 29px — Abrir Personagens… */
+.rv-pn-input { --rv-notch: 6px; }            /* ~22px — campos compactos do painel */
+.pn-dialogo .rv-pn-input { --rv-notch: 7px; } /* ~30px — campo dos diálogos (Nome…) */
+/* Toda superfície de rolagem (ferramenta Rolar Dados, rolagem da ficha,
+   bandeja do chat): os controles não têm
+   classe própria, então o corte é herdado da raiz — 7px pra seletores,
+   stepper, campo de CD e o botão de rolar (30–38px); 6px nos pares
+   baixos de 25px (visibilidade, Somar/Maior). */
+.rv-dados-painel,
+.rv-moldura-rolagem,
+.rv-bandeja-casca { --rv-notch: 7px; }  /* ferramenta, rolagem da ficha, bandeja do chat */
+.rv-dados-visib button,
+.rv-dados-modo button { --rv-notch: 6px; }
+.rv-dados-tabs button { --rv-notch: 10px; }  /* abas do topo: 50px, corte padrão */
 
 /* Caixas compostas só por ícone são exceção deliberada. O pictograma
    já concentra toda a leitura dentro de uma área pequena; chanfrar a
@@ -412,7 +446,7 @@ button[aria-label]:has(svg) {
   border: 1px solid var(--rv-line, #182338);
   border-radius: var(--rv-r, 2px);
   box-shadow: var(--rv-shadow-win, 0 30px 70px rgba(0, 0, 0, 0.55));
-  color: var(--rv-ink, #d6e4f5);
+  color: var(--rv-ink, #b9c9dc);
 }
 
 /* Topbar — a mesma em todas. */
@@ -431,7 +465,7 @@ button[aria-label]:has(svg) {
   flex: 1; min-width: 0; margin: 0;
   font-family: var(--rv-display), sans-serif;
   font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
-  line-height: 1.2; color: var(--rv-ink, #d6e4f5);
+  line-height: 1.2; color: var(--rv-ink, #b9c9dc);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
@@ -458,7 +492,7 @@ button[aria-label]:has(svg) {
 }
 .rv-jan-btn:hover,
 :is(.rv-fp-fechar, .pn-jan-btn, .rv-modal-fechar):hover {
-  color: var(--rv-ink, #d6e4f5);
+  color: var(--rv-ink, #b9c9dc);
   border-color: var(--rv-line-max, #2a3b58);
   background: var(--rv-raise, rgba(255, 255, 255, 0.015));
 }

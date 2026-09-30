@@ -46,6 +46,7 @@ import { resolverPericia } from "../../../../../../lib/dice";
 import { addLog, listCampaignRoster } from "../../../../../../lib/table/storage";
 import { TABLE_LOG_VISIBILITIES, type TableLogEntry, type TableLogVisibility } from "../../../../../../lib/table";
 import { exigirAcessoPainel, mensagemDeErro, type ResultadoPainel } from "./comum";
+import { assinarDownloadUrls } from "../../../../../../lib/vtt/imageService";
 
 /** Teto do modificador manual — protege o payload e a leitura do card; fora disso é recusado, nunca truncado em silêncio. */
 const MODIFICADOR_MAX = 20;
@@ -77,7 +78,8 @@ export interface FichaRolagem {
 
 export interface ContextoRolagem {
   /** Personagens que esta conta pode usar como identidade da rolagem. */
-  personagens: { id: string; nome: string }[];
+  /** Por quem a conta pode rolar — com o que o seletor precisa pra desenhar o cartão (rosto e cor do lado). */
+  personagens: { id: string; nome: string; avatarUrl: string | null; tipo: "jogador" | "pn" }[];
   /** Ficha do personagem pedido — `null` quando nenhum foi pedido ou o acesso não permite. */
   ficha: FichaRolagem | null;
   /** Narrador pode rolar escondido (`gm`); jogador, no máximo `private`. */
@@ -156,16 +158,27 @@ export async function lerContextoRolagemAction(
 
   try {
     const [personagens, regrasDoc, personagemPedido] = await Promise.all([
-      ehNarrador ? listCharactersForNarratorCampaign(campaignId) : listControlledCharacters(campaignId),
+      ehNarrador ? listCharactersForNarratorCampaign(campaignId) : listControlledCharacters(campaignId, { somenteEditar: true }),
       getCharacterRules().catch(() => null),
       characterId ? getCharacterForCampaign(campaignId, characterId) : Promise.resolve(null),
     ]);
     const regras = (regrasDoc?.payload as CharacterRulesPayload | undefined) ?? null;
+    const ativos = personagens.filter((p) => !p.archived_at);
+    // Avatares assinados em lote — a mesma via da aba Personagens.
+    // Falhar aqui só tira o rosto do cartão, nunca a rolagem.
+    const idsAvatar = ativos.map((p) => p.avatar_image_id ?? null).filter((id): id is string => !!id);
+    const usuario = idsAvatar.length ? await getCurrentUser().catch(() => null) : null;
+    const avatares = usuario ? await assinarDownloadUrls(idsAvatar, usuario.id).catch(() => new Map<string, string>()) : new Map<string, string>();
 
     return {
       ok: true,
       dados: {
-        personagens: personagens.filter((p) => !p.archived_at).map((p) => ({ id: p.id, nome: p.name })),
+        personagens: ativos.map((p) => ({
+          id: p.id,
+          nome: p.name,
+          avatarUrl: (p.avatar_image_id && avatares.get(p.avatar_image_id)) || null,
+          tipo: p.payload?.metadados?.tipo_personagem === "pn" ? "pn" as const : "jogador" as const,
+        })),
         ficha:
           personagemPedido && !personagemPedido.archived_at
             ? montarFicha(personagemPedido.id, personagemPedido.name, personagemPedido.payload, regras)

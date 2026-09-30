@@ -25,6 +25,7 @@ import { BedDouble, HeartCrack, ShieldCheck, Siren, TrendingDown, Zap } from "lu
 import { CartaoBase } from "../ui/CartaoBase";
 import { Chip, Chips, FaixaResultado, Modulo, Modulos } from "../ui/primitivas";
 import { acentoDoCartao, type CartaoColapso, type CartaoDescanso, type CartaoRuptura, type CartaoSobrecarga, type FaseColapso } from "./contratos";
+import { cabecalhoDe } from "./CabecalhoPersonagem";
 
 /* ── colapso ─────────────────────────────────────────────────────── */
 
@@ -68,6 +69,7 @@ export function CollapseCard({
       acento={acento}
       autor={cartao.alvo ?? cartao.autoria.nome}
       hora={hora}
+      cabecalho={cabecalhoDe(cartao.autoria, hora, cartao.criadoEm)}
       horaISO={cartao.criadoEm}
       visibilidade={visibilidade}
       estado={<Chip acento={acento}>{ESTADO_FASE[cartao.fase]}</Chip>}
@@ -122,6 +124,7 @@ export function OverloadCard({
       acento={acento}
       autor={cartao.alvo ?? cartao.autoria.nome}
       hora={hora}
+      cabecalho={cabecalhoDe(cartao.autoria, hora, cartao.criadoEm)}
       horaISO={cartao.criadoEm}
       visibilidade={visibilidade}
       estado={
@@ -176,6 +179,7 @@ export function RestCard({
       acento="ok"
       autor={cartao.alvo ?? cartao.autoria.nome}
       hora={hora}
+      cabecalho={cabecalhoDe(cartao.autoria, hora, cartao.criadoEm)}
       horaISO={cartao.criadoEm}
       visibilidade={visibilidade}
       testId="painel-feed-descanso"
@@ -224,6 +228,7 @@ export function RuptureCard({
       acento="perigo"
       autor={cartao.alvo ?? cartao.autoria.nome}
       hora={hora}
+      cabecalho={cabecalhoDe(cartao.autoria, hora, cartao.criadoEm)}
       horaISO={cartao.criadoEm}
       visibilidade={visibilidade}
       testId="painel-feed-ruptura"

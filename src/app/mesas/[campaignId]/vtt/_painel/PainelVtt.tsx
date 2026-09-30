@@ -474,6 +474,7 @@ export function PainelVtt({
         visivel={aberto && abaAtiva === "chat"}
         personagemDoTokenSelecionado={personagemDoTokenSelecionado}
         onFocarToken={onFocarToken}
+        onAbrirFicha={abrirConsole}
         fixtureVisual={fixtureVisual?.chat}
       />
     ),
@@ -721,7 +722,7 @@ export function PainelVtt({
               onConfigurarAcesso={setAcessoDe}
               onPrecarregarConsole={aquecerConsole}
               onReceberItemDoBando={(item, personagem) => setTransferencia({ item, personagem })}
-            />
+                  />
           </div>
         </JanelaInterna>
       )}

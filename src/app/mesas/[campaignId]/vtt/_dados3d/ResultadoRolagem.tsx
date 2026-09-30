@@ -17,12 +17,13 @@
  * um resultado, e um resultado se desenha de um jeito só.
  */
 
-import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { PolyDie } from "./PolyDie";
 import { CARGA_MAX_MS } from "./lancamento";
 import { Check, Chevron, Cross, Dice, DoubleCheck, Half, Warn } from "./icones";
 import { X } from "lucide-react";
+import "./seletor.css";
 import type { TableLogVisibility } from "../../../../../lib/table";
 
 /* ---- tokens do design ------------------------------------------- */
@@ -31,7 +32,7 @@ export const DISPLAY = "var(--font-chakra), 'Chakra Petch', sans-serif";
 export const MONO = "var(--font-mono), 'JetBrains Mono', monospace";
 export const BODY = "var(--font-rajdhani), Rajdhani, sans-serif";
 
-export const INK = "#d6e4f5";
+export const INK = "#b9c9dc";
 export const INK_DIM = "#7f95b3";
 export const INK_FAINT = "#4f6285";
 
@@ -568,12 +569,15 @@ export function MolduraRolagem({ indice, codigo, titulo, modo, acento = ACCENTS.
       role="group"
       aria-label={titulo}
       data-testid={testId}
+      // Chanfro das janelas da mesa: o raio está aqui, o `corner-shape`
+      // (que o React não tipa) vem da classe, em console.css.
+      className="rv-moldura-rolagem"
       style={{
         transform: `translate(${desloc.x}px, ${desloc.y}px)`,
         position: "relative", width: `min(${largura}px, calc(100vw - 32px))`,
         maxHeight: "min(660px, calc(100dvh - 32px))",
         display: "flex", flexDirection: "column", overflow: "hidden",
-        paddingLeft: 36, borderRadius: 2,
+        paddingLeft: 36, borderRadius: "4px 10px 4px 10px",
         background: "linear-gradient(160deg, #0b1424, #080e19)",
         border: "1px solid #182338",
         boxShadow: "0 30px 70px rgba(0, 0, 0, 0.55)",
@@ -690,43 +694,128 @@ export const VISIBILIDADES: { v: TableLogVisibility; label: string; dica: string
 /* ---- primitivas --------------------------------------------------- */
 
 /** Select por ID (as opções vêm da ficha real, não de um array fixo). */
-export function Select({ label, value, onChange, options, disabled = false }: {
+/**
+ * Seletor das rolagens (Atributo, Perícia…) — NÃO é o `<select>` do
+ * navegador, cuja lista é do sistema operacional e fura o visual da
+ * mesa. O gatilho mantém o desenho de sempre (mono, caixa alta, seta);
+ * a lista é própria, por portal (as janelas rolam e recortariam), com
+ * o escolhido marcado pela barra de acento. Fecha com clique fora, Esc
+ * ou escolha; setas ↑/↓ andam pela lista.
+ */
+export function Select({ label, value, onChange, options, disabled = false, labelOculto = false, className, testId }: {
   label: string; value: string; onChange: (id: string) => void;
-  options: { id: string; rotulo: string }[]; disabled?: boolean;
+  options: { id: string; rotulo: string; valor?: string }[]; disabled?: boolean;
+  labelOculto?: boolean; className?: string; testId?: string;
 }) {
+  const gatilho = useRef<HTMLButtonElement>(null);
+  const lista = useRef<HTMLDivElement>(null);
+  const idRotulo = useId();
+  const [pos, setPos] = useState<{ left: number; top: number; width: number; acima: boolean } | null>(null);
+  const atual = options.find((o) => o.id === value) ?? options[0];
+  const fechar = useCallback(() => setPos(null), []);
+  const abrir = () => {
+    const r = gatilho.current?.getBoundingClientRect();
+    if (!r) return;
+    const altura = Math.min(options.length * 32 + 12, 280);
+    const acima = r.bottom + 6 + altura > window.innerHeight - 8;
+    setPos({ left: r.left, top: acima ? r.top - 6 - altura : r.bottom + 6, width: r.width, acima });
+  };
+  useEffect(() => {
+    if (!pos) return;
+    requestAnimationFrame(() => lista.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]')?.focus({ preventScroll: false }));
+    const fora = (e: PointerEvent) => {
+      const alvo = e.target as Node;
+      if (!lista.current?.contains(alvo) && !gatilho.current?.contains(alvo)) fechar();
+    };
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); fechar(); gatilho.current?.focus(); return; }
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      e.preventDefault();
+      const itens = Array.from(lista.current?.querySelectorAll<HTMLButtonElement>("button") ?? []);
+      const i = itens.indexOf(document.activeElement as HTMLButtonElement);
+      itens[e.key === "ArrowDown" ? Math.min(itens.length - 1, i + 1) : Math.max(0, i - 1)]?.focus();
+    };
+    window.addEventListener("pointerdown", fora);
+    window.addEventListener("keydown", tecla, true);
+    return () => { window.removeEventListener("pointerdown", fora); window.removeEventListener("keydown", tecla, true); };
+  }, [pos, fechar]);
+
   return (
-    <label style={{ display: "block", minWidth: 0 }}>
-      <span style={{ fontFamily: DISPLAY, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.16em", color: INK_FAINT }}>{label}</span>
-      <div style={{ position: "relative", marginTop: 4 }}>
-        <select
-          value={value}
-          disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
-          style={{
-            width: "100%", appearance: "none", borderRadius: 2, border: "1px solid #1c2b45", background: "transparent",
-            padding: "9px 30px 9px 10px", fontFamily: BODY, fontSize: 12, color: disabled ? INK_FAINT : INK,
-            outline: "none", cursor: disabled ? "not-allowed" : "pointer",
-          }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = ACCENTS.cyan.hex + "88"; }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = "#1c2b45"; }}
+    <div className={className} style={{ display: "block", minWidth: 0 }}>
+      <span id={idRotulo} className={labelOculto ? "rv-sr-only" : undefined} style={labelOculto ? undefined : { fontFamily: DISPLAY, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.16em", color: INK_FAINT }}>{label}</span>
+      {/* `aria-labelledby` (rótulo + valor visíveis), não `aria-label`:
+          o chassi trata `button[aria-label]:has(svg)` como botão SÓ de
+          ícone e tira o chanfro. */}
+      <button
+        ref={gatilho}
+        type="button"
+        className="rv-seletor-gatilho"
+        aria-haspopup="listbox"
+        aria-expanded={pos !== null}
+        aria-labelledby={`${idRotulo} ${idRotulo}-valor`}
+        data-testid={testId}
+        disabled={disabled}
+        onClick={() => (pos ? fechar() : abrir())}
+      >
+        <span id={`${idRotulo}-valor`} className="rv-seletor-valor">
+          <span className="rv-seletor-nome">{atual?.rotulo ?? "—"}</span>
+          {atual?.valor && <kbd className="rv-tecla rv-seletor-medida">{atual.valor}</kbd>}
+        </span>
+        <Chevron width={13} height={13} className="rv-seletor-seta" style={{ transform: pos ? "rotate(180deg)" : "none" }} />
+      </button>
+      {pos && typeof document !== "undefined" && createPortal(
+        <div
+          ref={lista}
+          className="rv-seletor-lista"
+          role="listbox"
+          aria-label={label}
+          style={{ left: pos.left, top: pos.top, minWidth: pos.width }}
         >
-          {options.map((o) => <option key={o.id} value={o.id} style={{ background: "#0b1322" }}>{o.rotulo}</option>)}
-        </select>
-        <Chevron width={13} height={13} style={{ pointerEvents: "none", position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", color: INK_FAINT }} />
-      </div>
-    </label>
+          {options.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              role="option"
+              aria-selected={o.id === atual?.id}
+              className="rv-seletor-opcao"
+              onClick={() => { onChange(o.id); fechar(); gatilho.current?.focus(); }}
+            >
+              <span className="rv-seletor-nome">{o.rotulo}</span>
+              {o.valor && <kbd className="rv-tecla rv-seletor-medida">{o.valor}</kbd>}
+            </button>
+          ))}
+        </div>,
+        document.body,
+      )}
+    </div>
   );
 }
 
 export function Stepper({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   const fmt = value > 0 ? `+${value}` : `${value}`;
+  const [editando, setEditando] = useState(false);
+  const [rascunho, setRascunho] = useState(fmt);
+  useEffect(() => { if (!editando) setRascunho(fmt); }, [editando, fmt]);
   return (
-    <div className="rv-dados-stepper" style={{ display: "inline-flex", alignItems: "center", borderRadius: 2, border: "1px solid #1c2b45" }}>
-      <button type="button" onClick={() => onChange(value - 1)} {...aoPassarMouse({ background: "rgba(255,255,255,.05)", color: INK })}
-        style={{ padding: "6px 12px", border: 0, background: "transparent", cursor: "pointer", fontFamily: MONO, fontSize: 14, color: INK_DIM, transition: "background .14s, color .14s" }}>−</button>
-      <span style={{ minWidth: 40, textAlign: "center", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: value === 0 ? "#8ea0bd" : value > 0 ? ACCENTS.good.hex : ACCENTS.danger.hex }}>{fmt}</span>
-      <button type="button" onClick={() => onChange(value + 1)} {...aoPassarMouse({ background: "rgba(255,255,255,.05)", color: INK })}
-        style={{ padding: "6px 12px", border: 0, background: "transparent", cursor: "pointer", fontFamily: MONO, fontSize: 14, color: INK_DIM, transition: "background .14s, color .14s" }}>+</button>
+    <div className="rv-numero-controle rv-stepper-editavel">
+      <button type="button" aria-label="Diminuir modificador" onClick={() => onChange(value - 1)}>−</button>
+      <input
+        type="text"
+        inputMode="numeric"
+        aria-label="Modificador"
+        value={editando ? rascunho : fmt}
+        data-sinal={value === 0 ? "zero" : value > 0 ? "positivo" : "negativo"}
+        onFocus={(e) => { setEditando(true); setRascunho(fmt); e.currentTarget.select(); }}
+        onChange={(e) => {
+          const proximo = e.target.value.replace(/[^0-9+-]/g, "");
+          if (!/^[+-]?\d*$/.test(proximo)) return;
+          setRascunho(proximo);
+          if (/^[+-]?\d+$/.test(proximo)) onChange(Number(proximo));
+        }}
+        onBlur={() => setEditando(false)}
+        onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+      />
+      <button type="button" aria-label="Aumentar modificador" onClick={() => onChange(value + 1)}>+</button>
     </div>
   );
 }
@@ -737,16 +826,47 @@ export function Stepper({ value, onChange }: { value: number; onChange: (n: numb
  * nomeados que existiam aqui não vinham de regra nenhuma.
  */
 export function CampoCD({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const id = useId();
+  const vazia = value.trim() === "";
+  const ajustar = (delta: number) => {
+    const atual = Number.parseInt(value, 10);
+    const base = Number.isFinite(atual) ? atual : delta > 0 ? 0 : 2;
+    onChange(String(Math.min(99, Math.max(1, base + delta))));
+  };
   return (
-    <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-      <span style={{ fontFamily: DISPLAY, fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.16em", color: INK_FAINT }}>
-        CD <span style={{ textTransform: "none", letterSpacing: 0 }}>(vazio = sem CD)</span>
-      </span>
-      <input type="number" inputMode="numeric" min={1} max={99} value={value} placeholder="—"
-        onChange={(e) => onChange(e.target.value)}
-        {...aoPassarMouse({ "border-color": "#2a3b58" })}
-        style={{ width: 80, borderRadius: 2, background: "transparent", padding: "6px 8px", textAlign: "right", fontFamily: MONO, fontSize: 13, fontWeight: 700, border: "1px solid #1c2b45", color: ACCENTS.amber.hex, outline: "none", transition: "border-color .14s" }} />
-    </label>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 48, padding: "8px 10px", border: "1px solid #16233a", borderRadius: 2, background: "#0a1220" }}>
+      <label htmlFor={id} style={{ display: "flex", minWidth: 0, flexDirection: "column", gap: 3, cursor: "text" }}>
+        <span style={{ fontFamily: DISPLAY, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", color: ACCENTS.cyan.hex }}>
+          Definir CD
+        </span>
+        <span style={{ fontFamily: MONO, fontSize: 9, textTransform: "uppercase", letterSpacing: ".08em", color: INK_FAINT }}>
+          Vazio = sem CD
+        </span>
+      </label>
+      <div style={{ display: "flex", flex: "none", alignItems: "center", gap: 6 }}>
+        <button
+          type="button"
+          className="rv-cd-limpar"
+          aria-label="Remover CD"
+          title="Remover CD"
+          disabled={vazia}
+          onClick={() => onChange("")}
+          style={{ display: "grid", width: 30, height: 30, padding: 0, placeItems: "center", border: 0, borderRadius: 2 }}
+        >
+          <X width={13} height={13} strokeWidth={1.8} />
+        </button>
+        <div className="rv-numero-controle rv-cd-controle">
+          <button type="button" aria-label="Diminuir CD" onClick={() => ajustar(-1)}>−</button>
+          <input id={id} type="text" inputMode="numeric" pattern="[0-9]*" value={value}
+            aria-label="Classe de dificuldade"
+            onChange={(e) => {
+              const digitos = e.target.value.replace(/\D/g, "").slice(0, 2);
+              onChange(digitos === "" ? "" : String(Math.min(99, Math.max(1, Number(digitos)))));
+            }} />
+          <button type="button" aria-label="Aumentar CD" onClick={() => ajustar(1)}>+</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -993,21 +1113,14 @@ export function SeletorVisibilidade({ valor, onChange, ehNarrador }: {
 }) {
   const opcoes = VISIBILIDADES.filter((o) => o.v !== "gm" || ehNarrador);
   return (
-    <div role="group" aria-label="Quem vê esta rolagem" style={{ display: "flex", gap: 4 }}>
+    <div role="group" aria-label="Quem vê esta rolagem" className="rv-dados-visib" style={{ display: "flex", gap: 4 }}>
       {opcoes.map((o) => {
         const on = o.v === valor;
         return (
           <button key={o.v} type="button" onClick={() => onChange(o.v)} aria-pressed={on} title={o.dica}
-            /* O LIGADO não reage: ele já está aceso no ciano, e mexer
-               nele no hover só embaralharia "selecionado" com "sob o
-               cursor". */
-            {...(on ? {} : aoPassarMouse({ "border-color": "#2a3b58", color: "#9fb3d1", background: "rgba(255,255,255,.04)" }))}
             style={{
-              transition: "border-color .14s, color .14s, background .14s",
               flex: 1, borderRadius: 2, padding: "5px 6px", cursor: "pointer",
               fontFamily: DISPLAY, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em",
-              color: on ? ACCENTS.cyan.hex : "#6f83a3", background: on ? ACCENTS.cyan.soft : "transparent",
-              border: `1px solid ${on ? ACCENTS.cyan.hex + "88" : "#1c2b45"}`,
             }}>
             {o.label}
           </button>

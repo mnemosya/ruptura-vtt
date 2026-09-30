@@ -36,6 +36,7 @@ import { getScopedTableClient } from "../auth/scopedClient";
 import { getCurrentUser } from "../auth/session";
 import { CharacterStorageError } from "./storage.errors";
 import { validateCreationBudget } from "./createCharacterValidation";
+import { createInitialCharacter } from "./createCharacter";
 import type { Character, CharacterRecord, CharacterRulesPayload } from "./types";
 import { getCharacterRules } from "../content";
 import { parseDraftPayload, type DraftPayload } from "./draftValidation";
@@ -292,6 +293,38 @@ export async function createCharacterFromWizard(
 }
 
 /**
+ * Criação RÁPIDA pelo próprio participante (o "+ Personagem" do jogador
+ * na aba Personagens): só o nome, ficha em branco — o mesmo que o
+ * atalho do narrador faz, mas pela RPC `complete_character_creation`,
+ * que exige participante ATIVO e dá o controle a quem criou na mesma
+ * transação. Não passa por `validateCreationBudget` de propósito: a
+ * ficha em branco não gastou orçamento nenhum, e a validação existe pra
+ * barrar gasto ACIMA do permitido, não ficha por preencher.
+ */
+export async function createBlankCharacterForSelf(campaignId: string, nome: string): Promise<CharacterRecord> {
+  const personagem = createInitialCharacter(null, nome);
+  // A RPC confere a carteira final contra o orçamento inicial das
+  // regras (nada comprado ⇒ carteira == aretz iniciais). Mesma fonte e
+  // mesmo padrão (5000) que ela usa.
+  const regras = (await getCharacterRules())?.payload as
+    { criacao_personagem?: { inventario?: { aretz_iniciais?: number } } } | undefined;
+  const aretzIniciais = regras?.criacao_personagem?.inventario?.aretz_iniciais ?? 5000;
+  personagem.carteira = { aretz_informal: aretzIniciais, cdi: 0, cdi_craqueada: 0 };
+  const payload = buildPayloadForSave(personagem);
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("complete_character_creation", {
+    p_campaign_id: campaignId,
+    p_character_payload: payload,
+    p_owner_label: null,
+    p_creation_request_id: null,
+  });
+  if (error) {
+    throw new CharacterStorageError(`Falha ao criar o personagem: ${error.message}`, error);
+  }
+  return (data as { character: CharacterRecord }).character;
+}
+
+/**
  * Draft persistente do wizard de criação de personagem — só fluxo de
  * quem já é participante ativo da campanha (`auth.uid()` conhecido).
  * `select`/`delete` são protegidos por RLS (owner_id + membership
@@ -513,11 +546,18 @@ export async function duplicateCharacter(id: string): Promise<CharacterRecord> {
 // =====================================================================
 
 /** Concede controle de um personagem a uma conta — só o narrador dono da campanha (RPC `grant_character_control`, migration 0051). Exige que a conta-alvo já seja participante ativo da campanha. */
-export async function grantCharacterControl(characterId: string, userId: string): Promise<void> {
+export async function grantCharacterControl(
+  characterId: string,
+  userId: string,
+  permissao: PermissaoPersonagem = "editar",
+): Promise<void> {
   const client = await getScopedTableClient();
+  // Conceder de novo a quem já tem acesso só TROCA a permissão (a RPC
+  // faz upsert — migration 0151).
   const { error } = await client.rpc("grant_character_control", {
     p_character_id: characterId,
     p_user_id: userId,
+    p_permissao: permissao,
   });
   if (error) {
     throw new CharacterStorageError(`Falha ao conceder controle do personagem "${characterId}": ${error.message}`, error);
@@ -536,12 +576,19 @@ export async function revokeCharacterControl(characterId: string, userId: string
   }
 }
 
+/**
+ * `visualizar`: vê o personagem e abre a ficha. `editar`: controla de
+ * fato (ficha, token, turno). Migration 0151.
+ */
+export type PermissaoPersonagem = "visualizar" | "editar";
+
 export interface CharacterController {
   character_id: string;
   campaign_id: string;
   user_id: string;
   granted_by: string | null;
   granted_at: string;
+  permissao: PermissaoPersonagem;
 }
 
 /** Lista as linhas de character_controllers de uma campanha (RLS: narrador dono vê todas; jogador só as próprias). */
@@ -554,8 +601,17 @@ export async function listCharacterControllers(campaignId: string): Promise<Char
   return (data as CharacterController[]) ?? [];
 }
 
-/** Lista os personagens que a CONTA LOGADA controla numa campanha — base da área "Personagens" do jogador. */
-export async function listControlledCharacters(campaignId: string): Promise<CharacterRecord[]> {
+/**
+ * Lista os personagens que a CONTA LOGADA controla numa campanha — base da área "Personagens" do jogador.
+ *
+ * Por padrão inclui as duas permissões (quem só VISUALIZA também vê o
+ * personagem e abre a ficha). `somenteEditar` restringe a quem pode
+ * AGIR com ele — mover o token, rolar, falar como ele.
+ */
+export async function listControlledCharacters(
+  campaignId: string,
+  opcoes: { somenteEditar?: boolean } = {},
+): Promise<CharacterRecord[]> {
   const client = await getScopedTableClient();
   const userId = await currentOwnerId();
   if (!userId) return [];
@@ -564,7 +620,8 @@ export async function listControlledCharacters(campaignId: string): Promise<Char
     .from(CHARACTER_CONTROLLERS_TABLE)
     .select("character_id")
     .eq("campaign_id", campaignId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .in("permissao", opcoes.somenteEditar ? ["editar"] : ["visualizar", "editar"]);
   if (controllerError) {
     throw new CharacterStorageError(`Falha ao listar controles do usuário na campanha "${campaignId}": ${controllerError.message}`, controllerError);
   }

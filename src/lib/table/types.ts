@@ -49,6 +49,9 @@ export interface TableLogEntry {
   created_at: string;
   /** Conta autenticada que gerou o evento. Null em logs antigos anteriores ao login obrigatório. */
   created_by_user_id: string | null;
+  /** Fixado no topo do chat (migration 0152). Ausente em logs lidos antes da coluna existir. */
+  pinned_at?: string | null;
+  pinned_by?: string | null;
 }
 
 /** Tipo de convite (Fase 2, revisão 4, aditivo §6/§7): "email" (associado a uma conta específica) ou "clean" (reutilizável, sempre concede Jogador). */

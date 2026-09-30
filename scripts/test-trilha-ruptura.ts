@@ -23,6 +23,7 @@ import {
   assumirTurno,
   avancarParaLentos,
   cancelarTurno,
+  cancelarTurno,
   concluirTurno,
   elegibilidade,
   elegiveisAgora,
@@ -272,6 +273,20 @@ ok(
     "18 (já agiu: o Agir segue liberado, mas ele não segura a janela)",
     direto.apto && !geral.apto && assumirTurno(e, "pj1").agindoId === "pj1",
     `acaoDireta=${direto.apto}, geral=${geral.apto} (${geral.motivo?.texto})`,
+  );
+}
+
+// ── Cancelar o Agir: volta ao estado de antes, nada gasto ─────────
+{
+  const antes = estadoInicial();
+  const agindo = assumirTurno(antes, "pj1");
+  const cancelado = cancelarTurno(agindo);
+  const q = p(cancelado, "pj1");
+  ok(
+    "17 (cancelar o Agir não gasta PA, não marca que agiu nem mexe na alternância)",
+    cancelado.agindoId === null && q.paGasto === 0 && q.agiuEm.length === 0 && cancelado.ultimoLado === antes.ultimoLado
+      && elegibilidade(q, cancelado).apto,
+    `agindo=${cancelado.agindoId}, paGasto=${q.paGasto}, agiuEm=[${q.agiuEm}], apto=${elegibilidade(q, cancelado).apto}`,
   );
 }
 

@@ -30,7 +30,6 @@ import {
   Settings,
   Store,
   Ticket,
-  UserPlus,
   Users,
   UsersRound,
 } from "lucide-react";
@@ -69,7 +68,6 @@ const ITENS: readonly ItemMenu[] = [
   { janela: "personagens", rotulo: "Personagens", Icone: Users },
   // A criação COMPLETA (o assistente), distinta do "+ Personagem" da
   // aba, que só pede um nome: aquilo é atalho de quem monta a cena.
-  { janela: "novo-personagem", rotulo: "Novo personagem", Icone: UserPlus },
   { janela: "bando", rotulo: "Bando", Icone: Backpack },
   { janela: "compendio", rotulo: "Compêndio", Icone: Library },
   { janela: "participantes", rotulo: "Participantes", Icone: UsersRound },

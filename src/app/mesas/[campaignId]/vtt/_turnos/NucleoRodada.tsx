@@ -10,30 +10,19 @@
  * estados sem montar a trilha inteira em volta. Um componente só, dois
  * lugares — a página nunca mostra uma cópia que envelheceu.
  *
- * Duas partes, lado a lado:
- *
- *  · o NÚCLEO, sempre presente: a rodada em caixa pequena por cima e a
- *    janela em vigor com o teto de PA embaixo, grande. Os dois juntos
- *    respondem "onde estamos" sem ler mais nada.
- *
- *  · a AÇÃO, à direita, só quando a janela acabou: resolver os lentos
- *    ou encerrar a rodada. Sem rodapé nem texto de estado — de quem é
- *    a vez já se lê nos trilhos de facção; o estado segue existindo só
- *    pra leitor de tela (`role="status"`, visualmente oculto).
+ * A rodada, a janela em vigor e a trilha ficam na mesma placa. Quando a
+ * janela termina, a própria trilha permite resolver os lentos ou encerrar
+ * a rodada. O estado continua disponível para leitor de tela.
  *
  * Nada aqui decide regra: quem diz se a janela acabou é
  * `podeEncerrarJanela`, e de quem é a vez, `ladoDaVez`.
  */
 
 import {
-  type EstadoTrilha, type Janela, type Lado,
-  DICA_JANELA, PISO_PA, ROTULO_JANELA_CURTO, TETO_PA,
+  type EstadoTrilha, type Lado,
+  DICA_JANELA, ROTULO_JANELA_CURTO,
 } from "./modelo";
-
-/** Teto de PA da janela, curto — derivado das constantes do modelo, nunca digitado à mão. */
-export function limiteDaJanela(janela: Janela): string {
-  return janela === "rapidos" ? `até ${TETO_PA.rapidos} PA` : `${PISO_PA.lentos}+ PA`;
-}
+import { useDicaPortal } from "../_painel/ui/DicaPortal";
 
 export interface NucleoRodadaProps {
   trilha: EstadoTrilha;
@@ -45,10 +34,50 @@ export interface NucleoRodadaProps {
   janelaAcabou: boolean;
   onAvancarJanela: () => void;
   onProximaRodada: () => void;
+  /**
+   * Quem conduz a rodada (avança janela/rodada) — só o narrador. Para
+   * os demais a trilha continua legível, mas as etapas não são botões
+   * que respondem. O servidor recusa o avanço de qualquer forma.
+   */
+  podeConduzir?: boolean;
+}
+
+/**
+ * Uma etapa da trilha. `aria-disabled`, e não `disabled`: botão
+ * desabilitado não dispara os eventos de ponteiro, e a DICA com o motivo
+ * da trava é justamente o que a etapa travada tem a dizer. O clique é
+ * barrado aqui mesmo.
+ */
+function Etapa({ destino, atual, rotulo, emAndamento, motivoTrava, onIr }: {
+  destino: "rapidos" | "lentos";
+  atual: boolean;
+  rotulo: string;
+  emAndamento: string;
+  /** `null` = liberada. */
+  motivoTrava: string | null;
+  onIr: () => void;
+}) {
+  const travada = atual || motivoTrava !== null;
+  const { alvo, dica } = useDicaPortal(atual ? emAndamento : motivoTrava ?? rotulo, { lado: "abaixo" });
+  return (
+    <>
+      <button
+        type="button"
+        className="rv-rodadas-etapa"
+        data-destino={destino}
+        aria-label={atual ? emAndamento : motivoTrava ? `${rotulo} — ${motivoTrava}` : rotulo}
+        aria-current={atual ? "step" : undefined}
+        aria-disabled={travada || undefined}
+        onClick={() => { if (!travada) onIr(); }}
+        {...alvo}
+      />
+      {dica}
+    </>
+  );
 }
 
 export function NucleoRodada({
-  trilha, agindo, vez, janelaAcabou, onAvancarJanela, onProximaRodada,
+  trilha, agindo, vez, janelaAcabou, onAvancarJanela, onProximaRodada, podeConduzir = true,
 }: NucleoRodadaProps) {
   const estado = agindo
     ? `${agindo.nome} em ação`
@@ -56,8 +85,12 @@ export function NucleoRodada({
     : vez === "pn" ? "Vez do narrador"
     : janelaAcabou ? "Janela concluída"
     : "Qualquer lado pode abrir";
-
-
+  /* O NARRADOR MANDA NO RELÓGIO: nada o impede de trocar de janela ou
+     de rodada — nem alguém agindo, nem a janela por terminar. As duas
+     transições (`avancarParaLentos`, `proximaRodada`) já encerram a
+     ativação em curso. Só a etapa ATUAL não é clicável (não há pra onde
+     ir). `janelaAcabou` segue alimentando o texto de estado; quem não
+     conduz nem vê as etapas (`podeConduzir`). */
   return (
     <section className="rv-rodadas" aria-label="Rodada e ativação" data-janela={trilha.janela}>
       <div className="rv-rodadas-nucleo">
@@ -70,22 +103,31 @@ export function NucleoRodada({
           )}
         </p>
         <p className="rv-rodadas-janela" data-janela={trilha.janela} title={DICA_JANELA[trilha.janela]}>
-          {ROTULO_JANELA_CURTO[trilha.janela]} · {limiteDaJanela(trilha.janela)}
+          Turnos {ROTULO_JANELA_CURTO[trilha.janela]}
         </p>
+        {/* As etapas são o CONTROLE da rodada (avançar janela/rodada) —
+            só existem pra quem conduz. O jogador lê a janela no rótulo
+            acima; a faixa sozinha, sem clique, só repetia isso. */}
+        {podeConduzir && <div className="rv-rodadas-trilha" role="group" aria-label="Etapas da rodada">
+          <Etapa
+            destino="rapidos"
+            atual={trilha.janela === "rapidos"}
+            rotulo="Ir para turnos rápidos da próxima rodada"
+            emAndamento="Turnos rápidos em andamento"
+            motivoTrava={null}
+            onIr={onProximaRodada}
+          />
+          <Etapa
+            destino="lentos"
+            atual={trilha.janela === "lentos"}
+            rotulo="Ir para turnos lentos"
+            emAndamento="Turnos lentos em andamento"
+            motivoTrava={null}
+            onIr={onAvancarJanela}
+          />
+        </div>}
       </div>
       <p className="rv-rodadas-estado" role="status" aria-live="polite">{estado}</p>
-      {/* Avançar janela/rodada só aparece quando o modelo diz que
-          ninguém mais pode agir nela — e nunca no meio de uma
-          ativação aberta (escolha incompatível). */}
-      {janelaAcabou && !agindo && (
-        <button
-          type="button"
-          className="rv-rodadas-avanca"
-          onClick={trilha.janela === "rapidos" ? onAvancarJanela : onProximaRodada}
-        >
-          {trilha.janela === "rapidos" ? `Resolver ${ROTULO_JANELA_CURTO.lentos}` : "Encerrar rodada"}
-        </button>
-      )}
     </section>
   );
 }

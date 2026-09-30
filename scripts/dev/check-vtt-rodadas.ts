@@ -315,32 +315,25 @@ async function main() {
 
     // ── 1n: núcleo da rodada, os dois estados do Figma ────────────
     //
-    // A placa tem um rodapé CONDICIONAL — régua, estado e ação — que só
-    // existe quando há notícia: alguém agindo, um lado da vez, ou a
-    // janela fechada.
-    //
-    // Combate recém-iniciado tem notícia: NINGUÉM declarou ainda, então
-    // ninguém é elegível, `podeEncerrarJanela` é verdadeiro e a placa
-    // abre no estado com ação (Figma 440:2643) oferecendo "Resolver
-    // Lentos". O estado de repouso (440:1827) aparece assim que alguém
-    // declara — e é o que 3n-repouso confere, mais adiante.
-    //
-    // O botão NÃO é clicado: avançar de janela muda o estado do combate
-    // pro resto da suíte e não tem ação inversa. O que se prova aqui é
-    // o que a placa MOSTRA e OFERECE.
+    // Combate recém-iniciado: ninguém declarou, então a trilha permite
+    // avançar. Ela fica desabilitada durante uma ativação aberta.
+    // Não clicamos aqui porque isso mudaria o estado do resto da suíte.
     {
       const nucleo = narrador.page.locator(".rv-rodadas");
-      const cantos = await nucleo.locator(".rv-rodadas-canto").count();
       const janelaTxt = ((await nucleo.locator(".rv-rodadas-janela").textContent()) ?? "").trim();
       const janelaAttr = await nucleo.getAttribute("data-janela");
       const rodadaTxt = ((await nucleo.locator(".rv-rodadas-rodada").textContent()) ?? "").trim();
       const estadoTxt = ((await nucleo.locator(".rv-rodadas-estado").textContent()) ?? "").trim();
-      const rotuloAcao = ((await nucleo.locator(".rv-rodadas-avanca").textContent()) ?? "").trim();
-      registrar("1n (núcleo: rodada, janela com o teto de PA, quatro colchetes, e o rodapé com estado + ação)",
-        cantos === 4 && janelaAttr === "rapidos"
-          && janelaTxt === "Rápidos · até 2 PA" && rodadaTxt === "Rodada 1"
-          && estadoTxt === "Janela concluída" && rotuloAcao === "Resolver Lentos",
-        `colchetes=${cantos}, data-janela=${janelaAttr}, janela="${janelaTxt}", rodada="${rodadaTxt}", estado="${estadoTxt}", ação="${rotuloAcao}"`);
+      const trilha = nucleo.locator(".rv-rodadas-trilha");
+      const lentos = trilha.locator('[data-destino="lentos"]');
+      const rotuloAcao = await lentos.getAttribute("aria-label");
+      const podeAvancar = await lentos.isEnabled();
+      const segmentos = await trilha.locator("button").count();
+      registrar("1n (núcleo: rodada, turnos rápidos e trilha habilitada ao concluir a janela)",
+        janelaAttr === "rapidos" && janelaTxt === "Turnos Rápidos"
+          && rodadaTxt === "Rodada 1" && estadoTxt === "Janela concluída"
+          && rotuloAcao === "Ir para turnos lentos" && podeAvancar && segmentos === 2,
+        `data-janela=${janelaAttr}, janela="${janelaTxt}", rodada="${rodadaTxt}", estado="${estadoTxt}", ação="${rotuloAcao}", habilitada=${podeAvancar}, segmentos=${segmentos}`);
     }
 
     registrar("1c (declaração Rápido/Lento continua dentro dos slots)",
@@ -466,20 +459,13 @@ async function main() {
       abriuTurno, `agindoId=${(await linhaDoBanco())?.estado.agindoId}`);
 
     {
-      // Agora HÁ notícia: o rodapé nasce, com o estado do lado de quem
-      // age. A ação de avançar continua fora — nunca no meio de um
-      // turno aberto.
+      // Durante um turno aberto, a trilha continua visível mas não avança.
       const nucleo = narrador.page.locator(".rv-rodadas");
-      const temPe = await esperarAte(async () => await nucleo.locator(".rv-rodadas-pe").count() === 1, 8000);
-      // Sem `count()` antes do `textContent()`, um rodapé ausente vira
-      // 30s de espera e um erro fatal no lugar de uma falha legível.
-      const temEstado = await nucleo.locator(".rv-rodadas-estado").count() === 1;
-      const estadoTxt = temEstado ? ((await nucleo.locator(".rv-rodadas-estado").textContent()) ?? "").trim() : "";
-      const lado = temEstado ? await nucleo.locator(".rv-rodadas-estado").getAttribute("data-lado") : null;
-      const temAcao = await nucleo.locator(".rv-rodadas-avanca").count();
-      registrar("3n-pe (com turno aberto o rodapé aparece com o estado do lado, e sem ação de avançar)",
-        temPe && estadoTxt.endsWith("em ação") && lado === "pj" && temAcao === 0,
-        `rodapé=${temPe}, estado="${estadoTxt}", data-lado=${lado}, ação=${temAcao}`);
+      const desabilitada = await esperarAte(async () => !(await nucleo.locator('.rv-rodadas-etapa[data-destino="lentos"]').isEnabled()), 8000);
+      const estadoTxt = ((await nucleo.locator(".rv-rodadas-estado").textContent()) ?? "").trim();
+      registrar("3n-pe (com turno aberto a trilha não avança)",
+        desabilitada && estadoTxt.endsWith("em ação"),
+        `trilha desabilitada=${desabilitada}, estado="${estadoTxt}"`);
     }
 
     const estadoAntesReload = await narrador.page.locator(".rv-rodadas-estado").first().textContent();

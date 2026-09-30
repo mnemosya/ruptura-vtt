@@ -20,7 +20,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronsDown } from "lucide-react";
+import { ChevronDown, ChevronsDown, ImagePlus, Pin } from "lucide-react";
 import { useCampaignSession } from "../../_shell/CampaignRealtimeProvider";
 import type { TableLogVisibility } from "../../../../../lib/table";
 import {
@@ -33,9 +33,14 @@ import {
 } from "./chatModelo";
 import { projetarFeed, type CartaoFeed } from "./feed/contratos";
 import { EntradaFeed, type AcoesFeed } from "./feed/EntradaFeed";
+import { RetratosFeedProvider } from "./feed/retratos";
 import { Composer } from "./feed/Composer";
 import { BandejaDados } from "../_dados3d/RoladorDados";
-import { enviarMensagemChatAction, lerContextoChatAction, type ContextoChatPainel } from "./acoes/chatPainel";
+import { enviarMensagemChatAction, excluirCardAction, fixarCardAction, lerContextoChatAction, type ContextoChatPainel } from "./acoes/chatPainel";
+import { ItemFeedComMenu, cardTemMenu, resumoDoCartao, type AcoesMenuCard } from "./feed/MenuCard";
+import { DialogoConfirmar } from "./ui/Dialogo";
+import { cancelarUploadAction, finalizarUploadChatAction, reservarUploadAction } from "../_acoes/imageActions";
+import { ImagemRecusadaError, enviarParaUrlAssinada, prepararImagem, validarArquivo } from "../../../../../lib/vtt/imagePreparation";
 import { registrarRolagemLivreAction } from "./acoes/rolagemPainel";
 import { lerComandoRolagem, type ComandoRolagem } from "./feed/comandoRolagem";
 import { useRolarNaMesa } from "../_dados3d/ContextoMesaDados";
@@ -57,6 +62,7 @@ export function ChatTab({
   visivel,
   personagemDoTokenSelecionado,
   onFocarToken,
+  onAbrirFicha,
   fixtureVisual,
 }: {
   visivel: boolean;
@@ -64,6 +70,8 @@ export function ChatTab({
   personagemDoTokenSelecionado: { id: string; nome: string } | null;
   /** Ação EXPLÍCITA de centralizar a câmera — a única exceção ao invariante de não mexer na cena. */
   onFocarToken?: (tokenId: string) => void;
+  /** "Abrir ficha" do menu do card — abre o Console do personagem que agiu. */
+  onAbrirFicha?: (characterId: string) => void;
   /**
    * Contexto de autoria pronto, só para a galeria visual em
    * `/dev/estilos` — nunca usado pela mesa real. Os logs vêm do
@@ -72,11 +80,34 @@ export function ChatTab({
    */
   fixtureVisual?: ContextoChatPainel;
 }) {
-  const { campaignId, role, logs, reloadLogs, sessionSyncStatus } = useCampaignSession();
+  const { campaignId, role, viewer, logs, reloadLogs, sessionSyncStatus } = useCampaignSession();
 
   const [contexto, setContexto] = useState<ContextoChatPainel | null>(null);
   const [erroContexto, setErroContexto] = useState<string | null>(null);
   const [texto, setTexto] = useState("");
+  /* IMAGEM ANEXADA — escolhida pelo botão, colada ou arrastada. Fica no
+     composer (com prévia) até o envio, para dar tempo de escrever a
+     legenda; é no envio que ela sobe (migration 0153). */
+  const [anexo, setAnexo] = useState<{ arquivo: File; previewUrl: string } | null>(null);
+  const anexar = useCallback((arquivo: File) => {
+    try {
+      validarArquivo(arquivo);
+    } catch (e) {
+      setErroEnvio(e instanceof Error ? e.message : "Imagem recusada.");
+      return;
+    }
+    setErroEnvio(null);
+    setAnexo((atual) => {
+      if (atual) URL.revokeObjectURL(atual.previewUrl);
+      return { arquivo, previewUrl: URL.createObjectURL(arquivo) };
+    });
+  }, []);
+  const removerAnexo = useCallback(() => {
+    setAnexo((atual) => {
+      if (atual) URL.revokeObjectURL(atual.previewUrl);
+      return null;
+    });
+  }, []);
   const [enviando, setEnviando] = useState(false);
   const [erroEnvio, setErroEnvio] = useState<string | null>(null);
   const [pendentes, setPendentes] = useState<EnvioPendente[]>([]);
@@ -343,10 +374,72 @@ export function ChatTab({
     await reloadLogs();
   }, [rolarNaMesa, campaignId, identidade, visibilidade, reloadLogs]);
 
+  // ── Envio com imagem ───────────────────────────────────────────
+  // Mesmo caminho das outras imagens do VTT: prepara no browser (WebP,
+  // hash), reserva, sobe direto para o Storage, finaliza no servidor —
+  // e só então grava a mensagem que cita o arquivo. A bolha otimista
+  // mostra a prévia local enquanto isso.
+  const enviarComImagem = useCallback(async (legenda: string, atual: { arquivo: File; previewUrl: string }) => {
+    const idLocal = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setEnviando(true);
+    setErroEnvio(null);
+    let reservaId: string | null = null;
+    try {
+      const preparada = await prepararImagem(atual.arquivo);
+      setPendentes((p) => [
+        ...p,
+        {
+          id: idLocal, texto: legenda, autorNome: identidade.nome, visibilidade, idServidor: null, erro: null,
+          criadoEm: new Date().toISOString(),
+          imagem: { previewUrl: preparada.previewUrl, largura: preparada.widthPx, altura: preparada.heightPx },
+        },
+      ]);
+      noFimRef.current = true;
+
+      const reserva = await reservarUploadAction(campaignId, preparada.sha256, "chat");
+      if (!reserva.ok || !reserva.dados) throw new Error(reserva.erro ?? "Não foi possível preparar o envio.");
+      let assetId = reserva.dados.assetId;
+      if (!reserva.dados.reutilizado) {
+        reservaId = reserva.dados.reservaId;
+        await enviarParaUrlAssinada(reserva.dados.uploadUrl!, preparada.blob);
+        const fim = await finalizarUploadChatAction(campaignId, reserva.dados.reservaId!, preparada.sha256);
+        if (!fim.ok || !fim.dados) throw new Error(fim.erro ?? "Não foi possível concluir o envio.");
+        assetId = fim.dados.assetId;
+        reservaId = null;
+      }
+
+      const r = await enviarMensagemChatAction({
+        campaignId,
+        texto: legenda,
+        characterId: identidade.characterId,
+        visibilidade,
+        imagem: { id: assetId, largura: preparada.widthPx, altura: preparada.heightPx },
+      });
+      if (!r.ok || !r.dados) throw new Error(r.erro ?? "Falha ao enviar.");
+      const criada = r.dados;
+      setPendentes((p) => p.map((x) => (x.id === idLocal ? { ...x, idServidor: criada.id } : x)));
+      setTexto("");
+      removerAnexo();
+      await reloadLogs();
+    } catch (e) {
+      if (reservaId) void cancelarUploadAction(campaignId, reservaId).catch(() => {});
+      setPendentes((p) => p.filter((x) => x.id !== idLocal));
+      setErroEnvio(e instanceof ImagemRecusadaError || e instanceof Error ? e.message : "Falha ao enviar a imagem.");
+    } finally {
+      setEnviando(false);
+    }
+  }, [campaignId, identidade, visibilidade, reloadLogs, removerAnexo]);
+
   // ── Envio ──────────────────────────────────────────────────────
   const enviar = useCallback(async () => {
     const conteudo = texto.trim();
-    if (!conteudo || enviando) return;
+    if ((!conteudo && !anexo) || enviando) return;
+
+    // Com imagem, o texto é LEGENDA — nunca um comando de rolagem.
+    if (anexo) {
+      await enviarComImagem(conteudo, anexo);
+      return;
+    }
 
     // O comando é decidido ANTES de qualquer bolha otimista: uma
     // rolagem não é uma mensagem, e não pode piscar como se fosse.
@@ -396,7 +489,7 @@ export function ChatTab({
     } finally {
       setEnviando(false);
     }
-  }, [texto, enviando, identidade, visibilidade, campaignId, role, reloadLogs, executarRolagem]);
+  }, [texto, anexo, enviando, identidade, visibilidade, campaignId, role, reloadLogs, executarRolagem, enviarComImagem]);
 
   // ── Aplicar dano (workflow de ataque) ──────────────────────────
   const aplicarDano = useCallback(
@@ -456,15 +549,120 @@ export function ChatTab({
         origem: "chat",
         texto: p.texto,
         estilo: "normal" as const,
+        imagem: p.imagem
+          ? { id: "", largura: p.imagem.largura, altura: p.imagem.altura, previewUrl: p.imagem.previewUrl }
+          : null,
+        imagemRemovida: false,
       })),
     [pendentesVisiveis],
   );
 
   const canalDegradado = sessionSyncStatus === "error";
   const todos = useMemo(() => [...cartoes, ...cartoesPendentes], [cartoes, cartoesPendentes]);
+  /* Personagens que agiram no feed — o cabeçalho dos cards e a face
+     das mensagens mostram o rosto deles. A chave em string segura a identidade da
+     lista entre renders que não trazem personagem novo. */
+  const chaveRetratos = useMemo(() => Array.from(new Set(
+    todos.flatMap((c) => "autoria" in c && c.autoria.tipo === "personagem" && c.autoria.characterId
+      ? [c.autoria.characterId] : []),
+  )).join(","), [todos]);
+  const idsRetratos = useMemo(() => (chaveRetratos ? chaveRetratos.split(",") : []), [chaveRetratos]);
+  const chaveImagens = useMemo(() => Array.from(new Set(
+    todos.flatMap((c) => (c.kind === "mensagem" && c.imagem?.id ? [c.imagem.id] : [])),
+  )).join(","), [todos]);
+  const idsImagens = useMemo(() => (chaveImagens ? chaveImagens.split(",") : []), [chaveImagens]);
+
+  /* ARRASTAR IMAGEM PARA O CHAT. Só reage a ARQUIVOS do sistema —
+     arrastar um personagem ou uma pasta do painel usa outros tipos e
+     passa reto. O contador segura o `dragleave` que os filhos disparam
+     ao cruzar o painel, que senão faria o aviso piscar. */
+  const [arrastando, setArrastando] = useState(false);
+  const profundidadeArrasto = useRef(0);
+  const temArquivo = (e: React.DragEvent) => Array.from(e.dataTransfer.types).includes("Files");
+  const aoArrastarEntrar = (e: React.DragEvent) => {
+    if (!temArquivo(e)) return;
+    e.preventDefault();
+    profundidadeArrasto.current += 1;
+    setArrastando(true);
+  };
+  const aoArrastarSobre = (e: React.DragEvent) => {
+    if (!temArquivo(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+  const aoArrastarSair = (e: React.DragEvent) => {
+    if (!temArquivo(e)) return;
+    profundidadeArrasto.current = Math.max(0, profundidadeArrasto.current - 1);
+    if (profundidadeArrasto.current === 0) setArrastando(false);
+  };
+  const aoSoltar = (e: React.DragEvent) => {
+    if (!temArquivo(e)) return;
+    e.preventDefault();
+    profundidadeArrasto.current = 0;
+    setArrastando(false);
+    const arquivo = Array.from(e.dataTransfer.files).find((f) => f.type.startsWith("image/")) ?? e.dataTransfer.files[0];
+    if (arquivo) anexar(arquivo);
+  };
+
+  // ── Menu do card: excluir, fixar, abrir ficha (migration 0152) ──
+  // A regra de verdade está nas RPCs; aqui só se esconde o que o
+  // servidor recusaria. Excluir: narrador qualquer card, o autor os
+  // próprios. Fixar: quem vê o card. Ficha: personagem que a conta usa.
+  const [confirmarExclusao, setConfirmarExclusao] = useState<CartaoFeed | null>(null);
+  const [erroMenu, setErroMenu] = useState<string | null>(null);
+  const [fixadosAbertos, setFixadosAbertos] = useState(true);
+  const idsFicha = useMemo(() => new Set((contexto?.personagens ?? []).map((p) => p.id)), [contexto]);
+  const ehNarrador = role === "narrator";
+  const meuId = viewer.userId ?? null;
+
+  const executarNoCard = useCallback(async (acao: () => Promise<{ ok: boolean; erro?: string }>) => {
+    setErroMenu(null);
+    const r = await acao();
+    if (!r.ok) setErroMenu(r.erro ?? "Não foi possível concluir a ação.");
+    await reloadLogs();
+  }, [reloadLogs]);
+
+  const acoesDoCard = useCallback((cartao: CartaoFeed): AcoesMenuCard => {
+    if (!cardTemMenu(cartao) || fixtureVisual) return {};
+    const charId = cartao.autoria.tipo === "personagem" ? cartao.autoria.characterId : null;
+    const autor = meuId != null && cartao.autoria.userId === meuId;
+    return {
+      onAbrirFicha: charId && onAbrirFicha && (ehNarrador || idsFicha.has(charId)) ? () => onAbrirFicha(charId) : undefined,
+      onFixar: (fixar) => void executarNoCard(() => fixarCardAction(campaignId, cartao.id, fixar)),
+      onExcluir: ehNarrador || autor ? () => setConfirmarExclusao(cartao) : undefined,
+    };
+  }, [campaignId, ehNarrador, meuId, idsFicha, onAbrirFicha, executarNoCard, fixtureVisual]);
+
+  const fixados = useMemo(
+    () => todos.filter((c) => c.fixadoEm).sort((a, b) => ((a.fixadoEm ?? "") < (b.fixadoEm ?? "") ? 1 : -1)),
+    [todos],
+  );
+  const irParaCard = useCallback((id: string) => {
+    const el = document.getElementById(`feed-card-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.setAttribute("data-destaque", "true");
+    window.setTimeout(() => el.removeAttribute("data-destaque"), 1600);
+  }, []);
 
   return (
-    <div className="rv-pn-chat">
+    <div
+      className="rv-pn-chat"
+      data-arrastando={arrastando ? "true" : undefined}
+      onDragEnter={aoArrastarEntrar}
+      onDragOver={aoArrastarSobre}
+      onDragLeave={aoArrastarSair}
+      onDrop={aoSoltar}
+    >
+      {arrastando && (
+        <div className="pn-chat-soltar" aria-hidden="true">
+          <div className="pn-chat-soltar-caixa">
+            <ImagePlus size={26} />
+            <span className="pn-chat-soltar-titulo">Solte para anexar</span>
+            <span className="pn-chat-soltar-sub">PNG, JPEG ou WebP</span>
+          </div>
+        </div>
+      )}
       {canalDegradado && (
         <p className="rv-pn-estado rv-pn-estado--indisponivel" role="status">
           <span className="rv-pn-estado-texto">Sincronização interrompida — eventos novos podem demorar.</span>
@@ -478,6 +676,41 @@ export function ChatTab({
       {/* O feed e o aviso de novas vivem no MESMO contêiner relativo —
           é o que ancora o botão logo acima do composer sem depender de
           adivinhar a altura dele (que muda quando os chips quebram). */}
+      {erroMenu && (
+        <p className="rv-pn-estado rv-pn-estado--indisponivel" role="alert">
+          <span className="rv-pn-estado-texto">{erroMenu}</span>
+          <button type="button" className="rv-pn-retry" onClick={() => setErroMenu(null)}>Fechar</button>
+        </p>
+      )}
+      {fixados.length > 0 && (
+        <section className="pn-fixados" aria-label="Cards fixados" data-testid="painel-chat-fixados">
+          <button
+            type="button"
+            className="pn-fixados-cab"
+            aria-expanded={fixadosAbertos}
+            onClick={() => setFixadosAbertos((v) => !v)}
+          >
+            <Pin size={12} aria-hidden="true" />
+            <span>Fixados</span>
+            <span className="pn-fixados-n">{fixados.length}</span>
+            <ChevronDown size={13} aria-hidden="true" className="pn-fixados-chevron" />
+          </button>
+          {fixadosAbertos && (
+            <ul className="pn-fixados-lista">
+              {fixados.map((c) => (
+                <li key={c.id}>
+                  <button type="button" className="pn-fixados-item" onClick={() => irParaCard(c.id)}>
+                    <span className="pn-fixados-autor">{c.autoria.nome}</span>
+                    <span className="pn-fixados-resumo">{resumoDoCartao(c)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      <RetratosFeedProvider campaignId={campaignId} characterIds={idsRetratos} imagemIds={idsImagens}>
       <div className="rv-pn-chat-feedwrap">
       <div
         className="rv-pn-chat-scroll" ref={scrollRef} onScroll={aoRolar}
@@ -488,6 +721,7 @@ export function ChatTab({
           <EstadoVazio testId="painel-chat-vazio">Nenhum evento nesta campanha ainda.</EstadoVazio>
         ) : (
           todos.map((cartao, i) => (
+            <ItemFeedComMenu key={cartao.id} cartao={cartao} acoes={acoesDoCard(cartao)}>
             <EntradaFeed
               key={cartao.id}
               cartao={cartao}
@@ -498,6 +732,7 @@ export function ChatTab({
               acoes={acoes}
               pendente={cartao.id.startsWith("local-")}
             />
+            </ItemFeedComMenu>
           ))
         )}
       </div>
@@ -536,9 +771,29 @@ export function ChatTab({
         </div>
       </div>
       </div>
+      </RetratosFeedProvider>
+
+      <DialogoConfirmar
+        aberto={confirmarExclusao !== null}
+        titulo="Excluir card"
+        mensagem={confirmarExclusao
+          ? `Excluir "${resumoDoCartao(confirmarExclusao)}" do chat? Ele some para todos na mesa.`
+          : ""}
+        rotuloConfirmar="Excluir"
+        onCancelar={() => setConfirmarExclusao(null)}
+        onConfirmar={() => {
+          const alvo = confirmarExclusao;
+          setConfirmarExclusao(null);
+          if (alvo) void executarNoCard(() => excluirCardAction(campaignId, alvo.id));
+        }}
+        testId="painel-chat-confirmar-exclusao"
+      />
 
 
       <Composer
+        anexo={anexo}
+        onAnexar={anexar}
+        onRemoverAnexo={removerAnexo}
         papel={role}
         identidade={{ characterId: identidade.characterId, nome: identidade.nome, modo: identidade.modo }}
         identidadesDisponiveis={contexto?.personagens ?? []}

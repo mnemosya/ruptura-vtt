@@ -79,6 +79,15 @@ function BotaoEquipar({ onClick, testId, label }: { onClick: () => void; testId:
   );
 }
 
+/** Slot vazio na ficha SÓ LEITURA: a mesma caixa, sem "+ Equipar" — equipar é edição. */
+function SlotVazio({ quick = false }: { quick?: boolean }) {
+  return (
+    <div className={`rc-eq-inner rc-eq-vazio${quick ? " rc-eq-quick-inner" : ""}`}>
+      <span className="rc-eq-equipar-txt">Vazio</span>
+    </div>
+  );
+}
+
 /* O antigo `PipRow` (pips + valor correndo EMBAIXO do nome, dentro da
    área clicável) saiu junto com o readout lateral — ver
    `ReadoutDesgaste`. */
@@ -90,7 +99,8 @@ function CardFilled({
   direita,
 }: {
   nome: string;
-  onAbrirNome: () => void;
+  /** Ausente = só leitura: o nome não abre uso/ataque. */
+  onAbrirNome?: () => void;
   titleNome: string;
   /** O READOUT LATERAL — a coluna da direita do card. */
   direita: ReactNode;
@@ -111,6 +121,13 @@ function CardFilled({
     // de repeti-la no próximo controle que entrar ali. Fora do alvo,
     // não há o que interceptar.
     <div className="rc-eq-linha">
+      {!onAbrirNome ? (
+        <div className="rc-eq-inner rc-eq-inner--leitura" title={nome}>
+          <span className="rc-eq-nome-area">
+            <span className="rc-eq-nome">{nome}</span>
+          </span>
+        </div>
+      ) : (
       <div
         className="rc-eq-inner"
         role="button"
@@ -128,6 +145,7 @@ function CardFilled({
           <span className="rc-eq-nome">{nome}</span>
         </span>
       </div>
+      )}
       {direita}
     </div>
   );
@@ -147,23 +165,26 @@ function ReadoutDesgaste({
   max,
   rotulo,
   onDefinir,
+  leitura = false,
 }: {
   atual: number;
   max: number;
   rotulo: string;
   onDefinir: (valor: number) => void;
+  /** Só leitura: o valor sem os −/+ (a coluna deles fecha). */
+  leitura?: boolean;
 }) {
   const guard = useClickGuard();
   const total = Math.max(0, Math.round(max));
   return (
-    <span className="rc-eq-readout">
+    <span className="rc-eq-readout" data-leitura={leitura || undefined}>
       <span className="rc-eq-readout-main">
         <span className="rc-eq-valor">
           {atual}
           <span className="rc-eq-valor-total">/{total}</span>
         </span>
       </span>
-      <span className="rc-eq-readout-ctrls">
+      {!leitura && <span className="rc-eq-readout-ctrls">
         <button
           type="button"
           onClick={() => guard(() => onDefinir(Math.min(total, atual + 1)))}
@@ -180,7 +201,7 @@ function ReadoutDesgaste({
         >
           −
         </button>
-      </span>
+      </span>}
     </span>
   );
 }
@@ -242,6 +263,9 @@ export function EquipmentPanel({
 }) {
   const [hover, setHover] = useState<BodyRegiao | null>(null);
   const por = (id: BodySlotId) => slots.find((s) => s.id === id)!;
+  /* SÓ LEITURA: equipar, usar, atacar e ajustar MIT/PD são ações — o
+     que fica é o que está equipado e em que estado. */
+  const leitura = !!api.somenteLeitura;
 
   // Escudo e arma secundária representam a MESMA mão — um único box
   // visual, escudo tem prioridade de exibição se os dois existirem.
@@ -257,6 +281,7 @@ export function EquipmentPanel({
     const modelo = inst ? api.catalogo.get(inst.itemSlug) : undefined;
 
     if (!inst || !modelo) {
+      if (leitura) return <SlotVazio />;
       return <BotaoEquipar onClick={() => onAbrirVazio(slotId)} testId={`console-equipar-${slotId}`} label={BODY_SLOT_LABELS[slotId]} />;
     }
 
@@ -264,10 +289,10 @@ export function EquipmentPanel({
       <CardFilled
         nome={inst.itemNome}
         titleNome={`${inst.itemNome} — usar item`}
-        onAbrirNome={() => onUsarItem(inst, modelo)}
+        onAbrirNome={leitura ? undefined : () => onUsarItem(inst, modelo)}
         direita={
           modelo.mitMax != null ? (
-            <ReadoutDesgaste atual={inst.mitAtual ?? modelo.mitMax} max={modelo.mitMax} rotulo="MIT" onDefinir={(v) => api.definirMit(inst.id, v)} />
+            <ReadoutDesgaste leitura={leitura} atual={inst.mitAtual ?? modelo.mitMax} max={modelo.mitMax} rotulo="MIT" onDefinir={(v) => api.definirMit(inst.id, v)} />
           ) : null
         }
       />
@@ -280,6 +305,7 @@ export function EquipmentPanel({
     const modelo = inst ? api.catalogo.get(inst.itemSlug) : undefined;
 
     if (!inst || !modelo) {
+      if (leitura) return <SlotVazio />;
       return <BotaoEquipar onClick={() => onAbrirVazio(slotId)} testId={`console-equipar-${slotId}`} label={BODY_SLOT_LABELS[slotId]} />;
     }
 
@@ -288,7 +314,7 @@ export function EquipmentPanel({
       <CardFilled
         nome={inst.itemNome}
         titleNome={`${inst.itemNome} — abrir ataque`}
-        onAbrirNome={() => onAbrirAtaque(inst, modelo, slotId)}
+        onAbrirNome={leitura ? undefined : () => onAbrirAtaque(inst, modelo, slotId)}
         direita={dano ? <span className="rc-eq-readout rc-eq-readout--dano">{dano}</span> : null}
       />
     );
@@ -296,6 +322,7 @@ export function EquipmentPanel({
 
   function renderSecundaria() {
     if (!secundariaInst || !secundariaModelo) {
+      if (leitura) return <SlotVazio />;
       return <BotaoEquipar onClick={() => onAbrirVazio("arma_secundaria")} testId="console-equipar-arma_secundaria" label="Arma secundária" />;
     }
 
@@ -304,10 +331,11 @@ export function EquipmentPanel({
         <CardFilled
           nome={secundariaInst.itemNome}
           titleNome={`${secundariaInst.itemNome} — usar item`}
-          onAbrirNome={() => onUsarItem(secundariaInst, secundariaModelo)}
+          onAbrirNome={leitura ? undefined : () => onUsarItem(secundariaInst, secundariaModelo)}
           direita={
             secundariaModelo.pdMax != null ? (
               <ReadoutDesgaste
+                leitura={leitura}
                 atual={secundariaInst.pdAtual ?? secundariaModelo.pdMax}
                 max={secundariaModelo.pdMax}
                 rotulo="PD"
@@ -324,7 +352,7 @@ export function EquipmentPanel({
       <CardFilled
         nome={secundariaInst.itemNome}
         titleNome={`${secundariaInst.itemNome} — abrir ataque`}
-        onAbrirNome={() => onAbrirAtaque(secundariaInst, secundariaModelo, "arma_secundaria")}
+        onAbrirNome={leitura ? undefined : () => onAbrirAtaque(secundariaInst, secundariaModelo, "arma_secundaria")}
         direita={dano ? <span className="rc-eq-readout rc-eq-readout--dano">{dano}</span> : null}
       />
     );
@@ -344,6 +372,7 @@ export function EquipmentPanel({
    * que é botão de verdade (a silhueta é `aria-hidden`).
    */
   function acionarRegiao(regiao: BodyRegiao) {
+    if (leitura) return;
     if (regiao === "arma_secundaria") {
       if (!secundariaInst || !secundariaModelo) return onAbrirVazio("arma_secundaria");
       if (secundariaEhEscudo) return onUsarItem(secundariaInst, secundariaModelo);
@@ -365,7 +394,15 @@ export function EquipmentPanel({
     return (
       <div className="rc-eq-quick" data-testid={`console-equip-box-${slotId}`}>
         <span className="rc-eq-box-label">Acesso rápido #{numero}</span>
-        {!inst || !modelo ? (
+        {(!inst || !modelo) && leitura ? (
+          <SlotVazio quick />
+        ) : inst && modelo && leitura ? (
+          <div className="rc-eq-inner rc-eq-quick-inner rc-eq-inner--leitura" title={inst.itemNome}>
+            <span className="rc-eq-nome-area">
+              <span className="rc-eq-nome">{inst.itemNome}</span>
+            </span>
+          </div>
+        ) : !inst || !modelo ? (
           <button
             type="button"
             className="rc-eq-inner rc-eq-quick-inner rc-eq-equipar"
