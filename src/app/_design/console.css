@@ -844,6 +844,8 @@
     0 calc(100% - var(--rc-card-chanfro))
   );
 }
+/* Botões baixos (28px): chanfro proporcional à altura. */
+:is(button.rc-modo-chip, .rc-ncond-add) { --rc-card-chanfro: 6px; }
 :is(
   button.rc-modo-chip,
   .rc-ncond-add,
@@ -1504,11 +1506,19 @@
 .rc-tabrail-btn:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 2px; }
 .rc-tabrail-hint {
   position: absolute; right: calc(100% + 9px); top: 50%; transform: translateY(-50%);
-  padding: 5px 10px; white-space: nowrap;
-  border: 1px solid var(--rc-line);
-  background: rgb(13, 20, 29);
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10.5px; letter-spacing: 0.05em; color: var(--rc-text);
+  /* A `.rv-dica` do VTT: etiqueta em caixa alta, fio e espinha ciano.
+     Literais com fallback porque o Console também roda fora da mesa. */
+  display: flex; align-items: center; padding: 5px 9px 5px 10px; white-space: nowrap;
+  border: 0; border-radius: var(--rv-r, 4px);
+  background: var(--rv-panel, rgba(12, 21, 38, 0.92));
+  box-shadow:
+    inset 0 0 0 1px var(--rv-line-strong, #1c2b45),
+    inset 2px 0 0 var(--rv-cy, #45b8c9),
+    0 10px 28px rgba(0, 0, 0, .5);
+  backdrop-filter: blur(9px);
+  font-family: var(--rv-display, var(--font-chakra)), sans-serif;
+  font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--rv-ink, #b9c9dc);
   opacity: 0; pointer-events: none; z-index: 5;
   transition: opacity 0.12s;
 }
@@ -1581,7 +1591,12 @@
   border-radius: var(--rc-r-card); border: 1px solid rgba(0, 212, 255, 0.14);
   background: rgba(17, 29, 49, 0.70);
   box-sizing: border-box;
+  /* Contêiner do trilho (4 → 2 colunas) e rolagem vertical quando o
+     trilho em duas linhas não cabe junto da silhueta. */
+  container-type: inline-size; container-name: rc-eq;
+  overflow-y: auto; scrollbar-width: none;
 }
+.rc-eq-card-outer::-webkit-scrollbar { display: none; }
 /* `.rc-tabpanel` (pai genérico da aba) já tem a SUA própria borda —
    redundante com a do Card interno acima (mesmo bug que Perícias já
    teve). Só zera quando hospeda Equipamentos; as outras abas, ainda
@@ -1834,12 +1849,16 @@
    As armas ficam mais largas que os acessos rápidos porque é nelas
    que o nome do item é longo. */
 .rc-eq-loadout {
-  display: grid; grid-template-columns: 1.35fr 1.35fr 0.95fr 0.95fr;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px; padding: 12px 16px 16px;
-  align-self: stretch;
+  align-self: stretch; flex: none;
   border-top: 1px solid var(--rc-fio-sutil);
 }
-.rc-eq-loadout > * { width: auto; }
+/* `.rc-eq-loadout .rc-eq-quick` vence o `width: 180px` do card. */
+.rc-eq-loadout > .rc-eq-box, .rc-eq-loadout > .rc-eq-quick { width: auto; min-width: 0; }
+@container rc-eq (max-width: 720px) {
+  .rc-eq-loadout { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 /* Acesso rápido: a MESMA anatomia dos outros slots, na paleta âmbar
    que ele já usava. */
 .rc-eq-quick {
@@ -4106,9 +4125,8 @@
      2px era o único traço grosso do Console. */
   position: absolute; left: -1px;
   top: 50%; transform: translateY(-50%) scaleY(0); transform-origin: top;
-  /* `max(...)`: o Deslocamento é uma linha só e sobrava um traço de
-     7px, curto demais para ler como marcador — 14px é o piso. */
-  width: 1px; height: max(14px, calc(100% - 20px));
+  /* Altura inteira do bloco — o fio é a borda dele no hover. */
+  width: 1px; height: 100%;
   background: var(--rc-bloco-cor);
   opacity: 0;
   transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.1s ease-out, box-shadow 0.15s ease;
@@ -4123,6 +4141,12 @@
   .rc-nric-card > .rc-nric-faixa
 ):hover {
   background-size: 100% 100%, 100% 100%;
+}
+/* A Sobrecarga é o último bloco: o fio para antes do chanfro do card
+   (canto inferior esquerdo), senão sai pela diagonal. */
+.rc-nric-card > .rc-nsob-card::before {
+  top: calc(50% - var(--rc-card-chanfro, 9px) / 2);
+  height: calc(100% - var(--rc-card-chanfro, 9px));
 }
 :is(
   .rc-nric-nome-row,

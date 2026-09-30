@@ -117,20 +117,20 @@ export function TabRail({
 
       <div className="rc-tabrail-group">
         <TabBotao
-          selecionada={viewMode === "painel"}
-          label="Modo Painel"
-          onClick={() => onChangeViewMode("painel")}
-          testId="console-modo-painel"
-          className="rc-tabrail-btn--modo"
-          Icon={() => <PanelsTopLeft size={18} aria-hidden="true" />}
-        />
-        <TabBotao
           selecionada={viewMode === "foco"}
           label="Modo Foco"
           onClick={() => onChangeViewMode("foco")}
           testId="console-modo-foco"
           className="rc-tabrail-btn--modo"
           Icon={() => <AppWindow size={18} aria-hidden="true" />}
+        />
+        <TabBotao
+          selecionada={viewMode === "painel"}
+          label="Modo Painel"
+          onClick={() => onChangeViewMode("painel")}
+          testId="console-modo-painel"
+          className="rc-tabrail-btn--modo"
+          Icon={() => <PanelsTopLeft size={18} aria-hidden="true" />}
         />
       </div>
     </nav>
