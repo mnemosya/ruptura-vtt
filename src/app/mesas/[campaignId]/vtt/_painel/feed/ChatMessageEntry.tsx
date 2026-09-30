@@ -14,10 +14,57 @@
  * precisam permanecer inequívocas linha a linha.
  */
 
-import { Lock, Radio, ShieldAlert } from "lucide-react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { ImageOff, Lock, Radio, ShieldAlert, X } from "lucide-react";
 import type { CartaoMensagem } from "./contratos";
 import { rotuloVisibilidade } from "./contratos";
 import { CabecalhoPersonagem } from "./CabecalhoPersonagem";
+import { BotaoMenuCard } from "./MenuCard";
+import { useImagemFeed } from "./retratos";
+
+/**
+ * Imagem anexada à mensagem. O espaço é reservado pelas medidas
+ * gravadas (sem pulo quando ela carrega); clicar abre em tamanho cheio.
+ */
+function ImagemDaMensagem({ imagem }: { imagem: NonNullable<CartaoMensagem["imagem"]> }) {
+  const assinada = useImagemFeed(imagem.previewUrl ? null : imagem.id);
+  const url = imagem.previewUrl ?? assinada;
+  const [ampliada, setAmpliada] = useState(false);
+
+  useEffect(() => {
+    if (!ampliada) return;
+    const aoTeclar = (e: KeyboardEvent) => { if (e.key === "Escape") setAmpliada(false); };
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, [ampliada]);
+
+  const proporcao = imagem.largura && imagem.altura ? `${imagem.largura} / ${imagem.altura}` : "4 / 3";
+  return (
+    <>
+      <button
+        type="button"
+        className="pn-msg-imagem"
+        style={{ aspectRatio: proporcao }}
+        onClick={() => url && setAmpliada(true)}
+        aria-label="Ampliar imagem"
+        disabled={!url}
+        data-carregando={url ? undefined : "true"}
+      >
+        {url && <img src={url} alt="" draggable={false} />}
+      </button>
+      {ampliada && url && typeof document !== "undefined" && createPortal(
+        <div className="rv-imagem-ampliada" role="dialog" aria-label="Imagem ampliada" onClick={() => setAmpliada(false)}>
+          <img src={url} alt="" onClick={(e) => e.stopPropagation()} />
+          <button type="button" className="rv-imagem-ampliada-fechar" aria-label="Fechar" onClick={() => setAmpliada(false)}>
+            <X size={18} aria-hidden="true" />
+          </button>
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+}
 
 /** Iniciais do avatar — uma letra para nome simples, duas para composto. */
 function iniciais(nome: string): string {
@@ -70,9 +117,14 @@ export function ChatMessageEntry({
             </span>
           )}
           <time className="pn-msg-hora" dateTime={cartao.criadoEm}>{hora}</time>
+          <BotaoMenuCard />
         </div>
       )}
-      <p className="pn-msg-texto">
+      {cartao.imagem && <ImagemDaMensagem imagem={cartao.imagem} />}
+      {cartao.imagemRemovida && (
+        <p className="pn-msg-imagem-removida"><ImageOff size={13} aria-hidden="true" /> Imagem removida</p>
+      )}
+      {(cartao.texto || selo || pendente || (!cartao.imagem && !cartao.imagemRemovida)) && <p className="pn-msg-texto">
         {/* O selo de privacidade acompanha o TEXTO, não o cabeçalho —
             assim ele sobrevive à continuação. */}
         {selo && (
@@ -83,7 +135,7 @@ export function ChatMessageEntry({
         )}
         {cartao.texto}
         {pendente && <span className="pn-msg-selo" data-acento="neutro"> · enviando…</span>}
-      </p>
+      </p>}
     </div>
   );
 }

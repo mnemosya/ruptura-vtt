@@ -42,7 +42,7 @@ const LARGURA_ESTIMADA = 216;
 const MARGEM = 8;
 
 export function MenuContextual({
-  posicao, itens, onFechar, retornarFocoPara, codigo = "A\u00e7\u00f5es", alvo,
+  posicao, itens, onFechar, retornarFocoPara, codigo = "A\u00e7\u00f5es", alvo, semEspinha = false,
 }: {
   /** `null` = fechado. Coordenadas de TELA (`clientX/clientY`) de onde abrir. */
   posicao: { x: number; y: number } | null;
@@ -54,6 +54,8 @@ export function MenuContextual({
   codigo?: string;
   /** Sobre o que este menu age (nome do token, coordenada do hex) — vira o cabe\u00e7alho em mono. Sem ele o cabe\u00e7alho n\u00e3o aparece. */
   alvo?: string;
+  /** Força o menu compacto (sem espinha) mesmo com mais de duas opções — ex.: o menu dos cards do chat. */
+  semEspinha?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -106,7 +108,7 @@ export function MenuContextual({
      conteúdo — o código ("TOKEN") e o ponto ciano viravam ruído em
      volta de um botão só. O menu compacto fica sem ela; o cabeçalho
      (nome do alvo) continua dizendo sobre o que ele age. */
-  const compacto = itens.length <= 2;
+  const compacto = semEspinha || itens.length <= 2;
 
   return (
     <div

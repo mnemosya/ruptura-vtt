@@ -32,6 +32,7 @@
 
 import type { ReactNode } from "react";
 import type { Acento } from "./primitivas";
+import { BotaoMenuCard } from "../feed/MenuCard";
 
 export interface CartaoBaseProps {
   /** Rótulo do TIPO — "TESTE DE PERÍCIA", "ATAQUE", "CONDIÇÃO APLICADA". */
@@ -127,6 +128,7 @@ export function CartaoBase({
               <span className="pn-cartao-autor">{autor}</span>
               <span className="pn-cartao-meta">
                 {hora && <time className="pn-cartao-hora" dateTime={horaISO}>{hora}</time>}
+                <BotaoMenuCard />
               </span>
             </div>
           )}

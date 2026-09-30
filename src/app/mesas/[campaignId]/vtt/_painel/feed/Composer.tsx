@@ -20,7 +20,7 @@
  */
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ChevronDown, Eye, Loader2, Lock, Radio, ShieldAlert, User } from "lucide-react";
+import { ChevronDown, Eye, ImagePlus, Loader2, Lock, Radio, ShieldAlert, User, X } from "lucide-react";
 
 /**
  * Seta de enviar — exportada do Figma (Button - Enviar, nó 467:5993),
@@ -64,6 +64,9 @@ export function Composer({
   onEnviar,
   onLimparErro,
   ultimaEnviada,
+  anexo = null,
+  onAnexar,
+  onRemoverAnexo,
 }: {
   papel: "narrator" | "player";
   identidade: IdentidadeComposer;
@@ -80,7 +83,12 @@ export function Composer({
   onEnviar: () => void;
   onLimparErro: () => void;
   ultimaEnviada: string | null;
+  /** Imagem anexada, ainda local — sobe só no envio. */
+  anexo?: { arquivo: File; previewUrl: string } | null;
+  onAnexar?: (arquivo: File) => void;
+  onRemoverAnexo?: () => void;
 }) {
+  const arquivoRef = useRef<HTMLInputElement>(null);
   const campoRef = useRef<HTMLTextAreaElement>(null);
   const btnAutoriaRef = useRef<HTMLButtonElement>(null);
   const btnVisRef = useRef<HTMLButtonElement>(null);
@@ -177,7 +185,7 @@ export function Composer({
     }),
   );
 
-  const podeEnviar = texto.trim().length > 0 && !enviando;
+  const podeEnviar = (texto.trim().length > 0 || !!anexo) && !enviando;
 
   return (
     <form
@@ -219,6 +227,39 @@ export function Composer({
           <ChevronDown aria-hidden="true" />
         </button>
 
+        {onAnexar && (
+          <>
+            {/* Mesmo chip dos outros dois, só com ícone. O nome vai em
+                texto escondido, não em `aria-label`: com `aria-label` +
+                svg a regra global o trata como botão de ícone e tira o
+                chanfro que os chips vizinhos têm. */}
+            <button
+              type="button"
+              className="pn-chipbtn pn-chipbtn--icone"
+              data-acento="neutro"
+              onClick={() => arquivoRef.current?.click()}
+              title="Anexar imagem"
+              disabled={enviando}
+              data-testid="painel-chat-anexar"
+            >
+              <ImagePlus aria-hidden="true" />
+              <span className="rv-sr-only">Anexar imagem</span>
+            </button>
+            <input
+              ref={arquivoRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              hidden
+              onChange={(e) => {
+                const arquivo = e.target.files?.[0];
+                if (arquivo) onAnexar(arquivo);
+                // Limpa para a mesma imagem poder ser escolhida de novo.
+                e.target.value = "";
+              }}
+            />
+          </>
+        )}
+
       </div>
 
       {erro && (
@@ -228,6 +269,22 @@ export function Composer({
             Tentar de novo
           </button>
         </p>
+      )}
+
+      {anexo && (
+        <div className="pn-composer-anexo" data-testid="painel-composer-anexo">
+          <img className="pn-composer-anexo-img" src={anexo.previewUrl} alt="" />
+          <span className="pn-composer-anexo-nome" title={anexo.arquivo.name}>{anexo.arquivo.name}</span>
+          <button
+            type="button"
+            className="pn-composer-anexo-remover"
+            onClick={onRemoverAnexo}
+            aria-label="Remover imagem"
+            disabled={enviando}
+          >
+            <X size={13} aria-hidden="true" />
+          </button>
+        </div>
       )}
 
       <div className="pn-composer-linha">
@@ -243,7 +300,14 @@ export function Composer({
             value={texto}
             onChange={(e) => onTexto(e.target.value)}
             onKeyDown={aoTeclar}
-            placeholder="Enviar mensagem ou /r…"
+            onPaste={onAnexar ? (e) => {
+              // Colar uma imagem (print, cópia do navegador) anexa em vez de colar texto.
+              const arquivo = Array.from(e.clipboardData.files).find((f) => f.type.startsWith("image/"));
+              if (!arquivo) return;
+              e.preventDefault();
+              onAnexar(arquivo);
+            } : undefined}
+            placeholder={anexo ? "Legenda (opcional)…" : "Enviar mensagem ou /r…"}
             data-testid="painel-chat-input"
           />
         </div>

@@ -49,6 +49,8 @@ export interface EnvioPendente {
   idServidor: string | null;
   erro: string | null;
   criadoEm: string;
+  /** Prévia LOCAL da imagem anexada, enquanto ela sobe (`URL.createObjectURL`). */
+  imagem?: { previewUrl: string; largura: number; altura: number } | null;
 }
 
 /**

@@ -40,7 +40,7 @@ export interface PropsBibliotecaImagens {
   jaTemFundo: boolean;
   ocupado: boolean;
   onColocar: (imagem: ImagemBiblioteca, papel: "fundo" | "tile") => void;
-  /** Tira o arquivo da campanha. A ação recusa o que está em uso. */
+  /** Tira o arquivo da campanha — e de todos os usos dele (cena, retrato, avatar, chat). */
   onExcluir: (imagem: ImagemBiblioteca) => void;
   /**
    * Recusa do servidor — sobretudo "esta imagem está em uso: N em
@@ -174,6 +174,11 @@ export function BibliotecaImagens({
                 {confirmando === img.id && (
                   <div className="rv-biblioteca__confirmar" role="alertdialog" aria-label="Confirmar exclusão">
                     <p>Excluir?</p>
+                    {/* Em uso, a exclusão TIRA a imagem de todos os lugares
+                        (migration 0154) — dizer antes, não depois. */}
+                    {img.usosCena + img.usosRetrato + img.usosAvatar > 0 && (
+                      <span className="rv-biblioteca__confirmar-aviso">Sai de todos os usos</span>
+                    )}
                     <div>
                       <button type="button" className="rv-biblioteca__confirmar-sim" disabled={ocupado}
                         onClick={() => { setConfirmando(null); onExcluir(img); }}>

@@ -288,6 +288,8 @@ export async function listLogs(campaignId: string): Promise<TableLogEntry[]> {
     .from(TABLE_LOGS_TABLE)
     .select()
     .eq("campaign_id", campaignId)
+    // Excluído é lógico (migration 0152): some do feed, fica no histórico.
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (error) {

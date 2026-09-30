@@ -474,6 +474,7 @@ export function PainelVtt({
         visivel={aberto && abaAtiva === "chat"}
         personagemDoTokenSelecionado={personagemDoTokenSelecionado}
         onFocarToken={onFocarToken}
+        onAbrirFicha={abrirConsole}
         fixtureVisual={fixtureVisual?.chat}
       />
     ),

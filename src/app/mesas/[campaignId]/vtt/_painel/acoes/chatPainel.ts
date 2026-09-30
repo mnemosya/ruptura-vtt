@@ -27,6 +27,7 @@ import { getCharacterForCampaign, listControlledCharacters, listCharactersForNar
 import { addLog, listCampaignRoster } from "../../../../../../lib/table/storage";
 import { TABLE_LOG_VISIBILITIES, type TableLogEntry, type TableLogVisibility } from "../../../../../../lib/table";
 import { exigirAcessoPainel, mensagemDeErro, type ResultadoPainel } from "./comum";
+import { getScopedTableClient } from "../../../../../../lib/auth/scopedClient";
 
 /** Teto de tamanho de uma mensagem — protege o payload jsonb e a renderização; o excedente é recusado, nunca truncado em silêncio. */
 const MAX_CARACTERES_MENSAGEM = 2000;
@@ -83,6 +84,8 @@ export interface EnviarMensagemParams {
   visibilidade: TableLogVisibility;
   /** `true` = fala de cena do narrador (renderizada como narração). Ignorado para jogador. */
   narracao?: boolean;
+  /** Imagem já enviada (`finalizarUploadChatAction` ou reaproveitada). Com ela, o texto vira legenda opcional. */
+  imagem?: { id: string; largura: number | null; altura: number | null } | null;
 }
 
 /**
@@ -90,13 +93,18 @@ export interface EnviarMensagemParams {
  * dela pra descartar a bolha otimista quando o eco do Realtime chegar,
  * sem nunca desenhar a mesma mensagem duas vezes.
  */
+function medidaSegura(n: number | null | undefined): number | null {
+  return typeof n === "number" && Number.isFinite(n) && n > 0 && n <= 20000 ? Math.round(n) : null;
+}
+
 export async function enviarMensagemChatAction(params: EnviarMensagemParams): Promise<ResultadoPainel<TableLogEntry>> {
   const v = await exigirAcessoPainel(params.campaignId);
   if (!v.ok) return { ok: false, erro: v.erro };
   const ehNarrador = v.acesso.role === "narrator";
 
   const texto = params.texto.trim();
-  if (!texto) return { ok: false, erro: "Mensagem vazia." };
+  const imagem = params.imagem ?? null;
+  if (!texto && !imagem) return { ok: false, erro: "Mensagem vazia." };
   if (texto.length > MAX_CARACTERES_MENSAGEM) {
     return { ok: false, erro: `Mensagem longa demais (máximo ${MAX_CARACTERES_MENSAGEM} caracteres).` };
   }
@@ -109,6 +117,18 @@ export async function enviarMensagemChatAction(params: EnviarMensagemParams): Pr
   if (visibilidade === "gm" && !ehNarrador) visibilidade = "private";
 
   try {
+    // A imagem tem de ser de QUEM manda: enviada por ela para o chat, ou
+    // que ela já pode ver. Um id qualquer da campanha (um mapa escondido)
+    // viraria visível para a mesa só por ser citado (migration 0153).
+    if (imagem) {
+      const client = await getScopedTableClient();
+      const { data: pode, error } = await client.rpc("pode_anexar_imagem_chat", {
+        p_campaign_id: params.campaignId,
+        p_asset_id: imagem.id,
+      });
+      if (error || pode !== true) return { ok: false, erro: "Não foi possível anexar esta imagem." };
+    }
+
     // Autoria. `characterId` só é aceito depois de reler o personagem
     // pela RLS — quem não pode lê-lo recebe `null` (RLS filtra a linha)
     // e a chamada é recusada aqui, antes de chegar na RPC.
@@ -146,6 +166,12 @@ export async function enviarMensagemChatAction(params: EnviarMensagemParams): Pr
         // `text` é o campo que `chatText` (lib/table/logPresentation.ts)
         // já lê há várias versões — nada de um segundo formato.
         text: texto,
+        ...(imagem ? {
+          imagemId: imagem.id,
+          // Medidas só para reservar o espaço no card; nunca autorizam nada.
+          imagemLargura: medidaSegura(imagem.largura),
+          imagemAltura: medidaSegura(imagem.altura),
+        } : {}),
         // Autoria completa NO PAYLOAD: o cartão é renderizável no
         // futuro sem join nenhum, mesmo que o personagem seja
         // renomeado, arquivado ou removido depois.
@@ -160,5 +186,35 @@ export async function enviarMensagemChatAction(params: EnviarMensagemParams): Pr
     return { ok: true, dados: entrada };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Falha ao enviar a mensagem.") };
+  }
+}
+
+/* ── Menu do card: excluir e fixar (migration 0152) ────────────────
+   A autorização é das RPCs (narrador exclui qualquer card, o autor os
+   próprios; fixar vale para quem vê o card). Aqui só a porta da mesa. */
+
+export async function excluirCardAction(campaignId: string, logId: string): Promise<ResultadoPainel> {
+  const v = await exigirAcessoPainel(campaignId);
+  if (!v.ok) return { ok: false, erro: v.erro };
+  try {
+    const client = await getScopedTableClient();
+    const { error } = await client.rpc("excluir_table_log", { p_log_id: logId });
+    if (error) return { ok: false, erro: error.message };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Falha ao excluir o card.") };
+  }
+}
+
+export async function fixarCardAction(campaignId: string, logId: string, fixar: boolean): Promise<ResultadoPainel> {
+  const v = await exigirAcessoPainel(campaignId);
+  if (!v.ok) return { ok: false, erro: v.erro };
+  try {
+    const client = await getScopedTableClient();
+    const { error } = await client.rpc("fixar_table_log", { p_log_id: logId, p_fixar: fixar });
+    if (error) return { ok: false, erro: error.message };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, fixar ? "Falha ao fixar o card." : "Falha ao desafixar o card.") };
   }
 }

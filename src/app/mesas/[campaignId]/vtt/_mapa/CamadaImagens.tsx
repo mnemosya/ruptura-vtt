@@ -171,6 +171,10 @@ export function CamadaImagens({
                 className="rv-imagem-cena__alvo"
                 data-travada={img.travado || undefined}
                 onPointerDown={(e) => {
+                  // Só o botão ESQUERDO pega a imagem. O direito (e o do
+                  // meio) passam direto para o mapa, que os usa para
+                  // arrastar a vista.
+                  if (e.button !== 0) return;
                   onSelecionar?.(img.id);
                   // Travada seleciona (pra poder destravar pelo painel)
                   // mas não move. Travar que ainda deixasse arrastar
@@ -196,7 +200,7 @@ export function CamadaImagens({
                     width={ALCA} height={ALCA}
                     className="rv-imagem-cena__alca"
                     style={{ cursor: c.cursor }}
-                    onPointerDown={(e) => { e.stopPropagation(); onPressionarCanto?.(img.id, c.id, e); }}
+                    onPointerDown={(e) => { if (e.button !== 0) return; e.stopPropagation(); onPressionarCanto?.(img.id, c.id, e); }}
                   />
                 ))}
 
@@ -219,7 +223,7 @@ export function CamadaImagens({
                       cx={r.x + r.largura / 2} cy={r.y - HASTE} r={ALCA / 2 + 1}
                       className="rv-imagem-cena__giro"
                       style={{ cursor: "grab" }}
-                      onPointerDown={(e) => { e.stopPropagation(); onPressionarGiro?.(img.id, e); }}
+                      onPointerDown={(e) => { if (e.button !== 0) return; e.stopPropagation(); onPressionarGiro?.(img.id, e); }}
                     />
                   </>
                 )}

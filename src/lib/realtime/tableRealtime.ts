@@ -97,7 +97,8 @@ export function routeRealtimePayload(table: string, eventType: string): Realtime
   if (table === "campaigns" && eventType === "UPDATE") {
     return "refetch_campaign";
   }
-  if (table === "table_logs" && eventType === "INSERT") {
+  // UPDATE: card excluído (lógico) ou fixado/desafixado (migration 0152).
+  if (table === "table_logs" && (eventType === "INSERT" || eventType === "UPDATE")) {
     return "refetch_table_logs";
   }
   return "ignore";
@@ -325,6 +326,11 @@ export function subscribeToTableLogsRealtime(params: {
     .on(
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "table_logs", filter: `campaign_id=eq.${params.campaignId}` },
+      (payload) => params.onChange(payload as unknown as RealtimeEventLike),
+    )
+    .on(
+      "postgres_changes",
+      { event: "UPDATE", schema: "public", table: "table_logs", filter: `campaign_id=eq.${params.campaignId}` },
       (payload) => params.onChange(payload as unknown as RealtimeEventLike),
     )
     .subscribe((status) => params.onStatusChange?.(mapSupabaseChannelStatus(status)));

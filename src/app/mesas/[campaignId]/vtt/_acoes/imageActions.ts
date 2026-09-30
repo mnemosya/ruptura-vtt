@@ -58,7 +58,7 @@ function mensagemDeErro(e: unknown, padrao: string): string {
   return padrao;
 }
 
-export type IntencaoUpload = "fundo" | "tile" | "retrato" | "avatar";
+export type IntencaoUpload = "fundo" | "tile" | "retrato" | "avatar" | "chat";
 
 export interface ReservaUpload {
   /** `true` quando o conteúdo já existia nesta campanha: não há o que enviar. */
@@ -255,6 +255,35 @@ export async function finalizarUploadAvatarAction(
     });
     if (error) return { ok: false, erro: error.message };
     return { ok: true, dados: data };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Não foi possível concluir o envio.") };
+  }
+}
+
+/**
+ * Passo 4, caminho do CHAT: só promove o arquivo. A mensagem que o cita
+ * é gravada em seguida por `enviarMensagemChatAction`, que confere se
+ * quem manda pode anexar aquela imagem (migration 0153).
+ */
+export async function finalizarUploadChatAction(
+  campaignId: string,
+  reservaId: string,
+  storagePathSha: string,
+): Promise<ResultadoAcao<{ assetId: string }>> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+
+  try {
+    const medida = await validarEReencodar(`${campaignId}/${storagePathSha}.webp`);
+    const client = await getScopedTableClient();
+    const { data, error } = await client.rpc("finalizar_upload_chat", {
+      p_reserva_id: reservaId,
+      p_bytes_reais: medida.bytes,
+      p_width_px: medida.widthPx,
+      p_height_px: medida.heightPx,
+    });
+    if (error || !data) return { ok: false, erro: error?.message ?? "Não foi possível concluir o envio." };
+    return { ok: true, dados: { assetId: String((data as { asset_id: string }).asset_id) } };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Não foi possível concluir o envio.") };
   }

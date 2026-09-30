@@ -64,6 +64,8 @@ interface CartaoComum {
   autoria: AutoriaCartao;
   /** Tipo bruto de origem — só para diagnóstico/atributo de teste, nunca para decidir render. */
   origem: string;
+  /** Quando foi fixado no topo do chat (migration 0152); `null`/ausente = não fixado. */
+  fixadoEm?: string | null;
 }
 
 /** Módulo numérico de um card (DES 6, MOD +0, ND 10, PA 3). */
@@ -78,6 +80,16 @@ export interface CartaoMensagem extends CartaoComum {
   kind: "mensagem";
   texto: string;
   estilo: "normal" | "narracao";
+  /** Imagem anexada (migration 0153). As medidas só reservam o espaço antes de ela carregar. */
+  imagem: {
+    id: string;
+    largura: number | null;
+    altura: number | null;
+    /** Só nas bolhas otimistas: a prévia local enquanto o arquivo sobe. */
+    previewUrl?: string;
+  } | null;
+  /** A imagem foi excluída da biblioteca depois do envio (migration 0154). */
+  imagemRemovida: boolean;
 }
 
 export interface CartaoRolagem extends CartaoComum {
@@ -436,6 +448,7 @@ function comum(entry: TableLogEntry): CartaoComum {
     visibilidade: entry.visibility,
     autoria: autoriaDe(entry),
     origem: entry.type,
+    fixadoEm: entry.pinned_at ?? null,
   };
 }
 
@@ -480,6 +493,10 @@ function projetarMensagem(entry: TableLogEntry): CartaoFeed {
     kind: "mensagem",
     texto: txt(p, "text", "mensagem") ?? "",
     estilo: p.estilo === "narracao" ? "narracao" : "normal",
+    imagem: txt(p, "imagemId")
+      ? { id: txt(p, "imagemId")!, largura: num(p, "imagemLargura"), altura: num(p, "imagemAltura") }
+      : null,
+    imagemRemovida: p.imagemRemovida === true,
   };
 }
 

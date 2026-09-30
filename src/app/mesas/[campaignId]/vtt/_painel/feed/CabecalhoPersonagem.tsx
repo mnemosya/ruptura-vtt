@@ -11,6 +11,7 @@
 import { siglaDoNome } from "../personagensModelo";
 import type { AutoriaCartao } from "./contratos";
 import { useRetratoFeed } from "./retratos";
+import { BotaoMenuCard } from "./MenuCard";
 
 /** O cabeçalho só existe quando a autoria é de um personagem. */
 export function temCabecalhoPersonagem(autoria: AutoriaCartao): boolean {
@@ -41,6 +42,7 @@ export function CabecalhoPersonagem({
       </span>
       <span className="pn-cartao-pers-nome">{autoria.nome}</span>
       <time className="pn-cartao-pers-hora" dateTime={horaISO}>{hora}</time>
+      <BotaoMenuCard />
     </div>
   );
 }

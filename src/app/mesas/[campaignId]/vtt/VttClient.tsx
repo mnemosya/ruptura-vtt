@@ -6204,7 +6204,11 @@ export function VttClient({
             alvo que ninguém encontra. */}
         {arrastandoArquivo && (
           <div className="rv-arrastando-imagem" aria-hidden>
-            <span>Solte para colocar na cena</span>
+            <div className="rv-arrastando-imagem-caixa">
+              <ImageUp size={28} />
+              <span className="rv-arrastando-imagem-titulo">Solte para colocar na cena</span>
+              <span className="rv-arrastando-imagem-sub">PNG, JPEG ou WebP</span>
+            </div>
           </div>
         )}
         {imgs.pendente && (
