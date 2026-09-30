@@ -109,6 +109,23 @@ const COR_JA_AGIU = "#5f7492";
 export const TAM = 26; // raio do hexágono em px do mundo
 
 /**
+ * Quatro arcos iguais do retículo, com uma folga de 20° centrada em
+ * cada direção cardeal. Caminhos separados mantêm a fase do tracejado
+ * idêntica nos quatro quadrantes — um único círculo tracejado deixava
+ * uma sobra no fim da circunferência e fazia o alvo parecer torto.
+ */
+const ARCOS_ALVO = [[10, 80], [100, 170], [190, 260], [280, 350]] as const;
+function arcoCircularSvg(raio: number, inicioGraus: number, fimGraus: number): string {
+  const ponto = (graus: number) => {
+    const rad = graus * Math.PI / 180;
+    return { x: Math.cos(rad) * raio, y: Math.sin(rad) * raio };
+  };
+  const inicio = ponto(inicioGraus);
+  const fim = ponto(fimGraus);
+  return `M${inicio.x} ${inicio.y} A${raio} ${raio} 0 0 1 ${fim.x} ${fim.y}`;
+}
+
+/**
  * `deltaY` bruto de um `WheelEvent` pra uma escala aproximada de
  * pixels, resolvendo `deltaMode` (que muda a UNIDADE do valor, não só
  * a magnitude): a maioria dos navegadores/mouses manda `deltaMode = 0`
@@ -3892,7 +3909,14 @@ function Token({
       {/* alvo: retículo */}
       {estado.alvo && (
         <g className="rv-token-alvo" stroke="#ff5f74" strokeWidth="1.8" fill="none">
-          <circle r={raio + 10} strokeDasharray="10 8" />
+          {ARCOS_ALVO.map(([inicio, fim]) => (
+            <path
+              key={inicio}
+              d={arcoCircularSvg(raio + 10, inicio, fim)}
+              pathLength={100}
+              strokeDasharray="24 14 24 14 24 0"
+            />
+          ))}
           <line x1={-raio - 15} y1={0} x2={-raio - 5} y2={0} /><line x1={raio + 5} y1={0} x2={raio + 15} y2={0} />
           <line x1={0} y1={-raio - 15} x2={0} y2={-raio - 5} /><line x1={0} y1={raio + 5} x2={0} y2={raio + 15} />
         </g>

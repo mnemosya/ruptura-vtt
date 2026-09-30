@@ -85,6 +85,7 @@ import {
   type ResumoPersonagem,
 } from "./acoes/personagensPainel";
 import { useRolagemVelada } from "../_shell/useRolagemVelada";
+import { Select } from "../_dados3d/ResultadoRolagem";
 import { comecarLeitura, dadosDoEstado, falharLeitura, type EstadoAba } from "./tipos";
 import { DialogoConfirmar, DialogoTexto } from "./ui/Dialogo";
 import { MIME_ITEM_BANDO, desserializarItemBando, type ItemTransferivel } from "./bandoModelo";
@@ -965,17 +966,18 @@ export function PersonagensTab({
               placeholder="Buscar personagem…"
               testId="painel-personagens-busca"
             />
-            <label className="rv-sr-only" htmlFor="rv-pers-ordem">Ordenação</label>
-            <select
-              id="rv-pers-ordem"
-              className="rv-pn-select"
+            <Select
+              label="Ordenação"
+              labelOculto
+              className="rv-pn-ordem"
               value={ordenacao}
-              onChange={(e) => setOrdenacao(e.target.value as Ordenacao)}
-              data-testid="painel-personagens-ordem"
-            >
-              <option value="alfabetica">A–Z</option>
-              <option value="manual">Manual</option>
-            </select>
+              onChange={(valor) => setOrdenacao(valor as Ordenacao)}
+              options={[
+                { id: "alfabetica", rotulo: "A–Z" },
+                { id: "manual", rotulo: "Manual" },
+              ]}
+              testId="painel-personagens-ordem"
+            />
           </div>
 
           {/* LINHA 2 — o que se FAZ com a lista: criar à esquerda, o

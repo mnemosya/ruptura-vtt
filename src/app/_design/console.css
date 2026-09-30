@@ -53,14 +53,14 @@
 /* LARGURA DO TEXTO: cada ação tem o tamanho do próprio rótulo (com
    padding), e não 78px fixos. Por isso a posição é pela BORDA voltada
    pro token — assim a distância ao disco não muda com o texto. */
-.rv-token-actions button { position: absolute; width: auto; height: 36px; padding: 0 14px; white-space: nowrap; }
+.rv-token-actions button { position: absolute; width: auto; height: 32px; min-height: 32px; padding: 0 14px; white-space: nowrap; font-weight: 600; }
 /* Halo compacto (anel de 128px): Atacar e Fechar acompanham o anel;
    as ações LATERAIS saem mais pra fora, longe do disco do token.
    Fechar é só o ícone, num quadrado de 36px. */
 .rv-token-actions__atacar { left: 0; top: -88px; transform: translateX(-50%); }
-.rv-token-actions__conjurar { left: 44px; top: -18px; }
-.rv-token-actions__item { right: 44px; top: -18px; }
-.rv-token-actions button.rv-token-actions__fechar { left: 0; top: 52px; width: 36px; padding: 0; transform: translateX(-50%); display: grid; place-items: center; }
+.rv-token-actions__conjurar { left: 44px; top: -16px; }
+.rv-token-actions__item { right: 44px; top: -16px; }
+.rv-token-actions button.rv-token-actions__fechar { left: 0; top: 52px; width: 36px; height: 36px; min-height: 36px; padding: 0; transform: translateX(-50%); display: grid; place-items: center; }
 /* Caixa alta e SEM o branco: em repouso um azul apagado; no hover, o
    acento — o branco ficava reservado pra nada e gritava no mapa. */
 .rv-token-actions button { text-transform: uppercase; letter-spacing: .08em; color: #8fb0c2; }

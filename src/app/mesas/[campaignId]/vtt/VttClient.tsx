@@ -2285,19 +2285,35 @@ export function VttClient({
   useEffect(() => {
     const ouvir = (e: KeyboardEvent) => {
       if (e.defaultPrevented || elementoEhEditavel(document.activeElement as HTMLElement | null)) return;
-      if (!e.shiftKey || e.ctrlKey || e.metaKey || e.key.toLowerCase() !== "a") return;
-      if (selecionadoId) { e.preventDefault(); abrirRadial(selecionadoId); return; }
+      if (!e.shiftKey || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+      const tecla = e.key.toLowerCase();
+      const categoria = ({ q: "atacar", w: "conjurar", e: "item" } as const)[tecla as "q" | "w" | "e"];
+      if (tecla !== "a" && !categoria) return;
+
+      let tokenId = selecionadoId;
       // SEM SELEÇÃO: se o jogador EDITA um único personagem e ele tem
       // token nesta cena, não há dúvida de quem age — abre as ações dele.
       // Com dois ou mais, adivinhar seria pior que não fazer nada.
-      if (ehNarrador || controlledCharacterIds.length !== 1) return;
-      const doPersonagem = [...tokenPorId.values()].filter((t) => t.characterId === controlledCharacterIds[0] && t.podeControlar);
-      if (doPersonagem.length !== 1) return;
-      e.preventDefault(); abrirRadial(doPersonagem[0].id);
+      if (!tokenId) {
+        if (ehNarrador || controlledCharacterIds.length !== 1) return;
+        const doPersonagem = [...tokenPorId.values()].filter((t) => t.characterId === controlledCharacterIds[0] && t.podeControlar);
+        if (doPersonagem.length !== 1) return;
+        tokenId = doPersonagem[0].id;
+      }
+
+      const token = tokenPorId.get(tokenId);
+      if (!token?.characterId || !token.podeControlar || !consoleDaMesa) return;
+      e.preventDefault();
+      if (tecla === "a") { abrirRadial(tokenId); return; }
+      fecharCartaoToken();
+      setMenuContextual(null);
+      fecharRadial();
+      consoleDaMesa.aquecer();
+      consoleDaMesa.abrirAcaoToken(token.characterId, { tokenId: token.id, categoria });
     };
     window.addEventListener("keydown", ouvir);
     return () => window.removeEventListener("keydown", ouvir);
-  }, [abrirRadial, selecionadoId, ehNarrador, controlledCharacterIds, tokenPorId]);
+  }, [abrirRadial, selecionadoId, ehNarrador, controlledCharacterIds, tokenPorId, consoleDaMesa, fecharCartaoToken, fecharRadial]);
   const fluxoTokenRef = useRef(fluxoToken);
   useEffect(() => { fluxoTokenRef.current = fluxoToken; }, [fluxoToken]);
   const [confirmandoRemocao, setConfirmandoRemocao] = useState<TokenApresentacao | null>(null);

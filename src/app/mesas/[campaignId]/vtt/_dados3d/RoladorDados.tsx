@@ -29,6 +29,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { PolyDie } from "./PolyDie";
 import {
   ACCENTS, BODY, CampoCD, DISPLAY, aoPassarMouse, DadosRolados, FaixaResultado, FaixaSoma, GroupLabel, INK, INK_DIM, INK_FAINT, MONO,
@@ -94,7 +95,6 @@ function FreePool({
   const [counts, setCounts] = useState<Record<number, number>>(initial);
   const [mods, setMods] = useState(0);
   const [cdInput, setCdInput] = useState("");
-  const [cdAberto, setCdAberto] = useState(false);
   const [mode, setMode] = useState<CountMode>(defaultMode);
   const [results, setResults] = useState<{ sides: number; value: number }[] | null>(null);
   const [rolling, setRolling] = useState(false);
@@ -283,21 +283,12 @@ function FreePool({
 
       {erro && <ErroRolagem texto={erro} />}
 
-      <RollButton label={total === 0 ? "Escolha dados" : rolling ? "Rolando…" : `Rolar ${total} dado${total !== 1 ? "s" : ""}`} disabled={total === 0 || rolling || !rolarNaMesa} solid={solidRoll} onRoll={roll} onChargeChange={setLiveCharge} />
-
-      {/* Mesma CD do teste de Ruptura, mesma gaveta. Aqui ela decide
+      {/* Mesma CD do teste de Ruptura. Aqui ela decide
           só SUCESSO (total ≥ CD): faixa de margem é regra do teste de
           d8, não de uma soma qualquer de dados. */}
-      <div>
-        <button type="button" onClick={() => setCdAberto((v) => !v)}
-          {...aoPassarMouse({ opacity: "1" })}
-          style={{ display: "flex", width: "100%", alignItems: "center", border: 0, padding: 0, background: "transparent", cursor: "pointer", opacity: .82, transition: "opacity .14s" }}>
-          <GroupLabel right={<Chevron width={13} height={13} style={{ color: INK_FAINT, transform: cdAberto ? "rotate(180deg)" : "none" }} />}>
-            Definir CD
-          </GroupLabel>
-        </button>
-        {cdAberto && <div style={{ paddingTop: 4 }}><CampoCD value={cdInput} onChange={setCdInput} /></div>}
-      </div>
+      <CampoCD value={cdInput} onChange={setCdInput} />
+
+      <RollButton label={total === 0 ? "Escolha dados" : rolling ? "Rolando…" : `Rolar ${total} dado${total !== 1 ? "s" : ""}`} disabled={total === 0 || rolling || !rolarNaMesa} solid={solidRoll} onRoll={roll} onChargeChange={setLiveCharge} />
     </Stack>
   );
 }
@@ -486,17 +477,16 @@ function SemFicha({ motivo }: { motivo: string }) {
 }
 
 function RupturaTest({ s }: { s: ReturnType<typeof useTest> }) {
-  const [adv, setAdv] = useState(false);
   const { ficha, atributo } = s;
 
   if (!ficha) {
     return <SemFicha motivo="Selecione no mapa um token ligado a um personagem que você controla — o teste usa os atributos e perícias da ficha dele." />;
   }
 
-  const opcoesAtributo = ficha.atributos.map((a) => ({ id: a.id, rotulo: `${a.nome} · ${a.valor}d8` }));
+  const opcoesAtributo = ficha.atributos.map((a) => ({ id: a.id, rotulo: a.nome, valor: `${a.valor}d8` }));
   const opcoesPericia = [
     { id: SEM_PERICIA, rotulo: "Sem perícia" },
-    ...ficha.pericias.map((p) => ({ id: p.id, rotulo: `${p.nome} · +${p.valor}` })),
+    ...ficha.pericias.map((p) => ({ id: p.id, rotulo: p.nome, valor: `+${p.valor}` })),
   ];
   const nd8 = atributo?.valor ?? 0;
 
@@ -537,6 +527,8 @@ function RupturaTest({ s }: { s: ReturnType<typeof useTest> }) {
 
       {s.erro && <ErroRolagem texto={s.erro} />}
 
+      <CampoCD value={s.cdInput} onChange={s.setCdInput} />
+
       <RollButton
         label={s.rolling ? "Rolando…" : s.roll ? "Rolar de novo" : `Rolar ${nd8}d8`}
         disabled={s.rolling || !s.podeRolar}
@@ -544,12 +536,6 @@ function RupturaTest({ s }: { s: ReturnType<typeof useTest> }) {
         onChargeChange={s.setCarga}
       />
 
-      <div>
-        <button type="button" onClick={() => setAdv((v) => !v)} style={{ display: "flex", width: "100%", alignItems: "center", border: 0, padding: 0, background: "transparent", cursor: "pointer" }}>
-          <GroupLabel right={<Chevron width={13} height={13} style={{ color: INK_FAINT, transform: adv ? "rotate(180deg)" : "none" }} />}>Definir CD</GroupLabel>
-        </button>
-        {adv && <div style={{ paddingTop: 4 }}><CampoCD value={s.cdInput} onChange={s.setCdInput} /></div>}
-      </div>
     </>
   );
 }
@@ -617,6 +603,8 @@ function useContextoRolagem(campaignId: string | null, characterId: string | nul
   const [ctx, setCtx] = useState<ContextoRolagem | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [revisao, setRevisao] = useState(0);
+  const recarregar = useCallback(() => setRevisao((n) => n + 1), []);
 
   useEffect(() => {
     if (!campaignId) { setCtx(null); return; }
@@ -631,9 +619,104 @@ function useContextoRolagem(campaignId: string | null, characterId: string | nul
       .catch(() => { if (!cancelado) setErro("Falha ao carregar o contexto da rolagem."); })
       .finally(() => { if (!cancelado) setCarregando(false); });
     return () => { cancelado = true; };
-  }, [campaignId, characterId]);
+  }, [campaignId, characterId, revisao]);
 
-  return { ctx, carregando, erro };
+  return { ctx, carregando, erro, recarregar };
+}
+
+type Identidade = { id: string; nome: string; avatarUrl: string | null; tipo: "jogador" | "pn" };
+
+/** O rosto + nome no formato do cartão de alvo — usado no gatilho e em cada linha da lista. */
+function CartaoIdentidade({ p, onFalhaAvatar }: { p: Identidade; onFalhaAvatar?: (p: Identidade) => void }) {
+  const [avatarFalhou, setAvatarFalhou] = useState(false);
+  useEffect(() => { setAvatarFalhou(false); }, [p.avatarUrl]);
+  return (
+    <>
+      <span className="rv-ident-face" aria-hidden="true">
+        {p.avatarUrl && !avatarFalhou
+          ? <img src={p.avatarUrl} alt="" onError={() => { setAvatarFalhou(true); onFalhaAvatar?.(p); }} />
+          : p.nome.slice(0, 3).toUpperCase()}
+      </span>
+      <span className="rv-ident-nome">{p.nome}</span>
+    </>
+  );
+}
+
+/**
+ * "ROLANDO COMO" — não é o `<select>` do navegador: o gatilho é o cartão
+ * do personagem atual e abre uma LISTA de cartões (rosto, nome em mono,
+ * cor do lado), a mesma linguagem da lista de alvos da ação do token.
+ * A lista vai por portal pro `body` (a janela da ferramenta rola e
+ * recortaria) e fecha com clique fora ou Esc.
+ */
+function SeletorIdentidade({ identidades, valor, onEscolher, desabilitado, onFalhaAvatar }: {
+  identidades: Identidade[]; valor: string; onEscolher: (id: string) => void; desabilitado: boolean;
+  onFalhaAvatar?: (p: Identidade) => void;
+}) {
+  const gatilho = useRef<HTMLButtonElement>(null);
+  const lista = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; width: number } | null>(null);
+  const atual = identidades.find((p) => p.id === valor) ?? identidades[0];
+  const fechar = useCallback(() => setPos(null), []);
+  const abrir = () => {
+    const r = gatilho.current?.getBoundingClientRect();
+    if (r) setPos({ left: r.left, top: r.bottom + 6, width: r.width });
+  };
+  useEffect(() => {
+    if (!pos) return;
+    const fora = (e: PointerEvent) => {
+      const alvo = e.target as Node;
+      if (!lista.current?.contains(alvo) && !gatilho.current?.contains(alvo)) fechar();
+    };
+    const tecla = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); fechar(); gatilho.current?.focus(); } };
+    window.addEventListener("pointerdown", fora);
+    window.addEventListener("keydown", tecla, true);
+    return () => { window.removeEventListener("pointerdown", fora); window.removeEventListener("keydown", tecla, true); };
+  }, [pos, fechar]);
+  if (!atual) return null;
+  return (
+    <div>
+      <span style={{ fontFamily: DISPLAY, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.16em", color: INK_FAINT }}>Rolando como</span>
+      <button
+        ref={gatilho}
+        type="button"
+        className="rv-ident-cartao rv-ident-gatilho"
+        data-lado={atual.tipo === "pn" ? "pn" : "pj"}
+        aria-haspopup="listbox"
+        aria-expanded={pos !== null}
+        disabled={desabilitado}
+        onClick={() => (pos ? fechar() : abrir())}
+        data-testid="rolador-identidade"
+      >
+        <CartaoIdentidade p={atual} onFalhaAvatar={onFalhaAvatar} />
+        <Chevron width={13} height={13} className="rv-ident-seta" style={{ transform: pos ? "rotate(180deg)" : "none" }} />
+      </button>
+      {pos && typeof document !== "undefined" && createPortal(
+        <div
+          ref={lista}
+          className="rv-ident-lista"
+          role="listbox"
+          aria-label="Rolando como"
+          style={{ left: pos.left, top: pos.top, width: pos.width }}
+        >
+          {identidades.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              role="option"
+              aria-selected={p.id === atual.id}
+              className="rv-ident-cartao"
+              data-lado={p.tipo === "pn" ? "pn" : "pj"}
+              onClick={() => { onEscolher(p.id); fechar(); gatilho.current?.focus(); }}
+            >
+              <CartaoIdentidade p={p} onFalhaAvatar={onFalhaAvatar} />
+            </button>
+          ))}
+        </div>,
+        document.body,
+      )}
+    </div>
+  );
 }
 
 /**
@@ -652,12 +735,20 @@ export function RoladorDados({ size = 46, campaignId = null, personagemSugerido 
   const [visibilidade, setVisibilidade] = useState<TableLogVisibility>("public");
   const [escolhido, setEscolhido] = useState<string | null>(null);
   const characterId = escolhido ?? personagemSugerido?.id ?? null;
-  const { ctx, carregando, erro } = useContextoRolagem(campaignId, characterId);
+  const { ctx, carregando, erro, recarregar } = useContextoRolagem(campaignId, characterId);
+  const avataresRenovados = useRef(new Set<string>());
   const s = useTest(campaignId, ctx?.ficha ?? null, visibilidade);
 
   // O token selecionado mudou: volta a seguir a sugestão da mesa, em
   // vez de ficar preso no personagem escolhido à mão da vez passada.
   useEffect(() => { setEscolhido(null); }, [personagemSugerido?.id]);
+  useEffect(() => { avataresRenovados.current.clear(); }, [campaignId]);
+
+  const renovarAvatarComFalha = useCallback((p: Identidade) => {
+    if (avataresRenovados.current.has(p.id)) return;
+    avataresRenovados.current.add(p.id);
+    recarregar();
+  }, [recarregar]);
 
   const identidades = ctx?.personagens ?? [];
 
@@ -679,12 +770,12 @@ export function RoladorDados({ size = 46, campaignId = null, personagemSugerido 
       <DiceTabs tab={tab} onChange={setTab} />
 
       {campaignId && identidades.length > 0 && (
-        <Select
-          label="Rolando como"
-          value={characterId ?? identidades[0]?.id ?? ""}
-          onChange={setEscolhido}
-          options={identidades.map((p) => ({ id: p.id, rotulo: p.nome }))}
-          disabled={s.rolling}
+        <SeletorIdentidade
+          identidades={identidades}
+          valor={characterId ?? identidades[0]?.id ?? ""}
+          onEscolher={setEscolhido}
+          desabilitado={s.rolling}
+          onFalhaAvatar={renovarAvatarComFalha}
         />
       )}
 

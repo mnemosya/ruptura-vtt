@@ -3,11 +3,15 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import type { CategoriaAcaoToken } from "../_dominio/targets";
+import { useDicaPortal } from "../_painel/ui/DicaPortal";
 
 export function AcoesRapidasToken({tokenId,nome,onEscolher,onFechar}:{
   tokenId:string;nome:string;onEscolher:(categoria:CategoriaAcaoToken)=>void;onFechar:()=>void;
 }) {
   const [pos,setPos]=useState<{x:number;y:number}|null>(null);
+  const dicaAtacar=useDicaPortal(<><span>Atalho</span><kbd>Shift</kbd><kbd>Q</kbd></>);
+  const dicaConjurar=useDicaPortal(<><span>Atalho</span><kbd>Shift</kbd><kbd>W</kbd></>);
+  const dicaItem=useDicaPortal(<><span>Atalho</span><kbd>Shift</kbd><kbd>E</kbd></>);
   useEffect(()=>{
     let frame=0;
     const atualizar=()=>{
@@ -32,9 +36,18 @@ export function AcoesRapidasToken({tokenId,nome,onEscolher,onFechar}:{
   if(!pos)return null;
   return createPortal(<div className="rv-token-actions rc-cursor-scope" role="group" tabIndex={-1} aria-label={`Ações de ${nome}`} style={{left:pos.x,top:pos.y,outline:"none"}} data-testid="token-acoes-radial">
     <div className="rv-token-actions__anel" aria-hidden="true"/>
-    <button type="button" className="rv-token-actions__atacar" onClick={()=>onEscolher('atacar')}>Atacar</button>
-    <button type="button" className="rv-token-actions__conjurar" onClick={()=>onEscolher('conjurar')}>Conjurar</button>
-    <button type="button" className="rv-token-actions__item" onClick={()=>onEscolher('item')}>Usar item</button>
+    <button type="button" className="rv-token-actions__atacar" aria-label="Atacar (Shift+Q)" onClick={()=>onEscolher('atacar')} {...dicaAtacar.alvo}>
+      <span>Atacar</span>
+    </button>
+    {dicaAtacar.dica}
+    <button type="button" className="rv-token-actions__conjurar" aria-label="Conjurar (Shift+W)" onClick={()=>onEscolher('conjurar')} {...dicaConjurar.alvo}>
+      <span>Conjurar</span>
+    </button>
+    {dicaConjurar.dica}
+    <button type="button" className="rv-token-actions__item" aria-label="Usar item (Shift+E)" onClick={()=>onEscolher('item')} {...dicaItem.alvo}>
+      <span>Usar item</span>
+    </button>
+    {dicaItem.dica}
     <button type="button" className="rv-token-actions__fechar" onClick={onFechar} aria-label="Fechar"><X size={15} aria-hidden="true"/></button>
   </div>,document.body);
 }

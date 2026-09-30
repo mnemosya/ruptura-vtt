@@ -14,7 +14,7 @@
 import { useCallback, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-export function useDicaPortal(texto: string, opcoes: { lado?: "acima" | "abaixo" } = {}): {
+export function useDicaPortal(texto: ReactNode, opcoes: { lado?: "acima" | "abaixo" } = {}): {
   alvo: {
     onMouseEnter: (e: React.MouseEvent<HTMLElement>) => void;
     onMouseLeave: () => void;

@@ -1082,6 +1082,9 @@
    que o campo ainda lê "Buscar personagem"; abaixo disso a ordenação
    desce pra linha de baixo, que é o mesmo arranjo de antes. */
 .rv-pn-linha-busca .rv-pn-busca { flex: 1 1 150px; min-width: 0; margin: 0; }
+.rv-pn-linha-busca .rv-pn-ordem { flex: 0 0 96px; align-self: stretch; }
+.rv-pn-linha-busca .rv-pn-ordem .rv-seletor-gatilho { height: 100%; margin-top: 0; }
+.rv-pn-linha-busca .rv-pn-ordem .rv-seletor-valor { font-size: 12px; font-weight: 600; }
 /* MESMA ALTURA da busca. O select vem do bloco de filtros, que é mais
    baixo (22px contra 29px); lado a lado na mesma faixa, a diferença
    lia como desalinhamento. `align-self: stretch` copia a altura em vez
@@ -2149,12 +2152,17 @@
   font-size: 13px; padding: 6px 8px;
 }
 
-/* CAMPOS DE TEXTO em Chakra Petch — o que se DIGITA (e o placeholder);
-   rótulos e o resto do painel seguem em Rajdhani.
-   `.rv-pn-busca` na frente: `.rm-root input { font-family: inherit }`
-   (mesa.css) é mais específico que a classe sozinha e vencia. */
+/* A BUSCA usa JetBrains Mono como os demais campos técnicos do VTT.
+   12px compensa a altura-de-x maior da fonte sem aumentar a altura da
+   peça nem fazer o placeholder pesar mais que os controles vizinhos. */
 .rv-pn-busca .rv-pn-busca-input,
-.rv-pn-busca .rv-pn-busca-input::placeholder,
+.rv-pn-busca .rv-pn-busca-input::placeholder {
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* Os demais campos de texto continuam em Chakra Petch. */
 input.rv-pn-input.rv-pn-input,
 textarea.rv-pn-input.rv-pn-input {
   font-family: var(--font-chakra), var(--rv-body), sans-serif;
@@ -2173,7 +2181,8 @@ textarea.rv-pn-input.rv-pn-input {
 .rv-pn-linha-busca .rv-pn-select.rv-pn-select {
   --rv-notch: 8px;
   padding: 8px 28px 8px 13px;
-  font-family: var(--font-chakra), var(--rv-body), sans-serif;
+  font-family: var(--font-mono), monospace;
   /* Mesmo corpo do campo de busca ao lado (`.rv-pn-busca-input`). */
-  font-size: 13.5px;
+  font-size: 12px;
+  font-weight: 400;
 }
