@@ -29,6 +29,7 @@ import { BarraAlvo } from "../ui/primitivas";
 import { DadosLivres, DadosRolados, FaixaResultado as FaixaDeTeste, FaixaSoma, MONO, ACCENTS, RESULTS } from "../../_dados3d/ResultadoRolagem";
 import type { CartaoRolagem } from "./contratos";
 import { acentoDoCartao } from "./contratos";
+import { CabecalhoPersonagem, temCabecalhoPersonagem } from "./CabecalhoPersonagem";
 
 /** Modificadores nomeados, na linha extra que a faixa reserva pra isso. */
 function NotaDeModificadores({ modificadores }: { modificadores: CartaoRolagem["modificadores"] }) {
@@ -54,6 +55,9 @@ export function RollCard({
 }) {
   const acento = acentoDoCartao(cartao);
   const teste = cartao.teste;
+  const cabecalho = temCabecalhoPersonagem(cartao.autoria)
+    ? <CabecalhoPersonagem autoria={cartao.autoria} hora={hora} horaISO={cartao.criadoEm} />
+    : undefined;
 
   /* ── desenho de TESTE ── */
   if (teste) {
@@ -66,6 +70,7 @@ export function RollCard({
         autor={cartao.autoria.nome}
         hora={hora}
         horaISO={cartao.criadoEm}
+        cabecalho={cabecalho}
         visibilidade={visibilidade}
         testId="painel-feed-rolagem"
         atributos={{ "data-kind": "rolagem", "data-desenho": "teste" }}
@@ -136,6 +141,7 @@ export function RollCard({
       autor={cartao.autoria.nome}
       hora={hora}
       horaISO={cartao.criadoEm}
+      cabecalho={cabecalho}
       visibilidade={visibilidade}
       testId="painel-feed-rolagem"
       atributos={{ "data-kind": "rolagem", "data-desenho": "livre" }}

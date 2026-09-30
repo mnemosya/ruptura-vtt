@@ -33,6 +33,7 @@ import {
 } from "./chatModelo";
 import { projetarFeed, type CartaoFeed } from "./feed/contratos";
 import { EntradaFeed, type AcoesFeed } from "./feed/EntradaFeed";
+import { RetratosFeedProvider } from "./feed/retratos";
 import { Composer } from "./feed/Composer";
 import { BandejaDados } from "../_dados3d/RoladorDados";
 import { enviarMensagemChatAction, lerContextoChatAction, type ContextoChatPainel } from "./acoes/chatPainel";
@@ -462,6 +463,14 @@ export function ChatTab({
 
   const canalDegradado = sessionSyncStatus === "error";
   const todos = useMemo(() => [...cartoes, ...cartoesPendentes], [cartoes, cartoesPendentes]);
+  /* Personagens que agiram no feed — o cabeçalho dos cards e a face
+     das mensagens mostram o rosto deles. A chave em string segura a identidade da
+     lista entre renders que não trazem personagem novo. */
+  const chaveRetratos = useMemo(() => Array.from(new Set(
+    todos.flatMap((c) => "autoria" in c && c.autoria.tipo === "personagem" && c.autoria.characterId
+      ? [c.autoria.characterId] : []),
+  )).join(","), [todos]);
+  const idsRetratos = useMemo(() => (chaveRetratos ? chaveRetratos.split(",") : []), [chaveRetratos]);
 
   return (
     <div className="rv-pn-chat">
@@ -478,6 +487,7 @@ export function ChatTab({
       {/* O feed e o aviso de novas vivem no MESMO contêiner relativo —
           é o que ancora o botão logo acima do composer sem depender de
           adivinhar a altura dele (que muda quando os chips quebram). */}
+      <RetratosFeedProvider campaignId={campaignId} characterIds={idsRetratos}>
       <div className="rv-pn-chat-feedwrap">
       <div
         className="rv-pn-chat-scroll" ref={scrollRef} onScroll={aoRolar}
@@ -536,6 +546,7 @@ export function ChatTab({
         </div>
       </div>
       </div>
+      </RetratosFeedProvider>
 
 
       <Composer

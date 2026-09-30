@@ -29,6 +29,7 @@ import { Crosshair, Loader2, ShieldHalf, Swords } from "lucide-react";
 import { CartaoBase } from "../ui/CartaoBase";
 import { BarraAlvo, BotaoTecnico, Chip, Chips, FaixaResultado, Modulo, Modulos } from "../ui/primitivas";
 import type { AcentoCartao, CartaoAtaque, EstadoAtaque } from "./contratos";
+import { cabecalhoDe } from "./CabecalhoPersonagem";
 
 const ROTULO_ESTADO: Record<EstadoAtaque, string> = {
   declarado: "Declarado",
@@ -93,6 +94,7 @@ export function AttackWorkflowCard({
       acento={acento}
       autor={cartao.atacante}
       hora={hora}
+      cabecalho={cabecalhoDe(cartao.autoria, hora, cartao.criadoEm)}
       horaISO={cartao.criadoEm}
       visibilidade={visibilidade}
       estado={

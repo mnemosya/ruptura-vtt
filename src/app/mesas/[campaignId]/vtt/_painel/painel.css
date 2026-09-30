@@ -902,24 +902,34 @@
 .rv-pn-chat .pn-cartao { display:block; padding:0; border:1px solid var(--rv-line-2); border-radius:var(--rv-r); background:#0c1526; clip-path:none; overflow:visible; transition:border-color .14s, background .14s; }
 .rv-pn-chat .pn-cartao::before,.rv-pn-chat .pn-cartao::after { content:none; }
 .pn-cartao-layout { display:flex; min-width:0; }
-/* Fundo da espinha: o MESMO TOKEN da espinha das janelas de ferramenta
-   (`.rv-fp-espinha`), e não um hex copiado dela.
-   `--rv-raise` é um clareado translúcido (branco a 1.5%), então ele
-   resolve em relação ao fundo de QUEM O RECEBE. Foi essa a lição de uma
-   tentativa anterior com o literal `#121823` (o valor lido a conta-gotas
-   na janela): sobre o fundo do card, mais escuro, o mesmo hex vira um
-   degrau bem mais claro e a coluna salta. Com o token, card e janela
-   ficam à mesma DISTÂNCIA do próprio fundo — que é o que faz as duas
-   parecerem a mesma peça. */
-.rv-pn-chat .pn-cartao-espinha { width:36px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:12px 0; border-right:1px solid var(--rv-line-2); background:var(--rv-raise); }
-.rv-pn-chat .pn-cartao-espinha .pn-cartao-ico { width:auto; height:auto; padding:0; border:0; background:transparent; color:var(--pn-a); }
-.rv-pn-chat .pn-cartao-espinha .pn-cartao-ico svg { width:17px; height:17px; }
-.rv-pn-chat .pn-cartao-espinha .pn-cartao-tipo { display:block; max-height:92px; color:var(--pn-a); font:600 8.5px var(--rv-display); letter-spacing:.24em; writing-mode:vertical-rl; transform:rotate(180deg); overflow:hidden; }
+/* Sem espinha: o chat não repete o tipo do card numa faixa lateral. */
+.rv-pn-chat .pn-cartao-espinha { display:none; }
 .pn-cartao-conteudo { min-width:0; flex:1; padding:10px 12px; }
-.rv-pn-chat .pn-cartao-cab { display:flex; align-items:center; justify-content:space-between; gap:8px; color:var(--rv-ink-faint); font:8.5px var(--font-mono),monospace; letter-spacing:.12em; text-transform:uppercase; }
-.rv-pn-chat .pn-cartao-cab .pn-cartao-autor { max-width:none; color:var(--rv-ink-faint); font:8.5px var(--font-mono),monospace; letter-spacing:.12em; }
-.rv-pn-chat .pn-cartao-meta { gap:7px; }.rv-pn-chat .pn-cartao-hora { color:var(--rv-ink-faint); font-size:8.5px; }
-.rv-pn-chat .pn-cartao-nome { margin:7px 0 0; color:var(--rv-ink); font:700 17px/1 var(--rv-display); letter-spacing:.03em; text-transform:uppercase; }
+.rv-pn-chat .pn-cartao-cab { display:flex; align-items:center; justify-content:space-between; gap:8px; color:var(--rv-ink-faint); font:10px var(--font-mono),monospace; letter-spacing:.12em; text-transform:uppercase; }
+.rv-pn-chat .pn-cartao-cab .pn-cartao-autor { max-width:none; color:var(--rv-ink-faint); font:10px var(--font-mono),monospace; letter-spacing:.12em; }
+.rv-pn-chat .pn-cartao-meta { gap:7px; }.rv-pn-chat .pn-cartao-hora { color:var(--rv-ink-faint); font-size:10px; }
+.rv-pn-chat .pn-cartao-nome { margin:7px 0 0; color:var(--rv-ink); font:700 15px/1.1 var(--rv-display); letter-spacing:.03em; text-transform:uppercase; }
+/* CABEÇALHO DE PERSONAGEM (`CabecalhoPersonagem`): a linha da aba
+   Personagens no topo do card — coluna do rosto com fio à direita, nome
+   em caixa alta na cor do lado, fundo tingido como o hover dela. */
+.rv-pn-chat .pn-cartao-pers {
+  display:flex; align-items:stretch; min-height:48px; overflow:hidden;
+  border-bottom:1px solid #1c2b45; border-radius:var(--rv-r) var(--rv-r) 0 0;
+  background:color-mix(in srgb, var(--fg-a) 7%, #0c1526);
+}
+.rv-pn-chat .pn-cartao-pers-face {
+  flex:none; width:54px; display:flex; align-items:center; justify-content:center;
+  border-right:1px solid #1c2b45; color:#4f6285;
+  font:700 15px var(--rv-display); letter-spacing:.04em;
+}
+.rv-pn-chat .pn-cartao-pers-img { width:100%; height:100%; object-fit:cover; display:block; }
+.rv-pn-chat .pn-cartao-pers-nome {
+  flex:1; min-width:0; align-self:center; padding:0 10px 0 14px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  color:var(--fg-a); font:700 13px var(--rv-body); letter-spacing:.06em; text-transform:uppercase;
+}
+.rv-pn-chat .pn-cartao-pers-hora { align-self:center; flex:none; padding-right:12px; color:var(--rv-ink-faint); font:10px var(--font-mono),monospace; letter-spacing:.12em; }
+.rv-pn-chat .pn-cartao-pers + .pn-cartao-layout .pn-cartao-nome { margin-top:2px; }
 .rv-pn-chat .pn-cartao-subtitulo { margin-top:4px; color:#7f95b3; font:9px var(--font-mono),monospace; letter-spacing:.1em; text-transform:uppercase; }
 .rv-pn-chat .pn-cartao-estado { margin-top:9px; }
 .rv-pn-chat .pn-cartao-corpo { gap:10px; margin-top:11px; padding:0; }

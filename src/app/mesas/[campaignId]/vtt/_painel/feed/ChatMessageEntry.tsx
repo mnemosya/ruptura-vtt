@@ -17,6 +17,7 @@
 import { Lock, Radio, ShieldAlert } from "lucide-react";
 import type { CartaoMensagem } from "./contratos";
 import { rotuloVisibilidade } from "./contratos";
+import { CabecalhoPersonagem } from "./CabecalhoPersonagem";
 
 /** Iniciais do avatar — uma letra para nome simples, duas para composto. */
 function iniciais(nome: string): string {
@@ -42,6 +43,9 @@ export function ChatMessageEntry({
   const narracao = cartao.estilo === "narracao";
   const selo = rotuloVisibilidade(cartao.visibilidade, papel);
   const privada = cartao.visibilidade !== "public";
+  /* Falando como personagem, o cabeçalho é o MESMO dos outros cards
+     do feed (rosto, nome na cor do lado, hora). */
+  const personagem = cartao.autoria.tipo === "personagem";
 
   return (
     <div
@@ -53,7 +57,10 @@ export function ChatMessageEntry({
       data-testid="painel-feed-mensagem"
       data-visibility={cartao.visibilidade}
     >
-      {!continuacao && (
+      {!continuacao && personagem && (
+        <CabecalhoPersonagem autoria={cartao.autoria} hora={hora} horaISO={cartao.criadoEm} />
+      )}
+      {!continuacao && !personagem && (
         <div className="pn-msg-cab">
           <span className="pn-msg-face" aria-hidden="true">{iniciais(cartao.autoria.nome)}</span>
           <span className="pn-msg-autor">{cartao.autoria.nome}</span>
