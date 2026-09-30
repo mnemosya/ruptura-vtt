@@ -120,6 +120,9 @@ export function ChatMessageEntry({
           <BotaoMenuCard />
         </div>
       )}
+      {/* Continuação não tem cabeçalho: o "⋯" mora no canto do próprio
+          corpo, centrado na altura dele. */}
+      {continuacao && <span className="pn-msg-cont-acoes"><BotaoMenuCard /></span>}
       {cartao.imagem && <ImagemDaMensagem imagem={cartao.imagem} />}
       {cartao.imagemRemovida && (
         <p className="pn-msg-imagem-removida"><ImageOff size={13} aria-hidden="true" /> Imagem removida</p>

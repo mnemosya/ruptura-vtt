@@ -935,6 +935,15 @@
 .rv-pn-chat .pn-feed-menu-btn:hover,
 .rv-pn-chat .pn-feed-item[data-menu-aberto] .pn-feed-menu-btn { color: var(--rv-cy); border-color: color-mix(in srgb, var(--rv-cy) 45%, transparent); }
 .rv-pn-chat .pn-feed-menu-btn:focus-visible { outline: 2px solid var(--rv-cy); outline-offset: 1px; }
+/* Mensagem de continuação: sem linha de cabeçalho, o botão flutua no
+   canto direito, centrado na altura do corpo, com fundo para não
+   deixar o texto aparecer por baixo. */
+.rv-pn-chat .pn-msg { position: relative; }
+.rv-pn-chat .pn-msg-cont-acoes {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%); z-index: 2;
+  display: flex; --pn-cab-gap: 0px;
+}
+.rv-pn-chat .pn-msg-cont-acoes .pn-feed-menu-btn { background: #0c1526; }
 /* FIXADO: etiqueta âmbar montada na borda de cima, fora do conteúdo. */
 .rv-pn-chat .pn-feed-fixado {
   position: absolute; top: -7px; left: 12px; z-index: 2;
