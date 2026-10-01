@@ -238,3 +238,66 @@ export function moveHeadquartersV12(
   if (estado.caixa < custo) return err(`Caixa insuficiente: a mudança custa Ⱥ ${custo}.`);
   return ok({ ...estado, caixa: estado.caixa - custo, qg: { slug: novo.slug, melhorias: levadas }, exposicao_pistas: [] });
 }
+
+// ── Especialistas ──────────────────────────────────────────────────────
+
+/** Recruta pagando a taxa (uma vez); exige o Ranking mínimo do especialista. */
+export function recruitSpecialistV12(estado: CrewStateV12, slug: string, catalogo: CrewCatalogV12, nome?: string): CrewResult<CrewStateV12> {
+  const def = catalogo.especialistas.find((e) => e.slug === slug);
+  if (!def) return err(`Especialista desconhecido: "${slug}".`);
+  if (!rankingAtLeast(crewRankingV12(estado.cobalto, catalogo), def.ranking_minimo)) return err(`${def.nome} exige Ranking ${def.ranking_minimo}.`);
+  if (estado.caixa < def.recrutamento) return err(`Caixa insuficiente: recrutar ${def.nome} custa Ⱥ ${def.recrutamento}.`);
+  const especialista: CrewEspecialistaV12 = { slug, intervalos_sem_salario: 0, ...(nome?.trim() ? { nome: nome.trim() } : {}) };
+  return ok({ ...estado, caixa: estado.caixa - def.recrutamento, especialistas: [...estado.especialistas, especialista] });
+}
+
+export function dismissSpecialistV12(estado: CrewStateV12, indice: number): CrewResult<CrewStateV12> {
+  if (!Number.isInteger(indice) || indice < 0 || indice >= estado.especialistas.length) return err("Especialista inexistente.");
+  return ok({ ...estado, especialistas: estado.especialistas.filter((_, i) => i !== indice) });
+}
+
+/**
+ * Pagar a retaguarda num intervalo: paga quem couber no caixa, na ordem da
+ * lista; quem ficar sem salário soma um intervalo sem pagamento, e dois
+ * seguidos encerram o contrato (sai da lista).
+ */
+export function payIntervalV12(estado: CrewStateV12, catalogo: CrewCatalogV12): { estado: CrewStateV12; pagos: number; semSalario: string[]; encerrados: string[] } {
+  let caixa = estado.caixa;
+  let pagos = 0;
+  const semSalario: string[] = [];
+  const encerrados: string[] = [];
+  const especialistas: CrewEspecialistaV12[] = [];
+  for (const e of estado.especialistas) {
+    const def = catalogo.especialistas.find((x) => x.slug === e.slug);
+    const salario = def?.salario ?? 0;
+    const rotulo = e.nome ?? def?.nome ?? e.slug;
+    if (caixa >= salario) {
+      caixa -= salario;
+      pagos += salario;
+      especialistas.push({ ...e, intervalos_sem_salario: 0 });
+    } else if (e.intervalos_sem_salario + 1 >= 2) {
+      encerrados.push(rotulo);
+    } else {
+      semSalario.push(rotulo);
+      especialistas.push({ ...e, intervalos_sem_salario: e.intervalos_sem_salario + 1 });
+    }
+  }
+  return { estado: { ...estado, caixa, especialistas }, pagos, semSalario, encerrados };
+}
+
+// ── Coberturas e caixa ─────────────────────────────────────────────────
+
+export function addCoverV12(estado: CrewStateV12, slug: string, descricao: string, custos: Record<string, number>): CrewResult<CrewStateV12> {
+  const custo = custos[slug];
+  if (custo === undefined) return err(`Cobertura desconhecida: "${slug}".`);
+  if (!descricao.trim()) return err("Descreva a identidade ou finalidade da cobertura.");
+  if (estado.caixa < custo) return err(`Caixa insuficiente: a cobertura custa Ⱥ ${custo}.`);
+  return ok({ ...estado, caixa: estado.caixa - custo, coberturas: [...estado.coberturas, { slug, descricao: descricao.trim(), comprometida: false }] });
+}
+
+export function adjustCashV12(estado: CrewStateV12, delta: number): CrewResult<CrewStateV12> {
+  if (!Number.isFinite(delta) || delta === 0) return err("Informe um valor diferente de zero.");
+  const caixa = estado.caixa + Math.trunc(delta);
+  if (caixa < 0) return err("O caixa não pode ficar negativo.");
+  return ok({ ...estado, caixa });
+}

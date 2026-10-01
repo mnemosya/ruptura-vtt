@@ -383,16 +383,16 @@ Critério de saída:
 
 Entregáveis:
 
-- [ ] Nome;
-- [ ] Símbolo;
-- [ ] Princípio;
-- [ ] Contato;
-- [ ] Inimigo ou dívida;
-- [ ] QG;
-- [ ] Cobalto;
-- [ ] Ranking;
-- [ ] Exposição;
-- [ ] Alerta Imperial;
+- [x] Nome;
+- [x] Símbolo;
+- [x] Princípio;
+- [x] Contato;
+- [x] Inimigo ou dívida;
+- [x] QG;
+- [x] Cobalto;
+- [x] Ranking;
+- [x] Exposição;
+- [x] Alerta Imperial;
 - [ ] transferência bidirecional entre personagem e Bando;
 - [x] persistência isolada (decisão de 01/10/2026: tabela própria `campaign_crews`, 1:1 com a campanha);
 
@@ -471,7 +471,7 @@ editorial_notes
 - [ ] Custos variáveis não são interpretados como zero.
 - [ ] Biótica não depende permanentemente do ID `somatica`.
 - [ ] A aplicação rejeita payloads de personagem anteriores ao schema v2.
-- [ ] O Bando persiste todos os campos canônicos.
+- [x] O Bando persiste todos os campos canônicos.
 - [x] O replay das migrations produz schema equivalente ao remoto.
 - [ ] Conteúdo legado não é usado silenciosamente como fonte de verdade.
 
@@ -839,3 +839,18 @@ Equivalência das demais ações:
 - `src/lib/table/crewState.ts`: leitura e gravação;
 - `scripts/dev/v12/testar_bando.ts`: 14 cenários no remoto, desfeitos;
 - falta a interface na aba Bando, que hoje só tem o inventário compartilhado.
+
+### 01/10/2026 — Ficha do Bando na aba Bando (Fase 8)
+
+- decisões: a ficha fica dentro da aba Bando e todos os participantes editam. A migration `20261001190000_ruptura_v12_bando_edicao_participantes.sql`, aplicada no remoto, abre `save_campaign_crew` a qualquer participante; o estranho continua bloqueado (16 cenários em `testar_bando.ts`);
+- a aba Bando ganhou as seções "Ficha" (padrão) e "Inventário" (o inventário compartilhado de antes, sem mudança);
+- Ficha (`BandoFicha.tsx`):
+  - fundar o bando;
+  - Identidade (grava ao sair do campo) e Lista Cobalto (registrar operação com resultado-base e ajuste);
+  - QG (Capacidade, Segurança, caixa, instalar e aprimorar melhorias, trocar de QG, inclusive comprometido);
+  - Exposição (pistas com origem, neutralizar) e Alerta (+1/+2, redução com causa, notas);
+  - Especialistas (recrutar, dispensar, pagar a retaguarda do intervalo), Coberturas (criar, marcar comprometida) e Caixa (depositar, retirar);
+- cada ação passa pelo motor puro e grava com revisão otimista; em conflito, a ficha relê e avisa;
+- motor ampliado com recrutamento, salários (dois intervalos sem pagamento encerram o contrato), coberturas e caixa (`test:ruleset-v12-bando`);
+- validado no navegador: fundação, duas operações (F → E "Listados" com 4 de Cobalto), uma pista de Exposição e a troca para o Inventário, sem erros. Ficou um bando de teste, "Vórtex (teste)", na campanha de desenvolvimento;
+- pendentes: transferência bidirecional de itens e aretz entre personagem e Bando no formato v1.2 (o inventário compartilhado continua funcionando como antes) e atualização ao vivo da ficha (hoje ela relê ao focar a janela e ao salvar).

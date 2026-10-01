@@ -24,7 +24,7 @@ const base = newCrewStateV12({ nome: "Vórtex", simbolo: "espiral", principio: "
 
 await c.connect();
 await c.query("begin");
-await c.query(fs.readFileSync("supabase/migrations/20261001180000_ruptura_v12_bando.sql", "utf8"));
+for (const m of ["20261001180000_ruptura_v12_bando.sql", "20261001190000_ruptura_v12_bando_edicao_participantes.sql"]) await c.query(fs.readFileSync(`supabase/migrations/${m}`, "utf8"));
 await c.query("delete from campaign_crews where campaign_id=$1", [CAMP]);
 
 await caso("narrador cria o bando (revisão 0 → 1)", async () => { await como(NARR); const r = (await salvar(base, 0)).rows[0]; assert(r.revision === 1, "rev 1"); });
@@ -32,7 +32,12 @@ await caso("jogador lê o bando da campanha", async () => {
   await como(NARR); await salvar(base, 0); await como(PLAYER);
   const r = await c.query("select state->>'nome' n from campaign_crews where campaign_id=$1", [CAMP]); assert(r.rows[0]?.n === "Vórtex", "lê");
 });
-await caso("jogador não altera o bando", async () => { await como(NARR); await salvar(base, 0); await como(PLAYER); await salvar({ ...base, cobalto: 99 }, 1); }, "Só o narrador");
+await caso("jogador também altera o bando (decisão: todos editam)", async () => {
+  await como(NARR); await salvar(base, 0); await como(PLAYER); const r = (await salvar({ ...base, cobalto: 4 }, 1)).rows[0];
+  assert(r.revision === 2 && r.state.cobalto === 4, "jogador gravou");
+});
+await caso("jogador cria o bando", async () => { await como(PLAYER); const r = (await salvar(base, 0)).rows[0]; assert(r.revision === 1, "criou"); });
+await caso("estranho não altera", async () => { await como("00000000-0000-0000-0000-000000000001"); await salvar(base, 0); }, "Só participantes");
 await caso("jogador não escreve direto na tabela", async () => { await como(PLAYER); await c.query("insert into campaign_crews(campaign_id,state) values($1,$2)", [CAMP, JSON.stringify(base)]); }, "permission denied");
 await caso("narrador atualiza com revisão certa", async () => { await como(NARR); await salvar(base, 0); const r = (await salvar({ ...base, cobalto: 3 }, 1)).rows[0]; assert(r.revision === 2 && r.state.cobalto === 3, "rev 2"); });
 await caso("revisão velha é conflito (sem 40001)", async () => { await como(NARR); await salvar(base, 0); await salvar(base, 1); await salvar(base, 1); }, "revision_conflict");

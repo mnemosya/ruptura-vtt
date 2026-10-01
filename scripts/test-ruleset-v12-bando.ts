@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
+  addCoverV12,
   addExposureV12,
+  adjustCashV12,
+  dismissSpecialistV12,
+  payIntervalV12,
+  recruitSpecialistV12,
   alertStageV12,
   crewRankingV12,
   exposureStageV12,
@@ -95,5 +100,34 @@ const fuga = valor(moveHeadquartersV12(b, "instalacao_clandestina", catalogo, { 
 assert.equal(fuga.qg.melhorias.length, 0, "melhorias fixas abandonadas");
 assert.equal(fuga.caixa, 15000 - 10000, "sem revenda do QG comprometido");
 erro(moveHeadquartersV12(b, "complexo_refratario", catalogo), "exige Ranking A");
+
+// Especialistas: Ranking mínimo, recrutamento, salário e dois intervalos sem pagamento.
+let e = { ...newCrewStateV12({ nome: "X", simbolo: "", principio: "", contato_inicial: "", inimigo_ou_divida: "" }), caixa: 2000 };
+erro(recruitSpecialistV12(e, "mecanico", catalogo), "exige Ranking E");
+e = { ...e, cobalto: 3 };
+erro(recruitSpecialistV12(e, "quimico", catalogo), "exige Ranking D");
+e = valor(recruitSpecialistV12(e, "mecanico", catalogo, "Bruna"));
+e = valor(recruitSpecialistV12(e, "informante", catalogo));
+assert.equal(e.caixa, 2000 - 700 - 600);
+let pag = payIntervalV12(e, catalogo); // 700 em caixa: paga Mecânico (250) e Informante (200)
+assert.equal(pag.pagos, 450);
+e = { ...pag.estado, caixa: 300 };
+pag = payIntervalV12(e, catalogo); // paga Mecânico; Informante fica sem salário
+assert.deepEqual(pag.semSalario, ["Informante"]);
+pag = payIntervalV12({ ...pag.estado, caixa: 0 }, catalogo); // segundo intervalo seguido: Informante sai; Mecânico entra no primeiro
+assert.deepEqual(pag.encerrados, ["Informante"]);
+assert.deepEqual(pag.estado.especialistas.map((x) => [x.slug, x.intervalos_sem_salario]), [["mecanico", 1]]);
+e = valor(dismissSpecialistV12(pag.estado, 0));
+assert.equal(e.especialistas.length, 0);
+
+// Coberturas e caixa.
+const custosCobertura = { documento_avulso: 100, identidade_simples: 400, identidade_integrada: 1000 };
+e = { ...e, caixa: 500 };
+erro(addCoverV12(e, "identidade_simples", " ", custosCobertura), "Descreva");
+e = valor(addCoverV12(e, "identidade_simples", "Inspetora Ana Duarte", custosCobertura));
+assert.equal(e.caixa, 100);
+erro(addCoverV12(e, "identidade_integrada", "x", custosCobertura), "Caixa insuficiente");
+erro(adjustCashV12(e, -200), "negativo");
+assert.equal(valor(adjustCashV12(e, 1500)).caixa, 1600);
 
 console.log("test-ruleset-v12-bando — catálogo e regras do Bando válidos.");
