@@ -108,6 +108,22 @@ for (const f of arquivos) {
       });
     }
   }
+
+  // Reconciliação pontual do texto de erro de publish_content_draft.
+  // Assim como a 0155, a migration usa pg_get_functiondef dentro de DO
+  // e precisa ser representada explicitamente no replay estático.
+  const reconciliaMensagemPublish =
+    /publish_content_draft\(uuid,integer,jsonb,text,jsonb,jsonb,text\)/i.test(sql) &&
+    /replace\s*\(\s*v_definition\s*,\s*'≠'\s*,\s*'<>'\s*\)/i.test(sql);
+  if (reconciliaMensagemPublish) {
+    const atual = noRepo.get("publish_content_draft");
+    if (atual) {
+      noRepo.set("publish_content_draft", {
+        corpo: atual.corpo.replaceAll("≠", "<>"),
+        arquivo: f,
+      });
+    }
+  }
 }
 
 /** `--detalhe <nome>`: mostra o corpo dos dois lados, para inspeção. */

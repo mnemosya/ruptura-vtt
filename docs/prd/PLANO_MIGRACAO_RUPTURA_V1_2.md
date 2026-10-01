@@ -4,7 +4,7 @@
 **Criado em:** 30/09/2026  
 **Responsável editorial:** a definir  
 **Responsável técnico:** a definir  
-**Versão deste documento:** 0.3
+**Versão deste documento:** 0.4
 
 ## 1. Objetivo
 
@@ -186,13 +186,13 @@ Entregáveis:
 
 - [ ] snapshot recuperável do banco;
 - [x] branch ou tag de início da migração;
-- [ ] execução do replay das migrations;
-- [ ] comparação do schema reconstruído com o schema remoto;
+- [x] execução do replay das migrations;
+- [x] comparação do schema reconstruído com o schema remoto;
 - [x] relatório de divergências;
 - [ ] inventário dos conteúdos legados que serão substituídos ou removidos;
 - [x] conjunto inicial de critérios de aceite automatizados.
 
-Estado do replay local em 30/09/2026: bloqueado porque o Docker Desktop abriu sem iniciar o engine nem criar o socket local. O drift estático e a comparação das funções remotas foram executados; nenhuma migration v1.2 foi aplicada no remoto.
+Estado em 01/10/2026: as 160 migrations replayam do zero em PostgreSQL Supabase 17.6 descartável. A comparação integral do catálogo (incluindo enums) ficou equivalente ao remoto depois da migration idempotente que reconcilia o texto de erro de `publish_content_draft`. As migrations e os seeds v1.2 aplicados ao remoto durante a sessão autônoma também estão representados no histórico.
 
 Ferramentas já existentes:
 
@@ -203,6 +203,8 @@ Ferramentas já existentes:
 Critério de saída:
 
 - o schema remoto e o reconstruído estão equivalentes ou todas as divergências possuem decisão registrada.
+
+**Resultado:** atendido em 01/10/2026. Snapshot recuperável e inventário para o corte continuam como pré-condições da Fase 7, não como bloqueio da implementação aditiva.
 
 ### Fase 1 — Fundação mecânica
 
@@ -466,7 +468,7 @@ editorial_notes
 - [ ] Biótica não depende permanentemente do ID `somatica`.
 - [ ] A aplicação rejeita payloads de personagem anteriores ao schema v2.
 - [ ] O Bando persiste todos os campos canônicos.
-- [ ] O replay das migrations produz schema equivalente ao remoto.
+- [x] O replay das migrations produz schema equivalente ao remoto.
 - [ ] Conteúdo legado não é usado silenciosamente como fonte de verdade.
 
 ## 9. Regras de segurança da migração
@@ -603,7 +605,7 @@ Essa entrega deve terminar antes da implementação do novo wizard.
 - validação de pacote detecta slugs duplicados, Subclasses ausentes e vínculo incoerente entre Classe e Subclasse;
 - migration local preparada para os cinco novos valores de `content_type`;
 - build, typecheck e testes do contrato aprovados;
-- replay das migrations continua pendente porque o engine do Docker Desktop não iniciou.
+- o primeiro replay ficou bloqueado pelo engine do Docker Desktop; em 01/10/2026 foi concluído em um PostgreSQL Supabase descartável, com catálogo equivalente ao remoto após reconciliação idempotente de uma mensagem de erro.
 
 ### 30/09/2026 — Conteúdo canônico da Âncora
 

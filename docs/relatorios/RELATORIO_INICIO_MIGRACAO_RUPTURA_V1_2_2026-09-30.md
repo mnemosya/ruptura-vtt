@@ -127,16 +127,16 @@ Os validadores conferem os orçamentos canônicos de Trajetória, a exigência d
 
 Também foi preparada uma migration local para os tipos `class`, `subclass`, `background`, `quality` e `complication`. Ela não foi aplicada remotamente.
 
-## Bloqueio do replay local
+## Replay local concluído
 
-O Docker Desktop foi iniciado, mas o engine não criou o socket `~/.docker/run/docker.sock`. A consulta pela CLI continuou retornando “Docker Desktop não está em execução”, e a inspeção da interface expirou. Por isso `db:replay` e `db:verificar-replay` ainda não foram executados.
+Em 01/10/2026, o engine do Docker Desktop foi recuperado. Como o stack completo do Supabase falhou na inicialização do Realtime em Apple Silicon, o replay foi executado num PostgreSQL Supabase 17.6 descartável com um bootstrap local mínimo para os objetos de plataforma referenciados pelas migrations.
 
-Esse bloqueio não impediu o typecheck, os testes, o build nem o drift estático. Não houve tentativa de aplicar migrations no banco remoto.
+As 160 migrations foram aplicadas do zero. Tabelas e colunas, RLS, policies, índices, constraints, enums, funções, gatilhos, grants e publicação Realtime ficaram equivalentes ao remoto. A única divergência inicial era textual (`≠` no replay e `<>` no remoto) na mensagem de conflito de `publish_content_draft`; ela foi registrada numa migration idempotente, sem mudança de regra ou SQLSTATE.
+
+Nenhuma escrita remota foi feita durante esta verificação.
 
 ## Próximo passo
 
-1. recuperar o engine do Docker Desktop e executar o replay completo em banco local descartável;
-2. comparar o catálogo local reconstruído com o remoto;
-3. criar os formulários e fontes JSON dos novos tipos de conteúdo;
-4. publicar a Âncora e suas três Subclasses como primeira fatia vertical;
-5. aplicar migrations remotamente apenas depois do replay, snapshot e escolha explícita do ambiente.
+1. obter um snapshot recuperável antes do corte destrutivo;
+2. concluir condições, ações de combate e o catálogo editorial de magias da Fase 6;
+3. preparar e revisar o script explícito do corte de personagens e drafts incompatíveis da Fase 7.
