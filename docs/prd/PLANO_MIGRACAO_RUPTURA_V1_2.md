@@ -242,7 +242,7 @@ Entregáveis:
 - [x] esqueleto do payload `schema_version: 2`;
 - [ ] leitura e validação exclusiva de personagens v2 após o corte.
 
-Progresso do registro de tipos: `content_type`, o registro canônico e o contrato do seed já conhecem `class`, `subclass`, `background`, `quality` e `complication`. O seed publica `class` e `subclass` a partir de `content/v12/db_classe_ancora_v1_2.json` com `version = "1.2"` e valida o pacote inteiro com `validateRulesetContentBundleV12` antes de qualquer escrita; `npm run seed:content:dry` monta e valida sem tocar no banco. Continuam abertos: fontes JSON de `background`, `quality` e `complication` e os formulários do Editor Universal (os cinco tipos são somente leitura por enquanto). A migration `20261001024158_ruptura_v12_content_types.sql` foi aplicada no remoto e `class:ancora` e as três Subclasses estão publicadas.
+Progresso do registro de tipos: `content_type`, o registro canônico e o contrato do seed já conhecem `class`, `subclass`, `background`, `quality` e `complication`. O seed publica `class` e `subclass` a partir de `content/v12/db_classe_ancora_v1_2.json` com `version = "1.2"` e valida o pacote inteiro com `validateRulesetContentBundleV12` antes de qualquer escrita; `npm run seed:content:dry` monta e valida sem tocar no banco. As fontes JSON de `background`, `quality` e `complication` estão em `content/v12/db_trajetoria_v1_2.json` e entram no seed. Continuam abertos os formulários do Editor Universal (os cinco tipos são somente leitura por enquanto). A migration `20261001024158_ruptura_v12_content_types.sql` foi aplicada no remoto e `class:ancora` e as três Subclasses estão publicadas.
 
 Critério de saída:
 
@@ -260,6 +260,7 @@ Entregáveis:
 - [ ] equipamento e recursos iniciais;
 - [ ] Vertente Primária e magias iniciais;
 - [ ] criação server-side válida;
+  - Em implementação: `buildCharacterV2` (`src/lib/rulesetV12/creation.ts`) monta o payload v2 a partir das escolhas; a server action `createCharacterV2` chama a nova RPC `complete_character_creation_v2`, que revalida tudo no banco. A RPC passou em 13 cenários no remoto, dentro de uma transação abortada, e a migration `20261001033923_ruptura_v12_criacao_personagem.sql` foi aplicada no remoto em 01/10/2026. Antecedentes, Qualidades e Complicações estão publicados (`content/v12/db_trajetoria_v1_2.json`). As magias iniciais da Vertente Primária continuam indefinidas.
 - [ ] persistência e reabertura;
 - [ ] renderização correta na ficha;
 - [ ] rolagem integrada à mesa;
@@ -607,3 +608,28 @@ Essa entrega deve terminar antes da implementação do novo wizard.
 - seed executado: created=4 (`class:ancora`, `subclass:coordenador`, `subclass:terapeuta`, `subclass:vitalista`), updated=2 (`character_rule:regras_personagem`, `combat_flow:fluxo_combate`, com Reações `Mente + 1`, Medicina e pool de d8), sem mudança=448; total de 450 para 454 documentos;
 - verificação: novo dry-run sem diferenças, `db:drift` com 184/184 funções equivalentes e `vtt_hud_derived` retornando 3 Reações para Mente 2 pelo documento e pelo fallback;
 - operação não destrutiva (adição de valores de enum, `create or replace` de função e upserts com changelog); o snapshot da Fase 0 continua pendente.
+
+### 01/10/2026 — Criação server-side da Âncora
+
+- `buildCharacterV2` valida perfil e permutação de Atributos, perfil e listas de Perícias, Vertente Primária e compras contra o documento `class`, e monta recursos, perícias, carteira e inventário no servidor;
+- `createCharacterV2` (server action) busca Classe, regras e preços publicados e chama `complete_character_creation_v2`;
+- a RPC repete as checagens no banco (um participante pode chamá-la diretamente) e também valida a Trajetória contra documentos publicados e os orçamentos 3/2;
+- `npm run test:ruleset-v12-criacao` cobre o caso válido e 11 casos hostis; no remoto, a RPC aceitou o payload válido e rejeitou 12 adulterações, numa transação desfeita ao final;
+- decisões provisórias: magias iniciais rejeitadas até a regra ser estruturada; nenhum limite de raridade de item (a regra v1.2 não o define); recursos máximos da ficha ainda vêm de `character_rule`, não das fórmulas da Classe.
+
+### 01/10/2026 — Trajetória transcrita
+
+- 15 Antecedentes, 24 Qualidades e 28 Complicações transcritos do capítulo 8 do Notion (edição de 30/09/2026) para `content/v12/db_trajetoria_v1_2.json`;
+- Regiões de origem ficaram como constante (`REGIOES_V12`), não como `content_type`: o capítulo diz que não são personalizáveis;
+- Qualidades repetíveis marcadas conforme o texto (Boa Reputação, Contato e Credencial); Recursos recebeu o efeito `aretz_inicial_adicional` (Ⱥ 1.500 ou Ⱥ 3.000);
+- regras ajustadas ao texto canônico: Complicações somam ao menos 2 pontos (adicionais permitidas por acordo do grupo); custo de cada opção restrito a `custos_permitidos`; repetição só em opções repetíveis; região dentro das cinco do Império;
+- `buildCharacterV2` e a RPC aplicam essas regras e o bônus de Recursos na carteira; na RPC, 10 novos cenários foram testados no remoto em transação desfeita;
+- o dry-run do seed monta 67 documentos novos e nenhuma alteração nos existentes; nada foi publicado.
+
+### 01/10/2026 — Criação v1.2 publicada no remoto
+
+- migration `ruptura_v12_criacao_personagem` aplicada (versão `20261001033923`); arquivo local renomeado para essa versão;
+- seed: created=67 (15 `background`, 24 `quality`, 28 `complication`), updated=0, sem mudança=454; total de 521 documentos;
+- verificação: dry-run sem diferenças; `db:drift` com 185/185 funções equivalentes; `anon` sem permissão de executar a RPC;
+- prova de ponta a ponta com o conteúdo publicado, como participante real e em transação desfeita: Âncora Concentrada criada com PV 10, PE 15, Mana 16, Integridade 14 e Ⱥ 3.900 (Recursos 1 = Ⱥ 4.500, menos 3 Medkits); replay com o mesmo `creationRequestId` devolveu o mesmo personagem;
+- ainda falta interface: nenhuma tela chama `createCharacterV2`.

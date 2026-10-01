@@ -38,7 +38,17 @@ import { CharacterStorageError } from "./storage.errors";
 import { validateCreationBudget } from "./createCharacterValidation";
 import { createInitialCharacter } from "./createCharacter";
 import type { Character, CharacterRecord, CharacterRulesPayload } from "./types";
-import { getCharacterRules } from "../content";
+import { getCharacterRules, getContentDocument, getItem, listContentDocuments } from "../content";
+import {
+  buildCharacterV2,
+  VERTENTES_V12,
+  type BackgroundContentV12,
+  type ClassContentV12,
+  type ComplicationContentV12,
+  type CreationChoicesV12,
+  type CreationItemV12,
+  type QualityContentV12,
+} from "../rulesetV12";
 import { parseDraftPayload, type DraftPayload } from "./draftValidation";
 
 const CHARACTER_CREATION_DRAFTS_TABLE = "character_creation_drafts";
@@ -290,6 +300,81 @@ export async function createCharacterFromWizard(
   }
   const result = data as { character: CharacterRecord; idempotentReplay: boolean };
   return result.character;
+}
+
+/**
+ * Criação RUPTURA v1.2 (schema_version 2) no Ranking F.
+ *
+ * Recebe só as ESCOLHAS do jogador; Classe, catálogo de perícias e
+ * preços vêm dos documentos publicados, buscados aqui. O payload é
+ * montado no servidor (`buildCharacterV2`) e a RPC
+ * `complete_character_creation_v2` revalida tudo no banco.
+ */
+export async function createCharacterV2(
+  campaignId: string,
+  choices: CreationChoicesV12,
+  options: { ownerLabel?: string; creationRequestId?: string } = {},
+): Promise<CharacterRecord> {
+  // Opções de Trajetória: catálogo global publicado. Opções próprias da
+  // campanha ainda não entram por este caminho (a RPC já as aceitaria).
+  const [classeDoc, regrasDoc, antecedentes, qualidades, complicacoes] = await Promise.all([
+    getContentDocument<ClassContentV12>("class", choices.classe_id),
+    getCharacterRules(),
+    listContentDocuments<BackgroundContentV12>("background"),
+    listContentDocuments<QualityContentV12>("quality"),
+    listContentDocuments<ComplicationContentV12>("complication"),
+  ]);
+  if (!classeDoc) throw new CharacterStorageError(`Classe "${choices.classe_id}" não está publicada.`);
+  const regras = regrasDoc?.payload as CharacterRulesPayload | undefined;
+  if (!regras) throw new CharacterStorageError("Regras de criação indisponíveis no servidor.");
+
+  const itens = new Map<string, CreationItemV12>();
+  for (const slug of new Set((choices.compras ?? []).map((c) => c.itemSlug))) {
+    const doc = await getItem(slug);
+    const item = doc?.payload as { nome?: string; categoria?: string; preco?: number; estatisticas?: { subtipo?: string } } | undefined;
+    if (!item) continue; // ausência vira erro de validação em buildCharacterV2
+    itens.set(slug, {
+      slug,
+      nome: item.nome ?? slug,
+      categoria: item.categoria ?? "",
+      subtipo: item.estatisticas?.subtipo,
+      preco: item.preco ?? 0,
+    });
+  }
+
+  const built = buildCharacterV2(choices, {
+    classe: classeDoc.payload,
+    pericias: regras.pericias.map((p) => p.id),
+    vertentes: [...VERTENTES_V12],
+    itens,
+    trajetoria: {
+      antecedentes: new Map(antecedentes.map((d) => [d.slug, d.payload])),
+      qualidades: new Map(qualidades.map((d) => [d.slug, d.payload])),
+      complicacoes: new Map(complicacoes.map((d) => [d.slug, d.payload])),
+    },
+  });
+  if (!built.ok) throw new CharacterStorageError(built.errors.join(" "));
+
+  const payload = {
+    ...built.character,
+    metadados: {
+      ...built.character.metadados,
+      atualizado_em: new Date().toISOString(),
+      ...(options.creationRequestId ? { creationRequestId: options.creationRequestId } : {}),
+    },
+  };
+
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("complete_character_creation_v2", {
+    p_campaign_id: campaignId,
+    p_character_payload: payload,
+    p_owner_label: options.ownerLabel ?? null,
+    p_creation_request_id: options.creationRequestId ?? null,
+  });
+  if (error) {
+    throw new CharacterStorageError(`Falha ao concluir a criação do personagem: ${error.message}`, error);
+  }
+  return (data as { character: CharacterRecord }).character;
 }
 
 /**
