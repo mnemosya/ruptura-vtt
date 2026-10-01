@@ -184,7 +184,7 @@ Somente depois de validar esse fluxo o contrato será generalizado para as 7 Cla
 
 Entregáveis:
 
-- [ ] snapshot recuperável do banco;
+- [x] snapshot recuperável do banco (01/10/2026, antes do corte);
 - [x] branch ou tag de início da migração;
 - [x] execução do replay das migrations;
 - [x] comparação do schema reconstruído com o schema remoto;
@@ -364,14 +364,14 @@ Critério de saída:
 
 Entregáveis:
 
-- [ ] snapshot técnico anterior ao corte;
+- [x] snapshot técnico anterior ao corte (`pg_dump` completo em 01/10/2026, guardado fora do repositório, restauração testada);
 - [x] script explícito para apagar personagens e drafts incompatíveis: `scripts/dev/v12/corte_fase7.mjs` (só conta por padrão; `--testar` ensaia e desfaz; `--executar` exige `--snapshot=<ref>`). Remove também os tokens dos personagens v1 (decisão de 01/10/2026). Ensaio no remoto em 01/10/2026, desfeito: 121 personagens, 46 tokens e 2 rascunhos; v2 intactos;
 - [ ] remoção ou arquivamento dos documentos de conteúdo obsoletos;
 - [ ] substituição de `somatica` por `biotica` no conteúdo canônico;
 - [ ] remoção dos caminhos de criação, progressão e leitura v1;
 - [ ] seed mínimo de dados v1.2 para desenvolvimento;
-- [ ] verificações pós-corte;
-- [ ] registro das contagens removidas e criadas.
+- [x] verificações pós-corte (do script, mais a mesa abrindo sem erro só com a Hilda);
+- [x] registro das contagens removidas e criadas (abaixo, 01/10/2026).
 
 Critério de saída:
 
@@ -792,3 +792,13 @@ Equivalência das demais ações:
 - modos: contagem (padrão), `--testar` (apaga, confere e desfaz) e `--executar --snapshot=<ref>` (regra de segurança 1);
 - ensaio no remoto, desfeito: 121 personagens, 46 tokens (dos 32 personagens com token) e 2 rascunhos removidos; Hilda e o rascunho v2 intactos;
 - fora do script: imagens de avatar no Storage e o arquivamento de conteúdo obsoleto (Talentos), que fica para um passo separado.
+
+### 01/10/2026 — Snapshot e corte de personagens (Fase 7, executado)
+
+- **Snapshot:** `pg_dump` completo (formato custom) com o PostgreSQL 17.6 da imagem Supabase, rodando via Docker.
+  - Arquivo `~/ruptura-backups/ruptura_pre_corte_v12_20261001_152726.dump`, com 2,2 MB e sha256 `eca60c15c865…`. Fica fora do repositório porque contém dados de usuários.
+  - Restauração testada num contêiner descartável: 122 personagens, 77 tokens, 3 rascunhos, 551 documentos, 44 campanhas, 188 funções e 80 policies em `public`, iguais ao remoto. Os erros da restauração se limitam aos schemas gerenciados pelo Supabase.
+- **Corte** com `corte_fase7.mjs --executar`: removidos 121 personagens v1, 46 tokens e 2 rascunhos v1; 4 controladores saíram em cascata.
+- **Restaram:** 1 personagem v2 (Hilda Norren) e 1 rascunho v2.
+- **Verificação:** a mesa de desenvolvimento abre sem erros, com só a Hilda.
+- **Para voltar atrás:** `pg_restore` do arquivo acima.
