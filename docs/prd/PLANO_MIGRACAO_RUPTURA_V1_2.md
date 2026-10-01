@@ -417,13 +417,13 @@ Critério de saída:
 
 Pré-condições:
 
-- [ ] PM não participa de nenhum fluxo v1.2;
+- [x] PM não participa de nenhum fluxo v1.2 (a ficha do produto não mostra PM; "Ajustar" registra ajustes com custo 0);
 - [x] Talentos antigos não participam de nenhum fluxo v1.2 (arquivados; fora do Compêndio e da prévia de personagem);
 - [ ] nenhum conteúdo depende do ID `somatica`;
 - [ ] nenhuma ficha depende do catálogo antigo de magias;
 - [ ] nenhuma condição depende do schema booleano antigo;
 - [ ] buscas, testes e validadores confirmam ausência de referências;
-- [ ] plano de rollback está documentado.
+- [x] plano de rollback está documentado (`docs/relatorios/ROLLBACK_MIGRACAO_V1_2.md`).
 
 ## 7. Manifestos obrigatórios
 
