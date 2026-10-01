@@ -23,6 +23,7 @@
     "test:ruleset-v12-criacao": "tsx scripts/test-ruleset-v12-criacao.ts",
     "test:ruleset-v12-rascunho": "tsx scripts/test-ruleset-v12-rascunho.ts",
     "test:ruleset-v12-classes": "tsx scripts/test-ruleset-v12-classes.ts",
+    "test:ruleset-v12-progressao": "tsx scripts/test-ruleset-v12-progressao.ts",
     "test:end-round-conditions": "tsx scripts/test-end-round-conditions.ts",
     "test:active-effects": "tsx scripts/test-active-effects.ts",
     "test:end-round-indicators": "tsx scripts/test-end-round-indicators.ts",

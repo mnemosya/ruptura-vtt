@@ -20,7 +20,7 @@ import { BODY_SLOT_LABELS, itensCompativeisComSlot, type BodySlotId } from "../s
 import { useCentroDoConsole } from "../useCentroDoConsole";
 import type { ConsoleApi } from "../types";
 
-function Aux({
+export function AuxJanela({
   titulo,
   onFechar,
   cabecalho,
@@ -402,7 +402,7 @@ export function SurgePickerModal({
 }) {
   const [enviando, setEnviando] = useState(false);
   return (
-    <Aux titulo="Surto de Sobrecarga" onFechar={onFechar}>
+    <AuxJanela titulo="Surto de Sobrecarga" onFechar={onFechar}>
       <p className="rc-vazio">Escolha o tipo de surto. O terceiro surto do dia dispara Ruptura.</p>
       <div className="rc-aux-lista">
         {tipos.map((t) => (
@@ -427,7 +427,7 @@ export function SurgePickerModal({
           Cancelar
         </button>
       </div>
-    </Aux>
+    </AuxJanela>
   );
 }
 
@@ -561,7 +561,7 @@ export function BackpackPickerModal({
   onFechar: () => void;
 }) {
   return (
-    <Aux titulo={`Mochila — ${BODY_SLOT_LABELS[slot]}`} onFechar={onFechar}>
+    <AuxJanela titulo={`Mochila — ${BODY_SLOT_LABELS[slot]}`} onFechar={onFechar}>
       {itens.length === 0 ? (
         <p className="rc-vazio">Nenhum item compatível com este slot na mochila.</p>
       ) : (
@@ -584,7 +584,7 @@ export function BackpackPickerModal({
           Fechar
         </button>
       </div>
-    </Aux>
+    </AuxJanela>
   );
 }
 
@@ -627,7 +627,7 @@ export function AttackModal({
   const rotuloSlot = slot === "arma_primaria" ? "Arma primária" : "Arma secundária";
 
   return (
-    <Aux
+    <AuxJanela
       titulo={`${instancia.itemNome} — ${rotuloSlot}`}
       onFechar={onFechar}
       plano
@@ -752,7 +752,7 @@ export function AttackModal({
           </div>
         </>
       )}
-    </Aux>
+    </AuxJanela>
   );
 }
 
@@ -769,7 +769,7 @@ export function ConfirmModal({
   onFechar: () => void;
 }) {
   return (
-    <Aux titulo={titulo} onFechar={onFechar}>
+    <AuxJanela titulo={titulo} onFechar={onFechar}>
       <p className="rc-vazio">{mensagem}</p>
       <div className="rc-aux-acoes">
         <button type="button" className="rc-ghost" onClick={onFechar}>
@@ -779,7 +779,7 @@ export function ConfirmModal({
           Confirmar
         </button>
       </div>
-    </Aux>
+    </AuxJanela>
   );
 }
 

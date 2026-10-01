@@ -327,6 +327,8 @@ export function buildCharacterV2(choices: CreationChoicesV12, ctx: CreationConte
       vertente_primaria: choices.vertente_primaria,
       niveis_vertente: niveisVertente,
       magias_aprendidas: [],
+      // As magias do nível 1 da Vertente Primária dependem do catálogo v1.2.
+      escolhas_pendentes: [{ tipo: "magias_nivel_vertente", vertente: choices.vertente_primaria, nivel: 1, origem: "Criação" }],
     },
     metadados: { schema_version: RUPTURA_V12_CHARACTER_SCHEMA_VERSION, criado_em: agora },
   };

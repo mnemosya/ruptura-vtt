@@ -282,12 +282,12 @@ Entregáveis:
 - [x] 7 Classes publicadas;
 - [x] 24 Subclasses publicadas;
 - [x] Ranking F completo (as 7 Classes são criáveis pela tela e pela RPC);
-- [ ] Subclasse obrigatória no Ranking E;
-- [ ] avanços de D, C, B, A, S e S+;
-- [ ] PA igual a 4 no C e 5 no S;
+- [x] Subclasse obrigatória no Ranking E;
+- [x] avanços de D, C, B, A, S e S+ (magias concedidas ficam pendentes até o catálogo v1.2);
+- [x] PA igual a 4 no C e 5 no S;
 - [ ] recursos derivados dependentes da Classe;
-- [ ] progressão server-side atômica;
-- [ ] Modo Evolução orientado pelo próximo Ranking;
+- [ ] progressão server-side atômica; aplicada no servidor e gravada em uma operação, mas a RPC de ficha ainda aceita payload completo do controlador (ver relatório);
+- [x] Modo Evolução orientado pelo próximo Ranking (personagens v1.2);
 - [ ] PM e Talentos deixam de ser fonte de verdade para v2.
 
 Critério de saída:
@@ -445,13 +445,13 @@ editorial_notes
 
 - [x] Atributo 0 rola 2d8 e usa o menor.
 - [x] Atributo –1 rola 3d8 e usa o menor.
-- [ ] As 7 Classes podem ser criadas no Ranking F.
-- [ ] Classe define Atributos, Perícias, recursos e equipamento inicial.
+- [x] As 7 Classes podem ser criadas no Ranking F.
+- [x] Classe define Atributos, Perícias, recursos e equipamento inicial (pacotes de equipamento ainda são placeholders editoriais).
 - [x] Reações são `Mente + 1`.
 - [x] Medicina pode ser selecionada e rolada.
-- [ ] Ranking E exige uma Subclasse.
+- [x] Ranking E exige uma Subclasse.
 - [ ] Todos os Rankings aplicam exatamente seus avanços.
-- [ ] PA passa para 4 no C e 5 no S.
+- [x] PA passa para 4 no C e 5 no S.
 - [ ] As 18 condições existem.
 - [ ] Condições niveláveis possuem estado e transições reais.
 - [ ] Oculto está disponível.
@@ -683,3 +683,13 @@ Essa entrega deve terminar antes da implementação do novo wizard.
 - seed: 27 documentos criados (6 Classes, 21 Subclasses) e `class:ancora` atualizada para o novo formato de características; total de 548 documentos;
 - no remoto, em transação desfeita, a RPC criou um personagem de cada uma das 7 Classes com as fórmulas próprias;
 - pendências editoriais registradas nos pacotes: pacotes de equipamento (todas as Classes) e a nota "REVISAR O DANO DE SANGRANDO" no Ranking C do Assassino.
+
+### 01/10/2026 — Avanço de Ranking (Fase 4)
+
+- `src/lib/rulesetV12/progression.ts`: pacote do próximo Ranking, validação das escolhas (Subclasse no E, pontos e limite de Perícia, Atributo até 5, Vertente até o nível 5) e aplicação; PA atualizado na fórmula copiada (DEC-003);
+- magias concedidas (nível de Vertente na criação e na progressão, magia adicional em D/B/S) ficam em `magia.escolhas_pendentes` até o catálogo v1.2; recursos atuais não mudam no avanço (os máximos são recalculados);
+- `evolucaoV12Actions.ts`: lê o pacote e aplica o avanço no servidor a partir das escolhas, recarregando personagem e Classe efetiva; grava por `update_character_sheet_payload`;
+- console: para personagens v1.2, o chip "Ranking X" substitui o Modo Evolução livre e abre o modal de avanço;
+- `npm run test:ruleset-v12-progressao`: Âncora de F a S+ e casos inválidos;
+- validado no navegador: Hilda Norren avançou de F para E (Vitalista, Luta +1, Vigor +1, Cinética); banco e ficha conferidos;
+- limitação: `update_character_sheet_payload` aceita o payload completo do controlador, então um jogador ainda poderia alterar Ranking e escolhas por fora da tela. Fechar isso exige uma RPC de avanço e proteger `progressao` na RPC de ficha, decisão registrada no relatório.

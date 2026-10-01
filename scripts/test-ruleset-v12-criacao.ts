@@ -71,7 +71,12 @@ if (ok.ok) {
   assert.equal(Object.keys(c.pericias).length, rules.pericias.length);
   assert.deepEqual(c.carteira, { aretz_informal: 2600, cdi: 0, cdi_craqueada: 0 });
   assert.equal(c.inventario?.[0].precoPago, 400);
-  assert.deepEqual(c.magia, { vertente_primaria: "biotica", niveis_vertente: { biotica: 1 }, magias_aprendidas: [] });
+  assert.deepEqual(c.magia, {
+    vertente_primaria: "biotica",
+    niveis_vertente: { biotica: 1 },
+    magias_aprendidas: [],
+    escolhas_pendentes: [{ tipo: "magias_nivel_vertente", vertente: "biotica", nivel: 1, origem: "Criação" }],
+  });
   assert.deepEqual(c.niveis_vertente, { biotica: 1 });
   assert.equal(c.progressao.classe_id, "ancora");
   assert.equal(c.progressao.ranking, "F");

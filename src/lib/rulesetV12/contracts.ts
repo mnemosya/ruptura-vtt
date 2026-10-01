@@ -192,10 +192,20 @@ export interface CharacterProgressionV12 {
   formulas_derivados_texto?: Record<string, string>;
 }
 
+export type EscolhaPendenteMagiaV12 =
+  | { tipo: "magias_nivel_vertente"; vertente: string; nivel: number; origem: string }
+  | { tipo: "magia_adicional"; origem: string };
+
 export interface CharacterMagicV12 {
   vertente_primaria: string;
   niveis_vertente: Record<string, number>;
   magias_aprendidas: string[];
+  /**
+   * Escolhas de magia ainda não feitas porque o catálogo v1.2 não está
+   * publicado (nível de Vertente na criação e na progressão, magia
+   * adicional em D/B/S). Preenchidas quando o catálogo existir.
+   */
+  escolhas_pendentes?: EscolhaPendenteMagiaV12[];
 }
 
 /**

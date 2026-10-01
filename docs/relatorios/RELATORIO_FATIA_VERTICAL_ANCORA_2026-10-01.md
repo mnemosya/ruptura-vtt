@@ -56,6 +56,13 @@ Outras observações:
 - **Notas de regra:** blocos como "Testes de Interação" (Face) e "Dados originais de dano" (Brutalista) viraram características próprias com esse nome.
 - **Assassino, Ranking C:** o título no Notion contém "REVISAR O DANO DE SANGRANDO"; o texto foi transcrito como está e a nota ficou em `_meta.pendencias_editoriais`.
 
-## 6. Recomendação
+## 6. Progressão (adendo)
+
+- **Proteção do Ranking.** O avanço é calculado e validado no servidor, mas a RPC `update_character_sheet_payload` aceita o payload inteiro do jogador controlador (como já aceitava atributos). Para que o Ranking só mude por avanço válido, é preciso: (1) uma RPC de avanço que valide no banco e (2) a RPC de ficha preservar `progressao`, `trajetoria` e `magia.niveis_vertente` para jogadores, como já faz com `tipo_personagem`. Não implementado sem decisão sua, porque muda o que o jogador pode editar na própria ficha.
+- **Quem concede o Marco.** O capítulo 25 diz que o narrador reconhece o Marco; hoje narrador e controlador podem aplicar o avanço. Restringir ao narrador é uma decisão de produto.
+- **Recursos atuais no avanço.** O avanço recalcula os máximos e não cura; o capítulo não diz que o Intervalo restaura recursos. Mantido assim até decisão.
+- **Recursos de Classe na ficha.** Focos, Ímpeto, Brechas e afins avançam no conteúdo, mas a ficha ainda não os exibe.
+
+## 7. Recomendação
 
 Generalizar para as outras seis Classes e 21 Subclasses (Fase 4) usando o mesmo contrato. As lacunas 1 e 2 devem ser reavaliadas à medida que cada Classe for transcrita.

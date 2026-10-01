@@ -23,7 +23,7 @@
  *     — simplesmente não mostra o bloco.
  */
 
-import { Check, Crosshair, Sliders } from "lucide-react";
+import { ArrowUpCircle, Check, Crosshair, Sliders } from "lucide-react";
 import type { ConsoleApi, ConsoleModo } from "../types";
 import { useVerNoMapa } from "../ConsoleCloseContext";
 
@@ -176,5 +176,27 @@ export function PassoValor({
         +
       </button>
     </span>
+  );
+}
+
+/**
+ * Avanço de Ranking para personagens RUPTURA v1.2. Substitui o Modo
+ * Evolução livre: em v1.2 a ficha só muda pelo pacote do próximo Ranking
+ * (capítulo 25), validado no servidor.
+ */
+export function AvancoChip({ ranking, onAbrir }: { ranking: string; onAbrir: () => void }) {
+  return (
+    <button
+      type="button"
+      className="rc-modo-chip"
+      onClick={onAbrir}
+      title="Aplicar o avanço do próximo Ranking (Marco de Progressão)"
+      data-testid="console-avanco-chip"
+    >
+      <span className="rc-modo-chip-ico" aria-hidden="true">
+        <ArrowUpCircle size={12} strokeWidth={2} />
+      </span>
+      Ranking {ranking}
+    </button>
   );
 }
