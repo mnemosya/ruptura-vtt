@@ -662,4 +662,13 @@ Essa entrega deve terminar antes da implementação do novo wizard.
 - a tela envia só escolhas (`criarPersonagemV12Action`); a server action passou a usar o conteúdo efetivo da campanha, como a RPC;
 - botões com `aria-pressed` ganharam o estilo de selecionado em `mesa.css`;
 - validado no navegador: Hilda Norren (Âncora Equilibrada, Biótica, Recursos 1, dois Contatos, Dívida e Fobia, 3 Medkits) criada na campanha 12312321 (`e434866f-ec73-4c2c-b685-76dad1855f84`); a ficha abriu com PV 11, PE 15, Mana 14, Integridade 12, PA 3, Reações 3 e Deslocamento 11/22 m, e o registro tem Ⱥ 3.900 e 1 item;
-- limitação vista no teste: sem rascunho v1.2, uma remontagem da janela (ex.: recarga do servidor de desenvolvimento) perde o que foi preenchido.
+- limitação vista no teste: sem rascunho v1.2, uma remontagem da janela (ex.: recarga do servidor de desenvolvimento) perde o que foi preenchido (resolvida a seguir).
+
+### 01/10/2026 — Rascunho da criação v1.2
+
+- rascunho salvo na mesma tabela e RPC do assistente anterior (`character_creation_drafts`, `save_character_creation_draft`), com `schema_version: 2`; nenhuma migration nova;
+- `parseDraftV12` valida o formato com limites de tamanho; `sanitizeDraftV12` ajusta o rascunho ao conteúdo publicado ao restaurar e conta as escolhas descartadas;
+- o assistente salva sozinho (800 ms de debounce, troca de etapa e fechamento da janela), compara com o último conteúdo salvo para não gravar só por abrir, pausa em conflito de revisão e oferece "Salvar e sair" e "Cancelar criação";
+- cada assistente trata o rascunho do outro como formato incompatível e oferece descartar;
+- validado no navegador: gravação (revisões 1 a 4), mudança feita logo antes de fechar a janela preservada, restauração na mesma etapa, abertura sem gravação, troca de etapa salvando e cancelamento apagando o rascunho;
+- `npm run test:ruleset-v12-rascunho` cobre o formato, a separação v1/v2 e a restauração com conteúdo alterado.

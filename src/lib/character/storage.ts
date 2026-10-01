@@ -42,7 +42,9 @@ import { getCharacterRules } from "../content";
 import { resolveEffectiveList } from "../campaignContent/resolveEffectiveContent";
 import {
   buildCharacterV2,
+  parseDraftV12,
   VERTENTES_V12,
+  type DraftV12,
   type BackgroundContentV12,
   type ClassContentV12,
   type ComplicationContentV12,
@@ -480,6 +482,57 @@ export async function saveCharacterCreationDraft(
     throw new CharacterStorageError(`Falha ao salvar rascunho de criação: ${error.message}`, error);
   }
 
+  const row = Array.isArray(data) ? data[0] : data;
+  return { revision: row.revision as number };
+}
+
+export type LoadDraftV12Result =
+  | { kind: "none" }
+  | { kind: "found"; payload: DraftV12; creationRequestId: string; revision: number }
+  | { kind: "network_error"; message: string }
+  | { kind: "invalid"; message: string };
+
+/**
+ * Rascunho da criação v1.2 — mesma linha por (campanha, conta) e mesma
+ * RPC do rascunho anterior; só o formato (`schema_version: 2`) muda.
+ * Um rascunho do assistente anterior volta como `invalid`.
+ */
+export async function loadCharacterCreationDraftV12(campaignId: string): Promise<LoadDraftV12Result> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from(CHARACTER_CREATION_DRAFTS_TABLE)
+    .select("payload, creation_request_id, revision")
+    .eq("campaign_id", campaignId)
+    .maybeSingle();
+  if (error) return { kind: "network_error", message: error.message };
+  if (!data) return { kind: "none" };
+  const payload = parseDraftV12(data.payload);
+  if (!payload) {
+    return { kind: "invalid", message: "Existe um rascunho salvo em outro formato (possivelmente do assistente anterior)." };
+  }
+  return { kind: "found", payload, creationRequestId: data.creation_request_id as string, revision: data.revision as number };
+}
+
+export async function saveCharacterCreationDraftV12(
+  campaignId: string,
+  payload: DraftV12,
+  creationRequestId: string,
+  expectedRevision: number,
+): Promise<SaveDraftResult> {
+  if (!parseDraftV12(payload)) {
+    throw new CharacterStorageError("Payload de rascunho v1.2 em formato inválido — não gravado.");
+  }
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("save_character_creation_draft", {
+    p_campaign_id: campaignId,
+    p_creation_request_id: creationRequestId,
+    p_payload: payload,
+    p_expected_revision: expectedRevision,
+  });
+  if (error) {
+    if (error.message?.includes("revision_conflict")) return { conflict: true };
+    throw new CharacterStorageError(`Falha ao salvar rascunho de criação: ${error.message}`, error);
+  }
   const row = Array.isArray(data) ? data[0] : data;
   return { revision: row.revision as number };
 }

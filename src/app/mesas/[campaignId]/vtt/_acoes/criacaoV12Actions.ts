@@ -12,7 +12,13 @@
 import "server-only";
 import { resolveCampaignAccess } from "../../../../../lib/campaign/access";
 import { resolveEffectiveList } from "../../../../../lib/campaignContent/resolveEffectiveContent";
-import { createCharacterV2 } from "../../../../../lib/character/storage";
+import {
+  createCharacterV2,
+  deleteCharacterCreationDraft,
+  loadCharacterCreationDraftV12,
+  saveCharacterCreationDraftV12,
+  type LoadDraftV12Result,
+} from "../../../../../lib/character/storage";
 import { getCharacterRules } from "../../../../../lib/content";
 import type { CharacterRulesPayload } from "../../../../../lib/character/types";
 import {
@@ -20,6 +26,7 @@ import {
   VERTENTES_V12,
   type ClassContentV12,
   type CreationChoicesV12,
+  type DraftV12,
   type TrajectoryOptionContentV12,
 } from "../../../../../lib/rulesetV12";
 
@@ -133,5 +140,43 @@ export async function criarPersonagemV12Action(
     return { ok: true, dados: { characterId: record.id } };
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : "Falha ao criar o personagem." };
+  }
+}
+
+export async function lerRascunhoV12Action(campaignId: string): Promise<ResultadoAcao<LoadDraftV12Result>> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  try {
+    return { ok: true, dados: await loadCharacterCreationDraftV12(campaignId) };
+  } catch (e) {
+    return { ok: true, dados: { kind: "network_error", message: e instanceof Error ? e.message : "Falha ao ler o rascunho." } };
+  }
+}
+
+/** `conflito: true` quando outra aba gravou antes (revisão diferente) — resultado esperado, não erro. */
+export async function salvarRascunhoV12Action(
+  campaignId: string,
+  rascunho: DraftV12,
+  creationRequestId: string,
+  revisaoEsperada: number,
+): Promise<ResultadoAcao<{ revisao: number } | { conflito: true }>> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  try {
+    const r = await saveCharacterCreationDraftV12(campaignId, rascunho, creationRequestId, revisaoEsperada);
+    return { ok: true, dados: "conflict" in r ? { conflito: true } : { revisao: r.revision } };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : "Falha ao salvar o rascunho." };
+  }
+}
+
+export async function apagarRascunhoV12Action(campaignId: string): Promise<ResultadoAcao> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  try {
+    await deleteCharacterCreationDraft(campaignId);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : "Falha ao apagar o rascunho." };
   }
 }

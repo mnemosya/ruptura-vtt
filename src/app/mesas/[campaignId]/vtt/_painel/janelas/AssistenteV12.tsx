@@ -9,21 +9,29 @@
  * e revalidados pela RPC. As pendências mostradas aqui servem apenas
  * para orientar o jogador — o servidor é quem decide.
  *
- * Ainda não há rascunho persistente v1.2 nem magias iniciais (regra
- * pendente no plano de migração).
+ * O rascunho é salvo sozinho (debounce de 800 ms e a cada troca de
+ * etapa) na mesma tabela do assistente anterior, com `schema_version: 2`.
+ * Ao abrir, ele é restaurado e ajustado aos catálogos atuais. Magias
+ * iniciais ainda não fazem parte da criação (regra pendente no plano).
  */
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Spinner } from "../../../../../_design/icons";
 import {
+  DRAFT_V12_SCHEMA_VERSION,
   RANKINGS_V12,
   resolveClassResourceV12,
+  sanitizeDraftV12,
+  type DraftV12,
   type AttributeIdV12,
   type ClassContentV12,
   type CreationChoicesV12,
 } from "../../../../../../lib/rulesetV12";
 import {
+  apagarRascunhoV12Action,
   criarPersonagemV12Action,
+  lerRascunhoV12Action,
+  salvarRascunhoV12Action,
   type CatalogosCriacaoV12,
   type OpcaoTrajetoriaV12,
 } from "../../_acoes/criacaoV12Actions";
@@ -65,6 +73,15 @@ interface Escolha {
   pontos: 1 | 2;
 }
 
+/** ~800ms — autosave por debounce; troca de etapa e "Salvar e sair" salvam na hora. */
+const AUTOSAVE_DEBOUNCE_MS = 800;
+
+type EstadoRascunho =
+  | { tipo: "carregando" }
+  | { tipo: "erro"; mensagem: string }
+  | { tipo: "incompativel"; mensagem: string }
+  | { tipo: "pronto" };
+
 const formatarAretz = (valor: number) => `Ⱥ ${valor.toLocaleString("pt-BR")}`;
 
 function novoRequestId(): string {
@@ -82,7 +99,7 @@ export default function AssistenteV12({
   onSair: () => void;
   onConcluir: (characterId: string) => void;
 }) {
-  const [step, setStep] = useState(1);
+  const [step, setStepBruto] = useState(1);
 
   // Conceito
   const [nome, setNome] = useState("");
@@ -113,7 +130,20 @@ export default function AssistenteV12({
 
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
-  const [requestId] = useState(novoRequestId);
+  const [requestId, setRequestId] = useState(novoRequestId);
+
+  // Rascunho persistente
+  const [estadoRascunho, setEstadoRascunho] = useState<EstadoRascunho>({ tipo: "carregando" });
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [conflito, setConflito] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const revisaoRef = useRef(0);
+  const sujoRef = useRef(false);
+  const concluidoRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const filaRef = useRef<Promise<void>>(Promise.resolve());
+  /** JSON do último rascunho salvo ou restaurado; `null` até a tela ficar pronta. */
+  const ultimoSalvoRef = useRef<string | null>(null);
 
   const regiao = catalogos.regioes.find((r) => r.id === regiaoId);
   const idiomas = useMemo(() => {
@@ -195,6 +225,173 @@ export default function AssistenteV12({
     return p;
   }, [nome, localOrigem, antecedenteId, antecedente, refratario, rpi, somaQualidades, somaComplicacoes, classe, perfilAtr, atributosCompletos, perfilPer, contagemPericias, vertente, gasto, orcamento]);
 
+  const rascunho: DraftV12 = useMemo(() => ({
+    schema_version: DRAFT_V12_SCHEMA_VERSION,
+    ruleset_version: "1.2",
+    step,
+    nome,
+    codinome,
+    regiaoId,
+    localOrigem,
+    idiomaCampanha,
+    antecedenteId,
+    antecedente,
+    refratario,
+    rpi,
+    qualidades,
+    complicacoes,
+    classeSlug,
+    perfilAtributos,
+    atributos,
+    perfilPericias,
+    pericias,
+    vertente,
+    compras,
+  }), [step, nome, codinome, regiaoId, localOrigem, idiomaCampanha, antecedenteId, antecedente, refratario, rpi, qualidades, complicacoes, classeSlug, perfilAtributos, atributos, perfilPericias, pericias, vertente, compras]);
+  const rascunhoRef = useRef(rascunho);
+  rascunhoRef.current = rascunho;
+
+  const aplicarRascunho = (d: DraftV12) => {
+    setStepBruto(d.step);
+    setNome(d.nome);
+    setCodinome(d.codinome);
+    setRegiaoId(d.regiaoId);
+    setLocalOrigem(d.localOrigem);
+    setIdiomaCampanha(d.idiomaCampanha);
+    setAntecedenteId(d.antecedenteId);
+    setAntecedente(d.antecedente);
+    setRefratario(d.refratario);
+    setRpi(d.rpi);
+    setQualidades(d.qualidades);
+    setComplicacoes(d.complicacoes);
+    setClasseSlug(d.classeSlug);
+    setPerfilAtributos(d.perfilAtributos);
+    setAtributos(d.atributos);
+    setPerfilPericias(d.perfilPericias);
+    setPericias(d.pericias);
+    setVertente(d.vertente);
+    setCompras(d.compras);
+  };
+
+  const carregarRascunho = useCallback(async () => {
+    setEstadoRascunho({ tipo: "carregando" });
+    ultimoSalvoRef.current = null;
+    const r = await lerRascunhoV12Action(campaignId);
+    if (!r.ok || !r.dados) {
+      setEstadoRascunho({ tipo: "erro", mensagem: r.erro ?? "Falha ao verificar o rascunho." });
+      return;
+    }
+    const dados = r.dados;
+    if (dados.kind === "network_error") {
+      setEstadoRascunho({ tipo: "erro", mensagem: dados.message });
+      return;
+    }
+    if (dados.kind === "invalid") {
+      setEstadoRascunho({ tipo: "incompativel", mensagem: dados.message });
+      return;
+    }
+    if (dados.kind === "found") {
+      const { draft, descartados } = sanitizeDraftV12(dados.payload, catalogos);
+      aplicarRascunho(draft);
+      setRequestId(dados.creationRequestId);
+      revisaoRef.current = dados.revision;
+      setAviso(
+        descartados > 0
+          ? `Rascunho restaurado. ${descartados} escolha(s) não existem mais no conteúdo publicado e foram removidas.`
+          : "Rascunho restaurado.",
+      );
+    }
+    sujoRef.current = false;
+    setEstadoRascunho({ tipo: "pronto" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaignId, catalogos]);
+
+  useEffect(() => {
+    void carregarRascunho();
+  }, [carregarRascunho]);
+
+  /** Grava o estado atual; as gravações são serializadas para a revisão nunca correr. */
+  const salvarAgora = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    filaRef.current = filaRef.current.then(async () => {
+      if (concluidoRef.current || conflito || !sujoRef.current) return;
+      sujoRef.current = false;
+      setSalvando(true);
+      const enviado = rascunhoRef.current;
+      const r = await salvarRascunhoV12Action(campaignId, enviado, requestId, revisaoRef.current);
+      setSalvando(false);
+      if (!r.ok || !r.dados) {
+        sujoRef.current = true;
+        setAviso(`Não foi possível salvar o rascunho: ${r.erro ?? "erro desconhecido"}.`);
+        return;
+      }
+      if ("conflito" in r.dados) {
+        setConflito(true);
+        return;
+      }
+      revisaoRef.current = r.dados.revisao;
+      ultimoSalvoRef.current = JSON.stringify(enviado);
+    });
+    return filaRef.current;
+  }, [campaignId, requestId, conflito]);
+
+  // Fechar a janela (X, Esc) desmonta o assistente: grava o que ainda
+  // estiver pendente do debounce em vez de perder os últimos ~800 ms.
+  const salvarAgoraRef = useRef(salvarAgora);
+  salvarAgoraRef.current = salvarAgora;
+  useEffect(() => () => {
+    if (sujoRef.current && !concluidoRef.current) void salvarAgoraRef.current();
+  }, []);
+
+  // Autosave por debounce. Compara com o último conteúdo salvo (ou
+  // restaurado) em vez de contar renders: assim abrir a janela — inclusive
+  // com os efeitos dobrados do modo estrito — não gera gravação.
+  useEffect(() => {
+    if (estadoRascunho.tipo !== "pronto") return;
+    const atual = JSON.stringify(rascunho);
+    if (ultimoSalvoRef.current === null) {
+      ultimoSalvoRef.current = atual;
+      return;
+    }
+    if (atual === ultimoSalvoRef.current) return;
+    sujoRef.current = true;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => void salvarAgora(), AUTOSAVE_DEBOUNCE_MS);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [rascunho, estadoRascunho.tipo, salvarAgora]);
+
+  // Trocar de etapa salva na hora (o efeito acima marca o rascunho como sujo).
+  const setStep = (proximo: number | ((s: number) => number)) => {
+    setStepBruto(proximo);
+    setTimeout(() => void salvarAgoraRef.current(), 0);
+  };
+
+  async function salvarESair() {
+    if (JSON.stringify(rascunhoRef.current) !== ultimoSalvoRef.current) sujoRef.current = true;
+    await salvarAgora();
+    onSair();
+  }
+
+  async function cancelarCriacao() {
+    if (!window.confirm("Descartar este rascunho? O que foi preenchido será perdido.")) return;
+    concluidoRef.current = true;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    await filaRef.current;
+    await apagarRascunhoV12Action(campaignId);
+    onSair();
+  }
+
+  async function descartarIncompativel() {
+    await apagarRascunhoV12Action(campaignId);
+    sujoRef.current = false;
+    setEstadoRascunho({ tipo: "pronto" });
+  }
+
   const escolhas = (): CreationChoicesV12 => {
     const porNivel = (n: 1 | 2 | 3) => Object.entries(pericias).filter(([, v]) => v === n).map(([id]) => id);
     return {
@@ -223,9 +420,15 @@ export default function AssistenteV12({
   async function concluir() {
     setErro(null);
     setEnviando(true);
+    // Para o autosave antes de concluir: depois da criação a RPC recusa
+    // gravar um rascunho com o mesmo creationRequestId.
+    concluidoRef.current = true;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    await filaRef.current;
     const r = await criarPersonagemV12Action(campaignId, escolhas(), requestId);
     setEnviando(false);
     if (!r.ok || !r.dados) {
+      concluidoRef.current = false;
       setErro(r.erro ?? "Falha ao criar o personagem.");
       return;
     }
@@ -241,12 +444,71 @@ export default function AssistenteV12({
     setVertente("");
   };
 
+  if (estadoRascunho.tipo === "carregando") {
+    return (
+      <main className="rm-page" style={{ maxWidth: 720 }} data-testid="assistente-v12">
+        <p className="rm-faint"><Spinner size={13} strokeWidth={2} className="mo-spin" aria-hidden="true" /> Verificando rascunho salvo…</p>
+      </main>
+    );
+  }
+
+  if (estadoRascunho.tipo === "erro") {
+    return (
+      <main className="rm-page" style={{ maxWidth: 720 }} data-testid="assistente-v12">
+        <p role="alert" className="rm-erro" style={{ marginBottom: 12 }}>
+          Não foi possível verificar se você tem um rascunho salvo: {estadoRascunho.mensagem}
+        </p>
+        <button onClick={() => void carregarRascunho()} className="rm-btn rm-btn-ghost rv-focusable">Tentar novamente</button>
+      </main>
+    );
+  }
+
+  if (estadoRascunho.tipo === "incompativel") {
+    return (
+      <main className="rm-page" style={{ maxWidth: 720 }} data-testid="assistente-v12">
+        <p role="alert" className="rm-note rm-note--warn" style={{ marginBottom: 12 }}>
+          {estadoRascunho.mensagem} Para começar uma criação v1.2, ele precisa ser descartado.
+        </p>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => void descartarIncompativel()} className="rm-btn rm-btn-danger rv-focusable" data-testid="v12-descartar-incompativel">
+            Descartar e começar do zero
+          </button>
+          <button onClick={onSair} className="rm-btn rm-btn-ghost rv-focusable">Voltar</button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="rm-page" style={{ maxWidth: 720 }} data-testid="assistente-v12">
       {erro && <p role="alert" className="rm-erro" style={{ marginBottom: 16 }}>Erro: {erro}</p>}
+      {conflito && (
+        <p role="alert" className="rm-note rm-note--danger" style={{ marginBottom: 16 }}>
+          Este rascunho foi alterado em outra janela, e o salvamento automático foi pausado para não sobrescrever.{" "}
+          <button onClick={() => { setConflito(false); void carregarRascunho(); }} className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable">
+            Carregar a versão salva
+          </button>
+        </p>
+      )}
+      {aviso && !conflito && <p className="rm-note rm-note--warn" style={{ marginBottom: 16 }} data-testid="v12-aviso-rascunho">{aviso}</p>}
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        <button onClick={onSair} className="rm-btn rm-btn-ghost rv-focusable">Sair sem criar</button>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center" }}>
+        <button
+          onClick={() => void salvarESair()}
+          disabled={salvando || conflito}
+          aria-busy={salvando}
+          className="rm-btn rm-btn-ghost rv-focusable"
+          data-testid="v12-salvar-sair"
+        >
+          {salvando && <Spinner size={13} strokeWidth={2} className="mo-spin" aria-hidden="true" />}
+          Salvar e sair
+        </button>
+        <button onClick={() => void cancelarCriacao()} className="rm-btn rm-btn-danger rv-focusable" data-testid="v12-cancelar">
+          Cancelar criação
+        </button>
+        <span className="rm-faint" aria-live="polite" data-testid="v12-status-rascunho">
+          {conflito ? "" : salvando ? "Salvando rascunho…" : revisaoRef.current > 0 ? "Rascunho salvo" : ""}
+        </span>
       </div>
 
       <nav className="rm-pills" aria-label="Etapas da criação" style={{ marginBottom: 24 }}>
