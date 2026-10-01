@@ -339,14 +339,16 @@ Condições e combate:
 
 Magias:
 
-- [ ] crosswalk de todas as entradas v1.2;
-- [ ] classificação `same`, `renamed`, `redesigned`, `removed` ou `ambiguous`;
-- [ ] schema de Mana fixa, intervalo, escolha e fórmula;
-- [ ] schema de tempo de conjuração;
+- [x] crosswalk de todas as entradas v1.2 (rascunho: `content/v12/crosswalk_magias_v1_3_para_v1_2.json` e `docs/relatorios/CROSSWALK_MAGIAS_V1_2_RASCUNHO.md`);
+- [ ] classificação `same`, `renamed`, `redesigned`, `removed` ou `ambiguous`; hoje as 132 legadas estão como `ambiguous` (60 com homônima na mesma Vertente, 72 sem), aguardando revisão editorial;
+- [ ] schema de Mana fixa, intervalo, escolha e fórmula; os metadados já distinguem fixo (208), intervalo (1) e variável (2), sem contrato TypeScript ainda;
+- [ ] schema de tempo de conjuração; os metadados já distinguem PA (190), Reação (9), tempo (11) e variável (1);
 - [ ] interface para custos escolhidos/variáveis;
 - [ ] alias temporário `somatica → biotica`;
 - [ ] backfill dos IDs persistidos;
 - [ ] Fusão global desativada ou sustentada por regra canônica documentada.
+
+Progresso (01/10/2026): `content/v12/db_magias_v1_2_metadados.json` traz as 211 magias do BANCO DE MAGIAS do Notion (só propriedades: nível, Mana, conjuração, alcance, duração, pré-requisito, teste), geradas por `scripts/dev/v12/gerar_magias.py` e checadas por `npm run test:ruleset-v12-magias`. Todas estão como Rascunho ou Em revisão no Notion, então nada foi publicado e o texto das magias não foi extraído. Toda Vertente tem ao menos quatro magias de nível 1, o que basta para a escolha inicial quando o catálogo for aprovado.
 
 Critério de saída:
 
@@ -695,3 +697,11 @@ Essa entrega deve terminar antes da implementação do novo wizard.
 - `npm run test:ruleset-v12-progressao`: Âncora de F a S+ e casos inválidos;
 - validado no navegador: Hilda Norren avançou de F para E (Vitalista, Luta +1, Vigor +1, Cinética); banco e ficha conferidos;
 - limitação: `update_character_sheet_payload` aceita o payload completo do controlador, então um jogador ainda poderia alterar Ranking e escolhas por fora da tela. Fechar isso exige uma RPC de avanço e proteger `progressao` na RPC de ficha, decisão registrada no relatório.
+
+### 01/10/2026 — Metadados e crosswalk das magias (Fase 6, rascunho)
+
+- 211 magias lidas do BANCO DE MAGIAS do Notion (Biótica 41, Material 38, Cognitiva 36, Energética 36, Cinética 30, Sináptica 30); todas em Rascunho ou Em revisão;
+- `content/v12/db_magias_v1_2_metadados.json`: nível, Mana estruturada (fixa, intervalo "3–6", variável), conjuração (PA, Reação, tempo), alcance, duração, pré-requisito de perícia, teste e link da página; nada entra no seed;
+- `content/v12/crosswalk_magias_v1_3_para_v1_2.json` e `docs/relatorios/CROSSWALK_MAGIAS_V1_2_RASCUNHO.md`: as 132 magias legadas com candidato por nome (60) ou sem correspondência (72), todas `ambiguous`, mais as 151 magias v1.2 sem antecessor por nome; `somatica` é comparada com `biotica`;
+- `npm run test:ruleset-v12-magias`: slugs únicos, Vertentes válidas, perícias de pré-requisito no catálogo, ao menos quatro magias de nível 1 por Vertente e cobertura completa do crosswalk;
+- pendente de decisão: aprovação editorial do catálogo, a classificação de cada linha e a extração do texto das magias.

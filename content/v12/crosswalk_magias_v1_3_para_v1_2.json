@@ -1,0 +1,2371 @@
+{
+  "_meta": {
+    "ruleset_version": "1.2",
+    "fonte": "Notion — BANCO DE MAGIAS (collection://58de8b08-a4dd-4299-af37-864306f4f3eb)",
+    "extraido_em": "2026-10-01",
+    "aviso": "Somente metadados. O texto das magias ainda não foi extraído e nenhuma magia está publicada. Todas estão como Rascunho/Em revisão no Notion.",
+    "regra": "Plano §7.2: igualdade de nome nunca basta; todas as linhas começam como ambiguous."
+  },
+  "legado": [
+    {
+      "legacy_slug": "cinetica_arranque",
+      "legacy_nome": "Arranque",
+      "legacy_vertente": "cinetica",
+      "canonical_slug": "cinetica_arranque",
+      "canonical_nome": "Arranque",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cinetica_barreira_giratoria",
+      "legacy_nome": "Barreira giratória",
+      "legacy_vertente": "cinetica",
+      "canonical_slug": "cinetica_barreira_giratoria",
+      "canonical_nome": "Barreira Giratória",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned). Nível mudou: 3 → 2."
+    },
+    {
+      "legacy_slug": "cinetica_colapso_gravitacional",
+      "legacy_nome": "Colapso gravitacional",
+      "legacy_vertente": "cinetica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cinetica_controle",
+      "legacy_nome": "Controle",
+      "legacy_vertente": "cinetica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cinetica_defletir_projetil",
+      "legacy_nome": "Defletir projétil",
+      "legacy_vertente": "cinetica",
+      "canonical_slug": "cinetica_defletir_projetil",
+      "canonical_nome": "Defletir Projétil",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cinetica_estase",
+      "legacy_nome": "Estase",
+      "legacy_vertente": "cinetica",
+      "canonical_slug": "cinetica_estase",
+      "canonical_nome": "Estase",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cinetica_faixa_cinetica",
+      "legacy_nome": "Faixa cinética",
+      "legacy_vertente": "cinetica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cinetica_flash",
+      "legacy_nome": "Flash",
+      "legacy_vertente": "cinetica",
+      "canonical_slug": "cinetica_flash",
+      "canonical_nome": "Flash",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cinetica_forca_fantasma",
+      "legacy_nome": "Força fantasma",
+      "legacy_vertente": "cinetica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cinetica_frenesi",
+      "legacy_nome": "Frenesi",
+      "legacy_vertente": "cinetica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cinetica_misseis_cineticos",
+      "legacy_nome": "Mísseis cinéticos",
+      "legacy_vertente": "cinetica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cinetica_passo_adaptado",
+      "legacy_nome": "Passo adaptado",
+      "legacy_vertente": "cinetica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cinetica_queda_suave",
+      "legacy_nome": "Queda suave",
+      "legacy_vertente": "cinetica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cinetica_redoma_inercial",
+      "legacy_nome": "Redoma inercial",
+      "legacy_vertente": "cinetica",
+      "canonical_slug": "cinetica_redoma_inercial",
+      "canonical_nome": "Redoma Inercial",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cinetica_relampago",
+      "legacy_nome": "Relâmpago",
+      "legacy_vertente": "cinetica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cinetica_salto_propulsor",
+      "legacy_nome": "Salto propulsor",
+      "legacy_vertente": "cinetica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cinetica_vortice_gravitacional",
+      "legacy_nome": "Vórtice gravitacional",
+      "legacy_vertente": "cinetica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cognitiva_assombrar",
+      "legacy_nome": "Assombrar",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": "cognitiva_assombrar",
+      "canonical_nome": "Assombrar",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cognitiva_benzodiazepina",
+      "legacy_nome": "Benzodiazepina",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cognitiva_comando",
+      "legacy_nome": "Comando",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": "cognitiva_comando",
+      "canonical_nome": "Comando",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cognitiva_confusao",
+      "legacy_nome": "Confusão",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cognitiva_disfarcar_intencao",
+      "legacy_nome": "Disfarçar intenção",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cognitiva_esvanecer_memoria",
+      "legacy_nome": "Esvanecer memória",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": "cognitiva_esvanecer_memoria",
+      "canonical_nome": "Esvanecer Memória",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cognitiva_foco_induzido",
+      "legacy_nome": "Foco induzido",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cognitiva_fragmentar_identidade",
+      "legacy_nome": "Fragmentar identidade",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cognitiva_gaiola_de_pesadelos",
+      "legacy_nome": "Gaiola de pesadelos",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": "cognitiva_gaiola_de_pesadelos",
+      "canonical_nome": "Gaiola de Pesadelos",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cognitiva_grito_psiquico",
+      "legacy_nome": "Grito psíquico",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": "cognitiva_grito_psiquico",
+      "canonical_nome": "Grito Psíquico",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cognitiva_hesitacao",
+      "legacy_nome": "Hesitação",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": "cognitiva_hesitacao",
+      "canonical_nome": "Hesitação",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cognitiva_ilusao",
+      "legacy_nome": "Ilusão",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cognitiva_impressao",
+      "legacy_nome": "Impressão",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": "cognitiva_impressao",
+      "canonical_nome": "Impressão",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cognitiva_lingua_afiada",
+      "legacy_nome": "Língua afiada",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cognitiva_marionete",
+      "legacy_nome": "Marionete",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": "cognitiva_marionete",
+      "canonical_nome": "Marionete",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cognitiva_mente_turva",
+      "legacy_nome": "Mente turva",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cognitiva_modular_emocoes",
+      "legacy_nome": "Modular emoções",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cognitiva_nublar",
+      "legacy_nome": "Nublar",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": "cognitiva_nublar",
+      "canonical_nome": "Nublar",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cognitiva_oblivio",
+      "legacy_nome": "Oblívio",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": "cognitiva_oblivio",
+      "canonical_nome": "Oblívio",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cognitiva_parasita",
+      "legacy_nome": "Parasita",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida. Existe magia homônima em outra Vertente: biotica_parasita."
+    },
+    {
+      "legacy_slug": "cognitiva_purificacao",
+      "legacy_nome": "Purificação",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "cognitiva_ruido_mental",
+      "legacy_nome": "Ruído mental",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": "cognitiva_ruido_mental",
+      "canonical_nome": "Ruído Mental",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cognitiva_simulacao",
+      "legacy_nome": "Simulação",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": "cognitiva_simulacao",
+      "canonical_nome": "Simulação",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cognitiva_sincronia",
+      "legacy_nome": "Sincronia",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": "cognitiva_sincronia",
+      "canonical_nome": "Sincronia",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "cognitiva_veu",
+      "legacy_nome": "Véu",
+      "legacy_vertente": "cognitiva",
+      "canonical_slug": "cognitiva_veu",
+      "canonical_nome": "Véu",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned). Nível mudou: 2 → 3."
+    },
+    {
+      "legacy_slug": "energetica_bola_de_fogo",
+      "legacy_nome": "Bola de fogo",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_bola_de_fogo",
+      "canonical_nome": "Bola de Fogo",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_campo_de_forca",
+      "legacy_nome": "Campo de força",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_campo_de_forca",
+      "canonical_nome": "Campo de Força",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_campo_de_saturacao",
+      "legacy_nome": "Campo de saturação",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_campo_de_saturacao",
+      "canonical_nome": "Campo de Saturação",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_chuva_de_meteoros",
+      "legacy_nome": "Chuva de meteoros",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_chuva_de_meteoros",
+      "canonical_nome": "Chuva de Meteoros",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_circuito",
+      "legacy_nome": "Circuito",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_circuito",
+      "canonical_nome": "Circuito",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_crioforma",
+      "legacy_nome": "Crioforma",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_crioforma",
+      "canonical_nome": "Crioforma",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_descarga_eletrica",
+      "legacy_nome": "Descarga elétrica",
+      "legacy_vertente": "energetica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "energetica_ecolocalizacao",
+      "legacy_nome": "Ecolocalização",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_ecolocalizacao",
+      "canonical_nome": "Ecolocalização",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_evocacao",
+      "legacy_nome": "Evocação",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_evocacao",
+      "canonical_nome": "Evocação",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_lanca_de_gelo",
+      "legacy_nome": "Lança de gelo",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_lanca_de_gelo",
+      "canonical_nome": "Lança de Gelo",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_laco_magnetico",
+      "legacy_nome": "Laço magnético",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_laco_magnetico",
+      "canonical_nome": "Laço Magnético",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_modulacao",
+      "legacy_nome": "Modulação",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_modulacao",
+      "canonical_nome": "Modulação",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_nevasca",
+      "legacy_nome": "Nevasca",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_nevasca",
+      "canonical_nome": "Nevasca",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_olho_solar",
+      "legacy_nome": "Olho solar",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_olho_solar",
+      "canonical_nome": "Olho Solar",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_onda_de_impacto",
+      "legacy_nome": "Onda de impacto",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_onda_de_impacto",
+      "canonical_nome": "Onda de Impacto",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_parede_de_fogo",
+      "legacy_nome": "Parede de fogo",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_parede_de_fogo",
+      "canonical_nome": "Parede de Fogo",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_prisao_glacial",
+      "legacy_nome": "Prisão glacial",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_prisao_glacial",
+      "canonical_nome": "Prisão Glacial",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_pulso_eletromagnetico_pem",
+      "legacy_nome": "Pulso eletromagnético (pem)",
+      "legacy_vertente": "energetica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "energetica_rajada_congelante",
+      "legacy_nome": "Rajada congelante",
+      "legacy_vertente": "energetica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "energetica_ressonancia",
+      "legacy_nome": "Ressonância",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_ressonancia",
+      "canonical_nome": "Ressonância",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_revestimento",
+      "legacy_nome": "Revestimento",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_revestimento",
+      "canonical_nome": "Revestimento",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_tempestade_de_raios",
+      "legacy_nome": "Tempestade de raios",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_tempestade_de_raios",
+      "canonical_nome": "Tempestade de Raios",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_termografia",
+      "legacy_nome": "Termografia",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_termografia",
+      "canonical_nome": "Termografia",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_tiro_de_fogo",
+      "legacy_nome": "Tiro de fogo",
+      "legacy_vertente": "energetica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "energetica_transposicao_sonora",
+      "legacy_nome": "Transposição sonora",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_transposicao_sonora",
+      "canonical_nome": "Transposição Sonora",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "energetica_zero_absoluto",
+      "legacy_nome": "Zero absoluto",
+      "legacy_vertente": "energetica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "energetica_zona_nula",
+      "legacy_nome": "Zona nula",
+      "legacy_vertente": "energetica",
+      "canonical_slug": "energetica_zona_nula",
+      "canonical_nome": "Zona Nula",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "material_abalo_sismico",
+      "legacy_nome": "Abalo sísmico",
+      "legacy_vertente": "material",
+      "canonical_slug": "material_abalo_sismico",
+      "canonical_nome": "Abalo Sísmico",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "material_abrir_tunel",
+      "legacy_nome": "Abrir túnel",
+      "legacy_vertente": "material",
+      "canonical_slug": "material_abrir_tunel",
+      "canonical_nome": "Abrir Túnel",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "material_alterar_propriedades",
+      "legacy_nome": "Alterar propriedades",
+      "legacy_vertente": "material",
+      "canonical_slug": "material_alterar_propriedades",
+      "canonical_nome": "Alterar Propriedades",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "material_areificacao",
+      "legacy_nome": "Areificação",
+      "legacy_vertente": "material",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "material_chuva_acida",
+      "legacy_nome": "Chuva ácida",
+      "legacy_vertente": "material",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "material_compressao",
+      "legacy_nome": "Compressão",
+      "legacy_vertente": "material",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida. Existe magia homônima em outra Vertente: cinetica_compressao."
+    },
+    {
+      "legacy_slug": "material_consertar",
+      "legacy_nome": "Consertar",
+      "legacy_vertente": "material",
+      "canonical_slug": "material_consertar",
+      "canonical_nome": "Consertar",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "material_carcere",
+      "legacy_nome": "Cárcere",
+      "legacy_vertente": "material",
+      "canonical_slug": "material_carcere",
+      "canonical_nome": "Cárcere",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "material_dobrar_parede",
+      "legacy_nome": "Dobrar parede",
+      "legacy_vertente": "material",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "material_empalar",
+      "legacy_nome": "Empalar",
+      "legacy_vertente": "material",
+      "canonical_slug": "material_empalar",
+      "canonical_nome": "Empalar",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "material_enfraquecer",
+      "legacy_nome": "Enfraquecer",
+      "legacy_vertente": "material",
+      "canonical_slug": "material_enfraquecer",
+      "canonical_nome": "Enfraquecer",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "material_erguer_barreira",
+      "legacy_nome": "Erguer barreira",
+      "legacy_vertente": "material",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "material_escudo_instintivo",
+      "legacy_nome": "Escudo instintivo",
+      "legacy_vertente": "material",
+      "canonical_slug": "material_escudo_instintivo",
+      "canonical_nome": "Escudo Instintivo",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "material_fenda",
+      "legacy_nome": "Fenda",
+      "legacy_vertente": "material",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "material_marcha_silenciosa",
+      "legacy_nome": "Marcha silenciosa",
+      "legacy_vertente": "material",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "material_modelar_armadura",
+      "legacy_nome": "Modelar armadura",
+      "legacy_vertente": "material",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "material_modelar_armas",
+      "legacy_nome": "Modelar armas",
+      "legacy_vertente": "material",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "material_modelar_objetos",
+      "legacy_nome": "Modelar objetos",
+      "legacy_vertente": "material",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "material_reforcar",
+      "legacy_nome": "Reforçar",
+      "legacy_vertente": "material",
+      "canonical_slug": "material_reforcar",
+      "canonical_nome": "Reforçar",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "material_soldar",
+      "legacy_nome": "Soldar",
+      "legacy_vertente": "material",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "material_terraplanar",
+      "legacy_nome": "Terraplanar",
+      "legacy_vertente": "material",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "material_trincar",
+      "legacy_nome": "Trincar",
+      "legacy_vertente": "material",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "sinaptica_blackout",
+      "legacy_nome": "Blackout",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": "sinaptica_blackout",
+      "canonical_nome": "Blackout",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "sinaptica_cegar_sensores",
+      "legacy_nome": "Cegar sensores",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "sinaptica_conectar",
+      "legacy_nome": "Conectar",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "sinaptica_descarga_neural",
+      "legacy_nome": "Descarga neural",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "sinaptica_desligar_runa",
+      "legacy_nome": "Desligar runa",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "sinaptica_eco_programado",
+      "legacy_nome": "Eco programado",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "sinaptica_extrair_id_sinaptico",
+      "legacy_nome": "Extrair id sináptico",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "sinaptica_interceptar",
+      "legacy_nome": "Interceptar",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": "sinaptica_interceptar",
+      "canonical_nome": "Interceptar",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "sinaptica_leitura",
+      "legacy_nome": "Leitura",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": "sinaptica_leitura",
+      "canonical_nome": "Leitura",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "sinaptica_loop",
+      "legacy_nome": "Loop",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "sinaptica_mascara_digital",
+      "legacy_nome": "Máscara digital",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "sinaptica_ping",
+      "legacy_nome": "Ping",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "sinaptica_pulso",
+      "legacy_nome": "Pulso",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "sinaptica_quebrar_ciclo",
+      "legacy_nome": "Quebrar ciclo",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "sinaptica_queima_de_circuito",
+      "legacy_nome": "Queima de circuito",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "sinaptica_ruido",
+      "legacy_nome": "Ruído",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": "sinaptica_ruido",
+      "canonical_nome": "Ruído",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "sinaptica_scanner",
+      "legacy_nome": "Scanner",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "sinaptica_sintonizar",
+      "legacy_nome": "Sintonizar",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": "sinaptica_sintonizar",
+      "canonical_nome": "Sintonizar",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "sinaptica_trava_sinaptica",
+      "legacy_nome": "Trava sináptica",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "sinaptica_travar_escalpo",
+      "legacy_nome": "Travar escalpo",
+      "legacy_vertente": "sinaptica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "somatica_adrenalina",
+      "legacy_nome": "Adrenalina",
+      "legacy_vertente": "somatica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "somatica_agucar_sentidos",
+      "legacy_nome": "Aguçar sentidos",
+      "legacy_vertente": "somatica",
+      "canonical_slug": "biotica_agucar_sentidos",
+      "canonical_nome": "Aguçar Sentidos",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "somatica_campo_sensorial",
+      "legacy_nome": "Campo sensorial",
+      "legacy_vertente": "somatica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "somatica_fibra_explosiva",
+      "legacy_nome": "Fibra explosiva",
+      "legacy_vertente": "somatica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "somatica_garras_osseas",
+      "legacy_nome": "Garras ósseas",
+      "legacy_vertente": "somatica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "somatica_hiperforca",
+      "legacy_nome": "Hiperforça",
+      "legacy_vertente": "somatica",
+      "canonical_slug": "biotica_hiperforca",
+      "canonical_nome": "Hiperforça",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned). Nível mudou: 3 → 2."
+    },
+    {
+      "legacy_slug": "somatica_hipermobilidade",
+      "legacy_nome": "Hipermobilidade",
+      "legacy_vertente": "somatica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "somatica_homeostase",
+      "legacy_nome": "Homeostase",
+      "legacy_vertente": "somatica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "somatica_membrana_respiratoria",
+      "legacy_nome": "Membrana respiratória",
+      "legacy_vertente": "somatica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "somatica_metamorfose",
+      "legacy_nome": "Metamorfose",
+      "legacy_vertente": "somatica",
+      "canonical_slug": "biotica_metamorfose",
+      "canonical_nome": "Metamorfose",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned). Nível mudou: 3 → 4."
+    },
+    {
+      "legacy_slug": "somatica_necrose",
+      "legacy_nome": "Necrose",
+      "legacy_vertente": "somatica",
+      "canonical_slug": "biotica_necrose",
+      "canonical_nome": "Necrose",
+      "status": "ambiguous",
+      "candidato": "mesmo_nome",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Nome igual na mesma Vertente. Confirmar se o efeito é o mesmo (same), só mudou o nome (renamed) ou foi redesenhado (redesigned)."
+    },
+    {
+      "legacy_slug": "somatica_paralisia",
+      "legacy_nome": "Paralisia",
+      "legacy_vertente": "somatica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "somatica_pele_rigida",
+      "legacy_nome": "Pele rígida",
+      "legacy_vertente": "somatica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "somatica_primeiros_socorros",
+      "legacy_nome": "Primeiros socorros",
+      "legacy_vertente": "somatica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "somatica_pulso_vital",
+      "legacy_nome": "Pulso vital",
+      "legacy_vertente": "somatica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "somatica_reforco_neuromotor",
+      "legacy_nome": "Reforço neuromotor",
+      "legacy_vertente": "somatica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "somatica_regeneracao",
+      "legacy_nome": "Regeneração",
+      "legacy_vertente": "somatica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "somatica_regeneracao_maior",
+      "legacy_nome": "Regeneração maior",
+      "legacy_vertente": "somatica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "somatica_sinapse_acelerada",
+      "legacy_nome": "Sinapse acelerada",
+      "legacy_vertente": "somatica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "somatica_torpor",
+      "legacy_nome": "Torpor",
+      "legacy_vertente": "somatica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    },
+    {
+      "legacy_slug": "somatica_tratamento_expresso",
+      "legacy_nome": "Tratamento expresso",
+      "legacy_vertente": "somatica",
+      "canonical_slug": null,
+      "canonical_nome": null,
+      "status": "ambiguous",
+      "candidato": "sem_correspondencia",
+      "migration_strategy": "pendente de revisão editorial",
+      "editorial_notes": "Sem magia v1.2 com o mesmo nome na Vertente. Pode ter sido renomeada, redesenhada ou removida."
+    }
+  ],
+  "sem_antecessor": [
+    {
+      "canonical_slug": "biotica_anamnese",
+      "nome": "Anamnese",
+      "vertente": "biotica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "biotica_impeto",
+      "nome": "Carga muscular",
+      "vertente": "biotica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "biotica_colonia_sentinela",
+      "nome": "Colônia Sentinela",
+      "vertente": "biotica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "biotica_enxerto",
+      "nome": "Enxerto",
+      "vertente": "biotica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "biotica_febre",
+      "nome": "Febre",
+      "vertente": "biotica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "biotica_sobressalto",
+      "nome": "Sobressalto",
+      "vertente": "biotica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "biotica_biorreator",
+      "nome": "Biorreator",
+      "vertente": "biotica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "biotica_corpo_estranho",
+      "nome": "Corpo Estranho",
+      "vertente": "biotica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "biotica_esporos",
+      "nome": "Esporos",
+      "vertente": "biotica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "biotica_germinar",
+      "nome": "Germinar",
+      "vertente": "biotica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "biotica_mimetismo",
+      "nome": "Mimetismo",
+      "vertente": "biotica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "biotica_musculo_elastico",
+      "nome": "Músculo Elástico",
+      "vertente": "biotica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "biotica_nervo_morto",
+      "nome": "Nervo Morto",
+      "vertente": "biotica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "biotica_parasita",
+      "nome": "Parasita",
+      "vertente": "biotica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "biotica_peconha",
+      "nome": "Peçonha",
+      "vertente": "biotica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "biotica_plasticidade",
+      "nome": "Plasticidade",
+      "vertente": "biotica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "biotica_transfusao",
+      "nome": "Transfusão",
+      "vertente": "biotica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "biotica_casulo",
+      "nome": "Casulo",
+      "vertente": "biotica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "biotica_corpo_feral",
+      "nome": "Corpo Feral",
+      "vertente": "biotica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "biotica_enxame",
+      "nome": "Enxame",
+      "vertente": "biotica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "biotica_neogenese",
+      "nome": "Neogênese",
+      "vertente": "biotica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "biotica_rede_micelial",
+      "nome": "Rede Micelial",
+      "vertente": "biotica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "biotica_regenerar",
+      "nome": "Regenerar",
+      "vertente": "biotica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "biotica_simbionte",
+      "nome": "Simbionte",
+      "vertente": "biotica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "biotica_colmeia_de_cura",
+      "nome": "Colmeia de Cura",
+      "vertente": "biotica",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "biotica_corte_sensorial",
+      "nome": "Corte Sensorial",
+      "vertente": "biotica",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "biotica_epidemia",
+      "nome": "Epidemia",
+      "vertente": "biotica",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "biotica_fome_do_chao",
+      "nome": "Fome do Chão",
+      "vertente": "biotica",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "biotica_jardim_hostil",
+      "nome": "Jardim Hostil",
+      "vertente": "biotica",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "biotica_tumor_voraz",
+      "nome": "Tumor Voraz",
+      "vertente": "biotica",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "biotica_a_carne_lembra",
+      "nome": "A Carne Lembra",
+      "vertente": "biotica",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "biotica_chamado_vivo",
+      "nome": "Chamado Vivo",
+      "vertente": "biotica",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "biotica_colheita",
+      "nome": "Colheita",
+      "vertente": "biotica",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "biotica_ninho",
+      "nome": "Ninho",
+      "vertente": "biotica",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "biotica_outro_corpo",
+      "nome": "Outro Corpo",
+      "vertente": "biotica",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "biotica_peste",
+      "nome": "Peste",
+      "vertente": "biotica",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "biotica_sopro_limpo",
+      "nome": "Sopro Limpo",
+      "vertente": "biotica",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "cinetica_contravetor",
+      "nome": "Contravetor",
+      "vertente": "cinetica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "cinetica_esferas_de_impacto",
+      "nome": "Esferas de Impacto",
+      "vertente": "cinetica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "cinetica_mao_invisivel",
+      "nome": "Mão Invisível",
+      "vertente": "cinetica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "cinetica_propulsao",
+      "nome": "Propulsão",
+      "vertente": "cinetica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "cinetica_prumo",
+      "nome": "Prumo",
+      "vertente": "cinetica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "cinetica_telecinese",
+      "nome": "Telecinese",
+      "vertente": "cinetica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "cinetica_embalo",
+      "nome": "Embalo",
+      "vertente": "cinetica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "cinetica_enterrada",
+      "nome": "Enterrada",
+      "vertente": "cinetica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "cinetica_passos_sem_chao",
+      "nome": "Passos sem Chão",
+      "vertente": "cinetica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "cinetica_pelicula",
+      "nome": "Película",
+      "vertente": "cinetica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "cinetica_ricochete",
+      "nome": "Ricochete",
+      "vertente": "cinetica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "cinetica_troca",
+      "nome": "Troca",
+      "vertente": "cinetica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "cinetica_cadencia",
+      "nome": "Cadência",
+      "vertente": "cinetica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "cinetica_compressao",
+      "nome": "Compressão",
+      "vertente": "cinetica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "cinetica_elevacao",
+      "nome": "Elevação",
+      "vertente": "cinetica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "cinetica_martelo_gravitico",
+      "nome": "Martelo Gravítico",
+      "vertente": "cinetica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "cinetica_plataforma_cinetica",
+      "nome": "Plataforma Cinética",
+      "vertente": "cinetica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "cinetica_rebote",
+      "nome": "Rebote",
+      "vertente": "cinetica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "cinetica_via_cinetica",
+      "nome": "Via Cinética",
+      "vertente": "cinetica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "cinetica_orbita",
+      "nome": "Órbita",
+      "vertente": "cinetica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "cinetica_comboio",
+      "nome": "Comboio",
+      "vertente": "cinetica",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "cinetica_mil_maos",
+      "nome": "Mil Mãos",
+      "vertente": "cinetica",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "cinetica_portal",
+      "nome": "Portal",
+      "vertente": "cinetica",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "cinetica_singularidade",
+      "nome": "Singularidade",
+      "vertente": "cinetica",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "cognitiva_ancora",
+      "nome": "Ancorar",
+      "vertente": "cognitiva",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "cognitiva_fantasma_sensorial",
+      "nome": "Fantasma Sensorial",
+      "vertente": "cognitiva",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "cognitiva_leitura_superficial",
+      "nome": "Leitura Superficial",
+      "vertente": "cognitiva",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "cognitiva_modular_emocao",
+      "nome": "Modular Emoção",
+      "vertente": "cognitiva",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "cognitiva_mascara_mental",
+      "nome": "Máscara Mental",
+      "vertente": "cognitiva",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "cognitiva_tunel_atencional",
+      "nome": "Túnel Atencional",
+      "vertente": "cognitiva",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "cognitiva_ataque_fantasma",
+      "nome": "Ataque Fantasma",
+      "vertente": "cognitiva",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "cognitiva_ataraxia",
+      "nome": "Ataraxia",
+      "vertente": "cognitiva",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "cognitiva_eco_mnemonico",
+      "nome": "Eco Mnemônico",
+      "vertente": "cognitiva",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "cognitiva_muralha_mental",
+      "nome": "Muralha Mental",
+      "vertente": "cognitiva",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "cognitiva_ponto_cego",
+      "nome": "Ponto Cego",
+      "vertente": "cognitiva",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "cognitiva_sugestao",
+      "nome": "Sugestão",
+      "vertente": "cognitiva",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "cognitiva_sussurro",
+      "nome": "Sussurro",
+      "vertente": "cognitiva",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "cognitiva_antecipacao",
+      "nome": "Antecipação",
+      "vertente": "cognitiva",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "cognitiva_axioma",
+      "nome": "Axioma",
+      "vertente": "cognitiva",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "cognitiva_manada",
+      "nome": "Manada",
+      "vertente": "cognitiva",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "cognitiva_confabulacao",
+      "nome": "Confabulação",
+      "vertente": "cognitiva",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "cognitiva_palacio_onirico",
+      "nome": "Palácio Onírico",
+      "vertente": "cognitiva",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "cognitiva_persona",
+      "nome": "Persona",
+      "vertente": "cognitiva",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "cognitiva_a_mente_lembra",
+      "nome": "A Mente Lembra",
+      "vertente": "cognitiva",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "cognitiva_consenso",
+      "nome": "Consenso",
+      "vertente": "cognitiva",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "cognitiva_outra_vida",
+      "nome": "Outra Vida",
+      "vertente": "cognitiva",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "energetica_carga",
+      "nome": "Carga",
+      "vertente": "energetica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "energetica_condensacao",
+      "nome": "Condensação",
+      "vertente": "energetica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "energetica_equalizacao",
+      "nome": "Equalização",
+      "vertente": "energetica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "energetica_absorver_energia",
+      "nome": "Absorver Energia",
+      "vertente": "energetica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "energetica_captura_sonora",
+      "nome": "Captura Sonora",
+      "vertente": "energetica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "energetica_desvio_espectral",
+      "nome": "Desvio Espectral",
+      "vertente": "energetica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "energetica_leitura_arcana",
+      "nome": "Leitura Arcana",
+      "vertente": "energetica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "energetica_pulso_eletromagnetico",
+      "nome": "Pulso Eletromagnético",
+      "vertente": "energetica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "energetica_rajada_elemental",
+      "nome": "Rajada Elemental",
+      "vertente": "energetica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "energetica_transfusao_de_mana",
+      "nome": "Transfusão de Mana",
+      "vertente": "energetica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "energetica_janela_espectral",
+      "nome": "Janela Espectral",
+      "vertente": "energetica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "energetica_prisma",
+      "nome": "Prisma",
+      "vertente": "energetica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "energetica_dissipacao",
+      "nome": "Dissipação",
+      "vertente": "energetica",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "energetica_lacre_de_mana",
+      "nome": "Lacre de Mana",
+      "vertente": "energetica",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "material_acoplar",
+      "nome": "Acoplar",
+      "vertente": "material",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "material_forma_latente",
+      "nome": "Armadilha",
+      "vertente": "material",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "material_barreira",
+      "nome": "Barreira",
+      "vertente": "material",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "material_imprimir",
+      "nome": "Imprimir",
+      "vertente": "material",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "material_lastro",
+      "nome": "Lastro",
+      "vertente": "material",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "material_miniatura",
+      "nome": "Miniatura",
+      "vertente": "material",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "material_modelar",
+      "nome": "Modelar",
+      "vertente": "material",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "material_arsenal",
+      "nome": "Arsenal",
+      "vertente": "material",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "material_blindagem",
+      "nome": "Blindagem",
+      "vertente": "material",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "material_cama_elastica",
+      "nome": "Cama Elástica",
+      "vertente": "material",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "material_estilhacar",
+      "nome": "Estilhaçar",
+      "vertente": "material",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "material_memoria_de_forma",
+      "nome": "Memória de Forma",
+      "vertente": "material",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "material_plano_de_corte",
+      "nome": "Plano de Corte",
+      "vertente": "material",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "material_campo_de_espinhos",
+      "nome": "Campo de Espinhos",
+      "vertente": "material",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "material_convergir",
+      "nome": "Convergir",
+      "vertente": "material",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "material_fundir_se_a_estrutura",
+      "nome": "Fundir-se à Estrutura",
+      "vertente": "material",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "material_linha_de_demolicao",
+      "nome": "Linha de Demolição",
+      "vertente": "material",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "material_rosacea_balistica",
+      "nome": "Rosácea Balística",
+      "vertente": "material",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "material_arquitetura_de_campo",
+      "nome": "Arquitetura de Campo",
+      "vertente": "material",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "material_colapso_em_cadeia",
+      "nome": "Colapso em Cadeia",
+      "vertente": "material",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "material_exoestrutura_monolitica",
+      "nome": "Exoestrutura Monolítica",
+      "vertente": "material",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "material_labirinto",
+      "nome": "Labirinto",
+      "vertente": "material",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "material_reconstruir",
+      "nome": "Reconstruir",
+      "vertente": "material",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "material_soterrar",
+      "nome": "Soterrar",
+      "vertente": "material",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "material_cidadela",
+      "nome": "Cidadela",
+      "vertente": "material",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "material_colosso",
+      "nome": "Colosso",
+      "vertente": "material",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "material_geometria_soberana",
+      "nome": "Geometria Soberana",
+      "vertente": "material",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "material_ruina",
+      "nome": "Ruína",
+      "vertente": "material",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "material_transmutacao",
+      "nome": "Transmutação",
+      "vertente": "material",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "sinaptica_folego",
+      "nome": "Fôlego",
+      "vertente": "sinaptica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "sinaptica_marca",
+      "nome": "Marca",
+      "vertente": "sinaptica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "sinaptica_mergulho",
+      "nome": "Mergulho",
+      "vertente": "sinaptica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "sinaptica_sonda",
+      "nome": "Sonda",
+      "vertente": "sinaptica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "sinaptica_ancora",
+      "nome": "Âncora",
+      "vertente": "sinaptica",
+      "nivel": 1
+    },
+    {
+      "canonical_slug": "sinaptica_canal",
+      "nome": "Canal",
+      "vertente": "sinaptica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "sinaptica_convocar",
+      "nome": "Convocar",
+      "vertente": "sinaptica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "sinaptica_extracao",
+      "nome": "Extração",
+      "vertente": "sinaptica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "sinaptica_gatilho",
+      "nome": "Gatilho",
+      "vertente": "sinaptica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "sinaptica_isolar",
+      "nome": "Isolar",
+      "vertente": "sinaptica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "sinaptica_mimesis",
+      "nome": "Mimesis",
+      "vertente": "sinaptica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "sinaptica_pele_falsa",
+      "nome": "Pele Falsa",
+      "vertente": "sinaptica",
+      "nivel": 2
+    },
+    {
+      "canonical_slug": "sinaptica_a_cacada",
+      "nome": "A Caçada",
+      "vertente": "sinaptica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "sinaptica_atravessar",
+      "nome": "Atravessar",
+      "vertente": "sinaptica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "sinaptica_desfiar",
+      "nome": "Desfiar",
+      "vertente": "sinaptica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "sinaptica_entrelinhas",
+      "nome": "Entrelinhas",
+      "vertente": "sinaptica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "sinaptica_exumar",
+      "nome": "Exumar",
+      "vertente": "sinaptica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "sinaptica_heranca",
+      "nome": "Herança",
+      "vertente": "sinaptica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "sinaptica_mascara",
+      "nome": "Máscara",
+      "vertente": "sinaptica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "sinaptica_panorama",
+      "nome": "Panorama",
+      "vertente": "sinaptica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "sinaptica_vicario",
+      "nome": "Vicário",
+      "vertente": "sinaptica",
+      "nivel": 3
+    },
+    {
+      "canonical_slug": "sinaptica_duplicata",
+      "nome": "Duplicata",
+      "vertente": "sinaptica",
+      "nivel": 4
+    },
+    {
+      "canonical_slug": "sinaptica_construto",
+      "nome": "Construto",
+      "vertente": "sinaptica",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "sinaptica_onipresenca",
+      "nome": "Onipresença",
+      "vertente": "sinaptica",
+      "nivel": 5
+    },
+    {
+      "canonical_slug": "sinaptica_soberania",
+      "nome": "Soberania",
+      "vertente": "sinaptica",
+      "nivel": 5
+    }
+  ]
+}
