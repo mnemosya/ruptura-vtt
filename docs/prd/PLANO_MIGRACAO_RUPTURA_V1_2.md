@@ -333,11 +333,11 @@ Condições e combate:
 - [x] inclusão de `Oculto` (a relação por observador é só texto até o VTT ter percepção por criatura);
 - [x] estado persistente de nível (`nivel`/`nivelMaximo` na condição ativa; nova aplicação agrava até o limite);
 - [x] transições de Contundido, Envenenado, Lento, Ofuscado, Queimando, Sangrando e Sufocando (fratura do Contundido só sinalizada; deslocamento do Lento ainda não é aplicado ao movimento);
-- [ ] ação Esconder-se;
-- [ ] ação Ataque Secundário;
-- [ ] Acessar Trama por 1 PA;
+- [x] ação Esconder-se (no catálogo; teste por observador e Oculto relativo ficam manuais até a aba de ações);
+- [x] ação Ataque Secundário (no catálogo; 1/rodada após Atacar com arma leve, resolução manual até a aba de ações);
+- [x] Acessar Trama por 1 PA;
 - [x] Interagir reduz um nível de Queimando e contém Sangrando (opções da própria Interagir; Apagar fogo arquivada);
-- [ ] revisão da equivalência das demais ações.
+- [x] revisão da equivalência das demais ações (tabela no registro de 01/10/2026);
 
 Magias:
 
@@ -458,11 +458,11 @@ editorial_notes
 - [x] Ranking E exige uma Subclasse.
 - [ ] Todos os Rankings aplicam exatamente seus avanços.
 - [x] PA passa para 4 no C e 5 no S.
-- [ ] As 18 condições existem.
-- [ ] Condições niveláveis possuem estado e transições reais.
-- [ ] Oculto está disponível.
-- [ ] Esconder-se e Ataque Secundário estão disponíveis.
-- [ ] Acessar Trama custa 1 PA.
+- [x] As 18 condições existem.
+- [x] Condições niveláveis possuem estado e transições reais.
+- [x] Oculto está disponível.
+- [x] Esconder-se e Ataque Secundário estão disponíveis (no catálogo).
+- [x] Acessar Trama custa 1 PA.
 - [ ] Toda magia v1.2 está classificada no crosswalk.
 - [ ] Custos variáveis não são interpretados como zero.
 - [ ] Biótica não depende permanentemente do ID `somatica`.
@@ -732,3 +732,27 @@ Essa entrega deve terminar antes da implementação do novo wizard.
 - ações: enquanto Queimando ou Sangrando, Interagir pergunta sobre o que age: apagar o fogo (Queimando −1 nível), conter o sangramento (não agrava nesta rodada) ou outra interação. A ação antiga Apagar fogo foi arquivada (continua no banco);
 - testes: `test:ruleset-v12-condicoes` e `test:action-console` ampliados;
 - seed aplicado no remoto em 01/10/2026: `condition:oculto` criada; 17 condições, Interagir e Apagar fogo (arquivada) atualizadas.
+
+### 01/10/2026 — Ações de combate v1.2 (Fase 6)
+
+- fonte: capítulo 21 (Cenas de Combate) do Notion;
+- novas: Esconder-se (1 PA; Furtividade contra a Percepção de cada inimigo; no sucesso fica Oculto para ele) e Ataque Secundário (1 PA; uma vez por rodada após Atacar com arma leve; sem Corpo no dano; –1 corpo a corpo e –2 à distância). A resolução fica como efeito pendente, sem automação falsa, até a aba de ações;
+- Acessar Trama passa de 2 para 1 PA;
+- seed aplicado no remoto: 2 ações criadas e 3 atualizadas (Acessar Trama e os dois Sacar).
+
+Equivalência das demais ações:
+
+| Ação | v1.2 | Situação |
+|---|---|---|
+| Deslocar-se | 1 PA, cinco formas, +1 PA por repetição | igual |
+| Levantar, Escapar | 1 PA / 2 PA | iguais |
+| Interagir | 1 PA; também usa itens sem custo próprio | igual; ganhou as opções de Queimando e Sangrando |
+| Sacar rápido / difícil | "Sacar, guardar ou trocar": Acesso Rápido 1 PA, Mochila 2 PA, podendo usar item de 1 PA na mesma ação | custo igual; nome e descrição atualizados |
+| Recarregar, Mirar, Usar Perícia, Fintar | 1 PA | iguais |
+| Atacar, Agarrar, Estrangular, Derrubar, Empurrar, Desarmar | 2 PA | iguais |
+| Aparar, Bloquear, Esquivar, Resistir | Reação | iguais |
+| Preparar Turno | Reação + PA das ações preparadas | igual |
+| Posturas | 1 PA; podem começar o combate sem custo | custo igual; o início gratuito não está automatizado |
+| Falar, Gestos Rápidos | livres | iguais |
+| Soltar alvo | parte de Gestos Rápidos (livre) | equivalente; mantida como ação livre condicional |
+| Apagar fogo | opção de Interagir | arquivada |

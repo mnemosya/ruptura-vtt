@@ -109,7 +109,9 @@
         "sacar_dificil",
         "sacar_rapido",
         "soltar_alvo",
-        "usar_pericia"
+        "usar_pericia",
+        "esconder_se",
+        "ataque_secundario"
       ]
     },
     "tag": {
@@ -210,7 +212,9 @@
             "sacar_dificil",
             "sacar_rapido",
             "soltar_alvo",
-            "usar_pericia"
+            "usar_pericia",
+            "esconder_se",
+            "ataque_secundario"
           ]
         },
         "slug": {

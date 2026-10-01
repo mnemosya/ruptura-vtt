@@ -109,11 +109,19 @@ function execute(slug: string, character: Character) {
   );
 }
 
-assert.equal(actions.length, 28, "O DB deve conter 28 ações (Apagar fogo arquivada na v1.2).");
+assert.equal(actions.length, 30, "O DB deve conter 30 ações (v1.2: +Esconder-se, +Ataque Secundário; Apagar fogo arquivada).");
+assert.equal(getActionCost(action("acessar_trama")).pa, 1, "v1.2: Acessar Trama custa 1 PA.");
+assert.equal(getActionCost(action("esconder_se")).pa, 1, "Esconder-se custa 1 PA.");
+assert.equal(getActionCost(action("ataque_secundario")).pa, 1, "Ataque Secundário custa 1 PA.");
 assert.equal(action("apagar_fogo").status, "archived", "v1.2: apagar o fogo é opção de Interagir.");
 
 const noConditions = visibleSlugs(characterWith());
-assert.equal(noConditions.length, 24, "Sem condições, devem existir 24 ações visíveis.");
+assert.equal(noConditions.length, 26, "Sem condições, devem existir 26 ações visíveis.");
+for (const nova of ["esconder_se", "ataque_secundario"]) {
+  const item = consoleItems(characterWith()).find((candidate) => candidate.slug === nova);
+  assert.ok(item, `${nova} visível sem condição.`);
+  assert.ok(item.pendingEffects.length > 0, `${nova}: resolução ainda manual (efeito pendente), sem falsa automação.`);
+}
 for (const hidden of ["levantar", "escapar", "soltar_alvo", "apagar_fogo"]) {
   assert.ok(!noConditions.includes(hidden), `${hidden} deve ficar oculta sem condição.`);
 }
@@ -335,6 +343,6 @@ assert.equal(
   consoleItems(itemOrfao).find((item) => item.slug === "aparar")?.itemRequirements[0]?.satisfied,
   false,
 );
-assert.equal(consoleItems(characterWith()).length, 24, "Integração não cria nenhuma ação nova complexa.");
+assert.equal(consoleItems(characterWith()).length, 26, "Integração com inventário não cria ações além das 26 do catálogo.");
 
 console.log("test:action-console — todos os cenários passaram.");
