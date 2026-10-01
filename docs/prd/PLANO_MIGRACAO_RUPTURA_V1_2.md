@@ -394,9 +394,9 @@ Entregáveis:
 - [ ] Exposição;
 - [ ] Alerta Imperial;
 - [ ] transferência bidirecional entre personagem e Bando;
-- [ ] persistência isolada ou decisão registrada para armazenamento em `campaigns`.
+- [x] persistência isolada (decisão de 01/10/2026: tabela própria `campaign_crews`, 1:1 com a campanha);
 
-Opções comparadas em `docs/relatorios/BANDO_V1_2_OPCOES_ARMAZENAMENTO.md` (01/10/2026), com recomendação de tabela própria 1:1; aguarda decisão.
+Opções comparadas em `docs/relatorios/BANDO_V1_2_OPCOES_ARMAZENAMENTO.md`; decidido: tabela própria.
 
 Critério de saída:
 
@@ -830,3 +830,12 @@ Equivalência das demais ações:
 - removidos `createBlankCharacterForSelf` e o uso de `createInitialCharacter` na criação. A RPC v1 `complete_character_creation` ficou sem chamadas no app;
 - `testar_rpc_avanco.ts`: 31 cenários no remoto, desfeitos;
 - validado no navegador: PN criado só com o nome aparece como v1.2 pendente, e a ficha leva ao assistente no modo de completar. O personagem de teste foi arquivado.
+
+### 01/10/2026 — Bando: catálogo, regras e armazenamento (Fase 8)
+
+- `content/v12/db_bando_v1_2.json`: capítulo 10 transcrito, com Rankings por Cobalto, 5 QGs, 8 melhorias, 6 áreas, 7 especialistas, coberturas, atividades, Exposição, Alerta e complicações (rascunho, fora do seed);
+- `src/lib/rulesetV12/crew.ts`: motor puro com os limites por operação do capítulo. Cobre Cobalto (base mais um ajuste, −2..+3, nunca negativo), Ranking derivado, Exposição com pista obrigatória (+2 por operação), Alerta (+0..2, redução com causa), Capacidade e Segurança do QG (até 3), instalação e aprimoramento de melhorias e troca de QG (revenda, reconstrução das fixas pela metade, Exposição zerada). Testado por `npm run test:ruleset-v12-bando`;
+- migration `20261001180000_ruptura_v12_bando.sql`, aplicada no remoto: tabela `campaign_crews` com CHECKs dos invariantes. Participantes leem; só o narrador escreve, pela RPC `save_campaign_crew` com revisão otimista (conflito como `check_violation`, nunca 40001). A tabela está publicada no realtime;
+- `src/lib/table/crewState.ts`: leitura e gravação;
+- `scripts/dev/v12/testar_bando.ts`: 14 cenários no remoto, desfeitos;
+- falta a interface na aba Bando, que hoje só tem o inventário compartilhado.
