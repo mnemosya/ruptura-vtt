@@ -15,6 +15,16 @@ export type SubclassFeatureRankingV12 = (typeof SUBCLASS_FEATURE_RANKINGS_V12)[n
 
 export type AttributeIdV12 = "corpo" | "mente" | "animo";
 
+/** As cinco regiões do Império; não são opções personalizáveis (cap. 8, Região de origem). */
+export const REGIOES_V12 = {
+  beldran: { nome: "Beldran", idioma: "beldrano" },
+  kravus: { nome: "Kravus", idioma: "kravino" },
+  talesh: { nome: "Talesh", idioma: "taleshino" },
+  torvash: { nome: "Torvash", idioma: "torvashino" },
+  vastra: { nome: "Vastra", idioma: "vastrano" },
+} as const;
+export type RegiaoIdV12 = keyof typeof REGIOES_V12;
+
 export interface ContentReferenceV12 {
   content_type: "item" | "spell" | "class" | "subclass" | "background" | "quality" | "complication";
   slug: string;
@@ -125,6 +135,8 @@ export interface TrajectoryOptionContentV12 {
   custos_permitidos: Array<1 | 2>;
   repetivel?: boolean;
   campos_instancia?: string[];
+  /** Efeitos mecânicos estruturados, ex.: { tipo: "aretz_inicial_adicional", por_pontos: { "1": 1500 } }. */
+  efeitos?: unknown[];
 }
 
 export type QualityContentV12 = TrajectoryOptionContentV12;

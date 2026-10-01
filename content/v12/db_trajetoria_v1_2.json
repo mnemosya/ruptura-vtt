@@ -1,0 +1,837 @@
+{
+  "_meta": {
+    "ruleset_version": "1.2",
+    "fonte": "https://app.notion.com/p/3c30a136355280ee9165ca698f42f843",
+    "fonte_editada_em": "2026-09-30T23:30:33.848Z",
+    "extraido_em": "2026-10-01",
+    "observacoes": [
+      "Regiões de origem não são content_type: são as cinco regiões fixas do Império (ver REGIOES_V12).",
+      "Antecedentes, Qualidades e Complicações próprios criados com o narrador entram como conteúdo da campanha."
+    ]
+  },
+  "classes": [],
+  "subclasses": [],
+  "backgrounds": [
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "academico",
+      "nome": "Acadêmico",
+      "descricao": "Você passou parte importante da vida em uma universidade, instituto de pesquisa ou outra instituição de ensino superior, civil ou ligada à Primeira Ordem. Pode ter sido estudante, docente, pesquisador, bolsista ou integrante de uma equipe acadêmica em uma universidade civil, ESPO, CFPO ou instituição semelhante.\n\nDefina a instituição, sua área de estudo e a posição que ocupava. Sua Familiaridade abrange rotina universitária, métodos de pesquisa, produção e avaliação de trabalhos, publicações, eventos acadêmicos, departamentos, financiamento e relações entre estudantes, docentes e instituições.",
+      "familiaridade": "Sua Familiaridade abrange rotina universitária, métodos de pesquisa, produção e avaliação de trabalhos, publicações, eventos acadêmicos, departamentos, financiamento e relações entre estudantes, docentes e instituições.",
+      "recurso_por_sessao": {
+        "usos": 1,
+        "opcoes": [
+          "Fazer uma pergunta objetiva sobre pessoas, práticas, lugares ou riscos cobertos pela Familiaridade; o narrador responde com uma informação útil que alguém daquela vida poderia conhecer.",
+          "Receber +1 de vantagem em um teste diretamente ligado ao Antecedente, exceto ataques, defesas e conjurações."
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "artista",
+      "nome": "Artista",
+      "descricao": "Você pertence ou pertenceu a uma cena artística ou cultural. Música, moda, artes visuais, produção audiovisual, dança, literatura, performance ou outra forma de expressão colocou você em contato com públicos, produtores e espaços de circulação.\n\nDefina a linguagem artística, a cena da qual participava e sua função nela. Sua Familiaridade abrange criação e produção, ensaios, bastidores, organização de eventos, leitura de público e funcionamento dos espaços culturais ligados àquela cena.",
+      "familiaridade": "Sua Familiaridade abrange criação e produção, ensaios, bastidores, organização de eventos, leitura de público e funcionamento dos espaços culturais ligados àquela cena.",
+      "recurso_por_sessao": {
+        "usos": 1,
+        "opcoes": [
+          "Fazer uma pergunta objetiva sobre pessoas, práticas, lugares ou riscos cobertos pela Familiaridade; o narrador responde com uma informação útil que alguém daquela vida poderia conhecer.",
+          "Receber +1 de vantagem em um teste diretamente ligado ao Antecedente, exceto ataques, defesas e conjurações."
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "comunidade_remota",
+      "nome": "Comunidade Remota",
+      "descricao": "Você foi formado longe dos grandes centros, em uma cidade pequena, colônia produtiva, assentamento isolado, zona rural, estação de pesquisa ou comunidade de fronteira. Distância, recursos limitados e dependência mútua tornavam cada morador parte importante do funcionamento local.\n\nEscolha a comunidade, sua principal atividade e a maneira como ela se relacionava com o Império. Sua Familiaridade se concentra nos costumes, na geografia, nos meios de produção, nos deslocamentos e nas soluções cotidianas daquele lugar.",
+      "familiaridade": "Sua Familiaridade se concentra nos costumes, na geografia, nos meios de produção, nos deslocamentos e nas soluções cotidianas daquele lugar.",
+      "recurso_por_sessao": {
+        "usos": 1,
+        "opcoes": [
+          "Fazer uma pergunta objetiva sobre pessoas, práticas, lugares ou riscos cobertos pela Familiaridade; o narrador responde com uma informação útil que alguém daquela vida poderia conhecer.",
+          "Receber +1 de vantagem em um teste diretamente ligado ao Antecedente, exceto ataques, defesas e conjurações."
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "corporativo",
+      "nome": "Corporativo",
+      "descricao": "Você trabalha ou trabalhou para uma grande corporação, conglomerado, laboratório ou empresa com presença relevante no Império. Metas, avaliações de desempenho, sigilo e vigilância privada moldaram uma rotina em que interesses importantes raramente apareciam por inteiro no contrato de trabalho.\n\nDefina a organização, o setor e o cargo que ocupava. Sua Familiaridade abrange cultura profissional, estrutura de departamentos, processos internos, cadeias de aprovação, protocolos de segurança e formas de controle empregadas naquela corporação.",
+      "familiaridade": "Sua Familiaridade abrange cultura profissional, estrutura de departamentos, processos internos, cadeias de aprovação, protocolos de segurança e formas de controle empregadas naquela corporação.",
+      "recurso_por_sessao": {
+        "usos": 1,
+        "opcoes": [
+          "Fazer uma pergunta objetiva sobre pessoas, práticas, lugares ou riscos cobertos pela Familiaridade; o narrador responde com uma informação útil que alguém daquela vida poderia conhecer.",
+          "Receber +1 de vantagem em um teste diretamente ligado ao Antecedente, exceto ataques, defesas e conjurações."
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "cria_da_periferia",
+      "nome": "Cria da Periferia",
+      "descricao": "Você cresceu em um bairro integrado à cidade nos registros do Império, mas atendido apenas quando convinha ao centro. Serviços intermitentes, comércio informal, sensores falhos e operações ostensivas do CPO faziam parte de uma vida mantida principalmente pela própria comunidade.\n\nDefina o bairro, as pessoas que formavam sua rede local e como você contribuía para ela. Sua Familiaridade abrange rotas de serviço, burocracia cotidiana, comércio de vizinhança, infraestrutura irregular e as formas pelas quais moradores se organizam diante da presença imperial.",
+      "familiaridade": "Sua Familiaridade abrange rotas de serviço, burocracia cotidiana, comércio de vizinhança, infraestrutura irregular e as formas pelas quais moradores se organizam diante da presença imperial.",
+      "recurso_por_sessao": {
+        "usos": 1,
+        "opcoes": [
+          "Fazer uma pergunta objetiva sobre pessoas, práticas, lugares ou riscos cobertos pela Familiaridade; o narrador responde com uma informação útil que alguém daquela vida poderia conhecer.",
+          "Receber +1 de vantagem em um teste diretamente ligado ao Antecedente, exceto ataques, defesas e conjurações."
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "cria_do_submundo",
+      "nome": "Cria do Submundo",
+      "descricao": "Você cresceu ou passou anos decisivos entre plataformas incompletas, corredores reaproveitados e bairros sustentados por infraestrutura comunitária. Energia instável, caminhos improvisados, códigos territoriais e a proximidade da Zona Anômala ZA-2/VSK pertenciam ao cotidiano.\n\nEscolha a plataforma ou comunidade, o papel que ocupava e sua relação atual com o lugar. Sua Familiaridade abrange transporte local, manutenção improvisada, sinais ambientais de risco, organização comunitária e regras informais daquele território.",
+      "familiaridade": "Sua Familiaridade abrange transporte local, manutenção improvisada, sinais ambientais de risco, organização comunitária e regras informais daquele território.",
+      "recurso_por_sessao": {
+        "usos": 1,
+        "opcoes": [
+          "Fazer uma pergunta objetiva sobre pessoas, práticas, lugares ou riscos cobertos pela Familiaridade; o narrador responde com uma informação útil que alguém daquela vida poderia conhecer.",
+          "Receber +1 de vantagem em um teste diretamente ligado ao Antecedente, exceto ataques, defesas e conjurações."
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "criminoso",
+      "nome": "Criminoso",
+      "descricao": "Você passou parte importante da vida envolvido em atividades ilegais ou clandestinas. Pode ter agido por conta própria, integrado um bando, trabalhado para uma quadrilha ou pertencido a uma facção com influência sobre determinado território. Contrabando, roubo, fraude, extorsão, sabotagem, receptação e contratos fora da Malha oficial são algumas das possibilidades.\n\nDefina a atividade, o território, o grupo envolvido e sua função. Sua Familiaridade abrange métodos de operação, códigos, divisão de responsabilidades, pagamentos, cobranças, mercados clandestinos e relações entre os grupos daquele meio.",
+      "familiaridade": "Sua Familiaridade abrange métodos de operação, códigos, divisão de responsabilidades, pagamentos, cobranças, mercados clandestinos e relações entre os grupos daquele meio.",
+      "recurso_por_sessao": {
+        "usos": 1,
+        "opcoes": [
+          "Fazer uma pergunta objetiva sobre pessoas, práticas, lugares ou riscos cobertos pela Familiaridade; o narrador responde com uma informação útil que alguém daquela vida poderia conhecer.",
+          "Receber +1 de vantagem em um teste diretamente ligado ao Antecedente, exceto ataques, defesas e conjurações."
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "empreendedor",
+      "nome": "Empreendedor",
+      "descricao": "Você construiu uma atividade própria e aprendeu a mantê-la funcionando sem o amparo de uma grande instituição. Pode ter administrado uma banca, consultório, oficina, cozinha, pequeno comércio, escritório, serviço itinerante ou qualquer empreendimento sustentado por seu trabalho e por uma clientela recorrente.\n\nEscolha o ofício, a clientela e o lugar onde trabalhava. Sua Familiaridade abrange atendimento, negociação, fornecedores, precificação, rotina administrativa e problemas recorrentes daquele ramo de atividade.",
+      "familiaridade": "Sua Familiaridade abrange atendimento, negociação, fornecedores, precificação, rotina administrativa e problemas recorrentes daquele ramo de atividade.",
+      "recurso_por_sessao": {
+        "usos": 1,
+        "opcoes": [
+          "Fazer uma pergunta objetiva sobre pessoas, práticas, lugares ou riscos cobertos pela Familiaridade; o narrador responde com uma informação útil que alguém daquela vida poderia conhecer.",
+          "Receber +1 de vantagem em um teste diretamente ligado ao Antecedente, exceto ataques, defesas e conjurações."
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "itinerante",
+      "nome": "Itinerante",
+      "descricao": "Você passou boa parte da vida mudando de cidade, comunidade ou região. Pode ter acompanhado comboios, grupos artísticos, frentes de trabalho, caravanas comerciais, estações móveis ou uma família acostumada a partir antes de criar raízes.\n\nDefina o que mantinha você em movimento, quem costumava viajar ao seu lado e o que considerava lar. Sua Familiaridade abrange rotinas de viagem, terminais, pontos de parada, acomodações temporárias, trabalhos sazonais e adaptação rápida aos serviços e costumes de um lugar recém-conhecido.",
+      "familiaridade": "Sua Familiaridade abrange rotinas de viagem, terminais, pontos de parada, acomodações temporárias, trabalhos sazonais e adaptação rápida aos serviços e costumes de um lugar recém-conhecido.",
+      "recurso_por_sessao": {
+        "usos": 1,
+        "opcoes": [
+          "Fazer uma pergunta objetiva sobre pessoas, práticas, lugares ou riscos cobertos pela Familiaridade; o narrador responde com uma informação útil que alguém daquela vida poderia conhecer.",
+          "Receber +1 de vantagem em um teste diretamente ligado ao Antecedente, exceto ataques, defesas e conjurações."
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "nobre",
+      "nome": "Nobre",
+      "descricao": "Você foi criado entre as camadas privilegiadas do Império ou conviveu com elas durante tempo suficiente para assimilar seus códigos. Etiqueta, funcionários particulares, instituições exclusivas e disputas discretas por prestígio faziam parte de sua vida cotidiana.\n\nDefina a família, residência ou círculo social responsável por essa formação e diga que relação mantém com ele. Sua Familiaridade abrange hierarquias sociais, cerimônias, administração doméstica, serviços privados e expectativas de comportamento entre as elites.",
+      "familiaridade": "Sua Familiaridade abrange hierarquias sociais, cerimônias, administração doméstica, serviços privados e expectativas de comportamento entre as elites.",
+      "recurso_por_sessao": {
+        "usos": 1,
+        "opcoes": [
+          "Fazer uma pergunta objetiva sobre pessoas, práticas, lugares ou riscos cobertos pela Familiaridade; o narrador responde com uma informação útil que alguém daquela vida poderia conhecer.",
+          "Receber +1 de vantagem em um teste diretamente ligado ao Antecedente, exceto ataques, defesas e conjurações."
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "ocultista",
+      "nome": "Ocultista",
+      "descricao": "Depois do despertar, você passou anos escondendo qualquer canalização visível e sustentando uma rotina civil sob vigilância. Aprendeu a controlar sinais do conduto, atravessar triagens e reconhecer as perguntas que costumam anteceder uma investigação.\n\nDefina a vida civil que construiu, quem conhece sua condição e por quanto tempo conseguiu preservá-la. Sua Familiaridade abrange métodos cotidianos de ocultação, procedimentos de triagem, padrões de monitoramento e comportamentos usados para evitar suspeitas.",
+      "familiaridade": "Sua Familiaridade abrange métodos cotidianos de ocultação, procedimentos de triagem, padrões de monitoramento e comportamentos usados para evitar suspeitas.",
+      "recurso_por_sessao": {
+        "usos": 1,
+        "opcoes": [
+          "Fazer uma pergunta objetiva sobre pessoas, práticas, lugares ou riscos cobertos pela Familiaridade; o narrador responde com uma informação útil que alguém daquela vida poderia conhecer.",
+          "Receber +1 de vantagem em um teste diretamente ligado ao Antecedente, exceto ataques, defesas e conjurações."
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "servico_imperial",
+      "nome": "Serviço Imperial",
+      "descricao": "Você trabalhou dentro da máquina do Império Central. Isso inclui a Casa Primeira, a Primeira Ordem e suas estruturas (CFPO, ESPO e CPO), o Exército Imperial, o Conselho Imperial, governos e câmaras regionais, tribunais e outros órgãos da administração pública. Sua função pode ter sido civil, administrativa, técnica, judicial, militar ou de segurança pública.\n\nEscolha a instituição, o setor e a função que exerceu. Sua Familiaridade abrange sua organização interna, cadeia de comando, burocracia, registros, requisições, fiscalização, distribuição de recursos, designação de pessoal e procedimentos operacionais. No caso do CFPO e ESPO, este Antecedente representa a experiência administrativa dentro da instituição; a formação universitária pertence a Acadêmico.",
+      "familiaridade": "Sua Familiaridade abrange sua organização interna, cadeia de comando, burocracia, registros, requisições, fiscalização, distribuição de recursos, designação de pessoal e procedimentos operacionais. No caso do CFPO e ESPO, este Antecedente representa a experiência administrativa dentro da instituição; a formação universitária pertence a Acadêmico.",
+      "recurso_por_sessao": {
+        "usos": 1,
+        "opcoes": [
+          "Fazer uma pergunta objetiva sobre pessoas, práticas, lugares ou riscos cobertos pela Familiaridade; o narrador responde com uma informação útil que alguém daquela vida poderia conhecer.",
+          "Receber +1 de vantagem em um teste diretamente ligado ao Antecedente, exceto ataques, defesas e conjurações."
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "sobrevivente_de_zona",
+      "nome": "Sobrevivente de Zona",
+      "descricao": "Você viveu, trabalhou ou permaneceu por um longo período dentro ou nos arredores de uma Zona Anômala. Nesse ambiente, pequenas alterações na paisagem, no clima ou no comportamento das criaturas podiam anunciar mudanças muito maiores.\n\nEscolha a Zona, o período e o que levou você até ela. Sua Familiaridade abrange fenômenos recorrentes, sinais ambientais, rotas conhecidas, protocolos de segurança e respostas emergenciais desenvolvidas naquele lugar, além de precauções comuns a outras Zonas.",
+      "familiaridade": "Sua Familiaridade abrange fenômenos recorrentes, sinais ambientais, rotas conhecidas, protocolos de segurança e respostas emergenciais desenvolvidas naquele lugar, além de precauções comuns a outras Zonas.",
+      "recurso_por_sessao": {
+        "usos": 1,
+        "opcoes": [
+          "Fazer uma pergunta objetiva sobre pessoas, práticas, lugares ou riscos cobertos pela Familiaridade; o narrador responde com uma informação útil que alguém daquela vida poderia conhecer.",
+          "Receber +1 de vantagem em um teste diretamente ligado ao Antecedente, exceto ataques, defesas e conjurações."
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "sujeito_experimental",
+      "nome": "Sujeito Experimental",
+      "descricao": "Você participa ou participou, voluntariamente ou à força, de um projeto corporativo, imperial, acadêmico ou clandestino. Testes, contenção, exames e observação constante fizeram de seu corpo ou conduto uma fonte de dados para outras pessoas.\n\nDefina a instituição, o objetivo do projeto e sua relação atual com os responsáveis. Sua Familiaridade abrange procedimentos laboratoriais, métodos de contenção, rotina dos sujeitos, registros de acompanhamento e sinais de pesquisas conduzidas de maneira semelhante.",
+      "familiaridade": "Sua Familiaridade abrange procedimentos laboratoriais, métodos de contenção, rotina dos sujeitos, registros de acompanhamento e sinais de pesquisas conduzidas de maneira semelhante.",
+      "recurso_por_sessao": {
+        "usos": 1,
+        "opcoes": [
+          "Fazer uma pergunta objetiva sobre pessoas, práticas, lugares ou riscos cobertos pela Familiaridade; o narrador responde com uma informação útil que alguém daquela vida poderia conhecer.",
+          "Receber +1 de vantagem em um teste diretamente ligado ao Antecedente, exceto ataques, defesas e conjurações."
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "trabalhador_industrial",
+      "nome": "Trabalhador Industrial",
+      "descricao": "Você trabalha ou trabalhou em fábricas rúnicas, minas, refinarias, docas, forjas tecnomágicas ou centros logísticos. Aprendeu a reconhecer o som de uma máquina prestes a falhar, o ritmo imposto por cada turno e as hierarquias informais que mantêm a produção em movimento.\n\nDefina a indústria, a instalação e a função que exercia. Sua Familiaridade abrange segurança laboral, fluxo de produção, manutenção cotidiana, logística, organização dos turnos e cultura de trabalho daquele setor.",
+      "familiaridade": "Sua Familiaridade abrange segurança laboral, fluxo de produção, manutenção cotidiana, logística, organização dos turnos e cultura de trabalho daquele setor.",
+      "recurso_por_sessao": {
+        "usos": 1,
+        "opcoes": [
+          "Fazer uma pergunta objetiva sobre pessoas, práticas, lugares ou riscos cobertos pela Familiaridade; o narrador responde com uma informação útil que alguém daquela vida poderia conhecer.",
+          "Receber +1 de vantagem em um teste diretamente ligado ao Antecedente, exceto ataques, defesas e conjurações."
+        ]
+      }
+    }
+  ],
+  "qualities": [
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "afiliacao",
+      "nome": "Afiliação",
+      "descricao": "Você pertence ou pertenceu legitimamente a uma organização, cooperativa, coletivo, comunidade, corporação, instituição ou facção que ainda reconhece esse vínculo. A relação envolve pertencimento, acesso interno e deveres compatíveis com sua posição.\n\nPor 1 ponto, você é tratado como integrante comum e recebe acesso a espaços, informações internas rotineiras e ajuda básica compatível com o grupo.\n\nPor 2 pontos, possui posição respeitada, responsabilidade reconhecida ou histórico suficiente para solicitar recursos e mobilizar integrantes em escala limitada.\n\nDefina o grupo, sua função e os deveres que acompanham a posição. Afiliação não concede autoridade acima do nível comprado e pode criar expectativas sem se tornar automaticamente uma Complicação.",
+      "categoria": "relacoes",
+      "custos_permitidos": [
+        1,
+        2
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "aliado",
+      "nome": "Aliado",
+      "descricao": "Uma pessoa confia em você o suficiente para se envolver ativamente quando a situação importa. Ela pode investigar, transportar algo, abrir uma porta, oferecer abrigo ou assumir risco razoável dentro de suas capacidades.\n\nDefina quem é, por que existe confiança, quais recursos possui e o que jamais sacrificaria. O Aliado tem objetivos próprios e não se torna um personagem adicional sob seu controle. Quando puder ajudar, sua disposição é garantida; o modo e o preço da participação dependem da situação.",
+      "categoria": "relacoes",
+      "custos_permitidos": [
+        2
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "boa_reputacao",
+      "nome": "Boa Reputação",
+      "descricao": "Seu nome, pseudônimo ou trabalho é respeitado dentro de um meio específico. Quando reconhecido ali, você parte de uma disposição favorável, consegue ser ouvido e recebe o benefício da dúvida em assuntos relacionados à reputação.\n\nDefina o meio e os feitos pelos quais é conhecido. Uma vez por cena, o primeiro teste social que depender diretamente dessa reputação recebe +1 de vantagem. Fora do meio escolhido, seu nome não concede benefício especial. Esta Qualidade pode ser adquirida para reputações diferentes.",
+      "categoria": "relacoes",
+      "custos_permitidos": [
+        1
+      ],
+      "repetivel": true
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "contato",
+      "nome": "Contato",
+      "descricao": "Você mantém comunicação confiável com uma pessoa inserida em um meio específico. Ela fornece informações rotineiras ao alcance de sua posição, confirma rumores que poderia verificar e realiza apresentações ou pequenos favores que não a coloquem em perigo sério.\n\nDefina nome, função, meio, forma de contato e um limite que essa pessoa não costuma atravessar. Pedidos caros, ilegais ou arriscados exigem contrapartida e podem criar uma cena. Esta Qualidade pode ser comprada mais de uma vez para pessoas diferentes.",
+      "categoria": "relacoes",
+      "custos_permitidos": [
+        1
+      ],
+      "repetivel": true
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "lacos_familiares",
+      "nome": "Laços Familiares",
+      "descricao": "Sua família permanece presente, acessível e disposta a oferecer uma forma concreta de apoio. Pode ser abrigo, cuidado cotidiano, informação local, intermediação comunitária, trabalho ou suporte material modesto.\n\nNomeie ao menos duas pessoas e defina como a família costuma ajudar. Pedidos que coloquem parentes em risco ou excedam seus meios exigem decisão e conversa. Os mesmos laços podem sustentar Família no Sistema ou Pessoa sob sua Responsabilidade quando também gerarem pressão real.",
+      "categoria": "relacoes",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "protetor",
+      "nome": "Protetor",
+      "descricao": "Alguém com posição, influência ou recursos decidiu proteger você. Pode ser um executivo, autoridade imperial, dirigente de Casa, líder comunitário, chefe de facção ou outra figura capaz de interceder em uma esfera definida.\n\nEscolha o Protetor, seu alcance e o motivo da proteção. Uma intervenção compatível com esse alcance é confiável, embora possa demorar ou exigir discrição. Proteção relevante cria expectativa de reciprocidade; ela não concede imunidade, obediência do Protetor nem poder fora de sua esfera.",
+      "categoria": "relacoes",
+      "custos_permitidos": [
+        2
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "acesso_clandestino",
+      "nome": "Acesso Clandestino",
+      "descricao": "Você possui uma porta confiável para um serviço ou mercado que não atende desconhecidos. Pode ser um Mercado Noturno, clínica clandestina, fornecedor de Vertinas, atravessador, falsificador, oficina ilegal, rede de contrabando ou outro circuito definido.\n\nEscolha o serviço, o território e a pessoa ou código que permite entrar. O acesso e a possibilidade de negociar são garantidos; mercadorias, agenda, preço e disposição para assumir risco continuam variando. Quebrar as regras do circuito pode colocar a Qualidade em risco.",
+      "categoria": "acesso_e_identidade",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "canal_fechado",
+      "nome": "Canal Fechado",
+      "descricao": "Você participa de uma comunidade restrita da Subfrequência. Escolha seu foco: contratos, transporte, comércio, pesquisa, dissidência, medicina clandestina, colecionadores, bandos ou outro tema delimitado.\n\nVocê acompanha discussões, publica pedidos e encontra indicações sem precisar conquistar entrada a cada vez. Uma vez por operação, pode solicitar uma pista, anúncio ou apresentação que exista naquele meio; o narrador oferece uma direção útil, não uma solução gratuita. Acessar a Subfrequência ainda exige os meios normais do personagem.",
+      "categoria": "acesso_e_identidade",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "credencial",
+      "nome": "Credencial",
+      "descricao": "Você possui uma autorização persistente, legítima, desviada ou falsificada para uma organização, instalação, serviço ou Trama específica. Ela pode assumir a forma de crachá, login, chave digital, licença profissional, permissão de trânsito ou registro equivalente.\n\nDefina o emissor, o nível de acesso e o RPI ao qual a autorização está vinculada. Pessoas e sistemas reconhecem a Credencial e permitem o acesso registrado sem exigir invasão. Setores e funções acima desse nível permanecem protegidos. Esta Qualidade pode ser adquirida mais de uma vez para permissões diferentes.",
+      "categoria": "acesso_e_identidade",
+      "custos_permitidos": [
+        1
+      ],
+      "repetivel": true
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "rotas_clandestinas",
+      "nome": "Rotas Clandestinas",
+      "descricao": "Você conhece passagens de manutenção, horários mortos, transportadores discretos, pontos cegos e caminhos informais dentro de um território específico.\n\nDefina o território. Quando preparar um deslocamento ali, você pode estabelecer uma rota plausível que evite uma fiscalização rotineira, reduza exposição ou ofereça uma saída alternativa. A Qualidade não atravessa instalações seladas, bloqueios criados para a operação ou perigos que fisicamente destruíram o caminho. Se a campanha mudar de território por longo período, as rotas podem ser reconstruídas durante o jogo e transferidas para a nova região.",
+      "categoria": "acesso_e_identidade",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "vida_de_fachada",
+      "nome": "Vida de Fachada",
+      "descricao": "Você mantém uma identidade civil construída para sobreviver às verificações do Império. Ela reúne um RPI Forjado de Nível 2 ou 3, endereço, ocupação, histórico de transações, rotina pública e pessoas capazes de confirmar que essa vida existe.\n\nDefina o nome, a profissão, a residência e uma pessoa de confiança que conheça a falsidade da identidade e ajude ativamente a sustentá-la. Defina o vínculo entre vocês e qual aspecto da fachada essa pessoa pode confirmar, como sua ocupação, residência, rotina ou histórico. Quando consultada sobre esse aspecto, ela confirma a identidade, desde que isso não a coloque em perigo imediato. Essa relação não concede favores ou informações além da manutenção da fachada.\n\nVocê também recebe uma CDI Craqueada, utilizada para movimentar valores fora do rastreio imperial.\n\nCDI Craqueada:\n\nVersão adulterada da Carteira Digital Imperial (CDI), programada para usar rotas fantasmas de criptotransação. Esconde a origem real de valores e mascara quantias altas como pequenas movimentações.\n\nMecânica: permite transferir e receber dinheiro fora do rastreio imperial.\n\nPor 1 ponto, receba um RPI Forjado de Nível 2, caso ainda não possua um de nível igual ou superior. A identidade possui registros cotidianos coerentes e encontra confirmação em verificações relacionadas à residência, à ocupação e à rotina estabelecidas.\n\nRPI Forjado (Nível 2):\n\nUma identidade estabelecida, sustentada por endereço, histórico financeiro, registros médicos e atividade civil coerente. Permite firmar contratos, receber pagamentos, utilizar serviços regulamentados e atravessar checkpoints regulares.\n\nProtocolos de Nível 3 podem encontrar inconsistências entre instituições, períodos mal documentados ou vínculos fabricados.\n\nPor 2 pontos, receba um RPI Forjado de Nível 3. A identidade possui histórico completo, relações verificáveis e uma vida digital consistente entre diferentes sistemas. Apenas investigações profundas podem encontrar registros capazes de desmentir a história apresentada.\n\nRPI Forjado (Nível 3):\n\nUma identidade profunda, fabricada com um histórico completo e coerente entre diferentes sistemas imperiais. Resiste a protocolos automatizados de alta segurança e pode sustentar vínculos, ocupações e registros de longa duração.\n\nSua falsidade só pode ser revelada por uma investigação direcionada, baseada em provas, testemunhas ou contradições concretas.\n\nQuando uma verificação encontrar uma inconsistência em informações cobertas pela fachada, você recebe +1 de vantagem em testes para sustentar a identidade, justificar a divergência ou apresentar uma confirmação alternativa.\n\nAlém disso, uma falha nessa verificação não torna o RPI imediatamente Comprometido: ele fica Sinalizado pela instituição responsável. Evidências externas ou uma nova falha diante de quem reconheça essa sinalização podem comprometê-lo.\n\nCaso já possua um RPI de nível igual ou superior, vincule a fachada a ele. O nível do RPI determina quais protocolos a identidade atravessa; a Vida de Fachada fornece os registros, as relações e as justificativas que permitem defendê-la quando algo não corresponde. Autorizações profissionais e institucionais são representadas por Credenciais.",
+      "categoria": "acesso_e_identidade",
+      "custos_permitidos": [
+        1,
+        2
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "arquivo",
+      "nome": "Arquivo",
+      "descricao": "Você reuniu documentos, mapas, pesquisas, gravações, projetos ou registros sobre um tema estreito. Defina o assunto e o formato do Arquivo.\n\nDepois de pelo menos alguns minutos de consulta, faça uma pergunta objetiva coberta pelo acervo. Se a informação estiver razoavelmente registrada ali, o narrador fornece uma resposta útil ou uma pista concreta. Quando ainda for necessário analisar, cruzar ou interpretar os dados, o teste correspondente recebe +1 de vantagem. O Arquivo não contém automaticamente material secreto que você nunca teve como obter.",
+      "categoria": "recursos_e_infraestrutura",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "espaco_equipado",
+      "nome": "Espaço Equipado",
+      "descricao": "Você possui acesso estável a uma instalação preparada para um tipo de trabalho: oficina, laboratório, clínica, estúdio, cozinha profissional, sala de ensaio, bancada tecnomágica ou equivalente.\n\nEscolha a atividade. Trabalhos realizados ali não sofrem limitações por improviso ou falta de infraestrutura básica. O primeiro teste de cada cena de trabalho que se beneficie diretamente das instalações recebe +1 de vantagem. Materiais consumíveis, ferramentas portáteis raras e conhecimento técnico ainda precisam ser obtidos normalmente.",
+      "categoria": "recursos_e_infraestrutura",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "preparado",
+      "nome": "Preparado",
+      "descricao": "Você antecipa necessidades pequenas e carrega soluções antes de saber exatamente quando serão úteis.\n\nUma vez por sessão de jogo, quando surgir uma necessidade, declare que trouxe um objeto comum, modesto e plausível para a operação. Ele precisa caber em um espaço livre da Mochila caso seja mantido. A Qualidade não produz armas, armaduras, munição especial, explosivos, escalpos, Vertinas, drones, robôs, itens raros ou qualquer objeto que o grupo deliberadamente não tinha como obter.",
+      "categoria": "recursos_e_infraestrutura",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "recursos",
+      "nome": "Recursos",
+      "descricao": "Você possui renda, patrimônio e bens compatíveis com um padrão de vida acima daquele presumido para os demais personagens.\n\nDefina a origem do patrimônio e a identidade à qual a residência, o veículo, a CDI e as contas estão vinculados.\n\nPor 1 ponto, você leva uma vida de classe média. Possui uma residência própria confortável no centro da cidade e pode possuir um veículo civil de até Ⱥ 13.000. Além dos Ⱥ 3.000 recebidos na criação, ganha Ⱥ 1.500, totalizando Ⱥ 4.500.\n\nPor 2 pontos, você é rico. Possui uma residência ampla, bem localizada e equipada com tecnomagia doméstica de alto padrão, além de um veículo de até Ⱥ 35.000. Além dos Ⱥ 3.000 recebidos na criação, ganha Ⱥ 3.000, totalizando Ⱥ 6.000.\n\nA residência e o veículo são bens civis registrados e rastreáveis. Modificações operacionais, blindagem, armamento e instalações especializadas são adquiridos separadamente. Vender parte do patrimônio concede o valor definido pelo narrador e pode reduzir ou transformar a Qualidade.",
+      "categoria": "recursos_e_infraestrutura",
+      "custos_permitidos": [
+        1,
+        2
+      ],
+      "efeitos": [
+        {
+          "tipo": "aretz_inicial_adicional",
+          "por_pontos": {
+            "1": 1500,
+            "2": 3000
+          }
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "refugio",
+      "nome": "Refúgio",
+      "descricao": "Você controla um lugar preparado para abrigar sua vida refratária sem estabelecer uma ligação evidente com sua identidade.\n\nPor 1 ponto, o Refúgio abriga você e poucas pessoas, possui serviços básicos e passa despercebido por buscas rotineiras.\n\nPor 2 pontos, comporta todo o bando, mantém reservas essenciais, comunicação protegida e ao menos uma saída discreta ou medida relevante de segurança.\n\nDefina a localização, a aparência, quem responde legalmente pelo lugar e uma vulnerabilidade. O Refúgio só pode ser localizado por meio de pistas ou acontecimentos concretos da campanha. Depois de descoberto, suas medidas de segurança e sua vulnerabilidade determinam como ele pode ser invadido ou comprometido.",
+      "categoria": "recursos_e_infraestrutura",
+      "custos_permitidos": [
+        1,
+        2
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "aclimatado_ao_anomalo",
+      "nome": "Aclimatado ao Anômalo",
+      "descricao": "Exposição prolongada ensinou seu corpo e seus sentidos a reagir à instabilidade arcana antes que ela o domine.\n\nVocê ignora incômodos menores produzidos por ambientes anômalos e recebe +1 de vantagem em todos os testes contra efeitos causados diretamente por anomalias arcanas, qualquer que seja sua manifestação. O benefício não se aplica a magias conjuradas, ataques de criaturas ou perigos comuns que apenas estejam dentro de uma Zona Anômala.",
+      "categoria": "caracteristicas_pessoais",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "ambidestro",
+      "nome": "Ambidestro",
+      "descricao": "Você desenvolveu a coordenação necessária para utilizar as duas mãos com precisão durante o combate.\n\nPor 1 ponto, reduza em 1 a desvantagem aplicada ao teste de Ataque Secundário. Assim, ataques secundários corpo a corpo não sofrem desvantagem por essa ação, enquanto ataques secundários à distância sofrem apenas –1 de desvantagem.\n\nPor 2 pontos, você também soma Corpo ao dano dos seus ataques secundários corpo a corpo.",
+      "categoria": "caracteristicas_pessoais",
+      "custos_permitidos": [
+        1,
+        2
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "linguista",
+      "nome": "Linguista",
+      "descricao": "Você aprende idiomas com facilidade e compreende as nuances que uma tradução literal costuma perder.\n\nEscolha dois idiomas adicionais. Você fala, lê e escreve ambos e reconhece variações comuns, formalidades e expressões culturais.",
+      "categoria": "caracteristicas_pessoais",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "memoria_eidetica",
+      "nome": "Memória Eidética",
+      "descricao": "Você reconstrói com precisão incomum imagens, textos, rostos, sons e conversas que percebeu claramente.\n\nUma vez por cena, você pode pedir a descrição exata de um detalhe percebido em até 1 semana atrás; o narrador o relembra sem teste. A Qualidade não revela algo que passou despercebido, não substitui Percepção e não transforma suposição em memória.",
+      "categoria": "caracteristicas_pessoais",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "metabolismo_resistente",
+      "nome": "Metabolismo Resistente",
+      "descricao": "Seu organismo suporta melhor contaminação biológica, alimentos deteriorados, substâncias ingeridas, drogas e doenças comuns.\n\nReceba +1 de vantagem em testes para resistir diretamente a esses agentes. A Qualidade não concede resistência a dano Tóxico, não anula Dependência e não protege contra efeitos que não envolvam seu metabolismo.",
+      "categoria": "caracteristicas_pessoais",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "sangue_frio",
+      "nome": "Sangue-Frio",
+      "descricao": "Você sustenta a ação mesmo diante de intimidação, medo, choque ou imagens grotescas. Isso pode vir de treinamento, experiência, disciplina ou uma maneira particular de processar pressão.\n\nReceba +1 de vantagem em testes de Vontade para manter o controle diante dessas situações. Sangue-Frio não determina o que você sente e não protege contra dano psíquico de outras fontes.",
+      "categoria": "caracteristicas_pessoais",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "sortudo",
+      "nome": "Sortudo",
+      "descricao": "Coincidências improváveis costumam lhe oferecer uma segunda chance.\n\nUma vez por dia, depois de realizar um teste e antes de o narrador apresentar suas consequências, repita o teste inteiro. O novo resultado deve ser aceito, mesmo que seja pior. Sortudo não pode repetir rolagens de dano, tabelas ou determinações feitas por outro personagem.",
+      "categoria": "caracteristicas_pessoais",
+      "custos_permitidos": [
+        2
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "vigilante",
+      "nome": "Vigilante",
+      "descricao": "Parte da sua atenção permanece voltada ao ambiente mesmo durante descanso, espera ou rotina.\n\nBarulhos relevantes, contato físico e movimentação próxima costumam acordá-lo sem teste. Além disso, o primeiro teste de cada cena feito para perceber uma intrusão, emboscada ou ameaça física imediata recebe +1 de vantagem. Isso não amplia o alcance dos sentidos nem revela sinais inexistentes.",
+      "categoria": "caracteristicas_pessoais",
+      "custos_permitidos": [
+        1
+      ]
+    }
+  ],
+  "complications": [
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "bando_inimigo",
+      "nome": "Bando Inimigo",
+      "descricao": "Um bando refratário atribui a você uma perda específica: integrante morto, contrato arruinado, esconderijo exposto, carga tomada ou território invadido.\n\nDefina o bando, o dano e sua exigência: pagamento, devolução de um bem, prestação de um serviço ou entrega de uma informação.\n\nNa campanha: o bando pode fechar uma rota, recusar atendimento em um serviço sob sua influência, disputar contratos relacionados ao caso ou enviar integrantes para cobrar a pendência. Reparação, acordo ou confronto pode encerrar o conflito sem tornar todos os refratários hostis.",
+      "categoria": "relacoes",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "desertor",
+      "nome": "Desertor",
+      "descricao": "Você abandonou uma organização que não considera sua saída encerrada. Pode ser uma Casa-Vertente, unidade imperial, corporação, facção criminosa, laboratório, cooperativa ou antigo bando. Defina a organização, sua função, o motivo da saída e o que ela ainda quer de você.\n\nUse 1 ponto para um grupo local ou uma cobrança delimitada.\n\nUse 2 pontos para uma instituição de grande alcance, com capacidade de pressionar relações e perseguir você entre territórios.\n\nNa campanha: antigos superiores podem exigir seu retorno, cobrar silêncio, recuperar propriedade, impor punição ou forçar um último serviço. A organização age dentro do alcance definido e pode ampliar a perseguição conforme você resiste ou expõe seus interesses.",
+      "categoria": "relacoes",
+      "custos_permitidos": [
+        1,
+        2
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "exilado",
+      "nome": "Exilado",
+      "descricao": "Você foi expulso de um lugar ou grupo que ainda possui importância na campanha. Voltar ou ser reconhecido ali pode provocar recusa, denúncia, expulsão ou retaliação.\n\nDefina de onde foi exilado, por quê e quem sustenta a sentença.\n\nNa campanha: o exílio pode fechar acessos, comprometer negociações, provocar uma denúncia ou obrigar você a escolher entre evitar o lugar e enfrentar quem mantém sua expulsão.",
+      "categoria": "relacoes",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "familia_no_sistema",
+      "nome": "Família no Sistema",
+      "descricao": "Pessoas importantes para você continuam ligadas a instituições que sua vida refratária pode comprometer: Império, Casa-Vertente, corporação, universidade, serviço público ou estrutura formal semelhante.\n\nDefina os familiares, suas posições, aquilo que sabem e o rastro que pode ligar vocês.\n\nNa campanha: uma operação pode atravessar a instituição à qual pertencem, seus atos podem ameaçar a posição deles ou a família pode pedir silêncio, proteção ou cooperação. A relação também pode oferecer oportunidades cujo preço coloque os interesses de ambos em conflito.",
+      "categoria": "relacoes",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "ma_fama",
+      "nome": "Má Fama",
+      "descricao": "Um meio específico acredita que você é incompetente, traidor, desonesto, perigoso ou alguém com quem não vale a pena trabalhar. A reputação pode ser merecida, exagerada ou fabricada.\n\nDefina a comunidade, a acusação e quem ajudou a espalhá-la.\n\nNa campanha: pessoas desse meio podem elevar preços, exigir garantias, recusar cooperação, entregar oportunidades a concorrentes ou agir com hostilidade por causa do que ouviram. Cada pessoa reage à reputação conforme seus próprios interesses e sua relação com o caso.",
+      "categoria": "relacoes",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "pessoa_sob_sua_responsabilidade",
+      "nome": "Pessoa sob sua Responsabilidade",
+      "descricao": "Você assumiu responsabilidade real pelo sustento, segurança, tratamento ou futuro de alguém. Essa pessoa possui vontade e vida próprias; responsabilidade não significa incapacidade.\n\nDefina quem é, do que precisa, o que oferece à relação e por que você não abandona esse compromisso.\n\nNa campanha: essa responsabilidade pode exigir cuidado, presença, recursos ou o cumprimento de uma promessa quando outras prioridades também precisam de você. A pessoa possui necessidades, decisões e conflitos próprios; colocá-la em perigo é apenas uma das formas possíveis de pressionar o vínculo.",
+      "categoria": "relacoes",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "servico_em_aberto",
+      "nome": "Serviço em Aberto",
+      "descricao": "Uma pessoa ou organização pode cobrar de você um único serviço. Ela pode ter salvado sua vida, encoberto um erro, financiado uma fuga ou sofrido prejuízo quando você rompeu um contrato.\n\nDefina quem cobra e escolha a natureza do serviço: recuperar algo, transportar alguém, ocultar uma prova, transmitir uma informação ou abrir um acesso.\n\nNa campanha: o credor apresenta a exigência quando houver uma oportunidade real de cumpri-la e estabelece um prazo. Realizar o serviço encerra a Complicação. Recusar permite que o credor aplique a consequência escolhida na criação: perda de um acesso, Má Fama num meio específico, Dívida ou Vingança Declarada.",
+      "categoria": "relacoes",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "vinculo_indesejado",
+      "nome": "Vínculo Indesejado",
+      "descricao": "Você continua pertencendo, aos olhos de alguém, a uma família, tradição, comunidade, organização ou grupo do qual preferia se afastar. Costume, dependência, juramento, direito interno ou pressão social impede um rompimento limpo.\n\nDefina o grupo, a natureza do vínculo, o dever reivindicado e aquilo que mantém a ligação.\n\nNa campanha: o grupo pode exigir sua presença, reivindicar sua identidade, interferir em outras relações ou fechar caminhos quando você se recusa a cumprir o papel que ainda lhe atribuem.",
+      "categoria": "relacoes",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "vinganca_declarada",
+      "nome": "Vingança Declarada",
+      "descricao": "Uma pessoa prejudicada por você decidiu cobrar a perda com as próprias mãos ou por meio de poucos associados. Ela possui alcance local e um objetivo definido.\n\nEscolha quem busca vingança e o que pretende fazer: tomar um bem nomeado, arruinar uma relação específica, destruir sua reputação em determinado meio ou ferir você.\n\nNa campanha: o vingador procura oportunidades concretas para avançar seu objetivo e deixa sinais de suas ações. Seus conhecimentos, aliados e recursos são definidos durante a criação e podem mudar com a história. Reparação, reconciliação, derrota ou abandono do objetivo resolvem a Complicação.",
+      "categoria": "relacoes",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "rival",
+      "nome": "Rival",
+      "descricao": "Uma pessoa ou outro bando disputa com você um tipo específico de contrato, descoberta ou posição na Lista Cobalto. O Rival possui capacidade próxima à sua e quer chegar primeiro.\n\nDefina o Rival, o campo da disputa e uma vantagem que cada lado reconhece no outro.\n\nNa campanha: quando surgir uma oportunidade importante nesse campo, o Rival pode aparecer como candidato, antecipar uma etapa, oferecer condições melhores ou perseguir o mesmo objetivo por outro caminho. Suas ações devem deixar espaço para reação. A rivalidade termina por acordo, parceria, retirada ou vitória decisiva de um dos lados.",
+      "categoria": "relacoes",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "alvo_da_inquisicao",
+      "nome": "Alvo da Inquisição",
+      "descricao": "Uma investigação, célula ou figura inquisitorial dedica recursos para encontrar você. Essa atenção está acima do risco comum enfrentado por qualquer refratário: existe um caso, um padrão ou uma motivação pessoal mantendo a caçada ativa.\n\nDefina quem conduz a investigação, o que ela já sabe, qual evidência procura e o que pretende fazer ao encontrá-lo.\n\nNa campanha: inquisidores podem conectar rastros, aproximar-se de informantes, prever uma operação, pressionar pessoas ligadas a você ou fechar uma rota importante. Cada avanço parte das evidências e dos recursos que a investigação realmente possui.",
+      "categoria": "acesso_e_identidade",
+      "custos_permitidos": [
+        2
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "cacado_vivo",
+      "nome": "Caçado Vivo",
+      "descricao": "Uma organização com atuação em vários territórios precisa capturar você com vida. Seu corpo, conhecimento, linhagem, conduto ou acesso possui valor que seria perdido com sua morte.\n\nDefina a organização, o motivo da captura, o agente responsável e o rastro que a investigação já possui.\n\nNa campanha: a organização pode pressionar um contato, bloquear uma rota, procurar um Refúgio ou enviar uma equipe de contenção a partir das pistas reunidas. Destruir o interesse que você representa, apagar o rastro ou desmantelar a operação de captura resolve a Complicação.",
+      "categoria": "acesso_e_identidade",
+      "custos_permitidos": [
+        2
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "carimbado",
+      "nome": "Carimbado",
+      "descricao": "Você carrega o X azul sináptico implantado pelo Império em não alinhados capturados. O Carimbo registra localização e canalização, deixa uma marca visível e provoca desconfiança até em meios clandestinos.\n\nDefina quando foi aplicado, como costuma ser suprimido e quem conhece sua condição.\n\nNa campanha: o rastreamento pode retornar, uma supressão pode falhar, o sinal pode interferir em um acesso ou alguém pode reagir ao estigma do Carimbo. Removê-lo exige enfrentar sua origem ou encontrar recursos capazes de neutralizá-lo de maneira permanente.",
+      "categoria": "acesso_e_identidade",
+      "custos_permitidos": [
+        2
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "coleira",
+      "nome": "Coleira",
+      "descricao": "Uma organização imperial, corporativa ou clandestina controla uma alavanca capaz de causar uma perda grave: provas, acesso a alguém importante, tratamento indispensável, identidade comprometida ou segredo intolerável. Um agente específico atua como seu controlador.\n\nDefina o controlador, a alavanca e quais exigências ele pode fazer: informação, acesso ou serviço. Escolha também a consequência que ele pode executar caso você se recuse.\n\nNa campanha: o controlador apresenta cobranças com objetivo, prazo e relação com os interesses de sua organização. Recuperar a alavanca, torná-la pública, destruir seu valor ou derrubar o controlador resolve a Complicação.",
+      "categoria": "acesso_e_identidade",
+      "custos_permitidos": [
+        2
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "documentacao_fragil",
+      "nome": "Documentação Frágil",
+      "descricao": "Seu RPI forjado possui uma inconsistência conhecida: endereço duplicado, histórico incompleto, biometria instável, movimentação suspeita, permissão vencida ou dado que não resiste a cruzamento cuidadoso.\n\nEscolha a falha e os sistemas capazes de percebê-la.\n\nNa campanha: cruzamentos mais cuidadosos podem bloquear um serviço importante, exigir correção urgente, levantar suspeitas ou forçar o grupo a procurar uma rota mais perigosa. Verificações rotineiras continuam tratando o RPI conforme seu nível.",
+      "categoria": "acesso_e_identidade",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "identidade_exposta",
+      "nome": "Identidade Exposta",
+      "descricao": "Uma imagem, gravação, reportagem, propaganda, investigação ou vazamento tornou um de seus rostos reconhecível para um meio perigoso. O reconhecimento não é universal, mas pode conectar sua presença atual a algo que preferia manter separado.\n\nDefina qual imagem circula, entre quem e o que ela revela.\n\nNa campanha: alguém pode reconhecer você, transmitir a identificação, exigir silêncio ou usar a semelhança para pressioná-lo. Disfarces e mudanças de nome ajudam a evitar novos reconhecimentos, enquanto o registro original continua circulando até ser removido ou desacreditado.",
+      "categoria": "acesso_e_identidade",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "ponta_solta",
+      "nome": "Ponta Solta",
+      "descricao": "Você sabe, viu ou guardou algo que uma pessoa precisa manter oculto. Ela já decidiu agir para controlar o risco que você representa.\n\nDefina a informação, o responsável, sua exigência e o primeiro método que pretende usar: suborno, ameaça, difamação ou capanga contratado.\n\nNa campanha: o responsável começa pelo método escolhido e escala o mesmo plano caso você resista. Expor a informação, destruir seu valor ou neutralizar o responsável encerra a perseguição.",
+      "categoria": "acesso_e_identidade",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "rastro_na_subfrequencia",
+      "nome": "Rastro na Subfrequência",
+      "descricao": "Atividades diferentes começaram a ser ligadas pelo mesmo avatar, assinatura, ponto de acesso, padrão de linguagem ou cadeia de contratos. O rastro ainda não entrega toda a sua identidade, mas alguém consegue segui-lo.\n\nDefina a assinatura comprometida, quem a investiga e qual ligação já foi estabelecida.\n\nNa campanha: um canal pode ser infiltrado, uma proposta pode servir de isca, um acesso futuro pode começar sob vigilância ou um contato pode ser associado ao mesmo rastro. Romper a investigação exige quebrar a ligação, plantar outra pista ou limpar os registros relevantes.",
+      "categoria": "acesso_e_identidade",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "segredo_perigoso",
+      "nome": "Segredo Perigoso",
+      "descricao": "Existe uma verdade sobre você cuja revelação produziria consequências concretas. Pode envolver identidade, lealdade, autoria, crime, parentesco, pesquisa, colaboração ou aquilo que aconteceu numa operação anterior.\n\nDefina a verdade, quem já sabe, quem poderia descobrir e o que provavelmente aconteceria.\n\nUse 1 ponto quando a revelação afetar uma relação, posição ou território.\n\nUse 2 pontos quando puder desencadear perseguição institucional ou destruir várias partes da vida do personagem.\n\nNa campanha: o rastro definido pode ser encontrado, testemunhas podem falar, perguntas podem se aproximar da verdade e alguém pode tentar usar o segredo como chantagem. Quando ele vier a público, a Complicação termina ou se transforma nas consequências concretas da revelação.",
+      "categoria": "acesso_e_identidade",
+      "custos_permitidos": [
+        1,
+        2
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "carga_marcada",
+      "nome": "Carga Marcada",
+      "descricao": "Você possui um objeto importante que outra parte pretende recuperar: arma registrada, protótipo corporativo, veículo, escalpo, arquivo, obra, relíquia ou carga desviada.\n\nDefina o objeto, o reclamante e uma forma específica de reconhecê-lo, como número de série, assinatura rúnica, rastreador, registro de propriedade ou testemunha.\n\nNa campanha: usar, examinar, conectar ou negociar o objeto pode deixar uma pista que permita ao reclamante mobilizar agentes para recuperá-lo. Devolver o objeto, apagar sua origem ou encerrar a reivindicação resolve a Complicação.",
+      "categoria": "recursos_e_infraestrutura",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "divida",
+      "nome": "Dívida",
+      "descricao": "Você deve ao menos Ⱥ 3.000 a uma pessoa ou organização capaz de cobrar. Registre o valor total, a origem da dívida, uma parcela de pelo menos Ⱥ 500 e uma garantia concreta, como um bem, acesso, negócio ou documento.\n\nNa campanha: sempre que receber pagamento por um contrato, a próxima parcela vence antes da operação seguinte. Se não pagar, o credor tenta tomar a garantia, fecha um serviço específico para você ou oferece um trabalho perigoso em lugar do pagamento, conforme definido na criação. A dívida termina quando o valor registrado é quitado ou anulado por acordo, prova ou confronto.",
+      "categoria": "recursos_e_infraestrutura",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "codigo",
+      "nome": "Código",
+      "descricao": "Você escolheu uma regra pessoal capaz de limitar caminhos eficientes. Pode ser juramento, princípio ético, disciplina profissional, tradição ou promessa que considera parte de quem é.\n\nEscreva o Código como uma frase clara e indique duas situações em que ele pode cobrar um preço.\n\nNa campanha: o narrador apresenta situações nas quais seguir o Código fecha um atalho, custa recursos, expõe você ou protege algo em detrimento de outro objetivo. Você decide se permanece fiel a ele. Quebrá-lo pode encerrar a Complicação, transformá-la ou levar o personagem a lidar com o que fez.",
+      "categoria": "caracteristicas_pessoais",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "dependencia",
+      "nome": "Dependência",
+      "descricao": "Seu corpo, mente ou rotina depende de uma substância, atividade ou comportamento cuja ausência produz necessidade real. Defina o objeto, intervalo habitual, primeiros sinais, forma de obtenção e limites de representação acordados com o grupo.\n\nUse 1 ponto quando a necessidade for administrável, mas recorrente.\n\nUse 2 pontos quando a obtenção envolver risco constante, consequências graves ou uma organização que controla o acesso.\n\nNa campanha: escassez, aumento de custo, exposição, conflito de prioridades ou controle do fornecimento podem dificultar o acesso ao objeto da Dependência. O jogador decide como o personagem responde à necessidade, dentro dos limites de representação acordados pelo grupo.",
+      "categoria": "caracteristicas_pessoais",
+      "custos_permitidos": [
+        1,
+        2
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "fobia",
+      "nome": "Fobia",
+      "descricao": "Uma fonte específica de medo pode estreitar suas opções quando aparece de forma direta. Defina a fonte, os sinais que antecedem a reação e maneiras pelas quais seu personagem costuma responder: evitar, recuar, congelar, buscar apoio, enfrentar ou outra forma acordada.\n\nNa campanha: a presença desse medo pode fechar uma rota, atrasar uma ação, exigir ajuda ou tornar o enfrentamento uma escolha custosa. O jogador decide a resposta e descreve a experiência do personagem.",
+      "categoria": "caracteristicas_pessoais",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "impulsividade",
+      "nome": "Impulsividade",
+      "descricao": "Diante de um tipo definido de provocação ou oportunidade, você tende a agir antes de medir todas as consequências. Pode ser responder a desafio, proteger alguém, perseguir uma fuga, apostar alto, demonstrar poder ou agarrar uma chance rara.\n\nDefina a provocação ou oportunidade e a ação que costuma seguir.\n\nNa campanha: o narrador pode apresentar situações que despertem esse impulso. Segui-lo pode criar exposição, custo ou risco evitável, mas o jogador sempre decide se o personagem age antes de pensar ou contém a própria reação por algum outro custo.",
+      "categoria": "caracteristicas_pessoais",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "manutencao_corporal",
+      "nome": "Manutenção Corporal",
+      "descricao": "Uma condição crônica, prótese, alteração, tratamento ou conjunto específico de escalpos exige insumo, ajuste ou atendimento além da manutenção normal. Sem ele, o problema não surge instantaneamente, mas começa a ameaçar sua rotina ou desempenho.\n\nDefina a necessidade, frequência, fornecedor habitual e primeiros sinais de falha.\n\nNa campanha: o acesso ao tratamento pode ser bloqueado, o insumo pode se tornar moeda de pressão, uma operação pode atravessar o prazo de manutenção ou o atendimento pode exigir uma concessão perigosa. Os efeitos específicos da falta de manutenção devem ser definidos de acordo com a condição ou equipamento escolhido.",
+      "categoria": "caracteristicas_pessoais",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "mutacao_arcana",
+      "nome": "Mutação Arcana",
+      "descricao": "A exposição ao arcano alterou seu corpo de forma visível, aproximando sua aparência das bestas vestigiais, criaturas deformadas que sobrevivem em Zonas Anômalas ou próximas dela. A mutação pode produzir pele mineralizada ou translúcida, olhos multiplicados, assimetria corporal, protuberâncias ósseas, membros alongados, placas semelhantes a carapaça ou outra transformação equivalente.\n\nDefina a origem da mutação, suas características permanentes e como elas se intensificam durante canalizações ou novas exposições. Sem preparação adequada, observadores conseguem reconhecer que a alteração possui origem anômala.\n\nNa campanha: a mutação pode comprometer um disfarce ou identidade, bloquear um serviço regulamentado, conectar você a uma descrição ou atrair uma investigação. Disfarçá-la reduz a exposição momentânea; estabilizá-la, revertê-la ou incorporá-la a uma identidade segura pode resolver ou transformar a Complicação.\n\nA mutação é uma alteração narrativa e existe sem uma Ruptura. Seus efeitos não contam como Traços nem acrescentam capacidades ao personagem.",
+      "categoria": "caracteristicas_pessoais",
+      "custos_permitidos": [
+        1
+      ]
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "obsessao",
+      "nome": "Obsessão",
+      "descricao": "Uma pessoa, objetivo, mistério, obra ou verdade ocupa espaço desproporcional em sua atenção. Você continua funcional, mas pistas relacionadas têm poder para reorganizar suas prioridades.\n\nDefina o objeto da Obsessão, o que você espera encontrar e uma linha que teme atravessar.\n\nNa campanha: pistas relacionadas podem disputar tempo, segurança, recursos e compromissos com outros objetivos. O jogador decide quanto espaço o personagem entrega à busca e quais limites aceita atravessar para continuá-la.",
+      "categoria": "caracteristicas_pessoais",
+      "custos_permitidos": [
+        1
+      ]
+    }
+  ]
+}

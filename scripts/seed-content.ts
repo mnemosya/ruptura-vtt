@@ -240,6 +240,27 @@ const SOURCES: SourceSpec[] = [
     collectionKey: "subclasses",
     version: "1.2",
   },
+  {
+    contentType: "background",
+    mode: "collection",
+    file: "v12/db_trajetoria_v1_2.json",
+    collectionKey: "backgrounds",
+    version: "1.2",
+  },
+  {
+    contentType: "quality",
+    mode: "collection",
+    file: "v12/db_trajetoria_v1_2.json",
+    collectionKey: "qualities",
+    version: "1.2",
+  },
+  {
+    contentType: "complication",
+    mode: "collection",
+    file: "v12/db_trajetoria_v1_2.json",
+    collectionKey: "complications",
+    version: "1.2",
+  },
   // Não está no manifesto do core — singleton tratado à parte.
   {
     contentType: "master_table",

@@ -1,6 +1,7 @@
 import {
   CLASS_FEATURE_RANKINGS_V12,
   RANKINGS_V12,
+  REGIOES_V12,
   RUPTURA_V12_CHARACTER_SCHEMA_VERSION,
   RUPTURA_V12_CONTENT_SCHEMA_VERSION,
   RUPTURA_V12_RULESET_VERSION,
@@ -284,7 +285,8 @@ export function validateCharacterV2(value: unknown): ValidationResultV12<Charact
   }
 
   const trajectory = requireRecord(root.trajetoria, "trajetoria", errors);
-  requireSlug(trajectory.regiao_id, "trajetoria.regiao_id", errors);
+  const regiao = requireSlug(trajectory.regiao_id, "trajetoria.regiao_id", errors);
+  if (regiao && !(regiao in REGIOES_V12)) errors.push(`trajetoria.regiao_id: "${regiao}" não é uma das cinco regiões do Império.`);
   requireString(trajectory.local_origem, "trajetoria.local_origem", errors);
   requireStringArray(trajectory.idiomas, "trajetoria.idiomas", errors, 1);
   const background = requireRecord(trajectory.antecedente, "trajetoria.antecedente", errors);
@@ -315,7 +317,8 @@ export function validateCharacterV2(value: unknown): ValidationResultV12<Charact
   const qualityBudget = qualities.reduce((sum, entry) => sum + (record(entry)?.pontos === 2 ? 2 : record(entry)?.pontos === 1 ? 1 : 0), 0);
   const complicationBudget = complications.reduce((sum, entry) => sum + (record(entry)?.pontos === 2 ? 2 : record(entry)?.pontos === 1 ? 1 : 0), 0);
   if (qualityBudget !== 3) errors.push(`trajetoria.qualidades: orçamento deve somar 3; recebido ${qualityBudget}.`);
-  if (complicationBudget !== 2) errors.push(`trajetoria.complicacoes: orçamento deve somar 2; recebido ${complicationBudget}.`);
+  // Mínimo de 2: Complicações adicionais são permitidas quando o grupo concorda (cap. 8).
+  if (complicationBudget < 2) errors.push(`trajetoria.complicacoes: orçamento deve somar ao menos 2; recebido ${complicationBudget}.`);
 
   const progression = requireRecord(root.progressao, "progressao", errors);
   requireSlug(progression.classe_id, "progressao.classe_id", errors);
