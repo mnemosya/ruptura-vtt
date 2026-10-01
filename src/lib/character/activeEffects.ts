@@ -26,6 +26,7 @@
 import { normalizeConditionSlug } from "./actionConsole";
 import { getConditionEndRoundEffects, type ConditionContent, type ConditionEndRoundEffect } from "./endRoundConditions";
 import type { ActiveCondition, Character } from "./types";
+import { getConditionLevel } from "./conditionState";
 
 /** Fonte do efeito — "talent" adicionado no checkpoint v0.48, "escalpo" no v0.55, "rune" no v0.57, "temporary" no pós-v0.71 (buff temporário rastreado); outros tipos (magia...) são trabalho futuro. */
 export type ActiveEffectSourceType = "condition" | "reaction_overflow" | "talent" | "escalpo" | "rune" | "temporary";
@@ -113,7 +114,10 @@ function buildEffectFromPayload(
 
   switch (efeito.tipo) {
     case "modificador": {
-      const valor = efeito.valor;
+      const porNivel = efeito.valor_por_nivel;
+      const valor = porNivel && typeof porNivel === "object" && !Array.isArray(porNivel)
+        ? (porNivel as Record<string, unknown>)[String(getConditionLevel(condition))]
+        : efeito.valor;
       const alvoTags = isStringArray(efeito.alvo_tags) ? efeito.alvo_tags : [];
       if (typeof valor !== "number" || alvoTags.length === 0) return null;
       const sinal = valor >= 0 ? "+" : "";

@@ -18,6 +18,7 @@
  * textual, nunca simulados.
  */
 
+import { reduceConditionLevel } from "./conditionState";
 import type { ActiveCondition, Character } from "./types";
 import type { TechnicalContentItem } from "../content";
 import {
@@ -448,6 +449,9 @@ const AUTOMATED_EFFECT_TYPES = [
   "remover_condicao",
   "remover_condicoes",
   "remover_restricao_movimento",
+  // RUPTURA v1.2: Interagir reduz Queimando em 1 nível e contém Sangrando.
+  "reduzir_nivel_condicao",
+  "conter_condicao",
   // Checkpoint v0.64 — postura vira estado ativo real (ver aplicarOuEncerrarPostura).
   "aplicar_postura",
 ] as const;
@@ -497,6 +501,8 @@ const EFFECT_TYPE_LABELS: Record<string, string> = {
   remover_condicao: "Remove condição",
   remover_condicoes: "Remove condições",
   remover_restricao_movimento: "Remove restrição de movimento (Agarrado/Imobilizado)",
+  reduzir_nivel_condicao: "Reduz o nível da condição",
+  conter_condicao: "Contém o agravamento da condição nesta rodada",
   aplicar_postura: "Aplica/encerra postura como estado ativo (modificadores refletidos automaticamente nas rolagens)",
   habilitar_deslocamento_em_partes: "Deslocamento fracionável (não automatizado)",
   incrementar_custo_por_repeticao_no_turno: "Repetição no turno incrementa custo (não automatizado)",
@@ -877,6 +883,40 @@ function removeConditionsBySlug(condicoes: ActiveCondition[], slugs: string[], n
   return { next, removed };
 }
 
+/**
+ * Efeitos de nível das condições v1.2 no próprio personagem:
+ * `reduzir_nivel_condicao` tira `niveis` (padrão 1) e encerra abaixo de 1;
+ * `conter_condicao` marca a rodada atual para impedir o agravamento.
+ * `changed` lista o que realmente mudou (texto para log/cobrança).
+ */
+export function applyConditionLevelEffects(
+  character: Character,
+  efeitos: { tipo: string; [key: string]: unknown }[],
+  nowIso: string,
+): { character: Character; changed: string[] } {
+  let condicoes = character.condicoes_ativas ?? [];
+  const changed: string[] = [];
+  for (const efeito of efeitos) {
+    if (efeito.tipo !== "reduzir_nivel_condicao" && efeito.tipo !== "conter_condicao") continue;
+    if (typeof efeito.condicao !== "string") continue;
+    const alvo = normalizeConditionSlug(efeito.condicao);
+    condicoes = condicoes.map((c) => {
+      if (!c.ativa || normalizeConditionSlug(c.conditionId ?? c.nome) !== alvo) return c;
+      if (efeito.tipo === "conter_condicao") {
+        const rodada = character.current_round ?? 0;
+        if (c.contidaNaRodada === rodada) return c;
+        changed.push(`${c.nome} contido`);
+        return { ...c, contidaNaRodada: rodada };
+      }
+      const niveis = typeof efeito.niveis === "number" ? efeito.niveis : 1;
+      const reduzida = reduceConditionLevel(c, niveis, nowIso, "acao_combate");
+      changed.push(reduzida.ativa ? `${c.nome} ${reduzida.nivel}/${c.nivelMaximo ?? reduzida.nivel}` : c.nome);
+      return reduzida;
+    });
+  }
+  return { character: { ...character, condicoes_ativas: condicoes }, changed };
+}
+
 export function executeActionOnCharacter(
   character: Character,
   action: CombatActionContent,
@@ -935,7 +975,9 @@ export function executeActionOnCharacter(
   // continuam cobrando ao executar como já funcionava.
   const isPureRemovalAction =
     payloadEffects.length > 0 &&
-    payloadEffects.every((e) => e.tipo === "remover_condicao" || e.tipo === "remover_condicoes" || e.tipo === "remover_restricao_movimento");
+    payloadEffects.every((e) =>
+      e.tipo === "remover_condicao" || e.tipo === "remover_condicoes" || e.tipo === "remover_restricao_movimento"
+      || e.tipo === "reduzir_nivel_condicao" || e.tipo === "conter_condicao");
 
   const removal = getActionRemovalEffects(action);
   let removedConditions: string[] = [];
@@ -945,6 +987,11 @@ export function executeActionOnCharacter(
     characterAposRemocao = { ...character, condicoes_ativas: result.next };
     removedConditions = result.removed;
   }
+  // Níveis v1.2: reduzir (Queimando) e conter (Sangrando) contam como
+  // efeito real para a cobrança de PA, como a remoção acima.
+  const levelChanges = applyConditionLevelEffects(characterAposRemocao, payloadEffects, nowIso);
+  characterAposRemocao = levelChanges.character;
+  removedConditions = [...removedConditions, ...levelChanges.changed];
 
   const deveCobrarPA = !isPureRemovalAction || removedConditions.length > 0;
 
@@ -1039,6 +1086,8 @@ export function executeActionOnCharacter(
       efeito.tipo === "remover_condicao" ||
       efeito.tipo === "remover_condicoes" ||
       efeito.tipo === "remover_restricao_movimento" ||
+      efeito.tipo === "reduzir_nivel_condicao" ||
+      efeito.tipo === "conter_condicao" ||
       efeito.tipo === "aplicar_postura" ||
       (efeito.tipo === "modificador" && posturaSlug != null);
     if (tratadoComoAutomatico) {

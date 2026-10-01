@@ -67,20 +67,28 @@ export async function executarAplicarCondicao(
   const payload = (condicaoPublicada.payload as Record<string, unknown>) ?? {};
   const nome = typeof payload.nome === "string" ? payload.nome : condicaoSlug;
   const duracaoPadrao = typeof payload.duracao_padrao === "string" ? payload.duracao_padrao : undefined;
+  const nivelMaximo = typeof payload.nivel_maximo === "number" ? payload.nivel_maximo : undefined;
 
   // 2. duração: override do efeito prevalece sobre a duração padrão da condição.
   const duracao = duracaoOverride ?? duracaoPadrao;
 
   // 3. mutação em si — pura, não persiste nada (quem chama decide persistência).
-  const resultado = applyGmCondition(characterPayload, { slug: condicaoSlug, nome, duracao }, nowIso, authorship);
+  const resultado = applyGmCondition(
+    characterPayload,
+    { slug: condicaoSlug, nome, duracao, nivelMaximo, round: characterPayload.current_round },
+    nowIso,
+    authorship,
+  );
 
   // 5. falha sem sucesso parcial: condição já ativa (acúmulo binário do modelo atual).
-  if (resultado.jaAtiva) {
-    return { ok: false, motivo: `"${nome}" já está ativa neste alvo — o modelo atual não empilha a mesma condição.` };
+  if (resultado.jaAtiva && !resultado.agravada) {
+    return { ok: false, motivo: `"${nome}" já está no nível máximo neste alvo.` };
   }
 
   // 4. log legível.
-  const logTexto = `Condição aplicada: ${nome}${duracao ? ` (${duracao})` : ""}.`;
+  const logTexto = resultado.agravada
+    ? `Condição agravada: ${nome} ${resultado.condicao?.nivel}/${resultado.condicao?.nivelMaximo}.`
+    : `Condição aplicada: ${nome}${nivelMaximo ? " 1/" + nivelMaximo : ""}${duracao ? ` (${duracao})` : ""}.`;
 
   return { ok: true, character: resultado.character, condicao: resultado.condicao, logTexto };
 }

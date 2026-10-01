@@ -6,6 +6,7 @@ export * from "./createCharacter";
 export * from "./normalizeCharacter";
 export * from "./activeEffects";
 export * from "./autoHeal";
+export * from "./conditionState";
 export * from "./rest";
 export * from "./overload";
 export * from "./collapse";

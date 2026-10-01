@@ -7,6 +7,7 @@
  */
 
 import { applyAutoHealRemoval } from "./autoHeal";
+import { applyGmCondition } from "./gmActions";
 import { detectCollapseOnResourceChange, resolveCollapseAdditionalDamage } from "./collapse";
 import { spendReactionForDefense, type ReactionRules } from "./reactions";
 import { enforcePvGatedToggleDeactivation } from "./talentEngine";
@@ -200,6 +201,20 @@ export function applyConsoleMutation(
   }
 
   if (mutation.type === "condition_add") {
+    // Condição da Biblioteca: mesma regra do narrador (v1.2) — cumulativa
+    // agrava o nível, não cumulativa não duplica, nível máximo transborda.
+    if (mutation.condition.conditionId) {
+      const r = applyGmCondition(
+        character,
+        { slug: mutation.condition.conditionId, nome: mutation.condition.nome, duracao: mutation.condition.duracao, round: character.current_round },
+        mutation.condition.aplicadaEm,
+      );
+      const warnings: string[] = [];
+      if (r.transbordo === "cego") warnings.push("Ofuscado já estava no nível máximo: Cego até o fim do próximo turno.");
+      if (r.transbordo === "fratura") warnings.push("Contundido já estava no nível máximo: a nova aplicação fratura um membro.");
+      else if (r.jaAtiva && !r.agravada && !r.transbordo) warnings.push(`${mutation.condition.nome} já está ativa.`);
+      return { character: r.character, meta: warnings.length ? { warnings } : {} };
+    }
     return {
       character: {
         ...character,

@@ -109,7 +109,8 @@
         "sacar_dificil",
         "sacar_rapido",
         "soltar_alvo",
-        "usar_pericia"
+        "usar_pericia",
+        "conter_sangramento"
       ]
     },
     "tag": {
@@ -210,7 +211,8 @@
             "sacar_dificil",
             "sacar_rapido",
             "soltar_alvo",
-            "usar_pericia"
+            "usar_pericia",
+            "conter_sangramento"
           ]
         },
         "slug": {

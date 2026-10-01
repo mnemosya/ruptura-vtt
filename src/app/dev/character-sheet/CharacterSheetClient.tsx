@@ -321,6 +321,7 @@ import { ResourcesTab } from "./components/ResourcesTab";
 import { RollsTab } from "./components/RollsTab";
 import { LogTab, type LogEntry, type LogTipo } from "./components/LogTab";
 import { ConditionsTab, type ConditionOption } from "./components/ConditionsTab";
+import { applyGmCondition } from "../../../lib/character/gmActions";
 import { TalentsTab } from "./components/TalentsTab";
 import { InventoryTab } from "./components/InventoryTab";
 import { SpellsTab } from "./components/SpellsTab";
@@ -4849,6 +4850,7 @@ export default function CharacterSheetClient({
     origem: string;
     duracao: string;
   }) {
+    const option = input.conditionId ? condicoesDisponiveis.find((item) => item.slug === input.conditionId) : undefined;
     const novaCondicao: ActiveCondition = {
       id: crypto.randomUUID(),
       conditionId: input.conditionId,
@@ -4860,14 +4862,39 @@ export default function CharacterSheetClient({
       removidaEm: null,
       ativa: true,
     };
-    const addResult = applyConsoleMutation(
+    const result = input.conditionId
+      ? applyGmCondition(
+          characterRef.current,
+          {
+            slug: input.conditionId,
+            nome: input.nome,
+            duracao: input.duracao || undefined,
+            nivelMaximo: option?.nivel_maximo,
+            round: characterRef.current.current_round,
+          },
+          novaCondicao.aplicadaEm,
+        )
+      : null;
+    if (result?.transbordo) {
+      characterRef.current = result.character;
+      setCharacter(result.character);
+      addLogEntry("condicao", result.transbordo === "cego"
+        ? `"${input.nome}" já estava no nível máximo: Cego até o fim do próximo turno.`
+        : `"${input.nome}" já estava no nível máximo: a nova aplicação fratura um membro.`);
+      return;
+    }
+    if (result?.jaAtiva && !result.agravada) return;
+    const condicaoRegistrada = result?.condicao ?? novaCondicao;
+    const addResult = result ?? applyConsoleMutation(
       characterRef.current,
       { type: "condition_add", condition: novaCondicao },
       { derived: derivados, rules: regras, reactionRules, talents: talentsIniciais },
     );
     characterRef.current = addResult.character;
     setCharacter(addResult.character);
-    addLogEntry("condicao", `Condição aplicada: "${novaCondicao.nome}".`);
+    addLogEntry("condicao", result?.agravada
+      ? `Condição agravada: "${condicaoRegistrada.nome}" ${condicaoRegistrada.nivel}/${condicaoRegistrada.nivelMaximo}.`
+      : `Condição aplicada: "${condicaoRegistrada.nome}".`);
     if (selectedCampaignId) {
       try {
         await addLog({
@@ -4876,12 +4903,15 @@ export default function CharacterSheetClient({
           type: "condition_applied",
           visibility: "public",
           payload: {
-            conditionLocalId: novaCondicao.id,
-            conditionId: novaCondicao.conditionId,
-            nome: novaCondicao.nome,
-            descricao: novaCondicao.descricao,
-            origem: novaCondicao.origem,
-            duracao: novaCondicao.duracao,
+            conditionLocalId: condicaoRegistrada.id,
+            conditionId: condicaoRegistrada.conditionId,
+            nome: condicaoRegistrada.nome,
+            descricao: condicaoRegistrada.descricao,
+            origem: condicaoRegistrada.origem,
+            duracao: condicaoRegistrada.duracao,
+            nivel: condicaoRegistrada.nivel,
+            nivelMaximo: condicaoRegistrada.nivelMaximo,
+            agravada: result?.agravada ?? false,
             characterId,
             characterNome: character.nome,
           },
@@ -5904,6 +5934,7 @@ export default function CharacterSheetClient({
       slug: c.slug,
       nome: c.nome,
       descricao_curta: c.descricao_curta,
+      nivel_maximo: c.nivel_maximo,
     })),
 
     // `pinned` ainda não existe no payload do personagem — os três slots

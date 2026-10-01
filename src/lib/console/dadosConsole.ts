@@ -62,6 +62,7 @@ export interface OpcaoCondicaoConsole {
   nome: string;
   descricao_curta?: string;
   tags?: string[];
+  nivel_maximo?: number;
 }
 
 export interface DadosConsole {
@@ -145,12 +146,13 @@ export async function carregarDadosConsole(campaignId: string | null): Promise<D
     erroFatal: regrasR.erro,
 
     condicoesDisponiveis: docsCondicoes.map((doc) => {
-      const payload = doc.payload as { descricao_curta?: string; tags?: string[] } | null;
+      const payload = doc.payload as { descricao_curta?: string; tags?: string[]; nivel_maximo?: number } | null;
       return {
         slug: doc.slug,
         nome: doc.nome ?? doc.slug,
         descricao_curta: payload?.descricao_curta,
         tags: Array.isArray(payload?.tags) ? payload.tags : undefined,
+        nivel_maximo: typeof payload?.nivel_maximo === "number" ? payload.nivel_maximo : undefined,
       };
     }),
     condicoesParaAcoes: docsCondicoes.map((doc) => {

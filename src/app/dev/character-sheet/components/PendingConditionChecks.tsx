@@ -11,6 +11,7 @@ import type { ConditionResistanceCheck } from "../../../../lib/character";
  */
 const EFFECT_TYPE_ORIGEM: Record<ConditionResistanceCheck["effectType"], string> = {
   teste_fim_de_rodada: "Fim de rodada",
+  teste_fim_de_rodada_progressivo: "Fim de rodada (CD progressiva)",
   teste_fim_de_rodada_para_remover_condicao: "Fim de rodada (remover condição)",
   teste_apos_exposicao: "Exposição",
 };

@@ -19,6 +19,7 @@
 import { applyAutoHealRemoval } from "./autoHeal";
 import { detectCollapseOnResourceChange, type ResourceSnapshot } from "./collapse";
 import { applyDamageThroughTemporaryPv } from "./temporaryPv";
+import { getConditionLevel, getConditionLevelCap } from "./conditionState";
 import type { ActiveCondition, Character, CharacterResources } from "./types";
 
 const RECURSOS_PADRAO: Required<Pick<CharacterResources, "pv" | "pe" | "mana" | "integridade">> = {
@@ -63,8 +64,8 @@ export interface GmHealResult {
 
 /**
  * Aplica cura a PV, PE ou Mana — nunca acima de `max`. Cura de PV
- * também dispara a remoção automática de Contundido/Envenenado/
- * Sangrando (`applyAutoHealRemoval`, mesma regra da ficha) e a
+ * também reduz automaticamente Contundido/Sangrando em 1 nível
+ * (`applyAutoHealRemoval`, mesma regra da ficha) e faz a
  * detecção de fim de Colapso quando aplicável.
  */
 export function applyGmHealing(
@@ -121,13 +122,21 @@ export interface GmApplyConditionResult {
   condicao: ActiveCondition | null;
   /** true = não aplicou porque a mesma condição (por slug) já estava ativa (modelo atual não tem stacks). */
   jaAtiva: boolean;
+  /** A mesma condição já existia e subiu um nível. */
+  agravada: boolean;
+  /**
+   * Nova aplicação com a condição já no nível máximo (v1.2):
+   * Ofuscado 2 → Cego até o fim do próximo turno (aplicado aqui);
+   * Contundido 2 → fratura de um membro (só sinalizada: a escolha do
+   * membro é do narrador).
+   */
+  transbordo?: "cego" | "fratura";
 }
 
 /**
- * Aplica uma condição publicada da Biblioteca. Não duplica a mesma
- * condição (`conditionId`) enquanto já houver uma ativa — `ActiveCondition`
- * não tem campo de stacks hoje, então duas entradas ativas com o mesmo
- * slug seriam indistinguíveis na UI. `authorship` (checkpoint talentos,
+ * Aplica uma condição publicada da Biblioteca. Uma nova aplicação de
+ * condição cumulativa agrava seu nível até o limite canônico; condições
+ * não cumulativas continuam sem duplicação. `authorship` (checkpoint talentos,
  * Fase 6) é opcional — quando presente, grava a autoria estruturada
  * (`sourceCharacterId`/`sourceTalentId`/etc.) usada por talentos como
  * Praga › Sangria Lenta/Contágio, que precisam identificar "efeitos que
@@ -135,7 +144,7 @@ export interface GmApplyConditionResult {
  */
 export function applyGmCondition(
   character: Character,
-  condition: { slug: string; nome: string; duracao?: string },
+  condition: { slug: string; nome: string; duracao?: string; nivelMaximo?: number; round?: number },
   nowIso: string,
   authorship?: {
     sourceCharacterId?: string | null;
@@ -146,9 +155,48 @@ export function applyGmCondition(
   },
 ): GmApplyConditionResult {
   const atuais = character.condicoes_ativas ?? [];
-  const jaAtiva = atuais.some((c) => c.ativa && c.conditionId === condition.slug);
-  if (jaAtiva) {
-    return { character, condicao: null, jaAtiva: true };
+  const ativa = atuais.find((c) => c.ativa && c.conditionId === condition.slug);
+  const nivelMaximo = condition.nivelMaximo ?? getConditionLevelCap(condition.slug);
+  if (ativa) {
+    if (!nivelMaximo) return { character, condicao: null, jaAtiva: true, agravada: false };
+    const nivelAtual = getConditionLevel(ativa);
+    if (nivelAtual >= nivelMaximo) {
+      if (condition.slug === "ofuscado") {
+        const cegoAtivo = atuais.some((c) => c.ativa && c.conditionId === "cego");
+        const cego: ActiveCondition = {
+          id: crypto.randomUUID(),
+          conditionId: "cego",
+          nome: "Cego",
+          origem: "Ofuscado no nível máximo",
+          duracao: "ate_fim_do_proximo_turno",
+          aplicadaEm: nowIso,
+          removidaEm: null,
+          ativa: true,
+          aplicadaNaRodada: condition.round,
+        };
+        return {
+          character: cegoAtivo ? character : { ...character, condicoes_ativas: [...atuais, cego] },
+          condicao: ativa,
+          jaAtiva: true,
+          agravada: false,
+          transbordo: "cego",
+        };
+      }
+      if (condition.slug === "contundido") {
+        return { character, condicao: ativa, jaAtiva: true, agravada: false, transbordo: "fratura" };
+      }
+      return { character, condicao: ativa, jaAtiva: true, agravada: false };
+    }
+    const agravada: ActiveCondition = { ...ativa, nivel: nivelAtual + 1, nivelMaximo, aplicadaNaRodada: condition.round };
+    return {
+      character: {
+        ...character,
+        condicoes_ativas: atuais.map((c) => c.id === ativa.id ? agravada : c),
+      },
+      condicao: agravada,
+      jaAtiva: true,
+      agravada: true,
+    };
   }
   const novaCondicao: ActiveCondition = {
     id: crypto.randomUUID(),
@@ -158,10 +206,13 @@ export function applyGmCondition(
     aplicadaEm: nowIso,
     removidaEm: null,
     ativa: true,
+    nivel: nivelMaximo ? 1 : undefined,
+    nivelMaximo,
+    aplicadaNaRodada: condition.round,
     origem: "dev_table_narrator_tool",
     ...(authorship ?? {}),
   };
-  return { character: { ...character, condicoes_ativas: [...atuais, novaCondicao] }, condicao: novaCondicao, jaAtiva: false };
+  return { character: { ...character, condicoes_ativas: [...atuais, novaCondicao] }, condicao: novaCondicao, jaAtiva: false, agravada: false };
 }
 
 export interface GmRemoveConditionResult {

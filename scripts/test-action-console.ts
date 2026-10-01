@@ -109,11 +109,11 @@ function execute(slug: string, character: Character) {
   );
 }
 
-assert.equal(actions.length, 28, "O DB deve conter 28 ações canônicas.");
+assert.equal(actions.length, 29, "O DB deve conter 29 ações canônicas.");
 
 const noConditions = visibleSlugs(characterWith());
 assert.equal(noConditions.length, 24, "Sem condições, devem existir 24 ações visíveis.");
-for (const hidden of ["levantar", "escapar", "soltar_alvo", "apagar_fogo"]) {
+for (const hidden of ["levantar", "escapar", "soltar_alvo", "apagar_fogo", "conter_sangramento"]) {
   assert.ok(!noConditions.includes(hidden), `${hidden} deve ficar oculta sem condição.`);
 }
 
@@ -148,6 +148,24 @@ for (const testCase of conditionalCases) {
     `${testCase.action} não deve remover condição não relacionada.`,
   );
 }
+
+// v1.2: Apagar fogo reduz Queimando em 1 nível; Conter sangramento só marca a rodada.
+const queimando2 = characterWith([{ ...activeCondition("Queimando", "queimando"), nivel: 2, nivelMaximo: 3 }]);
+const apagou = execute("apagar_fogo", queimando2);
+assert.equal(apagou.paBefore - apagou.paAfter, 1, "Apagar fogo custa 1 PA.");
+const queimandoDepois = apagou.character.condicoes_ativas?.find((c) => c.conditionId === "queimando");
+assert.equal(queimandoDepois?.ativa, true);
+assert.equal(queimandoDepois?.nivel, 1, "Apagar fogo reduz Queimando 2 → 1.");
+
+const sangrando = { ...characterWith([{ ...activeCondition("Sangrando", "sangrando"), nivel: 1, nivelMaximo: 3 }]), current_round: 4 };
+assert.ok(visibleSlugs(sangrando).includes("conter_sangramento"), "Sangrando habilita Conter sangramento.");
+const contido = execute("conter_sangramento", sangrando);
+assert.equal(contido.paBefore - contido.paAfter, 1, "Conter sangramento custa 1 PA.");
+const sangrandoDepois = contido.character.condicoes_ativas?.find((c) => c.conditionId === "sangrando");
+assert.equal(sangrandoDepois?.contidaNaRodada, 4);
+assert.equal(sangrandoDepois?.ativa, true, "Conter não remove Sangrando.");
+const contidoDeNovo = execute("conter_sangramento", contido.character);
+assert.equal(contidoDeNovo.paBefore - contidoDeNovo.paAfter, 0, "Conter de novo na mesma rodada não cobra PA.");
 
 const manualFallen = characterWith([activeCondition("Caído")]);
 assert.ok(visibleSlugs(manualFallen).includes("levantar"), "Nome manual Caído deve normalizar para caido.");
@@ -208,7 +226,7 @@ const compoundItem = consoleItems(characterWith()).find((item) => item.slug === 
 assert.equal(compoundItem?.enabled, false);
 assert.match(compoundItem?.disabledReason ?? "", /Custo composto/);
 
-for (const conditional of ["levantar", "escapar", "soltar_alvo", "apagar_fogo"]) {
+for (const conditional of ["levantar", "escapar", "soltar_alvo", "apagar_fogo", "conter_sangramento"]) {
   assert.equal(
     validateConditionalActionConsistency(action(conditional), conditions),
     undefined,

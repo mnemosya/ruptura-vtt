@@ -329,14 +329,14 @@ Critério de saída:
 
 Condições e combate:
 
-- [ ] 18 condições canônicas;
-- [ ] inclusão de `Oculto`;
-- [ ] estado persistente de nível;
-- [ ] transições de Contundido, Envenenado, Lento, Ofuscado, Queimando, Sangrando e Sufocando;
+- [x] 18 condições canônicas (`content/db_condicoes_normalizado_v1_5.json`, gerado por `scripts/dev/v12/gerar_condicoes.mjs`);
+- [x] inclusão de `Oculto` (a relação por observador é só texto até o VTT ter percepção por criatura);
+- [x] estado persistente de nível (`nivel`/`nivelMaximo` na condição ativa; nova aplicação agrava até o limite);
+- [x] transições de Contundido, Envenenado, Lento, Ofuscado, Queimando, Sangrando e Sufocando (fratura do Contundido só sinalizada; deslocamento do Lento ainda não é aplicado ao movimento);
 - [ ] ação Esconder-se;
 - [ ] ação Ataque Secundário;
 - [ ] Acessar Trama por 1 PA;
-- [ ] Interagir reduz um nível de Queimando;
+- [x] Interagir reduz um nível de Queimando (Apagar fogo) e contém Sangrando (Conter sangramento);
 - [ ] revisão da equivalência das demais ações.
 
 Magias:
@@ -719,3 +719,16 @@ Essa entrega deve terminar antes da implementação do novo wizard.
   - grava só os campos de progressão sobre o payload persistido;
 - `update_character_sheet_payload`: para personagens v1.2 e jogador controlador, `schema_version`, `ruleset_version`, `progressao`, `trajetoria`, `atributos`, `pericias`, `niveis_vertente` e `magia.vertente_primaria`/`niveis_vertente`/`escolhas_pendentes` voltam ao valor persistido. O narrador continua editando tudo. Um salvamento atrasado da ficha deixa de desfazer um avanço;
 - `scripts/dev/v12/testar_rpc_avanco.ts`: 15 cenários no remoto em transação desfeita (jogador, narrador, estranho, avanço válido, duplicado, salto, pontos a mais, PA, Subclasse, fórmulas, pendências, F→E com Subclasse).
+
+### 01/10/2026 — Condições v1.2 (Fase 6)
+
+- iniciado no Codex e concluído aqui;
+- 18 condições, com Oculto. As cumulativas têm níveis: Contundido 2, Envenenado 3, Lento 2, Ofuscado 2, Queimando 3, Sangrando 3. Efeitos e dano variam por nível;
+- nova aplicação de condição cumulativa agrava o nível pelo narrador, pela ficha e pelo HUD; condição não cumulativa não duplica;
+- no nível máximo, Ofuscado aplica Cego até o fim do próximo turno, e Contundido avisa a fratura;
+- recuperar PV reduz Contundido e Sangrando em 1 nível; Envenenado não sai mais por cura;
+- Sangrando agrava no fim da rodada a partir da rodada seguinte à aplicação, salvo se contido;
+- Sufocando: teste de Vigor com CD 6 crescente, Inconsciente na falha e morte na falha seguinte; um novo episódio recomeça em CD 6;
+- ações: Apagar fogo reduz Queimando em 1 nível; nova ação Conter sangramento (1 PA, variação de Interagir). Ambas só cobram PA quando mudam algo;
+- testes: `test:ruleset-v12-condicoes` e `test:action-console` ampliados;
+- seed pendente de aplicação: 2 documentos novos (`condition:oculto`, `combat_action:conter_sangramento`) e 18 atualizados.

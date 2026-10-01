@@ -160,6 +160,14 @@ export interface ActiveCondition {
   /** ISO timestamp de quando foi removida — null enquanto ativa. */
   removidaEm?: string | null;
   ativa: boolean;
+  /** Nível atual das condições cumulativas v1.2. Ausente equivale a 1 para compatibilidade. */
+  nivel?: number;
+  /** Limite canônico copiado na aplicação para permitir renderização sem buscar o catálogo. */
+  nivelMaximo?: number;
+  /** Rodada em que a condição foi aplicada/agravada, quando o fluxo conhece esse valor. */
+  aplicadaNaRodada?: number;
+  /** Sangrando: rodada em que Interagir conteve o ferimento e impediu o agravamento. */
+  contidaNaRodada?: number;
   observacoes?: string;
   /**
    * Como a remoção aconteceu (checkpoint v0.34) — ausente/undefined
@@ -207,7 +215,7 @@ export interface ConditionResistanceCheck {
   /** slug canônico da condição de origem (ex.: "envenenado"). */
   conditionId: string;
   conditionName: string;
-  effectType: "teste_fim_de_rodada" | "teste_fim_de_rodada_para_remover_condicao" | "teste_apos_exposicao";
+  effectType: "teste_fim_de_rodada" | "teste_fim_de_rodada_progressivo" | "teste_fim_de_rodada_para_remover_condicao" | "teste_apos_exposicao";
   round: number;
   scene: number;
   createdAt: string;
@@ -323,6 +331,8 @@ export interface Character {
    * nunca apagadas do array, só marcadas como removidas.
    */
   condicoes_ativas?: ActiveCondition[];
+  /** Desfecho terminal explícito produzido por uma regra fora do Colapso, como Sufocando. */
+  estado_terminal?: { tipo: "morte"; causa: string; em: string };
   /**
    * Surtos de Sobrecarga usados no dia (checkpoint v0.36, PRD 10.5) —
    * campo mínimo só para o descanso longo poder resetar algo real.
