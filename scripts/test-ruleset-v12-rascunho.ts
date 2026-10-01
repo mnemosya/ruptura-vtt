@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseDraftV12, sanitizeDraftV12, REGIOES_V12, VERTENTES_V12, type DraftV12, type RulesetContentBundleV12 } from "../src/lib/rulesetV12";
-import { parseDraftPayload } from "../src/lib/character/draftValidation";
 
 const root = join(process.cwd(), "content");
 const ancora = JSON.parse(readFileSync(join(root, "v12", "db_classe_ancora_v1_2.json"), "utf8")) as RulesetContentBundleV12;
@@ -53,7 +52,6 @@ assert.equal(parseDraftV12({ ...rascunho, pericias: { medicina: 5 } }), null);
 assert.equal(parseDraftV12({ ...rascunho, qualidades: [{ id: "aliado", pontos: 3 }] }), null);
 assert.equal(parseDraftV12({ ...rascunho, compras: { medkit: -1 } }), null);
 assert.equal(parseDraftV12({ ...rascunho, atributos: { corpo: 1, mente: 2 } }), null);
-assert.equal(parseDraftPayload(rascunho), null, "o assistente anterior não aceita o rascunho v1.2");
 
 // Restauração sem mudanças no conteúdo: nada descartado.
 const limpo = sanitizeDraftV12(rascunho, catalogos);

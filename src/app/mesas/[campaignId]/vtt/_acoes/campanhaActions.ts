@@ -21,18 +21,6 @@ import "server-only";
 import { resolveCampaignAccess } from "../../../../../lib/campaign/access";
 import { listCharactersForNarratorCampaign, listControlledCharacters } from "../../../../../lib/character/storage";
 import { renameCampaign } from "../../../../../lib/table/storage";
-import { getCharacterRules } from "../../../../../lib/content";
-import { listItemsEffective, listSpellsEffective, listTalentsEffective } from "../../../../../lib/campaignContent";
-import {
-  normalizeItemContent,
-  normalizeSpellContent,
-  normalizeTalentContent,
-  type CharacterRulesPayload,
-  type ItemContent,
-  type SpellContent,
-  type TalentContent,
-} from "../../../../../lib/character";
-import { RARIDADES_PERMITIDAS_NA_CRIACAO } from "./tiposDeConteudo";
 import { compararTresVias, type ComparacaoTresVias } from "../../../../../lib/campaignContent/campaignContentDiff";
 import { getContentDocument } from "../../../../../lib/content/queries";
 import { getOpcoesDeRegras, type OpcoesDeRegras } from "../../../../../lib/contentSchema/characterRuleOptions";
@@ -362,70 +350,3 @@ export async function lerRascunhoAction(
   }
 }
 
-// ── Criação de personagem ────────────────────────────────────────────
-/**
- * Os catálogos do ASSISTENTE de criação — o que a rota
- * `/personagens/novo` lia antes de montar o wizard.
- *
- * Os três catálogos falham POR RECURSO, não em vazio silencioso, e a
- * razão é forte: os três têm um "vazio de verdade" legítimo (mesa nova,
- * Biblioteca sem nada publicado — o wizard até diz "avance sem
- * preencher"). Colapsar falha de leitura no mesmo `[]` faria alguém
- * fechar um personagem acreditando que a mesa não tem talento nenhum,
- * quando na verdade a consulta quebrou.
- */
-export interface CatalogosDaCriacao {
-  regras: CharacterRulesPayload | null;
-  talentos: TalentContent[];
-  talentosErro: string | null;
-  magias: SpellContent[];
-  magiasErro: string | null;
-  itensLoja: ItemContent[];
-  itensLojaErro: string | null;
-}
-
-export async function lerCatalogosDaCriacaoAction(
-  campaignId: string,
-): Promise<ResultadoAcao<CatalogosDaCriacao>> {
-  const v = await exigirAcesso(campaignId);
-  if (v.erro) return { ok: false, erro: v.erro };
-
-  let regras: CharacterRulesPayload | null = null;
-  try {
-    const doc = await getCharacterRules();
-    regras = (doc?.payload as CharacterRulesPayload | undefined) ?? null;
-  } catch {
-    regras = null;
-  }
-
-  let talentos: TalentContent[] = [];
-  let talentosErro: string | null = null;
-  try {
-    const docs = await listTalentsEffective(campaignId);
-    talentos = docs.map((d) => normalizeTalentContent(d.payload)).filter((t) => t.status === "published");
-  } catch (e) {
-    talentosErro = e instanceof Error ? e.message : "Erro ao carregar talentos.";
-  }
-
-  let magias: SpellContent[] = [];
-  let magiasErro: string | null = null;
-  try {
-    const docs = await listSpellsEffective(campaignId);
-    magias = docs.map((d) => normalizeSpellContent(d.payload)).filter((m) => m.status === "published");
-  } catch (e) {
-    magiasErro = e instanceof Error ? e.message : "Erro ao carregar magias.";
-  }
-
-  let itensLoja: ItemContent[] = [];
-  let itensLojaErro: string | null = null;
-  try {
-    const docs = await listItemsEffective(campaignId);
-    itensLoja = docs
-      .map((d) => normalizeItemContent(d.payload))
-      .filter((i) => i.raridade != null && RARIDADES_PERMITIDAS_NA_CRIACAO.has(i.raridade));
-  } catch (e) {
-    itensLojaErro = e instanceof Error ? e.message : "Erro ao carregar itens da loja.";
-  }
-
-  return { ok: true, dados: { regras, talentos, talentosErro, magias, magiasErro, itensLoja, itensLojaErro } };
-}

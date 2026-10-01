@@ -368,7 +368,7 @@ Entregáveis:
 - [x] script explícito para apagar personagens e drafts incompatíveis: `scripts/dev/v12/corte_fase7.mjs` (só conta por padrão; `--testar` ensaia e desfaz; `--executar` exige `--snapshot=<ref>`). Remove também os tokens dos personagens v1 (decisão de 01/10/2026). Ensaio no remoto em 01/10/2026, desfeito: 121 personagens, 46 tokens e 2 rascunhos; v2 intactos;
 - [ ] remoção ou arquivamento dos documentos de conteúdo obsoletos;
 - [ ] substituição de `somatica` por `biotica` no conteúdo canônico;
-- [ ] remoção dos caminhos de criação, progressão e leitura v1;
+- [ ] remoção dos caminhos de criação, progressão e leitura v1; o assistente de criação anterior saiu em 01/10/2026 (falta decidir o "+ Personagem"/PN em branco, a leitura v1 e o Modo Evolução v1);
 - [ ] seed mínimo de dados v1.2 para desenvolvimento;
 - [x] verificações pós-corte (do script, mais a mesa abrindo sem erro só com a Hilda);
 - [x] registro das contagens removidas e criadas (abaixo, 01/10/2026).
@@ -810,3 +810,9 @@ Equivalência das demais ações:
 - interface: o "+" de Perícia para no limite do Ranking (`LIMITE_PERICIA_POR_RANKING_V12`, igual nas 7 Classes e conferido no teste de Classes). No Painel de Magias, o modo não libera aprender magias nem editar nível de Vertente em personagens v1.2;
 - `scripts/dev/v12/testar_rpc_avanco.ts` passou a criar o próprio personagem de teste no Ranking F: 20 cenários no remoto, em transação desfeita;
 - validado no navegador com a Hilda: Artes 0 → 1 → 0 gravado ao Concluir e "+" de Medicina desabilitado no limite 3. O chanfro do botão ligado acompanha a borda âmbar.
+
+### 01/10/2026 — Assistente de criação v1 removido (Fase 7)
+
+- a janela "Novo personagem" abre direto no assistente v1.2, sem o botão "Regras anteriores";
+- removidos o assistente v1 (`AssistenteDeCriacao.tsx`), `lerCatalogosDaCriacaoAction` e, em `storage.ts`, a criação pelo assistente v1 (`createCharacterFromWizard`) e o rascunho v1 (`loadCharacterCreationDraft`/`saveCharacterCreationDraft`), além de `createCharacterValidation.ts` e `character/draftValidation.ts`;
+- continuam por decisão pendente: o "+ Personagem" (narrador e jogador) e a criação de PN, que geram ficha em branco no formato v1 via `createInitialCharacter`.
