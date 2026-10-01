@@ -365,7 +365,7 @@ Critério de saída:
 Entregáveis:
 
 - [ ] snapshot técnico anterior ao corte;
-- [ ] script explícito para apagar personagens e drafts incompatíveis (decidido em 01/10/2026: os tokens ligados a personagens v1 são removidos junto);
+- [x] script explícito para apagar personagens e drafts incompatíveis: `scripts/dev/v12/corte_fase7.mjs` (só conta por padrão; `--testar` ensaia e desfaz; `--executar` exige `--snapshot=<ref>`). Remove também os tokens dos personagens v1 (decisão de 01/10/2026). Ensaio no remoto em 01/10/2026, desfeito: 121 personagens, 46 tokens e 2 rascunhos; v2 intactos;
 - [ ] remoção ou arquivamento dos documentos de conteúdo obsoletos;
 - [ ] substituição de `somatica` por `biotica` no conteúdo canônico;
 - [ ] remoção dos caminhos de criação, progressão e leitura v1;
@@ -780,3 +780,13 @@ Equivalência das demais ações:
 - legado a substituir ou remover: 132 magias (catálogo antigo, em espera), 22 Talentos (arquivar no corte), itens, escalpos, runas, propriedades e companheiros (em espera, junto com equipamentos), além de `character_rule` 1.4 parcialmente;
 - nenhuma campanha tem conteúdo próprio; 121 personagens v1 (32 com token no mapa), 1 personagem v2 e 3 rascunhos (2 v1);
 - características ligadas a Investigação e Conflitos Sociais: Dossiê, Montar o Perfil e Caso Encerrado (Perito); Manobras Sociais e Reserva de Confiança (Face); Movimento (Ícone). Pista ≠ Evidência e Teste de Interação ≠ teste social (decisão de 01/10/2026); tokens de personagens v1 serão removidos no corte.
+
+### 01/10/2026 — Script de corte (Fase 7, preparado, não executado)
+
+- `scripts/dev/v12/corte_fase7.mjs`, na ordem das FKs conferidas no remoto:
+  1. tokens dos personagens v1 (a FK é `SET NULL`; sem este passo, os tokens ficariam órfãos);
+  2. personagens v1 (controladores e posicionamentos vão em cascata; logs e narrativa mantêm o histórico com `character_id` nulo);
+  3. rascunhos v1;
+- modos: contagem (padrão), `--testar` (apaga, confere e desfaz) e `--executar --snapshot=<ref>` (regra de segurança 1);
+- ensaio no remoto, desfeito: 121 personagens, 46 tokens (dos 32 personagens com token) e 2 rascunhos removidos; Hilda e o rascunho v2 intactos;
+- fora do script: imagens de avatar no Storage e o arquivamento de conteúdo obsoleto (Talentos), que fica para um passo separado.

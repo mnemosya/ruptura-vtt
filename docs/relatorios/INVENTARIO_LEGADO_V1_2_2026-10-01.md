@@ -37,7 +37,7 @@ Nenhuma campanha tem conteúdo próprio (`campaign_content_documents` vazio). Po
 | Personagens v2 | 1 (Hilda Norren) |
 | Rascunhos de criação | 3 (1 v2, 2 v1) |
 
-Pelo plano, os personagens v1 e os rascunhos v1 serão apagados no corte da Fase 7, depois do snapshot. Isso conta 121 personagens e 2 rascunhos hoje. **Decisão (01/10/2026):** os 32 tokens ligados a esses personagens serão **removidos** no corte.
+Pelo plano, os personagens v1 e os rascunhos v1 serão apagados no corte da Fase 7, depois do snapshot. Isso conta 121 personagens e 2 rascunhos hoje. **Decisão (01/10/2026):** os tokens ligados a esses personagens serão **removidos** no corte. São 46 tokens, de 32 personagens, porque alguns aparecem em mais de uma cena.
 
 ## 3. Características de Classe ligadas a Investigação e Conflitos Sociais
 
