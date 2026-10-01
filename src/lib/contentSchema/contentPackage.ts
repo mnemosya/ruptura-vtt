@@ -31,6 +31,11 @@ export const CONTENT_TYPES_SOMENTE_LEITURA = [
   "condition",
   "property",
   "escalpo",
+  "class",
+  "subclass",
+  "background",
+  "quality",
+  "complication",
 ] as const;
 export type ContentTypeSomenteLeitura = (typeof CONTENT_TYPES_SOMENTE_LEITURA)[number];
 
