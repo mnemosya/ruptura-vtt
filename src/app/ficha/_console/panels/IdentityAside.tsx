@@ -550,7 +550,11 @@ export function IdentityAside({
   const paDisponivel = Math.max(0, derivados.pa_max - (character.estado_jogo?.pa_gastos ?? 0));
   const reacoesDisponiveis = Math.max(0, derivados.reacoes_por_rodada - (character.estado_jogo?.reacoes_usadas ?? 0));
   const sobrecarga = character.sobrecarga_usada_dia ?? 0;
-  const ranking = (character.metadados?.ranking_cobalto as string | undefined) ?? null;
+  // v1.2: o Ranking é o da progressão (F…S+); v1 usa o Ranking de Cobalto dos metadados.
+  const rankingV12 = (character as { schema_version?: number; progressao?: { ranking?: string } }).schema_version === 2
+    ? ((character as { progressao?: { ranking?: string } }).progressao?.ranking ?? null)
+    : null;
+  const ranking = rankingV12 ?? (character.metadados?.ranking_cobalto as string | undefined) ?? null;
 
   const [confirmandoRemocao, setConfirmandoRemocao] = useState(false);
   /* Trocar de personagem com a pergunta aberta a deixaria pendurada
@@ -675,7 +679,7 @@ export function IdentityAside({
           <span
             className="rc-nric-badge"
             data-vazio={!ranking}
-            title={ranking ? `Ranking de Cobalto ${ranking}` : "Ranking de Cobalto não definido"}
+            title={rankingV12 ? `Ranking ${rankingV12}` : ranking ? `Ranking de Cobalto ${ranking}` : "Ranking de Cobalto não definido"}
           >
             {ranking ?? "—"}
           </span>
