@@ -222,8 +222,6 @@ export interface ConsoleApi {
    * destravar a ficha.
    */
   editarNome: (nome: string) => void;
-  /** PM de evolução — `null` quando a ficha nunca registrou PM. */
-  pm: { disponivel: number; total: number } | null;
 
   /** Pins (referência tipada, nunca cópia da entidade). */
   pins: ConsolePin[];

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Section } from "./Section";
 import { buttonStyle } from "./styles";
 import { ModeToggle, type SheetMode } from "./ModeToggle";
@@ -45,11 +44,7 @@ export function GeneralTab({
   selectedCampaignId,
   onSelectCampaign,
   onLoadPersonagemAtivo,
-  pmTotal,
-  pmDisponivel,
   historicoEvolucao,
-  onGainPm,
-  onSpendPm,
 }: {
   /** "dev" (padrão) mantém o seletor de mesa; "product" (/ficha) mostra a mesa fixa como texto, sem seletor. */
   mode?: "dev" | "product";
@@ -71,16 +66,8 @@ export function GeneralTab({
   /** Recarrega o personagem atual do servidor (modo product: refaz getCharacterForCampaign). */
   onLoadPersonagemAtivo: () => void;
   /** Checkpoint v0.40 — PM e histórico de evolução. */
-  pmTotal: number;
-  pmDisponivel: number;
   historicoEvolucao: EvolutionHistoryEntry[];
-  onGainPm: (quantidade: number, descricao: string) => void;
-  onSpendPm: (quantidade: number, descricao: string) => void;
 }) {
-  const [ganhoQtd, setGanhoQtd] = useState("0");
-  const [ganhoDescricao, setGanhoDescricao] = useState("");
-  const [gastoQtd, setGastoQtd] = useState("0");
-  const [gastoDescricao, setGastoDescricao] = useState("");
 
   const mesaSelecionada = mesas.find((m) => m.id === selectedCampaignId) ?? null;
 
@@ -90,7 +77,7 @@ export function GeneralTab({
 
       {sheetMode === "evolucao" && (
         <div
-          data-testid="pm-evolucao-secao"
+          data-testid="evolucao-ajustes-secao"
           style={{
             background: "#15161b",
             border: "1px solid #2a2b33",
@@ -99,69 +86,10 @@ export function GeneralTab({
             marginBottom: 16,
           }}
         >
-          <p style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>PM e evolução</p>
-          <p data-testid="pm-disponivel" style={{ fontSize: 13, marginBottom: 8 }}>
-            PM disponível: <strong>{pmDisponivel}</strong> · PM total recebido: {pmTotal}
-          </p>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-            <input
-              data-testid="pm-ganho-quantidade"
-              type="number"
-              value={ganhoQtd}
-              onChange={(e) => setGanhoQtd(e.target.value)}
-              style={{ ...inputStyle, width: 70 }}
-            />
-            <input
-              data-testid="pm-ganho-descricao"
-              type="text"
-              placeholder="Descrição (ex.: recompensa da sessão)"
-              value={ganhoDescricao}
-              onChange={(e) => setGanhoDescricao(e.target.value)}
-              style={{ ...inputStyle, flex: 1, minWidth: 160 }}
-            />
-            <button
-              data-testid="pm-ganho-button"
-              onClick={() => {
-                onGainPm(Number.parseInt(ganhoQtd, 10) || 0, ganhoDescricao);
-                setGanhoQtd("0");
-                setGanhoDescricao("");
-              }}
-              style={buttonStyle}
-            >
-              Adicionar PM recebido
-            </button>
-          </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-            <input
-              data-testid="pm-gasto-quantidade"
-              type="number"
-              value={gastoQtd}
-              onChange={(e) => setGastoQtd(e.target.value)}
-              style={{ ...inputStyle, width: 70 }}
-            />
-            <input
-              data-testid="pm-gasto-descricao"
-              type="text"
-              placeholder="Descrição (ex.: subir Corpo)"
-              value={gastoDescricao}
-              onChange={(e) => setGastoDescricao(e.target.value)}
-              style={{ ...inputStyle, flex: 1, minWidth: 160 }}
-            />
-            <button
-              data-testid="pm-gasto-button"
-              onClick={() => {
-                onSpendPm(Number.parseInt(gastoQtd, 10) || 0, gastoDescricao);
-                setGastoQtd("0");
-                setGastoDescricao("");
-              }}
-              style={buttonStyle}
-            >
-              Registrar gasto manual
-            </button>
-          </div>
+          <p style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Ajustes permanentes</p>
           <p style={{ fontSize: 11, opacity: 0.6, marginBottom: 6 }}>
-            Histórico de evolução ({historicoEvolucao.length}) — inclui PM ganho/gasto e ajustes
-            permanentes de atributo/perícia feitos em Modo Evolução.
+            Histórico ({historicoEvolucao.length}) — ajustes permanentes de atributo e perícia feitos
+            com "Ajustar".
           </p>
           <div data-testid="historico-evolucao-lista" style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 200, overflowY: "auto" }}>
             {historicoEvolucao.length === 0 && (

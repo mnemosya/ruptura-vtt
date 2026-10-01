@@ -386,14 +386,6 @@ export interface Character {
     ultimoEvento?: string;
   };
   /**
-   * PM (Pontos de Maestria/evolução, checkpoint v0.40, PRD 3.3/4.3) —
-   * total recebido ao longo da campanha e o que ainda não foi gasto.
-   * `pm_disponivel` nunca é negativo (gasto além do disponível é
-   * clampado a 0, com warning — ver `spendPm`).
-   */
-  pm_total?: number;
-  pm_disponivel?: number;
-  /**
    * Histórico de evolução (checkpoint v0.40, PRD 4.3) — append-only,
    * nunca reescrito/apagado. Cobre ganho/gasto de PM e ajustes
    * permanentes de atributo/perícia feitos em Modo Evolução.
