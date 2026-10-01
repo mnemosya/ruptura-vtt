@@ -4,3 +4,4 @@ export * from "./creation";
 export * from "./draft";
 export * from "./progression";
 export * from "./accessChallenge";
+export * from "./crew";
