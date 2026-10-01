@@ -37,7 +37,7 @@ Nenhuma campanha tem conteúdo próprio (`campaign_content_documents` vazio). Po
 | Personagens v2 | 1 (Hilda Norren) |
 | Rascunhos de criação | 3 (1 v2, 2 v1) |
 
-Pelo plano, os personagens v1 e os rascunhos v1 serão apagados no corte da Fase 7, depois do snapshot. Isso conta 121 personagens e 2 rascunhos hoje. Os 32 tokens ligados a esses personagens também precisam de decisão: remover os tokens ou desvinculá-los.
+Pelo plano, os personagens v1 e os rascunhos v1 serão apagados no corte da Fase 7, depois do snapshot. Isso conta 121 personagens e 2 rascunhos hoje. **Decisão (01/10/2026):** os 32 tokens ligados a esses personagens serão **removidos** no corte.
 
 ## 3. Características de Classe ligadas a Investigação e Conflitos Sociais
 
@@ -48,10 +48,11 @@ Pelo plano, os personagens v1 e os rascunhos v1 serão apagados no corte da Fase
 | Reserva de Confiança | Face, F | Conflitos Sociais | Recurso consumido pelas Manobras Sociais. |
 | Movimento | Ícone (Face), A | Conflitos Sociais | Fala em Concessões de um público; depende do mesmo vocabulário. |
 
-### Pendências editoriais
+### Decisões (01/10/2026)
 
-1. **Pista × Evidência:** definir se a Pista do Perito é uma Evidência registrada no Dossiê ou um marcador separado.
-2. **Teste de Interação × teste social:** alinhar o termo da Face com o capítulo 19 e dizer como Manobras Sociais combinam com as Concessões por impacto.
-3. A página "AJUSTES APÓS O CAPÍTULO DE INVESTIGAÇÃO e LACUNAS PRIORIZADAS" no Notion já lista dúvidas sobre o Perito e o Procurar Brecha. Esta lista não substitui aquela página.
+1. **Pista ≠ Evidência:** a Pista é um registro próprio do Dossiê do Perito, separado das Evidências do capítulo 20.
+2. **Teste de Interação ≠ teste social do capítulo 19:** as Manobras Sociais da Face são uma mecânica própria e não substituem as Concessões.
+
+A página "AJUSTES APÓS O CAPÍTULO DE INVESTIGAÇÃO e LACUNAS PRIORIZADAS" no Notion continua sendo a lista de dúvidas abertas sobre o Perito e o Procurar Brecha.
 
 Implementar essas características na mesa depende dessas definições e da interface de Investigação. Por enquanto elas continuam como texto na ficha.

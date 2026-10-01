@@ -365,7 +365,7 @@ Critério de saída:
 Entregáveis:
 
 - [ ] snapshot técnico anterior ao corte;
-- [ ] script explícito para apagar personagens e drafts incompatíveis;
+- [ ] script explícito para apagar personagens e drafts incompatíveis (decidido em 01/10/2026: os tokens ligados a personagens v1 são removidos junto);
 - [ ] remoção ou arquivamento dos documentos de conteúdo obsoletos;
 - [ ] substituição de `somatica` por `biotica` no conteúdo canônico;
 - [ ] remoção dos caminhos de criação, progressão e leitura v1;
@@ -407,7 +407,7 @@ Critério de saída:
 - [ ] Investigação; transcrita (`content/v12/db_investigacao_v1_2.json`, rascunho) e motor do Desafio de Acesso pronto (`src/lib/rulesetV12/accessChallenge.ts`); falta interface na mesa e decisão de `content_type`;
 - [ ] Conflitos Sociais; transcrito (`content/v12/db_conflitos_sociais_v1_2.json`, rascunho); é quase só orientação ao narrador, sem automação prevista;
 - [ ] Ameaças e Antagonistas (em espera: conteúdo em edição);
-- [ ] integração das características de Classe dependentes desses subsistemas; mapeadas no inventário (Perito: Dossiê/Pistas; Face: Manobras Sociais, Reserva de Confiança; Ícone: Movimento), com duas pendências de vocabulário (Pista × Evidência; Teste de Interação × Concessão).
+- [ ] integração das características de Classe dependentes desses subsistemas; mapeadas no inventário (Perito: Dossiê/Pistas; Face: Manobras Sociais, Reserva de Confiança; Ícone: Movimento). Decidido em 01/10/2026: Pista ≠ Evidência e Teste de Interação ≠ teste social; são mecânicas próprias das Classes.
 
 ### Fase 10 — Limpeza final do legado
 
@@ -779,4 +779,4 @@ Equivalência das demais ações:
 - só leitura no remoto; relatório em `docs/relatorios/INVENTARIO_LEGADO_V1_2_2026-10-01.md`;
 - legado a substituir ou remover: 132 magias (catálogo antigo, em espera), 22 Talentos (arquivar no corte), itens, escalpos, runas, propriedades e companheiros (em espera, junto com equipamentos), além de `character_rule` 1.4 parcialmente;
 - nenhuma campanha tem conteúdo próprio; 121 personagens v1 (32 com token no mapa), 1 personagem v2 e 3 rascunhos (2 v1);
-- características ligadas a Investigação e Conflitos Sociais: Dossiê, Montar o Perfil e Caso Encerrado (Perito); Manobras Sociais e Reserva de Confiança (Face); Movimento (Ícone). Duas pendências de vocabulário registradas.
+- características ligadas a Investigação e Conflitos Sociais: Dossiê, Montar o Perfil e Caso Encerrado (Perito); Manobras Sociais e Reserva de Confiança (Face); Movimento (Ícone). Pista ≠ Evidência e Teste de Interação ≠ teste social (decisão de 01/10/2026); tokens de personagens v1 serão removidos no corte.
