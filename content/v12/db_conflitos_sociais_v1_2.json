@@ -1,0 +1,58 @@
+{
+  "_meta": {
+    "ruleset_version": "1.2",
+    "fonte": "Notion — RUPTURA (1.2) / 19. CENAS DE CONFLITOS SOCIAIS (editado em 18/09/2026)",
+    "extraido_em": "2026-10-01",
+    "status": "draft",
+    "aviso": "Transcrição estruturada; não publicada. Ainda não existe content_type para conflitos sociais."
+  },
+  "quando_usar": "Quando um personagem deseja algo que outra pessoa resiste a conceder e existem riscos ou consequências relevantes. Conversas sem resistência seguem em fluxo livre; pedidos impossíveis nas condições presentes não se tornam possíveis por rolagem.",
+  "elementos": {
+    "objetivo": "O que o personagem deseja obter da outra pessoa.",
+    "resistencia": "Por que ela não aceita imediatamente e o que teme perder.",
+    "alavancas": "Fatos, ofertas, relações ou ameaças capazes de reduzir a Resistência. Precisam existir na ficção; podem conceder vantagem, reduzir a Complexidade ou dispensar o teste."
+  },
+  "argumentos": {
+    "vantagem_maxima_por_teste": 2,
+    "niveis": [
+      { "vantagem": 1, "quando": "O argumento fortalece claramente a abordagem." },
+      { "vantagem": 2, "quando": "Explora de maneira especialmente eficaz interesses, temores, contradições ou circunstâncias do interlocutor." }
+    ],
+    "regras": [
+      "Representa a qualidade da abordagem, não eloquência ou atuação.",
+      "A vantagem do argumento é distinta da concedida por Alavancas.",
+      "Um argumento que muda os termos pode virar nova Alavanca, reduzir a Complexidade ou permitir Concessão sem teste.",
+      "Interpretação pouco eloquente nunca impõe desvantagem nem aumenta a Complexidade."
+    ]
+  },
+  "pericias_abordagens": [
+    { "pericia": "carisma", "abordagem": "Criar empatia, conquistar simpatia, inspirar confiança ou motivar pela presença." },
+    { "pericia": "influencia", "abordagem": "Argumentar, negociar, persuadir, manipular ou conduzir uma entrevista." },
+    { "pericia": "intimidacao", "abordagem": "Impor medo, ameaçar consequências ou pressionar pela força." },
+    { "pericia": "psicologia", "abordagem": "Reconhecer emoções, motivações, hesitações e padrões de comportamento." },
+    { "pericia": "sociedade", "abordagem": "Utilizar protocolos, hierarquias, costumes, reputações e relações institucionais." }
+  ],
+  "testes": {
+    "simples": "Contra CD da Complexidade quando a dificuldade decorre dos interesses, riscos ou circunstâncias da proposta (negociação, cooperação, confiança).",
+    "contestado": { "contra": "vontade", "quando": "Quando a abordagem enfrenta diretamente a determinação de alguém (intimidar, pressionar, romper resistência em interrogatório)." },
+    "sem_teste": "Quando proposta, Alavancas ou argumento resolvem a Resistência. Limites que a pessoa não aceitaria não cedem por nenhum resultado."
+  },
+  "concessoes": {
+    "sucesso_limitado": "Concessão parcial ou condicionada a custo, garantia ou exigência.",
+    "sucesso_padrao": "A Concessão pretendida dentro dos limites estabelecidos.",
+    "sucesso_critico": "A Concessão e uma abertura relacionada (melhores termos ou informação adicional).",
+    "falha_limitada": "Não obtém a Concessão, mas descobre uma condição ou alternativa que ainda permitiria avançar.",
+    "falha_padrao": "Não obtém a Concessão e enfrenta uma consequência (desconfiança, encerramento da conversa).",
+    "falha_critica": "A abordagem compromete seriamente a situação ou provoca reação imediata."
+  },
+  "regras_gerais": [
+    "Um sucesso não concede controle sobre outra pessoa.",
+    "Uma falha não revela automaticamente toda mentira ou intenção oculta.",
+    "Uma mentira precisa ser plausível; o teste a sustenta no momento, não a torna verdade.",
+    "Intimidação produz obediência, não lealdade.",
+    "Psicologia reconhece comportamentos e contradições; não é detector infalível de mentiras.",
+    "O mesmo teste não se repete sem mudança relevante (outra Alavanca, proposta, abordagem ou circunstância).",
+    "Testes de personagens do narrador não determinam o que um personagem dos jogadores sente ou decide.",
+    "Promessas, favores, ameaças e Concessões continuam válidos depois da cena."
+  ]
+}

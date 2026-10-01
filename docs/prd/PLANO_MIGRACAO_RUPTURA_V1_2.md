@@ -404,9 +404,9 @@ Critério de saída:
 
 **Objetivo:** cobrir sistemas que não bloqueiam a primeira ficha v1.2, mas bloqueiam a paridade integral.
 
-- [ ] Investigação;
-- [ ] Conflitos Sociais;
-- [ ] Ameaças e Antagonistas;
+- [ ] Investigação; transcrita (`content/v12/db_investigacao_v1_2.json`, rascunho) e motor do Desafio de Acesso pronto (`src/lib/rulesetV12/accessChallenge.ts`); falta interface na mesa e decisão de `content_type`;
+- [ ] Conflitos Sociais; transcrito (`content/v12/db_conflitos_sociais_v1_2.json`, rascunho); é quase só orientação ao narrador, sem automação prevista;
+- [ ] Ameaças e Antagonistas (em espera: conteúdo em edição);
 - [ ] integração das características de Classe dependentes desses subsistemas.
 
 ### Fase 10 — Limpeza final do legado
@@ -764,3 +764,12 @@ Equivalência das demais ações:
 - personagens v1.2 guardam `niveis_vertente.biotica`, e o catálogo antigo usa `somatica`; sem o alias, as magias de Biótica apareciam com nível de Vertente desconhecido;
 - `canonicalVertenteId` e `getVertenteLevel` leem o ID canônico e, em fichas antigas, o legado; o painel de Magias filtra e rotula por Biótica e grava o nível no ID canônico;
 - o alias é temporário e sai quando o catálogo v1.2 substituir o antigo (Fases 7 e 10).
+
+### 01/10/2026 — Investigação e Conflitos Sociais (Fase 9, rascunho)
+
+- fonte: capítulos 20 (Cenas de Investigação, editado em 23/09) e 19 (Cenas de Conflitos Sociais, editado em 18/09) do Notion;
+- `content/v12/db_investigacao_v1_2.json`: 8 ações de investigação, tabela de impacto, regras gerais, Desafio de Acesso (tipos, Leituras, tentativas por perícia, Tolerância, Contramedidas, 6 modelos) e Arrombamento com Marcador de Progresso;
+- `content/v12/db_conflitos_sociais_v1_2.json`: Objetivo, Resistência e Alavancas; vantagem por argumento (máximo +2); perícias por abordagem; teste simples, contestado por Vontade ou sem teste; Concessões por impacto; limites;
+- `src/lib/rulesetV12/accessChallenge.ts`: motor puro do Desafio de Acesso (Código secreto, Leitura Direcional/Confirmação, tentativas 1/2/3 + Auxílio, Tolerância uma vez por ação, Contramedida uma vez) e avanço do Arrombamento;
+- `npm run test:ruleset-v12-investigacao`: reproduz o exemplo do livro (Tecnomagia 3, 2d4, Código 3–1) e cobre encerramento voluntário, Contramedida e Arrombamento;
+- nada publicado: os arquivos não entram no seed. Pendências: a página "AJUSTES APÓS O CAPÍTULO DE INVESTIGAÇÃO e LACUNAS PRIORIZADAS" lista dúvidas abertas; Ameaças está em espera.
