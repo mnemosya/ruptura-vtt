@@ -1,5 +1,7 @@
 # Crosswalk de magias v1.3 → v1.2 (rascunho para revisão editorial)
 
+> **Obsoleto.** Gerado a partir do banco BANCO DE MAGIAS, que está desatualizado. A fonte canônica são as listas de magias nos capítulos de cada Vertente. Refazer quando o trabalho com magias for retomado.
+
 **Gerado em:** 01/10/2026 por `scripts/dev/v12/gerar_magias.py`  
 **Fonte v1.2:** banco BANCO DE MAGIAS do Notion (só propriedades).  
 **Fonte legada:** `content/db_magias_normalizado_v1_3.json`.

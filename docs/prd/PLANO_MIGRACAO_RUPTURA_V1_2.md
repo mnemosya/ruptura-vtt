@@ -341,7 +341,9 @@ Condições e combate:
 
 Magias:
 
-- [x] crosswalk de todas as entradas v1.2 (rascunho: `content/v12/crosswalk_magias_v1_3_para_v1_2.json` e `docs/relatorios/CROSSWALK_MAGIAS_V1_2_RASCUNHO.md`);
+> **Fonte canônica (decisão de 01/10/2026):** as magias v1.2 vêm da lista de magias no capítulo de cada Vertente, no Notion. O banco "BANCO DE MAGIAS" está desatualizado e não deve ser usado. Magias e equipamentos ficam em espera até o conteúdo estabilizar.
+
+- [ ] crosswalk de todas as entradas v1.2; o rascunho `content/v12/crosswalk_magias_v1_3_para_v1_2.json` foi gerado a partir do BANCO DE MAGIAS e está **obsoleto**; refazer a partir dos capítulos;
 - [ ] classificação `same`, `renamed`, `redesigned`, `removed` ou `ambiguous`; hoje as 132 legadas estão como `ambiguous` (60 com homônima na mesma Vertente, 72 sem), aguardando revisão editorial;
 - [ ] schema de Mana fixa, intervalo, escolha e fórmula; os metadados já distinguem fixo (208), intervalo (1) e variável (2), sem contrato TypeScript ainda;
 - [ ] schema de tempo de conjuração; os metadados já distinguem PA (190), Reação (9), tempo (11) e variável (1);
@@ -350,7 +352,7 @@ Magias:
 - [ ] backfill dos IDs persistidos;
 - [ ] Fusão global desativada ou sustentada por regra canônica documentada.
 
-Progresso (01/10/2026): `content/v12/db_magias_v1_2_metadados.json` traz as 211 magias do BANCO DE MAGIAS do Notion (só propriedades: nível, Mana, conjuração, alcance, duração, pré-requisito, teste), geradas por `scripts/dev/v12/gerar_magias.py` e checadas por `npm run test:ruleset-v12-magias`. Todas estão como Rascunho ou Em revisão no Notion, então nada foi publicado e o texto das magias não foi extraído. Toda Vertente tem ao menos quatro magias de nível 1, o que basta para a escolha inicial quando o catálogo for aprovado.
+Progresso (01/10/2026, **obsoleto**: fonte errada): `content/v12/db_magias_v1_2_metadados.json` traz as 211 magias do BANCO DE MAGIAS do Notion (só propriedades: nível, Mana, conjuração, alcance, duração, pré-requisito, teste), geradas por `scripts/dev/v12/gerar_magias.py` e checadas por `npm run test:ruleset-v12-magias`. Todas estão como Rascunho ou Em revisão no Notion, então nada foi publicado e o texto das magias não foi extraído. Toda Vertente tem ao menos quatro magias de nível 1, o que basta para a escolha inicial quando o catálogo for aprovado.
 
 Critério de saída:
 
