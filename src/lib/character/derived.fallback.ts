@@ -30,7 +30,10 @@ export const FALLBACK_DERIVED_FORMULAS: Record<keyof DerivedStats, FormulaNode> 
     op: "+",
     args: [{ const: 10 }, { op: "*", args: [{ ref: "atributo", id: "animo" }, { const: 2 }] }],
   },
-  reacoes_por_rodada: { ref: "atributo", id: "mente" },
+  reacoes_por_rodada: {
+    op: "+",
+    args: [{ ref: "atributo", id: "mente" }, { const: 1 }],
+  },
   andar_m: { op: "+", args: [{ const: 10 }, { ref: "atributo", id: "corpo" }] },
   correr_m: { op: "*", args: [{ ref: "derivado", id: "andar_m" }, { const: 2 }] },
   pa_max: { const: 3 },

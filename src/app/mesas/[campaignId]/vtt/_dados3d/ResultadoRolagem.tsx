@@ -25,6 +25,7 @@ import { Check, Chevron, Cross, Dice, DoubleCheck, Half, Warn } from "./icones";
 import { X } from "lucide-react";
 import "./seletor.css";
 import type { TableLogVisibility } from "../../../../../lib/table";
+import type { RupturaSelectionMode } from "../../../../../lib/dice";
 
 /* ---- tokens do design ------------------------------------------- */
 
@@ -349,6 +350,8 @@ export function FaixaSoma({ base, modificador, total, cd, modo = "sum", nota, te
 /** Uma rolagem já resolvida, no vocabulário que a faixa desenha. */
 export interface RolagemExibida {
   maiorDado: number;
+  /** Regra usada para escolher o d8 que entrou no total. */
+  modoSelecao?: RupturaSelectionMode;
   /** Nome da perícia, ou `null` quando o teste é de atributo puro. */
   pericia: string | null;
   periciaValor: number;
@@ -459,7 +462,7 @@ export function FaixaResultado({ r, nota, testIdTotal }: {
             ("maior", "+ mod", "· cd") ficam no cinza: é o contraste
             entre eles e os números que faz a linha ser lida como uma
             conta, e não como um bloco colorido. */}
-        <Parcela>maior {seg(String(r.maiorDado), acento.hex)}</Parcela>
+        <Parcela>{r.modoSelecao === "lowest" ? "menor" : "maior"} {seg(String(r.maiorDado), acento.hex)}</Parcela>
         {r.pericia
           ? <Parcela>+ {r.pericia.toLowerCase()} {seg(`+${r.periciaValor}`, acento.hex)}</Parcela>
           : <Parcela>· sem perícia</Parcela>}

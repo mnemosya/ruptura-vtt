@@ -5652,7 +5652,7 @@ export default function CharacterSheetClient({
         atributoValor: character.atributos[id],
         modificador: 0,
       });
-      addLogEntry("rolagem_pericia", `Console — ${def?.nome ?? id}: ${r.dados.join(", ")} → maior ${r.maiorDado}, total ${r.total}.`);
+      addLogEntry("rolagem_pericia", `Console — ${def?.nome ?? id}: ${r.dados.join(", ")} → ${r.modoSelecao === "lowest" ? "menor" : "maior"} ${r.dadoEscolhido}, total ${r.total}.`);
       void publicarRolagemNaMesa(id, null, r.dados, 0);
       return r;
     },
@@ -5671,7 +5671,7 @@ export default function CharacterSheetClient({
         periciaValor: character.pericias[periciaId] ?? 0,
         modificador: 0,
       });
-      addLogEntry("rolagem_pericia", `Console — ${def?.nome ?? periciaId}: ${r.dados.join(", ")} → maior ${r.maiorDado}, total ${r.total}.`);
+      addLogEntry("rolagem_pericia", `Console — ${def?.nome ?? periciaId}: ${r.dados.join(", ")} → ${r.modoSelecao === "lowest" ? "menor" : "maior"} ${r.dadoEscolhido}, total ${r.total}.`);
       void publicarRolagemNaMesa(atributoId, periciaId, r.dados, 0);
       return r;
     },
@@ -5747,7 +5747,7 @@ export default function CharacterSheetClient({
       const alvo = periciaDef?.nome ?? atributoDef?.nome ?? atributoId;
       addLogEntry(
         "rolagem_pericia",
-        `Console — ${alvo}: ${r.dados.join(", ")} → maior ${r.maiorDado}, total ${r.total}${cd != null ? ` (CD ${cd})` : ""}.`,
+        `Console — ${alvo}: ${r.dados.join(", ")} → ${r.modoSelecao === "lowest" ? "menor" : "maior"} ${r.dadoEscolhido}, total ${r.total}${cd != null ? ` (CD ${cd})` : ""}.`,
       );
       void publicarRolagemNaMesa(atributoId, periciaId, r.dados, modificador, cd, visibilidade, intencao ?? null);
       return r;
@@ -5789,7 +5789,7 @@ export default function CharacterSheetClient({
           : (mutation.meta.warnings?.[0] ?? "");
       addLogEntry(
         "rolagem_pericia",
-        `Console — ${def?.nome ?? periciaId} (defesa): ${r.dados.join(", ")} → maior ${r.maiorDado}, total ${r.total}. ${reacaoLog}`,
+        `Console — ${def?.nome ?? periciaId} (defesa): ${r.dados.join(", ")} → ${r.modoSelecao === "lowest" ? "menor" : "maior"} ${r.dadoEscolhido}, total ${r.total}. ${reacaoLog}`,
       );
       // A penalidade de Reação entra como modificador da rolagem, então
       // vai junto pra mesa — senão o total publicado não bateria com o

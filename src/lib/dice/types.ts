@@ -38,7 +38,11 @@ export interface DiceRollResult {
 export interface RupturaRollParams {
   atributoId: string;
   atributoNome: string;
-  /** Quantidade de d8 a rolar (= valor do atributo). */
+  /**
+   * Valor do atributo. Pools positivos rolam esse número de d8 e usam
+   * o maior; 0 rola 2d8 e valores negativos acrescentam um d8 por
+   * ponto negativo, sempre usando o menor.
+   */
   atributoValor: number;
   periciaId?: string;
   periciaNome?: string;
@@ -65,6 +69,9 @@ export interface RupturaRollParams {
   quantidadeDadosGatilho?: number;
 }
 
+/** Como o pool escolhe o único d8 que entra no total. */
+export type RupturaSelectionMode = "highest" | "lowest";
+
 /**
  * Classificação simples da margem quando há CD. Não é regra de jogo
  * nova (dano/região do corpo/combate) — só uma leitura mais rápida do
@@ -88,9 +95,9 @@ export const MARGEM_CLASSIFICACOES = [
 export type MargemClassificacao = (typeof MARGEM_CLASSIFICACOES)[number];
 
 /**
- * Resultado de `rollPericia()`: maior d8 entre N dados (N = atributo) +
- * perícia + modificador manual. Espelha a regra do PRD: "maior dado
- * entre (Atributo)d8 + Perícia + modificadores".
+ * Resultado de `rollPericia()`: um d8 escolhido do pool + perícia +
+ * modificador manual. Pools positivos usam o maior d8; pools de
+ * Atributo 0 ou negativo usam o menor.
  *
  * periciaId/periciaNome ausentes = rolagem "sem perícia" — periciaValor
  * sempre vem preenchido (0 nesse caso), nunca fica `undefined`.
@@ -103,8 +110,18 @@ export interface RupturaRollResult {
   periciaNome?: string;
   periciaValor: number;
   modificador: number;
+  /** Quantidade canônica de d8 pedida pelo valor do atributo. */
+  quantidadeDados: number;
+  /** `highest` para atributo positivo; `lowest` para zero/negativo. */
+  modoSelecao: RupturaSelectionMode;
   /** Resultado de cada d8 rolado, na ordem em que saíram. */
   dados: number[];
+  /** O d8 efetivamente usado no total. */
+  dadoEscolhido: number;
+  /**
+   * Alias temporário para consumidores anteriores ao suporte a pools
+   * negativos. Contém o dado escolhido, inclusive quando ele é o menor.
+   */
   maiorDado: number;
   total: number;
   cd?: number;
@@ -115,11 +132,11 @@ export interface RupturaRollResult {
   classificacaoMargem?: MargemClassificacao;
   /** Rótulo do talento que promoveu a margem (ex.: "Passo Fantasma") — ausente = nenhuma promoção aplicada. */
   promocaoAplicada?: string;
-  /** Resultado do d8 de gatilho, quando `incluirDadoGatilho` foi pedido — já incluído em `dados`/`maiorDado`. */
+  /** Resultado do d8 de gatilho, quando `incluirDadoGatilho` foi pedido — já incluído em `dados`/`dadoEscolhido`. */
   dadoGatilhoResultado?: number;
-  /** `true` quando o d8 de gatilho foi o MAIOR dado da rolagem (seu resultado "faz parte do teste" — condição de Bang Bang). */
+  /** `true` quando o d8 de gatilho foi o escolhido pela regra do pool. */
   dadoGatilhoEscolhido?: boolean;
-  /** Pistoleiro › Showdown — resultado de CADA d8 de gatilho pedido via `quantidadeDadosGatilho`, na ordem em que saíram — já incluídos em `dados`/`maiorDado`. */
+  /** Pistoleiro › Showdown — resultado de CADA d8 de gatilho pedido via `quantidadeDadosGatilho`, na ordem em que saíram — já incluídos em `dados`/`dadoEscolhido`. */
   dadosGatilhoResultados?: number[];
 }
 

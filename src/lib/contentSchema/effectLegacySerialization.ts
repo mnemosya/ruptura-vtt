@@ -53,7 +53,7 @@ const RECURSO_SPELL_ENUM = new Set(["pv", "pe", "mana"]);
 /** `pericia`/`alvo_tags` em efeito de magia — enum de perícias do schema_magias_v1_3.json. */
 const PERICIA_SPELL_ENUM = new Set([
   "arcanismo", "artes", "balistica", "biologia", "carisma", "engenharia", "furtividade", "influencia",
-  "intimidacao", "logica", "luta", "mobilidade", "percepcao", "precisao", "psicologia", "reflexos",
+  "intimidacao", "logica", "luta", "medicina", "mobilidade", "percepcao", "precisao", "psicologia", "reflexos",
   "robotica", "sociedade", "tecnomagia", "vigor", "vontade",
 ]);
 

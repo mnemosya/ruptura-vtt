@@ -1,5 +1,5 @@
 /**
- * Ícone por perícia — 21 IDs reais de `regras_personagem.pericias`
+ * Ícone por perícia — 22 IDs reais de `regras_personagem.pericias`
  * (não nomes bonitos inventados). Cada ícone é a melhor correspondência
  * semântica disponível no Lucide ou o SVG original do design.
  */
@@ -19,6 +19,7 @@ import {
   Bot,
   Users,
   Heart,
+  Stethoscope,
 } from "lucide-react";
 import {
   BalisticaFigmaIcon,
@@ -45,6 +46,7 @@ export const SKILL_ICONS: Record<string, SkillIcon> = {
   intimidacao: Angry,
   logica: LogicaFigmaIcon,
   luta: LutaFigmaIcon,
+  medicina: Stethoscope,
   mobilidade: MobilidadeFigmaIcon,
   percepcao: Eye,
   precisao: Crosshair,

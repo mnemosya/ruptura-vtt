@@ -95,6 +95,7 @@ export function RollCard({
           testIdTotal="painel-feed-resultado"
           r={{
             maiorDado: teste.maiorDado,
+            modoSelecao: teste.modoSelecao,
             pericia: teste.pericia,
             periciaValor: teste.periciaValor,
             modificador: teste.modificador,

@@ -78,7 +78,7 @@ export interface ConsoleApi {
    */
   gravacao: { estado: "idle" | "saving" | "saved" | "error"; erro: string | null };
 
-  /** Rola um atributo (Nd8, maior dado) usando o motor real e registra no log. */
+  /** Rola um atributo usando o pool canônico (maior ou menor) e registra no log. */
   rolarAtributo: (id: keyof CharacterAttributes) => RupturaRollResult;
   /** Rola uma perícia usando o motor real e registra no log. */
   rolarPericia: (periciaId: string) => RupturaRollResult;

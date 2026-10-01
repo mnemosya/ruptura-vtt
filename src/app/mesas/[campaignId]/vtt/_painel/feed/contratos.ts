@@ -127,6 +127,7 @@ export interface CartaoRolagem extends CartaoComum {
    */
   teste: {
     maiorDado: number;
+    modoSelecao: "highest" | "lowest";
     pericia: string | null;
     periciaValor: number;
     modificador: number;
@@ -595,8 +596,8 @@ function termosDoPayload(p: P): { faces: number; valor: number }[] {
 
 /**
  * A leitura só existe quando a rolagem É um teste (tem atributo ou
- * perícia) e o payload gravou o maior dado. Sem isso — bandeja livre,
- * ou um log antigo anterior a `maiorDado` — o card cai no desenho de
+ * perícia) e o payload gravou o dado escolhido. Sem isso — bandeja livre,
+ * ou um log anterior a esse campo — o card cai no desenho de
  * módulos, que continua certo pra somar dados.
  */
 function montarLeituraDeTeste(
@@ -608,11 +609,13 @@ function montarLeituraDeTeste(
   cd: number | null,
 ): CartaoRolagem["teste"] {
   if (!atributo && !pericia) return null;
-  const maiorDado = num(p, "maiorDado");
+  const maiorDado = num(p, "dadoEscolhido") ?? num(p, "maiorDado");
   if (maiorDado == null) return null;
+  const modoSelecao = txt(p, "modoSelecao") === "lowest" ? "lowest" : "highest";
   const classificacao = txt(p, "classificacaoMargem");
   return {
     maiorDado,
+    modoSelecao,
     pericia,
     periciaValor: periciaValor ?? 0,
     modificador: modificador ?? 0,

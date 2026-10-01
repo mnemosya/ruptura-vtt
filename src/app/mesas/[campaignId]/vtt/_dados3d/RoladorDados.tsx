@@ -48,6 +48,7 @@ import {
   type FichaRolagem,
 } from "../_painel/acoes/rolagemPainel";
 import type { TableLogVisibility } from "../../../../../lib/table";
+import { getRupturaPool, type RupturaSelectionMode } from "../../../../../lib/dice";
 
 /* Tokens do design, faixas de margem e as peças de RESULTADO moram em
    `ResultadoRolagem.tsx` — o Console do Personagem desenha o resultado
@@ -306,6 +307,8 @@ function FreePool({
 type Roll = {
   dados: number[];
   maiorDado: number;
+  quantidadeDados: number;
+  modoSelecao: RupturaSelectionMode;
   atributo: string;
   atributoValor: number;
   pericia: string | null;
@@ -349,7 +352,8 @@ function useTest(campaignId: string | null, ficha: FichaRolagem | null, visibili
 
   const atributo = ficha?.atributos.find((a) => a.id === atributoId) ?? null;
   const pericia = periciaId ? ficha?.pericias.find((p) => p.id === periciaId) ?? null : null;
-  const podeRolar = !!campaignId && !!ficha && !!atributo && atributo.valor > 0 && !!rolarNaMesa;
+  const pool = getRupturaPool(atributo?.valor ?? 0);
+  const podeRolar = !!campaignId && !!ficha && !!atributo && !!rolarNaMesa;
 
   const doRoll = async (forca: number) => {
     if (rolling || !podeRolar || !ficha || !atributo || !rolarNaMesa || !campaignId) return;
@@ -360,7 +364,7 @@ function useTest(campaignId: string | null, ficha: FichaRolagem | null, visibili
 
     // A física primeiro: as faces do teste são as que os corpos
     // mostrarem quando pararem — nunca sorteadas antes.
-    const pedido: PhysicsDieSpec[] = Array.from({ length: atributo.valor }, (_, i) => ({ id: `teste-${i}`, sides: 8 }));
+    const pedido: PhysicsDieSpec[] = Array.from({ length: pool.quantidadeDados }, (_, i) => ({ id: `teste-${i}`, sides: 8 }));
     const fisicos = await rolarNaMesa(pedido, "#35c7d8", forca);
     const dados = fisicos.map((d) => d.value);
 
@@ -385,7 +389,9 @@ function useTest(campaignId: string | null, ficha: FichaRolagem | null, visibili
     const num = (k: string) => (typeof p[k] === "number" ? (p[k] as number) : null);
     setRoll({
       dados: Array.isArray(p.dados) ? (p.dados as number[]) : dados,
-      maiorDado: num("maiorDado") ?? Math.max(...dados),
+      maiorDado: num("dadoEscolhido") ?? num("maiorDado") ?? (pool.modoSelecao === "lowest" ? Math.min(...dados) : Math.max(...dados)),
+      quantidadeDados: num("quantidadeDados") ?? pool.quantidadeDados,
+      modoSelecao: p.modoSelecao === "lowest" ? "lowest" : "highest",
       atributo: typeof p.atributo === "string" ? p.atributo : atributo.nome,
       atributoValor: num("atributoValor") ?? atributo.valor,
       pericia: typeof p.pericia === "string" ? p.pericia : null,
@@ -483,12 +489,21 @@ function RupturaTest({ s }: { s: ReturnType<typeof useTest> }) {
     return <SemFicha motivo="Selecione no mapa um token ligado a um personagem que você controla — o teste usa os atributos e perícias da ficha dele." />;
   }
 
-  const opcoesAtributo = ficha.atributos.map((a) => ({ id: a.id, rotulo: a.nome, valor: `${a.valor}d8` }));
+  const opcoesAtributo = ficha.atributos.map((a) => {
+    const definicao = getRupturaPool(a.valor);
+    return {
+      id: a.id,
+      rotulo: a.nome,
+      valor: `${definicao.quantidadeDados}d8 · ${definicao.modoSelecao === "lowest" ? "menor" : "maior"}`,
+    };
+  });
   const opcoesPericia = [
     { id: SEM_PERICIA, rotulo: "Sem perícia" },
     ...ficha.pericias.map((p) => ({ id: p.id, rotulo: p.nome, valor: `+${p.valor}` })),
   ];
-  const nd8 = atributo?.valor ?? 0;
+  const pool = getRupturaPool(atributo?.valor ?? 0);
+  const nd8 = pool.quantidadeDados;
+  const rotuloSelecao = pool.modoSelecao === "lowest" ? "menor dado" : "maior dado";
 
   return (
     <>
@@ -510,7 +525,7 @@ function RupturaTest({ s }: { s: ReturnType<typeof useTest> }) {
       <div style={{ borderRadius: 2, padding: 14, background: "#0a1220", border: "1px solid #16233a" }}>
         <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: INK_FAINT }}>
-            Pool · <span style={{ color: "#35c7d8" }}>{nd8}d8</span> · maior dado
+            Pool · <span style={{ color: "#35c7d8" }}>{nd8}d8</span> · {rotuloSelecao}
           </span>
           <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: INK_FAINT }}>
             {s.cdInput.trim() === "" ? "sem CD definida" : `cd ${s.cdInput}`}
@@ -518,9 +533,9 @@ function RupturaTest({ s }: { s: ReturnType<typeof useTest> }) {
         </div>
         <TestPool r={s.roll} count={nd8} rolling={s.rolling} landed={s.landed} carga={s.carga} />
         {s.roll && !s.rolling && <div className="rup-reveal" style={{ marginTop: 14 }}><ResultBanner r={s.roll} /></div>}
-        {nd8 === 0 && (
+        {atributo?.valor === 0 && (
           <p style={{ margin: "10px 0 0", fontFamily: BODY, fontSize: 11.5, color: INK_FAINT }}>
-            Este atributo está em 0 na ficha — sem dado pra rolar.
+            Atributo 0: role 2d8 e use o menor resultado.
           </p>
         )}
       </div>
@@ -558,7 +573,7 @@ function ErroRolagem({ texto }: { texto: string }) {
 
 function DiceTabs({ tab, onChange }: { tab: "test" | "free"; onChange: (t: "test" | "free") => void }) {
   const tabs: { k: "test" | "free"; label: string; hint: string }[] = [
-    { k: "test", label: "Atributo & Perícia", hint: "Nd8 · maior" },
+    { k: "test", label: "Atributo & Perícia", hint: "Nd8 · maior/menor" },
     { k: "free", label: "Livre", hint: "d4 a d100" },
   ];
   return (

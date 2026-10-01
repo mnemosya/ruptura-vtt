@@ -260,7 +260,8 @@ export function RollResultModal({
   onFechar: () => void;
 }) {
   const centro = useCentroDoConsole();
-  const nd8 = resultado.atributoValor;
+  const nd8 = resultado.quantidadeDados;
+  const rotuloSelecao = resultado.modoSelecao === "lowest" ? "menor dado" : "maior dado";
   const natureza = defesa
     ? "Defesa"
     : resultado.periciaNome
@@ -284,7 +285,7 @@ export function RollResultModal({
         indice="01"
         codigo="Rolagem"
         titulo="Rolar Dados"
-        modo="d8 · maior dado + perícia + modificadores"
+        modo={`d8 · ${rotuloSelecao} + perícia + modificadores`}
         aoFechar={onFechar}
         rotuloFechar="Fechar rolagem"
       >
@@ -328,7 +329,7 @@ export function RollResultModal({
         <div style={{ borderRadius: 4, padding: 14, background: "#0c1420", border: "1px solid #16233a" }}>
           <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: INK_FAINT }}>
-              Pool · <span style={{ color: "#35c7d8" }}>{nd8}d8</span> · maior dado
+              Pool · <span style={{ color: "#35c7d8" }}>{nd8}d8</span> · {rotuloSelecao}
             </span>
             <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: INK_FAINT }}>
               {resultado.cd == null ? "sem CD definida" : `cd ${resultado.cd}`}
@@ -348,6 +349,7 @@ export function RollResultModal({
               testIdTotal="console-roll-total"
               r={{
                 maiorDado: resultado.maiorDado,
+                modoSelecao: resultado.modoSelecao,
                 pericia: resultado.periciaNome ?? null,
                 periciaValor: resultado.periciaValor,
                 modificador: resultado.modificador,
@@ -365,7 +367,7 @@ export function RollResultModal({
           {gatilho.length > 0 && (
             <p style={{ margin: "10px 0 0", fontFamily: BODY, fontSize: 11.5, lineHeight: 1.5, color: INK_FAINT }}>
               Dado de gatilho: {gatilho.join(", ")}
-              {resultado.dadoGatilhoEscolhido ? " — foi o maior dado da rolagem." : " — já incluído no pool acima."}
+              {resultado.dadoGatilhoEscolhido ? ` — foi o ${rotuloSelecao} da rolagem.` : " — já incluído no pool acima."}
             </p>
           )}
         </div>

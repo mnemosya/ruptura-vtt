@@ -471,6 +471,9 @@ export function RollsTab({
       periciaValor: resultado.periciaValor,
       modificador: resultado.modificador,
       dados: resultado.dados,
+      quantidadeDados: resultado.quantidadeDados,
+      modoSelecao: resultado.modoSelecao,
+      dadoEscolhido: resultado.dadoEscolhido,
       maiorDado: resultado.maiorDado,
       total: resultado.total,
       cd: resultado.cd ?? null,
@@ -528,6 +531,9 @@ export function RollsTab({
       periciaValor: resultado.periciaValor,
       modificador: resultado.modificador,
       dados: resultado.dados,
+      quantidadeDados: resultado.quantidadeDados,
+      modoSelecao: resultado.modoSelecao,
+      dadoEscolhido: resultado.dadoEscolhido,
       maiorDado: resultado.maiorDado,
       total: resultado.total,
       cd: resultado.cd ?? null,
@@ -1006,7 +1012,7 @@ function PericiaResultado({ resultado, origem }: { resultado: RupturaRollResult;
         {resultado.atributoNome} ({resultado.atributoValor}d8) + {resultado.periciaNome ?? "Sem perícia"}
       </div>
       <div>Resultados individuais: {resultado.dados.join(", ") || "—"}</div>
-      <div>Maior d8: {resultado.maiorDado}</div>
+      <div>{resultado.modoSelecao === "lowest" ? "Menor" : "Maior"} d8: {resultado.dadoEscolhido}</div>
       <div>Bônus de perícia: {resultado.periciaValor >= 0 ? "+" : ""}{resultado.periciaValor}</div>
       <div>Modificador: {resultado.modificador >= 0 ? "+" : ""}{resultado.modificador}</div>
       <div style={{ fontWeight: 700 }}>Total: {resultado.total}</div>

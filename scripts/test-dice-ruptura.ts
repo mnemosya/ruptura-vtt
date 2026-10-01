@@ -10,7 +10,7 @@
  * Uso: npx tsx scripts/test-dice-ruptura.ts
  */
 
-import { resolverPericia, rollPericia } from "../src/lib/dice";
+import { getRupturaPool, resolverPericia, rollPericia } from "../src/lib/dice";
 
 let passou = 0;
 let falhou = 0;
@@ -99,7 +99,42 @@ const base = { atributoId: "corpo", atributoNome: "Corpo", atributoValor: 3, mod
 
 {
   const r = rollPericia({ ...base, atributoValor: 0 });
-  ok("9 (atributo 0 não quebra: pool vazio, maior 0)", r.dados.length === 0 && r.maiorDado === 0, `dados=${JSON.stringify(r.dados)} maior=${r.maiorDado}`);
+  ok(
+    "9 (atributo 0 rola 2d8 e usa o menor)",
+    r.dados.length === 2 && r.modoSelecao === "lowest" && r.dadoEscolhido === Math.min(...r.dados),
+    `dados=${JSON.stringify(r.dados)} escolhido=${r.dadoEscolhido}`,
+  );
+}
+
+// ── Pools zero e negativos da v1.2 ───────────────────────────────
+{
+  const casos = [
+    { atributo: 3, quantidade: 3, modo: "highest" },
+    { atributo: 1, quantidade: 1, modo: "highest" },
+    { atributo: 0, quantidade: 2, modo: "lowest" },
+    { atributo: -1, quantidade: 3, modo: "lowest" },
+    { atributo: -2, quantidade: 4, modo: "lowest" },
+  ] as const;
+  const divergentes = casos.filter(({ atributo, quantidade, modo }) => {
+    const pool = getRupturaPool(atributo);
+    return pool.quantidadeDados !== quantidade || pool.modoSelecao !== modo;
+  });
+  ok("10 (3/1/0/−1/−2 produzem quantidade e modo canônicos)", divergentes.length === 0, JSON.stringify(divergentes));
+}
+
+{
+  const zero = resolverPericia({ ...base, atributoValor: 0, periciaValor: 2, modificador: 1 }, [7, 3]);
+  ok(
+    "11 (resolverPericia usa o menor em Atributo 0)",
+    zero.dadoEscolhido === 3 && zero.maiorDado === 3 && zero.total === 6,
+    `escolhido=${zero.dadoEscolhido} total=${zero.total}`,
+  );
+  const negativo = resolverPericia({ ...base, atributoValor: -1 }, [6, 2, 5]);
+  ok(
+    "12 (resolverPericia usa o menor em Atributo −1)",
+    negativo.quantidadeDados === 3 && negativo.dadoEscolhido === 2 && negativo.total === 2,
+    `pool=${negativo.quantidadeDados} escolhido=${negativo.dadoEscolhido}`,
+  );
 }
 
 console.log(`\n${passou} ok, ${falhou} falha(s).`);
