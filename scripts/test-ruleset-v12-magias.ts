@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { VERTENTES_V12 } from "../src/lib/rulesetV12";
+import { canonicalVertenteId, checkSpellVertenteLevel, getVertenteLevel, normalizeSpellContent } from "../src/lib/character";
 
 /**
  * Catálogo de metadados das magias v1.2 e crosswalk preliminar (Fase 6).
@@ -52,5 +53,15 @@ for (const l of crosswalk.legado) {
 }
 const cobertas = new Set([...crosswalk.legado.map((l) => l.canonical_slug).filter(Boolean), ...crosswalk.sem_antecessor.map((s) => s.canonical_slug)]);
 assert.equal(cobertas.size, magias.length, "toda magia v1.2 aparece no crosswalk");
+
+// Alias temporário somatica → biotica: ficha v1.2 (biotica) lê magia legada (somatica) e vice-versa.
+assert.equal(canonicalVertenteId("somatica"), "biotica");
+assert.equal(canonicalVertenteId("cinetica"), "cinetica");
+assert.equal(getVertenteLevel({ niveis_vertente: { biotica: 2 } }, "somatica"), 2, "v2 lê magia legada de Somática.");
+assert.equal(getVertenteLevel({ niveis_vertente: { somatica: 3 } }, "biotica"), 3, "ficha antiga continua lida.");
+assert.equal(getVertenteLevel({ niveis_vertente: {} }, "somatica"), null, "sem nível continua desconhecido.");
+const legadaSomatica = legado.find((m) => (m as unknown as { vertente: string }).vertente === "somatica") as unknown as Record<string, unknown>;
+const spellLegada = normalizeSpellContent(legadaSomatica);
+assert.equal(checkSpellVertenteLevel(spellLegada, { niveis_vertente: { biotica: 5 } }).vertenteLevel, 5);
 
 console.log(`test-ruleset-v12-magias — ${magias.length} magias v1.2; crosswalk com ${crosswalk.legado.length} legadas.`);

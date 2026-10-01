@@ -346,7 +346,7 @@ Magias:
 - [ ] schema de Mana fixa, intervalo, escolha e fórmula; os metadados já distinguem fixo (208), intervalo (1) e variável (2), sem contrato TypeScript ainda;
 - [ ] schema de tempo de conjuração; os metadados já distinguem PA (190), Reação (9), tempo (11) e variável (1);
 - [ ] interface para custos escolhidos/variáveis;
-- [ ] alias temporário `somatica → biotica`;
+- [x] alias temporário `somatica → biotica` (`canonicalVertenteId` em `src/lib/character/spells.ts`: nível de Vertente, filtros e rótulos do painel de Magias);
 - [ ] backfill dos IDs persistidos;
 - [ ] Fusão global desativada ou sustentada por regra canônica documentada.
 
@@ -756,3 +756,9 @@ Equivalência das demais ações:
 | Falar, Gestos Rápidos | livres | iguais |
 | Soltar alvo | parte de Gestos Rápidos (livre) | equivalente; mantida como ação livre condicional |
 | Apagar fogo | opção de Interagir | arquivada |
+
+### 01/10/2026 — Alias `somatica → biotica` (Fase 6)
+
+- personagens v1.2 guardam `niveis_vertente.biotica`, e o catálogo antigo usa `somatica`; sem o alias, as magias de Biótica apareciam com nível de Vertente desconhecido;
+- `canonicalVertenteId` e `getVertenteLevel` leem o ID canônico e, em fichas antigas, o legado; o painel de Magias filtra e rotula por Biótica e grava o nível no ID canônico;
+- o alias é temporário e sai quando o catálogo v1.2 substituir o antigo (Fases 7 e 10).

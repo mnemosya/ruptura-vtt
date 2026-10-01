@@ -239,8 +239,23 @@ export function getVertenteCd(nivelVertente: number): number {
  * compatibilidade com personagens antigos que nunca tiveram este
  * campo). `0` é um valor válido e diferente de "desconhecido".
  */
+/**
+ * Alias TEMPORÁRIO da migração v1.2 (plano, Fase 6): o catálogo antigo de
+ * magias usa `somatica`; a v1.2 chama a Vertente de Biótica (`biotica`).
+ * Sai quando o catálogo v1.2 substituir o antigo (Fase 7/10).
+ */
+export const VERTENTE_ALIASES: Readonly<Record<string, string>> = { somatica: "biotica" };
+
+/** ID canônico v1.2 de uma Vertente (`somatica` → `biotica`). */
+export function canonicalVertenteId(vertente: string): string {
+  return VERTENTE_ALIASES[vertente] ?? vertente;
+}
+
 export function getVertenteLevel(character: Pick<Character, "niveis_vertente">, vertente: string): number | null {
-  const nivel = character.niveis_vertente?.[vertente];
+  // Procura pelo ID canônico e, para fichas antigas, pelo ID legado.
+  const canonica = canonicalVertenteId(vertente);
+  const legada = Object.keys(VERTENTE_ALIASES).find((k) => VERTENTE_ALIASES[k] === canonica);
+  const nivel = character.niveis_vertente?.[canonica] ?? (legada ? character.niveis_vertente?.[legada] : undefined);
   return typeof nivel === "number" && Number.isFinite(nivel) ? Math.trunc(nivel) : null;
 }
 

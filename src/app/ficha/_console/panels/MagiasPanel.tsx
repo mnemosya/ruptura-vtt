@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import { Search } from "lucide-react";
-import { applyRangeAreaMultiplierToText, checkSpellVertenteLevel, describeSpellManualEffects, getSpellAttackProfile, getSpellDamageEffect, getVertenteCd, getVertenteLevel, resolveSpellResistance, type SpellContent } from "../../../../lib/character";
+import { applyRangeAreaMultiplierToText, canonicalVertenteId, checkSpellVertenteLevel, describeSpellManualEffects, getSpellAttackProfile, getSpellDamageEffect, getVertenteCd, getVertenteLevel, resolveSpellResistance, type SpellContent } from "../../../../lib/character";
 import type { ConsoleApi } from "../types";
 import { TextoComRegras } from "../TextoComRegras";
 import { CabecalhoModulo } from "./CabecalhoModulo";
 
 const VERTENTES = [
   ["cinetica", "Cinética"], ["energetica", "Energética"], ["material", "Material"],
-  ["somatica", "Biótica"], ["sinaptica", "Sináptica"], ["cognitiva", "Cognitiva"],
+  ["biotica", "Biótica"], ["sinaptica", "Sináptica"], ["cognitiva", "Cognitiva"],
 ] as const;
-const rotulo = (id: string) => VERTENTES.find(([slug]) => slug === id)?.[1] ?? id;
+const rotulo = (id: string) => VERTENTES.find(([slug]) => slug === canonicalVertenteId(id))?.[1] ?? id;
 const normalizar = (texto: string) => texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 /** Só apresentação: custos, testes e persistência continuam nas ações da ficha. */
@@ -23,17 +23,17 @@ export function MagiasPanel({ api }: { api: ConsoleApi }) {
   const [selecionado, setSelecionado] = useState<string | null>(null);
   const publicadas = m.spells.filter(s => s.status === "published");
   const repertorio = publicadas.filter(s => m.sheetMode === "evolucao" || m.magiasAprendidas.some(a => a.spellSlug === s.slug));
-  const visiveis = repertorio.filter(s => (!vertente || s.vertente === vertente) && (!nivel || s.estatisticas.nivel === nivel) && normalizar(s.nome).includes(normalizar(busca)))
+  const visiveis = repertorio.filter(s => (!vertente || canonicalVertenteId(s.vertente) === vertente) && (!nivel || s.estatisticas.nivel === nivel) && normalizar(s.nome).includes(normalizar(busca)))
     .sort((a, b) => a.estatisticas.nivel - b.estatisticas.nivel || a.nome.localeCompare(b.nome, "pt-BR"));
   const spell = visiveis.find(s => s.slug === selecionado) ?? visiveis[0];
-  const filtros = [["", "Todas"], ...VERTENTES, ...[...new Set(publicadas.map(s => s.vertente))].filter(v => !VERTENTES.some(([id]) => id === v)).map(v => [v, rotulo(v)])];
+  const filtros = [["", "Todas"], ...VERTENTES, ...[...new Set(publicadas.map(s => canonicalVertenteId(s.vertente)))].filter(v => !VERTENTES.some(([id]) => id === v)).map(v => [v, rotulo(v)])];
   return <section className="rc-eq-outer" aria-label="Magias">
     <div className="rc-eq-card-outer rc-inv-moldura">
       <CabecalhoModulo id="ID://MAGIAS" mod="MOD.ARC" />
       <div className="rc-inv rc-mag" data-testid="console-magias">
         <div className="rc-inv-abas rc-mag-abas" role="group" aria-label="Filtrar por vertente">
           {filtros.map(([id, label]) => <button key={id} type="button" className="rc-inv-aba" data-ativo={vertente === id || undefined} aria-pressed={vertente === id} onClick={() => setVertente(id)}>
-            {label}<span className="rc-inv-aba-n">{repertorio.filter(s => !id || s.vertente === id).length}</span>
+            {label}<span className="rc-inv-aba-n">{repertorio.filter(s => !id || canonicalVertenteId(s.vertente) === id).length}</span>
           </button>)}
         </div>
         {m.catalogError ? <p className="rc-inv-vazio" role="alert">Catálogo de magias indisponível. Tente novamente mais tarde.</p> : <div className="rc-inv-corpo">
@@ -87,7 +87,7 @@ function DetalheMagia({ spell, publicadas, api }: { spell: SpellContent; publica
           {alcance && <div className="rc-inv-linha"><dt>Alcance</dt><dd>{alcance.text}</dd></div>}
           {area && <div className="rc-inv-linha"><dt>Área</dt><dd>{area.text}</dd></div>}
           {spell.estatisticas.duracaoTexto && <div className="rc-inv-linha"><dt>Duração</dt><dd>{spell.estatisticas.duracaoTexto}</dd></div>}
-          <div className="rc-inv-linha"><dt>Nível da vertente</dt><dd>{m.sheetMode === "evolucao" ? <input aria-label={`Nível de ${rotulo(spell.vertente)}`} type="number" min={0} value={nivel ?? ""} placeholder="—" onChange={e => m.onSetVertenteLevel(spell.vertente, Math.max(0, Math.trunc(Number(e.target.value) || 0)))} /> : nivel ?? "Não definido"}</dd></div>
+          <div className="rc-inv-linha"><dt>Nível da vertente</dt><dd>{m.sheetMode === "evolucao" ? <input aria-label={`Nível de ${rotulo(spell.vertente)}`} type="number" min={0} value={nivel ?? ""} placeholder="—" onChange={e => m.onSetVertenteLevel(canonicalVertenteId(spell.vertente), Math.max(0, Math.trunc(Number(e.target.value) || 0)))} /> : nivel ?? "Não definido"}</dd></div>
           <div className="rc-inv-linha"><dt>CD da vertente</dt><dd>{cd ?? "Nível não definido"}</dd></div>
           {spell.estatisticas.usa_reacao && <div className="rc-inv-linha"><dt>Reação</dt><dd>Sim</dd></div>}
         </dl>
