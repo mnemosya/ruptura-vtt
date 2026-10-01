@@ -1222,7 +1222,7 @@ export function PersonagensTab({
 
                       <SecaoDossie n="04" titulo="Ficha">
                         <div className="rv-fg-statgrid" style={{ "--rv-fg-cols": 3 } as React.CSSProperties}>
-                          <div className="rv-fg-statcell"><b>{previaAtual.contadores.talentos}</b><span>Talentos</span></div>
+                          <div className="rv-fg-statcell"><b>{previaAtual.contadores.ranking}</b><span>Ranking</span></div>
                           <div className="rv-fg-statcell"><b>{previaAtual.contadores.magias}</b><span>Magias</span></div>
                           <div className="rv-fg-statcell"><b>{previaAtual.contadores.itens}</b><span>Itens</span></div>
                         </div>

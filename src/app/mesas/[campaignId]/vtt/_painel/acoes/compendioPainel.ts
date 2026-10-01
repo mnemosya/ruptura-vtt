@@ -46,7 +46,6 @@ const MAX_RESULTADOS = 60;
 
 const CONTENT_TYPE_POR_CATEGORIA: Record<CategoriaCompendio, ContentType> = {
   magias: "spell",
-  talentos: "talent",
   itens: "item",
   runas: "rune",
   condicoes: "condition",

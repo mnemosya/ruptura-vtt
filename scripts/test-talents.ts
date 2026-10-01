@@ -27,7 +27,10 @@ function readJson<T>(path: string): T {
 console.log("=== test-talents ===\n");
 
 const db = readJson<{ talentos: Record<string, unknown>[] }>("content/db_talentos_normalizado_v1_3.json");
-const talents: TalentContent[] = db.talentos.map(normalizeTalentContent);
+// Os Talentos foram ARQUIVADOS na migração v1.2 (não existem na v1.2), mas o
+// motor de Talentos continua no código até a limpeza final da Fase 10; este
+// teste segue exercitando o motor, por isso trata o catálogo como publicado.
+const talents: TalentContent[] = db.talentos.map((t) => normalizeTalentContent({ ...t, status: "published" }));
 assert.ok(talents.length >= 20, "Catálogo real deve ter pelo menos 20 talentos.");
 
 const artifice = talents.find((t) => t.slug === "artifice");

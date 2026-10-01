@@ -176,7 +176,8 @@ export interface ResumoPersonagem {
   };
   /** Só os nomes das condições ATIVAS — o dossiê não é a ficha inteira. */
   condicoesAtivas: string[];
-  contadores: { talentos: number; magias: number; itens: number };
+  /** RUPTURA v1.2: Ranking da progressão ("—" enquanto a criação estiver pendente); magias de `magia.magias_aprendidas`. */
+  contadores: { ranking: string; magias: number; itens: number };
 }
 
 export async function lerResumoPersonagemAction(
@@ -212,8 +213,8 @@ export async function lerResumoPersonagemAction(
         },
         condicoesAtivas: (personagemNormalizado.condicoes_ativas ?? []).filter((c) => c.ativa).map((c) => c.nome),
         contadores: {
-          talentos: personagemNormalizado.talentos_adquiridos?.length ?? 0,
-          magias: personagemNormalizado.magias_aprendidas?.length ?? 0,
+          ranking: (personagem.payload as { progressao?: { ranking?: string } }).progressao?.ranking ?? "—",
+          magias: (personagem.payload as { magia?: { magias_aprendidas?: unknown[] } }).magia?.magias_aprendidas?.length ?? 0,
           itens: personagemNormalizado.inventario?.length ?? 0,
         },
       },

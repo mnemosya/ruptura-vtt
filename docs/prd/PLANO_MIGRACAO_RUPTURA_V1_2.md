@@ -418,7 +418,7 @@ Critério de saída:
 Pré-condições:
 
 - [ ] PM não participa de nenhum fluxo v1.2;
-- [ ] Talentos antigos não participam de nenhum fluxo v1.2;
+- [x] Talentos antigos não participam de nenhum fluxo v1.2 (arquivados; fora do Compêndio e da prévia de personagem);
 - [ ] nenhum conteúdo depende do ID `somatica`;
 - [ ] nenhuma ficha depende do catálogo antigo de magias;
 - [ ] nenhuma condição depende do schema booleano antigo;
@@ -473,7 +473,7 @@ editorial_notes
 - [x] A aplicação rejeita payloads de personagem anteriores ao schema v2 (CHECK `characters_payload_schema_v2`, 01/10/2026).
 - [x] O Bando persiste todos os campos canônicos.
 - [x] O replay das migrations produz schema equivalente ao remoto.
-- [ ] Conteúdo legado não é usado silenciosamente como fonte de verdade.
+- [ ] Conteúdo legado não é usado silenciosamente como fonte de verdade. Talentos arquivados; magias, itens, escalpos e runas aguardam o conteúdo v1.2 (em espera).
 
 ## 9. Regras de segurança da migração
 
@@ -882,3 +882,11 @@ Equivalência das demais ações:
   - `check-ataque-ao-vivo` (1), `check-campanha-fase4-gameplay` (7, estoura o tempo), `check-carteira-inventario` (9), `check-console-moldura` (1), `check-console-paleta` (2), `check-dados-lado-direito` (1) e `check-ficha-ao-vivo` (2);
   - timeouts em `check-ficha-mesa-integracao`, `check-vtt-painel` (após 2d), `check-vtt-rolagem-real` e `check-vtt-targets`;
   - `check-vtt-integracao` (1) e `check-vtt-sincronizacao-live` (1).
+
+### 01/10/2026 — Talentos arquivados (Fase 7/10)
+
+- os 22 Talentos foram arquivados pelo seed (`status: archived` em `content/db_talentos_normalizado_v1_3.json`); os documentos continuam no banco;
+- o Compêndio perdeu a categoria Talentos;
+- a prévia de personagem (janela Personagens) trocou "Talentos" por "Ranking", e "Magias" passou a ler `magia.magias_aprendidas` (o campo v1 ficava sempre em 0 para v1.2);
+- `test:talents` continua exercitando o motor de Talentos, que ainda está no código, tratando o catálogo como publicado;
+- validado no navegador: Compêndio sem Talentos; prévia da Hilda com "D · Ranking".

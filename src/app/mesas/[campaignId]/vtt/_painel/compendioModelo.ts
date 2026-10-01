@@ -9,11 +9,11 @@
  * tudo sem banco.
  */
 
-export type CategoriaCompendio = "magias" | "talentos" | "itens" | "runas" | "condicoes" | "companheiros";
+// Talentos saíram em 01/10/2026: foram arquivados na migração v1.2 (não existem na v1.2).
+export type CategoriaCompendio = "magias" | "itens" | "runas" | "condicoes" | "companheiros";
 
 export const CATEGORIAS_COMPENDIO: readonly CategoriaCompendio[] = [
   "magias",
-  "talentos",
   "itens",
   "runas",
   "condicoes",
@@ -22,7 +22,6 @@ export const CATEGORIAS_COMPENDIO: readonly CategoriaCompendio[] = [
 
 const ROTULOS: Record<CategoriaCompendio, string> = {
   magias: "Magias",
-  talentos: "Talentos",
   itens: "Itens",
   runas: "Runas",
   condicoes: "Condições",
