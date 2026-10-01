@@ -15,14 +15,24 @@ const rotulo = (id: string) => VERTENTES.find(([slug]) => slug === canonicalVert
 const normalizar = (texto: string) => texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 /** Só apresentação: custos, testes e persistência continuam nas ações da ficha. */
+/**
+ * Modo Evolução vale para magias só em personagens v1: na v1.2 as magias
+ * e os níveis de Vertente vêm do avanço de Ranking (o Modo Evolução ali
+ * só corrige Atributos e Perícias).
+ */
+function evolucaoDeMagias(api: ConsoleApi): boolean {
+  return api.magias.sheetMode === "evolucao" && (api.character as { schema_version?: number }).schema_version !== 2;
+}
+
 export function MagiasPanel({ api }: { api: ConsoleApi }) {
   const m = api.magias;
+  const evolucao = evolucaoDeMagias(api);
   const [vertente, setVertente] = useState("");
   const [nivel, setNivel] = useState(0);
   const [busca, setBusca] = useState("");
   const [selecionado, setSelecionado] = useState<string | null>(null);
   const publicadas = m.spells.filter(s => s.status === "published");
-  const repertorio = publicadas.filter(s => m.sheetMode === "evolucao" || m.magiasAprendidas.some(a => a.spellSlug === s.slug));
+  const repertorio = publicadas.filter(s => evolucao || m.magiasAprendidas.some(a => a.spellSlug === s.slug));
   const visiveis = repertorio.filter(s => (!vertente || canonicalVertenteId(s.vertente) === vertente) && (!nivel || s.estatisticas.nivel === nivel) && normalizar(s.nome).includes(normalizar(busca)))
     .sort((a, b) => a.estatisticas.nivel - b.estatisticas.nivel || a.nome.localeCompare(b.nome, "pt-BR"));
   const spell = visiveis.find(s => s.slug === selecionado) ?? visiveis[0];
@@ -56,6 +66,7 @@ export function MagiasPanel({ api }: { api: ConsoleApi }) {
 
 function DetalheMagia({ spell, publicadas, api }: { spell: SpellContent; publicadas: SpellContent[]; api: ConsoleApi }) {
   const m = api.magias;
+  const evolucao = evolucaoDeMagias(api);
   const [fusao, setFusao] = useState("");
   const [mana, setMana] = useState(0);
   const aprendida = m.magiasAprendidas.find(a => a.spellSlug === spell.slug);
@@ -76,7 +87,7 @@ function DetalheMagia({ spell, publicadas, api }: { spell: SpellContent; publica
   const manaCanalizada = Math.min(mana, Math.max(0, m.canalizar?.manaAtual ?? 0));
   return <div className="rc-inv-det rc-mag-det" data-vertente={spell.vertente}>
     <div className="rc-mag-conteudo">
-      <div className="rc-inv-det-cab"><div className="rc-inv-det-titulo"><h3>{spell.nome}</h3><div className="rc-inv-etiquetas"><span className="rc-inv-etiqueta">Nível {spell.estatisticas.nivel}</span><span className="rc-inv-etiqueta">{rotulo(spell.vertente)}</span>{spell.estatisticas.tipo_magia && <span className="rc-inv-etiqueta">{spell.estatisticas.tipo_magia}</span>}{aprendida && m.sheetMode === "evolucao" && <span className="rc-inv-etiqueta">Aprendida</span>}</div></div></div>
+      <div className="rc-inv-det-cab"><div className="rc-inv-det-titulo"><h3>{spell.nome}</h3><div className="rc-inv-etiquetas"><span className="rc-inv-etiqueta">Nível {spell.estatisticas.nivel}</span><span className="rc-inv-etiqueta">{rotulo(spell.vertente)}</span>{spell.estatisticas.tipo_magia && <span className="rc-inv-etiqueta">{spell.estatisticas.tipo_magia}</span>}{aprendida && evolucao && <span className="rc-inv-etiqueta">Aprendida</span>}</div></div></div>
       {spell.descricao_curta && <TextoComRegras texto={spell.descricao_curta} glossario={api.glossario} className="rc-inv-det-desc" />}
       <div className="rc-inv-det-blocos">
         <div className="rc-inv-destaque">
@@ -87,7 +98,7 @@ function DetalheMagia({ spell, publicadas, api }: { spell: SpellContent; publica
           {alcance && <div className="rc-inv-linha"><dt>Alcance</dt><dd>{alcance.text}</dd></div>}
           {area && <div className="rc-inv-linha"><dt>Área</dt><dd>{area.text}</dd></div>}
           {spell.estatisticas.duracaoTexto && <div className="rc-inv-linha"><dt>Duração</dt><dd>{spell.estatisticas.duracaoTexto}</dd></div>}
-          <div className="rc-inv-linha"><dt>Nível da vertente</dt><dd>{m.sheetMode === "evolucao" ? <input aria-label={`Nível de ${rotulo(spell.vertente)}`} type="number" min={0} value={nivel ?? ""} placeholder="—" onChange={e => m.onSetVertenteLevel(canonicalVertenteId(spell.vertente), Math.max(0, Math.trunc(Number(e.target.value) || 0)))} /> : nivel ?? "Não definido"}</dd></div>
+          <div className="rc-inv-linha"><dt>Nível da vertente</dt><dd>{evolucao ? <input aria-label={`Nível de ${rotulo(spell.vertente)}`} type="number" min={0} value={nivel ?? ""} placeholder="—" onChange={e => m.onSetVertenteLevel(canonicalVertenteId(spell.vertente), Math.max(0, Math.trunc(Number(e.target.value) || 0)))} /> : nivel ?? "Não definido"}</dd></div>
           <div className="rc-inv-linha"><dt>CD da vertente</dt><dd>{cd ?? "Nível não definido"}</dd></div>
           {spell.estatisticas.usa_reacao && <div className="rc-inv-linha"><dt>Reação</dt><dd>Sim</dd></div>}
         </dl>
@@ -100,7 +111,7 @@ function DetalheMagia({ spell, publicadas, api }: { spell: SpellContent; publica
     </div>
     {/* Só leitura: conjurar, rolar dano e fundir são ações — o rodapé sai inteiro. */}
     {!api.somenteLeitura && <div className="rc-inv-det-rodape rc-mag-rodape">
-      {m.sheetMode === "evolucao" ? <button type="button" className="rc-inv-btn" onClick={() => aprendida ? m.onForget(aprendida.id) : m.onLearn(spell.slug)}>{aprendida ? "Esquecer" : "Aprender"}</button> : <>
+      {evolucao ? <button type="button" className="rc-inv-btn" onClick={() => aprendida ? m.onForget(aprendida.id) : m.onLearn(spell.slug)}>{aprendida ? "Esquecer" : "Aprender"}</button> : <>
         <button type="button" className="rc-inv-btn rc-mag-conjurar" disabled={bloqueada || !aprendida} onClick={() => m.onCast(spell.slug)}>Conjurar</button>
         {dano && <details className="rc-mag-opcoes"><summary>Dano e canalização</summary><div className="rc-mag-opcoes-corpo">{podeCanalizar && <label>Canalizar Potencializar · Mana<input aria-label="Mana para canalizar" type="number" min={0} max={m.canalizar?.manaAtual ?? 0} value={manaCanalizada} onChange={e => setMana(Math.max(0, Math.min(m.canalizar?.manaAtual ?? 0, Math.trunc(Number(e.target.value) || 0))))} /></label>}<button type="button" className="rc-inv-btn" onClick={() => m.onRollDamage(spell.slug, podeCanalizar ? manaCanalizada : 0)}>{dano.dado ? `Rolar dano (${dano.dado})` : `Dano fixo (${dano.valor})`}{podeCanalizar && manaCanalizada > 0 ? ` +${manaCanalizada}` : ""}</button></div></details>}
         {outras.length > 0 && <details className="rc-mag-opcoes"><summary>Fusão · +1 Sobrecarga</summary><div className="rc-mag-opcoes-corpo"><select aria-label="Magia para fundir" value={fundida ? fusao : ""} onChange={e => setFusao(e.target.value)}><option value="">Escolher magia…</option>{outras.map(s => <option key={s.slug} value={s.slug}>{s.nome} ({rotulo(s.vertente)})</option>)}</select><button type="button" className="rc-inv-btn" disabled={bloqueiaFusao} onClick={() => { if (!bloqueiaFusao) { m.onCastWithFusion(spell.slug, fusao); setFusao(""); } }}>Conjurar com Fusão</button>{fundida && bloqueiaFusao && <p className="rc-mag-aviso">Nível de vertente insuficiente para esta fusão.</p>}</div></details>}

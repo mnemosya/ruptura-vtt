@@ -88,7 +88,7 @@ export function GravacaoChip({ estado, erro }: { estado: "idle" | "saving" | "sa
   );
 }
 
-export function ModoChip({ modo, onAlternar }: { modo: ConsoleModo; onAlternar: (m: ConsoleModo) => void }) {
+export function ModoChip({ modo, onAlternar, v12 = false }: { modo: ConsoleModo; onAlternar: (m: ConsoleModo) => void; v12?: boolean }) {
   const evolucao = modo === "evolucao";
   return (
     <button
@@ -99,15 +99,17 @@ export function ModoChip({ modo, onAlternar }: { modo: ConsoleModo; onAlternar: 
       onClick={() => onAlternar(evolucao ? "jogo" : "evolucao")}
       title={
         evolucao
-          ? "Sair do Modo Evolução (volta para o Modo Jogo)"
-          : "Entrar no Modo Evolução — destrava atributos, perícias e talentos"
+          ? "Concluir os ajustes e gravar (volta para o Modo Jogo)"
+          : v12
+            ? "Entrar no Modo Evolução — corrige atributos e perícias definidos na criação"
+            : "Entrar no Modo Evolução — destrava atributos, perícias e talentos"
       }
       data-testid="console-modo-chip"
     >
       <span className="rc-modo-chip-ico" aria-hidden="true">
         {evolucao ? <Check size={12} strokeWidth={2.4} /> : <Sliders size={12} strokeWidth={2} />}
       </span>
-      {evolucao ? "Modo Evolução" : "Evoluir"}
+      {evolucao ? "Concluir" : "Ajustar"}
     </button>
   );
 }

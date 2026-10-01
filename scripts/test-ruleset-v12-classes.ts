@@ -3,6 +3,8 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   buildCharacterV2,
+  LIMITE_PERICIA_POR_RANKING_V12,
+  RANKINGS_V12,
   validateRulesetContentBundleV12,
   VERTENTES_V12,
   type ClassContentV12,
@@ -35,6 +37,9 @@ for (const arquivo of arquivos) {
   for (const classe of bundle.classes) {
     assert.ok(!slugsClasse.has(classe.slug), `Classe duplicada entre pacotes: ${classe.slug}`);
     slugsClasse.add(classe.slug);
+    for (const r of RANKINGS_V12) {
+      assert.equal(classe.progressao[r].limite_pericia, LIMITE_PERICIA_POR_RANKING_V12[r], `${classe.slug}: limite de Perícia do Ranking ${r} diverge da tabela da interface`);
+    }
     const c = classe.criacao;
     for (const slug of [...c.pericias_valor_3, ...c.pericias_valor_2]) assert.ok(catalogo.has(slug), `${classe.slug}: perícia desconhecida "${slug}"`);
     for (const p of c.perfis_pericias) {

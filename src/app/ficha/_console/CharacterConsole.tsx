@@ -100,7 +100,11 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
    */
   const [viewMode, setViewMode] = useState<ViewMode>("foco");
   const [aux, setAux] = useState<Aux>(null);
-  /** Personagem RUPTURA v1.2: usa o avanço de Ranking em vez do Modo Evolução livre. */
+  /**
+   * Personagem RUPTURA v1.2: o avanço de Ranking é o caminho da progressão;
+   * o Modo Evolução continua ao lado, só para corrigir Atributos e Perícias
+   * definidos na criação (o banco confere os limites do Ranking).
+   */
   const rankingV12 = (() => {
     const c = api.character as unknown as { schema_version?: number; progressao?: { ranking?: string } };
     return c.schema_version === 2 && typeof c.progressao?.ranking === "string" ? c.progressao.ranking : null;
@@ -428,11 +432,10 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
               <GravacaoChip estado={api.gravacao.estado} erro={api.gravacao.erro} />
             )}
             <VerNoMapaChip />
-            {!api.somenteLeitura && (rankingV12 ? (
-              api.mesa && <AvancoChip ranking={rankingV12} onAbrir={() => setAux({ tipo: "avanco" })} />
-            ) : (
-              <ModoChip modo={api.modo} onAlternar={api.definirModo} />
-            ))}
+            {!api.somenteLeitura && <ModoChip modo={api.modo} onAlternar={api.definirModo} v12={rankingV12 != null} />}
+            {!api.somenteLeitura && rankingV12 && api.mesa && (
+              <AvancoChip ranking={rankingV12} onAbrir={() => setAux({ tipo: "avanco" })} />
+            )}
           </>
         }
         dockContent={<MinimizedDockContent api={api} avatarUrl={avatarUrl} onEditarRecurso={editarRecursoComConfirmacao} />}

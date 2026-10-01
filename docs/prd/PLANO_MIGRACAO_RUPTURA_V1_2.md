@@ -802,3 +802,11 @@ Equivalência das demais ações:
 - **Restaram:** 1 personagem v2 (Hilda Norren) e 1 rascunho v2.
 - **Verificação:** a mesa de desenvolvimento abre sem erros, com só a Hilda.
 - **Para voltar atrás:** `pg_restore` do arquivo acima.
+
+### 01/10/2026 — Botão "Ajustar" para personagens v1.2
+
+- decisão: o Modo Evolução continua para personagens v1.2, como correção de Atributos e Perícias definidos na criação. O botão se chama "Ajustar" e vira "Concluir" quando ligado; fica à esquerda do botão de Ranking;
+- migration `20261001160000_ruptura_v12_correcao_atributos_pericias.sql`, aplicada no remoto: a RPC de ficha deixa de devolver Atributos e Perícias ao valor salvo e passa a conferir Atributo entre 1 e 5 e Perícia entre 0 e o limite do Ranking atual na Classe, com perícia do catálogo. Vale também para o narrador. Progressão, Trajetória e níveis de Vertente continuam protegidos;
+- interface: o "+" de Perícia para no limite do Ranking (`LIMITE_PERICIA_POR_RANKING_V12`, igual nas 7 Classes e conferido no teste de Classes). No Painel de Magias, o modo não libera aprender magias nem editar nível de Vertente em personagens v1.2;
+- `scripts/dev/v12/testar_rpc_avanco.ts` passou a criar o próprio personagem de teste no Ranking F: 20 cenários no remoto, em transação desfeita;
+- validado no navegador com a Hilda: Artes 0 → 1 → 0 gravado ao Concluir e "+" de Medicina desabilitado no limite 3. O chanfro do botão ligado acompanha a borda âmbar.

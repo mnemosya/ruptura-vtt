@@ -846,6 +846,9 @@
 }
 /* Botões baixos (28px): chanfro proporcional à altura. */
 :is(button.rc-modo-chip, .rc-ncond-add) { --rc-card-chanfro: 6px; }
+/* Ajustar ligado: o fio do chanfro acompanha a borda âmbar (senão o canto fica ciano). */
+button.rc-modo-chip[data-evolucao="true"] { --rc-card-fio: color-mix(in srgb, var(--rc-am) 55%, transparent); }
+button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 :is(
   button.rc-modo-chip,
   .rc-ncond-add,

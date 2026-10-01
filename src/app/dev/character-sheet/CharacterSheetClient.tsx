@@ -322,6 +322,7 @@ import { RollsTab } from "./components/RollsTab";
 import { LogTab, type LogEntry, type LogTipo } from "./components/LogTab";
 import { ConditionsTab, type ConditionOption } from "./components/ConditionsTab";
 import { applyGmCondition } from "../../../lib/character/gmActions";
+import { LIMITE_PERICIA_POR_RANKING_V12, type RankingV12 } from "../../../lib/rulesetV12";
 import { TalentsTab } from "./components/TalentsTab";
 import { InventoryTab } from "./components/InventoryTab";
 import { SpellsTab } from "./components/SpellsTab";
@@ -1231,7 +1232,11 @@ export default function CharacterSheetClient({
     if (sheetMode === "jogo") return;
     const def = regras?.pericias.find((p) => p.id === id);
     const min = def?.valor_minimo ?? 0;
-    const max = def?.valor_maximo ?? 5;
+    // v1.2: o Modo Evolução só corrige a criação — nunca acima do limite do Ranking atual (o banco confere o mesmo).
+    const rankingV12 = (character as { schema_version?: number; progressao?: { ranking?: RankingV12 } }).schema_version === 2
+      ? (character as { progressao?: { ranking?: RankingV12 } }).progressao?.ranking
+      : undefined;
+    const max = Math.min(def?.valor_maximo ?? 5, rankingV12 ? LIMITE_PERICIA_POR_RANKING_V12[rankingV12] : 5);
     const antes = character.pericias[id] ?? 0;
     const depois = clamp(rawValue, min, max);
     if (depois === antes) return;

@@ -33,6 +33,16 @@ import {
 import { VERTENTES_V12 } from "./creation";
 
 export const ATRIBUTO_MAXIMO_V12 = 5;
+
+/**
+ * Limite de Perícia por Ranking — igual nas sete Classes publicadas
+ * (conferido em `test-ruleset-v12-classes`). A fonte de verdade continua
+ * sendo `classe.progressao[ranking].limite_pericia`, que o banco usa ao
+ * gravar a ficha; esta tabela só serve à interface, que não carrega a Classe.
+ */
+export const LIMITE_PERICIA_POR_RANKING_V12: Readonly<Record<RankingV12, number>> = {
+  F: 3, E: 3, D: 3, C: 4, B: 4, A: 5, S: 5, "S+": 5,
+};
 export const NIVEL_MAXIMO_VERTENTE_V12 = 5;
 
 export interface AdvancementChoicesV12 {
