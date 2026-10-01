@@ -853,4 +853,4 @@ Equivalência das demais ações:
 - cada ação passa pelo motor puro e grava com revisão otimista; em conflito, a ficha relê e avisa;
 - motor ampliado com recrutamento, salários (dois intervalos sem pagamento encerram o contrato), coberturas e caixa (`test:ruleset-v12-bando`);
 - validado no navegador: fundação, duas operações (F → E "Listados" com 4 de Cobalto), uma pista de Exposição e a troca para o Inventário, sem erros. Ficou um bando de teste, "Vórtex (teste)", na campanha de desenvolvimento;
-- pendentes: transferência bidirecional de itens e aretz entre personagem e Bando no formato v1.2 (o inventário compartilhado continua funcionando como antes) e atualização ao vivo da ficha (hoje ela relê ao focar a janela e ao salvar).
+- pendentes: transferência bidirecional de itens e aretz entre personagem e Bando no formato v1.2 (o inventário compartilhado continua funcionando como antes). A atualização ao vivo ficou pronta em 01/10/2026: `subscribeToCampaignCrewRealtime`, com recorte por campanha no cliente; validada no navegador com a janela sem foco (Cobalto alterado no banco, de E para D na tela em menos de 3 s).

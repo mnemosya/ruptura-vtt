@@ -9,7 +9,7 @@
  * gravou antes, a ficha relê e avisa — nunca sobrescreve.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import {
   addCoverV12,
@@ -34,6 +34,7 @@ import {
   type CrewStateV12,
 } from "../../../../../lib/rulesetV12";
 import { lerFichaBandoAction, salvarFichaBandoAction, type FichaBandoPainel } from "./acoes/bandoFichaPainel";
+import { subscribeToCampaignCrewRealtime } from "../../../../../lib/realtime/tableRealtime";
 import { EstadoCarregando, EstadoErro } from "./Estados";
 import { BotaoTecnico, SecaoDossie } from "./ui/primitivas";
 import { Select } from "../_dados3d/ResultadoRolagem";
@@ -104,6 +105,22 @@ export function BandoFicha({ campaignId, visivel }: { campaignId: string; visive
   }, [campaignId]);
 
   useEffect(() => { if (visivel) void carregar(); }, [visivel, carregar]);
+  // Ao vivo: outra pessoa gravou o bando → relê. A própria gravação também
+  // chega por aqui; a revisão já conhecida evita a releitura à toa.
+  const revisaoRef = useRef(0);
+  revisaoRef.current = dados?.registro?.revision ?? 0;
+  useEffect(() => {
+    if (!visivel) return;
+    return subscribeToCampaignCrewRealtime({
+      campaignId,
+      onChange: (evento) => {
+        const revisao = (evento.new as { revision?: number } | null)?.revision;
+        if (revisao !== undefined && revisao === revisaoRef.current) return;
+        void carregar();
+      },
+    });
+  }, [visivel, campaignId, carregar]);
+
   useEffect(() => {
     if (!visivel) return;
     const aoFocar = () => void carregar();

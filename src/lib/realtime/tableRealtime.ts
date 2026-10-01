@@ -339,3 +339,36 @@ export function subscribeToTableLogsRealtime(params: {
     client.removeChannel(channel);
   };
 }
+
+/**
+ * Bando v1.2 (`campaign_crews`, uma linha por campanha). Só avisa "releia":
+ * a ficha continua lendo pela server action. O recorte da campanha é feito
+ * AQUI, como em `characters`, para não depender de filtro no servidor — um
+ * filtro recusado mata o canal em silêncio.
+ */
+export function subscribeToCampaignCrewRealtime(params: {
+  campaignId: string;
+  onChange: (payload: RealtimeEventLike) => void;
+  onStatusChange?: (status: RealtimeStatus) => void;
+}): () => void {
+  const client = getBrowserSupabaseClient();
+  if (!client) {
+    params.onStatusChange?.("disabled");
+    return () => {};
+  }
+  const channel: RealtimeChannel = client
+    .channel(`campaign-crew:${params.campaignId}`)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "campaign_crews" },
+      (payload) => {
+        const evento = payload as unknown as RealtimeEventLike;
+        const linha = (evento.new && Object.keys(evento.new).length > 0 ? evento.new : evento.old) as { campaign_id?: string } | null;
+        if (linha?.campaign_id === params.campaignId) params.onChange(evento);
+      },
+    )
+    .subscribe((status) => params.onStatusChange?.(mapSupabaseChannelStatus(status)));
+  return () => {
+    client.removeChannel(channel);
+  };
+}
