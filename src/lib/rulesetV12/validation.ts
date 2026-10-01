@@ -114,11 +114,21 @@ export function validateClassContentV12(value: unknown): ValidationResultV12<Cla
   requireStringArray(creation.pericias_valor_2, "criacao.pericias_valor_2", errors, 1);
 
   const features = requireRecord(root.caracteristicas, "caracteristicas", errors);
+  const featureSlugs = new Set<string>();
   for (const ranking of CLASS_FEATURE_RANKINGS_V12) {
-    const feature = requireRecord(features[ranking], `caracteristicas.${ranking}`, errors);
-    requireSlug(feature.slug, `caracteristicas.${ranking}.slug`, errors);
-    requireString(feature.nome, `caracteristicas.${ranking}.nome`, errors);
-    requireString(feature.descricao, `caracteristicas.${ranking}.descricao`, errors);
+    const lista = features[ranking];
+    if (!Array.isArray(lista) || lista.length === 0) {
+      errors.push(`caracteristicas.${ranking}: ao menos uma característica é obrigatória.`);
+      continue;
+    }
+    lista.forEach((entry, index) => {
+      const feature = requireRecord(entry, `caracteristicas.${ranking}[${index}]`, errors);
+      const slug = requireSlug(feature.slug, `caracteristicas.${ranking}[${index}].slug`, errors);
+      if (slug && featureSlugs.has(slug)) errors.push(`caracteristicas.${ranking}[${index}].slug: slug duplicado "${slug}" na Classe.`);
+      featureSlugs.add(slug);
+      requireString(feature.nome, `caracteristicas.${ranking}[${index}].nome`, errors);
+      requireString(feature.descricao, `caracteristicas.${ranking}[${index}].descricao`, errors);
+    });
   }
   for (const ranking of SUBCLASS_FEATURE_RANKINGS_V12) {
     if (features[ranking] !== undefined) errors.push(`caracteristicas.${ranking}: características de Subclasse não pertencem ao documento de Classe.`);

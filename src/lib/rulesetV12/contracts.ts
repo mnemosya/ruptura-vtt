@@ -97,7 +97,8 @@ export interface ClassContentV12 {
       itens: ContentReferenceV12[];
     };
   };
-  caracteristicas: Record<ClassFeatureRankingV12, FeatureV12>;
+  /** Uma Classe pode conceder mais de uma característica no mesmo Ranking (ex.: Técnico no D). */
+  caracteristicas: Record<ClassFeatureRankingV12, FeatureV12[]>;
   subclasses: string[];
   progressao: Record<RankingV12, RankAdvancementV12>;
 }

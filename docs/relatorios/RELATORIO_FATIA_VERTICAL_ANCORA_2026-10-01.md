@@ -46,6 +46,16 @@ A rolagem foi verificada com o motor real sobre o payload salvo, não por clique
 - **Magias iniciais:** cada Vertente concede, no nível 1, a escolha de **quatro magias de nível 1** da sua lista, algumas com perícia como pré-requisito (ex.: Acoplar exige Engenharia 1). Implementar depende do catálogo de magias v1.2 e do crosswalk da Fase 6; o catálogo publicado ainda é o antigo (`somatica`). Até lá a RPC rejeita magias na criação.
 - **CD de Vertente:** a página da Sináptica menciona "5 + Nível de Sináptica"; as demais usam CD = 6 + Nível. Mantido como ambíguo (regra de segurança 6).
 
-## 5. Recomendação
+## 5. Generalização para as sete Classes (adendo)
+
+A transcrição das outras seis Classes exigiu um ajuste adicional no contrato: **características de Classe passaram de uma por Ranking para uma lista por Ranking**, como já era nas Subclasses. O Técnico concede Protocolo Reativo, Reprogramar e novas Funções no Ranking D.
+
+Outras observações:
+
+- **Companheiros do Domador:** as fichas (Canídeo, Felino, Ave de Rapina, Constritora, Peçonhenta) estão como texto dentro das características. O tipo `companion_model` já existe e poderia representá-las estruturadamente.
+- **Notas de regra:** blocos como "Testes de Interação" (Face) e "Dados originais de dano" (Brutalista) viraram características próprias com esse nome.
+- **Assassino, Ranking C:** o título no Notion contém "REVISAR O DANO DE SANGRANDO"; o texto foi transcrito como está e a nota ficou em `_meta.pendencias_editoriais`.
+
+## 6. Recomendação
 
 Generalizar para as outras seis Classes e 21 Subclasses (Fase 4) usando o mesmo contrato. As lacunas 1 e 2 devem ser reavaliadas à medida que cada Classe for transcrita.

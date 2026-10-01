@@ -16,29 +16,141 @@
       "nome": "Âncora",
       "descricao": "Âncoras são especialistas em impedir que uma dificuldade isolada se transforme no colapso de toda a operação. Sustentam pessoas sob pressão, reorganizam o grupo diante de imprevistos e oferecem apoio antes que as consequências se tornem irreversíveis.\n\nDurante uma cena, a Âncora mantém atenção sobre os integrantes mais vulneráveis da equipe. Sua intervenção pode corrigir uma ação, limitar os efeitos de uma falha ou responder a uma emergência no momento em que ela acontece. Conforme sua capacidade aumenta, o grupo inteiro passa a se beneficiar dessa vigilância.\n\nAlgumas Âncoras preservam o corpo; outras coordenam decisões ou cuidam da mente e da Integridade. Escolha esta classe se quiser sustentar seus aliados sob pressão, recuperar o controle após complicações e manter a operação unida nos momentos mais difíceis.",
       "papel_principal": "Sustentação",
-      "papeis_secundarios": ["Coordenação", "Recuperação", "Mitigação de consequências", "Controle"],
+      "papeis_secundarios": [
+        "Coordenação",
+        "Recuperação",
+        "Mitigação de consequências",
+        "Controle"
+      ],
       "criacao": {
         "perfis_atributos": [
-          { "slug": "equilibrada", "nome": "Equilibrada", "valores": [2, 1, 1] },
-          { "slug": "concentrada", "nome": "Concentrada", "valores": [2, 2, 0] },
-          { "slug": "especializada", "nome": "Especializada", "valores": [3, 1, 0] }
+          {
+            "slug": "equilibrada",
+            "nome": "Equilibrada",
+            "valores": [
+              2,
+              1,
+              1
+            ]
+          },
+          {
+            "slug": "concentrada",
+            "nome": "Concentrada",
+            "valores": [
+              2,
+              2,
+              0
+            ]
+          },
+          {
+            "slug": "especializada",
+            "nome": "Especializada",
+            "valores": [
+              3,
+              1,
+              0
+            ]
+          }
         ],
         "perfis_pericias": [
-          { "slug": "abrangente", "nome": "Abrangente", "quantidades": { "valor_1": 10, "valor_2": 4, "valor_3": 1 } },
-          { "slug": "padrao", "nome": "Padrão", "quantidades": { "valor_1": 7, "valor_2": 3, "valor_3": 2 } },
-          { "slug": "especializado", "nome": "Especializado", "quantidades": { "valor_1": 3, "valor_2": 2, "valor_3": 3 } }
+          {
+            "slug": "abrangente",
+            "nome": "Abrangente",
+            "quantidades": {
+              "valor_1": 10,
+              "valor_2": 4,
+              "valor_3": 1
+            }
+          },
+          {
+            "slug": "padrao",
+            "nome": "Padrão",
+            "quantidades": {
+              "valor_1": 7,
+              "valor_2": 3,
+              "valor_3": 2
+            }
+          },
+          {
+            "slug": "especializado",
+            "nome": "Especializado",
+            "quantidades": {
+              "valor_1": 3,
+              "valor_2": 2,
+              "valor_3": 3
+            }
+          }
         ],
-        "pericias_valor_3": ["biologia", "influencia", "logica", "medicina", "percepcao", "psicologia", "sociedade", "vontade"],
-        "pericias_valor_2": ["arcanismo", "biologia", "engenharia", "influencia", "logica", "medicina", "mobilidade", "percepcao", "psicologia", "reflexos", "sociedade", "tecnomagia", "vigor", "vontade"],
+        "pericias_valor_3": [
+          "biologia",
+          "influencia",
+          "logica",
+          "medicina",
+          "percepcao",
+          "psicologia",
+          "sociedade",
+          "vontade"
+        ],
+        "pericias_valor_2": [
+          "arcanismo",
+          "biologia",
+          "engenharia",
+          "influencia",
+          "logica",
+          "medicina",
+          "mobilidade",
+          "percepcao",
+          "psicologia",
+          "reflexos",
+          "sociedade",
+          "tecnomagia",
+          "vigor",
+          "vontade"
+        ],
         "pericias_valor_1": "qualquer_nao_escolhida",
         "recursos": {
-          "pv": { "constante": 10, "atributo": "corpo", "multiplicador_atributo": 1, "texto": "10 + Corpo" },
-          "pe": { "constante": 13, "atributo": "mente", "multiplicador_atributo": 1, "texto": "13 + Mente" },
-          "mana": { "constante": 12, "atributo": "animo", "multiplicador_atributo": 2, "texto": "12 + (Ânimo × 2)" },
-          "andar": { "constante": 10, "atributo": "corpo", "multiplicador_atributo": 1, "texto": "10 + Corpo" },
-          "correr": { "constante": 20, "atributo": "corpo", "multiplicador_atributo": 2, "texto": "2 × (10 + Corpo)" },
-          "reacoes": { "constante": 1, "atributo": "mente", "multiplicador_atributo": 1, "texto": "Mente + 1" },
-          "integridade": { "constante": 10, "atributo": "animo", "multiplicador_atributo": 2, "texto": "10 + (Ânimo × 2)" }
+          "pv": {
+            "constante": 10,
+            "atributo": "corpo",
+            "multiplicador_atributo": 1,
+            "texto": "10 + Corpo"
+          },
+          "pe": {
+            "constante": 13,
+            "atributo": "mente",
+            "multiplicador_atributo": 1,
+            "texto": "13 + Mente"
+          },
+          "mana": {
+            "constante": 12,
+            "atributo": "animo",
+            "multiplicador_atributo": 2,
+            "texto": "12 + (Ânimo × 2)"
+          },
+          "andar": {
+            "constante": 10,
+            "atributo": "corpo",
+            "multiplicador_atributo": 1,
+            "texto": "10 + Corpo"
+          },
+          "correr": {
+            "constante": 20,
+            "atributo": "corpo",
+            "multiplicador_atributo": 2,
+            "texto": "2 × (10 + Corpo)"
+          },
+          "reacoes": {
+            "constante": 1,
+            "atributo": "mente",
+            "multiplicador_atributo": 1,
+            "texto": "Mente + 1"
+          },
+          "integridade": {
+            "constante": 10,
+            "atributo": "animo",
+            "multiplicador_atributo": 2,
+            "texto": "10 + (Ânimo × 2)"
+          }
         },
         "vertentes_primarias": "qualquer",
         "sinergia_vertentes": {
@@ -56,37 +168,153 @@
         }
       },
       "caracteristicas": {
+        "F": [
+          {
+            "slug": "ponto_de_apoio",
+            "nome": "Ponto de Apoio",
+            "descricao": "Você acompanha o estado e as ações de um aliado, mantendo-se preparado para intervir quando ele precisar de suporte.\n\nNo início de cada cena, escolha um aliado que possa perceber a até 10 m. Ele se torna seu Foco até o final da cena.\n\nDurante seu turno, você pode gastar 1 PA para substituir seu Foco por outro aliado que possa perceber a até 10 m.\n\nINTERVENÇÕES\nUma vez por rodada, quando seu Foco estiver a até 10 m, você pode realizar uma das Intervenções abaixo sem gastar PA ou sua Reação. Você precisa perceber o acontecimento e ser capaz de se comunicar com o aliado ou agir diretamente sobre a situação.\n\n• Ajustar: depois que seu Foco realizar um teste, mas antes que seus efeitos sejam resolvidos, conceda +1 de vantagem ao resultado.\n\n• Conter a Consequência: depois que seu Foco sofrer uma falha padrão ou crítica, reduza o impacto da falha em uma categoria. Uma falha crítica passa a ser tratada como uma falha padrão; uma falha padrão passa a ser tratada como uma falha limitada. A ação continua falhando. Esta Intervenção altera apenas as consequências determinadas pela margem da falha, não recupera recursos gastos nem remove efeitos que a própria ação imponha expressamente em caso de falha. Uma falha limitada não pode ser reduzida por esta Intervenção.\n\nVocê só pode realizar uma Intervenção sobre cada teste ou acontecimento. Intervenções concedidas por suas Características de Subclasse compartilham esse limite, salvo quando indicado o contrário.\n\nFora de cenas divididas em rodadas, um mesmo aliado só pode receber uma Intervenção por ação."
+          }
+        ],
+        "D": [
+          {
+            "slug": "atencao_dividida",
+            "nome": "Atenção Dividida",
+            "descricao": "Você pode manter até 2 Focos simultaneamente.\n\nAo gastar 1 PA para substituir um Foco, deixe de considerar apenas um deles como seu Foco e escolha outro aliado.\n\nAlém disso, uma vez por cena, quando um aliado que não seja um dos seus Focos e que você possa perceber a até 10 m realizar um teste ou for afetado por uma ação, você pode torná-lo um dos seus Focos sem gastar PA. Para isso, deixe imediatamente de considerar um dos aliados escolhidos anteriormente como seu Foco. A mudança acontece antes da resolução do teste ou efeito e permite que você realize uma Intervenção sobre o novo Foco.\n\nMudar um Foco dessa forma não consome sua Intervenção da rodada."
+          }
+        ],
+        "B": [
+          {
+            "slug": "rede_de_apoio",
+            "nome": "Rede de Apoio",
+            "descricao": "Você pode manter até 3 Focos simultaneamente e realizar até 2 Intervenções por rodada.\n\nCada Intervenção precisa beneficiar um Foco diferente. Você continua limitado a uma Intervenção sobre cada teste ou acontecimento.\n\nFora de cenas divididas em rodadas, você pode realizar até duas Intervenções durante cada ação, mas cada uma precisa beneficiar um aliado diferente."
+          }
+        ],
+        "S": [
+          {
+            "slug": "a_operacao_continua",
+            "nome": "A Operação Continua",
+            "descricao": "Todos os aliados que possam perceber a até 10 m são considerados seus Focos, mesmo que não tenham sido escolhidos por Ponto de Apoio.\n\nVocê pode realizar até 3 Intervenções por rodada. Um mesmo aliado pode receber mais de uma Intervenção durante a rodada, desde que sejam aplicadas a testes ou acontecimentos diferentes.\n\nAlém disso, uma vez por cena, quando utilizar Conter a Consequência sobre uma falha limitada, você pode transformar essa falha em um sucesso limitado com margem 0. A ação alcança seu objetivo, mas conserva qualquer custo, exposição ou consequência compatível com um sucesso limitado."
+          }
+        ]
+      },
+      "subclasses": [
+        "coordenador",
+        "terapeuta",
+        "vitalista"
+      ],
+      "progressao": {
         "F": {
-          "slug": "ponto_de_apoio",
-          "nome": "Ponto de Apoio",
-          "descricao": "Você acompanha o estado e as ações de um aliado, mantendo-se preparado para intervir quando ele precisar de suporte.\n\nNo início de cada cena, escolha um aliado que possa perceber a até 10 m. Ele se torna seu Foco até o final da cena.\n\nDurante seu turno, você pode gastar 1 PA para substituir seu Foco por outro aliado que possa perceber a até 10 m.\n\nINTERVENÇÕES\nUma vez por rodada, quando seu Foco estiver a até 10 m, você pode realizar uma das Intervenções abaixo sem gastar PA ou sua Reação. Você precisa perceber o acontecimento e ser capaz de se comunicar com o aliado ou agir diretamente sobre a situação.\n\n• Ajustar: depois que seu Foco realizar um teste, mas antes que seus efeitos sejam resolvidos, conceda +1 de vantagem ao resultado.\n\n• Conter a Consequência: depois que seu Foco sofrer uma falha padrão ou crítica, reduza o impacto da falha em uma categoria. Uma falha crítica passa a ser tratada como uma falha padrão; uma falha padrão passa a ser tratada como uma falha limitada. A ação continua falhando. Esta Intervenção altera apenas as consequências determinadas pela margem da falha, não recupera recursos gastos nem remove efeitos que a própria ação imponha expressamente em caso de falha. Uma falha limitada não pode ser reduzida por esta Intervenção.\n\nVocê só pode realizar uma Intervenção sobre cada teste ou acontecimento. Intervenções concedidas por suas Características de Subclasse compartilham esse limite, salvo quando indicado o contrário.\n\nFora de cenas divididas em rodadas, um mesmo aliado só pode receber uma Intervenção por ação."
+          "ranking": "F",
+          "pontos_pericia": 0,
+          "limite_pericia": 3,
+          "pontos_atributo": 0,
+          "pontos_vertente": 0,
+          "magias_adicionais": 0,
+          "pa": 3,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "focos": 1,
+            "intervencoes_por_rodada": 1
+          }
+        },
+        "E": {
+          "ranking": "E",
+          "pontos_pericia": 2,
+          "limite_pericia": 3,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 3,
+          "escolhe_subclasse": true,
+          "mudancas_recursos_classe": {
+            "focos": 1,
+            "intervencoes_por_rodada": 1
+          }
         },
         "D": {
-          "slug": "atencao_dividida",
-          "nome": "Atenção Dividida",
-          "descricao": "Você pode manter até 2 Focos simultaneamente.\n\nAo gastar 1 PA para substituir um Foco, deixe de considerar apenas um deles como seu Foco e escolha outro aliado.\n\nAlém disso, uma vez por cena, quando um aliado que não seja um dos seus Focos e que você possa perceber a até 10 m realizar um teste ou for afetado por uma ação, você pode torná-lo um dos seus Focos sem gastar PA. Para isso, deixe imediatamente de considerar um dos aliados escolhidos anteriormente como seu Foco. A mudança acontece antes da resolução do teste ou efeito e permite que você realize uma Intervenção sobre o novo Foco.\n\nMudar um Foco dessa forma não consome sua Intervenção da rodada."
+          "ranking": "D",
+          "pontos_pericia": 0,
+          "limite_pericia": 3,
+          "pontos_atributo": 1,
+          "pontos_vertente": 0,
+          "magias_adicionais": 1,
+          "pa": 3,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "focos": 2,
+            "intervencoes_por_rodada": 1
+          }
+        },
+        "C": {
+          "ranking": "C",
+          "pontos_pericia": 2,
+          "limite_pericia": 4,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 4,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "focos": 2,
+            "intervencoes_por_rodada": 1
+          }
         },
         "B": {
-          "slug": "rede_de_apoio",
-          "nome": "Rede de Apoio",
-          "descricao": "Você pode manter até 3 Focos simultaneamente e realizar até 2 Intervenções por rodada.\n\nCada Intervenção precisa beneficiar um Foco diferente. Você continua limitado a uma Intervenção sobre cada teste ou acontecimento.\n\nFora de cenas divididas em rodadas, você pode realizar até duas Intervenções durante cada ação, mas cada uma precisa beneficiar um aliado diferente."
+          "ranking": "B",
+          "pontos_pericia": 0,
+          "limite_pericia": 4,
+          "pontos_atributo": 1,
+          "pontos_vertente": 0,
+          "magias_adicionais": 1,
+          "pa": 4,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "focos": 3,
+            "intervencoes_por_rodada": 2
+          }
+        },
+        "A": {
+          "ranking": "A",
+          "pontos_pericia": 2,
+          "limite_pericia": 5,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 4,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "focos": 3,
+            "intervencoes_por_rodada": 2
+          }
         },
         "S": {
-          "slug": "a_operacao_continua",
-          "nome": "A Operação Continua",
-          "descricao": "Todos os aliados que possam perceber a até 10 m são considerados seus Focos, mesmo que não tenham sido escolhidos por Ponto de Apoio.\n\nVocê pode realizar até 3 Intervenções por rodada. Um mesmo aliado pode receber mais de uma Intervenção durante a rodada, desde que sejam aplicadas a testes ou acontecimentos diferentes.\n\nAlém disso, uma vez por cena, quando utilizar Conter a Consequência sobre uma falha limitada, você pode transformar essa falha em um sucesso limitado com margem 0. A ação alcança seu objetivo, mas conserva qualquer custo, exposição ou consequência compatível com um sucesso limitado."
+          "ranking": "S",
+          "pontos_pericia": 0,
+          "limite_pericia": 5,
+          "pontos_atributo": 1,
+          "pontos_vertente": 0,
+          "magias_adicionais": 1,
+          "pa": 5,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "focos": "todos_aliados_proximos",
+            "intervencoes_por_rodada": 3
+          }
+        },
+        "S+": {
+          "ranking": "S+",
+          "pontos_pericia": 2,
+          "limite_pericia": 5,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 5,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "focos": "todos_aliados_proximos",
+            "intervencoes_por_rodada": 3
+          }
         }
-      },
-      "subclasses": ["coordenador", "terapeuta", "vitalista"],
-      "progressao": {
-        "F": { "ranking": "F", "pontos_pericia": 0, "limite_pericia": 3, "pontos_atributo": 0, "pontos_vertente": 0, "magias_adicionais": 0, "pa": 3, "escolhe_subclasse": false, "mudancas_recursos_classe": { "focos": 1, "intervencoes_por_rodada": 1 } },
-        "E": { "ranking": "E", "pontos_pericia": 2, "limite_pericia": 3, "pontos_atributo": 0, "pontos_vertente": 1, "magias_adicionais": 0, "pa": 3, "escolhe_subclasse": true, "mudancas_recursos_classe": { "focos": 1, "intervencoes_por_rodada": 1 } },
-        "D": { "ranking": "D", "pontos_pericia": 0, "limite_pericia": 3, "pontos_atributo": 1, "pontos_vertente": 0, "magias_adicionais": 1, "pa": 3, "escolhe_subclasse": false, "mudancas_recursos_classe": { "focos": 2, "intervencoes_por_rodada": 1 } },
-        "C": { "ranking": "C", "pontos_pericia": 2, "limite_pericia": 4, "pontos_atributo": 0, "pontos_vertente": 1, "magias_adicionais": 0, "pa": 4, "escolhe_subclasse": false, "mudancas_recursos_classe": { "focos": 2, "intervencoes_por_rodada": 1 } },
-        "B": { "ranking": "B", "pontos_pericia": 0, "limite_pericia": 4, "pontos_atributo": 1, "pontos_vertente": 0, "magias_adicionais": 1, "pa": 4, "escolhe_subclasse": false, "mudancas_recursos_classe": { "focos": 3, "intervencoes_por_rodada": 2 } },
-        "A": { "ranking": "A", "pontos_pericia": 2, "limite_pericia": 5, "pontos_atributo": 0, "pontos_vertente": 1, "magias_adicionais": 0, "pa": 4, "escolhe_subclasse": false, "mudancas_recursos_classe": { "focos": 3, "intervencoes_por_rodada": 2 } },
-        "S": { "ranking": "S", "pontos_pericia": 0, "limite_pericia": 5, "pontos_atributo": 1, "pontos_vertente": 0, "magias_adicionais": 1, "pa": 5, "escolhe_subclasse": false, "mudancas_recursos_classe": { "focos": "todos_aliados_proximos", "intervencoes_por_rodada": 3 } },
-        "S+": { "ranking": "S+", "pontos_pericia": 2, "limite_pericia": 5, "pontos_atributo": 0, "pontos_vertente": 1, "magias_adicionais": 0, "pa": 5, "escolhe_subclasse": false, "mudancas_recursos_classe": { "focos": "todos_aliados_proximos", "intervencoes_por_rodada": 3 } }
       }
     }
   ],
@@ -104,7 +332,13 @@
             "slug": "limite_de_focos_coordenador_e",
             "nome": "Limite de Focos +1",
             "descricao": "Seu limite de Focos aumenta em 1.",
-            "efeitos": [{ "tipo": "recurso_classe", "recurso": "focos", "modificador": 1 }]
+            "efeitos": [
+              {
+                "tipo": "recurso_classe",
+                "recurso": "focos",
+                "modificador": 1
+              }
+            ]
           },
           {
             "slug": "briefing_operacional",
@@ -122,7 +356,13 @@
             "slug": "limite_de_focos_coordenador_c",
             "nome": "Limite de Focos +1",
             "descricao": "Seu limite de Focos aumenta em mais 1.",
-            "efeitos": [{ "tipo": "recurso_classe", "recurso": "focos", "modificador": 1 }]
+            "efeitos": [
+              {
+                "tipo": "recurso_classe",
+                "recurso": "focos",
+                "modificador": 1
+              }
+            ]
           },
           {
             "slug": "coordenacao_paralela",
@@ -140,7 +380,13 @@
             "slug": "limite_de_focos_coordenador_a",
             "nome": "Limite de Focos +1",
             "descricao": "Seu limite de Focos aumenta em mais 1.",
-            "efeitos": [{ "tipo": "recurso_classe", "recurso": "focos", "modificador": 1 }]
+            "efeitos": [
+              {
+                "tipo": "recurso_classe",
+                "recurso": "focos",
+                "modificador": 1
+              }
+            ]
           },
           {
             "slug": "operacao_sincronizada",

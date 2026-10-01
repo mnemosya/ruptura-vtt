@@ -55,7 +55,7 @@ const anchor = {
     vertentes_primarias: "qualquer",
     equipamento_inicial: { aretz: 3000, espacos_mochila: 10, itens: [] },
   },
-  caracteristicas: { F: feature("ponto_de_apoio"), D: feature("atencao_dividida"), B: feature("rede_de_apoio"), S: feature("a_operacao_continua") },
+  caracteristicas: { F: [feature("ponto_de_apoio")], D: [feature("atencao_dividida")], B: [feature("rede_de_apoio")], S: [feature("a_operacao_continua")] },
   subclasses: ["coordenador", "terapeuta", "vitalista"],
   progressao: progression,
 };

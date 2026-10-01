@@ -32,7 +32,7 @@
  * apenas projeções de campos já presentes nos registros.
  */
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { config as loadDotenv } from "dotenv";
@@ -128,6 +128,16 @@ interface ExistingRow {
 //
 // master_table NÃO está no manifesto do core; é tratado à parte.
 // ---------------------------------------------------------------------
+function classBundleSources(): SourceSpec[] {
+  const arquivos = readdirSync(join(CONTENT_DIR, "v12"))
+    .filter((f) => /^db_classe_.+_v1_2\.json$/.test(f))
+    .sort();
+  return arquivos.flatMap((f) => [
+    { contentType: "class" as const, mode: "collection" as const, file: `v12/${f}`, collectionKey: "classes", version: "1.2" },
+    { contentType: "subclass" as const, mode: "collection" as const, file: `v12/${f}`, collectionKey: "subclasses", version: "1.2" },
+  ]);
+}
+
 const SOURCES: SourceSpec[] = [
   {
     manifestId: "regras_personagem",
@@ -225,21 +235,9 @@ const SOURCES: SourceSpec[] = [
     collectionKey: "magias",
   },
   // RUPTURA v1.2 — pacotes validados por validateRulesetContentBundleV12
-  // antes de qualquer escrita (ver RULESET_V12_BUNDLES).
-  {
-    contentType: "class",
-    mode: "collection",
-    file: "v12/db_classe_ancora_v1_2.json",
-    collectionKey: "classes",
-    version: "1.2",
-  },
-  {
-    contentType: "subclass",
-    mode: "collection",
-    file: "v12/db_classe_ancora_v1_2.json",
-    collectionKey: "subclasses",
-    version: "1.2",
-  },
+  // antes de qualquer escrita (ver RULESET_V12_BUNDLES). Cada Classe tem
+  // seu arquivo v12/db_classe_<slug>_v1_2.json, com Classe e Subclasses.
+  ...classBundleSources(),
   {
     contentType: "background",
     mode: "collection",

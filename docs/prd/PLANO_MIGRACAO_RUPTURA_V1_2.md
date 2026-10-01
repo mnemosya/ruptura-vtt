@@ -279,9 +279,9 @@ Critério de saída:
 
 Entregáveis:
 
-- [ ] 7 Classes publicadas;
-- [ ] 24 Subclasses publicadas;
-- [ ] Ranking F completo;
+- [x] 7 Classes publicadas;
+- [x] 24 Subclasses publicadas;
+- [x] Ranking F completo (as 7 Classes são criáveis pela tela e pela RPC);
 - [ ] Subclasse obrigatória no Ranking E;
 - [ ] avanços de D, C, B, A, S e S+;
 - [ ] PA igual a 4 no C e 5 no S;
@@ -672,3 +672,14 @@ Essa entrega deve terminar antes da implementação do novo wizard.
 - cada assistente trata o rascunho do outro como formato incompatível e oferece descartar;
 - validado no navegador: gravação (revisões 1 a 4), mudança feita logo antes de fechar a janela preservada, restauração na mesma etapa, abertura sem gravação, troca de etapa salvando e cancelamento apagando o rascunho;
 - `npm run test:ruleset-v12-rascunho` cobre o formato, a separação v1/v2 e a restauração com conteúdo alterado.
+
+### 01/10/2026 — Sete Classes e 24 Subclasses (Fase 4)
+
+- Vanguarda, Técnico, Infiltrador, Combatente, Caçador e Face transcritos do Notion; Âncora já existia;
+- extrator `scripts/dev/v12/extrair_classe.py` monta o pacote a partir do texto limpo da página (`limpar_notion.py`); os textos-fonte ficam em `scripts/dev/v12/fontes/` e `gerar_classes.sh` regenera os pacotes de forma idêntica;
+- contrato: Classe passa a aceitar **várias características por Ranking** (o Técnico concede três no D e quatro no B); o validador rejeita slugs de característica duplicados na Classe;
+- recursos próprios de cada Classe na progressão: Focos/Intervenções (Âncora), limite de Ímpeto (Vanguarda), Unidades ativas (Técnico), limite de Brechas (Infiltrador), Dados de Manobra e Manobras conhecidas (Combatente), capacidade da Reserva e Preparos (Caçador), Reserva de Confiança (Face);
+- `npm run test:ruleset-v12-classes`: contrato, catálogo de perícias, sinergia, slugs únicos entre pacotes e criação de um personagem por Classe e perfil;
+- seed: 27 documentos criados (6 Classes, 21 Subclasses) e `class:ancora` atualizada para o novo formato de características; total de 548 documentos;
+- no remoto, em transação desfeita, a RPC criou um personagem de cada uma das 7 Classes com as fórmulas próprias;
+- pendências editoriais registradas nos pacotes: pacotes de equipamento (todas as Classes) e a nota "REVISAR O DANO DE SANGRANDO" no Ranking C do Assassino.
