@@ -1,0 +1,282 @@
+{
+  "schema_version": 2,
+  "ruleset_version": "1.2",
+  "nome": "Personagem de Teste",
+  "atributos": {
+    "corpo": 1,
+    "mente": 2,
+    "animo": 1
+  },
+  "pericias": {
+    "arcanismo": 1,
+    "artes": 0,
+    "balistica": 0,
+    "biologia": 2,
+    "carisma": 0,
+    "engenharia": 0,
+    "furtividade": 0,
+    "influencia": 1,
+    "intimidacao": 0,
+    "logica": 1,
+    "luta": 0,
+    "medicina": 3,
+    "mobilidade": 1,
+    "percepcao": 2,
+    "precisao": 0,
+    "psicologia": 3,
+    "reflexos": 1,
+    "robotica": 0,
+    "sociedade": 1,
+    "tecnomagia": 0,
+    "vigor": 1,
+    "vontade": 2
+  },
+  "recursos_atuais": {
+    "pv": 11,
+    "pe": 15,
+    "mana": 14,
+    "integridade": 12
+  },
+  "estado_jogo": {
+    "pa_gastos": 0,
+    "reacoes_usadas": 0,
+    "defesas_sem_reacao": 0
+  },
+  "carteira": {
+    "aretz_informal": 3000,
+    "cdi": 0,
+    "cdi_craqueada": 0
+  },
+  "inventario": [],
+  "magias_aprendidas": [],
+  "niveis_vertente": {
+    "biotica": 1
+  },
+  "trajetoria": {
+    "regiao_id": "vastra",
+    "local_origem": "Vosek",
+    "idiomas": [
+      "vastrano"
+    ],
+    "antecedente": {
+      "antecedente_id": "academico",
+      "meio": "Laboratório",
+      "papel": "Assistente",
+      "relacao_atual": "Afastada"
+    },
+    "transformacao_refratario": {
+      "estopim": "Acidente",
+      "primeiros_passos": "Fuga",
+      "consequencia": "Clandestinidade"
+    },
+    "rpi_forjado": {
+      "nivel": 1,
+      "nome_registrado": "Teste",
+      "ocupacao_declarada": "Técnica",
+      "origem": "Vosek"
+    },
+    "qualidades": [
+      {
+        "quality_id": "aliado",
+        "pontos": 2,
+        "detalhes": {}
+      },
+      {
+        "quality_id": "contato",
+        "pontos": 1,
+        "detalhes": {}
+      }
+    ],
+    "complicacoes": [
+      {
+        "complication_id": "desertor",
+        "pontos": 2,
+        "detalhes": {}
+      }
+    ]
+  },
+  "progressao": {
+    "classe_id": "ancora",
+    "ranking": "F",
+    "formulas_derivados": {
+      "pv_max": {
+        "op": "+",
+        "args": [
+          {
+            "const": 10
+          },
+          {
+            "op": "*",
+            "args": [
+              {
+                "ref": "atributo",
+                "id": "corpo"
+              },
+              {
+                "const": 1
+              }
+            ]
+          }
+        ]
+      },
+      "pe_max": {
+        "op": "+",
+        "args": [
+          {
+            "const": 13
+          },
+          {
+            "op": "*",
+            "args": [
+              {
+                "ref": "atributo",
+                "id": "mente"
+              },
+              {
+                "const": 1
+              }
+            ]
+          }
+        ]
+      },
+      "mana_max": {
+        "op": "+",
+        "args": [
+          {
+            "const": 12
+          },
+          {
+            "op": "*",
+            "args": [
+              {
+                "ref": "atributo",
+                "id": "animo"
+              },
+              {
+                "const": 2
+              }
+            ]
+          }
+        ]
+      },
+      "integridade_max": {
+        "op": "+",
+        "args": [
+          {
+            "const": 10
+          },
+          {
+            "op": "*",
+            "args": [
+              {
+                "ref": "atributo",
+                "id": "animo"
+              },
+              {
+                "const": 2
+              }
+            ]
+          }
+        ]
+      },
+      "reacoes_por_rodada": {
+        "op": "+",
+        "args": [
+          {
+            "const": 1
+          },
+          {
+            "op": "*",
+            "args": [
+              {
+                "ref": "atributo",
+                "id": "mente"
+              },
+              {
+                "const": 1
+              }
+            ]
+          }
+        ]
+      },
+      "andar_m": {
+        "op": "+",
+        "args": [
+          {
+            "const": 10
+          },
+          {
+            "op": "*",
+            "args": [
+              {
+                "ref": "atributo",
+                "id": "corpo"
+              },
+              {
+                "const": 1
+              }
+            ]
+          }
+        ]
+      },
+      "correr_m": {
+        "op": "+",
+        "args": [
+          {
+            "const": 20
+          },
+          {
+            "op": "*",
+            "args": [
+              {
+                "ref": "atributo",
+                "id": "corpo"
+              },
+              {
+                "const": 2
+              }
+            ]
+          }
+        ]
+      },
+      "pa_max": {
+        "const": 3
+      }
+    },
+    "formulas_derivados_texto": {
+      "pv_max": "10 + Corpo",
+      "pe_max": "13 + Mente",
+      "mana_max": "12 + (Ânimo × 2)",
+      "integridade_max": "10 + (Ânimo × 2)",
+      "reacoes_por_rodada": "Mente + 1",
+      "andar_m": "10 + Corpo",
+      "correr_m": "2 × (10 + Corpo)",
+      "pa_max": "3 (Ranking F)"
+    },
+    "escolhas_por_ranking": {
+      "F": {
+        "perfil_atributos": "equilibrada",
+        "perfil_pericias": "padrao"
+      }
+    }
+  },
+  "magia": {
+    "vertente_primaria": "biotica",
+    "niveis_vertente": {
+      "biotica": 1
+    },
+    "magias_aprendidas": [],
+    "escolhas_pendentes": [
+      {
+        "tipo": "magias_nivel_vertente",
+        "vertente": "biotica",
+        "nivel": 1,
+        "origem": "Criação"
+      }
+    ]
+  },
+  "metadados": {
+    "schema_version": 2,
+    "criado_em": "2026-10-01T00:00:00.000Z"
+  }
+}

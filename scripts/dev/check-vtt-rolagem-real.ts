@@ -29,6 +29,7 @@ import { chromium, type ConsoleMessage, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
 import { garantirAlcancavel } from "./painelDaSessao";
 
+import { personagemV12 } from "./fixtures/personagemV12";
 loadDotenv({ path: ".env.local" });
 
 function requireEnv(nome: string): string {
@@ -97,12 +98,8 @@ async function configurarFixture() {
     status: "draft",
     campaign_id: campaignId,
     owner_id: narradorId,
-    payload: {
-      nome: "Mara Venn",
-      atributos: { corpo: CORPO, mente: MENTE, animo: ANIMO },
-      pericias: { [PERICIA_SLUG]: PERICIA_VALOR },
-      metadados: { schema_version: 1 },
-    },
+    payload: personagemV12("Mara Venn", { atributos: { corpo: CORPO, mente: MENTE, animo: ANIMO },
+      pericias: { [PERICIA_SLUG]: PERICIA_VALOR } }),
   });
   if (e2) throw new Error(`criar personagem: ${e2.message}`);
 

@@ -17,6 +17,7 @@ import { createClient } from "@supabase/supabase-js";
 import { randomUUID, randomBytes } from "node:crypto";
 import { personagemMatchesFiltro } from "../../src/lib/character/personagensFilter.ts";
 
+import { personagemV12 } from "./fixtures/personagemV12.mjs";
 loadDotenv({ path: ".env.local" });
 
 function requireEnv(name) {
@@ -82,7 +83,7 @@ async function addActiveMember(campaignId, userId) {
 
 async function createCharacter(campaignId, name, extra = {}) {
   const id = randomUUID();
-  const payload = { nome: name, metadados: { schema_version: 1 }, ...extra.payload };
+  const payload = personagemV12(name, extra.payload ?? {});
   const { error } = await admin.from("characters").insert({
     id,
     name,
@@ -230,18 +231,10 @@ async function main() {
   // =====================================================================
 
   {
-    // Narrador cria personagem via complete_character_creation na própria campanha — não deve gerar controle redundante.
-    const payload = {
-      nome: "Criado-por-narrador-wizard",
-      atributos: { corpo: 1, mente: 1, animo: 1 },
-      pericias: {},
-      niveis_vertente: {},
-      magias_aprendidas: [],
-      talentos_adquiridos: [],
-      inventario: [],
-      carteira: { aretz_informal: 5000, cdi: 0, cdi_craqueada: 0 },
-    };
-    const { data, error } = await clientU1.rpc("complete_character_creation", { p_campaign_id: campaignA, p_character_payload: payload });
+    // Narrador cria personagem via complete_character_creation_v2 na própria campanha — não deve gerar controle redundante.
+    // Personagem v1.2 completo: a RPC v1 saiu na Fase 10.
+    const payload = personagemV12("Criado-por-narrador-wizard");
+    const { data, error } = await clientU1.rpc("complete_character_creation_v2", { p_campaign_id: campaignA, p_character_payload: payload });
     const charId = data?.character?.id;
     const { data: controllerRow } = await admin.from("character_controllers").select("user_id").eq("character_id", charId).eq("user_id", U1.id).maybeSingle();
     const ok = !error && !!charId && !controllerRow;
@@ -255,17 +248,9 @@ async function main() {
 
   {
     // Jogador criando personagem pelo assistente continua recebendo controle automaticamente.
-    const payload = {
-      nome: "Criado-por-jogador-wizard",
-      atributos: { corpo: 1, mente: 1, animo: 1 },
-      pericias: {},
-      niveis_vertente: {},
-      magias_aprendidas: [],
-      talentos_adquiridos: [],
-      inventario: [],
-      carteira: { aretz_informal: 5000, cdi: 0, cdi_craqueada: 0 },
-    };
-    const { data, error } = await clientU3.rpc("complete_character_creation", { p_campaign_id: campaignA, p_character_payload: payload });
+    // Personagem v1.2 completo: a RPC v1 saiu na Fase 10.
+    const payload = personagemV12("Criado-por-jogador-wizard");
+    const { data, error } = await clientU3.rpc("complete_character_creation_v2", { p_campaign_id: campaignA, p_character_payload: payload });
     const charId = data?.character?.id;
     const { data: controllerRow } = await admin.from("character_controllers").select("user_id").eq("character_id", charId).eq("user_id", U3.id).maybeSingle();
     const ok = !error && !!charId && !!controllerRow;

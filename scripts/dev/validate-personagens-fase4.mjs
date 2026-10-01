@@ -20,6 +20,7 @@ import { createClient } from "@supabase/supabase-js";
 import { randomUUID, randomBytes } from "node:crypto";
 import { personagemMatchesFiltro, isPersonagemPn } from "../../src/lib/character/personagensFilter.ts";
 
+import { personagemV12 } from "./fixtures/personagemV12.mjs";
 loadDotenv({ path: ".env.local" });
 
 function requireEnv(name) {
@@ -80,7 +81,7 @@ async function addActiveMember(campaignId, userId) {
 
 async function createCharacter(campaignId, name, extra = {}) {
   const id = randomUUID();
-  const payload = { nome: name, metadados: { schema_version: 1 }, ...extra.payload };
+  const payload = personagemV12(name, extra.payload ?? {});
   const { error } = await admin.from("characters").insert({
     id,
     name,
@@ -244,7 +245,7 @@ async function main() {
     const { error: restoreErr, data: restoreData } = await clientU3.from("characters").update({ archived_at: null }).eq("id", CARQ).select();
     const restoreBlocked = !!restoreErr || !restoreData || restoreData.length === 0;
 
-    const { error: dupErr, data: dupData } = await clientU3.from("characters").insert({ name: "Duplicata indevida", payload: { nome: "Duplicata indevida" }, campaign_id: campaignA }).select();
+    const { error: dupErr, data: dupData } = await clientU3.from("characters").insert({ name: "Duplicata indevida", payload: personagemV12("Duplicata indevida"), campaign_id: campaignA }).select();
     const dupBlocked = !!dupErr || !dupData || dupData.length === 0;
 
     record(
@@ -262,12 +263,12 @@ async function main() {
     // depois um SELECT separado. Ver comentário na função sobre por que
     // INSERT ... RETURNING quebra com can_read_character (STABLE).
     const criadoId = randomUUID();
-    const { error: createViaOwnerErr } = await clientU1.from("characters").insert({ id: criadoId, name: "Criado-por-U1", payload: { nome: "Criado-por-U1" }, campaign_id: campaignA });
+    const { error: createViaOwnerErr } = await clientU1.from("characters").insert({ id: criadoId, name: "Criado-por-U1", payload: personagemV12("Criado-por-U1"), campaign_id: campaignA });
     const { data: criadoLido, error: rereadErr } = await clientU1.from("characters").select("id").eq("id", criadoId).maybeSingle();
 
     const { error: archErr } = await clientU1.from("characters").update({ archived_at: new Date().toISOString() }).eq("id", criadoId);
     const { error: restErr } = await clientU1.from("characters").update({ archived_at: null }).eq("id", criadoId);
-    const { error: renameErr } = await clientU1.from("characters").update({ name: "Renomeado-por-U1", payload: { nome: "Renomeado-por-U1" } }).eq("id", criadoId);
+    const { error: renameErr } = await clientU1.from("characters").update({ name: "Renomeado-por-U1", payload: personagemV12("Renomeado-por-U1") }).eq("id", criadoId);
     record(
       "Teste 15 (narrador executa criar/arquivar/restaurar/renomear)",
       !createViaOwnerErr && !rereadErr && !!criadoLido && !archErr && !restErr && !renameErr,

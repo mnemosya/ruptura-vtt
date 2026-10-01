@@ -242,7 +242,7 @@ Entregáveis:
 - [x] validação de referências entre conteúdos;
 - [x] validação contra registros incompletos;
 - [x] esqueleto do payload `schema_version: 2`;
-- [ ] leitura e validação exclusiva de personagens v2 após o corte.
+- [x] leitura e validação exclusiva de personagens v2 após o corte (o banco recusa payload sem `schema_version: 2`).
 
 Progresso do registro de tipos: `content_type`, o registro canônico e o contrato do seed já conhecem `class`, `subclass`, `background`, `quality` e `complication`. O seed publica `class` e `subclass` a partir de `content/v12/db_classe_ancora_v1_2.json` com `version = "1.2"` e valida o pacote inteiro com `validateRulesetContentBundleV12` antes de qualquer escrita; `npm run seed:content:dry` monta e valida sem tocar no banco. As fontes JSON de `background`, `quality` e `complication` estão em `content/v12/db_trajetoria_v1_2.json` e entram no seed. Continuam abertos os formulários do Editor Universal (os cinco tipos são somente leitura por enquanto). A migration `20261001024158_ruptura_v12_content_types.sql` foi aplicada no remoto e `class:ancora` e as três Subclasses estão publicadas.
 
@@ -470,7 +470,7 @@ editorial_notes
 - [ ] Toda magia v1.2 está classificada no crosswalk.
 - [ ] Custos variáveis não são interpretados como zero.
 - [ ] Biótica não depende permanentemente do ID `somatica`.
-- [ ] A aplicação rejeita payloads de personagem anteriores ao schema v2.
+- [x] A aplicação rejeita payloads de personagem anteriores ao schema v2 (CHECK `characters_payload_schema_v2`, 01/10/2026).
 - [x] O Bando persiste todos os campos canônicos.
 - [x] O replay das migrations produz schema equivalente ao remoto.
 - [ ] Conteúdo legado não é usado silenciosamente como fonte de verdade.
@@ -861,3 +861,24 @@ Equivalência das demais ações:
 - na Ficha, a seção Caixa coletivo ganhou "Carteira → caixa" e "Caixa → carteira", com a lista dos personagens que quem usa pode movimentar;
 - `testar_bando.ts`: 24 cenários no remoto, desfeitos;
 - validado no navegador: Hilda Norren Ⱥ 3.900 → 3.800 (caixa Ⱥ 100) → 3.900 (caixa Ⱥ 0), conferido no banco.
+
+### 01/10/2026 — Fase 10: banco recusa personagem v1
+
+- migration `20261001210000_ruptura_v12_recusa_personagem_v1.sql`, aplicada no remoto:
+  - CHECK `characters_payload_schema_v2` exige `payload.schema_version = 2`. A primeira versão, sem `coalesce`, aceitava payload sem o campo (CHECK com NULL passa); corrigida e conferida com três casos;
+  - a RPC de criação v1 (`complete_character_creation`) foi removida;
+  - `complete_character_creation_v2` ganhou trava por (campanha, conta, pedido): duas chamadas simultâneas com o mesmo `creationRequestId` criavam dois personagens. O bug já existia na RPC v1 e foi apontado por `validate-campaign-session-concurrency` na linha de base;
+- fixture de teste v1.2: `scripts/dev/fixtures/personagem_v12.json`, gerado pelo builder real (`scripts/dev/v12/gerar_fixture_personagem.ts`), com helper `personagemV12(nome, extra)` em `.mjs` e `.ts`. O teste `test:fixture-personagem-v12` garante que continua válido;
+- 30 scripts que gravam personagens no banco passaram a usar a fixture (os testes que só usam personagem em memória ficaram como estavam). Os validadores de criação usam a RPC v2;
+- método: linha de base de todos os scripts antes da mudança, rodada depois e comparação script a script, com contagem do banco antes e depois (`scripts/dev/v12/contagem_banco.mjs`);
+- resultado:
+  - nenhuma regressão;
+  - `validate-campaign-session-concurrency` passou de 2/3 para 3/3;
+  - `check-vtt-painel` 2d ficou mais robusto (filtra o log por tipo);
+  - asserção de `test-character-storage` atualizada (`metadados.schema_version` 2);
+  - as falhas que já existiam continuam, ver lista abaixo;
+- sobras: a linha de base deixou 2 campanhas e 2 personagens (`check-ataque-ao-vivo` e `check-ficha-ao-vivo` apagavam a campanha sem conferir o erro). Foram removidas, e os dois scripts agora conferem e tentam de novo. As campanhas `zz_e2e_*` antigas (31, de setembro) são sobras anteriores e não foram tocadas;
+- falhas pré-existentes, iguais antes e depois:
+  - `check-ataque-ao-vivo` (1), `check-campanha-fase4-gameplay` (7, estoura o tempo), `check-carteira-inventario` (9), `check-console-moldura` (1), `check-console-paleta` (2), `check-dados-lado-direito` (1) e `check-ficha-ao-vivo` (2);
+  - timeouts em `check-ficha-mesa-integracao`, `check-vtt-painel` (após 2d), `check-vtt-rolagem-real` e `check-vtt-targets`;
+  - `check-vtt-integracao` (1) e `check-vtt-sincronizacao-live` (1).

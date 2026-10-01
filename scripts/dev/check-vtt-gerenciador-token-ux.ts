@@ -44,6 +44,7 @@ import { aceitarDialogos } from "./rascunhoDeEdicao";
 
 
 
+import { personagemV12 } from "./fixtures/personagemV12";
 loadDotenv({ path: ".env.local" });
 function requireEnv(nome: string): string {
   const v = process.env[nome];
@@ -100,14 +101,14 @@ async function configurarFixture(): Promise<void> {
   await admin.from("campaign_members").insert({ campaign_id: campaignId, user_id: dJogador.user.id, role: "player", status: "active", origem: "check_vtt_ux" });
 
   const personagemAqui = randomUUID();
-  await admin.from("characters").insert({ id: personagemAqui, name: "PJ da campanha certa", status: "draft", payload: {}, campaign_id: campaignId, owner_id: data.user.id });
+  await admin.from("characters").insert({ id: personagemAqui, name: "PJ da campanha certa", status: "draft", payload: personagemV12("PJ da campanha certa"), campaign_id: campaignId, owner_id: data.user.id });
   criados.personagens.push(personagemAqui);
 
   outraCampanhaId = randomUUID();
   await admin.from("campaigns").insert({ id: outraCampanhaId, name: "VTT UX Outra", owner_id: data.user.id });
   criados.campanhas.push(outraCampanhaId);
   const personagemOutra = randomUUID();
-  await admin.from("characters").insert({ id: personagemOutra, name: "PJ de outra campanha", status: "draft", payload: {}, campaign_id: outraCampanhaId, owner_id: data.user.id });
+  await admin.from("characters").insert({ id: personagemOutra, name: "PJ de outra campanha", status: "draft", payload: personagemV12("PJ de outra campanha"), campaign_id: outraCampanhaId, owner_id: data.user.id });
   criados.personagens.push(personagemOutra);
 }
 

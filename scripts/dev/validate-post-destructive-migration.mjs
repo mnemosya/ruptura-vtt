@@ -68,8 +68,9 @@ async function main() {
           // Espera-se um erro de NEGÓCIO (personagem sem campanha / não encontrado) — não um erro de "função não existe".
           return !error || !/does not exist|schema cache/i.test(error.message ?? "");
         } },
-      { label: "complete_character_creation (função)", check: async () => {
-          const { error } = await admin.rpc("complete_character_creation", { p_campaign_id: "00000000-0000-0000-0000-000000000000", p_character_payload: {} });
+      // A criação v1 (`complete_character_creation`) saiu na Fase 10 da migração v1.2; a que precisa existir é a v2.
+      { label: "complete_character_creation_v2 (função)", check: async () => {
+          const { error } = await admin.rpc("complete_character_creation_v2", { p_campaign_id: "00000000-0000-0000-0000-000000000000", p_character_payload: {} });
           return !error || !/does not exist|schema cache/i.test(error.message ?? "");
         } },
     ];

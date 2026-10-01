@@ -20,6 +20,7 @@ import { BASE_URL } from "./authSession";
 import { garantirTokenAlcancavel, garantirAlcancavel } from "./painelDaSessao";
 import { continuarParaPosicionar, escolherTamanhoDoToken } from "./gerenciadorDeToken";
 
+import { personagemV12 } from "./fixtures/personagemV12";
 loadDotenv({ path: ".env.local" });
 function requireEnv(nome: string): string {
   const v = process.env[nome];
@@ -85,7 +86,7 @@ async function configurarFixture(): Promise<void> {
   const novoId = randomUUID();
   await admin.from("characters").insert({
     id: novoId, name: "PJ do teste de sync", owner_label: null, status: "draft",
-    payload: { nome: "PJ do teste de sync" }, campaign_id: campaignId, owner_id: jogadorId,
+    payload: personagemV12("PJ do teste de sync"), campaign_id: campaignId, owner_id: jogadorId,
   });
   characterId = novoId;
 }

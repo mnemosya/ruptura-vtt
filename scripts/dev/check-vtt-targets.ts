@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { chromium, type Page } from "playwright";
+import { personagemV12 } from "./fixtures/personagemV12";
 config({ path: ".env.local", quiet: true });
 const url = process.env.SUPABASE_URL!, key = process.env.SUPABASE_ANON_KEY!;
 const admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
@@ -42,7 +43,7 @@ try {
   await db(admin.from("campaigns").insert({ id: campanha, name: "QA targets temporária", owner_id: n.id }));
   await db(admin.from("campaign_members").insert({ campaign_id: campanha, user_id: j.id, role: "player", status: "active" }));
   await db(admin.from("characters").insert({ id: personagem, name: "Raven QA", status: "draft", campaign_id: campanha, owner_id: n.id,
-    payload: { nome: "Raven QA", atributos: { corpo: 3, mente: 2, animo: 3 }, pericias: { luta: 2 }, estado_jogo: { pa_gastos: 99 }, metadados: { schema_version: 1 } } }));
+    payload: personagemV12("Raven QA", { atributos: { corpo: 3, mente: 2, animo: 3 }, pericias: { luta: 2 }, estado_jogo: { pa_gastos: 99 } }) }));
   await n.page.goto(`http://localhost:3000/mesas/${campanha}`, { waitUntil: "networkidle" });
   await n.page.waitForSelector(".rv-ferramentas", { timeout: 30000 });
   const cena = (await admin.from("vtt_scenes").select("id").eq("campaign_id", campanha).single()).data!.id;
