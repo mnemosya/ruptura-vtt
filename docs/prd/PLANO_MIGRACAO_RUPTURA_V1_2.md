@@ -258,14 +258,14 @@ Entregáveis:
 - [x] seus perfis de Atributos e Perícias;
 - [x] fórmulas próprias de PV, PE e Mana;
 - [ ] equipamento e recursos iniciais;
-- [ ] Vertente Primária e magias iniciais;
+- [ ] Vertente Primária e magias iniciais; Vertente Primária pronta; magias iniciais (4 de nível 1 da Vertente) dependem do catálogo v1.2 da Fase 6;
 - [x] criação server-side válida;
   - Em implementação: `buildCharacterV2` (`src/lib/rulesetV12/creation.ts`) monta o payload v2 a partir das escolhas; a server action `createCharacterV2` chama a nova RPC `complete_character_creation_v2`, que revalida tudo no banco. A RPC passou em 13 cenários no remoto, dentro de uma transação abortada, e a migration `20261001033923_ruptura_v12_criacao_personagem.sql` foi aplicada no remoto em 01/10/2026. Antecedentes, Qualidades e Complicações estão publicados (`content/v12/db_trajetoria_v1_2.json`). As magias iniciais da Vertente Primária continuam indefinidas.
 - [x] persistência e reabertura;
 - [x] renderização correta na ficha;
   - Em implementação: a ficha e o HUD usam as fórmulas da Classe copiadas para `progressao.formulas_derivados` (DEC-003). A migration `20261001034830_ruptura_v12_formulas_classe.sql` foi aplicada no remoto em 01/10/2026.
-- [ ] rolagem integrada à mesa;
-- [ ] relatório dos ajustes necessários no contrato.
+- [x] rolagem integrada à mesa (motor verificado com o payload v2 salvo);
+- [x] relatório dos ajustes necessários no contrato (`docs/relatorios/RELATORIO_FATIA_VERTICAL_ANCORA_2026-10-01.md`).
 
 Progresso: `content/v12/db_classe_ancora_v1_2.json` contém a Classe e as Subclasses Coordenador, Terapeuta e Vitalista, extraídas do Notion (edição de 23/09/2026) e validadas por `npm run test:ruleset-v12-ancora`. O equipamento inicial registra Ⱥ 3.000 e Mochila de 10 espaços; os pacotes recomendados continuam placeholders no Notion e nenhum item foi inferido. O arquivo ainda não entra no seed, porque o registro no pipeline (Fase 2) segue aberto.
 
