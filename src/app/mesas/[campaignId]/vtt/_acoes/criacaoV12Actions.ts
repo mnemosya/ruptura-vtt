@@ -17,10 +17,11 @@ import {
   deleteCharacterCreationDraft,
   loadCharacterCreationDraftV12,
   saveCharacterCreationDraftV12,
+  updateCharacterSheetPayload,
   type LoadDraftV12Result,
 } from "../../../../../lib/character/storage";
 import { getCharacterRules } from "../../../../../lib/content";
-import type { CharacterRulesPayload } from "../../../../../lib/character/types";
+import type { Character, CharacterRulesPayload } from "../../../../../lib/character/types";
 import {
   REGIOES_V12,
   VERTENTES_V12,
@@ -56,6 +57,8 @@ export interface CatalogosCriacaoV12 {
   qualidades: OpcaoTrajetoriaV12[];
   complicacoes: OpcaoTrajetoriaV12[];
   itens: Array<{ slug: string; nome: string; categoria: string; preco: number }>;
+  /** Narrador da campanha: o assistente oferece criar o personagem como PN. */
+  ehNarrador: boolean;
 }
 
 async function exigirAcesso(campaignId: string) {
@@ -102,6 +105,7 @@ export async function lerCatalogosCriacaoV12Action(campaignId: string): Promise<
     return {
       ok: true,
       dados: {
+        ehNarrador: v.acesso?.role === "narrator",
         classes: classes.map((c) => c.payload as unknown as ClassContentV12),
         pericias: regras.pericias.map((p) => ({ id: p.id, nome: p.nome })).sort(porNome),
         regioes: Object.entries(REGIOES_V12).map(([id, r]) => ({ id, nome: r.nome, idioma: r.idioma })),
@@ -132,11 +136,23 @@ export async function criarPersonagemV12Action(
   campaignId: string,
   choices: CreationChoicesV12,
   creationRequestId: string,
+  opcoes: { pn?: boolean } = {},
 ): Promise<ResultadoAcao<{ characterId: string }>> {
   const v = await exigirAcesso(campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
+  if (opcoes.pn && v.acesso?.role !== "narrator") return { ok: false, erro: "Só o narrador cria PN." };
   try {
     const record = await createCharacterV2(campaignId, choices, { creationRequestId });
+    if (opcoes.pn) {
+      // PN: mesmo personagem v1.2, marcado como do narrador (metadado que só o narrador altera).
+      const payload = record.payload as Character;
+      if (payload.metadados?.tipo_personagem !== "pn") {
+        await updateCharacterSheetPayload(record.id, {
+          ...payload,
+          metadados: { ...payload.metadados, schema_version: payload.metadados?.schema_version ?? 1, tipo_personagem: "pn" },
+        });
+      }
+    }
     return { ok: true, dados: { characterId: record.id } };
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : "Falha ao criar o personagem." };

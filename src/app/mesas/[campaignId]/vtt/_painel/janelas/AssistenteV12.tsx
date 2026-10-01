@@ -129,6 +129,8 @@ export default function AssistenteV12({
   const [compras, setCompras] = useState<Record<string, number>>({});
 
   const [enviando, setEnviando] = useState(false);
+  /** Narrador: criar como PN (personagem do narrador), como no "+ Personagem". */
+  const [ehPn, setEhPn] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [requestId, setRequestId] = useState(novoRequestId);
 
@@ -425,7 +427,7 @@ export default function AssistenteV12({
     concluidoRef.current = true;
     if (timerRef.current) clearTimeout(timerRef.current);
     await filaRef.current;
-    const r = await criarPersonagemV12Action(campaignId, escolhas(), requestId);
+    const r = await criarPersonagemV12Action(campaignId, escolhas(), requestId, { pn: catalogos.ehNarrador && ehPn });
     setEnviando(false);
     if (!r.ok || !r.dados) {
       concluidoRef.current = false;
@@ -818,6 +820,13 @@ export default function AssistenteV12({
               </ul>
             </div>
           ) : null}
+
+          {catalogos.ehNarrador && (
+            <label className="rm-note" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <input type="checkbox" checked={ehPn} onChange={(e) => setEhPn(e.target.checked)} data-testid="v12-pn" />
+              É um PN (personagem do narrador)
+            </label>
+          )}
 
           <div>
             <button

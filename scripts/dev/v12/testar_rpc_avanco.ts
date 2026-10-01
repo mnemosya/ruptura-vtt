@@ -126,6 +126,15 @@ await caso("narrador: corrige Ranking pela ficha, mas também respeita os limite
   assert((await ler()).atributos.corpo === 4, "narrador corrige");
 });
 
+await caso("narrador: marca o personagem v1.2 como PN (criação de PN pelo assistente)", async () => {
+  await como(NARR); const p = structuredClone(base) as any; p.metadados = { ...p.metadados, tipo_personagem: "pn" }; await rpcFicha(p); await c.query("reset role");
+  assert((await ler() as any).metadados?.tipo_personagem === "pn", "PN gravado");
+});
+await caso("jogador: não consegue se marcar como PN", async () => {
+  await como(PLAYER); const p = structuredClone(base) as any; p.metadados = { ...p.metadados, tipo_personagem: "pn" }; await rpcFicha(p); await c.query("reset role");
+  assert((await ler() as any).metadados?.tipo_personagem === undefined, "tipo preservado");
+});
+
 // ── Avanço de Ranking ───────────────────────────────────────────────
 const e = avancar(base);
 await caso("jogador: F→E com Subclasse válida", async () => {
