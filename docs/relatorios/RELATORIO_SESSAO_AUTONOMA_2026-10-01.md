@@ -48,7 +48,7 @@
 ## 4. Decisões que dependem de você
 
 1. **DEC-003:** aprovar a cópia das fórmulas da Classe e do PA para `progressao.formulas_derivados`. Já está em uso.
-2. **Proteção do Ranking:** hoje `update_character_sheet_payload` aceita o payload inteiro do jogador controlador. Fechar isso exige duas coisas: uma RPC de avanço, e a RPC de ficha preservar `progressao`, `trajetoria` e os níveis de Vertente.
+2. ~~**Proteção do Ranking:**~~ feita depois da sessão (migration `20261001120000`). hoje `update_character_sheet_payload` aceita o payload inteiro do jogador controlador. Fechar isso exige duas coisas: uma RPC de avanço, e a RPC de ficha preservar `progressao`, `trajetoria` e os níveis de Vertente.
 3. **Quem concede o Marco:** hoje o narrador e o controlador podem avançar. Precisa decidir se fica só com o narrador.
 4. **Cura no avanço:** hoje o avanço não cura e só recalcula os máximos.
 5. **CD da Sináptica:** a página diz 5 + Nível e as outras Vertentes dizem 6 + Nível.

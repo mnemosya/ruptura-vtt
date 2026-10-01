@@ -286,7 +286,7 @@ Entregáveis:
 - [x] avanços de D, C, B, A, S e S+ (magias concedidas ficam pendentes até o catálogo v1.2);
 - [x] PA igual a 4 no C e 5 no S;
 - [x] recursos derivados dependentes da Classe (DEC-003);
-- [ ] progressão server-side atômica; aplicada no servidor e gravada em uma operação, mas a RPC de ficha ainda aceita payload completo do controlador (ver relatório);
+- [x] progressão server-side atômica: `advance_character_ranking_v2` revalida no banco o salto de um Ranking e a RPC de ficha preserva a progressão para o jogador;
 - [x] Modo Evolução orientado pelo próximo Ranking (personagens v1.2);
 - [x] PM e Talentos deixam de ser fonte de verdade para v2 (o payload v2 não os tem, a RPC rejeita Talentos e o Modo Evolução livre não aparece para v1.2).
 
@@ -705,3 +705,15 @@ Essa entrega deve terminar antes da implementação do novo wizard.
 - `content/v12/crosswalk_magias_v1_3_para_v1_2.json` e `docs/relatorios/CROSSWALK_MAGIAS_V1_2_RASCUNHO.md`: as 132 magias legadas com candidato por nome (60) ou sem correspondência (72), todas `ambiguous`, mais as 151 magias v1.2 sem antecessor por nome; `somatica` é comparada com `biotica`;
 - `npm run test:ruleset-v12-magias`: slugs únicos, Vertentes válidas, perícias de pré-requisito no catálogo, ao menos quatro magias de nível 1 por Vertente e cobertura completa do crosswalk;
 - pendente de decisão: aprovação editorial do catálogo, a classificação de cada linha e a extração do texto das magias.
+
+### 01/10/2026 — Proteção do Ranking (Fase 4)
+
+- migration `20261001120000_ruptura_v12_protecao_ranking.sql`, aplicada no remoto em 01/10/2026;
+- nova RPC `advance_character_ranking_v2`, chamada pela action de avanço. Ela confere no banco:
+  - que o novo Ranking é exatamente o seguinte ao persistido (envio duplicado falha);
+  - Subclasse publicada da Classe no E e fixa depois;
+  - pontos de Atributo (até 5), Perícia (dentro do limite) e Vertente (até 5);
+  - PA do Ranking, fórmulas da Classe intactas e magias pendentes acrescentadas sem apagar as anteriores;
+  - grava só os campos de progressão sobre o payload persistido;
+- `update_character_sheet_payload`: para personagens v1.2 e jogador controlador, `schema_version`, `ruleset_version`, `progressao`, `trajetoria`, `atributos`, `pericias`, `niveis_vertente` e `magia.vertente_primaria`/`niveis_vertente`/`escolhas_pendentes` voltam ao valor persistido. O narrador continua editando tudo. Um salvamento atrasado da ficha deixa de desfazer um avanço;
+- `scripts/dev/v12/testar_rpc_avanco.ts`: 15 cenários no remoto em transação desfeita (jogador, narrador, estranho, avanço válido, duplicado, salto, pontos a mais, PA, Subclasse, fórmulas, pendências, F→E com Subclasse).

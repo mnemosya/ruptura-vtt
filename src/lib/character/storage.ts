@@ -822,6 +822,24 @@ export async function getCharacterForCampaign(campaignId: string, characterId: s
  * UPDATE direta na tabela não autoriza controlador desde a migration
  * 0052, só narrador/dono de personagem solto.
  */
+/**
+ * Avanço de Ranking v1.2 (RPC `advance_character_ranking_v2`): o banco
+ * confere que é exatamente um Ranking acima do persistido e grava só os
+ * campos de progressão. A RPC de ficha preserva esses campos para o
+ * jogador, então este é o único caminho que muda o Ranking.
+ */
+export async function advanceCharacterRankingV2(characterId: string, character: Character): Promise<CharacterRecord> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("advance_character_ranking_v2", {
+    p_character_id: characterId,
+    p_payload: character,
+  });
+  if (error) {
+    throw new CharacterStorageError(`Falha ao avançar o Ranking de "${characterId}": ${error.message}`, error);
+  }
+  return data as CharacterRecord;
+}
+
 export async function updateCharacterSheetPayload(characterId: string, character: Character): Promise<CharacterRecord> {
   const payload = buildPayloadForSave(character);
   const client = await getScopedTableClient();

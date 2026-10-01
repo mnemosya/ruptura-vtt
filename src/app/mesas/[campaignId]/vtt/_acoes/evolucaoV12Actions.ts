@@ -6,16 +6,16 @@
  * `lerAvancoV12Action` descreve o pacote do próximo Ranking para a tela;
  * `avancarRankingV12Action` recarrega o personagem e a Classe efetiva no
  * servidor, aplica as escolhas com `applyAdvancementV12` (que valida
- * tudo) e grava pelo caminho atômico da ficha
- * (`update_character_sheet_payload`, que já exige ser narrador da
- * campanha ou controlador do personagem). O cliente nunca envia o
- * personagem resultante — só as escolhas.
+ * tudo) e grava por `advance_character_ranking_v2`, que exige ser
+ * narrador ou controlador e revalida no banco que o salto é de um único
+ * Ranking com os ganhos da Classe. O cliente nunca envia o personagem
+ * resultante — só as escolhas.
  */
 
 import "server-only";
 import { resolveCampaignAccess } from "../../../../../lib/campaign/access";
 import { resolveEffectiveList } from "../../../../../lib/campaignContent/resolveEffectiveContent";
-import { getCharacterForCampaign, updateCharacterSheetPayload } from "../../../../../lib/character/storage";
+import { advanceCharacterRankingV2, getCharacterForCampaign } from "../../../../../lib/character/storage";
 import { getCharacterRules } from "../../../../../lib/content";
 import type { Character, CharacterRulesPayload } from "../../../../../lib/character/types";
 import {
@@ -129,7 +129,7 @@ export async function avancarRankingV12Action(
     if ("erro" in c) return { ok: false, erro: c.erro };
     const r = applyAdvancementV12(c.character, escolhas, c.ctx);
     if (!r.ok) return { ok: false, erro: r.errors.join(" ") };
-    await updateCharacterSheetPayload(characterId, r.character as unknown as Character);
+    await advanceCharacterRankingV2(characterId, r.character as unknown as Character);
     return { ok: true, dados: { ranking: r.character.progressao.ranking } };
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : "Falha ao avançar o Ranking." };
