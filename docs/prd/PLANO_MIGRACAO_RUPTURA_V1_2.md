@@ -396,6 +396,8 @@ Entregáveis:
 - [ ] transferência bidirecional entre personagem e Bando;
 - [ ] persistência isolada ou decisão registrada para armazenamento em `campaigns`.
 
+Opções comparadas em `docs/relatorios/BANDO_V1_2_OPCOES_ARMAZENAMENTO.md` (01/10/2026), com recomendação de tabela própria 1:1; aguarda decisão.
+
 Critério de saída:
 
 - a ficha coletiva persiste todos os campos canônicos e integra o inventário compartilhado.
