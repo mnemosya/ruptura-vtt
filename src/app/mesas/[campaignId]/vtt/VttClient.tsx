@@ -136,7 +136,6 @@ import { useConsoleDaMesa } from "../_shell/ConsoleDaMesa";
 import { BootPanel } from "../../../_boundaries/BootPanel";
 import { AvisoSincronizacao } from "./_shell/AvisoSincronizacao";
 import { MenuDaMesa, posicaoAoLadoDe, type PosicaoMenuMesa } from "./_shell/MenuDaMesa";
-import { ProvedorJanelasDaMesa } from "./_shell/JanelasDaMesa";
 import { readSelectedTokenHudAction } from "./_acoes/hudActions";
 import type { SelectedTokenHudData } from "../../../../lib/vtt/hudTypes";
 import { EditorRetratoToken } from "./_shell/EditorRetratoToken";
@@ -5864,10 +5863,9 @@ export function VttClient({
     // o PALCO (`MesaDadosOverlay`, mais abaixo), que é o que desenha.
     <ProvedorJanelasFerramenta campaignId={campaignId} usuarioId={usuarioId}>
     {/* As janelas da mesa (Personagens, Bando, Compêndio, Participantes,
-        Jogadores e convites) são abertas de DOIS lugares — do painel e
-        do menu da mesa, em lados opostos da tela. O estado fica aqui em
-        cima, onde os dois alcançam. */}
-    <ProvedorJanelasDaMesa>
+        Jogadores e convites) são abertas do painel, do menu da mesa e do
+        Console. O estado mora em `CampaignShell` (ProvedorJanelasDaMesa),
+        acima dos três. */}
     <div
       className="rv-mesa"
       /* A aparência da GRADE é da cena (0122) e chega ao SVG por
@@ -6651,7 +6649,6 @@ export function VttClient({
         </div>
       )}
     </div>
-    </ProvedorJanelasDaMesa>
     </ProvedorJanelasFerramenta>
   );
 }

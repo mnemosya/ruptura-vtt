@@ -23,6 +23,7 @@ const NARR = "5776feec-5b85-477a-bcb5-deb422e58f73";
 const MIGRATIONS = [
   "supabase/migrations/20261001120000_ruptura_v12_protecao_ranking.sql",
   "supabase/migrations/20261001160000_ruptura_v12_correcao_atributos_pericias.sql",
+  "supabase/migrations/20261001170000_ruptura_v12_personagem_pendente.sql",
 ];
 
 const ancora = JSON.parse(fs.readFileSync("content/v12/db_classe_ancora_v1_2.json", "utf8")) as RulesetContentBundleV12;
@@ -161,6 +162,54 @@ await caso("trocar Subclasse fora do E falha", async () => { await como(PLAYER);
 await caso("mexer em fórmula da Classe falha", async () => { await como(PLAYER); const p = structuredClone(d) as any; p.progressao.formulas_derivados.pv_max = { const: 99 }; await rpcAv(p); }, "fórmulas de recurso");
 await caso("apagar magia pendente falha", async () => { await como(PLAYER); const p = structuredClone(d) as any; p.magia.escolhas_pendentes = p.magia.escolhas_pendentes.slice(1).concat([{ tipo: "magia_adicional", origem: "x" }, { tipo: "magia_adicional", origem: "y" }]); await rpcAv(p); }, "Magias pendentes");
 await caso("estranho não avança", async () => { await como("00000000-0000-0000-0000-000000000001"); await rpcAv(d); }, "insufficient_privilege");
+
+// ── Personagem criado só com o nome e completado pelo assistente ────
+const pend = async (nome: string, pn = false) => (await c.query("select * from create_pending_character_v2($1,$2,$3)", [CAMP, nome, pn])).rows[0];
+const completar = (id: string, payload: unknown) => c.query("select complete_character_creation_v2($1,$2,null,null,$3) r", [CAMP, JSON.stringify(payload), id]);
+await caso("jogador: cria pendente só com o nome e recebe o controle", async () => {
+  await como(PLAYER); const r = await pend("Só Nome"); await c.query("reset role");
+  assert(r.payload.schema_version === 2 && r.payload.criacao_pendente === true && r.payload.nome === "Só Nome", "payload pendente");
+  const ctl = (await c.query("select count(*)::int n from character_controllers where character_id=$1 and user_id=$2", [r.id, PLAYER])).rows[0].n;
+  assert(ctl === 1, "controlador");
+});
+await caso("jogador: não cria PN", async () => { await como(PLAYER); await pend("PN do jogador", true); }, "Só o narrador cria PN");
+await caso("nome vazio falha", async () => { await como(PLAYER); await pend("   "); }, "Dê um nome");
+await caso("narrador: PN pendente completado mantém id, PN e nome do assistente", async () => {
+  await como(NARR); const r = await pend("Vilão", true);
+  const payload = { ...structuredClone(base), nome: "Vilão Completo" };
+  const out = (await completar(r.id, payload)).rows[0].r; await c.query("reset role");
+  assert(out.character.id === r.id, "mesmo id");
+  const x = (await c.query("select name, payload from characters where id=$1", [r.id])).rows[0];
+  assert(x.name === "Vilão Completo" && x.payload.progressao.classe_id === "ancora", "completado");
+  assert(x.payload.criacao_pendente === undefined, "sem pendência");
+  assert(x.payload.metadados.tipo_personagem === "pn", "PN mantido");
+});
+await caso("jogador: completa o próprio pendente", async () => {
+  await como(PLAYER); const r = await pend("Meu");
+  await completar(r.id, { ...structuredClone(base), nome: "Meu" }); await c.query("reset role");
+  assert((await c.query("select payload from characters where id=$1", [r.id])).rows[0].payload.progressao.ranking === "F", "F");
+});
+await caso("completar personagem já criado falha", async () => {
+  await como(NARR); await completar(CH, base);
+}, "já foi criado");
+await caso("estranho não completa pendente alheio", async () => {
+  await como(PLAYER); const r = await pend("Alheio"); await c.query("reset role");
+  await como(NARR); await c.query("reset role");
+  await c.query("delete from character_controllers where character_id=$1", [r.id]);
+  await c.query("update characters set owner_id=$2 where id=$1", [r.id, NARR]);
+  await como(PLAYER); await completar(r.id, base);
+}, "insufficient_privilege");
+await caso("jogador: ficha não remove criacao_pendente", async () => {
+  await como(PLAYER); const r = await pend("Teimoso");
+  await c.query("select * from update_character_sheet_payload($1,$2)", [r.id, JSON.stringify({ ...r.payload, criacao_pendente: false, nome: "Teimoso 2" })]);
+  await c.query("reset role");
+  const x = (await c.query("select payload from characters where id=$1", [r.id])).rows[0].payload;
+  assert(x.criacao_pendente === true && x.nome === "Teimoso 2", "pendência mantida, resto gravado");
+});
+await caso("criação nova sem p_character_id continua inserindo", async () => {
+  await como(PLAYER); const out = (await c.query("select complete_character_creation_v2($1,$2) r", [CAMP, JSON.stringify({ ...structuredClone(base), nome: "Novo direto" })])).rows[0].r;
+  await c.query("reset role"); assert(out.character.id !== CH && out.character.name === "Novo direto", "inseriu");
+});
 
 await c.query("rollback");
 await c.end();

@@ -136,13 +136,13 @@ export async function criarPersonagemV12Action(
   campaignId: string,
   choices: CreationChoicesV12,
   creationRequestId: string,
-  opcoes: { pn?: boolean } = {},
+  opcoes: { pn?: boolean; characterId?: string } = {},
 ): Promise<ResultadoAcao<{ characterId: string }>> {
   const v = await exigirAcesso(campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
   if (opcoes.pn && v.acesso?.role !== "narrator") return { ok: false, erro: "Só o narrador cria PN." };
   try {
-    const record = await createCharacterV2(campaignId, choices, { creationRequestId });
+    const record = await createCharacterV2(campaignId, choices, { creationRequestId, characterId: opcoes.characterId });
     if (opcoes.pn) {
       // PN: mesmo personagem v1.2, marcado como do narrador (metadado que só o narrador altera).
       const payload = record.payload as Character;

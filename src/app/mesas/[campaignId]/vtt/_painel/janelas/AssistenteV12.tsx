@@ -15,6 +15,7 @@
  * iniciais ainda não fazem parte da criação (regra pendente no plano).
  */
 
+import type { PersonagemACompletar } from "../../_shell/JanelasDaMesa";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Spinner } from "../../../../../_design/icons";
 import {
@@ -91,18 +92,25 @@ function novoRequestId(): string {
 export default function AssistenteV12({
   campaignId,
   catalogos,
+  completar = null,
   onSair,
   onConcluir,
 }: {
   campaignId: string;
   catalogos: CatalogosCriacaoV12;
+  /**
+   * Completar um personagem criado só com o nome: o assistente não lê nem
+   * grava o rascunho da campanha (que é de outra criação), começa com o nome
+   * e, ao concluir, atualiza esse personagem em vez de criar outro.
+   */
+  completar?: PersonagemACompletar | null;
   onSair: () => void;
   onConcluir: (characterId: string) => void;
 }) {
   const [step, setStepBruto] = useState(1);
 
   // Conceito
-  const [nome, setNome] = useState("");
+  const [nome, setNome] = useState(completar?.nome ?? "");
   const [codinome, setCodinome] = useState("");
 
   // Trajetória
@@ -276,6 +284,10 @@ export default function AssistenteV12({
   };
 
   const carregarRascunho = useCallback(async () => {
+    if (completar) {
+      setEstadoRascunho({ tipo: "pronto" });
+      return;
+    }
     setEstadoRascunho({ tipo: "carregando" });
     ultimoSalvoRef.current = null;
     const r = await lerRascunhoV12Action(campaignId);
@@ -306,7 +318,7 @@ export default function AssistenteV12({
     sujoRef.current = false;
     setEstadoRascunho({ tipo: "pronto" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [campaignId, catalogos]);
+  }, [campaignId, catalogos, completar]);
 
   useEffect(() => {
     void carregarRascunho();
@@ -319,7 +331,7 @@ export default function AssistenteV12({
       timerRef.current = null;
     }
     filaRef.current = filaRef.current.then(async () => {
-      if (concluidoRef.current || conflito || !sujoRef.current) return;
+      if (completar || concluidoRef.current || conflito || !sujoRef.current) return;
       sujoRef.current = false;
       setSalvando(true);
       const enviado = rascunhoRef.current;
@@ -338,7 +350,7 @@ export default function AssistenteV12({
       ultimoSalvoRef.current = JSON.stringify(enviado);
     });
     return filaRef.current;
-  }, [campaignId, requestId, conflito]);
+  }, [campaignId, requestId, conflito, completar]);
 
   // Fechar a janela (X, Esc) desmonta o assistente: grava o que ainda
   // estiver pendente do debounce em vez de perder os últimos ~800 ms.
@@ -384,7 +396,7 @@ export default function AssistenteV12({
     concluidoRef.current = true;
     if (timerRef.current) clearTimeout(timerRef.current);
     await filaRef.current;
-    await apagarRascunhoV12Action(campaignId);
+    if (!completar) await apagarRascunhoV12Action(campaignId);
     onSair();
   }
 
@@ -427,7 +439,9 @@ export default function AssistenteV12({
     concluidoRef.current = true;
     if (timerRef.current) clearTimeout(timerRef.current);
     await filaRef.current;
-    const r = await criarPersonagemV12Action(campaignId, escolhas(), requestId, { pn: catalogos.ehNarrador && ehPn });
+    const r = await criarPersonagemV12Action(campaignId, escolhas(), requestId, completar
+      ? { characterId: completar.characterId }
+      : { pn: catalogos.ehNarrador && ehPn });
     setEnviando(false);
     if (!r.ok || !r.dados) {
       concluidoRef.current = false;
@@ -494,6 +508,12 @@ export default function AssistenteV12({
       )}
       {aviso && !conflito && <p className="rm-note rm-note--warn" style={{ marginBottom: 16 }} data-testid="v12-aviso-rascunho">{aviso}</p>}
 
+      {completar ? (
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center" }}>
+          <button onClick={onSair} className="rm-btn rm-btn-ghost rv-focusable" data-testid="v12-sair">Sair</button>
+          <span className="rm-faint">O personagem só muda ao concluir; sair não grava as escolhas.</span>
+        </div>
+      ) : (
       <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center" }}>
         <button
           onClick={() => void salvarESair()}
@@ -512,6 +532,7 @@ export default function AssistenteV12({
           {conflito ? "" : salvando ? "Salvando rascunho…" : revisaoRef.current > 0 ? "Rascunho salvo" : ""}
         </span>
       </div>
+      )}
 
       <nav className="rm-pills" aria-label="Etapas da criação" style={{ marginBottom: 24 }}>
         {ETAPAS.map((e) => (
@@ -821,7 +842,7 @@ export default function AssistenteV12({
             </div>
           ) : null}
 
-          {catalogos.ehNarrador && (
+          {catalogos.ehNarrador && !completar && (
             <label className="rm-note" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
               <input type="checkbox" checked={ehPn} onChange={(e) => setEhPn(e.target.checked)} data-testid="v12-pn" />
               É um PN (personagem do narrador)
@@ -838,7 +859,7 @@ export default function AssistenteV12({
               data-testid="v12-criar"
             >
               {enviando && <Spinner size={13} strokeWidth={2} className="mo-spin" aria-hidden="true" />}
-              {enviando ? "Criando…" : "Criar personagem"}
+              {enviando ? "Criando…" : completar ? "Concluir criação" : "Criar personagem"}
             </button>
           </div>
         </section>

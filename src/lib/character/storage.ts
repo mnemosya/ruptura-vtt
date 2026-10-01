@@ -35,7 +35,6 @@ import { randomUUID } from "node:crypto";
 import { getScopedTableClient } from "../auth/scopedClient";
 import { getCurrentUser } from "../auth/session";
 import { CharacterStorageError } from "./storage.errors";
-import { createInitialCharacter } from "./createCharacter";
 import type { Character, CharacterRecord, CharacterRulesPayload } from "./types";
 import { getCharacterRules } from "../content";
 import { resolveEffectiveList } from "../campaignContent/resolveEffectiveContent";
@@ -242,7 +241,8 @@ export async function createCharacterForCampaign(
 export async function createCharacterV2(
   campaignId: string,
   choices: CreationChoicesV12,
-  options: { ownerLabel?: string; creationRequestId?: string } = {},
+  /** `characterId`: completa um personagem criado só com o nome em vez de criar outro. */
+  options: { ownerLabel?: string; creationRequestId?: string; characterId?: string } = {},
 ): Promise<CharacterRecord> {
   // Conteúdo EFETIVO da campanha (override > homebrew > oficial), a mesma
   // resolução que a RPC usa — preços com override e opções de Trajetória
@@ -301,6 +301,7 @@ export async function createCharacterV2(
     p_character_payload: payload,
     p_owner_label: options.ownerLabel ?? null,
     p_creation_request_id: options.creationRequestId ?? null,
+    p_character_id: options.characterId ?? null,
   });
   if (error) {
     throw new CharacterStorageError(`Falha ao concluir a criação do personagem: ${error.message}`, error);
@@ -309,35 +310,22 @@ export async function createCharacterV2(
 }
 
 /**
- * Criação RÁPIDA pelo próprio participante (o "+ Personagem" do jogador
- * na aba Personagens): só o nome, ficha em branco — o mesmo que o
- * atalho do narrador faz, mas pela RPC `complete_character_creation`,
- * que exige participante ATIVO e dá o controle a quem criou na mesma
- * transação. Não passa por `validateCreationBudget` de propósito: a
- * ficha em branco não gastou orçamento nenhum, e a validação existe pra
- * barrar gasto ACIMA do permitido, não ficha por preencher.
+ * "+ Personagem" (narrador e jogador): personagem RUPTURA v1.2 só com o
+ * nome (`criacao_pendente: true`), completado depois pelo assistente.
+ * A RPC `create_pending_character_v2` exige participante ativo, deixa PN
+ * só para o narrador e dá o controle ao jogador que criou.
  */
-export async function createBlankCharacterForSelf(campaignId: string, nome: string): Promise<CharacterRecord> {
-  const personagem = createInitialCharacter(null, nome);
-  // A RPC confere a carteira final contra o orçamento inicial das
-  // regras (nada comprado ⇒ carteira == aretz iniciais). Mesma fonte e
-  // mesmo padrão (5000) que ela usa.
-  const regras = (await getCharacterRules())?.payload as
-    { criacao_personagem?: { inventario?: { aretz_iniciais?: number } } } | undefined;
-  const aretzIniciais = regras?.criacao_personagem?.inventario?.aretz_iniciais ?? 5000;
-  personagem.carteira = { aretz_informal: aretzIniciais, cdi: 0, cdi_craqueada: 0 };
-  const payload = buildPayloadForSave(personagem);
+export async function createPendingCharacterV2(campaignId: string, nome: string, pn = false): Promise<CharacterRecord> {
   const client = await getScopedTableClient();
-  const { data, error } = await client.rpc("complete_character_creation", {
+  const { data, error } = await client.rpc("create_pending_character_v2", {
     p_campaign_id: campaignId,
-    p_character_payload: payload,
-    p_owner_label: null,
-    p_creation_request_id: null,
+    p_nome: nome,
+    p_pn: pn,
   });
   if (error) {
     throw new CharacterStorageError(`Falha ao criar o personagem: ${error.message}`, error);
   }
-  return (data as { character: CharacterRecord }).character;
+  return data as CharacterRecord;
 }
 
 export type LoadDraftV12Result =

@@ -22,8 +22,7 @@
 import { getScopedTableClient } from "../../../../../../lib/auth/scopedClient";
 import {
   archiveCharacter,
-  createBlankCharacterForSelf,
-  createCharacterForCampaign,
+  createPendingCharacterV2,
   duplicateCharacter,
   getCharacterForCampaign,
   listArchivedCharactersForNarratorCampaign,
@@ -36,7 +35,6 @@ import {
 import {
   characterDerivedFormulas,
   computeDerivedStats,
-  createInitialCharacter,
   normalizeCharacter,
   type CharacterRecord,
   type CharacterRulesPayload,
@@ -506,15 +504,8 @@ export async function criarPersonagemPainelAction(
   const nomeLimpo = nome.trim();
   if (!nomeLimpo) return { ok: false, erro: "Dê um nome ao personagem." };
   try {
-    const personagem = createInitialCharacter(null, nomeLimpo);
-    if (tipo === "pn") {
-      personagem.metadados = {
-        ...personagem.metadados,
-        schema_version: personagem.metadados?.schema_version ?? 1,
-        tipo_personagem: "pn",
-      };
-    }
-    const criado = await createCharacterForCampaign(campaignId, personagem);
+    // Personagem v1.2 só com o nome; o assistente completa depois.
+    const criado = await createPendingCharacterV2(campaignId, nomeLimpo, tipo === "pn");
     return { ok: true, dados: { id: criado.id } };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Falha ao criar o personagem.") };
@@ -531,7 +522,7 @@ export async function criarMeuPersonagemAction(campaignId: string, nome: string)
   const nomeLimpo = nome.trim();
   if (!nomeLimpo) return { ok: false, erro: "Dê um nome ao personagem." };
   try {
-    const criado = await createBlankCharacterForSelf(campaignId, nomeLimpo);
+    const criado = await createPendingCharacterV2(campaignId, nomeLimpo);
     return { ok: true, dados: { id: criado.id } };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Falha ao criar o personagem.") };

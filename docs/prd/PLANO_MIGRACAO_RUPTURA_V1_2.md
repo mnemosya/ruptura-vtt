@@ -368,7 +368,7 @@ Entregáveis:
 - [x] script explícito para apagar personagens e drafts incompatíveis: `scripts/dev/v12/corte_fase7.mjs` (só conta por padrão; `--testar` ensaia e desfaz; `--executar` exige `--snapshot=<ref>`). Remove também os tokens dos personagens v1 (decisão de 01/10/2026). Ensaio no remoto em 01/10/2026, desfeito: 121 personagens, 46 tokens e 2 rascunhos; v2 intactos;
 - [ ] remoção ou arquivamento dos documentos de conteúdo obsoletos;
 - [ ] substituição de `somatica` por `biotica` no conteúdo canônico;
-- [ ] remoção dos caminhos de criação, progressão e leitura v1; o assistente de criação anterior saiu em 01/10/2026 (falta decidir o "+ Personagem"/PN em branco, a leitura v1 e o Modo Evolução v1);
+- [ ] remoção dos caminhos de criação, progressão e leitura v1; criação v1 encerrada em 01/10/2026 (assistente anterior removido; "+ Personagem"/PN agora criam v1.2 pendente). Falta a leitura v1 e o Modo Evolução v1 (PM e Talentos);
 - [ ] seed mínimo de dados v1.2 para desenvolvimento;
 - [x] verificações pós-corte (do script, mais a mesa abrindo sem erro só com a Hilda);
 - [x] registro das contagens removidas e criadas (abaixo, 01/10/2026).
@@ -816,4 +816,17 @@ Equivalência das demais ações:
 - a janela "Novo personagem" abre direto no assistente v1.2, sem o botão "Regras anteriores";
 - removidos o assistente v1 (`AssistenteDeCriacao.tsx`), `lerCatalogosDaCriacaoAction` e, em `storage.ts`, a criação pelo assistente v1 (`createCharacterFromWizard`) e o rascunho v1 (`loadCharacterCreationDraft`/`saveCharacterCreationDraft`), além de `createCharacterValidation.ts` e `character/draftValidation.ts`;
 - continuam por decisão pendente: o "+ Personagem" (narrador e jogador) e a criação de PN, que geram ficha em branco no formato v1 via `createInitialCharacter`.
-- decisão (01/10/2026): a criação mantém dois caminhos, tanto para personagem de jogador quanto para PN: "só com nome" ("+ Personagem") e "com assistente". O assistente v1.2 ganhou, para o narrador, a opção "É um PN". O personagem é criado normalmente e depois marcado com `metadados.tipo_personagem = "pn"` pela RPC de ficha, que só aceita essa marca do narrador (2 cenários novos em `testar_rpc_avanco.ts`). A ficha "só com nome" continua no formato v1 em branco.
+- decisão (01/10/2026): a criação mantém dois caminhos, tanto para personagem de jogador quanto para PN: "só com nome" ("+ Personagem") e "com assistente". O assistente v1.2 ganhou, para o narrador, a opção "É um PN". O personagem é criado normalmente e depois marcado com `metadados.tipo_personagem = "pn"` pela RPC de ficha, que só aceita essa marca do narrador (2 cenários novos em `testar_rpc_avanco.ts`). A ficha "só com nome" deixou de ser v1 (ver o registro abaixo).
+
+### 01/10/2026 — "+ Personagem" cria personagem v1.2 pendente
+
+- decisão (opção 1): a ficha "só com nome" é um personagem v1.2 incompleto (`criacao_pendente: true`), completado depois pelo assistente;
+- migration `20261001170000_ruptura_v12_personagem_pendente.sql`, aplicada no remoto:
+  - `create_pending_character_v2`: o narrador cria personagem de jogador ou PN; o jogador cria só para si e recebe o controle;
+  - `complete_character_creation_v2` ganhou `p_character_id`. Com ele, faz as mesmas validações e atualiza o personagem pendente, mantendo id, dono, controladores, tokens, pasta e a marca de PN;
+  - a RPC de ficha protege `criacao_pendente` para o jogador e só confere limites de Atributo e Perícia depois da criação concluída;
+- na ficha, personagem pendente mostra "Completar criação" no lugar de "Ajustar" e "Ranking". O botão abre o assistente no modo de completar: título "Completar <nome>", nome preenchido, sem ler nem gravar o rascunho da campanha;
+- `ProvedorJanelasDaMesa` subiu para `CampaignShell`, porque o Console é janela da casca e fica fora do VTT;
+- removidos `createBlankCharacterForSelf` e o uso de `createInitialCharacter` na criação. A RPC v1 `complete_character_creation` ficou sem chamadas no app;
+- `testar_rpc_avanco.ts`: 31 cenários no remoto, desfeitos;
+- validado no navegador: PN criado só com o nome aparece como v1.2 pendente, e a ficha leva ao assistente no modo de completar. O personagem de teste foi arquivado.

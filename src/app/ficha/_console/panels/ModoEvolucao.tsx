@@ -23,7 +23,7 @@
  *     — simplesmente não mostra o bloco.
  */
 
-import { ArrowUpCircle, Check, Crosshair, Sliders } from "lucide-react";
+import { ArrowUpCircle, Check, Crosshair, Sliders, Wand2 } from "lucide-react";
 import type { ConsoleApi, ConsoleModo } from "../types";
 import { useVerNoMapa } from "../ConsoleCloseContext";
 
@@ -85,6 +85,28 @@ export function GravacaoChip({ estado, erro }: { estado: "idle" | "saving" | "sa
     >
       {falhou ? "não salvou" : "salvando…"}
     </span>
+  );
+}
+
+/**
+ * Personagem criado só com o nome: abre o assistente v1.2 para completar a
+ * criação (Classe, Trajetória, perícias, equipamento) mantendo o mesmo
+ * personagem. Substitui o Ajustar e o Ranking até a criação ser concluída.
+ */
+export function CompletarCriacaoChip({ onAbrir }: { onAbrir: () => void }) {
+  return (
+    <button
+      type="button"
+      className="rc-modo-chip"
+      onClick={onAbrir}
+      title="Completar a criação deste personagem pelo assistente RUPTURA v1.2"
+      data-testid="console-completar-criacao"
+    >
+      <span className="rc-modo-chip-ico" aria-hidden="true">
+        <Wand2 size={12} strokeWidth={2} />
+      </span>
+      Completar criação
+    </button>
   );
 }
 

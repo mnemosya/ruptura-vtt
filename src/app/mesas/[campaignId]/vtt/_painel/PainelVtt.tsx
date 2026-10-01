@@ -654,7 +654,9 @@ export function PainelVtt({
       )}
       {janelas.aberta("novo-personagem") && (
         <JanelaNovoPersonagem
+          key={janelas.completar?.characterId ?? "novo"}
           campaignId={campaignId}
+          completar={janelas.completar}
           onAbrirFicha={(id) => consoleDaMesa?.abrir(id)}
           onFechar={() => janelas.fechar("novo-personagem")}
         />

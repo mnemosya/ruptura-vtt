@@ -19,13 +19,16 @@ import { AlertTriangle, Loader2 } from "lucide-react";
 import { JanelaInterna } from "../ui/JanelaInterna";
 import AssistenteV12 from "./AssistenteV12";
 import { lerCatalogosCriacaoV12Action, type CatalogosCriacaoV12 } from "../../_acoes/criacaoV12Actions";
+import type { PersonagemACompletar } from "../../_shell/JanelasDaMesa";
 
 export function JanelaNovoPersonagem({
   campaignId,
+  completar = null,
   onAbrirFicha,
   onFechar,
 }: {
   campaignId: string;
+  completar?: PersonagemACompletar | null;
   onAbrirFicha: (characterId: string) => void;
   onFechar: () => void;
 }) {
@@ -47,7 +50,7 @@ export function JanelaNovoPersonagem({
   return (
     <JanelaInterna
       aberta
-      titulo="Novo personagem"
+      titulo={completar ? `Completar ${completar.nome}` : "Novo personagem"}
       largura={760}
       altura={680}
       onFechar={onFechar}
@@ -70,6 +73,7 @@ export function JanelaNovoPersonagem({
           <AssistenteV12
             campaignId={campaignId}
             catalogos={catalogos}
+            completar={completar}
             onSair={onFechar}
             onConcluir={(characterId) => { onFechar(); onAbrirFicha(characterId); }}
           />
