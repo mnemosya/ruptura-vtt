@@ -285,10 +285,10 @@ Entregáveis:
 - [x] Subclasse obrigatória no Ranking E;
 - [x] avanços de D, C, B, A, S e S+ (magias concedidas ficam pendentes até o catálogo v1.2);
 - [x] PA igual a 4 no C e 5 no S;
-- [ ] recursos derivados dependentes da Classe;
+- [x] recursos derivados dependentes da Classe (DEC-003);
 - [ ] progressão server-side atômica; aplicada no servidor e gravada em uma operação, mas a RPC de ficha ainda aceita payload completo do controlador (ver relatório);
 - [x] Modo Evolução orientado pelo próximo Ranking (personagens v1.2);
-- [ ] PM e Talentos deixam de ser fonte de verdade para v2.
+- [x] PM e Talentos deixam de ser fonte de verdade para v2 (o payload v2 não os tem, a RPC rejeita Talentos e o Modo Evolução livre não aparece para v1.2).
 
 Critério de saída:
 
@@ -304,16 +304,18 @@ Fluxo:
 Conceito → Trajetória → Classe → Revisão → Bando
 ```
 
+Implementado como Conceito → Trajetória → Classe → Equipamento → Revisão (`AssistenteV12`); o Bando é a Fase 8. A criação anterior segue disponível em "Regras anteriores" até o corte da Fase 7.
+
 Entregáveis:
 
-- [ ] remoção do point-buy genérico do fluxo v1.2;
-- [ ] remoção do orçamento genérico de 25 Perícias;
-- [ ] remoção dos 3 pontos livres de Vertente;
-- [ ] remoção de Talento inicial;
-- [ ] equipamento e aretz definidos pela Classe;
-- [ ] retomada de draft compatível com o schema v2;
-- [ ] revisão final mostra todas as escolhas e pendências;
-- [ ] servidor recalcula e valida o payload enviado pelo cliente.
+- [x] remoção do point-buy genérico do fluxo v1.2;
+- [x] remoção do orçamento genérico de 25 Perícias;
+- [x] remoção dos 3 pontos livres de Vertente;
+- [x] remoção de Talento inicial;
+- [x] equipamento e aretz definidos pela Classe (somados ao bônus de Recursos);
+- [x] retomada de draft compatível com o schema v2;
+- [x] revisão final mostra todas as escolhas e pendências;
+- [x] servidor recalcula e valida o payload enviado pelo cliente (o cliente envia escolhas; servidor e RPC validam).
 
 Critério de saída:
 
