@@ -204,8 +204,7 @@
               "falar",
               "gestos_rapidos",
               "soltar_alvo",
-              "apagar_fogo",
-              "conter_sangramento"
+              "apagar_fogo"
             ]
           },
           "uniqueItems": true
@@ -635,8 +634,7 @@
                           "falar",
                           "gestos_rapidos",
                           "soltar_alvo",
-                          "apagar_fogo",
-                          "conter_sangramento"
+                          "apagar_fogo"
                         ]
                       },
                       "uniqueItems": true
@@ -671,8 +669,7 @@
                         "falar",
                         "gestos_rapidos",
                         "soltar_alvo",
-                        "apagar_fogo",
-                        "conter_sangramento"
+                        "apagar_fogo"
                       ]
                     },
                     "requisito": {

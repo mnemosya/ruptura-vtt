@@ -80,7 +80,7 @@ export function ActionsTab({
   penalidadeDefensivaAtual: number;
   catalogError: string | null;
   executingActionId: string | null;
-  onExecute: (actionId: string) => void;
+  onExecute: (actionId: string, opcaoInteracao?: string) => void;
   /** undefined para uma ação = sem rolagem simples integrada disponível (sem `teste.pericias`). */
   onRoll: (actionId: string) => void;
   /** Candidatos de arma para "Atacar" (armas empunhadas + "Ataque desarmado"). */
@@ -160,7 +160,7 @@ export function ActionsTab({
             key={action.id}
             action={action}
             executing={executingActionId === action.id}
-            onExecute={() => onExecute(action.id)}
+            onExecute={(opcao) => onExecute(action.id, opcao)}
             onRoll={() => onRoll(action.id)}
             attackWeaponOptions={temEfeitoAtaque(action) ? attackWeaponOptions : null}
             selectedAttackWeaponId={selectedAttackWeaponId}
@@ -206,7 +206,7 @@ function ActionCard({
 }: {
   action: ActionConsoleItem;
   executing: boolean;
-  onExecute: () => void;
+  onExecute: (opcaoInteracao?: string) => void;
   onRoll: () => void;
   attackWeaponOptions: AttackWeaponOption[] | null;
   selectedAttackWeaponId: string | null;
@@ -219,6 +219,9 @@ function ActionCard({
 }) {
   const podeRolar = action.rollSkillId != null || (attackWeaponOptions != null && attackPreview?.skill != null);
   const executeEnabled = action.enabled && !executing;
+  // Interagir sobre uma condição ativa (v1.2): vazio = outra interação, sem efeito automático.
+  const [opcaoInteracao, setOpcaoInteracao] = useState("");
+  const opcaoValida = action.interactionOptions.some((o) => o.id === opcaoInteracao) ? opcaoInteracao : "";
   return (
     <div
       data-testid={`acao-item-${action.slug}`}
@@ -337,10 +340,26 @@ function ActionCard({
         </p>
       )}
 
+      {action.interactionOptions.length > 0 && (
+        <label style={{ fontSize: 12, display: "flex", gap: 6, alignItems: "center" }}>
+          Sobre o quê:
+          <select
+            data-testid={`acao-opcao-${action.slug}`}
+            value={opcaoValida}
+            onChange={(e) => setOpcaoInteracao(e.target.value)}
+          >
+            {action.interactionOptions.map((o) => (
+              <option key={o.id} value={o.id}>{o.nome}</option>
+            ))}
+            <option value="">Outra interação</option>
+          </select>
+        </label>
+      )}
+
       <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
         <button
           data-testid={`acao-executar-${action.slug}`}
-          onClick={onExecute}
+          onClick={() => onExecute(opcaoValida || undefined)}
           disabled={!executeEnabled}
           style={{ ...buttonStyle, opacity: executeEnabled ? 1 : 0.4, cursor: executeEnabled ? "pointer" : "not-allowed" }}
         >

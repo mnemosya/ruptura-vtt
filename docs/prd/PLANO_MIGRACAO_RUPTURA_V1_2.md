@@ -336,7 +336,7 @@ Condições e combate:
 - [ ] ação Esconder-se;
 - [ ] ação Ataque Secundário;
 - [ ] Acessar Trama por 1 PA;
-- [x] Interagir reduz um nível de Queimando (Apagar fogo) e contém Sangrando (Conter sangramento);
+- [x] Interagir reduz um nível de Queimando e contém Sangrando (opções da própria Interagir; Apagar fogo arquivada);
 - [ ] revisão da equivalência das demais ações.
 
 Magias:
@@ -729,6 +729,6 @@ Essa entrega deve terminar antes da implementação do novo wizard.
 - recuperar PV reduz Contundido e Sangrando em 1 nível; Envenenado não sai mais por cura;
 - Sangrando agrava no fim da rodada a partir da rodada seguinte à aplicação, salvo se contido;
 - Sufocando: teste de Vigor com CD 6 crescente, Inconsciente na falha e morte na falha seguinte; um novo episódio recomeça em CD 6;
-- ações: Apagar fogo reduz Queimando em 1 nível; nova ação Conter sangramento (1 PA, variação de Interagir). Ambas só cobram PA quando mudam algo;
+- ações: enquanto Queimando ou Sangrando, Interagir pergunta sobre o que age: apagar o fogo (Queimando −1 nível), conter o sangramento (não agrava nesta rodada) ou outra interação. A ação antiga Apagar fogo foi arquivada (continua no banco);
 - testes: `test:ruleset-v12-condicoes` e `test:action-console` ampliados;
-- seed pendente de aplicação: 2 documentos novos (`condition:oculto`, `combat_action:conter_sangramento`) e 18 atualizados.
+- seed aplicado no remoto em 01/10/2026: `condition:oculto` criada; 17 condições, Interagir e Apagar fogo (arquivada) atualizadas.

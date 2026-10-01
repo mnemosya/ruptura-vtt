@@ -97,6 +97,8 @@ export interface ActionConsoleItem {
   reactionPenalty: number;
   reactionWarning?: string;
   sortOrder: number;
+  /** Opções de Interagir sobre condições ativas (vazio quando não há). */
+  interactionOptions: InteractionOption[];
 }
 
 export interface ActionItemRequirement {
@@ -449,9 +451,8 @@ const AUTOMATED_EFFECT_TYPES = [
   "remover_condicao",
   "remover_condicoes",
   "remover_restricao_movimento",
-  // RUPTURA v1.2: Interagir reduz Queimando em 1 nível e contém Sangrando.
-  "reduzir_nivel_condicao",
-  "conter_condicao",
+  // RUPTURA v1.2: opções de Interagir sobre condições (aplicadas só quando escolhidas).
+  "opcoes_interacao",
   // Checkpoint v0.64 — postura vira estado ativo real (ver aplicarOuEncerrarPostura).
   "aplicar_postura",
 ] as const;
@@ -501,8 +502,7 @@ const EFFECT_TYPE_LABELS: Record<string, string> = {
   remover_condicao: "Remove condição",
   remover_condicoes: "Remove condições",
   remover_restricao_movimento: "Remove restrição de movimento (Agarrado/Imobilizado)",
-  reduzir_nivel_condicao: "Reduz o nível da condição",
-  conter_condicao: "Contém o agravamento da condição nesta rodada",
+  opcoes_interacao: "Pode agir sobre uma condição ativa (escolha ao usar)",
   aplicar_postura: "Aplica/encerra postura como estado ativo (modificadores refletidos automaticamente nas rolagens)",
   habilitar_deslocamento_em_partes: "Deslocamento fracionável (não automatizado)",
   incrementar_custo_por_repeticao_no_turno: "Repetição no turno incrementa custo (não automatizado)",
@@ -818,6 +818,7 @@ export function buildActionConsoleItems(
           ? `Sem Reação: esta defesa será realizada com penalidade ${reactionUse.penaltyApplied}.`
           : undefined,
         sortOrder: index,
+        interactionOptions: getInteractionOptions(action, character.condicoes_ativas ?? []),
       } satisfies ActionConsoleItem;
     });
 }
@@ -833,6 +834,8 @@ export interface ExecuteActionResult {
   reactionBefore: number;
   reactionAfter: number;
   removedConditions: string[];
+  /** Interagir sobre condição: o que mudou (ex.: "Queimando 1/3", "Sangrando contido"). */
+  interactionChanges?: string[];
   automatedEffects: string[];
   pendingEffects: string[];
   usedReaction: boolean;
@@ -883,6 +886,34 @@ function removeConditionsBySlug(condicoes: ActiveCondition[], slugs: string[], n
   return { next, removed };
 }
 
+export interface InteractionOption {
+  id: string;
+  nome: string;
+  descricao?: string;
+  condicao: string;
+  efeito: { tipo: string; [key: string]: unknown };
+}
+
+/**
+ * Opções de `opcoes_interacao` da ação disponíveis agora: só as cuja
+ * condição está ativa no personagem (ex.: Interagir → apagar o fogo
+ * enquanto Queimando).
+ */
+export function getInteractionOptions(action: CombatActionContent, activeConditions: ActiveCondition[]): InteractionOption[] {
+  const ativas = activeConditionSlugs(activeConditions);
+  const out: InteractionOption[] = [];
+  for (const efeito of getPayloadEffects(action)) {
+    if (efeito.tipo !== "opcoes_interacao" || !Array.isArray(efeito.opcoes)) continue;
+    for (const raw of efeito.opcoes as Record<string, unknown>[]) {
+      const efeitoOpcao = raw?.efeito as InteractionOption["efeito"] | undefined;
+      if (typeof raw?.id !== "string" || typeof raw.nome !== "string" || typeof raw.condicao !== "string" || !efeitoOpcao) continue;
+      if (!ativas.has(normalizeConditionSlug(raw.condicao))) continue;
+      out.push({ id: raw.id, nome: raw.nome, descricao: typeof raw.descricao === "string" ? raw.descricao : undefined, condicao: raw.condicao, efeito: efeitoOpcao });
+    }
+  }
+  return out;
+}
+
 /**
  * Efeitos de nível das condições v1.2 no próprio personagem:
  * `reduzir_nivel_condicao` tira `niveis` (padrão 1) e encerra abaixo de 1;
@@ -927,6 +958,8 @@ export function executeActionOnCharacter(
   turnWindow?: TurnWindow | null,
   narratorOverride = false,
   activeEffects: ActiveEffect[] = [],
+  /** Interagir: id da opção de `opcoes_interacao` escolhida (ex.: "apagar_fogo"). */
+  opcaoInteracao?: string,
 ): ExecuteActionResult {
   const cost = getActionCost(action);
   const paBefore = Math.max(0, (derivedPaMax ?? 0) - (character.estado_jogo?.pa_gastos ?? 0));
@@ -975,9 +1008,7 @@ export function executeActionOnCharacter(
   // continuam cobrando ao executar como já funcionava.
   const isPureRemovalAction =
     payloadEffects.length > 0 &&
-    payloadEffects.every((e) =>
-      e.tipo === "remover_condicao" || e.tipo === "remover_condicoes" || e.tipo === "remover_restricao_movimento"
-      || e.tipo === "reduzir_nivel_condicao" || e.tipo === "conter_condicao");
+    payloadEffects.every((e) => e.tipo === "remover_condicao" || e.tipo === "remover_condicoes" || e.tipo === "remover_restricao_movimento");
 
   const removal = getActionRemovalEffects(action);
   let removedConditions: string[] = [];
@@ -987,11 +1018,15 @@ export function executeActionOnCharacter(
     characterAposRemocao = { ...character, condicoes_ativas: result.next };
     removedConditions = result.removed;
   }
-  // Níveis v1.2: reduzir (Queimando) e conter (Sangrando) contam como
-  // efeito real para a cobrança de PA, como a remoção acima.
-  const levelChanges = applyConditionLevelEffects(characterAposRemocao, payloadEffects, nowIso);
-  characterAposRemocao = levelChanges.character;
-  removedConditions = [...removedConditions, ...levelChanges.changed];
+  // Interagir sobre uma condição (v1.2): a opção escolhida aplica o
+  // efeito dela (apagar o fogo, conter o sangramento) no próprio personagem.
+  const opcao = opcaoInteracao ? getInteractionOptions(action, character.condicoes_ativas ?? []).find((o) => o.id === opcaoInteracao) : undefined;
+  let interactionChanges: string[] = [];
+  if (opcao) {
+    const levelChanges = applyConditionLevelEffects(characterAposRemocao, [opcao.efeito], nowIso);
+    characterAposRemocao = levelChanges.character;
+    interactionChanges = levelChanges.changed;
+  }
 
   const deveCobrarPA = !isPureRemovalAction || removedConditions.length > 0;
 
@@ -1086,8 +1121,7 @@ export function executeActionOnCharacter(
       efeito.tipo === "remover_condicao" ||
       efeito.tipo === "remover_condicoes" ||
       efeito.tipo === "remover_restricao_movimento" ||
-      efeito.tipo === "reduzir_nivel_condicao" ||
-      efeito.tipo === "conter_condicao" ||
+      efeito.tipo === "opcoes_interacao" ||
       efeito.tipo === "aplicar_postura" ||
       (efeito.tipo === "modificador" && posturaSlug != null);
     if (tratadoComoAutomatico) {
@@ -1117,6 +1151,7 @@ export function executeActionOnCharacter(
     reactionBefore,
     reactionAfter,
     removedConditions,
+    interactionChanges,
     automatedEffects,
     pendingEffects,
     usedReaction,

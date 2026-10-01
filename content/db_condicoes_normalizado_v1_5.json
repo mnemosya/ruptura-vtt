@@ -733,7 +733,7 @@
       "categoria": "condicao",
       "categoria_label": "Condição",
       "descricao_curta": "No fim da rodada sofre 1d6/1d8/1d12 ígneo. Interagir 1 PA reduz 1 nível.",
-      "descricao_longa": "Pode alcançar 3 níveis. No fim da rodada sofre 1d6, 1d8 ou 1d12 de dano ígneo conforme o nível, reduzido pela MIT da região atingida ou do Tronco. Interagir 1 PA reduz 1 nível; submersão ou meio apropriado encerra.",
+      "descricao_longa": "Pode alcançar 3 níveis. No fim da rodada sofre 1d6, 1d8 ou 1d12 de dano ígneo conforme o nível, reduzido pela MIT da região atingida ou do Tronco. Interagir (1 PA, apagar o fogo) reduz 1 nível; submersão ou meio apropriado encerra.",
       "tags": [
         "acao_remove",
         "dano_continuo",
@@ -744,8 +744,8 @@
       "remove_por": [],
       "acoes_habilitadas": [
         {
-          "acao": "apagar_fogo",
-          "base_acao": "interagir",
+          "acao": "interagir",
+          "opcao": "apagar_fogo",
           "custo_pa": 1,
           "reduzir_niveis": 1
         }
@@ -765,8 +765,8 @@
           },
           {
             "tipo": "habilitar_acao",
-            "acao": "apagar_fogo",
-            "base_acao": "interagir",
+            "acao": "interagir",
+            "opcao": "apagar_fogo",
             "custo_pa": 1,
             "reduzir_niveis": 1
           }
@@ -835,7 +835,7 @@
       "categoria": "condicao",
       "categoria_label": "Condição",
       "descricao_curta": "No fim da rodada sofre 1d6/1d8/1d12 físico e aumenta 1 nível. Cura reduz 1 nível.",
-      "descricao_longa": "Pode alcançar 3 níveis. No fim da rodada sofre 1d6, 1d8 ou 1d12 de dano físico conforme o nível, ignorando MIT, e aumenta 1 nível a partir da rodada seguinte à aplicação. Interagir 1 PA contém o agravamento naquela rodada. Recuperar ao menos 1 PV reduz 1 nível.",
+      "descricao_longa": "Pode alcançar 3 níveis. No fim da rodada sofre 1d6, 1d8 ou 1d12 de dano físico conforme o nível, ignorando MIT, e aumenta 1 nível a partir da rodada seguinte à aplicação. Interagir (1 PA, conter o sangramento) contém o agravamento naquela rodada. Recuperar ao menos 1 PV reduz 1 nível.",
       "tags": [
         "dano_continuo",
         "fim_de_rodada",
@@ -852,8 +852,8 @@
       ],
       "acoes_habilitadas": [
         {
-          "acao": "conter_sangramento",
-          "base_acao": "interagir",
+          "acao": "interagir",
+          "opcao": "conter_sangramento",
           "custo_pa": 1
         }
       ],
@@ -882,8 +882,8 @@
           },
           {
             "tipo": "habilitar_acao",
-            "acao": "conter_sangramento",
-            "base_acao": "interagir",
+            "acao": "interagir",
+            "opcao": "conter_sangramento",
             "custo_pa": 1
           }
         ]

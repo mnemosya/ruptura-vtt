@@ -175,8 +175,8 @@
         "hash_sha256": "36605aa197a975ffc807757e9a845dd985bacdb43a12f08a201372c17503b8dd",
         "size_bytes": 46513,
         "counts": {
-          "acoes": 29,
-          "total_registros_meta": 29
+          "acoes": 28,
+          "total_registros_meta": 28
         }
       },
       "schema": {

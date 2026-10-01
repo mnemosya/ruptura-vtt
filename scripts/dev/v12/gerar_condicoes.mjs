@@ -83,26 +83,26 @@ effect("ofuscado", [
 update("queimando", {
   nivel_maximo: 3,
   descricao_curta: "No fim da rodada sofre 1d6/1d8/1d12 ígneo. Interagir 1 PA reduz 1 nível.",
-  descricao_longa: "Pode alcançar 3 níveis. No fim da rodada sofre 1d6, 1d8 ou 1d12 de dano ígneo conforme o nível, reduzido pela MIT da região atingida ou do Tronco. Interagir 1 PA reduz 1 nível; submersão ou meio apropriado encerra.",
-  acoes_habilitadas: [{ acao: "apagar_fogo", base_acao: "interagir", custo_pa: 1, reduzir_niveis: 1 }],
+  descricao_longa: "Pode alcançar 3 níveis. No fim da rodada sofre 1d6, 1d8 ou 1d12 de dano ígneo conforme o nível, reduzido pela MIT da região atingida ou do Tronco. Interagir (1 PA, apagar o fogo) reduz 1 nível; submersão ou meio apropriado encerra.",
+  acoes_habilitadas: [{ acao: "interagir", opcao: "apagar_fogo", custo_pa: 1, reduzir_niveis: 1 }],
 });
 effect("queimando", [
   { tipo: "dano_fim_de_rodada", dano_por_nivel: { "1": "1d6", "2": "1d8", "3": "1d12" }, tipo_dano: "igneo", aplica_mit: true, regiao_fallback: "tronco" },
-  { tipo: "habilitar_acao", acao: "apagar_fogo", base_acao: "interagir", custo_pa: 1, reduzir_niveis: 1 },
+  { tipo: "habilitar_acao", acao: "interagir", opcao: "apagar_fogo", custo_pa: 1, reduzir_niveis: 1 },
 ]);
 
 update("sangrando", {
   nivel_maximo: 3,
   descricao_curta: "No fim da rodada sofre 1d6/1d8/1d12 físico e aumenta 1 nível. Cura reduz 1 nível.",
-  descricao_longa: "Pode alcançar 3 níveis. No fim da rodada sofre 1d6, 1d8 ou 1d12 de dano físico conforme o nível, ignorando MIT, e aumenta 1 nível a partir da rodada seguinte à aplicação. Interagir 1 PA contém o agravamento naquela rodada. Recuperar ao menos 1 PV reduz 1 nível.",
+  descricao_longa: "Pode alcançar 3 níveis. No fim da rodada sofre 1d6, 1d8 ou 1d12 de dano físico conforme o nível, ignorando MIT, e aumenta 1 nível a partir da rodada seguinte à aplicação. Interagir (1 PA, conter o sangramento) contém o agravamento naquela rodada. Recuperar ao menos 1 PV reduz 1 nível.",
   remove_por: [{ tipo: "recuperar_pv", minimo_pv: 1, reduzir_niveis: 1 }],
-  acoes_habilitadas: [{ acao: "conter_sangramento", base_acao: "interagir", custo_pa: 1 }],
+  acoes_habilitadas: [{ acao: "interagir", opcao: "conter_sangramento", custo_pa: 1 }],
 });
 effect("sangrando", [
   { tipo: "dano_fim_de_rodada", dano_por_nivel: { "1": "1d6", "2": "1d8", "3": "1d12" }, tipo_dano: "fisico", ignora_mit: true },
   { tipo: "agravar_fim_de_rodada", niveis: 1, inicia_na_rodada_seguinte: true, impedido_por: "conter_sangramento" },
   { tipo: "reduzir_ao_recuperar_pv", minimo_pv: 1, niveis: 1 },
-  { tipo: "habilitar_acao", acao: "conter_sangramento", base_acao: "interagir", custo_pa: 1 },
+  { tipo: "habilitar_acao", acao: "interagir", opcao: "conter_sangramento", custo_pa: 1 },
 ]);
 
 update("sufocando", {

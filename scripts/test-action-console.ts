@@ -109,11 +109,12 @@ function execute(slug: string, character: Character) {
   );
 }
 
-assert.equal(actions.length, 29, "O DB deve conter 29 ações canônicas.");
+assert.equal(actions.length, 28, "O DB deve conter 28 ações (Apagar fogo arquivada na v1.2).");
+assert.equal(action("apagar_fogo").status, "archived", "v1.2: apagar o fogo é opção de Interagir.");
 
 const noConditions = visibleSlugs(characterWith());
 assert.equal(noConditions.length, 24, "Sem condições, devem existir 24 ações visíveis.");
-for (const hidden of ["levantar", "escapar", "soltar_alvo", "apagar_fogo", "conter_sangramento"]) {
+for (const hidden of ["levantar", "escapar", "soltar_alvo", "apagar_fogo"]) {
   assert.ok(!noConditions.includes(hidden), `${hidden} deve ficar oculta sem condição.`);
 }
 
@@ -122,7 +123,6 @@ const conditionalCases = [
   { conditionId: "agarrado", name: "Agarrado", action: "escapar", pa: 2, removed: "agarrado" },
   { conditionId: "imobilizado", name: "Imobilizado", action: "escapar", pa: 2, removed: "imobilizado" },
   { conditionId: "agarrando", name: "Agarrando", action: "soltar_alvo", pa: 0, removed: "agarrando" },
-  { conditionId: "queimando", name: "Queimando", action: "apagar_fogo", pa: 1, removed: "queimando" },
 ] as const;
 
 for (const testCase of conditionalCases) {
@@ -149,23 +149,32 @@ for (const testCase of conditionalCases) {
   );
 }
 
-// v1.2: Apagar fogo reduz Queimando em 1 nível; Conter sangramento só marca a rodada.
+// v1.2: Interagir oferece apagar o fogo / conter o sangramento enquanto a condição está ativa.
+const interagirSemCondicao = consoleItems(characterWith()).find((item) => item.slug === "interagir");
+assert.deepEqual(interagirSemCondicao?.interactionOptions, [], "Sem condição, Interagir não tem opções.");
+assert.ok(!visibleSlugs(characterWith([activeCondition("Queimando", "queimando")])).includes("apagar_fogo"), "Apagar fogo arquivada não aparece.");
+
 const queimando2 = characterWith([{ ...activeCondition("Queimando", "queimando"), nivel: 2, nivelMaximo: 3 }]);
-const apagou = execute("apagar_fogo", queimando2);
-assert.equal(apagou.paBefore - apagou.paAfter, 1, "Apagar fogo custa 1 PA.");
-const queimandoDepois = apagou.character.condicoes_ativas?.find((c) => c.conditionId === "queimando");
-assert.equal(queimandoDepois?.ativa, true);
-assert.equal(queimandoDepois?.nivel, 1, "Apagar fogo reduz Queimando 2 → 1.");
+const interagirQueimando = consoleItems(queimando2).find((item) => item.slug === "interagir");
+assert.deepEqual(interagirQueimando?.interactionOptions.map((o) => o.id), ["apagar_fogo"]);
+const executeInteragir = (c: Character, opcao?: string) =>
+  executeActionOnCharacter(c, action("interagir"), 3, 1, "2026-07-02T13:00:00.000Z", undefined, undefined, false, [], opcao);
+const apagou = executeInteragir(queimando2, "apagar_fogo");
+assert.equal(apagou.paBefore - apagou.paAfter, 1, "Interagir custa 1 PA.");
+assert.equal(apagou.character.condicoes_ativas?.find((c) => c.conditionId === "queimando")?.nivel, 1, "Apagar o fogo reduz Queimando 2 → 1.");
+const outraCoisa = executeInteragir(queimando2);
+assert.equal(outraCoisa.character.condicoes_ativas?.find((c) => c.conditionId === "queimando")?.nivel, 2, "Interagir com outra coisa não mexe em Queimando.");
+assert.equal(outraCoisa.paBefore - outraCoisa.paAfter, 1);
+const queimando1 = executeInteragir(characterWith([activeCondition("Queimando", "queimando")]), "apagar_fogo");
+assert.equal(queimando1.character.condicoes_ativas?.[0]?.ativa, false, "Queimando 1 → apagado.");
 
 const sangrando = { ...characterWith([{ ...activeCondition("Sangrando", "sangrando"), nivel: 1, nivelMaximo: 3 }]), current_round: 4 };
-assert.ok(visibleSlugs(sangrando).includes("conter_sangramento"), "Sangrando habilita Conter sangramento.");
-const contido = execute("conter_sangramento", sangrando);
-assert.equal(contido.paBefore - contido.paAfter, 1, "Conter sangramento custa 1 PA.");
+assert.deepEqual(consoleItems(sangrando).find((item) => item.slug === "interagir")?.interactionOptions.map((o) => o.id), ["conter_sangramento"]);
+const contido = executeInteragir(sangrando, "conter_sangramento");
 const sangrandoDepois = contido.character.condicoes_ativas?.find((c) => c.conditionId === "sangrando");
 assert.equal(sangrandoDepois?.contidaNaRodada, 4);
 assert.equal(sangrandoDepois?.ativa, true, "Conter não remove Sangrando.");
-const contidoDeNovo = execute("conter_sangramento", contido.character);
-assert.equal(contidoDeNovo.paBefore - contidoDeNovo.paAfter, 0, "Conter de novo na mesma rodada não cobra PA.");
+assert.equal(executeInteragir(sangrando, "apagar_fogo").character.condicoes_ativas?.[0]?.contidaNaRodada, undefined, "Opção sem a condição ativa é ignorada.");
 
 const manualFallen = characterWith([activeCondition("Caído")]);
 assert.ok(visibleSlugs(manualFallen).includes("levantar"), "Nome manual Caído deve normalizar para caido.");
@@ -226,7 +235,7 @@ const compoundItem = consoleItems(characterWith()).find((item) => item.slug === 
 assert.equal(compoundItem?.enabled, false);
 assert.match(compoundItem?.disabledReason ?? "", /Custo composto/);
 
-for (const conditional of ["levantar", "escapar", "soltar_alvo", "apagar_fogo", "conter_sangramento"]) {
+for (const conditional of ["levantar", "escapar", "soltar_alvo"]) {
   assert.equal(
     validateConditionalActionConsistency(action(conditional), conditions),
     undefined,

@@ -7,7 +7,7 @@
     "versao_schema": "1.1.0",
     "status_padrao": "published",
     "gerado_em": "2026-06-25",
-    "total_registros": 29,
+    "total_registros": 28,
     "observacoes": [
       "Catálogo de ações extraído do capítulo de Combate.",
       "Ações defensivas são tipo reacao.",
@@ -106,8 +106,7 @@
       "falar",
       "gestos_rapidos",
       "soltar_alvo",
-      "apagar_fogo",
-      "conter_sangramento"
+      "apagar_fogo"
     ],
     "tags_rolagem": [
       "acao",
@@ -614,19 +613,45 @@
         "diversa",
         "objeto"
       ],
-      "descricao_curta": "Manipula objeto, dispositivo ou elemento de cena.",
-      "descricao_longa": "Manipula objeto, dispositivo ou elemento de cena.",
+      "descricao_curta": "Manipula objeto, dispositivo ou elemento de cena; também apaga o fogo (Queimando) ou contém um sangramento (Sangrando).",
+      "descricao_longa": "Manipula objeto, dispositivo ou elemento de cena. Enquanto Queimando, Interagir pode abafar as chamas e reduz Queimando em 1 nível. Enquanto Sangrando, Interagir pode pressionar o ferimento: Sangrando não aumenta de nível no fim desta rodada (o dano continua).",
       "payload_automacao": {
         "efeitos": [
           {
             "tipo": "resolver_acao"
+          },
+          {
+            "tipo": "opcoes_interacao",
+            "opcoes": [
+              {
+                "id": "apagar_fogo",
+                "nome": "Apagar o fogo",
+                "condicao": "queimando",
+                "descricao": "Reduz Queimando em 1 nível.",
+                "efeito": {
+                  "tipo": "reduzir_nivel_condicao",
+                  "condicao": "queimando",
+                  "niveis": 1
+                }
+              },
+              {
+                "id": "conter_sangramento",
+                "nome": "Conter o sangramento",
+                "condicao": "sangrando",
+                "descricao": "Sangrando não aumenta de nível no fim desta rodada.",
+                "efeito": {
+                  "tipo": "conter_condicao",
+                  "condicao": "sangrando"
+                }
+              }
+            ]
           }
         ]
       },
       "status": "published",
-      "versao": "1.0.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25",
+      "updated_at": "2026-10-01",
       "teste": {
         "tipo": "opcional_narrador",
         "pericias": [
@@ -1918,7 +1943,7 @@
       "id": "apagar_fogo",
       "slug": "apagar_fogo",
       "nome": "Apagar fogo",
-      "categoria": "diversa",
+      "categoria": "movimento",
       "tipo": "acao",
       "custo": {
         "tipo": "pa",
@@ -1928,57 +1953,23 @@
       "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
       "visibilidade": "condicao:queimando",
       "tags": [
-        "diversa",
+        "movimento",
         "acao_remove",
         "igneo"
       ],
-      "descricao_curta": "Interagir (1 PA): reduz Queimando em 1 nível.",
-      "descricao_longa": "Variação de Interagir. Abafar, rolar no chão ou usar um meio apropriado reduz Queimando em 1 nível; abaixo do nível 1 a condição termina. Submersão ou meio que extinga o fogo encerra a condição a critério do narrador.",
+      "descricao_curta": "Arquivada na v1.2: apagar o fogo é uma opção de Interagir.",
+      "descricao_longa": "Remove ou tenta remover Queimando.",
       "payload_automacao": {
         "efeitos": [
           {
-            "tipo": "reduzir_nivel_condicao",
-            "condicao": "queimando",
-            "niveis": 1
+            "tipo": "remover_condicao",
+            "condicao": "queimando"
           }
         ]
       },
-      "status": "published",
+      "status": "archived",
       "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-10-01"
-    },
-    {
-      "id": "conter_sangramento",
-      "slug": "conter_sangramento",
-      "nome": "Conter sangramento",
-      "categoria": "diversa",
-      "tipo": "acao",
-      "custo": {
-        "tipo": "pa",
-        "valor": 1,
-        "base_acao": "interagir"
-      },
-      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
-      "visibilidade": "condicao:sangrando",
-      "tags": [
-        "diversa",
-        "acao_remove",
-        "fisico"
-      ],
-      "descricao_curta": "Interagir (1 PA): Sangrando não aumenta de nível no fim desta rodada.",
-      "descricao_longa": "Variação de Interagir. Pressionar o ferimento impede que Sangrando aumente de nível no fim da rodada; o dano da rodada continua. Recuperar ao menos 1 PV reduz a condição em 1 nível.",
-      "payload_automacao": {
-        "efeitos": [
-          {
-            "tipo": "conter_condicao",
-            "condicao": "sangrando"
-          }
-        ]
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-01",
       "updated_at": "2026-10-01"
     }
   ]

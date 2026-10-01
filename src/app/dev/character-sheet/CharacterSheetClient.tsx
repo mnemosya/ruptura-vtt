@@ -5150,7 +5150,7 @@ export default function CharacterSheetClient({
     if (saindoDaEvolucao) void persistEvolucao(characterRef.current);
   }
 
-  async function handleUseAction(actionId: string, armaId?: string | null, contexto?: ContextoAcaoToken) {
+  async function handleUseAction(actionId: string, armaId?: string | null, contexto?: ContextoAcaoToken, opcaoInteracao?: string) {
     const nowMs = Date.now();
     const lastExecution = lastActionExecutionRef.current;
     if (
@@ -5233,6 +5233,7 @@ export default function CharacterSheetClient({
       currentTurnWindow,
       false,
       activeEffects,
+      opcaoInteracao,
     );
     // Espadachim › Estocar (checkpoint talentos, Fase 4) — reduz o custo REAL de PA deste
     // Atacar em 1 (respeitando o mínimo do payload), 1/combate. Exige arma corpo a corpo
@@ -5336,7 +5337,7 @@ export default function CharacterSheetClient({
     // condição/toggle de postura persistem sozinhas quando conectado a
     // mesa/personagem salvo (ver persistAutomatedActionExecution acima).
     // Atacar entra na mesma regra quando consome munição/flecha (inventário mudou).
-    if (contexto || result.removedConditions.length > 0 || result.postureChange || attackLogFields.ammoConsumed) {
+    if (contexto || result.removedConditions.length > 0 || (result.interactionChanges?.length ?? 0) > 0 || result.postureChange || attackLogFields.ammoConsumed) {
       await persistAutomatedActionExecution(characterRef.current);
     }
 
@@ -5347,7 +5348,8 @@ export default function CharacterSheetClient({
         : result.reactionBefore !== result.reactionAfter
           ? `Reação ${result.reactionBefore} → ${result.reactionAfter}`
           : "sem custo";
-    const removidasResumo = result.removedConditions.length > 0 ? ` — removeu ${result.removedConditions.join(", ")}` : "";
+    const removidasResumo = (result.removedConditions.length > 0 ? ` — removeu ${result.removedConditions.join(", ")}` : "")
+      + ((result.interactionChanges?.length ?? 0) > 0 ? ` — ${result.interactionChanges!.join(", ")}` : "");
     const posturaResumo = result.postureChange
       ? result.postureChange.direction === "ativar"
         ? ` — ativou ${result.postureChange.conditionName}${result.postureChange.replacedConditionName ? ` (desligou ${result.postureChange.replacedConditionName})` : ""}`
@@ -6491,7 +6493,7 @@ export default function CharacterSheetClient({
           penalidadeDefensivaAtual={reactionAvailability.currentOverflowPenalty}
           catalogError={combatActionsError}
           executingActionId={executingActionId}
-          onExecute={handleUseAction}
+          onExecute={(id, opcao) => void handleUseAction(id, undefined, undefined, opcao)}
           onRoll={handleRollAction}
           attackWeaponOptions={attackWeaponCandidates.map((c) => ({ instanceId: c.instanceId, nome: c.nome }))}
           selectedAttackWeaponId={effectiveSelectedAttackWeaponId}
