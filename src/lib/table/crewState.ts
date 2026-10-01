@@ -57,3 +57,26 @@ export async function saveCampaignCrew(
   const row = Array.isArray(data) ? data[0] : data;
   return { revision: row.revision as number };
 }
+
+/**
+ * Aretz entre a carteira de um personagem e o caixa do bando, numa
+ * transação (RPC `transfer_crew_aretz`). `paraBando`: da carteira para o
+ * caixa; senão, do caixa para a carteira.
+ */
+export async function transferCrewAretz(
+  campaignId: string,
+  characterId: string,
+  amount: number,
+  paraBando: boolean,
+): Promise<{ saldoPersonagem: number; caixa: number; revision: number }> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("transfer_crew_aretz", {
+    p_campaign_id: campaignId,
+    p_character_id: characterId,
+    p_amount: Math.trunc(amount),
+    p_to_crew: paraBando,
+  });
+  if (error) throw new TableStorageError(error.message, error);
+  const r = data as { saldo_personagem: number; caixa: number; revision: number };
+  return { saldoPersonagem: Number(r.saldo_personagem), caixa: Number(r.caixa), revision: r.revision };
+}

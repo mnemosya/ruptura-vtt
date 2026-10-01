@@ -24,7 +24,7 @@ const base = newCrewStateV12({ nome: "Vórtex", simbolo: "espiral", principio: "
 
 await c.connect();
 await c.query("begin");
-for (const m of ["20261001180000_ruptura_v12_bando.sql", "20261001190000_ruptura_v12_bando_edicao_participantes.sql"]) await c.query(fs.readFileSync(`supabase/migrations/${m}`, "utf8"));
+for (const m of ["20261001180000_ruptura_v12_bando.sql", "20261001190000_ruptura_v12_bando_edicao_participantes.sql", "20261001200000_ruptura_v12_bando_transferir_aretz.sql"]) await c.query(fs.readFileSync(`supabase/migrations/${m}`, "utf8"));
 await c.query("delete from campaign_crews where campaign_id=$1", [CAMP]);
 
 await caso("narrador cria o bando (revisão 0 → 1)", async () => { await como(NARR); const r = (await salvar(base, 0)).rows[0]; assert(r.revision === 1, "rev 1"); });
@@ -54,6 +54,35 @@ await caso("estranho não lê", async () => {
 await caso("tabela publicada no realtime", async () => {
   await c.query("reset role"); const r = await c.query("select 1 from pg_publication_tables where pubname='supabase_realtime' and tablename='campaign_crews'"); assert(r.rowCount === 1, "publicada");
 });
+
+// ── Aretz entre personagem e caixa ─────────────────────────────────
+const CH = (await c.query("insert into characters(name,status,payload,campaign_id,owner_id) values('Tesoureira','active',$1,$2,$3) returning id",
+  [JSON.stringify({ nome: "Tesoureira", schema_version: 2, carteira: { aretz_informal: 500, cdi: 10, cdi_craqueada: 0 } }), CAMP, NARR])).rows[0].id as string;
+const SEM = (await c.query("insert into characters(name,status,payload,campaign_id,owner_id) values('Alheio','active',$1,$2,$3) returning id",
+  [JSON.stringify({ nome: "Alheio", carteira: { aretz_informal: 50, cdi: 0, cdi_craqueada: 0 } }), CAMP, NARR])).rows[0].id as string;
+await c.query("insert into character_controllers(character_id,campaign_id,user_id,permissao) values($1,$2,$3,'editar')", [CH, CAMP, PLAYER]);
+const transferir = (id: string, v: number, paraBando: boolean) => c.query("select transfer_crew_aretz($1,$2,$3,$4) r", [CAMP, id, v, paraBando]);
+const carteira = async (id: string) => (await c.query("select payload->'carteira' w from characters where id=$1", [id])).rows[0].w;
+const caixa = async () => Number((await c.query("select state->>'caixa' x from campaign_crews where campaign_id=$1", [CAMP])).rows[0].x);
+
+await caso("sem bando fundado falha", async () => { await como(PLAYER); await transferir(CH, 10, true); }, "ainda não fundou");
+await caso("jogador deposita e retira da própria personagem", async () => {
+  await como(NARR); await salvar(base, 0); await como(PLAYER);
+  const r1 = (await transferir(CH, 200, true)).rows[0].r; await c.query("reset role");
+  assert(r1.saldo_personagem === 300 && r1.caixa === 200 && r1.revision === 2, "depósito");
+  const w = await carteira(CH); assert(w.aretz_informal === 300 && w.cdi === 10, "carteira, CDI intacto");
+  await como(PLAYER); await transferir(CH, 50, false); await c.query("reset role");
+  assert((await carteira(CH)).aretz_informal === 350 && (await caixa()) === 150, "retirada");
+});
+await caso("saldo do personagem insuficiente", async () => { await como(NARR); await salvar(base, 0); await como(PLAYER); await transferir(CH, 501, true); }, "Saldo insuficiente");
+await caso("caixa insuficiente", async () => { await como(NARR); await salvar(base, 0); await como(PLAYER); await transferir(CH, 1, false); }, "Caixa insuficiente");
+await caso("valor zero falha", async () => { await como(NARR); await salvar(base, 0); await como(PLAYER); await transferir(CH, 0, true); }, "valor positivo");
+await caso("jogador não mexe na carteira de quem não controla", async () => { await como(NARR); await salvar(base, 0); await como(PLAYER); await transferir(SEM, 10, true); }, "não pode movimentar");
+await caso("narrador movimenta qualquer personagem", async () => {
+  await como(NARR); await salvar(base, 0); await transferir(SEM, 50, true); await c.query("reset role");
+  assert((await carteira(SEM)).aretz_informal === 0 && (await caixa()) === 50, "narrador");
+});
+await caso("estranho não transfere", async () => { await como(NARR); await salvar(base, 0); await como("00000000-0000-0000-0000-000000000001"); await transferir(CH, 10, true); }, "Só participantes");
 
 await c.query("rollback");
 await c.end();

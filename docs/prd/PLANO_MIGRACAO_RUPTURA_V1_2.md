@@ -393,7 +393,7 @@ Entregáveis:
 - [x] Ranking;
 - [x] Exposição;
 - [x] Alerta Imperial;
-- [ ] transferência bidirecional entre personagem e Bando;
+- [x] transferência bidirecional entre personagem e Bando (itens: inventário compartilhado, já existente; aretz: `transfer_crew_aretz`, em 01/10/2026);
 - [x] persistência isolada (decisão de 01/10/2026: tabela própria `campaign_crews`, 1:1 com a campanha);
 
 Opções comparadas em `docs/relatorios/BANDO_V1_2_OPCOES_ARMAZENAMENTO.md`; decidido: tabela própria.
@@ -854,3 +854,10 @@ Equivalência das demais ações:
 - motor ampliado com recrutamento, salários (dois intervalos sem pagamento encerram o contrato), coberturas e caixa (`test:ruleset-v12-bando`);
 - validado no navegador: fundação, duas operações (F → E "Listados" com 4 de Cobalto), uma pista de Exposição e a troca para o Inventário, sem erros. Ficou um bando de teste, "Vórtex (teste)", na campanha de desenvolvimento;
 - pendentes: transferência bidirecional de itens e aretz entre personagem e Bando no formato v1.2 (o inventário compartilhado continua funcionando como antes). A atualização ao vivo ficou pronta em 01/10/2026: `subscribeToCampaignCrewRealtime`, com recorte por campanha no cliente; validada no navegador com a janela sem foco (Cobalto alterado no banco, de E para D na tela em menos de 3 s).
+
+### 01/10/2026 — Aretz entre personagem e Bando (Fase 8)
+
+- migration `20261001200000_ruptura_v12_bando_transferir_aretz.sql`, aplicada no remoto: `transfer_crew_aretz` move aretz entre `carteira.aretz_informal` e o caixa do bando numa transação, com as duas linhas bloqueadas e sem saldo negativo. Quem pode: qualquer participante do lado do caixa, mas, do lado do personagem, só o narrador ou o controlador com permissão "editar". O CDI não é tocado, e a revisão do bando avança;
+- na Ficha, a seção Caixa coletivo ganhou "Carteira → caixa" e "Caixa → carteira", com a lista dos personagens que quem usa pode movimentar;
+- `testar_bando.ts`: 24 cenários no remoto, desfeitos;
+- validado no navegador: Hilda Norren Ⱥ 3.900 → 3.800 (caixa Ⱥ 100) → 3.900 (caixa Ⱥ 0), conferido no banco.

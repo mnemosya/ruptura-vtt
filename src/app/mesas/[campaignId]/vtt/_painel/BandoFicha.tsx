@@ -33,7 +33,7 @@ import {
   type CrewResult,
   type CrewStateV12,
 } from "../../../../../lib/rulesetV12";
-import { lerFichaBandoAction, salvarFichaBandoAction, type FichaBandoPainel } from "./acoes/bandoFichaPainel";
+import { lerFichaBandoAction, salvarFichaBandoAction, transferirAretzBandoAction, type FichaBandoPainel } from "./acoes/bandoFichaPainel";
 import { subscribeToCampaignCrewRealtime } from "../../../../../lib/realtime/tableRealtime";
 import { EstadoCarregando, EstadoErro } from "./Estados";
 import { BotaoTecnico, SecaoDossie } from "./ui/primitivas";
@@ -92,6 +92,8 @@ export function BandoFicha({ campaignId, visivel }: { campaignId: string; visive
   const [cobertura, setCobertura] = useState("documento_avulso");
   const [descCobertura, setDescCobertura] = useState("");
   const [valorCaixa, setValorCaixa] = useState("");
+  const [personagemId, setPersonagemId] = useState("");
+  const [valorTransf, setValorTransf] = useState("");
 
   const carregar = useCallback(async () => {
     setErroLeitura(null);
@@ -157,6 +159,20 @@ export function BandoFicha({ campaignId, visivel }: { campaignId: string; visive
   const ranking = estado && catalogo ? crewRankingV12(estado.cobalto, catalogo) : "F";
   const rankingInfo = catalogo?.rankings.find((r) => r.ranking === ranking);
   const proximo = catalogo?.rankings.find((r) => r.cobalto > (estado?.cobalto ?? 0));
+
+  async function transferir(paraBando: boolean) {
+    const valor = Number(valorTransf);
+    if (!personagemId || !valor) return;
+    setOcupado(true);
+    setAviso(null);
+    const r = await transferirAretzBandoAction(campaignId, personagemId, valor, paraBando);
+    setOcupado(false);
+    if (!r.ok || !r.dados) { setAviso(r.erro ?? "Falha ao transferir."); return; }
+    const nome = dados?.personagens.find((x) => x.id === personagemId)?.nome ?? "personagem";
+    setAviso(`${aretz(valor)} ${paraBando ? `de ${nome} para o caixa` : `do caixa para ${nome}`}. Caixa: ${aretz(r.dados.caixa)}; ${nome}: ${aretz(r.dados.saldoPersonagem)}.`);
+    setValorTransf("");
+    await carregar();
+  }
 
   if (erroLeitura) return <EstadoErro mensagem={erroLeitura} onTentarDeNovo={carregar} testId="painel-bando-ficha-erro" />;
   if (!dados || !catalogo) return <EstadoCarregando testId="painel-bando-ficha-carregando" />;
@@ -394,6 +410,17 @@ export function BandoFicha({ campaignId, visivel }: { campaignId: string; visive
           <BotaoTecnico ocupado={ocupado} desabilitado={!valorCaixa} testId="painel-bando-caixa-sair" onClick={() => void aplicar(adjustCashV12(estado, -Number(valorCaixa))).then((ok) => ok && setValorCaixa(""))}>Retirar</BotaoTecnico>
           <BotaoTecnico onClick={() => void carregar()} icone={<RefreshCw size={13} />}>Atualizar</BotaoTecnico>
         </Linha>
+        {dados.personagens.length > 0 && (
+          <Linha>
+            <Select label="Personagem" value={personagemId} onChange={setPersonagemId} options={[
+              { id: "", rotulo: "Escolher…" },
+              ...dados.personagens.map((x) => ({ id: x.id, rotulo: `${x.nome} · ${aretz(x.aretz)}` })),
+            ]} testId="painel-bando-transf-personagem" />
+            <Campo rotulo="Valor (Ⱥ)" valor={valorTransf} onMudar={(v) => setValorTransf(v.replace(/[^\d]/g, ""))} testId="painel-bando-transf-valor" />
+            <BotaoTecnico ocupado={ocupado} desabilitado={!personagemId || !valorTransf} testId="painel-bando-transf-para-bando" onClick={() => void transferir(true)}>Carteira → caixa</BotaoTecnico>
+            <BotaoTecnico ocupado={ocupado} desabilitado={!personagemId || !valorTransf} testId="painel-bando-transf-para-personagem" onClick={() => void transferir(false)}>Caixa → carteira</BotaoTecnico>
+          </Linha>
+        )}
       </SecaoDossie>
     </div>
   );

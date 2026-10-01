@@ -11,7 +11,8 @@
  */
 
 import catalogoBando from "../../../../../../../content/v12/db_bando_v1_2.json";
-import { getCampaignCrew, saveCampaignCrew } from "../../../../../../lib/table/crewState";
+import { getCampaignCrew, saveCampaignCrew, transferCrewAretz } from "../../../../../../lib/table/crewState";
+import { listCharactersForNarratorCampaign, listControlledCharacters } from "../../../../../../lib/character/storage";
 import type { CrewCatalogV12, CrewStateV12 } from "../../../../../../lib/rulesetV12";
 import { exigirAcessoPainel, mensagemDeErro, type ResultadoPainel } from "./comum";
 
@@ -24,18 +25,31 @@ export interface FichaBandoPainel {
   catalogo: CatalogoBandoPainel;
   /** `null` quando a campanha ainda não fundou um bando. */
   registro: { state: CrewStateV12; revision: number } | null;
+  /** Personagens cuja carteira quem lê pode movimentar (narrador: todos; jogador: os que edita). */
+  personagens: Array<{ id: string; nome: string; aretz: number }>;
 }
 
 export async function lerFichaBandoAction(campaignId: string): Promise<ResultadoPainel<FichaBandoPainel>> {
   const v = await exigirAcessoPainel(campaignId);
   if (!v.ok) return { ok: false, erro: v.erro };
   try {
-    const registro = await getCampaignCrew(campaignId);
+    const [registro, linhas] = await Promise.all([
+      getCampaignCrew(campaignId),
+      v.acesso.role === "narrator" ? listCharactersForNarratorCampaign(campaignId) : listControlledCharacters(campaignId, { somenteEditar: true }),
+    ]);
+    const personagens = linhas
+      .filter((l) => !l.archived_at)
+      .map((l) => {
+        const p = l.payload as { nome?: string; carteira?: { aretz_informal?: number } };
+        return { id: l.id, nome: p.nome ?? l.name, aretz: Number(p.carteira?.aretz_informal ?? 0) };
+      })
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
     return {
       ok: true,
       dados: {
         catalogo: catalogoBando as unknown as CatalogoBandoPainel,
         registro: registro ? { state: registro.state, revision: registro.revision } : null,
+        personagens,
       },
     };
   } catch (e) {
@@ -56,5 +70,22 @@ export async function salvarFichaBandoAction(
     return { ok: true, dados: "conflict" in r ? { conflito: true } : { revisao: r.revision } };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Falha ao salvar a ficha do bando.") };
+  }
+}
+
+/** Aretz entre a carteira de um personagem e o caixa do bando (atômico, no banco). */
+export async function transferirAretzBandoAction(
+  campaignId: string,
+  characterId: string,
+  valor: number,
+  paraBando: boolean,
+): Promise<ResultadoPainel<{ saldoPersonagem: number; caixa: number }>> {
+  const v = await exigirAcessoPainel(campaignId);
+  if (!v.ok) return { ok: false, erro: v.erro };
+  try {
+    const r = await transferCrewAretz(campaignId, characterId, valor, paraBando);
+    return { ok: true, dados: { saldoPersonagem: r.saldoPersonagem, caixa: r.caixa } };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Falha ao transferir aretz.") };
   }
 }
