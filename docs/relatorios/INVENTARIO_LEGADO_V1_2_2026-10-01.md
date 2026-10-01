@@ -43,10 +43,10 @@ Pelo plano, os personagens v1 e os rascunhos v1 serão apagados no corte da Fase
 
 | Característica | Onde | Ligação | Observação |
 |---|---|---|---|
-| Dossiê, Montar o Perfil, Caso Encerrado | Perito (Caçador), E/C/A | Investigação | Usa **Pistas** (até 3 no Dossiê). O capítulo 20 fala em **Evidências** e não define Pista. Não está claro se Pista é um registro próprio do Perito ou o mesmo que Evidência. |
-| Manobras Sociais | Face, F | Conflitos Sociais | Transforma o sucesso num **Teste de Interação** em Arrancar, Comprometer, Desviar, Expor etc. O capítulo 19 fala em **Concessão** e não usa "Teste de Interação". A Face tem uma característica própria "Testes de Interação" com essas regras. |
+| Dossiê, Montar o Perfil, Caso Encerrado | Perito (Caçador), E/C/A | Investigação | Usa **Pistas** (até 3 no Dossiê), registro próprio do Perito, distinto das Evidências do capítulo 20. |
+| Manobras Sociais | Face, F | Conflitos Sociais | Transforma o sucesso num **Teste de Interação** (mecânica própria da Face) em Arrancar, Comprometer, Desviar, Expor etc.; não substitui as Concessões do capítulo 19. |
 | Reserva de Confiança | Face, F | Conflitos Sociais | Recurso consumido pelas Manobras Sociais. |
-| Movimento | Ícone (Face), A | Conflitos Sociais | Fala em Concessões de um público; depende do mesmo vocabulário. |
+| Movimento | Ícone (Face), A | Conflitos Sociais | Fala em Concessões de um público. |
 
 ### Decisões (01/10/2026)
 
@@ -55,4 +55,4 @@ Pelo plano, os personagens v1 e os rascunhos v1 serão apagados no corte da Fase
 
 A página "AJUSTES APÓS O CAPÍTULO DE INVESTIGAÇÃO e LACUNAS PRIORIZADAS" no Notion continua sendo a lista de dúvidas abertas sobre o Perito e o Procurar Brecha.
 
-Implementar essas características na mesa depende dessas definições e da interface de Investigação. Por enquanto elas continuam como texto na ficha.
+Implementar essas características na mesa depende da interface de Investigação e de Conflitos Sociais. Por enquanto elas continuam como texto na ficha.
