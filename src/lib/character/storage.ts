@@ -38,7 +38,8 @@ import { CharacterStorageError } from "./storage.errors";
 import { validateCreationBudget } from "./createCharacterValidation";
 import { createInitialCharacter } from "./createCharacter";
 import type { Character, CharacterRecord, CharacterRulesPayload } from "./types";
-import { getCharacterRules, getContentDocument, getItem, listContentDocuments } from "../content";
+import { getCharacterRules } from "../content";
+import { resolveEffectiveList } from "../campaignContent/resolveEffectiveContent";
 import {
   buildCharacterV2,
   VERTENTES_V12,
@@ -315,42 +316,44 @@ export async function createCharacterV2(
   choices: CreationChoicesV12,
   options: { ownerLabel?: string; creationRequestId?: string } = {},
 ): Promise<CharacterRecord> {
-  // Opções de Trajetória: catálogo global publicado. Opções próprias da
-  // campanha ainda não entram por este caminho (a RPC já as aceitaria).
-  const [classeDoc, regrasDoc, antecedentes, qualidades, complicacoes] = await Promise.all([
-    getContentDocument<ClassContentV12>("class", choices.classe_id),
+  // Conteúdo EFETIVO da campanha (override > homebrew > oficial), a mesma
+  // resolução que a RPC usa — preços com override e opções de Trajetória
+  // próprias da campanha valem igual nos dois lados.
+  const [regrasDoc, classes, antecedentes, qualidades, complicacoes, itensEfetivos] = await Promise.all([
     getCharacterRules(),
-    listContentDocuments<BackgroundContentV12>("background"),
-    listContentDocuments<QualityContentV12>("quality"),
-    listContentDocuments<ComplicationContentV12>("complication"),
+    resolveEffectiveList(campaignId, "class"),
+    resolveEffectiveList(campaignId, "background"),
+    resolveEffectiveList(campaignId, "quality"),
+    resolveEffectiveList(campaignId, "complication"),
+    resolveEffectiveList(campaignId, "item"),
   ]);
-  if (!classeDoc) throw new CharacterStorageError(`Classe "${choices.classe_id}" não está publicada.`);
+  const classe = classes.find((c) => c.slug === choices.classe_id)?.payload as ClassContentV12 | undefined;
+  if (!classe) throw new CharacterStorageError(`Classe "${choices.classe_id}" não está publicada.`);
   const regras = regrasDoc?.payload as CharacterRulesPayload | undefined;
   if (!regras) throw new CharacterStorageError("Regras de criação indisponíveis no servidor.");
 
   const itens = new Map<string, CreationItemV12>();
-  for (const slug of new Set((choices.compras ?? []).map((c) => c.itemSlug))) {
-    const doc = await getItem(slug);
-    const item = doc?.payload as { nome?: string; categoria?: string; preco?: number; estatisticas?: { subtipo?: string } } | undefined;
-    if (!item) continue; // ausência vira erro de validação em buildCharacterV2
-    itens.set(slug, {
-      slug,
-      nome: item.nome ?? slug,
+  for (const efetivo of itensEfetivos) {
+    const item = efetivo.payload as { nome?: string; categoria?: string; preco?: number; estatisticas?: { subtipo?: string } };
+    itens.set(efetivo.slug, {
+      slug: efetivo.slug,
+      nome: item.nome ?? efetivo.slug,
       categoria: item.categoria ?? "",
       subtipo: item.estatisticas?.subtipo,
       preco: item.preco ?? 0,
     });
   }
+  const porSlug = <T,>(lista: { slug: string; payload: unknown }[]) => new Map(lista.map((d) => [d.slug, d.payload as T]));
 
   const built = buildCharacterV2(choices, {
-    classe: classeDoc.payload,
+    classe,
     pericias: regras.pericias.map((p) => p.id),
     vertentes: [...VERTENTES_V12],
     itens,
     trajetoria: {
-      antecedentes: new Map(antecedentes.map((d) => [d.slug, d.payload])),
-      qualidades: new Map(qualidades.map((d) => [d.slug, d.payload])),
-      complicacoes: new Map(complicacoes.map((d) => [d.slug, d.payload])),
+      antecedentes: porSlug<BackgroundContentV12>(antecedentes),
+      qualidades: porSlug<QualityContentV12>(qualidades),
+      complicacoes: porSlug<ComplicationContentV12>(complicacoes),
     },
   });
   if (!built.ok) throw new CharacterStorageError(built.errors.join(" "));

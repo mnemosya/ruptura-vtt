@@ -48,6 +48,7 @@ import {
   Trash2,
   UserPlus,
   UserRound,
+  Wand2,
 } from "lucide-react";
 import { MenuContextual, type ItemMenuContextual } from "../_shell/MenuContextual";
 import { BotaoAba, BuscaDiretorio, CabecalhoGrupo, LinhaDiretorio, RodapeAcoes } from "./Diretorio";
@@ -85,6 +86,7 @@ import {
   type ResumoPersonagem,
 } from "./acoes/personagensPainel";
 import { useRolagemVelada } from "../_shell/useRolagemVelada";
+import { useJanelasDaMesa } from "../_shell/JanelasDaMesa";
 import { Select } from "../_dados3d/ResultadoRolagem";
 import { comecarLeitura, dadosDoEstado, falharLeitura, type EstadoAba } from "./tipos";
 import { DialogoConfirmar, DialogoTexto } from "./ui/Dialogo";
@@ -367,6 +369,7 @@ export function PersonagensTab({
 
 
   const podeAdministrar = !!dados?.podeAdministrar && ehNarrador;
+  const janelas = useJanelasDaMesa();
 
 
 
@@ -1010,6 +1013,13 @@ export function PersonagensTab({
                 </BotaoAba>
                 <BotaoAba
                   desabilitado={ocupado}
+                  testId="painel-personagens-assistente"
+                  onClick={() => janelas.abrir("novo-personagem")}
+                >
+                  <Wand2 size={13} /> Criar com assistente
+                </BotaoAba>
+                <BotaoAba
+                  desabilitado={ocupado}
                   testId="painel-personagens-nova-pasta"
                   onClick={() =>
                     setPedido({
@@ -1043,6 +1053,13 @@ export function PersonagensTab({
                   }
                 >
                   <UserPlus size={13} /> Personagem
+                </BotaoAba>
+                <BotaoAba
+                  desabilitado={ocupado}
+                  testId="painel-personagens-assistente-jogador"
+                  onClick={() => janelas.abrir("novo-personagem")}
+                >
+                  <Wand2 size={13} /> Criar com assistente
                 </BotaoAba>
               </span>
             )}

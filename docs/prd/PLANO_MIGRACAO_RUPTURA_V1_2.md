@@ -259,10 +259,10 @@ Entregáveis:
 - [x] fórmulas próprias de PV, PE e Mana;
 - [ ] equipamento e recursos iniciais;
 - [ ] Vertente Primária e magias iniciais;
-- [ ] criação server-side válida;
+- [x] criação server-side válida;
   - Em implementação: `buildCharacterV2` (`src/lib/rulesetV12/creation.ts`) monta o payload v2 a partir das escolhas; a server action `createCharacterV2` chama a nova RPC `complete_character_creation_v2`, que revalida tudo no banco. A RPC passou em 13 cenários no remoto, dentro de uma transação abortada, e a migration `20261001033923_ruptura_v12_criacao_personagem.sql` foi aplicada no remoto em 01/10/2026. Antecedentes, Qualidades e Complicações estão publicados (`content/v12/db_trajetoria_v1_2.json`). As magias iniciais da Vertente Primária continuam indefinidas.
-- [ ] persistência e reabertura;
-- [ ] renderização correta na ficha;
+- [x] persistência e reabertura;
+- [x] renderização correta na ficha;
   - Em implementação: a ficha e o HUD usam as fórmulas da Classe copiadas para `progressao.formulas_derivados` (DEC-003). A migration `20261001034830_ruptura_v12_formulas_classe.sql` foi aplicada no remoto em 01/10/2026.
 - [ ] rolagem integrada à mesa;
 - [ ] relatório dos ajustes necessários no contrato.
@@ -655,3 +655,11 @@ Essa entrega deve terminar antes da implementação do novo wizard.
 - migration `20261001034830_ruptura_v12_formulas_classe.sql` (aplicada no remoto): `vtt_hud_derived` lê as fórmulas do personagem; a RPC de criação confere a cópia contra a Classe;
 - no remoto, em transação desfeita: HUD e ficha calcularam os mesmos máximos (PV 10, PE 15, Mana 16, Reações 3, PA 3); fórmula de PV forjada e cópia ausente foram rejeitadas;
 - personagens sem `formulas_derivados` continuam usando as regras gerais.
+
+### 01/10/2026 — Tela de criação v1.2
+
+- `AssistenteV12` (Conceito → Trajetória → Classe → Equipamento → Revisão) na janela Novo personagem, aberta pelo novo botão "Criar com assistente" da aba Personagens; a criação anterior continua disponível em "Regras anteriores" até o corte;
+- a tela envia só escolhas (`criarPersonagemV12Action`); a server action passou a usar o conteúdo efetivo da campanha, como a RPC;
+- botões com `aria-pressed` ganharam o estilo de selecionado em `mesa.css`;
+- validado no navegador: Hilda Norren (Âncora Equilibrada, Biótica, Recursos 1, dois Contatos, Dívida e Fobia, 3 Medkits) criada na campanha 12312321 (`e434866f-ec73-4c2c-b685-76dad1855f84`); a ficha abriu com PV 11, PE 15, Mana 14, Integridade 12, PA 3, Reações 3 e Deslocamento 11/22 m, e o registro tem Ⱥ 3.900 e 1 item;
+- limitação vista no teste: sem rascunho v1.2, uma remontagem da janela (ex.: recarga do servidor de desenvolvimento) perde o que foi preenchido.
