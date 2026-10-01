@@ -34,6 +34,7 @@ import {
   restoreCharacter,
 } from "../../../../../../lib/character/storage";
 import {
+  characterDerivedFormulas,
   computeDerivedStats,
   createInitialCharacter,
   normalizeCharacter,
@@ -109,7 +110,7 @@ function resumoLeveDoPersonagem(
   regras: CharacterRulesPayload | null,
 ): { pv: { atual: number; max: number }; pe: { atual: number; max: number }; condicoes: number } {
   const primeiraLeitura = normalizeCharacter(c.payload);
-  const derived = computeDerivedStats(primeiraLeitura.atributos, regras, primeiraLeitura.mana_bonus_ruptura ?? 0);
+  const derived = computeDerivedStats(primeiraLeitura.atributos, regras, primeiraLeitura.mana_bonus_ruptura ?? 0, characterDerivedFormulas(primeiraLeitura));
   const personagem = normalizeCharacter(primeiraLeitura, derived);
   return {
     pv: { atual: personagem.recursos_atuais?.pv ?? derived.pv_max, max: derived.pv_max },
@@ -196,7 +197,7 @@ export async function lerResumoPersonagemAction(
 
     const regras = (regrasDoc?.payload as CharacterRulesPayload | undefined) ?? null;
     const primeiraLeitura = normalizeCharacter(personagem.payload);
-    const derived = computeDerivedStats(primeiraLeitura.atributos, regras, primeiraLeitura.mana_bonus_ruptura ?? 0);
+    const derived = computeDerivedStats(primeiraLeitura.atributos, regras, primeiraLeitura.mana_bonus_ruptura ?? 0, characterDerivedFormulas(primeiraLeitura));
     const personagemNormalizado = normalizeCharacter(primeiraLeitura, derived);
 
     return {

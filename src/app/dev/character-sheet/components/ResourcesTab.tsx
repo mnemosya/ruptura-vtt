@@ -38,6 +38,7 @@ function derivedMetaById(regras: CharacterRulesPayload | null, id: string): Deri
 
 export function ResourcesTab({
   regras,
+  formulaLabels,
   derivados,
   recursosAtuais,
   onChangeRecursoAtual,
@@ -73,6 +74,8 @@ export function ResourcesTab({
   onResolveRuptureChoice,
 }: {
   regras: CharacterRulesPayload | null;
+  /** Texto das fórmulas próprias do personagem (Classe v1.2), com prioridade sobre o das regras. */
+  formulaLabels?: Record<string, string>;
   derivados: DerivedStats;
   recursosAtuais: CharacterResources | undefined;
   onChangeRecursoAtual: (id: keyof CharacterResources, value: number) => void;
@@ -140,7 +143,7 @@ export function ResourcesTab({
                 testId={`derivado-${id}`}
                 label={meta?.nome ?? id}
                 value={derivados[id]}
-                hint={meta?.formula_label}
+                hint={formulaLabels?.[id] ?? meta?.formula_label}
               />
             );
           })}
@@ -153,7 +156,7 @@ export function ResourcesTab({
                 testId={`derivado-${id}`}
                 label={meta?.nome ?? id}
                 value={`${derivados[id]}${unidade}`}
-                hint={meta?.formula_label}
+                hint={formulaLabels?.[id] ?? meta?.formula_label}
               />
             );
           })}

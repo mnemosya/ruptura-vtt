@@ -6,6 +6,7 @@ import { resolveCampaignAccess } from "../../../../../lib/campaign/access";
 import { listTalentsEffective } from "../../../../../lib/campaignContent";
 import {
   applyConsoleMutation,
+  characterDerivedFormulas,
   computeDerivedStats,
   normalizeCharacter,
   normalizeReactionRules,
@@ -68,7 +69,7 @@ function projectHud(raw: RawSelectedTokenHud, rules: CharacterRulesPayload | nul
   if (Array.isArray(raw.tokenConditions)) base.tokenConditions = raw.tokenConditions.filter((v): v is string => typeof v === "string");
   if (typeof raw.characterId === "string" && raw.character) {
     const normalized = normalizeCharacter(raw.character);
-    const derived = computeDerivedStats(normalized.atributos, rules, normalized.mana_bonus_ruptura ?? 0);
+    const derived = computeDerivedStats(normalized.atributos, rules, normalized.mana_bonus_ruptura ?? 0, characterDerivedFormulas(normalized));
     const character = normalizeCharacter(normalized, derived);
     base.characterId = raw.characterId;
     base.character = character;
@@ -181,7 +182,7 @@ async function loadMutationContext(campaignId: string, character: ReturnType<typ
     listTalentsEffective(campaignId).catch(() => []),
   ]);
   return {
-    derived: computeDerivedStats(character.atributos, rules, character.mana_bonus_ruptura ?? 0),
+    derived: computeDerivedStats(character.atributos, rules, character.mana_bonus_ruptura ?? 0, characterDerivedFormulas(character)),
     rules,
     reactionRules: normalizeReactionRules(combatFlow?.payload),
     talents: talentDocs.map((doc) => normalizeTalentContent(doc.payload as Record<string, unknown>)),

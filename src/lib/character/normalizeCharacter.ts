@@ -1,4 +1,4 @@
-import { computeDerivedStats } from "./derived";
+import { characterDerivedFormulas, computeDerivedStats } from "./derived";
 import { normalizeItemTechnicalState } from "./inventory";
 import type {
   ActiveCondition,
@@ -88,7 +88,8 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
   // `recursos_atuais.integridade` no payload salvo) aparecia como
   // "Integridade 0"/"fim da ficha" só por ausência de campo — nunca por
   // um estado real de Integridade zerada.
-  const effectiveDerived: DerivedStats = derived ?? computeDerivedStats(atributos, null, mana_bonus_ruptura_early);
+  const effectiveDerived: DerivedStats =
+    derived ?? computeDerivedStats(atributos, null, mana_bonus_ruptura_early, characterDerivedFormulas(raw));
 
   const recursosRaw = isPlainObject(raw.recursos_atuais) ? raw.recursos_atuais : {};
   const recursos_atuais: CharacterResources = { ...(recursosRaw as CharacterResources) };

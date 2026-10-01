@@ -22,6 +22,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createInitialCharacter,
+  characterDerivedFormulas,
   computeDerivedStats,
   normalizeCharacter,
   applyConsoleMutation,
@@ -794,7 +795,7 @@ export default function CharacterSheetClient({
   }, [activeEffects]);
 
   const derivados = useMemo(
-    () => computeDerivedStats(character.atributos, regras, character.mana_bonus_ruptura ?? 0),
+    () => computeDerivedStats(character.atributos, regras, character.mana_bonus_ruptura ?? 0, characterDerivedFormulas(character)),
     [character.atributos, regras, character.mana_bonus_ruptura],
   );
   // Janela atual da trilha de turnos (checkpoint pós-v0.94, fase 1;
@@ -1189,8 +1190,8 @@ export default function CharacterSheetClient({
 
     const atributosNovos = { ...character.atributos, [id]: depois };
     const manaBonus = character.mana_bonus_ruptura ?? 0;
-    const derivadosAntes = computeDerivedStats(character.atributos, regras, manaBonus);
-    const derivadosDepois = computeDerivedStats(atributosNovos, regras, manaBonus);
+    const derivadosAntes = computeDerivedStats(character.atributos, regras, manaBonus, characterDerivedFormulas(character));
+    const derivadosDepois = computeDerivedStats(atributosNovos, regras, manaBonus, characterDerivedFormulas(character));
 
     const RECURSO_MAX_MAP = {
       pv: "pv_max",
@@ -3028,7 +3029,7 @@ export default function CharacterSheetClient({
       addLogEntry("recurso", "Aliado não encontrado entre os personagens ativos da mesa — atualize a lista de aliados.");
       return;
     }
-    const targetDerivados = computeDerivedStats(ally2.character.atributos, regras, ally2.character.mana_bonus_ruptura ?? 0);
+    const targetDerivados = computeDerivedStats(ally2.character.atributos, regras, ally2.character.mana_bonus_ruptura ?? 0, characterDerivedFormulas(ally2.character));
     let ally2Next = applyResourceDeltas(ally2.character, ultimoEfeitoPositivoAliado.resourceDeltas, {
       pv: targetDerivados.pv_max,
       pe: targetDerivados.pe_max,
@@ -3060,7 +3061,7 @@ export default function CharacterSheetClient({
       addLogEntry("recurso", "Aliado original não encontrado entre os personagens ativos da mesa — atualize a lista de aliados.");
       return;
     }
-    const targetDerivados = computeDerivedStats(alvo.character.atributos, regras, alvo.character.mana_bonus_ruptura ?? 0);
+    const targetDerivados = computeDerivedStats(alvo.character.atributos, regras, alvo.character.mana_bonus_ruptura ?? 0, characterDerivedFormulas(alvo.character));
     let alvoNext = alvo.character;
     if (opcao === "numerico") {
       alvoNext = applyResourceDeltas(alvoNext, ultimoEfeitoPositivoAliado.resourceDeltas, { pv: targetDerivados.pv_max, pe: targetDerivados.pe_max });
@@ -3900,7 +3901,7 @@ export default function CharacterSheetClient({
     }
 
     const nowIso = new Date().toISOString();
-    const targetDerivados = computeDerivedStats(ally.character.atributos, regras, ally.character.mana_bonus_ruptura ?? 0);
+    const targetDerivados = computeDerivedStats(ally.character.atributos, regras, ally.character.mana_bonus_ruptura ?? 0, characterDerivedFormulas(ally.character));
     const result = useItemOnAlly({
       source: current,
       target: ally.character,
@@ -5009,7 +5010,7 @@ export default function CharacterSheetClient({
         try {
           const toSave = normalizeCharacter(
             alvo.personagem,
-            computeDerivedStats(alvo.personagem.atributos, regras, alvo.personagem.mana_bonus_ruptura ?? 0),
+            computeDerivedStats(alvo.personagem.atributos, regras, alvo.personagem.mana_bonus_ruptura ?? 0, characterDerivedFormulas(alvo.personagem)),
           );
           const record =
             mode === "product"
@@ -6181,6 +6182,7 @@ export default function CharacterSheetClient({
       {activeTab === "recursos" && (
         <ResourcesTab
           regras={regras}
+          formulaLabels={(character as { progressao?: { formulas_derivados_texto?: Record<string, string> } }).progressao?.formulas_derivados_texto}
           derivados={derivados}
           recursosAtuais={character.recursos_atuais}
           onChangeRecursoAtual={updateRecursoAtual}

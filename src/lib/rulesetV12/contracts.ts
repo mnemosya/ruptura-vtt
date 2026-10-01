@@ -181,6 +181,14 @@ export interface CharacterProgressionV12 {
   subclasse_id?: string;
   ranking: RankingV12;
   escolhas_por_ranking: Partial<Record<RankingV12, Record<string, unknown>>>;
+  /**
+   * Cópia das fórmulas de recurso da Classe (e do PA do Ranking atual),
+   * no formato de árvore lido pela ficha e pelo HUD. Gravada na criação
+   * e conferida pela RPC contra o documento `class` publicado.
+   */
+  formulas_derivados?: Record<string, unknown>;
+  /** Texto editorial de cada fórmula, para exibição (ex.: "13 + Mente"). */
+  formulas_derivados_texto?: Record<string, string>;
 }
 
 export interface CharacterMagicV12 {

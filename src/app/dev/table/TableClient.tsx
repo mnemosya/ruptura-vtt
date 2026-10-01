@@ -38,6 +38,7 @@ import {
   type CrewInventoryItem,
 } from "../../../lib/table/crewInventory";
 import {
+  characterDerivedFormulas,
   computeDerivedStats,
   normalizeCharacter,
   applyGmDamage,
@@ -1031,7 +1032,7 @@ const GM_RESOURCE_MAX_KEY: Record<GmResource, keyof DerivedStats> = {
 
 /** PV/PE/Mana/Integridade MÁXIMOS do personagem — mesma fórmula da ficha (computeDerivedStats), nunca reinventada aqui. */
 function gmDerivedMax(payload: Character, regras: CharacterRulesPayload | null, resource: GmResource): number {
-  const derivados = computeDerivedStats(payload.atributos, regras, payload.mana_bonus_ruptura ?? 0);
+  const derivados = computeDerivedStats(payload.atributos, regras, payload.mana_bonus_ruptura ?? 0, characterDerivedFormulas(payload));
   return derivados[GM_RESOURCE_MAX_KEY[resource]];
 }
 
@@ -1161,7 +1162,7 @@ function buildEndRoundPreview(
 
   for (const record of records) {
     const character = normalizeCharacter(record.payload);
-    const derived = computeDerivedStats(character.atributos, regras, character.mana_bonus_ruptura ?? 0);
+    const derived = computeDerivedStats(character.atributos, regras, character.mana_bonus_ruptura ?? 0, characterDerivedFormulas(character));
     const paGastos = character.estado_jogo?.pa_gastos ?? 0;
     const reacoesUsadas = character.estado_jogo?.reacoes_usadas ?? 0;
     const defesasSemReacao = character.estado_jogo?.defesas_sem_reacao ?? 0;
@@ -1493,7 +1494,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     }
 
     const nowIso = new Date().toISOString();
-    const maxReacoes = computeDerivedStats(target.atributos, regras, target.mana_bonus_ruptura ?? 0).reacoes_por_rodada;
+    const maxReacoes = computeDerivedStats(target.atributos, regras, target.mana_bonus_ruptura ?? 0, characterDerivedFormulas(target)).reacoes_por_rodada;
     // Guardião › Sentinela (checkpoint talentos, Fase 4) — Bloquear como Reação GRATUITA,
     // 1/rodada: não gasta o recurso real de Reação nem conta como "defesa sem Reação".
     const sentinelaStatus = getSentinelaAvailability(target, talentsIniciais);
@@ -1660,7 +1661,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     const weaponInstanceId = typeof log.payload.weaponInstanceId === "string" ? log.payload.weaponInstanceId : null;
     if (weaponSubtype !== "corpo_a_corpo" && weaponInstanceId != null) return;
 
-    const reactionMax = computeDerivedStats(target.atributos, regras, target.mana_bonus_ruptura ?? 0).reacoes_por_rodada;
+    const reactionMax = computeDerivedStats(target.atributos, regras, target.mana_bonus_ruptura ?? 0, characterDerivedFormulas(target)).reacoes_por_rodada;
     const availability = getReactionAvailability(target, reactionMax, reactionRules);
     if (availability.remaining < 1) return;
 
@@ -2310,7 +2311,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       requirementReminder = "Usado contra movimento forçado, queda, imobilização, paralisia e efeitos similares.";
     }
 
-    const maxReacoes = computeDerivedStats(target.atributos, regras, target.mana_bonus_ruptura ?? 0).reacoes_por_rodada;
+    const maxReacoes = computeDerivedStats(target.atributos, regras, target.mana_bonus_ruptura ?? 0, characterDerivedFormulas(target)).reacoes_por_rodada;
     const reactionResult = spendReactionForDefense(target, maxReacoes, reactionRules, 1);
     const blocked = !reactionResult.usedReaction && !reactionResult.defenseWithoutReaction;
     if (blocked && !form.defenseOverride) {
@@ -2596,7 +2597,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     if (!selectedCampaignId) return;
     setGmErro(null);
     try {
-      const derivados = computeDerivedStats(params.nextCharacter.atributos, regras, params.nextCharacter.mana_bonus_ruptura ?? 0);
+      const derivados = computeDerivedStats(params.nextCharacter.atributos, regras, params.nextCharacter.mana_bonus_ruptura ?? 0, characterDerivedFormulas(params.nextCharacter));
       const toSave = normalizeCharacter(params.nextCharacter, derivados);
       const record = await updateCharacter(params.characterId, toSave);
       setPersonagensAtivos((prev) => ({ ...prev, [record.id]: record }));
@@ -2699,7 +2700,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
           split.movedInstance!.categoria === "municao" ? i.itemSlug === split.movedInstance!.itemSlug && i.categoria === "municao" : i.id === split.movedInstance!.id,
         )?.quantidade ?? split.movedInstance.quantidade;
 
-      const derivados = computeDerivedStats(nextTargetCharacter.atributos, regras, nextTargetCharacter.mana_bonus_ruptura ?? 0);
+      const derivados = computeDerivedStats(nextTargetCharacter.atributos, regras, nextTargetCharacter.mana_bonus_ruptura ?? 0, characterDerivedFormulas(nextTargetCharacter));
       const toSave = normalizeCharacter(nextTargetCharacter, derivados);
 
       // 1) personagem primeiro (ordem segura — ver docstring acima).
@@ -4186,7 +4187,7 @@ function AttackResolutionPanel({
   const targetRecord = form.targetCharacterId ? personagensAtivos[form.targetCharacterId] : null;
   const targetNormalizado = targetRecord ? normalizeCharacter(targetRecord.payload) : null;
   const reactionMax = targetNormalizado
-    ? computeDerivedStats(targetNormalizado.atributos, regras, targetNormalizado.mana_bonus_ruptura ?? 0).reacoes_por_rodada
+    ? computeDerivedStats(targetNormalizado.atributos, regras, targetNormalizado.mana_bonus_ruptura ?? 0, characterDerivedFormulas(targetNormalizado)).reacoes_por_rodada
     : 0;
   const reactionAvailability = targetNormalizado ? getReactionAvailability(targetNormalizado, reactionMax, reactionRules) : null;
   // Mago de Batalha › Canalizar Amortecer (checkpoint talentos, Fase 5) — lido do ALVO (quem sofre o dano), não do atacante.
@@ -4871,7 +4872,7 @@ function SpellAttackResolutionPanel({
   const targetRecord = form.targetCharacterId ? personagensAtivos[form.targetCharacterId] : null;
   const targetNormalizado = targetRecord ? normalizeCharacter(targetRecord.payload) : null;
   const reactionMax = targetNormalizado
-    ? computeDerivedStats(targetNormalizado.atributos, regras, targetNormalizado.mana_bonus_ruptura ?? 0).reacoes_por_rodada
+    ? computeDerivedStats(targetNormalizado.atributos, regras, targetNormalizado.mana_bonus_ruptura ?? 0, characterDerivedFormulas(targetNormalizado)).reacoes_por_rodada
     : 0;
   const reactionAvailability = targetNormalizado ? getReactionAvailability(targetNormalizado, reactionMax, reactionRules) : null;
 

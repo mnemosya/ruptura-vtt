@@ -17,9 +17,43 @@ import {
   DERIVED_IDS,
   type CharacterAttributes,
   type CharacterRulesPayload,
+  type DerivedId,
   type DerivedStats,
   type FormulaNode,
 } from "./types";
+
+/** Fórmulas próprias de um personagem, com prioridade sobre `regras.derivados`. */
+export type CharacterDerivedFormulas = Partial<Record<DerivedId, FormulaNode>>;
+
+function isFormulaNode(node: unknown): node is FormulaNode {
+  if (node === null || typeof node !== "object" || Array.isArray(node)) return false;
+  const n = node as Record<string, unknown>;
+  if ("const" in n) return typeof n.const === "number" && Number.isFinite(n.const);
+  if ("ref" in n) return n.ref === "atributo" && typeof n.id === "string";
+  if ("op" in n) return ["+", "-", "*", "/"].includes(n.op as string) && Array.isArray(n.args) && n.args.every(isFormulaNode);
+  return false;
+}
+
+/**
+ * Fórmulas copiadas da Classe para o personagem v1.2 na criação
+ * (`progressao.formulas_derivados`; a RPC confere a cópia contra o
+ * documento `class`). Personagens sem esse campo usam só as regras
+ * gerais. Nós malformados ou que referenciem outro derivado são
+ * ignorados, para um payload editado não quebrar nem ciclar o cálculo.
+ */
+export function characterDerivedFormulas(character: unknown): CharacterDerivedFormulas | undefined {
+  if (character === null || typeof character !== "object") return undefined;
+  const progressao = (character as { progressao?: unknown }).progressao;
+  if (progressao === null || typeof progressao !== "object") return undefined;
+  const raw = (progressao as { formulas_derivados?: unknown }).formulas_derivados;
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const formulas: CharacterDerivedFormulas = {};
+  for (const id of DERIVED_IDS) {
+    const node = (raw as Record<string, unknown>)[id];
+    if (isFormulaNode(node)) formulas[id] = node;
+  }
+  return Object.keys(formulas).length > 0 ? formulas : undefined;
+}
 
 function isConstNode(node: FormulaNode): node is { const: number } {
   return typeof (node as { const?: unknown }).const === "number";
@@ -92,10 +126,14 @@ export function computeDerivedStats(
   atributos: CharacterAttributes,
   regras: CharacterRulesPayload | null,
   manaBonusRuptura = 0,
+  formulasPersonagem?: CharacterDerivedFormulas,
 ): DerivedStats {
   const formulas = new Map<string, FormulaNode>();
   for (const def of regras?.derivados ?? []) {
     formulas.set(def.id, def.formula);
+  }
+  for (const [id, formula] of Object.entries(formulasPersonagem ?? {})) {
+    if (formula) formulas.set(id, formula);
   }
   for (const id of DERIVED_IDS) {
     if (!formulas.has(id)) formulas.set(id, FALLBACK_DERIVED_FORMULAS[id]);
@@ -149,9 +187,13 @@ export function computeDerivedById(
   id: string,
   atributos: CharacterAttributes,
   regras: CharacterRulesPayload | null,
+  formulasPersonagem?: CharacterDerivedFormulas,
 ): number | null {
   const formulas = new Map<string, FormulaNode>();
   for (const def of regras?.derivados ?? []) formulas.set(def.id, def.formula);
+  for (const [fid, formula] of Object.entries(formulasPersonagem ?? {})) {
+    if (formula) formulas.set(fid, formula);
+  }
   for (const basico of DERIVED_IDS) {
     if (!formulas.has(basico)) formulas.set(basico, FALLBACK_DERIVED_FORMULAS[basico]);
   }

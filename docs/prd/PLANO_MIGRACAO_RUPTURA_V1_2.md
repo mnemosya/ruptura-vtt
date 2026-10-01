@@ -263,6 +263,7 @@ Entregáveis:
   - Em implementação: `buildCharacterV2` (`src/lib/rulesetV12/creation.ts`) monta o payload v2 a partir das escolhas; a server action `createCharacterV2` chama a nova RPC `complete_character_creation_v2`, que revalida tudo no banco. A RPC passou em 13 cenários no remoto, dentro de uma transação abortada, e a migration `20261001033923_ruptura_v12_criacao_personagem.sql` foi aplicada no remoto em 01/10/2026. Antecedentes, Qualidades e Complicações estão publicados (`content/v12/db_trajetoria_v1_2.json`). As magias iniciais da Vertente Primária continuam indefinidas.
 - [ ] persistência e reabertura;
 - [ ] renderização correta na ficha;
+  - Em implementação: a ficha e o HUD usam as fórmulas da Classe copiadas para `progressao.formulas_derivados` (DEC-003). A migration `20261001034830_ruptura_v12_formulas_classe.sql` foi aplicada no remoto em 01/10/2026.
 - [ ] rolagem integrada à mesa;
 - [ ] relatório dos ajustes necessários no contrato.
 
@@ -564,6 +565,19 @@ Essa entrega deve terminar antes da implementação do novo wizard.
 
 **Consequências:** referências e validação ficam locais à entidade que concede a característica; se uma característica passar a ser compartilhada entre Classes no futuro, a decisão poderá ser revista com uma migration explícita.
 
+### DEC-003 — Fórmulas de recursos copiadas da Classe para o personagem
+
+**Data:** 01/10/2026  
+**Status:** proposta
+
+**Contexto:** cada Classe v1.2 tem fórmulas próprias de PV, PE, Mana, Integridade, Reações e Deslocamento, e o PA depende do Ranking. A ficha calcula os máximos em cerca de 25 pontos do código a partir dos atributos e das regras gerais, e o HUD do mapa calcula em SQL a partir do payload do personagem, sem acesso à campanha nem à Classe.
+
+**Decisão:** na criação, as fórmulas da Classe e o PA do Ranking são copiados para `progressao.formulas_derivados`, junto com o texto editorial em `progressao.formulas_derivados_texto`. A RPC de criação confere a cópia contra o documento `class` publicado. `computeDerivedStats` e `vtt_hud_derived` usam essas fórmulas antes das regras gerais; nós malformados ou com referência a outro derivado são ignorados.
+
+**Consequências:** a ficha e o HUD não precisam buscar a Classe a cada cálculo. Uma correção editorial nas fórmulas de uma Classe exige atualizar os personagens existentes (backfill), e a progressão de Ranking precisa regravar o PA. O jogador já pode editar o payload pela ficha, incluindo atributos; a cópia não amplia esse risco.
+
+**Responsáveis:** a definir.
+
 ## 14. Registro de execução
 
 ### 30/09/2026 — Fundação mecânica
@@ -633,3 +647,11 @@ Essa entrega deve terminar antes da implementação do novo wizard.
 - verificação: dry-run sem diferenças; `db:drift` com 185/185 funções equivalentes; `anon` sem permissão de executar a RPC;
 - prova de ponta a ponta com o conteúdo publicado, como participante real e em transação desfeita: Âncora Concentrada criada com PV 10, PE 15, Mana 16, Integridade 14 e Ⱥ 3.900 (Recursos 1 = Ⱥ 4.500, menos 3 Medkits); replay com o mesmo `creationRequestId` devolveu o mesmo personagem;
 - ainda falta interface: nenhuma tela chama `createCharacterV2`.
+
+### 01/10/2026 — Ficha usando as fórmulas da Classe
+
+- `buildCharacterV2` grava em `progressao` as fórmulas de recurso da Classe e o PA do Ranking F (DEC-003);
+- `computeDerivedStats` recebe as fórmulas do personagem como 4º parâmetro; os pontos de chamada da ficha, mesa, painel, HUD, fim de rodada e transferência de tripulação passam a usá-las; a aba de Recursos mostra o texto da Classe ("13 + Mente");
+- migration `20261001034830_ruptura_v12_formulas_classe.sql` (aplicada no remoto): `vtt_hud_derived` lê as fórmulas do personagem; a RPC de criação confere a cópia contra a Classe;
+- no remoto, em transação desfeita: HUD e ficha calcularam os mesmos máximos (PV 10, PE 15, Mana 16, Reações 3, PA 3); fórmula de PV forjada e cópia ausente foram rejeitadas;
+- personagens sem `formulas_derivados` continuam usando as regras gerais.

@@ -8,6 +8,7 @@ import {
   type CreationContextV12,
   type RulesetContentBundleV12,
 } from "../src/lib/rulesetV12";
+import { characterDerivedFormulas, computeDerivedStats, normalizeCharacter } from "../src/lib/character";
 
 const root = join(process.cwd(), "content");
 const bundle = JSON.parse(readFileSync(join(root, "v12", "db_classe_ancora_v1_2.json"), "utf8")) as RulesetContentBundleV12;
@@ -72,7 +73,31 @@ if (ok.ok) {
   assert.equal(c.inventario?.[0].precoPago, 400);
   assert.deepEqual(c.magia, { vertente_primaria: "biotica", niveis_vertente: { biotica: 1 }, magias_aprendidas: [] });
   assert.deepEqual(c.niveis_vertente, { biotica: 1 });
-  assert.deepEqual(c.progressao, { classe_id: "ancora", ranking: "F", escolhas_por_ranking: { F: { perfil_atributos: "equilibrada", perfil_pericias: "padrao" } } });
+  assert.equal(c.progressao.classe_id, "ancora");
+  assert.equal(c.progressao.ranking, "F");
+  assert.deepEqual(c.progressao.escolhas_por_ranking, { F: { perfil_atributos: "equilibrada", perfil_pericias: "padrao" } });
+  assert.equal(c.progressao.formulas_derivados_texto?.pe_max, "13 + Mente");
+
+  // A ficha calcula os máximos pela Classe, não pelas regras genéricas (PE 10 + Mente).
+  const regrasGerais = JSON.parse(readFileSync(join(root, "db_regras_personagem_normalizado_v1_4.json"), "utf8"));
+  const genericos = computeDerivedStats(c.atributos, regrasGerais);
+  const daClasse = computeDerivedStats(c.atributos, regrasGerais, 0, characterDerivedFormulas(c));
+  assert.equal(genericos.pe_max, 12, "regra genérica: 10 + Mente");
+  assert.deepEqual(
+    { pv: daClasse.pv_max, pe: daClasse.pe_max, mana: daClasse.mana_max, integridade: daClasse.integridade_max },
+    c.recursos_atuais,
+    "personagem novo nasce com recursos cheios pela Classe",
+  );
+  assert.deepEqual(
+    { reacoes: daClasse.reacoes_por_rodada, andar: daClasse.andar_m, correr: daClasse.correr_m, pa: daClasse.pa_max },
+    { reacoes: 3, andar: 11, correr: 22, pa: 3 },
+  );
+  // A normalização preserva as fórmulas e não rebaixa recursos ao máximo genérico.
+  const normalizado = normalizeCharacter(structuredClone(c));
+  assert.equal(normalizado.recursos_atuais?.pe, 15);
+  assert.deepEqual(characterDerivedFormulas(normalizado), characterDerivedFormulas(c));
+  // Fórmula malformada ou com referência a outro derivado é ignorada.
+  assert.equal(characterDerivedFormulas({ progressao: { formulas_derivados: { pv_max: { ref: "derivado", id: "pv_max" } } } }), undefined);
 }
 
 const falha = (choices: Partial<CreationChoicesV12>, trecho: string, msg: string) => {

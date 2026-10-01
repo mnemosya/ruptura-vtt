@@ -21,6 +21,7 @@ import {
   type ClassContentV12,
   type ComplicationContentV12,
   type QualityContentV12,
+  type RankingV12,
 } from "./contracts";
 import { validateCharacterV2 } from "./validation";
 
@@ -117,6 +118,49 @@ function validateTrajectoryChoicesV12(trajetoria: CharacterTrajectoryV12, ctx: C
   checar((trajetoria.qualidades ?? []).map((q) => ({ id: q.quality_id, pontos: q.pontos })), ctx.trajetoria.qualidades, "qualidades");
   checar((trajetoria.complicacoes ?? []).map((c) => ({ id: c.complication_id, pontos: c.pontos })), ctx.trajetoria.complicacoes, "complicacoes");
   return errors;
+}
+
+/** Recurso da Classe → derivado da ficha. */
+export const CLASS_RESOURCE_TO_DERIVED_V12 = {
+  pv: "pv_max",
+  pe: "pe_max",
+  mana: "mana_max",
+  integridade: "integridade_max",
+  reacoes: "reacoes_por_rodada",
+  andar: "andar_m",
+  correr: "correr_m",
+} as const;
+
+type FormulaNodeV12 =
+  | { const: number }
+  | { ref: "atributo"; id: AttributeIdV12 }
+  | { op: "+" | "*"; args: FormulaNodeV12[] };
+
+/**
+ * Converte as fórmulas de recurso da Classe (e o PA do Ranking) para a
+ * árvore de fórmula lida pela ficha e pelo HUD. A mesma construção é
+ * refeita em SQL pela RPC de criação para conferir a cópia gravada.
+ */
+export function classDerivedFormulasV12(classe: ClassContentV12, ranking: RankingV12): {
+  formulas: Record<string, FormulaNodeV12>;
+  textos: Record<string, string>;
+} {
+  const formulas: Record<string, FormulaNodeV12> = {};
+  const textos: Record<string, string> = {};
+  for (const [recurso, derivado] of Object.entries(CLASS_RESOURCE_TO_DERIVED_V12)) {
+    const f = classe.criacao.recursos[recurso];
+    if (!f) continue;
+    formulas[derivado] = f.atributo
+      ? { op: "+", args: [{ const: f.constante }, { op: "*", args: [{ ref: "atributo", id: f.atributo }, { const: f.multiplicador_atributo ?? 1 }] }] }
+      : { const: f.constante };
+    textos[derivado] = f.texto;
+  }
+  const pa = classe.progressao[ranking]?.pa;
+  if (pa !== undefined) {
+    formulas.pa_max = { const: pa };
+    textos.pa_max = `${pa} (Ranking ${ranking})`;
+  }
+  return { formulas, textos };
 }
 
 /** Resolve uma fórmula de recurso da Classe (constante + atributo × multiplicador). */
@@ -273,6 +317,8 @@ export function buildCharacterV2(choices: CreationChoicesV12, ctx: CreationConte
     progressao: {
       classe_id: classe.slug,
       ranking: "F",
+      formulas_derivados: classDerivedFormulasV12(classe, "F").formulas,
+      formulas_derivados_texto: classDerivedFormulasV12(classe, "F").textos,
       escolhas_por_ranking: {
         F: { perfil_atributos: choices.perfil_atributos, perfil_pericias: choices.perfil_pericias },
       },
