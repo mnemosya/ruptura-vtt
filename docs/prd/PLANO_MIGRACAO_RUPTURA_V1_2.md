@@ -189,7 +189,7 @@ Entregáveis:
 - [x] execução do replay das migrations;
 - [x] comparação do schema reconstruído com o schema remoto;
 - [x] relatório de divergências;
-- [ ] inventário dos conteúdos legados que serão substituídos ou removidos;
+- [x] inventário dos conteúdos legados que serão substituídos ou removidos (`docs/relatorios/INVENTARIO_LEGADO_V1_2_2026-10-01.md`);
 - [x] conjunto inicial de critérios de aceite automatizados.
 
 Estado em 01/10/2026: as 160 migrations replayam do zero em PostgreSQL Supabase 17.6 descartável. A comparação integral do catálogo (incluindo enums) ficou equivalente ao remoto depois da migration idempotente que reconcilia o texto de erro de `publish_content_draft`. As migrations e os seeds v1.2 aplicados ao remoto durante a sessão autônoma também estão representados no histórico.
@@ -407,7 +407,7 @@ Critério de saída:
 - [ ] Investigação; transcrita (`content/v12/db_investigacao_v1_2.json`, rascunho) e motor do Desafio de Acesso pronto (`src/lib/rulesetV12/accessChallenge.ts`); falta interface na mesa e decisão de `content_type`;
 - [ ] Conflitos Sociais; transcrito (`content/v12/db_conflitos_sociais_v1_2.json`, rascunho); é quase só orientação ao narrador, sem automação prevista;
 - [ ] Ameaças e Antagonistas (em espera: conteúdo em edição);
-- [ ] integração das características de Classe dependentes desses subsistemas.
+- [ ] integração das características de Classe dependentes desses subsistemas; mapeadas no inventário (Perito: Dossiê/Pistas; Face: Manobras Sociais, Reserva de Confiança; Ícone: Movimento), com duas pendências de vocabulário (Pista × Evidência; Teste de Interação × Concessão).
 
 ### Fase 10 — Limpeza final do legado
 
@@ -773,3 +773,10 @@ Equivalência das demais ações:
 - `src/lib/rulesetV12/accessChallenge.ts`: motor puro do Desafio de Acesso (Código secreto, Leitura Direcional/Confirmação, tentativas 1/2/3 + Auxílio, Tolerância uma vez por ação, Contramedida uma vez) e avanço do Arrombamento;
 - `npm run test:ruleset-v12-investigacao`: reproduz o exemplo do livro (Tecnomagia 3, 2d4, Código 3–1) e cobre encerramento voluntário, Contramedida e Arrombamento;
 - nada publicado: os arquivos não entram no seed. Pendências: a página "AJUSTES APÓS O CAPÍTULO DE INVESTIGAÇÃO e LACUNAS PRIORIZADAS" lista dúvidas abertas; Ameaças está em espera.
+
+### 01/10/2026 — Inventário do legado (Fase 0) e dependências de Classe (Fase 9)
+
+- só leitura no remoto; relatório em `docs/relatorios/INVENTARIO_LEGADO_V1_2_2026-10-01.md`;
+- legado a substituir ou remover: 132 magias (catálogo antigo, em espera), 22 Talentos (arquivar no corte), itens, escalpos, runas, propriedades e companheiros (em espera, junto com equipamentos), além de `character_rule` 1.4 parcialmente;
+- nenhuma campanha tem conteúdo próprio; 121 personagens v1 (32 com token no mapa), 1 personagem v2 e 3 rascunhos (2 v1);
+- características ligadas a Investigação e Conflitos Sociais: Dossiê, Montar o Perfil e Caso Encerrado (Perito); Manobras Sociais e Reserva de Confiança (Face); Movimento (Ícone). Duas pendências de vocabulário registradas.
