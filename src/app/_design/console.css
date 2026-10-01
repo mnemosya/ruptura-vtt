@@ -911,12 +911,12 @@
 .rc-nric-badge {
   flex: none; width: 40px; height: 40px;
   display: grid; place-items: center;
-  font-family: var(--font-orbitron), var(--font-rajdhani), sans-serif;
+  font-family: var(--font-chakra), var(--font-rajdhani), sans-serif;
   /* Cor PRÓPRIA do badge, não o `--rc-skill-cor`: aquele token é
      CONTEXTUAL (verde em Corpo, roxo em Mente) e só recebe valor dentro
      de `.rc-skill`. Aqui ele não resolveria, e a coincidência de valor
      com a cor de Ânimo não os torna a mesma decisão. */
-  font-size: 22px; font-weight: 500; color: #0596B7; text-align: center;
+  font-size: 22px; font-weight: 700; color: #0596B7; text-align: center;
 }
 .rc-nric-badge[data-vazio="true"] { color: rgba(5, 150, 183, 0.35); }
 
