@@ -20,7 +20,8 @@
 import "server-only";
 import { resolveCampaignAccess } from "../../../../../lib/campaign/access";
 import { listCharactersForNarratorCampaign, listControlledCharacters } from "../../../../../lib/character/storage";
-import { renameCampaign } from "../../../../../lib/table/storage";
+import { renameCampaign, setCampaignRegion } from "../../../../../lib/table/storage";
+import { REGIOES_V12 } from "../../../../../lib/rulesetV12";
 import { compararTresVias, type ComparacaoTresVias } from "../../../../../lib/campaignContent/campaignContentDiff";
 import { getContentDocument } from "../../../../../lib/content/queries";
 import { getOpcoesDeRegras, type OpcoesDeRegras } from "../../../../../lib/contentSchema/characterRuleOptions";
@@ -109,6 +110,21 @@ export async function renomearCampanhaAction(
     return { ok: true, dados: { nome: campanha.name } };
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : "Falha ao renomear a mesa." };
+  }
+}
+
+export async function definirRegiaoCampanhaAction(
+  campaignId: string,
+  regiao: string | null,
+): Promise<ResultadoAcao<{ regiao: string | null }>> {
+  const v = await exigirNarrador(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  if (regiao !== null && !(regiao in REGIOES_V12)) return { ok: false, erro: "Região desconhecida." };
+  try {
+    const campanha = await setCampaignRegion(campaignId, regiao);
+    return { ok: true, dados: { regiao: campanha.regiao ?? null } };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : "Falha ao definir a região." };
   }
 }
 

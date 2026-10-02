@@ -7,8 +7,8 @@
  *   --ds-marca-eco      cor do eco (padrão: ciano; a Forja usa o laranja dela)
  * A fonte vem de `--font-oxanium` (classe `oxanium.variable` no componente).
  */
-/* `h1.` para vencer resets de título de quem a recebe (ex.: a Forja). */
-h1.ds-marca {
+/* Classe dobrada para vencer resets de título de quem a recebe (ex.: a Forja). */
+.ds-marca.ds-marca {
   --ds-marca-gelo: #cfeff4;
   --ds-marca-ciano: #00d4ff;
   position: relative; display: inline-block; margin: 0;

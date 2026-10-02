@@ -187,6 +187,8 @@ Com a Forja pronta, levantar o que vale para o VTT inteiro (Oxanium nos headings
 - **Fase 5 — entregue.** Atalhos Q (voltar), E (confirmar; no último passo, Selar) e U (avatar), ignorados enquanto se digita ou com uma janela aberta. Abaixo de 1280px o menu vira uma faixa de passos no topo (só o atual mostra o nome; os outros têm o nome no `title`). Os losangos de estado são lidos como "concluído/pendente" pelo leitor de tela. O resto de 3.6 já vinha das fases anteriores.
 
 - **Fase 6 — em andamento.** A marca RUPTURA da tela de título virou componente do design system (`src/app/_design/Marca.tsx` + `marca.css`, prefixo `ds-marca`): letras em gelo, brilho ciano e eco com glitch (laranja na Forja, ciano no resto). Já usada na Forja e na tela de login. A Oxanium saiu da pasta da Forja para `src/app/_design/oxanium.ts`.
+  - Área autenticada com o visual da Forja (`src/app/_design/areaGlobal.css`, camada `.ag` sobre `app.css`): menu em grupos numerados com sublinhado âmbar, marca na barra lateral, placa de perfil chanfrada, títulos em gelo com brilho, destaque "Retomar operação" (sessão em andamento ou a última), cartões com a arte da região e cartão tracejado de nova campanha, painéis de vidro. Revisão sem login em `/dev/area`.
+  - Região da campanha: coluna `campaigns.regiao` (`20261002150000_campanha_regiao.sql`, aplicada), escolhida ao criar a campanha ou nas Configurações da mesa. Dá a arte do cartão e o segundo idioma na Forja, que deixa de perguntar.
 
 ## 6. Em espera
 
