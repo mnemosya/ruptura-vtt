@@ -130,7 +130,8 @@
    desenhava pontas ciano soltas no ativo. */
 .ag .ra2-segmented {
   gap: 0; padding: 0; align-items: stretch; border: 1px solid color-mix(in srgb, var(--ag-cy) 22%, transparent);
-  background: color-mix(in srgb, var(--ag-abismo) 70%, transparent);
+  background: color-mix(in srgb, var(--ag-abismo) 35%, transparent);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   --ra-chanfro: 10px; --ra-chanfro-fio: color-mix(in srgb, var(--ag-cy) 22%, transparent);
 }
 .ag .ra2-seg {
