@@ -2,6 +2,7 @@ import { assertDevRouteAllowed } from "../../../lib/dev/guard";
 import { Forja } from "../../mesas/[campaignId]/vtt/_forja/Forja";
 import { catalogoDev } from "./catalogoDev";
 import "../../mesas/[campaignId]/vtt/_forja/forja.css";
+import "../../_design/console.css";
 
 export const dynamic = "force-dynamic";
 

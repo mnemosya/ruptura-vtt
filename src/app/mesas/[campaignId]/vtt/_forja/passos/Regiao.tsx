@@ -13,10 +13,10 @@ import type { RegiaoIdV12 } from "../../../../../../lib/rulesetV12/contracts";
 const reg = (id: string) => REGIOES.find((r) => r.id === id) ?? REGIOES[0];
 
 /** Idiomas conhecidos pela regra de origem: o da região e o da região onde a campanha começa. */
-export function idiomas(id: string, regiaoCampanha: RegiaoIdV12): string[] {
+export function idiomas(id: string, regiaoCampanha: RegiaoIdV12 | null): string[] {
   const own = REGIOES.find((r) => r.id === id)?.lang;
-  const camp = reg(regiaoCampanha).lang;
-  return own && own !== camp ? [own, camp] : [camp];
+  const camp = regiaoCampanha ? reg(regiaoCampanha).lang : own;
+  return [...new Set([own, camp].filter((x): x is string => Boolean(x)))];
 }
 
 /** Troca primeiro nome ou sobrenome no campo Nome. */
@@ -25,7 +25,15 @@ const swapName = (d: DraftV12, part: "given" | "last", n: string) => {
   return part === "given" ? [n, ...rest].join(" ") : [g, n].filter(Boolean).join(" ");
 };
 
-export function RegiaoLateral({ d, set, id, regiaoCampanha }: { d: DraftV12; set: SetDraft; id: string; regiaoCampanha: RegiaoIdV12 }) {
+export function RegiaoLateral({ d, set, id, regiaoCampanha, setRegiaoCampanha }: {
+  d: DraftV12;
+  set: SetDraft;
+  id: string;
+  /** Onde a campanha começa: define o segundo idioma conhecido. */
+  regiaoCampanha: RegiaoIdV12 | null;
+  /** Sem a região guardada na campanha, o jogador informa aqui. */
+  setRegiaoCampanha?: (id: RegiaoIdV12) => void;
+}) {
   const [open, setOpen] = useState(false);
   const r = reg(id), on = d.regiaoId === id;
   const langs = idiomas(id, regiaoCampanha);
@@ -45,7 +53,19 @@ export function RegiaoLateral({ d, set, id, regiaoCampanha }: { d: DraftV12; set
             <div className="fj-lado__dado"><dt><Mono pequeno>Capital</Mono></dt><dd className="fj-lado__valor">{r.capital}</dd></div>
             <div className="fj-lado__dado"><dt><Mono pequeno>Idiomas</Mono></dt><dd className="fj-lado__valor fj-lado__valor--am">{langs.join(" · ")}</dd></div>
           </dl>
-          <p className="fj-lado__nota">Mesa começa em {reg(regiaoCampanha).nome}. {langs.length === 1 ? "Mesma língua — apenas um idioma." : `Inclui ${langs[1]} da região da campanha.`}</p>
+          {setRegiaoCampanha ? (
+            <label className="fj-campo fj-lado__campo">
+              <Mono pequeno>A campanha começa em</Mono>
+              <select value={regiaoCampanha ?? ""} onChange={(e) => setRegiaoCampanha(e.target.value as RegiaoIdV12)} className="fj-campo__input fj-campo__select">
+                <option value="" disabled>Escolha a região</option>
+                {REGIOES.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}
+              </select>
+            </label>
+          ) : null}
+          <p className="fj-lado__nota">
+            {regiaoCampanha ? `Mesa começa em ${reg(regiaoCampanha).nome}. ` : "Informe onde a campanha começa para somar o idioma dela. "}
+            {regiaoCampanha && (langs.length === 1 ? "Mesma língua — apenas um idioma." : `Inclui ${langs[1]} da região da campanha.`)}
+          </p>
 
           <label className="fj-campo fj-lado__campo">
             <Mono pequeno>Cidade, distrito ou comunidade</Mono>

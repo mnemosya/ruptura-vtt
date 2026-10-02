@@ -59,6 +59,8 @@ export interface CatalogosCriacaoV12 {
   itens: Array<{ slug: string; nome: string; categoria: string; preco: number }>;
   /** Narrador da campanha: o assistente oferece criar o personagem como PN. */
   ehNarrador: boolean;
+  /** Nome da mesa, para o topo da Forja. */
+  nomeMesa?: string;
 }
 
 async function exigirAcesso(campaignId: string) {
@@ -106,6 +108,7 @@ export async function lerCatalogosCriacaoV12Action(campaignId: string): Promise<
       ok: true,
       dados: {
         ehNarrador: v.acesso?.role === "narrator",
+        nomeMesa: v.acesso?.campaign.name,
         classes: classes.map((c) => c.payload as unknown as ClassContentV12),
         pericias: regras.pericias.map((p) => ({ id: p.id, nome: p.nome })).sort(porNome),
         regioes: Object.entries(REGIOES_V12).map(([id, r]) => ({ id, nome: r.nome, idioma: r.idioma })),

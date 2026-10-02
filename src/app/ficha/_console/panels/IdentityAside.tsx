@@ -693,6 +693,29 @@ export function IdentityAside({
           ))}
         </dl>
 
+        {/* HISTÓRIA — os textos livres da Forja de Refratário (Ideia
+            geral, Aparência, como virou refratário). Recolhida por
+            padrão: é contexto para quem joga e narra, não dado de mesa. */}
+        {(() => {
+          const t = (character as { trajetoria?: { conceito?: string; aparencia?: string; relato_refratario?: string } }).trajetoria;
+          const partes: [string, string | undefined][] = [["Ideia geral", t?.conceito], ["Aparência", t?.aparencia], ["Como se tornou refratário", t?.relato_refratario]];
+          const preenchidas = partes.filter(([, v]) => v && v.trim());
+          if (!preenchidas.length) return null;
+          return (
+            <details className="rc-historia" data-testid="console-historia">
+              <summary className="rc-historia-resumo">História</summary>
+              <dl className="rc-historia-lista">
+                {preenchidas.map(([campo, valor]) => (
+                  <Fragment key={campo}>
+                    <dt>{campo}</dt>
+                    <dd>{valor}</dd>
+                  </Fragment>
+                ))}
+              </dl>
+            </details>
+          );
+        })()}
+
         {/* MATRIZ — três células de larguras iguais, divididas por fio,
             sangrando até a borda do card. O heptágono saiu: com três
             deles lado a lado, a forma era o que se via primeiro e o

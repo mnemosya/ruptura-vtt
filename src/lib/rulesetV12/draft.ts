@@ -223,30 +223,32 @@ export function sanitizeDraftV12(draft: DraftV12, cat: DraftCatalogosV12): { dra
   d.complicacoes = filtrarEscolhas(d.complicacoes, cat.complicacoes);
 
   const classe = cat.classes.find((c) => c.slug === d.classeSlug);
-  if (!classe) {
-    // Classe ainda não escolhida continua não escolhida; só uma Classe que
-    // deixou de existir conta como escolha descartada.
-    d.classeSlug = d.classeSlug === "" ? "" : manter(false, d.classeSlug, "");
-    d.perfilAtributos = "";
+  // Classe ainda não escolhida continua não escolhida; só uma Classe que
+  // deixou de existir conta como escolha descartada.
+  if (!classe) d.classeSlug = d.classeSlug === "" ? "" : manter(false, d.classeSlug, "");
+
+  // Atributos não dependem da Classe: os perfis são os mesmos em todas.
+  const perfisAtributos = (classe ?? cat.classes[0])?.criacao.perfis_atributos ?? [];
+  const perfil = perfisAtributos.find((p) => p.slug === d.perfilAtributos);
+  d.perfilAtributos = manter(!!perfil || d.perfilAtributos === "", d.perfilAtributos, "");
+  const usados = (["corpo", "mente", "animo"] as const).map((a) => d.atributos[a]).filter((v): v is number => v !== null);
+  const restantes = [...(perfil?.valores ?? [])];
+  const cabe = usados.every((u) => {
+    const i = restantes.indexOf(u);
+    if (i < 0) return false;
+    restantes.splice(i, 1);
+    return true;
+  });
+  if (!perfil || !cabe) {
+    if (usados.length > 0) descartados++;
     d.atributos = { corpo: null, mente: null, animo: null };
+  }
+
+  if (!classe) {
     d.perfilPericias = "";
     d.pericias = {};
-    d.vertente = "";
+    d.vertente = manter(d.vertente === "" || cat.vertentes.includes(d.vertente), d.vertente, "");
   } else {
-    const perfil = classe.criacao.perfis_atributos.find((p) => p.slug === d.perfilAtributos);
-    d.perfilAtributos = manter(!!perfil, d.perfilAtributos, "");
-    const usados = (["corpo", "mente", "animo"] as const).map((a) => d.atributos[a]).filter((v): v is number => v !== null);
-    const restantes = [...(perfil?.valores ?? [])];
-    const cabe = usados.every((u) => {
-      const i = restantes.indexOf(u);
-      if (i < 0) return false;
-      restantes.splice(i, 1);
-      return true;
-    });
-    if (!perfil || !cabe) {
-      if (usados.length > 0) descartados++;
-      d.atributos = { corpo: null, mente: null, animo: null };
-    }
     d.perfilPericias = manter(classe.criacao.perfis_pericias.some((p) => p.slug === d.perfilPericias), d.perfilPericias, "");
     const permitidas = classe.criacao.vertentes_primarias === "qualquer" ? cat.vertentes : classe.criacao.vertentes_primarias;
     d.vertente = manter(d.vertente === "" || permitidas.includes(d.vertente), d.vertente, "");

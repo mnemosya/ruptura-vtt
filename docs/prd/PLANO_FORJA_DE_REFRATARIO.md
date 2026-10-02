@@ -1,8 +1,8 @@
 # Plano — Forja de Refratário (criação de personagem)
 
-**Status:** em implementação (Fases 0 a 3 entregues)  
+**Status:** em implementação (Fases 0 a 4 entregues)  
 **Criado em:** 02/10/2026  
-**Versão deste documento:** 0.3  
+**Versão deste documento:** 0.4  
 **Origem:** audit do protótipo `High-Fidelity Character Creator Exploration/` (Figma Make, commit `6449e71`)  
 **Prancha de cores:** https://claude.ai/artifact/QPtzERYKCXwA5AoBQNGNFs
 
@@ -172,7 +172,17 @@ Com a Forja pronta, levantar o que vale para o VTT inteiro (Oxanium nos headings
   - Regras: Atributos por perfil da Classe (escolher o perfil já distribui; − e + trocam valores, a distribuição fica sempre válida), passo novo de Perícias, Qualidades = 3 e Complicações ≥ 2 (sem teto; Qualidades repetíveis podem ser compradas de novo), recursos e PA pelas fórmulas da Classe, magias pendentes, troca de Classe limpa perfis e Perícias com aviso.
   - Narrativa opcional também no servidor (`validation.ts`): Meio, Papel, Relação atual, transformação e RPI aceitam texto vazio. O banco já não exigia.
   - O quadro da placa mostra o Ranking (hoje sempre F).
-  - **Em aberto para a Fase 4:** onde guardar Ideia geral, Aparência e "Como se tornou refratário" no personagem. O contrato v1.2 não tem campo para eles; hoje ficam só no rascunho.
+  - ~~Em aberto para a Fase 4~~: resolvido abaixo.
+
+- **Fase 4 — entregue na mesa.**
+  - "Novo personagem" abre a Forja em tela cheia no lugar do assistente anterior (`AssistenteV12.tsx` removido). Selar cria o personagem (ou completa um existente), fecha a Forja e abre a ficha. O narrador marca "PN" na Revisão.
+  - Avatar pelas regras do VTT: recorte quadrado (`JanelaRecorte`) e envio pelo mesmo fluxo da ficha, feito depois de Selar. Se o envio falhar, o personagem continua criado.
+  - Tela de título: Continuar rascunho, Novo refratário (confirma antes de descartar), Voltar à mesa.
+  - Atributos não dependem da Classe (os perfis são iguais em todas); trocar a Classe limpa só as Perícias. Sem recomendações por Classe.
+  - Ideia geral, Aparência e "Como se tornou refratário" vão para `trajetoria` (`conceito`, `aparencia`, `relato_refratario`, opcionais) e aparecem na ficha, no bloco "História".
+  - Sem região de campanha definida, a Forja pergunta "A campanha começa em" para dar o segundo idioma.
+  - Correção paralela: perfis de Perícias iguais em todas as Classes (Abrangente 8/5/1, Padrão 5/4/2, Especializado 4/2/3), no repositório e no banco (`20261002130000_v12_perfis_pericias_corrigidos.sql`, aplicada).
+  - **Em aberto:** páginas das Classes no Notion ainda com os números antigos; 1 personagem Âncora criado com o Especializado antigo.
 
 ## 6. Em espera
 

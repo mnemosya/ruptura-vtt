@@ -4781,3 +4781,17 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
 /* Moldura da janela "Rolar Dados" (`MolduraRolagem`): o chanfro das
    janelas da mesa. O raio vem inline; aqui só a forma dos cantos. */
 .rv-moldura-rolagem { corner-shape: round bevel round bevel; }
+
+/* HISTÓRIA (IdentityAside): textos livres vindos da Forja de Refratário. */
+.rc-historia { margin: 2px 0 6px; border-top: 1px solid var(--rc-line-soft, #16233a); padding-top: 6px; }
+.rc-historia-resumo {
+  cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px;
+  font: 10px var(--font-mono), monospace; text-transform: uppercase; letter-spacing: 0.18em; color: var(--rc-teal, #45b8c9);
+}
+.rc-historia-resumo::-webkit-details-marker { display: none; }
+.rc-historia-resumo::before { content: "›"; transition: transform 140ms; }
+.rc-historia[open] > .rc-historia-resumo::before { transform: rotate(90deg); }
+.rc-historia-resumo:focus-visible { outline: 2px solid var(--rc-cy, #00d4ff); outline-offset: 2px; }
+.rc-historia-lista { margin: 6px 0 0; display: grid; gap: 6px; }
+.rc-historia-lista dt { font: 10px var(--font-mono), monospace; text-transform: uppercase; letter-spacing: 0.14em; color: var(--rc-dim, #7f95b3); }
+.rc-historia-lista dd { margin: 1px 0 0; font: 400 13px/1.45 var(--font-rajdhani), sans-serif; color: var(--rc-text, #b9c9dc); white-space: pre-line; }

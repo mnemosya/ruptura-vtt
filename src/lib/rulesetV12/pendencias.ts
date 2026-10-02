@@ -45,6 +45,11 @@ export interface CatalogoPendenciasV12 {
   itens: Array<{ slug: string; preco: number }>;
 }
 
+/** Perfis de Atributos: os da Classe escolhida ou, sem Classe, os de qualquer uma (são iguais). */
+export function perfisAtributosV12(classes: ClassContentV12[], classeSlug: string): ClassContentV12["criacao"]["perfis_atributos"] {
+  return (classes.find((c) => c.slug === classeSlug) ?? classes[0])?.criacao.perfis_atributos ?? [];
+}
+
 export const somaPontosV12 = (lista: Array<{ pontos: number }>) => lista.reduce((s, e) => s + e.pontos, 0);
 
 export function contagemPericiasV12(pericias: Record<string, number>): Record<1 | 2 | 3, number> {
@@ -74,7 +79,9 @@ export function orcamentoInicialV12(classe: ClassContentV12 | undefined, qualida
 export function pendenciasCriacaoV12(d: DraftV12, cat: CatalogoPendenciasV12): PendenciaCriacaoV12[] {
   const p: PendenciaCriacaoV12[] = [];
   const classe = cat.classes.find((c) => c.slug === d.classeSlug);
-  const perfilAtr = classe?.criacao.perfis_atributos.find((x) => x.slug === d.perfilAtributos);
+  // Os perfis de Atributos são os mesmos em todas as Classes (teste em
+  // test-ruleset-v12-classes): dá para distribuir antes de escolher a Classe.
+  const perfilAtr = perfisAtributosV12(cat.classes, d.classeSlug).find((x) => x.slug === d.perfilAtributos);
   const perfilPer = classe?.criacao.perfis_pericias.find((x) => x.slug === d.perfilPericias);
 
   if (!d.nome.trim()) p.push({ campo: "nome", texto: "Defina o nome do personagem." });
@@ -119,6 +126,11 @@ export function escolhasCriacaoV12(d: DraftV12, regioes: Array<{ id: string; idi
   const porNivel = (n: 1 | 2 | 3) => Object.entries(d.pericias).filter(([, v]) => v === n).map(([id]) => id);
   const completos = ATRIBUTOS_V12.every((a) => d.atributos[a] !== null);
   const codinome = d.codinome.trim();
+  const textos = {
+    conceito: d.forja?.conceito.trim() ?? "",
+    aparencia: d.forja?.aparencia.trim() ?? "",
+    relato_refratario: d.forja?.relato.trim() ?? "",
+  };
   return {
     nome: d.nome.trim(),
     classe_id: d.classeSlug,
@@ -135,6 +147,9 @@ export function escolhasCriacaoV12(d: DraftV12, regioes: Array<{ id: string; idi
       transformacao_refratario: d.refratario,
       rpi_forjado: { nivel: 1, ...d.rpi },
       ...(codinome ? { codinome } : {}),
+      ...(textos.conceito ? { conceito: textos.conceito } : {}),
+      ...(textos.aparencia ? { aparencia: textos.aparencia } : {}),
+      ...(textos.relato_refratario ? { relato_refratario: textos.relato_refratario } : {}),
       qualidades: d.qualidades.map((q) => ({ quality_id: q.id, pontos: q.pontos, detalhes: {} })),
       complicacoes: d.complicacoes.map((c) => ({ complication_id: c.id, pontos: c.pontos, detalhes: {} })),
     },

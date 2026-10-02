@@ -108,4 +108,18 @@ const ctx: CreationContextV12 = {
 const criado = buildCharacterV2(escolhasCriacaoV12(completo, regioes), ctx);
 assert.equal(criado.ok, true, criado.ok ? "" : criado.errors.join("\n"));
 
+// Atributos não dependem da Classe: dá para distribuir antes de escolhê-la.
+const semClasse = pendenciasCriacaoV12({ ...completo, classeSlug: "", perfilPericias: "", pericias: {} }, cat);
+assert.ok(!semClasse.some((p) => p.campo === "atributos"), "perfil de Atributos vale sem Classe");
+assert.ok(semClasse.some((p) => p.campo === "classe"));
+
+// Ideia geral, Aparência e relato vão para a Trajetória do personagem.
+const comTextos = { ...completo, forja: { passo: 8, conceito: " Ex-arquivista ", aparencia: "Cabelo verde", relato: "" } };
+const trajetoria = escolhasCriacaoV12(comTextos, regioes).trajetoria;
+assert.equal(trajetoria.conceito, "Ex-arquivista");
+assert.equal(trajetoria.aparencia, "Cabelo verde");
+assert.equal("relato_refratario" in trajetoria, false, "texto vazio não é gravado");
+const criadoComTextos = buildCharacterV2(escolhasCriacaoV12(comTextos, regioes), ctx);
+assert.equal(criadoComTextos.ok && criadoComTextos.character.trajetoria.conceito, "Ex-arquivista");
+
 console.log("test-ruleset-v12-pendencias — pendências da criação e narrativa opcional validadas.");

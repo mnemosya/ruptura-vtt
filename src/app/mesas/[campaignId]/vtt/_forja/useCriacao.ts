@@ -60,16 +60,16 @@ function novoRequestId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 }
 
-export function rascunhoInicial(regiaoCampanha: RegiaoIdV12, nome = ""): DraftV12 {
+export function rascunhoInicial(regiaoCampanha: RegiaoIdV12 | null, nome = ""): DraftV12 {
   return {
     schema_version: DRAFT_V12_SCHEMA_VERSION,
     ruleset_version: "1.2",
     step: 1,
     nome,
     codinome: "",
-    regiaoId: regiaoCampanha,
+    regiaoId: regiaoCampanha ?? "beldran",
     localOrigem: "",
-    idiomaCampanha: REGIOES_V12[regiaoCampanha].idioma,
+    idiomaCampanha: regiaoCampanha ? REGIOES_V12[regiaoCampanha].idioma : "",
     antecedenteId: "",
     antecedente: { meio: "", papel: "", relacao_atual: "" },
     refratario: { estopim: "", primeiros_passos: "", consequencia: "" },
@@ -116,17 +116,23 @@ export interface Criacao {
   // Conclusão (Fase 4 do plano)
   enviando: boolean;
   erroEnvio: string | null;
-  concluir: (opcoes?: { pn?: boolean; characterId?: string }) => Promise<string | null>;
+  concluir: (opcoes?: { pn?: boolean }) => Promise<string | null>;
 }
 
-export function useCriacao({ catalogos, regiaoCampanha, campaignId, nomeInicial }: {
+export function useCriacao({ catalogos, regiaoCampanha, campaignId, completar }: {
   catalogos: CatalogosCriacaoV12;
-  regiaoCampanha: RegiaoIdV12;
-  /** Sem ele, nada é lido nem gravado (prévia). */
+  regiaoCampanha: RegiaoIdV12 | null;
+  /** Mesa onde o personagem é criado. Sem ela (prévia), nada é lido, gravado ou criado. */
   campaignId?: string;
-  nomeInicial?: string;
+  /**
+   * Completar um personagem criado só com o nome: não lê nem grava o
+   * rascunho da mesa (que é de outra criação) e, ao concluir, atualiza
+   * esse personagem em vez de criar outro.
+   */
+  completar?: { characterId: string; nome: string } | null;
 }): Criacao {
-  const persiste = Boolean(campaignId);
+  const nomeInicial = completar?.nome;
+  const persiste = Boolean(campaignId) && !completar;
   const [d, setD] = useState<DraftV12>(() => rascunhoInicial(regiaoCampanha, nomeInicial));
   const [estado, setEstado] = useState<EstadoRascunho>(persiste ? { tipo: "carregando" } : { tipo: "pronto" });
   const [aviso, setAviso] = useState<string | null>(null);
@@ -163,7 +169,7 @@ export function useCriacao({ catalogos, regiaoCampanha, campaignId, nomeInicial 
 
   /* ---------- leitura do rascunho ---------- */
   const carregar = useCallback(async () => {
-    if (!campaignId) return;
+    if (!campaignId || !persiste) return;
     setEstado({ tipo: "carregando" });
     ultimoSalvoRef.current = null;
     const r = await lerRascunhoV12Action(campaignId);
@@ -181,7 +187,7 @@ export function useCriacao({ catalogos, regiaoCampanha, campaignId, nomeInicial 
     }
     sujoRef.current = false;
     setEstado({ tipo: "pronto" });
-  }, [campaignId, catalogos]);
+  }, [campaignId, catalogos, persiste]);
 
   useEffect(() => { void carregar(); }, [carregar]);
 
@@ -189,7 +195,7 @@ export function useCriacao({ catalogos, regiaoCampanha, campaignId, nomeInicial 
   const salvarAgora = useCallback(() => {
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
     filaRef.current = filaRef.current.then(async () => {
-      if (!campaignId || concluidoRef.current || conflito || !sujoRef.current) return;
+      if (!campaignId || !persiste || concluidoRef.current || conflito || !sujoRef.current) return;
       sujoRef.current = false;
       setSalvando(true);
       const enviado = dRef.current;
@@ -206,7 +212,7 @@ export function useCriacao({ catalogos, regiaoCampanha, campaignId, nomeInicial 
       setTemRascunhoSalvo(true);
     });
     return filaRef.current;
-  }, [campaignId, requestId, conflito]);
+  }, [campaignId, persiste, requestId, conflito]);
 
   // Sair da Forja desmonta o motor: grava o que ainda estiver no debounce.
   const salvarAgoraRef = useRef(salvarAgora);
@@ -215,7 +221,7 @@ export function useCriacao({ catalogos, regiaoCampanha, campaignId, nomeInicial 
 
   // Debounce: compara com o último conteúdo salvo, não com contagem de renders.
   useEffect(() => {
-    if (!campaignId || estado.tipo !== "pronto") return;
+    if (!persiste || estado.tipo !== "pronto") return;
     const atual = JSON.stringify(d);
     if (ultimoSalvoRef.current === null) { ultimoSalvoRef.current = atual; return; }
     if (atual === ultimoSalvoRef.current) return;
@@ -223,7 +229,7 @@ export function useCriacao({ catalogos, regiaoCampanha, campaignId, nomeInicial 
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => void salvarAgora(), AUTOSAVE_DEBOUNCE_MS);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [d, estado.tipo, salvarAgora, campaignId]);
+  }, [d, estado.tipo, salvarAgora, persiste]);
 
   const irPara = useCallback((passo: number) => {
     setD((o) => ({ ...o, step: ETAPA_DO_PASSO[passo] ?? o.step, forja: { ...(o.forja ?? FORJA_VAZIA), passo } }));
@@ -234,7 +240,7 @@ export function useCriacao({ catalogos, regiaoCampanha, campaignId, nomeInicial 
     concluidoRef.current = true;
     if (timerRef.current) clearTimeout(timerRef.current);
     await filaRef.current;
-    if (campaignId) await apagarRascunhoV12Action(campaignId);
+    if (campaignId && persiste) await apagarRascunhoV12Action(campaignId);
     concluidoRef.current = false;
     sujoRef.current = false;
     ultimoSalvoRef.current = null;
@@ -244,20 +250,20 @@ export function useCriacao({ catalogos, regiaoCampanha, campaignId, nomeInicial 
     setRequestId(novoRequestId());
     setD(rascunhoInicial(regiaoCampanha, nomeInicial));
     setEstado({ tipo: "pronto" });
-  }, [campaignId, regiaoCampanha, nomeInicial]);
+  }, [campaignId, persiste, regiaoCampanha, nomeInicial]);
 
   /* ---------- Classe: trocar limpa o que dependia dela ---------- */
   const trocarClasse = useCallback((slug: string) => {
     const o = dRef.current;
     if (o.classeSlug === slug) return;
-    if (o.perfilAtributos || o.perfilPericias || Object.keys(o.pericias).length > 0) {
-      setAviso("A Classe mudou: o perfil de Atributos e as Perícias foram limpos, porque dependem dela.");
+    if (o.perfilPericias || Object.keys(o.pericias).length > 0) {
+      setAviso("A Classe mudou: as Perícias foram limpas, porque as opções de cada valor dependem dela.");
     }
-    set({ classeSlug: slug, perfilAtributos: "", atributos: { corpo: null, mente: null, animo: null }, perfilPericias: "", pericias: {} });
+    set({ classeSlug: slug, perfilPericias: "", pericias: {} });
   }, [set]);
 
   /* ---------- Conclusão ---------- */
-  const concluir = useCallback(async (opcoes?: { pn?: boolean; characterId?: string }) => {
+  const concluir = useCallback(async (opcoes?: { pn?: boolean }) => {
     if (!campaignId) return null;
     setErroEnvio(null);
     setEnviando(true);
@@ -270,7 +276,7 @@ export function useCriacao({ catalogos, regiaoCampanha, campaignId, nomeInicial 
       campaignId,
       escolhasCriacaoV12(dRef.current, catalogos.regioes),
       requestId,
-      opcoes?.characterId ? { characterId: opcoes.characterId } : { pn: Boolean(opcoes?.pn) },
+      completar ? { characterId: completar.characterId } : { pn: Boolean(opcoes?.pn) },
     );
     setEnviando(false);
     if (!r.ok || !r.dados) {
@@ -279,7 +285,7 @@ export function useCriacao({ catalogos, regiaoCampanha, campaignId, nomeInicial 
       return null;
     }
     return r.dados.characterId;
-  }, [campaignId, catalogos.regioes, requestId]);
+  }, [campaignId, catalogos.regioes, requestId, completar]);
 
   return {
     d, forja, set, setForja,
