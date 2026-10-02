@@ -16,6 +16,7 @@ import { createClient } from "@supabase/supabase-js";
 import { chromium } from "playwright";
 import { BASE_URL } from "./authSession";
 
+import { personagemV12 } from "./fixtures/personagemV12";
 loadDotenv({ path: ".env.local" });
 
 function requireEnv(nome: string): string {
@@ -51,13 +52,9 @@ async function main() {
   const p1 = randomUUID();
   await admin.from("characters").insert({
     id: p1, name: "Mara Venn", status: "draft", campaign_id: campaignId, owner_id: narradorId,
-    payload: {
-      nome: "Mara Venn",
-      atributos: { corpo: 3, mente: 2, animo: 3 },
+    payload: personagemV12("Mara Venn", { atributos: { corpo: 3, mente: 2, animo: 3 },
       pericias: { balistica: 2 },
-      pm_total: 6, pm_disponivel: 4,
-      metadados: { schema_version: 1 },
-    },
+      pm_total: 6, pm_disponivel: 4 }),
   });
 
   try {

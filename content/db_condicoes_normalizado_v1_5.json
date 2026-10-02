@@ -2,21 +2,18 @@
   "_schema": "ruptura.vtt.content.condicoes.v1.5",
   "_meta": {
     "conteudo": "condicoes",
-    "fonte": "Capitulo CONDICOES (upload de junho/2026)",
+    "fonte": "RUPTURA v1.2 — capítulo 22. CONDIÇÕES (Notion, 01/10/2026)",
     "versao_schema": "1.5.0",
     "status_padrao": "published",
     "gerado_em": "2026-06-25",
-    "total_registros": 17,
+    "total_registros": 18,
     "hash_sha256_origem": "7360fa68c5ada3f49296b805a380db5c180abcef02419d71fbe8e0b18c95330c",
     "observacoes": [
-      "Condições foram normalizadas como IDs internos sem acento e em snake_case.",
-      "Descrições foram separadas em descricao_curta e descricao_longa.",
-      "Efeitos foram estruturados em payload_automacao.efeitos.",
-      "Ações habilitadas por condição foram separadas de modificadores passivos.",
-      "v1.3: Sangrando causa 1d6 de dano físico no fim de cada rodada. A condição dura até recuperar pelo menos 1 PV. Não há teste, sucesso, metade do dano ou resolução manual.",
-      "v1.5: remove_por usa minimo_pv para remoção por cura; schema passa a validar essa estrutura."
+      "Condições cumulativas usam nivel_maximo e efeitos por nível.",
+      "Níveis substituem os efeitos anteriores; abaixo de 1 a condição termina.",
+      "Oculto é relativo ao observador; a relação fica registrada no texto até o VTT possuir percepção por criatura."
     ],
-    "revisao": "Correção de Sangrando: removida qualquer resolução de sucesso/metade. A condição causa apenas 1d6 físico no fim de cada rodada e termina ao recuperar pelo menos 1 PV. | v1.4: remove_por.minimo -> minimo_pv (alinhado ao payload). | v1.5: created_at/updated_at adicionados; remove_por validado como recuperar_pv/minimo_pv."
+    "revisao": "RUPTURA v1.2: 18 condições; níveis cumulativos persistentes; Oculto incluído; cura reduz Contundido/Sangrando e não remove Envenenado."
   },
   "enums": {
     "status": [
@@ -160,9 +157,9 @@
         ]
       },
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01"
     },
     {
       "id": "agarrando",
@@ -217,9 +214,9 @@
         ]
       },
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01"
     },
     {
       "id": "atordoado",
@@ -251,9 +248,9 @@
         ]
       },
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01"
     },
     {
       "id": "caido",
@@ -307,9 +304,9 @@
         ]
       },
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01"
     },
     {
       "id": "cego",
@@ -317,8 +314,8 @@
       "nome": "Cego",
       "categoria": "condicao",
       "categoria_label": "Condição",
-      "descricao_curta": "Falha automaticamente em testes de visão; ofensivas contra o alvo recebem +2; suas ofensivas sofrem –2.",
-      "descricao_longa": "Falha automaticamente em testes que dependem de visão; ações ofensivas contra ele recebem +2 de vantagem, e suas próprias ações ofensivas sofrem –2 de desvantagem.",
+      "descricao_curta": "Falha em testes de visão; ofensivas contra o alvo recebem +2; ofensivas e defensivas visuais sofrem –2.",
+      "descricao_longa": "Falha automaticamente em testes que dependam de visão. Ações ofensivas contra você recebem +2 de vantagem, e suas ações ofensivas e defensivas que dependam de visão sofrem –2 de desvantagem. Novas aplicações renovam a duração.",
       "tags": [
         "falha_automatica",
         "penalidade_ofensiva",
@@ -349,15 +346,16 @@
             "tipo": "modificador",
             "valor": -2,
             "alvo_tags": [
-              "ofensiva"
+              "ofensiva",
+              "defensiva"
             ]
           }
         ]
       },
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01"
     },
     {
       "id": "contundido",
@@ -365,8 +363,8 @@
       "nome": "Contundido",
       "categoria": "condicao",
       "categoria_label": "Condição",
-      "descricao_curta": "–1 em Luta, Mobilidade e Reflexos; dura até recuperar pelo menos 1 PV.",
-      "descricao_longa": "Sofre –1 de desvantagem em testes de Luta, Mobilidade e Reflexos. A condição dura até recuperar pelo menos 1 PV.",
+      "descricao_curta": "Nível 1: –1 em Luta, Mobilidade e Reflexos; nível 2: –2. Cura de PV reduz 1 nível.",
+      "descricao_longa": "Pode alcançar 2 níveis. Nível 1: –1 de desvantagem em Luta, Mobilidade e Reflexos. Nível 2: –2. Nova aplicação no nível 2 fratura um membro. Recuperar ao menos 1 PV reduz a condição em 1 nível; a fratura permanece.",
       "tags": [
         "dano",
         "penalidade_pericia",
@@ -376,7 +374,8 @@
       "remove_por": [
         {
           "tipo": "recuperar_pv",
-          "minimo_pv": 1
+          "minimo_pv": 1,
+          "reduzir_niveis": 1
         }
       ],
       "acoes_habilitadas": [],
@@ -384,7 +383,10 @@
         "efeitos": [
           {
             "tipo": "modificador",
-            "valor": -1,
+            "valor_por_nivel": {
+              "1": -1,
+              "2": -2
+            },
             "alvo_tags": [
               "luta",
               "mobilidade",
@@ -392,15 +394,20 @@
             ]
           },
           {
-            "tipo": "remover_ao_recuperar_pv",
-            "minimo_pv": 1
+            "tipo": "reduzir_ao_recuperar_pv",
+            "minimo_pv": 1,
+            "niveis": 1
           }
+        ],
+        "observacoes": [
+          "Aplicação além do nível 2 causa fratura; a escolha do membro exige interface própria."
         ]
       },
       "status": "published",
-      "versao": "1.5.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01",
+      "nivel_maximo": 2
     },
     {
       "id": "envenenado",
@@ -408,8 +415,8 @@
       "nome": "Envenenado",
       "categoria": "condicao",
       "categoria_label": "Condição",
-      "descricao_curta": "Perde 1 PA; no fim de cada rodada faz Vigor CD 7 ou sofre 1d4 tóxico; dura até recuperar pelo menos 1 PV.",
-      "descricao_longa": "O alvo perde 1 PA para agir na rodada. Além disso, no fim de cada rodada deve realizar um teste de Vigor CD 7; em caso de falha, sofre 1d4 de dano tóxico. A condição dura até recuperar pelo menos 1 PV.",
+      "descricao_curta": "–1 PA; Vigor CD 7 no fim da rodada ou dano tóxico de 1d4/1d6/1d8 conforme o nível.",
+      "descricao_longa": "Pode alcançar 3 níveis. Possui 1 PA a menos. No fim da rodada, Vigor CD 7; falha causa 1d4, 1d6 ou 1d8 de dano tóxico conforme o nível, ignorando MIT. Antídoto apropriado encerra a condição.",
       "tags": [
         "dano_continuo",
         "fim_de_rodada",
@@ -418,12 +425,7 @@
         "veneno"
       ],
       "duracao_padrao": null,
-      "remove_por": [
-        {
-          "tipo": "recuperar_pv",
-          "minimo_pv": 1
-        }
-      ],
+      "remove_por": [],
       "acoes_habilitadas": [],
       "payload_automacao": {
         "efeitos": [
@@ -439,20 +441,22 @@
               "cd": 7
             },
             "falha": {
-              "dano": "1d4",
-              "tipo_dano": "toxico"
+              "dano_por_nivel": {
+                "1": "1d4",
+                "2": "1d6",
+                "3": "1d8"
+              },
+              "tipo_dano": "toxico",
+              "ignora_mit": true
             }
-          },
-          {
-            "tipo": "remover_ao_recuperar_pv",
-            "minimo_pv": 1
           }
         ]
       },
       "status": "published",
-      "versao": "1.5.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01",
+      "nivel_maximo": 3
     },
     {
       "id": "imobilizado",
@@ -498,9 +502,9 @@
         ]
       },
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01"
     },
     {
       "id": "insaturado",
@@ -532,34 +536,21 @@
             },
             "falha": {
               "aplicar_condicao": "lento",
-              "duracao": "ate_sair_da_area"
+              "duracao": "enquanto_na_area"
             }
-          },
-          {
-            "tipo": "exigir_teste_conjuracao",
-            "alvo": "magistas",
-            "inclui_triviais": true
-          },
-          {
-            "tipo": "modificador",
-            "valor": -1,
-            "alvo_tags": [
-              "conjuracao"
-            ],
-            "alvo": "magistas"
           },
           {
             "tipo": "alterar_custo_mana",
             "valor": 1,
             "operacao": "somar",
-            "alvo": "magistas"
+            "minimo": 1
           }
         ]
       },
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01"
     },
     {
       "id": "inconsciente",
@@ -596,9 +587,9 @@
         ]
       },
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01"
     },
     {
       "id": "lento",
@@ -606,8 +597,8 @@
       "nome": "Lento",
       "categoria": "condicao",
       "categoria_label": "Condição",
-      "descricao_curta": "Deslocamento à metade; –1 em Reflexos e Mobilidade.",
-      "descricao_longa": "Seu deslocamento é reduzido à metade. Além disso, sofre –1 de desvantagem em testes de Reflexos e Mobilidade.",
+      "descricao_curta": "Nível 1: deslocamento à metade e –1 em Mobilidade/Reflexos; nível 2: deslocamento 0 e –2.",
+      "descricao_longa": "Pode alcançar 2 níveis. Nível 1 reduz o deslocamento à metade e impõe –1 em Mobilidade e Reflexos. Nível 2 torna o deslocamento total 0 e aumenta a penalidade para –2. Não impede ações ofensivas ou defensivas.",
       "tags": [
         "penalidade_pericia",
         "restricao_movimento"
@@ -618,13 +609,19 @@
       "payload_automacao": {
         "efeitos": [
           {
-            "tipo": "multiplicar_deslocamento",
-            "multiplicador": 0.5,
-            "arredondamento": "baixo"
+            "tipo": "deslocamento_por_nivel",
+            "valor_por_nivel": {
+              "1": 0.5,
+              "2": 0
+            },
+            "operacao": "multiplicar_ou_definir"
           },
           {
             "tipo": "modificador",
-            "valor": -1,
+            "valor_por_nivel": {
+              "1": -1,
+              "2": -2
+            },
             "alvo_tags": [
               "reflexos",
               "mobilidade"
@@ -633,9 +630,10 @@
         ]
       },
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01",
+      "nivel_maximo": 2
     },
     {
       "id": "ofuscado",
@@ -643,8 +641,8 @@
       "nome": "Ofuscado",
       "categoria": "condicao",
       "categoria_label": "Condição",
-      "descricao_curta": "–1 em todos os testes que dependem de visão, incluindo ações ofensivas e defensivas.",
-      "descricao_longa": "Sofre –1 de desvantagem em todos os testes que dependem de visão, incluindo ações ofensivas e defensivas.",
+      "descricao_curta": "–1/–2 em testes visuais. Nova aplicação no nível 2 causa Cego até o fim do próximo turno.",
+      "descricao_longa": "Pode alcançar 2 níveis. Sofre –1 ou –2 em testes que dependam de visão, incluindo ações ofensivas e defensivas. Nova aplicação no nível 2 causa Cego até o fim do próximo turno e depois retorna a Ofuscado 2.",
       "tags": [
         "penalidade",
         "sentido",
@@ -657,26 +655,76 @@
         "efeitos": [
           {
             "tipo": "modificador",
-            "valor": -1,
+            "valor_por_nivel": {
+              "1": -1,
+              "2": -2
+            },
             "alvo_tags": [
               "visao"
             ]
           },
           {
             "tipo": "modificador",
-            "valor": -1,
+            "valor_por_nivel": {
+              "1": -1,
+              "2": -2
+            },
             "alvo_tags": [
               "ofensiva",
               "defensiva"
             ],
             "quando": "dependem_de_visao"
           }
+        ],
+        "observacoes": [
+          "Overflow no nível 2 aplica Cego temporário até o fim do próximo turno."
         ]
       },
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01",
+      "nivel_maximo": 2
+    },
+    {
+      "id": "oculto",
+      "slug": "oculto",
+      "nome": "Oculto",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "Localização desconhecida para certas criaturas; primeira ofensiva recebe +1 e revela sua posição.",
+      "descricao_longa": "Sua localização não é conhecida pelas criaturas das quais está escondido. Elas não podem escolhê-lo como alvo de ações visuais. Sua primeira ação ofensiva contra quem não saiba onde você está recebe +1 de vantagem e encerra Oculto para essa criatura. É uma condição relativa por observador.",
+      "tags": [
+        "controle",
+        "relacional",
+        "visao"
+      ],
+      "duracao_padrao": null,
+      "remove_por": [],
+      "acoes_habilitadas": [],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "bloquear_alvo_visual",
+            "relativo_ao_observador": true
+          },
+          {
+            "tipo": "modificador",
+            "valor": 1,
+            "alvo_tags": [
+              "ofensiva"
+            ],
+            "quando": "primeira_acao_contra_observador_que_nao_localizou"
+          }
+        ],
+        "observacoes": [
+          "A relação por observador exige estado de percepção no VTT e permanece informativa nesta etapa."
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-01",
+      "updated_at": "2026-10-01"
     },
     {
       "id": "queimando",
@@ -684,8 +732,8 @@
       "nome": "Queimando",
       "categoria": "condicao",
       "categoria_label": "Condição",
-      "descricao_curta": "Sofre 1d6 ígneo no fim de cada rodada; Interagir 1 PA apaga o fogo e encerra a condição.",
-      "descricao_longa": "Sofre 1d6 de dano ígneo no fim de cada rodada enquanto estiver sob o efeito. O personagem pode usar a ação Interagir 1 PA para apagar o fogo e a condição termina.",
+      "descricao_curta": "No fim da rodada sofre 1d6/1d8/1d12 ígneo. Interagir 1 PA reduz 1 nível.",
+      "descricao_longa": "Pode alcançar 3 níveis. No fim da rodada sofre 1d6, 1d8 ou 1d12 de dano ígneo conforme o nível, reduzido pela MIT da região atingida ou do Tronco. Interagir (1 PA, apagar o fogo) reduz 1 nível; submersão ou meio apropriado encerra.",
       "tags": [
         "acao_remove",
         "dano_continuo",
@@ -696,31 +744,39 @@
       "remove_por": [],
       "acoes_habilitadas": [
         {
-          "acao": "apagar_fogo",
-          "base_acao": "interagir",
-          "custo_pa": 1
+          "acao": "interagir",
+          "opcao": "apagar_fogo",
+          "custo_pa": 1,
+          "reduzir_niveis": 1
         }
       ],
       "payload_automacao": {
         "efeitos": [
           {
             "tipo": "dano_fim_de_rodada",
-            "dano": "1d6",
-            "tipo_dano": "igneo"
+            "dano_por_nivel": {
+              "1": "1d6",
+              "2": "1d8",
+              "3": "1d12"
+            },
+            "tipo_dano": "igneo",
+            "aplica_mit": true,
+            "regiao_fallback": "tronco"
           },
           {
             "tipo": "habilitar_acao",
-            "acao": "apagar_fogo",
-            "base_acao": "interagir",
+            "acao": "interagir",
+            "opcao": "apagar_fogo",
             "custo_pa": 1,
-            "remove_condicao": "queimando"
+            "reduzir_niveis": 1
           }
         ]
       },
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01",
+      "nivel_maximo": 3
     },
     {
       "id": "sufocando",
@@ -728,8 +784,8 @@
       "nome": "Sufocando",
       "categoria": "condicao",
       "categoria_label": "Condição",
-      "descricao_curta": "–1 em testes de Corpo; após 3 minutos fica Inconsciente; após 5 minutos morre.",
-      "descricao_longa": "Sofre –1 de desvantagem em testes de Corpo. Após 3 minutos consecutivos nessa condição, o personagem fica Inconsciente; após 5 minutos, ele morre.",
+      "descricao_curta": "–1 em Corpo e –1 PA; Vigor CD 6 crescente no fim da rodada. Falhas causam inconsciência e depois morte.",
+      "descricao_longa": "Após 5 + Vigor rodadas sem respirar, fica Sufocando. Sofre –1 em Corpo e possui 1 PA a menos. No fim da rodada testa Vigor, começando em CD 6 e aumentando 1 a cada teste. Falha causa Inconsciente; nova falha enquanto Inconsciente causa morte. Voltar a respirar encerra imediatamente.",
       "tags": [
         "asfixia",
         "cronometro",
@@ -749,20 +805,28 @@
             ]
           },
           {
-            "tipo": "aplicar_condicao_apos_tempo",
-            "tempo_min": 3,
-            "condicao": "inconsciente"
+            "tipo": "reduzir_pa",
+            "valor": 1,
+            "escopo": "rodada"
           },
           {
-            "tipo": "morte_apos_tempo",
-            "tempo_min": 5
+            "tipo": "teste_fim_de_rodada_progressivo",
+            "resistencia": {
+              "pericia": "vigor",
+              "cd_inicial": 6,
+              "incremento": 1
+            },
+            "falha": {
+              "aplicar_condicao": "inconsciente",
+              "se_ja_inconsciente": "morte"
+            }
           }
         ]
       },
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01"
     },
     {
       "id": "sangrando",
@@ -770,8 +834,8 @@
       "nome": "Sangrando",
       "categoria": "condicao",
       "categoria_label": "Condição",
-      "descricao_curta": "No fim de cada rodada sofre 1d6 de dano físico. Dura até recuperar pelo menos 1 PV.",
-      "descricao_longa": "No fim de cada rodada sofre 1d6 de dano físico. A condição dura até recuperar pelo menos 1 PV.",
+      "descricao_curta": "No fim da rodada sofre 1d6/1d8/1d12 físico e aumenta 1 nível. Cura reduz 1 nível.",
+      "descricao_longa": "Pode alcançar 3 níveis. No fim da rodada sofre 1d6, 1d8 ou 1d12 de dano físico conforme o nível, ignorando MIT, e aumenta 1 nível a partir da rodada seguinte à aplicação. Interagir (1 PA, conter o sangramento) contém o agravamento naquela rodada. Recuperar ao menos 1 PV reduz 1 nível.",
       "tags": [
         "dano_continuo",
         "fim_de_rodada",
@@ -782,27 +846,53 @@
       "remove_por": [
         {
           "tipo": "recuperar_pv",
-          "minimo_pv": 1
+          "minimo_pv": 1,
+          "reduzir_niveis": 1
         }
       ],
-      "acoes_habilitadas": [],
+      "acoes_habilitadas": [
+        {
+          "acao": "interagir",
+          "opcao": "conter_sangramento",
+          "custo_pa": 1
+        }
+      ],
       "payload_automacao": {
         "efeitos": [
           {
             "tipo": "dano_fim_de_rodada",
-            "dano": "1d6",
-            "tipo_dano": "fisico"
+            "dano_por_nivel": {
+              "1": "1d6",
+              "2": "1d8",
+              "3": "1d12"
+            },
+            "tipo_dano": "fisico",
+            "ignora_mit": true
           },
           {
-            "tipo": "remover_ao_recuperar_pv",
-            "minimo_pv": 1
+            "tipo": "agravar_fim_de_rodada",
+            "niveis": 1,
+            "inicia_na_rodada_seguinte": true,
+            "impedido_por": "conter_sangramento"
+          },
+          {
+            "tipo": "reduzir_ao_recuperar_pv",
+            "minimo_pv": 1,
+            "niveis": 1
+          },
+          {
+            "tipo": "habilitar_acao",
+            "acao": "interagir",
+            "opcao": "conter_sangramento",
+            "custo_pa": 1
           }
         ]
       },
       "status": "published",
-      "versao": "1.5.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01",
+      "nivel_maximo": 3
     },
     {
       "id": "saturado",
@@ -833,7 +923,8 @@
               "cd": 7
             },
             "falha": {
-              "aplicar_condicao": "envenenado"
+              "aplicar_condicao": "envenenado",
+              "nivel": 1
             }
           },
           {
@@ -848,22 +939,14 @@
             "tipo": "alterar_custo_mana",
             "valor": -1,
             "operacao": "somar",
-            "alvo": "magistas"
-          },
-          {
-            "tipo": "modificador",
-            "valor": 1,
-            "alvo_tags": [
-              "conjuracao"
-            ],
-            "alvo": "magistas"
+            "minimo": 1
           }
         ]
       },
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01"
     },
     {
       "id": "surdo",
@@ -892,9 +975,9 @@
         ]
       },
       "status": "published",
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01"
     }
   ]
 }

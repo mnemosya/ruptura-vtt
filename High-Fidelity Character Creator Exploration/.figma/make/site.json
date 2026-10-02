@@ -1,0 +1,10 @@
+{
+  "description": "Create immersive character profiles for the sci-fi RPG Ruptura with a visually engaging wizard that guides players through identity and class selection.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

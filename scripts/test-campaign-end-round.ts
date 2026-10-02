@@ -47,6 +47,7 @@ import {
 import { createInitialCharacter } from "../src/lib/character";
 import type { Character } from "../src/lib/character";
 
+import { personagemV12 } from "./dev/fixtures/personagemV12";
 const TEST_CAMPAIGN_NAME = "__TESTE_CAMPAIGN_END_ROUND__";
 const TEST_CHARACTER_PREFIX = "__TESTE_CER__";
 
@@ -69,7 +70,7 @@ function condition(slug: string) {
 }
 
 function characterWithCondition(nome: string, slug?: string): Character {
-  const base = createInitialCharacter(null, nome);
+  const base = personagemV12(nome);
   return {
     ...base,
     recursos_atuais: { ...base.recursos_atuais, pv: 20, pe: 20 },

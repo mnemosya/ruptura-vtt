@@ -1,97 +1,81 @@
 "use client";
 
 /**
- * O ASSISTENTE DE CRIAÇÃO, dentro da mesa.
+ * A CRIAÇÃO DE PERSONAGEM da mesa: a Forja de Refratário em tela cheia,
+ * por cima do mapa.
  *
- * Era a rota `/personagens/novo`, e o wizard inteiro (identidade,
- * atributos, perícias, talentos, magias, inventário) continua sendo o
- * mesmo componente — o que mudou é que ele não navega mais: terminar
- * abre a ficha por cima, sair fecha a janela, e o rascunho continua
- * sendo salvo do mesmo jeito.
+ * Substitui o assistente anterior (AssistenteV12): mesmas regras v1.2,
+ * mesmo rascunho salvo na mesa, mesma conclusão no servidor. Selar abre
+ * a ficha por cima e "Voltar à mesa" fecha.
  *
  * Diferente do "+ Personagem" da aba, que cria um personagem só com o
  * nome: aquilo é atalho de narrador montando a cena; isto é a criação
- * completa, de quem vai jogar com ele.
+ * completa, de quem vai jogar com ele (ou o "completar" daquele atalho).
  */
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
-import { JanelaInterna } from "../ui/JanelaInterna";
-import AssistenteDeCriacao from "./AssistenteDeCriacao";
-import { lerCatalogosDaCriacaoAction, type CatalogosDaCriacao } from "../../_acoes/campanhaActions";
-import { useCampaignSession } from "../../../_shell/CampaignRealtimeProvider";
+import { createPortal } from "react-dom";
+import { Forja } from "../../_forja/Forja";
+import { oxanium } from "../../_forja/fonte";
+import { lerCatalogosCriacaoV12Action, type CatalogosCriacaoV12 } from "../../_acoes/criacaoV12Actions";
+import type { PersonagemACompletar } from "../../_shell/JanelasDaMesa";
+import "../../_forja/forja.css";
+// A janela de recorte do avatar é a mesma da ficha, estilizada no Console.
+import "../../../../../_design/console.css";
 
 export function JanelaNovoPersonagem({
   campaignId,
+  completar = null,
   onAbrirFicha,
   onFechar,
 }: {
   campaignId: string;
+  completar?: PersonagemACompletar | null;
   onAbrirFicha: (characterId: string) => void;
   onFechar: () => void;
 }) {
-  const { campaign } = useCampaignSession();
-  const [catalogos, setCatalogos] = useState<CatalogosDaCriacao | null>(null);
+  const [catalogos, setCatalogos] = useState<CatalogosCriacaoV12 | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [montado, setMontado] = useState(false);
+  useEffect(() => { setMontado(true); }, []);
 
   useEffect(() => {
     let vivo = true;
-    void lerCatalogosDaCriacaoAction(campaignId).then((r) => {
+    setErro(null);
+    void lerCatalogosCriacaoV12Action(campaignId).then((r) => {
       if (!vivo) return;
-      if (!r.ok || !r.dados) { setErro(r.erro ?? "Falha ao preparar o assistente."); return; }
+      if (!r.ok || !r.dados) { setErro(r.erro ?? "Falha ao preparar a Forja."); return; }
       setCatalogos(r.dados);
     });
     return () => { vivo = false; };
   }, [campaignId]);
 
-  return (
-    <JanelaInterna
-      aberta
-      titulo="Novo personagem"
-      largura={760}
-      altura={680}
-      onFechar={onFechar}
-      testId="painel-janela-novo-personagem"
-    >
-      <div className="rv-novo-personagem rm-root">
-        {erro && (
-          <p className="rv-cena-estado" data-tipo="erro" role="alert">
-            <AlertTriangle size={14} aria-hidden="true" /> {erro}
-          </p>
-        )}
+  // Esc fecha só enquanto a Forja ainda carrega; dentro dela, Esc é dos Códex.
+  useEffect(() => {
+    if (catalogos) return;
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") onFechar(); };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [catalogos, onFechar]);
 
-        {!catalogos && !erro && (
-          <p className="rv-cena-estado">
-            <Loader2 size={14} className="rv-girando" aria-hidden="true" /> Preparando o assistente…
-          </p>
-        )}
-
-        {/* SEM REGRAS NÃO HÁ ASSISTENTE, e isso não é um erro de rede a
-            ser tentado de novo: `regras_personagem` é o documento que
-            define atributos e perícias. Montar o wizard sem ele seria
-            oferecer escolhas inventadas. */}
-        {catalogos && !catalogos.regras && (
-          <p className="rv-cena-estado" data-tipo="erro" role="alert">
-            <AlertTriangle size={14} aria-hidden="true" />
-            As regras de personagem não vieram do banco — sem elas não dá para montar o assistente.
-          </p>
-        )}
-
-        {catalogos?.regras && (
-          <AssistenteDeCriacao
-            campaign={campaign}
-            regras={catalogos.regras}
-            talentos={catalogos.talentos}
-            talentosErro={catalogos.talentosErro}
-            magias={catalogos.magias}
-            magiasErro={catalogos.magiasErro}
-            itensLoja={catalogos.itensLoja}
-            itensLojaErro={catalogos.itensLojaErro}
-            onSair={onFechar}
-            onConcluir={(characterId) => { onFechar(); onAbrirFicha(characterId); }}
-          />
-        )}
-      </div>
-    </JanelaInterna>
+  if (!montado) return null;
+  return createPortal(
+    <div className="fj-janela" role="dialog" aria-modal="true" aria-label={completar ? `Completar ${completar.nome}` : "Forja de Refratário"} data-testid="painel-janela-novo-personagem">
+      {catalogos ? (
+        <Forja
+          catalogos={catalogos}
+          campaignId={campaignId}
+          nomeMesa={catalogos.nomeMesa ?? "Mesa"}
+          completar={completar}
+          onSair={onFechar}
+          onConcluir={(id) => { onFechar(); onAbrirFicha(id); }}
+        />
+      ) : (
+        <div className={`fj-root ${oxanium.variable} fj-janela__carregando`}>
+          {erro ? <p role="alert">{erro} <button type="button" onClick={onFechar}>Voltar à mesa</button></p> : <p>Preparando a Forja…</p>}
+        </div>
+      )}
+    </div>,
+    document.body,
   );
 }

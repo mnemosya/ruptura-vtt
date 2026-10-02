@@ -32,19 +32,20 @@
  * apenas projeções de campos já presentes nos registros.
  */
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { config as loadDotenv } from "dotenv";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { validateRulesetContentBundleV12 } from "../src/lib/rulesetV12";
 
 loadDotenv({ path: ".env.local" });
 
 // ---------------------------------------------------------------------
 // Configuração
 // ---------------------------------------------------------------------
-const SUPABASE_URL = requireEnv("SUPABASE_URL");
-const SUPABASE_SERVICE_ROLE_KEY = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+/** SEED_DRY_RUN=1 monta e valida as linhas sem tocar no banco. */
+const DRY_RUN = process.env.SEED_DRY_RUN === "1";
 const CONTENT_DIR = process.env.CONTENT_DIR ?? "./content";
 const MANIFEST_FILE = process.env.MANIFEST_FILE ?? "ruptura_core_manifest_v0_1.json";
 
@@ -73,7 +74,12 @@ type ContentType =
   | "escalpo"
   | "talent"
   | "spell"
-  | "companion_model";
+  | "companion_model"
+  | "class"
+  | "subclass"
+  | "background"
+  | "quality"
+  | "complication";
 
 type Mode = "singleton" | "collection";
 
@@ -89,6 +95,8 @@ interface SourceSpec {
   /** Para singleton: slug e nome estáveis do documento. */
   singletonSlug?: string;
   singletonNome?: string;
+  /** Versão fixa dos documentos (ex.: ruleset "1.2"), em vez da versão do pack. */
+  version?: string;
 }
 
 interface DocumentRow {
@@ -120,6 +128,16 @@ interface ExistingRow {
 //
 // master_table NÃO está no manifesto do core; é tratado à parte.
 // ---------------------------------------------------------------------
+function classBundleSources(): SourceSpec[] {
+  const arquivos = readdirSync(join(CONTENT_DIR, "v12"))
+    .filter((f) => /^db_classe_.+_v1_2\.json$/.test(f))
+    .sort();
+  return arquivos.flatMap((f) => [
+    { contentType: "class" as const, mode: "collection" as const, file: `v12/${f}`, collectionKey: "classes", version: "1.2" },
+    { contentType: "subclass" as const, mode: "collection" as const, file: `v12/${f}`, collectionKey: "subclasses", version: "1.2" },
+  ]);
+}
+
 const SOURCES: SourceSpec[] = [
   {
     manifestId: "regras_personagem",
@@ -216,6 +234,31 @@ const SOURCES: SourceSpec[] = [
     file: "db_magias_normalizado_v1_3.json",
     collectionKey: "magias",
   },
+  // RUPTURA v1.2 — pacotes validados por validateRulesetContentBundleV12
+  // antes de qualquer escrita (ver RULESET_V12_BUNDLES). Cada Classe tem
+  // seu arquivo v12/db_classe_<slug>_v1_2.json, com Classe e Subclasses.
+  ...classBundleSources(),
+  {
+    contentType: "background",
+    mode: "collection",
+    file: "v12/db_trajetoria_v1_2.json",
+    collectionKey: "backgrounds",
+    version: "1.2",
+  },
+  {
+    contentType: "quality",
+    mode: "collection",
+    file: "v12/db_trajetoria_v1_2.json",
+    collectionKey: "qualities",
+    version: "1.2",
+  },
+  {
+    contentType: "complication",
+    mode: "collection",
+    file: "v12/db_trajetoria_v1_2.json",
+    collectionKey: "complications",
+    version: "1.2",
+  },
   // Não está no manifesto do core — singleton tratado à parte.
   {
     contentType: "master_table",
@@ -225,6 +268,9 @@ const SOURCES: SourceSpec[] = [
     singletonNome: "Tabelas Mestre",
   },
 ];
+
+/** Arquivos v1.2 com o formato RulesetContentBundleV12. */
+const RULESET_V12_BUNDLES = [...new Set(SOURCES.filter((s) => s.version === "1.2").map((s) => s.file))];
 
 // ---------------------------------------------------------------------
 // Helpers
@@ -321,7 +367,7 @@ function buildRowsForSource(
       categoria: asString(el.categoria),
       subtipo: asString(el.subtipo),
       status: asString(el.status) ?? packDefaultStatus,
-      version: asString(el.versao) ?? packVersion,
+      version: spec.version ?? asString(el.versao) ?? packVersion,
       source_pack_id: packId,
       source_pack_version: packVersion,
       payload: el, // registro completo, intacto
@@ -478,13 +524,47 @@ async function writeChangelog(
 // ---------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------
-async function main(): Promise<void> {
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false },
-  });
+function validateRulesetV12Bundles(): void {
+  for (const file of RULESET_V12_BUNDLES) {
+    const validation = validateRulesetContentBundleV12(readJson(file));
+    if (!validation.ok) {
+      throw new Error(`Pacote v1.2 inválido (${file}):\n  ${validation.errors.join("\n  ")}`);
+    }
+    console.log(`  v1.2 ${file} validado`);
+  }
+}
 
+async function main(): Promise<void> {
   console.log(`Lendo manifesto: ${MANIFEST_FILE} (dir: ${CONTENT_DIR})`);
   const manifest = readJson<Record<string, any>>(MANIFEST_FILE);
+
+  // Valida antes de qualquer escrita: um pacote v1.2 inválido não publica nada.
+  validateRulesetV12Bundles();
+
+  if (DRY_RUN) {
+    const pkg = manifest.package ?? {};
+    const rows = SOURCES.flatMap((spec) => buildRowsForSource(spec, pkg.id, pkg.version));
+    const ids = new Set<string>();
+    for (const r of rows) {
+      if (ids.has(r.id)) throw new Error(`id duplicado: ${r.id}`);
+      ids.add(r.id);
+    }
+    const v12 = rows.filter((r) => r.content_type === "class" || r.content_type === "subclass");
+    console.log(`\nDry-run: ${rows.length} documentos montados; nenhum escrito.`);
+    for (const r of v12) console.log(`  ${r.id.padEnd(24)} version=${r.version} status=${r.status}`);
+    // Com credenciais, compara com o banco (somente leitura) e lista o que mudaria.
+    if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const reader = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+      const classified = classifyRows(rows, await fetchExisting(reader, rows.map((r) => r.id)));
+      console.log(`\nComparado ao banco: created=${classified.createdCount}, updated=${classified.updatedCount}, sem_mudanca=${classified.unchangedCount}`);
+      for (const e of classified.changelogEntries) console.log(`  ${e.change_type.padEnd(8)} ${e.document_id}`);
+    }
+    return;
+  }
+
+  const supabase = createClient(requireEnv("SUPABASE_URL"), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
+    auth: { persistSession: false },
+  });
 
   const { packId, packVersion } = await upsertPack(supabase, manifest);
   console.log(`Pack: ${packId}@${packVersion}`);

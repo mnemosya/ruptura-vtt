@@ -14,7 +14,7 @@
  * Fora de escopo aqui (ver `EFFECT_TYPE` não tratado): mapa/token/alvo,
  * ataque contestado, dano de arma, `aplicar_condicao_apos_tempo`,
  * `morte_apos_tempo` (Sufocando), `alterar_custo_mana` e modificadores
- * de conjuração (Saturado/Insaturado, motor de magia não existe ainda),
+ * de conjuração (Saturado/Insaturado),
  * efeitos ambientais complexos — todos ficam de fora silenciosamente
  * (não geram pendência nem erro), documentados como pendência no
  * relatório.
@@ -23,6 +23,7 @@
 import { normalizeConditionSlug } from "./actionConsole";
 import { detectCollapseOnResourceChange, resolveCollapseAdditionalDamage } from "./collapse";
 import { applyDamageThroughTemporaryPv } from "./temporaryPv";
+import { conditionFormulaForLevel, getConditionLevel } from "./conditionState";
 import type { ActiveCondition, Character, CollapseRulesPayload, ConditionEffectHistoryEntry, ConditionResistanceCheck } from "./types";
 
 // ---------------------------------------------------------------------
@@ -37,6 +38,7 @@ export interface ConditionContent {
   status: string;
   payload_automacao?: unknown;
   remove_por?: unknown;
+  nivel_maximo?: number;
 }
 
 export interface ConditionEndRoundEffect {
@@ -60,6 +62,7 @@ export function normalizeConditionContent(raw: Record<string, unknown>): Conditi
     status: String(raw.status ?? "published"),
     payload_automacao: raw.payload_automacao,
     remove_por: raw.remove_por,
+    nivel_maximo: typeof raw.nivel_maximo === "number" ? raw.nivel_maximo : undefined,
   };
 }
 
@@ -80,6 +83,7 @@ export function getConditionEndRoundEffects(condition: ConditionContent): Condit
 const END_ROUND_EFFECT_TYPES = new Set([
   "dano_fim_de_rodada",
   "teste_fim_de_rodada",
+  "teste_fim_de_rodada_progressivo",
   "teste_fim_de_rodada_para_remover_condicao",
   "teste_apos_exposicao",
   "reduzir_pa",
@@ -376,7 +380,7 @@ export function resolveEndRoundConditionsForCharacter(params: {
       if (efeito.tipo === "dano_fim_de_rodada") {
         const key = getEndRoundEffectKey({ conditionId: slug, effectType: "dano_fim_de_rodada", round, effectIndex });
         if (history[key]) return; // idempotência: mesma rodada já processada.
-        const formula = typeof efeito.dano === "string" ? efeito.dano : "";
+        const formula = conditionFormulaForLevel(efeito, instance) ?? "";
         const damageType = typeof efeito.tipo_dano === "string" ? efeito.tipo_dano : "";
         if (!formula) return;
         const result = applyConditionEndRoundDamage({
@@ -412,40 +416,67 @@ export function resolveEndRoundConditionsForCharacter(params: {
             source: "end_round",
           },
         });
+        if (slug === "sangrando" && instance.contidaNaRodada !== round) {
+          const nivelAtual = getConditionLevel(instance);
+          const nivelMaximo = content.nivel_maximo ?? 3;
+          if (nivelAtual < nivelMaximo && instance.aplicadaNaRodada !== round) {
+            character = {
+              ...character,
+              condicoes_ativas: (character.condicoes_ativas ?? []).map((c) =>
+                c.id === instance.id ? { ...c, nivel: nivelAtual + 1, nivelMaximo } : c,
+              ),
+            };
+          }
+        }
         if (result.collapseStarted) {
           warnings.push(`Colapso (${result.collapseTipo}) iniciado por dano de condição (${content.nome}).`);
         }
         logs.push(...result.collapseAdvanceLogs);
         tableLogs.push(...result.collapseAdvanceTableLogs);
-      } else if (efeito.tipo === "teste_fim_de_rodada") {
-        const key = getEndRoundEffectKey({ conditionId: slug, effectType: "teste_fim_de_rodada", round, effectIndex });
+      } else if (efeito.tipo === "teste_fim_de_rodada" || efeito.tipo === "teste_fim_de_rodada_progressivo") {
+        const effectType = efeito.tipo;
+        const key = getEndRoundEffectKey({ conditionId: slug, effectType, round, effectIndex });
         if (history[key]) return;
         const jaPendente = existingPending.some(
-          (p) => p.status === "pending" && p.conditionId === slug && p.effectType === "teste_fim_de_rodada" && p.round === round,
+          (p) => p.status === "pending" && p.conditionId === slug && p.effectType === effectType && p.round === round,
         );
         if (jaPendente) return;
         const resistance = asRecord(efeito.resistencia);
-        if (!resistance || typeof resistance.pericia !== "string" || typeof resistance.cd !== "number") return;
+        if (!resistance || typeof resistance.pericia !== "string") return;
+        // Só os testes deste episódio: uma nova Sufocando recomeça em CD 6.
+        const testesAnteriores = Object.values(history).filter(
+          (entry) => entry.conditionId === slug && entry.effectType === "teste_fim_de_rodada_progressivo"
+            && entry.createdAt >= instance.aplicadaEm,
+        ).length;
+        const cd = typeof resistance.cd === "number"
+          ? resistance.cd
+          : typeof resistance.cd_inicial === "number"
+            ? resistance.cd_inicial + testesAnteriores * (typeof resistance.incremento === "number" ? resistance.incremento : 1)
+            : undefined;
+        if (cd == null) return;
+        const falha = asRecord(efeito.falha);
+        const formulaNivel = falha ? conditionFormulaForLevel(falha, instance) : undefined;
+        const onFailure = formulaNivel ? { ...falha, dano: formulaNivel } : efeito.falha;
         const check = buildConditionResistanceCheck({
           conditionId: slug,
           conditionName: content.nome,
-          effectType: "teste_fim_de_rodada",
+          effectType,
           round,
           scene,
           nowIso,
-          resistance: { pericia: resistance.pericia, cd: resistance.cd },
-          onFailure: efeito.falha,
+          resistance: { pericia: resistance.pericia, cd },
+          onFailure,
         });
         pendingChecks.push(check);
-        history = { ...history, [key]: { conditionId: slug, effectType: "teste_fim_de_rodada", round, createdAt: nowIso } };
-        logs.push(`${content.nome}: teste de ${resistance.pericia} CD ${resistance.cd} pendente (fim de rodada).`);
+        history = { ...history, [key]: { conditionId: slug, effectType, round, createdAt: nowIso } };
+        logs.push(`${content.nome}: teste de ${resistance.pericia} CD ${cd} pendente (fim de rodada).`);
         tableLogs.push({
           type: "condition_end_round_check_created",
           payload: {
             conditionId: slug,
             conditionName: content.nome,
             checkId: check.id,
-            effectType: "teste_fim_de_rodada",
+            effectType,
             resistance: check.resistance,
             onFailure: efeito.falha ?? null,
             onSuccess: null,
@@ -634,7 +665,7 @@ export function resolveConditionResistanceCheck(params: {
   let appliedConditionSlug: string | undefined;
   let removedConditionSlug: string | undefined;
 
-  if (check.effectType === "teste_fim_de_rodada") {
+  if (check.effectType === "teste_fim_de_rodada" || check.effectType === "teste_fim_de_rodada_progressivo") {
     if (outcome === "failure") {
       const falha = asRecord(check.onFailure);
       const formula = typeof falha?.dano === "string" ? falha.dano : undefined;
@@ -678,6 +709,33 @@ export function resolveConditionResistanceCheck(params: {
         tableLogs.push(...result.collapseAdvanceTableLogs);
         if (result.collapseStarted) {
           warnings.push(`Colapso (${result.collapseTipo}) iniciado por falha em teste de condição (${check.conditionName}).`);
+        }
+      } else if (check.effectType === "teste_fim_de_rodada_progressivo") {
+        const inconsciente = findActiveConditionInstance(character, "inconsciente");
+        if (inconsciente) {
+          character = {
+            ...character,
+            estado_terminal: { tipo: "morte", causa: check.conditionId, em: nowIso },
+          };
+          logs.push(`${check.conditionName}: nova falha enquanto Inconsciente causou morte.`);
+          tableLogs.push({
+            type: "condition_terminal_state",
+            payload: { conditionId: check.conditionId, terminalState: "morte", round: check.round, scene: check.scene },
+          });
+        } else {
+          const novaCondicao: ActiveCondition = {
+            id: crypto.randomUUID(),
+            conditionId: "inconsciente",
+            nome: "Inconsciente",
+            origem: `Falha em ${check.conditionName}`,
+            aplicadaEm: nowIso,
+            removidaEm: null,
+            ativa: true,
+            sourceType: "condition",
+          };
+          character = { ...character, condicoes_ativas: [...(character.condicoes_ativas ?? []), novaCondicao] };
+          appliedConditionSlug = "inconsciente";
+          logs.push(`${check.conditionName}: falha causou Inconsciente.`);
         }
       }
     } else {

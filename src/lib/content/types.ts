@@ -23,7 +23,12 @@ export type ContentType =
   | "talent"
   | "spell"
   | "capitulo"
-  | "companion_model";
+  | "companion_model"
+  | "class"
+  | "subclass"
+  | "background"
+  | "quality"
+  | "complication";
 
 /** Linha completa de content_documents, com o payload tipado genericamente. */
 export interface ContentDocument<TPayload = unknown> {

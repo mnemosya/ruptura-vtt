@@ -32,6 +32,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { HudCursor } from "../../_global/GlobalShell";
 import { ProvedorConsoleDaMesa } from "./ConsoleDaMesa";
+import { ProvedorJanelasDaMesa } from "../vtt/_shell/JanelasDaMesa";
 import { ProvedorMesaDados } from "../vtt/_dados3d/ContextoMesaDados";
 import { ProvedorTrilhaDaMesa } from "./TrilhaDaMesa";
 import { OnlineSessionProvider } from "./OnlineSessionProvider";
@@ -60,12 +61,17 @@ export function CampaignShell({ campaignId, children }: { campaignId: string; ch
           verdade que a ferramenta do mapa. Quem DESENHA a física é quem
           tem palco — o VTT o reivindica. */}
       <ProvedorMesaDados>
-        <ProvedorConsoleDaMesa campaignId={campaignId}>
-          <div className="rm-root rm-root--vtt">
-            <HudCursor enabled={cursorHabilitado} />
-            {children}
-          </div>
-        </ProvedorConsoleDaMesa>
+        {/* As janelas da mesa ficam ACIMA do Console: a ficha (que é janela
+            desta casca, fora do VTT) abre o assistente para completar um
+            personagem criado só com o nome. */}
+        <ProvedorJanelasDaMesa>
+          <ProvedorConsoleDaMesa campaignId={campaignId}>
+            <div className="rm-root rm-root--vtt">
+              <HudCursor enabled={cursorHabilitado} />
+              {children}
+            </div>
+          </ProvedorConsoleDaMesa>
+        </ProvedorJanelasDaMesa>
       </ProvedorMesaDados>
     </ProvedorTrilhaDaMesa></OnlineSessionProvider>
   );

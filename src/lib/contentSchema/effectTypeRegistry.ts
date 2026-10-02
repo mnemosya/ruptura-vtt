@@ -133,7 +133,7 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
     ],
     executor: {
       modo: "automatico",
-      modulo: "src/lib/character/activeEffects.ts, talents.ts, technicalEffects.ts",
+      modulo: "src/lib/character/activeEffects.ts, technicalEffects.ts",
       observacao:
         "Automático quando é bônus numérico simples com alvoTags/alvoAcoes; some para lembrete quando o efeito legado tem `quando`/`restrito_a` (contexto condicional que o motor ainda não avalia).",
     },
@@ -197,14 +197,14 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       { nome: "operacao", tipo: "string", obrigatorio: true, descricao: "promover | rebaixar | definir." },
       { nome: "faixaOrigem", tipo: "string", obrigatorio: false, descricao: "Faixa de margem de origem (mesmo enum de MARGEM_CLASSIFICACOES)." },
       { nome: "faixaDestino", tipo: "string", obrigatorio: false, descricao: "Faixa de margem de destino." },
-      { nome: "pericias", tipo: "array", obrigatorio: false, descricao: "Perícias afetadas — mesmo formato usado por getMarginPromotions (talentEngine.ts)." },
+      { nome: "pericias", tipo: "array", obrigatorio: false, descricao: "Perícias afetadas." },
       { nome: "contexto", tipo: "string", obrigatorio: true, descricao: "teste | ataque | defesa | pericia | acao." },
     ],
     executor: {
       modo: "assistido",
-      modulo: "src/lib/character/talentEngine.ts (getMarginPromotions) + rollRuptura.ts (promocaoMargem)",
+      modulo: "src/lib/character/rollRuptura.ts (promocaoMargem)",
       observacao:
-        "Para talento, serializa exatamente no formato que getMarginPromotions já lê hoje (tipo \"promocao_margem\", família \"margem\") — mecanismo real e funcionando, mas sempre assistido: a pessoa jogadora confirma que o contexto da rolagem bate antes de aplicar. Para magia/item não há leitor equivalente ainda — fica lembrete.",
+        "Serializa no formato legado de Talento (tipo \"promocao_margem\", família \"margem\"). O leitor de Talentos foi removido na v1.2 (Talentos arquivados); hoje nenhum fluxo lê esse payload, então na prática fica lembrete.",
     },
     aliasesLegado: {
       talent: ["promocao_margem"],
@@ -346,9 +346,9 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
     ],
     executor: {
       modo: "assistido",
-      modulo: "src/lib/character/talentEngine.ts (getGarimpoDeRuaAvailability, getCadernetaDeDividaAvailability)",
+      modulo: "—",
       observacao:
-        "Para talento, \"desconto_percentual\" e \"permitir_compra_fiada\" serializam exatamente no formato real já lido por essas funções (tipo \"desconto_loja\"/\"compra_fiada\", família \"economia_loja\") — genuinamente genéricas (leem QUALQUER efeito com esse tipo, não hardcoded por talento). As demais operações não têm leitor real — ficam bloqueadas na publicação (nunca fingidas).",
+        "Para talento, \"desconto_percentual\" e \"permitir_compra_fiada\" serializam no formato legado (tipo \"desconto_loja\"/\"compra_fiada\", família \"economia_loja\"). O leitor de Talentos foi removido na v1.2 (Talentos arquivados). As demais operações não têm leitor real — ficam bloqueadas na publicação (nunca fingidas).",
     },
     aliasesLegado: {
       talent: ["desconto_loja", "compra_fiada"],
@@ -382,7 +382,7 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       // invocados por clique manual na ficha, nunca por um efeito de
       // conteúdo lido genericamente — não há executor real conectado.
       modo: "lembrete",
-      observacao: "Nenhum executor real cria instância de companheiro a partir de um efeito de conteúdo — sempre lembrete. Droneiro/Mecatrônico/Tecelão continuam bespoke em talentEngine.ts (registerDrone/registerRobo), não generalizados.",
+      observacao: "Nenhum executor real cria instância de companheiro a partir de um efeito de conteúdo — sempre lembrete. O registro bespoke de Droneiro/Mecatrônico/Tecelão saiu com o motor de Talentos na v1.2.",
     },
     // "conceder_companheiro" é o `tipo` legado real que este efeito
     // serializa para talento (TIPO_LEGADO.talent) — precisa constar aqui,
@@ -447,7 +447,7 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       // hiper-específico (só drones do MESMO modelo string, máx. 3,
       // hardcoded pelo payload daquele talento) — não generalizável.
       modo: "lembrete",
-      observacao: "Nenhum executor genérico de pareamento existe — pairDronesEnxame (talentEngine.ts) é bespoke ao talento Enxame, não reutilizável por conteúdo genérico.",
+      observacao: "Nenhum executor genérico de pareamento existe — o pareamento bespoke do Enxame saiu com o motor de Talentos na v1.2.",
     },
     aliasesLegado: { talent: ["parear"] },
   },

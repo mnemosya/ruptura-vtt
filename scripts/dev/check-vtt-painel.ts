@@ -79,6 +79,7 @@ import { createClient } from "@supabase/supabase-js";
 import { chromium, type BrowserContext, type ConsoleMessage, type Locator, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
 
+import { personagemV12 } from "./fixtures/personagemV12";
 loadDotenv({ path: ".env.local" });
 
 function requireEnv(nome: string): string {
@@ -187,7 +188,7 @@ async function configurarFixture(): Promise<void> {
       id: personagemDoJogador,
       name: "Mara Venn",
       status: "draft",
-      payload: { nome: "Mara Venn", metadados: { schema_version: 1 } },
+      payload: personagemV12("Mara Venn"),
       campaign_id: campaignId,
       owner_id: jogadorId,
     },
@@ -195,7 +196,7 @@ async function configurarFixture(): Promise<void> {
       id: personagemPn,
       name: "Corvo do Jammer",
       status: "draft",
-      payload: { nome: "Corvo do Jammer", metadados: { schema_version: 1, tipo_personagem: "pn" } },
+      payload: personagemV12("Corvo do Jammer", { metadados: { schema_version: 1, tipo_personagem: "pn" } }),
       campaign_id: campaignId,
       owner_id: narradorId,
     },
@@ -603,6 +604,7 @@ async function main() {
         .select("payload, character_id")
         .eq("campaign_id", campaignId)
         .eq("character_id", personagemDoJogador)
+        .eq("type", "chat")
         .limit(1);
       return (data?.length ?? 0) > 0;
     });
@@ -611,6 +613,9 @@ async function main() {
       .select("payload, character_id, created_by_user_id")
       .eq("campaign_id", campaignId)
       .eq("character_id", personagemDoJogador)
+      // Só a fala: o personagem pode ter outros registros (ex.: a ficha v1.2
+      // registra ajustes), e `limit(1)` sem tipo pegava qualquer um.
+      .eq("type", "chat")
       .limit(1);
     const pp = (doPersonagem?.[0]?.payload ?? {}) as Record<string, unknown>;
     registrar(

@@ -1,0 +1,82 @@
+{
+  "_meta": {
+    "ruleset_version": "1.2",
+    "fonte": "Notion — RUPTURA (1.2) / 20. CENAS DE INVESTIGAÇÃO (editado em 23/09/2026)",
+    "extraido_em": "2026-10-01",
+    "status": "draft",
+    "aviso": "Transcrição estruturada; não publicada. Ainda não existe content_type para investigação.",
+    "pendencias_editoriais": [
+      "A página 'AJUSTES APÓS O CAPÍTULO DE INVESTIGAÇÃO e LACUNAS PRIORIZADAS' lista dúvidas abertas (ex.: Perito, Procurar Brecha) que podem alterar estas regras."
+    ]
+  },
+  "acoes": [
+    { "slug": "acessar", "nome": "Acessar", "custo": { "tipo": "pa", "valor": 1 }, "funcao": "Realizar tentativas em um Desafio de Acesso.", "descricao": "Realiza tentativas contra uma fechadura ou proteção digital usando a ferramenta exigida. A perícia relevante determina quantas combinações podem ser apresentadas; cada tentativa recebe sua Leitura antes da seguinte. Se a proteção não for superada até o fim da ação, consome-se 1 ponto de Tolerância, independentemente do número de tentativas.", "regra": "desafio_de_acesso" },
+    { "slug": "arrombar", "nome": "Arrombar", "custo": { "tipo": "pa", "valor": 2 }, "funcao": "Forçar fisicamente uma barreira ou mecanismo.", "descricao": "Força porta, grade, tampa, fechadura ou outra barreira física com um método e uma ferramenta ou capacidade capaz de afetá-la. Obstáculos simples usam um teste apropriado; barreiras que exigem esforço continuado usam um Marcador de Progresso. O método deixa os sinais coerentes com sua execução.", "regra": "arrombamento" },
+    { "slug": "auxiliar", "nome": "Auxiliar", "custo": { "tipo": "pa", "valor": 1 }, "funcao": "Contribuir para a próxima ação de um aliado.", "descricao": "Descreve como contribui para a próxima Ação de Investigação de um aliado: +1 de vantagem quando favorece o teste, +2 se especialmente favorável. Vários Auxílios podem se somar se forem contribuições distintas e efetivas. Em Desafio de Acesso, concede uma tentativa adicional naquela Ação de Acessar; não repõe Tolerância nem substitui a ferramenta." },
+    { "slug": "correlacionar", "nome": "Correlacionar", "custo": { "tipo": "pa", "valor": 1 }, "funcao": "Cruzar Evidências e estabelecer conexões.", "descricao": "Escolhe duas ou mais Evidências e explica a relação a examinar. Conclusão direta: o narrador confirma sem teste. Dedução incerta sob pressão: teste de Lógica. Evidências insuficientes indicam a lacuna, sem inventar resposta. Não se repete sobre a mesma relação sem nova Evidência ou mudança relevante.", "teste": { "pericia": "logica", "quando": "deducao_incerta_sob_pressao" } },
+    { "slug": "investigar", "nome": "Investigar", "custo": { "tipo": "pa", "valor": 1 }, "funcao": "Examinar ou manipular um Ponto de Interesse.", "descricao": "Escolhe um Ponto de Interesse e uma abordagem: Examinar (observar, interpretar, consultar, avaliar, analisar) ou Manipular (mover, abrir, iluminar, conectar, desligar, desmontar). Informação revelada diretamente não exige teste; risco ou incerteza relevante exigem o teste apropriado. Não reduz o tempo de procedimentos laboratoriais complexos.", "abordagens": ["examinar", "manipular"] },
+    { "slug": "preservar", "nome": "Preservar", "custo": { "tipo": "pa", "valor": 1 }, "funcao": "Coletar, copiar ou estabilizar uma Evidência.", "descricao": "Automático quando simples e seguro; teste apropriado se a Evidência for frágil, perigosa ou difícil de extrair. A Evidência preservada pode ser transportada e investigada depois. Não contorna criptografia, permissões ou as regras de extração de dados da Trama." },
+    { "slug": "utilizar_recurso", "nome": "Utilizar recurso", "custo": { "tipo": "proprio" }, "funcao": "Empregar uma característica, magia, escalpo ou equipamento.", "descricao": "Usa o recurso conforme sua descrição, com requisitos, custos, alcance e duração. Se resolve o problema diretamente, aplica-se; se apenas cria condições, o narrador define o que se torna acessível." },
+    { "slug": "vasculhar", "nome": "Vasculhar", "custo": { "tipo": "pa", "valor": 2 }, "funcao": "Procurar um elemento ainda não localizado.", "descricao": "Delimita uma área examinável na rodada e procura algo não localizado. Teste de Percepção quando houver incerteza e consequência. Sucesso localiza um elemento encontrável pelo método; crítico revela também um detalhe útil. Vasculhar localiza; Investigar examina o que foi localizado.", "teste": { "pericia": "percepcao", "quando": "incerteza_e_consequencia" } }
+  ],
+  "impacto": {
+    "sucesso_limitado": "Obtém a informação pretendida, com custo, demora adicional ou outra consequência coerente.",
+    "sucesso_padrao": "Obtém a informação pretendida sem contratempos.",
+    "sucesso_critico": "Obtém a informação e um benefício relacionado (detalhe adicional, execução mais rápida ou oportunidade para outra ação).",
+    "falha_limitada": "Não conclui a tarefa; perde tempo ou deixa uma abertura.",
+    "falha_padrao": "Não conclui a tarefa e surge uma complicação concreta.",
+    "falha_critica": "A tentativa compromete seriamente a situação, conforme os riscos estabelecidos."
+  },
+  "regras_gerais": [
+    "Sem urgência ou oposição, a cena segue em fluxo livre; tarefa rotineira compatível com o domínio do personagem pode dispensar teste.",
+    "Em rodadas, cada personagem usa os PA do seu Ranking e os recupera no início do seu turno; PA não usados não se acumulam.",
+    "Investigação simultânea a combate usa o tempo e os PA do combate, sem reserva adicional.",
+    "Uma falha não produz informação falsa apresentada como certeza.",
+    "Informação essencial não depende de rolagem para existir: o teste define custo, extensão, precisão, velocidade ou segurança.",
+    "Repetir uma tentativa exige algo ainda a fazer e um custo ou mudança relevante; Desafios de Acesso têm regras próprias.",
+    "Depoimento obtido por Conflito Social é uma Evidência e pode conter erros, omissões ou mentiras."
+  ],
+  "desafio_de_acesso": {
+    "tipos": [
+      { "slug": "mecanica", "nome": "Fechadura mecânica", "requisito": "Kit de Lockpicking e acesso ao mecanismo", "pericia": "precisao" },
+      { "slug": "digital_local", "nome": "Intervenção local em proteção digital", "requisito": "Kit de Intrusão Digital e interface compatível acessível", "pericia": "tecnomagia" },
+      { "slug": "trama", "nome": "Acesso pela Trama", "requisito": "Interface apropriada, ponto de acesso e acesso à Trama correspondente", "resolucao": "Regras de Tecendo a Malha" }
+    ],
+    "leituras": {
+      "direcional": "Para cada posição, informa aumentar, diminuir ou correto.",
+      "confirmacao": "Informa quantas posições estão corretas, sem revelar quais."
+    },
+    "tentativas_por_nivel_pericia": [
+      { "min": 0, "max": 1, "tentativas": 1 },
+      { "min": 2, "max": 3, "tentativas": 2 },
+      { "min": 4, "max": 5, "tentativas": 3 }
+    ],
+    "tolerancia": "Consome-se 1 ponto ao terminar uma Ação de Acessar sem superar a proteção (uma vez por ação, inclusive ao encerrar voluntariamente). Em 0, resolve-se a Contramedida.",
+    "contramedidas_exemplo": [
+      { "slug": "emperrar", "descricao": "Impede novas tentativas técnicas até reparo ou substituição." },
+      { "slug": "bloquear_interface", "descricao": "Suspende a intervenção local durante o período ou até a condição indicada." },
+      { "slug": "acionar_alarme", "descricao": "Avisa a segurança ou inicia um Marcador de Pressão; não volta a disparar enquanto a Tolerância estiver em 0." },
+      { "slug": "alterar_codigo", "descricao": "Gera nova combinação e repõe a Tolerância indicada pelo modelo." }
+    ],
+    "modelos": [
+      { "slug": "tranca_mercadinho_periferico", "nome": "Tranca de mercadinho periférico", "tipo": "mecanica", "codigo": "2d4", "leitura": "direcional", "tolerancia": 3, "contramedida": "Emperra; exige reparo ou outra abordagem." },
+      { "slug": "fechadura_oficina_reforcada", "nome": "Fechadura de oficina reforçada", "tipo": "mecanica", "codigo": "3d6", "leitura": "direcional", "tolerancia": 3, "contramedida": "Emperra e deixa marcas evidentes de violação." },
+      { "slug": "cofre_comercial_independente", "nome": "Cofre comercial independente", "tipo": "mecanica", "codigo": "3d6", "leitura": "direcional", "tolerancia": 4, "contramedida": "Trava o mecanismo de abertura até reparo." },
+      { "slug": "celular_pessoal_protecao_comum", "nome": "Celular pessoal com proteção comum", "tipo": "digital_local", "codigo": "2d4", "leitura": "confirmacao", "tolerancia": 3, "contramedida": "Bloqueia a interface de intrusão por 10 minutos." },
+      { "slug": "porta_deposito_corporativo", "nome": "Porta de depósito corporativo", "tipo": "digital_conectada", "codigo": "3d4", "leitura": "confirmacao", "tolerancia": 3, "contramedida": "Aciona a segurança; a intervenção pode continuar com o mesmo Código." },
+      { "slug": "compartimento_digital_restrito", "nome": "Compartimento digital restrito", "tipo": "digital_conectada", "codigo": "2d6", "leitura": "confirmacao", "tolerancia": 3, "contramedida": "Bloqueia a intervenção local até liberação autorizada e envia um alerta." }
+    ]
+  },
+  "arrombamento": {
+    "obstaculo_simples": "Teste físico apropriado contra a CD da Complexidade; sucesso abre a passagem se esse for o objetivo declarado.",
+    "marcador_de_progresso": {
+      "segmentos_por_resultado": { "sucesso_limitado": 1, "sucesso_padrao": 2, "sucesso_critico": 3, "falha": 0 },
+      "referencia_segmentos": { "barreira_leve": 2, "reforcada": 4, "robusta": 6 },
+      "regras": [
+        "Falha não enfraquece o obstáculo; o progresso já conquistado não desaparece sem reação concreta.",
+        "Barreira incompatível com os meios disponíveis não cede por acúmulo de tentativas.",
+        "Tolerância pertence ao Desafio de Acesso, não ao Arrombamento."
+      ]
+    }
+  }
+}

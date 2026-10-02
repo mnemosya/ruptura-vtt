@@ -312,6 +312,16 @@ ok(
     teste.teste != null && teste.teste.maiorDado === 7 && teste.teste.cd === 8 && teste.teste.classificacao === "sucesso_padrao",
     JSON.stringify(teste.teste),
   );
+  const atributoZero = projetarEntrada(log("rolagem_pericia", {
+    characterNome: "Mara Venn", atributo: "Corpo", atributoValor: 0, pericia: null, periciaValor: 0,
+    modificador: 0, total: 2, dados: [7, 2], quantidadeDados: 2, modoSelecao: "lowest", dadoEscolhido: 2,
+    maiorDado: 2,
+  })) as CartaoRolagem;
+  ok(
+    "L1b (Atributo 0 preserva no feed que o menor dado decidiu)",
+    atributoZero.teste?.modoSelecao === "lowest" && atributoZero.teste.maiorDado === 2,
+    JSON.stringify(atributoZero.teste),
+  );
   const livre = projetarEntrada(log("rolagem_expressao", { expressao: "3d8", dados: [7, 3, 6], modo: "sum", total: 16 })) as CartaoRolagem;
   ok("L2 (bandeja livre NÃO ganha leitura de teste — lá os dados são somados)", livre.teste === null, String(livre.teste));
   const antigo = projetarEntrada(log("rolagem_pericia", { atributo: "Corpo", atributoValor: 5, total: 5 })) as CartaoRolagem;

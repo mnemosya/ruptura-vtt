@@ -68,9 +68,16 @@ export function normalizeReactionRules(combatFlowPayload: unknown): ReactionRule
   const resetAt = reaction?.reseta_em;
   const zeroAt = withoutReaction?.zera_em;
 
+  const maximumArgs = Array.isArray(maximumPerRound?.args) ? maximumPerRound.args.map(asRecord) : [];
+  const maximumIsMindPlusOne =
+    maximumPerRound?.op === "+" &&
+    maximumArgs.length === 2 &&
+    maximumArgs[0]?.ref === "atributo" &&
+    maximumArgs[0]?.id === "mente" &&
+    maximumArgs[1]?.const === 1;
+
   const valid =
-    maximumPerRound?.ref === "atributo" &&
-    maximumPerRound?.id === "mente" &&
+    maximumIsMindPlusOne &&
     reaction?.acoes_defensivas_consumem_reacao === true &&
     withoutReaction?.defesa_ainda_permitida === true &&
     typeof cumulativePenalty === "number" &&

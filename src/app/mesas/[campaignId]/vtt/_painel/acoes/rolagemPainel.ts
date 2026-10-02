@@ -42,7 +42,7 @@ import {
 import { normalizeCharacter } from "../../../../../../lib/character";
 import type { AttributeDefinition, CharacterRulesPayload, SkillDefinition } from "../../../../../../lib/character";
 import { getCharacterRules } from "../../../../../../lib/content";
-import { resolverPericia } from "../../../../../../lib/dice";
+import { getRupturaPool, resolverPericia } from "../../../../../../lib/dice";
 import { addLog, listCampaignRoster } from "../../../../../../lib/table/storage";
 import { TABLE_LOG_VISIBILITIES, type TableLogEntry, type TableLogVisibility } from "../../../../../../lib/table";
 import { exigirAcessoPainel, mensagemDeErro, type ResultadoPainel } from "./comum";
@@ -273,14 +273,16 @@ export async function registrarRolagemPericiaAction(
     const cd = params.cd == null ? null : inteiroNaFaixa(params.cd, 1, CD_MAX);
     if (params.cd != null && cd == null) return { ok: false, erro: `CD fora da faixa (1 a ${CD_MAX}).` };
 
-    // Os dados: a contagem tem que ser a do ATRIBUTO LIDO DO BANCO, e
+    // Os dados: a contagem tem que ser a do POOL derivado do Atributo
+    // lido do banco, inclusive 2d8 no zero e dados adicionais no negativo, e
     // cada face um d8 de verdade. É o teto do que dá pra validar de
     // uma simulação que roda no cliente.
     const dados = Array.isArray(params.dados) ? params.dados.map((d) => inteiroNaFaixa(d, 1, 8)) : [];
-    if (dados.length !== atributo.valor || dados.some((d) => d == null)) {
+    const pool = getRupturaPool(atributo.valor);
+    if (dados.length !== pool.quantidadeDados || dados.some((d) => d == null)) {
       return {
         ok: false,
-        erro: `Dados inconsistentes: ${atributo.nome} ${atributo.valor} pede ${atributo.valor} d8 entre 1 e 8.`,
+        erro: `Dados inconsistentes: ${atributo.nome} ${atributo.valor} pede ${pool.quantidadeDados}d8 e usa o ${pool.modoSelecao === "lowest" ? "menor" : "maior"} resultado.`,
       };
     }
 
@@ -314,6 +316,9 @@ export async function registrarRolagemPericiaAction(
         periciaValor: resultado.periciaValor,
         modificador: resultado.modificador,
         dados: resultado.dados,
+        quantidadeDados: resultado.quantidadeDados,
+        modoSelecao: resultado.modoSelecao,
+        dadoEscolhido: resultado.dadoEscolhido,
         maiorDado: resultado.maiorDado,
         total: resultado.total,
         cd: resultado.cd ?? null,

@@ -8,7 +8,7 @@
  * que mudou de comportamento nesta fase — sem isso não dá pra
  * distinguir "nunca redirecionou porque não tinha 1 personagem só" de
  * "não redireciona mais porque a correção funcionou". Personagem criado
- * com `createInitialCharacter(null, ...)` (função pura, mesma usada
+ * com `personagemV12(...)` (função pura, mesma usada
  * pela UI) + insert direto via service role + RPC `grant_character_control`.
  *
  * Cobre:
@@ -71,6 +71,7 @@ import { chromium, type BrowserContext } from "playwright";
 import { createInitialCharacter } from "../../src/lib/character/createCharacter";
 import { BASE_URL, withAuthenticatedPage } from "./authSession";
 
+import { personagemV12 } from "./fixtures/personagemV12";
 loadDotenv({ path: ".env.local" });
 
 function requireEnv(name: string): string {
@@ -151,7 +152,7 @@ async function configurarFixture(): Promise<void> {
   // Mesmo helper puro que a UI usa pra criar um personagem novo —
   // `regras=null` cai no fallback fixo do PRD, suficiente pra um
   // personagem de teste que só precisa existir e ter nome.
-  const personagem = createInitialCharacter(null, "Fixture Único");
+  const personagem = personagemV12("Fixture Único");
   const novoId = randomUUID();
   const { error: erroChar } = await admin.from("characters").insert({
     id: novoId,
@@ -178,7 +179,7 @@ async function configurarFixture(): Promise<void> {
 
   // Segundo personagem, SEM controle concedido — os critérios 12/13
   // concedem/revogam isso ao vivo, é o objeto do teste, não do setup.
-  const personagemB = createInitialCharacter(null, "Fixture Segundo");
+  const personagemB = personagemV12("Fixture Segundo");
   const novoIdB = randomUUID();
   const { error: erroCharB } = await admin.from("characters").insert({
     id: novoIdB,

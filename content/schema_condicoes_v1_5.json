@@ -65,6 +65,7 @@
               "sangrando",
               "saturado",
               "surdo"
+              ,"oculto"
             ]
           },
           "slug": {
@@ -140,6 +141,10 @@
               "null"
             ]
           },
+          "nivel_maximo": {
+            "type": "integer",
+            "minimum": 2
+          },
           "remove_por": {
             "type": "array",
             "items": {
@@ -157,6 +162,10 @@
                     },
                     "minimo_pv": {
                       "type": "number"
+                    },
+                    "reduzir_niveis": {
+                      "type": "integer",
+                      "minimum": 1
                     }
                   }
                 }
@@ -305,6 +314,39 @@
             "array"
           ]
         },
+        "dano_por_nivel": {
+          "type": "object"
+        },
+        "valor_por_nivel": {
+          "type": "object"
+        },
+        "aplica_mit": {
+          "type": "boolean"
+        },
+        "ignora_mit": {
+          "type": "boolean"
+        },
+        "regiao_fallback": {
+          "type": "string"
+        },
+        "niveis": {
+          "type": "integer"
+        },
+        "reduzir_niveis": {
+          "type": "integer"
+        },
+        "inicia_na_rodada_seguinte": {
+          "type": "boolean"
+        },
+        "impedido_por": {
+          "type": "string"
+        },
+        "relativo_ao_observador": {
+          "type": "boolean"
+        },
+        "minimo": {
+          "type": "number"
+        },
         "escopo": {
           "type": [
             "string",
@@ -361,7 +403,9 @@
             "aplicar_condicao_associada",
             "bloquear_acoes",
             "bloquear_reacoes",
+            "bloquear_alvo_visual",
             "dano_fim_de_rodada",
+            "deslocamento_por_nivel",
             "definir_deslocamento",
             "exigir_teste_conjuracao",
             "falha_automatica",
@@ -372,10 +416,13 @@
             "morte_apos_tempo",
             "multiplicar_deslocamento",
             "reduzir_pa",
+            "reduzir_ao_recuperar_pv",
+            "agravar_fim_de_rodada",
             "remover_ao_recuperar_pv",
             "teste_apos_exposicao",
             "teste_fim_de_rodada",
-            "teste_fim_de_rodada_para_remover_condicao"
+            "teste_fim_de_rodada_para_remover_condicao",
+            "teste_fim_de_rodada_progressivo"
           ]
         },
         "tipo_dano": {

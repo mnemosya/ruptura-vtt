@@ -53,10 +53,11 @@ console.log(`1b. Insaturado/Saturado/Envenenado detectados via payload_automacao
 // -------------------------------------------------------------
 // 2. Condição sem efeito de fim de rodada não é marcada.
 // -------------------------------------------------------------
-for (const slug of ["agarrado", "agarrando", "atordoado", "caido", "cego", "contundido", "imobilizado", "inconsciente", "lento", "ofuscado", "sufocando", "surdo"]) {
+for (const slug of ["agarrado", "agarrando", "atordoado", "caido", "cego", "contundido", "imobilizado", "inconsciente", "lento", "ofuscado", "oculto", "surdo"]) {
   assert.equal(conditionHasEndRoundEffect(bySlug(slug)), false, `${slug} não deveria ser marcado como fim de rodada.`);
 }
-console.log("2. Condições sem efeito de fim de rodada (Agarrado, Cego, Lento, etc.) não marcadas — OK");
+assert.equal(conditionHasEndRoundEffect(bySlug("sufocando")), true, "Sufocando deve indicar teste progressivo/redução de PA no fim da rodada.");
+console.log("2. Condições sem efeito de fim de rodada não marcadas; Sufocando marcado — OK");
 
 // -------------------------------------------------------------
 // 3. Payload ausente/inválido — nunca marca (fallback defensivo, sem inventar).
@@ -76,13 +77,13 @@ assert.equal(conditionHasEndRoundEffect(payloadMalformado), false, "payload_auto
 console.log("3. Payload ausente/inválido — nunca marca (fallback defensivo) — OK");
 
 // -------------------------------------------------------------
-// 4. Paridade exata com o antigo Set hardcoded (FIM_DE_RODADA_SLUGS =
-//    queimando/sangrando/envenenado/insaturado/saturado) — nem a mais, nem a menos.
+// 4. Conjunto canônico v1.2: inclui Sufocando, que agora possui teste
+//    progressivo real no fim da rodada.
 // -------------------------------------------------------------
-const slugsAntigos = new Set(["queimando", "sangrando", "envenenado", "insaturado", "saturado"]);
+const slugsEsperados = new Set(["queimando", "sangrando", "envenenado", "insaturado", "saturado", "sufocando"]);
 const slugsDetectados = new Set(conditions.filter(conditionHasEndRoundEffect).map((c) => c.slug));
-assert.deepEqual(slugsDetectados, slugsAntigos, "O conjunto data-driven deve ter paridade exata com o antigo Set hardcoded.");
-console.log("4. Paridade exata com o antigo FIM_DE_RODADA_SLUGS hardcoded (nem a mais, nem a menos) — OK");
+assert.deepEqual(slugsDetectados, slugsEsperados, "O conjunto data-driven deve corresponder às condições v1.2 com efeito de rodada.");
+console.log("4. Conjunto canônico v1.2 de efeitos de fim de rodada — OK");
 
 // -------------------------------------------------------------
 // 5. Nenhuma duplicação hardcoded de slugs no código-fonte.

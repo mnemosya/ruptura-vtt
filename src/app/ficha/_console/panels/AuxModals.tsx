@@ -20,7 +20,7 @@ import { BODY_SLOT_LABELS, itensCompativeisComSlot, type BodySlotId } from "../s
 import { useCentroDoConsole } from "../useCentroDoConsole";
 import type { ConsoleApi } from "../types";
 
-function Aux({
+export function AuxJanela({
   titulo,
   onFechar,
   cabecalho,
@@ -260,7 +260,8 @@ export function RollResultModal({
   onFechar: () => void;
 }) {
   const centro = useCentroDoConsole();
-  const nd8 = resultado.atributoValor;
+  const nd8 = resultado.quantidadeDados;
+  const rotuloSelecao = resultado.modoSelecao === "lowest" ? "menor dado" : "maior dado";
   const natureza = defesa
     ? "Defesa"
     : resultado.periciaNome
@@ -284,7 +285,7 @@ export function RollResultModal({
         indice="01"
         codigo="Rolagem"
         titulo="Rolar Dados"
-        modo="d8 · maior dado + perícia + modificadores"
+        modo={`d8 · ${rotuloSelecao} + perícia + modificadores`}
         aoFechar={onFechar}
         rotuloFechar="Fechar rolagem"
       >
@@ -328,7 +329,7 @@ export function RollResultModal({
         <div style={{ borderRadius: 4, padding: 14, background: "#0c1420", border: "1px solid #16233a" }}>
           <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: INK_FAINT }}>
-              Pool · <span style={{ color: "#35c7d8" }}>{nd8}d8</span> · maior dado
+              Pool · <span style={{ color: "#35c7d8" }}>{nd8}d8</span> · {rotuloSelecao}
             </span>
             <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: INK_FAINT }}>
               {resultado.cd == null ? "sem CD definida" : `cd ${resultado.cd}`}
@@ -348,6 +349,7 @@ export function RollResultModal({
               testIdTotal="console-roll-total"
               r={{
                 maiorDado: resultado.maiorDado,
+                modoSelecao: resultado.modoSelecao,
                 pericia: resultado.periciaNome ?? null,
                 periciaValor: resultado.periciaValor,
                 modificador: resultado.modificador,
@@ -365,7 +367,7 @@ export function RollResultModal({
           {gatilho.length > 0 && (
             <p style={{ margin: "10px 0 0", fontFamily: BODY, fontSize: 11.5, lineHeight: 1.5, color: INK_FAINT }}>
               Dado de gatilho: {gatilho.join(", ")}
-              {resultado.dadoGatilhoEscolhido ? " — foi o maior dado da rolagem." : " — já incluído no pool acima."}
+              {resultado.dadoGatilhoEscolhido ? ` — foi o ${rotuloSelecao} da rolagem.` : " — já incluído no pool acima."}
             </p>
           )}
         </div>
@@ -400,7 +402,7 @@ export function SurgePickerModal({
 }) {
   const [enviando, setEnviando] = useState(false);
   return (
-    <Aux titulo="Surto de Sobrecarga" onFechar={onFechar}>
+    <AuxJanela titulo="Surto de Sobrecarga" onFechar={onFechar}>
       <p className="rc-vazio">Escolha o tipo de surto. O terceiro surto do dia dispara Ruptura.</p>
       <div className="rc-aux-lista">
         {tipos.map((t) => (
@@ -425,7 +427,7 @@ export function SurgePickerModal({
           Cancelar
         </button>
       </div>
-    </Aux>
+    </AuxJanela>
   );
 }
 
@@ -559,7 +561,7 @@ export function BackpackPickerModal({
   onFechar: () => void;
 }) {
   return (
-    <Aux titulo={`Mochila — ${BODY_SLOT_LABELS[slot]}`} onFechar={onFechar}>
+    <AuxJanela titulo={`Mochila — ${BODY_SLOT_LABELS[slot]}`} onFechar={onFechar}>
       {itens.length === 0 ? (
         <p className="rc-vazio">Nenhum item compatível com este slot na mochila.</p>
       ) : (
@@ -582,7 +584,7 @@ export function BackpackPickerModal({
           Fechar
         </button>
       </div>
-    </Aux>
+    </AuxJanela>
   );
 }
 
@@ -625,7 +627,7 @@ export function AttackModal({
   const rotuloSlot = slot === "arma_primaria" ? "Arma primária" : "Arma secundária";
 
   return (
-    <Aux
+    <AuxJanela
       titulo={`${instancia.itemNome} — ${rotuloSlot}`}
       onFechar={onFechar}
       plano
@@ -750,7 +752,7 @@ export function AttackModal({
           </div>
         </>
       )}
-    </Aux>
+    </AuxJanela>
   );
 }
 
@@ -767,7 +769,7 @@ export function ConfirmModal({
   onFechar: () => void;
 }) {
   return (
-    <Aux titulo={titulo} onFechar={onFechar}>
+    <AuxJanela titulo={titulo} onFechar={onFechar}>
       <p className="rc-vazio">{mensagem}</p>
       <div className="rc-aux-acoes">
         <button type="button" className="rc-ghost" onClick={onFechar}>
@@ -777,7 +779,7 @@ export function ConfirmModal({
           Confirmar
         </button>
       </div>
-    </Aux>
+    </AuxJanela>
   );
 }
 

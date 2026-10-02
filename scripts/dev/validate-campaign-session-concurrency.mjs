@@ -23,6 +23,7 @@ import { config as loadDotenv } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID, randomBytes } from "node:crypto";
 
+import { personagemV12 } from "./fixtures/personagemV12.mjs";
 loadDotenv({ path: ".env.local" });
 
 function requireEnv(name) {
@@ -83,7 +84,7 @@ async function addActiveMember(campaignId, userId, role = "player") {
 
 async function createCharacter(campaignId, name) {
   const id = randomUUID();
-  const { error } = await admin.from("characters").insert({ id, name, payload: { nome: name }, campaign_id: campaignId });
+  const { error } = await admin.from("characters").insert({ id, name, payload: personagemV12(name), campaign_id: campaignId });
   if (error) throw new Error(`Falha ao criar personagem: ${error.message}`);
   return id;
 }
@@ -196,19 +197,14 @@ async function scenario3() {
   const clientPlayer1 = await signIn(player);
   const clientPlayer2 = await signIn(player);
   const creationRequestId = randomUUID();
-  const payload = {
-    nome: "S3 Personagem Duplo Clique",
-    niveis_vertente: {},
-    magias_aprendidas: [],
-    talentos_adquiridos: [],
-    inventario: [],
-    carteira: { aretz_informal: 5000, cdi: 0, cdi_craqueada: 0 },
-  };
+  // Personagem v1.2 completo (a RPC v1 saiu na Fase 10); o mesmo pedido
+  // disparado por duas sessões ao mesmo tempo precisa virar UM personagem.
+  const payload = personagemV12("S3 Personagem Duplo Clique", { metadados: { creationRequestId } });
 
   const t0 = Date.now();
   const [res1, res2] = await Promise.allSettled([
-    clientPlayer1.rpc("complete_character_creation", { p_campaign_id: campaignId, p_character_payload: { ...payload, metadados: { creationRequestId } }, p_creation_request_id: creationRequestId }),
-    clientPlayer2.rpc("complete_character_creation", { p_campaign_id: campaignId, p_character_payload: { ...payload, metadados: { creationRequestId } }, p_creation_request_id: creationRequestId }),
+    clientPlayer1.rpc("complete_character_creation_v2", { p_campaign_id: campaignId, p_character_payload: payload, p_creation_request_id: creationRequestId }),
+    clientPlayer2.rpc("complete_character_creation_v2", { p_campaign_id: campaignId, p_character_payload: payload, p_creation_request_id: creationRequestId }),
   ]);
   const elapsed = Date.now() - t0;
 

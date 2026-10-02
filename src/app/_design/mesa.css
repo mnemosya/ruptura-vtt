@@ -630,6 +630,7 @@
    criação, Fase 6) — mesmo par de seletores já distinto pro trilho da
    campanha (`aria-current="page"` vs `aria-selected` do Console). */
 .rm-pill[aria-selected="true"],
+.rm-pill[aria-pressed="true"],
 .rm-pill[aria-current="step"] { border-color: var(--cy); background: rgba(0, 212, 255, 0.1); color: var(--cy); }
 .rm-pill:hover { border-color: var(--rm-line-strong); color: var(--rm-text); }
 .rm-pill:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }

@@ -1,0 +1,150 @@
+{
+  "_meta": {
+    "ruleset_version": "1.2",
+    "fonte": "Notion — RUPTURA (1.2) / 10. BANDO REFRATÁRIO (editado em 22/09/2026)",
+    "extraido_em": "2026-10-01",
+    "status": "draft",
+    "aviso": "Transcrição estruturada; não publicada. O bando é uma regra opcional por campanha."
+  },
+  "criacao": {
+    "campos": ["nome", "simbolo", "principio", "contato_inicial", "inimigo_ou_divida"],
+    "qg_inicial": "refugio_improvisado",
+    "cobalto_inicial": 0,
+    "exposicao_inicial": 0,
+    "alerta_inicial": 0
+  },
+  "cobalto": {
+    "resultado_base": [
+      { "slug": "nenhum", "valor": 0, "descricao": "Nenhum objetivo relevante foi cumprido." },
+      { "slug": "parcial", "valor": 1, "descricao": "Resultado parcial significativo ou objetivo próprio relevante." },
+      { "slug": "cumprido", "valor": 2, "descricao": "Objetivo principal cumprido e acordo com o contratante respeitado." }
+    ],
+    "ajustes": [
+      { "slug": "repercussao", "valor": 1, "descricao": "Feito excepcional, verificável e circulando na Subfrequência." },
+      { "slug": "quebra_publica", "valor": -1, "descricao": "Contrato abandonado, falha grave ocultada ou contratante prejudicado, e isso se tornou conhecido." },
+      { "slug": "traicao_confirmada", "valor": -2, "descricao": "Traição a aliado ou contratante com provas aceitas pelo Submundo." }
+    ],
+    "regras": [
+      "No máximo um ajuste por operação; variação total entre -2 e +3.",
+      "Cobalto nunca fica abaixo de 0.",
+      "Ser filmado, identificado ou perseguido não reduz Cobalto (é Exposição ou Alerta).",
+      "Só aumenta se alguém relevante no Submundo puder conhecer a ação e atribuí-la ao bando."
+    ]
+  },
+  "rankings": [
+    { "ranking": "F", "titulo": "Anônimos", "cobalto": 0, "beneficio": "Sem perfil verificável. Contratos chegam por contatos pessoais." },
+    { "ranking": "E", "titulo": "Listados", "cobalto": 3, "beneficio": "Perfil consultável na Lista. Especialistas de Ranking E podem ser recrutados." },
+    { "ranking": "D", "titulo": "Confiáveis", "cobalto": 7, "beneficio": "Uma vez por intervalo, uma pista concreta pela Lista sobre onde encontrar item, serviço ou contato Comum ou Incomum." },
+    { "ranking": "C", "titulo": "Estabelecidos", "cobalto": 12, "beneficio": "Ao aceitar contrato pela Lista, até 25% da recompensa como adiantamento, sem teste; devolvido se o contrato for rompido." },
+    { "ranking": "B", "titulo": "Disputados", "cobalto": 18, "beneficio": "Ao aceitar contrato pela Lista, pode solicitar um apoio plausível do contratante (transporte local, documentos temporários, informação operacional ou empréstimo de equipamento Comum)." },
+    { "ranking": "A", "titulo": "Notórios", "cobalto": 25, "beneficio": "Uma vez por operação, +2 de vantagem num teste social ao invocar abertamente a reputação do bando diante de alguém do Submundo que o reconheça; pode criar uma pista." },
+    { "ranking": "S", "titulo": "Cobalto", "cobalto": 35, "beneficio": "Ao negociar pela Lista, exigir 25% a mais na recompensa ou o apoio do Ranking B sem reduzir o pagamento." }
+  ],
+  "qgs": [
+    { "slug": "refugio_improvisado", "nome": "Refúgio Improvisado", "ranking_minimo": "F", "custo": 0, "capacidade": 1, "seguranca": 0, "revendavel": false, "descricao": "Quarto emprestado, porão, contêiner ou espaço temporário." },
+    { "slug": "apartamento_convertido", "nome": "Apartamento Convertido", "ranking_minimo": "E", "custo": 2000, "capacidade": 2, "seguranca": 1, "revendavel": true, "descricao": "Imóvel discreto com área de trabalho e acessos controláveis." },
+    { "slug": "oficina_ou_galpao", "nome": "Oficina ou Galpão", "ranking_minimo": "D", "custo": 5000, "capacidade": 4, "seguranca": 1, "revendavel": true, "descricao": "Estrutura industrial com setores separados, entrada de carga e espaço para equipamento pesado." },
+    { "slug": "instalacao_clandestina", "nome": "Instalação Clandestina", "ranking_minimo": "C", "custo": 10000, "capacidade": 6, "seguranca": 2, "revendavel": true, "descricao": "Base para operação contínua, com salas independentes e mais de uma rota interna." },
+    { "slug": "complexo_refratario", "nome": "Complexo Refratário", "ranking_minimo": "A", "custo": 18000, "capacidade": 9, "seguranca": 2, "revendavel": true, "descricao": "Espaços interligados, ocultos sob atividade legítima ou fora das rotas comuns." }
+  ],
+  "qg_regras": {
+    "seguranca_maxima": 3,
+    "vantagem_maxima_por_seguranca": 2,
+    "revenda_fracao": 0.5,
+    "reconstrucao_fixa_fracao": 0.5,
+    "ranking_aprimoramento": "C"
+  },
+  "melhorias": [
+    { "slug": "arquivo_de_coberturas", "nome": "Arquivo de Coberturas", "ranking_minimo": "E", "custo": 1000, "transferencia": "portatil", "aprimoramento": 800, "seguranca": 0, "efeito": "+1 de vantagem para criar ou reparar Coberturas; necessário para Identidade Integrada.", "efeito_aprimorado": "Mantém até duas Identidades Integradas em revisão; uma vez por intervalo, repara uma comprometida." },
+    { "slug": "enfermaria_clandestina", "nome": "Enfermaria Clandestina", "ranking_minimo": "E", "custo": 1500, "transferencia": "fixa", "aprimoramento": 1200, "seguranca": 0, "efeito": "Com Clínico ou personagem capaz, funciona como clínica clandestina com risco 10 p.p. menor e materiais pela metade.", "efeito_aprimorado": "Até dois personagens recebem o mesmo atendimento na mesma atividade." },
+    { "slug": "laboratorio_clandestino", "nome": "Laboratório Clandestino", "ranking_minimo": "D", "custo": 2500, "transferencia": "fixa", "aprimoramento": 2000, "seguranca": 0, "efeito": "Permite Síntese; +1 de vantagem em Biologia ou Arcanismo para analisar ou produzir sob risco.", "efeito_aprimorado": "Uma atividade produz duas unidades do mesmo item." },
+    { "slug": "oficina_de_equipamentos", "nome": "Oficina de Equipamentos", "ranking_minimo": "E", "custo": 1500, "transferencia": "fixa", "aprimoramento": 1200, "seguranca": 0, "efeito": "Permite Infraestrutura com ferramentas pesadas; +1 de vantagem em reparo ou modificação no local.", "efeito_aprimorado": "Uma vez por intervalo, um Mecânico faz um reparo rotineiro sem consumir sua atividade." },
+    { "slug": "rede_de_vigilancia", "nome": "Rede de Vigilância", "ranking_minimo": "E", "custo": 1000, "transferencia": "fixa", "aprimoramento": 1500, "seguranca": 1, "seguranca_aprimorada": 1, "efeito": "+1 Segurança; em Exposição 2 ou 4, revela a natureza de uma pista ativa.", "efeito_aprimorado": "+1 Segurança; a primeira falha do intervalo ao Neutralizar uma Pista não aumenta a Exposição." },
+    { "slug": "saida_de_emergencia", "nome": "Saída de Emergência", "ranking_minimo": "E", "custo": 1000, "transferencia": "fixa", "aprimoramento": 800, "seguranca": 1, "efeito": "+1 Segurança; sempre há rota de evacuação durante uma invasão.", "efeito_aprimorado": "Ao evacuar um QG localizado, leva uma melhoria fixa sem pagar reconstrução." },
+    { "slug": "sala_isolada", "nome": "Sala Isolada", "ranking_minimo": "E", "custo": 1200, "transferencia": "fixa", "aprimoramento": 1000, "seguranca": 1, "efeito": "+1 Segurança; uma vez por intervalo, evita 1 Exposição causada só por comunicação de dentro do QG (a pista fica registrada).", "efeito_aprimorado": "Preparar dentro da sala com sucesso padrão ou melhor aplica o +1 a dois personagens." },
+    { "slug": "servidor_de_subfrequencia", "nome": "Servidor de Subfrequência", "ranking_minimo": "D", "custo": 2000, "transferencia": "portatil", "aprimoramento": 2000, "seguranca": 0, "efeito": "Permite Identidades Integradas e projetos digitais persistentes; +1 de vantagem em Operações Sinápticas a partir do QG.", "efeito_aprimorado": "Uma vez por intervalo, contém uma pista digital conhecida como parte de outra atividade de Operações Sinápticas." }
+  ],
+  "areas_de_apoio": [
+    { "slug": "assistencia", "nome": "Assistência", "qualificacao": "Medicina 2+ (físico); Psicologia 2+ ou Cognitiva 1+ (mental)" },
+    { "slug": "coberturas", "nome": "Coberturas", "qualificacao": "Influência 2+, Sociedade 2+ ou Tecnomagia 2+" },
+    { "slug": "informacao", "nome": "Informação", "qualificacao": "Percepção 2+, Psicologia 2+ ou Sociedade 2+" },
+    { "slug": "infraestrutura", "nome": "Infraestrutura", "qualificacao": "Engenharia 2+, Robótica 2+ ou Tecnomagia 2+" },
+    { "slug": "operacoes_sinapticas", "nome": "Operações Sinápticas", "qualificacao": "Tecnomagia 2+ e acesso adequado à Malha" },
+    { "slug": "sintese", "nome": "Síntese", "qualificacao": "Biologia 3+ ou Arcanismo 2+" }
+  ],
+  "especialistas": [
+    { "slug": "biomecanico", "nome": "Biomecânico", "area": "assistencia", "ranking_minimo": "E", "recrutamento": 800, "salario": 250, "competencia": "Instala, extrai e repara escalpos." },
+    { "slug": "clinico", "nome": "Clínico", "area": "assistencia", "ranking_minimo": "E", "recrutamento": 600, "salario": 200, "competencia": "Cuidados físicos ou mentais (escolha ao recrutar)." },
+    { "slug": "forjador", "nome": "Forjador", "area": "coberturas", "ranking_minimo": "E", "recrutamento": 600, "salario": 200, "competencia": "Produz documentos e identidades." },
+    { "slug": "informante", "nome": "Informante", "area": "informacao", "ranking_minimo": "E", "recrutamento": 600, "salario": 200, "competencia": "Investiga por contatos, observa movimentações e trabalha contra vigilância." },
+    { "slug": "mecanico", "nome": "Mecânico", "area": "infraestrutura", "ranking_minimo": "E", "recrutamento": 700, "salario": 250, "competencia": "Repara e adapta armas, armaduras, escudos, drones, robôs e instalações." },
+    { "slug": "quimico", "nome": "Químico", "area": "sintese", "ranking_minimo": "D", "recrutamento": 900, "salario": 300, "competencia": "Produz compostos conhecidos; sem Laboratório só investiga fórmulas e insumos." },
+    { "slug": "tecelao", "nome": "Tecelão", "area": "operacoes_sinapticas", "ranking_minimo": "D", "recrutamento": 900, "salario": 300, "competencia": "Atua em Tramas e registros digitais; sem Servidor não mantém projetos ligados ao QG." }
+  ],
+  "especialistas_regras": [
+    "Taxa de recrutamento paga uma vez; salário pago em todo intervalo processado.",
+    "Salário não pago: especialista indisponível; dois intervalos consecutivos sem pagamento encerram o contrato.",
+    "Uma atividade de sua área por intervalo, ou +1 de vantagem ajudando um personagem."
+  ],
+  "coberturas": [
+    { "slug": "documento_avulso", "nome": "Documento avulso", "custo": 100, "requisito": "Área de Coberturas", "efeito": "+1 de vantagem numa verificação sumária compatível; deixa de ser confiável depois de usado ou examinado." },
+    { "slug": "identidade_simples", "nome": "Identidade simples", "custo": 400, "requisito": "Área de Coberturas", "efeito": "+1 de vantagem em verificações rotineiras; investigação de histórico encontra lacunas." },
+    { "slug": "identidade_integrada", "nome": "Identidade integrada", "custo": 1000, "requisito": "Arquivo de Coberturas e Servidor de Subfrequência", "efeito": "+2 de vantagem na primeira verificação relevante de cada operação; utilizável até ser comprometida." }
+  ],
+  "atividades": [
+    { "slug": "adquirir", "nome": "Adquirir" },
+    { "slug": "criar_cobertura", "nome": "Criar cobertura" },
+    { "slug": "investigar", "nome": "Investigar" },
+    { "slug": "neutralizar_pista", "nome": "Neutralizar uma pista" },
+    { "slug": "preparar", "nome": "Preparar" },
+    { "slug": "produzir", "nome": "Produzir" },
+    { "slug": "reparar", "nome": "Reparar" },
+    { "slug": "tratar", "nome": "Tratar" },
+    { "slug": "transferir_qg", "nome": "Transferir o QG" }
+  ],
+  "intervalo_sequencia": [
+    "Resolver a operação (Cobalto, causas de Exposição e Alerta).",
+    "Pagar a retaguarda (salários).",
+    "Escolher atividades (personagens e especialistas).",
+    "Resolver atividades e projetos.",
+    "Atualizar pressões (pistas neutralizadas, estágios, complicações).",
+    "Preparar a próxima operação."
+  ],
+  "exposicao": {
+    "maximo": 6,
+    "maximo_por_operacao": 2,
+    "estagios": [
+      { "min": 0, "max": 1, "estado": "Oculto", "consequencia": "Nenhuma investigação aponta o endereço." },
+      { "min": 2, "max": 3, "estado": "Vestígios", "consequencia": "Há uma rota de investigação; ao menos uma pista sinalizada para neutralizar." },
+      { "min": 4, "max": 5, "estado": "Perímetro observado", "consequencia": "Antes da próxima operação: neutralizar uma pista, partir de outro local ou aceitar uma complicação." },
+      { "min": 6, "max": 6, "estado": "Localizado", "consequencia": "Força hostil confirma o QG: Defender, Evacuar, Transformar em armadilha ou Negociar." }
+    ],
+    "regras": [
+      "Cada segmento registra a pista de origem; sem pista concreta, não aumenta.",
+      "Só diminui ao neutralizar uma pista registrada; volta a 0 com um novo QG."
+    ]
+  },
+  "alerta_imperial": {
+    "maximo": 5,
+    "maximo_por_operacao": 2,
+    "estagios": [
+      { "nivel": 0, "estado": "Ignorado", "resposta": "Nenhum caso específico contra o bando." },
+      { "nivel": 1, "estado": "Fichado", "resposta": "Dossiê e ao menos uma pista registrada; ninguém em tempo integral." },
+      { "nivel": 2, "estado": "Monitorado", "resposta": "Identidades conhecidas observadas; o primeiro uso relevante de um RPI conhecido por operação pode provocar verificação." },
+      { "nivel": 3, "estado": "Investigado", "resposta": "Um agente ou equipe assume o caso e persegue uma pista definida." },
+      { "nivel": 4, "estado": "Prioritário", "resposta": "Recursos de campo; o narrador introduz intervenção, busca ou pressão sobre um aliado." },
+      { "nivel": 5, "estado": "Caçado", "resposta": "Inquisidor ou unidade equivalente com ordem de captura." }
+    ],
+    "reducao": "Cai em 1, no máximo uma vez por operação ou intervalo, por causa concreta (investigação eliminada ou redirecionada, outro responsável incriminado, base do caso sacrificada, ou três operações seguidas sem gerar Alerta e sem identidades monitoradas)."
+  },
+  "complicacoes": [
+    { "d8": 1, "situacao": "Contato comprometido" },
+    { "d8": 2, "situacao": "Cobrança de favor" },
+    { "d8": 3, "situacao": "Falha de infraestrutura" },
+    { "d8": 4, "situacao": "Prova contestada" },
+    { "d8": 5, "situacao": "Rastro no equipamento" },
+    { "d8": 6, "situacao": "Pressão no perímetro" },
+    { "d8": 7, "situacao": "Especialista pressionado" },
+    { "d8": 8, "situacao": "Janela estreita" }
+  ]
+}

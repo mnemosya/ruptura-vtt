@@ -51,6 +51,7 @@ import { hexParaPixel } from "../../src/app/mesas/[campaignId]/vtt/_mapa/hex";
 import { TAM } from "../../src/app/mesas/[campaignId]/vtt/_mapa/MapaHex";
 import { garantirTokenAlcancavel, recolherPainelDaSessao } from "./painelDaSessao";
 
+import { personagemV12 } from "./fixtures/personagemV12";
 loadDotenv({ path: ".env.local" });
 
 function requireEnv(nome: string): string {
@@ -120,7 +121,7 @@ async function configurarFixture(): Promise<void> {
   const novoId = randomUUID();
   const { error: e3 } = await admin.from("characters").insert({
     id: novoId, name: "PJ do teste de animação", owner_label: null, status: "draft",
-    payload: { nome: "PJ do teste de animação" }, campaign_id: campaignId, owner_id: jogadorId,
+    payload: personagemV12("PJ do teste de animação"), campaign_id: campaignId, owner_id: jogadorId,
   });
   if (e3) throw new Error(`Falha ao criar personagem: ${e3.message}`);
   characterId = novoId;

@@ -45,7 +45,12 @@ export function adaptCondition(raw: Record<string, unknown>): ResultadoAdaptacao
     let payloadEspecifico: Record<string, unknown> = {};
     let gatilho: string | undefined;
     if (tipoLegado === "dano_fim_de_rodada") {
-      payloadEspecifico = { dado: efeito.dano, tipoDano: efeito.tipo_dano };
+      const danoPorNivel = asRecord(efeito.dano_por_nivel);
+      payloadEspecifico = {
+        dado: efeito.dano ?? danoPorNivel?.["1"],
+        danoPorNivel,
+        tipoDano: efeito.tipo_dano,
+      };
       gatilho = "fim_de_rodada";
     } else if (tipoLegado === "modificador" || tipoLegado === "modificador_recebido") {
       payloadEspecifico = { valor: efeito.valor, alvoTags: efeito.alvo_tags, recebido: tipoLegado === "modificador_recebido" };

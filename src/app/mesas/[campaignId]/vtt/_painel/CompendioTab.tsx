@@ -29,7 +29,6 @@ import { SecaoDossie } from "./ui/primitivas";
 /** Acento por categoria — a mesma ideia de `ACCENTS` da referência (uma cor por categoria, nunca por tipo de evento). */
 const ACENTO_CATEGORIA: Record<CategoriaCompendio, string> = {
   magias: "var(--rv-ar)",
-  talentos: "var(--rv-am)",
   itens: "var(--rv-cy)",
   runas: "var(--rv-mg)",
   condicoes: "var(--rv-dg)",

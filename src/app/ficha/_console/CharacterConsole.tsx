@@ -56,7 +56,9 @@ import { SkillsGrid } from "./panels/SkillsGrid";
 import { TabRail } from "./panels/TabRail";
 import { MinimizedDockContent } from "./panels/MinimizedDockContent";
 import { PinsRow, ConditionsPanel } from "./panels/PinsAndConditions";
-import { ModoChip, VerNoMapaChip, GravacaoChip } from "./panels/ModoEvolucao";
+import { AvancoChip, CompletarCriacaoChip, ModoChip, VerNoMapaChip, GravacaoChip } from "./panels/ModoEvolucao";
+import { useJanelasDaMesa } from "../../mesas/[campaignId]/vtt/_shell/JanelasDaMesa";
+import { AvancoRankingModal } from "./panels/AvancoRankingModal";
 import {
   AttackModal,
   BackpackPickerModal,
@@ -87,6 +89,7 @@ type Aux =
   | { tipo: "resistir-atributo" }
   | { tipo: "retorno-colapso"; recurso: "pv" | "pe"; valor: number; desfecho: "morte" | "coma" }
   | { tipo: "aviso"; titulo: string; mensagem: string }
+  | { tipo: "avanco" }
   | null;
 
 export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; onClose: () => void; api: ConsoleApi }) {
@@ -98,6 +101,18 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
    */
   const [viewMode, setViewMode] = useState<ViewMode>("foco");
   const [aux, setAux] = useState<Aux>(null);
+  /**
+   * Personagem RUPTURA v1.2: o avanço de Ranking é o caminho da progressão;
+   * o Modo Evolução continua ao lado, só para corrigir Atributos e Perícias
+   * definidos na criação (o banco confere os limites do Ranking).
+   */
+  const rankingV12 = (() => {
+    const c = api.character as unknown as { progressao?: { ranking?: string } };
+    return typeof c.progressao?.ranking === "string" ? c.progressao.ranking : null;
+  })();
+  /** Criado só com o nome ("+ Personagem"): ainda falta passar pelo assistente v1.2. */
+  const criacaoPendente = (api.character as unknown as { criacao_pendente?: boolean }).criacao_pendente === true;
+  const janelas = useJanelasDaMesa();
   const tabpanelRef = useRef<HTMLDivElement>(null);
 
   /** Última aba de NAVEGAÇÃO (nunca "personagem") — pra restaurar ao
@@ -421,7 +436,15 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
               <GravacaoChip estado={api.gravacao.estado} erro={api.gravacao.erro} />
             )}
             <VerNoMapaChip />
-            {!api.somenteLeitura && <ModoChip modo={api.modo} onAlternar={api.definirModo} />}
+            {!api.somenteLeitura && criacaoPendente && api.mesa && (
+              <CompletarCriacaoChip
+                onAbrir={() => api.mesa && janelas.abrirCompletar({ characterId: api.mesa.characterId, nome: api.character.nome })}
+              />
+            )}
+            {!api.somenteLeitura && !criacaoPendente && <ModoChip modo={api.modo} onAlternar={api.definirModo} v12={rankingV12 != null} />}
+            {!api.somenteLeitura && !criacaoPendente && rankingV12 && api.mesa && (
+              <AvancoChip ranking={rankingV12} onAbrir={() => setAux({ tipo: "avanco" })} />
+            )}
           </>
         }
         dockContent={<MinimizedDockContent api={api} avatarUrl={avatarUrl} onEditarRecurso={editarRecursoComConfirmacao} />}
@@ -496,6 +519,10 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
           prefill={aux.prefill}
           onFechar={() => setAux(null)}
         />
+      )}
+
+      {aux?.tipo === "avanco" && api.mesa && (
+        <AvancoRankingModal campaignId={api.mesa.campaignId} characterId={api.mesa.characterId} onFechar={() => setAux(null)} />
       )}
 
       {aux?.tipo === "surto" && (

@@ -14,6 +14,7 @@ import { createClient } from "@supabase/supabase-js";
 import { chromium, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
 
+import { personagemV12 } from "./fixtures/personagemV12";
 loadDotenv({ path: ".env.local" });
 function req(n: string): string {
   const v = process.env[n];
@@ -74,9 +75,9 @@ async function main() {
   const comSaldo = randomUUID(), semCarteira = randomUUID();
   await admin.from("characters").insert([
     { id: comSaldo, name: "Rico", status: "draft", campaign_id: campaignId, owner_id: dono.id,
-      payload: { nome: "Rico", carteira: { aretz_informal: 12500, cdi: 3, cdi_craqueada: 0 } } },
+      payload: personagemV12("Rico", { carteira: { aretz_informal: 12500, cdi: 3, cdi_craqueada: 0 } }) },
     { id: semCarteira, name: "Sem carteira", status: "draft", campaign_id: campaignId, owner_id: dono.id,
-      payload: { nome: "Sem carteira" } },
+      payload: personagemV12("Sem carteira") },
   ]);
   criados.ch.push(comSaldo, semCarteira);
   registrar("0 (fixture: um com saldo, um sem carteira no payload)", true, `campanha=${campaignId}`);

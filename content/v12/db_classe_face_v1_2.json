@@ -1,0 +1,469 @@
+{
+  "_meta": {
+    "ruleset_version": "1.2",
+    "fonte": "https://app.notion.com/p/3d90a136355280b18fc8e6819e95616f",
+    "fonte_editada_em": "2026-09-14T23:12:42.819Z",
+    "extraido_em": "2026-10-01",
+    "pendencias_editoriais": [
+      "equipamento_inicial: os pacotes recomendados ainda são placeholders no Notion; nenhum item foi inferido."
+    ]
+  },
+  "classes": [
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "face",
+      "nome": "Face",
+      "descricao": "Faces são especialistas em abrir portas que força, magia e tecnologia não conseguem atravessar. Interpretam interesses, reputações e relações para descobrir quem precisa ser convencido, o que pode ser oferecido e quando outra pessoa possui melhores condições de conduzir a interação.\n\nDurante uma cena, a Face transforma bons resultados em influência que pode ser utilizada depois. Pode preservar oportunidades, apoiar os argumentos dos aliados e fazer com que a confiança conquistada em uma conversa continue favorecendo a equipe. Seu poder cresce à medida que relações deixam de ser encontros isolados e passam a compor uma rede.\n\nAlgumas Faces dependem de fama e presença pública; outras atuam por meio do comércio ou do submundo. Escolha esta classe se quiser negociar caminhos alternativos, fortalecer a atuação social do grupo e transformar reputação e relacionamentos em acesso, informação e recursos.",
+      "papel_principal": "Influência",
+      "papeis_secundarios": [
+        "Negociação",
+        "Influência",
+        "Obtenção de informações",
+        "Articulação de contatos"
+      ],
+      "criacao": {
+        "perfis_atributos": [
+          {
+            "slug": "equilibrada",
+            "nome": "Equilibrada",
+            "valores": [
+              2,
+              1,
+              1
+            ]
+          },
+          {
+            "slug": "concentrada",
+            "nome": "Concentrada",
+            "valores": [
+              2,
+              2,
+              0
+            ]
+          },
+          {
+            "slug": "especializada",
+            "nome": "Especializada",
+            "valores": [
+              3,
+              1,
+              0
+            ]
+          }
+        ],
+        "perfis_pericias": [
+          {
+            "slug": "abrangente",
+            "nome": "Abrangente",
+            "quantidades": {
+              "valor_1": 8,
+              "valor_2": 5,
+              "valor_3": 1
+            }
+          },
+          {
+            "slug": "padrao",
+            "nome": "Padrão",
+            "quantidades": {
+              "valor_1": 5,
+              "valor_2": 4,
+              "valor_3": 2
+            }
+          },
+          {
+            "slug": "especializado",
+            "nome": "Especializado",
+            "quantidades": {
+              "valor_1": 4,
+              "valor_2": 2,
+              "valor_3": 3
+            }
+          }
+        ],
+        "pericias_valor_3": [
+          "artes",
+          "carisma",
+          "influencia",
+          "intimidacao",
+          "psicologia",
+          "sociedade",
+          "vontade"
+        ],
+        "pericias_valor_2": [
+          "arcanismo",
+          "artes",
+          "carisma",
+          "furtividade",
+          "influencia",
+          "intimidacao",
+          "logica",
+          "percepcao",
+          "psicologia",
+          "reflexos",
+          "sociedade",
+          "tecnomagia",
+          "vontade"
+        ],
+        "pericias_valor_1": "qualquer_nao_escolhida",
+        "recursos": {
+          "pv": {
+            "constante": 10,
+            "texto": "10 + Corpo",
+            "atributo": "corpo",
+            "multiplicador_atributo": 1
+          },
+          "pe": {
+            "constante": 13,
+            "texto": "13 + Mente",
+            "atributo": "mente",
+            "multiplicador_atributo": 1
+          },
+          "mana": {
+            "constante": 12,
+            "texto": "12 + (Ânimo × 2)",
+            "atributo": "animo",
+            "multiplicador_atributo": 2
+          },
+          "andar": {
+            "constante": 10,
+            "texto": "10 + Corpo",
+            "atributo": "corpo",
+            "multiplicador_atributo": 1
+          },
+          "correr": {
+            "constante": 20,
+            "texto": "2 × (10 + Corpo)",
+            "atributo": "corpo",
+            "multiplicador_atributo": 2
+          },
+          "reacoes": {
+            "constante": 1,
+            "texto": "Mente + 1",
+            "atributo": "mente",
+            "multiplicador_atributo": 1
+          },
+          "integridade": {
+            "constante": 10,
+            "texto": "10 + (Ânimo × 2)",
+            "atributo": "animo",
+            "multiplicador_atributo": 2
+          }
+        },
+        "vertentes_primarias": "qualquer",
+        "sinergia_vertentes": {
+          "biotica": 2,
+          "cinetica": 2,
+          "cognitiva": 5,
+          "energetica": 3,
+          "material": 1,
+          "sinaptica": 3
+        },
+        "equipamento_inicial": {
+          "aretz": 3000,
+          "espacos_mochila": 10,
+          "itens": []
+        }
+      },
+      "caracteristicas": {
+        "F": [
+          {
+            "slug": "testes_de_interacao",
+            "nome": "Testes de Interação",
+            "descricao": "Testes de Interação. Para as características desta classe, um Teste de Interação é qualquer teste realizado com a intenção de comunicar, convencer, enganar, intimidar, impressionar, provocar, compreender o comportamento de alguém ou conduzir uma relação social.\n\nEsses testes normalmente utilizam Artes, Carisma, Influência, Intimidação, Psicologia ou Sociedade. Entretanto, utilizar uma dessas perícias não transforma automaticamente um teste em um Teste de Interação. O propósito da ação precisa envolver diretamente outra criatura ou grupo."
+          },
+          {
+            "slug": "reserva_de_confianca",
+            "nome": "Reserva de Confiança",
+            "descricao": "Durante uma cena, você pode acumular resultados de d8 em uma Reserva de Confiança. Sua Reserva comporta até 2 dados e começa vazia no início de cada cena.\n\nOs dados guardados preservam seus resultados. Você pode mantê-los fisicamente separados ou registrar seus valores. Todos os dados da Reserva são descartados ao final da cena.\n\nDepois de rolar os d8 de um Teste de Interação, mas antes de determinar o resultado, você pode utilizar sua Reserva de uma das seguintes formas:\n\n- Guardar: retire um dos d8 rolados e coloque-o em um espaço vazio da Reserva. Pelo menos um dado deve permanecer no teste.\n- Trocar: escolha um d8 do teste e um d8 da Reserva. Os dois trocam de lugar: o dado guardado passa a fazer parte do teste, enquanto o dado retirado ocupa seu espaço na Reserva.\n\nOs valores dos dados não são alterados. Você só pode Guardar ou Trocar uma vez em cada teste.\n\nIsso permite fortalecer o teste atual ou aceitar um resultado menor para preservar um dado mais valioso para outra interação.\n\nExemplo: a Face possui 6 e 5 em sua Reserva. Em um novo teste, rola 8 e 3. Por considerar que esse teste é menos importante, troca o 5 guardado pelo 8 rolado. O teste passa a ter 5 e 3, enquanto sua Reserva passa a conter 8 e 6."
+          },
+          {
+            "slug": "manobras_sociais",
+            "nome": "Manobras Sociais",
+            "descricao": "Quando obtiver sucesso em um Teste de Interação, você pode transformar esse sucesso em uma Manobra Social apropriada ao argumento e às circunstâncias.\n\nEscolha uma das opções:\n\n- Arrancar: o alvo revela uma informação curta que pretendia esconder ou confirma algo que tentava evitar.\n- Comprometer: o alvo assume uma promessa, posição, acordo ou responsabilidade explícita.\n- Desviar: você muda o centro da conversa, afastando a atenção de uma pessoa, assunto ou acontecimento.\n- Expor: você revela uma contradição, hesitação, mentira ou fragilidade perceptível no discurso do alvo.\n- Hesitar: o alvo posterga uma decisão imediata, desde que esperar seja uma possibilidade razoável.\n- Isolar: você separa socialmente o alvo de parte de seus apoiadores ou consegue uma oportunidade para falar com alguém em particular.\n- Provocar: o alvo direciona sua atenção ou sua reação imediata para você.\n- Viabilizar: você cria uma abertura para um aliado. O próximo Teste de Interação realizado por ele contra o mesmo alvo recebe +1 de vantagem.\n\nA extensão da Manobra depende do resultado do teste:\n\n- Em um sucesso limitado, a Manobra ocorre parcialmente, exige uma concessão ou produz uma complicação.\n- Em um sucesso padrão, a Manobra produz integralmente o efeito pretendido.\n- Em um sucesso crítico, você pode aplicar duas Manobras diferentes compatíveis com a mesma abordagem ou melhorar os termos da Manobra original.\n\nUma mesma criatura ou grupo só pode ser afetado por cada Manobra uma vez por cena.\n\nManobras Sociais não constituem controle mental. Uma criatura não pode ser obrigada a realizar algo evidentemente suicida, abandonar instantaneamente convicções fundamentais ou oferecer recursos que não controla. Ainda assim, ela precisa reagir de maneira coerente à pressão, à informação ou à abertura criada."
+          },
+          {
+            "slug": "interacao_cognitiva",
+            "nome": "Interação Cognitiva",
+            "descricao": "Quando uma magia Cognitiva sua revelar diretamente uma emoção, intenção, lembrança ou percepção de uma criatura, ou alterar um desses elementos de maneira perceptível para você, essa informação pode fundamentar seu próximo Teste de Interação com ela.\n\nSe o teste explorar diretamente aquilo que foi revelado ou alterado, receba +1 de vantagem. Esse benefício só pode ser utilizado uma vez por aplicação da magia e termina quando a informação deixar de ser relevante."
+          }
+        ],
+        "D": [
+          {
+            "slug": "argumento_coletivo",
+            "nome": "Argumento Coletivo",
+            "descricao": "Sua Reserva de Confiança passa a comportar até 3 dados.\n\nAlém de utilizá-la em seus próprios Testes de Interação, você pode propor a Troca de um dado da Reserva por um dado de um Teste de Interação realizado por um aliado que possa perceber e compreender suas orientações.\n\nO aliado precisa estar participando da mesma interação, defendendo uma posição compatível com a sua ou seguindo uma abordagem coordenada com você. O jogador responsável pelo aliado decide se aceita a Troca depois de conhecer os dois dados envolvidos.\n\nVocê pode propor essa Troca apenas uma vez por rodada. Um mesmo teste só pode receber uma única Troca."
+          },
+          {
+            "slug": "rede_de_contatos",
+            "nome": "Rede de Contatos",
+            "descricao": "Você mantém contatos em ambientes sociais nos quais já tenha estabelecido alguma presença, como instituições, comunidades, mercados, círculos profissionais ou organizações clandestinas.\n\nQuando procurar uma informação, apresentação, serviço comum ou acesso social que possa razoavelmente ser obtido por esses contatos, determine com o Narrador quem pode ajudá-lo e qual será o preço, favor, compromisso ou risco envolvido.\n\nEssa característica cria um caminho possível até o recurso procurado, mas não garante gratuidade, lealdade ou disponibilidade imediata."
+          }
+        ],
+        "B": [
+          {
+            "slug": "confianca_acumulada",
+            "nome": "Confiança Acumulada",
+            "descricao": "Sua Reserva de Confiança deixa de ser limitada a uma única cena.\n\nNo início de cada operação, sua Reserva começa vazia. Os dados guardados permanecem nela mesmo quando a cena termina e só são descartados ao final da operação.\n\nAlém disso, você pode aplicar até duas Manobras Sociais diferentes por rodada, respeitando os demais limites de cada Manobra.\n\nQuando um aliado que você possa perceber obtiver sucesso em um Teste de Interação, você pode gastar 1 PA para aplicar uma Manobra Social compatível com aquilo que ele disse ou fez. Você só pode fazer isso uma vez por rodada."
+          }
+        ],
+        "S": [
+          {
+            "slug": "palavra_final",
+            "nome": "Palavra Final",
+            "descricao": "Você domina não apenas a construção de seus próprios argumentos, mas também as dúvidas e hesitações de quem tenta resistir a eles.\n\nUma vez por cena, quando uma criatura realizar um teste diretamente para resistir, contestar ou se opor a um Teste de Interação seu ou de um aliado, você pode Trocar um dado da Reserva por um dos d8 rolados pela criatura.\n\nO dado retirado da oposição passa a ocupar sua Reserva, enquanto o dado que estava guardado passa a integrar o teste da criatura. A Troca acontece antes que os resultados sejam determinados.\n\nDurante a mesma resolução, você também pode realizar normalmente uma Troca no teste realizado por você ou pelo aliado. Dessa forma, é possível fortalecer um lado da interação e enfraquecer o outro simultaneamente.\n\nAlém disso, quando obtiver um sucesso crítico em um Teste de Interação, você pode aplicar até três Manobras Sociais diferentes compatíveis com a mesma abordagem.\n\nSua Reserva continua comportando até 3 dados e permanece ativa durante toda a operação. Seus resultados só são descartados quando a operação termina."
+          }
+        ]
+      },
+      "subclasses": [
+        "icone",
+        "mercador",
+        "rato_de_rua"
+      ],
+      "progressao": {
+        "F": {
+          "ranking": "F",
+          "pontos_pericia": 0,
+          "limite_pericia": 3,
+          "pontos_atributo": 0,
+          "pontos_vertente": 0,
+          "magias_adicionais": 0,
+          "pa": 3,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "reserva_confianca": 2
+          }
+        },
+        "E": {
+          "ranking": "E",
+          "pontos_pericia": 2,
+          "limite_pericia": 3,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 3,
+          "escolhe_subclasse": true,
+          "mudancas_recursos_classe": {
+            "reserva_confianca": 2
+          }
+        },
+        "D": {
+          "ranking": "D",
+          "pontos_pericia": 0,
+          "limite_pericia": 3,
+          "pontos_atributo": 1,
+          "pontos_vertente": 0,
+          "magias_adicionais": 1,
+          "pa": 3,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "reserva_confianca": 3
+          }
+        },
+        "C": {
+          "ranking": "C",
+          "pontos_pericia": 2,
+          "limite_pericia": 4,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 4,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "reserva_confianca": 3
+          }
+        },
+        "B": {
+          "ranking": "B",
+          "pontos_pericia": 0,
+          "limite_pericia": 4,
+          "pontos_atributo": 1,
+          "pontos_vertente": 0,
+          "magias_adicionais": 1,
+          "pa": 4,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "reserva_confianca": 3
+          }
+        },
+        "A": {
+          "ranking": "A",
+          "pontos_pericia": 2,
+          "limite_pericia": 5,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 4,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "reserva_confianca": 3
+          }
+        },
+        "S": {
+          "ranking": "S",
+          "pontos_pericia": 0,
+          "limite_pericia": 5,
+          "pontos_atributo": 1,
+          "pontos_vertente": 0,
+          "magias_adicionais": 1,
+          "pa": 5,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "reserva_confianca": 3
+          }
+        },
+        "S+": {
+          "ranking": "S+",
+          "pontos_pericia": 2,
+          "limite_pericia": 5,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 5,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "reserva_confianca": 3
+          }
+        }
+      }
+    }
+  ],
+  "subclasses": [
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "icone",
+      "nome": "Ícone",
+      "classe_slug": "face",
+      "descricao": "Ícones transformam sua imagem em uma força coletiva. Podem ser artistas, influenciadores, agitadores, atletas, líderes comunitários, pregadores ou símbolos de um movimento. Não dependem apenas de convencer quem está diante deles: cultivam um Público disposto a oferecer recursos, espalhar mensagens e agir em seu nome.\n\nA influência de um Ícone não equivale a controle mental. Ela depende da relação construída entre sua Persona e as pessoas que a reconhecem. Quanto maior a exposição, o risco ou o sacrifício exigido, mais forte precisa ser essa relação.",
+      "caracteristicas": {
+        "E": [
+          {
+            "slug": "persona_publica",
+            "nome": "Persona Pública",
+            "descricao": "Defina a imagem pela qual você é conhecido, os meios pelos quais ela circula e o que seu Público espera de você. Sua Persona pode estar associada a uma comunidade, causa, religião, movimento político, circuito artístico, ambiente da Malha ou outro meio social. As expectativas criadas por ela podem envolver coragem, irreverência, competência, honestidade, luxo, rebeldia, tradição ou qualquer outro valor compatível com essa imagem.\n\nAo escolher esta subclasse, defina uma comunidade, circuito ou ambiente social no qual sua Persona já circula. Dentro desse meio, um pequeno grupo conhece sua imagem e possui simpatia suficiente para formar seu Público, salvo quando as circunstâncias indicarem o contrário. O simples reconhecimento não é suficiente: inimigos, críticos e pessoas indiferentes podem conhecer sua Persona sem fazer parte de seu Público.\n\nFora desse meio, alguém só conhece sua Persona caso já tenha sido exposto a ela, sua imagem tenha alcançado essa pessoa ou você utilize Cativar para conquistar sua atenção. O Narrador determina o alcance desse reconhecimento de acordo com sua trajetória, suas ações anteriores e os meios disponíveis para a circulação de sua imagem."
+          },
+          {
+            "slug": "cativar",
+            "nome": "Cativar",
+            "descricao": "Quando obtiver sucesso em um Teste de Interação dirigido simultaneamente a várias criaturas capazes de perceber você, pode aproximá-las de sua Persona:\n\n- Em um sucesso limitado, uma das criaturas passa a fazer parte de seu Público pelo restante da cena.\n- Em um sucesso padrão, um pequeno grupo entre as criaturas afetadas passa a fazer parte de seu Público pelo restante da cena.\n- Em um sucesso crítico, todas as criaturas afetadas que não sejam abertamente hostis passam a fazer parte de seu Público pelo restante da cena.\n\nCriaturas hostis podem ser impressionadas, intimidadas ou afetadas normalmente por suas Manobras Sociais, mas não passam a integrar seu Público apenas por meio de Cativar."
+          },
+          {
+            "slug": "mobilizar",
+            "nome": "Mobilizar",
+            "descricao": "Você pode pedir ajuda ao seu Público. Pedidos simples, compatíveis com sua Persona e que não imponham custo ou risco relevante são atendidos sem a necessidade de um teste, desde que os integrantes do Público sejam capazes de realizá-los.\n\nEsses pedidos podem incluir:\n\n- Apresentar você a alguém.\n- Divulgar uma mensagem.\n- Fornecer uma informação conhecida.\n- Oferecer abrigo por pouco tempo.\n- Permitir acesso a um espaço sob seu controle.\n- Reunir outras pessoas.\n- Realizar uma tarefa simples.\n- Disponibilizar um recurso comum.\n\nQuando o pedido exigir tempo, recursos limitados, exposição ou contrariar uma preferência do Público, realize um Teste de Interação. O resultado determina a resposta:\n\n- Em um sucesso limitado, apenas uma parte do Público atende ao pedido, exige uma contrapartida ou oferece uma versão reduzida da ajuda.\n- Em um sucesso padrão, o Público atende ao pedido dentro de suas possibilidades.\n- Em um sucesso crítico, o Público também oferece uma vantagem adicional, como agir imediatamente, ampliar o alcance da ajuda ou disponibilizar recursos melhores.\n\nVocê pode realizar um pedido dessa forma uma vez por cena. Um pedido feito ao Público não pode exigir violência, perigo grave, prejuízo significativo ou ruptura com seus interesses fundamentais."
+          }
+        ],
+        "C": [
+          {
+            "slug": "mobilizacao",
+            "nome": "Mobilização",
+            "descricao": "Seu Público passa a aceitar pedidos que envolvam exposição, risco moderado ou um custo significativo, desde que sejam compatíveis com sua Persona e com os interesses das pessoas envolvidas.\n\nEsses pedidos podem incluir:\n\n- Bloquear uma passagem.\n- Esconder uma pessoa procurada.\n- Interromper uma atividade.\n- Fornecer um equipamento valioso.\n- Confrontar uma autoridade.\n- Cometer uma infração.\n- Organizar uma manifestação.\n- Proteger alguém sem entrar diretamente em combate.\n\nPedidos dessa natureza sempre exigem um Teste de Interação.\n\nAlém disso, quando Mobilizar seu Público durante uma cena, você pode conduzir seus integrantes como um grupo. Em vez de resolver separadamente as ações de cada pessoa, o resultado do seu Teste de Interação determina a eficácia da mobilização:\n\n- Em um sucesso limitado, o grupo realiza uma versão reduzida da ação, demora mais que o esperado ou sofre uma complicação.\n- Em um sucesso padrão, o grupo realiza a ação conforme solicitado.\n- Em um sucesso crítico, o grupo age de maneira especialmente coordenada e produz um benefício adicional compatível com a situação.\n\nA mobilização não concede capacidades que o Público não possui. Uma multidão desarmada pode bloquear uma rua, cercar um veículo ou distrair agentes de segurança, mas não passa a combater como uma unidade militar.\n\nVocê pode Mobilizar seu Público até duas vezes por cena, mas não pode realizar um segundo pedido enquanto o primeiro ainda estiver sendo executado."
+          }
+        ],
+        "A": [
+          {
+            "slug": "movimento",
+            "nome": "Movimento",
+            "descricao": "Sua Persona tornou-se o centro de uma comunidade organizada, causa ou movimento capaz de agir mesmo quando você não está presente.\n\nEscolha uma cidade, região, comunidade distribuída ou circuito social compatível com sua trajetória. Sua Persona é amplamente reconhecida nesse meio, embora reconhecimento ainda não implique simpatia automática. Dentro desse alcance, sempre existe Público suficiente para que você tente uma convocação por meio desta característica.\n\nUma vez por operação, você pode transmitir uma convocação ao seu Público por qualquer meio capaz de alcançá-lo. Declare um objetivo coletivo compatível com sua Persona e realize um Teste de Interação.\n\nA convocação pode:\n\n- Disseminar uma informação por uma comunidade ou região.\n- Reunir recursos, testemunhas ou voluntários.\n- Organizar abrigo, transporte ou evacuação.\n- Ocupar, cercar ou vigiar um local.\n- Ocultar os movimentos de uma pessoa ou grupo.\n- Interromper serviços, atividades ou rotas.\n- Exercer pressão pública sobre uma organização.\n- Iniciar uma greve, protesto, motim ou ação coletiva semelhante.\n\nO resultado determina a escala alcançada:\n\n- Em um sucesso limitado, apenas uma parcela do Público responde, a mobilização exige uma concessão ou seus efeitos alcançam uma área menor que a pretendida.\n- Em um sucesso padrão, o movimento se organiza e executa o objetivo dentro da escala que sua presença pública poderia alcançar.\n- Em um sucesso crítico, a mobilização ultrapassa seu Público imediato, recebe apoio externo ou produz uma consequência favorável adicional.\n\nA mobilização começa assim que a mensagem alcança o Público, mas o tempo necessário para produzir seus efeitos depende das distâncias, recursos e ações exigidas.\n\nSeu Movimento pode aceitar riscos graves quando o objetivo corresponde diretamente aos valores de sua Persona, mas você ainda não pode exigir sacrifícios evidentemente suicidas nem obrigar pessoas a contrariar seus interesses fundamentais.\n\nAs ações realizadas pelo Movimento tornam-se acontecimentos públicos associados à sua Persona. Seus resultados, custos e consequências permanecem depois do final da operação."
+          }
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "mercador",
+      "nome": "Mercador",
+      "classe_slug": "face",
+      "descricao": "Mercadores conhecem os canais pelos quais mercadorias, serviços, informações e favores circulam fora do alcance das instituições oficiais. Avaliam produtos sem confiar na palavra do vendedor, localizam fornecedores capazes de conseguir o improvável e transformam aquilo que o grupo encontra em capital para o próximo negócio.\n\nPara um Mercador, a ausência de uma mercadoria no estoque não encerra uma negociação. Significa apenas que será necessário descobrir quem a possui, quem deseja comprá-la e quanto risco existe entre o acordo e a entrega.",
+      "caracteristicas": {
+        "E": [
+          {
+            "slug": "intermediacao",
+            "nome": "Intermediação",
+            "descricao": "Você pode utilizar sua rede para comprar ou vender mercadorias, serviços e informações.\n\nAo utilizar esta característica, escolha uma das opções:\n\n- Comprar: procure uma mercadoria, serviço ou informação que não esteja prontamente disponível.\n- Vender: procure um comprador para uma mercadoria, informação ou lote composto por diversos itens.\n\nDefina exatamente o que pretende negociar e escolha quanto tempo dedicará a conversas, mensagens e consultas aos seus contatos, entre 1 e 3 horas. Para cada hora dedicada, role 1d8, até um número máximo de dados igual à sua Mente, mínimo de 1 dado.\n\nOs resultados formam uma Reserva de Negociação, criada exclusivamente para essa transação. Ela começa vazia e não utiliza nem recebe dados da sua Reserva de Confiança.\n\nDepois de concluir o tempo escolhido, realize um Teste de Interação. A dificuldade é determinada pelo Narrador:\n\n- Ao Comprar, considere a disponibilidade, a legalidade, o valor e os riscos envolvidos.\n- Ao Vender, considere o valor, a demanda, a procedência e os riscos envolvidos.\n\nDurante esse teste, você pode trocar dados com a Reserva de Negociação seguindo as regras de Trocar da Reserva de Confiança. Seus resultados permanecem disponíveis mesmo que a preparação atravesse mais de uma cena.\n\nDepois que o teste for resolvido, descarte todos os dados restantes na Reserva de Negociação.\n\nO resultado depende da opção escolhida.\n\nComprar\n\n- Em um sucesso limitado, você encontra o que procura, mas o fornecedor exige uma condição desfavorável, como preço maior, entrega demorada, procedência arriscada, quantidade reduzida ou um favor adicional.\n- Em um sucesso padrão, você encontra o que procura pelo valor justo e dentro de um prazo razoável.\n- Em um sucesso crítico, você também obtém uma condição favorável, como entrega discreta, prazo reduzido, procedência confiável ou acesso a uma alternativa superior pelo mesmo preço.\n\nEssa negociação cria uma oportunidade de aquisição, mas não paga seu preço nem transporta automaticamente aquilo que foi encontrado. Bens únicos, destruídos ou completamente inacessíveis não podem ser encontrados dessa forma.\n\nVocê pode concluir apenas uma negociação de Compra por operação.\n\nVender\n\n- Em um sucesso limitado, você vende a oferta por 75% de seu valor justo.\n- Em um sucesso padrão, você vende a oferta por 100% de seu valor justo.\n- Em um sucesso crítico, você vende a oferta por 125% de seu valor justo.\n\nEm uma falha, nenhum acordo é alcançado e as mercadorias permanecem com você. Elas podem ser incluídas em uma nova tentativa a partir do dia seguinte.\n\nVocê pode realizar apenas uma tentativa de Venda por dia. A soma do valor justo das mercadorias efetivamente vendidas por meio desta característica não pode ultrapassar Ⱥ 2.000 por operação.\n\nUma mercadoria cujo valor justo ultrapasse o limite restante não pode ser incluída em uma oferta. Mercadorias que excedam esse limite ainda podem ser vendidas normalmente, mas não recebem os valores concedidos por esta característica."
+          },
+          {
+            "slug": "garimpo_de_rua",
+            "nome": "Garimpo de Rua",
+            "descricao": "Você sempre sabe onde, quando e como acessar o próximo Mercado Noturno disponível na região. Isso inclui localizar um contato capaz de conduzi-lo até o mercado e obter o código de acesso válido naquela ocasião.\n\nAo examinar uma mercadoria, você identifica automaticamente:\n\n- Se ela corresponde ao que o vendedor afirma.\n- Sinais de adulteração, falsificação ou desgaste.\n- Sua procedência aparente, quando houver indícios reconhecíveis.\n- Seu valor justo.\n\nEssa análise revela características perceptíveis ou verificáveis da mercadoria, mas não identifica automaticamente efeitos completamente ocultos, propriedades desconhecidas ou adulterações produzidas por meios que você não poderia reconhecer. Nesse caso, você recebe +1 de vantagem no teste para identificar esses efeitos.\n\nAlém disso, uma vez por operação, você pode reduzir em 20% o preço de uma única mercadoria ou serviço adquirido em um Mercado Noturno. Esse desconto não se acumula com outros descontos."
+          }
+        ],
+        "C": [
+          {
+            "slug": "credito_de_campo",
+            "nome": "Crédito de Campo",
+            "descricao": "Uma vez por operação, ao adquirir uma mercadoria ou contratar um serviço por meio de seus contatos, você pode deixar de pagar até Ⱥ 1.500 de seu preço. O valor não pago torna-se uma Dívida associada ao fornecedor.\n\nA Dívida pode ser quitada com aretz, mercadorias, informações, serviços ou favores aceitos pelo credor. Os termos e o prazo são definidos no momento da compra.\n\nEnquanto a Dívida permanecer, o credor pode procurar você para cobrar o pagamento, exigir o favor acordado ou suspender o acesso aos próprios serviços. Transferir, abandonar ou perder a mercadoria não elimina a Dívida.\n\nVocê não pode utilizar Crédito de Campo enquanto possuir uma Dívida criada por esta característica.\n\nQuando apropriado, o crédito pode assumir a forma de consignação. Nesse caso, você recebe a mercadoria para utilizar durante a operação e não acumula uma Dívida se devolvê-la nas condições acordadas. Caso ela seja perdida, destruída, adulterada ou não seja devolvida, seu valor integral torna-se uma Dívida."
+          },
+          {
+            "slug": "estoque_de_oportunidade",
+            "nome": "Estoque de Oportunidade",
+            "descricao": "Uma vez por operação, você pode declarar que adquiriu antecipadamente uma mercadoria que o grupo poderia ter comprado antes do início da operação.\n\nJustifique como conseguiu o item e pague o preço normal da mercadoria no momento da declaração. Ela passa a integrar seu inventário e ocupa normalmente os espaços exigidos na Mochila.\n\nA mercadoria precisa:\n\n- Caber na sua Mochila ou em outro espaço de armazenamento que você possua.\n- Estar normalmente disponível por meio de seus contatos.\n- Não ser única, produzida sob encomenda ou vinculada a um proprietário específico.\n- Poder ter sido transportada até sua posição.\n- Ser de raridade Incomum ou inferior.\n\nEstoque de Oportunidade representa planejamento comercial, depósitos intermediários, entregas programadas ou mercadorias mantidas em consignação. Ele não permite que um objeto apareça em um local onde não poderia ter sido armazenado ou entregue."
+          },
+          {
+            "slug": "margem_favoravel",
+            "nome": "Margem Favorável",
+            "descricao": "O limite de valor justo que você pode vender por meio de Intermediação aumenta para Ⱥ 4.000 por operação.\n\nAlém disso, os valores recebidos ao escolher Vender aumentam:\n\n- Em um sucesso limitado, você vende a oferta por 100% de seu valor justo.\n- Em um sucesso padrão, você vende a oferta por 125% de seu valor justo.\n- Em um sucesso crítico, você vende a oferta por 150% de seu valor justo."
+          }
+        ],
+        "A": [
+          {
+            "slug": "mercado_particular",
+            "nome": "Mercado Particular",
+            "descricao": "Sua rede de compradores, fornecedores, atravessadores e prestadores de serviço é extensa o bastante para formar um mercado onde antes existiam apenas contatos dispersos.\n\nUma vez por operação, dedique pelo menos 1 hora para organizar um Mercado Particular em um local seguro ou através de uma conexão disponível na Malha. Escolha até três mercadorias, serviços, informações ou lotes diferentes que pretende comprar ou vender.\n\nDesde que uma escolha não seja única ou completamente inacessível, seus contatos encontram uma contraparte e concluem a negociação dentro das próximas 6 horas. O Narrador determina o fornecedor ou comprador, a forma de entrega e as precauções necessárias de acordo com a natureza do negócio.\n\nMercadorias, serviços e informações procurados são disponibilizados pelo valor justo. Cada lote oferecido é vendido por 125% de seu valor justo, sem exigir um teste. Essas vendas contam normalmente para o limite de Intermediação.\n\nO Mercado Particular pode ser utilizado por você e por seus aliados. Cada aquisição ainda precisa ser paga normalmente, mas não exige novos testes para localizar fornecedores ou comprovar acesso ao mercado."
+          },
+          {
+            "slug": "operacao_em_escala",
+            "nome": "Operação em Escala",
+            "descricao": "O limite de valor justo que você pode vender por meio de Intermediação aumenta para Ⱥ 8.000 por operação.\n\nAlém disso:\n\n- Garimpo de Rua também pode conceder seu desconto a uma mercadoria ou serviço adquirido por um aliado através de seu Mercado Particular.\n- O limite de seu Crédito de Campo aumenta para Ⱥ 3.000.\n- Você pode utilizar Estoque de Oportunidade até duas vezes por operação.\n\nMercadorias severamente controladas, experimentais ou cuja circulação possa provocar uma resposta imediata ainda podem exigir uma contrapartida, favor ou risco adicional. Seus contatos garantem uma oportunidade de negociação, não imunidade às consequências do negócio."
+          }
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "rato_de_rua",
+      "nome": "Rato de Rua",
+      "classe_slug": "face",
+      "descricao": "Ratos de Rua usam reputação local, contatos informais e conhecimento do submundo para conseguir acesso e informação. Sabem quem controla cada território, quais conflitos estão em curso e por onde circulam rumores, contrabando e pessoas que não desejam ser encontradas.\n\nSua influência não depende de instituições formais, mas das relações construídas entre aqueles que sobrevivem fora delas. Onde outras pessoas encontram ruas desconhecidas e comunidades fechadas, um Rato de Rua reconhece códigos, intermediários, esconderijos e caminhos alternativos.",
+      "caracteristicas": {
+        "E": [
+          {
+            "slug": "ouvidos_no_chao",
+            "nome": "Ouvidos no Chão",
+            "descricao": "Uma vez por cena, dedique pelo menos 10 minutos a observar a região e conversar com moradores, trabalhadores, comerciantes ou frequentadores locais. Em seguida, escolha até duas perguntas:\n\n- Quem exerce maior autoridade informal neste território?\n- Quem está fazendo perguntas sobre uma pessoa, grupo ou acontecimento?\n- O que aconteceu recentemente que causou medo ou interesse?\n- Onde alguém procuraria abrigo, transporte ou atendimento clandestino?\n- Qual caminho ou local é evitado pelos moradores e por quê?\n- Quem controla o acesso ao lugar que procuro?\n- Quem teria motivos para esconder aquilo que estou procurando?\n- Que conflito, dívida ou acordo influencia esta situação?\n\nO Narrador apresenta um rumor, indício, nome ou local relacionado a cada pergunta escolhida, de acordo com aquilo que poderia circular entre as pessoas da região. Essas informações podem ser incompletas, contraditórias ou influenciadas pelos interesses de quem as compartilhou, mas oferecem uma direção concreta para sua investigação.\n\nAlém disso, você recebe +1 de vantagem no primeiro Teste de Interação realizado para seguir uma dessas informações durante a mesma cena."
+          },
+          {
+            "slug": "porta_entreaberta",
+            "nome": "Porta Entreaberta",
+            "descricao": "Você reconhece os estabelecimentos, intermediários e pontos de apoio utilizados pelas redes informais de uma região.\n\nUma vez por cena, quando procurar uma das formas de ajuda abaixo, reduza para 10 minutos o tempo necessário para encontrar alguém disposto a negociar:\n\n- abrigo temporário;\n- acesso a uma passagem controlada;\n- atendimento clandestino comum;\n- encontro com uma pessoa conhecida na região;\n- espaço discreto para uma conversa, troca ou procedimento;\n- transporte informal dentro da região.\n\nAjuda simples, que não imponha custo ou risco relevante ao contato, pode ser obtida sem um teste. Caso envolva recursos limitados, exposição, ilegalidade ou perigo, realize um Teste de Interação para determinar as condições oferecidas.\n\nPorta Entreaberta não elimina pagamentos, favores ou regras locais. A disponibilidade e a qualidade da ajuda dependem da região e das pessoas que poderiam oferecê-la."
+          }
+        ],
+        "C": [
+          {
+            "slug": "casa_segura",
+            "nome": "Casa Segura",
+            "descricao": "Uma vez por operação, dedique pelo menos 1 hora para encontrar e preparar uma Casa Segura em uma região habitada. Ela pode ser uma residência, oficina, depósito, clínica clandestina, veículo estacionado, túnel abandonado ou outro local protegido por sua discrição e por sua relação com a comunidade.\n\nDetermine com o Narrador quem controla o lugar e qual pagamento, favor, regra ou limitação está associado à sua utilização.\n\nEnquanto você e seus aliados permanecerem na Casa Segura:\n\n- testes realizados para descobrir sua localização sofrem –1 de desvantagem;\n- essa penalidade aumenta para –2 de desvantagem caso os perseguidores não possuam uma pista diretamente relacionada ao esconderijo;\n- informações obtidas por rumores ou testemunhas ocasionais tendem a chegar atrasadas ou imprecisas.\n\nA proteção pode ser reduzida ou encerrada se o grupo chamar atenção para o local, mantiver comunicações rastreáveis, conduzir inimigos até sua proximidade ou violar as condições estabelecidas por seus responsáveis."
+          },
+          {
+            "slug": "gato_de_telhado",
+            "nome": "Gato de Telhado",
+            "descricao": "Você conhece passagens de serviço, telhados acessíveis, túneis, edifícios conectados e rotas improvisadas através de regiões urbanas.\n\nVocê recebe +1 de vantagem em testes realizados para navegar, perseguir ou escapar nesses ambientes. Aliados que estejam seguindo suas orientações também recebem esse bônus.\n\nAlém disso, uma vez por cena, você pode procurar uma rota que contorne um obstáculo urbano entre o grupo e seu destino, como uma rua bloqueada, entrada vigiada, multidão, área perigosa ou território hostil.\n\nO Narrador indica uma passagem alternativa que possa existir naquele ambiente. A rota não elimina testes, custos ou perigos próprios, mas permite evitar o confronto direto com o obstáculo escolhido.\n\nEncontrar a passagem não significa que ela esteja livre ou em boas condições. Dependendo do local, o grupo pode precisar escalar, atravessar espaços apertados, negociar acesso ou lidar com riscos encontrados pelo caminho."
+          }
+        ],
+        "A": [
+          {
+            "slug": "saida_dos_fundos",
+            "nome": "Saída dos Fundos",
+            "descricao": "Uma vez por operação, quando você e seus aliados estiverem cercados, perseguidos ou sob risco imediato de captura, você pode conduzi-los por uma saída improvável nas proximidades.\n\nA saída pode ser uma passagem de serviço, túnel, telhado acessível, veículo informal, construção conectada ou caminho através de um território conhecido. Ela precisa ser fisicamente possível no ambiente, embora pudesse passar despercebida para alguém que não conheça aquele tipo de região.\n\nVocê e os aliados que puderem acompanhar sua fuga escapam do perigo imediato e despistam seus perseguidores. A perseguição termina, e aqueles que seguiam o grupo precisam obter uma nova pista concreta depois da fuga para voltar a localizá-lo.\n\nO Narrador apresenta uma consequência compatível com a situação, como separar temporariamente o grupo, exigir que algo seja abandonado, conduzi-los a uma área perigosa, comprometer um contato ou criar uma dívida.\n\nSaída dos Fundos não permite atravessar barreiras fisicamente intransponíveis, transportar pessoas que o grupo não conseguiria mover nem evitar perigos independentes da perseguição."
+          }
+        ]
+      }
+    }
+  ],
+  "backgrounds": [],
+  "qualities": [],
+  "complications": []
+}

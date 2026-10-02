@@ -204,7 +204,9 @@
               "falar",
               "gestos_rapidos",
               "soltar_alvo",
-              "apagar_fogo"
+              "apagar_fogo",
+              "esconder_se",
+              "ataque_secundario"
             ]
           },
           "uniqueItems": true
@@ -225,6 +227,7 @@
               "intimidacao",
               "logica",
               "luta",
+              "medicina",
               "mobilidade",
               "percepcao",
               "precisao",
@@ -633,7 +636,9 @@
                           "falar",
                           "gestos_rapidos",
                           "soltar_alvo",
-                          "apagar_fogo"
+                          "apagar_fogo",
+                          "esconder_se",
+                          "ataque_secundario"
                         ]
                       },
                       "uniqueItems": true
@@ -668,7 +673,9 @@
                         "falar",
                         "gestos_rapidos",
                         "soltar_alvo",
-                        "apagar_fogo"
+                        "apagar_fogo",
+                        "esconder_se",
+                        "ataque_secundario"
                       ]
                     },
                     "requisito": {
@@ -691,6 +698,7 @@
                         "intimidacao",
                         "logica",
                         "luta",
+                        "medicina",
                         "mobilidade",
                         "percepcao",
                         "precisao",
@@ -734,6 +742,7 @@
                             "intimidacao",
                             "logica",
                             "luta",
+                            "medicina",
                             "mobilidade",
                             "percepcao",
                             "precisao",

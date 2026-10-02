@@ -1,0 +1,5907 @@
+{
+  "_meta": {
+    "ruleset_version": "1.2",
+    "fonte": "Notion — BANCO DE MAGIAS (collection://58de8b08-a4dd-4299-af37-864306f4f3eb)",
+    "extraido_em": "2026-10-01",
+    "aviso": "Somente metadados. O texto das magias ainda não foi extraído e nenhuma magia está publicada. Todas estão como Rascunho/Em revisão no Notion."
+  },
+  "magias": [
+    {
+      "slug": "biotica_agucar_sentidos",
+      "id_notion": "biotica-agucar-sentidos",
+      "nome": "Aguçar Sentidos",
+      "vertente": "biotica",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 1,
+        "texto": "Biologia 1"
+      },
+      "teste_defesa": "Percepção",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281889f39e8481cc8c7ab"
+    },
+    {
+      "slug": "biotica_anamnese",
+      "id_notion": "biotica-anamnese",
+      "nome": "Anamnese",
+      "vertente": "biotica",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 1,
+        "texto": "1"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "Toque (1 criatura, cadáver ou amostra biológica)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 2,
+        "texto": "Biologia 2"
+      },
+      "teste_defesa": "Resistir",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281a88cf6c33e0282bb20"
+    },
+    {
+      "slug": "biotica_impeto",
+      "id_notion": "biotica-impeto",
+      "nome": "Carga muscular",
+      "vertente": "biotica",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque (1 criatura)",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 1,
+        "texto": "Biologia 1"
+      },
+      "teste_defesa": "Luta",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281009282c5f38c732568"
+    },
+    {
+      "slug": "biotica_colonia_sentinela",
+      "id_notion": "biotica-colonia-sentinela",
+      "nome": "Colônia Sentinela",
+      "vertente": "biotica",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque (esfera ◎, raio de 3 m)",
+      "duracao": "1 hora",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 1,
+        "texto": "Biologia 1"
+      },
+      "teste_defesa": "Percepção",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281cbaf00f7a1475db390"
+    },
+    {
+      "slug": "biotica_enxerto",
+      "id_notion": "biotica-enxerto",
+      "nome": "Enxerto",
+      "vertente": "biotica",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 1,
+        "texto": "Biologia 1"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281aa9368f265321cc24a"
+    },
+    {
+      "slug": "biotica_febre",
+      "id_notion": "biotica-febre",
+      "nome": "Febre",
+      "vertente": "biotica",
+      "nivel": 1,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "8 metros (1 criatura)",
+      "duracao": "2 rodadas",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 1,
+        "texto": "Biologia 1"
+      },
+      "teste_defesa": "Resistir (CD de Biótica)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552815dbec2c609db93c362"
+    },
+    {
+      "slug": "biotica_sobressalto",
+      "id_notion": "biotica-sobressalto",
+      "nome": "Sobressalto",
+      "vertente": "biotica",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "reacao",
+        "texto": "Reação"
+      },
+      "alcance": "10 metros (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 1,
+        "texto": "Biologia 1"
+      },
+      "teste_defesa": "Reflexos",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281ac9bc1eaaef3c83aa8"
+    },
+    {
+      "slug": "biotica_biorreator",
+      "id_notion": "biotica-biorreator",
+      "nome": "Biorreator",
+      "vertente": "biotica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "5 metros (15 metros cúbicos de matéria orgânica, água parada ou esgoto)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 2,
+        "texto": "Biologia 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281bf93e8e7a3563f2a86"
+    },
+    {
+      "slug": "biotica_corpo_estranho",
+      "id_notion": "biotica-corpo-estranho",
+      "nome": "Corpo Estranho",
+      "vertente": "biotica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 criatura)",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 2,
+        "texto": "Biologia 2"
+      },
+      "teste_defesa": "Resistir (CD de Biótica)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552819fac8cd2ec7846aa63"
+    },
+    {
+      "slug": "biotica_esporos",
+      "id_notion": "biotica-esporos",
+      "nome": "Esporos",
+      "vertente": "biotica",
+      "nivel": 2,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "8 metros (esfera ◎, 4 m de raio)",
+      "duracao": "1 rodada",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 1,
+        "texto": "Biologia 1"
+      },
+      "teste_defesa": "Resistir (CD de Biótica)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552813fa231d9091113c12b"
+    },
+    {
+      "slug": "biotica_germinar",
+      "id_notion": "biotica-germinar",
+      "nome": "Germinar",
+      "vertente": "biotica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros",
+      "duracao": "1 hora",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 1,
+        "texto": "Biologia 1"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528164aea8f0cbf3ba1b6b"
+    },
+    {
+      "slug": "biotica_hiperforca",
+      "id_notion": "biotica-hiperforca",
+      "nome": "Hiperforça",
+      "vertente": "biotica",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "5 metros (1 criatura voluntária)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 2,
+        "texto": "Biologia 2"
+      },
+      "teste_defesa": "Vigor; Luta",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281e39f8cfaecb5a7835f"
+    },
+    {
+      "slug": "biotica_mimetismo",
+      "id_notion": "biotica-mimetismo",
+      "nome": "Mimetismo",
+      "vertente": "biotica",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque (1 criatura)",
+      "duracao": "10 minutos",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 1,
+        "texto": "Biologia 1"
+      },
+      "teste_defesa": "Percepção; Furtividade",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281dba18ae66173a6a964"
+    },
+    {
+      "slug": "biotica_musculo_elastico",
+      "id_notion": "biotica-musculo-elastico",
+      "nome": "Músculo Elástico",
+      "vertente": "biotica",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque (1 criatura)",
+      "duracao": "10 minutos",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 1,
+        "texto": "Biologia 1"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281adbeb9e3aa7ef9d2c6"
+    },
+    {
+      "slug": "biotica_nervo_morto",
+      "id_notion": "biotica-nervo-morto",
+      "nome": "Nervo Morto",
+      "vertente": "biotica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 criatura em linha de efeito)",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 2,
+        "texto": "Biologia 2"
+      },
+      "teste_defesa": "Resistir (CD de Biótica)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528175a8cfd4e50ada4e3a"
+    },
+    {
+      "slug": "biotica_parasita",
+      "id_notion": "biotica-parasita",
+      "nome": "Parasita",
+      "vertente": "biotica",
+      "nivel": 2,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 criatura em linha de efeito)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 2,
+        "texto": "Biologia 2"
+      },
+      "teste_defesa": "Resistir (CD de Biótica)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552813eb262c6fe5d41cf0c"
+    },
+    {
+      "slug": "biotica_peconha",
+      "id_notion": "biotica-peconha",
+      "nome": "Peçonha",
+      "vertente": "biotica",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 criatura voluntária)",
+      "duracao": "1 hora",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 2,
+        "texto": "Biologia 2"
+      },
+      "teste_defesa": "Resistir (CD de Biótica)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528100bb48c58d292f96de"
+    },
+    {
+      "slug": "biotica_plasticidade",
+      "id_notion": "biotica-plasticidade",
+      "nome": "Plasticidade",
+      "vertente": "biotica",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque (1 criatura)",
+      "duracao": "30 minutos",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 2,
+        "texto": "Biologia 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281159967ff8554bdf78c"
+    },
+    {
+      "slug": "biotica_transfusao",
+      "id_notion": "biotica-transfusao",
+      "nome": "Transfusão",
+      "vertente": "biotica",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque (1 outra criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 2,
+        "texto": "Biologia 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281f88e90de877fba37a3"
+    },
+    {
+      "slug": "biotica_casulo",
+      "id_notion": "biotica-casulo",
+      "nome": "Casulo",
+      "vertente": "biotica",
+      "nivel": 3,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "Toque (1 criatura)",
+      "duracao": "10 minutos",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 2,
+        "texto": "Biologia 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281ecba7dd594bc004340"
+    },
+    {
+      "slug": "biotica_corpo_feral",
+      "id_notion": "biotica-corpo-feral",
+      "nome": "Corpo Feral",
+      "vertente": "biotica",
+      "nivel": 3,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Pessoal",
+      "duracao": "10 minutos",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 3,
+        "texto": "Biologia 3"
+      },
+      "teste_defesa": "Resistir (CD de Biótica); Vigor; Percepção; Mobilidade; Furtividade",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281b08eb7e7ec52a1feef"
+    },
+    {
+      "slug": "biotica_enxame",
+      "id_notion": "biotica-enxame",
+      "nome": "Enxame",
+      "vertente": "biotica",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "15 metros (esfera ◎, 5 m de raio)",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 2,
+        "texto": "Biologia 2"
+      },
+      "teste_defesa": "Resistir (CD de Biótica)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552817faeabcb767a269e69"
+    },
+    {
+      "slug": "biotica_necrose",
+      "id_notion": "biotica-necrose",
+      "nome": "Necrose",
+      "vertente": "biotica",
+      "nivel": 3,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 criatura em linha de efeito)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 2,
+        "texto": "Biologia 2"
+      },
+      "teste_defesa": "Resistir (CD de Biótica)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281a192bbc8596115ab91"
+    },
+    {
+      "slug": "biotica_neogenese",
+      "id_notion": "biotica-neogenese",
+      "nome": "Neogênese",
+      "vertente": "biotica",
+      "nivel": 3,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "Toque (1 criatura)",
+      "duracao": "Permanente ou 1 hora",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 3,
+        "texto": "Biologia 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281fe818fe16c91131fd5"
+    },
+    {
+      "slug": "biotica_rede_micelial",
+      "id_notion": "biotica-rede-micelial",
+      "nome": "Rede Micelial",
+      "vertente": "biotica",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "20 metros (esfera ◎, 30 m de raio)",
+      "duracao": "12 horas",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 2,
+        "texto": "Biologia 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281a7823bff99ce6259ab"
+    },
+    {
+      "slug": "biotica_regenerar",
+      "id_notion": "biotica-regenerar",
+      "nome": "Regenerar",
+      "vertente": "biotica",
+      "nivel": 3,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "10 metros (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 2,
+        "texto": "Biologia 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281488de3cce93e8f037c"
+    },
+    {
+      "slug": "biotica_simbionte",
+      "id_notion": "biotica-simbionte",
+      "nome": "Simbionte",
+      "vertente": "biotica",
+      "nivel": 3,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "Toque (1 criatura)",
+      "duracao": "1 hora",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 2,
+        "texto": "Biologia 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281729a8aeae315474271"
+    },
+    {
+      "slug": "biotica_colmeia_de_cura",
+      "id_notion": "biotica-colmeia-de-cura",
+      "nome": "Colmeia de Cura",
+      "vertente": "biotica",
+      "nivel": 4,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "Toque (esfera ◎, 8 m de raio)",
+      "duracao": "1 hora",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 3,
+        "texto": "Biologia 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552810591fdfa7acda3c3da"
+    },
+    {
+      "slug": "biotica_corte_sensorial",
+      "id_notion": "biotica-corte-sensorial",
+      "nome": "Corte Sensorial",
+      "vertente": "biotica",
+      "nivel": 4,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 6,
+        "texto": "6"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 criatura em linha de efeito)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 3,
+        "texto": "Biologia 3"
+      },
+      "teste_defesa": "Resistir (CD de Biótica)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281869cf2fd21b6899218"
+    },
+    {
+      "slug": "biotica_epidemia",
+      "id_notion": "biotica-epidemia",
+      "nome": "Epidemia",
+      "vertente": "biotica",
+      "nivel": 4,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "20 metros (esfera ◎, 10 m de raio)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 3,
+        "texto": "Biologia 3"
+      },
+      "teste_defesa": "Resistir (CD de Biótica)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528120885ef4d956dca5ef"
+    },
+    {
+      "slug": "biotica_fome_do_chao",
+      "id_notion": "biotica-fome-do-chao",
+      "nome": "Fome do Chão",
+      "vertente": "biotica",
+      "nivel": 4,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 8,
+        "texto": "8"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "15 metros (esfera ◎, 8 m de raio)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 3,
+        "texto": "Biologia 3"
+      },
+      "teste_defesa": "Resistir (CD de Biótica)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528113b91cc57ae201ff2c"
+    },
+    {
+      "slug": "biotica_jardim_hostil",
+      "id_notion": "biotica-jardim-hostil",
+      "nome": "Jardim Hostil",
+      "vertente": "biotica",
+      "nivel": 4,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 8,
+        "texto": "8"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "20 metros (esfera ◎, 10 m de raio)",
+      "duracao": "10 minutos",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 2,
+        "texto": "Biologia 2"
+      },
+      "teste_defesa": "Resistir (CD de Biótica)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552815c8e6ecc538f89b467"
+    },
+    {
+      "slug": "biotica_metamorfose",
+      "id_notion": "biotica-metamorfose",
+      "nome": "Metamorfose",
+      "vertente": "biotica",
+      "nivel": 4,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 8,
+        "texto": "8"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "Toque (1 criatura voluntária)",
+      "duracao": "8 horas",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 3,
+        "texto": "Biologia 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528191b626c1e586345f4e"
+    },
+    {
+      "slug": "biotica_tumor_voraz",
+      "id_notion": "biotica-tumor-voraz",
+      "nome": "Tumor Voraz",
+      "vertente": "biotica",
+      "nivel": 4,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "10 metros (1 criatura em linha de efeito)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 3,
+        "texto": "Biologia 3"
+      },
+      "teste_defesa": "Resistir (CD de Biótica)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528149a8fcf6b66216bdc6"
+    },
+    {
+      "slug": "biotica_a_carne_lembra",
+      "id_notion": "biotica-a-carne-lembra",
+      "nome": "A Carne Lembra",
+      "vertente": "biotica",
+      "nivel": 5,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 15,
+        "texto": "15"
+      },
+      "conjuracao": {
+        "tipo": "tempo",
+        "minutos": 10,
+        "texto": "10 minutos"
+      },
+      "alcance": "Toque (1 cadáver)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 5,
+        "texto": "Biologia 5"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281d1bc49ca08a6a8444e"
+    },
+    {
+      "slug": "biotica_chamado_vivo",
+      "id_notion": "biotica-chamado-vivo",
+      "nome": "Chamado Vivo",
+      "vertente": "biotica",
+      "nivel": 5,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 10,
+        "texto": "10"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "400 metros (esfera ◎, 100 m de raio)",
+      "duracao": "1 hora",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 3,
+        "texto": "Biologia 3"
+      },
+      "teste_defesa": "Esquivar ou Bloquear",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281b4b264f601add475e5"
+    },
+    {
+      "slug": "biotica_colheita",
+      "id_notion": "biotica-colheita",
+      "nome": "Colheita",
+      "vertente": "biotica",
+      "nivel": 5,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 10,
+        "texto": "10"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "20 metros (esfera ◎, 10 m de raio)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 3,
+        "texto": "Biologia 3"
+      },
+      "teste_defesa": "Resistir (CD de Biótica)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552815b932ddb14588c88a6"
+    },
+    {
+      "slug": "biotica_ninho",
+      "id_notion": "biotica-ninho",
+      "nome": "Ninho",
+      "vertente": "biotica",
+      "nivel": 5,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 10,
+        "texto": "10"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "10 metros",
+      "duracao": "1 hora",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 4,
+        "texto": "Biologia 4"
+      },
+      "teste_defesa": "Esquivar ou Bloquear",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528189a456df3d197f1d7d"
+    },
+    {
+      "slug": "biotica_outro_corpo",
+      "id_notion": "biotica-outro-corpo",
+      "nome": "Outro Corpo",
+      "vertente": "biotica",
+      "nivel": 5,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 15,
+        "texto": "15"
+      },
+      "conjuracao": {
+        "tipo": "tempo",
+        "minutos": 60,
+        "texto": "1 hora"
+      },
+      "alcance": "Toque (1 criatura voluntária)",
+      "duracao": "Permanente",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 5,
+        "texto": "Biologia 5"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528161b916e2f1b3854bf5"
+    },
+    {
+      "slug": "biotica_peste",
+      "id_notion": "biotica-peste",
+      "nome": "Peste",
+      "vertente": "biotica",
+      "nivel": 5,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 12,
+        "texto": "12"
+      },
+      "conjuracao": {
+        "tipo": "tempo",
+        "minutos": 10,
+        "texto": "10 minutos"
+      },
+      "alcance": "Toque (1 sistema conectado de água, ventilação, esgoto ou distribuição de alimentos, com até 100 metros de extensão)",
+      "duracao": "7 dias",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 3,
+        "texto": "Biologia 3"
+      },
+      "teste_defesa": "Resistir (CD de Biótica)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281dd9daaf90000bb5995"
+    },
+    {
+      "slug": "biotica_sopro_limpo",
+      "id_notion": "biotica-sopro-limpo",
+      "nome": "Sopro Limpo",
+      "vertente": "biotica",
+      "nivel": 5,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 10,
+        "texto": "10"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "Toque (1 estrutura ou sistema biológico integrado de até 100 metros de extensão)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "biologia",
+        "valor": 3,
+        "texto": "Biologia 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281e98e12f809710a89e8"
+    },
+    {
+      "slug": "cinetica_arranque",
+      "id_notion": "cinetica-arranque",
+      "nome": "Arranque",
+      "vertente": "cinetica",
+      "nivel": 1,
+      "tipo": "Movimento",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "Pessoal",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "mobilidade",
+        "valor": 2,
+        "texto": "Mobilidade 2"
+      },
+      "teste_defesa": "Esquivar ou Bloquear (CD de Cinética)",
+      "status_editorial": "Em revisão",
+      "fonte": "https://app.notion.com/3b90a136355281b097bace7370f34d52"
+    },
+    {
+      "slug": "cinetica_contravetor",
+      "id_notion": "cinetica-contravetor",
+      "nome": "Contravetor",
+      "vertente": "cinetica",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "reacao",
+        "texto": "Reação"
+      },
+      "alcance": "10 metros (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Em revisão",
+      "fonte": "https://app.notion.com/3b90a1363552814da6aacc572b4abc42"
+    },
+    {
+      "slug": "cinetica_esferas_de_impacto",
+      "id_notion": "cinetica-esferas-de-impacto",
+      "nome": "Esferas de Impacto",
+      "vertente": "cinetica",
+      "nivel": 1,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "intervalo",
+        "min": 3,
+        "max": 6,
+        "texto": "3–6"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "12 metros (linha —, 1–3 criaturas)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "Atacar à distância; Esquivar ou Bloquear",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281a89374ecabde0d0aaf"
+    },
+    {
+      "slug": "cinetica_estase",
+      "id_notion": "cinetica-estase",
+      "nome": "Estase",
+      "vertente": "cinetica",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Variável (1 criatura ou objeto)",
+      "duracao": "1 rodada",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "Resistir (CD de Cinética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281b297cff3c090bd7732"
+    },
+    {
+      "slug": "cinetica_mao_invisivel",
+      "id_notion": "cinetica-mao-invisivel",
+      "nome": "Mão Invisível",
+      "vertente": "cinetica",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "8 metros",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "Perícia aplicável (–1 de desvantagem, se exigido)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281ff9032f04f277486d1"
+    },
+    {
+      "slug": "cinetica_propulsao",
+      "id_notion": "cinetica-propulsao",
+      "nome": "Propulsão",
+      "vertente": "cinetica",
+      "nivel": 1,
+      "tipo": "Movimento",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "Pessoal",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "mobilidade",
+        "valor": 2,
+        "texto": "Mobilidade 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528192bcb8dff5dab171e1"
+    },
+    {
+      "slug": "cinetica_prumo",
+      "id_notion": "cinetica-prumo",
+      "nome": "Prumo",
+      "vertente": "cinetica",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "reacao",
+        "texto": "Reação"
+      },
+      "alcance": "10 metros (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528144819de4472c7a15de"
+    },
+    {
+      "slug": "cinetica_telecinese",
+      "id_notion": "cinetica-telecinese",
+      "nome": "Telecinese",
+      "vertente": "cinetica",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 criatura ou objeto)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "Resistir (CD de Cinética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281c2a90adfd7b412d9d9"
+    },
+    {
+      "slug": "cinetica_barreira_giratoria",
+      "id_notion": "cinetica-barreira-giratoria",
+      "nome": "Barreira Giratória",
+      "vertente": "cinetica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Pessoal (aura ⊙, 2 m de raio)",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "mobilidade",
+        "valor": 2,
+        "texto": "Mobilidade 2"
+      },
+      "teste_defesa": "Resistir (CD de Cinética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281edb002d8b9bb3f85bc"
+    },
+    {
+      "slug": "cinetica_defletir_projetil",
+      "id_notion": "cinetica-defletir-projetil",
+      "nome": "Defletir Projétil",
+      "vertente": "cinetica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "reacao",
+        "texto": "Reação"
+      },
+      "alcance": "5 metros",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Cinética + Reflexos vs. resultado do ataque",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281cf9483eb76e886cc85"
+    },
+    {
+      "slug": "cinetica_embalo",
+      "id_notion": "cinetica-embalo",
+      "nome": "Embalo",
+      "vertente": "cinetica",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "Pessoal",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281d7b531f659852f69bc"
+    },
+    {
+      "slug": "cinetica_enterrada",
+      "id_notion": "cinetica-enterrada",
+      "nome": "Enterrada",
+      "vertente": "cinetica",
+      "nivel": 2,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "12 metros (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Resistir (CD de Cinética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281948effd56ae7c1568f"
+    },
+    {
+      "slug": "cinetica_passos_sem_chao",
+      "id_notion": "cinetica-passos-sem-chao",
+      "nome": "Passos sem Chão",
+      "vertente": "cinetica",
+      "nivel": 2,
+      "tipo": "Movimento",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "Pessoal",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552817caaf5e325a181375e"
+    },
+    {
+      "slug": "cinetica_pelicula",
+      "id_notion": "cinetica-pelicula",
+      "nome": "Película",
+      "vertente": "cinetica",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 criatura)",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281b9a73ef647f0598383"
+    },
+    {
+      "slug": "cinetica_ricochete",
+      "id_notion": "cinetica-ricochete",
+      "nome": "Ricochete",
+      "vertente": "cinetica",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "Pessoal",
+      "duracao": "1 rodada",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528196906ed4096c1bef11"
+    },
+    {
+      "slug": "cinetica_troca",
+      "id_notion": "cinetica-troca",
+      "nome": "Troca",
+      "vertente": "cinetica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "20 metros (2 criaturas ou objetos)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "Resistir (CD de Cinética; hostis)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281ae88c1e09bdafe8cdc"
+    },
+    {
+      "slug": "cinetica_cadencia",
+      "id_notion": "cinetica-cadencia",
+      "nome": "Cadência",
+      "vertente": "cinetica",
+      "nivel": 3,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 6,
+        "texto": "6"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Pessoal",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "mobilidade",
+        "valor": 3,
+        "texto": "Mobilidade 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552819ca484e1183dbf5e8e"
+    },
+    {
+      "slug": "cinetica_compressao",
+      "id_notion": "cinetica-compressao",
+      "nome": "Compressão",
+      "vertente": "cinetica",
+      "nivel": 3,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 6,
+        "texto": "6"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "12 metros (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Resistir (CD de Cinética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528125af96f67685102ea8"
+    },
+    {
+      "slug": "cinetica_elevacao",
+      "id_notion": "cinetica-elevacao",
+      "nome": "Elevação",
+      "vertente": "cinetica",
+      "nivel": 3,
+      "tipo": "Movimento",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Pessoal",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281a5b190dc46c8b646bc"
+    },
+    {
+      "slug": "cinetica_flash",
+      "id_notion": "cinetica-flash",
+      "nome": "Flash",
+      "vertente": "cinetica",
+      "nivel": 3,
+      "tipo": "Movimento",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 6,
+        "texto": "6"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Pessoal",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "mobilidade",
+        "valor": 3,
+        "texto": "Mobilidade 3"
+      },
+      "teste_defesa": "Resistir (CD de Cinética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528172a30ccc70f28dd66f"
+    },
+    {
+      "slug": "cinetica_martelo_gravitico",
+      "id_notion": "cinetica-martelo-gravitico",
+      "nome": "Martelo Gravítico",
+      "vertente": "cinetica",
+      "nivel": 3,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 6,
+        "texto": "6"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "12 metros (esfera ◎, 3 m de raio)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Resistir (CD de Cinética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552815d9f74df0be0644ebb"
+    },
+    {
+      "slug": "cinetica_plataforma_cinetica",
+      "id_notion": "cinetica-plataforma-cinetica",
+      "nome": "Plataforma Cinética",
+      "vertente": "cinetica",
+      "nivel": 3,
+      "tipo": "Movimento",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (faixa ═, 4 × 2 metros)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528147acb2c5977d9ad000"
+    },
+    {
+      "slug": "cinetica_rebote",
+      "id_notion": "cinetica-rebote",
+      "nome": "Rebote",
+      "vertente": "cinetica",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "15 metros (1 criatura)",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Resistir (CD de Cinética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281809e8ef1ee0c707bf5"
+    },
+    {
+      "slug": "cinetica_via_cinetica",
+      "id_notion": "cinetica-via-cinetica",
+      "nome": "Via Cinética",
+      "vertente": "cinetica",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "12 metros (faixa ═, 10 × 4 m)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Resistir (CD de Cinética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281fc84cbd5a1e4be476e"
+    },
+    {
+      "slug": "cinetica_orbita",
+      "id_notion": "cinetica-orbita",
+      "nome": "Órbita",
+      "vertente": "cinetica",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "1d6 (interceptação)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528187b8e4d93f1b2a47fd"
+    },
+    {
+      "slug": "cinetica_comboio",
+      "id_notion": "cinetica-comboio",
+      "nome": "Comboio",
+      "vertente": "cinetica",
+      "nivel": 4,
+      "tipo": "Movimento",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "5 metros (4 criaturas voluntárias)",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Reflexos (dificuldade do narrador)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528131aa80e7c6086aa86e"
+    },
+    {
+      "slug": "cinetica_redoma_inercial",
+      "id_notion": "cinetica-redoma-inercial",
+      "nome": "Redoma Inercial",
+      "vertente": "cinetica",
+      "nivel": 4,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 8,
+        "texto": "8"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "15 metros (esfera ◎, 8 m de raio)",
+      "duracao": "1 rodada",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Resistir",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528149bbeaf3c060217c91"
+    },
+    {
+      "slug": "cinetica_mil_maos",
+      "id_notion": "cinetica-mil-maos",
+      "nome": "Mil Mãos",
+      "vertente": "cinetica",
+      "nivel": 5,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 10,
+        "texto": "10"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "20 metros (esfera ◎, 10 metros de raio)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 5,
+        "texto": "Precisão 5"
+      },
+      "teste_defesa": "Resistir (CD de Cinética)",
+      "status_editorial": "Em revisão",
+      "fonte": "https://app.notion.com/3b90a136355281b6be4bd1d980640ace"
+    },
+    {
+      "slug": "cinetica_portal",
+      "id_notion": "cinetica-portal",
+      "nome": "Portal",
+      "vertente": "cinetica",
+      "nivel": 5,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 10,
+        "texto": "10"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "1 quilômetro",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 5,
+        "texto": "Precisão 5"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528179905fd83eaa1a87f8"
+    },
+    {
+      "slug": "cinetica_singularidade",
+      "id_notion": "cinetica-singularidade",
+      "nome": "Singularidade",
+      "vertente": "cinetica",
+      "nivel": 5,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 10,
+        "texto": "10"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "15 metros (esfera ◎, 6 m de raio)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 5,
+        "texto": "Precisão 5"
+      },
+      "teste_defesa": "Resistir (CD de Cinética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281d6ae92c8eb40c0e287"
+    },
+    {
+      "slug": "cognitiva_ancora",
+      "id_notion": "cognitiva-ancora",
+      "nome": "Ancorar",
+      "vertente": "cognitiva",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "8 metros (1 criatura voluntária)",
+      "duracao": "10 minutos",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 1,
+        "texto": "Psicologia 1"
+      },
+      "teste_defesa": "Resistir",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281b4bb21e754ef8cbbd7"
+    },
+    {
+      "slug": "cognitiva_fantasma_sensorial",
+      "id_notion": "cognitiva-fantasma-sensorial",
+      "nome": "Fantasma Sensorial",
+      "vertente": "cognitiva",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "8 metros (1 criatura)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 1,
+        "texto": "Psicologia 1"
+      },
+      "teste_defesa": "Lógica (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528185b388f2aec1bd53e2"
+    },
+    {
+      "slug": "cognitiva_impressao",
+      "id_notion": "cognitiva-impressao",
+      "nome": "Impressão",
+      "vertente": "cognitiva",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "8 metros (1 criatura)",
+      "duracao": "5 minutos",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 1,
+        "texto": "Psicologia 1"
+      },
+      "teste_defesa": "Lógica (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528165ace7e976bc7dff07"
+    },
+    {
+      "slug": "cognitiva_leitura_superficial",
+      "id_notion": "cognitiva-leitura-superficial",
+      "nome": "Leitura Superficial",
+      "vertente": "cognitiva",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "8 metros (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 1,
+        "texto": "Psicologia 1"
+      },
+      "teste_defesa": "Vontade (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528150b3f4c9c91511d92f"
+    },
+    {
+      "slug": "cognitiva_modular_emocao",
+      "id_notion": "cognitiva-modular-emocao",
+      "nome": "Modular Emoção",
+      "vertente": "cognitiva",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "8 metros (1 criatura)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 1,
+        "texto": "Psicologia 1"
+      },
+      "teste_defesa": "Vontade (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281cf992fd815ed791f26"
+    },
+    {
+      "slug": "cognitiva_mascara_mental",
+      "id_notion": "cognitiva-mascara-mental",
+      "nome": "Máscara Mental",
+      "vertente": "cognitiva",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Pessoal",
+      "duracao": "10 minutos",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 1,
+        "texto": "Psicologia 1"
+      },
+      "teste_defesa": "Lógica (CD de Cognitiva; com evidência)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552816f9dd2f534910422bb"
+    },
+    {
+      "slug": "cognitiva_ruido_mental",
+      "id_notion": "cognitiva-ruido-mental",
+      "nome": "Ruído Mental",
+      "vertente": "cognitiva",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "8 metros (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 1,
+        "texto": "Psicologia 1"
+      },
+      "teste_defesa": "Lógica (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528109a1e0c3ad0f34798b"
+    },
+    {
+      "slug": "cognitiva_tunel_atencional",
+      "id_notion": "cognitiva-tunel-atencional",
+      "nome": "Túnel Atencional",
+      "vertente": "cognitiva",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "8 metros (1 criatura)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 1,
+        "texto": "Psicologia 1"
+      },
+      "teste_defesa": "Percepção",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528100ba50d16ce299bb07"
+    },
+    {
+      "slug": "cognitiva_ataque_fantasma",
+      "id_notion": "cognitiva-ataque-fantasma",
+      "nome": "Ataque Fantasma",
+      "vertente": "cognitiva",
+      "nivel": 2,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 2,
+        "texto": "Psicologia 2"
+      },
+      "teste_defesa": "Vontade (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3dc0a136355281b7ad76f65ab239df7c"
+    },
+    {
+      "slug": "cognitiva_ataraxia",
+      "id_notion": "cognitiva-ataraxia",
+      "nome": "Ataraxia",
+      "vertente": "cognitiva",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 2,
+        "texto": "Psicologia 2"
+      },
+      "teste_defesa": "Resistir",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281e1ae53e6260b75e87d"
+    },
+    {
+      "slug": "cognitiva_eco_mnemonico",
+      "id_notion": "cognitiva-eco-mnemonico",
+      "nome": "Eco Mnemônico",
+      "vertente": "cognitiva",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 2,
+        "texto": "Psicologia 2"
+      },
+      "teste_defesa": "Vontade (CD de Cognitiva; alvo involuntário)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281dba0a4f7e86d2ba56e"
+    },
+    {
+      "slug": "cognitiva_esvanecer_memoria",
+      "id_notion": "cognitiva-esvanecer-memoria",
+      "nome": "Esvanecer Memória",
+      "vertente": "cognitiva",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 2,
+        "texto": "Psicologia 2"
+      },
+      "teste_defesa": "Lógica (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281218396dfb052533af9"
+    },
+    {
+      "slug": "cognitiva_hesitacao",
+      "id_notion": "cognitiva-hesitacao",
+      "nome": "Hesitação",
+      "vertente": "cognitiva",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "reacao",
+        "texto": "Reação"
+      },
+      "alcance": "12 metros (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 1,
+        "texto": "Psicologia 1"
+      },
+      "teste_defesa": "Vontade (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528185bc99ec0a8ecfc6b2"
+    },
+    {
+      "slug": "cognitiva_muralha_mental",
+      "id_notion": "cognitiva-muralha-mental",
+      "nome": "Muralha Mental",
+      "vertente": "cognitiva",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 criatura voluntária)",
+      "duracao": "10 minutos",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 2,
+        "texto": "Psicologia 2"
+      },
+      "teste_defesa": "Resistir",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552811b9b6ee01c2fcb703c"
+    },
+    {
+      "slug": "cognitiva_ponto_cego",
+      "id_notion": "cognitiva-ponto-cego",
+      "nome": "Ponto Cego",
+      "vertente": "cognitiva",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 criatura)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 2,
+        "texto": "Psicologia 2"
+      },
+      "teste_defesa": "Percepção",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281e29b9fc8ec23ddcea7"
+    },
+    {
+      "slug": "cognitiva_sugestao",
+      "id_notion": "cognitiva-sugestao",
+      "nome": "Sugestão",
+      "vertente": "cognitiva",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 criatura)",
+      "duracao": "30 minutos",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 2,
+        "texto": "Psicologia 2"
+      },
+      "teste_defesa": "Vontade (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552816890afcacf7dde69dd"
+    },
+    {
+      "slug": "cognitiva_sussurro",
+      "id_notion": "cognitiva-sussurro",
+      "nome": "Sussurro",
+      "vertente": "cognitiva",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "12 metros (1 criatura)",
+      "duracao": "10 minutos",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 1,
+        "texto": "Psicologia 1"
+      },
+      "teste_defesa": "Vontade (CD de Cognitiva; encerrar)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281aeab7fff6b05d2ae59"
+    },
+    {
+      "slug": "cognitiva_antecipacao",
+      "id_notion": "cognitiva-antecipacao",
+      "nome": "Antecipação",
+      "vertente": "cognitiva",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "12 metros (1 criatura)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 3,
+        "texto": "Psicologia 3"
+      },
+      "teste_defesa": "Resistir",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552810f916cc18f41875d7d"
+    },
+    {
+      "slug": "cognitiva_assombrar",
+      "id_notion": "cognitiva-assombrar",
+      "nome": "Assombrar",
+      "vertente": "cognitiva",
+      "nivel": 3,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "12 metros (1 criatura)",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 3,
+        "texto": "Psicologia 3"
+      },
+      "teste_defesa": "Vontade",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281958acef31209b0a6d4"
+    },
+    {
+      "slug": "cognitiva_axioma",
+      "id_notion": "cognitiva-axioma",
+      "nome": "Axioma",
+      "vertente": "cognitiva",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "10 metros (1 criatura)",
+      "duracao": "10 minutos",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 3,
+        "texto": "Psicologia 3"
+      },
+      "teste_defesa": "Vontade (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528129a1efd8da0967e6e0"
+    },
+    {
+      "slug": "cognitiva_comando",
+      "id_notion": "cognitiva-comando",
+      "nome": "Comando",
+      "vertente": "cognitiva",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "12 metros (3 criaturas)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 3,
+        "texto": "Psicologia 3"
+      },
+      "teste_defesa": "Vontade",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528135a78ac02feac3f362"
+    },
+    {
+      "slug": "cognitiva_gaiola_de_pesadelos",
+      "id_notion": "cognitiva-gaiola-de-pesadelos",
+      "nome": "Gaiola de Pesadelos",
+      "vertente": "cognitiva",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "12 metros (1 criatura)",
+      "duracao": "1 rodada",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 3,
+        "texto": "Psicologia 3"
+      },
+      "teste_defesa": "Vontade (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281499844c2c70170c2bb"
+    },
+    {
+      "slug": "cognitiva_grito_psiquico",
+      "id_notion": "cognitiva-grito-psiquico",
+      "nome": "Grito Psíquico",
+      "vertente": "cognitiva",
+      "nivel": 3,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "12 metros (3 criaturas)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 2,
+        "texto": "Psicologia 2"
+      },
+      "teste_defesa": "Vontade (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552814382edea05127ac964"
+    },
+    {
+      "slug": "cognitiva_manada",
+      "id_notion": "cognitiva-manada",
+      "nome": "Manada",
+      "vertente": "cognitiva",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "15 metros (3 criaturas)",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 3,
+        "texto": "Psicologia 3"
+      },
+      "teste_defesa": "Vontade",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552814fabc5fe5432b0ebee"
+    },
+    {
+      "slug": "cognitiva_simulacao",
+      "id_notion": "cognitiva-simulacao",
+      "nome": "Simulação",
+      "vertente": "cognitiva",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 6,
+        "texto": "6"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "15 metros (3 criaturas)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 3,
+        "texto": "Psicologia 3"
+      },
+      "teste_defesa": "Lógica (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281aa8ebdfc5e11ee8811"
+    },
+    {
+      "slug": "cognitiva_sincronia",
+      "id_notion": "cognitiva-sincronia",
+      "nome": "Sincronia",
+      "vertente": "cognitiva",
+      "nivel": 3,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "15 metros (3 criaturas voluntárias)",
+      "duracao": "10 minutos",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 3,
+        "texto": "Psicologia 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528163808fe378618710cb"
+    },
+    {
+      "slug": "cognitiva_veu",
+      "id_notion": "cognitiva-veu",
+      "nome": "Véu",
+      "vertente": "cognitiva",
+      "nivel": 3,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (3 criaturas)",
+      "duracao": "10 minutos",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 3,
+        "texto": "Psicologia 3"
+      },
+      "teste_defesa": "Resistir",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281868fa9f13ed0a912a7"
+    },
+    {
+      "slug": "cognitiva_confabulacao",
+      "id_notion": "cognitiva-confabulacao",
+      "nome": "Confabulação",
+      "vertente": "cognitiva",
+      "nivel": 4,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "10 metros (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 4,
+        "texto": "Psicologia 4"
+      },
+      "teste_defesa": "Lógica (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528137b06bc106a7bd5a36"
+    },
+    {
+      "slug": "cognitiva_nublar",
+      "id_notion": "cognitiva-nublar",
+      "nome": "Nublar",
+      "vertente": "cognitiva",
+      "nivel": 4,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "Pessoal (aura ⊙, 3 m de raio)",
+      "duracao": "30 minutos",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 3,
+        "texto": "Psicologia 3"
+      },
+      "teste_defesa": "Lógica (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528105bb46fdef94fa48ed"
+    },
+    {
+      "slug": "cognitiva_oblivio",
+      "id_notion": "cognitiva-oblivio",
+      "nome": "Oblívio",
+      "vertente": "cognitiva",
+      "nivel": 4,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "15 metros (3 criaturas)",
+      "duracao": "Permanente",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 4,
+        "texto": "Psicologia 4"
+      },
+      "teste_defesa": "Lógica (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528157aa96d132d42655a0"
+    },
+    {
+      "slug": "cognitiva_palacio_onirico",
+      "id_notion": "cognitiva-palacio-onirico",
+      "nome": "Palácio Onírico",
+      "vertente": "cognitiva",
+      "nivel": 4,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 8,
+        "texto": "8"
+      },
+      "conjuracao": {
+        "tipo": "tempo",
+        "minutos": 10,
+        "texto": "10 minutos"
+      },
+      "alcance": "Toque (4 criaturas adormecidas)",
+      "duracao": "1 hora",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 4,
+        "texto": "Psicologia 4"
+      },
+      "teste_defesa": "Vontade",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552816fa60ac4e33f44bd6b"
+    },
+    {
+      "slug": "cognitiva_persona",
+      "id_notion": "cognitiva-persona",
+      "nome": "Persona",
+      "vertente": "cognitiva",
+      "nivel": 4,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 8,
+        "texto": "8"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "10 metros (1 criatura)",
+      "duracao": "30 minutos",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 4,
+        "texto": "Psicologia 4"
+      },
+      "teste_defesa": "Vontade (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281d2b2dbd7d12e8b5575"
+    },
+    {
+      "slug": "cognitiva_a_mente_lembra",
+      "id_notion": "cognitiva-a-mente-lembra",
+      "nome": "A Mente Lembra",
+      "vertente": "cognitiva",
+      "nivel": 5,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 12,
+        "texto": "12"
+      },
+      "conjuracao": {
+        "tipo": "tempo",
+        "minutos": 10,
+        "texto": "10 minutos"
+      },
+      "alcance": "Toque (1 criatura voluntária)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 5,
+        "texto": "Psicologia 5"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528170a4e1e8fdfea525b5"
+    },
+    {
+      "slug": "cognitiva_consenso",
+      "id_notion": "cognitiva-consenso",
+      "nome": "Consenso",
+      "vertente": "cognitiva",
+      "nivel": 5,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 12,
+        "texto": "12"
+      },
+      "conjuracao": {
+        "tipo": "tempo",
+        "minutos": 10,
+        "texto": "10 minutos"
+      },
+      "alcance": "50 metros (20 criaturas)",
+      "duracao": "24 horas",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 4,
+        "texto": "Psicologia 4"
+      },
+      "teste_defesa": "Lógica (CD de Cognitiva)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281cc83c8df5bdbc79d9b"
+    },
+    {
+      "slug": "cognitiva_marionete",
+      "id_notion": "cognitiva-marionete",
+      "nome": "Marionete",
+      "vertente": "cognitiva",
+      "nivel": 5,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 15,
+        "texto": "15"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "20 metros (1 criatura)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 5,
+        "texto": "Psicologia 5"
+      },
+      "teste_defesa": "Reflexos; Vontade",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528137abf8d779349ff846"
+    },
+    {
+      "slug": "cognitiva_outra_vida",
+      "id_notion": "cognitiva-outra-vida",
+      "nome": "Outra Vida",
+      "vertente": "cognitiva",
+      "nivel": 5,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 12,
+        "texto": "12"
+      },
+      "conjuracao": {
+        "tipo": "tempo",
+        "minutos": 60,
+        "texto": "1 hora"
+      },
+      "alcance": "Toque (1 criatura voluntária)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "psicologia",
+        "valor": 5,
+        "texto": "Psicologia 5"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281558918c500a1bb4271"
+    },
+    {
+      "slug": "energetica_carga",
+      "id_notion": "energetica-carga",
+      "nome": "Carga",
+      "vertente": "energetica",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 1,
+        "texto": "1"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "Toque (1 runa ou dispositivo)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "arcanismo",
+        "valor": 1,
+        "texto": "Arcanismo 1"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552817fab6dfe64098f5a63"
+    },
+    {
+      "slug": "energetica_condensacao",
+      "id_notion": "energetica-condensacao",
+      "nome": "Condensação",
+      "vertente": "energetica",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (esfera ◎ de 3 metros)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281328b01d42ee7f59085"
+    },
+    {
+      "slug": "energetica_equalizacao",
+      "id_notion": "energetica-equalizacao",
+      "nome": "Equalização",
+      "vertente": "energetica",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "5 metros",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "arcanismo",
+        "valor": 1,
+        "texto": "Arcanismo 1"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281178484f5b862ece456"
+    },
+    {
+      "slug": "energetica_evocacao",
+      "id_notion": "energetica-evocacao",
+      "nome": "Evocação",
+      "vertente": "energetica",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 1,
+        "texto": "1"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "15 metros",
+      "duracao": "1 rodada",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 1,
+        "texto": "Precisão 1"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552812e9ec9e8140d06a68e"
+    },
+    {
+      "slug": "energetica_laco_magnetico",
+      "id_notion": "energetica-laco-magnetico",
+      "nome": "Laço Magnético",
+      "vertente": "energetica",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "15 metros",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 1,
+        "texto": "Precisão 1"
+      },
+      "teste_defesa": "Resistir (CD de Energética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281aa87f4cc986c317185"
+    },
+    {
+      "slug": "energetica_modulacao",
+      "id_notion": "energetica-modulacao",
+      "nome": "Modulação",
+      "vertente": "energetica",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "variavel",
+        "texto": "Variável"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "15 metros",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 1,
+        "texto": "Precisão 1"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528138b3e1f00004431743"
+    },
+    {
+      "slug": "energetica_revestimento",
+      "id_notion": "energetica-revestimento",
+      "nome": "Revestimento",
+      "vertente": "energetica",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "Toque",
+      "duracao": "1 rodada",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 1,
+        "texto": "Precisão 1"
+      },
+      "teste_defesa": "Resistir (CD de Energética); Vigor",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281d28475d0f0bfdcbdb6"
+    },
+    {
+      "slug": "energetica_termografia",
+      "id_notion": "energetica-termografia",
+      "nome": "Termografia",
+      "vertente": "energetica",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Pessoal (aura ⊙, 4 m de raio)",
+      "duracao": "5 minutos",
+      "prerequisito": {
+        "pericia": "percepcao",
+        "valor": 1,
+        "texto": "Percepção 1"
+      },
+      "teste_defesa": "Percepção",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528147928ae24968d81d04"
+    },
+    {
+      "slug": "energetica_absorver_energia",
+      "id_notion": "energetica-absorver-energia",
+      "nome": "Absorver Energia",
+      "vertente": "energetica",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "reacao",
+        "texto": "Reação"
+      },
+      "alcance": "Pessoal",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281c081c1f23ebb183438"
+    },
+    {
+      "slug": "energetica_campo_de_saturacao",
+      "id_notion": "energetica-campo-de-saturacao",
+      "nome": "Campo de Saturação",
+      "vertente": "energetica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "20 metros (esfera ◎, 4 m de raio)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "arcanismo",
+        "valor": 2,
+        "texto": "Arcanismo 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281f696dde07ff3cbf647"
+    },
+    {
+      "slug": "energetica_captura_sonora",
+      "id_notion": "energetica-captura-sonora",
+      "nome": "Captura Sonora",
+      "vertente": "energetica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "Toque",
+      "duracao": "24 horas",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281bdac84c9a4930700bb"
+    },
+    {
+      "slug": "energetica_crioforma",
+      "id_notion": "energetica-crioforma",
+      "nome": "Crioforma",
+      "vertente": "energetica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528105aaa9e998d850d6a2"
+    },
+    {
+      "slug": "energetica_desvio_espectral",
+      "id_notion": "energetica-desvio-espectral",
+      "nome": "Desvio Espectral",
+      "vertente": "energetica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "15 metros (esfera ◎, 3 m de raio)",
+      "duracao": "10 minutos",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552815298e3f115906187bd"
+    },
+    {
+      "slug": "energetica_ecolocalizacao",
+      "id_notion": "energetica-ecolocalizacao",
+      "nome": "Ecolocalização",
+      "vertente": "energetica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "25 metros (esfera ◎, 6 m de raio)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "percepcao",
+        "valor": 2,
+        "texto": "Percepção 2"
+      },
+      "teste_defesa": "Percepção",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552818f99a5d0fbc088c6b6"
+    },
+    {
+      "slug": "energetica_leitura_arcana",
+      "id_notion": "energetica-leitura-arcana",
+      "nome": "Leitura Arcana",
+      "vertente": "energetica",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Pessoal (esfera ◎, 15 m de raio)",
+      "duracao": "10 minutos",
+      "prerequisito": {
+        "pericia": "arcanismo",
+        "valor": 2,
+        "texto": "Arcanismo 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281648c8ed23e1959d2cc"
+    },
+    {
+      "slug": "energetica_pulso_eletromagnetico",
+      "id_notion": "energetica-pulso-eletromagnetico",
+      "nome": "Pulso Eletromagnético",
+      "vertente": "energetica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (esfera ◎, 3 m de raio)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 2,
+        "texto": "Tecnomagia 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281eb8793c3bc48b8c008"
+    },
+    {
+      "slug": "energetica_rajada_elemental",
+      "id_notion": "energetica-rajada-elemental",
+      "nome": "Rajada Elemental",
+      "vertente": "energetica",
+      "nivel": 2,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "20 metros (linha —, 1 criatura ou objeto em linha de efeito)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "Atacar à distância; Esquivar ou Bloquear",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281f7924cc8fb742ae1d0"
+    },
+    {
+      "slug": "energetica_ressonancia",
+      "id_notion": "energetica-ressonancia",
+      "nome": "Ressonância",
+      "vertente": "energetica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "15 metros (esfera ◎, 3 m de raio) ou (aura ⊙, 3 m de raio)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281b5ae31fbafb2b481c6"
+    },
+    {
+      "slug": "energetica_transfusao_de_mana",
+      "id_notion": "energetica-transfusao-de-mana",
+      "nome": "Transfusão de Mana",
+      "vertente": "energetica",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 1,
+        "texto": "1"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "Toque (1 criatura voluntária)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "arcanismo",
+        "valor": 2,
+        "texto": "Arcanismo 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528147903afb06b9aaeeb7"
+    },
+    {
+      "slug": "energetica_transposicao_sonora",
+      "id_notion": "energetica-transposicao-sonora",
+      "nome": "Transposição Sonora",
+      "vertente": "energetica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "30 metros",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281a997cbff14b404d2be"
+    },
+    {
+      "slug": "energetica_bola_de_fogo",
+      "id_notion": "energetica-bola-de-fogo",
+      "nome": "Bola de Fogo",
+      "vertente": "energetica",
+      "nivel": 3,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 6,
+        "texto": "6"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "25 metros (esfera ◎, 3 m de raio)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Esquivar (CD de Energética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281b78f20d935d9d3cb50"
+    },
+    {
+      "slug": "energetica_campo_de_forca",
+      "id_notion": "energetica-campo-de-forca",
+      "nome": "Campo de Força",
+      "vertente": "energetica",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "25 metros (parede ▭, 4 m x 2 m) ou (esfera ◎, 2 m de raio)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "arcanismo",
+        "valor": 3,
+        "texto": "Arcanismo 3"
+      },
+      "teste_defesa": "Esquivar; Bloquear",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528136af9cd7a6729f1f17"
+    },
+    {
+      "slug": "energetica_circuito",
+      "id_notion": "energetica-circuito",
+      "nome": "Circuito",
+      "vertente": "energetica",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 6,
+        "texto": "6"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "20 metros",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Resistir (CD de Energética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281d49ebbcc66116c849e"
+    },
+    {
+      "slug": "energetica_janela_espectral",
+      "id_notion": "energetica-janela-espectral",
+      "nome": "Janela Espectral",
+      "vertente": "energetica",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (parede ▭, de 3 m de altura e 2 m de comprimento)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281639fc3d380fc8e2eeb"
+    },
+    {
+      "slug": "energetica_lanca_de_gelo",
+      "id_notion": "energetica-lanca-de-gelo",
+      "nome": "Lança de Gelo",
+      "vertente": "energetica",
+      "nivel": 3,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "20 metros (linha —, 2 cm de largura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Atacar à distância; Esquivar (CD de Energética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552819eba5bce0085a03be9"
+    },
+    {
+      "slug": "energetica_nevasca",
+      "id_notion": "energetica-nevasca",
+      "nome": "Nevasca",
+      "vertente": "energetica",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 6,
+        "texto": "6"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "25 metros (esfera ◎, 4 m de raio)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Resistir (CD de Energética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281e0a807c2755ae61345"
+    },
+    {
+      "slug": "energetica_onda_de_impacto",
+      "id_notion": "energetica-onda-de-impacto",
+      "nome": "Onda de Impacto",
+      "vertente": "energetica",
+      "nivel": 3,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Pessoal (cone ◢, 6 m)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Resistir (CD de Energética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552817db2e8d3e74ef39cb8"
+    },
+    {
+      "slug": "energetica_prisma",
+      "id_notion": "energetica-prisma",
+      "nome": "Prisma",
+      "vertente": "energetica",
+      "nivel": 3,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "reacao",
+        "texto": "Reação"
+      },
+      "alcance": "10 metros (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Bloquear",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528184b661f96c54a4f42b"
+    },
+    {
+      "slug": "energetica_dissipacao",
+      "id_notion": "energetica-dissipacao",
+      "nome": "Dissipação",
+      "vertente": "energetica",
+      "nivel": 4,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "15 metros (1 magia ativa)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "percepcao",
+        "valor": 3,
+        "texto": "Percepção 3"
+      },
+      "teste_defesa": "Resistir (CD de Energética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552815d9583c77bb00cf7e6"
+    },
+    {
+      "slug": "energetica_lacre_de_mana",
+      "id_notion": "energetica-lacre-de-mana",
+      "nome": "Lacre de Mana",
+      "vertente": "energetica",
+      "nivel": 4,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "10 metros (1 criatura)",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "arcanismo",
+        "valor": 3,
+        "texto": "Arcanismo 3"
+      },
+      "teste_defesa": "Resistir (CD de Energética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281e9b32fce3d8bf75302"
+    },
+    {
+      "slug": "energetica_olho_solar",
+      "id_notion": "energetica-olho-solar",
+      "nome": "Olho Solar",
+      "vertente": "energetica",
+      "nivel": 4,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "15 metros",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Esquivar (CD de Energética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528128b9d0c6db48cd30f9"
+    },
+    {
+      "slug": "energetica_parede_de_fogo",
+      "id_notion": "energetica-parede-de-fogo",
+      "nome": "Parede de Fogo",
+      "vertente": "energetica",
+      "nivel": 4,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "30 metros (parede ▭, 8 m x 2 m)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Resistir (CD de Energética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528188beebc969f7ddfa95"
+    },
+    {
+      "slug": "energetica_prisao_glacial",
+      "id_notion": "energetica-prisao-glacial",
+      "nome": "Prisão Glacial",
+      "vertente": "energetica",
+      "nivel": 4,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "30 metros (esfera ◎, 6 m de raio)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Resistir (CD de Energética); Esquivar (CD de Energética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281df862be40895ae1941"
+    },
+    {
+      "slug": "energetica_tempestade_de_raios",
+      "id_notion": "energetica-tempestade-de-raios",
+      "nome": "Tempestade de Raios",
+      "vertente": "energetica",
+      "nivel": 4,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 8,
+        "texto": "8"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "30 metros (esfera ◎, 6 m de raio)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Esquivar (CD de Energética); Vigor",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528155a7facfd33a6c1488"
+    },
+    {
+      "slug": "energetica_chuva_de_meteoros",
+      "id_notion": "energetica-chuva-de-meteoros",
+      "nome": "Chuva de Meteoros",
+      "vertente": "energetica",
+      "nivel": 5,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 10,
+        "texto": "10"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 4,
+        "texto": "4 PA"
+      },
+      "alcance": "30 metros (esfera ◎, 15 m de raio)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 4,
+        "texto": "Precisão 4"
+      },
+      "teste_defesa": "Esquivar (CD de Energética)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281858408e4d21fd1bf79"
+    },
+    {
+      "slug": "energetica_zona_nula",
+      "id_notion": "energetica-zona-nula",
+      "nome": "Zona Nula",
+      "vertente": "energetica",
+      "nivel": 5,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 10,
+        "texto": "10"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 4,
+        "texto": "4 PA"
+      },
+      "alcance": "30 metros (esfera ◎, 10 m de raio)",
+      "duracao": "1 rodada",
+      "prerequisito": {
+        "pericia": "arcanismo",
+        "valor": 4,
+        "texto": "Arcanismo 4"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281edbb25fa140f16b46e"
+    },
+    {
+      "slug": "material_acoplar",
+      "id_notion": "material-acoplar",
+      "nome": "Acoplar",
+      "vertente": "material",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 1,
+        "texto": "1"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "Toque (2 objetos)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 1,
+        "texto": "Engenharia 1"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281beb5c6c9bed2410a74"
+    },
+    {
+      "slug": "material_alterar_propriedades",
+      "id_notion": "material-alterar-propriedades",
+      "nome": "Alterar Propriedades",
+      "vertente": "material",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "Toque (cubo ▢, 2 m)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 1,
+        "texto": "Engenharia 1"
+      },
+      "teste_defesa": "Mobilidade",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281e4aa59f2e391fd69b3"
+    },
+    {
+      "slug": "material_forma_latente",
+      "id_notion": "material-forma-latente",
+      "nome": "Armadilha",
+      "vertente": "material",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque (cubo ▢, 2 m)",
+      "duracao": "5 minutos",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 1,
+        "texto": "Engenharia 1"
+      },
+      "teste_defesa": "Esquivar",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552811f95bfcacfd9436466"
+    },
+    {
+      "slug": "material_barreira",
+      "id_notion": "material-barreira",
+      "nome": "Barreira",
+      "vertente": "material",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Variável (parede ▭) ou (domo ⊙)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 1,
+        "texto": "Engenharia 1"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281629662fb38aa222439"
+    },
+    {
+      "slug": "material_consertar",
+      "id_notion": "material-consertar",
+      "nome": "Consertar",
+      "vertente": "material",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque (1 objeto ou trecho de estrutura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 1,
+        "texto": "Engenharia 1"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552811abaa4e06d807f06f8"
+    },
+    {
+      "slug": "material_imprimir",
+      "id_notion": "material-imprimir",
+      "nome": "Imprimir",
+      "vertente": "material",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque (1 objeto)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 2,
+        "texto": "Engenharia 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281e5bc67fbb286b18654"
+    },
+    {
+      "slug": "material_lastro",
+      "id_notion": "material-lastro",
+      "nome": "Lastro",
+      "vertente": "material",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "10 metros (1 objeto de até 1 m)",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 1,
+        "texto": "Engenharia 1"
+      },
+      "teste_defesa": "Esquivar; Vigor",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528134b021d9dea5af2c0b"
+    },
+    {
+      "slug": "material_miniatura",
+      "id_notion": "material-miniatura",
+      "nome": "Miniatura",
+      "vertente": "material",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque (1 objeto solto de até 2 m)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 1,
+        "texto": "Engenharia 1"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552819eafb4c59b49708ace"
+    },
+    {
+      "slug": "material_modelar",
+      "id_notion": "material-modelar",
+      "nome": "Modelar",
+      "vertente": "material",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque (cubo ▢, 1 m)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 1,
+        "texto": "Engenharia 1"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281b48e5cfa5bca5b86d5"
+    },
+    {
+      "slug": "material_arsenal",
+      "id_notion": "material-arsenal",
+      "nome": "Arsenal",
+      "vertente": "material",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque",
+      "duracao": "1 hora",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 3,
+        "texto": "Engenharia 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552816480d5d3ca3204b328"
+    },
+    {
+      "slug": "material_blindagem",
+      "id_notion": "material-blindagem",
+      "nome": "Blindagem",
+      "vertente": "material",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque (1 criatura voluntária)",
+      "duracao": "1 hora",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 2,
+        "texto": "Engenharia 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552812d9726f56272b4e4d4"
+    },
+    {
+      "slug": "material_cama_elastica",
+      "id_notion": "material-cama-elastica",
+      "nome": "Cama Elástica",
+      "vertente": "material",
+      "nivel": 2,
+      "tipo": "Movimento",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "12 metros (cubo ▢, 3 metros)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 2,
+        "texto": "Engenharia 2"
+      },
+      "teste_defesa": "Esquivar (CD de Material)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281b8852ceba4393d4cad"
+    },
+    {
+      "slug": "material_enfraquecer",
+      "id_notion": "material-enfraquecer",
+      "nome": "Enfraquecer",
+      "vertente": "material",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 objeto, cubo ▢, 2 m)",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 2,
+        "texto": "Engenharia 2"
+      },
+      "teste_defesa": "Esquivar (CD de Material)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281168f1fef9a5d5f2ef7"
+    },
+    {
+      "slug": "material_escudo_instintivo",
+      "id_notion": "material-escudo-instintivo",
+      "nome": "Escudo Instintivo",
+      "vertente": "material",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "reacao",
+        "texto": "Reação"
+      },
+      "alcance": "8 metros (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "reflexos",
+        "valor": 2,
+        "texto": "Reflexos 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281388086cd4190e0038a"
+    },
+    {
+      "slug": "material_estilhacar",
+      "id_notion": "material-estilhacar",
+      "nome": "Estilhaçar",
+      "vertente": "material",
+      "nivel": 2,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "20 m (cone ◢, 6 m)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "Esquivar (CD de Material)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a1363552816b9ca3d1bc1c92ef1e"
+    },
+    {
+      "slug": "material_memoria_de_forma",
+      "id_notion": "material-memoria-de-forma",
+      "nome": "Memória de Forma",
+      "vertente": "material",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque (1 objeto ou cubo ▢, 2 m)",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 2,
+        "texto": "Engenharia 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281f0b015ff82e1b4f5cf"
+    },
+    {
+      "slug": "material_plano_de_corte",
+      "id_notion": "material-plano-de-corte",
+      "nome": "Plano de Corte",
+      "vertente": "material",
+      "nivel": 2,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (cubo ▢, 3 m)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 2,
+        "texto": "Precisão 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552810eaf5dfad141cf360c"
+    },
+    {
+      "slug": "material_reforcar",
+      "id_notion": "material-reforcar",
+      "nome": "Reforçar",
+      "vertente": "material",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 objeto, cubo ▢, 2 m)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 2,
+        "texto": "Engenharia 2"
+      },
+      "teste_defesa": "Esquivar (CD de Material)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552811cb3c7e0e4c9c36f38"
+    },
+    {
+      "slug": "material_abalo_sismico",
+      "id_notion": "material-abalo-sismico",
+      "nome": "Abalo Sísmico",
+      "vertente": "material",
+      "nivel": 3,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "15 m (faixa ═, 8 × 3 m)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 3,
+        "texto": "Engenharia 3"
+      },
+      "teste_defesa": "Esquivar (CD de Material)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a1363552814a8b04c796943a804c"
+    },
+    {
+      "slug": "material_abrir_tunel",
+      "id_notion": "material-abrir-tunel",
+      "nome": "Abrir Túnel",
+      "vertente": "material",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 6,
+        "texto": "6"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "Toque (passagem de até 12 m de comprimento)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 3,
+        "texto": "Engenharia 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a136355281dc901ac12408d67486"
+    },
+    {
+      "slug": "material_campo_de_espinhos",
+      "id_notion": "material-campo-de-espinhos",
+      "nome": "Campo de Espinhos",
+      "vertente": "material",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "15 m (esfera ◎, 5 m de raio)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Esquivar; Mobilidade (CD de Material)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a136355281b2a6a7cf3438e61c00"
+    },
+    {
+      "slug": "material_convergir",
+      "id_notion": "material-convergir",
+      "nome": "Convergir",
+      "vertente": "material",
+      "nivel": 3,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 6,
+        "texto": "6"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "12 m (cubo ▢, 3 m)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 3,
+        "texto": "Engenharia 3"
+      },
+      "teste_defesa": "Esquivar (CD de Material)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a13635528157a351cf92768f1d07"
+    },
+    {
+      "slug": "material_carcere",
+      "id_notion": "material-carcere",
+      "nome": "Cárcere",
+      "vertente": "material",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "15 m (cubo ▢, 3 m)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 3,
+        "texto": "Engenharia 3"
+      },
+      "teste_defesa": "Esquivar; Escapar (CD de Material)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a136355281619e73df581d099e83"
+    },
+    {
+      "slug": "material_empalar",
+      "id_notion": "material-empalar",
+      "nome": "Empalar",
+      "vertente": "material",
+      "nivel": 3,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "15 m (1 criatura sobre uma superfície sólida)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "precisao",
+        "valor": 3,
+        "texto": "Precisão 3"
+      },
+      "teste_defesa": "Esquivar (CD de Material)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a1363552815493a7c75180227645"
+    },
+    {
+      "slug": "material_fundir_se_a_estrutura",
+      "id_notion": "material-fundir-se-a-estrutura",
+      "nome": "Fundir-se à Estrutura",
+      "vertente": "material",
+      "nivel": 3,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque (até 3 criaturas voluntárias)",
+      "duracao": "10 minutos",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 3,
+        "texto": "Engenharia 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a1363552812193ecc68591b02cb2"
+    },
+    {
+      "slug": "material_linha_de_demolicao",
+      "id_notion": "material-linha-de-demolicao",
+      "nome": "Linha de Demolição",
+      "vertente": "material",
+      "nivel": 3,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 6,
+        "texto": "6"
+      },
+      "conjuracao": {
+        "tipo": "variavel",
+        "texto": "Tempo variável"
+      },
+      "alcance": "Toque",
+      "duracao": "24 horas ou até ser ativada",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 3,
+        "texto": "Engenharia 3"
+      },
+      "teste_defesa": "Percepção ou Engenharia (CD de Material)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a136355281218d29fae2ecd7f510"
+    },
+    {
+      "slug": "material_rosacea_balistica",
+      "id_notion": "material-rosacea-balistica",
+      "nome": "Rosácea Balística",
+      "vertente": "material",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 6,
+        "texto": "6"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 m (1 superfície)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 3,
+        "texto": "Engenharia 3"
+      },
+      "teste_defesa": "Esquivar (CD de Material)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a1363552815cb203fa49b2c2ee7f"
+    },
+    {
+      "slug": "material_arquitetura_de_campo",
+      "id_notion": "material-arquitetura-de-campo",
+      "nome": "Arquitetura de Campo",
+      "vertente": "material",
+      "nivel": 4,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 8,
+        "texto": "8"
+      },
+      "conjuracao": {
+        "tipo": "tempo",
+        "minutos": 10,
+        "texto": "10 minutos"
+      },
+      "alcance": "Toque (cubo ▢, 20 m)",
+      "duracao": "8 horas",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 4,
+        "texto": "Engenharia 4"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a1363552811ab04fc5a932fadb57"
+    },
+    {
+      "slug": "material_colapso_em_cadeia",
+      "id_notion": "material-colapso-em-cadeia",
+      "nome": "Colapso em Cadeia",
+      "vertente": "material",
+      "nivel": 4,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "30 m (1 objeto ou trecho de estrutura dentro de um cubo ▢, 8 m)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 4,
+        "texto": "Engenharia 4"
+      },
+      "teste_defesa": "Esquivar (CD de Material)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a1363552812a9c98e2dad7a7235f"
+    },
+    {
+      "slug": "material_exoestrutura_monolitica",
+      "id_notion": "material-exoestrutura-monolitica",
+      "nome": "Exoestrutura Monolítica",
+      "vertente": "material",
+      "nivel": 4,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "Toque (1 criatura voluntária)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 4,
+        "texto": "Engenharia 4"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a1363552810e88b5df213895dcd8"
+    },
+    {
+      "slug": "material_labirinto",
+      "id_notion": "material-labirinto",
+      "nome": "Labirinto",
+      "vertente": "material",
+      "nivel": 4,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 8,
+        "texto": "8"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "20 m (esfera ◎, 8 m de raio)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 4,
+        "texto": "Engenharia 4"
+      },
+      "teste_defesa": "Esquivar (CD de Material)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a13635528185b10afd004d43723a"
+    },
+    {
+      "slug": "material_reconstruir",
+      "id_notion": "material-reconstruir",
+      "nome": "Reconstruir",
+      "vertente": "material",
+      "nivel": 4,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "tempo",
+        "minutos": 10,
+        "texto": "10 minutos"
+      },
+      "alcance": "Toque (1 objeto, veículo ou trecho de estrutura dentro de um cubo ▢, 8 m)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 4,
+        "texto": "Engenharia 4"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a13635528189a40edb62b7d98196"
+    },
+    {
+      "slug": "material_soterrar",
+      "id_notion": "material-soterrar",
+      "nome": "Soterrar",
+      "vertente": "material",
+      "nivel": 4,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 8,
+        "texto": "8"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "20 m (esfera ◎, 4 m de raio)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 4,
+        "texto": "Engenharia 4"
+      },
+      "teste_defesa": "Esquivar; Escapar (CD de Material)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a13635528172b39feb805a6a4d34"
+    },
+    {
+      "slug": "material_cidadela",
+      "id_notion": "material-cidadela",
+      "nome": "Cidadela",
+      "vertente": "material",
+      "nivel": 5,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 12,
+        "texto": "12"
+      },
+      "conjuracao": {
+        "tipo": "tempo",
+        "minutos": 10,
+        "texto": "10 minutos"
+      },
+      "alcance": "Toque (cubo ▢, 50 m)",
+      "duracao": "24 horas",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 5,
+        "texto": "Engenharia 5"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a136355281a3a85ff32c34ccb8fd"
+    },
+    {
+      "slug": "material_colosso",
+      "id_notion": "material-colosso",
+      "nome": "Colosso",
+      "vertente": "material",
+      "nivel": 5,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 12,
+        "texto": "12"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 4,
+        "texto": "4 PA"
+      },
+      "alcance": "20 m",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 5,
+        "texto": "Engenharia 5"
+      },
+      "teste_defesa": "Ataque corpo a corpo; Esquivar ou Bloquear",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a136355281ea9494def7f3b60277"
+    },
+    {
+      "slug": "material_geometria_soberana",
+      "id_notion": "material-geometria-soberana",
+      "nome": "Geometria Soberana",
+      "vertente": "material",
+      "nivel": 5,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 12,
+        "texto": "12"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 4,
+        "texto": "4 PA"
+      },
+      "alcance": "30 m (esfera ◎, 15 m de raio)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 5,
+        "texto": "Engenharia 5"
+      },
+      "teste_defesa": "Esquivar (CD de Material)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a1363552813db1bdd73fd3e1ce8e"
+    },
+    {
+      "slug": "material_ruina",
+      "id_notion": "material-ruina",
+      "nome": "Ruína",
+      "vertente": "material",
+      "nivel": 5,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 10,
+        "texto": "10"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 4,
+        "texto": "4 PA"
+      },
+      "alcance": "30 m (esfera ◎, 10 m de raio)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 5,
+        "texto": "Engenharia 5"
+      },
+      "teste_defesa": "Esquivar (CD de Material)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a136355281b19613da8622348ab7"
+    },
+    {
+      "slug": "material_transmutacao",
+      "id_notion": "material-transmutacao",
+      "nome": "Transmutação",
+      "vertente": "material",
+      "nivel": 5,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 15,
+        "texto": "15"
+      },
+      "conjuracao": {
+        "tipo": "tempo",
+        "minutos": 60,
+        "texto": "1 hora"
+      },
+      "alcance": "Toque (matéria dentro de um cubo ▢, 3 m)",
+      "duracao": "Permanente",
+      "prerequisito": {
+        "pericia": "engenharia",
+        "valor": 5,
+        "texto": "Engenharia 5"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3d90a1363552817c900ec0a7760c6c83"
+    },
+    {
+      "slug": "sinaptica_folego",
+      "id_notion": "sinaptica-folego",
+      "nome": "Fôlego",
+      "vertente": "sinaptica",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Pessoal",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 2,
+        "texto": "Tecnomagia 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552812a9ca2f78fd8cf9c58"
+    },
+    {
+      "slug": "sinaptica_leitura",
+      "id_notion": "sinaptica-leitura",
+      "nome": "Leitura",
+      "vertente": "sinaptica",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "10 metros (1 runa ou dispositivo)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 1,
+        "texto": "Tecnomagia 1"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528180bd84f07bae96ea19"
+    },
+    {
+      "slug": "sinaptica_marca",
+      "id_notion": "sinaptica-marca",
+      "nome": "Marca",
+      "vertente": "sinaptica",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 1,
+        "texto": "1"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "10 metros",
+      "duracao": "1 hora",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 1,
+        "texto": "Tecnomagia 1"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281ed9fecc440018ed7ea"
+    },
+    {
+      "slug": "sinaptica_mergulho",
+      "id_notion": "sinaptica-mergulho",
+      "nome": "Mergulho",
+      "vertente": "sinaptica",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "variavel",
+        "texto": "Variável"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "15 metros (ponto de acesso identificado)",
+      "duracao": "Até desconectar",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 2,
+        "texto": "Tecnomagia 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528147bf64f5bf9db6cdcd"
+    },
+    {
+      "slug": "sinaptica_ruido",
+      "id_notion": "sinaptica-ruido",
+      "nome": "Ruído",
+      "vertente": "sinaptica",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "10 metros (esfera ◎, 5 m de raio)",
+      "duracao": "1 rodada",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 1,
+        "texto": "Tecnomagia 1"
+      },
+      "teste_defesa": "Percepção",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281a6ba99c02b80cb0b6c"
+    },
+    {
+      "slug": "sinaptica_sintonizar",
+      "id_notion": "sinaptica-sintonizar",
+      "nome": "Sintonizar",
+      "vertente": "sinaptica",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 1,
+        "texto": "1"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "Pessoal",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "percepcao",
+        "valor": 1,
+        "texto": "Percepção 1"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552819c84c5c7db254a3ec1"
+    },
+    {
+      "slug": "sinaptica_sonda",
+      "id_notion": "sinaptica-sonda",
+      "nome": "Sonda",
+      "vertente": "sinaptica",
+      "nivel": 1,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 1,
+        "texto": "1"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "Pessoal (esfera ◎, raio de 15 m)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 1,
+        "texto": "Tecnomagia 1"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281949fb1fc55e15ae1c5"
+    },
+    {
+      "slug": "sinaptica_ancora",
+      "id_notion": "sinaptica-ancora",
+      "nome": "Âncora",
+      "vertente": "sinaptica",
+      "nivel": 1,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 2,
+        "texto": "2"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "Pessoal",
+      "duracao": "Sessão",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 2,
+        "texto": "Tecnomagia 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528121a47fe71470f33584"
+    },
+    {
+      "slug": "sinaptica_canal",
+      "id_notion": "sinaptica-canal",
+      "nome": "Canal",
+      "vertente": "sinaptica",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "30 metros (2 criaturas voluntárias)",
+      "duracao": "1 hora",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 3,
+        "texto": "Tecnomagia 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281b2b978ee0e1921ecac"
+    },
+    {
+      "slug": "sinaptica_convocar",
+      "id_notion": "sinaptica-convocar",
+      "nome": "Convocar",
+      "vertente": "sinaptica",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Toque",
+      "duracao": "Sessão",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 2,
+        "texto": "Tecnomagia 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281c18401ceeccffe5b3d"
+    },
+    {
+      "slug": "sinaptica_extracao",
+      "id_notion": "sinaptica-extracao",
+      "nome": "Extração",
+      "vertente": "sinaptica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 criatura)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 2,
+        "texto": "Tecnomagia 2"
+      },
+      "teste_defesa": "Percepção",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552812f8cc9e75eaf2d7112"
+    },
+    {
+      "slug": "sinaptica_gatilho",
+      "id_notion": "sinaptica-gatilho",
+      "nome": "Gatilho",
+      "vertente": "sinaptica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 1,
+        "texto": "1 PA"
+      },
+      "alcance": "20 metros (1 dispositivo, runa ou mecanismo)",
+      "duracao": "10 minutos",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 2,
+        "texto": "Tecnomagia 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281c2a979e06fc11dd8fd"
+    },
+    {
+      "slug": "sinaptica_interceptar",
+      "id_notion": "sinaptica-interceptar",
+      "nome": "Interceptar",
+      "vertente": "sinaptica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "20 metros",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 3,
+        "texto": "Tecnomagia 3"
+      },
+      "teste_defesa": "Tecnomagia vs. Tecnomagia ou CD do sistema",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281e7866df9efe7564089"
+    },
+    {
+      "slug": "sinaptica_isolar",
+      "id_notion": "sinaptica-isolar",
+      "nome": "Isolar",
+      "vertente": "sinaptica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "15 metros (1 criatura, aparelho, escalpo, drone, terminal ou pequeno sistema)",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 2,
+        "texto": "Tecnomagia 2"
+      },
+      "teste_defesa": "Tecnomagia vs. Tecnomagia ou CD do sistema",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281a0a8e3dfaee254aa64"
+    },
+    {
+      "slug": "sinaptica_mimesis",
+      "id_notion": "sinaptica-mimesis",
+      "nome": "Mimesis",
+      "vertente": "sinaptica",
+      "nivel": 2,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 3,
+        "texto": "3"
+      },
+      "conjuracao": {
+        "tipo": "reacao",
+        "texto": "Reação"
+      },
+      "alcance": "Pessoal",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 2,
+        "texto": "Tecnomagia 2"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281ef8683c3e93064f4e5"
+    },
+    {
+      "slug": "sinaptica_pele_falsa",
+      "id_notion": "sinaptica-pele-falsa",
+      "nome": "Pele Falsa",
+      "vertente": "sinaptica",
+      "nivel": 2,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 4,
+        "texto": "4"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Pessoal",
+      "duracao": "Sessão",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 3,
+        "texto": "Tecnomagia 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552817983ebd8be504b4f1a"
+    },
+    {
+      "slug": "sinaptica_a_cacada",
+      "id_notion": "sinaptica-a-cacada",
+      "nome": "A Caçada",
+      "vertente": "sinaptica",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "Nível (1 Admin)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 3,
+        "texto": "Tecnomagia 3"
+      },
+      "teste_defesa": "Tecnomagia vs. Tecnomagia",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552815f8c26e529a0624eb5"
+    },
+    {
+      "slug": "sinaptica_atravessar",
+      "id_notion": "sinaptica-atravessar",
+      "nome": "Atravessar",
+      "vertente": "sinaptica",
+      "nivel": 3,
+      "tipo": "Movimento",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Bloqueio adjacente",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 3,
+        "texto": "Tecnomagia 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552815a85d1defe9974afd1"
+    },
+    {
+      "slug": "sinaptica_blackout",
+      "id_notion": "sinaptica-blackout",
+      "nome": "Blackout",
+      "vertente": "sinaptica",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 6,
+        "texto": "6"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "20 metros (esfera ◎, raio de 15 m)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 3,
+        "texto": "Tecnomagia 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552810d8369f6e4d384ee48"
+    },
+    {
+      "slug": "sinaptica_desfiar",
+      "id_notion": "sinaptica-desfiar",
+      "nome": "Desfiar",
+      "vertente": "sinaptica",
+      "nivel": 3,
+      "tipo": "Ataque",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 6,
+        "texto": "6"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Nível atual (1 Sentinela ou Admin)",
+      "duracao": "Instantâneo",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 3,
+        "texto": "Tecnomagia 3"
+      },
+      "teste_defesa": "Tecnomagia vs. Tecnomagia",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281f497e0d7cb256d1e03"
+    },
+    {
+      "slug": "sinaptica_entrelinhas",
+      "id_notion": "sinaptica-entrelinhas",
+      "nome": "Entrelinhas",
+      "vertente": "sinaptica",
+      "nivel": 3,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "Pessoal",
+      "duracao": "Mente rodadas",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 3,
+        "texto": "Tecnomagia 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528161b202f160124d4514"
+    },
+    {
+      "slug": "sinaptica_exumar",
+      "id_notion": "sinaptica-exumar",
+      "nome": "Exumar",
+      "vertente": "sinaptica",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "Pessoal (esfera ◎, raio de 10 m)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 3,
+        "texto": "Tecnomagia 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281768c90eafd5c105181"
+    },
+    {
+      "slug": "sinaptica_heranca",
+      "id_notion": "sinaptica-heranca",
+      "nome": "Herança",
+      "vertente": "sinaptica",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 6,
+        "texto": "6"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "Nó adjacente",
+      "duracao": "Permanente, ou até ser removida",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 3,
+        "texto": "Tecnomagia 3"
+      },
+      "teste_defesa": "Tecnomagia (CD de Sináptica; remover)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281b3b94cc5b470e968ad"
+    },
+    {
+      "slug": "sinaptica_mascara",
+      "id_notion": "sinaptica-mascara",
+      "nome": "Máscara",
+      "vertente": "sinaptica",
+      "nivel": 3,
+      "tipo": "Suporte",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 criatura voluntária)",
+      "duracao": "30 minutos",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 3,
+        "texto": "Tecnomagia 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281368251ea99cacb9449"
+    },
+    {
+      "slug": "sinaptica_panorama",
+      "id_notion": "sinaptica-panorama",
+      "nome": "Panorama",
+      "vertente": "sinaptica",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 6,
+        "texto": "6"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "50 metros (prédio, instalação ou quarteirão)",
+      "duracao": "3 rodadas",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 3,
+        "texto": "Tecnomagia 3"
+      },
+      "teste_defesa": "Tecnomagia (CD do sistema)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281268139c810bdbdb3fd"
+    },
+    {
+      "slug": "sinaptica_vicario",
+      "id_notion": "sinaptica-vicario",
+      "nome": "Vicário",
+      "vertente": "sinaptica",
+      "nivel": 3,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 2,
+        "texto": "2 PA"
+      },
+      "alcance": "10 metros (1 dispositivo, unidade, escalpo ou ponto de acesso)",
+      "duracao": "5 minutos",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 3,
+        "texto": "Tecnomagia 3"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528168b194df7ee1308624"
+    },
+    {
+      "slug": "sinaptica_duplicata",
+      "id_notion": "sinaptica-duplicata",
+      "nome": "Duplicata",
+      "vertente": "sinaptica",
+      "nivel": 4,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 7,
+        "texto": "7"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "Pessoal",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 4,
+        "texto": "Tecnomagia 4"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a13635528107b80efea20b9622e7"
+    },
+    {
+      "slug": "sinaptica_construto",
+      "id_notion": "sinaptica-construto",
+      "nome": "Construto",
+      "vertente": "sinaptica",
+      "nivel": 5,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 15,
+        "texto": "15"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 4,
+        "texto": "4 PA"
+      },
+      "alcance": "15 metros (até 6 criaturas voluntárias ou 1 criatura hostil)",
+      "duracao": "10 minutos",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 5,
+        "texto": "Tecnomagia 5"
+      },
+      "teste_defesa": "Lógica; Lógica ou Vontade (CD de Sináptica)",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281048ecdf5519b662b54"
+    },
+    {
+      "slug": "sinaptica_onipresenca",
+      "id_notion": "sinaptica-onipresenca",
+      "nome": "Onipresença",
+      "vertente": "sinaptica",
+      "nivel": 5,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 5,
+        "texto": "5"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 4,
+        "texto": "4 PA"
+      },
+      "alcance": "Pessoal (esfera ◎, raio de 15 km)",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 5,
+        "texto": "Tecnomagia 5"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a136355281daa13ddd527e5cd477"
+    },
+    {
+      "slug": "sinaptica_soberania",
+      "id_notion": "sinaptica-soberania",
+      "nome": "Soberania",
+      "vertente": "sinaptica",
+      "nivel": 5,
+      "tipo": "Controle",
+      "custo_mana": {
+        "tipo": "fixo",
+        "valor": 12,
+        "texto": "12"
+      },
+      "conjuracao": {
+        "tipo": "pa",
+        "pa": 3,
+        "texto": "3 PA"
+      },
+      "alcance": "Pessoal",
+      "duracao": "1 minuto",
+      "prerequisito": {
+        "pericia": "tecnomagia",
+        "valor": 5,
+        "texto": "Tecnomagia 5"
+      },
+      "teste_defesa": "—",
+      "status_editorial": "Rascunho",
+      "fonte": "https://app.notion.com/3b90a1363552810d90c0c8b4b6a6af90"
+    }
+  ]
+}

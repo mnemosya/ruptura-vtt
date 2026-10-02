@@ -31,16 +31,26 @@ export type JanelaDaMesa =
   | "configuracoes"
   | "novo-personagem";
 
+/** Personagem criado só com o nome, a ser completado pelo assistente v1.2. */
+export interface PersonagemACompletar {
+  characterId: string;
+  nome: string;
+}
+
 interface ValorJanelas {
   aberta: (janela: JanelaDaMesa) => boolean;
   abrir: (janela: JanelaDaMesa) => void;
   fechar: (janela: JanelaDaMesa) => void;
+  /** Quando presente, "novo-personagem" abre completando este personagem. */
+  completar: PersonagemACompletar | null;
+  abrirCompletar: (alvo: PersonagemACompletar) => void;
 }
 
 const Contexto = createContext<ValorJanelas | null>(null);
 
 export function ProvedorJanelasDaMesa({ children }: { children: React.ReactNode }) {
   const [abertas, setAbertas] = useState<ReadonlySet<JanelaDaMesa>>(new Set());
+  const [completar, setCompletar] = useState<PersonagemACompletar | null>(null);
 
   const abrir = useCallback((janela: JanelaDaMesa) => {
     setAbertas((atual) => {
@@ -52,6 +62,7 @@ export function ProvedorJanelasDaMesa({ children }: { children: React.ReactNode 
   }, []);
 
   const fechar = useCallback((janela: JanelaDaMesa) => {
+    if (janela === "novo-personagem") setCompletar(null);
     setAbertas((atual) => {
       if (!atual.has(janela)) return atual;
       const proximo = new Set(atual);
@@ -60,9 +71,14 @@ export function ProvedorJanelasDaMesa({ children }: { children: React.ReactNode 
     });
   }, []);
 
+  const abrirCompletar = useCallback((alvo: PersonagemACompletar) => {
+    setCompletar(alvo);
+    abrir("novo-personagem");
+  }, [abrir]);
+
   const valor = useMemo<ValorJanelas>(
-    () => ({ aberta: (j) => abertas.has(j), abrir, fechar }),
-    [abertas, abrir, fechar],
+    () => ({ aberta: (j) => abertas.has(j), abrir, fechar, completar, abrirCompletar }),
+    [abertas, abrir, fechar, completar, abrirCompletar],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
@@ -73,7 +89,7 @@ export function ProvedorJanelasDaMesa({ children }: { children: React.ReactNode 
  * galeria de estilos monta o painel sozinho, e um contexto obrigatório
  * transformaria "quero ver o componente" em "monte a mesa inteira".
  */
-const INERTE: ValorJanelas = { aberta: () => false, abrir: () => {}, fechar: () => {} };
+const INERTE: ValorJanelas = { aberta: () => false, abrir: () => {}, fechar: () => {}, completar: null, abrirCompletar: () => {} };
 
 export function useJanelasDaMesa(): ValorJanelas {
   return useContext(Contexto) ?? INERTE;

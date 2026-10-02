@@ -37,6 +37,7 @@ import { Client } from "pg";
 import { SESSION_FILE } from "./authSession";
 import { createInitialCharacter } from "../../src/lib/character/createCharacter";
 
+import { personagemV12 } from "./fixtures/personagemV12";
 loadDotenv({ path: ".env.local" });
 
 export const PREFIXO_MESA_FIXTURE = "zz_e2e_mesa_";
@@ -95,7 +96,7 @@ export async function garantirMesaDeFixture(): Promise<MesaDeFixture> {
       // \"corpo\", que não existe no personagem". `createInitialCharacter`
       // com `regras: null` cai nos padrões do PRD, que é exatamente o
       // personagem mínimo válido que a fixture quer ser.
-      [NOME_PERSONAGEM_FIXTURE, campanhaId, dono, JSON.stringify(createInitialCharacter(null, NOME_PERSONAGEM_FIXTURE))],
+      [NOME_PERSONAGEM_FIXTURE, campanhaId, dono, JSON.stringify(personagemV12(NOME_PERSONAGEM_FIXTURE))],
     );
     return { campanhaId, personagemId: personagem.rows[0].id };
   } finally {

@@ -1,0 +1,469 @@
+{
+  "_meta": {
+    "ruleset_version": "1.2",
+    "fonte": "https://app.notion.com/p/3d90a13635528088ac28caeaca52d623",
+    "fonte_editada_em": "2026-09-20T01:34:35.817Z",
+    "extraido_em": "2026-10-01",
+    "pendencias_editoriais": [
+      "equipamento_inicial: os pacotes recomendados ainda são placeholders no Notion; nenhum item foi inferido."
+    ]
+  },
+  "classes": [
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "combatente",
+      "nome": "Combatente",
+      "descricao": "Combatentes são especialistas em levar confrontos a uma conclusão. Em vez de apenas trocar golpes ou manter inimigos ocupados, procuram a falha capaz de quebrar uma defesa, interromper uma reação ou tornar possível um ataque decisivo.\n\nDurante o combate, o Combatente reúne diferentes técnicas para fortalecer suas ações e responder às mudanças do campo. Pode aumentar o impacto de um golpe, alcançar uma posição vantajosa, atingir uma vulnerabilidade ou reagir antes que o inimigo complete sua ofensiva. Sua eficácia nasce da combinação dessas respostas, não de um equipamento específico.\n\nAlguns Combatentes agem com precisão metódica; outros confiam em acrobacias, violência concentrada ou na integração entre armas e magia. Escolha esta classe se quiser construir ataques decisivos, explorar erros e impedir que uma ameaça tenha tempo de se recuperar.",
+      "papel_principal": "Eliminação",
+      "papeis_secundarios": [
+        "Pressão ofensiva",
+        "Mobilidade",
+        "Resposta"
+      ],
+      "criacao": {
+        "perfis_atributos": [
+          {
+            "slug": "equilibrada",
+            "nome": "Equilibrada",
+            "valores": [
+              2,
+              1,
+              1
+            ]
+          },
+          {
+            "slug": "concentrada",
+            "nome": "Concentrada",
+            "valores": [
+              2,
+              2,
+              0
+            ]
+          },
+          {
+            "slug": "especializada",
+            "nome": "Especializada",
+            "valores": [
+              3,
+              1,
+              0
+            ]
+          }
+        ],
+        "perfis_pericias": [
+          {
+            "slug": "abrangente",
+            "nome": "Abrangente",
+            "quantidades": {
+              "valor_1": 8,
+              "valor_2": 5,
+              "valor_3": 1
+            }
+          },
+          {
+            "slug": "padrao",
+            "nome": "Padrão",
+            "quantidades": {
+              "valor_1": 5,
+              "valor_2": 4,
+              "valor_3": 2
+            }
+          },
+          {
+            "slug": "especializado",
+            "nome": "Especializado",
+            "quantidades": {
+              "valor_1": 4,
+              "valor_2": 2,
+              "valor_3": 3
+            }
+          }
+        ],
+        "pericias_valor_3": [
+          "balistica",
+          "luta",
+          "mobilidade",
+          "precisao",
+          "reflexos"
+        ],
+        "pericias_valor_2": [
+          "arcanismo",
+          "balistica",
+          "engenharia",
+          "intimidacao",
+          "luta",
+          "mobilidade",
+          "percepcao",
+          "precisao",
+          "reflexos",
+          "vigor",
+          "vontade"
+        ],
+        "pericias_valor_1": "qualquer_nao_escolhida",
+        "recursos": {
+          "pv": {
+            "constante": 13,
+            "texto": "13 + Corpo",
+            "atributo": "corpo",
+            "multiplicador_atributo": 1
+          },
+          "pe": {
+            "constante": 10,
+            "texto": "10 + Mente",
+            "atributo": "mente",
+            "multiplicador_atributo": 1
+          },
+          "mana": {
+            "constante": 12,
+            "texto": "12 + (Ânimo × 2)",
+            "atributo": "animo",
+            "multiplicador_atributo": 2
+          },
+          "andar": {
+            "constante": 10,
+            "texto": "10 + Corpo",
+            "atributo": "corpo",
+            "multiplicador_atributo": 1
+          },
+          "correr": {
+            "constante": 20,
+            "texto": "2 × (10 + Corpo)",
+            "atributo": "corpo",
+            "multiplicador_atributo": 2
+          },
+          "reacoes": {
+            "constante": 1,
+            "texto": "Mente + 1",
+            "atributo": "mente",
+            "multiplicador_atributo": 1
+          },
+          "integridade": {
+            "constante": 10,
+            "texto": "10 + (Ânimo × 2)",
+            "atributo": "animo",
+            "multiplicador_atributo": 2
+          }
+        },
+        "vertentes_primarias": "qualquer",
+        "sinergia_vertentes": {
+          "biotica": 4,
+          "cinetica": 5,
+          "cognitiva": 3,
+          "energetica": 5,
+          "material": 3,
+          "sinaptica": 1
+        },
+        "equipamento_inicial": {
+          "aretz": 3000,
+          "espacos_mochila": 10,
+          "itens": []
+        }
+      },
+      "caracteristicas": {
+        "F": [
+          {
+            "slug": "doutrina_de_combate",
+            "nome": "Doutrina de Combate",
+            "descricao": "Você aprende técnicas que permitem alterar o resultado de suas ações durante o confronto.\n\nVocê possui uma reserva de 4 Dados de Manobra d4 e aprende 3 Manobras Básicas à sua escolha.\n\nDADOS DE MANOBRA\n\nAlgumas características permitem gastar um Dado de Manobra para realizar uma manobra. Cada manobra determina seus requisitos, o momento em que pode ser declarada e como aplicar o resultado do dado.\n\nAo declarar uma manobra, gaste e role o dado indicado. Ele permanece gasto mesmo que a ação não alcance o resultado pretendido.\n\nVocê pode aplicar apenas uma manobra por ação, salvo quando uma característica disser o contrário. Diferentes efeitos produzidos durante a mesma ação não permitem utilizar manobras adicionais.\n\nVocê recupera todos os Dados de Manobra gastos ao concluir um descanso longo.\n\nMANOBRAS BÁSICAS\n\nManobras Básicas modificam diretamente suas ações, defesas e deslocamentos.\n\nCORTAR A RESPOSTA:\n\nDepois de acertar uma criatura, você pode gastar um Dado de Manobra e adicioná-lo ao dano.\n\nEm um sucesso padrão ou crítico, o alvo perde uma Reação disponível. Caso não possua Reações disponíveis, ele recupera uma Reação a menos no início do próximo turno.\n\nDEFESA CALCULADA:\n\nDepois de realizar uma ação defensiva e antes de saber o resultado, você pode gastar um Dado de Manobra e adicioná-lo ao teste.\n\nDEMOLIÇÃO:\n\nDepois de atingir um escudo, objeto, estrutura ou cobertura, você pode gastar um Dado de Manobra e adicionar o dobro do resultado ao dano causado ao PD.\n\nEXPLORAR A GUARDA:\n\nDepois de acertar uma criatura, você pode gastar um Dado de Manobra e adicioná-lo ao dano.\n\nSeu próximo ataque contra ela até o final do seu próximo turno recebe +1 de vantagem.\n\nFINTA TREINADA:\n\nQuando realizar Fintar, você pode gastar um Dado de Manobra e adicioná-lo ao teste.\n\nSe a Finta for bem-sucedida, adicione também o resultado ao dano do primeiro ataque beneficiado por ela.\n\nINVESTIDA IRREFREÁVEL:\n\nQuando realizar um ataque depois de se deslocar pelo menos 4 m em direção ao alvo, você pode gastar um Dado de Manobra.\n\nSe acertar, adicione o resultado ao dano e desloque o alvo uma quantidade de metros igual à metade do resultado, arredondado para baixo. Você pode acompanhá-lo durante esse deslocamento, permanecendo ao alcance dele, sem gastar PA.\n\nEsse deslocamento não provoca Reações."
+          }
+        ],
+        "D": [
+          {
+            "slug": "tecnica_aprimorada",
+            "nome": "Técnica Aprimorada",
+            "descricao": "Seus Dados de Manobra passam a ser d6 e você libera as Manobras Táticas.\n\nVocê aprende 1 manobra adicional, que pode ser Básica ou Tática.\n\nAo concluir um descanso longo, pode substituir uma de suas manobras conhecidas por outra entre as categorias que já tenha liberado.\n\nMANOBRAS TÁTICAS\n\nManobras Táticas permitem responder às ações dos adversários, impor efeitos de controle e realizar sequências de combate mais elaboradas.\n\nATAQUE ENCADEADO:\n\nQuando realizar a ação Ataque Secundário, você pode gastar um Dado de Manobra para não gastar o 1 PA exigido pela ação. Se o ataque acertar, adicione o resultado do Dado de Manobra ao dano.\n\nVocê pode utilizar esta manobra apenas uma vez por rodada.\n\nATAQUE PREPARADO:\n\nQuando uma criatura entrar voluntariamente no alcance de um ataque seu, você pode gastar uma Reação e um Dado de Manobra para atacá-la imediatamente.\n\nSe acertar, adicione o resultado do dado ao dano.\n\nCONTRA-ATAQUE:\n\nQuando uma criatura ao seu alcance errar um ataque contra você, você pode gastar uma Reação e um Dado de Manobra para atacá-la imediatamente.\n\nSe acertar, adicione o resultado do dado ao dano.\n\nDESARME:\n\nAo atacar uma criatura que esteja empunhando um objeto, você pode gastar um Dado de Manobra.\n\nSe acertar, adicione o resultado ao dano, e o alvo deve realizar Resistir contra o resultado do seu teste de acerto. Em uma falha, ele solta um objeto empunhado à sua escolha seguindo as regras de Desarmar.\n\nGOLPE AMPLO:\n\nDepois de acertar uma criatura com um ataque corpo a corpo, você pode gastar um Dado de Manobra e escolher outra criatura ao seu alcance.\n\nSe o resultado original também superar a ação defensiva da segunda criatura, ela sofre dano igual ao resultado do Dado de Manobra, do mesmo tipo do ataque original.\n\nQUEBRA DE BASE:\n\nDepois de acertar uma criatura, você pode gastar um Dado de Manobra e adicioná-lo ao dano.\n\nSe o ataque alcançar um sucesso padrão ou crítico, o alvo fica Caído. Em um sucesso limitado, ele deve realizar Resistir contra o resultado do seu teste de acerto, ficando Caído se falhar."
+          }
+        ],
+        "B": [
+          {
+            "slug": "manobra_composta",
+            "nome": "Manobra Composta",
+            "descricao": "Seus Dados de Manobra passam a ser d8 e você libera as Manobras Avançadas.\n\nVocê aprende 1 manobra adicional de qualquer categoria liberada.\n\nUma vez por rodada, pode aplicar duas manobras diferentes à mesma ação, gastando um Dado de Manobra para cada uma.\n\nAs duas manobras precisam ser compatíveis com a ação realizada e seus efeitos são resolvidos na ordem escolhida por você. Uma mesma manobra não pode ser aplicada duas vezes à ação por meio desta característica.\n\nMANOBRAS AVANÇADAS\n\nManobras Avançadas permitem controlar o ritmo do confronto, interromper respostas e prolongar sua ofensiva.\n\nAMORTECER:\n\nQuando sofrer dano de um ataque, você pode gastar um Dado de Manobra e reduzir o dano sofrido em valor igual ao resultado.\n\nEsta manobra só pode ser utilizada uma vez por rodada.\n\nATAQUE DE OPORTUNIDADE:\n\nQuando uma criatura sair voluntariamente do alcance de um ataque seu, você pode gastar uma Reação e um Dado de Manobra para atacá-la imediatamente.\n\nSe acertar, adicione o resultado do Dado de Manobra ao dano.\n\nCORREÇÃO DO GOLPE:\n\nDepois de realizar um teste de acerto e saber que o ataque errou, você pode gastar um Dado de Manobra e adicionar o resultado ao teste.\n\nSe isso transformar a falha em sucesso, determine a margem a partir do novo resultado.\n\nMANTER A OFENSIVA:\n\nDepois de reduzir uma criatura a 0 PV com um ataque, você pode gastar um Dado de Manobra para realizar imediatamente outro ataque contra uma criatura ao alcance, sem gastar PA.\n\nSe acertar, adicione o resultado do Dado de Manobra ao dano.\n\nVocê pode utilizar esta manobra apenas uma vez por rodada."
+          }
+        ],
+        "S": [
+          {
+            "slug": "mestre_inesgotavel",
+            "nome": "Mestre Inesgotável",
+            "descricao": "Seus Dados de Manobra passam a ser d10 e você aprende 1 manobra adicional.\n\nSe iniciar uma cena sem nenhum Dado de Manobra disponível, recupere 1 Dado de Manobra.\n\nAlém disso, uma vez por cena, quando utilizar Manobra Composta, você pode gastar apenas 1 Dado de Manobra para aplicar as duas manobras. Role o dado uma única vez e utilize o mesmo resultado para todos os efeitos das duas manobras."
+          }
+        ]
+      },
+      "subclasses": [
+        "acrobata",
+        "brutalista",
+        "dissecador",
+        "mago_de_batalha"
+      ],
+      "progressao": {
+        "F": {
+          "ranking": "F",
+          "pontos_pericia": 0,
+          "limite_pericia": 3,
+          "pontos_atributo": 0,
+          "pontos_vertente": 0,
+          "magias_adicionais": 0,
+          "pa": 3,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "dados_de_manobra": "4d4",
+            "manobras_conhecidas": 3
+          }
+        },
+        "E": {
+          "ranking": "E",
+          "pontos_pericia": 2,
+          "limite_pericia": 3,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 3,
+          "escolhe_subclasse": true,
+          "mudancas_recursos_classe": {
+            "dados_de_manobra": "4d4",
+            "manobras_conhecidas": 3
+          }
+        },
+        "D": {
+          "ranking": "D",
+          "pontos_pericia": 0,
+          "limite_pericia": 3,
+          "pontos_atributo": 1,
+          "pontos_vertente": 0,
+          "magias_adicionais": 1,
+          "pa": 3,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "dados_de_manobra": "4d6",
+            "manobras_conhecidas": 4
+          }
+        },
+        "C": {
+          "ranking": "C",
+          "pontos_pericia": 2,
+          "limite_pericia": 4,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 4,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "dados_de_manobra": "4d6",
+            "manobras_conhecidas": 4
+          }
+        },
+        "B": {
+          "ranking": "B",
+          "pontos_pericia": 0,
+          "limite_pericia": 4,
+          "pontos_atributo": 1,
+          "pontos_vertente": 0,
+          "magias_adicionais": 1,
+          "pa": 4,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "dados_de_manobra": "4d8",
+            "manobras_conhecidas": 5
+          }
+        },
+        "A": {
+          "ranking": "A",
+          "pontos_pericia": 2,
+          "limite_pericia": 5,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 4,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "dados_de_manobra": "4d8",
+            "manobras_conhecidas": 5
+          }
+        },
+        "S": {
+          "ranking": "S",
+          "pontos_pericia": 0,
+          "limite_pericia": 5,
+          "pontos_atributo": 1,
+          "pontos_vertente": 0,
+          "magias_adicionais": 1,
+          "pa": 5,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "dados_de_manobra": "4d10",
+            "manobras_conhecidas": 6
+          }
+        },
+        "S+": {
+          "ranking": "S+",
+          "pontos_pericia": 2,
+          "limite_pericia": 5,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 5,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "dados_de_manobra": "4d10",
+            "manobras_conhecidas": 6
+          }
+        }
+      }
+    }
+  ],
+  "subclasses": [
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "acrobata",
+      "nome": "Acrobata",
+      "classe_slug": "combatente",
+      "descricao": "Acrobatas transformam o cenário em uma extensão do próprio corpo. Correm por paredes, atravessam espaços ocupados, saltam sobre obstáculos e atacam antes de tocar o chão. Cada superfície pode servir como apoio e cada mudança de direção prepara uma nova ofensiva.\n\nEssa mobilidade não depende de uma arma ou estilo específico. Acrobatas podem lutar de perto, disparar durante um salto, arremessar armas ou utilizar o próprio impacto para derrubar e deslocar inimigos. O que os distingue é a capacidade de agir a partir de posições que outras personagens não conseguiriam ocupar.",
+      "caracteristicas": {
+        "E": [
+          {
+            "slug": "percurso_livre",
+            "nome": "Percurso Livre",
+            "descricao": "Seu deslocamento de Manobrar aumenta em +5 metros. Além disso, você não precisa mais realizar testes de Mobilidade para Manobrar. Ao utilizar Manobrar para se deslocar, você pode:\n\n- Atravessar espaços ocupados por outras criaturas, mas não pode encerrar seu deslocamento neles.\n- Correr por paredes e outras superfícies capazes de sustentar momentaneamente seu movimento.\n- Saltar sobre criaturas e obstáculos sem consumir deslocamento adicional.\n- Realizar uma ação enquanto estiver em um espaço que não poderia ocupar ao final do deslocamento, como no ar, sobre uma superfície estreita, apoiado em uma parede ou atravessando o espaço de outra criatura.\n\nPara essa ação, determine alcance, linha de visão, cobertura e diferença de altura a partir da posição transitória ocupada. Depois, você precisa continuar o deslocamento e terminá-lo em um espaço que possa ocupar.\n\nUma vez por rodada, quando realizar uma ação ofensiva a partir de uma posição transitória, a ação recebe +1 de vantagem."
+          },
+          {
+            "slug": "aterrissagem",
+            "nome": "Aterrissagem",
+            "descricao": "Reduza qualquer queda sofrida em uma quantidade de metros igual ao seu deslocamento de Andar. Se essa redução evitar todo o dano, você aterrissa em pé e pode escolher um espaço livre dentro de 2 m do ponto onde cairia."
+          }
+        ],
+        "C": [
+          {
+            "slug": "impulso_continuo",
+            "nome": "Impulso Contínuo",
+            "descricao": "Uma vez por rodada, ao realizar uma ação ofensiva a partir de uma posição transitória, você pode gastar um Dado de Manobra para reduzir o custo da ação em 1 PA, até o mínimo de 1 PA.\n\nDepois de resolver a ação, aumente o deslocamento restante de Manobrar em uma quantidade de metros igual ao resultado do dado. Você pode mudar a direção do percurso e escolher uma nova superfície, obstáculo ou criatura como ponto de apoio.\n\nEsse deslocamento adicional conserva todos os benefícios de Percurso Livre e pode ser realizado mesmo que a ação ofensiva falhe.\n\nEsta característica não conta como uma manobra aplicada à ação."
+          }
+        ],
+        "A": [
+          {
+            "slug": "sem_tocar_o_chao",
+            "nome": "Sem Tocar o Chão",
+            "descricao": "Uma vez por cena, ao iniciar um deslocamento de Manobrar, você pode entrar em movimento contínuo até o final do seu turno.\n\nDurante o efeito:\n\n- Esse uso de Manobrar não gasta PA.\n- Depois de cada ação ofensiva, aumente o deslocamento restante em 4 m e escolha uma nova direção ou ponto de apoio.\n- A primeira ação ofensiva realizada contra cada criatura a partir de uma posição transitória recebe +1 de vantagem.\n- Você pode utilizar Impulso Contínuo mais de uma vez na rodada, mas apenas uma vez por ação.\n\nO movimento termina quando seu turno acaba, quando você fica Imobilizado ou quando não possui um espaço ou ponto de apoio que possa alcançar. Ao final do efeito, você precisa ocupar um espaço capaz de sustentá-lo; caso contrário, começa a cair."
+          }
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "brutalista",
+      "nome": "Brutalista",
+      "classe_slug": "combatente",
+      "descricao": "Brutalistas concentram toda a força de sua ofensiva em ataques capazes de encerrar o confronto imediatamente. Cada golpe é conduzido além do limite seguro, extraindo dos dados de dano resultados que outras personagens dependeriam da sorte para alcançar.\n\nEssa técnica não depende de uma categoria específica de arma. Brutalistas podem descarregar seu poder por meio de golpes corpo a corpo, disparos, armas arremessadas ou ataques desarmados. O que os distingue é a disposição de comprometer tudo para produzir o maior impacto possível.",
+      "caracteristicas": {
+        "E": [
+          {
+            "slug": "dados_originais_de_dano",
+            "nome": "Dados Originais de Dano",
+            "descricao": "Dados originais de dano. Para as características desta subclasse, dados originais de dano são aqueles fornecidos diretamente pelo ataque, antes de modificadores de margem, manobras ou outros efeitos."
+          },
+          {
+            "slug": "mao_pesada",
+            "nome": "Mão Pesada",
+            "descricao": "Uma vez por cena, durante seu turno, você pode assumir a Postura Ofensiva sem gastar PA.\n\nAlém disso, uma vez por rodada, depois de rolar os dados originais de dano de um ataque, você pode escolher um deles e rolá-lo novamente. Utilize o maior dos dois resultados."
+          },
+          {
+            "slug": "dano_explosivo",
+            "nome": "Dano Explosivo",
+            "descricao": "Uma vez por rodada, quando um dado original de dano alcançar seu resultado máximo, você pode rolar outro dado do mesmo tipo e adicioná-lo ao dano.\n\nCaso mais de um dado alcance o resultado máximo, escolha apenas um deles. O dado adicional não pode ativar outra explosão neste ranking. Um resultado máximo obtido por meio de Mão Pesada pode ativar esta característica."
+          }
+        ],
+        "C": [
+          {
+            "slug": "forcar_o_limite",
+            "nome": "Forçar o Limite",
+            "descricao": "Uma vez por rodada, depois de rolar os dados originais de dano de um ataque, você pode gastar e rolar um Dado de Manobra. Escolha um dos dados originais de dano e aumente seu resultado em valor igual ao resultado do Dado de Manobra, até o máximo possível para ele.\n\nSe o dado escolhido alcançar seu resultado máximo, ele ativa Dano Explosivo. Caso já tenha ativado Dano Explosivo nesse ataque, ele o ativa novamente, gerando uma segunda explosão.\n\nEsta característica não conta como uma manobra aplicada ao ataque."
+          }
+        ],
+        "A": [
+          {
+            "slug": "tudo_ou_nada",
+            "nome": "Tudo Ou Nada",
+            "descricao": "Uma vez por cena, antes de realizar um ataque, você pode declarar um golpe de Tudo ou Nada.\n\nO ataque recebe –1 de vantagem. Se acertar:\n\n- Escolha um dado original de dano e considere que ele obteve seu resultado máximo. Dano Explosivo é ativado independente dos resultados.\n- Você pode utilizar Forçar o Limite nesse mesmo dado para provocar uma segunda explosão.\n- Role duas vezes cada dado gerado pelas explosões e utilize o maior resultado.\n\nSe o ataque errar, o uso desta característica é perdido."
+          }
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "dissecador",
+      "nome": "Dissecador",
+      "classe_slug": "combatente",
+      "descricao": "Dissecadores identificam vulnerabilidades e concentram seus ataques onde podem causar a maior consequência. Um primeiro golpe revela falhas na postura, na proteção ou nos movimentos do adversário; os seguintes exploram o mesmo ponto até comprometer uma parte essencial de sua capacidade de lutar.\n\nEssa técnica pode ser empregada com armas corpo a corpo, armas à distância ou ataques desarmados. Dissecadores se distinguem pela precisão com que escolhem onde atingir e pela capacidade de transformar um ferimento localizado em uma vantagem decisiva.",
+      "caracteristicas": {
+        "E": [
+          {
+            "slug": "tecnica_analitica",
+            "nome": "Técnica Analítica",
+            "descricao": "Ao realizar um teste de Atacar, você pode utilizar Mente no lugar de Corpo.\n\nEssa substituição afeta apenas o teste de acerto. Corpo continua sendo somado normalmente ao dano dos ataques corpo a corpo."
+          },
+          {
+            "slug": "ponto_fraco",
+            "nome": "Ponto Fraco",
+            "descricao": "Uma vez por rodada, quando acertar uma criatura, você pode marcar a região atingida como um Ponto Fraco até o final da cena. Cada criatura pode ter apenas um Ponto Fraco marcado por você. Caso marque outra região da mesma criatura, a marca anterior é substituída.\n\nQuando realizar um ataque contra o Ponto Fraco:\n\n- O teste de acerto recebe +1 de vantagem.\n- Se o ataque acertar, você pode escolher o Ponto Fraco como região atingida, mesmo que ele não esteja disponível pela margem alcançada.\n- Um sucesso limitado não impõe –1 no dano do ataque.\n\nA margem continua determinando normalmente os demais modificadores de dano e a ativação de propriedades ou efeitos."
+          }
+        ],
+        "C": [
+          {
+            "slug": "comprometer",
+            "nome": "Comprometer",
+            "descricao": "Uma vez por rodada, quando acertar o Ponto Fraco de uma criatura, pode gastar um Dado de Manobra e adicioná-lo ao dano do ataque. Além disso, a região atingida fica Comprometida até o final do próximo turno da criatura:\n\n- Braços: a criatura sofre –1 de desvantagem em ataques e manobras de combate realizados com os membros atingidos;\n- Pernas: seu deslocamento é reduzido à metade e ela não pode realizar deslocamentos sem gastar PA;\n- Tronco: a criatura não pode recuperar PV nem reduzir o dano sofrido;\n- Cabeça: a criatura sofre –1 de desvantagem em ações ofensivas e não pode utilizar Reações ofensivas.\n\nEsta característica não conta como uma manobra aplicada ao ataque."
+          }
+        ],
+        "A": [
+          {
+            "slug": "golpe_decisivo",
+            "nome": "Golpe Decisivo",
+            "descricao": "Uma vez por cena, quando acertar o Ponto Fraco de uma criatura, você pode transformar o ataque em um Golpe Decisivo.\n\nO ataque recebe os seguintes efeitos:\n\n- É tratado como um sucesso crítico para determinar seu modificador de dano e ativar propriedades que dependam da margem;\n- Ignora a MIT da região atingida;\n- A região fica Comprometida sem exigir o gasto de um Dado de Manobra;\n- O comprometimento permanece até o final da cena.\n\nO Golpe Decisivo ainda pode receber uma manobra normalmente."
+          }
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "mago_de_batalha",
+      "nome": "Mago de Batalha",
+      "classe_slug": "combatente",
+      "descricao": "Magos de Batalha tratam magias de Ataque como armamento de campo. Alteram alcance, área e distribuição dos efeitos para atingir posições normalmente seguras, concentrar poder sobre um único alvo ou bombardear grupos sem comprometer seus aliados.\n\nSeu domínio está na aplicação ofensiva da magia. Em vez de depender de armas convencionais, adaptam cada ataque arcano às condições do confronto e transformam seus Dados de Manobra em instrumentos de precisão, alcance e devastação.",
+      "caracteristicas": {
+        "E": [
+          {
+            "slug": "treinado_em_magia_belica",
+            "nome": "Treinado em Magia Bélica",
+            "descricao": "Você pode aplicar manobras do Combatente às suas magias de Ataque, desde que a manobra seja compatível com a forma como a magia é resolvida.\n\nQuando uma manobra exigir que você acerte um ataque, ela pode ser aplicada depois que a magia causar dano a pelo menos uma criatura. Qualquer dano ou efeito adicional concedido pela manobra afeta apenas uma das criaturas atingidas, à sua escolha."
+          },
+          {
+            "slug": "modulacao_de_combate",
+            "nome": "Modulação de Combate",
+            "descricao": "Uma vez por rodada, ao conjurar uma magia de Ataque, você pode gastar um Dado de Manobra e escolher uma das seguintes Modulações:\n\n- Concentrar: escolha uma criatura afetada pela magia e adicione o resultado ao dano causado a ela.\n- Expandir: aumente uma das dimensões da área da magia em uma quantidade de metros igual à metade do resultado.\n- Projetar: aumente o alcance da magia em uma quantidade de metros igual ao resultado.\n- Conter: escolha uma quantidade de criaturas dentro da área igual à metade do resultado para que não sejam afetadas.\n\nArredonde pela metade para baixo. Modulação de Combate não conta como uma manobra aplicada à magia."
+          }
+        ],
+        "C": [
+          {
+            "slug": "modulacao_composta",
+            "nome": "Modulação Composta",
+            "descricao": "Ao utilizar Modulação de Combate, você pode escolher duas Modulações diferentes, utilizando o mesmo Dado de Manobra e o mesmo resultado para ambas.\n\nAlém disso:\n\n- Quando utilizar Concentrar em uma magia que cause dano somente a uma criatura, role o Dado de Manobra duas vezes e utilize o maior resultado.\n- Quando utilizar Expandir, você pode aumentar duas dimensões diferentes da área, dividindo entre elas os metros concedidos pela Modulação.\n- Quando utilizar Conter, você pode escolher as criaturas protegidas depois que elas realizarem suas ações defensivas.\n\nEsses benefícios fazem parte da mesma manobra."
+          }
+        ],
+        "A": [
+          {
+            "slug": "bombardeio_perfeito",
+            "nome": "Bombardeio Perfeito",
+            "descricao": "Uma vez por cena, ao conjurar uma magia de Ataque, você pode transformá-la em um Bombardeio Perfeito.\n\nAplique todas as Modulações de Modulação de Combate sem gastar um Dado de Manobra. Role um Dado de Manobra sem gastá-lo e utilize o mesmo resultado para todas elas.\n\nAlém disso, replique a magia de uma das seguintes formas:\n\n- Se possuir uma área, crie uma segunda área idêntica em outro ponto dentro do alcance;\n- Se afetar apenas uma criatura, escolha uma segunda criatura válida dentro do alcance para também ser afetada.\n\nResolva separadamente os efeitos contra cada criatura. Uma mesma criatura só pode ser afetada uma vez pelo Bombardeio Perfeito."
+          }
+        ]
+      }
+    }
+  ],
+  "backgrounds": [],
+  "qualities": [],
+  "complications": []
+}

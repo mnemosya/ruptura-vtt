@@ -611,7 +611,7 @@ function item(p: Partial<ItemBandoPainel> & { id: string; nome: string }): ItemB
 
 ok(
   "K1 (as seis categorias pedidas)",
-  CATEGORIAS_COMPENDIO.join(",") === "magias,talentos,itens,runas,condicoes,companheiros" && ehCategoriaCompendio("runas") && !ehCategoriaCompendio("armas"),
+  CATEGORIAS_COMPENDIO.join(",") === "magias,itens,runas,condicoes,companheiros" && !ehCategoriaCompendio("talentos") && ehCategoriaCompendio("runas") && !ehCategoriaCompendio("armas"),
   CATEGORIAS_COMPENDIO.join(","),
 );
 {

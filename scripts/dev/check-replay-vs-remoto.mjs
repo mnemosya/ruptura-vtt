@@ -60,6 +60,14 @@ const CONSULTAS = {
       from pg_constraint c join pg_namespace n on n.oid = c.connamespace
      where n.nspname = 'public'`,
 
+  "enums": `
+    select t.typname || '.' || e.enumsortorder::text as chave,
+           e.enumlabel as valor
+      from pg_type t
+      join pg_namespace n on n.oid = t.typnamespace
+      join pg_enum e on e.enumtypid = t.oid
+     where n.nspname = 'public'`,
+
   "funções": `
     select p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' as chave,
            md5(regexp_replace(regexp_replace(p.prosrc, '--[^\\n]*', '', 'g'), '\\s+', ' ', 'g'))

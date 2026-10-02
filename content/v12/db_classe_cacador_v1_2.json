@@ -1,0 +1,475 @@
+{
+  "_meta": {
+    "ruleset_version": "1.2",
+    "fonte": "https://app.notion.com/p/3d90a13635528034a166dbb1dd0c2b3b",
+    "fonte_editada_em": "2026-09-20T01:32:00.000Z",
+    "extraido_em": "2026-10-01",
+    "pendencias_editoriais": [
+      "equipamento_inicial: os pacotes recomendados ainda são placeholders no Notion; nenhum item foi inferido.",
+      "Subclasse Assassino, Ranking C: nota no Notion \"REVISAR O DANO DE SANGRANDO\"; texto transcrito como está."
+    ]
+  },
+  "classes": [
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "cacador",
+      "nome": "Caçador",
+      "descricao": "Caçadores são especialistas em criar as condições necessárias para agir com vantagem. Raramente dependem apenas de improviso: escolhem o alvo, preparam seus recursos e esperam até que uma oportunidade transforme uma ação comum em uma intervenção decisiva.\n\nDurante uma cena, o Caçador administra o próprio ritmo. Pode conservar ações para a rodada seguinte, preparar recursos com antecedência e responder a movimentos ou comportamentos que estava esperando. Seu poder não está apenas no que faz, mas em decidir quando cada ação terá maior valor.\n\nAlguns controlam distância e visibilidade; outros investigam comportamentos, atacam alvos expostos ou trabalham em conjunto com um companheiro animal. Escolha esta classe se quiser preparar oportunidades, controlar o momento de agir e executar planos quando as condições estiverem a seu favor.",
+      "papel_principal": "Preparação",
+      "papeis_secundarios": [
+        "Investigação",
+        "Perseguição",
+        "Dano",
+        "Controle"
+      ],
+      "criacao": {
+        "perfis_atributos": [
+          {
+            "slug": "equilibrada",
+            "nome": "Equilibrada",
+            "valores": [
+              2,
+              1,
+              1
+            ]
+          },
+          {
+            "slug": "concentrada",
+            "nome": "Concentrada",
+            "valores": [
+              2,
+              2,
+              0
+            ]
+          },
+          {
+            "slug": "especializada",
+            "nome": "Especializada",
+            "valores": [
+              3,
+              1,
+              0
+            ]
+          }
+        ],
+        "perfis_pericias": [
+          {
+            "slug": "abrangente",
+            "nome": "Abrangente",
+            "quantidades": {
+              "valor_1": 8,
+              "valor_2": 5,
+              "valor_3": 1
+            }
+          },
+          {
+            "slug": "padrao",
+            "nome": "Padrão",
+            "quantidades": {
+              "valor_1": 5,
+              "valor_2": 4,
+              "valor_3": 2
+            }
+          },
+          {
+            "slug": "especializado",
+            "nome": "Especializado",
+            "quantidades": {
+              "valor_1": 4,
+              "valor_2": 2,
+              "valor_3": 3
+            }
+          }
+        ],
+        "pericias_valor_3": [
+          "balistica",
+          "biologia",
+          "furtividade",
+          "logica",
+          "luta",
+          "percepcao",
+          "precisao"
+        ],
+        "pericias_valor_2": [
+          "arcanismo",
+          "balistica",
+          "biologia",
+          "furtividade",
+          "logica",
+          "luta",
+          "mobilidade",
+          "percepcao",
+          "precisao",
+          "psicologia",
+          "reflexos",
+          "sociedade",
+          "vigor"
+        ],
+        "pericias_valor_1": "qualquer_nao_escolhida",
+        "recursos": {
+          "pv": {
+            "constante": 12,
+            "texto": "12 + Corpo",
+            "atributo": "corpo",
+            "multiplicador_atributo": 1
+          },
+          "pe": {
+            "constante": 10,
+            "texto": "10 + Mente",
+            "atributo": "mente",
+            "multiplicador_atributo": 1
+          },
+          "mana": {
+            "constante": 12,
+            "texto": "12 + (Ânimo × 2)",
+            "atributo": "animo",
+            "multiplicador_atributo": 2
+          },
+          "andar": {
+            "constante": 10,
+            "texto": "10 + Corpo",
+            "atributo": "corpo",
+            "multiplicador_atributo": 1
+          },
+          "correr": {
+            "constante": 20,
+            "texto": "2 × (10 + Corpo)",
+            "atributo": "corpo",
+            "multiplicador_atributo": 2
+          },
+          "reacoes": {
+            "constante": 1,
+            "texto": "Mente + 1",
+            "atributo": "mente",
+            "multiplicador_atributo": 1
+          },
+          "integridade": {
+            "constante": 10,
+            "texto": "10 + (Ânimo × 2)",
+            "atributo": "animo",
+            "multiplicador_atributo": 2
+          }
+        },
+        "vertentes_primarias": "qualquer",
+        "sinergia_vertentes": {
+          "biotica": 5,
+          "cinetica": 5,
+          "cognitiva": 3,
+          "energetica": 4,
+          "material": 3,
+          "sinaptica": 2
+        },
+        "equipamento_inicial": {
+          "aretz": 3000,
+          "espacos_mochila": 10,
+          "itens": []
+        }
+      },
+      "caracteristicas": {
+        "F": [
+          {
+            "slug": "reserva_tatica",
+            "nome": "Reserva Tática",
+            "descricao": "Sua Reserva Tática possui capacidade para 1 PA.\n\nNo final da rodada, você pode conservar uma quantidade de PA que não tenha utilizado, até a capacidade da Reserva. Isso inclui PA que já estavam reservados e não foram gastos. Na rodada seguinte, os PA mantidos na Reserva são adicionados aos seus PA normais e podem pagar qualquer ação.\n\nOs PA reservados contam normalmente entre os PA gastos para determinar se você age nos Turnos Rápidos ou Lentos. Qualquer PA que exceda a capacidade da Reserva ao final da rodada é perdido."
+          }
+        ],
+        "D": [
+          {
+            "slug": "preparado_para_tudo",
+            "nome": "Preparado para Tudo",
+            "descricao": "Ao concluir um descanso longo, escolha 2 Preparos da lista.\n\nVocê pode utilizar cada Preparo escolhido uma vez por cena, mas apenas um Preparo por ação. Todos os usos são recuperados no início da próxima cena.\n\nAÇÃO CALCULADA:\n\nAntes de realizar um teste como parte de uma ação paga ao menos parcialmente com sua Reserva Tática, utilize este Preparo para receber +1 de vantagem nesse teste.\n\nEQUIPAMENTO SEPARADO:\n\nQuando precisar de um item que possua em seu Acesso Rápido ou Mochila, utilize este Preparo para sacá-lo sem gastar PA.\n\nSe o item puder ser utilizado por meio de Interagir, você também pode realizar essa ação imediatamente, reduzindo seu custo em 1 PA, até o mínimo de 0 PA.\n\nPLANO ALTERNATIVO:\n\nDepois de falhar em uma ação paga ao menos parcialmente com sua Reserva Tática, utilize este Preparo para recuperar 1 dos PA de Reserva gastos nela.\n\nO PA recuperado retorna à sua Reserva Tática e ainda precisa ser utilizado até o final da rodada.\n\nREPOSICIONAMENTO PREVISTO:\n\nDepois de realizar uma ação paga ao menos parcialmente com sua Reserva Tática, utilize este Preparo para se deslocar até 3 m sem gastar PA.\n\nSAÍDA PLANEJADA:\n\nQuando realizar um teste para evitar ou reduzir o dano de uma área, armadilha ou outro efeito que permita uma ação defensiva, utilize este Preparo antes da rolagem.\n\n- Se falhar, sofra apenas metade do dano, arredondada para cima.\n- Se obtiver sucesso, não sofra nenhum dano.\n\nSaída Planejada afeta apenas o dano. Condições e demais efeitos da ameaça são resolvidos normalmente conforme o resultado da ação defensiva.\n\nSINAL COMBINADO:\n\nQuando gastar sua Reserva Tática em uma ação, utilize este Preparo e escolha um aliado a até 10 m que possa perceber seu sinal.\n\nDepois que sua ação terminar, o aliado escolhe um dos seguintes benefícios:\n\n- Deslocar-se 2 m sem gastar PA;\n- Receber +1 de vantagem na próxima ação realizada contra o mesmo alvo ou elemento da cena até o final da rodada."
+          }
+        ],
+        "B": [
+          {
+            "slug": "reacao_planejada",
+            "nome": "Reação Planejada",
+            "descricao": "Sua Reserva Tática passa a comportar até 2 PA.\n\nAlém disso, uma vez por rodada, depois que outra criatura terminar uma ação, você pode utilizar sua Reação para realizar imediatamente uma ação. Ela precisa ser paga inteiramente com sua Reserva Tática."
+          }
+        ],
+        "S": [
+          {
+            "slug": "dez_passos_a_frente",
+            "nome": "Dez Passos à Frente",
+            "descricao": "No início de cada cena, receba 1 PA de Reserva Tática. Esse PA é perdido ao final da primeira rodada caso não seja utilizado.\n\nAlém disso:\n\n- Passa a escolher 3 Preparos ao concluir um descanso longo.\n- Uma vez por cena, pode utilizar um Preparo que não tenha escolhido durante o descanso.\n- Uma vez por cena, pode utilizar pela segunda vez um Preparo escolhido que já tenha utilizado naquela cena."
+          }
+        ]
+      },
+      "subclasses": [
+        "assassino",
+        "atirador_de_elite",
+        "domador",
+        "perito"
+      ],
+      "progressao": {
+        "F": {
+          "ranking": "F",
+          "pontos_pericia": 0,
+          "limite_pericia": 3,
+          "pontos_atributo": 0,
+          "pontos_vertente": 0,
+          "magias_adicionais": 0,
+          "pa": 3,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "capacidade_da_reserva": 1,
+            "preparos": 0
+          }
+        },
+        "E": {
+          "ranking": "E",
+          "pontos_pericia": 2,
+          "limite_pericia": 3,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 3,
+          "escolhe_subclasse": true,
+          "mudancas_recursos_classe": {
+            "capacidade_da_reserva": 1,
+            "preparos": 0
+          }
+        },
+        "D": {
+          "ranking": "D",
+          "pontos_pericia": 0,
+          "limite_pericia": 3,
+          "pontos_atributo": 1,
+          "pontos_vertente": 0,
+          "magias_adicionais": 1,
+          "pa": 3,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "capacidade_da_reserva": 1,
+            "preparos": 2
+          }
+        },
+        "C": {
+          "ranking": "C",
+          "pontos_pericia": 2,
+          "limite_pericia": 4,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 4,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "capacidade_da_reserva": 1,
+            "preparos": 2
+          }
+        },
+        "B": {
+          "ranking": "B",
+          "pontos_pericia": 0,
+          "limite_pericia": 4,
+          "pontos_atributo": 1,
+          "pontos_vertente": 0,
+          "magias_adicionais": 1,
+          "pa": 4,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "capacidade_da_reserva": 2,
+            "preparos": 2
+          }
+        },
+        "A": {
+          "ranking": "A",
+          "pontos_pericia": 2,
+          "limite_pericia": 5,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 4,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "capacidade_da_reserva": 2,
+            "preparos": 2
+          }
+        },
+        "S": {
+          "ranking": "S",
+          "pontos_pericia": 0,
+          "limite_pericia": 5,
+          "pontos_atributo": 1,
+          "pontos_vertente": 0,
+          "magias_adicionais": 1,
+          "pa": 5,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "capacidade_da_reserva": 2,
+            "preparos": 3
+          }
+        },
+        "S+": {
+          "ranking": "S+",
+          "pontos_pericia": 2,
+          "limite_pericia": 5,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 5,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "capacidade_da_reserva": 2,
+            "preparos": 3
+          }
+        }
+      }
+    }
+  ],
+  "subclasses": [
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "assassino",
+      "nome": "Assassino",
+      "classe_slug": "cacador",
+      "descricao": "Assassinos transformam perseguições em eliminações preparadas. Reconhecem quando um alvo está isolado, ferido ou incapaz de responder e exploram esse instante antes que a oportunidade desapareça. Alguns utilizam lâminas, armas silenciosas ou venenos; outros preparam emboscadas, adulteram equipamentos ou aproveitam condições provocadas pelo restante do grupo. Seu método pode variar, mas sempre segue a mesma lógica: atacar, retirar-se e retornar para concluir o trabalho.",
+      "caracteristicas": {
+        "E": [
+          {
+            "slug": "ataque_furtivo",
+            "nome": "Ataque Furtivo",
+            "descricao": "Quando atacar uma criatura que não esteja ciente da sua presença, você recebe +1 de vantagem adicional ao benefício de +1 de vantagem do *Ponto cego*, totalizando +2 de vantagem.\n\nUma vez por rodada, quando acertar um ataque nessas condições, cause dano adicional do mesmo tipo do ataque conforme seu Ranking:\n\n| Ranking | Dano adicional |\n| E | +1d4 |\n| C | +2d4 |\n| A | +3d4 |"
+          },
+          {
+            "slug": "rota_de_fuga",
+            "nome": "Rota de Fuga",
+            "descricao": "Depois de alcançar um sucesso padrão ou crítico contra uma criatura que não estivesse ciente da sua presença ou estivesse Isolada, você pode se deslocar até metade do seu Andar sem gastar PA.\n\nUma vez por rodada, se terminar esse deslocamento em uma posição onde seja possível se esconder, você pode realizar imediatamente a ação Esconder-se sem gastar PA.\n\nAlvo Isolado. Uma criatura está isolada para você quando não possui nenhum aliado consciente a até 8 m."
+          }
+        ],
+        "C": [
+          {
+            "slug": "ferida_aberta",
+            "nome": "Ferida Aberta",
+            "descricao": "Quando atacar com uma arma que possua a propriedade *Sangramento*, um sucesso padrão já deixa o alvo Sangrando, em vez de exigir um sucesso crítico. Em um sucesso crítico, o dano contínuo de Sangrando passa de 1d6 para 1d8."
+          },
+          {
+            "slug": "caca_persistente",
+            "nome": "Caça Persistente",
+            "descricao": "Enquanto uma criatura estiver Sangrando por um efeito causado por você:\n\n- Você sabe se os PV atuais dela são iguais ou inferiores à metade dos PV máximos.\n- Recebe +1 de vantagem em testes realizados para rastreá-la ou determinar por onde passou.\n- Pode ativar Rota de Fuga depois de alcançar um sucesso padrão ou crítico contra ela, mesmo que ela estivesse ciente da sua presença e não esteja isolada."
+          }
+        ],
+        "A": [
+          {
+            "slug": "executar",
+            "nome": "Executar",
+            "descricao": "Uma vez por cena, antes de realizar um ataque direcionado contra uma única criatura, você pode declarar uma Execução caso ao menos uma das seguintes condições seja atendida:\n\n- A criatura possui metade dos PV máximos ou menos.\n- Não está ciente da sua presença.\n- Está Imobilizada ou Atordoada.\n- Está Sangrando por um efeito causado por você e está Isolado.\n\nSe o ataque acertar:\n\n- Trate-o como um sucesso crítico, independentemente da margem.\n- O dano ignora a MIT da região atingida.\n- Se o ataque já alcançaria um sucesso crítico pela própria margem, cause +1 dado de dano adicional.\n\nSe o ataque falhar, o uso de *Executar* é perdido."
+          }
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "atirador_de_elite",
+      "nome": "Atirador de Elite",
+      "classe_slug": "cacador",
+      "descricao": "Atiradores de Elite dominam distância, linha de visão e paciência. Estabelecem uma posição favorável, acompanham os movimentos de uma presa e aguardam o instante em que um único disparo pode decidir o confronto. Quanto mais tempo possuem para calcular um tiro, menos espaço deixam para que o alvo sobreviva ao resultado.",
+      "caracteristicas": {
+        "E": [
+          {
+            "slug": "um_tiro_um_acerto",
+            "nome": "Um Tiro, Um Acerto",
+            "descricao": "Quando utilizar Mirar, o benefício recebido depende do resultado do teste:\n\n| Resultado | Benefício |\n| Falha | +1 de vantagem |\n| Sucesso | +2 de vantagem |\n| Sucesso crítico | +3 de vantagem |"
+          },
+          {
+            "slug": "alvo_na_mira",
+            "nome": "Alvo na Mira",
+            "descricao": "O benefício de Mirar não termina no final da rodada. Ele permanece até que uma das seguintes situações aconteça:\n\n- Realizar um ataque.\n- Utilizar Mirar contra outra criatura.\n- Perder a capacidade de perceber o alvo.\n- Deslocar-se voluntariamente mais de 2 m.\n- A cena terminar."
+          }
+        ],
+        "C": [
+          {
+            "slug": "a_espreita",
+            "nome": "À Espreita",
+            "descricao": "Quando realizar um ataque à distância beneficiado por Mirar, uma falha limitada torna-se um sucesso limitado.\n\nAlém disso, seus sucessos limitados nesses ataques não sofrem –1 no dano."
+          },
+          {
+            "slug": "janela_de_abate",
+            "nome": "Janela de Abate",
+            "descricao": "Você reconhece os momentos em que uma presa precisa abandonar sua proteção ou dividir a atenção.\n\nUma vez por rodada, uma criatura que você mantenha na mira abre uma Janela de Abate quando:\n\n- Desloca-se pelo menos 2 m.\n- Realiza uma ação ofensiva que não tenha você entre os alvos.\n- Termina uma ação sem possuir cobertura contra você.\n\nDepois que a ação da criatura terminar, você pode gastar 1 PA de Reserva Tática e utilizar sua Reação para realizar imediatamente um ataque à distância contra ela.\n\nPara esse ataque, o custo da ação é reduzido para 1 PA. O ataque consome o benefício de Mirar caso acerte, mas, se falhar, você continua mantendo o alvo na mira.\n\nVocê pode utilizar Janela de Abate apenas uma vez por rodada, mesmo que possua outras Reações disponíveis."
+          }
+        ],
+        "A": [
+          {
+            "slug": "tiro_terminal",
+            "nome": "Tiro Terminal",
+            "descricao": "Quando acertar um ataque à distância depois de obter um sucesso crítico em Mirar:\n\n- Trate o ataque como um sucesso crítico, independentemente da margem.\n- O alvo não recebe os benefícios de cobertura contra o ataque.\n- Se o ataque já alcançaria um sucesso crítico pela própria margem, cause +1 dado de dano adicional.\n\nTiro Terminal ainda exige que o ataque acerte. Uma falha não é convertida em sucesso por esta característica."
+          }
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "domador",
+      "nome": "Domador",
+      "classe_slug": "cacador",
+      "descricao": "Domadores caçam ao lado de criaturas treinadas para agir como parceiras, e não como ferramentas. Cada companheiro possui capacidades próprias, ocupa espaço no campo e realiza seu próprio turno durante o combate. A relação entre os dois se fortalece conforme aprendem a reconhecer sinais, criar aberturas e atacar como uma única unidade.",
+      "caracteristicas": {
+        "E": [
+          {
+            "slug": "companheiro_de_caca",
+            "nome": "Companheiro de Caça",
+            "descricao": "Escolha uma das fichas de companheiro apresentadas ao final desta característica. As fichas representam funções e formas de treinamento, não espécies específicas. Animais semelhantes podem utilizar fichas diferentes conforme suas capacidades e o modo como foram treinados.\n\nA espécie, aparência e origem da criatura são definidas em conjunto com o Narrador, desde que sejam compatíveis com a ficha escolhida.\n\nSeu companheiro possui atributos, perícias, PV, deslocamento, ataques e características próprias. Perícias não indicadas são consideradas de Nível 0. Ele também possui uma Reação por rodada, entra em Colapso normalmente e pode ser afetado por condições.\n\nTURNO DO COMPANHEIRO\n\nSeu companheiro realiza o próprio turno imediatamente depois do seu, como parte da mesma ativação de personagem. O turno dele não ocupa uma nova posição na alternância entre PJs e PNs.\n\nO companheiro não pode fragmentar seus PA. Seus PA também não determinam se sua ativação pertence aos Turnos Rápidos ou Lentos.\n\n- COMANDAR COMPANHEIRO 1 PA\n\nDurante seu turno, você pode gastar 1 PA para comandar seu companheiro. Essa ação pode ser paga com sua Reserva Tática.\n\nQuando comandado, o companheiro recebe 2 PA em seu turno seguinte. Você escolhe como ele utiliza esses PA.\n\nCaso não seja comandado, ele recebe apenas 1 PA e pode utilizá-lo para:\n\n- Deslocar-se em sua direção.\n- Procurar abrigo ou afastar-se de uma ameaça.\n- Realizar a ação descrita em seu Instinto.\n\nO companheiro precisa ser capaz de perceber suas ordens para ser comandado. Comandos estabelecidos antecipadamente podem continuar sendo obedecidos enquanto a criatura for capaz de compreender a situação.\n\nATAQUES NATURAIS\n\nRealizar um ataque natural custa 1 PA. Cada companheiro pode realizar apenas um ataque natural por turno, mesmo que possua PA adicionais.\n\nPERDA E SUBSTITUIÇÃO\n\nAo chegar a 0 PV, seu companheiro entra em Colapso e segue normalmente as regras de inconsciência, estabilização e morte. Caso morra, sua perda é permanente.\n\nVocê também pode dispensar voluntariamente seu companheiro a qualquer momento. A criatura deixa de receber os benefícios desta subclasse, mas continua existindo no mundo caso isso seja coerente com a narrativa.\n\nSe seu companheiro morrer ou for dispensado, você pode estabelecer um vínculo com outro. Para isso, precisa encontrar uma criatura compatível e dedicar um período seguro ao treinamento. Normalmente, isso ocorre durante um intervalo entre aventuras ou outra oportunidade determinada pelo Narrador.\n\nAo obter um novo companheiro, escolha qualquer uma das fichas disponíveis que faça sentido com a natureza dele. Ele recebe todas as características correspondentes ao seu Ranking de Domador.\n\nVocê só pode manter um companheiro por vez."
+          },
+          {
+            "slug": "companheiros_de_caca",
+            "nome": "Companheiros de Caça",
+            "descricao": "CANÍDEOS\n\nCanídeos perseguem presas pelo cheiro, revelam criaturas escondidas e mantêm o rastro mesmo quando o alvo desaparece de vista. Sua velocidade e resistência os tornam especialmente eficientes em buscas e perseguições prolongadas.\n\nExemplos: cães farejadores, lobos, galgos, cães de caça e outros canídeos treinados para rastreamento.\n\nCANÍDEO\n\n- Tamanho: Médio\n- Atributos: Corpo 2 Mente 2 Ânimo 1\n- PV: 12\n- Deslocamento: 15 m\n- Perícias: Luta 2 Mobilidade 2 Percepção 3 Reflexos 2 e Vigor 2\n\nFaro Apurado. O companheiro recebe +1 de vantagem em testes de Percepção baseados no olfato e em testes para encontrar ou seguir rastros.\n\n1 PA Andar. O companheiro se desloca até 15 m.\n\n2 PA Correr. O companheiro se desloca até 30 m.\n\n1 PA Mordida (Ataque natural). 1d6 + Corpo de dano perfurante.\n\n1 PA Localizar. Escolha uma criatura escondida, um rastro ou outro indício que o companheiro possa farejar. Ele realiza um teste de Percepção contra a Furtividade da criatura ou uma dificuldade determinada pelo Narrador. Em caso de sucesso, identifica a direção do alvo ou o caminho seguido.\n\nUma criatura localizada deixa de estar escondida do companheiro e do Domador até o final do próximo turno do companheiro. A primeira ação realizada por um deles diretamente contra ela durante esse período recebe +1 de vantagem.\n\nInstinto. Utilizar Localizar, Andar ou Correr seguindo um rastro conhecido.\n\nFELINOS\n\nFelinos avançam sem chamar atenção e aguardam o momento certo para atacar. Sua combinação de furtividade, agilidade e explosão muscular permite surpreender presas e alcançá-las com um único bote.\n\nExemplos: gatos-do-mato, linces, pumas, caracais e outros felinos de pequeno ou médio porte.\n\nFELINO\n\n- Tamanho: Pequeno ou Médio\n- Atributos: Corpo 2 Mente 2 Ânimo 1\n- PV: 10\n- Deslocamento: 12 m\n- Perícias: Furtividade 3 Luta 2 Mobilidade 3 Percepção 2 e Reflexos 2\n\nPassos Silenciosos. O companheiro recebe +1 de vantagem em testes de Furtividade realizados durante um turno no qual tenha se deslocado até metade de seu Deslocamento.\n\n1 PA Andar. O companheiro se desloca até 12 m.\n\n2 PA Correr. O companheiro se desloca até 24 m.\n\n1 PA Garras (Ataque natural). 1d4 + Corpo de dano cortante.\n\n2 PA Bote. O companheiro se desloca até 12 m e realiza um ataque natural. Caso o alvo não tenha percebido sua presença, o ataque recebe +1 de vantagem e causa +1d4 + 1 de dano se acertar.\n\nInstinto. Utilizar Furtividade para se esconder, desde que exista uma posição apropriada ao alcance.\n\nAVES DE RAPINA\n\nAves de rapina patrulham o campo do alto, identificam criaturas a grandes distâncias e indicam posições que seriam difíceis de perceber a partir do solo. Sua mobilidade aérea permite acompanhar alvos e orientar o Domador sem se aproximar deles.\n\nExemplos: águias, falcões, gaviões, corujas e outras aves predadoras treinadas.\n\nAVE DE RAPINA\n\n- Tamanho: Pequeno\n- Atributos: Corpo 2 Mente 2 Ânimo 1\n- PV: 7\n- Deslocamento: terrestre 5 m; voo 18 m\n- Perícias: Furtividade 2 Luta 1 Mobilidade 3 Percepção 3 e Reflexos 3\n\nVisão Elevada. O companheiro recebe +1 de vantagem em testes visuais de Percepção. Enquanto estiver voando, pode observar por cima de obstáculos que não bloqueiem completamente sua linha de visão.\n\n1 PA Andar. O companheiro se desloca até 5 m ou voa até 18 m.\n\n2 PA Correr. O companheiro se desloca até 10 m ou voa até 36 m.\n\n1 PA Garras (Ataque natural). 1d4 + Corpo de dano cortante.\n\n1 PA Assinalar. Escolha uma criatura que o companheiro possa perceber a até 20 m. O próximo ataque realizado por você ou o companheiro contra ela antes do início do próximo turno do companheiro recebe +1 de vantagem.\n\nUma criatura só pode ser assinalada uma vez por turno.\n\nInstinto. Utilizar Percepção para observar o campo ou Andar até uma posição mais elevada.\n\nCaso fique Atordoado, Imobilizado ou inconsciente enquanto estiver voando, o companheiro cai.\n\nSERPENTES\n\nSerpentes aproximam-se sem serem percebidas e neutralizam suas presas antes que elas consigam reagir. Algumas envolvem o corpo do alvo e restringem seus movimentos; outras atacam rapidamente para inocular peçonha.\n\nEscolha uma das fichas abaixo para o companheiro.\n\nCONSTRITORAS\n\nConstritoras surpreendem suas presas, envolvem seus corpos e mantêm pressão para impedir qualquer reação ou fuga. São companheiras resistentes, especializadas em capturar e conter criaturas.\n\nExemplos: jiboias, pítons, sucuris e outras serpentes constritoras de porte compatível.\n\nCONSTRITORA\n\n- Tamanho: Pequeno\n- Atributos: Corpo 3 Mente 1 Ânimo 1\n- PV: 13\n- Deslocamento: 8 m\n- Perícias: Furtividade 2 Luta 3 Reflexos 1 e Vigor 3\n\nCorpo Constritor. Enquanto estiver agarrando uma criatura, o Deslocamento do companheiro é reduzido a 0, mas ele não sofre a desvantagem normalmente causada por Agarrar.\n\n1 PA Andar. O companheiro se desloca até 8 m.\n\n2 PA Correr. O companheiro se desloca até 16 m.\n\n1 PA Mordida (Ataque natural). 1d4 + Corpo de dano perfurante.\n\n1 PA Enrolar. Depois de acertar um ataque natural, o companheiro pode realizar imediatamente a manobra Agarrar contra o mesmo alvo. Resolva a manobra normalmente.\n\nInstinto. Caso esteja agarrando uma criatura, utilizar Mordida contra ela.\n\nPEÇONHENTAS\n\nPeçonhentas permanecem escondidas até encontrarem uma oportunidade para atacar. Embora sejam menos resistentes que as constritoras, suas mordidas inoculam toxinas capazes de atravessar proteções e debilitar rapidamente uma presa.\n\nExemplos: cascavéis, corais-verdadeiras, jararacas, najas, víboras e outras serpentes peçonhentas de porte compatível.\n\nPEÇONHENTA\n\n- Tamanho: Pequeno\n- Atributos: Corpo 2 Mente 2 Ânimo 1\n- PV: 9\n- Deslocamento: 10 m\n- Perícias: Furtividade 3 Luta 2 Mobilidade 2 Percepção 2 Reflexos 3 e Vigor 1\n\nPredadora Paciente. O companheiro recebe +1 de vantagem em testes de Furtividade enquanto não tiver se deslocado desde o início do seu último turno.\n\n1 PA Andar. O companheiro se desloca até 10 m.\n\n2 PA Correr. O companheiro se desloca até 20 m.\n\n1 PA Mordida (Ataque natural). Corpo de dano perfurante.\n\n1 PA Inocular. Depois de causar dano a uma criatura com Mordida, o companheiro pode inocular sua peçonha nela. O alvo realiza um teste de Vigor, CD 7. Em caso de falha, sofre 1d6 de dano tóxico e fica Envenenado. Em sucesso, apenas sofre metade do dano.\n\nInstinto. Utilizar Mordida contra uma criatura ao alcance e, caso cause dano, utilizar Inocular nela."
+          }
+        ],
+        "C": [
+          {
+            "slug": "cacada_coordenada",
+            "nome": "Caçada Coordenada",
+            "descricao": "Você e seu companheiro aprenderam a reconhecer e explorar as aberturas criadas um pelo outro.\n\nUma vez por rodada, quando um de vocês obtiver um sucesso padrão ou crítico contra uma criatura, o outro recebe +1 de vantagem na primeira ação que realizar diretamente contra ela até o final da rodada.\n\nAlém disso, seu companheiro recebe novas características:\n\nCANÍDEOS\n\nO Corpo do companheiro aumenta para 3 e seus PV aumentam para 13.\n\nO dano da Mordida aumenta para 1d8 + Corpo. Além disso, criaturas encontradas por Localizar passam a sofrer –1 de desvantagem em ações defensivas contra os ataques do companheiro enquanto estiverem adjacentes a ele.\n\nCANÍDEO\n\n- Tamanho: Médio\n- Atributos: Corpo 3 Mente 2 Ânimo 1\n- PV: 13\n- Deslocamento: 15 m\n- Perícias: Luta 2 Mobilidade 2 Percepção 3 Reflexos 2 e Vigor 2\n\nFaro Apurado. O companheiro recebe +1 de vantagem em testes de Percepção baseados no olfato e em testes para encontrar ou seguir rastros.\n\n1 PA Andar. O companheiro se desloca até 15 m.\n\n2 PA Correr. O companheiro se desloca até 30 m.\n\n1 PA Mordida (Ataque natural). 1d8 + Corpo de dano perfurante.\n\n1 PA Localizar. Escolha uma criatura escondida, um rastro ou outro indício que o companheiro possa farejar. Ele realiza um teste de Percepção contra a Furtividade da criatura ou uma dificuldade determinada pelo Narrador. Em caso de sucesso, identifica a direção do alvo ou o caminho seguido.\n\nUma criatura localizada deixa de estar escondida do companheiro e do Domador até o final do próximo turno do companheiro. A primeira ação realizada por um deles diretamente contra ela durante esse período recebe +1 de vantagem.\n\nAlém disso, a criatura sofre –1 de desvantagem em ações defensivas contra os ataques do companheiro enquanto estiver adjacente a ele.\n\nInstinto. Utilizar Localizar, Andar ou Correr seguindo um rastro conhecido.\n\nFELINOS\n\nO Corpo do companheiro aumenta para 3 e seus PV aumentam para 11.\n\nO dano das Garras aumenta para 1d6 + Corpo. Depois de resolver Bote, o companheiro também pode se deslocar até metade de seu Deslocamento sem gastar PA, desde que não termine esse movimento mais próximo do alvo atacado.\n\nFELINO\n\n- Tamanho: Pequeno ou Médio\n- Atributos: Corpo 3 Mente 2 Ânimo 1\n- PV: 11\n- Deslocamento: 12 m\n- Perícias: Furtividade 3 Luta 2 Mobilidade 3 Percepção 2 e Reflexos 2\n\nPassos Silenciosos. O companheiro recebe +1 de vantagem em testes de Furtividade realizados durante um turno no qual tenha se deslocado até metade de seu Deslocamento.\n\n1 PA Andar. O companheiro se desloca até 12 m.\n\n2 PA Correr. O companheiro se desloca até 24 m.\n\n1 PA Garras (Ataque natural). 1d6 + Corpo de dano cortante.\n\n2 PA Bote. O companheiro se desloca até 12 m e realiza um ataque natural. Caso o alvo não tenha percebido sua presença, o ataque recebe +1 de vantagem e causa +1d4 + 1 de dano se acertar.\n\nDepois de resolver o ataque, o companheiro pode se deslocar até metade de seu Deslocamento sem gastar PA. Esse movimento não pode terminar mais próximo do alvo atacado.\n\nInstinto. Utilizar Furtividade para se esconder, desde que exista uma posição apropriada ao alcance.\n\nAVES DE RAPINA\n\nA Mente do companheiro aumenta para 3 e seus PV aumentam para 8.\n\nDepois de utilizar Assinalar, o companheiro passa a poder voar até metade de seu Deslocamento sem gastar PA. Caso o ataque favorecido por essa ação acerte, ele também causa +1d6 de dano.\n\nAVE DE RAPINA\n\n- Tamanho: Pequeno\n- Atributos: Corpo 2 Mente 3 Ânimo 1\n- PV: 8\n- Deslocamento: terrestre 5 m; voo 18 m\n- Perícias: Furtividade 2 Luta 1 Mobilidade 3 Percepção 3 e Reflexos 3\n\nVisão Elevada. O companheiro recebe +1 de vantagem em testes visuais de Percepção. Enquanto estiver voando, pode observar por cima de obstáculos que não bloqueiem completamente sua linha de visão.\n\n1 PA Andar. O companheiro se desloca até 5 m ou voa até 18 m.\n\n2 PA Correr. O companheiro se desloca até 10 m ou voa até 36 m.\n\n1 PA Garras (Ataque natural). 1d4 + Corpo de dano cortante.\n\n1 PA Assinalar. Escolha uma criatura que o companheiro possa perceber a até 20 m. O próximo ataque realizado por você ou pelo companheiro contra ela antes do início do próximo turno do companheiro recebe +1 de vantagem e causa +1d6 de dano caso acerte.\n\nUma criatura só pode ser assinalada uma vez por turno.\n\nDepois de utilizar Assinalar, o companheiro pode voar até metade de seu Deslocamento sem gastar PA.\n\nInstinto. Utilizar Percepção para observar o campo ou Andar até uma posição mais elevada.\n\nCaso fique Atordoado, Imobilizado ou inconsciente enquanto estiver voando, o companheiro cai.\n\nSERPENTES CONSTRITORAS\n\nO Corpo do companheiro aumenta para 4 e seus PV aumentam para 14.\n\nCriaturas agarradas pelo companheiro passam a sofrer –1 de desvantagem em testes para escapar dele, ou –2 caso o Agarrar realizado por meio de Enrolar alcance um sucesso crítico. Além disso, no início do próprio turno, o companheiro pode tentar deixar uma criatura agarrada Imobilizada sem gastar PA.\n\nCONSTRITORA\n\n- Tamanho: Pequeno\n- Atributos: Corpo 4 Mente 1 Ânimo 1\n- PV: 14\n- Deslocamento: 8 m\n- Perícias: Furtividade 2 Luta 3 Reflexos 1 e Vigor 3\n\nCorpo Constritor. Enquanto estiver agarrando uma criatura, o Deslocamento do companheiro é reduzido a 0, mas ele não sofre a desvantagem normalmente causada por Agarrar.\n\nCriaturas agarradas pelo companheiro sofrem –1 de desvantagem em testes para escapar dele. Caso a manobra Agarrar realizada por meio de Enrolar alcance um sucesso crítico, essa penalidade aumenta para –2.\n\nNo início do turno do companheiro, ele pode realizar um teste de Luta contra Resistir de uma criatura que esteja agarrando, sem gastar PA. Em caso de sucesso, ela fica Imobilizada enquanto permanecer agarrada.\n\n1 PA Andar. O companheiro se desloca até 8 m.\n\n2 PA Correr. O companheiro se desloca até 16 m.\n\n1 PA Mordida (Ataque natural). 1d4 + Corpo de dano perfurante.\n\n1 PA Enrolar. Depois de acertar um ataque natural, o companheiro pode realizar imediatamente a manobra Agarrar contra o mesmo alvo. Resolva a manobra normalmente.\n\nInstinto. Caso esteja agarrando uma criatura, utilizar Mordida contra ela.\n\nSERPENTES PEÇONHENTAS\n\nO Corpo do companheiro aumenta para 3 e seus PV aumentam para 10.\n\nUma vez por turno, depois de causar dano com Mordida, o companheiro passa a poder utilizar Inocular sem gastar PA. Quando uma criatura já Envenenada por sua peçonha for inoculada novamente, ela realiza o teste de Vigor com –1 de desvantagem e, em caso de falha, também fica Lenta até o final do próximo turno dela.\n\nPEÇONHENTA\n\n- Tamanho: Pequeno\n- Atributos: Corpo 3 Mente 2 Ânimo 1\n- PV: 10\n- Deslocamento: 10 m\n- Perícias: Furtividade 3 Luta 2 Mobilidade 2 Percepção 2 Reflexos 3 e Vigor 1\n\nPredadora Paciente. O companheiro recebe +1 de vantagem em testes de Furtividade enquanto não tiver se deslocado desde o início do seu último turno.\n\n1 PA Andar. O companheiro se desloca até 10 m.\n\n2 PA Correr. O companheiro se desloca até 20 m.\n\n1 PA Mordida (Ataque natural). Corpo de dano perfurante.\n\n1 PA Inocular. Depois de causar dano a uma criatura com Mordida, o companheiro pode inocular sua peçonha nela. Uma vez por turno, pode utilizar esta ação sem gastar PA.\n\nO alvo realiza um teste de Vigor, CD 7. Em caso de falha, sofre 1d6 de dano tóxico e fica Envenenado. Em caso de sucesso, sofre apenas metade do dano.\n\nCaso o alvo já esteja Envenenado pela peçonha do companheiro, realiza esse teste com –1 de desvantagem. Em caso de falha, também fica Lento até o final do próximo turno dele.\n\nInstinto. Utilizar Mordida contra uma criatura ao alcance e, caso cause dano, utilizar Inocular nela."
+          }
+        ],
+        "A": [
+          {
+            "slug": "ataque_conjunto",
+            "nome": "Ataque Conjunto",
+            "descricao": "Uma vez por cena, quando você ou seu companheiro acertar uma criatura com um ataque, o outro pode utilizar sua Reação para se deslocar até o próprio deslocamento e realizar um ataque contra o mesmo alvo, sem gastar PA.\n\nCaso o segundo ataque também acerte:\n\n- Ambos os ataques são tratados como sucessos críticos, independentemente de suas margens.\n- O segundo ataque causa +1 dado de dano.\n- O alvo não pode utilizar Reações até o início do próximo turno dele.\n\nO ataque realizado por seu companheiro por meio desta característica não conta para o limite de um ataque natural por turno."
+          }
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "perito",
+      "nome": "Perito",
+      "classe_slug": "cacador",
+      "descricao": "Peritos reconstroem acontecimentos a partir daquilo que foi deixado para trás. Interpretam vestígios, comparam relatos e reconhecem padrões capazes de revelar o método, a intenção e os próximos passos de sua presa. As informações reunidas durante uma investigação se transformam em vantagens concretas para localizar, antecipar e enfrentar aquilo que procuram.",
+      "caracteristicas": {
+        "E": [
+          {
+            "slug": "dossie",
+            "nome": "Dossiê",
+            "descricao": "Você pode manter um Dossiê sobre uma criatura, grupo, local, acontecimento ou fenômeno que esteja investigando. O Dossiê comporta até 3 Pistas.\n\nVocê recebe 1 Pista quando:\n\n- Obtém sucesso em um teste para examinar um vestígio relevante.\n- Analisa um registro, objeto, corpo ou manifestação relacionada.\n- Obtém uma informação importante por meio de um depoimento, interrogatório ou fonte.\n- Outra característica concede uma Pista.\n\nUma mesma fonte não pode conceder mais de uma Pista. Você pode manter apenas um Dossiê por vez. Ao abrir outro, perde as Pistas do anterior.\n\nSempre que receber uma Pista, escolha uma das perguntas abaixo que possa ser respondida pela informação analisada:\n\n- Método: como isso foi realizado?\n- Motivação: o que o responsável pretendia alcançar ou evitar?\n- Origem: que criatura, grupo, equipamento ou Vertente produziu o vestígio?\n- Destino: para onde o responsável provavelmente foi?\n- Padrão: o que tende a acontecer em seguida?\n- Inconsistência: qual elemento foi escondido, alterado ou encenado?\n\nO Narrador responde de acordo com aquilo que poderia ser concluído a partir da Pista. Caso ainda não existam informações suficientes para uma resposta completa, ele indica o que permanece incerto ou o que precisaria ser descoberto.\n\nA quantidade de Pistas reunidas concede os seguintes benefícios:\n\n- Com 1 Pista, você recebe +1 de vantagem em testes para investigar, identificar, localizar ou rastrear o objeto do Dossiê.\n- Com 2 Pistas, você não pode ser surpreendido pelo objeto do Dossiê. Aliados que tenham recebido suas orientações também não podem ser surpreendidos por ele enquanto forem capazes de reconhecer a ameaça.\n- Com 3 Pistas, quando uma cena relacionada diretamente ao objeto do Dossiê começar, receba 1 PA de Reserva Tática. Se alcançar 3 Pistas durante a própria cena, receba esse PA imediatamente. Você só pode receber esse benefício uma vez por cena e continua limitado pela capacidade de sua Reserva."
+          }
+        ],
+        "C": [
+          {
+            "slug": "montar_o_perfil",
+            "nome": "Montar o Perfil",
+            "descricao": "Uma vez por rodada, depois que uma criatura que você possa perceber terminar uma ação, você pode gastar 1 PA de Reserva Tática para analisar o método utilizado.\n\nRegistre a ação realizada. Até o final do seu próximo turno, caso a criatura tente repeti-la, escolha um dos seguintes efeitos antes que ela seja resolvida:\n\n- Impor –1 de desvantagem ao teste da criatura\n- Conceder +1 de vantagem à ação defensiva realizada contra ela\n- Escolher uma criatura a até 10 m que possa perceber sua orientação. Depois que a ação terminar, ela pode se deslocar 2 m sem gastar PA\n\nDepois de produzir um desses efeitos, o Perfil termina.\n\nUma ação conta como repetida quando possui o mesmo nome e funcionamento. No caso de Atacar, conjurar uma magia ou utilizar um equipamento, a criatura também precisa empregar a mesma arma, magia, dispositivo ou efeito observado.\n\nNa primeira vez em cada cena que você montar o Perfil de uma criatura diretamente relacionada ao seu Dossiê, receba 1 Pista, respeitando o limite de 3."
+          }
+        ],
+        "A": [
+          {
+            "slug": "caso_encerrado",
+            "nome": "Caso Encerrado",
+            "descricao": "Quando possuir 3 Pistas, você pode transformar suas conclusões em uma resposta coordenada contra o objeto do Dossiê.\n\nUma vez por cena, quando uma confrontação direta com ele começar ou durante seu turno, escolha uma quantidade de aliados a até 10 m igual à sua Mente, mínimo de 1. Os aliados precisam perceber suas orientações.\n\nAté o final da cena, você e os aliados escolhidos recebem os seguintes benefícios:\n\n- A primeira ação ofensiva, ação defensiva ou outro teste que cada criatura realizar diretamente contra o objeto do Dossiê a cada rodada recebe +1 de vantagem.\n- Uma vez durante o efeito, quando cada criatura beneficiada obtiver um sucesso limitado contra o objeto do Dossiê, ela pode transformá-lo em um sucesso padrão."
+          }
+        ]
+      }
+    }
+  ],
+  "backgrounds": [],
+  "qualities": [],
+  "complications": []
+}

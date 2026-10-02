@@ -39,6 +39,19 @@ const client = new Client({
   ssl: url.includes("127.0.0.1") || url.includes("localhost") ? false : { rejectUnauthorized: false },
 });
 await client.connect();
+
+const localTarget = url.includes("127.0.0.1") || url.includes("localhost");
+if (localTarget) {
+  const bootstrapPath = "scripts/dev/supabase-local-platform-bootstrap.sql";
+  const adminUrl = new URL(url);
+  adminUrl.username = "supabase_admin";
+  const platformClient = new Client({ connectionString: adminUrl.toString(), ssl: false });
+  await platformClient.connect();
+  await platformClient.query(readFileSync(bootstrapPath, "utf8"));
+  await platformClient.end();
+  console.log(`Bootstrap de plataforma local aplicado: ${bootstrapPath}`);
+}
+
 console.log(`Replay de ${arquivos.length} migrations em ${url.replace(/:[^:@]*@/, ":***@")}\n`);
 
 let n = 0;

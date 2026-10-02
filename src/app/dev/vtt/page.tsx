@@ -20,9 +20,6 @@
  */
 
 import { assertDevRouteAllowed } from "../../../lib/dev/guard";
-import { listTalentsEffective } from "../../../lib/campaignContent";
-import { normalizeReactionRules, normalizeTalentContent, type CharacterRulesPayload } from "../../../lib/character";
-import { getCharacterRules, getCombatFlow, listConditions } from "../../../lib/content";
 import { VttClient } from "../../mesas/[campaignId]/vtt/VttClient";
 import { ProvedorMesaDados } from "../../mesas/[campaignId]/vtt/_dados3d/ContextoMesaDados";
 
@@ -44,12 +41,6 @@ export default async function DevVttPage({ searchParams }: PageProps) {
       </div>
     );
   }
-  const [rulesDocument, combatFlow, conditionDocuments, talentDocuments] = await Promise.all([
-    getCharacterRules().catch(() => null),
-    getCombatFlow().catch(() => null),
-    listConditions().catch(() => []),
-    listTalentsEffective(campaignId).catch(() => []),
-  ]);
   return (
     // `ProvedorMesaDados` mora na casca da campanha (`CampaignShell`),
     // que este harness não monta — sem ele o rolador não teria mesa

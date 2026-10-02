@@ -1,0 +1,199 @@
+| Ranking | Características de classe | Limite de Brechas | Perícias | Atributos | Vertentes | PA |
+| F | Característica de Classe I | 2 | Distribuição inicial, limite 3 | Distribuição inicial | Escolha a Primária e receba 1 ponto nela | 3 |
+| E | Característica de Subclasse I | 2 | +2 pontos | — | +1 ponto | 3 |
+| D | Característica de Classe II | 3 | — | +1 ponto | +1 magia | 3 |
+| C | Característica de Subclasse II | 3 | +2 pontos, limite 4 | — | +1 ponto | 4 |
+| B | Característica de Classe III | 4 | — | +1 ponto | +1 magia | 4 |
+| A | Característica de Subclasse III | 4 | +2 pontos, limite 5 | — | +1 ponto | 4 |
+| S | Característica de Classe IV | 5 | — | +1 ponto | +1 magia | 5 |
+| S+ | — | 5 | +2 pontos | — | +1 ponto | 5 |
+Infiltradores são especialistas em atravessar lugares onde sua presença deveria ser impossível. Reconhecem falhas em rondas, linhas de visão, rotas de circulação, barreiras físicas e expectativas sociais, aproveitando cada uma delas antes que alguém perceba o erro.
+Durante uma cena, o Infiltrador identifica informações e oportunidades que facilitam sua passagem: o momento em que um guarda desvia o olhar, uma área fora de vista, uma porta que demora para fechar, um uniforme reconhecido à distância ou um caminho ignorado pela vigilância. Ao conectar essas falhas, consegue entrar, circular e sair antes que uma resposta organizada se forme.
+Alguns Infiltradores controlam ruído, iluminação e cobertura para permanecer fora de vista. Outros reconhecem caminhos seguros, antecipam ameaças e conduzem o grupo através de áreas perigosas. Escolha esta classe se quiser encontrar os pontos frágeis de uma barreira, transformá-los em rotas e atravessá-la antes que alguém consiga fechar a passagem.
+| Papel principal | Infiltração |
+| Papéis secundários | Reconhecimento, sabotagem e acesso clandestino |
+| Subclasses | Batedor e Sorrateiro |
+# CRIANDO UM INFILTRADOR
+### 1. ATRIBUTOS
+Distribua 4 pontos entre Corpo, Mente e Ânimo, utilizando uma das distribuições abaixo. Os valores podem ser atribuídos livremente aos três atributos.
+| Equilibrada | 2, 1 e 1 |
+| Concentrada | 2, 2 e 0 |
+| Especializada | 3, 1 e 0 |
+### 2. RECURSOS
+Determine seus recursos iniciais:
+- PV: 10 + Corpo
+- PE: 12 + Mente
+- Mana: 12 + (Ânimo × 2)
+- Deslocamento:
+- Andar: 10 + Corpo
+- Correr: 2 × (10 + Corpo)
+- Reações: Mente + 1
+- Integridade: 10 + (Ânimo × 2)
+### 3. PERÍCIAS
+| Perfil | Valor 1 | Valor 2 | Valor 3 | Total |
+| Abrangente | 8 | 5 | 1 | 21 |
+| Padrão | 5 | 4 | 2 | 19 |
+| Especializado | 4 | 2 | 3 | 17 |
+2. Escolha suas perícias de valor 3 entre:
+Furtividade Influência Lógica Mobilidade Precisão Reflexos Tecnomagia
+3. Escolha suas perícias de valor 2 entre:
+Arcanismo Balística Engenharia Furtividade Influência Lógica Mobilidade Percepção Psicologia Precisão Reflexos Robótica Tecnomagia
+### 4. VERTENTES
+BIÓTICA
+Biótica favorece Infiltradores que pretendem alterar o próprio corpo, ampliar os sentidos e ocultar vestígios biológicos durante uma infiltração.
+Sinergia: ●●○○○
+CINÉTICA
+Cinética favorece Infiltradores que pretendem atravessar obstáculos, alcançar posições inacessíveis e controlar deslocamentos durante uma infiltração.
+Sinergia: ●●●●○
+COGNITIVA
+Cognitiva favorece Infiltradores que pretendem manipular atenção, percepção e memória durante uma infiltração.
+Sinergia: ●●●●○
+ENERGÉTICA
+Energética favorece Infiltradores que pretendem controlar luz e som, sabotar equipamentos e neutralizar ameaças rapidamente.
+Sinergia: ●●●●●
+MATERIAL
+Material favorece Infiltradores que pretendem abrir passagens, modificar barreiras e transformar a estrutura do ambiente durante uma infiltração.
+Sinergia: ●●○○○
+SINÁPTICA
+Sináptica favorece Infiltradores que pretendem comprometer dispositivos, comunicações e sistemas de identificação.
+Sinergia: ●●●●●
+### 5. EQUIPAMENTO INICIAL
+- Ⱥ 3.000, que podem ser gastos livremente na aquisição de equipamentos;
+- Uma Mochila de 10 espaços de inventário.
+#### PACOTE 1 — [PLACEHOLDER]
+#### PACOTE 2 — [PLACEHOLDER]
+# CARACTERÍSTICAS DE CLASSE
+Ao alcançar um novo Ranking, você recebe os avanços concedidos abaixo.
+### RANKING F
+Você adquire as características Brechas e Procurar Brecha.
+#### BRECHAS
+Você pode possuir até 2 Brechas. Todas as Brechas restantes são perdidas ao final da cena.
+Você recebe 1 Brecha quando:
+- Obtém sucesso em um teste para permanecer despercebido.
+- Atravessa uma barreira, área vigiada ou passagem perigosa por meio de um teste.
+- Engana alguém para entrar ou permanecer em um local restrito.
+- Acessa, desativa ou manipula uma fechadura, dispositivo ou sistema de segurança.
+- Identifica uma informação relevante sobre a vigilância, os acessos ou a rotina do local.
+Você pode receber apenas 1 Brecha por rodada dessa forma.
+#### UTILIZANDO BRECHA
+Quando realizar um teste para permanecer despercebido, atravessar um acesso, sustentar um disfarce ou manipular uma medida de segurança, você pode gastar 1 Brecha para escolher um dos seguintes benefícios:
+- Antes do teste, receber +1 de vantagem.
+- Depois de obter um sucesso, aumentar sua margem em 2.
+Você pode utilizar apenas 1 Brecha por ação. Brechas não podem melhorar ataques, dano ou ações defensivas.
+#### PROCURAR BRECHA
+Durante o combate, gaste 1 PA para observar o ambiente, uma criatura ou um sistema e receber 1 Brecha. Fora de combate, você pode fazer o mesmo dedicando alguns instantes à observação. Você só pode utilizar essa característica uma vez por cena.
+Você precisa ser capaz de perceber ou examinar algo relacionado à infiltração. Observar uma situação que não possua nenhuma barreira, vigilância ou acesso relevante não concede uma Brecha.
+### RANKING E
+Escolha uma Subclasse de Infiltrador: Batedor ou Sorrateiro.
+### RANKING D
+Você adquire a característica Sem Deixar Rastros.
+#### SEM DEIXAR RASTROS
+Seu limite aumenta para 3 Brechas.
+Quando uma ação beneficiada por uma Brecha for bem-sucedida, ela não deixa vestígios comuns de sua execução. Isso inclui ruídos discretos, registros rotineiros, marcas superficiais de manipulação e testemunhos casuais. Uma investigação deliberada ainda pode encontrar indícios por meio de um teste apropriado com –2 de desvantagem.
+Além disso, quando falhar em uma ação na qual poderia utilizar uma Brecha, você pode gastar 1 Brecha para evitar que a falha denuncie sua presença.
+A ação continua falhando, mas a falha não:
+- Aciona um alarme.
+- Registra a tentativa.
+- Alerta outras pessoas.
+- Faz com que você seja imediatamente identificado como uma ameaça.
+- Inicia um confronto por si só.
+Esse benefício não desfaz consequências provocadas diretamente pela ação. Se você quebrar um objeto durante a tentativa, ele continua quebrado. Se falhar ao atravessar uma passagem perigosa, ainda sofre as consequências da travessia.
+### RANKING C
+Você recebe a Característica de Subclasse II correspondente à sua Subclasse.
+### RANKING B
+Você adquire a característica Caminho Fantasma.
+#### CAMINHO FANTASMA
+Seu limite aumenta para 4 Brechas.
+Uma vez por cena, quando utilizar uma Brecha e a ação beneficiada for bem-sucedida, recupere a Brecha gasta. Depois que a ação terminar, você também pode se deslocar 3 m sem gastar PA.
+A Brecha recuperada pode ser utilizada em outra ação, mas continua sujeita ao limite de uma Brecha por ação.
+### RANKING A
+Você recebe a Característica de Subclasse III correspondente à sua Subclasse.
+### RANKING S
+Você adquire as características Ninguém Esteve Aqui e Plano de Contingência.
+#### NINGUÉM ESTEVE AQUI
+Seu limite aumenta para 5 Brechas.
+No início de cada cena, depois de observar o ambiente, receba 2 Brechas.
+A partir deste Ranking, o limite de uma vez por cena de Caminho Fantasma é substituído: você pode utilizar essa característica até duas vezes por rodada, mas apenas uma vez para cada ação.
+#### PLANO DE CONTINGÊNCIA
+Uma vez por cena, quando falhar em uma ação na qual poderia utilizar uma Brecha, você pode transformar a falha em um sucesso limitado com margem 0.
+Depois que a ação for resolvida, perca todas as Brechas que possuir.
+# SUBCLASSES DE INFILTRADOR
+Cada Subclasse de Infiltrador representa uma maneira diferente de reconhecer Brechas, atravessar espaços vigiados e abrir caminho para o restante do grupo.
+## BATEDOR
+Batedores avançam antes do grupo para reconhecer áreas perigosas e preparar a passagem dos demais. Identificam ameaças, saídas e caminhos viáveis, retornando com orientações capazes de transformar uma infiltração improvisada em um avanço coordenado. Quando alguém se desvia, hesita ou comete um erro, o Batedor intervém para impedir que todo o grupo seja comprometido.
+### RANKING E
+Você adquire as características Reconhecer o Caminho e Sigam Meus Passos.
+#### RECONHECER O CAMINHO
+Sempre que utilizar Procurar uma Brecha após observar o ambiente, escolha até duas das perguntas abaixo:
+- Qual é o caminho mais seguro até o destino que consigo perceber?
+- Qual ameaça tem maior chance de detectar ou interceptar o grupo?
+- Onde fica a saída ou posição segura mais próxima?
+- Que parte do caminho exigirá maior cuidado?
+- O que poderia tornar essa passagem insegura?
+O Narrador responde de acordo com aquilo que você consegue perceber. A resposta revela informações práticas sobre o ambiente, mas não expõe elementos completamente ocultos nem conhecimentos que dependam de uma investigação mais aprofundada.
+#### SIGAM MEUS PASSOS
+Depois de gastar uma Brecha e obter sucesso em uma ação para atravessar, evitar, acessar ou manipular um obstáculo, você pode orientar qualquer quantidade de aliados a até 10 m que possam perceber suas instruções.
+Até o final do seu próximo turno, esses aliados recebem +2 de vantagem em testes para superar o mesmo obstáculo ou seguir o caminho que você reconheceu.
+Cada aliado pode receber esse benefício apenas uma vez por caminho reconhecido.
+### RANKING C
+Você adquire a característica Caminho Seguro.
+#### CAMINHO SEGURO
+Quando um aliado obtiver sucesso em um teste beneficiado por Sigam Meus Passos, ele pode se deslocar 3 m sem gastar PA depois que sua ação terminar.
+Quando um desses aliados falhar no teste, você pode gastar uma Brecha para encobrir o erro. A ação continua falhando, mas o obstáculo não:
+- Identifica imediatamente o aliado.
+- Aciona um alarme.
+- Alerta outras pessoas.
+- Inicia um confronto por causa daquela falha.
+Isso não impede consequências diretamente causadas pela ação. Se o aliado falhar ao saltar uma abertura, ainda sofrerá as consequências da queda, por exemplo.
+Você pode encobrir mais de uma falha durante o mesmo caminho, desde que possua Brechas suficientes para isso.
+### RANKING A
+Você adquire a característica Todos Pelo Mesmo Caminho.
+#### TODOS PELO MESMO CAMINHO
+Uma vez por cena, depois de gastar uma Brecha e obter sucesso em uma ação para atravessar, evitar, acessar ou manipular um obstáculo, você pode preparar aquela passagem para o restante do grupo.
+Escolha qualquer quantidade de aliados a até 10 m que possam perceber suas orientações. Até o final da cena, cada aliado escolhido pode atravessar uma vez o mesmo caminho ou superar o mesmo obstáculo sem realizar um teste, desde que siga suas instruções e empregue um método compatível com aquele que você preparou.
+Essa travessia dispensa apenas testes exigidos pelas etapas que você já neutralizou. O aliado ainda precisa realizar um teste caso encontre oposição ativa, um risco imediato, uma condição diferente ou uma consequência relevante que não estava presente quando você reconheceu o caminho.
+Quando um teste ainda for necessário, o aliado recebe os benefícios de Reconhecer o Caminho e continua protegido por Caminho Seguro.
+O caminho preparado deixa de produzir seus efeitos caso as condições mudem de maneira significativa, como quando uma nova patrulha ocupa a passagem, um alarme modifica os protocolos de segurança, uma porta é bloqueada ou parte do trajeto é destruída.
+## SORRATEIRO
+Sorrateiros transformam furtividade em movimento. Desaparecem assim que encontram uma abertura, desviam a atenção de quem estiver em seu caminho e aproveitam breves distrações para atravessar espaços vigiados. Fechaduras, bolsos e objetos protegidos são apenas obstáculos entre eles e aquilo que vieram buscar.
+### RANKING E
+Você adquire as características Sumir de Vista, Mãos Leves e Sem Alarde.
+#### SUMIR DE VISTA
+Uma vez por rodada, depois de terminar um movimento em um local com cobertura, ocultação ou iluminação baixa, você pode realizar imediatamente um teste de Furtividade sem gastar PA.
+Você também pode utilizar esta característica depois de ser bem-sucedido em uma ação concedida por Mãos Leves. O teste pode ser realizado mesmo que você tenha sido percebido anteriormente na mesma rodada.
+Você pode utilizar uma Brecha nesse teste normalmente.
+#### MÃOS LEVES
+Uma vez por rodada, sua primeira ação de Interagir destinada a apanhar, guardar, ocultar ou retirar um objeto pequeno, ou a manipular uma fechadura ou mecanismo manual, custa –1 PA, até o mínimo de 0.
+Quando passar ao alcance de uma criatura que não tenha percebido sua presença, você pode utilizar essa ação durante o próprio movimento para tentar retirar um objeto pequeno que ela esteja carregando, desde que o objeto não esteja sendo segurado ativamente.
+Faça um teste de Precisão contra a Percepção da criatura:
+- Em uma falha limitada, você não retira o objeto, mas a criatura não percebe a tentativa.
+- Em um sucesso limitado, você retira o objeto, mas a criatura percebe que algo aconteceu depois que seu movimento terminar.
+- Em um sucesso padrão, você retira o objeto sem ser percebido.
+- Em um sucesso crítico, além de não ser percebido, pode deixar outro objeto de tamanho semelhante no lugar.
+Objetos presos, guardados em recipientes fechados ou protegidos por algum mecanismo podem exigir uma ação ou teste adicional.
+#### SEM ALARDE
+Quando realizar um ataque à distância com uma arma que possua a propriedade Silencioso, você pode utilizar 1 Brecha nesse ataque. Escolha normalmente entre receber +1 de vantagem antes do teste ou aumentar em 2 a margem de um sucesso.
+### RANKING C
+Você adquire a característica Posição Falsa.
+#### POSIÇÃO FALSA
+Uma vez por rodada, você pode gastar 1 Brecha para produzir um ruído, movimento ou outro sinal discreto em um ponto a até 6 m que consiga afetar de alguma forma.
+Todas as criaturas capazes de perceber o sinal consideram que sua presença ou atividade está naquele ponto. Até o final do seu próximo turno, elas sofrem –1 de desvantagem em testes para perceber você em outro lugar.
+Depois de criar a Posição Falsa, você pode se deslocar 3 m sem gastar PA.
+A Brecha gasta para criar a Posição Falsa também pode beneficiar o primeiro teste de Furtividade ou Precisão que você realizar contra as criaturas afetadas antes que o efeito termine. Alternativamente, ela pode ser utilizada para ativar Sem Alarde no primeiro ataque realizado contra uma dessas criaturas.
+Escolha normalmente entre receber +1 de vantagem antes do teste ou aumentar em 2 a margem de um sucesso.
+Se, durante esse período, você for bem-sucedido ao retirar um objeto carregado ou vigiado por uma criatura afetada, ou ao manipular algo sob sua atenção, ela só percebe a alteração quando a Posição Falsa terminar. Ela pode percebê-la antes caso examine diretamente o objeto ou presencie uma consequência evidente da ação.
+Você também pode utilizar esta característica quando criaturas perceberem algum sinal de sua presença sem vê-lo diretamente. Nesse caso, o ponto escolhido representa a origem falsa que elas atribuem ao sinal.
+### RANKING A
+Você adquire a característica Entre Um Piscar e Outro.
+#### ENTRE UM PISCAR E OUTRO
+Uma vez por cena, você pode gastar 2 Brechas para realizar imediatamente uma sequência formada por um movimento de até seu deslocamento e até duas ações, sem gastar PA.
+Uma das ações pode ser um ataque que cumpra os requisitos de Sem Alarde. Para realizá-lo, você deve gastar normalmente a Brecha exigida pela característica, e o ataque deve ser a última ação da sequência. Nenhuma outra ação ofensiva pode ser realizada dessa forma.
+Durante essa sequência:
+- Criaturas que não estejam procurando ativamente por você não percebem sua presença. Oposição ativa, contato direto ou alguém bloqueando fisicamente seu caminho ainda podem exigir testes.
+- Criaturas procurando ativamente por você sofrem –2 de desvantagem nos testes para encontrá-lo.
+- Ações não ofensivas bem-sucedidas não revelam sua posição.
+- Um ataque realizado por meio de Sem Alarde segue normalmente as regras da propriedade Silencioso, incluindo a distância necessária para que seu ruído não revele sua posição.
+Se utilizar uma das ações para apanhar, retirar ou substituir um objeto que consiga transportar:
+- Você pode guardá-lo ou ocultá-lo como parte da mesma ação.
+- Sua ausência não é percebida até o final do seu próximo turno, salvo se alguém procurar diretamente pelo objeto por um bom motivo.
+As Brechas gastas para ativar Entre um Piscar e Outro não impedem que você utilize outras Brechas em testes realizados durante a sequência, incluindo a Brecha necessária para ativar Sem Alarde. Você continua respeitando o limite normal de uma Brecha por ação.

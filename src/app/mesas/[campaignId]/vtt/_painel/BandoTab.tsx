@@ -37,6 +37,7 @@ import { lerBandoPainelAction, removerItemBandoAction, type BandoPainel, type It
 import { useRolagemVelada } from "../_shell/useRolagemVelada";
 import { comecarLeitura, dadosDoEstado, falharLeitura, type EstadoAba } from "./tipos";
 import { DialogoConfirmar } from "./ui/Dialogo";
+import { BandoFicha } from "./BandoFicha";
 
 export function BandoTab({
   campaignId,
@@ -71,6 +72,8 @@ export function BandoTab({
   /** Confirmação destrutiva sem `window.confirm` — ver `ui/Dialogo.tsx`. */
   const [confirmarRemocao, setConfirmarRemocao] = useState<ItemBandoPainel | null>(null);
   const jaCarregouRef = useRef(false);
+  /** "Ficha" é o Bando Refratário v1.2 (cap. 10); "Inventário" é o que a aba já mostrava. */
+  const [secao, setSecao] = useState<"ficha" | "inventario">("ficha");
 
   const carregar = useCallback(async () => {
     if (fixtureVisual) { setEstado({ fase: "pronto", dados: fixtureVisual }); return; }
@@ -80,10 +83,10 @@ export function BandoTab({
   }, [campaignId, fixtureVisual]);
 
   useEffect(() => {
-    if (!visivel || jaCarregouRef.current) return;
+    if (!visivel || secao !== "inventario" || jaCarregouRef.current) return;
     jaCarregouRef.current = true;
     carregar();
-  }, [visivel, carregar]);
+  }, [visivel, secao, carregar]);
 
   // Releitura ao voltar o foco e quando uma transferência concluída
   // fora desta aba avisa (o item pode ter saído do bando).
@@ -129,8 +132,25 @@ export function BandoTab({
   const categoriasVisiveis = grupos.length;
   const unidadesVisiveis = useMemo(() => grupos.reduce((n, g) => n + totalDeUnidades(g.itens), 0), [grupos]);
 
+  const abas = (
+    <div className="rm-pills" role="group" aria-label="Seção do bando" style={{ marginBottom: 10 }}>
+      <button type="button" className="rm-pill rv-focusable" aria-pressed={secao === "ficha"} onClick={() => setSecao("ficha")} data-testid="painel-bando-secao-ficha">Ficha</button>
+      <button type="button" className="rm-pill rv-focusable" aria-pressed={secao === "inventario"} onClick={() => setSecao("inventario")} data-testid="painel-bando-secao-inventario">Inventário</button>
+    </div>
+  );
+
+  if (secao === "ficha" && !fixtureVisual) {
+    return (
+      <div className="rv-pn-aba">
+        {abas}
+        <BandoFicha campaignId={campaignId} visivel={visivel} />
+      </div>
+    );
+  }
+
   return (
     <div className="rv-pn-aba">
+      {!fixtureVisual && abas}
       {dados && (
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", marginBottom: 10, borderRadius: 2, background: "linear-gradient(160deg,#0b1424,#080e19)", border: "1px solid color-mix(in srgb, var(--rv-am) 27%, #18263f)" }}>
           <div className="rv-fg-emblema" style={{ height: 44, width: 44, fontSize: 14 }}>BND</div>

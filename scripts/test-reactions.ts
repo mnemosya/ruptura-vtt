@@ -19,19 +19,32 @@ import {
   resetRoundReactionState,
   spendReactionForDefense,
 } from "../src/lib/character/reactions.js";
-import type { Character } from "../src/lib/character/types.js";
+import { computeDerivedStats } from "../src/lib/character/derived.js";
+import type { Character, CharacterRulesPayload } from "../src/lib/character/types.js";
 
 function readJson<T>(path: string): T {
   return JSON.parse(readFileSync(path, "utf8")) as T;
 }
 
 const flow = readJson<Record<string, unknown>>("content/db_fluxo_combate_normalizado_v1_1.json");
+const characterRules = readJson<CharacterRulesPayload>("content/db_regras_personagem_normalizado_v1_4.json");
 const actionDb = readJson<{ acoes: Record<string, unknown>[] }>(
   "content/db_acoes_combate_normalizado_v1_1.json",
 );
 const actions = actionDb.acoes.map(normalizeCombatActionContent);
 const actionBySlug = new Map(actions.map((action) => [action.slug, action]));
 const rules = normalizeReactionRules(flow);
+
+assert.equal(
+  computeDerivedStats({ corpo: 1, mente: 2, animo: 1 }, characterRules).reacoes_por_rodada,
+  3,
+  "Reações por rodada devem ser Mente + 1 no conteúdo publicado.",
+);
+assert.equal(
+  computeDerivedStats({ corpo: 1, mente: 2, animo: 1 }, null).reacoes_por_rodada,
+  3,
+  "O fallback de Reações também deve ser Mente + 1.",
+);
 
 function character(reacoesUsadas = 0, defesasSemReacao = 0): Character {
   return {
@@ -61,11 +74,11 @@ assert.equal(
     ...flow,
     reacoes: {
       ...(flow.reacoes as Record<string, unknown>),
-      max_por_rodada: { ref: "atributo", id: "corpo" },
+      max_por_rodada: { op: "+", args: [{ ref: "atributo", id: "corpo" }, { const: 1 }] },
     },
   }).valid,
   false,
-  "A fonte de máximo deve continuar sendo Mente.",
+  "A fonte de máximo deve continuar sendo Mente + 1.",
 );
 
 const withReaction = spendReactionForDefense(character(), 1, rules);

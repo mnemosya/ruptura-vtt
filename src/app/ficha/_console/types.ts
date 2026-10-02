@@ -78,7 +78,7 @@ export interface ConsoleApi {
    */
   gravacao: { estado: "idle" | "saving" | "saved" | "error"; erro: string | null };
 
-  /** Rola um atributo (Nd8, maior dado) usando o motor real e registra no log. */
+  /** Rola um atributo usando o pool canônico (maior ou menor) e registra no log. */
   rolarAtributo: (id: keyof CharacterAttributes) => RupturaRollResult;
   /** Rola uma perícia usando o motor real e registra no log. */
   rolarPericia: (periciaId: string) => RupturaRollResult;
@@ -222,8 +222,6 @@ export interface ConsoleApi {
    * destravar a ficha.
    */
   editarNome: (nome: string) => void;
-  /** PM de evolução — `null` quando a ficha nunca registrou PM. */
-  pm: { disponivel: number; total: number } | null;
 
   /** Pins (referência tipada, nunca cópia da entidade). */
   pins: ConsolePin[];

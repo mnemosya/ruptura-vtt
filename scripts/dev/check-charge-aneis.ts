@@ -28,6 +28,7 @@ import { createClient } from "@supabase/supabase-js";
 import { chromium, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
 
+import { personagemV12 } from "./fixtures/personagemV12";
 loadDotenv({ path: ".env.local" });
 function req(n: string): string {
   const v = process.env[n];
@@ -100,12 +101,8 @@ async function main() {
     // Payload com atributos e perícias de verdade: sem eles o botão de
     // rolagem nasce desabilitado, e o teste mediria a ausência da carga
     // em vez do recorte dos anéis.
-    payload: {
-      nome: "PJ do charge",
-      atributos: { corpo: 3, mente: 2, animo: 3 },
-      pericias: { balistica: 2, reflexos: 1 },
-      metadados: { schema_version: 1 },
-    },
+    payload: personagemV12("PJ do charge", { atributos: { corpo: 3, mente: 2, animo: 3 },
+      pericias: { balistica: 2, reflexos: 1 } }),
     campaign_id: campaignId, owner_id: dono.id,
   });
   criados.ch.push(characterId);

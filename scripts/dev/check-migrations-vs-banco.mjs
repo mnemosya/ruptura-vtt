@@ -89,6 +89,41 @@ for (const f of arquivos) {
     if (e.tipo === "cria") { noRepo.set(e.nome, { corpo: e.corpo, arquivo: f }); }
     else if (!criadasAqui.has(e.nome)) noRepo.delete(e.nome);
   }
+
+  // A migration 0155 corrige em lote TODA função pública cujo corpo
+  // ainda usa `serialization_failure`. Ela faz isso dinamicamente com
+  // `pg_get_functiondef()` dentro de um DO, portanto não aparece como
+  // `create or replace function` para o extrator acima. Modelar a
+  // transformação no ponto exato em que a migration roda evita marcar
+  // como drift as mesmas funções que o replay efetivamente reescreve.
+  const trocaSerializationFailure =
+    /p\.prosrc\s+ilike\s+'%serialization_failure%'/i.test(sql) &&
+    /replace\s*\(\s*pg_get_functiondef\s*\([^)]*\)\s*,\s*'serialization_failure'\s*,\s*'check_violation'\s*\)/i.test(sql);
+  if (trocaSerializationFailure) {
+    for (const [nome, atual] of noRepo) {
+      if (!atual.corpo.includes("serialization_failure")) continue;
+      noRepo.set(nome, {
+        corpo: atual.corpo.replaceAll("serialization_failure", "check_violation"),
+        arquivo: f,
+      });
+    }
+  }
+
+  // Reconciliação pontual do texto de erro de publish_content_draft.
+  // Assim como a 0155, a migration usa pg_get_functiondef dentro de DO
+  // e precisa ser representada explicitamente no replay estático.
+  const reconciliaMensagemPublish =
+    /publish_content_draft\(uuid,integer,jsonb,text,jsonb,jsonb,text\)/i.test(sql) &&
+    /replace\s*\(\s*v_definition\s*,\s*'≠'\s*,\s*'<>'\s*\)/i.test(sql);
+  if (reconciliaMensagemPublish) {
+    const atual = noRepo.get("publish_content_draft");
+    if (atual) {
+      noRepo.set("publish_content_draft", {
+        corpo: atual.corpo.replaceAll("≠", "<>"),
+        arquivo: f,
+      });
+    }
+  }
 }
 
 /** `--detalhe <nome>`: mostra o corpo dos dois lados, para inspeção. */

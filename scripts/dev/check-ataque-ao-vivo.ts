@@ -43,6 +43,7 @@ import { BASE_URL } from "./authSession";
 import { recolherPainelDaSessao } from "./painelDaSessao";
 import { createInitialCharacter } from "../../src/lib/character/createCharacter";
 
+import { personagemV12 } from "./fixtures/personagemV12";
 loadDotenv({ path: ".env.local" });
 
 function exigirEnv(nome: string): string {
@@ -122,7 +123,17 @@ async function pvNoBanco(personagemId: string): Promise<number | null> {
 }
 
 async function limpar(): Promise<void> {
-  for (const id of criados.campanhas) await admin.from("campaigns").delete().eq("id", id);
+  // Confere o delete: antes ele falhava em silêncio e deixava a campanha
+  // (e o personagem) no banco, apesar do "L (limpeza)" aprovado.
+  for (const id of criados.campanhas) {
+    await admin.from("characters").delete().eq("campaign_id", id);
+    for (let tentativa = 1; tentativa <= 3; tentativa++) {
+      const { error } = await admin.from("campaigns").delete().eq("id", id);
+      if (!error) break;
+      if (tentativa === 3) console.log(`AVISO: campanha ${id} não foi apagada: ${error.message}`);
+      else await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
   for (const id of criados.usuarios) await admin.auth.admin.deleteUser(id).catch(() => {});
 }
 
@@ -146,7 +157,7 @@ async function main(): Promise<void> {
   const personagemId = randomUUID();
   const { error: erroPersonagem } = await admin.from("characters").insert({
     id: personagemId, campaign_id: campaignId, owner_id: jogador.id,
-    name: "Corvo", payload: createInitialCharacter(null, "Corvo"),
+    name: "Corvo", payload: personagemV12("Corvo"),
   });
   if (erroPersonagem) throw new Error(`Falha ao criar personagem: ${erroPersonagem.message}`);
   const { error: erroControle } = await admin.from("character_controllers")

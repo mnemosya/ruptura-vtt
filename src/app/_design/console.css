@@ -846,6 +846,9 @@
 }
 /* Botões baixos (28px): chanfro proporcional à altura. */
 :is(button.rc-modo-chip, .rc-ncond-add) { --rc-card-chanfro: 6px; }
+/* Ajustar ligado: o fio do chanfro acompanha a borda âmbar (senão o canto fica ciano). */
+button.rc-modo-chip[data-evolucao="true"] { --rc-card-fio: color-mix(in srgb, var(--rc-am) 55%, transparent); }
+button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 :is(
   button.rc-modo-chip,
   .rc-ncond-add,
@@ -911,12 +914,12 @@
 .rc-nric-badge {
   flex: none; width: 40px; height: 40px;
   display: grid; place-items: center;
-  font-family: var(--font-orbitron), var(--font-rajdhani), sans-serif;
+  font-family: var(--font-chakra), var(--font-rajdhani), sans-serif;
   /* Cor PRÓPRIA do badge, não o `--rc-skill-cor`: aquele token é
      CONTEXTUAL (verde em Corpo, roxo em Mente) e só recebe valor dentro
      de `.rc-skill`. Aqui ele não resolveria, e a coincidência de valor
      com a cor de Ânimo não os torna a mesma decisão. */
-  font-size: 22px; font-weight: 500; color: #0596B7; text-align: center;
+  font-size: 22px; font-weight: 700; color: #0596B7; text-align: center;
 }
 .rc-nric-badge[data-vazio="true"] { color: rgba(5, 150, 183, 0.35); }
 
@@ -2371,6 +2374,20 @@
 .rc-aux-item:hover { border-color: var(--rc-cy, var(--rc-cy)); background: rgba(0, 212, 255, 0.12); }
 .rc-aux-item:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 1px; }
 .rc-aux-acoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.rc-aux-item[aria-pressed="true"] { border-color: var(--rc-cy); background: rgba(0, 212, 255, 0.14); color: var(--rc-cy); }
+.rc-aux-item:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Avanço de Ranking (v1.2): seções, texto das características e a grade de perícias. */
+.rc-avanco-secao { margin-top: 14px; }
+.rc-avanco-secao h3 {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--rc-dim); margin: 0 0 6px;
+}
+.rc-avanco-texto { white-space: pre-line; margin: 4px 0 8px; padding: 0 10px; }
+.rc-avanco-pericias { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; }
+.rc-avanco-pericia { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; }
+.rc-avanco-pericia .rc-passo-val[data-mudou] { color: var(--rc-cy); }
+.rc-avanco-pendencias { margin: 12px 0 0; padding-left: 18px; font-size: 12px; color: var(--rc-am); }
 .rc-aux-dados { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
 .rc-aux-dado {
   width: 30px; height: 30px; display: grid; place-items: center;
@@ -2766,12 +2783,15 @@
    VTT — o Console também roda em /ficha e no harness. Sem esta cópia a
    variável vem vazia, e `color-mix()` com variável vazia é declaração
    inválida: apagaria o fundo do ladrilho inteiro, não só a cor.
-   Valores idênticos aos de vtt.css. O default é o cinza de "nenhuma". */
+   Valores idênticos aos de vtt.css. O default é o cinza de "nenhuma".
+   Os nomes antigos (somatica, cognitivo, energetico) ficam só porque
+   magias publicadas ainda os usam (MagiasPanel). Saem quando o
+   capítulo de magias for normalizado. */
 .rc-window-wrap { --rv-vertente-cor: #6b7f8c; }
-.rc-window-wrap [data-vertente="somatico"], .rc-window-wrap [data-vertente="somatica"] { --rv-vertente-cor: #2f9e56; }
-.rc-window-wrap [data-vertente="cognitivo"], .rc-window-wrap [data-vertente="cognitiva"] { --rv-vertente-cor: #8b5cf6; }
+.rc-window-wrap [data-vertente="biotica"], .rc-window-wrap [data-vertente="somatica"] { --rv-vertente-cor: #2f9e56; }
+.rc-window-wrap [data-vertente="cognitiva"], .rc-window-wrap [data-vertente="cognitivo"] { --rv-vertente-cor: #8b5cf6; }
 .rc-window-wrap [data-vertente="material"] { --rv-vertente-cor: #f5a200; }
-.rc-window-wrap [data-vertente="energetico"], .rc-window-wrap [data-vertente="energetica"] { --rv-vertente-cor: #f07a1f; }
+.rc-window-wrap [data-vertente="energetica"], .rc-window-wrap [data-vertente="energetico"] { --rv-vertente-cor: #f07a1f; }
 .rc-window-wrap [data-vertente="cinetica"] { --rv-vertente-cor: #e0455f; }
 .rc-window-wrap [data-vertente="sinaptica"] { --rv-vertente-cor: #35c7d8; }
 .rc-window-wrap [data-vertente="nenhuma"] { --rv-vertente-cor: #6b7f8c; }
@@ -4761,3 +4781,17 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
 /* Moldura da janela "Rolar Dados" (`MolduraRolagem`): o chanfro das
    janelas da mesa. O raio vem inline; aqui só a forma dos cantos. */
 .rv-moldura-rolagem { corner-shape: round bevel round bevel; }
+
+/* HISTÓRIA (IdentityAside): textos livres vindos da Forja de Refratário. */
+.rc-historia { margin: 2px 0 6px; border-top: 1px solid var(--rc-line-soft, #16233a); padding-top: 6px; }
+.rc-historia-resumo {
+  cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px;
+  font: 10px var(--font-mono), monospace; text-transform: uppercase; letter-spacing: 0.18em; color: var(--rc-teal, #45b8c9);
+}
+.rc-historia-resumo::-webkit-details-marker { display: none; }
+.rc-historia-resumo::before { content: "›"; transition: transform 140ms; }
+.rc-historia[open] > .rc-historia-resumo::before { transform: rotate(90deg); }
+.rc-historia-resumo:focus-visible { outline: 2px solid var(--rc-cy, #00d4ff); outline-offset: 2px; }
+.rc-historia-lista { margin: 6px 0 0; display: grid; gap: 6px; }
+.rc-historia-lista dt { font: 10px var(--font-mono), monospace; text-transform: uppercase; letter-spacing: 0.14em; color: var(--rc-dim, #7f95b3); }
+.rc-historia-lista dd { margin: 1px 0 0; font: 400 13px/1.45 var(--font-rajdhani), sans-serif; color: var(--rc-text, #b9c9dc); white-space: pre-line; }

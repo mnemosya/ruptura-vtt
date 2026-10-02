@@ -100,10 +100,10 @@ const RECURSOS_DO_TOKEN = [
 /** As vertentes na ordem do sistema; a cor de cada uma vive na folha (`--rv-vertente-cor`). */
 const VERTENTES: readonly (readonly [VertenteToken, string])[] = [
   ["nenhuma", "Nenhuma"],
-  ["somatico", "Somática"],
-  ["cognitivo", "Cognitiva"],
+  ["biotica", "Biótica"],
+  ["cognitiva", "Cognitiva"],
   ["material", "Material"],
-  ["energetico", "Energética"],
+  ["energetica", "Energética"],
   ["cinetica", "Cinética"],
   ["sinaptica", "Sináptica"],
 ];
@@ -711,7 +711,7 @@ export function GerenciadorToken({
           <div className="rv-token-pegada" data-vertente={valores.vertente}>
             {/* `currentColor`, e não um ciano cravado: a cor vem da
                 VERTENTE, como no mapa — lá o anel do disco é
-                `COR_VERTENTE`. Escolher "Somática" e ver a pegada azul
+                `COR_VERTENTE`. Escolher "Biótica" e ver a pegada azul
                 era a prévia contradizendo o campo logo abaixo dela. */}
             <svg viewBox={`${minX} ${minY} ${maxX - minX} ${maxY - minY}`} width={58} height={58}>
               {previewPontos.map((p, i) => {

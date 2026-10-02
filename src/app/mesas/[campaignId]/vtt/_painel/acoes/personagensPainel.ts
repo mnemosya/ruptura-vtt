@@ -22,8 +22,7 @@
 import { getScopedTableClient } from "../../../../../../lib/auth/scopedClient";
 import {
   archiveCharacter,
-  createBlankCharacterForSelf,
-  createCharacterForCampaign,
+  createPendingCharacterV2,
   duplicateCharacter,
   getCharacterForCampaign,
   listArchivedCharactersForNarratorCampaign,
@@ -34,8 +33,8 @@ import {
   restoreCharacter,
 } from "../../../../../../lib/character/storage";
 import {
+  characterDerivedFormulas,
   computeDerivedStats,
-  createInitialCharacter,
   normalizeCharacter,
   type CharacterRecord,
   type CharacterRulesPayload,
@@ -109,7 +108,7 @@ function resumoLeveDoPersonagem(
   regras: CharacterRulesPayload | null,
 ): { pv: { atual: number; max: number }; pe: { atual: number; max: number }; condicoes: number } {
   const primeiraLeitura = normalizeCharacter(c.payload);
-  const derived = computeDerivedStats(primeiraLeitura.atributos, regras, primeiraLeitura.mana_bonus_ruptura ?? 0);
+  const derived = computeDerivedStats(primeiraLeitura.atributos, regras, primeiraLeitura.mana_bonus_ruptura ?? 0, characterDerivedFormulas(primeiraLeitura));
   const personagem = normalizeCharacter(primeiraLeitura, derived);
   return {
     pv: { atual: personagem.recursos_atuais?.pv ?? derived.pv_max, max: derived.pv_max },
@@ -177,7 +176,8 @@ export interface ResumoPersonagem {
   };
   /** Só os nomes das condições ATIVAS — o dossiê não é a ficha inteira. */
   condicoesAtivas: string[];
-  contadores: { talentos: number; magias: number; itens: number };
+  /** RUPTURA v1.2: Ranking da progressão ("—" enquanto a criação estiver pendente); magias de `magia.magias_aprendidas`. */
+  contadores: { ranking: string; magias: number; itens: number };
 }
 
 export async function lerResumoPersonagemAction(
@@ -196,7 +196,7 @@ export async function lerResumoPersonagemAction(
 
     const regras = (regrasDoc?.payload as CharacterRulesPayload | undefined) ?? null;
     const primeiraLeitura = normalizeCharacter(personagem.payload);
-    const derived = computeDerivedStats(primeiraLeitura.atributos, regras, primeiraLeitura.mana_bonus_ruptura ?? 0);
+    const derived = computeDerivedStats(primeiraLeitura.atributos, regras, primeiraLeitura.mana_bonus_ruptura ?? 0, characterDerivedFormulas(primeiraLeitura));
     const personagemNormalizado = normalizeCharacter(primeiraLeitura, derived);
 
     return {
@@ -213,8 +213,8 @@ export async function lerResumoPersonagemAction(
         },
         condicoesAtivas: (personagemNormalizado.condicoes_ativas ?? []).filter((c) => c.ativa).map((c) => c.nome),
         contadores: {
-          talentos: personagemNormalizado.talentos_adquiridos?.length ?? 0,
-          magias: personagemNormalizado.magias_aprendidas?.length ?? 0,
+          ranking: (personagem.payload as { progressao?: { ranking?: string } }).progressao?.ranking ?? "—",
+          magias: (personagem.payload as { magia?: { magias_aprendidas?: unknown[] } }).magia?.magias_aprendidas?.length ?? 0,
           itens: personagemNormalizado.inventario?.length ?? 0,
         },
       },
@@ -505,15 +505,8 @@ export async function criarPersonagemPainelAction(
   const nomeLimpo = nome.trim();
   if (!nomeLimpo) return { ok: false, erro: "Dê um nome ao personagem." };
   try {
-    const personagem = createInitialCharacter(null, nomeLimpo);
-    if (tipo === "pn") {
-      personagem.metadados = {
-        ...personagem.metadados,
-        schema_version: personagem.metadados?.schema_version ?? 1,
-        tipo_personagem: "pn",
-      };
-    }
-    const criado = await createCharacterForCampaign(campaignId, personagem);
+    // Personagem v1.2 só com o nome; o assistente completa depois.
+    const criado = await createPendingCharacterV2(campaignId, nomeLimpo, tipo === "pn");
     return { ok: true, dados: { id: criado.id } };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Falha ao criar o personagem.") };
@@ -530,7 +523,7 @@ export async function criarMeuPersonagemAction(campaignId: string, nome: string)
   const nomeLimpo = nome.trim();
   if (!nomeLimpo) return { ok: false, erro: "Dê um nome ao personagem." };
   try {
-    const criado = await createBlankCharacterForSelf(campaignId, nomeLimpo);
+    const criado = await createPendingCharacterV2(campaignId, nomeLimpo);
     return { ok: true, dados: { id: criado.id } };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Falha ao criar o personagem.") };

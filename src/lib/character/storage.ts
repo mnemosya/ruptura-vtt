@@ -35,20 +35,24 @@ import { randomUUID } from "node:crypto";
 import { getScopedTableClient } from "../auth/scopedClient";
 import { getCurrentUser } from "../auth/session";
 import { CharacterStorageError } from "./storage.errors";
-import { validateCreationBudget } from "./createCharacterValidation";
-import { createInitialCharacter } from "./createCharacter";
 import type { Character, CharacterRecord, CharacterRulesPayload } from "./types";
 import { getCharacterRules } from "../content";
-import { parseDraftPayload, type DraftPayload } from "./draftValidation";
+import { resolveEffectiveList } from "../campaignContent/resolveEffectiveContent";
+import {
+  buildCharacterV2,
+  parseDraftV12,
+  VERTENTES_V12,
+  type DraftV12,
+  type BackgroundContentV12,
+  type ClassContentV12,
+  type ComplicationContentV12,
+  type CreationChoicesV12,
+  type CreationItemV12,
+  type QualityContentV12,
+} from "../rulesetV12";
 
 const CHARACTER_CREATION_DRAFTS_TABLE = "character_creation_drafts";
 const CHARACTER_CONTROLLERS_TABLE = "character_controllers";
-
-export type LoadDraftResult =
-  | { kind: "none" }
-  | { kind: "found"; payload: DraftPayload; creationRequestId: string; revision: number }
-  | { kind: "network_error"; message: string }
-  | { kind: "invalid"; message: string };
 
 export type SaveDraftResult = { revision: number } | { conflict: true };
 
@@ -227,156 +231,139 @@ export async function createCharacterForCampaign(
 }
 
 /**
- * Criação PELO PRÓPRIO USUÁRIO via assistente (wizard) — valida o
- * orçamento de criação (atributos/perícias/vertentes) server-side ANTES
- * de persistir, contra as regras REAIS (nunca as que o cliente enviar —
- * buscadas de novo aqui via `getCharacterRules`, mesma fonte confiável
- * de sempre).
+ * Criação RUPTURA v1.2 (schema_version 2) no Ranking F.
  *
- * Fase 1 (revisão 4): não recebe mais `profileId`. Exige só que o
- * chamador seja participante ATIVO da campanha (`campaign_members`,
- * checado dentro da RPC `complete_character_creation`, migration 0054)
- * — vale tanto para o narrador quanto para um jogador. A conta que cria
- * o personagem recebe controle automaticamente (`character_controllers`,
- * inserido dentro da mesma transação da RPC) — aditivo §11 "jogador
- * recebe controle automaticamente". `options.creationRequestId`, quando
- * informado, torna a conclusão idempotente: retry após sucesso ou duplo
- * clique devolvem o MESMO personagem, nunca duplicam.
- *
- * Diferente da versão anterior a esta fase: não há mais limite de "um
- * personagem por perfil por campanha" (o índice único que impunha isso
- * dependia de `profile_id`, removido) — uma conta pode criar mais de um
- * personagem na mesma campanha ao longo do tempo, alinhado ao modelo
- * N:N de `character_controllers` que o aditivo pede. Quantos
- * personagens um jogador pode criar livremente continua uma decisão de
- * produto pendente (ver §12 do relatório) — não bloqueada por esta
- * função.
+ * Recebe só as ESCOLHAS do jogador; Classe, catálogo de perícias e
+ * preços vêm dos documentos publicados, buscados aqui. O payload é
+ * montado no servidor (`buildCharacterV2`) e a RPC
+ * `complete_character_creation_v2` revalida tudo no banco.
  */
-export async function createCharacterFromWizard(
+export async function createCharacterV2(
   campaignId: string,
-  character: Character,
-  regras: CharacterRulesPayload,
-  options: { ownerLabel?: string; creationRequestId?: string } = {},
+  choices: CreationChoicesV12,
+  /** `characterId`: completa um personagem criado só com o nome em vez de criar outro. */
+  options: { ownerLabel?: string; creationRequestId?: string; characterId?: string } = {},
 ): Promise<CharacterRecord> {
-  // `regras` do argumento nunca é confiável (pode ter chegado inflado de
-  // um chamador hostil) — sempre revalidado contra a Biblioteca
-  // publicada real antes de checar o orçamento.
-  const doc = await getCharacterRules();
-  const regrasReais = doc?.payload as CharacterRulesPayload | undefined;
-  if (!regrasReais) {
-    throw new CharacterStorageError("Regras de criação indisponíveis no servidor.");
-  }
+  // Conteúdo EFETIVO da campanha (override > homebrew > oficial), a mesma
+  // resolução que a RPC usa — preços com override e opções de Trajetória
+  // próprias da campanha valem igual nos dois lados.
+  const [regrasDoc, classes, antecedentes, qualidades, complicacoes, itensEfetivos] = await Promise.all([
+    getCharacterRules(),
+    resolveEffectiveList(campaignId, "class"),
+    resolveEffectiveList(campaignId, "background"),
+    resolveEffectiveList(campaignId, "quality"),
+    resolveEffectiveList(campaignId, "complication"),
+    resolveEffectiveList(campaignId, "item"),
+  ]);
+  const classe = classes.find((c) => c.slug === choices.classe_id)?.payload as ClassContentV12 | undefined;
+  if (!classe) throw new CharacterStorageError(`Classe "${choices.classe_id}" não está publicada.`);
+  const regras = regrasDoc?.payload as CharacterRulesPayload | undefined;
+  if (!regras) throw new CharacterStorageError("Regras de criação indisponíveis no servidor.");
 
-  const validation = validateCreationBudget(character, regrasReais);
-  if (!validation.ok) {
-    throw new CharacterStorageError(validation.reason ?? "Orçamento de criação inválido.");
+  const itens = new Map<string, CreationItemV12>();
+  for (const efetivo of itensEfetivos) {
+    const item = efetivo.payload as { nome?: string; categoria?: string; preco?: number; estatisticas?: { subtipo?: string } };
+    itens.set(efetivo.slug, {
+      slug: efetivo.slug,
+      nome: item.nome ?? efetivo.slug,
+      categoria: item.categoria ?? "",
+      subtipo: item.estatisticas?.subtipo,
+      preco: item.preco ?? 0,
+    });
   }
-  void regras; // mantido no parâmetro por compatibilidade de assinatura com o chamador (UI); nunca usado para validar.
+  const porSlug = <T,>(lista: { slug: string; payload: unknown }[]) => new Map(lista.map((d) => [d.slug, d.payload as T]));
 
-  const payload = buildPayloadForSave(character);
-  if (options.creationRequestId) {
-    payload.metadados = { ...payload.metadados, schema_version: payload.metadados!.schema_version, creationRequestId: options.creationRequestId };
-  }
+  const built = buildCharacterV2(choices, {
+    classe,
+    pericias: regras.pericias.map((p) => p.id),
+    vertentes: [...VERTENTES_V12],
+    itens,
+    trajetoria: {
+      antecedentes: porSlug<BackgroundContentV12>(antecedentes),
+      qualidades: porSlug<QualityContentV12>(qualidades),
+      complicacoes: porSlug<ComplicationContentV12>(complicacoes),
+    },
+  });
+  if (!built.ok) throw new CharacterStorageError(built.errors.join(" "));
+
+  const payload = {
+    ...built.character,
+    metadados: {
+      ...built.character.metadados,
+      atualizado_em: new Date().toISOString(),
+      ...(options.creationRequestId ? { creationRequestId: options.creationRequestId } : {}),
+    },
+  };
 
   const client = await getScopedTableClient();
-  const { data, error } = await client.rpc("complete_character_creation", {
+  const { data, error } = await client.rpc("complete_character_creation_v2", {
     p_campaign_id: campaignId,
     p_character_payload: payload,
     p_owner_label: options.ownerLabel ?? null,
     p_creation_request_id: options.creationRequestId ?? null,
+    p_character_id: options.characterId ?? null,
   });
   if (error) {
     throw new CharacterStorageError(`Falha ao concluir a criação do personagem: ${error.message}`, error);
-  }
-  const result = data as { character: CharacterRecord; idempotentReplay: boolean };
-  return result.character;
-}
-
-/**
- * Criação RÁPIDA pelo próprio participante (o "+ Personagem" do jogador
- * na aba Personagens): só o nome, ficha em branco — o mesmo que o
- * atalho do narrador faz, mas pela RPC `complete_character_creation`,
- * que exige participante ATIVO e dá o controle a quem criou na mesma
- * transação. Não passa por `validateCreationBudget` de propósito: a
- * ficha em branco não gastou orçamento nenhum, e a validação existe pra
- * barrar gasto ACIMA do permitido, não ficha por preencher.
- */
-export async function createBlankCharacterForSelf(campaignId: string, nome: string): Promise<CharacterRecord> {
-  const personagem = createInitialCharacter(null, nome);
-  // A RPC confere a carteira final contra o orçamento inicial das
-  // regras (nada comprado ⇒ carteira == aretz iniciais). Mesma fonte e
-  // mesmo padrão (5000) que ela usa.
-  const regras = (await getCharacterRules())?.payload as
-    { criacao_personagem?: { inventario?: { aretz_iniciais?: number } } } | undefined;
-  const aretzIniciais = regras?.criacao_personagem?.inventario?.aretz_iniciais ?? 5000;
-  personagem.carteira = { aretz_informal: aretzIniciais, cdi: 0, cdi_craqueada: 0 };
-  const payload = buildPayloadForSave(personagem);
-  const client = await getScopedTableClient();
-  const { data, error } = await client.rpc("complete_character_creation", {
-    p_campaign_id: campaignId,
-    p_character_payload: payload,
-    p_owner_label: null,
-    p_creation_request_id: null,
-  });
-  if (error) {
-    throw new CharacterStorageError(`Falha ao criar o personagem: ${error.message}`, error);
   }
   return (data as { character: CharacterRecord }).character;
 }
 
 /**
- * Draft persistente do wizard de criação de personagem — só fluxo de
- * quem já é participante ativo da campanha (`auth.uid()` conhecido).
- * `select`/`delete` são protegidos por RLS (owner_id + membership
- * ativa); a gravação passa inteira pela RPC
- * `save_character_creation_draft` — nunca um insert/update direto
- * nesta tabela.
- *
- * Fase 1 (revisão 4): chave de unicidade passou de (campaign_id,
- * profile_id) para (campaign_id, owner_id) — um rascunho em andamento
- * por campanha por CONTA, não mais por perfil.
+ * "+ Personagem" (narrador e jogador): personagem RUPTURA v1.2 só com o
+ * nome (`criacao_pendente: true`), completado depois pelo assistente.
+ * A RPC `create_pending_character_v2` exige participante ativo, deixa PN
+ * só para o narrador e dá o controle ao jogador que criou.
  */
-export async function loadCharacterCreationDraft(campaignId: string): Promise<LoadDraftResult> {
+export async function createPendingCharacterV2(campaignId: string, nome: string, pn = false): Promise<CharacterRecord> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("create_pending_character_v2", {
+    p_campaign_id: campaignId,
+    p_nome: nome,
+    p_pn: pn,
+  });
+  if (error) {
+    throw new CharacterStorageError(`Falha ao criar o personagem: ${error.message}`, error);
+  }
+  return data as CharacterRecord;
+}
+
+export type LoadDraftV12Result =
+  | { kind: "none" }
+  | { kind: "found"; payload: DraftV12; creationRequestId: string; revision: number }
+  | { kind: "network_error"; message: string }
+  | { kind: "invalid"; message: string };
+
+/**
+ * Rascunho da criação v1.2 — mesma linha por (campanha, conta) e mesma
+ * RPC do rascunho anterior; só o formato (`schema_version: 2`) muda.
+ * Um rascunho do assistente anterior volta como `invalid`.
+ */
+export async function loadCharacterCreationDraftV12(campaignId: string): Promise<LoadDraftV12Result> {
   const client = await getScopedTableClient();
   const { data, error } = await client
     .from(CHARACTER_CREATION_DRAFTS_TABLE)
     .select("payload, creation_request_id, revision")
     .eq("campaign_id", campaignId)
     .maybeSingle();
-
-  if (error) {
-    return { kind: "network_error", message: error.message };
-  }
-  if (!data) {
-    return { kind: "none" };
-  }
-
-  const payload = parseDraftPayload(data.payload);
+  if (error) return { kind: "network_error", message: error.message };
+  if (!data) return { kind: "none" };
+  const payload = parseDraftV12(data.payload);
   if (!payload) {
-    return { kind: "invalid", message: "O rascunho salvo está num formato que esta versão não reconhece." };
+    return { kind: "invalid", message: "Existe um rascunho salvo em outro formato (possivelmente do assistente anterior)." };
   }
-
   return { kind: "found", payload, creationRequestId: data.creation_request_id as string, revision: data.revision as number };
 }
 
-/**
- * Grava o draft via RPC atômica `save_character_creation_draft` — a RPC
- * valida participação ativa na campanha, rejeita se já existir um
- * personagem desta conta com o mesmo `creationRequestId` (conclusão já
- * aconteceu), e faz compare-and-swap por `expectedRevision`. Conflito de
- * revisão é resultado ESPERADO, não falha — devolvido como
- * `{ conflict: true }`, nunca lançado.
- */
-export async function saveCharacterCreationDraft(
+export async function saveCharacterCreationDraftV12(
   campaignId: string,
-  payload: DraftPayload,
+  payload: DraftV12,
   creationRequestId: string,
   expectedRevision: number,
 ): Promise<SaveDraftResult> {
-  if (!parseDraftPayload(payload)) {
-    throw new CharacterStorageError("Payload de rascunho em formato inválido — não gravado.");
+  if (!parseDraftV12(payload)) {
+    throw new CharacterStorageError("Payload de rascunho v1.2 em formato inválido — não gravado.");
   }
-
   const client = await getScopedTableClient();
   const { data, error } = await client.rpc("save_character_creation_draft", {
     p_campaign_id: campaignId,
@@ -384,14 +371,10 @@ export async function saveCharacterCreationDraft(
     p_payload: payload,
     p_expected_revision: expectedRevision,
   });
-
   if (error) {
-    if (error.message?.includes("revision_conflict")) {
-      return { conflict: true };
-    }
+    if (error.message?.includes("revision_conflict")) return { conflict: true };
     throw new CharacterStorageError(`Falha ao salvar rascunho de criação: ${error.message}`, error);
   }
-
   const row = Array.isArray(data) ? data[0] : data;
   return { revision: row.revision as number };
 }
@@ -681,6 +664,24 @@ export async function getCharacterForCampaign(campaignId: string, characterId: s
  * UPDATE direta na tabela não autoriza controlador desde a migration
  * 0052, só narrador/dono de personagem solto.
  */
+/**
+ * Avanço de Ranking v1.2 (RPC `advance_character_ranking_v2`): o banco
+ * confere que é exatamente um Ranking acima do persistido e grava só os
+ * campos de progressão. A RPC de ficha preserva esses campos para o
+ * jogador, então este é o único caminho que muda o Ranking.
+ */
+export async function advanceCharacterRankingV2(characterId: string, character: Character): Promise<CharacterRecord> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("advance_character_ranking_v2", {
+    p_character_id: characterId,
+    p_payload: character,
+  });
+  if (error) {
+    throw new CharacterStorageError(`Falha ao avançar o Ranking de "${characterId}": ${error.message}`, error);
+  }
+  return data as CharacterRecord;
+}
+
 export async function updateCharacterSheetPayload(characterId: string, character: Character): Promise<CharacterRecord> {
   const payload = buildPayloadForSave(character);
   const client = await getScopedTableClient();

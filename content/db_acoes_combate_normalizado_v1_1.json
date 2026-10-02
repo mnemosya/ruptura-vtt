@@ -7,7 +7,7 @@
     "versao_schema": "1.1.0",
     "status_padrao": "published",
     "gerado_em": "2026-06-25",
-    "total_registros": 28,
+    "total_registros": 30,
     "observacoes": [
       "Catálogo de ações extraído do capítulo de Combate.",
       "Ações defensivas são tipo reacao.",
@@ -76,7 +76,8 @@
       "sangrando",
       "saturado",
       "sufocando",
-      "surdo"
+      "surdo",
+      "oculto"
     ],
     "acoes": [
       "deslocar",
@@ -106,7 +107,9 @@
       "falar",
       "gestos_rapidos",
       "soltar_alvo",
-      "apagar_fogo"
+      "apagar_fogo",
+      "esconder_se",
+      "ataque_secundario"
     ],
     "tags_rolagem": [
       "acao",
@@ -194,6 +197,7 @@
       "multiplicar_deslocamento",
       "multiplicar_distancia",
       "opcional_narrador",
+      "opcoes_interacao",
       "recarregar_arma",
       "remover_condicao",
       "remover_condicao_do_oponente",
@@ -202,8 +206,10 @@
       "reposicionar",
       "resolver_acao",
       "resolver_ataque",
+      "resolver_ataque_secundario",
       "sacar_ou_guardar",
-      "substituir_bonus"
+      "substituir_bonus",
+      "teste_esconder_se"
     ],
     "custo_tipos": [
       "pa",
@@ -598,6 +604,50 @@
       ]
     },
     {
+      "id": "esconder_se",
+      "slug": "esconder_se",
+      "nome": "Esconder-se",
+      "categoria": "movimento",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 1
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "movimento",
+        "furtividade",
+        "visao"
+      ],
+      "descricao_curta": "Furtividade contestada pela Percepção de cada inimigo; no sucesso fica Oculto para ele.",
+      "descricao_longa": "Exige estar fora da linha de visão dos observadores, ter cobertura suficiente ou alguma condição que dificulte a localização (escuridão, fumaça, vegetação, distração). Teste de Furtividade contestado pela Percepção de cada inimigo capaz de localizar o personagem; contra quem não procura ativamente, o narrador pode usar uma CD. No sucesso, fica Oculto para aquele inimigo: sua posição exata não é conhecida e ataques contra ele sem localizá-lo são resolvidos como contra um alvo que não pode ser visto. Deixa de estar Oculto ao entrar na linha de visão sem ocultação suficiente, ao realizar ação ofensiva contra o observador, ao produzir sinal evidente ou ao ser localizado por Usar Perícia com Percepção.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "teste_esconder_se",
+            "pericia": "furtividade",
+            "contra": "percepcao",
+            "por_observador": true,
+            "sucesso": {
+              "aplicar_condicao_em_si": "oculto",
+              "relativo_ao_observador": true
+            }
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-01",
+      "updated_at": "2026-10-01",
+      "teste": {
+        "tipo": "contestado_ou_cd",
+        "pericias": [
+          "furtividade"
+        ]
+      }
+    },
+    {
       "id": "interagir",
       "slug": "interagir",
       "nome": "Interagir",
@@ -613,19 +663,45 @@
         "diversa",
         "objeto"
       ],
-      "descricao_curta": "Manipula objeto, dispositivo ou elemento de cena.",
-      "descricao_longa": "Manipula objeto, dispositivo ou elemento de cena.",
+      "descricao_curta": "Manipula objeto, dispositivo ou elemento de cena; também apaga o fogo (Queimando) ou contém um sangramento (Sangrando).",
+      "descricao_longa": "Manipula objeto, dispositivo ou elemento de cena. Enquanto Queimando, Interagir pode abafar as chamas e reduz Queimando em 1 nível. Enquanto Sangrando, Interagir pode pressionar o ferimento: Sangrando não aumenta de nível no fim desta rodada (o dano continua).",
       "payload_automacao": {
         "efeitos": [
           {
             "tipo": "resolver_acao"
+          },
+          {
+            "tipo": "opcoes_interacao",
+            "opcoes": [
+              {
+                "id": "apagar_fogo",
+                "nome": "Apagar o fogo",
+                "condicao": "queimando",
+                "descricao": "Reduz Queimando em 1 nível.",
+                "efeito": {
+                  "tipo": "reduzir_nivel_condicao",
+                  "condicao": "queimando",
+                  "niveis": 1
+                }
+              },
+              {
+                "id": "conter_sangramento",
+                "nome": "Conter o sangramento",
+                "condicao": "sangrando",
+                "descricao": "Sangrando não aumenta de nível no fim desta rodada.",
+                "efeito": {
+                  "tipo": "conter_condicao",
+                  "condicao": "sangrando"
+                }
+              }
+            ]
           }
         ]
       },
       "status": "published",
-      "versao": "1.0.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25",
+      "updated_at": "2026-10-01",
       "teste": {
         "tipo": "opcional_narrador",
         "pericias": [
@@ -636,7 +712,7 @@
     {
       "id": "sacar_rapido",
       "slug": "sacar_rapido",
-      "nome": "Sacar/Guardar (rápido)",
+      "nome": "Sacar, guardar ou trocar (Acesso Rápido)",
       "categoria": "diversa",
       "tipo": "acao",
       "custo": {
@@ -649,8 +725,8 @@
         "diversa",
         "equipamento"
       ],
-      "descricao_curta": "Saca ou guarda equipamento de acesso fácil.",
-      "descricao_longa": "Saca ou guarda equipamento de acesso fácil.",
+      "descricao_curta": "Saca, guarda ou troca item do Acesso Rápido; pode usar na mesma ação um item de 1 PA.",
+      "descricao_longa": "O equipamento está em coldre, bainha, correia, bolso utilitário ou outro suporte de acesso imediato. Por 1 PA: sacar um item do Acesso Rápido, guardar um item num espaço livre de Acesso Rápido, trocar o item empunhado por outro do Acesso Rápido ou sacar e usar imediatamente um item cujo uso custe 1 PA. Arma Primária e Secundária já estão prontas no início do combate.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -660,14 +736,14 @@
         ]
       },
       "status": "published",
-      "versao": "1.0.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01"
     },
     {
       "id": "sacar_dificil",
       "slug": "sacar_dificil",
-      "nome": "Sacar/Guardar (difícil)",
+      "nome": "Sacar, guardar ou trocar (Mochila)",
       "categoria": "diversa",
       "tipo": "acao",
       "custo": {
@@ -680,8 +756,8 @@
         "diversa",
         "equipamento"
       ],
-      "descricao_curta": "Saca ou guarda equipamento de acesso difícil.",
-      "descricao_longa": "Saca ou guarda equipamento de acesso difícil.",
+      "descricao_curta": "Retira, guarda ou troca item da Mochila; pode usar na mesma ação um item de 1 PA.",
+      "descricao_longa": "O equipamento está na Mochila ou em outro compartimento fechado. Por 2 PA: retirar um item da Mochila, guardar um item na Mochila, trocar o item empunhado por outro da Mochila, transferir um item entre a Mochila e um espaço livre de Acesso Rápido ou retirar e usar imediatamente um item cujo uso custe 1 PA. A Mochila precisa ter capacidade para receber o item.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -691,9 +767,9 @@
         ]
       },
       "status": "published",
-      "versao": "1.0.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01"
     },
     {
       "id": "recarregar",
@@ -906,6 +982,60 @@
           ]
         }
       ],
+      "efeitos_por_margem_ref": "regiao_corpo_ataque"
+    },
+    {
+      "id": "ataque_secundario",
+      "slug": "ataque_secundario",
+      "nome": "Ataque Secundário",
+      "categoria": "ofensiva",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 1
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "ofensiva",
+        "ataque"
+      ],
+      "descricao_curta": "1/rodada, depois de Atacar com arma leve: ataca com outra arma leve, sem Corpo no dano; –1 corpo a corpo, –2 à distância.",
+      "descricao_longa": "Uma vez por rodada, depois de realizar Atacar com uma arma leve, você pode atacar com outra arma leve empunhada como arma secundária. Resolva um novo ataque contra o mesmo alvo, sem somar Corpo ao dano. O teste sofre –1 de desvantagem em ataques corpo a corpo e –2 de desvantagem em ataques à distância.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "resolver_ataque_secundario",
+            "uma_vez_por_rodada": true,
+            "requer_acao_anterior": "atacar",
+            "requer_propriedade_arma": "leve",
+            "mesmo_alvo": true,
+            "soma_corpo_no_dano": false,
+            "modificador": {
+              "corpo_a_corpo": -1,
+              "distancia": -2
+            }
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-01",
+      "updated_at": "2026-10-01",
+      "teste": {
+        "tipo": "contestado_ou_simples",
+        "contra_criatura": {
+          "defensor_escolhe_acoes": [
+            "esquivar",
+            "aparar",
+            "bloquear"
+          ]
+        },
+        "contra_objeto": {
+          "tipo": "simples",
+          "cd": "narrador"
+        }
+      },
       "efeitos_por_margem_ref": "regiao_corpo_ataque"
     },
     {
@@ -1726,7 +1856,7 @@
       "tipo": "acao",
       "custo": {
         "tipo": "pa",
-        "valor": 2
+        "valor": 1
       },
       "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
       "visibilidade": "sempre",
@@ -1735,8 +1865,8 @@
         "trama",
         "malha"
       ],
-      "descricao_curta": "Estabelece vínculo com ponto de acesso exposto.",
-      "descricao_longa": "Estabelece vínculo com ponto de acesso exposto.",
+      "descricao_curta": "Estabelece vínculo inicial com um ponto de acesso exposto no alcance (protocolo Conectar).",
+      "descricao_longa": "O personagem estabelece um vínculo inicial com um ponto de acesso exposto no alcance. Para usuários de Deck Sináptico, representa a execução do protocolo Conectar e consome o custo indicado (PA e RAM) normalmente.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1746,9 +1876,9 @@
         ]
       },
       "status": "published",
-      "versao": "1.0.0",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01"
     },
     {
       "id": "preparar_turno",
@@ -1931,7 +2061,7 @@
         "acao_remove",
         "igneo"
       ],
-      "descricao_curta": "Remove ou tenta remover Queimando.",
+      "descricao_curta": "Arquivada na v1.2: apagar o fogo é uma opção de Interagir.",
       "descricao_longa": "Remove ou tenta remover Queimando.",
       "payload_automacao": {
         "efeitos": [
@@ -1941,10 +2071,10 @@
           }
         ]
       },
-      "status": "published",
-      "versao": "1.0.0",
+      "status": "archived",
+      "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-06-25"
+      "updated_at": "2026-10-01"
     }
   ]
 }

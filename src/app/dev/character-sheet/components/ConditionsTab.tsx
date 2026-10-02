@@ -57,6 +57,7 @@ export interface ConditionOption {
   descricao_curta?: string;
   /** Tags da Biblioteca (checkpoint v0.35) — usado para detectar gatilho "fim_de_rodada" sem hardcode frágil (ver ActiveStateStrip). */
   tags?: string[];
+  nivel_maximo?: number;
 }
 
 export function ConditionsTab({
@@ -295,7 +296,7 @@ export function ConditionsTab({
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <span data-testid="condicao-ativa-nome" style={{ fontWeight: 700 }}>
-                  {c.nome}
+                  {c.nome}{c.nivelMaximo ? ` ${c.nivel ?? 1}/${c.nivelMaximo}` : ""}
                 </span>
                 <button
                   data-testid={`condicao-remover-${c.id}`}

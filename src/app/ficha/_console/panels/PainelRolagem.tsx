@@ -36,6 +36,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CharacterAttributes } from "../../../../lib/character";
 import type { RupturaRollResult } from "../../../../lib/dice/types";
+import { getRupturaPool } from "../../../../lib/dice";
 import type { TableLogVisibility } from "../../../../lib/table";
 import type { PhysicsDieSpec } from "../../../mesas/[campaignId]/vtt/_dados3d/ArenaDados";
 import { useRolarNaMesa } from "../../../mesas/[campaignId]/vtt/_dados3d/ContextoMesaDados";
@@ -122,13 +123,17 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
     : { position: "absolute" as const, inset: 0, display: "grid", placeItems: "center", padding: 24 };
 
   const valorAtributo = api.character.atributos[atributoId as keyof CharacterAttributes] ?? 0;
-  const nd8 = valorAtributo;
-  const podeRolar = nd8 > 0 && !rolando && !!rolarNaMesa && !((testeColapso || acaoToken) && resultado);
+  const pool = getRupturaPool(valorAtributo);
+  const nd8 = pool.quantidadeDados;
+  const podeRolar = !rolando && !!rolarNaMesa && !((testeColapso || acaoToken) && resultado);
 
-  const opcoesAtributo = atributos.map((a) => ({
-    id: a.id,
-    rotulo: `${a.nome} · ${api.character.atributos[a.id as keyof CharacterAttributes] ?? 0}d8`,
-  }));
+  const opcoesAtributo = atributos.map((a) => {
+    const definicao = getRupturaPool(api.character.atributos[a.id as keyof CharacterAttributes] ?? 0);
+    return {
+      id: a.id,
+      rotulo: `${a.nome} · ${definicao.quantidadeDados}d8 · ${definicao.modoSelecao === "lowest" ? "menor" : "maior"}`,
+    };
+  });
   // A perícia é escolhível SEMPRE — inclusive num teste que nasceu de
   // um clique em atributo. Era a única coisa que o clique fechava sem
   // ter por quê: rolar Corpo e decidir no meio que aquilo é Atletismo
@@ -139,7 +144,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
   ];
 
   const doRoll = useCallback(async (forca: number) => {
-    if (rolando || nd8 <= 0 || !rolarNaMesa || (acaoToken && resultado)) return;
+    if (rolando || !rolarNaMesa || (acaoToken && resultado)) return;
     setRolando(true);
     setLanded(false);
     setResultado(null);
@@ -195,7 +200,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
     ? "colapso · teste decisivo"
     : prefill.tipo === "defesa"
     ? "defesa · gasta 1 reação ao rolar"
-    : "d8 · maior dado + perícia + modificadores";
+    : `d8 · ${pool.modoSelecao === "lowest" ? "menor" : "maior"} dado + perícia + modificadores`;
 
   return (
     <div style={CAMADA} data-testid="console-rolagem-camada">
@@ -235,7 +240,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
           <div style={{ borderRadius: 4, padding: 14, background: "#0c1420", border: "1px solid #16233a" }}>
             <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: INK_FAINT }}>
-                Pool · <span style={{ color: "#35c7d8" }}>{nd8}d8</span> · maior dado
+                Pool · <span style={{ color: "#35c7d8" }}>{nd8}d8</span> · {pool.modoSelecao === "lowest" ? "menor dado" : "maior dado"}
               </span>
               <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: INK_FAINT }}>
                 {cdInput.trim() === "" ? "sem CD definida" : `cd ${cdInput}`}
@@ -259,6 +264,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
                   testIdTotal="console-roll-total"
                   r={{
                     maiorDado: resultado.maiorDado,
+                    modoSelecao: resultado.modoSelecao,
                     pericia: resultado.periciaNome ?? null,
                     periciaValor: resultado.periciaValor,
                     modificador: resultado.modificador,
@@ -275,9 +281,9 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
               </div>
             )}
 
-            {nd8 === 0 && (
+            {valorAtributo === 0 && (
               <p style={{ margin: "10px 0 0", fontFamily: BODY, fontSize: 11.5, color: INK_FAINT }}>
-                Este atributo está em 0 na ficha — sem dado pra rolar.
+                Atributo 0: role 2d8 e use o menor resultado.
               </p>
             )}
           </div>

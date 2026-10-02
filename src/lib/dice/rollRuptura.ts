@@ -1,5 +1,31 @@
 import { rollDie } from "./rollExpression";
-import type { MargemClassificacao, RupturaRollParams, RupturaRollResult } from "./types";
+import type {
+  MargemClassificacao,
+  RupturaRollParams,
+  RupturaRollResult,
+  RupturaSelectionMode,
+} from "./types";
+
+export interface RupturaPoolDefinition {
+  quantidadeDados: number;
+  modoSelecao: RupturaSelectionMode;
+}
+
+/**
+ * Traduz o valor do Atributo no pool canônico da v1.2.
+ *
+ *  3 → 3d8, maior
+ *  1 → 1d8, maior
+ *  0 → 2d8, menor
+ * -1 → 3d8, menor
+ * -2 → 4d8, menor
+ */
+export function getRupturaPool(atributoValor: number): RupturaPoolDefinition {
+  const valor = Number.isFinite(atributoValor) ? Math.trunc(atributoValor) : 0;
+  return valor > 0
+    ? { quantidadeDados: valor, modoSelecao: "highest" }
+    : { quantidadeDados: 2 + Math.abs(valor), modoSelecao: "lowest" };
+}
 
 /**
  * Classifica a margem de uma rolagem já resolvida contra CD. A margem
@@ -17,19 +43,16 @@ function classificarMargem(margem: number): MargemClassificacao {
 }
 
 /**
- * Rolagem base do Ruptura: "maior dado entre (Atributo)d8 + Perícia +
- * modificadores" (PRD). Rola `atributoValor` dados de 8 faces, usa o
- * maior, soma a perícia (0 se nenhuma for informada — rolagem "sem
- * perícia") e o modificador manual. Se `cd` for informado, calcula
- * sucesso/falha, margem (total - cd) e a classificação da margem —
- * senão deixa os quatro campos ausentes.
+ * Rolagem base do Ruptura v1.2. Atributo positivo rola `Nd8` e usa o
+ * maior. Atributo 0 rola 2d8 e usa o menor; cada ponto negativo adiciona
+ * um d8 e continua usando o menor. Depois soma Perícia e modificadores.
  */
 export function rollPericia(params: RupturaRollParams): RupturaRollResult {
-  const quantidadeDados = Math.max(0, Math.trunc(params.atributoValor));
+  const { quantidadeDados } = getRupturaPool(params.atributoValor);
   const dados = Array.from({ length: quantidadeDados }, () => rollDie(8));
   // Pistoleiro › Gatilho Quente/Showdown — o(s) d8 de gatilho são rolados JUNTO com os
-  // demais (mesma rolagem, cor diferente só narrativamente) e entram no pool de "maior
-  // dado" — nunca um bônus separado somado depois. Showdown (`quantidadeDadosGatilho`)
+  // demais (mesma rolagem, cor diferente só narrativamente) e entram no pool antes da
+  // seleção do maior/menor — nunca um bônus separado. Showdown (`quantidadeDadosGatilho`)
   // tem precedência sobre o modo de 1 dado (`incluirDadoGatilho`).
   const quantidadeGatilho = Math.max(0, Math.trunc(params.quantidadeDadosGatilho ?? (params.incluirDadoGatilho ? 1 : 0)));
   const dadosGatilhoResultados = quantidadeGatilho > 0 ? Array.from({ length: quantidadeGatilho }, () => rollDie(8)) : undefined;
@@ -43,7 +66,7 @@ export function rollPericia(params: RupturaRollParams): RupturaRollResult {
  * dados que já existem. É o que permite a mesa do VTT — onde os d8 são
  * corpos rígidos de verdade e o valor sai da face que ficou pra cima
  * quando eles param (`ArenaDados`) — usar EXATAMENTE a mesma regra do
- * Console, em vez de reimplementar "maior dado + perícia + modificador"
+ * Console, em vez de reimplementar "dado escolhido + perícia + modificador"
  * e as seis faixas de margem por conta própria. Uma regra, dois
  * geradores de dado.
  */
@@ -52,12 +75,15 @@ export function resolverPericia(
   dados: number[],
   dadosGatilhoResultados?: number[],
 ): RupturaRollResult {
+  const { quantidadeDados, modoSelecao } = getRupturaPool(params.atributoValor);
   const poolCompleto = dadosGatilhoResultados ? [...dados, ...dadosGatilhoResultados] : dados;
-  const maiorDado = poolCompleto.length > 0 ? Math.max(...poolCompleto) : 0;
+  const dadoEscolhido = poolCompleto.length > 0
+    ? modoSelecao === "highest" ? Math.max(...poolCompleto) : Math.min(...poolCompleto)
+    : 0;
   const dadoGatilhoResultado = dadosGatilhoResultados && dadosGatilhoResultados.length === 1 ? dadosGatilhoResultados[0] : undefined;
-  const dadoGatilhoEscolhido = dadoGatilhoResultado != null ? dadoGatilhoResultado === maiorDado : undefined;
+  const dadoGatilhoEscolhido = dadoGatilhoResultado != null ? dadoGatilhoResultado === dadoEscolhido : undefined;
   const periciaValor = params.periciaValor ?? 0;
-  const total = maiorDado + periciaValor + params.modificador;
+  const total = dadoEscolhido + periciaValor + params.modificador;
 
   const resultado: RupturaRollResult = {
     atributoId: params.atributoId,
@@ -67,8 +93,11 @@ export function resolverPericia(
     periciaNome: params.periciaNome,
     periciaValor,
     modificador: params.modificador,
+    quantidadeDados,
+    modoSelecao,
     dados: poolCompleto,
-    maiorDado,
+    dadoEscolhido,
+    maiorDado: dadoEscolhido,
     total,
     dadoGatilhoResultado,
     dadoGatilhoEscolhido,

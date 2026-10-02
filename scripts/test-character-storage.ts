@@ -68,6 +68,7 @@ import {
   clienteAdministrativo, criarContaDeTeste, exigirStubDeCookies, usarSessao,
 } from "./dev/sessaoDeTeste";
 
+import { personagemV12 } from "./dev/fixtures/personagemV12";
 loadDotenv({ path: ".env.local" });
 
 const TEST_CHARACTER_NAME = "__TESTE_STORAGE_RUPTURA__";
@@ -118,7 +119,7 @@ async function main(): Promise<void> {
     const erroListar = await recusa(() => storage.listCharacters());
     assert(erroListar?.includes("permission denied"), `sem sessão, listar tem que ser recusado — veio: ${erroListar}`);
     const erroCriar = await recusa(() =>
-      storage.createCharacter(createInitialCharacter(null, TEST_CHARACTER_NAME)));
+      storage.createCharacter(personagemV12(TEST_CHARACTER_NAME)));
     assert(erroCriar?.includes("permission denied"), `sem sessão, criar tem que ser recusado — veio: ${erroCriar}`);
     console.log("1. Sem sessão: listar e criar recusados pelo GRANT, antes mesmo da RLS.");
 
@@ -129,12 +130,12 @@ async function main(): Promise<void> {
     usarSessao(tokensDono);
     const daMesa = await storage.createCharacterForCampaign(
       campaignId,
-      createInitialCharacter(null, TEST_CHARACTER_NAME),
+      personagemV12(TEST_CHARACTER_NAME),
     );
     daMesaId = daMesa.id;
     assert(daMesa.name === TEST_CHARACTER_NAME, "nome do registro criado deve ser o nome de teste");
     assert(daMesa.campaign_id === campaignId, "o personagem deve nascer ligado à mesa");
-    assert(daMesa.payload.metadados?.schema_version === 1, "schema_version deve ser 1 num personagem novo");
+    assert(daMesa.payload.metadados?.schema_version === 2, "personagem novo é RUPTURA v1.2 (metadados.schema_version 2)");
     console.log(`2. Criado na mesa: id=${daMesa.id}`);
 
     const lido = await storage.getCharacter(daMesa.id);
@@ -182,7 +183,7 @@ async function main(): Promise<void> {
     // RETURNING; hoje delega a `insertCharacterScoped` como os demais.
     // Este critério guarda a correção: uma regressão que devolva o
     // `.insert().select()` volta a falhar aqui.
-    const solto = await storage.createCharacter(createInitialCharacter(null, TEST_CHARACTER_NAME));
+    const solto = await storage.createCharacter(personagemV12(TEST_CHARACTER_NAME));
     soltoId = solto.id;
     assert(solto.owner_id === donoId, "o legado deve carimbar a dona em `owner_id`");
     assert(solto.status === "draft", "sem `status` explícito, o legado continua criando como rascunho");

@@ -84,6 +84,8 @@ export interface SharedCondition {
   id: string;
   nome: string;
   descricao?: string;
+  nivel?: number;
+  nivelMaximo?: number;
 }
 
 /** Mesma lista/chips/teclado usada pela ficha e pelo HUD. */
@@ -119,9 +121,9 @@ export function ConditionsControls({
           <span key={c.id} className="rc-ncond-tag">
             {onDetails && !readOnly ? (
               <button type="button" className="rc-ncond-abrir" onClick={() => onDetails(c.id)} title={c.descricao ?? c.nome}>
-                {c.nome}
+                {c.nome}{c.nivelMaximo ? ` ${c.nivel ?? 1}/${c.nivelMaximo}` : ""}
               </button>
-            ) : <span className="rc-ncond-abrir" title={c.descricao ?? c.nome}>{c.nome}</span>}
+            ) : <span className="rc-ncond-abrir" title={c.descricao ?? c.nome}>{c.nome}{c.nivelMaximo ? ` ${c.nivel ?? 1}/${c.nivelMaximo}` : ""}</span>}
             {editable && (
               <button
                 type="button"

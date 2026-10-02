@@ -23,7 +23,6 @@ import {
   assumirTurno,
   avancarParaLentos,
   cancelarTurno,
-  cancelarTurno,
   concluirTurno,
   elegibilidade,
   elegiveisAgora,

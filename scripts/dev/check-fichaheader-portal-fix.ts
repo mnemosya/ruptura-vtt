@@ -76,6 +76,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createInitialCharacter } from "../../src/lib/character/createCharacter";
 import { BASE_URL, withAuthenticatedPage } from "./authSession";
 
+import { personagemV12 } from "./fixtures/personagemV12";
 loadDotenv({ path: ".env.local" });
 
 function requireEnv(name: string): string {
@@ -125,7 +126,7 @@ async function configurarFixtures(): Promise<void> {
   // depender de nenhum jogador controlar nada (o narrador vê todos).
   for (let i = 0; i < 14; i++) {
     const nome = i === 7 ? `${MARCADOR_BUSCA} Alvo` : `Padding ${i} personagem`;
-    const personagem = createInitialCharacter(null, nome);
+    const personagem = personagemV12(nome);
     const id = randomUUID();
     const { error: erroChar } = await admin.from("characters").insert({
       id,

@@ -21,6 +21,7 @@ import { config as loadDotenv } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID, randomBytes } from "node:crypto";
 
+import { personagemV12 } from "./fixtures/personagemV12.mjs";
 loadDotenv({ path: ".env.local" });
 
 function requireEnv(name) {
@@ -81,7 +82,7 @@ async function addActiveMember(campaignId, userId, role = "player") {
 
 async function createCharacter(campaignId, name, extra = {}) {
   const id = randomUUID();
-  const { error } = await admin.from("characters").insert({ id, name, payload: { nome: name }, campaign_id: campaignId, ...extra });
+  const { error } = await admin.from("characters").insert({ id, name, payload: personagemV12(name), campaign_id: campaignId, ...extra });
   if (error) throw new Error(`Falha ao criar personagem: ${error.message}`);
   return id;
 }
@@ -126,7 +127,7 @@ async function main() {
   // --- Teste 2: narrador acessa sem ser controlador ---
   {
     const canRead = await canReadCharacter(clientU1, C1);
-    const { error: updErr } = await clientU1.from("characters").update({ payload: { nome: "C1 editado pelo narrador" } }).eq("id", C1);
+    const { error: updErr } = await clientU1.from("characters").update({ payload: personagemV12("C1 editado pelo narrador") }).eq("id", C1);
     record("Teste 2 (narrador acessa sem ser controlador)", canRead && !updErr, `U1 lê=${canRead}, edita=${!updErr}`);
   }
 
@@ -247,7 +248,7 @@ async function main() {
     const { error: e1 } = await clientU1.from("characters").update({ campaign_id: campaignA }).eq("id", C19);
     const { error: e2 } = await clientU1.from("characters").update({ owner_id: U1.id }).eq("id", C19);
     const { error: e3 } = await clientU1.from("characters").update({ archived_at: new Date().toISOString() }).eq("id", C19);
-    const { error: e4 } = await clientU1.from("characters").update({ archived_at: null, payload: { nome: "C19 editado" } }).eq("id", C19);
+    const { error: e4 } = await clientU1.from("characters").update({ archived_at: null, payload: personagemV12("C19 editado") }).eq("id", C19);
     record("Teste 19 (narrador continua com poderes administrativos)", !e1 && !e2 && !e3 && !e4, `campaign_id=${!e1}, owner_id=${!e2}, archive=${!e3}, unarchive+payload=${!e4}`);
   }
 
@@ -255,7 +256,7 @@ async function main() {
   {
     const C20 = await createCharacter(campaignA, "C20-payload-whitelist");
     await clientU1.rpc("grant_character_control", { p_character_id: C20, p_user_id: U3.id });
-    const { error: payloadErr } = await clientU3.rpc("update_character_sheet_payload", { p_character_id: C20, p_payload: { nome: "C20 editado pelo jogador" } });
+    const { error: payloadErr } = await clientU3.rpc("update_character_sheet_payload", { p_character_id: C20, p_payload: personagemV12("C20 editado pelo jogador") });
     const { data: c20After } = await admin.from("characters").select("payload").eq("id", C20).single();
     record(
       "Extra (update_character_sheet_payload funciona para o controlador)",

@@ -231,8 +231,6 @@ export function ConsoleNoVtt({
             combatActionsIniciais={catalogos.combatActions}
             combatActionsError={catalogos.combatActionsError}
             reactionRules={catalogos.reactionRules}
-            talentsIniciais={catalogos.talents}
-            talentsError={catalogos.talentsError}
             itemsIniciais={catalogos.items}
             itemsError={catalogos.itemsError}
             spellsIniciais={catalogos.spells}

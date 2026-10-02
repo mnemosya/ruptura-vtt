@@ -15,6 +15,7 @@ import { createClient } from "@supabase/supabase-js";
 import { chromium, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
 
+import { personagemV12 } from "./fixtures/personagemV12";
 loadDotenv({ path: ".env.local" });
 function req(n: string): string {
   const v = process.env[n];
@@ -70,7 +71,7 @@ async function main() {
   const characterId = randomUUID();
   await admin.from("characters").insert({
     id: characterId, name: "PJ do console", status: "draft",
-    payload: { nome: "PJ do console" }, campaign_id: campaignId, owner_id: narrador.id,
+    payload: personagemV12("PJ do console"), campaign_id: campaignId, owner_id: narrador.id,
   });
   criados.ch.push(characterId);
   registrar("0 (fixture)", true, `campanha=${campaignId}`);

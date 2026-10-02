@@ -13,6 +13,7 @@ import { createClient } from "@supabase/supabase-js";
 import { chromium, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
 
+import { personagemV12 } from "./fixtures/personagemV12";
 loadDotenv({ path: ".env.local" });
 function requireEnv(nome: string): string {
   const v = process.env[nome];
@@ -83,7 +84,7 @@ async function main() {
   });
   const personagem = randomUUID();
   await admin.from("characters").insert({
-    id: personagem, name: "Kael", status: "draft", payload: { nome: "Kael" },
+    id: personagem, name: "Kael", status: "draft", payload: personagemV12("Kael"),
     campaign_id: campaignId, owner_id: jogador.id,
   });
   criados.personagens.push(personagem);

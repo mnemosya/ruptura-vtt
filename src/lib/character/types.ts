@@ -160,6 +160,14 @@ export interface ActiveCondition {
   /** ISO timestamp de quando foi removida — null enquanto ativa. */
   removidaEm?: string | null;
   ativa: boolean;
+  /** Nível atual das condições cumulativas v1.2. Ausente equivale a 1 para compatibilidade. */
+  nivel?: number;
+  /** Limite canônico copiado na aplicação para permitir renderização sem buscar o catálogo. */
+  nivelMaximo?: number;
+  /** Rodada em que a condição foi aplicada/agravada, quando o fluxo conhece esse valor. */
+  aplicadaNaRodada?: number;
+  /** Sangrando: rodada em que Interagir conteve o ferimento e impediu o agravamento. */
+  contidaNaRodada?: number;
   observacoes?: string;
   /**
    * Como a remoção aconteceu (checkpoint v0.34) — ausente/undefined
@@ -207,7 +215,7 @@ export interface ConditionResistanceCheck {
   /** slug canônico da condição de origem (ex.: "envenenado"). */
   conditionId: string;
   conditionName: string;
-  effectType: "teste_fim_de_rodada" | "teste_fim_de_rodada_para_remover_condicao" | "teste_apos_exposicao";
+  effectType: "teste_fim_de_rodada" | "teste_fim_de_rodada_progressivo" | "teste_fim_de_rodada_para_remover_condicao" | "teste_apos_exposicao";
   round: number;
   scene: number;
   createdAt: string;
@@ -323,6 +331,8 @@ export interface Character {
    * nunca apagadas do array, só marcadas como removidas.
    */
   condicoes_ativas?: ActiveCondition[];
+  /** Desfecho terminal explícito produzido por uma regra fora do Colapso, como Sufocando. */
+  estado_terminal?: { tipo: "morte"; causa: string; em: string };
   /**
    * Surtos de Sobrecarga usados no dia (checkpoint v0.36, PRD 10.5) —
    * campo mínimo só para o descanso longo poder resetar algo real.
@@ -375,14 +385,6 @@ export interface Character {
     desfecho?: "morte" | "coma" | null;
     ultimoEvento?: string;
   };
-  /**
-   * PM (Pontos de Maestria/evolução, checkpoint v0.40, PRD 3.3/4.3) —
-   * total recebido ao longo da campanha e o que ainda não foi gasto.
-   * `pm_disponivel` nunca é negativo (gasto além do disponível é
-   * clampado a 0, com warning — ver `spendPm`).
-   */
-  pm_total?: number;
-  pm_disponivel?: number;
   /**
    * Histórico de evolução (checkpoint v0.40, PRD 4.3) — append-only,
    * nunca reescrito/apagado. Cobre ganho/gasto de PM e ajustes

@@ -102,6 +102,7 @@ import { type PontoAxial, mundoParaAxial } from "../_dominio/escalaMapa";
 import { type CantoImagem, CamadaImagens } from "./CamadaImagens";
 import { type ImagemCena, alturaEfetivaM, pxPorMetro, retanguloDaImagem } from "../_dominio/imagemCena";
 import { useAnimacaoToken } from "./useAnimacaoToken";
+import { CORES_VERTENTE } from "../../../../_design/coresVertente";
 
 /** Anel e selo de quem já agiu na janela — neutro, sem a cor do lado. */
 const COR_JA_AGIU = "#5f7492";
@@ -160,19 +161,9 @@ export interface EstadoVisualToken {
   origemDeAura: boolean;
 }
 
-/* A PALETA DAS VERTENTES. Energética passou de ciano a LARANJA e o
-   ciano foi pra sináptica — o ciano é a cor estrutural do chassi
-   inteiro, e uma vertente vestida com ela não se lia como vertente,
-   se lia como "selecionado". */
-const COR_VERTENTE: Record<TokenApresentacao["vertente"], string> = {
-  somatico: "#2f9e56",
-  cognitivo: "#8b5cf6",
-  material: "#f5a200",
-  energetico: "#f07a1f",
-  cinetica: "#e0455f",
-  sinaptica: "#35c7d8",
-  nenhuma: "#6b7f8c",
-};
+/* A PALETA DAS VERTENTES vem de `_design/coresVertente.ts`, a mesma
+   fonte da Forja de Refratário. */
+const COR_VERTENTE: Record<TokenApresentacao["vertente"], string> = CORES_VERTENTE;
 
 /** Aparência de cada tipo de objeto — cor de topo e de lateral (dá volume). */
 const APARENCIA_OBJETO: Record<string, { topo: string; lado: string; traco: string }> = {

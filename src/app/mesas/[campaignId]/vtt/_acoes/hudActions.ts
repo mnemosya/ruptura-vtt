@@ -3,13 +3,12 @@
 import "server-only";
 
 import { resolveCampaignAccess } from "../../../../../lib/campaign/access";
-import { listTalentsEffective } from "../../../../../lib/campaignContent";
 import {
   applyConsoleMutation,
+  characterDerivedFormulas,
   computeDerivedStats,
   normalizeCharacter,
   normalizeReactionRules,
-  normalizeTalentContent,
   type CharacterRulesPayload,
   type ConsoleMutation,
   type ConsoleMutationContext,
@@ -68,7 +67,7 @@ function projectHud(raw: RawSelectedTokenHud, rules: CharacterRulesPayload | nul
   if (Array.isArray(raw.tokenConditions)) base.tokenConditions = raw.tokenConditions.filter((v): v is string => typeof v === "string");
   if (typeof raw.characterId === "string" && raw.character) {
     const normalized = normalizeCharacter(raw.character);
-    const derived = computeDerivedStats(normalized.atributos, rules, normalized.mana_bonus_ruptura ?? 0);
+    const derived = computeDerivedStats(normalized.atributos, rules, normalized.mana_bonus_ruptura ?? 0, characterDerivedFormulas(normalized));
     const character = normalizeCharacter(normalized, derived);
     base.characterId = raw.characterId;
     base.character = character;
@@ -175,16 +174,12 @@ async function validateAndCanonicalizeMutation(input: HudMutationInput): Promise
   return null;
 }
 
-async function loadMutationContext(campaignId: string, character: ReturnType<typeof normalizeCharacter>, rules: CharacterRulesPayload | null): Promise<ConsoleMutationContext> {
-  const [combatFlow, talentDocs] = await Promise.all([
-    getCombatFlow().catch(() => null),
-    listTalentsEffective(campaignId).catch(() => []),
-  ]);
+async function loadMutationContext(character: ReturnType<typeof normalizeCharacter>, rules: CharacterRulesPayload | null): Promise<ConsoleMutationContext> {
+  const combatFlow = await getCombatFlow().catch(() => null);
   return {
-    derived: computeDerivedStats(character.atributos, rules, character.mana_bonus_ruptura ?? 0),
+    derived: computeDerivedStats(character.atributos, rules, character.mana_bonus_ruptura ?? 0, characterDerivedFormulas(character)),
     rules,
     reactionRules: normalizeReactionRules(combatFlow?.payload),
-    talents: talentDocs.map((doc) => normalizeTalentContent(doc.payload as Record<string, unknown>)),
   };
 }
 
@@ -229,7 +224,7 @@ export async function mutateSelectedTokenHudAction(params: {
       return afterUnlinked ? { ok: true, data: afterUnlinked.data } : { ok: false, error: "Token indisponível." };
     }
 
-    const context = await loadMutationContext(params.campaignId, loaded.data.character, rules);
+    const context = await loadMutationContext(loaded.data.character, rules);
     const boundedMutation: HudMutationInput = mutation.type === "resource"
       ? {
           ...mutation,

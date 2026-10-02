@@ -16,6 +16,7 @@
  */
 
 import {
+  characterDerivedFormulas,
   computeDerivedStats,
   conditionHasEndRoundEffect,
   getActiveConditionIds,
@@ -132,7 +133,7 @@ export async function resolveCampaignEndRoundForCharacters(params: {
   for (const record of activeCharacters) {
     try {
       const character = normalizeCharacter(record.payload);
-      const derived = computeDerivedStats(character.atributos, regras);
+      const derived = computeDerivedStats(character.atributos, regras, undefined, characterDerivedFormulas(character));
 
       const pvBefore = character.recursos_atuais?.pv ?? 0;
       const paBefore = Math.max(0, derived.pa_max - (character.estado_jogo?.pa_gastos ?? 0));

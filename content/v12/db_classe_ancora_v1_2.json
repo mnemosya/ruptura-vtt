@@ -1,0 +1,500 @@
+{
+  "_meta": {
+    "ruleset_version": "1.2",
+    "fonte": "https://app.notion.com/p/3d90a1363552800aa253ecb7b72a8b0d",
+    "fonte_editada_em": "2026-09-23T00:02:44.849Z",
+    "extraido_em": "2026-09-30",
+    "pendencias_editoriais": [
+      "equipamento_inicial: os pacotes recomendados 1 e 2 ainda são placeholders no Notion; nenhum item foi inferido."
+    ]
+  },
+  "classes": [
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "ancora",
+      "nome": "Âncora",
+      "descricao": "Âncoras são especialistas em impedir que uma dificuldade isolada se transforme no colapso de toda a operação. Sustentam pessoas sob pressão, reorganizam o grupo diante de imprevistos e oferecem apoio antes que as consequências se tornem irreversíveis.\n\nDurante uma cena, a Âncora mantém atenção sobre os integrantes mais vulneráveis da equipe. Sua intervenção pode corrigir uma ação, limitar os efeitos de uma falha ou responder a uma emergência no momento em que ela acontece. Conforme sua capacidade aumenta, o grupo inteiro passa a se beneficiar dessa vigilância.\n\nAlgumas Âncoras preservam o corpo; outras coordenam decisões ou cuidam da mente e da Integridade. Escolha esta classe se quiser sustentar seus aliados sob pressão, recuperar o controle após complicações e manter a operação unida nos momentos mais difíceis.",
+      "papel_principal": "Sustentação",
+      "papeis_secundarios": [
+        "Coordenação",
+        "Recuperação",
+        "Mitigação de consequências",
+        "Controle"
+      ],
+      "criacao": {
+        "perfis_atributos": [
+          {
+            "slug": "equilibrada",
+            "nome": "Equilibrada",
+            "valores": [
+              2,
+              1,
+              1
+            ]
+          },
+          {
+            "slug": "concentrada",
+            "nome": "Concentrada",
+            "valores": [
+              2,
+              2,
+              0
+            ]
+          },
+          {
+            "slug": "especializada",
+            "nome": "Especializada",
+            "valores": [
+              3,
+              1,
+              0
+            ]
+          }
+        ],
+        "perfis_pericias": [
+          {
+            "slug": "abrangente",
+            "nome": "Abrangente",
+            "quantidades": {
+              "valor_1": 8,
+              "valor_2": 5,
+              "valor_3": 1
+            }
+          },
+          {
+            "slug": "padrao",
+            "nome": "Padrão",
+            "quantidades": {
+              "valor_1": 5,
+              "valor_2": 4,
+              "valor_3": 2
+            }
+          },
+          {
+            "slug": "especializado",
+            "nome": "Especializado",
+            "quantidades": {
+              "valor_1": 4,
+              "valor_2": 2,
+              "valor_3": 3
+            }
+          }
+        ],
+        "pericias_valor_3": [
+          "biologia",
+          "influencia",
+          "logica",
+          "medicina",
+          "percepcao",
+          "psicologia",
+          "sociedade",
+          "vontade"
+        ],
+        "pericias_valor_2": [
+          "arcanismo",
+          "biologia",
+          "engenharia",
+          "influencia",
+          "logica",
+          "medicina",
+          "mobilidade",
+          "percepcao",
+          "psicologia",
+          "reflexos",
+          "sociedade",
+          "tecnomagia",
+          "vigor",
+          "vontade"
+        ],
+        "pericias_valor_1": "qualquer_nao_escolhida",
+        "recursos": {
+          "pv": {
+            "constante": 10,
+            "atributo": "corpo",
+            "multiplicador_atributo": 1,
+            "texto": "10 + Corpo"
+          },
+          "pe": {
+            "constante": 13,
+            "atributo": "mente",
+            "multiplicador_atributo": 1,
+            "texto": "13 + Mente"
+          },
+          "mana": {
+            "constante": 12,
+            "atributo": "animo",
+            "multiplicador_atributo": 2,
+            "texto": "12 + (Ânimo × 2)"
+          },
+          "andar": {
+            "constante": 10,
+            "atributo": "corpo",
+            "multiplicador_atributo": 1,
+            "texto": "10 + Corpo"
+          },
+          "correr": {
+            "constante": 20,
+            "atributo": "corpo",
+            "multiplicador_atributo": 2,
+            "texto": "2 × (10 + Corpo)"
+          },
+          "reacoes": {
+            "constante": 1,
+            "atributo": "mente",
+            "multiplicador_atributo": 1,
+            "texto": "Mente + 1"
+          },
+          "integridade": {
+            "constante": 10,
+            "atributo": "animo",
+            "multiplicador_atributo": 2,
+            "texto": "10 + (Ânimo × 2)"
+          }
+        },
+        "vertentes_primarias": "qualquer",
+        "sinergia_vertentes": {
+          "biotica": 5,
+          "cinetica": 4,
+          "cognitiva": 5,
+          "energetica": 3,
+          "material": 4,
+          "sinaptica": 3
+        },
+        "equipamento_inicial": {
+          "aretz": 3000,
+          "espacos_mochila": 10,
+          "itens": []
+        }
+      },
+      "caracteristicas": {
+        "F": [
+          {
+            "slug": "ponto_de_apoio",
+            "nome": "Ponto de Apoio",
+            "descricao": "Você acompanha o estado e as ações de um aliado, mantendo-se preparado para intervir quando ele precisar de suporte.\n\nNo início de cada cena, escolha um aliado que possa perceber a até 10 m. Ele se torna seu Foco até o final da cena.\n\nDurante seu turno, você pode gastar 1 PA para substituir seu Foco por outro aliado que possa perceber a até 10 m.\n\nINTERVENÇÕES\nUma vez por rodada, quando seu Foco estiver a até 10 m, você pode realizar uma das Intervenções abaixo sem gastar PA ou sua Reação. Você precisa perceber o acontecimento e ser capaz de se comunicar com o aliado ou agir diretamente sobre a situação.\n\n• Ajustar: depois que seu Foco realizar um teste, mas antes que seus efeitos sejam resolvidos, conceda +1 de vantagem ao resultado.\n\n• Conter a Consequência: depois que seu Foco sofrer uma falha padrão ou crítica, reduza o impacto da falha em uma categoria. Uma falha crítica passa a ser tratada como uma falha padrão; uma falha padrão passa a ser tratada como uma falha limitada. A ação continua falhando. Esta Intervenção altera apenas as consequências determinadas pela margem da falha, não recupera recursos gastos nem remove efeitos que a própria ação imponha expressamente em caso de falha. Uma falha limitada não pode ser reduzida por esta Intervenção.\n\nVocê só pode realizar uma Intervenção sobre cada teste ou acontecimento. Intervenções concedidas por suas Características de Subclasse compartilham esse limite, salvo quando indicado o contrário.\n\nFora de cenas divididas em rodadas, um mesmo aliado só pode receber uma Intervenção por ação."
+          }
+        ],
+        "D": [
+          {
+            "slug": "atencao_dividida",
+            "nome": "Atenção Dividida",
+            "descricao": "Você pode manter até 2 Focos simultaneamente.\n\nAo gastar 1 PA para substituir um Foco, deixe de considerar apenas um deles como seu Foco e escolha outro aliado.\n\nAlém disso, uma vez por cena, quando um aliado que não seja um dos seus Focos e que você possa perceber a até 10 m realizar um teste ou for afetado por uma ação, você pode torná-lo um dos seus Focos sem gastar PA. Para isso, deixe imediatamente de considerar um dos aliados escolhidos anteriormente como seu Foco. A mudança acontece antes da resolução do teste ou efeito e permite que você realize uma Intervenção sobre o novo Foco.\n\nMudar um Foco dessa forma não consome sua Intervenção da rodada."
+          }
+        ],
+        "B": [
+          {
+            "slug": "rede_de_apoio",
+            "nome": "Rede de Apoio",
+            "descricao": "Você pode manter até 3 Focos simultaneamente e realizar até 2 Intervenções por rodada.\n\nCada Intervenção precisa beneficiar um Foco diferente. Você continua limitado a uma Intervenção sobre cada teste ou acontecimento.\n\nFora de cenas divididas em rodadas, você pode realizar até duas Intervenções durante cada ação, mas cada uma precisa beneficiar um aliado diferente."
+          }
+        ],
+        "S": [
+          {
+            "slug": "a_operacao_continua",
+            "nome": "A Operação Continua",
+            "descricao": "Todos os aliados que possam perceber a até 10 m são considerados seus Focos, mesmo que não tenham sido escolhidos por Ponto de Apoio.\n\nVocê pode realizar até 3 Intervenções por rodada. Um mesmo aliado pode receber mais de uma Intervenção durante a rodada, desde que sejam aplicadas a testes ou acontecimentos diferentes.\n\nAlém disso, uma vez por cena, quando utilizar Conter a Consequência sobre uma falha limitada, você pode transformar essa falha em um sucesso limitado com margem 0. A ação alcança seu objetivo, mas conserva qualquer custo, exposição ou consequência compatível com um sucesso limitado."
+          }
+        ]
+      },
+      "subclasses": [
+        "coordenador",
+        "terapeuta",
+        "vitalista"
+      ],
+      "progressao": {
+        "F": {
+          "ranking": "F",
+          "pontos_pericia": 0,
+          "limite_pericia": 3,
+          "pontos_atributo": 0,
+          "pontos_vertente": 0,
+          "magias_adicionais": 0,
+          "pa": 3,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "focos": 1,
+            "intervencoes_por_rodada": 1
+          }
+        },
+        "E": {
+          "ranking": "E",
+          "pontos_pericia": 2,
+          "limite_pericia": 3,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 3,
+          "escolhe_subclasse": true,
+          "mudancas_recursos_classe": {
+            "focos": 1,
+            "intervencoes_por_rodada": 1
+          }
+        },
+        "D": {
+          "ranking": "D",
+          "pontos_pericia": 0,
+          "limite_pericia": 3,
+          "pontos_atributo": 1,
+          "pontos_vertente": 0,
+          "magias_adicionais": 1,
+          "pa": 3,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "focos": 2,
+            "intervencoes_por_rodada": 1
+          }
+        },
+        "C": {
+          "ranking": "C",
+          "pontos_pericia": 2,
+          "limite_pericia": 4,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 4,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "focos": 2,
+            "intervencoes_por_rodada": 1
+          }
+        },
+        "B": {
+          "ranking": "B",
+          "pontos_pericia": 0,
+          "limite_pericia": 4,
+          "pontos_atributo": 1,
+          "pontos_vertente": 0,
+          "magias_adicionais": 1,
+          "pa": 4,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "focos": 3,
+            "intervencoes_por_rodada": 2
+          }
+        },
+        "A": {
+          "ranking": "A",
+          "pontos_pericia": 2,
+          "limite_pericia": 5,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 4,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "focos": 3,
+            "intervencoes_por_rodada": 2
+          }
+        },
+        "S": {
+          "ranking": "S",
+          "pontos_pericia": 0,
+          "limite_pericia": 5,
+          "pontos_atributo": 1,
+          "pontos_vertente": 0,
+          "magias_adicionais": 1,
+          "pa": 5,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "focos": "todos_aliados_proximos",
+            "intervencoes_por_rodada": 3
+          }
+        },
+        "S+": {
+          "ranking": "S+",
+          "pontos_pericia": 2,
+          "limite_pericia": 5,
+          "pontos_atributo": 0,
+          "pontos_vertente": 1,
+          "magias_adicionais": 0,
+          "pa": 5,
+          "escolhe_subclasse": false,
+          "mudancas_recursos_classe": {
+            "focos": "todos_aliados_proximos",
+            "intervencoes_por_rodada": 3
+          }
+        }
+      }
+    }
+  ],
+  "subclasses": [
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "coordenador",
+      "nome": "Coordenador",
+      "classe_slug": "ancora",
+      "descricao": "Coordenadores organizam pessoas, informações e oportunidades para transformar capacidades individuais em uma operação coerente. Identificam o objetivo mais importante, distribuem responsabilidades e ajustam a ordem das ações conforme a situação muda.\n\nSeu trabalho não consiste em comandar cada movimento dos aliados, mas em garantir que todos compreendam o plano, reconheçam as oportunidades criadas pelo grupo e consigam agir no momento em que sua contribuição produz maior impacto.",
+      "caracteristicas": {
+        "E": [
+          {
+            "slug": "limite_de_focos_coordenador_e",
+            "nome": "Limite de Focos +1",
+            "descricao": "Seu limite de Focos aumenta em 1.",
+            "efeitos": [
+              {
+                "tipo": "recurso_classe",
+                "recurso": "focos",
+                "modificador": 1
+              }
+            ]
+          },
+          {
+            "slug": "briefing_operacional",
+            "nome": "Briefing Operacional",
+            "descricao": "Ao dedicar pelo menos 5 minutos para orientar o grupo antes de uma cena, escolha como participantes um número de aliados igual ao seu limite de Focos. Cada participante escolhe uma perícia relacionada ao papel que desempenhará no plano.\n\nUma vez durante a cena, quando falhar em um teste da perícia escolhida diretamente relacionado ao plano estabelecido, o participante pode rerrolar o teste e receber +1 no resultado. Ele deve utilizar o novo resultado.\n\nUma criatura só pode receber os benefícios de um Briefing Operacional por vez. Um novo briefing substitui o anterior."
+          },
+          {
+            "slug": "orientacoes_coordenadas",
+            "nome": "Orientações Coordenadas",
+            "descricao": "Quando utilizar Ajustar ou Conter a Consequência sobre uma ação, escolha outro Foco capaz de receber suas orientações. O Foco escolhido pode imediatamente realizar uma das seguintes opções: deslocar-se até 2 m; sacar ou guardar um item; ou realizar uma interação simples com um objeto ou elemento do ambiente ao seu alcance.\n\nSe a ação for bem-sucedida, o Foco escolhido também recebe +1 de vantagem no próximo teste que realizar até o final de seu próximo turno.\n\nO Foco beneficiado não pode ser aquele que desencadeou a Intervenção."
+          }
+        ],
+        "C": [
+          {
+            "slug": "limite_de_focos_coordenador_c",
+            "nome": "Limite de Focos +1",
+            "descricao": "Seu limite de Focos aumenta em mais 1.",
+            "efeitos": [
+              {
+                "tipo": "recurso_classe",
+                "recurso": "focos",
+                "modificador": 1
+              }
+            ]
+          },
+          {
+            "slug": "coordenacao_paralela",
+            "nome": "Coordenação Paralela",
+            "descricao": "Uma vez por rodada, você pode utilizar Ajustar ou Conter a Consequência sobre a ação de um Foco sem que essa utilização conte para o número máximo de Intervenções que pode realizar na rodada."
+          },
+          {
+            "slug": "imposicao_de_ritmo",
+            "nome": "Imposição de Ritmo",
+            "descricao": "Intervenção. Escolha um Foco que ainda não tenha realizado seu turno na rodada. Ele realiza imediatamente seu turno, ignorando a alternância entre PJ e PN, e pode gastar 3 PA ou mais mesmo durante os Turnos Rápidos.\n\nEsse é o turno normal do Foco naquela rodada. Esta Intervenção não concede PA, não recupera PA gastos nem permite que ele realize outro turno posteriormente.\n\nApós o término desse turno, a ordem de ações continua a partir do ponto em que foi interrompida."
+          }
+        ],
+        "A": [
+          {
+            "slug": "limite_de_focos_coordenador_a",
+            "nome": "Limite de Focos +1",
+            "descricao": "Seu limite de Focos aumenta em mais 1.",
+            "efeitos": [
+              {
+                "tipo": "recurso_classe",
+                "recurso": "focos",
+                "modificador": 1
+              }
+            ]
+          },
+          {
+            "slug": "operacao_sincronizada",
+            "nome": "Operação Sincronizada",
+            "descricao": "Intervenção. Uma vez por cena, escolha qualquer quantidade de seus Focos que ainda não tenha realizado seus turnos na rodada. Os Focos escolhidos realizam imediatamente seus turnos, um após o outro, na ordem determinada por você, ignorando a alternância entre PJ e PN. Durante essa sequência, eles podem gastar 3 PA ou mais mesmo durante os Turnos Rápidos.\n\nEsses são os turnos normais dos Focos naquela rodada. Esta Intervenção não concede PA, não recupera PA gastos nem permite que eles realizem outros turnos posteriormente.\n\nEfeitos que duram até o início ou o final do turno de uma criatura são resolvidos normalmente durante a sequência. Depois que todos os Focos escolhidos concluírem seus turnos, a ordem de ações continua a partir do ponto em que foi interrompida.\n\nImposição de Ritmo continua disponível normalmente e possui um uso separado de Operação Sincronizada."
+          }
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "terapeuta",
+      "nome": "Terapeuta",
+      "classe_slug": "ancora",
+      "descricao": "Terapeutas preservam o equilíbrio emocional e cognitivo do grupo diante do medo, da pressão e da interferência arcana. Reconhecem sinais de desorientação antes que se transformem em colapso, ajudam seus aliados a recuperar o controle e compreendem os efeitos produzidos pela Vertente Cognitiva.\n\nSeu trabalho também continua depois da operação. Por meio de acompanhamento prolongado, um Terapeuta pode ajudar alguém a processar experiências que fragmentaram sua identidade e recuperar parte da Integridade perdida.",
+      "caracteristicas": {
+        "E": [
+          {
+            "slug": "acompanhamento_terapeutico",
+            "nome": "Acompanhamento Terapêutico",
+            "descricao": "Você pode conduzir um tratamento prolongado para recuperar parte da Integridade perdida por outra criatura.\n\nNo início do tratamento, o paciente escolhe uma Origem para ser o Foco do Tratamento. Uma Origem corresponde ao acontecimento específico responsável pela perda de Integridade, como uma Ruptura, um Escalpo, uma experiência traumática ou outro evento semelhante.\n\nCada sessão exige pelo menos 1 hora, condições apropriadas e ausência de interrupções significativas. Ao final da sessão, o paciente realiza um teste de Vontade CD 7 com +2 de vantagem. Em caso de sucesso, acumula 1 Sucesso Terapêutico naquela Origem. Uma falha não elimina sucessos acumulados.\n\nAo acumular 3 Sucessos Terapêuticos, o paciente recupera 1 ponto de Integridade perdido em decorrência da Origem tratada. Sucessos excedentes não são transferidos para outro tratamento.\n\nUma criatura só pode participar de uma sessão de Acompanhamento Terapêutico a cada 6 dias, o equivalente a uma semana em Vantahl. Esse intervalo pertence ao paciente; trocar de Terapeuta ou participar de sessões adicionais não permite antecipar o próximo teste.\n\nCada criatura pode recuperar no máximo 1 ponto de Integridade por meio de Acompanhamento Terapêutico. Esse limite considera todos os tratamentos e Terapeutas envolvidos. Você não pode conduzir seu próprio tratamento, e uma criatura reduzida a 0 de Integridade não pode ser recuperada dessa forma."
+          },
+          {
+            "slug": "aterramento",
+            "nome": "Aterramento",
+            "descricao": "Ao orientar uma criatura próxima por meio da voz, do toque ou de outra forma adequada de comunicação, você pode gastar 2 PA para fazê-la recuperar 1d6 + 2 PE.\n\nCada criatura só pode recuperar PE dessa forma uma vez por cena."
+          },
+          {
+            "slug": "expertise_cognitiva",
+            "nome": "Expertise Cognitiva",
+            "descricao": "Você recebe +1 de vantagem em testes de Psicologia para identificar, analisar ou tratar alterações emocionais, comportamentais, perceptivas ou mnemônicas produzidas pela Vertente Cognitiva.\n\nDepois de observar ou interagir com uma criatura afetada, você consegue reconhecer a natureza geral da alteração, como medo implantado, percepção distorcida, memória modificada ou comportamento induzido. Isso não revela automaticamente a origem exata, a duração ou o efeito utilizado."
+          }
+        ],
+        "C": [
+          {
+            "slug": "intervencao_cognitiva",
+            "nome": "Intervenção Cognitiva",
+            "descricao": "Quando um de seus Focos perder PE, receber uma condição mental ou for submetido a um efeito da Vertente Cognitiva, você pode utilizar uma das opções abaixo como uma Intervenção:\n\n• Recuperar o Eixo: utilize Aterramento sobre o Foco fora de seu turno, pagando normalmente seu custo.\n\n• Romper a Influência: caso o efeito permita um teste para ser encerrado ou resistido, o Foco pode repetir imediatamente esse teste com +1 vantagem. Uma criatura só pode receber esta opção uma vez contra cada aplicação do mesmo efeito.\n\n• Suspender a Crise: suspenda até o final do próximo turno do Foco uma condição mental que o esteja afetando. A duração da condição continua transcorrendo normalmente, e ela retorna ao final desse período caso ainda não tenha terminado.\n\nIntervenção Cognitiva não encerra efeitos instantâneos nem reverte alterações permanentes."
+          }
+        ],
+        "A": [
+          {
+            "slug": "retomar_a_si",
+            "nome": "Retomar a Si",
+            "descricao": "Uma vez por cena, quando utilizar Intervenção Cognitiva, você pode fazer o Foco recuperar imediatamente o domínio sobre a própria mente.\n\nEncerre uma condição mental ou um efeito da Vertente Cognitiva que esteja afetando o Foco, desde que não seja permanente. Isso funciona mesmo que o efeito normalmente não permita um novo teste para ser encerrado.\n\nCaso o efeito tenha duração instantânea, você não desfaz consequências que já ocorreram, mas impede que seus efeitos continuem afetando o Foco."
+          },
+          {
+            "slug": "acompanhamento_aprofundado",
+            "nome": "Acompanhamento Aprofundado",
+            "descricao": "Cada criatura pode agora recuperar até 2 pontos de Integridade no total por meio de Acompanhamento Terapêutico. O segundo ponto pode pertencer a uma Origem diferente ou à mesma Origem do primeiro, desde que aquele acontecimento tenha causado a perda de pelo menos 2 pontos de Integridade.\n\nCada ponto recuperado exige um ciclo independente de tratamento e 3 novos Sucessos Terapêuticos. Recuperar o primeiro ponto não reduz a quantidade de sucessos necessária para recuperar o segundo.\n\nAinda que uma Origem tenha causado uma perda superior a 2 pontos de Integridade, uma criatura não pode recuperar mais de 2 pontos de Integridade no total por meio de Acompanhamento Terapêutico."
+          }
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "ruleset_version": "1.2",
+      "slug": "vitalista",
+      "nome": "Vitalista",
+      "classe_slug": "ancora",
+      "descricao": "Vitalistas prestam atendimento durante operações, quando não há tempo, segurança ou estrutura para um tratamento completo. Avaliam rapidamente a gravidade de cada caso, alcançam pacientes em posições perigosas e utilizam os recursos disponíveis para mantê-los vivos e capazes de continuar agindo.\n\nA forma desse atendimento varia. Um Vitalista pode recorrer a treinamento médico, fármacos, organismos regenerativos, magia Biótica, técnicas tradicionais ou equipamentos tecnomágicos. Sua especialidade não está na origem da cura, mas em reconhecer quem corre maior risco, chegar até essa pessoa e devolver-lhe condições de permanecer em campo.",
+      "caracteristicas": {
+        "E": [
+          {
+            "slug": "atendimento",
+            "nome": "Atendimento",
+            "descricao": "Para suas características de Vitalista, um Atendimento é uma ação realizada por você sobre uma criatura que produza imediatamente ao menos um dos seguintes efeitos: recuperar PV; estabilizar um Colapso físico; ou remover uma condição provocada por dano físico, energético, ácido ou tóxico.\n\nUm Atendimento pode ser realizado por meio de um item, magia, fórmula, talento ou característica. Você precisa possuir e ser capaz de utilizar normalmente o recurso escolhido, pagando seus PA, Mana, usos e demais custos.\n\nEfeitos automáticos, persistentes ou que recuperem várias criaturas sem uma ação dirigida por você não são considerados Atendimentos. Primeiros Socorros e a aplicação de um Medkit são Atendimentos."
+          },
+          {
+            "slug": "primeiros_socorros",
+            "nome": "Primeiros Socorros",
+            "descricao": "Você pode gastar 2 PA para prestar primeiros socorros a uma criatura ao seu alcance. Ela recupera 1d4 PV sem consumir um Medkit ou outro item.\n\nCada criatura só pode recuperar PV dessa forma uma vez por cena."
+          },
+          {
+            "slug": "pratica_de_cura",
+            "nome": "Prática de Cura",
+            "descricao": "Quando um Atendimento seu que não seja Primeiros Socorros fizer uma criatura recuperar PV, ela recupera +1d6 PV. Esse dado adicional é aplicado apenas uma vez por Atendimento, mesmo que o efeito produza mais de uma recuperação.\n\nAlém disso, você não precisa realizar testes normalmente exigidos para aplicar Medkits ou outros itens médicos. A aplicação é automaticamente bem-sucedida.\n\nVitalistas mantêm contatos entre curandeiros, distribuidores clandestinos, magistas e profissionais de clínicas oficiais ou improvisadas. Também sabem adquirir separadamente refis, fármacos e componentes compatíveis para montar seus próprios Medkits sem pagar pelo conjunto corporativo completo.\n\nPor isso, Medkits adquiridos por você custam 50% do preço indicado. Nenhum outro desconto ou redução de preço pode ser aplicado a essa compra."
+          },
+          {
+            "slug": "prontidao_de_campo",
+            "nome": "Prontidão de Campo",
+            "descricao": "Você recebe a Intervenção Primeira Resposta: quando um de seus Focos perder PV, receber uma condição provocada por dano ou entrar em Colapso físico, você pode se deslocar até metade de seu Andar em direção a ele.\n\nEsse deslocamento não exige PA e precisa terminar em uma posição mais próxima do Foco.\n\nDurante o deslocamento, você também pode sacar um item necessário para realizar um Atendimento, independentemente de ele estar em seu Acesso Rápido ou em sua Mochila."
+          }
+        ],
+        "C": [
+          {
+            "slug": "triagem_de_combate",
+            "nome": "Triagem de Combate",
+            "descricao": "Você reconhece rapidamente a gravidade dos ferimentos de qualquer aliado que possa perceber. Você sabe se ele está com seus PV máximos; está acima da metade de seus PV máximos; está com metade de seus PV máximos ou menos; está com 0 PV ou em Colapso físico; ou possui uma condição provocada por dano físico, energético, ácido ou tóxico.\n\nQuando um aliado que possa perceber ficar com metade de seus PV máximos ou menos, chegar a 0 PV ou receber uma dessas condições, você pode torná-lo imediatamente um de seus Focos. Caso já tenha atingido seu limite de Focos, deixe de considerar outro aliado como seu Foco.\n\nEssa mudança não exige PA e não conta como a mudança permitida por Atenção Dividida."
+          },
+          {
+            "slug": "protocolo_de_urgencia",
+            "nome": "Protocolo de Urgência",
+            "descricao": "Uma vez por rodada, depois de utilizar Primeira Resposta, você pode realizar imediatamente um Atendimento no Foco, desde que tenha terminado o deslocamento em uma posição da qual possa atendê-lo ou tenha permanecido onde estava por já estar dentro do alcance necessário.\n\nVocê paga normalmente os PA e demais recursos exigidos pelo Atendimento. Ele pode ser realizado fora do seu turno, desde que você ainda tenha os PA necessários.\n\nQuando realizar esse Atendimento em um Foco com metade de seus PV máximos ou menos, escolha também um dos seguintes procedimentos:\n\n• Reabilitar: o Foco pode se levantar sem gastar PA.\n\n• Reposicionar: depois do Atendimento, o Foco pode se deslocar até 2 m sem gastar PA.\n\n• Tratar Condição: remova uma condição provocada por dano físico, energético, ácido ou tóxico, desde que sua causa possa ser tratada pelo método utilizado. Uma condição mantida por uma fonte ainda ativa não pode ser removida dessa forma."
+          }
+        ],
+        "A": [
+          {
+            "slug": "janela_de_reanimacao",
+            "nome": "Janela de Reanimação",
+            "descricao": "O deslocamento concedido por Primeira Resposta aumenta para até seu Andar.\n\nAlém disso, quando uma criatura que era um de seus Focos morrer em consequência de um Colapso físico, você ainda pode prestar atendimento nela durante as 3 rodadas seguintes, aproximadamente 30 segundos.\n\nDurante esse período, a criatura permanece morta, mas é considerada um Foco para suas características e um alvo válido para qualquer Atendimento seu que possa recuperar PV ou estabilizar um Colapso físico. O Atendimento precisa ser concluído antes do encerramento dessa janela.\n\nResolva o Atendimento normalmente. Caso a criatura recupere ao menos 1 PV, a morte é revertida, o marcador de Colapso é encerrado e ela recobra a consciência. Caso seja estabilizada sem recuperar PV, a morte é revertida, mas ela permanece com 0 PV, Inconsciente e estabilizada até recuperar ao menos 1 PV.\n\nVocê pode utilizar Primeira Resposta quando a morte acontecer e para alcançar o corpo durante a janela de reanimação.\n\nEsta característica funciona apenas sobre mortes provocadas por Colapso físico e exige que o corpo ainda esteja em condições de receber o Atendimento escolhido. Depois das três rodadas, a morte torna-se definitiva e não pode mais ser revertida por esta característica."
+          }
+        ]
+      }
+    }
+  ],
+  "backgrounds": [],
+  "qualities": [],
+  "complications": []
+}

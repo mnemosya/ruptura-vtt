@@ -23,7 +23,7 @@
  *     — simplesmente não mostra o bloco.
  */
 
-import { Check, Crosshair, Sliders } from "lucide-react";
+import { ArrowUpCircle, Check, Crosshair, Sliders, Wand2 } from "lucide-react";
 import type { ConsoleApi, ConsoleModo } from "../types";
 import { useVerNoMapa } from "../ConsoleCloseContext";
 
@@ -88,7 +88,29 @@ export function GravacaoChip({ estado, erro }: { estado: "idle" | "saving" | "sa
   );
 }
 
-export function ModoChip({ modo, onAlternar }: { modo: ConsoleModo; onAlternar: (m: ConsoleModo) => void }) {
+/**
+ * Personagem criado só com o nome: abre o assistente v1.2 para completar a
+ * criação (Classe, Trajetória, perícias, equipamento) mantendo o mesmo
+ * personagem. Substitui o Ajustar e o Ranking até a criação ser concluída.
+ */
+export function CompletarCriacaoChip({ onAbrir }: { onAbrir: () => void }) {
+  return (
+    <button
+      type="button"
+      className="rc-modo-chip"
+      onClick={onAbrir}
+      title="Completar a criação deste personagem pelo assistente RUPTURA v1.2"
+      data-testid="console-completar-criacao"
+    >
+      <span className="rc-modo-chip-ico" aria-hidden="true">
+        <Wand2 size={12} strokeWidth={2} />
+      </span>
+      Completar criação
+    </button>
+  );
+}
+
+export function ModoChip({ modo, onAlternar, v12 = false }: { modo: ConsoleModo; onAlternar: (m: ConsoleModo) => void; v12?: boolean }) {
   const evolucao = modo === "evolucao";
   return (
     <button
@@ -99,15 +121,17 @@ export function ModoChip({ modo, onAlternar }: { modo: ConsoleModo; onAlternar: 
       onClick={() => onAlternar(evolucao ? "jogo" : "evolucao")}
       title={
         evolucao
-          ? "Sair do Modo Evolução (volta para o Modo Jogo)"
-          : "Entrar no Modo Evolução — destrava atributos, perícias e talentos"
+          ? "Concluir os ajustes e gravar (volta para o Modo Jogo)"
+          : v12
+            ? "Entrar no Modo Evolução — corrige atributos e perícias definidos na criação"
+            : "Entrar no Modo Evolução — destrava atributos, perícias e talentos"
       }
       data-testid="console-modo-chip"
     >
       <span className="rc-modo-chip-ico" aria-hidden="true">
         {evolucao ? <Check size={12} strokeWidth={2.4} /> : <Sliders size={12} strokeWidth={2} />}
       </span>
-      {evolucao ? "Modo Evolução" : "Evoluir"}
+      {evolucao ? "Concluir" : "Ajustar"}
     </button>
   );
 }
@@ -176,5 +200,27 @@ export function PassoValor({
         +
       </button>
     </span>
+  );
+}
+
+/**
+ * Avanço de Ranking para personagens RUPTURA v1.2. Substitui o Modo
+ * Evolução livre: em v1.2 a ficha só muda pelo pacote do próximo Ranking
+ * (capítulo 25), validado no servidor.
+ */
+export function AvancoChip({ ranking, onAbrir }: { ranking: string; onAbrir: () => void }) {
+  return (
+    <button
+      type="button"
+      className="rc-modo-chip"
+      onClick={onAbrir}
+      title="Aplicar o avanço do próximo Ranking (Marco de Progressão)"
+      data-testid="console-avanco-chip"
+    >
+      <span className="rc-modo-chip-ico" aria-hidden="true">
+        <ArrowUpCircle size={12} strokeWidth={2} />
+      </span>
+      Ranking {ranking}
+    </button>
   );
 }

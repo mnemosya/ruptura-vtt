@@ -4,7 +4,7 @@
     "conteudo": "talentos",
     "fonte": "talentos.md",
     "versao_schema": "1.3.0",
-    "status_padrao": "published",
+    "status_padrao": "archived",
     "gerado_em": "2026-06-25",
     "hash_sha256_origem": "f69647396d6071403032da3e9c3beb466ec54bd3eeda0305de7f5edf3233ffde",
     "total_talentos": 22,
@@ -17,7 +17,8 @@
       "Cada nível recebeu payload_automacao.efeitos com estrutura data-driven.",
       "Campos de perícia, condição, margem, cadência e tags usam IDs internos em snake_case.",
       "Efeitos narrativos sem automação direta foram mantidos como payloads do tipo acao_narrativa ou equivalentes.",
-      "v1.3: alvo_tags deve conter perícias ou tags semânticas de rolagem; IDs de ação ficam em alvo_acoes."
+      "v1.3: alvo_tags deve conter perícias ou tags semânticas de rolagem; IDs de ação ficam em alvo_acoes.",
+      "Arquivados em 01/10/2026 (migração RUPTURA v1.2, Fase 7/10): Talentos não existem na v1.2. Os documentos continuam no banco."
     ],
     "revisao": "v1.2: camada familia (dispatch §12.1) sobre tipo; corrigido campo condicao->requisito em Camuflagem Optica; removidos aparar/bloquear do enum de pericias. | v1.3: alvo_tags com IDs de ação (aparar/bloquear) migrados para alvo_acoes; schema passa a validar alvo_acoes e contrato de alvo_tags."
   },
@@ -391,7 +392,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -554,7 +555,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -682,7 +683,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -843,7 +844,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -990,7 +991,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -1133,7 +1134,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -1274,7 +1275,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -1431,7 +1432,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -1573,7 +1574,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -1717,7 +1718,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -1865,7 +1866,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -2030,7 +2031,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -2167,7 +2168,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -2306,7 +2307,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -2442,7 +2443,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -2626,7 +2627,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -2753,7 +2754,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -2891,7 +2892,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -3026,7 +3027,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -3152,7 +3153,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -3290,7 +3291,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"
@@ -3422,7 +3423,7 @@
           "updated_at": "2026-06-25"
         }
       ],
-      "status": "published",
+      "status": "archived",
       "versao": "1.0.0",
       "created_at": "2026-06-25",
       "updated_at": "2026-06-25"

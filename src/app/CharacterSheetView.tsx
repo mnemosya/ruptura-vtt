@@ -79,8 +79,6 @@ export async function CharacterSheetView({
       combatActionsIniciais={dados.combatActions}
       combatActionsError={dados.combatActionsError}
       reactionRules={dados.reactionRules}
-      talentsIniciais={dados.talents}
-      talentsError={dados.talentsError}
       itemsIniciais={dados.items}
       itemsError={dados.itemsError}
       spellsIniciais={dados.spells}

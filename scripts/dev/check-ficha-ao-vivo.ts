@@ -37,6 +37,7 @@ import { BASE_URL } from "./authSession";
 import { garantirTokenAlcancavel, recolherPainelDaSessao } from "./painelDaSessao";
 import { createInitialCharacter } from "../../src/lib/character/createCharacter";
 
+import { personagemV12 } from "./fixtures/personagemV12";
 loadDotenv({ path: ".env.local" });
 
 function exigirEnv(nome: string): string {
@@ -110,7 +111,17 @@ async function abrirSessao(browser: Browser, email: string, url: string): Promis
 }
 
 async function limpar(): Promise<void> {
-  for (const id of criados.campanhas) await admin.from("campaigns").delete().eq("id", id);
+  // Confere o delete: antes ele falhava em silêncio e deixava a campanha
+  // (e o personagem) no banco, apesar do "L (limpeza)" aprovado.
+  for (const id of criados.campanhas) {
+    await admin.from("characters").delete().eq("campaign_id", id);
+    for (let tentativa = 1; tentativa <= 3; tentativa++) {
+      const { error } = await admin.from("campaigns").delete().eq("id", id);
+      if (!error) break;
+      if (tentativa === 3) console.log(`AVISO: campanha ${id} não foi apagada: ${error.message}`);
+      else await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
   for (const id of criados.usuarios) await admin.auth.admin.deleteUser(id).catch(() => {});
 }
 
@@ -134,7 +145,7 @@ async function main(): Promise<void> {
   // Personagem pela fábrica canônica do produto — payload inventado à
   // mão já produziu token que nem renderiza.
   const personagemId = randomUUID();
-  const payload = createInitialCharacter(null, "Alvo Vivo");
+  const payload = personagemV12("Alvo Vivo");
   // `name`, não `nome`: a coluna da tabela é em inglês, e um insert com
   // nome errado falha em silêncio quando ninguém lê o retorno — foi
   // exatamente o que aconteceu na primeira versão deste arquivo, e a

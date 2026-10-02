@@ -106,8 +106,16 @@
   },
   "reacoes": {
     "max_por_rodada": {
-      "ref": "atributo",
-      "id": "mente"
+      "op": "+",
+      "args": [
+        {
+          "ref": "atributo",
+          "id": "mente"
+        },
+        {
+          "const": 1
+        }
+      ]
     },
     "reseta_em": "inicio_da_rodada",
     "acoes_defensivas_consumem_reacao": true,

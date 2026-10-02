@@ -35,6 +35,7 @@ import {
 import { createInitialCharacter, resolvePendingRuptureChoice } from "../src/lib/character";
 import type { Character } from "../src/lib/character";
 
+import { personagemV12 } from "./dev/fixtures/personagemV12";
 const TEST_CAMPAIGN_NAME = "__TESTE_CAMPAIGN_END_SCENE__";
 const TEST_CHARACTER_PREFIX = "__TESTE_CES__";
 
@@ -46,7 +47,7 @@ async function deleteCampaignRaw(id: string): Promise<void> {
 }
 
 function characterWithRupture(nome: string, opts: { pending?: boolean; level?: number; integridade?: number; animo?: number } = {}): Character {
-  const base = createInitialCharacter(null, nome);
+  const base = personagemV12(nome);
   return {
     ...base,
     atributos: { ...base.atributos, animo: opts.animo ?? base.atributos.animo },

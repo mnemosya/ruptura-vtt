@@ -1,0 +1,280 @@
+| Ranking | Características de classe | Dados de Manobra | Manobras conhecidas | Perícias | Atributos | Vertentes | PA |
+| F | Característica de Classe I | 4d4 | 3 | Distribuição inicial, limite 3 | Distribuição inicial | Escolha a Primária e receba 1 ponto nela | 3 |
+| E | Característica de Subclasse I | 4d4 | 3 | +2 pontos | — | +1 ponto | 3 |
+| D | Característica de Classe II | 4d6 | 4 | — | +1 ponto | +1 magia | 3 |
+| C | Característica de Subclasse II | 4d6 | 4 | +2 pontos, limite 4 | — | +1 ponto | 4 |
+| B | Característica de Classe III | 4d8 | 5 | — | +1 ponto | +1 magia | 4 |
+| A | Característica de Subclasse III | 4d8 | 5 | +2 pontos, limite 5 | — | +1 ponto | 4 |
+| S | Característica de Classe IV | 4d10 | 6 | — | +1 ponto | +1 magia | 5 |
+| S+ | — | 4d10 | 6 | +2 pontos | — | +1 ponto | 5 |
+Combatentes são especialistas em levar confrontos a uma conclusão. Em vez de apenas trocar golpes ou manter inimigos ocupados, procuram a falha capaz de quebrar uma defesa, interromper uma reação ou tornar possível um ataque decisivo.
+Durante o combate, o Combatente reúne diferentes técnicas para fortalecer suas ações e responder às mudanças do campo. Pode aumentar o impacto de um golpe, alcançar uma posição vantajosa, atingir uma vulnerabilidade ou reagir antes que o inimigo complete sua ofensiva. Sua eficácia nasce da combinação dessas respostas, não de um equipamento específico.
+Alguns Combatentes agem com precisão metódica; outros confiam em acrobacias, violência concentrada ou na integração entre armas e magia. Escolha esta classe se quiser construir ataques decisivos, explorar erros e impedir que uma ameaça tenha tempo de se recuperar.
+| Papel principal | Eliminação |
+| Papéis secundários | Pressão ofensiva, mobilidade e resposta |
+| Subclasses | Acrobata, Brutalista, Dissecador e Mago de Batalha |
+# CRIANDO UM COMBATENTE
+### 1. ATRIBUTOS
+| Equilibrada | 2, 1 e 1 |
+| Concentrada | 2, 2 e 0 |
+| Especializada | 3, 1 e 0 |
+### 2. RECURSOS
+- PV: 13 + Corpo
+- PE: 10 + Mente
+- Mana: 12 + (Ânimo × 2)
+- Deslocamento:
+- Andar: 10 + Corpo
+- Correr: 2 × (10 + Corpo)
+- Reações: Mente + 1
+- Integridade: 10 + (Ânimo × 2)
+### 3. PERÍCIAS
+| Perfil | Valor 1 | Valor 2 | Valor 3 | Total |
+| Abrangente | 10 | 4 | 1 | 21 |
+| Padrão | 7 | 3 | 2 | 19 |
+| Especializado | 3 | 2 | 3 | 16 |
+2. Escolha suas perícias de valor 3 entre:
+Balística Luta Mobilidade Precisão Reflexos
+3. Escolha suas perícias de valor 2 entre:
+Arcanismo Balística Engenharia Intimidação Luta Mobilidade Percepção Precisão Reflexos Vigor Vontade
+### 4. VERTENTES
+BIÓTICA
+Biótica favorece Combatentes que pretendem fortalecer o próprio corpo, sobreviver a ferimentos e debilitar organismos inimigos.
+Sinergia: ●●●●○
+CINÉTICA
+Cinética favorece Combatentes que pretendem combinar mobilidade, impacto e pressão contínua.
+Sinergia: ●●●●●
+COGNITIVA
+Cognitiva favorece Combatentes que pretendem desorganizar adversários, controlar comportamentos e criar oportunidades de ataque.
+Sinergia: ●●●○○
+ENERGÉTICA
+Energética favorece Combatentes que pretendem maximizar o dano e explorar diferentes resistências.
+Sinergia: ●●●●●
+MATERIAL
+Material favorece Combatentes que pretendem preparar suas próprias oportunidades e superar defesas físicas.
+Sinergia: ●●●○○
+SINÁPTICA
+Sináptica favorece Combatentes que pretendem enfrentar ameaças na Trama, interferir em sistemas e reunir informações táticas.
+Sinergia: ●○○○○
+### 5. EQUIPAMENTO INICIAL
+- Ⱥ 3.000, que podem ser gastos livremente na aquisição de equipamentos;
+- Uma Mochila de 10 espaços de inventário.
+#### PACOTE 1 — [PLACEHOLDER]
+#### PACOTE 2 — [PLACEHOLDER]
+# CARACTERÍSTICAS DE CLASSE
+### RANKING F
+Você adquire a característica Doutrina de Combate.
+#### DOUTRINA DE COMBATE
+Você aprende técnicas que permitem alterar o resultado de suas ações durante o confronto.
+Você possui uma reserva de 4 Dados de Manobra d4 e aprende 3 Manobras Básicas à sua escolha.
+#### DADOS DE MANOBRA
+Algumas características permitem gastar um Dado de Manobra para realizar uma manobra. Cada manobra determina seus requisitos, o momento em que pode ser declarada e como aplicar o resultado do dado.
+Ao declarar uma manobra, gaste e role o dado indicado. Ele permanece gasto mesmo que a ação não alcance o resultado pretendido.
+Você pode aplicar apenas uma manobra por ação, salvo quando uma característica disser o contrário. Diferentes efeitos produzidos durante a mesma ação não permitem utilizar manobras adicionais.
+Você recupera todos os Dados de Manobra gastos ao concluir um descanso longo.
+#### MANOBRAS BÁSICAS
+Manobras Básicas modificam diretamente suas ações, defesas e deslocamentos.
+CORTAR A RESPOSTA:
+Depois de acertar uma criatura, você pode gastar um Dado de Manobra e adicioná-lo ao dano.
+Em um sucesso padrão ou crítico, o alvo perde uma Reação disponível. Caso não possua Reações disponíveis, ele recupera uma Reação a menos no início do próximo turno.
+DEFESA CALCULADA:
+Depois de realizar uma ação defensiva e antes de saber o resultado, você pode gastar um Dado de Manobra e adicioná-lo ao teste.
+DEMOLIÇÃO:
+Depois de atingir um escudo, objeto, estrutura ou cobertura, você pode gastar um Dado de Manobra e adicionar o dobro do resultado ao dano causado ao PD.
+EXPLORAR A GUARDA:
+Depois de acertar uma criatura, você pode gastar um Dado de Manobra e adicioná-lo ao dano.
+Seu próximo ataque contra ela até o final do seu próximo turno recebe +1 de vantagem.
+FINTA TREINADA:
+Quando realizar Fintar, você pode gastar um Dado de Manobra e adicioná-lo ao teste.
+Se a Finta for bem-sucedida, adicione também o resultado ao dano do primeiro ataque beneficiado por ela.
+INVESTIDA IRREFREÁVEL:
+Quando realizar um ataque depois de se deslocar pelo menos 4 m em direção ao alvo, você pode gastar um Dado de Manobra.
+Se acertar, adicione o resultado ao dano e desloque o alvo uma quantidade de metros igual à metade do resultado, arredondado para baixo. Você pode acompanhá-lo durante esse deslocamento, permanecendo ao alcance dele, sem gastar PA.
+Esse deslocamento não provoca Reações.
+### RANKING E
+Escolha uma Subclasse de Combatente: Acrobata, Brutalista, Dissecador ou Mago de Batalha.
+### RANKING D
+Você adquire a característica Técnica Aprimorada.
+#### TÉCNICA APRIMORADA
+Seus Dados de Manobra passam a ser d6 e você libera as Manobras Táticas.
+Você aprende 1 manobra adicional, que pode ser Básica ou Tática.
+Ao concluir um descanso longo, pode substituir uma de suas manobras conhecidas por outra entre as categorias que já tenha liberado.
+#### MANOBRAS TÁTICAS
+Manobras Táticas permitem responder às ações dos adversários, impor efeitos de controle e realizar sequências de combate mais elaboradas.
+ATAQUE ENCADEADO:
+Quando realizar a ação Ataque Secundário, você pode gastar um Dado de Manobra para não gastar o 1 PA exigido pela ação. Se o ataque acertar, adicione o resultado do Dado de Manobra ao dano.
+Você pode utilizar esta manobra apenas uma vez por rodada.
+ATAQUE PREPARADO:
+Quando uma criatura entrar voluntariamente no alcance de um ataque seu, você pode gastar uma Reação e um Dado de Manobra para atacá-la imediatamente.
+Se acertar, adicione o resultado do dado ao dano.
+CONTRA-ATAQUE:
+Quando uma criatura ao seu alcance errar um ataque contra você, você pode gastar uma Reação e um Dado de Manobra para atacá-la imediatamente.
+Se acertar, adicione o resultado do dado ao dano.
+DESARME:
+Ao atacar uma criatura que esteja empunhando um objeto, você pode gastar um Dado de Manobra.
+Se acertar, adicione o resultado ao dano, e o alvo deve realizar Resistir contra o resultado do seu teste de acerto. Em uma falha, ele solta um objeto empunhado à sua escolha seguindo as regras de Desarmar.
+GOLPE AMPLO:
+Depois de acertar uma criatura com um ataque corpo a corpo, você pode gastar um Dado de Manobra e escolher outra criatura ao seu alcance.
+Se o resultado original também superar a ação defensiva da segunda criatura, ela sofre dano igual ao resultado do Dado de Manobra, do mesmo tipo do ataque original.
+QUEBRA DE BASE:
+Depois de acertar uma criatura, você pode gastar um Dado de Manobra e adicioná-lo ao dano.
+Se o ataque alcançar um sucesso padrão ou crítico, o alvo fica Caído. Em um sucesso limitado, ele deve realizar Resistir contra o resultado do seu teste de acerto, ficando Caído se falhar.
+### RANKING C
+Você recebe a Característica de Subclasse II correspondente à sua Subclasse.
+### RANKING B
+Você adquire a característica Manobra Composta.
+#### MANOBRA COMPOSTA
+Seus Dados de Manobra passam a ser d8 e você libera as Manobras Avançadas.
+Você aprende 1 manobra adicional de qualquer categoria liberada.
+Uma vez por rodada, pode aplicar duas manobras diferentes à mesma ação, gastando um Dado de Manobra para cada uma.
+As duas manobras precisam ser compatíveis com a ação realizada e seus efeitos são resolvidos na ordem escolhida por você. Uma mesma manobra não pode ser aplicada duas vezes à ação por meio desta característica.
+#### MANOBRAS AVANÇADAS
+Manobras Avançadas permitem controlar o ritmo do confronto, interromper respostas e prolongar sua ofensiva.
+AMORTECER:
+Quando sofrer dano de um ataque, você pode gastar um Dado de Manobra e reduzir o dano sofrido em valor igual ao resultado.
+Esta manobra só pode ser utilizada uma vez por rodada.
+ATAQUE DE OPORTUNIDADE:
+Quando uma criatura sair voluntariamente do alcance de um ataque seu, você pode gastar uma Reação e um Dado de Manobra para atacá-la imediatamente.
+Se acertar, adicione o resultado do Dado de Manobra ao dano.
+CORREÇÃO DO GOLPE:
+Depois de realizar um teste de acerto e saber que o ataque errou, você pode gastar um Dado de Manobra e adicionar o resultado ao teste.
+Se isso transformar a falha em sucesso, determine a margem a partir do novo resultado.
+MANTER A OFENSIVA:
+Depois de reduzir uma criatura a 0 PV com um ataque, você pode gastar um Dado de Manobra para realizar imediatamente outro ataque contra uma criatura ao alcance, sem gastar PA.
+Se acertar, adicione o resultado do Dado de Manobra ao dano.
+Você pode utilizar esta manobra apenas uma vez por rodada.
+### RANKING A
+Você recebe a Característica de Subclasse III correspondente à sua Subclasse.
+### RANKING S
+Você adquire a característica Mestre Inesgotável.
+#### MESTRE INESGOTÁVEL
+Seus Dados de Manobra passam a ser d10 e você aprende 1 manobra adicional.
+Se iniciar uma cena sem nenhum Dado de Manobra disponível, recupere 1 Dado de Manobra.
+Além disso, uma vez por cena, quando utilizar Manobra Composta, você pode gastar apenas 1 Dado de Manobra para aplicar as duas manobras. Role o dado uma única vez e utilize o mesmo resultado para todos os efeitos das duas manobras.
+# SUBCLASSES DE COMBATENTE
+Cada Subclasse de Combatente representa uma maneira diferente de identificar oportunidades ofensivas e transformá-las em eliminações.
+## ACROBATA
+Acrobatas transformam o cenário em uma extensão do próprio corpo. Correm por paredes, atravessam espaços ocupados, saltam sobre obstáculos e atacam antes de tocar o chão. Cada superfície pode servir como apoio e cada mudança de direção prepara uma nova ofensiva.
+Essa mobilidade não depende de uma arma ou estilo específico. Acrobatas podem lutar de perto, disparar durante um salto, arremessar armas ou utilizar o próprio impacto para derrubar e deslocar inimigos. O que os distingue é a capacidade de agir a partir de posições que outras personagens não conseguiriam ocupar.
+### RANKING E
+Você adquire as características Percurso Livre e Aterrissagem.
+#### PERCURSO LIVRE
+Seu deslocamento de Manobrar aumenta em +5 metros. Além disso, você não precisa mais realizar testes de Mobilidade para Manobrar. Ao utilizar Manobrar para se deslocar, você pode:
+- Atravessar espaços ocupados por outras criaturas, mas não pode encerrar seu deslocamento neles.
+- Correr por paredes e outras superfícies capazes de sustentar momentaneamente seu movimento.
+- Saltar sobre criaturas e obstáculos sem consumir deslocamento adicional.
+- Realizar uma ação enquanto estiver em um espaço que não poderia ocupar ao final do deslocamento, como no ar, sobre uma superfície estreita, apoiado em uma parede ou atravessando o espaço de outra criatura.
+Para essa ação, determine alcance, linha de visão, cobertura e diferença de altura a partir da posição transitória ocupada. Depois, você precisa continuar o deslocamento e terminá-lo em um espaço que possa ocupar.
+Uma vez por rodada, quando realizar uma ação ofensiva a partir de uma posição transitória, a ação recebe +1 de vantagem.
+#### ATERRISSAGEM
+Reduza qualquer queda sofrida em uma quantidade de metros igual ao seu deslocamento de Andar. Se essa redução evitar todo o dano, você aterrissa em pé e pode escolher um espaço livre dentro de 2 m do ponto onde cairia.
+### RANKING C
+Você adquire a característica Impulso Contínuo.
+#### IMPULSO CONTÍNUO
+Uma vez por rodada, ao realizar uma ação ofensiva a partir de uma posição transitória, você pode gastar um Dado de Manobra para reduzir o custo da ação em 1 PA, até o mínimo de 1 PA.
+Depois de resolver a ação, aumente o deslocamento restante de Manobrar em uma quantidade de metros igual ao resultado do dado. Você pode mudar a direção do percurso e escolher uma nova superfície, obstáculo ou criatura como ponto de apoio.
+Esse deslocamento adicional conserva todos os benefícios de Percurso Livre e pode ser realizado mesmo que a ação ofensiva falhe.
+Esta característica não conta como uma manobra aplicada à ação.
+### RANKING A
+Você adquire a característica Sem Tocar o Chão.
+#### SEM TOCAR O CHÃO
+Uma vez por cena, ao iniciar um deslocamento de Manobrar, você pode entrar em movimento contínuo até o final do seu turno.
+Durante o efeito:
+- Esse uso de Manobrar não gasta PA.
+- Depois de cada ação ofensiva, aumente o deslocamento restante em 4 m e escolha uma nova direção ou ponto de apoio.
+- A primeira ação ofensiva realizada contra cada criatura a partir de uma posição transitória recebe +1 de vantagem.
+- Você pode utilizar Impulso Contínuo mais de uma vez na rodada, mas apenas uma vez por ação.
+O movimento termina quando seu turno acaba, quando você fica Imobilizado ou quando não possui um espaço ou ponto de apoio que possa alcançar. Ao final do efeito, você precisa ocupar um espaço capaz de sustentá-lo; caso contrário, começa a cair.
+## BRUTALISTA
+Brutalistas concentram toda a força de sua ofensiva em ataques capazes de encerrar o confronto imediatamente. Cada golpe é conduzido além do limite seguro, extraindo dos dados de dano resultados que outras personagens dependeriam da sorte para alcançar.
+Essa técnica não depende de uma categoria específica de arma. Brutalistas podem descarregar seu poder por meio de golpes corpo a corpo, disparos, armas arremessadas ou ataques desarmados. O que os distingue é a disposição de comprometer tudo para produzir o maior impacto possível.
+### RANKING E
+Você adquire as características Mão Pesada e Dano Explosivo.
+Dados originais de dano. Para as características desta subclasse, dados originais de dano são aqueles fornecidos diretamente pelo ataque, antes de modificadores de margem, manobras ou outros efeitos.
+#### MÃO PESADA
+Uma vez por cena, durante seu turno, você pode assumir a Postura Ofensiva sem gastar PA.
+Além disso, uma vez por rodada, depois de rolar os dados originais de dano de um ataque, você pode escolher um deles e rolá-lo novamente. Utilize o maior dos dois resultados.
+#### DANO EXPLOSIVO
+Uma vez por rodada, quando um dado original de dano alcançar seu resultado máximo, você pode rolar outro dado do mesmo tipo e adicioná-lo ao dano.
+Caso mais de um dado alcance o resultado máximo, escolha apenas um deles. O dado adicional não pode ativar outra explosão neste ranking. Um resultado máximo obtido por meio de Mão Pesada pode ativar esta característica.
+### RANKING C
+Você adquire a característica Forçar o Limite.
+#### FORÇAR O LIMITE
+Uma vez por rodada, depois de rolar os dados originais de dano de um ataque, você pode gastar e rolar um Dado de Manobra. Escolha um dos dados originais de dano e aumente seu resultado em valor igual ao resultado do Dado de Manobra, até o máximo possível para ele.
+Se o dado escolhido alcançar seu resultado máximo, ele ativa Dano Explosivo. Caso já tenha ativado Dano Explosivo nesse ataque, ele o ativa novamente, gerando uma segunda explosão.
+Esta característica não conta como uma manobra aplicada ao ataque.
+### RANKING A
+Você adquire a característica Tudo Ou Nada.
+#### TUDO OU NADA
+Uma vez por cena, antes de realizar um ataque, você pode declarar um golpe de Tudo ou Nada.
+O ataque recebe –1 de vantagem. Se acertar:
+- Escolha um dado original de dano e considere que ele obteve seu resultado máximo. Dano Explosivo é ativado independente dos resultados.
+- Você pode utilizar Forçar o Limite nesse mesmo dado para provocar uma segunda explosão.
+- Role duas vezes cada dado gerado pelas explosões e utilize o maior resultado.
+Se o ataque errar, o uso desta característica é perdido.
+## DISSECADOR
+Dissecadores identificam vulnerabilidades e concentram seus ataques onde podem causar a maior consequência. Um primeiro golpe revela falhas na postura, na proteção ou nos movimentos do adversário; os seguintes exploram o mesmo ponto até comprometer uma parte essencial de sua capacidade de lutar.
+Essa técnica pode ser empregada com armas corpo a corpo, armas à distância ou ataques desarmados. Dissecadores se distinguem pela precisão com que escolhem onde atingir e pela capacidade de transformar um ferimento localizado em uma vantagem decisiva.
+### RANKING E
+Você adquire as características Técnica Analítica e Ponto Fraco.
+#### TÉCNICA ANALÍTICA
+Ao realizar um teste de Atacar, você pode utilizar Mente no lugar de Corpo.
+Essa substituição afeta apenas o teste de acerto. Corpo continua sendo somado normalmente ao dano dos ataques corpo a corpo.
+#### PONTO FRACO
+Uma vez por rodada, quando acertar uma criatura, você pode marcar a região atingida como um Ponto Fraco até o final da cena. Cada criatura pode ter apenas um Ponto Fraco marcado por você. Caso marque outra região da mesma criatura, a marca anterior é substituída.
+Quando realizar um ataque contra o Ponto Fraco:
+- O teste de acerto recebe +1 de vantagem.
+- Se o ataque acertar, você pode escolher o Ponto Fraco como região atingida, mesmo que ele não esteja disponível pela margem alcançada.
+- Um sucesso limitado não impõe –1 no dano do ataque.
+A margem continua determinando normalmente os demais modificadores de dano e a ativação de propriedades ou efeitos.
+### RANKING C
+Você adquire a característica Comprometer.
+#### COMPROMETER
+Uma vez por rodada, quando acertar o Ponto Fraco de uma criatura, pode gastar um Dado de Manobra e adicioná-lo ao dano do ataque. Além disso, a região atingida fica Comprometida até o final do próximo turno da criatura:
+- Braços: a criatura sofre –1 de desvantagem em ataques e manobras de combate realizados com os membros atingidos;
+- Pernas: seu deslocamento é reduzido à metade e ela não pode realizar deslocamentos sem gastar PA;
+- Tronco: a criatura não pode recuperar PV nem reduzir o dano sofrido;
+- Cabeça: a criatura sofre –1 de desvantagem em ações ofensivas e não pode utilizar Reações ofensivas.
+Esta característica não conta como uma manobra aplicada ao ataque.
+### RANKING A
+Você adquire a característica Golpe Decisivo.
+#### GOLPE DECISIVO
+Uma vez por cena, quando acertar o Ponto Fraco de uma criatura, você pode transformar o ataque em um Golpe Decisivo.
+O ataque recebe os seguintes efeitos:
+- É tratado como um sucesso crítico para determinar seu modificador de dano e ativar propriedades que dependam da margem;
+- Ignora a MIT da região atingida;
+- A região fica Comprometida sem exigir o gasto de um Dado de Manobra;
+- O comprometimento permanece até o final da cena.
+O Golpe Decisivo ainda pode receber uma manobra normalmente.
+## MAGO DE BATALHA
+Magos de Batalha tratam magias de Ataque como armamento de campo. Alteram alcance, área e distribuição dos efeitos para atingir posições normalmente seguras, concentrar poder sobre um único alvo ou bombardear grupos sem comprometer seus aliados.
+Seu domínio está na aplicação ofensiva da magia. Em vez de depender de armas convencionais, adaptam cada ataque arcano às condições do confronto e transformam seus Dados de Manobra em instrumentos de precisão, alcance e devastação.
+### RANKING E
+Você adquire as características Treinado em Magia Bélica e Modulação de Combate.
+#### TREINADO EM MAGIA BÉLICA
+Você pode aplicar manobras do Combatente às suas magias de Ataque, desde que a manobra seja compatível com a forma como a magia é resolvida.
+Quando uma manobra exigir que você acerte um ataque, ela pode ser aplicada depois que a magia causar dano a pelo menos uma criatura. Qualquer dano ou efeito adicional concedido pela manobra afeta apenas uma das criaturas atingidas, à sua escolha.
+#### MODULAÇÃO DE COMBATE
+Uma vez por rodada, ao conjurar uma magia de Ataque, você pode gastar um Dado de Manobra e escolher uma das seguintes Modulações:
+- Concentrar: escolha uma criatura afetada pela magia e adicione o resultado ao dano causado a ela.
+- Expandir: aumente uma das dimensões da área da magia em uma quantidade de metros igual à metade do resultado.
+- Projetar: aumente o alcance da magia em uma quantidade de metros igual ao resultado.
+- Conter: escolha uma quantidade de criaturas dentro da área igual à metade do resultado para que não sejam afetadas.
+Arredonde pela metade para baixo. Modulação de Combate não conta como uma manobra aplicada à magia.
+### RANKING C
+Você adquire a característica Modulação Composta.
+#### MODULAÇÃO COMPOSTA
+Ao utilizar Modulação de Combate, você pode escolher duas Modulações diferentes, utilizando o mesmo Dado de Manobra e o mesmo resultado para ambas.
+Além disso:
+- Quando utilizar Concentrar em uma magia que cause dano somente a uma criatura, role o Dado de Manobra duas vezes e utilize o maior resultado.
+- Quando utilizar Expandir, você pode aumentar duas dimensões diferentes da área, dividindo entre elas os metros concedidos pela Modulação.
+- Quando utilizar Conter, você pode escolher as criaturas protegidas depois que elas realizarem suas ações defensivas.
+Esses benefícios fazem parte da mesma manobra.
+### RANKING A
+Você adquire a característica Bombardeio Perfeito.
+#### BOMBARDEIO PERFEITO
+Uma vez por cena, ao conjurar uma magia de Ataque, você pode transformá-la em um Bombardeio Perfeito.
+Aplique todas as Modulações de Modulação de Combate sem gastar um Dado de Manobra. Role um Dado de Manobra sem gastá-lo e utilize o mesmo resultado para todas elas.
+Além disso, replique a magia de uma das seguintes formas:
+- Se possuir uma área, crie uma segunda área idêntica em outro ponto dentro do alcance;
+- Se afetar apenas uma criatura, escolha uma segunda criatura válida dentro do alcance para também ser afetada.
+Resolva separadamente os efeitos contra cada criatura. Uma mesma criatura só pode ser afetada uma vez pelo Bombardeio Perfeito.

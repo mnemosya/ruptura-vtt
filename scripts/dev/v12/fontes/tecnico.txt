@@ -1,0 +1,398 @@
+| Ranking | Características de classe | Unidades ativas | Perícias | Atributos | Vertentes | PA |
+| F | Característica de Classe I | 1 | Distribuição inicial, limite 3 | Distribuição inicial | Escolha a Primária e receba 1 ponto nela | 3 |
+| E | Característica de Subclasse I | 1 | +2 pontos | — | +1 ponto | 3 |
+| D | Característica de Classe II | 1 | — | +1 ponto | +1 magia | 3 |
+| C | Característica de Subclasse II | 1 | +2 pontos, limite 4 | — | +1 ponto | 4 |
+| B | Característica de Classe III | 2 | — | +1 ponto | +1 magia | 4 |
+| A | Característica de Subclasse III | 2 | +2 pontos, limite 5 | — | +1 ponto | 4 |
+| S | Característica de Classe IV | 3 | — | +1 ponto | +1 magia | 5 |
+| S+ | — | 3 | +2 pontos | — | +1 ponto | 5 |
+Técnicos são especialistas em compreender e reorganizar as máquinas, estruturas e sistemas que mantêm o mundo funcionando. Identificam falhas, conectam dispositivos e transformam equipamentos dispersos em uma infraestrutura capaz de sustentar toda a operação.
+Durante uma cena, o Técnico instala dispositivos que podem reparar, controlar, analisar ou estabilizar sistemas. Essas instalações podem ser acopladas aos equipamentos do grupo, distribuídas por uma instalação ou integradas a máquinas e redes conectadas. Conforme a infraestrutura cresce, seus componentes passam a responder automaticamente aos acontecimentos, agir em conjunto e preservar o funcionamento uns dos outros.
+Alguns Técnicos modificam armas, armaduras e ferramentas. Outros operam sobre escalpos, coordenam drones e robôs ou mergulham na Malha para controlar sistemas conectados. Escolha esta classe se quiser preparar o ambiente, integrar diferentes equipamentos e construir uma infraestrutura que se torne mais capaz conforme a operação avança.
+| Papel principal | Engenharia |
+| Papéis secundários | Reparo, automação, controle de sistemas e suporte técnico |
+| Subclasses | Artífice, Biomecânico, Maquinista e Tecelão |
+# CRIANDO UM TÉCNICO
+### 1. ATRIBUTOS
+Distribua 4 pontos entre Corpo, Mente e Ânimo, utilizando uma das distribuições abaixo. Os valores podem ser atribuídos livremente aos três atributos.
+| Equilibrada | 2, 1 e 1 |
+| Concentrada | 2, 2 e 0 |
+| Especializada | 3, 1 e 0 |
+Mente determina suas Reações, amplia seus PE e sustenta Engenharia Lógica Robótica e Tecnomagia. Corpo favorece Técnicos que trabalham em campo, transportam equipamento e participam diretamente de confrontos. Ânimo aumenta Mana e Integridade, sendo especialmente importante para quem depende de magia ou escalpos.
+Nenhum atributo é obrigatório. Mente costuma ocupar o maior valor, mas a distribuição escolhida determina se o Técnico atua como especialista, operador de campo ou artesão tecnomágico.
+### 2. RECURSOS
+Determine seus recursos iniciais:
+- PV: 10 + Corpo
+- PE: 13 + Mente
+- Mana: 12 + (Ânimo × 2)
+- Deslocamento:
+- Andar: 10 + Corpo
+- Correr: 2 × (10 + Corpo)
+- Reações: Mente + 1
+- Integridade: 10 + (Ânimo × 2)
+### 3. PERÍCIAS
+1. Escolha um perfil para determinar seus níveis iniciais de perícia:
+| Perfil | Valor 1 | Valor 2 | Valor 3 | Total |
+| Abrangente | 10 | 4 | 1 | 21 |
+| Padrão | 7 | 3 | 2 | 19 |
+| Especializado | 3 | 2 | 3 | 16 |
+2. Escolha suas perícias de valor 3 entre:
+Engenharia Furtividade Lógica Robótica Tecnomagia Biologia
+3. Escolha suas perícias de valor 2 entre:
+Arcanismo Balística Biologia Engenharia Furtividade Influência Lógica Percepção Precisão Robótica Sociedade Tecnomagia
+4. Escolha suas perícias de valor 1 entre:
+Qualquer perícia que ainda não tenha sido escolhida.
+> *Cada perícia ocupa uma única seleção. Uma perícia escolhida com valor 3, por exemplo, deixa de estar disponível para suas escolhas de valores 2 e 1.*
+### 4. VERTENTES
+Escolha qualquer Vertente para ser sua Vertente Primária. Você recebe 1 ponto nela.
+BIÓTICA
+Biótica favorece Técnicos que pretendem intervir em corpos implantados, integrar organismos a dispositivos e trabalhar com estruturas vivas.
+Sinergia: ●●○○○
+CINÉTICA
+Cinética favorece Técnicos que pretendem reposicionar Unidades, manipular partes móveis e alcançar pontos difíceis do ambiente.
+Sinergia: ●●●○○
+COGNITIVA
+Cognitiva favorece Técnicos que pretendem influenciar operadores, proteger mentes e controlar a resposta humana aos sistemas que administram.
+Sinergia: ●○○○○
+ENERGÉTICA
+Energética favorece Técnicos que pretendem alimentar, estabilizar ou interferir no funcionamento de dispositivos.
+Sinergia: ●●●●○
+MATERIAL
+Material favorece Técnicos que pretendem construir, reparar, adaptar e reforçar equipamentos ou estruturas.
+Sinergia: ●●●●●
+SINÁPTICA
+Sináptica favorece Técnicos que pretendem controlar sistemas, trocar informações e integrar pessoas a dispositivos.
+Sinergia: ●●●●●
+### 5. EQUIPAMENTO INICIAL
+Você começa com:
+- Ⱥ 3.000, que podem ser gastos livremente na aquisição de equipamentos;
+- Uma Mochila de 10 espaços de inventário.
+Você pode escolher seus equipamentos diretamente entre os itens disponíveis no jogo. As orientações abaixo apresentam duas maneiras de distribuir o orçamento e podem ser modificadas livremente.
+#### PACOTE 1 — [PLACEHOLDER]
+*Equipamentos a definir.*
+#### PACOTE 2 — [PLACEHOLDER]
+*Equipamentos a definir.*
+# CARACTERÍSTICAS DE CLASSE
+Ao alcançar um novo Ranking, você recebe os avanços concedidos abaixo.
+### RANKING F
+Você adquire a característica Unidades de Campo.
+#### UNIDADES DE CAMPO
+Você possui 1 Unidade de Campo, utilizada para instalar soluções temporárias durante uma operação.
+Uma Unidade pode assumir formas concretas muito diferentes: como uma câmera de vigilância portátil, uma maleta de reparos aberta no chão ou uma placa rúnica colado a uma superfície. Também pode ser acoplada como uma pulseira presa ao usuário, um sensor preso à uma máquina ou um programa carregado em um notebook conectado à Malha. Sua forma não altera suas regras.
+Cada Unidade de Campo possui 10 PD e custa 1 PA para ser instalada ou recolhida ao seu alcance.
+Ao chegar a 0 PD, a Unidade fica Inativa e seus efeitos são suspensos. Ela pode ser recolhida normalmente e recupera todos os seus PD após 10 minutos de reparo com ferramentas apropriadas.
+Em cenas estruturadas, a Unidade permanece ativa até ser recolhida, ficar Inativa ou a cena terminar. Fora delas, pode permanecer ativa enquanto você estiver próximo ou operando a infraestrutura à qual pertence.
+Ao instalar uma Unidade, escolha uma das formas abaixo:
+- Posicionada: ocupa um espaço e possui uma área de atuação de 4 m de raio.
+- Acoplada: conecta-se a um equipamento, máquina, dispositivo, implante, prótese, escalpo, Nó ou outro sistema compatível e acompanha seus movimentos.
+Uma vez por rodada, cada Unidade ativa pode executar uma das Funções abaixo quando você gastar 1 PA. Escolha a Função e seu alvo no momento da execução.
+Você pode operar uma Unidade a até 20 m, salvo quando outra característica permitir operá-la a uma distância maior.
+Se estiver Posicionada, escolha um alvo compatível dentro de sua área de atuação. Se estiver Acoplada, a Função afeta o sistema conectado ou seu usuário, conforme aplicável.
+#### FUNÇÕES
+A partir do Ranking F, suas Unidades podem executar as Funções Amplificação, Diagnóstico, Estabilização, Interface, Manutenção e Monitoramento.
+Novas Funções são liberadas conforme você avança de Ranking.
+AMPLIFICAÇÃO:
+Escolha uma função realizada pelo sistema afetado, como atacar, detectar, mover, proteger, transmitir ou executar um comando. Até o início do seu próximo turno, aplique um dos efeitos abaixo:
+- Se essa função exigir um teste, o próximo teste realizado por meio dela recebe +1 de vantagem.
+- Se não exigir teste, aumente em +2 um dos seguintes valores produzidos por ela: alcance em metros, deslocamento em metros, PD concedidos ou cura de PV.
+> *Exemplo: uma Unidade acoplada a um drone pode Amplificar seus sensores para conceder +1 de vantagem ao próximo teste de Percepção realizado por ele.*
+DIAGNÓSTICO:
+Escolha um equipamento, máquina ou dispositivo dentro da área de atuação da Unidade ou conectado a ela. Você descobre:
+- Quantos PD ele possui atualmente.
+- Quais partes estão quebradas, desligadas ou funcionando com dificuldade.
+- Quais efeitos temporários estão prejudicando seu funcionamento.
+- Uma alteração que a Unidade consiga detectar, como um comando instalado, uma conexão com outro dispositivo ou uma peça modificada.
+Até o início do seu próximo turno, o próximo teste para operar, reparar, modificar ou sabotar o alvo recebe +1 de vantagem.
+Diagnóstico não revela senhas, não concede acesso e não remove os problemas encontrados.
+> *Exemplo:* *você escolhe um elevador parado e descobre que ele não está quebrado: um comando impede suas portas de abrir. O próximo teste para remover esse comando recebe +1 de vantagem.*
+ESTABILIZAÇÃO:
+Escolha um efeito técnico temporário que esteja impedindo ou prejudicando uma função do sistema afetado. Até o início do seu próximo turno, ele ignora esse efeito.
+Estabilização não recupera PD ou recursos, não repara componentes destruídos e não desfaz alterações permanentes.
+> *Exemplo: um drone teve sua comunicação bloqueada pela magia Pulso Eletromagnético da Energética. Estabilização permite que ele ignore essa interferência e volte a receber comandos até o início do seu próximo turno.*
+INTERFACE:
+Execute Interagir sobre o sistema afetado como se estivesse ao alcance dele. Essa interação faz parte da execução da Função e não possui outro custo em PA. Caso exija um teste, realize-o normalmente.
+> *Exemplo: uma Unidade acoplada a uma porta permite que você a destranque por meio de Interagir mesmo estando do outro lado da sala.*
+MANUTENÇÃO:
+O sistema afetado recupera 1d6 PD. Um mesmo sistema só pode recuperar PD por meio de Manutenção uma vez por cena.
+> *Exemplo: depois que um drone perde 4 PD devido a um disparo, Manutenção pode restaurar 1d6 de seus PD.*
+MONITORAMENTO:
+Escolha uma criatura, objeto, dispositivo ou região que a Unidade seja capaz de perceber.
+Até o início do seu próximo turno, a Unidade acompanha esse alvo. Você sabe imediatamente quando ele:
+- Se move.
+- É utilizado.
+- Sofre dano ou perde PD.
+- Transmite um sinal.
+- Muda de estado.
+Monitoramento só detecta acontecimentos que os sensores ou meios de percepção da Unidade seriam capazes de perceber.
+> *Exemplo: uma Unidade posicionada diante de uma entrada pode Monitorar a porta e avisar você imediatamente caso ela seja aberta, danificada ou utilizada.*
+### RANKING E
+Escolha uma Subclasse de Técnico: Artífice, Biomecânico, Maquinista ou Tecelão.
+Você recebe a primeira Característica de Subclasse no Ranking E e recebe novas características da mesma subclasse nos Rankings C e A.
+| Subclasse | Identidade e funcionamento |
+| Artífice | Fabrica e modifica equipamentos, combinando ajustes técnicos e runas. |
+| Biomecânico | Instala, recupera, recalibra e potencializa escalpos. |
+| Maquinista | Controla e programa drones e robôs acoplados às suas Unidades. |
+| Tecelão | Distribui suas Unidades pela Trama para executar Comandos e controlar sistemas da Malha. |
+As Características de Subclasse podem alterar a maneira como você constrói, instala e opera suas Unidades de Campo e como suas Funções interagem com outros sistemas.
+### RANKING D
+Você adquire as características Protocolo Reativo e Reprogramar. Suas Unidades também aprendem as Funções Derivação, Desregulação e Travamento.
+#### PROTOCOLO REATIVO
+Suas Unidades podem ser programadas para executar uma Função automaticamente quando determinado acontecimento ocorrer. Ao instalar uma Unidade, você pode programar nela 1 Protocolo, formado por:
+Quando *[Gatilho]* acontecer, execute *[Resposta]*.
+> *Exemplo:* Quando *o drone perder PD*, execute *Manutenção nele*.
+- O Gatilho determina o acontecimento que ativa o Protocolo e deve ser um acontecimento específico que a Unidade seja capaz de perceber.
+- A Resposta determina qual Função a Unidade executa quando isso acontecer, sem gastar PA ou Reação. Ao programá-la, determine seu alvo e todas as escolhas exigidas. A Resposta respeita todos os requisitos e limites da Função utilizada.
+A ativação manual e o Protocolo compartilham o limite da Unidade. Depois que ela executar uma Função de qualquer uma dessas formas, não poderá executar outra naquela rodada.
+Características de subclasse podem conceder outras opções de Resposta. Elas seguem o mesmo limite.
+#### REPROGRAMAR
+Enquanto estiver ao alcance de 20 m da Unidade, você pode gastar 1 PA para alterar seu Gatilho, sua Resposta ou ambos. Se o Protocolo já tiver sido executado naquela rodada, reprogramá-lo não permite que seja executado novamente na mesma rodada.
+> OUTROS EXEMPLOS DE PROTOCOLOS
+- Quando *o turno do aliado começar*, execute *Amplificação em sua arma*.
+- Quando uma criatura entrar na área de atuação, execute *Monitoramento sobre ela*.
+- Quando *o escalpo sofrer um efeito que prejudique seu funcionamento*, execute *Estabilização nele*.
+#### FUNÇÕES
+DERIVAÇÃO:
+Escolha um equipamento dentro da área de atuação da Unidade ou conectado a ela. Você pode proteger esse equipamento ou a criatura que o estiver utilizando.
+Até o início do seu próximo turno, na próxima vez que o alvo sofrer dano, reduza esse dano em até 3 pontos. A Unidade perde a mesma quantidade de PD.
+Aplique essa redução antes das demais proteções do alvo. Você não pode reduzir mais pontos do que os PD restantes da Unidade.
+> *Exemplo:* *um aliado recebe um disparo que causaria 5 pontos de dano. A Unidade perde 3 PD para reduzir esse dano para 2. Depois disso, o aliado aplica suas demais proteções normalmente.*
+DESREGULAÇÃO:
+Escolha um equipamento, máquina ou dispositivo dentro da área de atuação da Unidade ou conectado a ela. Escolha também uma atividade que ele realiza, como disparar, detectar movimento, deslocar-se ou proteger seu usuário.
+Até o início do seu próximo turno, aplique um dos efeitos abaixo à atividade escolhida:
+- Se exigir um teste, o próximo teste recebe –1 de desvantagem.
+- Se não exigir teste, reduza em 2, até o mínimo de 0, um dos seguintes valores: alcance em metros, deslocamento em metros, PD concedidos ou cura de PV.
+Desregulação não ignora proteções contra interferência. Caso seja necessário superar uma delas, realize o teste apropriado antes de aplicar o efeito.
+> *Exemplo:* *você escolhe uma torre automatizada e interfere em sua mira. O próximo disparo da torre sofre –1 de desvantagem.*
+TRAVAMENTO:
+Escolha uma porta, máquina ou outro dispositivo dentro da área de atuação da Unidade ou conectado a ela. Escolha uma de suas partes móveis, como uma comporta, plataforma ou braço mecânico.
+Até o início do seu próximo turno, essa parte permanece na posição atual. Seus controles normais não conseguem movê-la, mas uma criatura pode tentar forçá-la ou liberar a trava por meio de um teste apropriado.
+Travamento não afeta partes do corpo, implantes, próteses ou escalpos de criaturas.
+> *Exemplo:* *você escolhe uma porta fechada e trava sua abertura. Apertar o botão não funciona, mas alguém ainda pode tentar arrombá-la ou desativar a trava.*
+### RANKING C
+Você recebe a Característica de Subclasse II correspondente à sua Subclasse.
+### RANKING B
+Você adquire as características Redundância Operacional, Registro e Restaurar. Suas Unidades também aprendem a Função Relé.
+#### REDUNDÂNCIA OPERACIONAL
+Você passa a possuir 2 Unidades de Campo, que podem permanecer ativas simultaneamente. Cada Unidade possui seu próprio Protocolo e pode executar uma Função por rodada.
+#### REGISTRO
+Suas Unidades passam a criar Registros, estados preservados de sistemas que podem ser restaurados posteriormente.
+Cada Unidade pode criar 1 Registro por cena. O Registro permanece até ser utilizado, até a Unidade ser recolhida ou ficar Inativa, ou até o fim da cena. Criar um Registro custa 1 PA.
+O Registro preserva o estado técnico do sistema naquele momento, incluindo:
+- Seus PD atuais.
+- Condições técnicas.
+- Funções ativas ou inativas.
+- Configurações.
+- Conexões.
+- Permissões e comandos instalados.
+- Posição de suas partes móveis.
+O Registro não preserva PV, Mana, Integridade, munição, cargas, consumíveis ou condições naturais de criaturas. Também não reproduz informações adquiridas posteriormente nem altera a posição do sistema na cena.
+#### RESTAURAR
+Enquanto o sistema registrado estiver na área de atuação da Unidade ou acoplado a ela, você pode gastar 2 PA para restaurar seu Registro. O sistema retorna ao estado registrado.
+Depois de utilizado, o Registro é apagado.
+Restaurar pode ser escolhido como Resposta de um Protocolo.
+O sistema precisa possuir um Registro válido, que é consumido normalmente quando a Resposta é executada.
+Por exemplo:
+Quando o Ceifador iria chegar a 0 PD, execute restaurar Registro.
+#### FUNÇÕES
+RELÉ:
+A Unidade amplia a distância pela qual você consegue operar máquinas e dispositivos. O efeito depende da forma de instalação:
+- Posicionada: enquanto você estiver a até 100 m da Unidade, pode operar suas outras Unidades de Campo e sistemas controlados remotamente que também estejam a até 100 m dela.
+- Acoplada: aumente em 100 m o alcance de controle remoto do sistema conectado.
+Para operar uma máquina ou dispositivo, você precisa já possuir controle sobre ele. Todas as ações realizadas mantêm seus custos em PA, testes e demais requisitos.
+Relé permanece ativo sem novos gastos de PA até que a Unidade execute outra Função, seja recolhida, fique Inativa ou a cena termine. Bloqueios de sinal afetam normalmente as conexões mantidas pela Unidade.
+> *Exemplo:* *uma Unidade Posicionada permite que você opere outra Unidade instalada a 70 m dela. Acoplada a um drone com alcance de controle de 200 m, aumenta esse alcance para 300 m.*
+### RANKING A
+Você recebe a Característica de Subclasse III correspondente à sua Subclasse.
+### RANKING S
+Você adquire as características Arquitetura Distribuída e Operação Sincronizada.
+#### ARQUITETURA DISTRIBUÍDA
+Você passa a possuir 3 Unidades de Campo, que podem permanecer ativas simultaneamente.
+#### OPERAÇÃO SINCRONIZADA
+Uma vez por rodada, quando você gastar 1 PA para executar manualmente a Função de uma Unidade, escolha outra de suas Unidades ativas. Ela também pode executar uma Função, sem gastar PA adicional.
+Cada Unidade precisa possuir um alvo válido e respeitar normalmente os requisitos e limites da Função executada. Ambas utilizam sua operação naquela rodada.
+> *Exemplo:* *uma Unidade acoplada a um drone executa Manutenção nele. Pela Operação Sincronizada, uma Unidade posicionada pode executar Amplificação em uma arma dentro de sua área.*
+# SUBCLASSES DE TÉCNICO
+Cada Subclasse de Técnico representa uma maneira diferente de especializar suas Unidades de Campo e integrá-las a equipamentos, escalpos, máquinas ou à Trama.
+| Subclasse | Identidade e funcionamento |
+| Artífice | Fabrica e modifica equipamentos, combinando ajustes técnicos e runas. |
+| Biomecânico | Instala, recupera, recalibra e potencializa escalpos. |
+| Maquinista | Controla e programa drones e robôs acoplados às suas Unidades. |
+| Tecelão | Distribui suas Unidades pela Trama para executar Comandos e controlar sistemas da Malha. |
+## ARTÍFICE
+Artífices transformam equipamentos em soluções ajustadas para cada operação. Reforçam peças vulneráveis, recalibram ferramentas, alteram o funcionamento de armas e integram runas, escalpos e dispositivos por meio de modificações próprias.
+Seu trabalho começa antes da ação, quando decide quais recursos o grupo levará a campo, mas continua durante a operação. Quando uma preparação deixa de servir, o Artífice desmonta, substitui e reconstrói seus ajustes sem abandonar o problema.
+### RANKING E
+Você adquire as características Oficina, Modificações e Projetos.
+#### OFICINA
+Você pode manter até 2 Modificações instaladas simultaneamente em armas, armaduras, escudos, ferramentas e dispositivos. Cada equipamento pode possuir apenas uma Modificação sua.
+Instalar, remover ou substituir uma Modificação exige ferramentas apropriadas e 10 minutos de trabalho. As Modificações não ocupam espaços de runa e permanecem instaladas até serem removidas ou o equipamento ser destruído.
+#### MODIFICAÇÕES
+Ao instalar uma Modificação, escolha uma das opções abaixo. O equipamento precisa ser compatível com o efeito escolhido.
+BALANCEAMENTO:
+Escolha uma arma. Ela recebe uma das seguintes propriedades: *Alcance*, *Arremesso (6 m/12 m)* ou *Silencioso*.
+BLINDAGEM ADICIONAL:
+Escolha uma armadura. Sua MIT máxima e atual aumentam em 3.
+Quando a Modificação for removida, reduza a MIT máxima e atual da peça em 3, até o mínimo de 0.
+CALIBRAÇÃO:
+Escolha uma ferramenta, dispositivo, escalpo ou outro sistema utilizado para realizar testes. Determine uma de suas funções técnicas. Testes realizados por meio dessa função recebem +2.
+Calibração não pode ser aplicada a testes de ataque ou ações defensivas.
+POTENCIALIZAÇÃO:
+Escolha uma arma. Ela causa +1d4 de dano.
+REFORÇO ESTRUTURAL:
+Escolha um escudo, ferramenta, dispositivo, escalpo ou outro sistema que possua PD. Seus PD máximos e atuais aumentam em 5.
+SOBREGRAVAÇÃO:
+Escolha um equipamento que comporte runas. Ele recebe 1 espaço adicional de runa enquanto esta Modificação permanecer instalada.
+#### PROJETOS
+Um Projeto contém as instruções necessárias para fabricar determinado item. Cada Projeto corresponde a uma arma, armadura, escudo, ferramenta, dispositivo ou runa específica.
+Ao escolher esta subclasse, você recebe o Projeto de 2 itens incomuns ou de raridade inferior que você pode escolher da lista do Mercado Noturno. Possuir um Projeto não concede o item correspondente.
+Para iniciar uma fabricação, você precisa do Projeto, de ferramentas apropriadas e de materiais equivalentes a 50% do preço do item.
+Para avançar o trabalho, realize uma série de testes de Engenharia contra a CD determinada pela raridade do item. Cada teste representa um período de trabalho e concede Progresso conforme seu resultado. A fabricação é concluída quando você acumular o Progresso necessário.
+| Raridade | CD | Progresso necessário |
+| Muito comum/comum | 5 | 100 |
+| Incomum | 7 | 300 |
+| Raro | 9 | 600 |
+Antes de realizar cada teste, escolha o ritmo do período de trabalho:
+| Ritmo | Duração | Efeito |
+| Cauteloso | 4 horas | Receba +1 de vantagem. Falhas são tratadas como um grau menos grave; uma falha limitada não produz consequência. |
+| Regular | 2 horas | Realize o teste normalmente. |
+| Acelerado | 1 hora | Receba –1 de desvantagem e role +1d100 de Progresso em caso de sucesso. Falhas são tratadas como um grau mais grave, até falha crítica. |
+O resultado do teste determina o Progresso obtido. Em uma falha, escolha uma das consequências correspondentes:
+| Resultado | Progresso | Consequência |
+| Sucesso limitado | +1d100 | — |
+| Sucesso padrão | +2d100 | — |
+| Sucesso crítico | +3d100 | — |
+| Falha limitada | 0 | Trabalhe por mais 1 hora ou perca 1d100 de Progresso. |
+| Falha padrão | 0 | Trabalhe por mais 2 horas, perca 2d100 de Progresso ou inutilize materiais equivalentes a 10% do preço do item. |
+| Falha crítica | 0 | Trabalhe por mais 4 horas, perca 3d100 de Progresso ou inutilize materiais equivalentes a 20% do preço do item. |
+O Progresso não pode ficar abaixo de 0 e permanece caso o trabalho seja interrompido. O Projeto não é consumido durante a fabricação.
+Além disso, com ferramentas apropriadas e 8 horas de trabalho, você pode desmontar um item para produzir seu Projeto. O item é destruído no processo, mas os materiais recuperados cobrem o custo inicial de materiais da primeira fabricação realizada com esse Projeto.
+### RANKING C
+A característica Oficina é aprimorada, e você adquire as características Equipamento Híbrido e Gatilho Rúnico.
+Você pode manter até 3 Modificações instaladas simultaneamente.
+Uma vez por cena, por 1 PA, você pode instalar, remover ou substituir uma Modificação ou runa em um equipamento ao seu alcance ou na área de uma de suas Unidades.
+#### EQUIPAMENTO HÍBRIDO
+Ao iniciar uma fabricação, você pode utilizar dois Projetos de equipamentos da mesma categoria para produzir um Equipamento Híbrido.
+Considere a soma dos preços dos dois itens para determinar o custo dos materiais. Utilize a maior CD entre eles e some o Progresso exigido pelos dois Projetos. A fabricação segue normalmente as regras de Ritmo de Trabalho e Progresso.
+O Equipamento Híbrido possui duas configurações, cada uma correspondente a um dos Projetos utilizados. Uma vez por rodada, o usuário pode gastar 1 PA para alternar entre elas.
+O equipamento utiliza apenas a ficha da configuração atual. Modificações e runas instaladas somente funcionam nas configurações com as quais forem compatíveis.
+Você só pode possuir 1 Equipamento Híbrido criado dessa forma. Enquanto ele existir, não pode iniciar a fabricação de outro.
+#### GATILHO RÚNICO
+Uma vez por rodada, você pode ativar ou desativar uma runa instalada em um equipamento Integrado sem gastar PA, desde que ele esteja adjacente a você ou a até 20 m de uma de suas Unidades.
+A ativação, a desativação ou o consumo de uma runa instalada em um equipamento Integrado pode servir como Gatilho de um Protocolo. Ativar Runa e Desativar Runa também podem ser utilizadas como Respostas.
+Equipamento Integrado: para as características desta subclasse, considera-se Integrado um equipamento que possua uma de suas Modificações, tenha sido fabricado a partir de um de seus Projetos ou esteja acoplado a uma de suas Unidades de Campo.
+### RANKING A
+Você adquire a característica Modificação Permanente.
+#### MODIFICAÇÃO PERMANENTE
+Você pode manter até 4 Modificações instaladas simultaneamente.
+Ao iniciar a fabricação de um item, escolha uma Modificação compatível. Acrescente 300 ao Progresso necessário e materiais equivalentes a 25% do preço do item para incorporar essa Modificação permanentemente ao equipamento.
+Uma Modificação incorporada dessa forma não conta para o seu limite e não pode ser removida ou substituída. O equipamento ainda pode receber outra Modificação normalmente.
+Você pode possuir uma quantidade de equipamentos com Modificações permanentes igual à sua Mente, mínimo de 1. Depois de alcançar esse limite, não pode incorporar outra Modificação enquanto um desses equipamentos ainda existir.
+Você também pode incorporar uma Modificação ao equipamento produzido por seu Projeto Híbrido, desde que ela seja compatível com suas duas configurações.
+## MAQUINISTA
+Maquinistas são especialistas no controle e na programação de drones e robôs. Conectam essas máquinas às suas Unidades de Campo para operá-las diretamente, ampliar sua autonomia e coordenar suas ações durante uma operação.
+Alguns trabalham com pequenos drones de reconhecimento e intervenção. Outros preferem autômatos industriais, plataformas de combate ou máquinas construídas para funções específicas. Em todos os casos, suas características funcionam com qualquer drone ou robô que possuam, obtenham ou assumam durante o jogo. Cada máquina conserva sua própria ficha, ações, atributos, PD, alcance e espaços de runa.
+### RANKING E
+Você adquire as características Modos de Operação, Domínio Técnico e Reconstrução.
+#### MODOS DE OPERAÇÃO
+Enquanto uma Unidade de Campo estiver acoplada a um drone ou robô, você pode operá-los de uma das seguintes formas:
+- Controle direto: você utiliza seus próprios PA e atributos para executar as ações da máquina. Ela não age autonomamente enquanto estiver sob seu controle direto.
+- Operação autônoma: a máquina utiliza seus próprios atributos para seguir a programação recebida. Durante seu turno, você pode gastar 1 PA para comandá-la. Quando comandada, ela recebe todos os PA indicados em sua ficha em sua ativação. Caso não seja comandada, recebe apenas 1 PA, que pode utilizar para se deslocar, procurar proteção ou executar uma ação defensiva descrita em sua ficha. Ela age logo depois do seu turno e não conta para a alternância de turnos de PJ e PN.
+Alternar entre essas formas custa 1 PA. Quando você assume o controle direto, quaisquer PA que a máquina ainda possua naquela rodada são perdidos. Quando encerra o controle, ela retorna à programação anterior.
+Você pode perceber através dos sensores de uma máquina acoplada. A Unidade também pode utilizar esses sensores para perceber acontecimentos e escolher alvos para suas Funções.
+#### DOMÍNIO TÉCNICO
+Uma falha limitada em um teste de Robótica para controlar ou programar uma máquina acoplada conta como sucesso limitado.
+#### RECONSTRUÇÃO
+Você também pode reconstruir um drone ou robô destruído caso recupere seus componentes principais. A reconstrução exige 8 horas de trabalho, materiais equivalentes a 25% do preço da máquina e um teste de Robótica contra sua CD. Em falha, o tempo é gasto, mas os materiais podem ser reutilizados em outra tentativa.
+### RANKING C
+Você adquire as características Resposta Mecânica e Intervenção Direta.
+#### RESPOSTA MECÂNICA
+O Protocolo de uma Unidade acoplada pode utilizar uma ação da máquina como Resposta. Quando o Gatilho ocorrer, a máquina executa a ação com seus próprios atributos e PA. Ela precisa estar em operação autônoma e ser capaz de realizar a ação.
+#### INTERVENÇÃO DIRETA
+Uma vez por rodada, quando uma máquina acoplada falhar em um teste durante sua operação autônoma, você pode gastar 1 PA para repetir o teste utilizando seus próprios atributos. Você deve utilizar o novo resultado. Essa intervenção não altera a forma de operação da máquina.
+### RANKING A
+Você adquire as características Enxame e Overclock.
+#### ENXAME
+Uma vez por dia, você pode designar até 4 modelos idênticos de drones ou 2 modelos de robôs como “pareados”. Enquanto permanecerem ativos, todos respondem a seus comandos como uma unidade coordenada. Uma máquina só permanece pareada enquanto estiver a até 20 m de você ou de uma de suas Unidades ativas e puder receber seus sinais.
+Uma única Unidade pode manter acopladas todas as máquinas pareadas do mesmo modelo para fins das características desta subclasse.
+Para cada ação específica que você ordena, escolha se quer executá-la:
+- Pareada: todos as máquinas designadas executam a mesma ação de forma simultânea, cada um rolando e aplicando resultados separadamente, sem custo extra de PA.
+- Independente: as máquinas agem de forma separada, cada uma podendo receber comandos diferentes (custando PA normalmente para cada ação).
+#### OVERCLOCK
+Uma vez por cena, ao comandar seu Enxame, você pode ativar seu Overclock. Ao fazer isso, todas as suas máquinas pareadas em operação autônoma recebem 2 PA adicionais até o final da rodada.
+## TECELÃO
+Tecelões transformam a Malha numa extensão de sua infraestrutura. Distribuem suas Unidades de Campo pela Trama, observam sistemas a partir de diferentes posições e mantêm processos preparados junto aos Nós que pretendem controlar.
+Alguns utilizam Decks Sinápticos e bibliotecas especializadas. Outros estabelecem a conexão por meio de magia Sináptica. Em ambos os casos, suas Unidades permitem que continuem operando em pontos pelos quais já passaram, sustentando controle sobre a Trama enquanto avançam em direção ao objetivo.
+### RANKING E
+Você adquire as características Unidades Na Trama, Olho de Botão e Processamento Paralelo.
+#### UNIDADES NA TRAMA
+Enquanto estiver conectado a uma Trama, você pode instalar suas Unidades dentro dela, posicionando-as junto ao seu avatar ou acoplando-as a um Ponto de Acesso, Nó ou Bloqueio adjacente. Você pode recolher uma Unidade na Trama independentemente da distância.
+Você pode executar Protocolos de Trama e Comandos a partir da posição de uma de suas Unidades, utilizando seus atributos e pagando normalmente seus custos. Para determinar o alcance dessas ações, cada 1 m equivale a 1 espaço na Trama. Acontecimentos percebidos pela Unidade e ações executadas dessa forma podem servir como Gatilhos de seu Protocolo Reativo.
+As Unidades podem ser percebidas e atacadas pelas defesas da Trama. Ao se defenderem, utilizam sua Tecnomagia. O dano sofrido é aplicado aos seus PD. Caso uma Unidade fique Inativa, o avatar dela desaparece da Trama.
+#### OLHO DE BOTÃO
+Na primeira vez que se conectar a uma Trama durante uma cena, revele automaticamente os elementos presentes nos próximos 2 níveis a partir do Ponto de Acesso utilizado, como em um uso de Sondar.
+Olho de Botão não revela informações que dependam de Examinar e não consome PA ou RAM.
+#### PROCESSAMENTO PARALELO
+Enquanto estiver conectado a uma Trama e possuir uma Unidade ativa dentro dela, você recebe 1 PA adicional no início do seu primeiro turno de cada rodada.
+Esse PA só pode ser utilizado para executar um Protocolo ou um Comando, e pode ser utilizado por meio de uma de suas Unidades.
+### RANKING C
+Você adquire as características Controle Distribuído e Bypass.
+#### CONTROLE DISTRIBUÍDO
+Quando executar Controlar Sistema, Controlar Unidade ou Travar Acesso por meio de uma Unidade acoplada ao alvo, ela pode sustentar o Comando indefinidamente. Cada Unidade pode sustentar apenas um Comando.
+O efeito permanece mesmo que você se desconecte da Trama. Enquanto puder se comunicar com a Unidade, você pode emitir as ordens permitidas pelo Comando, pagando seus PA normalmente.
+O Comando termina quando a Unidade ficar Inativa, for recolhida ou perder sua conexão com o alvo.
+#### BYPASS
+Uma vez por cena, ao executar um Comando por meio de uma Unidade, você pode dispensar o teste e obter um sucesso limitado com margem 0.
+O Comando mantém seus custos e não pode ser Apagar Rastros ou Modificar Assinatura.
+### RANKING A
+Você adquire as características Migração de Processo e Processos Espelhados.
+#### MIGRAÇÃO DE PROCESSO
+Uma vez por rodada, você pode gastar 1 PA para transferir seu avatar para a posição de uma de suas Unidades na Trama.
+Essa transferência não exige Avançar e ignora os espaços, níveis e Bloqueios existentes entre seu avatar e a Unidade.
+#### PROCESSOS ESPELHADOS
+Uma vez por rodada, quando executar um Protocolo de Trama ou Comando por meio de uma Unidade, você pode repetir a mesma ação por meio de outra Unidade ativa, tendo um alvo diferente e compatível.
+A segunda execução não custa PA, mas consome RAM normalmente. Seu alcance é determinado a partir da segunda Unidade, e seus testes e efeitos são resolvidos separadamente.
+## BIOMECÂNICO
+Biomecânicos trabalham na fronteira entre carne, runas e próteses. Instalam e recuperam escalpos, corrigem incompatibilidades e removem os limitadores que impedem esses implantes de operar em sua capacidade máxima.
+Seus procedimentos permitem que um escalpo ultrapasse temporariamente as especificações de fábrica. Durante uma operação, suas Unidades percorrem o corpo implantado, recalibram sistemas sobrecarregados e mantêm os escalpos funcionando quando seus mecanismos de segurança tentariam interrompê-los.
+### RANKING E
+Você adquire as características Procedimento Biomecânico e Forçar Limites.
+#### PROCEDIMENTO BIOMECÂNICO
+Com instrumentos apropriados e 1 hora de trabalho, você pode instalar ou extrair um escalpo de uma criatura voluntária, inconsciente ou imobilizada. A extração não regenera partes do corpo substituídas pelo implante.
+Quando as circunstâncias tornarem o procedimento arriscado e um teste for exigido, você recebe +2 de vantagem nos testes de Biologia para identificar, instalar, extrair ou corrigir defeitos em escalpos.
+Ao concluir a extração, a pessoa de quem o escalpo foi retirado pode realizar um teste de Vontade, CD 7, com +1 de vantagem. Em caso de sucesso, recupera a Integridade perdida com a instalação daquele escalpo. Em caso de falha, não recupera Integridade nem sofre perda adicional.
+Um escalpo extraído por você permanece intacto e pode ser preparado para outro usuário. A instalação reduz a Integridade do novo usuário normalmente.
+Você também pode dedicar 10 minutos para remover 1 ponto de Desgaste de um escalpo ou eliminar um efeito técnico persistente que esteja prejudicando seu funcionamento.
+#### FORÇAR LIMITES
+Uma vez por cena, você pode potencializar um escalpo instalado em você ou em uma criatura ao seu alcance. Também pode afetar um escalpo de uma criatura que tenha uma de suas Unidades acoplada, desde que você possa operar essa Unidade.
+Declare a potencialização antes da ativação do escalpo ou antes de resolver um efeito que utilize uma de suas capacidades. Isso não exige PA adicionais e pode ocorrer fora do seu turno.
+Escolha uma das melhorias abaixo:
+- Bônus: aumente em +1 um bônus numérico fixo concedido pelo escalpo até o fim da cena.
+- Desempenho: aumente em +2 m um alcance ou deslocamento concedido pelo escalpo, ou em +2 o dano de uma de suas capacidades até o fim da cena.
+- Proteção: conceda 2 pontos temporários de MIT ou PD à proteção fornecida pelo escalpo até o fim da cena. Esses pontos são perdidos antes dos pontos normais.
+- Ativação: ative uma capacidade do escalpo sem gastar os PA normalmente exigidos por essa ativação. Os demais custos e requisitos permanecem.
+- Uso adicional: conceda 1 uso adicional de uma capacidade do escalpo cujos usos por cena já tenham sido esgotados.
+### RANKING C
+Você adquire as características Recalibração de Campo, Segunda Calibração, Circuito Biomecânico e Compensação de Desgaste.
+#### RECALIBRAÇÃO DE CAMPO
+Uma Unidade acoplada a uma criatura pode aplicar suas Funções a qualquer escalpo instalado nela, como se estivesse acoplada diretamente a esse escalpo.
+Além disso, Manutenção pode recuperar 1d6 MIT de um escalpo, até seu máximo. Cada escalpo pode receber essa recuperação uma vez por cena.
+#### SEGUNDA CALIBRAÇÃO
+Uma vez por cena, uma Unidade pode executar Estabilização sobre um escalpo afetado por Forçar Limites para recalibrá-lo. Depois dessa execução, recupere um uso de Forçar Limites nesta cena.
+#### CIRCUITO BIOMECÂNICO
+A ativação, o uso, a perda de PD ou MIT, o ganho de Desgaste e a mudança de estado de qualquer escalpo instalado na criatura podem servir como Gatilhos do Protocolo da Unidade acoplada a ela. A Resposta pode afetar qualquer escalpo instalado nessa criatura.
+#### COMPENSAÇÃO DE DESGASTE
+Quando utilizar Manutenção sobre um escalpo, você pode, em vez de recuperar PD ou MIT, suprimir os efeitos de 1 ponto de Desgaste até o final da cena. O Desgaste não é removido e volta a produzir seus efeitos quando a supressão terminar. Cada escalpo pode receber esse benefício uma vez por cena.
+### RANKING A
+Você adquire a característica Zona Vermelha.
+#### ZONA VERMELHA
+Uma vez por cena, quando utilizar Forçar Limites, você pode levar o escalpo à Zona Vermelha, sem custo adicional em PA.
+A melhoria escolhida é substituída pela versão correspondente abaixo:
+- Bônus: aumente em +1d4 um bônus numérico fixo concedido pelo escalpo até o final da cena. Role o dado quando entrar na Zona Vermelha e utilize o mesmo resultado durante todo o efeito.
+- Desempenho: aumente em +6 m um alcance ou deslocamento concedido pelo escalpo, ou em +1d8 o dano de uma de suas capacidades até o final da cena.
+- Proteção: conceda 1d8 pontos temporários de MIT ou PD à proteção fornecida pelo escalpo até o final da cena. Esses pontos são perdidos antes dos pontos normais e não se renovam durante esse período.
+- Ativação: ative uma capacidade do escalpo sem gastar os PA normalmente exigidos e aplique a ela uma melhoria de Bônus, Desempenho ou Proteção, com os valores de Forçar Limites, até o final da cena. Os demais custos e requisitos permanecem.
+- Uso adicional: conceda 2 usos adicionais de uma capacidade do escalpo cujos usos por cena já tenham sido esgotados. Os usos adicionais não utilizados são perdidos ao final da cena.
+Até o final da cena, o escalpo também ignora impedimentos técnicos temporários que interromperiam seu funcionamento. Essa proteção não impede sua destruição ou extração e não substitui os recursos necessários para utilizar suas capacidades.
+Um escalpo em Zona Vermelha pode receber outra melhoria por Segunda Calibração. Melhorias sobre um mesmo bônus, valor ou custo não se somam: aplique apenas a mais alta.
+Ao final da cena, o escalpo fica inativo até receber 10 minutos de procedimento técnico com ferramentas apropriadas. Esse procedimento não exige teste.

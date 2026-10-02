@@ -28,6 +28,7 @@
  * lista e o atributo primário vêm de `regras_personagem`.
  */
 
+import { LIMITE_PERICIA_POR_RANKING_V12, type RankingV12 } from "../../../../lib/rulesetV12";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { CharacterAttributes, SkillDefinition } from "../../../../lib/character";
@@ -125,6 +126,9 @@ export function SkillsGrid({ api, onRolar }: { api: ConsoleApi; onRolar: (perici
   const ordenadas = [...definicoes].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
   const evolucao = api.modo === "evolucao";
+  // v1.2: a correção não passa do limite de Perícia do Ranking atual.
+  const v12 = api.character as { progressao?: { ranking?: RankingV12 } };
+  const limiteV12 = v12.progressao?.ranking ? LIMITE_PERICIA_POR_RANKING_V12[v12.progressao.ranking] : undefined;
   const [dica, setDica] = useState<DicaPericia | null>(null);
   const atrasoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelarAtraso = () => {
@@ -228,7 +232,7 @@ export function SkillsGrid({ api, onRolar }: { api: ConsoleApi; onRolar: (perici
                         <PassoValor
                           valor={valor}
                           min={skill.valor_minimo ?? 0}
-                          max={skill.valor_maximo ?? 5}
+                          max={Math.min(skill.valor_maximo ?? 5, limiteV12 ?? 5)}
                           rotulo={skill.nome}
                           onDefinir={(novo) => api.editarPericia(skill.id, novo)}
                           testId={`console-pericia-passo-${skill.id}`}

@@ -342,7 +342,7 @@ function character(overrides: Partial<Character> = {}): Character {
   });
   assert.equal(afterFailure.appliedConditionSlug, "lento");
   const lento = afterFailure.character.condicoes_ativas?.find((cc) => cc.conditionId === "lento");
-  assert.equal(lento?.duracao, "ate_sair_da_area");
+  assert.equal(lento?.duracao, "enquanto_na_area");
   console.log("8. Insaturado — exposição — OK");
 }
 

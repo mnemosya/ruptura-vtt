@@ -40,6 +40,7 @@
 import { getCharacter, updateCharacter, updateCharacterSheetPayload } from "../character/storage";
 import {
   addInstanceToInventory,
+  characterDerivedFormulas,
   computeDerivedStats,
   normalizeCharacter,
   removeQuantityFromInventory,
@@ -97,7 +98,7 @@ export async function transferCrewItemToCharacter(params: {
     const destino = normalizeCharacter(destinoAntes.payload);
     const proximo = addInstanceToInventory(destino, movida);
     const regras = ((await getCharacterRules().catch(() => null))?.payload as CharacterRulesPayload | undefined) ?? null;
-    const derivados = computeDerivedStats(proximo.atributos, regras, proximo.mana_bonus_ruptura ?? 0);
+    const derivados = computeDerivedStats(proximo.atributos, regras, proximo.mana_bonus_ruptura ?? 0, characterDerivedFormulas(proximo));
     const paraSalvar = normalizeCharacter(proximo, derivados);
 
     // 1) destino primeiro (ordem segura — ver cabeçalho).
@@ -183,7 +184,7 @@ export async function transferCharacterItemToCrew(params: {
 
     // 2) só então a baixa na ficha, pelo caminho de escrita do papel.
     const regras = ((await getCharacterRules().catch(() => null))?.payload as CharacterRulesPayload | undefined) ?? null;
-    const derivados = computeDerivedStats(remocao.character.atributos, regras, remocao.character.mana_bonus_ruptura ?? 0);
+    const derivados = computeDerivedStats(remocao.character.atributos, regras, remocao.character.mana_bonus_ruptura ?? 0, characterDerivedFormulas(remocao.character));
     const paraSalvar = normalizeCharacter(remocao.character, derivados);
     if (params.usarCaminhoDoControlador) {
       await updateCharacterSheetPayload(params.characterId, paraSalvar);

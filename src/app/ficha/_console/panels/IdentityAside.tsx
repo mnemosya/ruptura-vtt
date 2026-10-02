@@ -550,7 +550,8 @@ export function IdentityAside({
   const paDisponivel = Math.max(0, derivados.pa_max - (character.estado_jogo?.pa_gastos ?? 0));
   const reacoesDisponiveis = Math.max(0, derivados.reacoes_por_rodada - (character.estado_jogo?.reacoes_usadas ?? 0));
   const sobrecarga = character.sobrecarga_usada_dia ?? 0;
-  const ranking = (character.metadados?.ranking_cobalto as string | undefined) ?? null;
+  // Ranking da progressão v1.2 (F…S+).
+  const ranking = (character as { progressao?: { ranking?: string } }).progressao?.ranking ?? null;
 
   const [confirmandoRemocao, setConfirmandoRemocao] = useState(false);
   /* Trocar de personagem com a pergunta aberta a deixaria pendurada
@@ -675,7 +676,7 @@ export function IdentityAside({
           <span
             className="rc-nric-badge"
             data-vazio={!ranking}
-            title={ranking ? `Ranking de Cobalto ${ranking}` : "Ranking de Cobalto não definido"}
+            title={ranking ? `Ranking ${ranking}` : "Ranking não definido"}
           >
             {ranking ?? "—"}
           </span>
@@ -691,6 +692,29 @@ export function IdentityAside({
             </Fragment>
           ))}
         </dl>
+
+        {/* HISTÓRIA — os textos livres da Forja de Refratário (Ideia
+            geral, Aparência, como virou refratário). Recolhida por
+            padrão: é contexto para quem joga e narra, não dado de mesa. */}
+        {(() => {
+          const t = (character as { trajetoria?: { conceito?: string; aparencia?: string; relato_refratario?: string } }).trajetoria;
+          const partes: [string, string | undefined][] = [["Ideia geral", t?.conceito], ["Aparência", t?.aparencia], ["Como se tornou refratário", t?.relato_refratario]];
+          const preenchidas = partes.filter(([, v]) => v && v.trim());
+          if (!preenchidas.length) return null;
+          return (
+            <details className="rc-historia" data-testid="console-historia">
+              <summary className="rc-historia-resumo">História</summary>
+              <dl className="rc-historia-lista">
+                {preenchidas.map(([campo, valor]) => (
+                  <Fragment key={campo}>
+                    <dt>{campo}</dt>
+                    <dd>{valor}</dd>
+                  </Fragment>
+                ))}
+              </dl>
+            </details>
+          );
+        })()}
 
         {/* MATRIZ — três células de larguras iguais, divididas por fio,
             sangrando até a borda do card. O heptágono saiu: com três

@@ -130,26 +130,6 @@ export function RollsTab({
   characterId,
   characterNome,
   activeEffects,
-  marginPromotions = [],
-  saqueFantasmaAvailable = false,
-  gatilhoQuenteStatus,
-  onGatilhoDadoResultado,
-  bangBangAvailable = false,
-  paDisponivel = 0,
-  onSpendPaBangBang,
-  totemBencaoAvailable = false,
-  bencaoTokenAtivo,
-  onConsumeBencaoToken,
-  falcaoTokenAtivo,
-  onConsumeFalcaoToken,
-  briefingCampoAtivo,
-  onConsumeBriefingCampo,
-  entrelinhasAtivo,
-  onConsumeEntrelinhas,
-  espetaculoMortalAtivo,
-  onConsumeEspetaculoMortal,
-  showdownStatus,
-  onShowdownUsado,
 }: {
   atributos: CharacterAttributes;
   atributoDefinitions: AttributeDefinition[] | undefined;
@@ -165,42 +145,6 @@ export function RollsTab({
   characterNome: string;
   /** Efeitos derivados das condições ativas do personagem (checkpoint v0.33) — ver deriveActiveEffectsFromConditions. */
   activeEffects: ActiveEffect[];
-  /** Promoções de margem data-driven por perícia (Passo Fantasma, Olhar Penetrante) — checkpoint talentos. */
-  marginPromotions?: { periciaId: string; de: string; para: string; origem: string; contexto: string | null }[];
-  /** Malabarista › Saque Fantasma (checkpoint talentos, Fase 1) — personagem adquiriu o talento (ignora a penalidade de Rajada com arma leve de Arremesso, confirmada manualmente). */
-  saqueFantasmaAvailable?: boolean;
-  /** Pistoleiro › Gatilho Quente (checkpoint talentos, Fase 1 — revisão) — recurso real de dados de gatilho. */
-  gatilhoQuenteStatus?: { acquired: boolean; max: number; used: number; available: number };
-  /** Chamado logo após uma rolagem com o d8 de gatilho incluído — consome o recurso real e aplica dano extra se resultado 8. */
-  onGatilhoDadoResultado?: (resultado: number, foiEscolhido: boolean) => void;
-  /** Pistoleiro › Bang Bang (N2) — segundo disparo disponível quando o d8 de gatilho foi escolhido como parte do teste. */
-  bangBangAvailable?: boolean;
-  /** PA disponível atual — só habilita "Segundo disparo" com PA suficiente. */
-  paDisponivel?: number;
-  /** Gasta 1 PA para o segundo disparo do Bang Bang (a rolagem em si é a próxima "Rolar" normal, com −1 pré-preenchido). */
-  onSpendPaBangBang?: () => void;
-  /** Totem › Benção (checkpoint talentos, Fase 1) — personagem adquiriu o talento (promoção no PRÓPRIO teste ao aplicar efeito positivo, confirmada manualmente). */
-  totemBencaoAvailable?: boolean;
-  /** Token de Benção concedido por um aliado — consumido no PRIMEIRO teste após a concessão (promove se resultar em falha limitada). */
-  bencaoTokenAtivo?: { origem: string; concedidoEm: string } | null;
-  /** Consome o token de Benção (chamado depois de QUALQUER rolagem, quando o token estava ativo — "o primeiro teste realizado" consome, com ou sem promoção). */
-  onConsumeBencaoToken?: () => void;
-  /** Estrategista › Falcão (checkpoint talentos, Fase 5) — token +2 concedido por um aliado, aplicado ao PRÓXIMO teste que o recebedor confirmar (não é automático em qualquer rolagem — o jogador escolhe em qual teste usar). */
-  falcaoTokenAtivo?: { origem: string; alvoDescricao: string; valor: number; concedidoEm: string } | null;
-  onConsumeFalcaoToken?: () => void;
-  /** Estrategista › Briefing de Campo (checkpoint talentos, Fase 5) — perícia designada; oferece rerroll +1 na perícia correspondente quando o jogador confirma que o teste foi uma falha. */
-  briefingCampoAtivo?: { periciaId: string; origem: string; bonus: number; concedidoEm: string } | null;
-  onConsumeBriefingCampo?: () => void;
-  /** Manipulador › Entrelinhas (checkpoint talentos, Fase 6) — +valor real no próximo teste de Influência do caster contra a criatura marcada, confirmado no clique. */
-  entrelinhasAtivo?: { alvoNome: string; descoberta: string; valor: number; concedidoEm: string } | null;
-  onConsumeEntrelinhas?: () => void;
-  /** Malabarista › Espetáculo Mortal (checkpoint talentos, Fase 10) — falha_limitada→sucesso_limitado no próximo teste de Precisão da sequência. */
-  espetaculoMortalAtivo?: { opcao: "convergencia" | "dispersao"; concedidoEm: string } | null;
-  onConsumeEspetaculoMortal?: () => void;
-  /** Pistoleiro › Showdown (checkpoint talentos, Fase 11) — 1/cena, gasta até maxDados dados de gatilho de uma vez. */
-  showdownStatus?: { acquired: boolean; usedThisScene: boolean; maxDados: number; intervaloAtiva: number[] };
-  /** Consome os dados gastos + marca 1/cena — chamado após a rolagem com o total gasto e a contagem de qualificados. */
-  onShowdownUsado?: (dadosGastos: number, qualificados: number) => void;
 }) {
   const atributoIds = ["corpo", "mente", "animo"] as const;
   const [atributoId, setAtributoId] = useState<(typeof atributoIds)[number]>("corpo");
@@ -217,44 +161,9 @@ export function RollsTab({
   // ActiveEffect) — um chip ausente daqui está ligado (enabledByDefault
   // é sempre true neste checkpoint, ver activeEffects.ts).
   const [chipsDesligados, setChipsDesligados] = useState<Set<string>>(new Set());
-  // Confirmação manual de que o teste atual se encaixa no `contexto` estreito
-  // de uma promoção de margem (ex.: Olhar Penetrante exige Influência
-  // ESPECIFICAMENTE para distorcer percepções/convencer/manipular, não
-  // qualquer teste de Influência) — nunca aplica sem essa confirmação
-  // explícita quando a promoção tem `contexto`. Reseta ao trocar de perícia.
-  const [contextoConfirmado, setContextoConfirmado] = useState(false);
   // Propriedade Rajada (arma de fogo/arremesso_disparo) — dispara múltiplas vezes numa
-  // ação em troca de −1 no teste. Malabarista › Saque Fantasma ignora essa penalidade
-  // especificamente com arma LEVE de propriedade Arremesso — como o catálogo não
-  // estrutura "leve + Arremesso" como um único booleano consultável a partir daqui, o
-  // jogador confirma explicitamente (mesmo critério de outras confirmações desta sessão).
+  // ação em troca de −1 no teste.
   const [rajadaAtiva, setRajadaAtiva] = useState(false);
-  const [saqueFantasmaConfirmado, setSaqueFantasmaConfirmado] = useState(false);
-  // Pistoleiro › Gatilho Quente — inclui o d8 de gatilho na próxima rolagem; reseta
-  // depois de cada "Rolar" (1 dado por ataque, nunca acumula pedido).
-  const [usarDadoGatilho, setUsarDadoGatilho] = useState(false);
-  // Pistoleiro › Showdown — quantidade de dados de gatilho a gastar de uma vez (0 = não
-  // usar), capada por reserva disponível e pelo máximo do payload; reseta após "Rolar".
-  const [showdownQuantidade, setShowdownQuantidade] = useState(0);
-  const [showdownResumo, setShowdownResumo] = useState<string | null>(null);
-  // Bang Bang — true logo após uma rolagem onde o d8 de gatilho foi o maior dado
-  // (condição real do payload: "escolher o resultado dele como parte do teste").
-  const [bangBangDisponivelAgora, setBangBangDisponivelAgora] = useState(false);
-  // Totem › Benção — confirmação de que ESTE teste aplica um efeito positivo em alguém
-  // (cura/reforço/proteção); sem `pericias[]` no payload, não dá pra escopar por perícia
-  // como Passo Fantasma/Olhar Penetrante, então é uma confirmação avulsa por rolagem.
-  const [bencaoAtiva, setBencaoAtiva] = useState(false);
-  // Estrategista › Falcão — confirmação de que ESTE teste é o beneficiado pelo token (o
-  // jogador escolhe em qual rolagem aplicar o +2, já que o recebedor pode ter mais de um
-  // teste pendente antes de "agir sobre o alvo").
-  const [falcaoAtiva, setFalcaoAtiva] = useState(false);
-  // Manipulador › Entrelinhas — confirmação de que ESTE teste de Influência é contra a
-  // criatura marcada (o talento não tem como saber sozinho qual criatura o teste alvo sem
-  // um modelo de alvo estruturado nas rolagens).
-  const [entrelinhasAtivaCheckbox, setEntrelinhasAtivaCheckbox] = useState(false);
-  // Malabarista › Espetáculo Mortal — confirmação de que ESTE teste de Precisão é o da
-  // sequência de arremessos (o talento não sabe sozinho qual rolagem é "a" ação da sequência).
-  const [espetaculoMortalConfirmado, setEspetaculoMortalConfirmado] = useState(false);
 
   function toggleTagExtra(tag: ToggleTag) {
     setTagsExtras((prev) => {
@@ -346,7 +255,6 @@ export function RollsTab({
     setPericiaId(preparedRoll.periciaId ?? SEM_PERICIA);
     setOrigemAtual(preparedRoll.origem);
     setAutoTagsPreparadas(preparedRoll.extraTags ?? []);
-    setContextoConfirmado(false);
     onPreparedRollApplied();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preparedRoll]);
@@ -370,32 +278,8 @@ export function RollsTab({
     const manualModifier = parseIntOrDefault(modificadorInput, 0);
     const cd = cdInput.trim() === "" ? undefined : parseIntOrDefault(cdInput, 0);
     const temPericia = periciaId !== SEM_PERICIA;
-    const rajadaPenalidade = rajadaAtiva && !(saqueFantasmaAvailable && saqueFantasmaConfirmado) ? -1 : 0;
-    // Estrategista › Falcão — +2 (ou o valor real do payload) só quando o jogador confirma
-    // que ESTE teste é "agir diretamente sobre o alvo/detalhe" marcado.
-    const falcaoBonus = falcaoTokenAtivo && falcaoAtiva ? falcaoTokenAtivo.valor : 0;
-    const entrelinhasBonus = entrelinhasAtivo && entrelinhasAtivaCheckbox && periciaId === "influencia" ? entrelinhasAtivo.valor : 0;
-    const finalModifier = manualModifier + modificadorEfeitos + rajadaPenalidade + falcaoBonus + entrelinhasBonus;
-    const promocaoCandidata = temPericia ? marginPromotions.find((p) => p.periciaId === periciaId) : undefined;
-    // Promoção com `contexto` (ex.: Olhar Penetrante) só aplica com confirmação explícita de que
-    // o teste atual se encaixa nesse contexto estreito — sem contexto (ex.: Passo Fantasma, "testes
-    // de Furtividade") aplica direto, já que a própria perícia já delimita o uso.
-    const promocaoPericia = promocaoCandidata && (!promocaoCandidata.contexto || contextoConfirmado) ? promocaoCandidata : undefined;
-    // Totem › Benção — sem `pericias[]` no payload (aplica a QUALQUER teste que aplique um
-    // efeito positivo), então a confirmação avulsa (checkbox) ou o token de um aliado tomam
-    // precedência sobre a promoção por perícia quando ambos poderiam se aplicar (mesma faixa
-    // de margem — nunca empilham, só uma promoção por rolagem).
-    const bencaoOrigem = bencaoTokenAtivo ? `Token de Benção (${bencaoTokenAtivo.origem})` : bencaoAtiva ? "Totem — Benção" : null;
-    // Malabarista › Espetáculo Mortal — mesma precedência de Benção, escopado à Precisão.
-    const espetaculoMortalOrigem =
-      espetaculoMortalAtivo && espetaculoMortalConfirmado && periciaId === "precisao" ? `Espetáculo Mortal (${espetaculoMortalAtivo.opcao})` : null;
-    const promocao = bencaoOrigem
-      ? { de: "falha_limitada" as MargemClassificacao, para: "sucesso_limitado" as MargemClassificacao, origem: bencaoOrigem }
-      : espetaculoMortalOrigem
-        ? { de: "falha_limitada" as MargemClassificacao, para: "sucesso_limitado" as MargemClassificacao, origem: espetaculoMortalOrigem }
-        : promocaoPericia
-          ? { de: promocaoPericia.de as MargemClassificacao, para: promocaoPericia.para as MargemClassificacao, origem: promocaoPericia.origem }
-          : undefined;
+    const rajadaPenalidade = rajadaAtiva ? -1 : 0;
+    const finalModifier = manualModifier + modificadorEfeitos + rajadaPenalidade;
 
     const resultado = rollPericia({
       atributoId,
@@ -406,54 +290,7 @@ export function RollsTab({
       periciaValor: temPericia ? pericias[periciaId] ?? 0 : undefined,
       modificador: finalModifier,
       cd,
-      promocaoMargem: promocao,
-      incluirDadoGatilho: usarDadoGatilho,
-      quantidadeDadosGatilho: showdownQuantidade > 0 ? showdownQuantidade : undefined,
     });
-
-    // Token consumido pelo PRIMEIRO teste após a concessão, com ou sem promoção real
-    // (o texto canônico consome no teste, não condicionado ao resultado dar falha limitada).
-    if (bencaoTokenAtivo) onConsumeBencaoToken?.();
-    setBencaoAtiva(false);
-    if (falcaoTokenAtivo && falcaoAtiva) {
-      onConsumeFalcaoToken?.();
-      setFalcaoAtiva(false);
-    }
-    if (entrelinhasAtivo && entrelinhasAtivaCheckbox && periciaId === "influencia") {
-      onConsumeEntrelinhas?.();
-      setEntrelinhasAtivaCheckbox(false);
-    }
-    if (espetaculoMortalOrigem) {
-      onConsumeEspetaculoMortal?.();
-      setEspetaculoMortalConfirmado(false);
-    }
-
-    if (usarDadoGatilho && resultado.dadoGatilhoResultado != null) {
-      onGatilhoDadoResultado?.(resultado.dadoGatilhoResultado, resultado.dadoGatilhoEscolhido === true);
-      setBangBangDisponivelAgora(bangBangAvailable && resultado.dadoGatilhoEscolhido === true);
-      setUsarDadoGatilho(false);
-    } else {
-      setBangBangDisponivelAgora(false);
-    }
-
-    // Pistoleiro › Showdown — consome os dados gastos (independente do resultado) e lista
-    // um lembrete EXATO por dado qualificado (6-8), já que os 4 efeitos afetam o ALVO
-    // (cross-character) e nem RollsTab nem TableClient conseguem aplicá-los sozinhos aqui
-    // (ver docstring de getShowdownAvailability em talentEngine.ts).
-    if (showdownQuantidade > 0 && resultado.dadosGatilhoResultados) {
-      const intervalo = showdownStatus?.intervaloAtiva ?? [6, 7, 8];
-      const qualificados = resultado.dadosGatilhoResultados.filter((d) => intervalo.includes(d));
-      const danoExtra = 2 * (pericias["balistica"] ?? 0);
-      if (qualificados.length > 0) {
-        setShowdownResumo(
-          `Showdown: ${qualificados.length} dado(s) qualificado(s) (${qualificados.join(", ")}) — para cada um, escolha 1: dano extra +${danoExtra} (2× Balística) · alvo perde 1 PA (rodada atual ou próxima) · -1 ofensivo e defensivo até fim da rodada · Desarmar (mova a arma do alvo para fora de "empunhado"). Aplique manualmente no alvo.`,
-        );
-      } else {
-        setShowdownResumo("Showdown: nenhum dado qualificado (6-8) nesta rolagem.");
-      }
-      onShowdownUsado?.(showdownQuantidade, qualificados.length);
-      setShowdownQuantidade(0);
-    }
 
     pushHistorico({ kind: "pericia", resultado, origem: origemAtual ?? undefined });
 
@@ -471,6 +308,9 @@ export function RollsTab({
       periciaValor: resultado.periciaValor,
       modificador: resultado.modificador,
       dados: resultado.dados,
+      quantidadeDados: resultado.quantidadeDados,
+      modoSelecao: resultado.modoSelecao,
+      dadoEscolhido: resultado.dadoEscolhido,
       maiorDado: resultado.maiorDado,
       total: resultado.total,
       cd: resultado.cd ?? null,
@@ -491,50 +331,6 @@ export function RollsTab({
         .map((e) => ({ id: e.id, sourceName: e.sourceName, modifier: e.modifier, explanation: e.explanation })),
       manualModifier,
       finalModifier,
-    });
-  }
-
-  /**
-   * Estrategista › Briefing de Campo — rerroll real (+bonus do payload) da última rolagem
-   * qualificada (mesma perícia designada), consumido no clique. "Se o aliado falhar" fica a
-   * critério do jogador confirmar (este sistema não computa falha genérica sem CD sempre
-   * presente) — o botão só aparece habilitado para a rolagem mais recente que casa a
-   * perícia, então o jogador decide se era mesmo uma falha antes de clicar.
-   */
-  async function handleRerollBriefing(original: RupturaRollResult) {
-    if (!briefingCampoAtivo) return;
-    const bonus = briefingCampoAtivo.bonus;
-    const resultado = rollPericia({
-      atributoId: original.atributoId,
-      atributoNome: original.atributoNome,
-      atributoValor: original.atributoValor,
-      periciaId: original.periciaId,
-      periciaNome: original.periciaNome,
-      periciaValor: original.periciaValor,
-      modificador: original.modificador + bonus,
-      cd: original.cd,
-    });
-    onConsumeBriefingCampo?.();
-    pushHistorico({ kind: "pericia", resultado, origem: `Rerroll — Briefing de Campo (${briefingCampoAtivo.origem}, +${bonus})` });
-    const periciaParte = resultado.periciaNome ? ` + ${resultado.periciaNome}` : " (sem perícia)";
-    const cdParte = resultado.cd != null ? ` vs CD ${resultado.cd} (${resultado.sucesso ? "Sucesso" : "Falha"})` : "";
-    onLog("rolagem_pericia", `Rerroll (Briefing de Campo): ${resultado.atributoNome}${periciaParte}: total ${resultado.total}${cdParte}`);
-    await persistirNaMesa("rolagem_pericia", {
-      characterId,
-      characterNome,
-      atributo: resultado.atributoNome,
-      atributoValor: resultado.atributoValor,
-      pericia: resultado.periciaNome ?? null,
-      periciaValor: resultado.periciaValor,
-      modificador: resultado.modificador,
-      dados: resultado.dados,
-      maiorDado: resultado.maiorDado,
-      total: resultado.total,
-      cd: resultado.cd ?? null,
-      sucesso: resultado.sucesso ?? null,
-      margem: resultado.margem ?? null,
-      classificacaoMargem: resultado.classificacaoMargem ?? null,
-      origem: `Rerroll — Briefing de Campo (${briefingCampoAtivo.origem}, +${bonus})`,
     });
   }
 
@@ -634,8 +430,6 @@ export function RollsTab({
                 setOrigemAtual(null);
                 // Trocar perícia manualmente invalida tags automáticas (item/bricolagem) da rolagem preparada anterior — nunca vazar bônus escopado para um teste diferente.
                 setAutoTagsPreparadas([]);
-                // Trocar perícia invalida a confirmação de contexto de uma promoção de margem anterior.
-                setContextoConfirmado(false);
               }}
               style={{ ...selectStyle, minWidth: 160 }}
             >
@@ -699,163 +493,7 @@ export function RollsTab({
             />
             Usar Rajada (arma de fogo/arremesso com propriedade Rajada — −1 no teste)
           </label>
-          {rajadaAtiva && saqueFantasmaAvailable && (
-            <label
-              data-testid="roll-saque-fantasma-confirmar"
-              style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11, color: "#5ec8ff", marginLeft: 20 }}
-            >
-              <input
-                type="checkbox"
-                checked={saqueFantasmaConfirmado}
-                onChange={(e) => setSaqueFantasmaConfirmado(e.target.checked)}
-                style={{ marginTop: 2 }}
-              />
-              <span>Saque Fantasma: confirmo que é uma arma LEVE com propriedade Arremesso — ignora a penalidade de Rajada.</span>
-            </label>
-          )}
-          {gatilhoQuenteStatus?.acquired && (
-            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-              <input
-                data-testid="roll-gatilho-quente-usar"
-                type="checkbox"
-                checked={usarDadoGatilho}
-                disabled={gatilhoQuenteStatus.available <= 0}
-                onChange={(e) => setUsarDadoGatilho(e.target.checked)}
-              />
-              Usar dado de gatilho (d8 real na rolagem — {gatilhoQuenteStatus.available}/{gatilhoQuenteStatus.max} disponíveis)
-            </label>
-          )}
-          {showdownStatus?.acquired && !showdownStatus.usedThisScene && gatilhoQuenteStatus && gatilhoQuenteStatus.available > 0 && (
-            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-              <span>Showdown (1/cena) — gastar</span>
-              <select
-                data-testid="roll-showdown-quantidade"
-                value={showdownQuantidade}
-                onChange={(e) => {
-                  setShowdownQuantidade(Number(e.target.value));
-                  if (Number(e.target.value) > 0) setUsarDadoGatilho(false);
-                }}
-                style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "2px 6px", fontSize: 11 }}
-              >
-                {Array.from({ length: Math.min(showdownStatus.maxDados, gatilhoQuenteStatus.available) + 1 }, (_, n) => n).map((n) => (
-                  <option key={n} value={n}>{n}</option>
-                ))}
-              </select>
-              <span>dado(s) de gatilho de uma vez nesta rolagem</span>
-            </label>
-          )}
-          {showdownResumo && (
-            <p data-testid="roll-showdown-resumo" style={{ fontSize: 11, color: "#5ec8ff", margin: 0 }}>
-              {showdownResumo}
-            </p>
-          )}
-          {bangBangDisponivelAgora && (
-            <div data-testid="roll-bang-bang-disponivel" style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: "#5ec8ff" }}>
-              <span>Bang Bang: dado de gatilho fez parte do teste — pode gastar +1 PA para um segundo disparo (−1).</span>
-              <button
-                data-testid="roll-bang-bang-confirmar"
-                disabled={paDisponivel < 1}
-                onClick={() => {
-                  onSpendPaBangBang?.();
-                  setModificadorInput(String(parseIntOrDefault(modificadorInput, 0) - 1));
-                  setBangBangDisponivelAgora(false);
-                }}
-                style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
-              >
-                Confirmar segundo disparo (−1 pré-preenchido — role novamente)
-              </button>
-            </div>
-          )}
-          {bencaoTokenAtivo ? (
-            <p data-testid="roll-bencao-token-ativo" style={{ fontSize: 11, color: "#5ec8ff", margin: 0 }}>
-              Token de Benção ativo (de {bencaoTokenAtivo.origem}) — este é o primeiro teste desde a concessão: falha
-              limitada vira sucesso limitado. Consumido ao rolar.
-            </p>
-          ) : (
-            totemBencaoAvailable && (
-              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-                <input
-                  data-testid="roll-bencao-ativa"
-                  type="checkbox"
-                  checked={bencaoAtiva}
-                  onChange={(e) => setBencaoAtiva(e.target.checked)}
-                />
-                Benção: confirmo que este teste aplica um efeito positivo em alguém (cura/reforço/proteção) — falha
-                limitada vira sucesso limitado.
-              </label>
-            )
-          )}
-          {falcaoTokenAtivo && (
-            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-              <input
-                data-testid="roll-falcao-ativa"
-                type="checkbox"
-                checked={falcaoAtiva}
-                onChange={(e) => setFalcaoAtiva(e.target.checked)}
-              />
-              Falcão ativo (de {falcaoTokenAtivo.origem}, alvo: {falcaoTokenAtivo.alvoDescricao}) — confirmo que este teste
-              age diretamente sobre o alvo/detalhe: +{falcaoTokenAtivo.valor}. Consumido ao rolar.
-            </label>
-          )}
-          {entrelinhasAtivo && periciaId === "influencia" && (
-            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-              <input
-                data-testid="roll-entrelinhas-ativa"
-                type="checkbox"
-                checked={entrelinhasAtivaCheckbox}
-                onChange={(e) => setEntrelinhasAtivaCheckbox(e.target.checked)}
-              />
-              Entrelinhas ativo contra {entrelinhasAtivo.alvoNome} ({entrelinhasAtivo.descoberta}) — confirmo que uso essa
-              impressão na abordagem: +{entrelinhasAtivo.valor}. Consumido ao rolar.
-            </label>
-          )}
-          {espetaculoMortalAtivo && periciaId === "precisao" && (
-            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-              <input
-                data-testid="roll-espetaculo-mortal-ativa"
-                type="checkbox"
-                checked={espetaculoMortalConfirmado}
-                onChange={(e) => setEspetaculoMortalConfirmado(e.target.checked)}
-              />
-              Espetáculo Mortal ativo ({espetaculoMortalAtivo.opcao}) — confirmo que este é o teste de Precisão da sequência: falha
-              limitada vira sucesso limitado. Consumido ao rolar.
-            </label>
-          )}
-          {briefingCampoAtivo && periciaId === briefingCampoAtivo.periciaId && (
-            <p data-testid="roll-briefing-campo-disponivel" style={{ fontSize: 11, color: "#5ec8ff", margin: 0 }}>
-              Briefing de Campo ativo em {periciaDefinitions?.find((p) => p.id === periciaId)?.nome ?? periciaId} (de{" "}
-              {briefingCampoAtivo.origem}) — se este teste falhar, use "Rerrolar (Briefing de Campo)" no histórico abaixo.
-            </p>
-          )}
         </div>
-
-        {periciaId !== SEM_PERICIA && marginPromotions.some((p) => p.periciaId === periciaId) && (() => {
-          const promo = marginPromotions.find((p) => p.periciaId === periciaId)!;
-          if (!promo.contexto) {
-            return (
-              <p data-testid="roll-promocao-disponivel" style={{ fontSize: 11, color: "#5ec8ff", marginTop: -6, marginBottom: 12 }}>
-                Promoção de margem ativa nesta perícia: {promo.origem} — falha limitada conta como sucesso limitado (com CD informado).
-              </p>
-            );
-          }
-          return (
-            <label
-              data-testid="roll-promocao-contexto-confirmar"
-              style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11, color: "#5ec8ff", marginTop: -6, marginBottom: 12 }}
-            >
-              <input
-                type="checkbox"
-                checked={contextoConfirmado}
-                onChange={(e) => setContextoConfirmado(e.target.checked)}
-                style={{ marginTop: 2 }}
-              />
-              <span>
-                {promo.origem} — só se aplica se este teste for especificamente <strong>{promo.contexto}</strong>.
-                Confirme que este teste se encaixa nesse contexto para ativar a promoção (falha limitada → sucesso limitado).
-              </span>
-            </label>
-          );
-        })()}
 
         {/* --- Tags extras (checkpoint v0.33) --- */}
         <div style={{ marginBottom: 12 }}>
@@ -981,15 +619,6 @@ export function RollsTab({
               ) : (
                 <ExpressaoResultado resultado={entry.resultado} />
               )}
-              {index === 0 && entry.kind === "pericia" && briefingCampoAtivo && entry.resultado.periciaId === briefingCampoAtivo.periciaId && (
-                <button
-                  data-testid="roll-rerroll-briefing"
-                  onClick={() => handleRerollBriefing(entry.resultado)}
-                  style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", marginTop: 6 }}
-                >
-                  Rerrolar (Briefing de Campo, +{briefingCampoAtivo.bonus}) — só se foi falha
-                </button>
-              )}
             </div>
           ))}
         </div>
@@ -1006,7 +635,7 @@ function PericiaResultado({ resultado, origem }: { resultado: RupturaRollResult;
         {resultado.atributoNome} ({resultado.atributoValor}d8) + {resultado.periciaNome ?? "Sem perícia"}
       </div>
       <div>Resultados individuais: {resultado.dados.join(", ") || "—"}</div>
-      <div>Maior d8: {resultado.maiorDado}</div>
+      <div>{resultado.modoSelecao === "lowest" ? "Menor" : "Maior"} d8: {resultado.dadoEscolhido}</div>
       <div>Bônus de perícia: {resultado.periciaValor >= 0 ? "+" : ""}{resultado.periciaValor}</div>
       <div>Modificador: {resultado.modificador >= 0 ? "+" : ""}{resultado.modificador}</div>
       <div style={{ fontWeight: 700 }}>Total: {resultado.total}</div>

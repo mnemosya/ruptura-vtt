@@ -36,6 +36,7 @@ const SUPABASE_URL = requireEnv("SUPABASE_URL");
 const ANON = requireEnv("SUPABASE_ANON_KEY");
 import { limparCampanhasDeTeste } from "./limparCampanhaDeTeste";
 
+import { personagemV12 } from "./fixtures/personagemV12";
 const admin = createClient(SUPABASE_URL, requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
   auth: { persistSession: false, autoRefreshToken: false },
 });
@@ -87,7 +88,7 @@ async function main() {
 
   const personagemId = randomUUID();
   await admin.from("characters").insert({
-    id: personagemId, name: "PJ do teste", status: "draft", payload: {}, campaign_id: campanhaId, owner_id: jogador.id,
+    id: personagemId, name: "PJ do teste", status: "draft", payload: personagemV12("PJ do teste"), campaign_id: campanhaId, owner_id: jogador.id,
   });
   criados.personagens.push(personagemId);
   await admin.from("character_controllers").insert({ character_id: personagemId, campaign_id: campanhaId, user_id: jogador.id });
@@ -731,7 +732,7 @@ async function main() {
     // testa: mesmo tendo characterId setado, sem `character_controllers`
     // ele não controla — prova que o modelo NUNCA é só `characterId!==null`.
     const personagem2Id = randomUUID();
-    await admin.from("characters").insert({ id: personagem2Id, name: "PJ2 sem controle", status: "draft", payload: {}, campaign_id: campanhaId, owner_id: jogador2.id });
+    await admin.from("characters").insert({ id: personagem2Id, name: "PJ2 sem controle", status: "draft", payload: personagemV12("PJ2 sem controle"), campaign_id: campanhaId, owner_id: jogador2.id });
     criados.personagens.push(personagem2Id);
     await admin.from("vtt_tokens").update({ character_id: personagem2Id }).eq("id", tokenNovoId);
     const { data: atual } = await admin.from("vtt_tokens").select("revision, q, r, visivel").eq("id", tokenNovoId).single();

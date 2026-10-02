@@ -36,6 +36,7 @@ const SUPABASE_URL = requireEnv("SUPABASE_URL");
 const ANON = requireEnv("SUPABASE_ANON_KEY");
 import { limparCampanhasDeTeste } from "./limparCampanhaDeTeste";
 
+import { personagemV12 } from "./fixtures/personagemV12";
 const admin = createClient(SUPABASE_URL, requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
   auth: { persistSession: false, autoRefreshToken: false },
 });
@@ -94,7 +95,7 @@ async function main() {
   // Personagem do jogador + controle
   const personagemId = randomUUID();
   await admin.from("characters").insert({
-    id: personagemId, name: "PJ do teste", status: "draft", payload: {},
+    id: personagemId, name: "PJ do teste", status: "draft", payload: personagemV12("PJ do teste"),
     campaign_id: campanhaId, owner_id: jogador.id,
   });
   criados.personagens.push(personagemId);
@@ -323,7 +324,7 @@ async function main() {
   {
     const personagemDaOutra = randomUUID();
     await admin.from("characters").insert({
-      id: personagemDaOutra, name: "PJ de outra campanha", status: "draft", payload: {},
+      id: personagemDaOutra, name: "PJ de outra campanha", status: "draft", payload: personagemV12("PJ de outra campanha"),
       campaign_id: outraCampanhaId, owner_id: estranho.id,
     });
     criados.personagens.push(personagemDaOutra);
@@ -395,7 +396,7 @@ async function main() {
   {
     const personagemDescartavel = randomUUID();
     await admin.from("characters").insert({
-      id: personagemDescartavel, name: "PJ descartável", status: "draft", payload: {},
+      id: personagemDescartavel, name: "PJ descartável", status: "draft", payload: personagemV12("PJ descartável"),
       campaign_id: campanhaId, owner_id: jogador.id,
     });
     const { data: tokenLigado } = await admin.from("vtt_tokens")
@@ -440,7 +441,7 @@ async function main() {
   const personagemSeedId = randomUUID();
   {
     await admin.from("characters").insert({
-      id: personagemSeedId, name: "PJ da campanha de semeadura", status: "draft", payload: {},
+      id: personagemSeedId, name: "PJ da campanha de semeadura", status: "draft", payload: personagemV12("PJ da campanha de semeadura"),
       campaign_id: campanhaSeedId, owner_id: jogador.id,
     });
     criados.personagens.push(personagemSeedId);

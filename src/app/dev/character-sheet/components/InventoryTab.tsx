@@ -27,7 +27,6 @@ import {
   canSplitInstanceQuantity,
   hasSobregravacaoAccess,
   getSlotsRunaMaxEfetivo,
-  isRaridadeDentroDoLimite,
   type Character,
   type ItemContent,
   type InventoryItemInstance,
@@ -94,28 +93,8 @@ export function InventoryTab({
   allies,
   onUseItemOnAlly,
   onRefreshAllies,
-  toqueDeMidasAvailable = false,
-  onApplyToqueDeMidas,
-  onEndToqueDeMidas,
   onApplyShieldDamage,
-  onRollToolTest,
-  runicoGatilhoAvailable = false,
-  onToggleRuneActive,
-  entalheRapidoAvailable = false,
-  entalheAttempts = {},
-  onStartEntalheRapido,
-  onConfirmEntalheRapido,
-  sobregravacaoAvailable = false,
   currentCharacterId = null,
-  onApplySobregravacao,
-  onSetSobregravacaoAllies,
-  sobregravacaoTestPending = {},
-  onStartSobregravacaoTest,
-  onConfirmSobregravacaoTest,
-  garimpoDeRuaStatus,
-  onActivateGarimpoDeRua,
-  cadernetaDeDividaStatus,
-  onBuyFiado,
   dividasMercador = [],
   onQuitarDivida,
 }: {
@@ -169,45 +148,10 @@ export function InventoryTab({
   onUseItemOnAlly: (instanceId: string, targetCharacterId: string, options?: { selectedConditionInstanceId?: string }) => void;
   /** Recarrega `allies` sob demanda (ex.: ao abrir o painel "Usar em aliado") — mantém PV/condições do alvo atualizados no momento do uso. */
   onRefreshAllies: () => void;
-  /** Artífice › Toque de Midas disponível (adquirido + 1/dia não usado). */
-  toqueDeMidasAvailable?: boolean;
-  /** Aplica Toque de Midas à instância (o alvo é derivado da categoria; `pericia` só p/ ferramenta/dispositivo). */
-  onApplyToqueDeMidas?: (instanceId: string, pericia?: string) => void;
-  /** Encerra manualmente o Toque de Midas da instância. */
-  onEndToqueDeMidas?: (instanceId: string) => void;
   /** Aplica dano ao escudo (consome PD temporário de Toque de Midas antes do PD-base). */
   onApplyShieldDamage?: (instanceId: string, amount: number) => void;
-  /** Prepara na aba Rolagens um teste de ferramenta/dispositivo com o +1 de Toque de Midas escopado a esta instância. */
-  onRollToolTest?: (instanceId: string, relatedSkill: string) => void;
-  /** Rúnico › Gatilho Rúnico — mostra o botão Ativar/Desativar por runa instalada (sem PA). */
-  runicoGatilhoAvailable?: boolean;
-  onToggleRuneActive?: (instanceId: string, runeInstallationId: string) => void;
-  /** Rúnico › Entalhe Rápido — mostra o fluxo de instalar/remover com 1 PA + teste real de Engenharia. */
-  entalheRapidoAvailable?: boolean;
-  /** Tentativa pendente de confirmação por instância (após gastar PA e preparar a rolagem). */
-  entalheAttempts?: Record<string, { mode: "instalar" | "remover"; alvo: string; cd: number }>;
-  onStartEntalheRapido?: (instanceId: string, mode: "instalar" | "remover", alvo: string, cd: number) => void;
-  onConfirmEntalheRapido?: (instanceId: string, resultado: number) => void;
-  /** Rúnico › Sobregravação — personagem tem o talento (pode aplicar a instâncias do próprio inventário). */
-  sobregravacaoAvailable?: boolean;
   /** Id do personagem atualmente com a ficha aberta — usado para checar `hasSobregravacaoAccess` (dono/aliado/terceiro testado). */
   currentCharacterId?: string | null;
-  /** Aplica Sobregravação a uma instância do próprio inventário (dono do talento). */
-  onApplySobregravacao?: (instanceId: string) => void;
-  /** Dono edita a lista de aliados instruídos (substitui a lista inteira). */
-  onSetSobregravacaoAllies?: (instanceId: string, allyIds: string[]) => void;
-  /** Instâncias com teste de Tecnomagia/Arcanismo CD 8 pendente de confirmação. */
-  sobregravacaoTestPending?: Record<string, true>;
-  /** Terceiro sem acesso inicia o teste CD 8 para acessar o espaço extra. */
-  onStartSobregravacaoTest?: (instanceId: string) => void;
-  onConfirmSobregravacaoTest?: (instanceId: string, resultado: number) => void;
-  /** Mercador › Garimpo de Rua (checkpoint talentos, Fase 8). */
-  garimpoDeRuaStatus?: { acquired: boolean; percentual: number; ativoHoje: boolean };
-  onActivateGarimpoDeRua?: () => void;
-  /** Mercador › Caderneta de Dívida (checkpoint talentos, Fase 12). */
-  cadernetaDeDividaStatus?: { acquired: boolean; usedThisSession: boolean; raridadeMaxima: string };
-  /** Confirma a compra fiada — saldo insuficiente vira dívida real (`fornecedor` é texto livre do jogador/narrador). */
-  onBuyFiado?: (itemSlug: string, quantidade: number, walletId: WalletId, precoUnitario: number, fornecedor: string) => void;
   /** Dívidas registradas por Caderneta de Dívida — persistidas no personagem. */
   dividasMercador?: Character["dividas_mercador"];
   /** Marca uma dívida como quitada manualmente. */
@@ -218,16 +162,8 @@ export function InventoryTab({
   const [walletId, setWalletId] = useState<WalletId>("aretz_informal");
   const [quantidades, setQuantidades] = useState<Record<string, number>>({});
   const [precos, setPrecos] = useState<Record<string, number>>({});
-  // fornecedorFiado[slug] = nome do fornecedor digitado para a compra fiada (Caderneta de Dívida)
-  const [fornecedorFiado, setFornecedorFiado] = useState<Record<string, string>>({});
   const [runaSelecionada, setRunaSelecionada] = useState<Record<string, string>>({});
-  const [toqueMidasPericia, setToqueMidasPericia] = useState<Record<string, string>>({});
   const [escudoDanoInput, setEscudoDanoInput] = useState<Record<string, string>>({});
-  const [entalheCd, setEntalheCd] = useState<Record<string, string>>({});
-  const [entalheRemoverAlvo, setEntalheRemoverAlvo] = useState<Record<string, string>>({});
-  const [entalheResultado, setEntalheResultado] = useState<Record<string, string>>({});
-  const [sobregravacaoAliadosInput, setSobregravacaoAliadosInput] = useState<Record<string, string>>({});
-  const [sobregravacaoTestResultado, setSobregravacaoTestResultado] = useState<Record<string, string>>({});
   // guardarQtd[`${aljavaInstanceId}:${ammoInstanceId}`] = quanto guardar nesta Aljava
   const [guardarQtd, setGuardarQtd] = useState<Record<string, number>>({});
   // retirarQtd[`${aljavaInstanceId}:${contentSlug}`] = quanto retirar desta Aljava
@@ -264,9 +200,6 @@ export function InventoryTab({
   }
   function precoDe(item: ItemContent) {
     const base = precos[item.slug] ?? item.preco;
-    if (garimpoDeRuaStatus?.ativoHoje && garimpoDeRuaStatus.percentual > 0) {
-      return Math.max(0, Math.round(base * (1 - garimpoDeRuaStatus.percentual / 100)));
-    }
     return base;
   }
 
@@ -297,38 +230,6 @@ export function InventoryTab({
           Catálogo inteiro da Biblioteca do Sistema ({items.length} itens). Preço do livro editável
           por compra (PRD 13.2). Sem fiado do Mercador, sem envio para o bando ainda.
         </p>
-        {garimpoDeRuaStatus?.acquired && (
-          <div data-testid="garimpo-de-rua-widget" style={{ ...widgetBox2, marginBottom: 10 }}>
-            {garimpoDeRuaStatus.ativoHoje ? (
-              <span style={{ color: "#4caf50" }}>
-                Garimpo de Rua ativo hoje — preços da loja com -{garimpoDeRuaStatus.percentual}% (reseta em Novo Dia/descanso longo).
-              </span>
-            ) : (
-              <>
-                <span style={{ opacity: 0.7 }}>Garimpo de Rua: -{garimpoDeRuaStatus.percentual}% nas compras de hoje (1/dia).</span>
-                <button
-                  data-testid="garimpo-de-rua-ativar"
-                  onClick={onActivateGarimpoDeRua}
-                  style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}
-                >
-                  Ativar desconto de hoje
-                </button>
-              </>
-            )}
-          </div>
-        )}
-        {cadernetaDeDividaStatus?.acquired && (
-          <div data-testid="caderneta-de-divida-widget" style={{ ...widgetBox2, marginBottom: 10 }}>
-            {cadernetaDeDividaStatus.usedThisSession ? (
-              <span style={{ opacity: 0.6 }}>Caderneta de Dívida já usada nesta sessão (reseta na próxima sessão).</span>
-            ) : (
-              <span style={{ opacity: 0.7 }}>
-                Caderneta de Dívida: 1x/sessão, garante um item até raridade "{cadernetaDeDividaStatus.raridadeMaxima}" mesmo sem saldo — preencha o
-                fornecedor e use "Comprar fiado".
-              </span>
-            )}
-          </div>
-        )}
         {dividasMercador.length > 0 && (
           <div data-testid="dividas-mercador-lista" style={{ ...widgetBox2, marginBottom: 10 }}>
             <strong style={{ fontSize: 11 }}>Dívidas com fornecedores</strong>
@@ -397,31 +298,6 @@ export function InventoryTab({
                   >
                     Comprar
                   </button>
-                  {cadernetaDeDividaStatus?.acquired &&
-                    !cadernetaDeDividaStatus.usedThisSession &&
-                    isRaridadeDentroDoLimite(item.raridade, cadernetaDeDividaStatus.raridadeMaxima) && (
-                      <>
-                        <input
-                          data-testid={`loja-fiado-fornecedor-${item.slug}`}
-                          type="text"
-                          placeholder="Fornecedor"
-                          value={fornecedorFiado[item.slug] ?? ""}
-                          onChange={(e) => setFornecedorFiado((prev) => ({ ...prev, [item.slug]: e.target.value }))}
-                          style={{ ...input, width: 100 }}
-                        />
-                        <button
-                          data-testid={`loja-comprar-fiado-${item.slug}`}
-                          disabled={!fornecedorFiado[item.slug]?.trim()}
-                          onClick={() =>
-                            onBuyFiado?.(item.slug, quantidadeDe(item.slug), walletId, precoDe(item), fornecedorFiado[item.slug]!.trim())
-                          }
-                          style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", opacity: fornecedorFiado[item.slug]?.trim() ? 1 : 0.5 }}
-                          title="Caderneta de Dívida — 1x/sessão, item até raridade limite; o saldo devido vira dívida com o fornecedor."
-                        >
-                          Comprar fiado
-                        </button>
-                      </>
-                    )}
                 </div>
               ))}
               {filtrados.length === 0 && <p style={{ fontSize: 12, opacity: 0.6 }}>Nenhum item nesta busca/categoria.</p>}
@@ -517,102 +393,6 @@ export function InventoryTab({
                     Remover
                   </button>
                 </div>
-
-                {/* Toque de Midas (Artífice N2) — efeito temporário na instância real. */}
-                {(() => {
-                  const nowIso = new Date().toISOString();
-                  const midas = instance.toqueDeMidas;
-                  const midasAtivo = midas?.active && nowIso < midas.expiresAt ? midas : null;
-                  const midasExpiradoNaoLimpo = midas?.active && nowIso >= midas.expiresAt;
-                  const alvoDerivado =
-                    instance.categoria === "arma"
-                      ? "arma"
-                      : instance.categoria === "armadura"
-                        ? "armadura"
-                        : instance.categoria === "escudo"
-                          ? "escudo"
-                          : "ferramenta_dispositivo";
-                  if (midasAtivo) {
-                    const mods = midasAtivo.modifiers;
-                    const efeitoTexto =
-                      alvoDerivado === "arma"
-                        ? `+${mods.ataque ?? 0} ataque e +${mods.dano ?? 0} dano`
-                        : alvoDerivado === "armadura"
-                          ? `+${mods.mit ?? 0} MIT`
-                          : alvoDerivado === "escudo"
-                            ? `+${midasAtivo.temporaryPdGranted ?? 0} PD temporário`
-                            : `+${mods.testeRelacionado ?? 0} no teste${midasAtivo.relatedSkill ? ` (${midasAtivo.relatedSkill})` : ""}`;
-                    return (
-                      <div data-testid={`toque-de-midas-ativo-${instance.id}`} style={{ background: "#241f14", border: "1px solid #6b5a2a", borderRadius: 6, padding: "6px 8px", fontSize: 11, display: "flex", flexDirection: "column", gap: 4 }}>
-                        <div>
-                          <span style={{ color: "#e0a03c" }}>✦ Toque de Midas ativo</span> — {efeitoTexto} · aplicado {new Date(midasAtivo.appliedAt).toLocaleTimeString()} · expira {new Date(midasAtivo.expiresAt).toLocaleTimeString()}
-                          <button
-                            data-testid={`toque-de-midas-encerrar-${instance.id}`}
-                            onClick={() => onEndToqueDeMidas?.(instance.id)}
-                            style={{ ...buttonStyle, fontSize: 10, padding: "1px 8px", marginLeft: 8 }}
-                          >
-                            Encerrar efeito
-                          </button>
-                        </div>
-                        {alvoDerivado === "arma" && (
-                          <span data-testid={`toque-de-midas-escopo-arma-${instance.id}`} style={{ opacity: 0.6 }}>
-                            Selecione esta arma em "Atacar" e clique "Rolar" — o +{mods.ataque ?? 0} entra como chip só nesse teste.
-                          </span>
-                        )}
-                        {alvoDerivado === "armadura" && (
-                          <span data-testid={`toque-de-midas-mit-comparacao-${instance.id}`} style={{ opacity: 0.6 }}>
-                            MIT-base {getItemMitBase(instance, itemModelo)} → MIT ajustado {getItemMitAtual(instance, itemModelo, nowIso)}
-                          </span>
-                        )}
-                        {alvoDerivado === "escudo" && (
-                          <span data-testid={`toque-de-midas-pd-detalhe-${instance.id}`} style={{ opacity: 0.6 }}>
-                            PD-base {getItemPdBase(instance, itemModelo)} + PD temporário {getItemPdTemporaryRemaining(instance, nowIso)}/{midasAtivo.temporaryPdGranted ?? 0} = PD total {getItemPdAtual(instance, itemModelo, nowIso)}
-                          </span>
-                        )}
-                        {alvoDerivado === "ferramenta_dispositivo" && (
-                          <button
-                            data-testid={`toque-de-midas-rolar-ferramenta-${instance.id}`}
-                            onClick={() => onRollToolTest?.(instance.id, midasAtivo.relatedSkill ?? "")}
-                            style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}
-                          >
-                            Rolar teste relacionado (+{mods.testeRelacionado ?? 0})
-                          </button>
-                        )}
-                      </div>
-                    );
-                  }
-                  if (midasExpiradoNaoLimpo) {
-                    return (
-                      <div data-testid={`toque-de-midas-expirado-${instance.id}`} style={{ fontSize: 11, color: "#888", background: "#1a1a1a", borderRadius: 6, padding: "4px 8px" }}>
-                        Toque de Midas expirou (bônus não conta mais no cálculo) — sincroniza ao recarregar/salvar.
-                      </div>
-                    );
-                  }
-                  if (!toqueDeMidasAvailable) return null;
-                  const efeitoLabel =
-                    alvoDerivado === "arma" ? "arma" : alvoDerivado === "armadura" ? "armadura" : alvoDerivado === "escudo" ? "escudo" : "ferramenta/dispositivo";
-                  return (
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 11 }}>
-                      {alvoDerivado === "ferramenta_dispositivo" && (
-                        <input
-                          data-testid={`toque-de-midas-pericia-${instance.id}`}
-                          placeholder="perícia/contexto"
-                          value={toqueMidasPericia[instance.id] ?? ""}
-                          onChange={(e) => setToqueMidasPericia((prev) => ({ ...prev, [instance.id]: e.target.value }))}
-                          style={{ ...input, width: 130 }}
-                        />
-                      )}
-                      <button
-                        data-testid={`toque-de-midas-aplicar-${instance.id}`}
-                        onClick={() => onApplyToqueDeMidas?.(instance.id, toqueMidasPericia[instance.id] || undefined)}
-                        style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
-                        title="1/dia (renova no descanso longo) · 1 hora · efeito na instância real"
-                      >
-                        Aplicar Toque de Midas ({efeitoLabel})
-                      </button>
-                    </div>
-                  );
-                })()}
 
                 {/* Aplicar dano ao escudo (checkpoint talentos) — consome PD temporário (Toque de Midas) antes do PD-base. */}
                 {instance.categoria === "escudo" && instance.equipadoDefensivo && (getItemPdAtual(instance, itemModelo) > 0) && (
@@ -1204,77 +984,6 @@ export function InventoryTab({
                       </span>
                     )}
                   </p>
-                  {/* Rúnico › Sobregravação — dono aplica/gerencia; terceiro sem acesso testa CD 8. */}
-                  {sobregravacaoAvailable && !instance.sobregravacao && (
-                    <button
-                      data-testid={`sobregravacao-aplicar-${instance.id}`}
-                      onClick={() => onApplySobregravacao?.(instance.id)}
-                      style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", marginBottom: 6 }}
-                    >
-                      Aplicar Sobregravação a este item
-                    </button>
-                  )}
-                  {instance.sobregravacao && currentCharacterId === instance.sobregravacao.ownerCharacterId && (
-                    <div style={{ ...widgetBox2, marginBottom: 6 }}>
-                      <span style={{ opacity: 0.7 }}>Aliados instruídos (acessam o espaço extra sem teste):</span>
-                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                        <input
-                          data-testid={`sobregravacao-aliados-${instance.id}`}
-                          placeholder="ids de personagem separados por vírgula"
-                          value={sobregravacaoAliadosInput[instance.id] ?? instance.sobregravacao.instructedAllyIds.join(",")}
-                          onChange={(e) => setSobregravacaoAliadosInput((prev) => ({ ...prev, [instance.id]: e.target.value }))}
-                          style={{ ...input, flex: 1, fontSize: 11 }}
-                        />
-                        <button
-                          data-testid={`sobregravacao-aliados-salvar-${instance.id}`}
-                          onClick={() =>
-                            onSetSobregravacaoAllies?.(
-                              instance.id,
-                              (sobregravacaoAliadosInput[instance.id] ?? "")
-                                .split(",")
-                                .map((s) => s.trim())
-                                .filter(Boolean),
-                            )
-                          }
-                          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
-                        >
-                          Salvar
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {instance.sobregravacao && !sobregravacaoAcesso && (
-                    sobregravacaoTestPending[instance.id] ? (
-                      <div data-testid={`sobregravacao-teste-confirmar-${instance.id}`} style={{ ...widgetBox2, marginBottom: 6 }}>
-                        <span>Teste de Tecnomagia/Arcanismo rolado — CD 8. Informe o resultado:</span>
-                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                          <input
-                            data-testid={`sobregravacao-teste-resultado-${instance.id}`}
-                            type="number"
-                            placeholder="total rolado"
-                            value={sobregravacaoTestResultado[instance.id] ?? ""}
-                            onChange={(e) => setSobregravacaoTestResultado((prev) => ({ ...prev, [instance.id]: e.target.value }))}
-                            style={{ ...input, width: 80, fontSize: 11 }}
-                          />
-                          <button
-                            data-testid={`sobregravacao-teste-confirmar-btn-${instance.id}`}
-                            onClick={() => onConfirmSobregravacaoTest?.(instance.id, Number(sobregravacaoTestResultado[instance.id]) || 0)}
-                            style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
-                          >
-                            Confirmar resultado
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        data-testid={`sobregravacao-testar-${instance.id}`}
-                        onClick={() => onStartSobregravacaoTest?.(instance.id)}
-                        style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", marginBottom: 6 }}
-                      >
-                        Testar acesso ao espaço extra (Tecnomagia/Arcanismo CD 8)
-                      </button>
-                    )
-                  )}
                   {runasInstaladas.length > 0 && (
                     <div data-testid={`inventario-runas-lista-${instance.id}`} style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
                       {runasInstaladas.map((runa) => {
@@ -1287,20 +996,10 @@ export function InventoryTab({
                             <span style={{ opacity: ativa ? 1 : 0.5 }}>{modelo?.nome ?? `Conteúdo não encontrado (${runa.runeContentId})`}</span>
                             {automatizada && ativa && <span style={{ fontSize: 10, color: "#4caf50" }}>modificador aplicado</span>}
                             {!ativa && <span style={{ fontSize: 10, color: "#888" }}>inativa — sem efeito</span>}
-                            {runicoGatilhoAvailable && (
-                              <button
-                                data-testid={`inventario-runa-toggle-${runa.id}`}
-                                onClick={() => onToggleRuneActive?.(instance.id, runa.id)}
-                                style={{ ...buttonStyle, fontSize: 10, padding: "1px 6px" }}
-                                title="Ativar/desativar sem PA (Gatilho Rúnico)"
-                              >
-                                {ativa ? "Desativar" : "Ativar"}
-                              </button>
-                            )}
                             <button
                               data-testid={`inventario-runa-remover-${runa.id}`}
                               onClick={() => onRemoveRune(instance.id, runa.id)}
-                              style={{ ...buttonStyle, fontSize: 10, padding: "1px 6px", marginLeft: runicoGatilhoAvailable ? undefined : "auto" }}
+                              style={{ ...buttonStyle, fontSize: 10, padding: "1px 6px", marginLeft: "auto" }}
                             >
                               Remover
                             </button>
@@ -1344,80 +1043,6 @@ export function InventoryTab({
                     </div>
                   )}
 
-                  {/* Entalhe Rápido (Rúnico N2) — 1 PA + teste real de Engenharia, aplica só em sucesso. */}
-                  {entalheRapidoAvailable && !runesError && (() => {
-                    const attempt = entalheAttempts[instance.id];
-                    if (attempt) {
-                      return (
-                        <div data-testid={`entalhe-rapido-confirmar-${instance.id}`} style={{ ...widgetBox2, marginTop: 6 }}>
-                          <span>Teste de Engenharia rolado — CD {attempt.cd}. Informe o resultado:</span>
-                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                            <input
-                              data-testid={`entalhe-rapido-resultado-${instance.id}`}
-                              type="number"
-                              placeholder="total rolado"
-                              value={entalheResultado[instance.id] ?? ""}
-                              onChange={(e) => setEntalheResultado((prev) => ({ ...prev, [instance.id]: e.target.value }))}
-                              style={{ ...input, width: 80, fontSize: 11 }}
-                            />
-                            <button
-                              data-testid={`entalhe-rapido-confirmar-sucesso-${instance.id}`}
-                              onClick={() => onConfirmEntalheRapido?.(instance.id, Number(entalheResultado[instance.id]) || 0)}
-                              style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
-                            >
-                              Confirmar resultado
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div data-testid={`entalhe-rapido-form-${instance.id}`} style={{ ...widgetBox2, marginTop: 6 }}>
-                        <span style={{ opacity: 0.7 }}>Entalhe Rápido — 1 PA + teste de Engenharia (CD do narrador):</span>
-                        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                          <input
-                            data-testid={`entalhe-rapido-cd-${instance.id}`}
-                            type="number"
-                            placeholder="CD"
-                            value={entalheCd[instance.id] ?? ""}
-                            onChange={(e) => setEntalheCd((prev) => ({ ...prev, [instance.id]: e.target.value }))}
-                            style={{ ...input, width: 60, fontSize: 11 }}
-                          />
-                          <button
-                            data-testid={`entalhe-rapido-instalar-${instance.id}`}
-                            disabled={!runaEscolhida || !entalheCd[instance.id]}
-                            onClick={() => onStartEntalheRapido?.(instance.id, "instalar", runaEscolhida, Number(entalheCd[instance.id]) || 0)}
-                            style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !runaEscolhida || !entalheCd[instance.id] ? 0.5 : 1 }}
-                          >
-                            Instalar (selecionada acima)
-                          </button>
-                          {runasInstaladas.length > 0 && (
-                            <select
-                              data-testid={`entalhe-rapido-remover-select-${instance.id}`}
-                              value={entalheRemoverAlvo[instance.id] ?? ""}
-                              onChange={(e) => setEntalheRemoverAlvo((prev) => ({ ...prev, [instance.id]: e.target.value }))}
-                              style={{ ...input, fontSize: 11 }}
-                            >
-                              <option value="">— runa a remover —</option>
-                              {runasInstaladas.map((r) => (
-                                <option key={r.id} value={r.id}>{runaBySlug.get(r.runeContentId)?.nome ?? r.runeContentId}</option>
-                              ))}
-                            </select>
-                          )}
-                          {runasInstaladas.length > 0 && (
-                            <button
-                              data-testid={`entalhe-rapido-remover-${instance.id}`}
-                              disabled={!entalheRemoverAlvo[instance.id] || !entalheCd[instance.id]}
-                              onClick={() => onStartEntalheRapido?.(instance.id, "remover", entalheRemoverAlvo[instance.id], Number(entalheCd[instance.id]) || 0)}
-                              style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !entalheRemoverAlvo[instance.id] || !entalheCd[instance.id] ? 0.5 : 1 }}
-                            >
-                              Remover (selecionada)
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()}
                   <p style={{ fontSize: 10, opacity: 0.4, margin: "4px 0 0" }}>
                     Modificadores passivos claramente estruturados são aplicados automaticamente (ver
                     chip acima); o restante do payload de cada runa continua só leitura na Biblioteca.
