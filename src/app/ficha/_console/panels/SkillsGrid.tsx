@@ -260,7 +260,7 @@ export function SkillsGrid({ api, onRolar }: { api: ConsoleApi; onRolar: (perici
                     aria-label={`Rolar ${skill.nome}: ${dados}d8, valor ${valor}`}
                   >
                     {celulas}
-                    <span className="rc-sensor-rank">{valor}</span>
+                    <span className="rc-sensor-rank" data-treinada={valor > 0 || undefined}>{valor}</span>
                   </button>
                 );
               })}

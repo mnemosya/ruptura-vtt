@@ -20,6 +20,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Minus, Square, Minimize2, Maximize2, X } from "lucide-react";
+import { oxanium } from "../../_design/fonteOxanium";
 import { useConsoleWindow } from "./useConsoleWindow";
 import { ladoDoTrilho, type LadoTrilho } from "./geometry";
 import { useConsoleAncorado } from "./ConsoleCloseContext";
@@ -226,7 +227,7 @@ export function ConsoleWindow({
   if (!aberto || !win.geo) return null;
 
   const conteudo = (
-    <div className="rc-cursor-scope">
+    <div className={`rc-cursor-scope ${oxanium.variable}`}>
       <HudCursor enabled={cursorHabilitado} />
 
       {!minimizada && !ancorado && <div className="rc-backdrop" onMouseDown={(e) => e.preventDefault()} />}

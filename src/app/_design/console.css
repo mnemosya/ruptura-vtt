@@ -3783,6 +3783,9 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 11px; font-weight: 700; color: var(--rc-text-forte);
 }
+/* Valor acima de zero acende na cor do atributo que governa a perícia
+   (clareada: as três cores base somem no fundo escuro em texto). */
+.rc-sensor-rank[data-treinada] { color: color-mix(in srgb, var(--rc-skill-cor) 70%, #fff); }
 /* Em Evolução a última célula vira os passos −/+, que precisam de mais
    espaço que um número. */
 .rc-sensor[data-evolucao="true"] {
@@ -3932,6 +3935,8 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke;
 }
 .rc-vres-brilho { fill: none; stroke: var(--rc-vres-cor); stroke-width: 5; vector-effect: non-scaling-stroke; opacity: 0.06; }
+/* Fantasma: o resto do canal, com a mesma assinatura, apagado. */
+.rc-vres-fantasma { fill: none; stroke: var(--rc-vres-cor); stroke-width: 1; stroke-linejoin: round; vector-effect: non-scaling-stroke; opacity: 0.18; }
 .rc-vres-guia { stroke: var(--rc-vres-cor); stroke-width: 1; stroke-dasharray: 2 3; vector-effect: non-scaling-stroke; opacity: 0.28; }
 
 /* ── Leitura ─────────────────────────────────────────────────────── */
@@ -4234,7 +4239,10 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   border-style: dashed;
   border-color: rgba(34, 88, 115, 0.62);
   background: rgba(7, 19, 31, 0.24);
-  transition: border-color 0.15s ease, background 0.15s ease;
+  /* Listras diagonais na cor das linhas do console (azul arroxeado):
+     marcam o slot como área vazia, à espera de algo. */
+  background-image: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--rc-line) 40%, transparent) 0 6px, transparent 6px 12px);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 .rc-pin:not([data-preenchido]) > * {
   opacity: 0.62;
@@ -4251,7 +4259,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 }
 .rc-pin:not([data-preenchido]):hover {
   border-color: rgba(34, 88, 115, 0.95);
-  background: rgba(8, 24, 38, 0.5);
+  background-color: rgba(8, 24, 38, 0.5);
 }
 .rc-pin:not([data-preenchido]):hover::before { width: 36px; }
 .rc-pin:not([data-preenchido]):hover > * { opacity: 1; }
@@ -4795,3 +4803,22 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
 .rc-historia-lista { margin: 6px 0 0; display: grid; gap: 6px; }
 .rc-historia-lista dt { font: 10px var(--font-mono), monospace; text-transform: uppercase; letter-spacing: 0.14em; color: var(--rc-dim, #7f95b3); }
 .rc-historia-lista dd { margin: 1px 0 0; font: 400 13px/1.45 var(--font-rajdhani), sans-serif; color: var(--rc-text, #b9c9dc); white-space: pre-line; }
+
+/* ── Leituras na fonte da Forja ────────────────────────────────────
+   Nome, leitura do RPI, atributos, Integridade, Sobrecarga, PA e
+   Reações — rótulos e valores — usam a Oxanium da Forja de Refratário
+   (`_design/fonteOxanium.ts`, carregada na raiz do `ConsoleWindow`).
+   Os tamanhos ficam os de cada regra acima; só a família muda. */
+.rc-nric-nome,
+.rc-nric-nome-campo,
+.rc-bio-leitura dd,
+.rc-nric-attr-nome,
+.rc-nric-attr-val,
+.rc-nric-integ-label,
+.rc-nric-integ-val,
+.rc-nsob-label,
+.rc-nsob-val,
+.rc-acao-nome,
+.rc-acao-valor {
+  font-family: var(--font-oxanium), var(--font-orbitron), sans-serif;
+}
