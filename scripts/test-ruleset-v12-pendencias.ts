@@ -69,7 +69,7 @@ const completo: DraftV12 = {
   pericias: {
     medicina: 3, psicologia: 3,
     biologia: 2, percepcao: 2, vontade: 2,
-    arcanismo: 1, influencia: 1, logica: 1, mobilidade: 1, reflexos: 1, sociedade: 1, vigor: 1,
+    arcanismo: 2, influencia: 1, logica: 1, mobilidade: 1, reflexos: 1, vigor: 1,
   },
   vertente: "biotica",
 };

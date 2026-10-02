@@ -23,7 +23,7 @@ const pericias = regras.pericias.map((p: { id: string }) => p.id);
 const criado = buildCharacterV2({
   nome: "Progressão", classe_id: "ancora", perfil_atributos: "equilibrada", atributos: { corpo: 1, mente: 2, animo: 1 },
   perfil_pericias: "padrao",
-  pericias: { valor_3: ["medicina", "psicologia"], valor_2: ["biologia", "percepcao", "vontade"], valor_1: ["arcanismo", "influencia", "logica", "mobilidade", "reflexos", "sociedade", "vigor"] },
+  pericias: { valor_3: ["medicina", "psicologia"], valor_2: ["biologia", "percepcao", "vontade", "arcanismo"], valor_1: ["influencia", "logica", "mobilidade", "reflexos", "vigor"] },
   vertente_primaria: "biotica",
   trajetoria: {
     regiao_id: "vastra", local_origem: "Vosek", idiomas: ["vastrano"],
