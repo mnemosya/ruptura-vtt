@@ -63,13 +63,13 @@
 
 .ag .ra2-nav { gap: 8px; }
 .ag .ag-nav-grupo { display: flex; align-items: center; gap: 12px; margin: 26px 18px 6px 0; }
-.ag .ag-nav-grupo:first-child { margin-top: 4px; }
+.ag .ra2-nav > div:first-child > .ag-nav-grupo { margin-top: 4px; }
 .ag .ag-nav-grupo .ag-mono { font-size: 10px; color: color-mix(in srgb, var(--ag-cy) 75%, transparent); }
 .ag .ag-nav-grupo i { height: 1px; flex: 1; background: color-mix(in srgb, var(--ag-cy) 15%, transparent); }
 .ag .ra2-sidebar--collapsed .ag-nav-grupo { display: none; }
 
 .ag .ra2-nav-item:not(.ra2-nav-logout) {
-  gap: 16px; padding: 13px 0 13px 16px; border: 0; border-radius: 0;
+  gap: 16px; padding: 13px 0 13px 16px; border: 0; border-radius: 0; width: 100%; --ra-chanfro-fio: transparent;
   clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
   background: color-mix(in srgb, var(--ag-cy) 4%, transparent);
   color: color-mix(in srgb, var(--ag-gelo) 62%, transparent); box-shadow: none;
@@ -81,7 +81,8 @@
 .ag .ag-nav-cont { margin-left: auto; margin-right: 26px; font: 500 10px var(--ag-mono); color: var(--ag-cy); }
 .ag .ra2-sidebar--collapsed .ag-nav-cont { display: none; }
 .ag .ra2-nav-item:not(.ra2-nav-logout):hover { background: color-mix(in srgb, var(--ag-cy) 10%, transparent); color: var(--ag-gelo); }
-.ag .ra2-nav-item--active, .ag .ra2-nav-item--active:hover {
+/* `:not(.ra2-nav-logout)` iguala a especificidade da regra base acima; sem ele o item aberto perdia o destaque. */
+.ag .ra2-nav-item--active:not(.ra2-nav-logout), .ag .ra2-nav-item--active:not(.ra2-nav-logout):hover {
   background: linear-gradient(to right, color-mix(in srgb, var(--ag-cy) 25%, transparent), color-mix(in srgb, var(--ag-cy) 5%, transparent));
   color: var(--ag-gelo); box-shadow: none;
 }
