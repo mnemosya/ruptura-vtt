@@ -104,4 +104,16 @@ for (const classe of classes) {
   console.log(`ok criação de ${classe.nome} (${classe.criacao.perfis_pericias.length} perfis)`);
 }
 
+// Perfis de Atributos e de Perícias são os mesmos em todas as Classes.
+const PERFIS_PERICIAS = [
+  { slug: "abrangente", quantidades: { valor_1: 8, valor_2: 5, valor_3: 1 } },
+  { slug: "padrao", quantidades: { valor_1: 5, valor_2: 4, valor_3: 2 } },
+  { slug: "especializado", quantidades: { valor_1: 4, valor_2: 2, valor_3: 3 } },
+];
+const PERFIS_ATRIBUTOS = [{ slug: "equilibrada", valores: [2, 1, 1] }, { slug: "concentrada", valores: [2, 2, 0] }, { slug: "especializada", valores: [3, 1, 0] }];
+for (const classe of classes) {
+  assert.deepEqual(classe.criacao.perfis_pericias.map((p) => ({ slug: p.slug, quantidades: p.quantidades })), PERFIS_PERICIAS, `${classe.slug}: perfis de Perícias diferentes do comum a todas as Classes`);
+  assert.deepEqual(classe.criacao.perfis_atributos.map((p) => ({ slug: p.slug, valores: p.valores })), PERFIS_ATRIBUTOS, `${classe.slug}: perfis de Atributos diferentes do comum a todas as Classes`);
+}
+
 console.log(`test-ruleset-v12-classes — ${slugsClasse.size} Classe(s), ${totalSubclasses} Subclasse(s) válidas e criáveis.`);

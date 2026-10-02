@@ -31,7 +31,7 @@ for (const profile of ancora.criacao.perfis_pericias) {
   assert.ok(valor_1 + valor_2 + valor_3 <= skillIds.size, `${profile.slug}: perfil excede o catálogo`);
 }
 const totals = Object.fromEntries(ancora.criacao.perfis_pericias.map((p) => [p.slug, p.quantidades.valor_1 + p.quantidades.valor_2 * 2 + p.quantidades.valor_3 * 3]));
-assert.deepEqual(totals, { abrangente: 21, padrao: 19, especializado: 16 }, "Totais editoriais dos perfis de perícia");
+assert.deepEqual(totals, { abrangente: 21, padrao: 19, especializado: 17 }, "Totais editoriais dos perfis de perícia");
 
 // Fórmulas de recursos reproduzem o texto editorial.
 const resolve = (key: string, attrs: Record<"corpo" | "mente" | "animo", number>) => {

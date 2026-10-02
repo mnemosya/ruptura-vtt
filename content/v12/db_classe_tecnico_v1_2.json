@@ -57,8 +57,8 @@
             "slug": "abrangente",
             "nome": "Abrangente",
             "quantidades": {
-              "valor_1": 10,
-              "valor_2": 4,
+              "valor_1": 8,
+              "valor_2": 5,
               "valor_3": 1
             }
           },
@@ -66,8 +66,8 @@
             "slug": "padrao",
             "nome": "Padrão",
             "quantidades": {
-              "valor_1": 7,
-              "valor_2": 3,
+              "valor_1": 5,
+              "valor_2": 4,
               "valor_3": 2
             }
           },
@@ -75,7 +75,7 @@
             "slug": "especializado",
             "nome": "Especializado",
             "quantidades": {
-              "valor_1": 3,
+              "valor_1": 4,
               "valor_2": 2,
               "valor_3": 3
             }

@@ -38,8 +38,8 @@ const base: CreationChoicesV12 = {
   perfil_pericias: "padrao",
   pericias: {
     valor_3: ["medicina", "psicologia"],
-    valor_2: ["biologia", "percepcao", "vontade"],
-    valor_1: ["arcanismo", "influencia", "logica", "mobilidade", "reflexos", "sociedade", "vigor"],
+    valor_2: ["biologia", "percepcao", "vontade", "arcanismo"],
+    valor_1: ["influencia", "logica", "mobilidade", "reflexos", "vigor"],
   },
   vertente_primaria: "biotica",
   trajetoria: {
