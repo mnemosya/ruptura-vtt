@@ -124,15 +124,26 @@
 
 /* ── Barra de ferramentas ── */
 .ag .ra2-search { border-radius: 0; border: 0; border-bottom: 1px solid color-mix(in srgb, var(--ag-cy) 35%, transparent); background: color-mix(in srgb, var(--ag-cy) 4%, transparent); }
-.ag .ra2-segmented { gap: 4px; padding: 0; border: 0; background: none; }
-.ag .ra2-seg {
-  border: 0; border-radius: 0; padding: 10px 26px 10px 16px;
-  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
-  background: color-mix(in srgb, var(--ag-cy) 6%, transparent);
-  font: 600 12px var(--ag-display); letter-spacing: 0.18em; color: color-mix(in srgb, var(--ag-gelo) 62%, transparent); box-shadow: none;
+/* Seletor de papel: UMA peça chanfrada (só o canto do contêiner), segmentos
+   retos separados por fio, e o ativo marcado como o item aberto do menu —
+   degradê ciano e sublinhado âmbar. Sem o fio de chanfro por segmento, que
+   desenhava pontas ciano soltas no ativo. */
+.ag .ra2-segmented {
+  gap: 0; padding: 0; border: 1px solid color-mix(in srgb, var(--ag-cy) 22%, transparent);
+  background: color-mix(in srgb, var(--ag-abismo) 70%, transparent);
+  --ra-chanfro: 10px; --ra-chanfro-fio: color-mix(in srgb, var(--ag-cy) 22%, transparent);
 }
-.ag .ra2-seg:hover { color: var(--ag-gelo); }
-.ag .ra2-seg--active { background: linear-gradient(to right, color-mix(in srgb, var(--ag-cy) 30%, transparent), color-mix(in srgb, var(--ag-cy) 8%, transparent)); color: var(--ag-gelo); }
+.ag .ra2-seg {
+  position: relative; border: 0; border-radius: 0; clip-path: none; --ra-chanfro-fio: transparent;
+  padding: 10px 22px; background: none; box-shadow: none;
+  font: 600 12px var(--ag-display); letter-spacing: 0.18em; color: color-mix(in srgb, var(--ag-gelo) 55%, transparent);
+}
+.ag .ra2-seg + .ra2-seg { border-left: 1px solid color-mix(in srgb, var(--ag-cy) 14%, transparent); }
+.ag .ra2-seg:not(.ra2-seg--active):hover { background: color-mix(in srgb, var(--ag-cy) 6%, transparent); color: var(--ag-gelo); }
+.ag .ra2-seg--active {
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--ag-cy) 22%, transparent), color-mix(in srgb, var(--ag-cy) 6%, transparent));
+  color: var(--ag-gelo); box-shadow: inset 0 -2px 0 var(--ag-am); --ra-chanfro-fio: transparent;
+}
 .ag .ra2-toolbar .ra2-secondary {
   border: 0; border-radius: 0; padding: 12px 24px;
   clip-path: polygon(0 0, calc(100% - var(--ag-n)) 0, 100% var(--ag-n), 100% 100%, var(--ag-n) 100%, 0 calc(100% - var(--ag-n)));

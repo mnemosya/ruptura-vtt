@@ -32,7 +32,7 @@ import { setAppearOffline } from "../../../lib/campaign/presencePreferenceAction
 import { signOut } from "../../../lib/auth/actions";
 import {
   AlertTriangle, BookText, CheckCircle, ChevronDown, Eye, EyeOff, LayoutGrid, LogOut, Menu,
-  PanelLeftClose, PanelLeftOpen, Plus, Spinner, Ticket, User, UserCog, Users, X,
+  Plus, Spinner, Ticket, User, UserCog, Users, X,
 } from "../../_design/icons";
 import "../../_design/app.css";
 import "../../_design/areaGlobal.css";
@@ -49,7 +49,6 @@ const NAV_ITEMS: { key: NavKey; label: string; grupo: string; href: string; icon
   { key: "account", label: "Conta", grupo: "Sistema", href: "/mesas/conta", icon: <UserCog size={18} strokeWidth={1.5} /> },
 ];
 
-const COLLAPSED_KEY = "ruptura.sidebar.collapsed";
 const PREFS_KEY = "ruptura.prefs";
 
 // ── Preferências visuais ────────────────────────────────────────────
@@ -249,7 +248,8 @@ export function GlobalShell({
   const pathname = usePathname();
   const ativo = rotaAtiva(pathname);
 
-  const [collapsed, setCollapsed] = useState(false);
+  // A barra não recolhe mais (o botão saiu no redesign da Fase 6).
+  const collapsed = false;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -266,7 +266,6 @@ export function GlobalShell({
   // divergir do HTML do servidor.
   useEffect(() => {
     try {
-      setCollapsed(window.localStorage.getItem(COLLAPSED_KEY) === "1");
       const raw = window.localStorage.getItem(PREFS_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<VisualPrefs>;
@@ -275,14 +274,6 @@ export function GlobalShell({
     } catch {
       /* localStorage indisponível (modo privado, etc.) — segue com o padrão. */
     }
-  }, []);
-
-  const toggleCollapsed = useCallback(() => {
-    setCollapsed((prev) => {
-      const next = !prev;
-      try { window.localStorage.setItem(COLLAPSED_KEY, next ? "1" : "0"); } catch { /* ignora */ }
-      return next;
-    });
   }, []);
 
   const togglePref = useCallback((key: keyof VisualPrefs) => {
@@ -448,17 +439,6 @@ export function GlobalShell({
                 </div>
 
                 <div className="ra2-sidebar-foot">
-                  <button
-                    type="button"
-                    data-testid="sidebar-recolher"
-                    className="ra2-collapse-btn"
-                    onClick={toggleCollapsed}
-                    aria-expanded={!collapsed}
-                    aria-label={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
-                  >
-                    {collapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-                    <span>Recolher</span>
-                  </button>
 
                   <button
                     type="button"
