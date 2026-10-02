@@ -4805,12 +4805,13 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
 .rc-historia-lista dd { margin: 1px 0 0; font: 400 13px/1.45 var(--font-rajdhani), sans-serif; color: var(--rc-text, #b9c9dc); white-space: pre-line; }
 
 /* ── Leituras na fonte da Forja ────────────────────────────────────
-   Nome, leitura do RPI, atributos, Integridade, Sobrecarga, PA e
+   Nome, selo de Ranking, leitura do RPI, atributos, Integridade, Sobrecarga, PA e
    Reações — rótulos e valores — usam a Oxanium da Forja de Refratário
    (`_design/fonteOxanium.ts`, carregada na raiz do `ConsoleWindow`).
    Os tamanhos ficam os de cada regra acima; só a família muda. */
 .rc-nric-nome,
 .rc-nric-nome-campo,
+.rc-nric-badge,
 .rc-bio-leitura dd,
 .rc-nric-attr-nome,
 .rc-nric-attr-val,
