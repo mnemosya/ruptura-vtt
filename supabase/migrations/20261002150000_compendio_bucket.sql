@@ -7,7 +7,7 @@
 -- Idempotente.
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('compendio', 'compendio', true, 10485760,
+values ('compendio', 'compendio', true, 52428800,
         array['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml', 'image/avif'])
 on conflict (id) do update
    set public = excluded.public,

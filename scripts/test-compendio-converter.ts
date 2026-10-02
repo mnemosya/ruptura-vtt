@@ -55,6 +55,9 @@ const bloco = (type: string, dados: Record<string, unknown>, filhos?: BlocoNotio
     bloco("image", { type: "file", file: { url: "https://s3/x.png" }, caption: [] }),
     bloco("toggle", { rich_text: [txt("Lento")] }, []),
     bloco("toggle", { rich_text: [txt("LENTO")] }, []),
+    bloco("heading_4", { rich_text: [txt("AGARRADO")], is_toggleable: true }, [bloco("paragraph", { rich_text: [txt("x")] })]),
+    bloco("heading_4", { rich_text: [txt("Subtítulo")] }),
+    bloco("link_to_page", { type: "page_id", page_id: "9d60a136-3552-82ba-8f73-01ec177c75fe" }),
   ];
   const r = converterBlocos(blocos);
   const p = r.blocos[0];
@@ -62,7 +65,10 @@ const bloco = (type: string, dados: Record<string, unknown>, filhos?: BlocoNotio
   const t = r.blocos[1];
   assert.ok(t.tipo === "tabela" && t.cabecalhoLinha && t.linhas.length === 2 && t.linhas[1][1][0].texto === "1d6");
   assert.ok(r.blocos[2].tipo === "imagem");
-  assert.deepEqual(r.verbetes.map((v) => v.ancora), ["lento", "lento-2"]);
+  assert.deepEqual(r.verbetes.map((v) => v.ancora), ["lento", "lento-2", "agarrado"]);
+  assert.ok(r.blocos.some((b) => b.tipo === "titulo" && b.nivel === 4), "heading_4 sem toggle vira título nível 4");
+  assert.ok(r.blocos.some((b) => b.tipo === "link_pagina" && b.paginaNotionId === "9d60a136355282ba8f7301ec177c75fe"));
+  assert.deepEqual(r.naoSuportados, []);
   console.log("2. link interno, tabela, imagem, âncoras únicas — OK");
 }
 

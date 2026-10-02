@@ -21,7 +21,7 @@ export interface TrechoCompendio {
 }
 
 export type BlocoCompendio =
-  | { tipo: "titulo"; nivel: 1 | 2 | 3; texto: TrechoCompendio[]; ancora: string }
+  | { tipo: "titulo"; nivel: 1 | 2 | 3 | 4; texto: TrechoCompendio[]; ancora: string }
   | { tipo: "paragrafo"; texto: TrechoCompendio[] }
   | { tipo: "lista"; ordenada: boolean; itens: { texto: TrechoCompendio[]; filhos: BlocoCompendio[] }[] }
   | { tipo: "citacao"; texto: TrechoCompendio[]; filhos: BlocoCompendio[] }
@@ -29,6 +29,7 @@ export type BlocoCompendio =
   | { tipo: "destaque"; icone: string | null; texto: TrechoCompendio[]; filhos: BlocoCompendio[] }
   | { tipo: "tabela"; cabecalhoLinha: boolean; cabecalhoColuna: boolean; linhas: TrechoCompendio[][][] }
   | { tipo: "imagem"; url: string; legenda: TrechoCompendio[] }
+  | { tipo: "link_pagina"; paginaNotionId: string }
   | { tipo: "divisor" }
   | { tipo: "nao_suportado"; tipoNotion: string };
 

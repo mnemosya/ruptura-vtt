@@ -28,7 +28,7 @@ export function lerIndice(blocosRaiz: BlocoNotion[]): EntradaIndice[] {
   let secao: string | null = null;
   let incluir = false;
   for (const b of blocosRaiz) {
-    if (b.type === "heading_1" || b.type === "heading_2" || b.type === "heading_3") {
+    if (/^heading_[1-4]$/.test(b.type)) {
       const rich = (b[b.type] as { rich_text?: Parameters<typeof converterTexto>[0] }).rich_text;
       secao = converterTexto(rich).map((t) => t.texto).join("").trim();
       incluir = !SECOES_EXCLUIDAS.includes(normalizar(secao));

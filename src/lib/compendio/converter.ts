@@ -109,9 +109,10 @@ export function converterBlocos(blocos: BlocoNotion[]): ResultadoConversao {
         }
         case "heading_1":
         case "heading_2":
-        case "heading_3": {
+        case "heading_3":
+        case "heading_4": {
           const texto = converterTexto(rich);
-          const nivel = Number(b.type.slice(-1)) as 1 | 2 | 3;
+          const nivel = Number(b.type.slice(-1)) as 1 | 2 | 3 | 4;
           // Título recolhível do Notion é um verbete (ex.: cada condição no capítulo 22).
           if (dados.is_toggleable) {
             const ancora = ancoraUnica(textoPlano(texto));
@@ -163,6 +164,11 @@ export function converterBlocos(blocos: BlocoNotion[]): ResultadoConversao {
           const arquivo = dados as { type?: string; file?: { url: string }; external?: { url: string }; caption?: RichTextNotion[] };
           const url = arquivo.type === "external" ? arquivo.external?.url : arquivo.file?.url;
           if (url) saida.push({ tipo: "imagem", url, legenda: converterTexto(arquivo.caption) });
+          break;
+        }
+        case "link_to_page": {
+          const alvo = dados as { type?: string; page_id?: string };
+          if (alvo.type === "page_id" && alvo.page_id) saida.push({ tipo: "link_pagina", paginaNotionId: semHifens(alvo.page_id) });
           break;
         }
         case "divider":

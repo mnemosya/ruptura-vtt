@@ -1,6 +1,6 @@
 # Plano — Compêndio sincronizado com o Notion
 
-**Status:** proposto
+**Status:** em implementação (Fases 0 e 1 entregues)
 **Criado em:** 02/10/2026
 **Versão deste documento:** 0.1
 
@@ -140,3 +140,13 @@ O índice de termos é montado pela própria sincronização, a partir dos títu
 - Extrair automaticamente regras do texto (condições, Classes, magias) para o motor.
 - Editar o livro dentro do VTT.
 - Conteúdo homebrew de campanha no compêndio (sai junto com a aba atual; volta em plano próprio se fizer falta).
+
+## 8. Registro
+
+### 02/10/2026 — Fases 0 e 1
+
+- Conexão "Ruptura VTT" criada no Notion (só leitura), token em `.env.local`.
+- Primeira sincronização: 29 páginas (28 capítulos e Patch Notes 1.1.0), 76 imagens no bucket `compendio`, 515 kB de texto convertido. Capítulo 22 com os 18 verbetes de condição.
+- Leitura completa: ≈6 min e 863 requisições. Rodada sem mudanças: 91 requisições (só a data de cada página).
+- Tipos adicionados depois do ensaio: `heading_4` (as condições do cap. 22 são títulos de 4º nível recolhíveis) e `link_to_page`.
+- Limite do bucket subiu de 10 para 50 MB: uma imagem do capítulo 23 passa de 10 MB. Reduzir o peso das imagens fica para a Fase 4.
