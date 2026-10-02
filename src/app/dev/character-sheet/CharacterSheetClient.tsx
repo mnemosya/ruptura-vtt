@@ -58,7 +58,6 @@ import {
   resolveConditionResistanceCheck,
   applyRoundScopedPaReductions,
   resolvePendingRuptureChoice,
-  deriveActiveEffectsFromTalents,
   deriveActiveEffectsFromTemporaryEffects,
   tickRoundTemporaryEffects,
   removeTemporaryEffect,
@@ -66,13 +65,7 @@ import {
   formatTemporaryEffectSummary,
   deriveInstalledTechnicalEffects,
   deriveInstalledRuneEffects,
-  getTalentSpellRangeAreaMultiplier,
-  applyRangeAreaMultiplierToText,
-  getTalentOverloadLimitOverride,
   getSpellAttackProfile,
-  getCanalizarState,
-  markCanalizarUsed,
-  resetTalentUses,
   purchaseItem,
   setItemLoadoutState,
   applyToqueDeMidas,
@@ -80,36 +73,6 @@ import {
   applyShieldDamage,
   expireItemTemporaryEffects,
   deriveActiveEffectsFromItemTemporaryEffects,
-  getBricolagemActiveEffects,
-  getMarginPromotions,
-  getMirarModifier,
-  isMirarActive,
-  getMirarActiveEffects,
-  consumeMirar,
-  MIRAR_TAG,
-  getGatilhoQuenteAvailability,
-  consumeGatilhoDado,
-  consumeGatilhoDados,
-  hasBangBangSegundoDisparo,
-  getShowdownAvailability,
-  markShowdownUsed,
-  hasTotemBencao,
-  getGarimpoDeRuaAvailability,
-  activateGarimpoDeRua,
-  getCadernetaDeDividaAvailability,
-  markCadernetaDeDividaUsed,
-  isRaridadeDentroDoLimite,
-  expireSinalLimpoBonus,
-  expireMarchaDuplaRoundState,
-  enforcePvGatedToggleDeactivation,
-  hasSaqueFantasma,
-  getEstocarAvailability,
-  markEstocarUsed,
-  getRitmoDeCampoAvailability,
-  computeRitmoDeCampoReducao,
-  getToqueDeMidasAvailability,
-  getToqueDeMidasModifiersForTarget,
-  markToqueDeMidasUsed,
   removeItemFromInventory,
   adjustItemQuantity,
   deriveItemProperties,
@@ -119,10 +82,6 @@ import {
   installRuneOnItem,
   removeRuneFromItem,
   toggleInstalledRune,
-  hasGatilhoRunico,
-  hasEntalheRapido,
-  hasSobregravacao,
-  getSobregravacaoMultiplier,
   applySobregravacao,
   setSobregravacaoInstructedAllies,
   grantSobregravacaoAccess,
@@ -186,7 +145,6 @@ import type {
   CombatActionContent,
   ReactionRules,
   ConditionContent,
-  TalentContent,
   ItemContent,
   WalletId,
   ItemLoadoutState,
@@ -281,9 +239,6 @@ interface Props {
   combatActionsError: string | null;
   /** Regras canônicas de Reação interpretadas do singleton combat_flow. */
   reactionRules: ReactionRules;
-  /** Talentos publicados na Biblioteca do Sistema (checkpoint v0.48) — fonte única da aba Talentos. */
-  talentsIniciais: TalentContent[];
-  talentsError: string | null;
   /** Itens publicados na Biblioteca do Sistema (checkpoint v0.49) — fonte única da loja/inventário. */
   itemsIniciais: ItemContent[];
   itemsError: string | null;
@@ -374,8 +329,6 @@ export default function CharacterSheetClient({
   conditionContents,
   combatActionsError,
   reactionRules,
-  talentsIniciais,
-  talentsError,
   itemsIniciais,
   itemsError,
   spellsIniciais,
@@ -486,29 +439,6 @@ export default function CharacterSheetClient({
   // local, não persistido na ficha (mesmo critério de preparedRoll):
   // qual arma empunhada usar quando há mais de uma, ou "__desarmado__".
   const [selectedAttackWeaponId, setSelectedAttackWeaponId] = useState<string | null>(null);
-  /** Espadachim › Estocar (checkpoint talentos, Fase 4) — confirmação manual do jogador para o próximo Atacar (lâmina não é dado estruturado, mesmo critério de Aparar/Ripostar). */
-  const [estocarAtivo, setEstocarAtivo] = useState(false);
-  /**
-   * Paramédico › Ritmo de Campo (checkpoint talentos, Fase 7) — "armado" para a PRÓXIMA
-   * ação/item/magia de cura (ação do Console, item, ou magia — sem tag "cura" estruturada
-   * no catálogo, então é confirmação manual do jogador em vez de detecção automática,
-   * conforme decisão do checkpoint). Consumido automaticamente pelo primeiro dos três
-   * fluxos que gastar PA depois de armado.
-   */
-  const [ritmoDeCampoAtivo, setRitmoDeCampoAtivo] = useState(false);
-  /**
-   * Totem › Onda Solidária/Chama Redobrada (checkpoint talentos, Fase 9) — snapshot do
-   * ÚLTIMO efeito positivo real aplicado via item em UM aliado (o fluxo mais geral de
-   * "aplicar efeito positivo em alguém" já construído nesta base). Onda Solidária copia
-   * para um segundo aliado; Chama Redobrada dobra no mesmo alvo. `null` até o primeiro
-   * uso de item em aliado nesta sessão.
-   */
-  const [ultimoEfeitoPositivoAliado, setUltimoEfeitoPositivoAliado] = useState<{
-    targetCharacterId: string;
-    targetNome: string;
-    resourceDeltas: { resource: "pv" | "pe"; delta: number }[];
-    temporaryEffects: TemporaryEffect[];
-  } | null>(null);
   /** Rúnico › Sobregravação — instância com teste de Tecnomagia/Arcanismo CD 8 pendente de confirmação (terceiro tentando acessar o espaço extra). */
   const [sobregravacaoTestPending, setSobregravacaoTestPending] = useState<Record<string, true>>({});
   // Mesa (campaign) selecionada — estado de UI local, não persiste no
@@ -659,7 +589,6 @@ export default function CharacterSheetClient({
   const activeEffects = useMemo(
     () => {
       const conditionEffects = deriveActiveEffectsFromConditions(character, [...conditionContents, ...postureConditionContents]);
-      const talentEffects = deriveActiveEffectsFromTalents(character, talentsIniciais);
       const escalpoEffects = deriveInstalledTechnicalEffects(character, escalposIniciais);
       const runeEffects = deriveInstalledRuneEffects(character, runesIniciais);
       // Efeitos temporários/buffs rastreados (checkpoint pós-v0.71) — modificadores de rolagem
@@ -667,12 +596,10 @@ export default function CharacterSheetClient({
       const temporaryEffects = deriveActiveEffectsFromTemporaryEffects(character);
       const reactionEffect = deriveReactionDefenseEffect(character, reactionRules);
       const itemTempEffects = deriveActiveEffectsFromItemTemporaryEffects(character, new Date().toISOString());
-      const bricolagemEffects = getBricolagemActiveEffects(character, talentsIniciais);
-      const mirarEffects = getMirarActiveEffects(character, character.current_round ?? null);
-      const base = [...conditionEffects, ...talentEffects, ...escalpoEffects, ...runeEffects, ...temporaryEffects, ...itemTempEffects, ...bricolagemEffects, ...mirarEffects];
+      const base = [...conditionEffects, ...escalpoEffects, ...runeEffects, ...temporaryEffects, ...itemTempEffects];
       return reactionEffect ? [...base, reactionEffect] : base;
     },
-    [character, conditionContents, postureConditionContents, reactionRules, talentsIniciais, escalposIniciais, runesIniciais],
+    [character, conditionContents, postureConditionContents, reactionRules, escalposIniciais, runesIniciais],
   );
 
   // instanceIds de escalpos com pelo menos 1 ActiveEffect derivado (checkpoint v0.55, fase 2) —
@@ -1294,34 +1221,13 @@ export default function CharacterSheetClient({
       nowIso,
     );
 
-    // Talentos com cadência "dia" (checkpoint pós-v0.63) renovam no descanso longo — mesmo precedente de sobrecarga_usada_dia.
-    // "descanso_longo" (checkpoint talentos, Fase 7) — cadência própria do payload (ex.: Pistoleiro › Gatilho Quente).
-    const talentReset = resetTalentUses({ ...result.character, condicoes_ativas: proximasCondicoes }, ["dia", "descanso_longo"]);
-    setCharacter(talentReset.character);
+    setCharacter({ ...result.character, condicoes_ativas: proximasCondicoes });
     addLogEntry(
       "descanso",
       `Descanso longo — PV ${result.before.pv} → ${result.after.pv}, PE ${result.before.pe} → ${result.after.pe}, Mana ${result.before.mana} → ${result.after.mana}.`,
     );
     await persistRest("rest_long", result);
     if (removidas.length > 0) void handleAutoHealRemovals(removidas, result.before.pv, result.after.pv);
-  }
-
-  /**
-   * Reset manual de "novo dia" SÓ para talentos cadência "dia" (ex.: Toque de Midas)
-   * — não aplica descanso longo, não mexe em PV/PE/Mana/Sobrecarga. Cobre o caso em
-   * que o narrador declara um novo dia narrativo sem um descanso completo de 8h
-   * (checkpoint talentos — "dia" não é forçosamente "descanso longo").
-   */
-  function handleMarkNewDayTalents() {
-    const current = characterRef.current;
-    const talentReset = resetTalentUses(current, ["dia"]);
-    if (talentReset.resetCount === 0) {
-      addLogEntry("condicao", "Novo dia (talentos): nenhum contador de cadência diária estava em uso.");
-      return;
-    }
-    characterRef.current = talentReset.character;
-    setCharacter(talentReset.character);
-    addLogEntry("condicao", `Novo dia (talentos): ${talentReset.resetCount} contador(es) de cadência diária resetado(s) manualmente.`);
   }
 
   /**
@@ -1335,10 +1241,8 @@ export default function CharacterSheetClient({
     const nowIso = new Date().toISOString();
     const sobrecargaAntes = character.sobrecarga_usada_dia ?? 0;
     const overloadRules = regras?.sobrecarga;
-    const talentLimitOverride = getTalentOverloadLimitOverride(character, talentsIniciais);
-    const maxCanonico = getOverloadMaxPerDay(overloadRules);
-    const maxSurtos = talentLimitOverride != null && talentLimitOverride > maxCanonico ? talentLimitOverride : maxCanonico;
-    const result = useOverloadSurge(character, tipo, nowIso, undefined, overloadRules, talentLimitOverride);
+    const maxSurtos = getOverloadMaxPerDay(overloadRules);
+    const result = useOverloadSurge(character, tipo, nowIso, undefined, overloadRules);
 
     if (!result.surge) {
       addLogEntry("recurso", result.warnings[0] ?? "Limite de surtos de Sobrecarga atingido.");
@@ -1527,12 +1431,7 @@ export default function CharacterSheetClient({
       }
     }
 
-    // Berserker › Sede de Sangue (checkpoint talentos, Fase 1) — encerra automaticamente
-    // qualquer toggle PV-condicionado assim que o PV volta a ficar >= metade do máximo.
-    const pvGated = enforcePvGatedToggleDeactivation(finalCharacter, talentsIniciais, afterPvPe.pv, derivados.pv_max, nowIso);
-    finalCharacter = pvGated.character;
-
-    return { character: finalCharacter, removidasPorCura: removidas, colapso, collapseAdvance, pvGatedDeactivated: pvGated.deactivated };
+    return { character: finalCharacter, removidasPorCura: removidas, colapso, collapseAdvance };
   }
 
   /**
@@ -1556,7 +1455,7 @@ export default function CharacterSheetClient({
       const result = applyConsoleMutation(
         character,
         { type: "resource", resource: id, value: novo, nowIso },
-        { derived: derivados, rules: regras, reactionRules, talents: talentsIniciais },
+        { derived: derivados, rules: regras, reactionRules },
       );
 
       const retornoConfirmado = opcoes?.confirmarRetorno === true && (
@@ -1573,9 +1472,6 @@ export default function CharacterSheetClient({
       }
       if ((result.meta.autoRemovedConditions?.length ?? 0) > 0) {
         void handleAutoHealRemovals(result.meta.autoRemovedConditions ?? [], beforePvPe.pv, id === "pv" ? novo : beforePvPe.pv);
-      }
-      for (const d of result.meta.pvGatedDeactivated ?? []) {
-        addLogEntry("recurso", `${d.talentNome} — ${d.nivelNome}: encerrado automaticamente (PV voltou a ficar acima da metade).`);
       }
       if (result.meta.collapseStarted) {
         addLogEntry("recurso", `Colapso iniciado (${result.meta.collapseStarted === "pv" ? "PV" : "PE"} a 0) — Inconsciente aplicado.`);
@@ -1611,7 +1507,7 @@ export default function CharacterSheetClient({
     const pvNovo = derivados.pv_max;
     const peNovo = derivados.pe_max;
     const nowIso = new Date().toISOString();
-    const { character: charComEfeitos, removidasPorCura: removidas, colapso, pvGatedDeactivated } = applyPvPeSideEffects(
+    const { character: charComEfeitos, removidasPorCura: removidas, colapso } = applyPvPeSideEffects(
       character,
       { pv: pvAnterior, pe: peAnterior },
       { pv: pvNovo, pe: peNovo },
@@ -1632,9 +1528,6 @@ export default function CharacterSheetClient({
       `Restaurados ao máximo — PV ${derivados.pv_max}, PE ${derivados.pe_max}, Mana ${derivados.mana_max}, Integridade ${derivados.integridade_max}`,
     );
     if (removidas.length > 0) void handleAutoHealRemovals(removidas, pvAnterior, pvNovo);
-    for (const d of pvGatedDeactivated) {
-      addLogEntry("recurso", `${d.talentNome} — ${d.nivelNome}: encerrado automaticamente (PV voltou a ficar acima da metade).`);
-    }
     if (colapso.ended) {
       addLogEntry("recurso", `Colapso encerrado por cura — cicatriz pendente.`);
       void persistCollapseEvent("collapse_ended", { tipo: colapso.tipo, motivo: "cura" });
@@ -1749,7 +1642,7 @@ export default function CharacterSheetClient({
     const result = applyConsoleMutation(
       current,
       { type: "pa", delta },
-      { derived: derivados, rules: regras, reactionRules, talents: talentsIniciais },
+      { derived: derivados, rules: regras, reactionRules },
     );
     const after = result.character.estado_jogo?.pa_gastos ?? 0;
     characterRef.current = result.character;
@@ -1773,7 +1666,7 @@ export default function CharacterSheetClient({
     const result = applyConsoleMutation(
       current,
       { type: "reactions", delta },
-      { derived: derivados, rules: regras, reactionRules, talents: talentsIniciais },
+      { derived: derivados, rules: regras, reactionRules },
     );
     const usedAfter = result.character.estado_jogo?.reacoes_usadas ?? 0;
     const overflowAfter = result.character.estado_jogo?.defesas_sem_reacao ?? 0;
@@ -1915,15 +1808,9 @@ export default function CharacterSheetClient({
       round: round + 1,
       scene,
     });
-    // Talentos com cadência "rodada" (checkpoint pós-v0.63) renovam os usos aqui.
-    const talentReset = resetTalentUses(paReduction.character, ["rodada"]);
     // Efeitos temporários com duração por rodadas (checkpoint pós-v0.71) — reduz 1 rodada e expira os que zeram.
-    const tick = tickRoundTemporaryEffects(talentReset.character, nowIso);
-    // Droneiro › Sinal Limpo (checkpoint "Catálogo oficial de drones e robôs") — o +1 PA concedido ao operador vale só a rodada em que foi dado.
-    const sinalLimpoExpiry = expireSinalLimpoBonus(tick.character);
-    // Mecatrônico › Marcha Dupla (checkpoint talentos, Fase 15) — a ação dupla vale só a rodada em que foi ativada.
-    const marchaDuplaExpiry = expireMarchaDuplaRoundState(sinalLimpoExpiry.character);
-    nextCharacter = { ...marchaDuplaExpiry.character, current_round: round + 1 };
+    const tick = tickRoundTemporaryEffects(paReduction.character, nowIso);
+    nextCharacter = { ...tick.character, current_round: round + 1 };
 
     characterRef.current = nextCharacter;
     setCharacter(nextCharacter);
@@ -1931,8 +1818,6 @@ export default function CharacterSheetClient({
     const tempLogs: string[] = [
       ...tick.ticked.map((e) => `Efeito temporário "${e.name}": ${e.remainingRounds} rodada(s) restante(s).`),
       ...tick.expired.map((e) => `Efeito temporário "${e.name}" expirou (duração por rodadas).`),
-      ...(sinalLimpoExpiry.expiredDroneNome ? [`Sinal Limpo: +1 PA de ${sinalLimpoExpiry.expiredDroneNome} expirou no fim da rodada.`] : []),
-      ...marchaDuplaExpiry.expired.map((r) => `Marcha Dupla: ${r.nome} volta ao normal nesta rodada.`),
     ];
     const allLogs = [...collapseResult.logs, ...resolved.logs, ...paReduction.logs, ...tempLogs];
     setEndRoundSummary({ logs: allLogs, warnings: [...collapseResult.warnings, ...resolved.warnings] });
@@ -2058,28 +1943,6 @@ export default function CharacterSheetClient({
     }
   }
 
-  /** Grava `table_logs.type = "talent_used"` (checkpoint pós-v0.63) — best-effort, mesmo padrão de item_used. */
-  async function persistTalentUsedLog(payload: Record<string, unknown>) {
-    if (!selectedCampaignId) return;
-    try {
-      await addLog({
-        campaignId: selectedCampaignId,
-        characterId: characterId ?? undefined,
-        type: "talent_used",
-        visibility: "public",
-        payload: {
-          characterId,
-          characterNome: characterRef.current.nome,
-          source: "character_sheet_talents",
-          ...payload,
-        },
-      });
-    } catch {
-      avisarFalhaLogMesa();
-      // Best-effort — o uso já foi aplicado no estado local/persistido.
-    }
-  }
-
   /**
    * Comprar item na loja (aba Inventário, checkpoint v0.49) — desconta
    * a carteira escolhida e cria a instância no inventário
@@ -2098,81 +1961,6 @@ export default function CharacterSheetClient({
     characterRef.current = result.character;
     setCharacter(result.character);
     addLogEntry("recurso", `Comprado: ${item.nome} x${quantidade} — ${result.totalCost} (${result.walletBefore} → ${result.walletAfter}).`);
-  }
-
-  /** Mercador › Garimpo de Rua — ativa o desconto de -20% para o resto do dia (1/dia). */
-  function handleActivateGarimpoDeRua() {
-    const current = characterRef.current;
-    const status = getGarimpoDeRuaAvailability(current, talentsIniciais);
-    if (!status.acquired || status.ativoHoje) return;
-    const next = activateGarimpoDeRua(current, new Date().toISOString());
-    characterRef.current = next;
-    setCharacter(next);
-    addLogEntry("recurso", `Garimpo de Rua: desconto de -${status.percentual}% ativado para o resto do dia.`);
-  }
-
-  /**
-   * Mercador › Caderneta de Dívida — compra fiada real (1x/sessão): usa
-   * `purchaseItem` com `permitirSaldoInsuficiente`, registra a instância
-   * normalmente e persiste o saldo devido em `dividas_mercador`. Nunca
-   * permite item acima da raridade limite do payload.
-   */
-  function handleBuyItemFiado(itemSlug: string, quantidade: number, walletId: WalletId, precoUnitario: number, fornecedor: string) {
-    const current = characterRef.current;
-    const status = getCadernetaDeDividaAvailability(current, talentsIniciais);
-    if (!status.acquired || status.usedThisSession) {
-      addLogEntry("recurso", "Caderneta de Dívida já foi usada nesta sessão.");
-      return;
-    }
-    const item = itemsIniciais.find((i) => i.slug === itemSlug);
-    if (!item) return;
-    if (!isRaridadeDentroDoLimite(item.raridade, status.raridadeMaxima)) {
-      addLogEntry("recurso", `Caderneta de Dívida não cobre itens acima da raridade "${status.raridadeMaxima}".`);
-      return;
-    }
-    const nowIso = new Date().toISOString();
-    const result = purchaseItem({
-      character: current,
-      item,
-      quantidade,
-      walletId,
-      precoUnitario,
-      nowIso,
-      catalog: itemsIniciais,
-      permitirSaldoInsuficiente: true,
-    });
-    if (!result.ok) {
-      addLogEntry("recurso", result.reason ?? "Compra fiada não realizada.");
-      return;
-    }
-    let next = markCadernetaDeDividaUsed(result.character, nowIso);
-    const saldoDevido = result.saldoDevido ?? 0;
-    if (saldoDevido > 0) {
-      const divida = {
-        id: crypto.randomUUID(),
-        fornecedor,
-        itemSlug: item.slug,
-        itemNome: item.nome,
-        precoTotal: result.totalCost ?? 0,
-        valorPago: result.valorPago ?? 0,
-        saldoDevido,
-        // Sem numeração canônica de sessão de jogo em nenhum lugar do app (mesmo
-        // motivo de "sessao"/"missao" não terem reset automático) — usa a data
-        // como rótulo honesto em vez de inventar um contador de sessão.
-        sessao: nowIso.slice(0, 10),
-        criadaEm: nowIso,
-        quitada: false,
-      };
-      next = { ...next, dividas_mercador: [...(next.dividas_mercador ?? []), divida] };
-    }
-    characterRef.current = next;
-    setCharacter(next);
-    addLogEntry(
-      "recurso",
-      saldoDevido > 0
-        ? `Comprado fiado: ${item.nome} x${quantidade} — pago ${result.valorPago} de ${result.totalCost}, devendo ${saldoDevido} a ${fornecedor}.`
-        : `Comprado fiado: ${item.nome} x${quantidade} — ${result.totalCost} (sem saldo devido).`,
-    );
   }
 
   /** Mercador › Caderneta de Dívida — marca uma dívida como quitada manualmente (o pagamento em si é narrativo). */
@@ -2206,257 +1994,6 @@ export default function CharacterSheetClient({
     setCharacter(next);
   }
 
-  /** Artífice › Toque de Midas — aplica efeito temporário (1h) na instância real; 1/dia. */
-  function handleApplyToqueDeMidas(instanceId: string, pericia?: string) {
-    const current = characterRef.current;
-    const avail = getToqueDeMidasAvailability(current, talentsIniciais);
-    if (!avail.available) {
-      addLogEntry("condicao", avail.usedToday ? "Toque de Midas já foi usado hoje (renova no descanso longo, mesmo padrão de Sobrecarga)." : "Toque de Midas não adquirido.");
-      return;
-    }
-    const instance = (current.inventario ?? []).find((i) => i.id === instanceId);
-    if (!instance) return;
-    const alvo: "arma" | "armadura" | "escudo" | "ferramenta_dispositivo" =
-      instance.categoria === "arma" ? "arma"
-      : instance.categoria === "armadura" ? "armadura"
-      : instance.categoria === "escudo" ? "escudo"
-      : "ferramenta_dispositivo";
-    const mods = getToqueDeMidasModifiersForTarget(current, talentsIniciais, alvo);
-    if (!mods) {
-      addLogEntry("condicao", `Toque de Midas: payload não estrutura modificadores para "${alvo}" — não aplicado.`);
-      return;
-    }
-    const now = new Date();
-    const nowIso = now.toISOString();
-    const expiresAt = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
-    let next = applyToqueDeMidas(current, instanceId, {
-      id: crypto.randomUUID(),
-      sourceTalentId: mods.nivelId,
-      sourceCharacterId: characterId ?? null,
-      itemCategory: alvo,
-      modifiers: { ataque: mods.ataque, dano: mods.dano, mit: mods.mit, testeRelacionado: mods.testeRelacionado },
-      temporaryPdGranted: mods.pd,
-      relatedSkill: alvo === "ferramenta_dispositivo" ? pericia : undefined,
-      nowIso,
-      expiresAt,
-    });
-    next = markToqueDeMidasUsed(next, nowIso);
-    characterRef.current = next;
-    setCharacter(next);
-    const efeito =
-      alvo === "arma" ? `+${mods.ataque ?? 0} ataque e +${mods.dano ?? 0} dano`
-      : alvo === "armadura" ? `+${mods.mit ?? 0} MIT`
-      : alvo === "escudo" ? `+${mods.pd ?? 0} PD temporário`
-      : `+${mods.testeRelacionado ?? 0} no teste${pericia ? ` (${pericia})` : ""}`;
-    addLogEntry("condicao", `Toque de Midas aplicado em "${instance.itemNome}": ${efeito} por 1 hora (expira ${new Date(expiresAt).toLocaleTimeString()}).`);
-    void persistTalentUsedLog({ talentNome: "Toque de Midas", nivelNome: "Nível 2", instanceId, alvo, efeito });
-  }
-
-  function handleEndToqueDeMidas(instanceId: string) {
-    const current = characterRef.current;
-    const instance = (current.inventario ?? []).find((i) => i.id === instanceId);
-    const next = endToqueDeMidas(current, instanceId);
-    if (next === current) return;
-    characterRef.current = next;
-    setCharacter(next);
-    addLogEntry("condicao", `Toque de Midas encerrado em "${instance?.itemNome ?? "item"}" — bônus/PD temporário restante removido; PD-base preservado.`);
-  }
-
-  /**
-   * Pistoleiro › Gatilho Quente — consome 1 dado de gatilho real (jogador informa o d8
-   * físico rolado junto com o teste). Resultado 8 soma dano extra igual à Balística
-   * atual; qualquer outro resultado só consome o dado (conta como um dado normal do
-   * teste, sem bônus extra) — nunca inventa uma regra diferente da descrita no capítulo.
-   */
-  function handleUseGatilhoDado(resultadoD8: number) {
-    const current = characterRef.current;
-    const status = getGatilhoQuenteAvailability(current, talentsIniciais);
-    if (!status.acquired || status.available <= 0) return;
-    const nowIso = new Date().toISOString();
-    const next = consumeGatilhoDado(current, nowIso);
-    characterRef.current = next;
-    setCharacter(next);
-    if (resultadoD8 === 8) {
-      const bonus = current.pericias.balistica ?? 0;
-      addLogEntry(
-        "condicao",
-        `Gatilho Quente: dado de gatilho usado — resultado 8! +${bonus} de dano extra (Balística). Dados restantes: ${status.available - 1}/${status.max}.`,
-      );
-    } else {
-      addLogEntry(
-        "condicao",
-        `Gatilho Quente: dado de gatilho usado — resultado ${resultadoD8} (conta como dado normal do teste, sem dano extra). Dados restantes: ${status.available - 1}/${status.max}.`,
-      );
-    }
-  }
-
-  /** Pistoleiro › Showdown (N3, checkpoint talentos Fase 11) — consome os dados de gatilho gastos de uma vez, 1/cena. */
-  function handleShowdownUsado(dadosGastos: number, qualificados: number) {
-    const current = characterRef.current;
-    const status = getShowdownAvailability(current, talentsIniciais);
-    if (!status.acquired || status.usedThisScene) return;
-    const nowIso = new Date().toISOString();
-    let next = consumeGatilhoDados(current, dadosGastos, nowIso);
-    next = markShowdownUsed(next, nowIso);
-    characterRef.current = next;
-    setCharacter(next);
-    addLogEntry(
-      "condicao",
-      `Showdown: ${dadosGastos} dado(s) de gatilho gastos de uma vez — ${qualificados} qualificaram (6-8). Efeitos por dado a aplicar manualmente no alvo.`,
-    );
-  }
-
-  /** Pistoleiro › Bang Bang (N2, checkpoint talentos Fase 1) — gasta 1 PA para o segundo disparo (a rolagem em si é a próxima "Rolar" normal, com −1 já pré-preenchido pelo RollsTab). */
-  function handleSpendPaBangBang() {
-    adjustEstadoJogo("pa_gastos", 1);
-    addLogEntry("condicao", "Bang Bang: +1 PA gasto para segundo disparo imediato (−1 no teste).");
-  }
-
-  /** Totem › Benção (N1, checkpoint talentos Fase 1) — consome o token recebido (o primeiro teste desde a concessão, com ou sem promoção real). */
-  function handleConsumeBencaoToken() {
-    const current = characterRef.current;
-    if (!current.bencao_token_ativo) return;
-    const { bencao_token_ativo: _drop, ...next } = current;
-    characterRef.current = next;
-    setCharacter(next);
-    addLogEntry("condicao", "Token de Benção consumido neste teste.");
-  }
-
-  /** Estrategista › Falcão (N1, checkpoint talentos Fase 5) — consome o token +2 recebido no próximo teste confirmado. */
-  function handleConsumeFalcaoToken() {
-    const current = characterRef.current;
-    if (!current.falcao_token_ativo) return;
-    const { falcao_token_ativo: _drop, ...next } = current;
-    characterRef.current = next;
-    setCharacter(next);
-    addLogEntry("condicao", "Token de Falcão consumido neste teste.");
-  }
-
-  /** Estrategista › Briefing de Campo (N2, checkpoint talentos Fase 5) — consome a designação de perícia no rerroll. */
-  function handleConsumeBriefingCampo() {
-    const current = characterRef.current;
-    if (!current.briefing_campo_ativo) return;
-    const { briefing_campo_ativo: _drop, ...next } = current;
-    characterRef.current = next;
-    setCharacter(next);
-    addLogEntry("condicao", "Briefing de Campo: rerroll consumido nesta perícia.");
-  }
-
-  /** Manipulador › Entrelinhas — consome a vulnerabilidade (chamado pelo RollsTab após um teste de Influência confirmado contra o alvo). */
-  function handleConsumeEntrelinhas() {
-    const current = characterRef.current;
-    if (!current.entrelinhas_ativo) return;
-    const { entrelinhas_ativo: _drop, ...next } = current;
-    characterRef.current = next;
-    setCharacter(next);
-    addLogEntry("condicao", "Entrelinhas: vulnerabilidade consumida neste teste de Influência.");
-  }
-
-  /** Malabarista › Espetáculo Mortal — consome a promoção ativa (chamado pelo RollsTab após o teste de Precisão da sequência). */
-  function handleConsumeEspetaculoMortal() {
-    const current = characterRef.current;
-    if (!current.espetaculo_mortal_ativo) return;
-    const { espetaculo_mortal_ativo: _drop, ...next } = current;
-    characterRef.current = next;
-    setCharacter(next);
-    addLogEntry("condicao", "Espetáculo Mortal: promoção consumida neste teste de Precisão.");
-  }
-
-  /** Rúnico › Gatilho Rúnico — ativa/desativa runa instalada sem PA. */
-  function handleToggleRuneActive(instanceId: string, runeInstallationId: string) {
-    const current = characterRef.current;
-    const result = toggleInstalledRune(current, instanceId, runeInstallationId);
-    if (!result) return;
-    characterRef.current = result.character;
-    setCharacter(result.character);
-    addLogEntry("condicao", `Gatilho Rúnico: runa ${result.ativa ? "ativada" : "desativada"} — 0 PA.`);
-  }
-
-  /** Rúnico › Entalhe Rápido — gasta 1 PA e prepara o teste real de Engenharia (CD do narrador). */
-  function handleStartEntalheRapido(instanceId: string, mode: "instalar" | "remover", alvo: string, cd: number) {
-    if (!alvo || !cd) return;
-    const current = characterRef.current;
-    // Preflight: se já há uma tentativa pendente nesta instância, não inicia outra (evitaria perder o
-    // rastro do 1º PA já gasto). Para instalar, verifica o limite de slots ANTES de gastar o PA — sem
-    // isso, um jogador podia passar no teste de Engenharia e só descobrir depois que o slot estava cheio.
-    if (current.entalhe_rapido_tentativas?.[instanceId]) {
-      addLogEntry("condicao", "Entalhe Rápido: já há uma tentativa pendente para este item — confirme ou aguarde antes de iniciar outra.");
-      return;
-    }
-    if (mode === "instalar") {
-      const instance = current.inventario?.find((i) => i.id === instanceId);
-      const itemContent = instance ? itemsIniciais.find((i) => i.slug === instance.itemSlug) : undefined;
-      if (instance) {
-        const slotsMax = getSlotsRunaMaxEfetivo(instance, itemContent, characterId);
-        if (slotsMax != null && countInstalledRunes(instance) >= slotsMax) {
-          addLogEntry("condicao", `Entalhe Rápido: limite de slots de runa já atingido (máx. ${slotsMax}) — PA não gasto.`);
-          return;
-        }
-      }
-    }
-    // PA + tentativa pendente aplicados NUM SÓ update — persistidos juntos (sobrevive a
-    // reload/salvar; antes `entalheAttempts` era só estado local, perdido ao recarregar
-    // no meio do fluxo, deixando o PA gasto sem tentativa correspondente para confirmar).
-    const paGastosAntes = current.estado_jogo?.pa_gastos ?? 0;
-    const next: Character = {
-      ...current,
-      estado_jogo: { ...current.estado_jogo, pa_gastos: paGastosAntes + 1 },
-      entalhe_rapido_tentativas: { ...current.entalhe_rapido_tentativas, [instanceId]: { mode, alvo, cd } },
-    };
-    characterRef.current = next;
-    setCharacter(next);
-    const periciaDef = regras?.pericias.find((p) => p.id === "engenharia");
-    setPreparedRoll({ atributoId: periciaDef?.atributo_primario ?? "mente", periciaId: "engenharia", origem: `Entalhe Rápido: ${mode}` });
-    setActiveTab("rolagens");
-    addLogEntry("condicao", `Entalhe Rápido: 1 PA gasto — teste de Engenharia CD ${cd} para ${mode === "instalar" ? "instalar" : "remover"} a runa.`);
-  }
-
-  /** Confirma o resultado do teste — só aplica a alteração (instalar/remover) em sucesso; falha preserva item/runa (PA já gasto). */
-  function handleConfirmEntalheRapido(instanceId: string, resultado: number) {
-    const current = characterRef.current;
-    const attempt = current.entalhe_rapido_tentativas?.[instanceId];
-    if (!attempt) return;
-    const sucesso = resultado >= attempt.cd;
-    const semTentativa: Character = {
-      ...current,
-      entalhe_rapido_tentativas: Object.fromEntries(Object.entries(current.entalhe_rapido_tentativas ?? {}).filter(([id]) => id !== instanceId)),
-    };
-    if (!sucesso) {
-      characterRef.current = semTentativa;
-      setCharacter(semTentativa);
-      addLogEntry("condicao", `Entalhe Rápido: falha (${resultado} < CD ${attempt.cd}) — item e runa preservados, PA não é devolvido.`);
-      return;
-    }
-    if (attempt.mode === "instalar") {
-      const rune = runesIniciais.find((r) => r.slug === attempt.alvo);
-      if (!rune) return;
-      const instance = semTentativa.inventario?.find((i) => i.id === instanceId);
-      const itemContent = instance ? itemsIniciais.find((i) => i.slug === instance.itemSlug) : undefined;
-      const result = installRuneOnItem({
-        character: semTentativa,
-        instanceId,
-        itemContent,
-        rune,
-        nowIso: new Date().toISOString(),
-        currentCharacterId: characterId,
-      });
-      // Sucesso no teste, mas a instalação em si falhou (ex.: slot ocupado nesse meio-tempo) —
-      // ainda assim limpa a tentativa pendente (não fica travada) e preserva o PA já gasto.
-      characterRef.current = result.character;
-      setCharacter(result.character);
-      if (!result.ok) {
-        addLogEntry("condicao", `Entalhe Rápido: sucesso no teste, mas ${result.reason ?? "não instalada"}.`);
-        return;
-      }
-      addLogEntry("condicao", `Entalhe Rápido: sucesso (${resultado} ≥ CD ${attempt.cd}) — runa ${rune.nome} instalada.`);
-    } else {
-      const next = removeRuneFromItem(semTentativa, instanceId, attempt.alvo);
-      characterRef.current = next;
-      setCharacter(next);
-      addLogEntry("condicao", `Entalhe Rápido: sucesso (${resultado} ≥ CD ${attempt.cd}) — runa removida.`);
-    }
-  }
-
   /** Aplica dano a um escudo consumindo o PD temporário (Toque de Midas) antes do PD-base — fluxo real de teste. */
   function handleApplyShieldDamage(instanceId: string, amount: number) {
     const current = characterRef.current;
@@ -2471,20 +2008,6 @@ export default function CharacterSheetClient({
     if (result.fromTemp > 0) partes.push(`${result.fromTemp} do PD temporário`);
     if (result.fromBase > 0) partes.push(`${result.fromBase} do PD-base`);
     addLogEntry("condicao", `${instance.itemNome}: ${amount} de dano no escudo (${partes.join(" + ") || "nenhum PD disponível — dano não absorvido"}).`);
-  }
-
-  /** Prepara na aba Rolagens um teste "relacionado" à ferramenta/dispositivo com Toque de Midas — o +1 entra via item:<instanceId>, escopado só a esta instância. */
-  function handleRollToolTest(instanceId: string, relatedSkill: string) {
-    const instance = (characterRef.current.inventario ?? []).find((i) => i.id === instanceId);
-    if (!instance) return;
-    const periciaDef = regras?.pericias.find((p) => p.id === relatedSkill);
-    setPreparedRoll({
-      atributoId: periciaDef?.atributo_primario ?? "mente",
-      periciaId: periciaDef ? relatedSkill : null,
-      origem: `Teste relacionado: ${instance.itemNome}`,
-      extraTags: [`item:${instanceId}`],
-    });
-    setActiveTab("rolagens");
   }
 
   function handleRemoveItem(instanceId: string) {
@@ -2618,38 +2141,8 @@ export default function CharacterSheetClient({
       return;
     }
 
-    // Paramédico › Ritmo de Campo (checkpoint talentos, Fase 7) — "armado" pelo jogador
-    // confirmando que este item é de cura; -1 PA real (mín. respeitado) no custo já pago.
-    let characterAposItem = result.character;
-    if (ritmoDeCampoAtivo && result.paCost != null) {
-      const ritmoStatus = getRitmoDeCampoAvailability(current, talentsIniciais);
-      if (ritmoStatus.acquired) {
-        const reducaoReal = computeRitmoDeCampoReducao(result.paCost, ritmoStatus.reducao, ritmoStatus.minimo);
-        if (reducaoReal > 0) {
-          characterAposItem = {
-            ...characterAposItem,
-            estado_jogo: { ...characterAposItem.estado_jogo, pa_gastos: Math.max(0, (characterAposItem.estado_jogo?.pa_gastos ?? 0) - reducaoReal) },
-          };
-          addLogEntry("recurso", `Ritmo de Campo: custo de PA deste item de cura reduzido em ${reducaoReal}.`);
-          setRitmoDeCampoAtivo(false);
-        }
-      }
-    }
-
-    // Berserker › Sede de Sangue — item de cura também pode levar o PV de volta
-    // acima da metade; mesma checagem genérica da edição manual de recursos.
-    const pvGatedPorItem = enforcePvGatedToggleDeactivation(
-      characterAposItem,
-      talentsIniciais,
-      result.character.recursos_atuais?.pv ?? 0,
-      derivados.pv_max,
-      nowIso,
-    );
-    characterRef.current = pvGatedPorItem.character;
-    setCharacter(pvGatedPorItem.character);
-    for (const d of pvGatedPorItem.deactivated) {
-      addLogEntry("recurso", `${d.talentNome} — ${d.nivelNome}: encerrado automaticamente (PV voltou a ficar acima da metade).`);
-    }
+    characterRef.current = result.character;
+    setCharacter(result.character);
 
     const partesLog: string[] = [];
     if (result.paCost != null) partesLog.push(`PA ${result.paBefore} → ${result.paAfter}`);
@@ -2804,24 +2297,7 @@ export default function CharacterSheetClient({
     }
     setAlliesAtivos((prev) => prev.map((a) => (a.id === ally.id ? { ...a, character: normalizeCharacter(targetRecord.payload) } : a)));
 
-    // Paramédico › Ritmo de Campo (checkpoint talentos, Fase 7) — "armado" pelo jogador
-    // confirmando que este item usado no aliado é de cura; -1 PA real no CASTER (quem gasta o custo).
-    let characterAposItemAliado = result.source;
-    if (ritmoDeCampoAtivo && result.paCost != null) {
-      const ritmoStatus = getRitmoDeCampoAvailability(current, talentsIniciais);
-      if (ritmoStatus.acquired) {
-        const reducaoReal = computeRitmoDeCampoReducao(result.paCost, ritmoStatus.reducao, ritmoStatus.minimo);
-        if (reducaoReal > 0) {
-          characterAposItemAliado = {
-            ...characterAposItemAliado,
-            estado_jogo: { ...characterAposItemAliado.estado_jogo, pa_gastos: Math.max(0, (characterAposItemAliado.estado_jogo?.pa_gastos ?? 0) - reducaoReal) },
-          };
-          addLogEntry("recurso", `Ritmo de Campo: custo de PA deste item de cura em ${ally.nome} reduzido em ${reducaoReal}.`);
-          setRitmoDeCampoAtivo(false);
-        }
-      }
-    }
-
+    const characterAposItemAliado = result.source;
     characterRef.current = characterAposItemAliado;
     setCharacter(characterAposItemAliado);
 
@@ -2843,17 +2319,6 @@ export default function CharacterSheetClient({
     }
     for (const efeito of result.targetTemporaryEffectsAdded) {
       partesLog.push(`efeito temporário em ${ally.nome}: ${formatTemporaryEffectSummary(efeito)}`);
-    }
-    // Totem › Onda Solidária/Chama Redobrada (checkpoint talentos, Fase 9) — guarda o
-    // snapshot deste efeito positivo (deltas reais + efeitos temporários) para copiar num
-    // segundo aliado ou dobrar no mesmo alvo, via widgets dedicados na aba Talentos.
-    if (result.targetResourceChanges.length > 0 || result.targetTemporaryEffectsAdded.length > 0) {
-      setUltimoEfeitoPositivoAliado({
-        targetCharacterId: ally.id,
-        targetNome: ally.nome,
-        resourceDeltas: result.targetResourceChanges.map((m) => ({ resource: m.resource, delta: m.after - m.before })),
-        temporaryEffects: result.targetTemporaryEffectsAdded,
-      });
     }
     addLogEntry(
       "recurso",
@@ -3030,85 +2495,6 @@ export default function CharacterSheetClient({
     characterRef.current = next;
     setCharacter(next);
     addLogEntry("recurso", "Runa removida do item.");
-  }
-
-  /**
-   * Rúnico › Sobregravação (N3) — o DONO do talento aplica a autorização a
-   * uma instância do próprio inventário (`equipamento_proprio`, payload).
-   * Persiste na instância (sobrevive a transferência): dono + aliados
-   * instruídos acessam o espaço extra automaticamente; qualquer outro
-   * personagem que fique com o item depois precisa do teste CD 8
-   * (`handleStartSobregravacaoTest`/`handleConfirmSobregravacaoTest`).
-   */
-  function handleApplySobregravacao(instanceId: string) {
-    const current = characterRef.current;
-    if (!hasSobregravacao(current, talentsIniciais)) return;
-    if (!characterId) {
-      addLogEntry("condicao", "Sobregravação: personagem sem id de sessão salvo — salve a ficha antes de aplicar.");
-      return;
-    }
-    const multiplicador = getSobregravacaoMultiplier(current, talentsIniciais);
-    const next = applySobregravacao({
-      character: current,
-      instanceId,
-      ownerCharacterId: characterId,
-      multiplicador,
-      nowIso: new Date().toISOString(),
-    });
-    characterRef.current = next;
-    setCharacter(next);
-    addLogEntry(
-      "condicao",
-      `Sobregravação aplicada: espaços de runa deste item multiplicados por ${multiplicador} — só você e aliados instruídos se beneficiam do espaço extra; outros veem a inscrição, mas não acessam o efeito sem teste de Tecnomagia/Arcanismo CD 8.`,
-    );
-  }
-
-  /** Rúnico › Sobregravação — dono edita a lista de aliados previamente instruídos (substitui a lista inteira). */
-  function handleSetSobregravacaoAllies(instanceId: string, allyIds: string[]) {
-    const current = characterRef.current;
-    const next = setSobregravacaoInstructedAllies(current, instanceId, allyIds);
-    if (next === current) return;
-    characterRef.current = next;
-    setCharacter(next);
-    addLogEntry("condicao", `Sobregravação: aliados instruídos atualizados (${allyIds.length}).`);
-  }
-
-  /** Rúnico › Sobregravação — terceiro (não dono, não aliado instruído) inicia o teste real de Tecnomagia/Arcanismo CD 8 para acessar o espaço extra. */
-  function handleStartSobregravacaoTest(instanceId: string) {
-    const periciaDef =
-      regras?.pericias.find((p) => p.id === "tecnomagia") ?? regras?.pericias.find((p) => p.id === "arcanismo");
-    setSobregravacaoTestPending((prev) => ({ ...prev, [instanceId]: true }));
-    setPreparedRoll({
-      atributoId: periciaDef?.atributo_primario ?? "mente",
-      periciaId: periciaDef?.id ?? "arcanismo",
-      origem: "Sobregravação: acesso de terceiro ao espaço extra (CD 8)",
-    });
-    setActiveTab("rolagens");
-    addLogEntry("condicao", "Sobregravação: teste de Tecnomagia ou Arcanismo CD 8 preparado para acessar o espaço extra deste item.");
-  }
-
-  /** Confirma o resultado do teste CD 8 — sucesso concede acesso permanente (persistido na instância); falha não bloqueia o item nem as runas já instaladas. */
-  function handleConfirmSobregravacaoTest(instanceId: string, resultado: number) {
-    if (!sobregravacaoTestPending[instanceId]) return;
-    setSobregravacaoTestPending((prev) => {
-      const next = { ...prev };
-      delete next[instanceId];
-      return next;
-    });
-    const sucesso = resultado >= 8;
-    if (!sucesso) {
-      addLogEntry("condicao", `Sobregravação: teste falhou (${resultado} < CD 8) — espaço extra continua inacessível para você.`);
-      return;
-    }
-    if (!characterId) {
-      addLogEntry("condicao", "Sobregravação: sucesso no teste, mas personagem sem id de sessão salvo — não foi possível persistir o acesso.");
-      return;
-    }
-    const current = characterRef.current;
-    const next = grantSobregravacaoAccess(current, instanceId, characterId);
-    characterRef.current = next;
-    setCharacter(next);
-    addLogEntry("condicao", `Sobregravação: teste bem-sucedido (${resultado} ≥ CD 8) — acesso ao espaço extra concedido e persistido.`);
   }
 
   /**
@@ -3336,24 +2722,7 @@ export default function CharacterSheetClient({
       return;
     }
     if (result.reason) addLogEntry("recurso", result.reason);
-    // Paramédico › Ritmo de Campo (checkpoint talentos, Fase 7) — "armado" pelo jogador
-    // confirmando que esta magia é de cura; -1 PA real (mín. respeitado) no custo já pago.
-    let characterAposMagia = result.character;
-    const custoPaMagiaPago = result.paBefore - result.paAfter;
-    if (ritmoDeCampoAtivo && custoPaMagiaPago > 0) {
-      const ritmoStatus = getRitmoDeCampoAvailability(current, talentsIniciais);
-      if (ritmoStatus.acquired) {
-        const reducaoReal = computeRitmoDeCampoReducao(custoPaMagiaPago, ritmoStatus.reducao, ritmoStatus.minimo);
-        if (reducaoReal > 0) {
-          characterAposMagia = {
-            ...characterAposMagia,
-            estado_jogo: { ...characterAposMagia.estado_jogo, pa_gastos: Math.max(0, (characterAposMagia.estado_jogo?.pa_gastos ?? 0) - reducaoReal) },
-          };
-          addLogEntry("recurso", `Ritmo de Campo: custo de PA desta magia de cura reduzido em ${reducaoReal}.`);
-          setRitmoDeCampoAtivo(false);
-        }
-      }
-    }
+    const characterAposMagia = result.character;
     characterRef.current = characterAposMagia;
     setCharacter(characterAposMagia);
 
@@ -3370,15 +2739,6 @@ export default function CharacterSheetClient({
       partes.push(
         `dano ${resolution.damage.fixo ? "fixo" : "rolado"} ${resolution.damage.result} (${resolution.damage.formula}/${resolution.damage.tipoDano}${resolution.damage.subtipoDano ? `/${resolution.damage.subtipoDano}` : ""})`,
       );
-    }
-    // Mago de Batalha › Domínio Territorial: alcance/área REAL ajustados entram no
-    // log de conjuração de verdade (não só na aba Magias) — checkpoint talentos.
-    const rangeAreaMult = getTalentSpellRangeAreaMultiplier(current, talentsIniciais, spell.estatisticas.tipo_magia);
-    if (rangeAreaMult !== 1) {
-      const alcanceAjustado = spell.estatisticas.alcanceTexto ? applyRangeAreaMultiplierToText(spell.estatisticas.alcanceTexto, rangeAreaMult) : null;
-      const areaAjustada = spell.estatisticas.areaTexto ? applyRangeAreaMultiplierToText(spell.estatisticas.areaTexto, rangeAreaMult) : null;
-      if (alcanceAjustado?.changed) partes.push(`alcance ${alcanceAjustado.text} (Domínio Territorial, base ${spell.estatisticas.alcanceTexto})`);
-      if (areaAjustada?.changed) partes.push(`área ${areaAjustada.text} (Domínio Territorial, base ${spell.estatisticas.areaTexto})`);
     }
     const extras = [...resolution.manualEffects, ...resolution.reminders];
     addLogEntry(
@@ -3534,15 +2894,6 @@ export default function CharacterSheetClient({
     if (resolution.damage) {
       partes.push(`dano ${resolution.damage.fixo ? "fixo" : "rolado"} ${resolution.damage.result} (${resolution.damage.formula}/${resolution.damage.tipoDano})`);
     }
-    // Mago de Batalha › Domínio Territorial — mesmo ajuste real de handleCastSpell,
-    // aplicado à magia PRINCIPAL da fusão (a fundida não carrega alcance/área próprios aqui).
-    const rangeAreaMultFusao = getTalentSpellRangeAreaMultiplier(current, talentsIniciais, spell.estatisticas.tipo_magia);
-    if (rangeAreaMultFusao !== 1) {
-      const alcanceAjustado = spell.estatisticas.alcanceTexto ? applyRangeAreaMultiplierToText(spell.estatisticas.alcanceTexto, rangeAreaMultFusao) : null;
-      const areaAjustada = spell.estatisticas.areaTexto ? applyRangeAreaMultiplierToText(spell.estatisticas.areaTexto, rangeAreaMultFusao) : null;
-      if (alcanceAjustado?.changed) partes.push(`alcance ${alcanceAjustado.text} (Domínio Territorial, base ${spell.estatisticas.alcanceTexto})`);
-      if (areaAjustada?.changed) partes.push(`área ${areaAjustada.text} (Domínio Territorial, base ${spell.estatisticas.areaTexto})`);
-    }
     // Chegou aqui só se castSpellWithFusion aprovou — nível de vertente da
     // principal E da fundida já foi validado DENTRO dela (bloqueio real).
     const extras = [...resolution.manualEffects, ...resolution.reminders, ...result.fusionReminders];
@@ -3668,38 +3019,13 @@ export default function CharacterSheetClient({
   }
 
   /** "Rolar dano" (aba Magias, checkpoint v0.50) — atalho de rolagem para magias com efeito de dano. */
-  function handleRollSpellDamage(slug: string, canalizarMana = 0) {
+  function handleRollSpellDamage(slug: string) {
     const spell = spellsIniciais.find((s) => s.slug === slug);
     if (!spell) return;
     const dano = getSpellDamageEffect(spell);
     if (!dano) return;
     const resultado = rollSpellDamage(spell);
     if (resultado == null) return;
-
-    // Canalizar Potencializar (Mago N2): só em magia de ataque, 1/rodada, gasta Mana real → +1 dano/Mana.
-    const attack = getSpellAttackProfile(spell);
-    const canalizarState = getCanalizarState(characterRef.current, talentsIniciais);
-    const manaAtual = characterRef.current.recursos_atuais?.mana ?? 0;
-    let mana = Math.max(0, Math.trunc(canalizarMana));
-    if (mana > 0) {
-      if (!attack.isAttack) { addLogEntry("recurso", "Canalizar Potencializar só se aplica a magias de ataque."); mana = 0; }
-      else if (!canalizarState.acquired) { addLogEntry("recurso", "Canalizar não adquirido."); mana = 0; }
-      else if (canalizarState.usedThisRound) { addLogEntry("recurso", "Canalizar já foi usado nesta rodada."); mana = 0; }
-      else if (mana > manaAtual) { addLogEntry("recurso", `Mana insuficiente para Canalizar (atual ${manaAtual}, pedido ${mana}).`); mana = 0; }
-    }
-
-    if (mana > 0) {
-      const nowIso = new Date().toISOString();
-      let next: Character = { ...characterRef.current, recursos_atuais: { ...characterRef.current.recursos_atuais, mana: manaAtual - mana } };
-      next = markCanalizarUsed(next, nowIso);
-      characterRef.current = next;
-      setCharacter(next);
-      addLogEntry(
-        "recurso",
-        `${spell.nome}: ${resultado} + ${mana} (Canalizar Potencializar, ${mana} Mana gasta) = ${resultado + mana} de dano ${dano.tipo_dano}${dano.subtipo_dano ? ` (${dano.subtipo_dano})` : ""} (${dano.dado ?? `fixo ${dano.valor}`}). Mana ${manaAtual} → ${manaAtual - mana}.`,
-      );
-      return;
-    }
     addLogEntry("recurso", `${spell.nome}: ${resultado} de dano ${dano.tipo_dano}${dano.subtipo_dano ? ` (${dano.subtipo_dano})` : ""} (${dano.dado ?? `fixo ${dano.valor}`}).`);
   }
 
@@ -3757,7 +3083,7 @@ export default function CharacterSheetClient({
     const addResult = result ?? applyConsoleMutation(
       characterRef.current,
       { type: "condition_add", condition: novaCondicao },
-      { derived: derivados, rules: regras, reactionRules, talents: talentsIniciais },
+      { derived: derivados, rules: regras, reactionRules },
     );
     characterRef.current = addResult.character;
     setCharacter(addResult.character);
@@ -3806,7 +3132,7 @@ export default function CharacterSheetClient({
     const removeResult = applyConsoleMutation(
       characterRef.current,
       { type: "condition_remove", conditionId: id, nowIso: removidaEm },
-      { derived: derivados, rules: regras, reactionRules, talents: talentsIniciais },
+      { derived: derivados, rules: regras, reactionRules },
     );
     characterRef.current = removeResult.character;
     setCharacter(removeResult.character);
@@ -4104,45 +3430,9 @@ export default function CharacterSheetClient({
       activeEffects,
       opcaoInteracao,
     );
-    // Espadachim › Estocar (checkpoint talentos, Fase 4) — reduz o custo REAL de PA deste
-    // Atacar em 1 (respeitando o mínimo do payload), 1/combate. Exige arma corpo a corpo
-    // empunhada (não desarmado) — "lâmina" fica confirmada pelo próprio checkbox marcado
-    // pelo jogador, mesmo critério já usado para Aparar/Ripostar (sem dado estruturado de
-    // lâmina no catálogo). Combinado num ÚNICO update atômico com o resultado da ação para
-    // não arriscar characterRef.current desatualizado entre duas chamadas de setCharacter.
-    const estocarStatus = temEfeitoAtaque ? getEstocarAvailability(currentCharacter, talentsIniciais) : { acquired: false, usedThisCombat: false, reducao: 1, minimo: 1 };
-    const estocarElegivel =
-      temEfeitoAtaque &&
-      estocarAtivo &&
-      estocarStatus.acquired &&
-      !estocarStatus.usedThisCombat &&
-      attackWeaponInstanceId != null &&
-      attackWeaponModel?.subtipo === "corpo_a_corpo";
-    const custoPaPago = result.paBefore - result.paAfter;
-    const estocarReducaoReal = estocarElegivel ? Math.max(0, Math.min(estocarStatus.reducao, custoPaPago - estocarStatus.minimo)) : 0;
-    // Paramédico › Ritmo de Campo (checkpoint talentos, Fase 7) — "armado" pelo jogador
-    // confirmando que esta ação do Console é de cura; combinado no MESMO update atômico.
-    const ritmoDeCampoStatus = getRitmoDeCampoAvailability(currentCharacter, talentsIniciais);
-    const ritmoDeCampoReducaoReal =
-      ritmoDeCampoAtivo && ritmoDeCampoStatus.acquired && custoPaPago > 0
-        ? computeRitmoDeCampoReducao(custoPaPago, ritmoDeCampoStatus.reducao, ritmoDeCampoStatus.minimo)
-        : 0;
-    const reducaoTotal = estocarReducaoReal + ritmoDeCampoReducaoReal;
-    let characterAposEstocar: Character =
-      reducaoTotal > 0
-        ? { ...result.character, estado_jogo: { ...result.character.estado_jogo, pa_gastos: Math.max(0, (result.character.estado_jogo?.pa_gastos ?? 0) - reducaoTotal) } }
-        : result.character;
-    if (estocarReducaoReal > 0) characterAposEstocar = markEstocarUsed(characterAposEstocar, nowIso);
-    if (estocarReducaoReal > 0) {
-      addLogEntry("acao_combate", `Estocar: custo de PA deste ataque reduzido em ${estocarReducaoReal} (lâmina confirmada).`);
-      setEstocarAtivo(false);
-    }
-    if (ritmoDeCampoReducaoReal > 0) {
-      addLogEntry("acao_combate", `Ritmo de Campo: custo de PA desta ação de cura reduzido em ${ritmoDeCampoReducaoReal}.`);
-      setRitmoDeCampoAtivo(false);
-    }
-    characterRef.current = characterAposEstocar;
-    setCharacter(characterAposEstocar);
+    const characterAposAcao: Character = result.character;
+    characterRef.current = characterAposAcao;
+    setCharacter(characterAposAcao);
 
     let attackLogFields: Record<string, unknown> = {};
     if (temEfeitoAtaque) {
@@ -4332,25 +3622,7 @@ export default function CharacterSheetClient({
     // ver getSimpleActionRollSkill) — a perícia correta depende da arma
     // selecionada, resolvida em attackPreview (mesma lógica de handleUseAction).
     if (actionContentHasResolverAtaque(item) && attackPreview?.skill) {
-      // Toque de Midas (arma) e Mirar (1 Tiro, 1 Acerto) escopam um bônus só a ESTE
-      // ataque via tag sintética — vale nos dois ramos abaixo (com ou sem atributo
-      // resolvido; armas à distância sem `atributoAtaque` estruturado no catálogo
-      // caem no ramo sem atributo, mas o bônus de Mirar TEM que valer do mesmo jeito).
-      const mirarMod = getMirarModifier(characterRef.current, talentsIniciais);
-      const mirarAplicavel =
-        !!mirarMod &&
-        mirarMod.alvoTags.includes(attackPreview.skill) &&
-        isMirarActive(characterRef.current, characterRef.current.current_round ?? null);
-      const extraTags = [
-        ...(effectiveSelectedAttackWeaponId ? [`item:${effectiveSelectedAttackWeaponId}`] : []),
-        ...(mirarAplicavel ? [MIRAR_TAG] : []),
-      ];
-      const consumirMirarSeAplicavel = () => {
-        if (!mirarAplicavel) return;
-        const consumed = consumeMirar(characterRef.current, new Date().toISOString());
-        characterRef.current = consumed;
-        setCharacter(consumed);
-      };
+      const extraTags = effectiveSelectedAttackWeaponId ? [`item:${effectiveSelectedAttackWeaponId}`] : [];
 
       if (attackPreview.attribute) {
         const weaponName = attackWeaponCandidates.find((c) => c.instanceId === effectiveSelectedAttackWeaponId)?.nome ?? "Ataque desarmado";
@@ -4360,7 +3632,6 @@ export default function CharacterSheetClient({
           origem: `Atacar: ${weaponName}`,
           extraTags,
         });
-        consumirMirarSeAplicavel();
         setActiveTab("rolagens");
         return;
       }
@@ -4377,7 +3648,6 @@ export default function CharacterSheetClient({
         origem: `Atacar: ${attackWeaponCandidates.find((c) => c.instanceId === effectiveSelectedAttackWeaponId)?.nome ?? "Ataque desarmado"}`,
         extraTags,
       });
-      consumirMirarSeAplicavel();
       setActiveTab("rolagens");
       return;
     }
@@ -4496,8 +3766,6 @@ export default function CharacterSheetClient({
     );
   }
 
-  const estocarStatusFicha = getEstocarAvailability(character, talentsIniciais);
-
   const consoleApi: ConsoleApi = {
     somenteLeitura,
     escalpos: {
@@ -4519,11 +3787,6 @@ export default function CharacterSheetClient({
       onCastWithFusion: handleCastSpellWithFusion,
       onRollDamage: handleRollSpellDamage,
       onSetVertenteLevel: handleSetVertenteLevel,
-      spellRangeAreaMultiplier: getTalentSpellRangeAreaMultiplier(character, talentsIniciais, "ataque"),
-      canalizar: (() => {
-        const st = getCanalizarState(character, talentsIniciais);
-        return st.acquired ? { available: !st.usedThisRound, manaAtual: character.recursos_atuais?.mana ?? 0 } : null;
-      })(),
     },
     gravacao: { estado: saveState, erro: errorMessage },
     character,
@@ -4599,7 +3862,7 @@ export default function CharacterSheetClient({
       const mutation = applyConsoleMutation(
         current,
         { type: "defense" },
-        { derived: derivados, rules: regras, reactionRules, talents: talentsIniciais },
+        { derived: derivados, rules: regras, reactionRules },
       );
       if (mutation.character !== current) {
         characterRef.current = mutation.character;
@@ -4660,7 +3923,7 @@ export default function CharacterSheetClient({
       const mutation = applyConsoleMutation(
         current,
         { type: "defense" },
-        { derived: derivados, rules: regras, reactionRules, talents: talentsIniciais },
+        { derived: derivados, rules: regras, reactionRules },
       );
       if (mutation.character !== current) {
         characterRef.current = mutation.character;
@@ -5092,9 +4355,7 @@ export default function CharacterSheetClient({
           atributos={character.atributos}
           onApplyShortRest={handleApplyShortRest}
           onApplyLongRest={handleApplyLongRest}
-          onMarkNewDayTalents={handleMarkNewDayTalents}
           sobrecargaUsadaDia={character.sobrecarga_usada_dia ?? 0}
-          overloadMaxOverride={getTalentOverloadLimitOverride(character, talentsIniciais)}
           rupturaEspecialAscensao={character.ruptura_especial_ascensao ?? null}
           rupturaPendente={character.ruptura_pendente ?? false}
           overloadWillRollPending={overloadWillRollPending}
@@ -5163,30 +4424,8 @@ export default function CharacterSheetClient({
           allies={alliesAtivos}
           onUseItemOnAlly={handleUseItemOnAlly}
           onRefreshAllies={() => selectedCampaignId && refreshAlliesAtivos(selectedCampaignId)}
-          toqueDeMidasAvailable={getToqueDeMidasAvailability(character, talentsIniciais).available}
-          onApplyToqueDeMidas={handleApplyToqueDeMidas}
-          onEndToqueDeMidas={handleEndToqueDeMidas}
           onApplyShieldDamage={handleApplyShieldDamage}
-          onRollToolTest={handleRollToolTest}
-          runicoGatilhoAvailable={hasGatilhoRunico(character, talentsIniciais)}
-          onToggleRuneActive={handleToggleRuneActive}
-          entalheRapidoAvailable={hasEntalheRapido(character, talentsIniciais)}
-          entalheAttempts={character.entalhe_rapido_tentativas ?? {}}
-          onStartEntalheRapido={handleStartEntalheRapido}
-          onConfirmEntalheRapido={handleConfirmEntalheRapido}
-          sobregravacaoAvailable={hasSobregravacao(character, talentsIniciais)}
           currentCharacterId={characterId}
-          onApplySobregravacao={handleApplySobregravacao}
-          onSetSobregravacaoAllies={handleSetSobregravacaoAllies}
-          sobregravacaoTestPending={sobregravacaoTestPending}
-          onStartSobregravacaoTest={handleStartSobregravacaoTest}
-          onConfirmSobregravacaoTest={handleConfirmSobregravacaoTest}
-          garimpoDeRuaStatus={getGarimpoDeRuaAvailability(character, talentsIniciais)}
-          onActivateGarimpoDeRua={handleActivateGarimpoDeRua}
-          cadernetaDeDividaStatus={getCadernetaDeDividaAvailability(character, talentsIniciais)}
-          onBuyFiado={handleBuyItemFiado}
-          dividasMercador={character.dividas_mercador}
-          onQuitarDivida={handleQuitarDivida}
         />
       )}
 
@@ -5203,11 +4442,6 @@ export default function CharacterSheetClient({
           onCastWithFusion={handleCastSpellWithFusion}
           onRollDamage={handleRollSpellDamage}
           onSetVertenteLevel={handleSetVertenteLevel}
-          spellRangeAreaMultiplier={getTalentSpellRangeAreaMultiplier(character, talentsIniciais, "ataque")}
-          canalizar={(() => {
-            const st = getCanalizarState(character, talentsIniciais);
-            return st.acquired ? { available: !st.usedThisRound, manaAtual: character.recursos_atuais?.mana ?? 0 } : null;
-          })()}
         />
       )}
 
@@ -5243,10 +4477,6 @@ export default function CharacterSheetClient({
           selectedAttackWeaponId={effectiveSelectedAttackWeaponId}
           onSelectAttackWeapon={(id) => setSelectedAttackWeaponId(id ?? "__desarmado__")}
           attackPreview={attackPreview}
-          estocarAvailable={estocarStatusFicha.acquired && !estocarStatusFicha.usedThisCombat}
-          estocarUsedThisCombat={estocarStatusFicha.usedThisCombat}
-          estocarAtivo={estocarAtivo}
-          onToggleEstocar={setEstocarAtivo}
         />
       )}
 
@@ -5263,26 +4493,6 @@ export default function CharacterSheetClient({
           characterId={characterId}
           characterNome={character.nome}
           activeEffects={activeEffects}
-          marginPromotions={getMarginPromotions(character, talentsIniciais)}
-          saqueFantasmaAvailable={hasSaqueFantasma(character, talentsIniciais)}
-          gatilhoQuenteStatus={getGatilhoQuenteAvailability(character, talentsIniciais)}
-          onGatilhoDadoResultado={handleUseGatilhoDado}
-          bangBangAvailable={hasBangBangSegundoDisparo(character, talentsIniciais)}
-          paDisponivel={Math.max(0, derivados.pa_max - (character.estado_jogo?.pa_gastos ?? 0))}
-          onSpendPaBangBang={handleSpendPaBangBang}
-          totemBencaoAvailable={hasTotemBencao(character, talentsIniciais)}
-          bencaoTokenAtivo={character.bencao_token_ativo ?? null}
-          onConsumeBencaoToken={handleConsumeBencaoToken}
-          falcaoTokenAtivo={character.falcao_token_ativo ?? null}
-          onConsumeFalcaoToken={handleConsumeFalcaoToken}
-          briefingCampoAtivo={character.briefing_campo_ativo ?? null}
-          onConsumeBriefingCampo={handleConsumeBriefingCampo}
-          entrelinhasAtivo={character.entrelinhas_ativo ?? null}
-          onConsumeEntrelinhas={handleConsumeEntrelinhas}
-          espetaculoMortalAtivo={character.espetaculo_mortal_ativo ?? null}
-          onConsumeEspetaculoMortal={handleConsumeEspetaculoMortal}
-          showdownStatus={getShowdownAvailability(character, talentsIniciais)}
-          onShowdownUsado={handleShowdownUsado}
         />
       )}
 

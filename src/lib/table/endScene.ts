@@ -26,11 +26,7 @@
 import {
   normalizeCharacter,
   resolvePendingRupture,
-  resetTalentUses,
   expireSceneTemporaryEffects,
-  resolveUltimoFolegoSceneEnd,
-  resetDroneSceneState,
-  resetRoboSceneState,
   type Character,
 } from "../character";
 import { listCharactersForNarratorCampaign, updateCharacter } from "../character/storage";
@@ -122,45 +118,14 @@ export async function resolveCampaignEndSceneForCharacters(params: {
       const result = resolvePendingRupture(character, { scene, nowIso });
       let nextCharacter: Character = result.character;
 
-      // Talentos com cadência "cena" (checkpoint pós-v0.63) renovam os usos aqui —
-      // mudança de estado além da Ruptura; persiste mesmo sem Ruptura resolvida.
-      const talentReset = resetTalentUses(nextCharacter, ["cena"]);
-      nextCharacter = talentReset.character;
       // Efeitos temporários com duração por cena (checkpoint pós-v0.71) expiram aqui.
       const sceneExpiry = expireSceneTemporaryEffects(nextCharacter, nowIso);
       nextCharacter = sceneExpiry.character;
-      // Berserker › Último Fôlego (checkpoint talentos, Fase 3) — consequência de fim de
-      // cena: se a prevenção estava ativa e o personagem ainda está de pé, cai a 0 PV
-      // (dispara colapso normalmente, mesmo padrão de qualquer outro PV chegando a 0).
-      const ultimoFolego = resolveUltimoFolegoSceneEnd(nextCharacter, nowIso);
-      nextCharacter = ultimoFolego.character;
-      // Droneiro › Script (checkpoint talentos, Fase 14) — reseta a "1ª ativação na
-      // cena" e o gatilho definido, que são escopados à cena que está encerrando.
-      const droneSceneReset = resetDroneSceneState(nextCharacter);
-      nextCharacter = droneSceneReset.character;
-      // Mecatrônico › Overclock (checkpoint talentos, Fase 15) — dura "a cena", some ao encerrar.
-      const roboSceneReset = resetRoboSceneState(nextCharacter);
-      nextCharacter = roboSceneReset.character;
-      const outroEstadoMudou =
-        talentReset.resetCount > 0 ||
-        sceneExpiry.expired.length > 0 ||
-        ultimoFolego.forcedToZero ||
-        droneSceneReset.resetCount > 0 ||
-        roboSceneReset.resetCount > 0;
+      // (Talentos, Último Fôlego, drones e robôs saíram com o motor de
+      // Talentos na migração v1.2; só os efeitos temporários expiram aqui.)
+      const outroEstadoMudou = sceneExpiry.expired.length > 0;
       if (outroEstadoMudou && !result.resolved) {
         await updateCharacter(record.id, nextCharacter);
-      }
-      if (ultimoFolego.forcedToZero) {
-        tableLogs.push({
-          type: "talent_triggered",
-          payload: {
-            characterId: record.id,
-            characterNome: character.nome,
-            message: `Último Fôlego: ${character.nome} ainda estava de pé ao fim da cena — caiu a 0 PV automaticamente (consequência do payload, cura não impede).`,
-            sourceTalentId: "berserker_ultimo_folego",
-            source: "campaign_end_scene",
-          },
-        });
       }
       // Log persistente por efeito temporário expirado na cena.
       for (const e of sceneExpiry.expired) {

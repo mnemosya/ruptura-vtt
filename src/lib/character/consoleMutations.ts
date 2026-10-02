@@ -10,8 +10,6 @@ import { applyAutoHealRemoval } from "./autoHeal";
 import { applyGmCondition } from "./gmActions";
 import { detectCollapseOnResourceChange, resolveCollapseAdditionalDamage } from "./collapse";
 import { spendReactionForDefense, type ReactionRules } from "./reactions";
-import { enforcePvGatedToggleDeactivation } from "./talentEngine";
-import type { TalentContent } from "./talents";
 import type {
   ActiveCondition,
   Character,
@@ -33,7 +31,6 @@ export interface ConsoleMutationContext {
   derived: DerivedStats;
   rules: CharacterRulesPayload | null;
   reactionRules: ReactionRules;
-  talents: TalentContent[];
 }
 
 export interface ConsoleMutationResult {
@@ -44,7 +41,6 @@ export interface ConsoleMutationResult {
     collapseEnded?: "pv" | "pe" | null;
     collapseAdvanceLogs?: string[];
     collapseAdvanceOutcome?: unknown;
-    pvGatedDeactivated?: { talentNome: string; nivelNome: string }[];
     usedReaction?: boolean;
     defenseWithoutReaction?: boolean;
     reactionPenalty?: number;
@@ -126,16 +122,9 @@ function applyResourceMutation(
     }
   }
 
-  const pvGated = enforcePvGatedToggleDeactivation(
-    next,
-    context.talents,
-    after.pv,
-    context.derived.pv_max,
-    mutation.nowIso,
-  );
   next = {
-    ...pvGated.character,
-    recursos_atuais: { ...pvGated.character.recursos_atuais, [mutation.resource]: value },
+    ...next,
+    recursos_atuais: { ...next.recursos_atuais, [mutation.resource]: value },
   };
 
   return {
@@ -146,7 +135,6 @@ function applyResourceMutation(
       collapseEnded: collapse.ended ? collapse.tipo : null,
       collapseAdvanceLogs: collapseAdvance?.logs ?? [],
       collapseAdvanceOutcome: collapseAdvance?.outcome,
-      pvGatedDeactivated: pvGated.deactivated,
     },
   };
 }

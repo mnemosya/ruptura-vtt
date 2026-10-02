@@ -368,7 +368,7 @@ Entregáveis:
 - [x] script explícito para apagar personagens e drafts incompatíveis: `scripts/dev/v12/corte_fase7.mjs` (só conta por padrão; `--testar` ensaia e desfaz; `--executar` exige `--snapshot=<ref>`). Remove também os tokens dos personagens v1 (decisão de 01/10/2026). Ensaio no remoto em 01/10/2026, desfeito: 121 personagens, 46 tokens e 2 rascunhos; v2 intactos;
 - [ ] remoção ou arquivamento dos documentos de conteúdo obsoletos;
 - [ ] substituição de `somatica` por `biotica` no conteúdo canônico;
-- [ ] remoção dos caminhos de criação, progressão e leitura v1; criação v1 encerrada em 01/10/2026 (assistente anterior removido; "+ Personagem"/PN agora criam v1.2 pendente). Falta a leitura v1 e o Modo Evolução v1 (PM e Talentos);
+- [ ] remoção dos caminhos de criação, progressão e leitura v1; criação v1 encerrada em 01/10/2026 (assistente anterior removido; "+ Personagem"/PN agora criam v1.2 pendente). Modo Evolução v1 (PM e aba Talentos) e motor de Talentos removidos em 01/10/2026. Falta a leitura v1;
 - [ ] seed mínimo de dados v1.2 para desenvolvimento;
 - [x] verificações pós-corte (do script, mais a mesa abrindo sem erro só com a Hilda);
 - [x] registro das contagens removidas e criadas (abaixo, 01/10/2026).
@@ -888,5 +888,12 @@ Equivalência das demais ações:
 - os 22 Talentos foram arquivados pelo seed (`status: archived` em `content/db_talentos_normalizado_v1_3.json`); os documentos continuam no banco;
 - o Compêndio perdeu a categoria Talentos;
 - a prévia de personagem (janela Personagens) trocou "Talentos" por "Ranking", e "Magias" passou a ler `magia.magias_aprendidas` (o campo v1 ficava sempre em 0 para v1.2);
-- `test:talents` continua exercitando o motor de Talentos, que ainda está no código, tratando o catálogo como publicado;
+- `test:talents` continuava exercitando o motor de Talentos (removido no mesmo dia, ver abaixo);
 - validado no navegador: Compêndio sem Talentos; prévia da Hilda com "D · Ranking".
+
+### 01/10/2026 — Motor de Talentos removido (Fase 7)
+
+- `src/lib/character/talents.ts` e `talentEngine.ts` apagados, junto de `test:talents` e `test-companion-models`;
+- ficha (dev e console): saíram Mirar, Estocar, Ritmo de Campo, Onda Solidária, Domínio Territorial, os blocos de Talento do Inventário, Rolagens e Ações e o botão "Novo dia (talentos)"; o descanso longo não reseta mais usos de Talento;
+- `/dev/table`: ataque e defesa resolvem só pela regra (sem Sentinela, Blindagem, Executar, Muralha, Contágio etc.);
+- validação: `tsc` limpo, 37 suítes `test:*` aprovadas, e2e igual à linha de base (mesmas falhas pré-existentes), contagens do banco inalteradas.

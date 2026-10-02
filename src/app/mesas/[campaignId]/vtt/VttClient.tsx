@@ -151,7 +151,7 @@ import {
   desserializarPersonagemArrastado,
   type PersonagemArrastado,
 } from "./_painel/personagensModelo";
-import type { CharacterRulesPayload, ReactionRules, TalentContent } from "../../../../lib/character";
+import type { CharacterRulesPayload, ReactionRules } from "../../../../lib/character";
 import "../../../_design/console.css";
 import "./vtt.css";
 

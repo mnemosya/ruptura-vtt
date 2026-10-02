@@ -4,7 +4,7 @@ import "server-only";
  * Carga dos catálogos do Console do Personagem — EM PARALELO.
  *
  * Extraído de `app/CharacterSheetView.tsx`, onde os onze catálogos
- * (condições, ações de combate, fluxo de combate, talentos, itens,
+ * (condições, ações de combate, fluxo de combate, itens,
  * magias, propriedades, runas, escalpos, modelos de companheiro) eram
  * carregados um `await` DEPOIS DO OUTRO. Cada um é uma ida
  * independente ao Supabase; em série, o tempo de abertura do Console é
@@ -37,20 +37,17 @@ import {
   listItemsEffective,
   listRunesEffective,
   listSpellsEffective,
-  listTalentsEffective,
 } from "../campaignContent";
 import {
   normalizeCombatActionContent,
   normalizeConditionContent,
   normalizeReactionRules,
-  normalizeTalentContent,
   normalizeItemContent,
   normalizeSpellContent,
   normalizeCompanionModel,
   type CombatActionContent,
   type ConditionContent,
   type ReactionRules,
-  type TalentContent,
   type ItemContent,
   type SpellContent,
   type CompanionModelSummary,
@@ -79,8 +76,6 @@ export interface DadosConsole {
   combatActionsError: string | null;
   reactionRules: ReactionRules;
 
-  talents: TalentContent[];
-  talentsError: string | null;
   items: ItemContent[];
   itemsError: string | null;
   spells: SpellContent[];
@@ -110,13 +105,12 @@ async function tolerante<T>(p: Promise<T>, padrao: string): Promise<{ dado: T | 
 
 export async function carregarDadosConsole(campaignId: string | null): Promise<DadosConsole> {
   // TUDO parte junto. `regras` é a única leitura cujo erro é fatal —
-  // as outras dez degradam isoladamente, como sempre degradaram.
+  // as outras nove degradam isoladamente, como sempre degradaram.
   const [
     regrasR,
     condicoesR,
     combatActionsR,
     combatFlowR,
-    talentsR,
     itemsR,
     spellsR,
     propertiesR,
@@ -128,7 +122,6 @@ export async function carregarDadosConsole(campaignId: string | null): Promise<D
     tolerante(listConditions(), "Não foi possível carregar o catálogo de condições."),
     tolerante(listCombatActions(), "Não foi possível carregar o catálogo de ações."),
     tolerante(getCombatFlow(), "Não foi possível carregar o fluxo de combate."),
-    tolerante(listTalentsEffective(campaignId), "Não foi possível carregar o catálogo de talentos."),
     tolerante(listItemsEffective(campaignId), "Não foi possível carregar o catálogo de itens."),
     tolerante(listSpellsEffective(campaignId), "Não foi possível carregar o catálogo de magias."),
     tolerante(listProperties(), "Não foi possível carregar o catálogo de propriedades."),
@@ -166,8 +159,6 @@ export async function carregarDadosConsole(campaignId: string | null): Promise<D
     // Fail-closed: sem `combat_flow`, defesa sem Reação fica indisponível.
     reactionRules: normalizeReactionRules(combatFlowR.dado?.payload ?? null),
 
-    talents: (talentsR.dado ?? []).map((doc) => normalizeTalentContent(doc.payload as Record<string, unknown>)),
-    talentsError: talentsR.erro,
     items: (itemsR.dado ?? []).map((doc) => normalizeItemContent(doc.payload as Record<string, unknown>)),
     itemsError: itemsR.erro,
     spells: (spellsR.dado ?? []).map((doc) => normalizeSpellContent(doc.payload as Record<string, unknown>)),

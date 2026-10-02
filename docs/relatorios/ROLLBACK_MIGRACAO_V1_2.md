@@ -26,6 +26,7 @@ Ordem do mais recente para o mais antigo. Cada linha diz o que reverter e o que 
 
 | Migration / passo | O que fez | Como reverter | Efeito colateral |
 |---|---|---|---|
+| Motor de Talentos removido (código) | `talents.ts`, `talentEngine.ts` e usos na ficha e em `/dev/table` | `git revert` do commit | Nenhum no banco |
 | Talentos arquivados (seed) | 22 Talentos com `status: archived` | Voltar `status` para `published` em `content/db_talentos_normalizado_v1_3.json` e rodar `npm run seed:content` | Nenhum (o Compêndio também precisaria da categoria de volta, no código) |
 | `20261001210000_ruptura_v12_recusa_personagem_v1` | CHECK `characters_payload_schema_v2`; remove `complete_character_creation`; trava na v2 | `alter table characters drop constraint characters_payload_schema_v2;` A RPC v1 tem a última definição em `0060_display_names_tipo_personagem_protection.sql`. A trava é inofensiva e pode ficar | Sem o CHECK, volta a ser possível gravar personagem v1 |
 | `20261001200000_ruptura_v12_bando_transferir_aretz` | RPC `transfer_crew_aretz` | `drop function transfer_crew_aretz(uuid, uuid, integer, boolean);` | Some a transferência na Ficha do Bando |

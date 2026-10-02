@@ -13,7 +13,6 @@ import {
   resolveSpellResistance,
   checkSpellVertenteLevel,
   getSpellAttackProfile,
-  applyRangeAreaMultiplierToText,
   type SpellContent,
   type LearnedSpell,
 } from "../../../../lib/character";
@@ -45,14 +44,10 @@ export function SpellsTab({
   onCastWithFusion,
   onRollDamage,
   onSetVertenteLevel,
-  spellRangeAreaMultiplier = 1,
-  canalizar = null,
 }: {
   spells: SpellContent[];
   catalogError: string | null;
   magiasAprendidas: LearnedSpell[];
-  /** Multiplicador de alcance/área de magias de ATAQUE de talento (Domínio Territorial). 1 = nenhum. */
-  spellRangeAreaMultiplier?: number;
   /** Nível investido por vertente (checkpoint pós-v0.69) — chave = slug da vertente, ausente = nível desconhecido (nunca 0 implícito). */
   niveisVertente: Record<string, number>;
   sheetMode: "jogo" | "evolucao";
@@ -61,17 +56,13 @@ export function SpellsTab({
   onCast: (slug: string) => void;
   /** Fusão (checkpoint pós-v0.66) — conjura `slug` fundida com `fusedSlug` (+1 Sobrecarga; ambas aprendidas). */
   onCastWithFusion: (slug: string, fusedSlug: string) => void;
-  onRollDamage: (slug: string, canalizarMana?: number) => void;
-  /** Canalizar Potencializar (Mago N2): disponível (adquirido + não usado nesta rodada) e Mana atual. null = talento ausente. */
-  canalizar?: { available: boolean; manaAtual: number } | null;
+  onRollDamage: (slug: string) => void;
   /** Define o nível investido numa vertente (checkpoint pós-v0.69) — só editável em Modo Evolução. */
   onSetVertenteLevel: (vertente: string, value: number) => void;
 }) {
   const [expandido, setExpandido] = useState<Record<string, boolean>>({});
   // fusaoSelecionada[slug da principal] = slug da segunda magia a fundir
   const [fusaoSelecionada, setFusaoSelecionada] = useState<Record<string, string>>({});
-  // Mana escolhida para Canalizar Potencializar por magia (checkpoint talentos).
-  const [canalizarMana, setCanalizarMana] = useState<Record<string, number>>({});
 
   const publicadas = spells.filter((s) => s.status === "published");
   const vertentesConhecidas = getKnownVertentes({ magias_aprendidas: magiasAprendidas }, publicadas);
@@ -173,30 +164,13 @@ export function SpellsTab({
                           </span>
                         )}
                       </div>
-                      {(spell.estatisticas.alcanceTexto || spell.estatisticas.areaTexto) && (() => {
-                        const mult = attackProfile.isAttack ? spellRangeAreaMultiplier : 1;
-                        const alcance = spell.estatisticas.alcanceTexto
-                          ? applyRangeAreaMultiplierToText(spell.estatisticas.alcanceTexto, mult)
-                          : null;
-                        const area = spell.estatisticas.areaTexto
-                          ? applyRangeAreaMultiplierToText(spell.estatisticas.areaTexto, mult)
-                          : null;
-                        const dominioAtivo = mult !== 1;
-                        const naoEscalado = dominioAtivo && ((alcance && !alcance.changed) || (area && !area.changed));
-                        return (
-                          <p data-testid={`magia-alcance-area-${spell.slug}`} style={{ fontSize: 11, opacity: 0.75, margin: "2px 0" }}>
-                            {alcance && <span>Alcance: {alcance.text}</span>}
-                            {alcance && area && " · "}
-                            {area && <span>Área: {area.text}</span>}
-                            {dominioAtivo && (alcance?.changed || area?.changed) && (
-                              <span style={{ color: "#5ec8ff" }}> · Domínio Territorial (+50% em ataque)</span>
-                            )}
-                            {naoEscalado && (
-                              <span style={{ color: "#e0a03c" }}> · Domínio Territorial: +50% não aplicado ao texto — confirme a distância manualmente</span>
-                            )}
-                          </p>
-                        );
-                      })()}
+                      {(spell.estatisticas.alcanceTexto || spell.estatisticas.areaTexto) && (
+                        <p data-testid={`magia-alcance-area-${spell.slug}`} style={{ fontSize: 11, opacity: 0.75, margin: "2px 0" }}>
+                          {spell.estatisticas.alcanceTexto && <span>Alcance: {spell.estatisticas.alcanceTexto}</span>}
+                          {spell.estatisticas.alcanceTexto && spell.estatisticas.areaTexto && " · "}
+                          {spell.estatisticas.areaTexto && <span>Área: {spell.estatisticas.areaTexto}</span>}
+                        </p>
+                      )}
                       {spell.descricao_curta && <p style={{ opacity: 0.7, margin: "4px 0" }}>{spell.descricao_curta}</p>}
                       {aberto && spell.descricao_longa && (
                         <p data-testid={`magia-descricao-longa-${spell.slug}`} style={{ opacity: 0.85, margin: "4px 0", whiteSpace: "pre-wrap" }}>
@@ -251,40 +225,15 @@ export function SpellsTab({
                             >
                               {attackProfile.isAttack ? "Conjurar (ataque mágico)" : "Conjurar"}
                             </button>
-                            {dano && (() => {
-                              const podeCanalizar = attackProfile.isAttack && canalizar?.available;
-                              const manaCanalizar = canalizarMana[spell.slug] ?? 0;
-                              return (
-                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                                  {podeCanalizar && (
-                                    <span data-testid={`magia-canalizar-${spell.slug}`} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: "#5ec8ff" }}>
-                                      Canalizar Potencializar (Mana):
-                                      <input
-                                        data-testid={`magia-canalizar-mana-${spell.slug}`}
-                                        type="number"
-                                        min={0}
-                                        max={canalizar?.manaAtual ?? 0}
-                                        value={manaCanalizar}
-                                        onChange={(e) => {
-                                          const v = Math.max(0, Math.min(canalizar?.manaAtual ?? 0, Math.trunc(Number(e.target.value) || 0)));
-                                          setCanalizarMana((prev) => ({ ...prev, [spell.slug]: v }));
-                                        }}
-                                        style={{ ...input, width: 48 }}
-                                      />
-                                      {manaCanalizar > 0 && <span>= +{manaCanalizar} dano</span>}
-                                    </span>
-                                  )}
-                                  <button
-                                    data-testid={`magia-rolar-dano-${spell.slug}`}
-                                    onClick={() => onRollDamage(spell.slug, podeCanalizar ? manaCanalizar : 0)}
-                                    style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px" }}
-                                  >
-                                    {dano.dado ? `Rolar dano (${dano.dado})` : `Dano fixo (${dano.valor})`}
-                                    {podeCanalizar && manaCanalizar > 0 ? ` +${manaCanalizar}` : ""}
-                                  </button>
-                                </span>
-                              );
-                            })()}
+                            {dano && (
+                              <button
+                                data-testid={`magia-rolar-dano-${spell.slug}`}
+                                onClick={() => onRollDamage(spell.slug)}
+                                style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px" }}
+                              >
+                                {dano.dado ? `Rolar dano (${dano.dado})` : `Dano fixo (${dano.valor})`}
+                              </button>
+                            )}
                             {(() => {
                               // Fusão (checkpoint pós-v0.66) — só entre magias APRENDIDAS; custa sempre 1 Sobrecarga.
                               const outrasAprendidas = publicadas.filter(

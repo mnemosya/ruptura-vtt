@@ -66,10 +66,6 @@ export function ActionsTab({
   selectedAttackWeaponId,
   onSelectAttackWeapon,
   attackPreview,
-  estocarAvailable = false,
-  estocarUsedThisCombat = false,
-  estocarAtivo = false,
-  onToggleEstocar,
 }: {
   actions: ActionConsoleItem[];
   paAtual: number;
@@ -89,11 +85,6 @@ export function ActionsTab({
   onSelectAttackWeapon: (instanceId: string | null) => void;
   /** Perícia/atributo/dano resolvidos da arma selecionada — só exibição, nunca aplica dano. */
   attackPreview: AttackPreview | null;
-  /** Espadachim › Estocar (checkpoint talentos, Fase 4) — talento adquirido e ainda não usado neste combate. */
-  estocarAvailable?: boolean;
-  estocarUsedThisCombat?: boolean;
-  estocarAtivo?: boolean;
-  onToggleEstocar?: (value: boolean) => void;
 }) {
   const [categoria, setCategoria] = useState<Categoria>("todos");
 
@@ -166,10 +157,6 @@ export function ActionsTab({
             selectedAttackWeaponId={selectedAttackWeaponId}
             onSelectAttackWeapon={onSelectAttackWeapon}
             attackPreview={temEfeitoAtaque(action) ? attackPreview : null}
-            estocarAvailable={temEfeitoAtaque(action) && estocarAvailable}
-            estocarUsedThisCombat={estocarUsedThisCombat}
-            estocarAtivo={estocarAtivo}
-            onToggleEstocar={onToggleEstocar}
           />
         ))}
       </div>
@@ -199,10 +186,6 @@ function ActionCard({
   selectedAttackWeaponId,
   onSelectAttackWeapon,
   attackPreview,
-  estocarAvailable = false,
-  estocarUsedThisCombat = false,
-  estocarAtivo = false,
-  onToggleEstocar,
 }: {
   action: ActionConsoleItem;
   executing: boolean;
@@ -212,10 +195,6 @@ function ActionCard({
   selectedAttackWeaponId: string | null;
   onSelectAttackWeapon: (instanceId: string | null) => void;
   attackPreview: AttackPreview | null;
-  estocarAvailable?: boolean;
-  estocarUsedThisCombat?: boolean;
-  estocarAtivo?: boolean;
-  onToggleEstocar?: (value: boolean) => void;
 }) {
   const podeRolar = action.rollSkillId != null || (attackWeaponOptions != null && attackPreview?.skill != null);
   const executeEnabled = action.enabled && !executing;
@@ -288,19 +267,6 @@ function ActionCard({
             ))}
           </select>
         </div>
-      )}
-      {estocarAvailable && (
-        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
-          <input
-            data-testid={`acao-estocar-${action.slug}`}
-            type="checkbox"
-            checked={estocarAtivo}
-            disabled={estocarUsedThisCombat}
-            onChange={(e) => onToggleEstocar?.(e.target.checked)}
-          />
-          Usar Estocar: -1 PA neste ataque (requer arma corpo a corpo com lâmina, 1/combate)
-          {estocarUsedThisCombat && <span style={{ color: "#888" }}> — já usado neste combate</span>}
-        </label>
       )}
       {attackPreview && (
         <p data-testid={`acao-ataque-resumo-${action.slug}`} style={{ fontSize: 11, opacity: 0.7, margin: 0 }}>

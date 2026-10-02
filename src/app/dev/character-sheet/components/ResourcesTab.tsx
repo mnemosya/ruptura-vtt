@@ -54,9 +54,7 @@ export function ResourcesTab({
   atributos,
   onApplyShortRest,
   onApplyLongRest,
-  onMarkNewDayTalents,
   sobrecargaUsadaDia,
-  overloadMaxOverride = null,
   rupturaEspecialAscensao = null,
   rupturaPendente,
   overloadWillRollPending,
@@ -92,12 +90,8 @@ export function ResourcesTab({
   atributos: CharacterAttributes;
   onApplyShortRest: () => void;
   onApplyLongRest: () => void;
-  /** Reset manual de contadores de talentos cadência "dia" — sem aplicar descanso longo (checkpoint talentos). */
-  onMarkNewDayTalents: () => void;
   /** Checkpoint v0.37 — Sobrecarga/Ruptura pendente. */
   sobrecargaUsadaDia: number;
-  /** Limite diário de Surtos elevado por talento (Mago › Ascensão → 5). null = usa o limite canônico. */
-  overloadMaxOverride?: number | null;
   /** Ruptura especial de Ascensão (Mago N3) — exibida à parte, não reduz Integridade. null = nenhuma. */
   rupturaEspecialAscensao?: Character["ruptura_especial_ascensao"] | null;
   rupturaPendente: boolean;
@@ -119,9 +113,7 @@ export function ResourcesTab({
   onResolveRuptureChoice: (choiceId: string, marca: string, traco: string) => void;
 }) {
   const [tipoSurto, setTipoSurto] = useState<string>(OVERLOAD_SURGE_TYPES[0]);
-  // Limite efetivo de Surtos: canônico, ou elevado por talento (Ascensão → 5).
-  const overloadMaxCanonico = getOverloadMaxPerDay(regras?.sobrecarga);
-  const overloadMax = overloadMaxOverride != null && overloadMaxOverride > overloadMaxCanonico ? overloadMaxOverride : overloadMaxCanonico;
+  const overloadMax = getOverloadMaxPerDay(regras?.sobrecarga);
   const pvAtual = recursosAtuais?.pv ?? 0;
   const peAtual = recursosAtuais?.pe ?? 0;
   const manaAtual = recursosAtuais?.mana ?? 0;
@@ -215,17 +207,6 @@ export function ResourcesTab({
             </p>
             <button data-testid="descanso-longo-button" onClick={onApplyLongRest} style={buttonStyle}>
               Aplicar descanso longo
-            </button>
-          </div>
-          <div style={{ background: "#15161b", border: "1px solid #2a2b33", borderRadius: 8, padding: 12, flex: "1 1 220px" }}>
-            <p style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>Novo dia (só talentos)</p>
-            <p style={{ fontSize: 11, opacity: 0.6, marginBottom: 8 }}>
-              Reseta contadores de talentos com cadência "1/dia" (ex.: Toque de Midas) SEM aplicar
-              descanso longo — para quando o narrador declara um novo dia narrativo sem um descanso
-              completo de 8h. Não mexe em PV/PE/Mana/Sobrecarga.
-            </p>
-            <button data-testid="novo-dia-talentos-button" onClick={onMarkNewDayTalents} style={buttonStyle}>
-              Marcar novo dia (talentos)
             </button>
           </div>
         </div>
