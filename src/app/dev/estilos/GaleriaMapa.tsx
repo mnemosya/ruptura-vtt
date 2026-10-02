@@ -244,7 +244,7 @@ const VALORES_TOKEN = {
 
 const VALORES_EDICAO = {
   ...VALORES_TOKEN,
-  nome: "Mara Venn", sigla: "MV", lado: "pj" as const, vertente: "energetico" as const,
+  nome: "Mara Venn", sigla: "MV", lado: "pj" as const, vertente: "energetica" as const,
   tamanho: "grande" as const, orientacao: 2, direcao: 0, q: 4, r: 3,
   characterId: "p1", pvAtual: 14, pvMax: 20,
 };

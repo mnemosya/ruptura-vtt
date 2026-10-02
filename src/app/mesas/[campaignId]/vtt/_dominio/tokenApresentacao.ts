@@ -24,7 +24,7 @@ import type { CondicaoSlug } from "../_dados/cenaDemo";
 
 export type LadoToken = "pj" | "pn" | "neutro";
 export type VertenteToken =
-  | "somatico" | "cognitivo" | "material" | "energetico" | "cinetica" | "sinaptica" | "nenhuma";
+  | "biotica" | "cognitiva" | "material" | "energetica" | "cinetica" | "sinaptica" | "nenhuma";
 
 export interface TokenApresentacao {
   /** `vtt_tokens.id` — identidade canônica. Nunca casado por sigla/nome. */
@@ -78,8 +78,22 @@ export interface TokenApresentacao {
 }
 
 const VERTENTES_VALIDAS: readonly VertenteToken[] = [
-  "somatico", "cognitivo", "material", "energetico", "cinetica", "sinaptica", "nenhuma",
+  "biotica", "cognitiva", "material", "energetica", "cinetica", "sinaptica", "nenhuma",
 ];
+
+/**
+ * Nomes antigos de Vertente que ainda podem estar gravados em
+ * `vtt_tokens.vertente`. "Somática" não existe mais (é Biótica), e
+ * Cognitiva/Energética concordam com "a Vertente". A migration
+ * `20261002120000_vtt_token_vertentes_v12.sql` regrava o banco; isto
+ * cobre o intervalo até ela ser aplicada, para nenhum token perder a cor.
+ */
+const VERTENTES_LEGADAS: Readonly<Record<string, VertenteToken>> = {
+  somatico: "biotica",
+  somatica: "biotica",
+  cognitivo: "cognitiva",
+  energetico: "energetica",
+};
 const CONDICOES_VALIDAS: readonly CondicaoSlug[] = [
   "atordoado", "caido", "cego", "surdo", "lento", "sangrando", "queimando",
   "envenenado", "saturado", "insaturado", "imobilizado", "agarrado",
@@ -87,7 +101,8 @@ const CONDICOES_VALIDAS: readonly CondicaoSlug[] = [
 ];
 
 function vertenteValida(v: string): VertenteToken {
-  return (VERTENTES_VALIDAS as readonly string[]).includes(v) ? (v as VertenteToken) : "nenhuma";
+  if ((VERTENTES_VALIDAS as readonly string[]).includes(v)) return v as VertenteToken;
+  return VERTENTES_LEGADAS[v] ?? "nenhuma";
 }
 
 /** Filtra condições pra só as que a UI sabe desenhar — o banco já valida o slug na escrita (migration 0073), isto é só a ponte de tipo. */

@@ -165,10 +165,10 @@ export interface EstadoVisualToken {
    inteiro, e uma vertente vestida com ela não se lia como vertente,
    se lia como "selecionado". */
 const COR_VERTENTE: Record<TokenApresentacao["vertente"], string> = {
-  somatico: "#2f9e56",
-  cognitivo: "#8b5cf6",
+  biotica: "#2f9e56",
+  cognitiva: "#8b5cf6",
   material: "#f5a200",
-  energetico: "#f07a1f",
+  energetica: "#f07a1f",
   cinetica: "#e0455f",
   sinaptica: "#35c7d8",
   nenhuma: "#6b7f8c",

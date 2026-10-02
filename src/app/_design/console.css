@@ -2783,12 +2783,15 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    VTT — o Console também roda em /ficha e no harness. Sem esta cópia a
    variável vem vazia, e `color-mix()` com variável vazia é declaração
    inválida: apagaria o fundo do ladrilho inteiro, não só a cor.
-   Valores idênticos aos de vtt.css. O default é o cinza de "nenhuma". */
+   Valores idênticos aos de vtt.css. O default é o cinza de "nenhuma".
+   Os nomes antigos (somatica, cognitivo, energetico) ficam só porque
+   magias publicadas ainda os usam (MagiasPanel). Saem quando o
+   capítulo de magias for normalizado. */
 .rc-window-wrap { --rv-vertente-cor: #6b7f8c; }
-.rc-window-wrap [data-vertente="somatico"], .rc-window-wrap [data-vertente="somatica"] { --rv-vertente-cor: #2f9e56; }
-.rc-window-wrap [data-vertente="cognitivo"], .rc-window-wrap [data-vertente="cognitiva"] { --rv-vertente-cor: #8b5cf6; }
+.rc-window-wrap [data-vertente="biotica"], .rc-window-wrap [data-vertente="somatica"] { --rv-vertente-cor: #2f9e56; }
+.rc-window-wrap [data-vertente="cognitiva"], .rc-window-wrap [data-vertente="cognitivo"] { --rv-vertente-cor: #8b5cf6; }
 .rc-window-wrap [data-vertente="material"] { --rv-vertente-cor: #f5a200; }
-.rc-window-wrap [data-vertente="energetico"], .rc-window-wrap [data-vertente="energetica"] { --rv-vertente-cor: #f07a1f; }
+.rc-window-wrap [data-vertente="energetica"], .rc-window-wrap [data-vertente="energetico"] { --rv-vertente-cor: #f07a1f; }
 .rc-window-wrap [data-vertente="cinetica"] { --rv-vertente-cor: #e0455f; }
 .rc-window-wrap [data-vertente="sinaptica"] { --rv-vertente-cor: #35c7d8; }
 .rc-window-wrap [data-vertente="nenhuma"] { --rv-vertente-cor: #6b7f8c; }
