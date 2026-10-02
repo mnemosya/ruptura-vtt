@@ -234,8 +234,11 @@ export function GlobalShell({
   userEmail,
   displayName,
   aparecerOfflineInicial = false,
+  contagens = null,
   children,
 }: {
+  /** Números ao lado de Campanhas e Personagens no menu. Null = não mostra. */
+  contagens?: { campanhas: number; personagens: number } | null;
   userEmail: string;
   displayName: string | null;
   /** "Aparecer offline" lido no servidor — é preferência de CONTA, não deste navegador. */
@@ -432,6 +435,9 @@ export function GlobalShell({
                         <span className="ag-nav-n" aria-hidden="true">0{i + 1}</span>
                         <span className="ra2-nav-icon">{item.icon}</span>
                         <span className="ra2-nav-label">{item.label}</span>
+                        {contagens && (item.key === "campaigns" || item.key === "characters") && (
+                          <span className="ag-nav-cont">{item.key === "campaigns" ? contagens.campanhas : contagens.personagens}</span>
+                        )}
                         {/* Destino pendente — ver `NavPending.tsx` e
                             `.ra2-nav-item:has(.mo-linkflag)` em app.css. */}
                         <LinkPending />

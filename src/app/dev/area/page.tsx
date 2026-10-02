@@ -38,7 +38,7 @@ const CAMPANHAS: CampaignCardData[] = [
 export default function AreaDevPage() {
   assertDevRouteAllowed();
   return (
-    <GlobalShell userEmail="dev@ruptura.local" displayName="Dev">
+    <GlobalShell userEmail="dev@ruptura.local" displayName="Dev" contagens={{ campanhas: 3, personagens: 7 }}>
       <MesasDashboardClient
         campanhasIniciais={CAMPANHAS}
         errorInicial={null}
