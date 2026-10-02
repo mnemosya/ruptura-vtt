@@ -38,7 +38,8 @@
  * do irmão que já está certo.
  */
 
-.rm-root {
+.rm-root,
+.fj-root {
   /* ── Espaçamento ────────────────────────────────────────────────
      Os 8 degraus que `console.css` de fato usa (gap/padding medidos):
      4 e 6 pra dentro de pill/badge, 8-12 entre campos, 16 pra dentro

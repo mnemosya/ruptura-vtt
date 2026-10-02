@@ -1,8 +1,8 @@
 # Plano — Forja de Refratário (criação de personagem)
 
-**Status:** planejado, nada aplicado  
+**Status:** em implementação (Fases 0 e 1 entregues)  
 **Criado em:** 02/10/2026  
-**Versão deste documento:** 0.1  
+**Versão deste documento:** 0.2  
 **Origem:** audit do protótipo `High-Fidelity Character Creator Exploration/` (Figma Make, commit `6449e71`)  
 **Prancha de cores:** https://claude.ai/artifact/QPtzERYKCXwA5AoBQNGNFs
 
@@ -155,7 +155,18 @@ Aplicar 3.6.
 
 Com a Forja pronta, levantar o que vale para o VTT inteiro (Oxanium nos headings, efeitos de texto, chanfros, `edge` em gradiente, `glass`, hexgrid, `boot`) e propor a adoção nas outras telas.
 
-## 5. Em espera
+## 5. Andamento
+
+- **Fase 0 — entregue.** Token, mapa, Gerenciador de Token, ficha e CSS usam `biotica`/`cognitiva`/`energetica`. A leitura do token converte os nomes antigos. **Pendente:** aplicar `supabase/migrations/20261002120000_vtt_token_vertentes_v12.sql` **depois** do deploy desse código (o código anterior não reconhece os nomes novos).
+- **Fase 1 — entregue em `/dev/forja`.** A Forja vive em `src/app/mesas/[campaignId]/vtt/_forja/` com CSS próprio (`forja.css`, sem Tailwind) e ainda não substitui o assistente da mesa. Decisões tomadas na conversão:
+  - a paleta das Vertentes virou fonte única (`src/app/_design/coresVertente.ts`), usada pelo mapa e pela Forja;
+  - as durações longas do protótipo (entrada `boot`, varreduras) ficaram, com as curvas do app; `prefers-reduced-motion` desliga o que é contínuo;
+  - os breakpoints são de contêiner, para a Forja funcionar dentro da mesa;
+  - as imagens usadas viraram WebP em `public/forja/` (de ~45 MB para ~1,9 MB), porque o build não pode depender dos PNGs do protótipo, que estão em Git LFS. As URLs do Unsplash continuam em espera;
+  - Antecedentes, Qualidades e Complicações já vêm do catálogo canônico (`CatalogosCriacaoV12`). Dossiês de classe e grimórios ainda vêm dos JSON do protótipo, importados direto da pasta dele (sai na Fase 3);
+  - de quebra: rótulos de 8–9px subiram para 10px, a regra de "concluído" ficou numa função só (`passosCompletos`), a prévia do avatar é liberada da memória e a ordem dos hooks em Traços foi corrigida.
+
+## 6. Em espera
 
 - **Equipamento:** passo de compras com Ⱥ inicial.
 - **Magias:** escolha na criação e o back correspondente, depois do capítulo de magias.
