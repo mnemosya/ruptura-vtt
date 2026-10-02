@@ -298,10 +298,10 @@ export function VitrineBando() {
 /* ── compêndio ───────────────────────────────────────────────────── */
 
 const COMPENDIO = [
-  { categoria: "magias", rotulo: "Magias", total: 42, daMesa: 3 },
-  { categoria: "itens", rotulo: "Itens", total: 118, daMesa: 7 },
-  { categoria: "condicoes", rotulo: "Condições", total: 21, daMesa: 0 },
-  { categoria: "talentos", rotulo: "Talentos", total: 64, daMesa: 2 },
+  { pageId: "g1", numero: 1, titulo: "BRAXUS", secao: "SOB A SOMBRA DO IMPÉRIO CENTRAL", ordem: 1, verbetes: [] },
+  { pageId: "g4", numero: 4, titulo: "VOSEK", secao: "SOB A SOMBRA DO IMPÉRIO CENTRAL", ordem: 2, verbetes: [] },
+  { pageId: "g21", numero: 21, titulo: "CENAS DE COMBATE", secao: "O JOGO EM MOVIMENTO", ordem: 3, verbetes: [{ titulo: "ATACAR", ancora: "atacar" }] },
+  { pageId: "g22", numero: 22, titulo: "CONDIÇÕES", secao: "O JOGO EM MOVIMENTO", ordem: 4, verbetes: [{ titulo: "LENTO", ancora: "lento" }, { titulo: "SANGRANDO", ancora: "sangrando" }] },
 ];
 
 export function VitrineCompendio() {
@@ -310,7 +310,8 @@ export function VitrineCompendio() {
       <CompendioTab
         campaignId="galeria"
         visivel
-        fixtureVisual={COMPENDIO as Parameters<typeof CompendioTab>[0]["fixtureVisual"]}
+        onAbrir={() => {}}
+        fixtureVisual={COMPENDIO}
       />
     </ColunaDoPainel>
   );

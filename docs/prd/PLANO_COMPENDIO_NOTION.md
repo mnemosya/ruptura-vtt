@@ -1,6 +1,6 @@
 # Plano — Compêndio sincronizado com o Notion
 
-**Status:** em implementação (Fases 0 e 1 entregues)
+**Status:** em implementação (Fases 0 a 2 entregues)
 **Criado em:** 02/10/2026
 **Versão deste documento:** 0.1
 
@@ -150,3 +150,10 @@ O índice de termos é montado pela própria sincronização, a partir dos títu
 - Leitura completa: ≈6 min e 863 requisições. Rodada sem mudanças: 91 requisições (só a data de cada página).
 - Tipos adicionados depois do ensaio: `heading_4` (as condições do cap. 22 são títulos de 4º nível recolhíveis) e `link_to_page`.
 - Limite do bucket subiu de 10 para 50 MB: uma imagem do capítulo 23 passa de 10 MB. Reduzir o peso das imagens fica para a Fase 4.
+
+### 02/10/2026 — Fase 2
+
+- Aba Compêndio do painel trocada: índice do livro por seção, busca em capítulos e verbetes, "Abrir o livro". O diretório antigo (magias, itens, runas, condições, companheiros) e "Enviar ao Chat" saíram (`compendioModelo.ts`, `acoes/compendioPainel.ts`); cartões antigos `compendio_compartilhado` no chat continuam legíveis.
+- O livro abre num modal com a moldura do Códex da Forja (`_compendio/LivroCodex.tsx`): índice à esquerda (subtítulos do capítulo aberto), verbetes recolhíveis, etiquetas de termo com link para o verbete (`Lento` → cap. 22), links entre capítulos, Anterior/Próximo, Voltar, busca no texto completo (carregado só na primeira busca).
+- Esc: o painel tinha o próprio Esc em captura e engolia a tecla; o painel agora ignora Esc com um modal aberto e o livro escuta Esc em captura.
+- Verificação: `scripts/dev/check-compendio.ts <campaignId>` (9 critérios, todos aprovados), `test-vtt-painel` com os testes K do modelo novo.
