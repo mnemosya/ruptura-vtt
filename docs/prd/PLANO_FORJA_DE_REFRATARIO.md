@@ -1,6 +1,6 @@
 # Plano — Forja de Refratário (criação de personagem)
 
-**Status:** em implementação (Fases 0 a 4 entregues)  
+**Status:** em implementação (Fases 0 a 5 entregues)  
 **Criado em:** 02/10/2026  
 **Versão deste documento:** 0.4  
 **Origem:** audit do protótipo `High-Fidelity Character Creator Exploration/` (Figma Make, commit `6449e71`)  
@@ -183,6 +183,8 @@ Com a Forja pronta, levantar o que vale para o VTT inteiro (Oxanium nos headings
   - Sem região de campanha definida, a Forja pergunta "A campanha começa em" para dar o segundo idioma.
   - Correção paralela: perfis de Perícias iguais em todas as Classes (Abrangente 8/5/1, Padrão 5/4/2, Especializado 4/2/3), no repositório e no banco (`20261002130000_v12_perfis_pericias_corrigidos.sql`, aplicada).
   - **Em aberto:** páginas das Classes no Notion ainda com os números antigos; 1 personagem Âncora criado com o Especializado antigo.
+
+- **Fase 5 — entregue.** Atalhos Q (voltar), E (confirmar; no último passo, Selar) e U (avatar), ignorados enquanto se digita ou com uma janela aberta. Abaixo de 1280px o menu vira uma faixa de passos no topo (só o atual mostra o nome; os outros têm o nome no `title`). Os losangos de estado são lidos como "concluído/pendente" pelo leitor de tela. O resto de 3.6 já vinha das fases anteriores.
 
 ## 6. Em espera
 

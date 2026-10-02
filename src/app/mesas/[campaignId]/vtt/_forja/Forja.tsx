@@ -280,11 +280,12 @@ function MenuLateral({ step, setStep, completos }: { step: number; setStep: (n: 
           return (
             <div key={s.key}>
               {hdr && <div className="fj-menu__grupo"><Mono pequeno tom="cy">{s.group}</Mono><span className="fj-menu__grupo-fio" /></div>}
-              <button type="button" onClick={() => setStep(i)} aria-current={on ? "step" : undefined} className={`fj-ch-tab fj-menu__passo ${on ? "fj-menu__passo--atual" : ""}`}>
+              <button type="button" title={s.label} onClick={() => setStep(i)} aria-current={on ? "step" : undefined} className={`fj-ch-tab fj-menu__passo ${on ? "fj-menu__passo--atual" : ""}`}>
                 {on && <span className="fj-menu__sublinhado" />}
                 <span className="fj-menu__n">0{i + 1}</span>
                 <span className="fj-menu__rotulo">{s.label}</span>
-                <span className={`fj-menu__estado ${completos[i] ? "fj-menu__estado--feito" : ""}`} aria-label={completos[i] ? "concluído" : "pendente"} />
+                <span className="fj-sr">{completos[i] ? ", concluído" : ", pendente"}</span>
+                <span className={`fj-menu__estado ${completos[i] ? "fj-menu__estado--feito" : ""}`} aria-hidden="true" />
               </button>
             </div>
           );
@@ -339,6 +340,25 @@ function Doca({ step, setStep, pendentes, podeSelar, enviando, erro, rotuloSelar
   rotuloSelar: string;
   onSelar: () => void;
 }) {
+  const podeSelarAgora = podeSelar && pendentes === 0 && !enviando;
+  // Atalhos da doca: Q volta, E confirma (ou sela, no último passo), U abre o avatar.
+  // Não disparam enquanto se digita nem com modificadores.
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.defaultPrevented) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      if (document.querySelector(".rc-recorte-janela, [aria-modal='true']")) return;
+      const tecla = e.key.toLowerCase();
+      if (tecla === "q" && step > 0) setStep(step - 1);
+      else if (tecla === "e") { if (step < PASSOS.length - 1) setStep(step + 1); else if (podeSelarAgora) onSelar(); }
+      else if (tecla === "u") document.getElementById("fj-avatar-arquivo")?.click();
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [step, setStep, podeSelarAgora, onSelar]);
   const motivo = pendentes > 0 ? "Resolva as pendências da Revisão." : !podeSelar ? "O Selar cria o personagem dentro da mesa." : undefined;
   return (
     <footer className="fj-doca">
@@ -352,7 +372,7 @@ function Doca({ step, setStep, pendentes, podeSelar, enviando, erro, rotuloSelar
       ) : (
         <div className="fj-doca__selo">
           {erro ? <span className="fj-doca__erro" role="alert">{erro}</span> : pendentes > 0 ? <Mono tom="am">{pendentes} pendência{pendentes > 1 ? "s" : ""}</Mono> : null}
-          <button type="button" disabled={!podeSelar || pendentes > 0 || enviando} aria-busy={enviando} onClick={onSelar} title={motivo} className="fj-ch fj-doca__selar">
+          <button type="button" disabled={!podeSelarAgora} aria-busy={enviando} onClick={onSelar} title={motivo} className="fj-ch fj-doca__selar">
             {enviando ? "Selando…" : rotuloSelar}
           </button>
         </div>
@@ -456,7 +476,7 @@ function centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente }:
         <label className="fj-conceito__avatar">
           <Holograma d={d} avatar={avatar.url} progress={c.sincronia} nomeAntecedente={nomeAntecedente} />
           <span className="fj-conceito__carregar"><Key k="U" /> {avatar.preparada ? "Trocar avatar" : "Carregar avatar"}</span>
-          <input type="file" accept="image/png,image/jpeg,image/webp" className="fj-sr" onChange={(e) => { const f = e.target.files?.[0]; if (f) avatar.escolher(f); e.target.value = ""; }} />
+          <input id="fj-avatar-arquivo" type="file" accept="image/png,image/jpeg,image/webp" className="fj-sr" onChange={(e) => { const f = e.target.files?.[0]; if (f) avatar.escolher(f); e.target.value = ""; }} />
         </label>
         <div className="fj-conceito__rodape">
           <Mono>Avatar enviado pelo jogador · projetado como registro holográfico</Mono>
