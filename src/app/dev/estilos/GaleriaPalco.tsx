@@ -34,7 +34,7 @@ const SEM_EFEITO = () => {};
 
 function token(id: string, nome: string, sigla: string, lado: "pj" | "pn", q: number, r: number, extra: Partial<TokenApresentacao> = {}): TokenApresentacao {
   return {
-    id, nome, sigla, lado, vertente: "energetico", tamanho: "medio",
+    id, nome, sigla, lado, vertente: "energetica", tamanho: "medio",
     pos: { q, r }, offset: { q: 0, r: 0 }, orientacao: 0, direcao: 0,
     pegadaPersonalizada: null, retrato: null, pv: 20, pvMax: 20, pe: null, peMax: null, mana: null, manaMax: null,
     condicoes: [], visivel: true, bloqueado: false, characterId: null,
@@ -49,8 +49,8 @@ const CENA: CenaMapa = {
   altura: 10,
   tokens: [
     token("t1", "Mara Venn", "MV", "pj", 4, 3),
-    token("t2", "Corvo", "CV", "pj", 5, 4, { vertente: "somatico", pv: 5, pvMax: 26, condicoes: ["sangrando"] }),
-    token("t3", "Siv", "SV", "pj", 3, 5, { vertente: "cognitivo", tamanho: "grande", orientacao: 2 }),
+    token("t2", "Corvo", "CV", "pj", 5, 4, { vertente: "biotica", pv: 5, pvMax: 26, condicoes: ["sangrando"] }),
+    token("t3", "Siv", "SV", "pj", 3, 5, { vertente: "cognitiva", tamanho: "grande", orientacao: 2 }),
     token("t4", "Sentinela da Doca", "#2", "pn", 9, 4, { vertente: "nenhuma" }),
     token("t5", "Contrabandista", "#3", "pn", 10, 6, { vertente: "material", visivel: false }),
   ],
