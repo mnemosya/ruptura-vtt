@@ -39,7 +39,6 @@ export function GeneralTab({
   onModeChange,
   onNomeChange,
   onSave,
-  onNew,
   mesas,
   selectedCampaignId,
   onSelectCampaign,
@@ -59,7 +58,6 @@ export function GeneralTab({
   onModeChange: (mode: SheetMode) => void;
   onNomeChange: (value: string) => void;
   onSave: () => void;
-  onNew: () => void;
   mesas: Campaign[];
   selectedCampaignId: string | null;
   onSelectCampaign: (id: string | null) => void;
@@ -154,11 +152,6 @@ export function GeneralTab({
             Agora tudo grava sozinho; a evolução, que é permanente,
             grava ao sair do modo pelo ✓. O estado de gravação continua
             visível abaixo — some o passo manual, não o retorno. */}
-        {mode === "dev" && (
-          <button onClick={onNew} style={buttonStyle}>
-            Novo personagem
-          </button>
-        )}
         {saveState === "saving" && <span style={{ fontSize: 13, opacity: 0.75 }}>Salvando…</span>}
         {saveState === "saved" && <span style={{ fontSize: 13, color: "#4caf50" }}>✓ Salvo</span>}
         {saveState === "error" && <span style={{ fontSize: 13, color: "#ff6b6b" }}>Erro: {errorMessage}</span>}

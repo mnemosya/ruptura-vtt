@@ -107,8 +107,8 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
    * definidos na criação (o banco confere os limites do Ranking).
    */
   const rankingV12 = (() => {
-    const c = api.character as unknown as { schema_version?: number; progressao?: { ranking?: string } };
-    return c.schema_version === 2 && typeof c.progressao?.ranking === "string" ? c.progressao.ranking : null;
+    const c = api.character as unknown as { progressao?: { ranking?: string } };
+    return typeof c.progressao?.ranking === "string" ? c.progressao.ranking : null;
   })();
   /** Criado só com o nome ("+ Personagem"): ainda falta passar pelo assistente v1.2. */
   const criacaoPendente = (api.character as unknown as { criacao_pendente?: boolean }).criacao_pendente === true;

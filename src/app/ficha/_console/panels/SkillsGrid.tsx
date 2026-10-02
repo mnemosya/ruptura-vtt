@@ -127,8 +127,8 @@ export function SkillsGrid({ api, onRolar }: { api: ConsoleApi; onRolar: (perici
 
   const evolucao = api.modo === "evolucao";
   // v1.2: a correção não passa do limite de Perícia do Ranking atual.
-  const v12 = api.character as { schema_version?: number; progressao?: { ranking?: RankingV12 } };
-  const limiteV12 = v12.schema_version === 2 && v12.progressao?.ranking ? LIMITE_PERICIA_POR_RANKING_V12[v12.progressao.ranking] : undefined;
+  const v12 = api.character as { progressao?: { ranking?: RankingV12 } };
+  const limiteV12 = v12.progressao?.ranking ? LIMITE_PERICIA_POR_RANKING_V12[v12.progressao.ranking] : undefined;
   const [dica, setDica] = useState<DicaPericia | null>(null);
   const atrasoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelarAtraso = () => {

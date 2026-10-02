@@ -125,7 +125,6 @@ import {
   removeInstalledEscalpo,
 } from "../../../lib/character";
 import {
-  createCharacter,
   updateCharacter,
   getCharacter,
   listLegacyCharactersDev,
@@ -730,6 +729,12 @@ export default function CharacterSheetClient({
     // nunca são null aqui em modo product (a UI de edição só aparece com
     // productSessionState "valid", que exige o personagem já carregado).
     if (mode === "product" && (!characterId || !selectedCampaignId)) return;
+    // Personagem novo só nasce v1.2, pelo "+ Personagem" da mesa — a ficha só grava um existente.
+    if (!characterId) {
+      setSaveState("error");
+      setErrorMessage("Carregue um personagem antes de salvar. Personagens novos são criados pelo \"+ Personagem\" da mesa.");
+      return;
+    }
     setSaveState("saving");
     setErrorMessage(null);
     try {
@@ -740,9 +745,7 @@ export default function CharacterSheetClient({
       const record =
         mode === "product"
           ? await updateCharacterSheetPayload(characterId as string, toSave)
-          : characterId
-            ? await updateCharacter(characterId, toSave)
-            : await createCharacter(toSave);
+          : await updateCharacter(characterId as string, toSave);
       lastSyncedCharacterRef.current = record.payload;
       setCharacter(record.payload);
       setCharacterId(record.id);
@@ -907,13 +910,6 @@ export default function CharacterSheetClient({
     }
   }
 
-  function handleNew() {
-    setCharacter(createInitialCharacter(regras));
-    setCharacterId(null);
-    setSaveState("idle");
-    setErrorMessage(null);
-  }
-
   /**
    * Registra um evento de evolução (ganho/gasto de PM ou ajuste
    * permanente de atributo/perícia) em `table_logs`
@@ -1061,9 +1057,7 @@ export default function CharacterSheetClient({
     const def = regras?.pericias.find((p) => p.id === id);
     const min = def?.valor_minimo ?? 0;
     // v1.2: o Modo Evolução só corrige a criação — nunca acima do limite do Ranking atual (o banco confere o mesmo).
-    const rankingV12 = (character as { schema_version?: number; progressao?: { ranking?: RankingV12 } }).schema_version === 2
-      ? (character as { progressao?: { ranking?: RankingV12 } }).progressao?.ranking
-      : undefined;
+    const rankingV12 = (character as { progressao?: { ranking?: RankingV12 } }).progressao?.ranking;
     const max = Math.min(def?.valor_maximo ?? 5, rankingV12 ? LIMITE_PERICIA_POR_RANKING_V12[rankingV12] : 5);
     const antes = character.pericias[id] ?? 0;
     const depois = clamp(rawValue, min, max);
@@ -4307,7 +4301,6 @@ export default function CharacterSheetClient({
           onModeChange={alternarModo}
           onNomeChange={(value) => setCharacter((prev) => ({ ...prev, nome: value }))}
           onSave={handleSave}
-          onNew={handleNew}
           mesas={mesas}
           selectedCampaignId={selectedCampaignId}
           onSelectCampaign={handleSelectCampaign}
