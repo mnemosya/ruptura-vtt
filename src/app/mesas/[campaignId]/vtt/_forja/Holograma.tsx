@@ -3,7 +3,7 @@
 import { REGIOES } from "./acervo/regioes";
 import { CLASSES_ACERVO } from "./acervo/classes";
 import { VERTENTES_ACERVO } from "./acervo/vertentes";
-import type { Build } from "./tipos";
+import type { DraftV12 } from "../../../../../lib/rulesetV12";
 
 /**
  * O personagem projetado como registro holográfico. Instável (cinza,
@@ -11,10 +11,10 @@ import type { Build } from "./tipos";
  * (`--vc`, `--vc-brilho`, definidas na raiz da Forja) e os fragmentos
  * de origem, antecedente, classe e vertente conforme o jogador escolhe.
  */
-export function Holograma({ b, progress, size = "lg", solid = false, nomeAntecedente }: { b: Build; progress: number; size?: "md" | "lg"; solid?: boolean; nomeAntecedente?: string }) {
-  const reg = REGIOES.find((r) => r.id === b.regiao);
-  const cls = CLASSES_ACERVO.find((c) => c.id === b.classe);
-  const vt = VERTENTES_ACERVO.find((v) => v.id === b.vertente);
+export function Holograma({ d, avatar, progress, size = "lg", solid = false, nomeAntecedente }: { d: DraftV12; avatar: string; progress: number; size?: "md" | "lg"; solid?: boolean; nomeAntecedente?: string }) {
+  const reg = REGIOES.find((r) => r.id === d.regiaoId);
+  const cls = CLASSES_ACERVO.find((c) => c.id === d.classeSlug);
+  const vt = VERTENTES_ACERVO.find((v) => v.id === d.vertente);
   return (
     <div className={`fj-holo fj-holo--${size}`}>
       <div className="fj-holo__cone" />
@@ -24,8 +24,8 @@ export function Holograma({ b, progress, size = "lg", solid = false, nomeAnteced
           <div className="fj-ch-shield fj-holo__tela">
             {/* eslint-disable-next-line @next/next/no-img-element -- prévia local (blob:) ou URL externa; next/image não serve aqui */}
             <img
-              src={b.avatar}
-              alt={`Avatar de ${b.nome || "personagem sem nome"}`}
+              src={avatar}
+              alt={`Avatar de ${d.nome || "personagem sem nome"}`}
               className="fj-holo__foto"
               style={{
                 filter: solid ? "contrast(1.05)" : `grayscale(1) contrast(1.25) brightness(${0.8 + progress * 0.4})`,
@@ -38,14 +38,14 @@ export function Holograma({ b, progress, size = "lg", solid = false, nomeAnteced
             <div className="fj-holo__base" />
             {!solid && <div className="fj-beam fj-holo__feixe" />}
             <div className="fj-holo__legenda">
-              <div className="fj-holo__nome fj-glow">{b.nome || "———"}</div>
-              {b.codinome && <div className="fj-holo__codinome">«{b.codinome}»</div>}
+              <div className="fj-holo__nome fj-glow">{d.nome || "———"}</div>
+              {d.codinome && <div className="fj-holo__codinome">«{d.codinome}»</div>}
             </div>
           </div>
         </div>
 
         <Fragmento on={!!reg} lugar="origem" label="ORIGEM" value={reg?.nome} sub={reg?.sector} />
-        <Fragmento on={!!b.antecedente} lugar="antecedente" label="ANTECEDENTE" value={nomeAntecedente} />
+        <Fragmento on={!!d.antecedenteId} lugar="antecedente" label="ANTECEDENTE" value={nomeAntecedente} />
         {cls && (
           <div className="fj-boot fj-holo__classe">
             <span className="fj-spin fj-holo__classe-anel" />

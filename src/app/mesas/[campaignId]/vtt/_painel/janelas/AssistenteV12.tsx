@@ -215,9 +215,6 @@ export default function AssistenteV12({
     if (!nome.trim()) p.push({ etapa: 1, texto: "Defina o nome do personagem." });
     if (!localOrigem.trim()) p.push({ etapa: 2, texto: "Defina a cidade, distrito ou comunidade de origem." });
     if (!antecedenteId) p.push({ etapa: 2, texto: "Escolha um Antecedente." });
-    if (Object.values(antecedente).some((v) => !v.trim())) p.push({ etapa: 2, texto: "Defina Meio, Papel e Relação atual do Antecedente." });
-    if (Object.values(refratario).some((v) => !v.trim())) p.push({ etapa: 2, texto: "Defina Estopim, Primeiros passos e Consequência." });
-    if (Object.values(rpi).some((v) => !v.trim())) p.push({ etapa: 2, texto: "Defina nome registrado, ocupação declarada e origem do RPI Forjado." });
     if (somaQualidades !== 3) p.push({ etapa: 2, texto: `Qualidades devem somar 3 pontos (atual: ${somaQualidades}).` });
     if (somaComplicacoes < 2) p.push({ etapa: 2, texto: `Complicações devem somar ao menos 2 pontos (atual: ${somaComplicacoes}).` });
     if (!classe) p.push({ etapa: 3, texto: "Escolha uma Classe." });
@@ -233,7 +230,7 @@ export default function AssistenteV12({
     if (!vertente) p.push({ etapa: 3, texto: "Escolha a Vertente Primária." });
     if (gasto > orcamento) p.push({ etapa: 4, texto: `Compras (${formatarAretz(gasto)}) acima do orçamento (${formatarAretz(orcamento)}).` });
     return p;
-  }, [nome, localOrigem, antecedenteId, antecedente, refratario, rpi, somaQualidades, somaComplicacoes, classe, perfilAtr, atributosCompletos, perfilPer, contagemPericias, vertente, gasto, orcamento]);
+  }, [nome, localOrigem, antecedenteId, somaQualidades, somaComplicacoes, classe, perfilAtr, atributosCompletos, perfilPer, contagemPericias, vertente, gasto, orcamento]);
 
   const rascunho: DraftV12 = useMemo(() => ({
     schema_version: DRAFT_V12_SCHEMA_VERSION,
@@ -594,27 +591,27 @@ export default function AssistenteV12({
               {antecedenteId && (
                 <p className="rm-faint">{catalogos.antecedentes.find((a) => a.slug === antecedenteId)?.familiaridade}</p>
               )}
-              <Campo rotulo="Meio *" valor={antecedente.meio} onChange={(v) => setAntecedente({ ...antecedente, meio: v })} />
-              <Campo rotulo="Papel *" valor={antecedente.papel} onChange={(v) => setAntecedente({ ...antecedente, papel: v })} />
-              <Campo rotulo="Relação atual *" valor={antecedente.relacao_atual} onChange={(v) => setAntecedente({ ...antecedente, relacao_atual: v })} />
+              <Campo rotulo="Meio" valor={antecedente.meio} onChange={(v) => setAntecedente({ ...antecedente, meio: v })} />
+              <Campo rotulo="Papel" valor={antecedente.papel} onChange={(v) => setAntecedente({ ...antecedente, papel: v })} />
+              <Campo rotulo="Relação atual" valor={antecedente.relacao_atual} onChange={(v) => setAntecedente({ ...antecedente, relacao_atual: v })} />
             </div>
           </div>
 
           <div>
             <h2 className="rm-section-title">Tornando-se refratário</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 560 }}>
-              <Campo rotulo="Estopim *" valor={refratario.estopim} onChange={(v) => setRefratario({ ...refratario, estopim: v })} />
-              <Campo rotulo="Primeiros passos *" valor={refratario.primeiros_passos} onChange={(v) => setRefratario({ ...refratario, primeiros_passos: v })} />
-              <Campo rotulo="Consequência *" valor={refratario.consequencia} onChange={(v) => setRefratario({ ...refratario, consequencia: v })} />
+              <Campo rotulo="Estopim" valor={refratario.estopim} onChange={(v) => setRefratario({ ...refratario, estopim: v })} />
+              <Campo rotulo="Primeiros passos" valor={refratario.primeiros_passos} onChange={(v) => setRefratario({ ...refratario, primeiros_passos: v })} />
+              <Campo rotulo="Consequência" valor={refratario.consequencia} onChange={(v) => setRefratario({ ...refratario, consequencia: v })} />
             </div>
           </div>
 
           <div>
             <h2 className="rm-section-title">RPI Forjado (Nível 1)</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 560 }}>
-              <Campo rotulo="Nome registrado *" valor={rpi.nome_registrado} onChange={(v) => setRpi({ ...rpi, nome_registrado: v })} />
-              <Campo rotulo="Ocupação declarada *" valor={rpi.ocupacao_declarada} onChange={(v) => setRpi({ ...rpi, ocupacao_declarada: v })} />
-              <Campo rotulo="Como o RPI chegou às suas mãos *" valor={rpi.origem} onChange={(v) => setRpi({ ...rpi, origem: v })} />
+              <Campo rotulo="Nome registrado" valor={rpi.nome_registrado} onChange={(v) => setRpi({ ...rpi, nome_registrado: v })} />
+              <Campo rotulo="Ocupação declarada" valor={rpi.ocupacao_declarada} onChange={(v) => setRpi({ ...rpi, ocupacao_declarada: v })} />
+              <Campo rotulo="Como o RPI chegou às suas mãos" valor={rpi.origem} onChange={(v) => setRpi({ ...rpi, origem: v })} />
             </div>
           </div>
 
@@ -646,7 +643,7 @@ export default function AssistenteV12({
             <label className="rm-field" style={{ maxWidth: 480 }}>
               <span className="rm-field-label">Classe *</span>
               <select value={classeSlug} onChange={(e) => trocarClasse(e.target.value)} className="rm-select rv-focusable" data-testid="v12-classe">
-                {catalogos.classes.length === 0 && <option value="">Nenhuma Classe publicada</option>}
+                <option value="">{catalogos.classes.length === 0 ? "Nenhuma Classe publicada" : "Escolha…"}</option>
                 {catalogos.classes.map((c) => <option key={c.slug} value={c.slug}>{c.nome}</option>)}
               </select>
             </label>

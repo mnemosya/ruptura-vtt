@@ -45,6 +45,11 @@ function requireString(value: unknown, path: string, errors: string[]): string {
   return value;
 }
 
+/** Texto narrativo opcional: precisa ser texto, pode ficar vazio. */
+function optionalString(value: unknown, path: string, errors: string[]): void {
+  if (typeof value !== "string") errors.push(`${path}: esperado texto (pode ficar vazio).`);
+}
+
 function requireSlug(value: unknown, path: string, errors: string[]): string {
   const slug = requireString(value, path, errors);
   if (slug && !SLUG_PATTERN.test(slug)) errors.push(`${path}: slug inválido; use minúsculas, números e underscore.`);
@@ -301,14 +306,16 @@ export function validateCharacterV2(value: unknown): ValidationResultV12<Charact
   requireStringArray(trajectory.idiomas, "trajetoria.idiomas", errors, 1);
   const background = requireRecord(trajectory.antecedente, "trajetoria.antecedente", errors);
   requireSlug(background.antecedente_id, "trajetoria.antecedente.antecedente_id", errors);
-  requireString(background.meio, "trajetoria.antecedente.meio", errors);
-  requireString(background.papel, "trajetoria.antecedente.papel", errors);
-  requireString(background.relacao_atual, "trajetoria.antecedente.relacao_atual", errors);
+  // Meio, Papel, Relação atual, a transformação e os dados do RPI são
+  // narrativos: ficam entre jogador e narrador e podem ficar vazios.
+  optionalString(background.meio, "trajetoria.antecedente.meio", errors);
+  optionalString(background.papel, "trajetoria.antecedente.papel", errors);
+  optionalString(background.relacao_atual, "trajetoria.antecedente.relacao_atual", errors);
   const transformation = requireRecord(trajectory.transformacao_refratario, "trajetoria.transformacao_refratario", errors);
-  for (const key of ["estopim", "primeiros_passos", "consequencia"] as const) requireString(transformation[key], `trajetoria.transformacao_refratario.${key}`, errors);
+  for (const key of ["estopim", "primeiros_passos", "consequencia"] as const) optionalString(transformation[key], `trajetoria.transformacao_refratario.${key}`, errors);
   const rpi = requireRecord(trajectory.rpi_forjado, "trajetoria.rpi_forjado", errors);
   if (rpi.nivel !== 1) errors.push("trajetoria.rpi_forjado.nivel: personagem novo começa com RPI Forjado de nível 1.");
-  for (const key of ["nome_registrado", "ocupacao_declarada", "origem"] as const) requireString(rpi[key], `trajetoria.rpi_forjado.${key}`, errors);
+  for (const key of ["nome_registrado", "ocupacao_declarada", "origem"] as const) optionalString(rpi[key], `trajetoria.rpi_forjado.${key}`, errors);
 
   const qualities = Array.isArray(trajectory.qualidades) ? trajectory.qualidades : [];
   const complications = Array.isArray(trajectory.complicacoes) ? trajectory.complicacoes : [];

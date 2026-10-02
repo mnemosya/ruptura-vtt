@@ -78,9 +78,20 @@ assert.equal(sujo.descartados, 8);
 const semPerfil = sanitizeDraftV12({ ...rascunho, perfilAtributos: "point_buy" }, catalogos);
 assert.deepEqual(semPerfil.draft.atributos, { corpo: null, mente: null, animo: null });
 
-// Classe removida volta para a primeira publicada e limpa as escolhas dela.
+// Classe removida fica "não escolhida" (conta como descartada) e limpa as escolhas dela.
 const semClasse = sanitizeDraftV12({ ...rascunho, classeSlug: "classe_removida" }, catalogos);
-assert.equal(semClasse.draft.classeSlug, "ancora");
+assert.equal(semClasse.draft.classeSlug, "");
 assert.deepEqual(semClasse.draft.pericias, {});
+assert.ok(semClasse.descartados >= 1);
+
+// Classe ainda não escolhida continua não escolhida, sem contar como descarte.
+const nenhuma = sanitizeDraftV12({ ...rascunho, classeSlug: "", perfilAtributos: "", perfilPericias: "", pericias: {}, atributos: { corpo: null, mente: null, animo: null }, vertente: "" }, catalogos);
+assert.equal(nenhuma.draft.classeSlug, "");
+assert.equal(nenhuma.descartados, 0);
+
+// Dados da Forja: aceitos quando bem formados, recusados quando não.
+assert.deepEqual(parseDraftV12({ ...rascunho, forja: { passo: 6, conceito: "c", aparencia: "a", relato: "r" } })?.forja, { passo: 6, conceito: "c", aparencia: "a", relato: "r" });
+assert.equal(parseDraftV12({ ...rascunho, forja: { passo: 99, conceito: "", aparencia: "", relato: "" } }), null);
+assert.equal(parseDraftV12({ ...rascunho })?.forja, undefined);
 
 console.log("test-ruleset-v12-rascunho — formato e restauração do rascunho validados.");

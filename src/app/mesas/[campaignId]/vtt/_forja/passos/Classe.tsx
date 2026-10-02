@@ -6,7 +6,7 @@ import { CLASSES_ACERVO, type RankDossie } from "../acervo/classes";
 import { vertentePorNome } from "../acervo/vertentes";
 import { BotaoCodex, BotaoEscolha, CabecalhoCodex, FaixaEstado, IndiceCodex, RuleText, SecHead, Shell, useAtalhoCodex, useIndiceAtivo, type ItemIndice } from "../Codex";
 import { Mono, Panel } from "../ui";
-import type { Build, SetBuild } from "../tipos";
+import type { DraftV12 } from "../../../../../../lib/rulesetV12";
 
 const title = (s: string) => s.toLowerCase().replace(/(^|\s)(\p{L})/gu, (_, a: string, c: string) => a + c.toUpperCase());
 const meta = (id: string) => CLASSES_ACERVO.find((c) => c.id === id) ?? CLASSES_ACERVO[0];
@@ -44,16 +44,16 @@ function Sinergia({ id }: { id: string }) {
   );
 }
 
-function Assumir({ id, b, set }: { id: string; b: Build; set: SetBuild }) {
-  const on = b.classe === id;
-  return <BotaoEscolha on={on} onClick={() => set({ classe: id })}>{on ? `✓ ${meta(id).nome} assumida` : "Assumir classe"}</BotaoEscolha>;
+function Assumir({ id, d, escolher }: { id: string; d: DraftV12; escolher: (slug: string) => void }) {
+  const on = d.classeSlug === id;
+  return <BotaoEscolha on={on} onClick={() => escolher(id)}>{on ? `✓ ${meta(id).nome} assumida` : "Assumir classe"}</BotaoEscolha>;
 }
 
-export function ClasseLateral({ b, set, id }: { b: Build; set: SetBuild; id: string }) {
+export function ClasseLateral({ d, escolher, id }: { d: DraftV12; escolher: (slug: string) => void; id: string }) {
   const [open, setOpen] = useState(false);
-  const c = meta(id), d = c.dossie, on = b.classe === id;
-  const now = d.feats.find((r) => r.r === "F")?.feats ?? [];
-  const top = [...d.syn].sort((a, z) => z.n - a.n).filter((s) => s.n === 5);
+  const c = meta(id), dos = c.dossie, on = d.classeSlug === id;
+  const now = dos.feats.find((r) => r.r === "F")?.feats ?? [];
+  const top = [...dos.syn].sort((a, z) => z.n - a.n).filter((s) => s.n === 5);
   useAtalhoCodex(() => setOpen(true));
 
   return (
@@ -62,9 +62,9 @@ export function ClasseLateral({ b, set, id }: { b: Build; set: SetBuild; id: str
         <FaixaEstado on={on} confirmado="SELECIONADA" pendente="VISUALIZANDO · NÃO CONFIRMADA" />
 
         <div key={id} className="fj-boot">
-          <Mono tom="am">Papel · {d.role}</Mono>
+          <Mono tom="am">Papel · {dos.role}</Mono>
           <p className="fj-lado__destaque fj-lado__destaque--grande">{c.frase}</p>
-          <p className="fj-lado__resumo">{d.intro[0]}</p>
+          <p className="fj-lado__resumo">{dos.intro[0]}</p>
 
           <dl className="fj-lado__lista">
             <div><dt><Mono pequeno>Você começa com</Mono></dt><dd className="fj-lado__chips">{now.map((f) => title(f.n)).join(" · ")}</dd></div>
@@ -77,7 +77,7 @@ export function ClasseLateral({ b, set, id }: { b: Build; set: SetBuild; id: str
                 })}
               </dd>
             </div>
-            <div><dt><Mono pequeno>Caminhos · Ranking E</Mono></dt><dd className="fj-lado__caminhos">{d.subs.map((s) => s.n).join(" · ")}</dd></div>
+            <div><dt><Mono pequeno>Caminhos · Ranking E</Mono></dt><dd className="fj-lado__caminhos">{dos.subs.map((s) => s.n).join(" · ")}</dd></div>
           </dl>
         </div>
 
@@ -88,13 +88,13 @@ export function ClasseLateral({ b, set, id }: { b: Build; set: SetBuild; id: str
 
       {open && createPortal(
         <Shell rotulo={`Códex de ${c.nome}`} onClose={() => setOpen(false)}>
-          <CodexClasse id={id} b={b} set={set} onClose={() => setOpen(false)} />
+          <CodexClasse id={id} d={d} escolher={escolher} onClose={() => setOpen(false)} />
         </Shell>, document.body)}
     </>
   );
 }
 
-function CodexClasse({ id, b, set, onClose }: { id: string; b: Build; set: SetBuild; onClose: () => void }) {
+function CodexClasse({ id, d: rascunho, escolher, onClose }: { id: string; d: DraftV12; escolher: (slug: string) => void; onClose: () => void }) {
   const c = meta(id), d = c.dossie;
   const { scroller, active, go } = useIndiceAtivo(id);
   const toc: ItemIndice[] = [
@@ -108,7 +108,7 @@ function CodexClasse({ id, b, set, onClose }: { id: string; b: Build; set: SetBu
     <div className="fj-borda fj-ch fj-codex">
       <div className="fj-ch fj-vidro fj-codex__corpo">
         <CabecalhoCodex icone={<span className="fj-ch-hex fj-codex-cab__sigla">{c.sigla}</span>} kicker="Dossiê de classe · Códex" titulo={c.nome} onClose={onClose}>
-          <Assumir id={id} b={b} set={set} />
+          <Assumir id={id} d={rascunho} escolher={escolher} />
         </CabecalhoCodex>
         <div className="fj-codex__grade">
           <IndiceCodex toc={toc} active={active} go={go} />
