@@ -173,6 +173,12 @@ export interface CharacterTrajectoryV12 {
     origem: string;
   };
   codinome?: string;
+  /** Ideia geral do personagem, em texto livre (Forja de Refratário). */
+  conceito?: string;
+  /** Aparência, em texto livre. */
+  aparencia?: string;
+  /** "Como se tornou refratário", em texto livre. */
+  relato_refratario?: string;
   qualidades: Array<{ quality_id: string; pontos: 1 | 2; detalhes: Record<string, string> }>;
   complicacoes: Array<{ complication_id: string; pontos: 1 | 2; detalhes: Record<string, string> }>;
 }

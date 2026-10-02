@@ -313,6 +313,9 @@ export function validateCharacterV2(value: unknown): ValidationResultV12<Charact
   optionalString(background.relacao_atual, "trajetoria.antecedente.relacao_atual", errors);
   const transformation = requireRecord(trajectory.transformacao_refratario, "trajetoria.transformacao_refratario", errors);
   for (const key of ["estopim", "primeiros_passos", "consequencia"] as const) optionalString(transformation[key], `trajetoria.transformacao_refratario.${key}`, errors);
+  for (const key of ["conceito", "aparencia", "relato_refratario"] as const) {
+    if (trajectory[key] !== undefined) optionalString(trajectory[key], `trajetoria.${key}`, errors);
+  }
   const rpi = requireRecord(trajectory.rpi_forjado, "trajetoria.rpi_forjado", errors);
   if (rpi.nivel !== 1) errors.push("trajetoria.rpi_forjado.nivel: personagem novo começa com RPI Forjado de nível 1.");
   for (const key of ["nome_registrado", "ocupacao_declarada", "origem"] as const) optionalString(rpi[key], `trajetoria.rpi_forjado.${key}`, errors);

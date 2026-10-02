@@ -640,7 +640,7 @@
 
 /* ════════════════════════ CÓDEX (MODAIS) ════════════════════════ */
 
-.fj-shell { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: var(--hud-space-4); }
+.fj-shell { position: fixed; inset: 0; z-index: 486; display: flex; align-items: center; justify-content: center; padding: var(--hud-space-4); }
 @media (min-width: 768px) { .fj-shell { padding: var(--hud-space-8); } }
 .fj-shell__veu { position: absolute; inset: 0; background: color-mix(in srgb, var(--fj-abismo) 85%, transparent); backdrop-filter: blur(4px); }
 .fj-shell__caixa { position: relative; display: flex; height: 100%; max-height: 880px; width: 100%; max-width: 1280px; flex-direction: column; }
@@ -911,3 +911,28 @@
 .fj-pendencias__item { display: flex; width: 100%; flex-direction: column; gap: 2px; padding: var(--hud-space-2) var(--hud-space-3); text-align: left; font-size: 14px; line-height: 1.35; color: var(--fj-texto); transition: var(--fj-trans); }
 .fj-pendencias__item:hover { background: color-mix(in srgb, var(--fj-am) 10%, transparent); color: var(--fj-gelo); }
 .fj-pendencias__passo { font: 400 10px var(--fj-mono); text-transform: uppercase; letter-spacing: 0.18em; color: var(--fj-am); }
+
+/* ════════════════════════ FASE 4: A FORJA NA MESA ════════════════════════ */
+
+/* Por cima da mesa inteira. Abaixo do Console (500+) e da janela de
+   recorte do avatar (521); os Códex (486) e o mapa grande (1000) por cima. */
+.fj-janela { position: fixed; inset: 0; z-index: 480; }
+.fj-janela__carregando { display: grid; height: 100%; place-items: center; background: var(--fj-abismo); }
+.fj-janela__carregando p { font: 400 12px var(--fj-mono); text-transform: uppercase; letter-spacing: 0.2em; color: var(--fj-cy); }
+.fj-janela__carregando p[role="alert"] { color: var(--fj-perigo); text-transform: none; letter-spacing: 0; font: 400 15px var(--fj-corpo); }
+
+.fj-aviso__acao { white-space: nowrap; font: 700 12px var(--fj-display) !important; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fj-am) !important; }
+.fj-doca__erro { max-width: 420px; font-size: 14px; line-height: 1.35; color: var(--fj-perigo); text-align: right; }
+
+.fj-titulo__item:disabled { cursor: progress; opacity: 0.6; }
+.fj-titulo__alerta { margin-top: var(--hud-space-6); max-width: 448px; border-left: 2px solid var(--fj-perigo); padding-left: var(--hud-space-4); font-size: 15px; line-height: 1.45; color: var(--fj-texto); }
+.fj-titulo__alerta button { margin-left: var(--hud-space-2); font: 700 13px var(--fj-display); text-transform: uppercase; letter-spacing: 0.1em; color: var(--fj-am); }
+
+.fj-conceito__rodape { display: flex; flex-direction: column; align-items: center; gap: var(--hud-space-3); }
+.fj-conceito__remover { font: 700 12px var(--fj-display); text-transform: uppercase; letter-spacing: 0.12em; color: var(--fj-apagado); transition: var(--fj-trans); }
+.fj-conceito__remover:hover { color: var(--fj-am); }
+
+.fj-campo__select { margin-top: var(--hud-space-1); font: 400 16px var(--fj-display); background: var(--fj-abismo); color-scheme: dark; }
+
+.fj-revisao__pn { margin-top: var(--hud-space-4); display: flex; cursor: pointer; align-items: center; gap: var(--hud-space-3); font-size: 15px; color: var(--fj-texto); }
+.fj-revisao__pn input { accent-color: var(--fj-am); width: 16px; height: 16px; }
