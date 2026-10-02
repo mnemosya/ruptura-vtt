@@ -5,7 +5,8 @@ import { createPortal } from "react-dom";
 import { MAPA_DO_IMPERIO, REGIOES, REGRAS_DE_ORIGEM, type RegiaoAcervo } from "../acervo/regioes";
 import { BotaoCodex, BotaoEscolha, FaixaEstado, IndiceCodex, SecHead, Shell, useAtalhoCodex, useIndiceAtivo, type ItemIndice } from "../Codex";
 import { Key, Mono, Panel } from "../ui";
-import type { Build, SetBuild } from "../tipos";
+import type { SetDraft } from "../tipos";
+import type { DraftV12 } from "../../../../../../lib/rulesetV12";
 import { oxanium } from "../fonte";
 import type { RegiaoIdV12 } from "../../../../../../lib/rulesetV12/contracts";
 
@@ -19,14 +20,14 @@ export function idiomas(id: string, regiaoCampanha: RegiaoIdV12): string[] {
 }
 
 /** Troca primeiro nome ou sobrenome no campo Nome. */
-const swapName = (b: Build, part: "given" | "last", n: string) => {
-  const [g = "", ...rest] = b.nome.trim().split(/\s+/);
+const swapName = (d: DraftV12, part: "given" | "last", n: string) => {
+  const [g = "", ...rest] = d.nome.trim().split(/\s+/);
   return part === "given" ? [n, ...rest].join(" ") : [g, n].filter(Boolean).join(" ");
 };
 
-export function RegiaoLateral({ b, set, id, regiaoCampanha }: { b: Build; set: SetBuild; id: string; regiaoCampanha: RegiaoIdV12 }) {
+export function RegiaoLateral({ d, set, id, regiaoCampanha }: { d: DraftV12; set: SetDraft; id: string; regiaoCampanha: RegiaoIdV12 }) {
   const [open, setOpen] = useState(false);
-  const r = reg(id), on = b.regiao === id;
+  const r = reg(id), on = d.regiaoId === id;
   const langs = idiomas(id, regiaoCampanha);
   useAtalhoCodex(() => setOpen(true));
 
@@ -49,9 +50,9 @@ export function RegiaoLateral({ b, set, id, regiaoCampanha }: { b: Build; set: S
           <label className="fj-campo fj-lado__campo">
             <Mono pequeno>Cidade, distrito ou comunidade</Mono>
             <input
-              value={on ? b.local : ""}
+              value={on ? d.localOrigem : ""}
               disabled={!on}
-              onChange={(e) => set({ local: e.target.value })}
+              onChange={(e) => set({ localOrigem: e.target.value })}
               placeholder={on ? `Ex.: níveis baixos de ${r.capital}` : "Fixe a origem para especificar"}
               className="fj-campo__input fj-campo__input--display"
             />
@@ -65,7 +66,7 @@ export function RegiaoLateral({ b, set, id, regiaoCampanha }: { b: Build; set: S
 
       {open && createPortal(
         <Shell rotulo="Códex regional" onClose={() => setOpen(false)}>
-          <CodexRegional start={id} b={b} set={set} onClose={() => setOpen(false)} />
+          <CodexRegional start={id} d={d} set={set} onClose={() => setOpen(false)} />
         </Shell>, document.body)}
     </>
   );
@@ -73,9 +74,9 @@ export function RegiaoLateral({ b, set, id, regiaoCampanha }: { b: Build; set: S
 
 const FADE = "linear-gradient(to left, black 35%, transparent), linear-gradient(to top, transparent, black 30%)";
 
-function CodexRegional({ start, b, set, onClose }: { start: string; b: Build; set: SetBuild; onClose: () => void }) {
+function CodexRegional({ start, d, set, onClose }: { start: string; d: DraftV12; set: SetDraft; onClose: () => void }) {
   const [id, setId] = useState(start);
-  const r = reg(id), on = b.regiao === id;
+  const r = reg(id), on = d.regiaoId === id;
   const { scroller, active, go } = useIndiceAtivo(null);
   const toc: ItemIndice[] = [
     { k: "visao", label: "Visão geral" },
@@ -91,7 +92,7 @@ function CodexRegional({ start, b, set, onClose }: { start: string; b: Build; se
     window.addEventListener("keydown", k, true);
     return () => window.removeEventListener("keydown", k, true);
   }, [big]);
-  const pick = () => set({ regiao: r.id, local: on ? b.local : "" });
+  const pick = () => set({ regiaoId: r.id, localOrigem: on ? d.localOrigem : "" });
 
   return (
     <div className="fj-borda fj-ch fj-codex" style={{ "--rt": r.tint } as CSSProperties}>
@@ -106,7 +107,7 @@ function CodexRegional({ start, b, set, onClose }: { start: string; b: Build; se
           <div className="fj-regioes-rapidas">
             {REGIOES.map((x) => (
               <button type="button" key={x.id} onClick={() => setId(x.id)} className={`fj-regiao-rapida ${x.id === id ? "fj-regiao-rapida--atual" : ""}`}>
-                <span>{x.nome}{b.regiao === x.id && <span className="fj-regiao-rapida__origem">●</span>}</span>
+                <span>{x.nome}{d.regiaoId === x.id && <span className="fj-regiao-rapida__origem">●</span>}</span>
               </button>
             ))}
           </div>
@@ -142,7 +143,7 @@ function CodexRegional({ start, b, set, onClose }: { start: string; b: Build; se
                 <SecHead n="02" t="Mapa do Império" />
                 <div className="fj-borda fj-ch">
                   <div className="fj-ch fj-mapa">
-                    <MapaImperio id={id} origin={b.regiao} onPin={setId} />
+                    <MapaImperio id={id} origin={d.regiaoId} onPin={setId} />
                     <button type="button" onClick={() => setBig(true)} className="fj-mapa__expandir">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg> Expandir
                     </button>
@@ -159,15 +160,15 @@ function CodexRegional({ start, b, set, onClose }: { start: string; b: Build; se
                     <Mono tom="cy">{t}</Mono>
                     <div className="fj-nomes__lista">
                       {list.map((n) => {
-                        const used = b.nome.split(/\s+/).includes(n);
+                        const used = d.nome.split(/\s+/).includes(n);
                         return (
-                          <button type="button" key={n} onClick={() => set({ nome: swapName(b, part, n) })} title={part === "given" ? "Usar como primeiro nome" : "Usar como sobrenome"} className={`fj-nome ${used ? "fj-nome--usado" : ""}`}>{n}</button>
+                          <button type="button" key={n} onClick={() => set({ nome: swapName(d, part, n) })} title={part === "given" ? "Usar como primeiro nome" : "Usar como sobrenome"} className={`fj-nome ${used ? "fj-nome--usado" : ""}`}>{n}</button>
                         );
                       })}
                     </div>
                   </div>
                 ))}
-                <p className="fj-codex__dica">Clique para aplicar ao nome do refratário · atual: <span className="fj-codex__dica-forte">{b.nome || "—"}</span></p>
+                <p className="fj-codex__dica">Clique para aplicar ao nome do refratário · atual: <span className="fj-codex__dica-forte">{d.nome || "—"}</span></p>
               </section>
 
               <section id="regra" data-sec className="fj-codex__secao fj-codex__secao--fio">
@@ -207,7 +208,7 @@ function CodexRegional({ start, b, set, onClose }: { start: string; b: Build; se
             <div className="fj-mapa-grande__area">
               <div onClick={(e) => e.stopPropagation()} className="fj-borda fj-ch fj-mapa-grande__moldura">
                 <div className="fj-ch fj-mapa">
-                  <MapaImperio id={id} origin={b.regiao} onPin={setId} big />
+                  <MapaImperio id={id} origin={d.regiaoId} onPin={setId} big />
                 </div>
               </div>
             </div>

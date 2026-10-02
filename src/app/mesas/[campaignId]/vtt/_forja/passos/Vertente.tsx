@@ -5,25 +5,16 @@ import { createPortal } from "react-dom";
 import { VERTENTES_ACERVO, type MagiaGrimorio, type VertenteAcervo, type VertenteId } from "../acervo/vertentes";
 import { BotaoCodex, BotaoEscolha, CabecalhoCodex, FaixaEstado, IndiceCodex, RuleText, SecHead, Shell, useAtalhoCodex, useIndiceAtivo, type ItemIndice } from "../Codex";
 import { Mono, Panel } from "../ui";
-import type { Build, SetBuild } from "../tipos";
+import type { SetDraft } from "../tipos";
+import type { DraftV12 } from "../../../../../../lib/rulesetV12";
 
 const title = (s: string) => s.toLowerCase().replace(/(^|\s)(\p{L})/gu, (_, a: string, c: string) => a + c.toUpperCase());
 const vmeta = (id: string): VertenteAcervo => VERTENTES_ACERVO.find((v) => v.id === id) ?? VERTENTES_ACERVO[0];
 const plain = (s: string) => s.replace(/\*\*/g, "");
 const DIFF: Record<string, number> = { "Fácil": 1, "Média": 2, "Difícil": 3 };
 
-/** Magias iniciais = magias aprendidas no nível 1 (tabela da Vertente). */
-export const magiasIniciais = (id: string) => vmeta(id).grimorio.prog[0].n;
-
-function useMagias(id: VertenteId, b: Build, set: SetBuild) {
-  const tuned = b.vertente === id, need = magiasIniciais(id);
-  const spells = tuned ? b.magias : [];
-  const toggle = (n: string) => {
-    const on = spells.includes(n);
-    set({ vertente: id, magias: on ? spells.filter((x) => x !== n) : spells.length < need ? [...spells, n] : spells });
-  };
-  return { tuned, need, spells, toggle };
-}
+/** Magias do nível 1 da Vertente (tabela de progressão): escolhidas depois da criação. */
+const magiasIniciais = (id: string) => vmeta(id).grimorio.prog[0].n;
 
 function Dificuldade({ diff, cor }: { diff: string; cor: string }) {
   const n = DIFF[diff] ?? 2;
@@ -35,17 +26,21 @@ function Dificuldade({ diff, cor }: { diff: string; cor: string }) {
   );
 }
 
-function Vagas({ id, b }: { id: string; b: Build }) {
-  const need = magiasIniciais(id), have = b.vertente === id ? b.magias.length : 0;
+/**
+ * As magias do nível 1 não são escolhidas na criação: o servidor grava a
+ * escolha como pendente até o catálogo de magias v1.2 ser publicado.
+ */
+function MagiasPendentes({ id }: { id: string }) {
+  const n = magiasIniciais(id);
   return (
     <div className="fj-vagas">
-      <span className="fj-vagas__pips" aria-hidden="true">{Array.from({ length: need }).map((_, i) => <span key={i} className={`fj-losango fj-losango--md ${i < have ? "fj-losango--ambar" : "fj-losango--contorno"}`} />)}</span>
-      <Mono pequeno>{have}/{need} magias · escolha no códex</Mono>
+      <span className="fj-vagas__pips" aria-hidden="true">{Array.from({ length: n }).map((_, i) => <span key={i} className="fj-losango fj-losango--md fj-losango--contorno" />)}</span>
+      <Mono pequeno>{n} magias · escolha depois da criação</Mono>
     </div>
   );
 }
 
-function Essencia({ id, b }: { id: string; b: Build }) {
+function Essencia({ id }: { id: string }) {
   const v = vmeta(id), d = v.grimorio;
   return (
     <div className="fj-essencia">
@@ -66,21 +61,21 @@ function Essencia({ id, b }: { id: string; b: Build }) {
         <Dificuldade diff={d.diff} cor={v.cor} />
         <span className="fj-essencia__gatilho">{v.gatilho}</span>
       </div>
-      <Vagas id={id} b={b} />
+      <MagiasPendentes id={id} />
     </div>
   );
 }
 
-export function VertenteLateral({ b, set, id }: { b: Build; set: SetBuild; id: string }) {
+export function VertenteLateral({ d, set, id }: { d: DraftV12; set: SetDraft; id: string }) {
   const [open, setOpen] = useState(false);
-  const v = vmeta(id), tuned = b.vertente === id;
+  const v = vmeta(id), tuned = d.vertente === id;
   useAtalhoCodex(() => setOpen(true));
 
   return (
     <>
       <Panel title={v.nome} ambar={tuned}>
         <FaixaEstado colada on={tuned} confirmado="SINTONIZADA" pendente="VISUALIZANDO · NÃO SINTONIZADA" />
-        <div key={id} className="fj-boot"><Essencia id={id} b={b} /></div>
+        <div key={id} className="fj-boot"><Essencia id={id} /></div>
         <div className="fj-lado__codex">
           <BotaoCodex arte={v.arte} hexCor={`${v.cor}55`} kicker={`Grimório · ${v.grimorio.house}`} titulo="Abrir códex e magias" onOpen={() => setOpen(true)} />
         </div>
@@ -88,15 +83,15 @@ export function VertenteLateral({ b, set, id }: { b: Build; set: SetBuild; id: s
 
       {open && createPortal(
         <Shell rotulo={`Códex de ${v.nome}`} onClose={() => setOpen(false)}>
-          <CodexVertente id={v.id} b={b} set={set} onClose={() => setOpen(false)} />
+          <CodexVertente id={v.id} d={d} set={set} onClose={() => setOpen(false)} />
         </Shell>, document.body)}
     </>
   );
 }
 
-function CodexVertente({ id, b, set, onClose }: { id: VertenteId; b: Build; set: SetBuild; onClose: () => void }) {
+function CodexVertente({ id, d: rascunho, set, onClose }: { id: VertenteId; d: DraftV12; set: SetDraft; onClose: () => void }) {
   const v = vmeta(id), d = v.grimorio;
-  const { tuned, need, spells, toggle } = useMagias(id, b, set);
+  const tuned = rascunho.vertente === id, need = magiasIniciais(id);
   const { scroller, active, go } = useIndiceAtivo(id);
   const toc: ItemIndice[] = [
     { k: "visao", label: "Visão geral" },
@@ -108,8 +103,8 @@ function CodexVertente({ id, b, set, onClose }: { id: VertenteId; b: Build; set:
     <div className="fj-borda fj-ch fj-codex" style={{ "--vc": v.cor, "--vc-brilho": v.brilho } as CSSProperties}>
       <div className="fj-ch fj-vidro fj-codex__corpo">
         <CabecalhoCodex icone={<span className="fj-ch-hex fj-codex-cab__hex" style={{ background: v.cor, boxShadow: `0 0 14px ${v.brilho}` }} />} kicker="Grimório de vertente · Códex" titulo={v.nome} onClose={onClose}>
-          <span className="fj-codex-cab__contador"><Mono pequeno>Magias iniciais</Mono><span>{spells.length}/{need}</span></span>
-          <BotaoEscolha on={tuned} onClick={() => set({ vertente: id, magias: tuned ? spells : [] })}>{tuned ? "✓ Sintonizada" : "Sintonizar"}</BotaoEscolha>
+          <span className="fj-codex-cab__contador"><Mono pequeno>Magias iniciais</Mono><span>{need} depois</span></span>
+          <BotaoEscolha on={tuned} onClick={() => set({ vertente: id })}>{tuned ? "✓ Sintonizada" : "Sintonizar"}</BotaoEscolha>
         </CabecalhoCodex>
 
         <div className="fj-codex__grade">
@@ -163,12 +158,12 @@ function CodexVertente({ id, b, set, onClose }: { id: VertenteId; b: Build; set:
                   <div key={l.lv} id={`lv-${l.lv}`} data-sec className="fj-nivel">
                     <div className="fj-ch-l fj-nivel__cab">
                       <h3 className="fj-subclasse__nome">Nível {l.lv}</h3>
-                      {l.lv === 1 ? <Mono tom="am">Escolha {need} · {spells.length}/{need}</Mono> : <Mono>Desbloqueia depois</Mono>}
+                      {l.lv === 1 ? <Mono tom="am">{need} magias · escolha depois da criação</Mono> : <Mono>Desbloqueia depois</Mono>}
                     </div>
                     {l.note && <p className="fj-codex__dica fj-codex__dica--italico">{l.note}</p>}
                     <div className="fj-nivel__magias">
                       {l.spells.map((s) => (
-                        <CartaoMagia key={s.n} s={s} cor={v.cor} pick={l.lv === 1 ? { on: spells.includes(s.n), full: spells.length >= need, toggle: () => toggle(s.n) } : undefined} />
+                        <CartaoMagia key={s.n} s={s} cor={v.cor} />
                       ))}
                     </div>
                   </div>
@@ -182,10 +177,9 @@ function CodexVertente({ id, b, set, onClose }: { id: VertenteId; b: Build; set:
   );
 }
 
-function CartaoMagia({ s, cor, pick }: { s: MagiaGrimorio; cor: string; pick?: { on: boolean; full: boolean; toggle: () => void } }) {
-  const on = !!pick?.on;
+function CartaoMagia({ s, cor }: { s: MagiaGrimorio; cor: string }) {
   return (
-    <article className={`fj-magia ${on ? "fj-magia--on" : ""}`} style={{ borderColor: on ? undefined : `${cor}88` }}>
+    <article className="fj-magia" style={{ borderColor: `${cor}88` }}>
       <div className="fj-magia__topo">
         <div>
           <h5 className="fj-magia__nome">{title(s.n)}</h5>
@@ -194,11 +188,6 @@ function CartaoMagia({ s, cor, pick }: { s: MagiaGrimorio; cor: string; pick?: {
             {s.type && <span className="fj-magia__tag" style={{ color: cor, background: `${cor}1a` }}>{s.type.toUpperCase()}</span>}
           </div>
         </div>
-        {pick && (
-          <button type="button" onClick={pick.toggle} disabled={!on && pick.full} className={`fj-ch-tab fj-magia__vincular ${on ? "fj-magia__vincular--on" : ""}`}>
-            {on ? "✓ Vinculada" : "+ Vincular"}
-          </button>
-        )}
       </div>
       <dl className="fj-magia__dados">
         {([["Alcance", s.range], ["Duração", s.dur], ["Requisito", s.req]] as const).filter(([, x]) => x).map(([k, x]) => (

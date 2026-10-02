@@ -2,18 +2,19 @@
 
 import { useState, type ReactNode } from "react";
 import type { CatalogosCriacaoV12, OpcaoTrajetoriaV12 } from "../../_acoes/criacaoV12Actions";
+import { somaPontosV12, type DraftEscolhaV12, type DraftForjaV12, type DraftV12 } from "../../../../../../lib/rulesetV12";
 import { Mono, Panel, Rich } from "../ui";
-import { CATEGORIAS_TRACO, type Build, type SetBuild } from "../tipos";
+import { CATEGORIAS_TRACO, type SetDraft } from "../tipos";
 
 const pad = (i: number) => String(i + 1).padStart(2, "0");
 
 /**
- * Orçamento de Traços do protótipo (Fase 1). A Fase 3 troca pela regra
- * da v1.2: Qualidades somam exatamente 3; Complicações, ao menos 2.
+ * Regra da v1.2: Qualidades somam EXATAMENTE 3 pontos; Complicações, AO
+ * MENOS 2 (mais, só por acordo do grupo, então não há teto aqui).
  */
-export const ORCAMENTO = { qualidades: 3, complicacoes: 2 } as const;
-type Tipo = keyof typeof ORCAMENTO;
-export const gasto = (m: Record<string, number>) => Object.values(m).reduce((a, c) => a + c, 0);
+const QUALIDADES = 3;
+const COMPLICACOES_MINIMO = 2;
+type Tipo = "qualidades" | "complicacoes";
 
 function Cabecalho({ kicker, title, right }: { kicker: string; title: string; right?: ReactNode }) {
   return (
@@ -23,18 +24,19 @@ function Cabecalho({ kicker, title, right }: { kicker: string; title: string; ri
     </div>
   );
 }
+export { Cabecalho };
 
 /* ---------------- Antecedente: índice vertical + registro selecionado ---------------- */
 
 /** A descrição publicada repete a frase de Familiaridade no fim; ela já tem caixa própria. */
 const semFamiliaridade = (descricao: string, familiaridade: string) => (familiaridade ? descricao.replace(familiaridade, "").trim() : descricao);
 
-export function Antecedente({ b, set, catalogos }: { b: Build; set: SetBuild; catalogos: CatalogosCriacaoV12 }) {
+export function Antecedente({ d, set, catalogos }: { d: DraftV12; set: SetDraft; catalogos: CatalogosCriacaoV12 }) {
   const lista = catalogos.antecedentes;
-  const idx = Math.max(0, lista.findIndex((x) => x.slug === b.antecedente));
+  const idx = Math.max(0, lista.findIndex((x) => x.slug === d.antecedenteId));
   const cur = lista[idx];
   if (!cur) return <p className="fj-vazio">Nenhum Antecedente publicado para esta mesa.</p>;
-  const linked = b.antecedente === cur.slug;
+  const linked = d.antecedenteId === cur.slug;
   return (
     <div className="fj-passo">
       <Cabecalho kicker="Trajetória · 02" title="Antecedente" right={<Mono>{lista.length} registros</Mono>} />
@@ -42,9 +44,9 @@ export function Antecedente({ b, set, catalogos }: { b: Build; set: SetBuild; ca
         <div className="fj-borda fj-ch fj-mestre-detalhe__lista">
           <div className="fj-ch fj-vidro fj-sem-barra fj-indice-lista">
             {lista.map((bg, i) => {
-              const on = bg.slug === b.antecedente;
+              const on = bg.slug === d.antecedenteId;
               return (
-                <button type="button" key={bg.slug} onClick={() => set({ antecedente: bg.slug })} className={`fj-indice-lista__item ${on ? "fj-indice-lista__item--on" : ""}`}>
+                <button type="button" key={bg.slug} onClick={() => set({ antecedenteId: bg.slug })} aria-pressed={on} className={`fj-indice-lista__item ${on ? "fj-indice-lista__item--on" : ""}`}>
                   <span className="fj-indice-lista__n">{pad(i)}</span>
                   <span className="fj-indice-lista__nome">{bg.nome}</span>
                   {on && <span className="fj-losango fj-losango--sm fj-losango--ambar fj-indice-lista__marca" />}
@@ -79,17 +81,63 @@ export function Antecedente({ b, set, catalogos }: { b: Build; set: SetBuild; ca
   );
 }
 
-/** Painel lateral do Antecedente: a narrativa de como virou refratário e o RPI. */
-export function OrigemNarrativa({ b, set }: { b: Build; set: SetBuild }) {
+/**
+ * Painel lateral do Antecedente: a história de como virou refratário, o
+ * codinome e, recolhidos, os detalhes que ficam entre jogador e narrador.
+ * Nada aqui é obrigatório.
+ */
+export function OrigemNarrativa({ d, set, forja, setForja }: { d: DraftV12; set: SetDraft; forja: DraftForjaV12; setForja: (p: Partial<DraftForjaV12>) => void }) {
+  const preenchidos = [...Object.values(d.antecedente), ...Object.values(d.refratario), ...Object.values(d.rpi)].filter((v) => v.trim()).length;
   return (
-    <Panel title="Como se tornou refratário" right={<Mono tom="cy">Narrativo</Mono>}>
-      <label className="fj-sr" htmlFor="fj-origem">Como se tornou refratário</label>
-      <textarea id="fj-origem" rows={8} value={b.origem} onChange={(e) => set({ origem: e.target.value })} placeholder="O dia em que a ruptura te tocou…" className="fj-area-livre" />
-      <div className="fj-rpi">
-        <label htmlFor="fj-rpi-codinome"><Mono>RPI forjado</Mono></label>
-        <input id="fj-rpi-codinome" value={b.codinome} onChange={(e) => set({ codinome: e.target.value.toUpperCase() })} className="fj-rpi__input" />
-      </div>
-    </Panel>
+    <div className="fj-pilha">
+      <Panel title="Como se tornou refratário" right={<Mono tom="cy">Narrativo</Mono>}>
+        <label className="fj-sr" htmlFor="fj-origem">Como se tornou refratário</label>
+        <textarea id="fj-origem" rows={6} value={forja.relato} onChange={(e) => setForja({ relato: e.target.value })} placeholder="O dia em que a ruptura te tocou…" className="fj-area-livre" />
+        <div className="fj-rpi">
+          <label htmlFor="fj-rpi-codinome"><Mono>Codinome</Mono></label>
+          <input id="fj-rpi-codinome" value={d.codinome} onChange={(e) => set({ codinome: e.target.value.toUpperCase() })} className="fj-rpi__input" />
+        </div>
+      </Panel>
+
+      <details className="fj-detalhes">
+        <summary className="fj-detalhes__resumo">
+          <span>Detalhes para o narrador</span>
+          <Mono pequeno>{preenchidos ? `${preenchidos}/9 preenchidos` : "Opcional"}</Mono>
+        </summary>
+        <div className="fj-borda fj-ch">
+          <div className="fj-ch fj-vidro fj-detalhes__corpo">
+            <Grupo titulo="Antecedente">
+              <CampoCurto rotulo="Meio" valor={d.antecedente.meio} onChange={(v) => set({ antecedente: { ...d.antecedente, meio: v } })} />
+              <CampoCurto rotulo="Papel" valor={d.antecedente.papel} onChange={(v) => set({ antecedente: { ...d.antecedente, papel: v } })} />
+              <CampoCurto rotulo="Relação atual" valor={d.antecedente.relacao_atual} onChange={(v) => set({ antecedente: { ...d.antecedente, relacao_atual: v } })} />
+            </Grupo>
+            <Grupo titulo="Tornando-se refratário">
+              <CampoCurto rotulo="Estopim" valor={d.refratario.estopim} onChange={(v) => set({ refratario: { ...d.refratario, estopim: v } })} />
+              <CampoCurto rotulo="Primeiros passos" valor={d.refratario.primeiros_passos} onChange={(v) => set({ refratario: { ...d.refratario, primeiros_passos: v } })} />
+              <CampoCurto rotulo="Consequência" valor={d.refratario.consequencia} onChange={(v) => set({ refratario: { ...d.refratario, consequencia: v } })} />
+            </Grupo>
+            <Grupo titulo="RPI Forjado">
+              <CampoCurto rotulo="Nome registrado" valor={d.rpi.nome_registrado} onChange={(v) => set({ rpi: { ...d.rpi, nome_registrado: v } })} />
+              <CampoCurto rotulo="Ocupação declarada" valor={d.rpi.ocupacao_declarada} onChange={(v) => set({ rpi: { ...d.rpi, ocupacao_declarada: v } })} />
+              <CampoCurto rotulo="Como o RPI chegou às suas mãos" valor={d.rpi.origem} onChange={(v) => set({ rpi: { ...d.rpi, origem: v } })} />
+            </Grupo>
+          </div>
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function Grupo({ titulo, children }: { titulo: string; children: ReactNode }) {
+  return <fieldset className="fj-detalhes__grupo"><legend><Mono tom="cy">{titulo}</Mono></legend>{children}</fieldset>;
+}
+
+function CampoCurto({ rotulo, valor, onChange }: { rotulo: string; valor: string; onChange: (v: string) => void }) {
+  return (
+    <label className="fj-campo">
+      <Mono pequeno>{rotulo}</Mono>
+      <input value={valor} onChange={(e) => onChange(e.target.value)} className="fj-campo__input fj-campo__input--curto" />
+    </label>
   );
 }
 
@@ -98,7 +146,7 @@ export function OrigemNarrativa({ b, set }: { b: Build; set: SetBuild }) {
 function Pips({ n, max, tipo }: { n: number; max: number; tipo: Tipo }) {
   return (
     <span className="fj-pips" aria-label={`${n} de ${max} pontos`}>
-      {Array.from({ length: max }).map((_, i) => <span key={i} className={`fj-pips__pip ${i < n ? `fj-pips__pip--${tipo}` : ""}`} />)}
+      {Array.from({ length: Math.max(max, n) }).map((_, i) => <span key={i} className={`fj-pips__pip ${i < n ? `fj-pips__pip--${tipo}` : ""} ${i >= max ? "fj-pips__pip--extra" : ""}`} />)}
     </span>
   );
 }
@@ -109,33 +157,42 @@ const nomeCategoria = (id?: string) => CATEGORIAS_TRACO.find((c) => c.id === id)
 /** Linhas de custo ("Por 1 ponto…") e de campanha ("Na campanha:…") ganham caixa própria. */
 const estiloLinha = (x: string) => (/^(Por|Use) \**\d/.test(x) ? "fj-traco__custo" : /^\**Na campanha/.test(x) ? "fj-traco__campanha" : "");
 
-export function Tracos({ b, set, catalogos }: { b: Build; set: SetBuild; catalogos: CatalogosCriacaoV12 }) {
+export function Tracos({ d, set, catalogos }: { d: DraftV12; set: SetDraft; catalogos: CatalogosCriacaoV12 }) {
   const [tipo, setTipo] = useState<Tipo>("qualidades");
   const [viewId, setViewId] = useState<Record<Tipo, string>>({ qualidades: catalogos.qualidades[0]?.slug ?? "", complicacoes: catalogos.complicacoes[0]?.slug ?? "" });
   const [lvl, setLvl] = useState<number | null>(null);
   const list: OpcaoTrajetoriaV12[] = catalogos[tipo];
-  const picked = b[tipo], spent = gasto(picked), max = ORCAMENTO[tipo];
+  const escolhas: DraftEscolhaV12[] = d[tipo];
   const cur = list.find((x) => x.slug === viewId[tipo]) ?? list[0];
   if (!cur) return <p className="fj-vazio">Nenhuma opção publicada para esta mesa.</p>;
-  const ownCost = picked[cur.slug];
+
+  const spent = somaPontosV12(escolhas);
+  const minhas = escolhas.filter((e) => e.id === cur.slug);
+  // Não repetível: no máximo uma; o custo dela pode ser ajustado. Repetível: cada compra é uma linha.
+  const ownCost = !cur.repetivel ? minhas[0]?.pontos : undefined;
   const level = lvl ?? ownCost ?? cur.custos[0];
-  const room = max - spent + (ownCost ?? 0);
+  const room = tipo === "qualidades" ? QUALIDADES - spent + (ownCost ?? 0) : Infinity;
   const view = (id: string) => { setViewId({ ...viewId, [tipo]: id }); setLvl(null); };
-  const commit = (cost: number | null) => {
-    const next = { ...picked };
-    if (cost === null) delete next[cur.slug]; else next[cur.slug] = cost;
-    set({ [tipo]: next } as Partial<Build>);
-    setLvl(null);
+  const gravar = (lista: DraftEscolhaV12[]) => { set({ [tipo]: lista } as Partial<DraftV12>); setLvl(null); };
+  const adquirir = () => {
+    const pontos = level as 1 | 2;
+    if (cur.repetivel) gravar([...escolhas, { id: cur.slug, pontos }]);
+    else gravar([...escolhas.filter((e) => e.id !== cur.slug), { id: cur.slug, pontos }]);
+  };
+  const remover = () => {
+    // Repetível: tira a última compra; não repetível: tira a única.
+    const i = escolhas.map((e) => e.id).lastIndexOf(cur.slug);
+    if (i >= 0) gravar(escolhas.filter((_, j) => j !== i));
   };
   const categorias = [...CATEGORIAS_TRACO.map((c) => c.id), ...new Set(list.map((x) => x.categoria ?? "").filter((c) => !CATEGORIAS_TRACO.some((k) => k.id === c)))];
+  const textoAdquirir = level > room ? "Sem pontos" : ownCost ? `Ajustar para ${level} pt` : minhas.length && cur.repetivel ? "Adquirir outra" : "Adquirir";
 
   return (
     <div className="fj-passo" data-tipo={tipo}>
       <Cabecalho kicker="Trajetória · 03" title="Qualidades & Complicações" right={
         <div className="fj-orcamentos">
-          {(["qualidades", "complicacoes"] as const).map((k) => (
-            <div key={k} className="fj-orcamento"><Mono tom={k === "qualidades" ? "cy" : "am"}>{ROTULO[k]}</Mono><Pips n={gasto(b[k])} max={ORCAMENTO[k]} tipo={k} /></div>
-          ))}
+          <div className="fj-orcamento"><Mono tom="cy">Qualidades</Mono><Pips n={somaPontosV12(d.qualidades)} max={QUALIDADES} tipo="qualidades" /></div>
+          <div className="fj-orcamento"><Mono tom="am">Complicações</Mono><Pips n={somaPontosV12(d.complicacoes)} max={COMPLICACOES_MINIMO} tipo="complicacoes" /></div>
         </div>
       } />
       <div className="fj-mestre-detalhe fj-mestre-detalhe--tracos">
@@ -156,14 +213,15 @@ export function Tracos({ b, set, catalogos }: { b: Build; set: SetBuild; catalog
                   <div key={cat}>
                     <div className="fj-tracos__categoria"><Mono pequeno>{nomeCategoria(cat)}</Mono><span className="fj-tracos__categoria-fio" /></div>
                     {items.map((t) => {
-                      const on = t.slug in picked, viewing = t.slug === cur.slug;
+                      const doTipo = escolhas.filter((e) => e.id === t.slug);
+                      const on = doTipo.length > 0, viewing = t.slug === cur.slug;
                       return (
                         <button type="button" key={t.slug} onClick={() => view(t.slug)} className={`fj-tracos__item ${viewing ? "fj-tracos__item--vendo" : ""}`}>
                           <span className="fj-tracos__item-nome">
                             <span className={`fj-losango fj-losango--sm ${on ? "fj-losango--tipo" : "fj-losango--vazio"}`} />
-                            <span className={on ? "fj-tracos__nome--on" : ""}>{t.nome}</span>
+                            <span className={on ? "fj-tracos__nome--on" : ""}>{t.nome}{doTipo.length > 1 ? ` ×${doTipo.length}` : ""}</span>
                           </span>
-                          <CustoTag t={t} on={on ? picked[t.slug] : undefined} />
+                          <CustoTag t={t} on={on ? somaPontosV12(doTipo) : undefined} />
                         </button>
                       );
                     })}
@@ -174,12 +232,14 @@ export function Tracos({ b, set, catalogos }: { b: Build; set: SetBuild; catalog
           </div>
         </div>
 
-        <div className={`${ownCost && tipo === "complicacoes" ? "fj-borda-ambar" : "fj-borda"} fj-ch fj-mestre-detalhe__registro`}>
+        <div className={`${minhas.length && tipo === "complicacoes" ? "fj-borda-ambar" : "fj-borda"} fj-ch fj-mestre-detalhe__registro`}>
           <div key={tipo + cur.slug} className="fj-ch fj-vidro fj-boot fj-sem-barra fj-registro fj-registro--traco">
             <div className="fj-registro__linha">
               <Mono className="fj-tom-tipo">{tipo === "qualidades" ? "Qualidade" : "Complicação"} · {nomeCategoria(cur.categoria)}</Mono>
               <span className="fj-registro__fio fj-registro__fio--cy" />
-              <Mono className={ownCost ? "fj-tom-tipo" : ""}>{ownCost ? `✓ Adquirida · ${ownCost} pt` : "Disponível"}</Mono>
+              <Mono className={minhas.length ? "fj-tom-tipo" : ""}>
+                {minhas.length ? `✓ Adquirida${minhas.length > 1 ? ` ×${minhas.length}` : ""} · ${somaPontosV12(minhas)} pt` : cur.repetivel ? "Disponível · repetível" : "Disponível"}
+              </Mono>
             </div>
             <h3 className="fj-registro__titulo fj-registro__titulo--menor fj-glow">{cur.nome}</h3>
             <div className="fj-traco__texto">
@@ -193,11 +253,9 @@ export function Tracos({ b, set, catalogos }: { b: Build; set: SetBuild; catalog
                 ))}
               </div>
               <div className="fj-traco__botoes">
-                {ownCost && <button type="button" onClick={() => commit(null)} className="fj-ch fj-botao-fantasma">Remover</button>}
-                {ownCost !== level && (
-                  <button type="button" disabled={level > room} onClick={() => commit(level)} className="fj-ch fj-botao-tipo">
-                    {level > room ? "Sem pontos" : ownCost ? `Ajustar para ${level} pt` : "Adquirir"}
-                  </button>
+                {minhas.length > 0 && <button type="button" onClick={remover} className="fj-ch fj-botao-fantasma">{cur.repetivel && minhas.length > 1 ? "Remover uma" : "Remover"}</button>}
+                {(cur.repetivel || ownCost !== level) && (
+                  <button type="button" disabled={level > room} onClick={adquirir} className="fj-ch fj-botao-tipo">{textoAdquirir}</button>
                 )}
               </div>
             </div>
@@ -220,26 +278,31 @@ function CustoTag({ t, on }: { t: OpcaoTrajetoriaV12; on?: number }) {
   );
 }
 
-/** Painel lateral dos Traços: o que já foi adquirido e os pontos que sobram. */
-export function FichaTracos({ b, set, catalogos }: { b: Build; set: SetBuild; catalogos: CatalogosCriacaoV12 }) {
-  const drop = (k: Tipo, id: string) => { const n = { ...b[k] }; delete n[id]; set({ [k]: n } as Partial<Build>); };
+/** Painel lateral dos Traços: o que já foi adquirido e a regra de cada lado. */
+export function FichaTracos({ d, set, catalogos }: { d: DraftV12; set: SetDraft; catalogos: CatalogosCriacaoV12 }) {
+  const drop = (k: Tipo, i: number) => set({ [k]: d[k].filter((_, j) => j !== i) } as Partial<DraftV12>);
   return (
     <div className="fj-pilha">
       {(["qualidades", "complicacoes"] as const).map((k) => {
-        const entries = Object.entries(b[k]), left = ORCAMENTO[k] - gasto(b[k]), q = k === "qualidades";
+        const lista = d[k], soma = somaPontosV12(lista), q = k === "qualidades";
         const nome = (slug: string) => catalogos[k].find((x) => x.slug === slug)?.nome ?? slug;
+        const placar = q ? `${QUALIDADES - soma}` : soma >= COMPLICACOES_MINIMO ? "✓" : `${COMPLICACOES_MINIMO - soma}`;
         return (
-          <Panel key={k} ambar={!q} title={ROTULO[k]} right={<span className={`fj-ficha-tracos__sobra ${q ? "" : "fj-ficha-tracos__sobra--escuro"}`}>{left}</span>}>
-            <div className="fj-ficha-tracos__topo" data-tipo={k}><Mono>Pontos restantes</Mono><Pips n={gasto(b[k])} max={ORCAMENTO[k]} tipo={k} /></div>
-            {entries.length ? entries.map(([id, v]) => (
-              <div key={id} className="fj-ficha-tracos__linha">
-                <span className="fj-ficha-tracos__nome">{nome(id)}</span>
+          <Panel key={k} ambar={!q} title={ROTULO[k]} right={<span className={`fj-ficha-tracos__sobra ${q ? "" : "fj-ficha-tracos__sobra--escuro"}`}>{placar}</span>}>
+            <div className="fj-ficha-tracos__topo" data-tipo={k}>
+              <Mono>{q ? "Somam exatamente 3" : "Somam ao menos 2"}</Mono>
+              <Pips n={soma} max={q ? QUALIDADES : COMPLICACOES_MINIMO} tipo={k} />
+            </div>
+            {lista.length ? lista.map((e, i) => (
+              <div key={`${e.id}-${i}`} className="fj-ficha-tracos__linha">
+                <span className="fj-ficha-tracos__nome">{nome(e.id)}</span>
                 <span className="fj-ficha-tracos__dir">
-                  <Mono tom={q ? "cy" : "am"}>{v} pt</Mono>
-                  <button type="button" onClick={() => drop(k, id)} className="fj-ficha-tracos__remover" aria-label={`Remover ${nome(id)}`}>✕</button>
+                  <Mono tom={q ? "cy" : "am"}>{e.pontos} pt</Mono>
+                  <button type="button" onClick={() => drop(k, i)} className="fj-ficha-tracos__remover" aria-label={`Remover ${nome(e.id)}`}>✕</button>
                 </span>
               </div>
             )) : <p className="fj-ficha-tracos__vazio">Nenhum registro adquirido.</p>}
+            {!q && soma > COMPLICACOES_MINIMO && <p className="fj-ficha-tracos__nota">Complicações além de 2 pontos só com acordo do grupo.</p>}
           </Panel>
         );
       })}

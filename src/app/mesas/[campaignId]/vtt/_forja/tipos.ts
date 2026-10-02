@@ -1,40 +1,11 @@
-import type { RegiaoIdV12 } from "../../../../../lib/rulesetV12/contracts";
-import type { VertenteId } from "./acervo/vertentes";
-
 /**
- * O personagem em construção dentro da Forja. Só ESCOLHAS: recursos,
- * perícias zeradas e inventário são montados no servidor.
- *
- * Fase 1 do plano: a mecânica ainda é a do protótipo (atributos livres
- * de 1 a 4 somando 9, magias escolhidas na Vertente). A Fase 3 troca por
- * perfis da Classe, passo de Perícias e magias pendentes.
+ * O personagem em construção é um `DraftV12` (o mesmo formato do rascunho
+ * do servidor), dentro do motor `useCriacao`. Aqui ficam só constantes de
+ * apresentação da Forja.
  */
-export interface Build {
-  /** URL de prévia local (`blob:`) ou da arte padrão. */
-  avatar: string;
-  nome: string;
-  codinome: string;
-  conceito: string;
-  aparencia: string;
-  regiao: RegiaoIdV12 | "";
-  /** Cidade, distrito ou comunidade de origem. */
-  local: string;
-  /** Slug do Antecedente publicado. */
-  antecedente: string;
-  /** Texto livre "Como se tornou refratário". */
-  origem: string;
-  /** Slug → pontos. */
-  qualidades: Record<string, number>;
-  complicacoes: Record<string, number>;
-  /** Slug da Classe publicada. */
-  classe: string;
-  /** Corpo, Mente, Ânimo. */
-  atributos: [number, number, number];
-  vertente: VertenteId | "";
-  magias: string[];
-}
+import type { DraftV12 } from "../../../../../lib/rulesetV12";
 
-export type SetBuild = (p: Partial<Build>) => void;
+export type SetDraft = (p: Partial<DraftV12>) => void;
 
 export const PASSOS = [
   { key: "conceito", label: "Conceito", group: "CONCEITO" },
@@ -43,6 +14,7 @@ export const PASSOS = [
   { key: "tracos", label: "Traços", group: "TRAJETÓRIA" },
   { key: "classe", label: "Classe", group: "CLASSE" },
   { key: "atributos", label: "Atributos", group: "MECÂNICA" },
+  { key: "pericias", label: "Perícias", group: "MECÂNICA" },
   { key: "vertente", label: "Vertente", group: "MECÂNICA" },
   { key: "revisao", label: "Revisão", group: "SELAGEM" },
 ] as const;
@@ -54,6 +26,9 @@ export const CATEGORIAS_TRACO: Array<{ id: string; nome: string }> = [
   { id: "recursos_e_infraestrutura", nome: "Recursos e Infraestrutura" },
   { id: "caracteristicas_pessoais", nome: "Características Pessoais" },
 ];
+
+/** Ranking em que todo personagem novo começa (até existir o Ranking inicial da campanha). */
+export const RANKING_INICIAL = "F";
 
 /** Arte provisória do avatar até o jogador enviar o dele (Unsplash; em espera no plano). */
 export const AVATAR_PADRAO = "https://images.unsplash.com/photo-1660514163811-cc993ac5ff1f?w=700&h=900&fit=crop&auto=format&q=80";

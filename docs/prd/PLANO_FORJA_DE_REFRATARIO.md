@@ -1,8 +1,8 @@
 # Plano — Forja de Refratário (criação de personagem)
 
-**Status:** em implementação (Fases 0 e 1 entregues)  
+**Status:** em implementação (Fases 0 a 3 entregues)  
 **Criado em:** 02/10/2026  
-**Versão deste documento:** 0.2  
+**Versão deste documento:** 0.3  
 **Origem:** audit do protótipo `High-Fidelity Character Creator Exploration/` (Figma Make, commit `6449e71`)  
 **Prancha de cores:** https://claude.ai/artifact/QPtzERYKCXwA5AoBQNGNFs
 
@@ -166,7 +166,17 @@ Com a Forja pronta, levantar o que vale para o VTT inteiro (Oxanium nos headings
   - Antecedentes, Qualidades e Complicações já vêm do catálogo canônico (`CatalogosCriacaoV12`). Dossiês de classe e grimórios ainda vêm dos JSON do protótipo, importados direto da pasta dele (sai na Fase 3);
   - de quebra: rótulos de 8–9px subiram para 10px, a regra de "concluído" ficou numa função só (`passosCompletos`), a prévia do avatar é liberada da memória e a ordem dos hooks em Traços foi corrigida.
 
+- **Fases 2 e 3 — entregues em `/dev/forja`.**
+  - Motor único (`_forja/useCriacao.ts`): o personagem em construção é um `DraftV12`, o mesmo rascunho do servidor, salvo sozinho quando a Forja abre numa mesa (debounce, fila, pausa em conflito, vindos do assistente anterior). O rascunho ganhou `forja` (passo exato e os textos da Forja); o assistente anterior ignora esse campo.
+  - Pendências numa função pura (`src/lib/rulesetV12/pendencias.ts`), que alimenta a Sincronia, os losangos do menu e a Revisão; testada em `test:ruleset-v12-pendencias`.
+  - Regras: Atributos por perfil da Classe (escolher o perfil já distribui; − e + trocam valores, a distribuição fica sempre válida), passo novo de Perícias, Qualidades = 3 e Complicações ≥ 2 (sem teto; Qualidades repetíveis podem ser compradas de novo), recursos e PA pelas fórmulas da Classe, magias pendentes, troca de Classe limpa perfis e Perícias com aviso.
+  - Narrativa opcional também no servidor (`validation.ts`): Meio, Papel, Relação atual, transformação e RPI aceitam texto vazio. O banco já não exigia.
+  - O quadro da placa mostra o Ranking (hoje sempre F).
+  - **Em aberto para a Fase 4:** onde guardar Ideia geral, Aparência e "Como se tornou refratário" no personagem. O contrato v1.2 não tem campo para eles; hoje ficam só no rascunho.
+
 ## 6. Em espera
+
+- **Ranking inicial da campanha:** o narrador poder começar a mesa acima do Ranking F. Precisa de uma opção na campanha, de passos extras na Forja (Subclasse, características por Ranking) ou de "criar em F e evoluir até o Ranking da mesa" reaproveitando a evolução v1.2, e de validação no servidor aceitando personagens criados acima de F. Depende de regras a definir.
 
 - **Equipamento:** passo de compras com Ⱥ inicial.
 - **Magias:** escolha na criação e o back correspondente, depois do capítulo de magias.

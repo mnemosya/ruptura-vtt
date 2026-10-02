@@ -17,6 +17,7 @@ import face from "../../../../content/v12/db_classe_face_v1_2.json";
 import infiltrador from "../../../../content/v12/db_classe_infiltrador_v1_2.json";
 import tecnico from "../../../../content/v12/db_classe_tecnico_v1_2.json";
 import vanguarda from "../../../../content/v12/db_classe_vanguarda_v1_2.json";
+import regras from "../../../../content/db_regras_personagem_normalizado_v1_4.json";
 
 const porNome = <T extends { nome: string }>(a: T, b: T) => a.nome.localeCompare(b.nome, "pt-BR");
 
@@ -41,7 +42,8 @@ export function catalogoDev(): CatalogosCriacaoV12 {
   return {
     ehNarrador: false,
     classes,
-    pericias: [],
+    // Na mesa vem de `character_rule` (getCharacterRules); aqui, da transcrição das regras.
+    pericias: (regras as unknown as { pericias: Array<{ id: string; nome: string }> }).pericias.map((p) => ({ id: p.id, nome: p.nome })).sort(porNome),
     regioes: Object.entries(REGIOES_V12).map(([id, r]) => ({ id, nome: r.nome, idioma: r.idioma })),
     vertentes: [...VERTENTES_V12],
     antecedentes: t.backgrounds.map((a) => ({ slug: a.slug, nome: a.nome, descricao: a.descricao, familiaridade: a.familiaridade })).sort(porNome),

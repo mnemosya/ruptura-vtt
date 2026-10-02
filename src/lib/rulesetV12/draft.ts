@@ -45,7 +45,25 @@ export interface DraftV12 {
   pericias: Record<string, 0 | 1 | 2 | 3>;
   vertente: string;
   compras: Record<string, number>;
+  /**
+   * O que só a Forja de Refratário coleta. Opcional: rascunhos do
+   * assistente anterior não têm, e o assistente anterior ignora.
+   * `passo` é o passo exato da Forja (o `step` acima fica no número de
+   * etapas do assistente, para os dois lerem o mesmo rascunho).
+   */
+  forja?: DraftForjaV12;
 }
+
+export interface DraftForjaV12 {
+  passo: number;
+  conceito: string;
+  aparencia: string;
+  /** "Como se tornou refratário", em texto livre. */
+  relato: string;
+}
+
+/** Passos da Forja de Refratário (Conceito … Revisão). */
+export const FORJA_PASSOS = 9;
 
 const MAX_SERIALIZED_LENGTH = 100_000;
 const MAX_TEXT = 2_000;
@@ -117,7 +135,17 @@ export function parseDraftV12(raw: unknown): DraftV12 | null {
     compras[k] = v as number;
   }
 
+  let forja: DraftForjaV12 | undefined;
+  if (raw.forja !== undefined) {
+    const f = raw.forja;
+    if (!isObj(f) || !Number.isInteger(f.passo) || (f.passo as number) < 0 || (f.passo as number) >= FORJA_PASSOS) return null;
+    const t = textos(f, ["conceito", "aparencia", "relato"] as const);
+    if (!t) return null;
+    forja = { passo: f.passo as number, ...t };
+  }
+
   return {
+    ...(forja ? { forja } : {}),
     schema_version: DRAFT_V12_SCHEMA_VERSION,
     ruleset_version: "1.2",
     step: raw.step as number,
@@ -196,7 +224,9 @@ export function sanitizeDraftV12(draft: DraftV12, cat: DraftCatalogosV12): { dra
 
   const classe = cat.classes.find((c) => c.slug === d.classeSlug);
   if (!classe) {
-    d.classeSlug = manter(false, d.classeSlug, cat.classes[0]?.slug ?? "");
+    // Classe ainda não escolhida continua não escolhida; só uma Classe que
+    // deixou de existir conta como escolha descartada.
+    d.classeSlug = d.classeSlug === "" ? "" : manter(false, d.classeSlug, "");
     d.perfilAtributos = "";
     d.atributos = { corpo: null, mente: null, animo: null };
     d.perfilPericias = "";
