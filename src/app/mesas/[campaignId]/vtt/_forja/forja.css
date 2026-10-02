@@ -338,8 +338,7 @@
 .fj-titulo__conteudo { position: relative; display: flex; height: 100%; flex-direction: column; justify-content: center; padding: 0 40px; }
 @container forja (min-width: 1024px) { .fj-titulo__conteudo { padding-inline: 96px; } }
 .fj-titulo__marca { position: relative; margin-top: var(--hud-space-5); }
-.fj-titulo__logo { display: block; font: 800 clamp(4rem, 11cqi, 9.5rem)/0.85 var(--fj-display); letter-spacing: 0.04em; color: var(--fj-gelo); }
-.fj-titulo__logo--eco { position: absolute; inset: 0; color: color-mix(in srgb, var(--fj-am) 60%, transparent); mix-blend-mode: screen; text-shadow: none; }
+.fj-titulo__marca .ds-marca { --ds-marca-tamanho: clamp(4rem, 11cqi, 9.5rem); --ds-marca-eco: var(--fj-am); display: block; }
 .fj-titulo__sub { margin-top: var(--hud-space-4); display: flex; align-items: center; gap: var(--hud-space-4); }
 .fj-titulo__sub-fio { height: 2px; width: 64px; background: var(--fj-cy); box-shadow: 0 0 10px var(--fj-cy); }
 .fj-titulo__sub-texto { font: 600 18px var(--fj-display); text-transform: uppercase; letter-spacing: 0.5em; color: var(--fj-cy); }

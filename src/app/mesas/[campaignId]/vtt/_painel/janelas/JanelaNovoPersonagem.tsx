@@ -16,7 +16,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Forja } from "../../_forja/Forja";
-import { oxanium } from "../../_forja/fonte";
+import { oxanium } from "../../../../../_design/oxanium";
 import { lerCatalogosCriacaoV12Action, type CatalogosCriacaoV12 } from "../../_acoes/criacaoV12Actions";
 import type { PersonagemACompletar } from "../../_shell/JanelasDaMesa";
 import "../../_forja/forja.css";
@@ -66,6 +66,7 @@ export function JanelaNovoPersonagem({
           catalogos={catalogos}
           campaignId={campaignId}
           nomeMesa={catalogos.nomeMesa ?? "Mesa"}
+          regiaoCampanha={catalogos.regiaoMesa ?? undefined}
           completar={completar}
           onSair={onFechar}
           onConcluir={(id) => { onFechar(); onAbrirFicha(id); }}
