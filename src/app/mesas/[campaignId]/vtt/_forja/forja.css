@@ -258,8 +258,7 @@
 @container forja (min-width: 1024px) { .fj-topo { padding-inline: var(--hud-space-8); } }
 
 /* ── Menu lateral ── */
-.fj-menu { display: none; flex-direction: column; }
-@container forja (min-width: 1280px) { .fj-menu { display: flex; } }
+.fj-menu { display: flex; flex-direction: column; }
 .fj-menu__titulo {
   margin-bottom: var(--hud-space-4); padding: var(--hud-space-3) 0 var(--hud-space-3) var(--hud-space-5);
   background: linear-gradient(to right, color-mix(in srgb, var(--fj-cy) 40%, transparent), color-mix(in srgb, var(--fj-cy) 5%, transparent));
@@ -285,6 +284,17 @@
 .fj-menu__aviso { margin-top: auto; padding-top: var(--hud-space-7); }
 .fj-menu__aviso-texto { font-size: 14px; line-height: 1.375; color: var(--fj-texto); }
 .fj-menu__aviso-faixa { margin-top: var(--hud-space-4); height: 8px; }
+/* Abaixo de 1280px: faixa compacta com os passos no topo. */
+@container forja (max-width: 1279.98px) {
+  .fj-menu__titulo, .fj-menu__grupo, .fj-menu__aviso, .fj-menu__sublinhado { display: none; }
+  .fj-menu__lista { flex-direction: row; gap: var(--hud-space-1); overflow-x: auto; scrollbar-width: none; }
+  .fj-menu__lista > div { flex: none; }
+  .fj-menu__passo { gap: var(--hud-space-2); padding: var(--hud-space-2) var(--hud-space-3); border-bottom: 2px solid transparent; }
+  .fj-menu__passo--atual { border-bottom-color: var(--fj-am); }
+  .fj-menu__rotulo { font-size: 12px; }
+  .fj-menu__passo:not(.fj-menu__passo--atual) .fj-menu__rotulo { display: none; }
+  .fj-menu__estado { margin-right: 0; }
+}
 
 /* ── Placa de identidade e sincronia ── */
 .fj-placa { display: flex; align-items: stretch; justify-content: flex-end; gap: var(--hud-space-3); }
