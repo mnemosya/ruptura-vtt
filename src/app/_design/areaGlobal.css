@@ -129,13 +129,13 @@
    degradê ciano e sublinhado âmbar. Sem o fio de chanfro por segmento, que
    desenhava pontas ciano soltas no ativo. */
 .ag .ra2-segmented {
-  gap: 0; padding: 0; border: 1px solid color-mix(in srgb, var(--ag-cy) 22%, transparent);
+  gap: 0; padding: 0; align-items: stretch; border: 1px solid color-mix(in srgb, var(--ag-cy) 22%, transparent);
   background: color-mix(in srgb, var(--ag-abismo) 70%, transparent);
   --ra-chanfro: 10px; --ra-chanfro-fio: color-mix(in srgb, var(--ag-cy) 22%, transparent);
 }
 .ag .ra2-seg {
   position: relative; border: 0; border-radius: 0; clip-path: none; --ra-chanfro-fio: transparent;
-  padding: 10px 22px; background: none; box-shadow: none;
+  height: auto; padding: 0 22px; background: none; box-shadow: none;
   font: 600 12px var(--ag-display); letter-spacing: 0.18em; color: color-mix(in srgb, var(--ag-gelo) 55%, transparent);
 }
 .ag .ra2-seg + .ra2-seg { border-left: 1px solid color-mix(in srgb, var(--ag-cy) 14%, transparent); }
@@ -180,10 +180,10 @@
 .ag .ag-papel::before { content: "◆ "; }
 
 /* ── Cartões ── */
-.ag .ag-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; padding-top: 16px; }
+.ag .ag-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px; padding-top: 16px; }
 .ag .ag-cartao-borda { transition: transform var(--ag-trans), filter var(--ag-trans); }
 .ag .ag-cartao-borda:hover { transform: translateY(-3px); filter: drop-shadow(0 0 10px color-mix(in srgb, var(--ag-cy) 30%, transparent)); }
-.ag .ag-cartao { position: relative; height: 230px; overflow: hidden; }
+.ag .ag-cartao { position: relative; aspect-ratio: 1; overflow: hidden; }
 .ag .ag-cartao__capa { opacity: 0.55; }
 .ag .ag-cartao__veu { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(6, 18, 28, 0.97) 38%, rgba(6, 18, 28, 0.2)); }
 .ag .ag-cartao__corpo { position: relative; height: 100%; display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; }
@@ -193,7 +193,7 @@
 .ag .ag-cartao__titulo { margin: auto 0 0; font: 700 19px/1.15 var(--ag-display); color: var(--ag-gelo); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .ag .ag-cartao__rodape { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
 .ag .ag-nova {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; height: 232px; width: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; aspect-ratio: 1; width: 100%;
   border: 1px dashed color-mix(in srgb, var(--ag-cy) 35%, transparent); color: var(--ag-cy); background-color: transparent; cursor: pointer;
   background-image: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--ag-cy) 7%, transparent) 0 6px, transparent 6px 12px);
   transition: background-color var(--ag-trans), border-color var(--ag-trans);
@@ -202,24 +202,43 @@
 .ag .ag-nova:focus-visible { outline: 2px solid var(--ag-cy); outline-offset: 3px; }
 .ag .ag-nova__mais { font: 300 40px/1 var(--ag-display); }
 
-/* ── Painéis laterais (Atividade, Rede) ── */
-.ag .ra2-side { gap: 18px; }
+/* ── Painéis laterais (Atividade, Rede) ──
+   Sem caixa: como o painel lateral da Forja, cada um é um título em mono
+   com fio e uma lista solta. Atividade vira uma linha do tempo (fio
+   vertical com losangos); Rede, uma lista de avatares hexagonais com o
+   estado à direita. */
+.ag .ra2-side { gap: 30px; }
 .ag .ra2-panel {
-  border: 0; border-radius: 0; padding: 0 16px 14px; box-shadow: none;
-  clip-path: polygon(0 0, calc(100% - var(--ag-n)) 0, 100% var(--ag-n), 100% 100%, var(--ag-n) 100%, 0 calc(100% - var(--ag-n)));
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--ag-fundo) 92%, transparent), color-mix(in srgb, var(--ag-abismo) 95%, transparent)) padding-box;
-  outline: 1px solid color-mix(in srgb, var(--ag-cy) 30%, transparent); outline-offset: -1px;
+  border: 0; border-radius: 0; padding: 0; box-shadow: none; clip-path: none; background: none; outline: 0;
+  --ra-chanfro-fio: transparent;
 }
+.ag .ra2-panel::before, .ag .ra2-panel::after { display: none; }
 .ag .ra2-panel .ra-deco-bottom { display: none; }
 .ag .ra2-panel-title {
-  margin: 0 -16px 8px; padding: 12px 16px;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--ag-cy) 18%, transparent), transparent);
-  font: 700 13px var(--ag-display); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ag-gelo);
+  display: flex; align-items: center; gap: 10px; margin: 0 0 12px; padding: 0; background: none;
+  font: 400 11px var(--ag-mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ag-cy);
 }
-.ag .ra2-panel-row-main strong { font-family: var(--ag-display); color: var(--ag-gelo); }
-.ag .ra-diamond { background: var(--ag-cy); box-shadow: 0 0 6px var(--ag-cy); }
-.ag .ra2-person-avatar { border: 0; border-radius: 0; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); background: linear-gradient(135deg, #1d4a5c, #0b2230); color: var(--ag-gelo); }
+.ag .ra2-panel-title svg { display: none; }
+.ag .ra2-panel-title::after { content: ""; flex: 1; height: 1px; background: color-mix(in srgb, var(--ag-cy) 15%, transparent); }
+
+.ag .ra2-panel-list { position: relative; gap: 0; padding-left: 4px; }
+.ag .ra2-panel-list::before { content: ""; position: absolute; left: 7px; top: 10px; bottom: 10px; width: 1px; background: color-mix(in srgb, var(--ag-cy) 25%, transparent); }
+.ag .ra2-panel-sep { display: none; }
+.ag .ra2-panel-row { position: relative; gap: 14px; padding: 6px 0 12px; }
+.ag .ra2-panel-row .ra-diamond { position: relative; width: 8px; height: 8px; background: var(--ag-cy); box-shadow: 0 0 6px var(--ag-cy); }
+.ag .ra2-panel-list > div:first-child .ra-diamond { background: var(--ag-am); box-shadow: 0 0 8px var(--ag-am); }
+.ag .ra2-panel-row-main strong { font: 700 15px var(--ag-display); color: var(--ag-gelo); }
+.ag .ra2-panel-row-main span { font: 400 10px var(--ag-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ag-apagado); }
+
+.ag .ra2-people { gap: 4px; }
+.ag .ra2-person--link { padding: 8px 10px 8px 0; border: 0; border-radius: 0; clip-path: none; --ra-chanfro-fio: transparent; background: none; }
+.ag .ra2-person--link::before, .ag .ra2-person--link::after { display: none; }
+.ag .ra2-person--link:hover { background: linear-gradient(to right, color-mix(in srgb, var(--ag-cy) 12%, transparent), transparent); }
+.ag .ra2-person-avatar { width: 34px; height: 30px; border: 0; border-radius: 0; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); background: linear-gradient(135deg, #1d4a5c, #0b2230); color: var(--ag-gelo); --ra-chanfro-fio: transparent; }
+.ag .ra2-person-avatar::before, .ag .ra2-person-avatar::after { display: none; }
+.ag .ra2-person-name { font: 600 15px var(--ag-display); color: var(--ag-gelo); }
+.ag .ra2-person--off .ra2-person-name { color: var(--ag-apagado); }
+.ag .ra2-person-off { font: 400 10px var(--ag-mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--ag-apagado); }
 
 /* ── Modal de criação ── */
 .ag .ra-modal { border-radius: 0; clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px)); }
