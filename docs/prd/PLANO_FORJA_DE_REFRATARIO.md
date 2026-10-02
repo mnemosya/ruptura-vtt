@@ -186,6 +186,8 @@ Com a Forja pronta, levantar o que vale para o VTT inteiro (Oxanium nos headings
 
 - **Fase 5 — entregue.** Atalhos Q (voltar), E (confirmar; no último passo, Selar) e U (avatar), ignorados enquanto se digita ou com uma janela aberta. Abaixo de 1280px o menu vira uma faixa de passos no topo (só o atual mostra o nome; os outros têm o nome no `title`). Os losangos de estado são lidos como "concluído/pendente" pelo leitor de tela. O resto de 3.6 já vinha das fases anteriores.
 
+- **Fase 6 — em andamento.** A marca RUPTURA da tela de título virou componente do design system (`src/app/_design/Marca.tsx` + `marca.css`, prefixo `ds-marca`): letras em gelo, brilho ciano e eco com glitch (laranja na Forja, ciano no resto). Já usada na Forja e na tela de login. A Oxanium saiu da pasta da Forja para `src/app/_design/oxanium.ts`.
+
 ## 6. Em espera
 
 - **Ranking inicial da campanha:** o narrador poder começar a mesa acima do Ranking F. Precisa de uma opção na campanha, de passos extras na Forja (Subclasse, características por Ranking) ou de "criar em F e evoluir até o Ranking da mesa" reaproveitando a evolução v1.2, e de validação no servidor aceitando personagens criados acima de F. Depende de regras a definir.

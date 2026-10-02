@@ -1,0 +1,35 @@
+/*
+ * Marca RUPTURA — o logotipo da tela de título da Forja, compartilhado.
+ *
+ * Letras em gelo com brilho ciano e um eco que falha (glitch) por cima.
+ * Quem usa ajusta só duas variáveis:
+ *   --ds-marca-tamanho  tamanho da fonte (padrão: clamp para telas pequenas)
+ *   --ds-marca-eco      cor do eco (padrão: ciano; a Forja usa o laranja dela)
+ * A fonte vem de `--font-oxanium` (classe `oxanium.variable` no componente).
+ */
+/* `h1.` para vencer resets de título de quem a recebe (ex.: a Forja). */
+h1.ds-marca {
+  --ds-marca-gelo: #cfeff4;
+  --ds-marca-ciano: #00d4ff;
+  position: relative; display: inline-block; margin: 0;
+  font: 800 var(--ds-marca-tamanho, clamp(3rem, 15vw, 4.5rem)) / 0.85 var(--font-oxanium), "Oxanium", var(--font-orbitron), sans-serif;
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+.ds-marca__logo {
+  display: block; color: var(--ds-marca-gelo);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--ds-marca-ciano) 70%, transparent);
+}
+.ds-marca__eco {
+  position: absolute; inset: 0; pointer-events: none; user-select: none;
+  color: color-mix(in srgb, var(--ds-marca-eco, var(--ds-marca-ciano)) 60%, transparent);
+  mix-blend-mode: screen;
+  animation: ds-marca-glitch 2.6s steps(1) infinite;
+}
+@keyframes ds-marca-glitch {
+  0%, 60%, 100% { transform: none; clip-path: none; }
+  20% { transform: translate(-3px, 1px); clip-path: inset(10% 0 60% 0); }
+  40% { transform: translate(3px, -1px); clip-path: inset(50% 0 20% 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds-marca__eco { display: none; }
+}

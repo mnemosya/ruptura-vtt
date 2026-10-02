@@ -23,7 +23,8 @@ import { VERTENTES_ACERVO } from "./acervo/vertentes";
 import { Carrossel } from "./Carrossel";
 import { Holograma } from "./Holograma";
 import { Key, Mono, Panel, Seg } from "./ui";
-import { oxanium } from "./fonte";
+import { oxanium } from "../../../../_design/oxanium";
+import { MarcaRuptura } from "../../../../_design/Marca";
 import { AVATAR_PADRAO, PASSOS, RANKING_INICIAL, type SetDraft } from "./tipos";
 import { PASSO_DO_CAMPO, useCriacao, type Criacao } from "./useCriacao";
 import { RegiaoLateral } from "./passos/Regiao";
@@ -433,8 +434,7 @@ function Titulo({ nomeMesa, c, completar, onContinuar, onNovo, onSair }: {
       <div className="fj-titulo__conteudo">
         <Mono tom="am">{"// ANOMALIA DETECTADA · NOVO SINAL REFRATÁRIO"}</Mono>
         <div className="fj-titulo__marca">
-          <h1 className="fj-titulo__logo fj-glow">RUPTURA</h1>
-          <span aria-hidden="true" className="fj-glitch fj-titulo__logo fj-titulo__logo--eco">RUPTURA</span>
+          <MarcaRuptura />
         </div>
         <div className="fj-titulo__sub"><span className="fj-titulo__sub-fio" /><span className="fj-titulo__sub-texto">Forja de Refratário</span></div>
         {c.estado.tipo === "erro" && <p className="fj-titulo__alerta" role="alert">Não foi possível verificar o rascunho salvo: {c.estado.mensagem} <button type="button" onClick={c.recarregar}>Tentar de novo</button></p>}

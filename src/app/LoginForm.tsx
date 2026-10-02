@@ -38,6 +38,7 @@ import {
   User,
 } from "./_design/icons";
 import "./_design/auth.css";
+import { MarcaRuptura } from "./_design/Marca";
 
 type AuthMode = "login" | "register";
 
@@ -409,7 +410,7 @@ export function LoginForm({
                   TERMINAL DE ACESSO À MALHA
                 </span>
               </div>
-              <h1 className="rv-title">RUPTURA</h1>
+              <MarcaRuptura className="rv-marca" />
               <p className="rv-subtitle">VIRTUAL TABLETOP</p>
             </div>
 
