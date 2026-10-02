@@ -410,7 +410,7 @@ export function GlobalShell({
                     <span className="ra2-brand-full">
                       <MarcaRuptura como="span" />
                       <span className="ra2-brand-sub" style={{ display: "block" }}>
-                        VTT · v{process.env.NEXT_PUBLIC_APP_VERSION ?? "0.0.0"}
+                        VTT · Terminal de operações
                       </span>
                     </span>
                   )}

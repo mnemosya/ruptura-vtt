@@ -48,15 +48,21 @@
 }
 
 /* ── Barra lateral ── */
-.ag .ra2-sidebar { gap: 18px; width: 250px; padding: 22px 0 18px 22px; background: linear-gradient(180deg, rgba(6, 18, 28, 0.82), rgba(6, 18, 28, 0.7)); border-right-color: color-mix(in srgb, var(--ag-cy) 12%, transparent); }
+.ag .ra2-sidebar {
+  gap: 10px; width: 290px; padding: 28px 0 18px 40px;
+  /* Como o menu da Forja: sem painel nem borda, solto sobre o fundo. */
+  background: linear-gradient(90deg, rgba(6, 18, 28, 0.85), rgba(6, 18, 28, 0)); border-right: 0;
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+}
 .ag .ra2-sidebar--collapsed { width: 76px; padding: 22px 12px 18px; }
 .ag .ra2-brand { min-height: 0; gap: 8px; padding-right: 18px; }
-.ag .ra2-brand .ds-marca { --ds-marca-tamanho: 30px; }
-.ag .ra2-brand-sub { font-size: 10px; letter-spacing: 0.2em; color: var(--ag-cy); padding-top: 0; }
+.ag .ra2-brand { margin-bottom: 18px; }
+.ag .ra2-brand .ds-marca { --ds-marca-tamanho: 36px; }
+.ag .ra2-brand-sub { font-size: 11px; letter-spacing: 0.18em; color: var(--ag-cy); padding-top: 6px; }
 .ag .ra2-brand-mark { border-radius: 0; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); font-family: var(--ag-display); font-weight: 800; color: var(--ag-abismo); background: var(--ag-gelo); box-shadow: none; }
 
 .ag .ra2-nav { gap: 8px; }
-.ag .ag-nav-grupo { display: flex; align-items: center; gap: 12px; margin: 22px 18px 4px 0; }
+.ag .ag-nav-grupo { display: flex; align-items: center; gap: 12px; margin: 26px 18px 6px 0; }
 .ag .ag-nav-grupo:first-child { margin-top: 4px; }
 .ag .ag-nav-grupo .ag-mono { font-size: 10px; color: color-mix(in srgb, var(--ag-cy) 75%, transparent); }
 .ag .ag-nav-grupo i { height: 1px; flex: 1; background: color-mix(in srgb, var(--ag-cy) 15%, transparent); }
@@ -215,3 +221,8 @@
   .ag .ag-cartao-borda, .ag .ag-cartao-borda:hover { transition: none; transform: none; }
 }
 .ra-reduce-motion.ag .ag-cartao-borda:hover { transform: none; }
+/* Gaveta do celular: fundo sólido (sobre o conteúdo, a transparência atrapalharia). */
+@media (max-width: 860px) {
+  .ag .ra2-sidebar-wrap .ra2-sidebar { width: 270px; padding: 24px 0 18px 24px; background: var(--ag-abismo); }
+  .ag .ra2-sidebar-wrap .ra2-nav-item:not(.ra2-nav-logout) { padding: 13px 0 13px 16px; }
+}
