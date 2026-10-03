@@ -8,7 +8,6 @@
 
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "../../../../lib/auth/session";
-import { PageHead } from "../../_global/parts";
 import { LivroPagina } from "../../[campaignId]/vtt/_compendio/LivroCodex";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +16,6 @@ export default async function CompendioPage() {
   if (!(await getCurrentUser())) redirect("/login");
   return (
     <div className="ra2-page ra2-view-enter">
-      <PageHead eyebrow="SYS.RUPTURA // LIVRO DE REGRAS" title="Compêndio" />
       <LivroPagina />
     </div>
   );

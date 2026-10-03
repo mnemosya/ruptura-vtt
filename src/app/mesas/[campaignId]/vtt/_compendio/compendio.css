@@ -133,7 +133,7 @@
 .fj-livro-enviar--heroi { margin-top: var(--hud-space-4); }
 
 /* ── Livro em página inteira (Compêndio da área autenticada) ── */
-.fj-livro-pagina { height: calc(100dvh - 240px); min-height: 520px; }
+.fj-livro-pagina { height: calc(100dvh - 120px); min-height: 520px; }
 .fj-livro-pagina .fj-codex { height: 100%; }
 
 /* Páginas filhas listadas no texto (ex.: a Lista de Mercadorias do cap. 24). */
