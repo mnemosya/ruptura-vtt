@@ -131,3 +131,7 @@
 .fj-livro-enviar:hover { border-color: var(--fj-am); color: var(--fj-am); }
 .fj-livro-verbete .fj-livro-enviar { position: absolute; top: var(--hud-space-2); right: var(--hud-space-4); }
 .fj-livro-enviar--heroi { margin-top: var(--hud-space-4); }
+
+/* ── Livro em página inteira (Compêndio da área autenticada) ── */
+.fj-livro-pagina { height: calc(100dvh - 240px); min-height: 520px; }
+.fj-livro-pagina .fj-codex { height: 100%; }

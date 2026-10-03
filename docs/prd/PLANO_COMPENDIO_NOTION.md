@@ -192,3 +192,7 @@ O índice de termos é montado pela própria sincronização, a partir dos títu
 - Marcar como revisado: `npm run compendio:revisado -- <chave>` (ou `--todos`, `--listar`); grava o hash atual e a data no manifesto, que é commitado com a revisão.
 - Primeira leitura: Classe Âncora (editada 02/10 11:51, revisão 02/10 00:31), Infiltrador e Vanguarda (editadas 02/10 ~00:20, revisão 01/10 01:32). Nenhuma foi marcada: a revisão é decisão editorial.
 - Verificação: `test:compendio-converter` (cenário 6) e `check-compendio` com 13 critérios aprovados.
+
+### 03/10/2026 — Compêndio da área autenticada
+
+- `/mesas/compendio` (menu "Compêndio" da conta) deixou de ser o catálogo da Biblioteca por tipo (magias, talentos, itens…) e passou a mostrar o mesmo livro, em página inteira (`LivroPagina`). Fora da mesa: leitura para qualquer conta logada, sem "Enviar ao chat" e sem "Fechar". O editor administrativo continua em `/admin/biblioteca`.

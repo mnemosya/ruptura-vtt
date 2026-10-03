@@ -12,6 +12,7 @@ import { createPortal } from "react-dom";
 import type { CapituloCompendio } from "../../../../../lib/compendio/tipos";
 import { CabecalhoCodex, Shell, useIndiceAtivo } from "../_forja/Codex";
 import { Mono } from "../_forja/ui";
+import { oxanium } from "../../../../_design/oxanium";
 import "../_forja/forja.css";
 import "./compendio.css";
 import { abrirCapituloAction, enviarTrechoAoChatAction, listarCapitulosAction, textosDoLivroAction } from "./acoes";
@@ -45,6 +46,18 @@ function gravarUltimoLido(pageId: string) {
   }
 }
 
+/**
+ * O livro numa página inteira, sem modal (Compêndio da área autenticada,
+ * fora de qualquer mesa): sem campanha não há chat, então sem "Enviar ao chat".
+ */
+export function LivroPagina() {
+  return (
+    <div className={`fj-root ${oxanium.variable} fj-livro-pagina`}>
+      <Livro campaignId={null} inicial={null} />
+    </div>
+  );
+}
+
 export function LivroCodex({ campaignId, inicial, onClose }: { campaignId: string; inicial?: DestinoLivro | null; onClose: () => void }) {
   const [montado, setMontado] = useState(false);
   useEffect(() => setMontado(true), []);
@@ -57,7 +70,7 @@ export function LivroCodex({ campaignId, inicial, onClose }: { campaignId: strin
   );
 }
 
-function Livro({ campaignId, inicial, onClose }: { campaignId: string; inicial: DestinoLivro | null; onClose: () => void }) {
+function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; inicial: DestinoLivro | null; onClose?: () => void }) {
   const [linhas, setLinhas] = useState<LinhaCapitulo[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [atual, setAtual] = useState<DestinoLivro | null>(inicial);
@@ -71,6 +84,7 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string; inicial: 
   const [avisoEnvio, setAvisoEnvio] = useState<string | null>(null);
 
   async function enviarAoChat(pageId: string, ancora: string | null) {
+    if (!campaignId) return;
     setAvisoEnvio("Enviando…");
     const r = await enviarTrechoAoChatAction(campaignId, pageId, ancora);
     setAvisoEnvio(r.ok ? "Enviado ao chat" : r.erro ?? "Falha ao enviar.");
@@ -127,10 +141,10 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string; inicial: 
   fecharRef.current = onClose;
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
+      if (e.key !== "Escape" || !fecharRef.current) return;
       e.preventDefault();
       e.stopPropagation();
-      fecharRef.current();
+      fecharRef.current?.();
     };
     window.addEventListener("keydown", k, true);
     return () => window.removeEventListener("keydown", k, true);
@@ -173,7 +187,7 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string; inicial: 
     titulos,
     ir,
     abertos,
-    enviar: (ancora) => atual && void enviarAoChat(atual.pageId, ancora),
+    enviar: campaignId ? (ancora) => atual && void enviarAoChat(atual.pageId, ancora) : undefined,
     alternar: (ancora) => setAbertos((s) => {
       const n = new Set(s);
       if (n.has(ancora)) n.delete(ancora);
@@ -280,9 +294,9 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string; inicial: 
                       <Mono tom="am">{linhaAtual.secao}{linhaAtual.numero != null ? ` · Capítulo ${linhaAtual.numero}` : ""}</Mono>
                     )}
                     <h2 className="fj-codex__heroi-titulo fj-glow">{capitulo.titulo}</h2>
-                    <button type="button" className="fj-livro-enviar fj-livro-enviar--heroi" onClick={() => void enviarAoChat(capitulo.notionPageId, null)} data-testid="compendio-enviar-pagina">
+                    {campaignId && <button type="button" className="fj-livro-enviar fj-livro-enviar--heroi" onClick={() => void enviarAoChat(capitulo.notionPageId, null)} data-testid="compendio-enviar-pagina">
                       Enviar ao chat
-                    </button>
+                    </button>}
                   </div>
                 </header>
                 <div className="fj-codex__coluna fj-livro-texto">

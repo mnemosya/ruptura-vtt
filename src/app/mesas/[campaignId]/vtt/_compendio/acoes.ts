@@ -22,7 +22,17 @@ import { PACK_COMPENDIO, pendenciasDeRevisao } from "../../../../../lib/compendi
 import type { CapituloCompendio } from "../../../../../lib/compendio/tipos";
 import { addLog } from "../../../../../lib/table/storage";
 import type { BlocoCompendio } from "../../../../../lib/compendio/tipos";
+import { getCurrentUser } from "../../../../../lib/auth/session";
 import { exigirAcessoPainel, mensagemDeErro, type ResultadoPainel } from "../_painel/acoes/comum";
+
+/**
+ * Quem pode ler o livro: na mesa, quem tem acesso à campanha; fora dela
+ * (página Compêndio da área autenticada, `campaignId` nulo), qualquer conta logada.
+ */
+async function exigirLeitor(campaignId: string | null): Promise<{ ok: true } | { ok: false; erro: string }> {
+  if (campaignId) return exigirAcessoPainel(campaignId);
+  return (await getCurrentUser()) ? { ok: true } : { ok: false, erro: "Sessão expirada." };
+}
 import { rotuloCapitulo, textoDe, textoPlanoDosBlocos, type LinhaCapitulo } from "./modelo";
 
 function consultaBase() {
@@ -34,8 +44,8 @@ function consultaBase() {
     .eq("status", "published");
 }
 
-export async function listarCapitulosAction(campaignId: string): Promise<ResultadoPainel<LinhaCapitulo[]>> {
-  const v = await exigirAcessoPainel(campaignId);
+export async function listarCapitulosAction(campaignId: string | null): Promise<ResultadoPainel<LinhaCapitulo[]>> {
+  const v = await exigirLeitor(campaignId);
   if (!v.ok) return { ok: false, erro: v.erro };
   try {
     const { data, error } = await consultaBase();
@@ -53,8 +63,8 @@ export async function listarCapitulosAction(campaignId: string): Promise<Resulta
   }
 }
 
-export async function abrirCapituloAction(campaignId: string, pageId: string): Promise<ResultadoPainel<CapituloCompendio>> {
-  const v = await exigirAcessoPainel(campaignId);
+export async function abrirCapituloAction(campaignId: string | null, pageId: string): Promise<ResultadoPainel<CapituloCompendio>> {
+  const v = await exigirLeitor(campaignId);
   if (!v.ok) return { ok: false, erro: v.erro };
   try {
     const { data, error } = await consultaBase().eq("slug", pageId).maybeSingle();
@@ -66,8 +76,8 @@ export async function abrirCapituloAction(campaignId: string, pageId: string): P
   }
 }
 
-export async function textosDoLivroAction(campaignId: string): Promise<ResultadoPainel<[string, string][]>> {
-  const v = await exigirAcessoPainel(campaignId);
+export async function textosDoLivroAction(campaignId: string | null): Promise<ResultadoPainel<[string, string][]>> {
+  const v = await exigirLeitor(campaignId);
   if (!v.ok) return { ok: false, erro: v.erro };
   try {
     const { data, error } = await consultaBase();

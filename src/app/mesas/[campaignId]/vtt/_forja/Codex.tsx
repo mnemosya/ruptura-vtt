@@ -156,7 +156,7 @@ export function FaixaEstado({ on, confirmado, pendente, colada }: { on: boolean;
 }
 
 /** Cabeçalho de modal do Códex: ícone, kicker, título, ações e fechar. */
-export function CabecalhoCodex({ icone, kicker, titulo, onClose, children }: { icone: ReactNode; kicker: string; titulo: string; onClose: () => void; children?: ReactNode }) {
+export function CabecalhoCodex({ icone, kicker, titulo, onClose, children }: { icone: ReactNode; kicker: string; titulo: string; onClose?: () => void; children?: ReactNode }) {
   return (
     <header className="fj-codex-cab">
       {icone}
@@ -166,7 +166,7 @@ export function CabecalhoCodex({ icone, kicker, titulo, onClose, children }: { i
       </div>
       <div className="fj-codex-cab__acoes">
         {children}
-        <button type="button" onClick={onClose} className="fj-fechar"><Key k="ESC" /> Fechar</button>
+        {onClose && <button type="button" onClick={onClose} className="fj-fechar"><Key k="ESC" /> Fechar</button>}
       </div>
     </header>
   );
