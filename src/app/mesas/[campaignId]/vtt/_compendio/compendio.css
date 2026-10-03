@@ -124,3 +124,10 @@
 .fj-livro-card__descricao { font-size: 14px; line-height: 1.4; color: var(--fj-texto); }
 .fj-livro-card__etiquetas { display: flex; flex-wrap: wrap; gap: var(--hud-space-1); }
 .fj-livro-card__etiquetas .fj-livro-termo { margin: 0; font-size: 11px; }
+
+/* ── Enviar ao chat ─────────────────────────────────────── */
+.fj-livro-verbete { position: relative; }
+.fj-livro-enviar { border: 1px solid color-mix(in srgb, var(--fj-cy) 35%, transparent); padding: 2px var(--hud-space-3); font: 700 11px var(--fj-display); text-transform: uppercase; letter-spacing: 0.12em; color: var(--fj-cy); transition: var(--fj-trans); }
+.fj-livro-enviar:hover { border-color: var(--fj-am); color: var(--fj-am); }
+.fj-livro-verbete .fj-livro-enviar { position: absolute; top: var(--hud-space-2); right: var(--hud-space-4); }
+.fj-livro-enviar--heroi { margin-top: var(--hud-space-4); }

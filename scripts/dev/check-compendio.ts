@@ -69,6 +69,11 @@ async function main() {
     ok("C4 verbete aberto mostra etiqueta de termo com link", termo.length > 0, termo);
     await page.screenshot({ path: `${SAIDA}/compendio-verbete.png` });
 
+    // C11: Enviar ao chat (o verbete aberto).
+    await page.locator(".fj-livro-verbete--aberto [data-testid=\"compendio-enviar-verbete\"]").click();
+    await page.waitForFunction(() => document.querySelector('[data-testid="compendio-aviso-envio"]')?.textContent?.includes("Enviado"), null, { timeout: 15000 });
+    ok("C11 verbete enviado ao chat", true);
+
     await page.locator('[data-testid="compendio-busca"]').fill("antídoto");
     await page.waitForFunction(() => document.querySelectorAll('[data-testid="compendio-resultado"]').length > 0, null, { timeout: 30000 });
     const resultados = await page.locator('[data-testid="compendio-resultado"]').count();
@@ -87,7 +92,19 @@ async function main() {
     await page.waitForSelector('[data-testid="compendio-livro"]', { state: "detached", timeout: 5000 });
     ok("C8 Esc fecha o livro", true);
 
+    // C12: o cartão aparece no chat e "Abrir no livro" volta ao verbete.
+    await page.locator('[data-testid="painel-aba-chat"]').click();
+    const cartao = page.locator('[data-testid="painel-feed-referencia"]', { hasText: "QUEIMANDO" }).last();
+    await cartao.waitFor({ timeout: 20000 });
+    await cartao.locator('[data-testid="painel-feed-abrir-livro"]').click();
+    await page.waitForSelector('[data-testid="compendio-livro"] .fj-livro-verbete--aberto', { timeout: 30000 });
+    const aberto = ((await page.locator(".fj-livro-verbete--aberto .fj-livro-verbete__titulo").first().textContent()) ?? "").toUpperCase();
+    ok("C12 cartão no chat abre o livro no verbete", aberto.includes("QUEIMANDO"), aberto.trim());
+    await page.screenshot({ path: `${SAIDA}/compendio-chat-volta.png` });
+    await page.keyboard.press("Escape");
+
     // C10: o botão "Sincronizar agora" (só para administradoras de conteúdo).
+    await page.locator('[data-testid="painel-aba-compendio"]').click();
     const botao = page.locator('[data-testid="painel-compendio-sincronizar"]');
     if (await botao.count()) {
       await botao.click();

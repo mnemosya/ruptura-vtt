@@ -22,6 +22,12 @@ import { CartaoBase } from "../ui/CartaoBase";
 import { Chip, Chips, Modulo, Modulos, PainelTecnico } from "../ui/primitivas";
 import type { AcentoCartao, CartaoReferencia, CartaoUso, SnapshotConteudo } from "./contratos";
 import { cabecalhoDe } from "./CabecalhoPersonagem";
+import { EVENTO_ABRIR_COMPENDIO } from "../../_compendio/modelo";
+
+/** O livro mora no painel; o cartão só pede para abri-lo (ver `PainelVtt`, evento `EVENTO_ABRIR_COMPENDIO`). */
+function abrirNoLivro(destino: { pageId: string; ancora: string | null }) {
+  window.dispatchEvent(new CustomEvent(EVENTO_ABRIR_COMPENDIO, { detail: { pageId: destino.pageId, ancora: destino.ancora ?? undefined } }));
+}
 
 function iconeDaCategoria(categoria: string) {
   if (categoria === "magias") return <Wand2 />;
@@ -93,6 +99,11 @@ export function ContentReferenceCard({
       )}
 
       {!temDescricao && c.resumo && <p className="pn-texto">{c.resumo}</p>}
+      {c.livro && (
+        <button type="button" className="rv-pn-voltar" onClick={() => abrirNoLivro(c.livro!)} data-testid="painel-feed-abrir-livro">
+          <BookOpen size={13} /> Abrir no livro
+        </button>
+      )}
     </CartaoBase>
   );
 }

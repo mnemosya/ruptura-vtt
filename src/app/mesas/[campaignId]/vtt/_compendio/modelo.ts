@@ -26,6 +26,9 @@ export function soCapitulos(linhas: LinhaCapitulo[]): LinhaCapitulo[] {
   return linhas.filter((c) => !c.paiPageId);
 }
 
+/** Evento de janela que pede ao painel para abrir o livro num destino (`detail: DestinoLivro`). */
+export const EVENTO_ABRIR_COMPENDIO = "ruptura:abrir-compendio";
+
 /** Destino de navegação dentro do livro. */
 export interface DestinoLivro {
   pageId: string;

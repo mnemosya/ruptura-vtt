@@ -18,6 +18,8 @@ export interface ContextoLeitura {
   /** Verbetes abertos (por âncora). */
   abertos: Set<string>;
   alternar: (ancora: string) => void;
+  /** Envia um verbete ao chat da mesa. */
+  enviar?: (ancora: string) => void;
 }
 
 export function Texto({ trechos, ctx }: { trechos: TrechoCompendio[]; ctx: ContextoLeitura }) {
@@ -127,6 +129,11 @@ function Bloco({ b, ctx }: { b: BlocoCompendio; ctx: ContextoLeitura }) {
             <span className="fj-livro-verbete__seta" aria-hidden="true">›</span>
             <span><Texto trechos={b.titulo} ctx={{ ...ctx, termos: new Map() }} /></span>
           </button>
+          {aberto && ctx.enviar && (
+            <button type="button" className="fj-livro-enviar" onClick={() => ctx.enviar!(b.ancora)} data-testid="compendio-enviar-verbete">
+              Enviar ao chat
+            </button>
+          )}
           {aberto && (
             <div className="fj-livro-verbete__corpo">
               <Blocos blocos={b.filhos} ctx={ctx} />

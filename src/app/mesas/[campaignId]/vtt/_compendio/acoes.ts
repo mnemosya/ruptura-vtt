@@ -19,8 +19,10 @@ import { getContentClient } from "../../../../../lib/content/client";
 import { sincronizarAgora, talvezSincronizar } from "../../../../../lib/compendio/sincronizacaoAutomatica";
 import { PACK_COMPENDIO } from "../../../../../lib/compendio/sincronizar";
 import type { CapituloCompendio } from "../../../../../lib/compendio/tipos";
+import { addLog } from "../../../../../lib/table/storage";
+import type { BlocoCompendio } from "../../../../../lib/compendio/tipos";
 import { exigirAcessoPainel, mensagemDeErro, type ResultadoPainel } from "../_painel/acoes/comum";
-import { textoPlanoDosBlocos, type LinhaCapitulo } from "./modelo";
+import { rotuloCapitulo, textoDe, textoPlanoDosBlocos, type LinhaCapitulo } from "./modelo";
 
 function consultaBase() {
   return getContentClient()
@@ -110,5 +112,61 @@ export async function sincronizarAgoraAction(): Promise<ResultadoPainel<ResumoSi
     };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "A sincronização falhou.") };
+  }
+}
+
+/** Teto do texto gravado no cartão do chat — o cartão é uma referência, não o capítulo inteiro. */
+const MAX_TEXTO_CARTAO = 1500;
+
+function acharVerbete(blocos: BlocoCompendio[], ancora: string): Extract<BlocoCompendio, { tipo: "verbete" }> | null {
+  for (const b of blocos) {
+    if (b.tipo === "verbete" && b.ancora === ancora) return b;
+    const filhos = "filhos" in b ? b.filhos : b.tipo === "lista" ? b.itens.flatMap((i) => i.filhos) : [];
+    const achado = acharVerbete(filhos, ancora);
+    if (achado) return achado;
+  }
+  return null;
+}
+
+/**
+ * "Enviar ao chat" de um verbete (ou de uma página inteira, sem âncora).
+ * Grava o mesmo evento `compendio_compartilhado` de antes, com o texto relido
+ * AQUI do livro publicado — o browser só diz qual trecho. O cartão guarda o
+ * texto daquele momento e o destino para "Abrir no livro".
+ */
+export async function enviarTrechoAoChatAction(campaignId: string, pageId: string, ancora: string | null): Promise<ResultadoPainel> {
+  const v = await exigirAcessoPainel(campaignId);
+  if (!v.ok) return { ok: false, erro: v.erro };
+  try {
+    const { data, error } = await consultaBase().eq("slug", pageId).maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) return { ok: false, erro: "Página não encontrada no livro." };
+    const p = data.payload as CapituloCompendio;
+    const verbete = ancora ? acharVerbete(p.blocos, ancora) : null;
+    if (ancora && !verbete) return { ok: false, erro: "Verbete não encontrado." };
+    const nome = verbete ? textoDe(verbete.titulo).trim() : p.titulo;
+    let texto = textoPlanoDosBlocos(verbete ? verbete.filhos : p.blocos).trim();
+    if (texto.length > MAX_TEXTO_CARTAO) texto = `${texto.slice(0, MAX_TEXTO_CARTAO).trimEnd()}…`;
+    await addLog({
+      campaignId,
+      type: "compendio_compartilhado",
+      visibility: "public",
+      payload: {
+        categoria: "livro",
+        categoriaRotulo: `Compêndio · ${p.paiPageId ? p.secao : rotuloCapitulo(p)}`,
+        slug: ancora ? `${pageId}#${ancora}` : pageId,
+        nome,
+        origem: "oficial",
+        origemRotulo: "Livro RUPTURA v1.2",
+        resumo: texto.split("\n")[0] ?? "",
+        descricao: texto || null,
+        pageId,
+        ancora,
+        source: "vtt_compendio_livro",
+      },
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Falha ao enviar ao chat.") };
   }
 }

@@ -40,7 +40,7 @@ import { ParticipantesTab } from "./ParticipantesTab";
 import { BandoTab } from "./BandoTab";
 import { CompendioTab } from "./CompendioTab";
 import { LivroCodex } from "../_compendio/LivroCodex";
-import type { DestinoLivro } from "../_compendio/modelo";
+import { EVENTO_ABRIR_COMPENDIO, type DestinoLivro } from "../_compendio/modelo";
 import { LimiteErroAba } from "./LimiteErroAba";
 import { TransferenciaBando, type AlvoTransferencia } from "./TransferenciaBando";
 import { useConsoleDaMesa } from "../../_shell/ConsoleDaMesa";
@@ -416,6 +416,17 @@ export function PainelVtt({
   const setCompendioAberto = (v: boolean) => (v ? janelas.abrir("compendio") : janelas.fechar("compendio"));
   /** Onde o livro abre: capítulo/verbete escolhido na aba, ou o começo. */
   const [destinoCompendio, setDestinoCompendio] = useState<DestinoLivro | null>(null);
+  // Cartões do chat ("Abrir no livro") pedem por evento: o feed não conhece o painel.
+  useEffect(() => {
+    const abrir = (e: Event) => {
+      const destino = (e as CustomEvent<DestinoLivro>).detail;
+      if (!destino?.pageId) return;
+      setDestinoCompendio({ ...destino });
+      janelas.abrir("compendio");
+    };
+    window.addEventListener(EVENTO_ABRIR_COMPENDIO, abrir);
+    return () => window.removeEventListener(EVENTO_ABRIR_COMPENDIO, abrir);
+  }, [janelas]);
   const setParticipantesAberto = (v: boolean) => (v ? janelas.abrir("participantes") : janelas.fechar("participantes"));
   const setPersonagensAberto = (v: boolean) => (v ? janelas.abrir("personagens") : janelas.fechar("personagens"));
 

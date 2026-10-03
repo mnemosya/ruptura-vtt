@@ -14,7 +14,7 @@ import { CabecalhoCodex, Shell, useIndiceAtivo } from "../_forja/Codex";
 import { Mono } from "../_forja/ui";
 import "../_forja/forja.css";
 import "./compendio.css";
-import { abrirCapituloAction, listarCapitulosAction, textosDoLivroAction } from "./acoes";
+import { abrirCapituloAction, enviarTrechoAoChatAction, listarCapitulosAction, textosDoLivroAction } from "./acoes";
 import { Blocos, type ContextoLeitura } from "./Blocos";
 import {
   agruparPorSecao,
@@ -25,6 +25,25 @@ import {
   type DestinoLivro,
   type LinhaCapitulo,
 } from "./modelo";
+
+const CHAVE_ULTIMO_LIDO = "ruptura:compendio:ultimo";
+
+/** Conveniência por navegador: falhar (aba privada, armazenamento bloqueado) só faz abrir no começo. */
+function lerUltimoLido(): string | null {
+  try {
+    return localStorage.getItem(CHAVE_ULTIMO_LIDO);
+  } catch {
+    return null;
+  }
+}
+
+function gravarUltimoLido(pageId: string) {
+  try {
+    localStorage.setItem(CHAVE_ULTIMO_LIDO, pageId);
+  } catch {
+    // sem armazenamento: nada a fazer
+  }
+}
 
 export function LivroCodex({ campaignId, inicial, onClose }: { campaignId: string; inicial?: DestinoLivro | null; onClose: () => void }) {
   const [montado, setMontado] = useState(false);
@@ -49,6 +68,14 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string; inicial: 
   const [textos, setTextos] = useState<Map<string, string> | undefined>(undefined);
   const pedindoTextos = useRef(false);
   const [abertos, setAbertos] = useState<Set<string>>(new Set());
+  const [avisoEnvio, setAvisoEnvio] = useState<string | null>(null);
+
+  async function enviarAoChat(pageId: string, ancora: string | null) {
+    setAvisoEnvio("Enviando…");
+    const r = await enviarTrechoAoChatAction(campaignId, pageId, ancora);
+    setAvisoEnvio(r.ok ? "Enviado ao chat" : r.erro ?? "Falha ao enviar.");
+    window.setTimeout(() => setAvisoEnvio(null), 3000);
+  }
 
   useEffect(() => {
     let vivo = true;
@@ -56,13 +83,19 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string; inicial: 
       if (!vivo) return;
       if (!r.ok || !r.dados) return setErro(r.erro ?? "Não foi possível carregar o Compêndio.");
       setLinhas(r.dados);
-      const primeiro = r.dados.find((c) => !c.paiPageId);
-      setAtual((a) => a ?? (primeiro ? { pageId: primeiro.pageId } : null));
+      // Sem destino pedido: volta ao último capítulo lido neste navegador; senão, o começo do livro.
+      const ultimo = lerUltimoLido();
+      const retomar = ultimo && r.dados.some((c) => c.pageId === ultimo) ? ultimo : r.dados.find((c) => !c.paiPageId)?.pageId;
+      setAtual((a) => a ?? (retomar ? { pageId: retomar } : null));
     });
     return () => { vivo = false; };
   }, [campaignId]);
 
   const capitulo = atual ? capitulos.get(atual.pageId) ?? null : null;
+
+  useEffect(() => {
+    if (atual) gravarUltimoLido(atual.pageId);
+  }, [atual]);
 
   useEffect(() => {
     if (!atual || capitulos.has(atual.pageId)) return;
@@ -140,6 +173,7 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string; inicial: 
     titulos,
     ir,
     abertos,
+    enviar: (ancora) => atual && void enviarAoChat(atual.pageId, ancora),
     alternar: (ancora) => setAbertos((s) => {
       const n = new Set(s);
       if (n.has(ancora)) n.delete(ancora);
@@ -163,6 +197,7 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string; inicial: 
           titulo={linhaAtual?.titulo ?? "Compêndio"}
           onClose={onClose}
         >
+          {avisoEnvio && <span className="fj-mono fj-mono--pequeno fj-mono--am" role="status" data-testid="compendio-aviso-envio">{avisoEnvio}</span>}
           {historico.length > 0 && (
             <button type="button" className="fj-fechar" onClick={voltar} data-testid="compendio-voltar">‹ Voltar</button>
           )}
@@ -245,6 +280,9 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string; inicial: 
                       <Mono tom="am">{linhaAtual.secao}{linhaAtual.numero != null ? ` · Capítulo ${linhaAtual.numero}` : ""}</Mono>
                     )}
                     <h2 className="fj-codex__heroi-titulo fj-glow">{capitulo.titulo}</h2>
+                    <button type="button" className="fj-livro-enviar fj-livro-enviar--heroi" onClick={() => void enviarAoChat(capitulo.notionPageId, null)} data-testid="compendio-enviar-pagina">
+                      Enviar ao chat
+                    </button>
                   </div>
                 </header>
                 <div className="fj-codex__coluna fj-livro-texto">

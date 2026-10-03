@@ -1,6 +1,6 @@
 # Plano — Compêndio sincronizado com o Notion
 
-**Status:** em implementação (Fases 0 a 3 entregues)
+**Status:** em implementação (Fases 0 a 4 entregues)
 **Criado em:** 02/10/2026
 **Versão deste documento:** 0.1
 
@@ -175,3 +175,11 @@ O índice de termos é montado pela própria sincronização, a partir dos títu
 - Ícones nativos do Notion (ex.: Sináptica) não vêm como imagem pela API e ficam sem ícone.
 - Sincronização forçada: 13 subpáginas criadas, capítulos 9, 16 e 27 atualizados, 18 imagens novas, 1.578 requisições.
 - Tipografia: corpo de toda a Forja (telas e Códex) trocado de Rajdhani para Exo 2 Regular (`--fj-corpo`). O resto do VTT segue em Rajdhani por ora.
+
+### 03/10/2026 — Fase 4
+
+- Imagens: recomprimidas na cópia (`sharp`, até 1600px de largura, WebP qualidade 80); SVG e GIF ficam como vieram. Reprocessamento completo: **185,8 MB → 10,4 MB** em 89 imagens (ex.: Cinética 5 MB → 277 KB). O bucket ficou com 88 WebP e 5 SVG.
+- Imagens órfãs (sem nenhum documento publicado apontando para elas) são removidas no fim de toda rodada sem falhas; sem nenhuma referência lida, não apaga nada.
+- O livro reabre no último capítulo lido (por navegador, `localStorage`).
+- "Enviar ao chat": botão no verbete aberto e no título da página. Grava o evento `compendio_compartilhado` com o texto relido no servidor (até 1.500 caracteres) e o destino; o cartão no chat tem "Abrir no livro", que abre o livro no verbete.
+- Verificação: `check-compendio` com 12 critérios aprovados (C11 enviar, C12 voltar pelo chat).

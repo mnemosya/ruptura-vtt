@@ -30,7 +30,8 @@ async function main() {
 
   console.log(`\nCriados: ${rel.criados.length} · atualizados: ${rel.atualizados.length} · inalterados: ${rel.inalterados.length} · arquivados: ${rel.arquivados.length}`);
   if (rel.arquivados.length) console.log(`Arquivados: ${rel.arquivados.join(", ")}`);
-  console.log(`Imagens copiadas: ${rel.imagensCopiadas} · requisições ao Notion: ${rel.requisicoesNotion}`);
+  const mb = (b: number) => (b / 1024 / 1024).toFixed(1);
+  console.log(`Imagens copiadas: ${rel.imagensCopiadas} (${mb(rel.bytesOriginais)} MB → ${mb(rel.bytesGravados)} MB) · órfãs removidas: ${rel.imagensOrfasRemovidas} · requisições ao Notion: ${rel.requisicoesNotion}`);
   for (const [cap, tipos] of Object.entries(rel.naoSuportados)) console.log(`Blocos sem equivalente em "${cap}": ${tipos.join(", ")}`);
   for (const f of rel.falhas) console.log(`FALHA — ${f.capitulo}: ${f.erro}`);
   if (rel.falhas.length) process.exit(1);

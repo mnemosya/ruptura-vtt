@@ -15,6 +15,7 @@
  */
 
 import { createHash } from "node:crypto";
+import sharp from "sharp";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { converterBlocos, separarNumero, type BlocoNotion } from "./converter";
 import { lerIndice } from "./indice";
@@ -32,6 +33,10 @@ export interface RelatorioSincronizacao {
   falhas: { capitulo: string; erro: string }[];
   naoSuportados: Record<string, string[]>;
   imagensCopiadas: number;
+  /** Peso das imagens copiadas nesta rodada, antes e depois da otimização. */
+  bytesOriginais: number;
+  bytesGravados: number;
+  imagensOrfasRemovidas: number;
   requisicoesNotion: number;
 }
 
@@ -49,11 +54,37 @@ function hash(valor: unknown): string {
   return createHash("sha256").update(JSON.stringify(valor)).digest("hex");
 }
 
-/** Chave estável da imagem: o caminho do arquivo no Notion, sem a assinatura. */
+/** Largura máxima das imagens do livro: a coluna de leitura tem ~880px; 1600 cobre telas de alta densidade. */
+export const LARGURA_MAXIMA_IMAGEM = 1600;
+
+/** Formatos que o sincronizador recomprime para WebP. SVG e GIF (pode ser animado) ficam como vieram. */
+function ehRecomprimivel(ext: string): boolean {
+  return ["png", "jpg", "jpeg", "webp", "avif"].includes(ext);
+}
+
+function extensaoDe(url: string): string {
+  return (url.split("?")[0].match(/\.(png|jpe?g|gif|webp|svg|avif)$/i)?.[1] ?? "png").toLowerCase();
+}
+
+/**
+ * Chave estável da imagem: o caminho do arquivo no Notion, sem a assinatura.
+ * Imagens recomprimidas ganham sufixo com a largura e extensão .webp — trocar a
+ * regra de compressão gera chaves novas, e as antigas viram órfãs (limpas no fim).
+ */
 export function chaveImagem(url: string): string {
   const semQuery = url.split("?")[0];
-  const ext = (semQuery.match(/\.(png|jpe?g|gif|webp|svg|avif)$/i)?.[1] ?? "png").toLowerCase();
-  return `${createHash("sha256").update(semQuery).digest("hex").slice(0, 32)}.${ext}`;
+  const base = createHash("sha256").update(semQuery).digest("hex").slice(0, 32);
+  const ext = extensaoDe(url);
+  return ehRecomprimivel(ext) ? `${base}-w${LARGURA_MAXIMA_IMAGEM}.webp` : `${base}.${ext}`;
+}
+
+/** Redimensiona (nunca amplia) e converte para WebP. */
+export async function otimizarImagem(bytes: ArrayBuffer): Promise<Buffer> {
+  return sharp(Buffer.from(bytes))
+    .rotate()
+    .resize({ width: LARGURA_MAXIMA_IMAGEM, withoutEnlargement: true })
+    .webp({ quality: 80 })
+    .toBuffer();
 }
 
 /** Primeira imagem de uma página, em qualquer profundidade: a capa do card na galeria. */
@@ -80,7 +111,7 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
   const { notion, supabase, seco = false, forcar = false } = op;
   const log = op.log ?? (() => {});
   const rel: RelatorioSincronizacao = {
-    criados: [], atualizados: [], inalterados: [], arquivados: [], falhas: [], naoSuportados: {}, imagensCopiadas: 0, requisicoesNotion: 0,
+    criados: [], atualizados: [], inalterados: [], arquivados: [], falhas: [], naoSuportados: {}, imagensCopiadas: 0, bytesOriginais: 0, bytesGravados: 0, imagensOrfasRemovidas: 0, requisicoesNotion: 0,
   };
 
   const indice = lerIndice(await notion.blocos(PAGINA_RAIZ_RUPTURA_V12));
@@ -110,8 +141,13 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
     if (jaExiste?.some((f) => f.name === caminho)) return publica;
     const resp = await fetch(url);
     if (!resp.ok) throw new Error(`imagem ${resp.status}`);
-    const tipo = resp.headers.get("content-type") ?? "image/png";
-    const { error } = await supabase.storage.from(BUCKET_COMPENDIO).upload(caminho, await resp.arrayBuffer(), { contentType: tipo, upsert: true });
+    const original = await resp.arrayBuffer();
+    const otimizar = caminho.endsWith(".webp");
+    const corpo = otimizar ? await otimizarImagem(original) : Buffer.from(original);
+    const tipo = otimizar ? "image/webp" : resp.headers.get("content-type") ?? "image/png";
+    rel.bytesOriginais += original.byteLength;
+    rel.bytesGravados += corpo.byteLength;
+    const { error } = await supabase.storage.from(BUCKET_COMPENDIO).upload(caminho, corpo, { contentType: tipo, upsert: true });
     if (error) throw new Error(`upload da imagem: ${error.message}`);
     rel.imagensCopiadas++;
     return publica;
@@ -249,8 +285,41 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
     rel.arquivados.push(((d.payload as CapituloCompendio | null)?.titulo) ?? String(d.slug));
   }
 
+  // Imagens que nenhum documento publicado usa mais: removidas do bucket.
+  // Só numa rodada limpa — com falha, um capítulo pode ter ficado com a versão antiga.
+  if (!seco && rel.falhas.length === 0) rel.imagensOrfasRemovidas = await removerImagensOrfas(supabase);
+
   rel.requisicoesNotion = notion.requisicoes();
   return rel;
+}
+
+async function removerImagensOrfas(supabase: SupabaseClient): Promise<number> {
+  const { data: docs, error } = await supabase
+    .from("content_documents")
+    .select("payload")
+    .eq("content_type", "capitulo")
+    .eq("source_pack_id", PACK_COMPENDIO)
+    .eq("status", "published");
+  if (error) throw new Error(`Falha ao ler capítulos para limpar imagens: ${error.message}`);
+  const usadas = new Set<string>();
+  for (const { payload } of docs ?? []) {
+    for (const m of JSON.stringify(payload).matchAll(/\/object\/public\/compendio\/([^"?]+)/g)) usadas.add(m[1]);
+  }
+  const arquivos: string[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error: erroLista } = await supabase.storage.from(BUCKET_COMPENDIO).list("", { limit: 1000, offset });
+    if (erroLista) throw new Error(`Falha ao listar o bucket: ${erroLista.message}`);
+    arquivos.push(...(data ?? []).map((f) => f.name));
+    if (!data || data.length < 1000) break;
+  }
+  // Trava de segurança: sem nenhuma imagem referenciada, algo deu errado na leitura — não apaga nada.
+  if (usadas.size === 0) return 0;
+  const orfas = arquivos.filter((n) => !usadas.has(n));
+  for (let i = 0; i < orfas.length; i += 100) {
+    const { error: erroRemover } = await supabase.storage.from(BUCKET_COMPENDIO).remove(orfas.slice(i, i + 100));
+    if (erroRemover) throw new Error(`Falha ao remover imagens órfãs: ${erroRemover.message}`);
+  }
+  return orfas.length;
 }
 
 /** Tipagem exportada para o teste. */
