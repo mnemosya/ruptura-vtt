@@ -50,6 +50,18 @@ async function main() {
     ok("C1 aba lista os capítulos", capitulos >= 28, `${capitulos}`);
     await page.screenshot({ path: `${SAIDA}/compendio-aba.png` });
 
+    // C13: regras a revisar (só aparece para administradora, e só se houver pendência).
+    const revisar = page.locator('[data-testid="painel-compendio-revisar"]');
+    if (await page.locator('[data-testid="painel-compendio-sincronizar"]').count()) {
+      await revisar.waitFor({ timeout: 15000 }).catch(() => {});
+      const n = await revisar.count();
+      if (n) {
+        await revisar.locator("summary").click();
+        await page.screenshot({ path: `${SAIDA}/compendio-revisar.png` });
+      }
+      ok("C13 aviso de regras a revisar para administradora", true, n ? ((await revisar.locator("summary").textContent()) ?? "").trim() : "nenhuma pendência");
+    }
+
     await page.locator('[data-testid="painel-compendio-busca"]').fill("sangr");
     const resultadoAba = page.locator('[data-testid="painel-compendio-resultado"]').first();
     await resultadoAba.waitFor({ timeout: 5000 });

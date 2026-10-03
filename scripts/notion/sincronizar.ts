@@ -12,7 +12,8 @@
 import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { criarClienteNotion } from "../../src/lib/compendio/notion";
-import { sincronizarCompendio } from "../../src/lib/compendio/sincronizar";
+import { pendenciasDeRevisao, sincronizarCompendio } from "../../src/lib/compendio/sincronizar";
+import { descreverPendencia } from "../../src/lib/compendio/revisao";
 
 config({ path: ".env.local" });
 
@@ -34,6 +35,15 @@ async function main() {
   console.log(`Imagens copiadas: ${rel.imagensCopiadas} (${mb(rel.bytesOriginais)} MB → ${mb(rel.bytesGravados)} MB) · órfãs removidas: ${rel.imagensOrfasRemovidas} · requisições ao Notion: ${rel.requisicoesNotion}`);
   for (const [cap, tipos] of Object.entries(rel.naoSuportados)) console.log(`Blocos sem equivalente em "${cap}": ${tipos.join(", ")}`);
   for (const f of rel.falhas) console.log(`FALHA — ${f.capitulo}: ${f.erro}`);
+
+  const pendencias = await pendenciasDeRevisao(supabase);
+  if (pendencias.length) {
+    console.log(`\nRegras a revisar (${pendencias.length}) — a página mudou depois da revisão do arquivo:`);
+    for (const p of pendencias) console.log(`  [${p.chave}] ${descreverPendencia(p)}  → ${p.arquivo}`);
+    console.log("Depois de revisar: npm run compendio:revisado -- <chave>");
+  } else {
+    console.log("\nRegras revisadas: nenhuma página mudou desde a revisão.");
+  }
   if (rel.falhas.length) process.exit(1);
 }
 

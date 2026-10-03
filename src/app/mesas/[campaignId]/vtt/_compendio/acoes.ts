@@ -17,7 +17,8 @@ import { after } from "next/server";
 import { getContentAdminStatus } from "../../../../../lib/auth/contentAdmin";
 import { getContentClient } from "../../../../../lib/content/client";
 import { sincronizarAgora, talvezSincronizar } from "../../../../../lib/compendio/sincronizacaoAutomatica";
-import { PACK_COMPENDIO } from "../../../../../lib/compendio/sincronizar";
+import { descreverPendencia } from "../../../../../lib/compendio/revisao";
+import { PACK_COMPENDIO, pendenciasDeRevisao } from "../../../../../lib/compendio/sincronizar";
 import type { CapituloCompendio } from "../../../../../lib/compendio/tipos";
 import { addLog } from "../../../../../lib/table/storage";
 import type { BlocoCompendio } from "../../../../../lib/compendio/tipos";
@@ -168,5 +169,22 @@ export async function enviarTrechoAoChatAction(campaignId: string, pageId: strin
     return { ok: true };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Falha ao enviar ao chat.") };
+  }
+}
+
+/**
+ * Regras a revisar (Fase 5): arquivos de regras cuja página no livro mudou
+ * depois da revisão. Só para administradoras de conteúdo; lê o livro
+ * publicado (cliente público) e o manifesto de revisão do repositório.
+ */
+export async function regrasARevisarAction(): Promise<ResultadoPainel<{ chave: string; texto: string; arquivo: string }[]>> {
+  if (!(await getContentAdminStatus()).isAdmin) return { ok: false, erro: "Só administradoras de conteúdo." };
+  try {
+    return {
+      ok: true,
+      dados: (await pendenciasDeRevisao(getContentClient())).map((p) => ({ chave: p.chave, texto: descreverPendencia(p), arquivo: p.arquivo })),
+    };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Não foi possível conferir as regras.") };
   }
 }

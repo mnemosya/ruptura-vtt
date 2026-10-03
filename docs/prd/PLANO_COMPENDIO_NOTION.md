@@ -1,6 +1,6 @@
 # Plano — Compêndio sincronizado com o Notion
 
-**Status:** em implementação (Fases 0 a 4 entregues)
+**Status:** Fases 0 a 5 entregues
 **Criado em:** 02/10/2026
 **Versão deste documento:** 0.1
 
@@ -183,3 +183,12 @@ O índice de termos é montado pela própria sincronização, a partir dos títu
 - O livro reabre no último capítulo lido (por navegador, `localStorage`).
 - "Enviar ao chat": botão no verbete aberto e no título da página. Grava o evento `compendio_compartilhado` com o texto relido no servidor (até 1.500 caracteres) e o destino; o cartão no chat tem "Abrir no livro", que abre o livro no verbete.
 - Verificação: `check-compendio` com 12 critérios aprovados (C11 enviar, C12 voltar pelo chat).
+
+### 03/10/2026 — Fase 5
+
+- Manifesto `content/v12/revisao_notion.json`: 13 fontes (Condições, Ações de combate, Bando, Conflitos Sociais, Investigação, Trajetória e as 7 Classes), cada uma com a página de origem no livro e a data de revisão (último commit do arquivo). Magias, equipamentos e Ameaças ficam de fora enquanto estão em espera.
+- Comparação: com `hashRevisado`, só avisa se o TEXTO da página mudou; sem ele (estado inicial), compara a data de edição no Notion com a revisão.
+- Onde aparece: no fim de `npm run notion:sincronizar` e, para administradoras de conteúdo, no topo da aba Compêndio (atualiza também após "Sincronizar agora").
+- Marcar como revisado: `npm run compendio:revisado -- <chave>` (ou `--todos`, `--listar`); grava o hash atual e a data no manifesto, que é commitado com a revisão.
+- Primeira leitura: Classe Âncora (editada 02/10 11:51, revisão 02/10 00:31), Infiltrador e Vanguarda (editadas 02/10 ~00:20, revisão 01/10 01:32). Nenhuma foi marcada: a revisão é decisão editorial.
+- Verificação: `test:compendio-converter` (cenário 6) e `check-compendio` com 13 critérios aprovados.

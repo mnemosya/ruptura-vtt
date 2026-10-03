@@ -1,0 +1,109 @@
+{
+  "_sobre": "Fase 5 do PLANO_COMPENDIO_NOTION: de qual página do livro (Notion) veio cada arquivo de regras revisado, e quando foi revisado. A sincronização avisa quando o texto da página mudou depois da revisão. Marcar como revisado: npm run compendio:revisado -- <chave>. Sem hashRevisado, a comparação usa a data (revisadoEm = último commit do arquivo). Magias, equipamentos e Ameaças ficam de fora enquanto estão em espera.",
+  "fontes": [
+    {
+      "chave": "condicoes",
+      "rotulo": "Condições",
+      "arquivo": "content/db_condicoes_normalizado_v1_5.json",
+      "pageId": "9d60a136355282ba8f7301ec177c75fe",
+      "revisadoEm": "2026-10-01T16:11:05.000Z",
+      "hashRevisado": null
+    },
+    {
+      "chave": "acoes-combate",
+      "rotulo": "Ações de combate",
+      "arquivo": "content/db_acoes_combate_normalizado_v1_1.json",
+      "pageId": "0210a136355282b09ba50128db510387",
+      "revisadoEm": "2026-10-01T16:17:15.000Z",
+      "hashRevisado": null
+    },
+    {
+      "chave": "bando",
+      "rotulo": "Bando",
+      "arquivo": "content/v12/db_bando_v1_2.json",
+      "pageId": "3600a136355280a698d2d265cb64ae8e",
+      "revisadoEm": "2026-10-01T20:11:02.000Z",
+      "hashRevisado": null
+    },
+    {
+      "chave": "conflitos-sociais",
+      "rotulo": "Conflitos Sociais",
+      "arquivo": "content/v12/db_conflitos_sociais_v1_2.json",
+      "pageId": "3dd0a13635528012b7aeda3739fddde8",
+      "revisadoEm": "2026-10-01T16:30:07.000Z",
+      "hashRevisado": null
+    },
+    {
+      "chave": "investigacao",
+      "rotulo": "Investigação",
+      "arquivo": "content/v12/db_investigacao_v1_2.json",
+      "pageId": "3dc0a13635528184a959c3cdbfc10389",
+      "revisadoEm": "2026-10-01T16:30:07.000Z",
+      "hashRevisado": null
+    },
+    {
+      "chave": "trajetoria",
+      "rotulo": "Trajetória",
+      "arquivo": "content/v12/db_trajetoria_v1_2.json",
+      "pageId": "3c30a136355280ee9165ca698f42f843",
+      "revisadoEm": "2026-10-01T03:40:45.000Z",
+      "hashRevisado": null
+    },
+    {
+      "chave": "classe-ancora",
+      "rotulo": "Classe Âncora",
+      "arquivo": "content/v12/db_classe_ancora_v1_2.json",
+      "pageId": "3d90a1363552800aa253ecb7b72a8b0d",
+      "revisadoEm": "2026-10-02T03:31:15.000Z",
+      "hashRevisado": null
+    },
+    {
+      "chave": "classe-cacador",
+      "rotulo": "Classe Caçador",
+      "arquivo": "content/v12/db_classe_cacador_v1_2.json",
+      "pageId": "3d90a13635528034a166dbb1dd0c2b3b",
+      "revisadoEm": "2026-10-01T04:32:31.000Z",
+      "hashRevisado": null
+    },
+    {
+      "chave": "classe-combatente",
+      "rotulo": "Classe Combatente",
+      "arquivo": "content/v12/db_classe_combatente_v1_2.json",
+      "pageId": "3d90a13635528088ac28caeaca52d623",
+      "revisadoEm": "2026-10-02T03:31:15.000Z",
+      "hashRevisado": null
+    },
+    {
+      "chave": "classe-face",
+      "rotulo": "Classe Face",
+      "arquivo": "content/v12/db_classe_face_v1_2.json",
+      "pageId": "3d90a136355280b18fc8e6819e95616f",
+      "revisadoEm": "2026-10-02T03:31:15.000Z",
+      "hashRevisado": null
+    },
+    {
+      "chave": "classe-infiltrador",
+      "rotulo": "Classe Infiltrador",
+      "arquivo": "content/v12/db_classe_infiltrador_v1_2.json",
+      "pageId": "3d90a1363552807294c8d481c179bf01",
+      "revisadoEm": "2026-10-01T04:32:31.000Z",
+      "hashRevisado": null
+    },
+    {
+      "chave": "classe-tecnico",
+      "rotulo": "Classe Técnico",
+      "arquivo": "content/v12/db_classe_tecnico_v1_2.json",
+      "pageId": "3d90a13635528045a101de4d967cd26c",
+      "revisadoEm": "2026-10-02T03:31:15.000Z",
+      "hashRevisado": null
+    },
+    {
+      "chave": "classe-vanguarda",
+      "rotulo": "Classe Vanguarda",
+      "arquivo": "content/v12/db_classe_vanguarda_v1_2.json",
+      "pageId": "3d90a1363552807aad18f3d230b68c40",
+      "revisadoEm": "2026-10-01T04:32:31.000Z",
+      "hashRevisado": null
+    }
+  ]
+}

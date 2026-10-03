@@ -14,7 +14,7 @@ import { useEffect, useMemo, useState } from "react";
 import { BookOpen, CloudDownload, Loader2, RefreshCw } from "lucide-react";
 import { BotaoAba, BuscaDiretorio, CabecalhoGrupo, LinhaDiretorio, RodapeAcoes } from "./Diretorio";
 import { EstadoCarregando, EstadoErro, EstadoVazio } from "./Estados";
-import { listarCapitulosAction, podeSincronizarAction, sincronizarAgoraAction } from "../_compendio/acoes";
+import { listarCapitulosAction, podeSincronizarAction, regrasARevisarAction, sincronizarAgoraAction } from "../_compendio/acoes";
 import { agruparPorSecao, buscarNoLivro, rotuloCapitulo, type DestinoLivro, type LinhaCapitulo } from "../_compendio/modelo";
 
 type Estado = { fase: "ocioso" } | { fase: "carregando" } | { fase: "erro"; mensagem: string } | { fase: "pronto"; linhas: LinhaCapitulo[] };
@@ -36,6 +36,11 @@ export function CompendioTab({
   const [podeSincronizar, setPodeSincronizar] = useState(false);
   const [sincronizando, setSincronizando] = useState(false);
   const [avisoSync, setAvisoSync] = useState<string | null>(null);
+  /** Regras a revisar (Fase 5) — só para administradoras de conteúdo. */
+  const [aRevisar, setARevisar] = useState<{ chave: string; texto: string; arquivo: string }[]>([]);
+  function conferirRegras() {
+    void regrasARevisarAction().then((r) => setARevisar(r.ok && r.dados ? r.dados : []));
+  }
 
   async function sincronizar() {
     setSincronizando(true);
@@ -50,6 +55,7 @@ export function CompendioTab({
         (falhas.length ? ` Falhas: ${falhas.join("; ")}` : ""),
     );
     if (mudou > 0) carregar();
+    conferirRegras();
   }
 
   function carregar() {
@@ -63,7 +69,10 @@ export function CompendioTab({
   useEffect(() => {
     if (visivel && estado.fase === "ocioso") {
       carregar();
-      if (!fixtureVisual) void podeSincronizarAction().then(setPodeSincronizar);
+      if (!fixtureVisual) void podeSincronizarAction().then((pode) => {
+        setPodeSincronizar(pode);
+        if (pode) conferirRegras();
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visivel]);
@@ -76,6 +85,17 @@ export function CompendioTab({
   return (
     <div className="rv-pn-aba" data-testid="painel-compendio">
       <BuscaDiretorio valor={busca} onMudar={setBusca} rotulo="Buscar no livro" placeholder="Capítulo ou verbete…" testId="painel-compendio-busca" />
+      {aRevisar.length > 0 && (
+        <details className="rv-pn-compendio-revisar" data-testid="painel-compendio-revisar">
+          <summary>{aRevisar.length} arquivo{aRevisar.length === 1 ? "" : "s"} de regras a revisar</summary>
+          <ul>
+            {aRevisar.map((r) => (
+              <li key={r.chave} title={r.arquivo}>{r.texto}</li>
+            ))}
+          </ul>
+          <p>Depois de revisar: <code>npm run compendio:revisado -- {"<chave>"}</code></p>
+        </details>
+      )}
       <div className="rv-pn-scroll">
         {(estado.fase === "ocioso" || estado.fase === "carregando") && <EstadoCarregando rotulo="Carregando o livro…" />}
         {estado.fase === "erro" && <EstadoErro mensagem={estado.mensagem} />}

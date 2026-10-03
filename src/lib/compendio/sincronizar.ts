@@ -21,6 +21,7 @@ import { converterBlocos, separarNumero, type BlocoNotion } from "./converter";
 import { lerIndice } from "./indice";
 import { PAGINA_RAIZ_RUPTURA_V12, type ClienteNotion } from "./notion";
 import type { BlocoCompendio, CapituloCompendio } from "./tipos";
+import { avaliarRevisoes, lerFontesRevisao, type EstadoPaginaLivro, type PendenciaRevisao } from "./revisao";
 
 export const BUCKET_COMPENDIO = "compendio";
 export const PACK_COMPENDIO = "notion-ruptura-v1-2";
@@ -320,6 +321,29 @@ async function removerImagensOrfas(supabase: SupabaseClient): Promise<number> {
     if (erroRemover) throw new Error(`Falha ao remover imagens órfãs: ${erroRemover.message}`);
   }
   return orfas.length;
+}
+
+/** Estado de cada página publicada do livro (título, data no Notion, hash do texto). */
+export async function estadoDasPaginas(supabase: SupabaseClient): Promise<Map<string, EstadoPaginaLivro>> {
+  const { data, error } = await supabase
+    .from("content_documents")
+    .select("slug, payload, payload_hash")
+    .eq("content_type", "capitulo")
+    .eq("source_pack_id", PACK_COMPENDIO)
+    .eq("status", "published");
+  if (error) throw new Error(`Falha ao ler o livro: ${error.message}`);
+  return new Map(
+    (data ?? []).map((d) => {
+      const p = d.payload as CapituloCompendio;
+      const titulo = p.numero != null ? `${p.numero}. ${p.titulo}` : p.paiPageId ? `${p.secao} › ${p.titulo}` : p.titulo;
+      return [d.slug as string, { titulo, editadoEm: p.notionEditadoEm, hash: d.payload_hash as string }];
+    }),
+  );
+}
+
+/** Arquivos de regras cuja página de origem mudou depois da revisão (Fase 5). */
+export async function pendenciasDeRevisao(supabase: SupabaseClient): Promise<PendenciaRevisao[]> {
+  return avaliarRevisoes(lerFontesRevisao(), await estadoDasPaginas(supabase));
 }
 
 /** Tipagem exportada para o teste. */

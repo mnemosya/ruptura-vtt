@@ -6,6 +6,7 @@
 import assert from "node:assert/strict";
 import { converterBlocos, separarNumero, ancoraDe, type BlocoNotion } from "../src/lib/compendio/converter";
 import { lerIndice } from "../src/lib/compendio/indice";
+import { avaliarRevisoes, lerFontesRevisao } from "../src/lib/compendio/revisao";
 
 const txt = (plain_text: string, annotations: Record<string, boolean> = {}) => ({ type: "text", plain_text, annotations });
 let n = 0;
@@ -114,6 +115,30 @@ const bloco = (type: string, dados: Record<string, unknown>, filhos?: BlocoNotio
   assert.equal(r.blocos.length, 1, "banco sem linhas não gera galeria vazia");
   assert.deepEqual(r.naoSuportados, []);
   console.log("5. galeria de banco embutido — OK");
+}
+
+// 6. Regras a revisar (Fase 5).
+{
+  const base = { arquivo: "x.json", revisadoEm: "2026-10-01T12:00:00.000Z" };
+  const fontes = [
+    { ...base, chave: "por-hash-igual", rotulo: "A", pageId: "p1", hashRevisado: "h1" },
+    { ...base, chave: "por-hash-mudou", rotulo: "B", pageId: "p2", hashRevisado: "h-antigo" },
+    { ...base, chave: "por-data-antes", rotulo: "C", pageId: "p3", hashRevisado: null },
+    { ...base, chave: "por-data-depois", rotulo: "D", pageId: "p4", hashRevisado: null },
+    { ...base, chave: "sumiu", rotulo: "E", pageId: "p5", hashRevisado: null },
+  ];
+  const paginas = new Map([
+    ["p1", { titulo: "1", editadoEm: "2026-10-09T00:00:00.000Z", hash: "h1" }],
+    ["p2", { titulo: "2", editadoEm: "2026-09-01T00:00:00.000Z", hash: "h-novo" }],
+    ["p3", { titulo: "3", editadoEm: "2026-09-30T00:00:00.000Z", hash: "x" }],
+    ["p4", { titulo: "4", editadoEm: "2026-10-02T00:00:00.000Z", hash: "x" }],
+  ]);
+  const r = avaliarRevisoes(fontes, paginas);
+  assert.deepEqual(r.map((p) => `${p.chave}:${p.motivo}`), ["por-hash-mudou:texto_mudou", "por-data-depois:editada_depois", "sumiu:pagina_ausente"],
+    "hash igual não avisa mesmo com data nova; sem hash, vale a data");
+  const manifesto = lerFontesRevisao();
+  assert.ok(manifesto.length >= 13 && manifesto.every((f) => /^[0-9a-f]{32}$/.test(f.pageId) && f.arquivo.endsWith(".json")), "manifesto de revisão bem formado");
+  console.log("6. regras a revisar (hash, data, página ausente) e manifesto — OK");
 }
 
 // 4. Utilidades.
