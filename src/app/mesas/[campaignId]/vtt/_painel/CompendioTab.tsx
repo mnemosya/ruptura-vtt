@@ -11,10 +11,10 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, RefreshCw } from "lucide-react";
+import { BookOpen, CloudDownload, Loader2, RefreshCw } from "lucide-react";
 import { BotaoAba, BuscaDiretorio, CabecalhoGrupo, LinhaDiretorio, RodapeAcoes } from "./Diretorio";
 import { EstadoCarregando, EstadoErro, EstadoVazio } from "./Estados";
-import { listarCapitulosAction } from "../_compendio/acoes";
+import { listarCapitulosAction, podeSincronizarAction, sincronizarAgoraAction } from "../_compendio/acoes";
 import { agruparPorSecao, buscarNoLivro, rotuloCapitulo, type DestinoLivro, type LinhaCapitulo } from "../_compendio/modelo";
 
 type Estado = { fase: "ocioso" } | { fase: "carregando" } | { fase: "erro"; mensagem: string } | { fase: "pronto"; linhas: LinhaCapitulo[] };
@@ -33,6 +33,24 @@ export function CompendioTab({
 }) {
   const [estado, setEstado] = useState<Estado>({ fase: "ocioso" });
   const [busca, setBusca] = useState("");
+  const [podeSincronizar, setPodeSincronizar] = useState(false);
+  const [sincronizando, setSincronizando] = useState(false);
+  const [avisoSync, setAvisoSync] = useState<string | null>(null);
+
+  async function sincronizar() {
+    setSincronizando(true);
+    setAvisoSync("Lendo o Notion… pode levar alguns minutos se muita coisa mudou.");
+    const r = await sincronizarAgoraAction();
+    setSincronizando(false);
+    if (!r.ok || !r.dados) return setAvisoSync(r.erro ?? "A sincronização falhou.");
+    const { criados, atualizados, arquivados, falhas } = r.dados;
+    const mudou = criados + atualizados + arquivados;
+    setAvisoSync(
+      (mudou === 0 ? "Livro já estava em dia." : `${atualizados} capítulo(s) atualizado(s), ${criados} novo(s), ${arquivados} arquivado(s).`) +
+        (falhas.length ? ` Falhas: ${falhas.join("; ")}` : ""),
+    );
+    if (mudou > 0) carregar();
+  }
 
   function carregar() {
     if (fixtureVisual) return setEstado({ fase: "pronto", linhas: fixtureVisual });
@@ -43,7 +61,10 @@ export function CompendioTab({
   }
 
   useEffect(() => {
-    if (visivel && estado.fase === "ocioso") carregar();
+    if (visivel && estado.fase === "ocioso") {
+      carregar();
+      if (!fixtureVisual) void podeSincronizarAction().then(setPodeSincronizar);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visivel]);
 
@@ -104,6 +125,12 @@ export function CompendioTab({
         <BotaoAba onClick={carregar} desabilitado={estado.fase === "carregando"} titulo="Recarregar o índice" testId="painel-compendio-atualizar">
           <RefreshCw size={13} />
         </BotaoAba>
+        {podeSincronizar && (
+          <BotaoAba onClick={() => void sincronizar()} desabilitado={sincronizando} titulo="Buscar agora as mudanças do Notion" testId="painel-compendio-sincronizar">
+            {sincronizando ? <Loader2 size={13} className="rv-spin" /> : <CloudDownload size={13} />}
+          </BotaoAba>
+        )}
+        {avisoSync && <span className="rv-pn-aviso" role="status" data-testid="painel-compendio-aviso-sync">{avisoSync}</span>}
       </RodapeAcoes>
     </div>
   );

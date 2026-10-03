@@ -10,7 +10,11 @@
 
 import { mkdirSync } from "node:fs";
 import { chromium } from "playwright";
-import { BASE_URL, SESSION_FILE, requireSessaoSalva } from "./authSession";
+import { BASE_URL as BASE_PADRAO, SESSION_FILE, requireSessaoSalva } from "./authSession";
+
+// Outra porta local é permitida (ex.: um worktree em 3001); outro host, nunca.
+const PORTA = process.env.PORTA_LOCAL;
+const BASE_URL = PORTA && /^\d+$/.test(PORTA) ? `http://localhost:${PORTA}` : BASE_PADRAO;
 
 const campaignId = process.argv[2];
 if (!campaignId) {
@@ -82,6 +86,22 @@ async function main() {
     await page.keyboard.press("Escape");
     await page.waitForSelector('[data-testid="compendio-livro"]', { state: "detached", timeout: 5000 });
     ok("C8 Esc fecha o livro", true);
+
+    // C10: o botão "Sincronizar agora" (só para administradoras de conteúdo).
+    const botao = page.locator('[data-testid="painel-compendio-sincronizar"]');
+    if (await botao.count()) {
+      await botao.click();
+      const aviso = page.locator('[data-testid="painel-compendio-aviso-sync"]');
+      await page.waitForFunction(
+        () => !document.querySelector('[data-testid="painel-compendio-aviso-sync"]')?.textContent?.startsWith("Lendo o Notion"),
+        null,
+        { timeout: 600000 },
+      );
+      const texto = ((await aviso.textContent()) ?? "").trim();
+      ok("C10 Sincronizar agora devolve o resultado", /em dia|atualizado/.test(texto) && !texto.includes("Falhas"), texto);
+    } else {
+      ok("C10 Sincronizar agora (conta sem papel de administradora: botão oculto)", true);
+    }
 
     ok("C9 sem erros no console", erros.length === 0, erros.slice(0, 3).join(" | "));
   } finally {

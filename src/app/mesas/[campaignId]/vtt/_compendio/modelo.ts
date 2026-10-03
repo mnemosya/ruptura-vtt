@@ -15,6 +15,8 @@ export interface LinhaCapitulo {
   secao: string;
   ordem: number;
   verbetes: { titulo: string; ancora: string }[];
+  /** Última edição no Notion — o livro aberto compara para avisar que mudou. */
+  editadoEm?: string;
 }
 
 /** Destino de navegação dentro do livro. */

@@ -20,8 +20,14 @@ import "server-only";
  * server-only, depois que uma RPC decidiu a autorização id por id
  * (`vtt_asset_assinavel_para`, migration 0100).
  *
+ * SEGUNDA EXCEÇÃO (02/10/2026): a sincronização do Compêndio
+ * (`lib/compendio/sincronizacaoAutomatica.ts`) grava os capítulos do
+ * livro vindos do Notion em `content_documents` e as imagens no bucket
+ * `compendio`. O browser só DISPARA a rodada; nada do que é gravado vem
+ * dele (o conteúdo vem da API do Notion, com o token do servidor).
+ *
  * REGRAS DE USO — não são sugestão:
- *   • só `lib/vtt/imageService.ts` importa este módulo;
+ *   • só `lib/vtt/imageService.ts` e `lib/compendio/sincronizacaoAutomatica.ts` importam este módulo;
  *   • nenhuma Server Action de domínio o toca;
  *   • nada aqui recebe input do cliente sem ter passado por uma RPC de
  *     autorização antes (o caminho no bucket é DERIVADO no banco, via

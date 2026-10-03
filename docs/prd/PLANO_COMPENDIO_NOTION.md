@@ -1,6 +1,6 @@
 # Plano — Compêndio sincronizado com o Notion
 
-**Status:** em implementação (Fases 0 a 2 entregues)
+**Status:** em implementação (Fases 0 a 3 entregues)
 **Criado em:** 02/10/2026
 **Versão deste documento:** 0.1
 
@@ -157,3 +157,13 @@ O índice de termos é montado pela própria sincronização, a partir dos títu
 - O livro abre num modal com a moldura do Códex da Forja (`_compendio/LivroCodex.tsx`): índice à esquerda (subtítulos do capítulo aberto), verbetes recolhíveis, etiquetas de termo com link para o verbete (`Lento` → cap. 22), links entre capítulos, Anterior/Próximo, Voltar, busca no texto completo (carregado só na primeira busca).
 - Esc: o painel tinha o próprio Esc em captura e engolia a tecla; o painel agora ignora Esc com um modal aberto e o livro escuta Esc em captura.
 - Verificação: `scripts/dev/check-compendio.ts <campaignId>` (9 critérios, todos aprovados), `test-vtt-painel` com os testes K do modelo novo.
+
+### 03/10/2026 — Fase 3 (adaptada)
+
+- O VTT ainda não tem servidor público e o Supabase não alcança o app (`pg_net` ausente), então não há cron chamando uma rota. No lugar: **abrir o Compêndio dispara, em segundo plano (`after()`), uma checagem no Notion, no máximo a cada 12 horas** (duas vezes por dia, decisão de 03/10/2026; 15 minutos foi considerado frequente demais).
+- Último horário e resultado guardados em `content_packs.manifest` (`ultimaVerificacao`, `ultimoResultado`).
+- Botão "Sincronizar agora" no rodapé da aba, só para administradoras de conteúdo (`is_content_admin`).
+- O aviso "este capítulo foi atualizado" para quem está lendo saiu: com checagem de 12 em 12 horas, o livro já abre sempre na versão mais nova.
+- O cliente com chave de serviço ganhou a segunda exceção documentada (`lib/supabase/adminClient.ts`).
+- Quando o VTT tiver servidor público: trocar o gatilho por uma Edge Function agendada (pg_cron), que roda mesmo sem ninguém abrir o livro.
+- Verificação: `check-compendio` com 10 critérios aprovados (C10: Sincronizar agora).
