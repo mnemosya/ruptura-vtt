@@ -15,7 +15,7 @@ import { Mono } from "../_forja/ui";
 import { oxanium } from "../../../../_design/oxanium";
 import "../_forja/forja.css";
 import "./compendio.css";
-import { abrirCapituloAction, enviarTrechoAoChatAction, listarCapitulosAction, textosDoLivroAction } from "./acoes";
+import { abrirCapituloAction, enviarSelecaoAoChatAction, enviarTrechoAoChatAction, listarCapitulosAction, textosDoLivroAction } from "./acoes";
 import { Blocos, type ContextoLeitura } from "./Blocos";
 import {
   agruparPorSecao,
@@ -84,6 +84,50 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
   const [abertos, setAbertos] = useState<Set<string>>(new Set());
   const [avisoEnvio, setAvisoEnvio] = useState<string | null>(null);
 
+  /** Menu de contexto sobre uma seleção (só na mesa: fora dela não há chat). */
+  const [menuSelecao, setMenuSelecao] = useState<{ x: number; y: number; texto: string; ancora: string | null } | null>(null);
+  const menuSelecaoRef = useRef(menuSelecao);
+  menuSelecaoRef.current = menuSelecao;
+
+  function abrirMenuSelecao(e: React.MouseEvent) {
+    if (!campaignId || !atual) return;
+    const sel = window.getSelection();
+    const texto = sel?.toString().trim() ?? "";
+    const no = sel?.anchorNode ?? null;
+    // Sem seleção dentro do livro: fica o menu normal do navegador.
+    if (!texto || !no || !scroller.current?.contains(no)) return;
+    e.preventDefault();
+    const el = no.nodeType === Node.ELEMENT_NODE ? (no as Element) : no.parentElement;
+    const ancora = el?.closest(".fj-livro-verbete")?.id ?? null;
+    setMenuSelecao({ x: e.clientX, y: e.clientY, texto, ancora });
+  }
+
+  async function enviarSelecao() {
+    const m = menuSelecao;
+    setMenuSelecao(null);
+    if (!m || !campaignId || !atual) return;
+    setAvisoEnvio("Enviando trecho…");
+    const r = await enviarSelecaoAoChatAction(campaignId, atual.pageId, m.ancora, m.texto);
+    setAvisoEnvio(r.ok ? "Trecho enviado ao chat" : r.erro ?? "Falha ao enviar.");
+    window.setTimeout(() => setAvisoEnvio(null), 3500);
+  }
+
+  // O menu fecha com clique fora, rolagem ou troca de página.
+  useEffect(() => {
+    if (!menuSelecao) return;
+    const fechar = () => setMenuSelecao(null);
+    const fora = (ev: MouseEvent) => { if (!(ev.target as Element | null)?.closest?.(".fj-livro-menu")) fechar(); };
+    window.addEventListener("mousedown", fora);
+    window.addEventListener("wheel", fechar, { passive: true });
+    window.addEventListener("resize", fechar);
+    return () => {
+      window.removeEventListener("mousedown", fora);
+      window.removeEventListener("wheel", fechar);
+      window.removeEventListener("resize", fechar);
+    };
+  }, [menuSelecao]);
+  useEffect(() => setMenuSelecao(null), [atual]);
+
   async function enviarAoChat(pageId: string, ancora: string | null) {
     if (!campaignId) return;
     setAvisoEnvio("Enviando…");
@@ -142,7 +186,14 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
   fecharRef.current = onClose;
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || !fecharRef.current) return;
+      if (e.key !== "Escape") return;
+      if (menuSelecaoRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        setMenuSelecao(null);
+        return;
+      }
+      if (!fecharRef.current) return;
       e.preventDefault();
       e.stopPropagation();
       fecharRef.current?.();
@@ -205,6 +256,21 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
 
   return (
     <div className="fj-borda fj-ch fj-codex" data-testid="compendio-livro">
+      {menuSelecao && createPortal(
+        <div className={`fj-root ${oxanium.variable}`}>
+        <div
+          className="fj-livro-menu"
+          role="menu"
+          style={{ left: Math.min(menuSelecao.x, window.innerWidth - 240), top: Math.min(menuSelecao.y, window.innerHeight - 60) }}
+          data-testid="compendio-menu-selecao"
+        >
+          <button type="button" role="menuitem" className="fj-livro-menu__item" onClick={() => void enviarSelecao()} autoFocus data-testid="compendio-enviar-selecao">
+            Enviar trecho ao chat
+          </button>
+        </div>
+        </div>,
+        document.body,
+      )}
       <div className="fj-ch fj-vidro fj-codex__corpo">
         <CabecalhoCodex
           icone={<span className="fj-ch-hex fj-codex-cab__sigla">{linhaAtual?.numero ?? "RP"}</span>}
@@ -257,7 +323,7 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
             ))}
           </nav>
 
-          <div ref={scroller} className="fj-codex__leitura" tabIndex={-1} data-testid="compendio-leitura">
+          <div ref={scroller} className="fj-codex__leitura" tabIndex={-1} data-testid="compendio-leitura" onContextMenu={abrirMenuSelecao}>
             {erro && <p className="fj-livro-aviso">{erro}</p>}
             {!linhas && !erro && <p className="fj-livro-aviso fj-mono">Carregando o livro…</p>}
             {linhas && linhas.length === 0 && <p className="fj-livro-aviso">O livro ainda não foi sincronizado.</p>}

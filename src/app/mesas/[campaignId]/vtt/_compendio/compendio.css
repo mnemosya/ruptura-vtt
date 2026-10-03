@@ -140,3 +140,8 @@
 .fj-livro-texto > p:has(> .fj-livro-link--bloco) + p:has(> .fj-livro-link--bloco) { margin-top: var(--hud-space-1); }
 .fj-livro-link--bloco { display: block; width: 100%; border-left: 2px solid color-mix(in srgb, var(--fj-cy) 30%, transparent); background: color-mix(in srgb, var(--fj-abismo) 35%, transparent); padding: var(--hud-space-3) var(--hud-space-5); text-align: left; }
 .fj-livro-link--bloco:hover { border-left-color: var(--fj-am); background: color-mix(in srgb, var(--fj-am) 8%, transparent); }
+
+/* ── Menu de contexto da seleção ───────────────────────── */
+.fj-livro-menu { position: fixed; z-index: 1000; min-width: 200px; border: 1px solid color-mix(in srgb, var(--fj-cy) 45%, transparent); background: var(--fj-abismo); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 12px color-mix(in srgb, var(--fj-cy) 15%, transparent); padding: var(--hud-space-1); }
+.fj-livro-menu__item { display: block; width: 100%; padding: var(--hud-space-2) var(--hud-space-4); text-align: left; font: 700 12px var(--fj-display); text-transform: uppercase; letter-spacing: 0.12em; color: var(--fj-gelo); transition: var(--fj-trans); }
+.fj-livro-menu__item:hover, .fj-livro-menu__item:focus-visible { background: color-mix(in srgb, var(--fj-am) 15%, transparent); color: var(--fj-am); outline: none; }

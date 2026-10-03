@@ -86,6 +86,25 @@ async function main() {
     await page.waitForFunction(() => document.querySelector('[data-testid="compendio-aviso-envio"]')?.textContent?.includes("Enviado"), null, { timeout: 15000 });
     ok("C11 verbete enviado ao chat", true);
 
+    // C14: selecionar um trecho + botão direito → "Enviar trecho ao chat".
+    const alvoTrecho = page.locator(".fj-livro-verbete--aberto .fj-livro-par").nth(1);
+    const trecho = await alvoTrecho.evaluate((el) => {
+      const no = el.firstChild!;
+      const range = document.createRange();
+      range.setStart(no, 0);
+      range.setEnd(no, Math.min(40, no.textContent!.length));
+      const sel = window.getSelection()!;
+      sel.removeAllRanges();
+      sel.addRange(range);
+      return sel.toString();
+    });
+    const caixa = (await alvoTrecho.boundingBox())!;
+    await page.mouse.click(caixa.x + 20, caixa.y + 8, { button: "right" });
+    await page.locator('[data-testid="compendio-enviar-selecao"]').click({ timeout: 5000 });
+    await page.waitForFunction(() => /Trecho enviado|não confere|Falha/.test(document.querySelector('[data-testid="compendio-aviso-envio"]')?.textContent ?? ""), null, { timeout: 15000 });
+    const avisoTrecho = ((await page.locator('[data-testid="compendio-aviso-envio"]').textContent()) ?? "").trim();
+    ok("C14 trecho selecionado enviado ao chat", avisoTrecho === "Trecho enviado ao chat", `"${trecho.trim()}" → ${avisoTrecho}`);
+
     await page.locator('[data-testid="compendio-busca"]').fill("antídoto");
     await page.waitForFunction(() => document.querySelectorAll('[data-testid="compendio-resultado"]').length > 0, null, { timeout: 30000 });
     const resultados = await page.locator('[data-testid="compendio-resultado"]').count();
@@ -112,6 +131,13 @@ async function main() {
     await page.waitForSelector('[data-testid="compendio-livro"] .fj-livro-verbete--aberto', { timeout: 30000 });
     const aberto = ((await page.locator(".fj-livro-verbete--aberto .fj-livro-verbete__titulo").first().textContent()) ?? "").toUpperCase();
     ok("C12 cartão no chat abre o livro no verbete", aberto.includes("QUEIMANDO"), aberto.trim());
+    await page.keyboard.press("Escape");
+    await page.locator('[data-testid="painel-aba-chat"]').click();
+    const cartaoTrecho = page.locator('[data-testid="painel-feed-referencia"]', { hasText: "Trecho" }).last();
+    const textoCartao = ((await cartaoTrecho.textContent({ timeout: 15000 })) ?? "").replace(/\s+/g, " ");
+    ok("C15 cartão do trecho no chat mostra só o trecho e a origem", textoCartao.includes("QUEIMANDO") && textoCartao.includes("22. CONDIÇÕES") && !textoCartao.includes("1d12"), textoCartao.slice(0, 140));
+    await cartaoTrecho.locator('[data-testid="painel-feed-abrir-livro"]').click();
+    await page.waitForSelector('[data-testid="compendio-livro"]', { timeout: 30000 });
     await page.screenshot({ path: `${SAIDA}/compendio-chat-volta.png` });
     await page.keyboard.press("Escape");
 

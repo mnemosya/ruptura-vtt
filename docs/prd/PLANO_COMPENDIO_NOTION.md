@@ -202,3 +202,10 @@ O índice de termos é montado pela própria sincronização, a partir dos títu
 - O conversor descartava páginas filhas postas direto no texto (`child_page`). A Lista de Mercadorias do cap. 24 (9 páginas: Armas e Armaduras, Dispositivos Tecnológicos, Drones e Robôs, Escalpos, Explosivos, Farmácia, Ferramentas e Utilidades, Veículos, Vertinas) não aparecia.
 - Agora cada página filha vira um link no lugar e uma subpágina do livro, como as linhas de galeria; o sincronizador desce até 3 níveis (página dentro de página). Índice e Anterior/Próximo sobem até o capítulo raiz.
 - `--capitulo=24` relê só os capítulos pedidos. Rodada: 9 subpáginas criadas, 22 imagens (33,2 MB → 1,7 MB). Varredura dos 29 capítulos: só o 24 tinha páginas filhas.
+
+### 03/10/2026 — Enviar trecho ao chat
+
+- Selecionar texto no livro e clicar com o botão direito abre um menu no visual do Códex com "Enviar trecho ao chat" (só na mesa; sem seleção, fica o menu do navegador). Esc fecha o menu antes do livro.
+- Vai só o trecho, com a origem: verbete (se a seleção estiver dentro de um) ou página, e o capítulo ("Trecho · Compêndio · 22. CONDIÇÕES"); "Abrir no livro" leva ao verbete.
+- O servidor confere que o trecho está naquela página do livro publicado (espaços e quebras normalizados) e recusa o que não confere; máximo de 1.500 caracteres.
+- Verificação: `check-compendio` com 15 critérios aprovados (C14 enviar a seleção, C15 cartão no chat).

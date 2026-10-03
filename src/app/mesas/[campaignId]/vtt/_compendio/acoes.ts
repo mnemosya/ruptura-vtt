@@ -198,3 +198,60 @@ export async function regrasARevisarAction(): Promise<ResultadoPainel<{ chave: s
     return { ok: false, erro: mensagemDeErro(e, "Não foi possível conferir as regras.") };
   }
 }
+
+/** Espaços e quebras colapsados: a seleção do navegador e o texto corrido do livro diferem nisso. */
+function normalizarTrecho(texto: string): string {
+  return texto.normalize("NFC").replace(/[\s\u00a0]+/g, " ").trim();
+}
+
+/**
+ * "Enviar trecho ao chat" (menu de contexto sobre uma seleção). Vai só o trecho
+ * selecionado, com a origem (página e, se houver, o verbete). O servidor confere
+ * que o trecho está MESMO naquela página do livro publicado — o cartão nunca
+ * atribui ao livro um texto que não está nele.
+ */
+export async function enviarSelecaoAoChatAction(
+  campaignId: string,
+  pageId: string,
+  ancora: string | null,
+  trecho: string,
+): Promise<ResultadoPainel> {
+  const v = await exigirAcessoPainel(campaignId);
+  if (!v.ok) return { ok: false, erro: v.erro };
+  const selecionado = normalizarTrecho(trecho);
+  if (!selecionado) return { ok: false, erro: "Nada selecionado." };
+  if (selecionado.length > MAX_TEXTO_CARTAO) return { ok: false, erro: `Trecho longo demais (máximo de ${MAX_TEXTO_CARTAO} caracteres).` };
+  try {
+    const { data, error } = await consultaBase().eq("slug", pageId).maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) return { ok: false, erro: "Página não encontrada no livro." };
+    const p = data.payload as CapituloCompendio;
+    const verbete = ancora ? acharVerbete(p.blocos, ancora) : null;
+    if (!normalizarTrecho(textoPlanoDosBlocos(p.blocos)).includes(selecionado)) {
+      return { ok: false, erro: "O trecho selecionado não confere com o texto do livro." };
+    }
+    const origem = verbete ? textoDe(verbete.titulo).trim() : p.titulo;
+    await addLog({
+      campaignId,
+      type: "compendio_compartilhado",
+      visibility: "public",
+      payload: {
+        categoria: "livro",
+        categoriaRotulo: `Trecho · Compêndio · ${p.paiPageId ? p.secao : rotuloCapitulo(p)}`,
+        slug: ancora ? `${pageId}#${ancora}` : pageId,
+        nome: origem,
+        origem: "oficial",
+        origemRotulo: "Livro RUPTURA v1.2",
+        resumo: selecionado,
+        descricao: null,
+        trecho: true,
+        pageId,
+        ancora: verbete ? ancora : null,
+        source: "vtt_compendio_trecho",
+      },
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Falha ao enviar ao chat.") };
+  }
+}
