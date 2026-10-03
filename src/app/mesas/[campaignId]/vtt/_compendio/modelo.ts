@@ -15,8 +15,15 @@ export interface LinhaCapitulo {
   secao: string;
   ordem: number;
   verbetes: { titulo: string; ancora: string }[];
-  /** Última edição no Notion — o livro aberto compara para avisar que mudou. */
+  /** Última edição no Notion. */
   editadoEm?: string;
+  /** Subpágina de galeria (uma Vertente, uma Classe): o capítulo onde ela está. */
+  paiPageId?: string | null;
+}
+
+/** Só os capítulos do livro (sem as subpáginas das galerias). */
+export function soCapitulos(linhas: LinhaCapitulo[]): LinhaCapitulo[] {
+  return linhas.filter((c) => !c.paiPageId);
 }
 
 /** Destino de navegação dentro do livro. */
@@ -32,7 +39,7 @@ export function rotuloCapitulo(c: Pick<LinhaCapitulo, "numero" | "titulo">): str
 /** Seções na ordem em que aparecem no livro. */
 export function agruparPorSecao(linhas: LinhaCapitulo[]): { secao: string; capitulos: LinhaCapitulo[] }[] {
   const grupos: { secao: string; capitulos: LinhaCapitulo[] }[] = [];
-  for (const c of [...linhas].sort((a, b) => a.ordem - b.ordem)) {
+  for (const c of soCapitulos(linhas).sort((a, b) => a.ordem - b.ordem)) {
     const g = grupos.find((x) => x.secao === c.secao);
     if (g) g.capitulos.push(c);
     else grupos.push({ secao: c.secao, capitulos: [c] });
@@ -138,6 +145,11 @@ function recortar(linha: string, pos: number, tam: number): string {
 export function indiceDeTermos(linhas: LinhaCapitulo[]): Map<string, DestinoLivro> {
   const mapa = new Map<string, DestinoLivro>();
   for (const c of [...linhas].sort((a, b) => a.ordem - b.ordem)) {
+    // Subpágina (BIÓTICA, VANGUARDA): o próprio nome também é termo.
+    if (c.paiPageId) {
+      const chave = normalizar(c.titulo);
+      if (!mapa.has(chave)) mapa.set(chave, { pageId: c.pageId });
+    }
     for (const v of c.verbetes) {
       const chave = normalizar(v.titulo);
       if (!mapa.has(chave)) mapa.set(chave, { pageId: c.pageId, ancora: v.ancora });
@@ -160,7 +172,9 @@ export { ancoraDe };
 
 /** Capítulo anterior e seguinte na ordem do livro. */
 export function vizinhos(linhas: LinhaCapitulo[], pageId: string): { anterior: LinhaCapitulo | null; proximo: LinhaCapitulo | null } {
-  const ordenadas = [...linhas].sort((a, b) => a.ordem - b.ordem);
-  const i = ordenadas.findIndex((c) => c.pageId === pageId);
+  const ordenadas = soCapitulos(linhas).sort((a, b) => a.ordem - b.ordem);
+  // Numa subpágina, os vizinhos são os do capítulo onde ela está.
+  const alvo = linhas.find((c) => c.pageId === pageId)?.paiPageId ?? pageId;
+  const i = ordenadas.findIndex((c) => c.pageId === alvo);
   return { anterior: i > 0 ? ordenadas[i - 1] : null, proximo: i >= 0 && i < ordenadas.length - 1 ? ordenadas[i + 1] : null };
 }

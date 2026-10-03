@@ -56,7 +56,8 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string; inicial: 
       if (!vivo) return;
       if (!r.ok || !r.dados) return setErro(r.erro ?? "Não foi possível carregar o Compêndio.");
       setLinhas(r.dados);
-      setAtual((a) => a ?? (r.dados![0] ? { pageId: r.dados![0].pageId } : null));
+      const primeiro = r.dados.find((c) => !c.paiPageId);
+      setAtual((a) => a ?? (primeiro ? { pageId: primeiro.pageId } : null));
     });
     return () => { vivo = false; };
   }, [campaignId]);
@@ -158,7 +159,7 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string; inicial: 
       <div className="fj-ch fj-vidro fj-codex__corpo">
         <CabecalhoCodex
           icone={<span className="fj-ch-hex fj-codex-cab__sigla">{linhaAtual?.numero ?? "RP"}</span>}
-          kicker={linhaAtual ? `Compêndio · ${linhaAtual.secao}` : "Compêndio · RUPTURA v1.2"}
+          kicker={linhaAtual ? `Compêndio · ${linhaAtual.paiPageId ? titulos.get(linhaAtual.paiPageId) ?? linhaAtual.secao : linhaAtual.secao}` : "Compêndio · RUPTURA v1.2"}
           titulo={linhaAtual?.titulo ?? "Compêndio"}
           onClose={onClose}
         >
@@ -182,7 +183,7 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string; inicial: 
               <div key={g.secao} className="fj-indice__grupo">
                 <div className="fj-livro-indice-secao"><Mono pequeno tom="am">{g.secao}</Mono></div>
                 {g.capitulos.map((c) => {
-                  const ativo = c.pageId === atual?.pageId;
+                  const ativo = c.pageId === atual?.pageId || c.pageId === linhaAtual?.paiPageId;
                   return (
                     <div key={c.pageId}>
                       <button
@@ -236,7 +237,13 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string; inicial: 
               <article key={capitulo.notionPageId}>
                 <header className="fj-codex__heroi fj-livro-heroi">
                   <div className="fj-codex__heroi-texto">
-                    <Mono tom="am">{linhaAtual.secao}{linhaAtual.numero != null ? ` · Capítulo ${linhaAtual.numero}` : ""}</Mono>
+                    {linhaAtual.paiPageId ? (
+                      <button type="button" className="fj-livro-link fj-livro-link--bloco" onClick={() => ir({ pageId: linhaAtual.paiPageId! })}>
+                        ‹ {titulos.get(linhaAtual.paiPageId) ?? linhaAtual.secao}
+                      </button>
+                    ) : (
+                      <Mono tom="am">{linhaAtual.secao}{linhaAtual.numero != null ? ` · Capítulo ${linhaAtual.numero}` : ""}</Mono>
+                    )}
                     <h2 className="fj-codex__heroi-titulo fj-glow">{capitulo.titulo}</h2>
                   </div>
                 </header>

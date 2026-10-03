@@ -9,11 +9,25 @@
 import type { BlocoCompendio, TrechoCompendio } from "./tipos";
 
 /** Bloco como vem da API do Notion, mais os filhos já carregados. */
+/** Linha de um banco de dados do Notion (página), como o leitor entrega. */
+export interface LinhaBancoNotion {
+  id: string;
+  titulo: string;
+  /** Propriedades de texto, por nome. */
+  textos: Record<string, string>;
+  /** Propriedades de seleção, por nome. */
+  selecoes: Record<string, string>;
+  icone: string | null;
+  editadoEm: string;
+}
+
 export interface BlocoNotion {
   id: string;
   type: string;
   has_children?: boolean;
   filhos?: BlocoNotion[];
+  /** Só em `child_database`: as linhas do banco, já carregadas. */
+  linhas?: LinhaBancoNotion[];
   [chave: string]: unknown;
 }
 
@@ -180,9 +194,26 @@ export function converterBlocos(blocos: BlocoNotion[]): ResultadoConversao {
         case "synced_block":
           saida.push(...filhos());
           break;
+        case "child_database": {
+          const linhas = b.linhas ?? [];
+          if (!linhas.length) break;
+          saida.push({
+            tipo: "galeria",
+            titulo: (dados as { title?: string }).title ?? "",
+            itens: linhas.map((l) => ({
+              pageId: semHifens(l.id),
+              titulo: l.titulo,
+              // "Descrição" quando existe; senão o primeiro texto preenchido (ex.: "Papel" nas Classes).
+              descricao: l.textos["Descrição"] ?? Object.values(l.textos).find((t) => t.trim()) ?? "",
+              etiquetas: Object.values(l.selecoes).filter(Boolean),
+              imagem: null,
+              icone: l.icone,
+            })),
+          });
+          break;
+        }
         // Subpáginas e índices não fazem parte do texto do capítulo.
         case "child_page":
-        case "child_database":
         case "table_of_contents":
         case "breadcrumb":
           break;

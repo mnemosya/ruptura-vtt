@@ -56,6 +56,17 @@ export function chaveImagem(url: string): string {
   return `${createHash("sha256").update(semQuery).digest("hex").slice(0, 32)}.${ext}`;
 }
 
+/** Primeira imagem de uma página, em qualquer profundidade: a capa do card na galeria. */
+function primeiraImagem(blocos: BlocoCompendio[]): string | null {
+  for (const b of blocos) {
+    if (b.tipo === "imagem") return b.url;
+    const filhos = "filhos" in b ? b.filhos : b.tipo === "lista" ? b.itens.flatMap((i) => i.filhos) : [];
+    const achada = primeiraImagem(filhos);
+    if (achada) return achada;
+  }
+  return null;
+}
+
 /** Percorre os blocos trocando a URL de cada imagem. */
 async function trocarImagens(blocos: BlocoCompendio[], trocar: (url: string) => Promise<string>): Promise<void> {
   for (const b of blocos) {
@@ -107,6 +118,54 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
   }
 
   const vistos = new Set<string>();
+
+  /** Grava um documento se mudou. Devolve "criado", "atualizado" ou "inalterado". */
+  async function gravar(payload: CapituloCompendio, nome: string): Promise<"criado" | "atualizado" | "inalterado"> {
+    const id = `capitulo:${payload.notionPageId}`;
+    const anterior = porId.get(id);
+    // O hash ignora as datas de edição: tocar a página sem mudar o texto não republica.
+    const { notionEditadoEm: _data, subpaginas: _subs, ...semData } = payload;
+    const payloadHash = hash(semData);
+    if (anterior && anterior.payload_hash === payloadHash && anterior.status === "published") {
+      // Só as datas mudaram: guarda em silêncio para a próxima rodada pular a leitura.
+      if (!seco) await supabase.from("content_documents").update({ payload }).eq("id", id);
+      return "inalterado";
+    }
+    if (!seco) {
+      const { error } = await supabase.from("content_documents").upsert({
+        id, content_type: "capitulo", slug: payload.notionPageId, nome,
+        categoria: payload.secao, subtipo: payload.paiPageId ? "subpagina" : null, status: "published", version: "1.2",
+        source_pack_id: PACK_COMPENDIO, source_pack_version: "1.2", payload, payload_hash: payloadHash,
+      }, { onConflict: "id" });
+      if (error) throw new Error(`gravação: ${error.message}`);
+      const { error: erroLog } = await supabase.from("content_changelog").insert({
+        document_id: id, content_type: "capitulo", change_type: anterior ? "updated" : "created",
+        pack_id: PACK_COMPENDIO, pack_version: "1.2", payload_before: anterior?.payload ?? null, payload_after: payload,
+      });
+      if (erroLog) throw new Error(`changelog: ${erroLog.message}`);
+    }
+    return anterior ? "atualizado" : "criado";
+  }
+
+  function registrar(resultado: "criado" | "atualizado" | "inalterado", rotulo: string) {
+    if (resultado === "criado") rel.criados.push(rotulo);
+    else if (resultado === "atualizado") rel.atualizados.push(rotulo);
+    else rel.inalterados.push(rotulo);
+    if (resultado !== "inalterado") log(`${resultado}: ${rotulo}`);
+  }
+
+  /** Alguma subpágina guardada mudou (ou sumiu) desde a última rodada? */
+  async function subpaginasMudaram(guardadas: Record<string, string> | undefined): Promise<boolean> {
+    for (const [id, editadoEm] of Object.entries(guardadas ?? {})) {
+      try {
+        if ((await notion.pagina(id)).editadoEm !== editadoEm) return true;
+      } catch {
+        return true;
+      }
+    }
+    return false;
+  }
+
   for (const entrada of indice) {
     const id = `capitulo:${entrada.notionPageId}`;
     vistos.add(id);
@@ -116,7 +175,9 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
       const pagina = await notion.pagina(entrada.notionPageId);
       const payloadAnterior = anterior?.payload as CapituloCompendio | undefined;
       const mesmaOrdem = payloadAnterior && payloadAnterior.secao === entrada.secao && payloadAnterior.ordem === entrada.ordem && payloadAnterior.titulo === separarNumero(pagina.titulo).titulo;
-      if (!forcar && anterior?.status === "published" && payloadAnterior?.notionEditadoEm === pagina.editadoEm && mesmaOrdem) {
+      if (!forcar && anterior?.status === "published" && payloadAnterior?.notionEditadoEm === pagina.editadoEm && mesmaOrdem
+        && !(await subpaginasMudaram(payloadAnterior?.subpaginas))) {
+        for (const sub of Object.keys(payloadAnterior?.subpaginas ?? {})) vistos.add(`capitulo:${sub}`);
         rel.inalterados.push(rotulo);
         continue;
       }
@@ -124,9 +185,44 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
       const conversao = converterBlocos(await notion.blocos(entrada.notionPageId));
       if (conversao.naoSuportados.length) rel.naoSuportados[rotulo] = [...new Set(conversao.naoSuportados)];
       await trocarImagens(conversao.blocos, copiarImagem);
-
       const { numero, titulo } = separarNumero(pagina.titulo);
-      const payload: CapituloCompendio = {
+
+      // Galerias (bancos embutidos): cada linha vira uma subpágina do livro, e a
+      // primeira imagem dela vira a capa do card, como na galeria do Notion.
+      const subpaginas: Record<string, string> = {};
+      const galerias = conversao.blocos.filter((b): b is Extract<BlocoCompendio, { tipo: "galeria" }> => b.tipo === "galeria");
+      let n = 0;
+      for (const galeria of galerias) {
+        for (const card of galeria.itens) {
+          n++;
+          const rotuloSub = `${rotulo} › ${card.titulo}`;
+          vistos.add(`capitulo:${card.pageId}`);
+          try {
+            const sub = await notion.pagina(card.pageId);
+            subpaginas[card.pageId] = sub.editadoEm;
+            const convSub = converterBlocos(await notion.blocos(card.pageId));
+            if (convSub.naoSuportados.length) rel.naoSuportados[rotuloSub] = [...new Set(convSub.naoSuportados)];
+            await trocarImagens(convSub.blocos, copiarImagem);
+            card.imagem = primeiraImagem(convSub.blocos);
+            if (card.icone && /^https?:/.test(card.icone)) card.icone = await copiarImagem(card.icone);
+            registrar(await gravar({
+              notionPageId: card.pageId,
+              notionEditadoEm: sub.editadoEm,
+              numero: null,
+              titulo: card.titulo,
+              secao: titulo,
+              ordem: entrada.ordem + n / 1000,
+              blocos: convSub.blocos,
+              verbetes: convSub.verbetes,
+              paiPageId: entrada.notionPageId,
+            }, card.titulo), rotuloSub);
+          } catch (e) {
+            rel.falhas.push({ capitulo: rotuloSub, erro: e instanceof Error ? e.message : String(e) });
+          }
+        }
+      }
+
+      registrar(await gravar({
         notionPageId: entrada.notionPageId,
         notionEditadoEm: pagina.editadoEm,
         numero,
@@ -135,33 +231,8 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
         ordem: entrada.ordem,
         blocos: conversao.blocos,
         verbetes: conversao.verbetes,
-      };
-      // O hash ignora a data de edição: tocar a página sem mudar o texto não republica.
-      const { notionEditadoEm: _data, ...semData } = payload;
-      const payloadHash = hash(semData);
-
-      if (anterior && anterior.payload_hash === payloadHash && anterior.status === "published") {
-        // Só a data mudou: atualiza a data em silêncio para a próxima rodada pular a leitura.
-        if (!seco) await supabase.from("content_documents").update({ payload }).eq("id", id);
-        rel.inalterados.push(rotulo);
-        continue;
-      }
-
-      if (!seco) {
-        const { error } = await supabase.from("content_documents").upsert({
-          id, content_type: "capitulo", slug: entrada.notionPageId, nome: pagina.titulo,
-          categoria: entrada.secao, subtipo: null, status: "published", version: "1.2",
-          source_pack_id: PACK_COMPENDIO, source_pack_version: "1.2", payload, payload_hash: payloadHash,
-        }, { onConflict: "id" });
-        if (error) throw new Error(`gravação: ${error.message}`);
-        const { error: erroLog } = await supabase.from("content_changelog").insert({
-          document_id: id, content_type: "capitulo", change_type: anterior ? "updated" : "created",
-          pack_id: PACK_COMPENDIO, pack_version: "1.2", payload_before: anterior?.payload ?? null, payload_after: payload,
-        });
-        if (erroLog) throw new Error(`changelog: ${erroLog.message}`);
-      }
-      (anterior ? rel.atualizados : rel.criados).push(rotulo);
-      log(`${anterior ? "atualizado" : "criado"}: ${rotulo}`);
+        ...(n ? { subpaginas } : {}),
+      }, pagina.titulo), rotulo);
     } catch (e) {
       rel.falhas.push({ capitulo: rotulo, erro: e instanceof Error ? e.message : String(e) });
       log(`FALHA em ${rotulo}: ${e instanceof Error ? e.message : e}`);

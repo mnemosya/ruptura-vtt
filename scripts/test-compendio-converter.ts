@@ -95,6 +95,27 @@ const bloco = (type: string, dados: Record<string, unknown>, filhos?: BlocoNotio
   console.log("3. índice: livro e Patch Notes entram; Versões anteriores e Outros não — OK");
 }
 
+// 5. Banco embutido em galeria (Vertentes, Classes).
+{
+  const db: BlocoNotion = {
+    id: "db1", type: "child_database", child_database: { title: "VERTENTES" },
+    linhas: [
+      { id: "3990a136-3552-809f-976d-e2f4015f2b49", titulo: "BIÓTICA", textos: { "Casa-Vertente": "Casa Orelis", "Descrição": "Cura, adapta e transforma organismos vivos." }, selecoes: { Dificuldade: "Dificuldade: Média" }, icone: "🧬", editadoEm: "x" },
+      { id: "3d90a136-3552-807a-ad18-f3d230b68c40", titulo: "VANGUARDA", textos: { Papel: "Linha de frente" }, selecoes: {}, icone: null, editadoEm: "x" },
+    ],
+  };
+  const r = converterBlocos([db, bloco("child_database", { title: "vazio" })]);
+  const g = r.blocos[0];
+  assert.ok(g.tipo === "galeria" && g.titulo === "VERTENTES" && g.itens.length === 2);
+  assert.equal(g.itens[0].pageId, "3990a136355280 9f976de2f4015f2b49".replace(" ", ""));
+  assert.equal(g.itens[0].descricao, "Cura, adapta e transforma organismos vivos.", "Descrição tem prioridade");
+  assert.equal(g.itens[1].descricao, "Linha de frente", "sem Descrição, usa o primeiro texto (Papel)");
+  assert.deepEqual(g.itens[0].etiquetas, ["Dificuldade: Média"]);
+  assert.equal(r.blocos.length, 1, "banco sem linhas não gera galeria vazia");
+  assert.deepEqual(r.naoSuportados, []);
+  console.log("5. galeria de banco embutido — OK");
+}
+
 // 4. Utilidades.
 assert.deepEqual(separarNumero("22. CONDIÇÕES"), { numero: 22, titulo: "CONDIÇÕES" });
 assert.deepEqual(separarNumero("GUIA"), { numero: null, titulo: "GUIA" });

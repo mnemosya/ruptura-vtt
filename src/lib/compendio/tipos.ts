@@ -30,8 +30,23 @@ export type BlocoCompendio =
   | { tipo: "tabela"; cabecalhoLinha: boolean; cabecalhoColuna: boolean; linhas: TrechoCompendio[][][] }
   | { tipo: "imagem"; url: string; legenda: TrechoCompendio[] }
   | { tipo: "link_pagina"; paginaNotionId: string }
+  /** Banco de dados do Notion em galeria (Classes, Vertentes): cada card abre a página da linha. */
+  | { tipo: "galeria"; titulo: string; itens: CardGaleria[] }
   | { tipo: "divisor" }
   | { tipo: "nao_suportado"; tipoNotion: string };
+
+export interface CardGaleria {
+  /** ID da página da linha no Notion, sem hífens — também é a subpágina no livro. */
+  pageId: string;
+  titulo: string;
+  descricao: string;
+  /** Propriedades de seleção (ex.: "Dificuldade: Média"), como etiquetas. */
+  etiquetas: string[];
+  /** Primeira imagem da página da linha (preenchida pelo sincronizador). */
+  imagem: string | null;
+  /** Emoji ou URL de ícone da página. */
+  icone: string | null;
+}
 
 /** Payload de um documento `capitulo`. */
 export interface CapituloCompendio {
@@ -44,4 +59,8 @@ export interface CapituloCompendio {
   blocos: BlocoCompendio[];
   /** Verbetes (toggles com título) — alimentam o índice de termos e a busca. */
   verbetes: { titulo: string; ancora: string }[];
+  /** Subpágina (linha de uma galeria): ID do capítulo onde a galeria está. */
+  paiPageId?: string | null;
+  /** Subpáginas das galerias deste capítulo e a data de edição de cada uma. */
+  subpaginas?: Record<string, string>;
 }

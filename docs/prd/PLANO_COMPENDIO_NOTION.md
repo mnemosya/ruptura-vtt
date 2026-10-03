@@ -167,3 +167,11 @@ O índice de termos é montado pela própria sincronização, a partir dos títu
 - O cliente com chave de serviço ganhou a segunda exceção documentada (`lib/supabase/adminClient.ts`).
 - Quando o VTT tiver servidor público: trocar o gatilho por uma Edge Function agendada (pg_cron), que roda mesmo sem ninguém abrir o livro.
 - Verificação: `check-compendio` com 10 critérios aprovados (C10: Sincronizar agora).
+
+### 03/10/2026 — Galerias e tipografia
+
+- Bancos embutidos do Notion em galeria (VERTENTES no cap. 16, CLASSES no cap. 9) viram uma galeria de cards no Códex: imagem (a primeira da página da linha, como no Notion), ícone, nome, descrição (`Descrição`, ou o primeiro texto, ex.: `Papel`) e seleções como etiquetas (`Dificuldade`). A API não devolve a ordem da visualização: a galeria é alfabética.
+- Cada linha é uma **subpágina** do livro (`paiPageId`): fora do índice e de Anterior/Próximo, dentro da busca e dos termos (o nome `BIÓTICA` vira link). Editar só uma Vertente faz o capítulo dela ser relido (`subpaginas` guarda a data de cada uma).
+- Ícones nativos do Notion (ex.: Sináptica) não vêm como imagem pela API e ficam sem ícone.
+- Sincronização forçada: 13 subpáginas criadas, capítulos 9, 16 e 27 atualizados, 18 imagens novas, 1.578 requisições.
+- Tipografia: corpo de toda a Forja (telas e Códex) trocado de Rajdhani para Exo 2 Regular (`--fj-corpo`). O resto do VTT segue em Rajdhani por ora.

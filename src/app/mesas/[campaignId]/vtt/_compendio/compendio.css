@@ -108,3 +108,19 @@
 .fj-livro-resultado { display: flex; width: 100%; flex-direction: column; gap: var(--hud-space-1); border-left: 2px solid transparent; background: color-mix(in srgb, var(--fj-abismo) 35%, transparent); padding: var(--hud-space-3) var(--hud-space-5); text-align: left; transition: var(--fj-trans); }
 .fj-livro-resultado:hover { border-left-color: var(--fj-am); background: color-mix(in srgb, var(--fj-am) 8%, transparent); }
 .fj-livro-resultado__titulo { font-size: 16px; color: var(--fj-gelo); }
+
+/* ── Galeria (banco embutido do Notion: Vertentes, Classes) ── */
+.fj-livro-galeria { display: grid; gap: var(--hud-space-4); grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.fj-livro-card { display: flex; flex-direction: column; overflow: hidden; border: 1px solid color-mix(in srgb, var(--fj-cy) 20%, transparent); background: color-mix(in srgb, var(--fj-abismo) 55%, transparent); text-align: left; transition: var(--fj-trans); }
+.fj-livro-card:hover { border-color: var(--fj-am); box-shadow: 0 0 14px color-mix(in srgb, var(--fj-am) 25%, transparent); }
+.fj-livro-card__arte { display: block; aspect-ratio: 16 / 7; overflow: hidden; background: var(--fj-fundo); }
+.fj-livro-card__arte img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(0.55); transition: var(--fj-trans); }
+.fj-livro-card:hover .fj-livro-card__arte img { filter: grayscale(0); }
+.fj-livro-card__sem-arte { display: grid; height: 100%; place-items: center; font: 800 28px var(--fj-display); color: color-mix(in srgb, var(--fj-cy) 35%, transparent); }
+.fj-livro-card__texto { display: flex; flex-direction: column; gap: var(--hud-space-2); padding: var(--hud-space-3) var(--hud-space-4) var(--hud-space-4); }
+.fj-livro-card__titulo { display: flex; align-items: center; gap: var(--hud-space-2); font: 700 15px var(--fj-display); text-transform: uppercase; letter-spacing: 0.12em; color: var(--fj-gelo); }
+.fj-livro-card:hover .fj-livro-card__titulo { color: var(--fj-am); }
+.fj-livro-card__icone { width: 18px; height: 18px; flex: none; font-size: 16px; line-height: 18px; text-align: center; }
+.fj-livro-card__descricao { font-size: 14px; line-height: 1.4; color: var(--fj-texto); }
+.fj-livro-card__etiquetas { display: flex; flex-wrap: wrap; gap: var(--hud-space-1); }
+.fj-livro-card__etiquetas .fj-livro-termo { margin: 0; font-size: 11px; }

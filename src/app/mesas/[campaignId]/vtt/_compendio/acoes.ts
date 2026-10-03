@@ -39,7 +39,7 @@ export async function listarCapitulosAction(campaignId: string): Promise<Resulta
     if (error) throw new Error(error.message);
     const linhas = (data ?? []).map(({ payload }) => {
       const p = payload as CapituloCompendio;
-      return { pageId: p.notionPageId, numero: p.numero, titulo: p.titulo, secao: p.secao, ordem: p.ordem, verbetes: p.verbetes, editadoEm: p.notionEditadoEm };
+      return { pageId: p.notionPageId, numero: p.numero, titulo: p.titulo, secao: p.secao, ordem: p.ordem, verbetes: p.verbetes, editadoEm: p.notionEditadoEm, paiPageId: p.paiPageId ?? null };
     });
     // Usar o Compêndio é o que mantém o livro em dia: checa o Notion em segundo
     // plano, no máximo a cada 12 horas (Fase 3, sincronizacaoAutomatica.ts).
