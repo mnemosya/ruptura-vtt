@@ -989,91 +989,25 @@ async function main() {
     await fecharOutra();
   }
 
-  // ═══════════════ 6. COMPÊNDIO ═══════════════
+  // ═══════════════ 6. COMPÊNDIO (livro do Notion) ═══════════════
+  // O fluxo completo do livro (verbetes, termos, busca, Esc) fica em
+  // check-compendio.ts; aqui só o contrato da aba dentro do painel.
   {
-    // Carregamento sob demanda: nada do Compêndio é pedido antes de a
-    // aba ser aberta. Uma página recém-carregada com a aba Bando ativa
-    // não pode ter contagem nenhuma renderizada.
     await abrirMesa(narrador);
-    const antesDeAbrir = await narrador.locator('[data-testid="painel-compendio-resumo-linha"]').count();
+    const antesDeAbrir = await narrador.locator('[data-testid="painel-compendio-capitulo"]').count();
     registrar("6a (nada do Compêndio é carregado antes de a aba ser aberta)", antesDeAbrir === 0, `linhas=${antesDeAbrir}`);
 
     await irParaAba(narrador, "compendio");
-    const carregou = await esperarAte(async () => (await narrador.locator('[data-testid="painel-compendio-resumo-linha"]').count()) === 6, 20000);
-    const totais = await narrador
-      .locator('[data-testid="painel-compendio-resumo-linha"]')
-      .evaluateAll((els) => els.map((e) => Number(e.getAttribute("data-total") ?? "0")));
-    registrar(
-      "6b1 (as seis categorias com CONTAGENS reais do conteúdo efetivo)",
-      carregou && totais.length === 6 && totais.some((n) => n > 0),
-      `totais=${totais.join(",")}`,
-    );
-  }
-  let slugAberto = "";
-  {
-    await narrador.locator('[data-testid="painel-compendio-categoria-condicoes"]').click();
-    const listou = await esperarAte(async () => (await narrador.locator('[data-testid="painel-compendio-linha"]').count()) > 0, 20000);
-    const primeiroNome = (await narrador.locator('[data-testid="painel-compendio-linha"] .rv-pn-linha-nome').first().textContent()) ?? "";
-    slugAberto = (await narrador.locator('[data-testid="painel-compendio-linha"]').first().getAttribute("data-slug")) ?? "";
-    registrar("6b2 (abrir uma categoria busca as linhas daquela categoria)", listou && !!slugAberto, `primeiro="${primeiroNome.trim()}", slug=${slugAberto}`);
+    const carregou = await esperarAte(async () => (await narrador.locator('[data-testid="painel-compendio-capitulo"]').count()) >= 28, 20000);
+    registrar("6b (aba lista os capítulos do livro)", carregou, `capitulos=${await narrador.locator('[data-testid="painel-compendio-capitulo"]').count()}`);
 
-    await narrador.locator('[data-testid="painel-compendio-busca"]').fill(primeiroNome.trim().slice(0, 4));
-    await narrador.waitForTimeout(700);
-    const filtrou = await narrador.locator('[data-testid="painel-compendio-linha"]').count();
-    registrar("6b3 (busca real filtra dentro da categoria)", filtrou >= 1, `resultados=${filtrou}`);
-    await narrador.locator('[data-testid="painel-compendio-busca"]').fill("");
-    await narrador.waitForTimeout(700);
-  }
-  {
-    const itensAntes = await admin.from("campaign_inventory_items").select("id").eq("campaign_id", campaignId);
-    await narrador.locator(`[data-testid="painel-compendio-linha"][data-slug="${slugAberto}"]`).first().click();
-    const abriu = await narrador
-      .waitForSelector('[data-testid="painel-compendio-detalhe"] .rv-pn-detalhe-titulo', { timeout: 30000 })
-      .then(() => true)
-      .catch(() => false);
-    const detalhe = (await narrador.locator('[data-testid="painel-compendio-detalhe"]').textContent()) ?? "";
-    registrar(
-      "6c (detalhe abre o documento completo, sem JSON cru na tela)",
-      abriu && detalhe.length > 20 && !detalhe.includes('{"'),
-      detalhe.replace(/\s+/g, " ").slice(0, 100),
-    );
-
-    await narrador.locator('[data-testid="painel-compendio-enviar-chat"]').click();
-    const enviou = await esperarAte(async () => {
-      const { data } = await admin
-        .from("table_logs")
-        .select("payload")
-        .eq("campaign_id", campaignId)
-        .eq("type", "compendio_compartilhado")
-        .limit(1);
-      return (data?.length ?? 0) > 0;
-    }, 12000);
-    const { data: cartao } = await admin
-      .from("table_logs")
-      .select("payload, visibility")
-      .eq("campaign_id", campaignId)
-      .eq("type", "compendio_compartilhado")
-      .limit(1);
-    const cp = (cartao?.[0]?.payload ?? {}) as Record<string, unknown>;
-    registrar(
-      "6d ('Enviar ao Chat' persiste um EVENTO estruturado, com nome/categoria/procedência do servidor)",
-      enviou && cp.slug === slugAberto && typeof cp.nome === "string" && typeof cp.origemRotulo === "string",
-      `slug=${String(cp.slug)}, origem=${String(cp.origemRotulo)}`,
-    );
-
-    const itensDepois = await admin.from("campaign_inventory_items").select("id").eq("campaign_id", campaignId);
-    registrar(
-      "6e (só VISUALIZAR/compartilhar não cria instância de item nenhuma)",
-      (itensDepois.data?.length ?? 0) === (itensAntes.data?.length ?? 0),
-      `antes=${itensAntes.data?.length ?? 0}, depois=${itensDepois.data?.length ?? 0}`,
-    );
-
-    await irParaAba(narrador, "chat");
-    const noChat = await esperarAte(async () => {
-      const t = (await narrador.locator('[data-testid="painel-chat-scroll"]').textContent()) ?? "";
-      return t.includes(String(cp.nome ?? "«»"));
-    }, 12000);
-    registrar("6d2 (o cartão do Compêndio aparece no Chat como texto legível)", noChat, `nome=${String(cp.nome)}`);
+    await narrador.locator('[data-testid="painel-compendio-capitulo"]').first().click();
+    const abriu = await narrador.waitForSelector('[data-testid="compendio-livro"] .fj-codex__heroi-titulo', { timeout: 30000 }).then(() => true).catch(() => false);
+    registrar("6c (clicar num capítulo abre o livro nele)", abriu, `abriu=${abriu}`);
+    await narrador.keyboard.press("Escape");
+    const fechou = await narrador.waitForSelector('[data-testid="compendio-livro"]', { state: "detached", timeout: 5000 }).then(() => true).catch(() => false);
+    const painelSegueAberto = (await narrador.locator('[data-testid="painel-tabpanel-compendio"]:not([hidden])').count()) === 1;
+    registrar("6d (Esc fecha só o livro; o painel continua aberto)", fechou && painelSegueAberto, `fechou=${fechou}, painel=${painelSegueAberto}`);
   }
 
   // ═══════════════ 8. INVARIANTES DE UX ═══════════════

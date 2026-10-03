@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Chakra_Petch, Orbitron, Rajdhani, JetBrains_Mono } from "next/font/google";
+import { Chakra_Petch, Exo_2, Orbitron, Rajdhani, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 /**
@@ -23,6 +23,15 @@ const rajdhani = Rajdhani({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-rajdhani",
+  display: "swap",
+});
+
+/** Corpo de texto da Forja e do Códex: a Rajdhani cansava na leitura longa (03/10/2026). O resto do VTT segue em Rajdhani. */
+const exo2 = Exo_2({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-exo2",
   display: "swap",
 });
 
@@ -56,7 +65,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${orbitron.variable} ${rajdhani.variable} ${jetbrainsMono.variable} ${chakraPetch.variable}`}>
+    <html lang="pt-BR" className={`${orbitron.variable} ${rajdhani.variable} ${jetbrainsMono.variable} ${chakraPetch.variable} ${exo2.variable}`}>
       {/* suppressHydrationWarning: extensões de navegador (ex.: ColorZilla/Grammarly)
           injetam atributos no <body> antes do React hidratar (ex.: cz-shortcut-listen) —
           falso positivo de mismatch, não um bug do app. Ver https://react.dev/link/hydration-mismatch */}

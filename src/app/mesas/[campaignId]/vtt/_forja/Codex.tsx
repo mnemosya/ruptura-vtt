@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Key, Mono } from "./ui";
-import { oxanium } from "./fonte";
+import { oxanium } from "../../../../_design/oxanium";
 
 /** Teclado de leitura: "I" abre o Códex quando o foco não está num campo de texto. */
 export function useAtalhoCodex(abrir: () => void) {

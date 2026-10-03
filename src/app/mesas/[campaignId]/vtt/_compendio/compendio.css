@@ -1,0 +1,133 @@
+/*
+ * Compêndio — blocos do livro dentro do Códex da Forja.
+ * Só acrescenta o que o livro tem e o Códex não: verbetes, tabelas,
+ * citações, etiquetas de termo, busca. Tokens e moldura vêm de forja.css.
+ */
+
+/* ── Cabeçalho ─────────────────────────────────────────── */
+.fj-livro-busca {
+  width: 220px;
+  border-bottom: 1px solid color-mix(in srgb, var(--fj-cy) 40%, transparent);
+  padding: var(--hud-space-1) 0;
+  font: 400 14px var(--fj-corpo);
+  color: var(--fj-gelo);
+  outline: none;
+  transition: var(--fj-trans);
+}
+.fj-livro-busca:focus { border-bottom-color: var(--fj-am); }
+
+/* ── Índice ────────────────────────────────────────────── */
+.fj-livro-indice-secao { padding: var(--hud-space-3) var(--hud-space-6) var(--hud-space-2); }
+.fj-livro-indice-rotulo { font-size: 12px; letter-spacing: 0.08em; text-align: left; }
+
+/* ── Abertura do capítulo ──────────────────────────────── */
+.fj-livro-heroi { background: linear-gradient(to right, color-mix(in srgb, var(--fj-cy) 8%, transparent), transparent 70%); }
+.fj-livro-heroi .fj-codex__heroi-texto { max-width: 880px; padding-block: 36px 28px; }
+.fj-livro-heroi .fj-codex__heroi-titulo { font-size: clamp(32px, 4vw, 52px); }
+
+.fj-codex__leitura:focus { outline: none; }
+
+/* ── Texto ─────────────────────────────────────────────── */
+.fj-livro-texto { padding-top: var(--hud-space-7); padding-bottom: 48px; font-size: 17px; line-height: 1.625; color: var(--fj-texto); }
+.fj-livro-texto > * + * { margin-top: var(--hud-space-4); }
+.fj-livro-par em, .fj-livro-citacao em { color: var(--fj-gelo); }
+
+.fj-livro-titulo { scroll-margin-top: var(--hud-space-5); font-family: var(--fj-display); text-transform: uppercase; color: var(--fj-gelo); }
+.fj-livro-titulo--1, .fj-livro-titulo--2 { margin-top: 40px !important; font-weight: 800; font-size: 26px; letter-spacing: 0.08em; }
+.fj-livro-titulo--3 { margin-top: 36px !important; display: flex; align-items: baseline; gap: var(--hud-space-5); font-weight: 800; font-size: 20px; letter-spacing: 0.1em; }
+.fj-livro-titulo--3::after { content: ""; height: 1px; flex: 1; background: linear-gradient(to right, color-mix(in srgb, var(--fj-cy) 40%, transparent), transparent); }
+.fj-livro-titulo--4 { margin-top: var(--hud-space-7) !important; font-weight: 700; font-size: 15px; letter-spacing: 0.15em; color: var(--fj-cy); }
+
+.fj-livro-lista { list-style: none; display: flex; flex-direction: column; gap: var(--hud-space-2); }
+.fj-livro-lista__item { position: relative; padding-left: var(--hud-space-6); }
+.fj-livro-lista--num { counter-reset: fj-livro; }
+.fj-livro-lista--num > .fj-livro-lista__item { counter-increment: fj-livro; }
+.fj-livro-lista--num > .fj-livro-lista__item::before { content: counter(fj-livro, decimal-leading-zero); position: absolute; left: 0; top: 0.35em; font: 400 11px var(--fj-mono); color: var(--fj-cy); }
+.fj-livro-lista__filhos { margin-top: var(--hud-space-2); }
+
+.fj-livro-citacao { border-left: 2px solid color-mix(in srgb, var(--fj-am) 60%, transparent); padding: var(--hud-space-2) 0 var(--hud-space-2) var(--hud-space-5); font-style: italic; color: color-mix(in srgb, var(--fj-texto) 92%, transparent); }
+.fj-livro-citacao > * + * { margin-top: var(--hud-space-3); }
+
+.fj-livro-destaque { display: flex; gap: var(--hud-space-4); }
+.fj-livro-destaque__icone { font-size: 18px; line-height: 1.4; }
+.fj-livro-destaque p { margin-top: 0; }
+
+.fj-livro-divisor { border: 0; height: 1px; background: linear-gradient(to right, color-mix(in srgb, var(--fj-cy) 25%, transparent), transparent); }
+
+/* Etiqueta de termo: o código inline do Notion (`Lento`, `1 PA`). */
+.fj-livro-termo {
+  display: inline-block;
+  margin: 0 1px;
+  border: 1px solid color-mix(in srgb, var(--fj-cy) 35%, transparent);
+  background: color-mix(in srgb, var(--fj-cy) 8%, transparent);
+  padding: 0 6px;
+  font: 600 0.82em/1.5 var(--fj-mono);
+  letter-spacing: 0.04em;
+  color: var(--fj-cy);
+  vertical-align: 0.06em;
+}
+.fj-livro-termo--link { cursor: pointer; transition: var(--fj-trans); }
+.fj-livro-termo--link:hover { border-color: var(--fj-am); color: var(--fj-am); }
+
+.fj-livro-link { color: var(--fj-cy); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--fj-cy) 40%, transparent); text-underline-offset: 3px; transition: var(--fj-trans); }
+.fj-livro-link:hover { color: var(--fj-am); text-decoration-color: var(--fj-am); }
+.fj-livro-link--bloco { font: 700 14px var(--fj-display); text-transform: uppercase; letter-spacing: 0.1em; text-decoration: none; }
+
+/* ── Verbete (bloco recolhível) ────────────────────────── */
+.fj-livro-verbete { scroll-margin-top: var(--hud-space-5); border-left: 2px solid color-mix(in srgb, var(--fj-cy) 25%, transparent); background: color-mix(in srgb, var(--fj-abismo) 35%, transparent); transition: var(--fj-trans); }
+.fj-livro-verbete + .fj-livro-verbete { margin-top: var(--hud-space-2); }
+.fj-livro-verbete--aberto { border-left-color: var(--fj-am); background: color-mix(in srgb, var(--fj-abismo) 60%, transparent); }
+.fj-livro-verbete__titulo { display: flex; width: 100%; align-items: center; gap: var(--hud-space-4); padding: var(--hud-space-3) var(--hud-space-5); font: 700 15px var(--fj-display); text-transform: uppercase; letter-spacing: 0.12em; color: var(--fj-gelo); }
+.fj-livro-verbete__titulo .fj-destaque { color: inherit; }
+.fj-livro-verbete__titulo:hover { color: var(--fj-cy); }
+.fj-livro-verbete__seta { color: var(--fj-cy); transition: var(--fj-trans); }
+.fj-livro-verbete--aberto .fj-livro-verbete__seta { transform: rotate(90deg); color: var(--fj-am); }
+.fj-livro-verbete__corpo { padding: 0 var(--hud-space-5) var(--hud-space-5) 40px; }
+.fj-livro-verbete__corpo > * + * { margin-top: var(--hud-space-3); }
+
+/* ── Tabela ────────────────────────────────────────────── */
+.fj-livro-tabela-rolagem { overflow-x: auto; }
+.fj-livro-tabela { width: 100%; border-collapse: collapse; font-size: 15px; }
+.fj-livro-tabela th, .fj-livro-tabela td { border: 1px solid color-mix(in srgb, var(--fj-cy) 15%, transparent); padding: var(--hud-space-2) var(--hud-space-4); text-align: left; vertical-align: top; }
+.fj-livro-tabela th { background: color-mix(in srgb, var(--fj-cy) 10%, transparent); font: 700 13px var(--fj-display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fj-gelo); }
+
+/* ── Imagem ────────────────────────────────────────────── */
+.fj-livro-figura img { width: 100%; height: auto; border: 1px solid color-mix(in srgb, var(--fj-cy) 15%, transparent); }
+.fj-livro-figura figcaption { margin-top: var(--hud-space-2); }
+
+/* ── Vizinhos e avisos ─────────────────────────────────── */
+.fj-livro-vizinhos { margin-top: 56px !important; display: flex; justify-content: space-between; gap: var(--hud-space-4); border-top: 1px solid color-mix(in srgb, var(--fj-cy) 15%, transparent); padding-top: var(--hud-space-6); }
+.fj-livro-vizinho { display: flex; flex-direction: column; gap: var(--hud-space-1); text-align: left; font: 700 14px var(--fj-display); text-transform: uppercase; letter-spacing: 0.08em; color: color-mix(in srgb, var(--fj-gelo) 75%, transparent); transition: var(--fj-trans); }
+.fj-livro-vizinho:hover { color: var(--fj-cy); }
+.fj-livro-vizinho--proximo { align-items: flex-end; text-align: right; }
+.fj-livro-aviso { padding: var(--hud-space-6) var(--hud-space-8); color: var(--fj-apagado); }
+
+/* ── Resultados da busca ───────────────────────────────── */
+.fj-livro-resultados { padding-top: var(--hud-space-7); padding-bottom: 48px; }
+.fj-livro-resultados ul { margin-top: var(--hud-space-4); display: flex; flex-direction: column; gap: var(--hud-space-2); list-style: none; }
+.fj-livro-resultado { display: flex; width: 100%; flex-direction: column; gap: var(--hud-space-1); border-left: 2px solid transparent; background: color-mix(in srgb, var(--fj-abismo) 35%, transparent); padding: var(--hud-space-3) var(--hud-space-5); text-align: left; transition: var(--fj-trans); }
+.fj-livro-resultado:hover { border-left-color: var(--fj-am); background: color-mix(in srgb, var(--fj-am) 8%, transparent); }
+.fj-livro-resultado__titulo { font-size: 16px; color: var(--fj-gelo); }
+
+/* ── Galeria (banco embutido do Notion: Vertentes, Classes) ── */
+.fj-livro-galeria { display: grid; gap: var(--hud-space-4); grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.fj-livro-card { display: flex; flex-direction: column; overflow: hidden; border: 1px solid color-mix(in srgb, var(--fj-cy) 20%, transparent); background: color-mix(in srgb, var(--fj-abismo) 55%, transparent); text-align: left; transition: var(--fj-trans); }
+.fj-livro-card:hover { border-color: var(--fj-am); box-shadow: 0 0 14px color-mix(in srgb, var(--fj-am) 25%, transparent); }
+.fj-livro-card__arte { display: block; aspect-ratio: 16 / 7; overflow: hidden; background: var(--fj-fundo); }
+.fj-livro-card__arte img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(0.55); transition: var(--fj-trans); }
+.fj-livro-card:hover .fj-livro-card__arte img { filter: grayscale(0); }
+.fj-livro-card__sem-arte { display: grid; height: 100%; place-items: center; font: 800 28px var(--fj-display); color: color-mix(in srgb, var(--fj-cy) 35%, transparent); }
+.fj-livro-card__texto { display: flex; flex-direction: column; gap: var(--hud-space-2); padding: var(--hud-space-3) var(--hud-space-4) var(--hud-space-4); }
+.fj-livro-card__titulo { display: flex; align-items: center; gap: var(--hud-space-2); font: 700 15px var(--fj-display); text-transform: uppercase; letter-spacing: 0.12em; color: var(--fj-gelo); }
+.fj-livro-card:hover .fj-livro-card__titulo { color: var(--fj-am); }
+.fj-livro-card__icone { width: 18px; height: 18px; flex: none; font-size: 16px; line-height: 18px; text-align: center; }
+.fj-livro-card__descricao { font-size: 14px; line-height: 1.4; color: var(--fj-texto); }
+.fj-livro-card__etiquetas { display: flex; flex-wrap: wrap; gap: var(--hud-space-1); }
+.fj-livro-card__etiquetas .fj-livro-termo { margin: 0; font-size: 11px; }
+
+/* ── Enviar ao chat ─────────────────────────────────────── */
+.fj-livro-verbete { position: relative; }
+.fj-livro-enviar { border: 1px solid color-mix(in srgb, var(--fj-cy) 35%, transparent); padding: 2px var(--hud-space-3); font: 700 11px var(--fj-display); text-transform: uppercase; letter-spacing: 0.12em; color: var(--fj-cy); transition: var(--fj-trans); }
+.fj-livro-enviar:hover { border-color: var(--fj-am); color: var(--fj-am); }
+.fj-livro-verbete .fj-livro-enviar { position: absolute; top: var(--hud-space-2); right: var(--hud-space-4); }
+.fj-livro-enviar--heroi { margin-top: var(--hud-space-4); }

@@ -67,13 +67,13 @@ function hashInviteToken(rawToken: string): string {
  * Cria uma mesa (campaign). Carimba `owner_id` com o narrador logado
  * quando há sessão.
  */
-export async function createCampaign(name: string): Promise<Campaign> {
+export async function createCampaign(name: string, regiao: string | null = null): Promise<Campaign> {
   const client = await getScopedTableClient();
   const finalName = name.trim() ? name.trim() : "Mesa sem nome";
   const ownerId = await currentOwnerId();
   const { data, error } = await client
     .from(CAMPAIGNS_TABLE)
-    .insert({ name: finalName, owner_id: ownerId })
+    .insert({ name: finalName, owner_id: ownerId, ...(regiao ? { regiao } : {}) })
     .select()
     .single();
 
@@ -126,6 +126,26 @@ export async function renameCampaign(campaignId: string, name: string): Promise<
 
   if (error) {
     throw new TableStorageError(`Falha ao renomear a mesa "${campaignId}": ${error.message}`, error);
+  }
+  return data as Campaign;
+}
+
+/**
+ * Define a região onde a campanha começa (null limpa). Mesma RLS de
+ * `renameCampaign`: só o dono grava; o CHECK do banco recusa região fora
+ * de `REGIOES_V12`.
+ */
+export async function setCampaignRegion(campaignId: string, regiao: string | null): Promise<Campaign> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from(CAMPAIGNS_TABLE)
+    .update({ regiao })
+    .eq("id", campaignId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new TableStorageError(`Falha ao definir a região da mesa "${campaignId}": ${error.message}`, error);
   }
   return data as Campaign;
 }

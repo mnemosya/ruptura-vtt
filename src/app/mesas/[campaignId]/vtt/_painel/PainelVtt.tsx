@@ -39,6 +39,8 @@ import { PersonagensTab } from "./PersonagensTab";
 import { ParticipantesTab } from "./ParticipantesTab";
 import { BandoTab } from "./BandoTab";
 import { CompendioTab } from "./CompendioTab";
+import { LivroCodex } from "../_compendio/LivroCodex";
+import { EVENTO_ABRIR_COMPENDIO, type DestinoLivro } from "../_compendio/modelo";
 import { LimiteErroAba } from "./LimiteErroAba";
 import { TransferenciaBando, type AlvoTransferencia } from "./TransferenciaBando";
 import { useConsoleDaMesa } from "../../_shell/ConsoleDaMesa";
@@ -237,6 +239,8 @@ export function PainelVtt({
     function aoTeclar(e: KeyboardEvent) {
       if (e.key !== "Escape") return;
       if (transferencia) return;
+      // Um modal por cima (o livro do Compêndio, o Códex da Forja) tem o próprio Esc.
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
       const alvo = document.activeElement as HTMLElement | null;
       if (alvo && (alvo.tagName === "INPUT" || alvo.tagName === "TEXTAREA" || alvo.tagName === "SELECT" || alvo.isContentEditable)) return;
       if (!asideRef.current?.contains(alvo)) return;
@@ -410,6 +414,19 @@ export function PainelVtt({
   const setConvitesAberto = (v: boolean) => (v ? janelas.abrir("convites") : janelas.fechar("convites"));
   const setBandoAberto = (v: boolean) => (v ? janelas.abrir("bando") : janelas.fechar("bando"));
   const setCompendioAberto = (v: boolean) => (v ? janelas.abrir("compendio") : janelas.fechar("compendio"));
+  /** Onde o livro abre: capítulo/verbete escolhido na aba, ou o começo. */
+  const [destinoCompendio, setDestinoCompendio] = useState<DestinoLivro | null>(null);
+  // Cartões do chat ("Abrir no livro") pedem por evento: o feed não conhece o painel.
+  useEffect(() => {
+    const abrir = (e: Event) => {
+      const destino = (e as CustomEvent<DestinoLivro>).detail;
+      if (!destino?.pageId) return;
+      setDestinoCompendio({ ...destino });
+      janelas.abrir("compendio");
+    };
+    window.addEventListener(EVENTO_ABRIR_COMPENDIO, abrir);
+    return () => window.removeEventListener(EVENTO_ABRIR_COMPENDIO, abrir);
+  }, [janelas]);
   const setParticipantesAberto = (v: boolean) => (v ? janelas.abrir("participantes") : janelas.fechar("participantes"));
   const setPersonagensAberto = (v: boolean) => (v ? janelas.abrir("personagens") : janelas.fechar("personagens"));
 
@@ -518,7 +535,7 @@ export function PainelVtt({
       <CompendioTab
         campaignId={campaignId}
         visivel={aberto && abaAtiva === "compendio"}
-        onAbrirJanela={() => setCompendioAberto(true)}
+        onAbrir={(destino) => { setDestinoCompendio(destino); setCompendioAberto(true); }}
         fixtureVisual={fixtureVisual?.compendio}
       />
     ),
@@ -689,12 +706,7 @@ export function PainelVtt({
         </JanelaInterna>
       )}
       {compendioAberto && (
-        <JanelaInterna aberta titulo="Compêndio" largura={680} altura={620} onFechar={() => setCompendioAberto(false)} testId="painel-janela-compendio">
-          {/* Mesma aba, com mais espaço — nada de uma segunda implementação do Compêndio. */}
-          <div className="rv-pn-aba" style={{ height: "100%" }}>
-            <CompendioTab campaignId={campaignId} visivel />
-          </div>
-        </JanelaInterna>
+        <LivroCodex campaignId={campaignId} inicial={destinoCompendio} onClose={() => { setCompendioAberto(false); setDestinoCompendio(null); }} />
       )}
       {participantesAberto && (
         <JanelaInterna aberta titulo="Participantes" largura={620} altura={620} onFechar={() => setParticipantesAberto(false)} testId="painel-janela-participantes">

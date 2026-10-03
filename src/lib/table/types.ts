@@ -23,6 +23,8 @@ export interface Campaign {
   turn_track: import("./turnTrack").TurnTrackState;
   /** Versão para concorrência otimista das Server Actions de turno (migration 0036). */
   turn_track_version: number;
+  /** Região v1.2 onde a campanha começa (`REGIOES_V12`). Null = não definida. */
+  regiao?: string | null;
 }
 
 /** Visibilidade de uma entrada de log — hoje é só um campo de dados, sem filtro de RLS (ver migration). */
