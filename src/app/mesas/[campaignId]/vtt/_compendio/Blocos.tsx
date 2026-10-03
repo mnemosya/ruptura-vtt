@@ -180,7 +180,7 @@ function Bloco({ b, ctx }: { b: BlocoCompendio; ctx: ContextoLeitura }) {
       return (
         <p className="fj-livro-par">
           <button type="button" className="fj-livro-link fj-livro-link--bloco" onClick={() => ctx.ir({ pageId: b.paginaNotionId })}>
-            › {ctx.titulos.get(b.paginaNotionId) ?? "Abrir página"}
+            › {ctx.titulos.get(b.paginaNotionId) ?? b.titulo ?? "Abrir página"}
           </button>
         </p>
       );

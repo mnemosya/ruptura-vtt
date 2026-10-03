@@ -21,6 +21,18 @@ export interface LinhaCapitulo {
   paiPageId?: string | null;
 }
 
+/** Capítulo do livro onde uma página está, subindo pelas subpáginas (página dentro de página). */
+export function capituloRaiz(linhas: LinhaCapitulo[], pageId: string): string {
+  const porId = new Map(linhas.map((c) => [c.pageId, c]));
+  let atual = pageId;
+  for (let i = 0; i < 10; i++) {
+    const pai = porId.get(atual)?.paiPageId;
+    if (!pai) return atual;
+    atual = pai;
+  }
+  return atual;
+}
+
 /** Só os capítulos do livro (sem as subpáginas das galerias). */
 export function soCapitulos(linhas: LinhaCapitulo[]): LinhaCapitulo[] {
   return linhas.filter((c) => !c.paiPageId);
@@ -177,7 +189,7 @@ export { ancoraDe };
 export function vizinhos(linhas: LinhaCapitulo[], pageId: string): { anterior: LinhaCapitulo | null; proximo: LinhaCapitulo | null } {
   const ordenadas = soCapitulos(linhas).sort((a, b) => a.ordem - b.ordem);
   // Numa subpágina, os vizinhos são os do capítulo onde ela está.
-  const alvo = linhas.find((c) => c.pageId === pageId)?.paiPageId ?? pageId;
+  const alvo = capituloRaiz(linhas, pageId);
   const i = ordenadas.findIndex((c) => c.pageId === alvo);
   return { anterior: i > 0 ? ordenadas[i - 1] : null, proximo: i >= 0 && i < ordenadas.length - 1 ? ordenadas[i + 1] : null };
 }

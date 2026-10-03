@@ -196,3 +196,9 @@ O índice de termos é montado pela própria sincronização, a partir dos títu
 ### 03/10/2026 — Compêndio da área autenticada
 
 - `/mesas/compendio` (menu "Compêndio" da conta) deixou de ser o catálogo da Biblioteca por tipo (magias, talentos, itens…) e passou a mostrar o mesmo livro, em página inteira (`LivroPagina`). Fora da mesa: leitura para qualquer conta logada, sem "Enviar ao chat" e sem "Fechar". O editor administrativo continua em `/admin/biblioteca`.
+
+### 03/10/2026 — Páginas filhas no texto
+
+- O conversor descartava páginas filhas postas direto no texto (`child_page`). A Lista de Mercadorias do cap. 24 (9 páginas: Armas e Armaduras, Dispositivos Tecnológicos, Drones e Robôs, Escalpos, Explosivos, Farmácia, Ferramentas e Utilidades, Veículos, Vertinas) não aparecia.
+- Agora cada página filha vira um link no lugar e uma subpágina do livro, como as linhas de galeria; o sincronizador desce até 3 níveis (página dentro de página). Índice e Anterior/Próximo sobem até o capítulo raiz.
+- `--capitulo=24` relê só os capítulos pedidos. Rodada: 9 subpáginas criadas, 22 imagens (33,2 MB → 1,7 MB). Varredura dos 29 capítulos: só o 24 tinha páginas filhas.

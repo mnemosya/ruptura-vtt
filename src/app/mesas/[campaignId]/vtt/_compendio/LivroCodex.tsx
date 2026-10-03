@@ -19,6 +19,7 @@ import { abrirCapituloAction, enviarTrechoAoChatAction, listarCapitulosAction, t
 import { Blocos, type ContextoLeitura } from "./Blocos";
 import {
   agruparPorSecao,
+  capituloRaiz,
   buscarNoLivro,
   indiceDeTermos,
   rotuloCapitulo,
@@ -232,7 +233,7 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
               <div key={g.secao} className="fj-indice__grupo">
                 <div className="fj-livro-indice-secao"><Mono pequeno tom="am">{g.secao}</Mono></div>
                 {g.capitulos.map((c) => {
-                  const ativo = c.pageId === atual?.pageId || c.pageId === linhaAtual?.paiPageId;
+                  const ativo = !!atual && c.pageId === capituloRaiz(linhas ?? [], atual.pageId);
                   return (
                     <div key={c.pageId}>
                       <button

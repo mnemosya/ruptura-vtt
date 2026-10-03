@@ -135,3 +135,8 @@
 /* ── Livro em página inteira (Compêndio da área autenticada) ── */
 .fj-livro-pagina { height: calc(100dvh - 240px); min-height: 520px; }
 .fj-livro-pagina .fj-codex { height: 100%; }
+
+/* Páginas filhas listadas no texto (ex.: a Lista de Mercadorias do cap. 24). */
+.fj-livro-texto > p:has(> .fj-livro-link--bloco) + p:has(> .fj-livro-link--bloco) { margin-top: var(--hud-space-1); }
+.fj-livro-link--bloco { display: block; width: 100%; border-left: 2px solid color-mix(in srgb, var(--fj-cy) 30%, transparent); background: color-mix(in srgb, var(--fj-abismo) 35%, transparent); padding: var(--hud-space-3) var(--hud-space-5); text-align: left; }
+.fj-livro-link--bloco:hover { border-left-color: var(--fj-am); background: color-mix(in srgb, var(--fj-am) 8%, transparent); }

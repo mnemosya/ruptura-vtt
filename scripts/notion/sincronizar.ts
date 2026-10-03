@@ -4,6 +4,7 @@
  *   npx tsx scripts/notion/sincronizar.ts --seco     # só mostra o que mudaria
  *   npx tsx scripts/notion/sincronizar.ts            # grava
  *   npx tsx scripts/notion/sincronizar.ts --forcar   # relê todos os capítulos
+ *   npx tsx scripts/notion/sincronizar.ts --capitulo=24   # relê só o capítulo 24
  *
  * Precisa de NOTION_TOKEN, SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY no .env.local.
  * Ver docs/prd/PLANO_COMPENDIO_NOTION.md.
@@ -19,6 +20,9 @@ config({ path: ".env.local" });
 
 const seco = process.argv.includes("--seco");
 const forcar = process.argv.includes("--forcar");
+// --capitulo=24 (ou --capitulo=9,16): relê só esses capítulos, mesmo sem mudança no Notion.
+const forcarCapitulos = (process.argv.find((a) => a.startsWith("--capitulo="))?.split("=")[1] ?? "")
+  .split(",").map(Number).filter((n) => Number.isInteger(n) && n > 0);
 
 async function main() {
   const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -27,7 +31,7 @@ async function main() {
   const supabase = createClient(url, chave, { auth: { persistSession: false } });
 
   console.log(seco ? "Modo seco: nada será gravado.\n" : "Sincronizando…\n");
-  const rel = await sincronizarCompendio({ notion: criarClienteNotion(), supabase, seco, forcar, log: (m) => console.log(`  ${m}`) });
+  const rel = await sincronizarCompendio({ notion: criarClienteNotion(), supabase, seco, forcar, forcarCapitulos, log: (m) => console.log(`  ${m}`) });
 
   console.log(`\nCriados: ${rel.criados.length} · atualizados: ${rel.atualizados.length} · inalterados: ${rel.inalterados.length} · arquivados: ${rel.arquivados.length}`);
   if (rel.arquivados.length) console.log(`Arquivados: ${rel.arquivados.join(", ")}`);

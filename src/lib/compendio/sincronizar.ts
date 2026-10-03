@@ -24,6 +24,8 @@ import type { BlocoCompendio, CapituloCompendio } from "./tipos";
 import { avaliarRevisoes, lerFontesRevisao, type EstadoPaginaLivro, type PendenciaRevisao } from "./revisao";
 
 export const BUCKET_COMPENDIO = "compendio";
+/** Até onde o livro desce em páginas dentro de páginas (capítulo → subpágina → … ). */
+export const PROFUNDIDADE_MAXIMA_SUBPAGINAS = 3;
 export const PACK_COMPENDIO = "notion-ruptura-v1-2";
 
 export interface RelatorioSincronizacao {
@@ -48,6 +50,8 @@ interface OpcoesSincronizacao {
   seco?: boolean;
   /** Relê todos os capítulos, mesmo os que não mudaram no Notion. */
   forcar?: boolean;
+  /** Relê só estes capítulos (número, ex.: 24), mesmo sem mudança no Notion. */
+  forcarCapitulos?: number[];
   log?: (msg: string) => void;
 }
 
@@ -109,7 +113,7 @@ async function trocarImagens(blocos: BlocoCompendio[], trocar: (url: string) => 
 }
 
 export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<RelatorioSincronizacao> {
-  const { notion, supabase, seco = false, forcar = false } = op;
+  const { notion, supabase, seco = false, forcar = false, forcarCapitulos = [] } = op;
   const log = op.log ?? (() => {});
   const rel: RelatorioSincronizacao = {
     criados: [], atualizados: [], inalterados: [], arquivados: [], falhas: [], naoSuportados: {}, imagensCopiadas: 0, bytesOriginais: 0, bytesGravados: 0, imagensOrfasRemovidas: 0, requisicoesNotion: 0,
@@ -212,7 +216,8 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
       const pagina = await notion.pagina(entrada.notionPageId);
       const payloadAnterior = anterior?.payload as CapituloCompendio | undefined;
       const mesmaOrdem = payloadAnterior && payloadAnterior.secao === entrada.secao && payloadAnterior.ordem === entrada.ordem && payloadAnterior.titulo === separarNumero(pagina.titulo).titulo;
-      if (!forcar && anterior?.status === "published" && payloadAnterior?.notionEditadoEm === pagina.editadoEm && mesmaOrdem
+      const forcarEste = forcar || forcarCapitulos.includes(separarNumero(entrada.tituloPagina).numero ?? -1);
+      if (!forcarEste && anterior?.status === "published" && payloadAnterior?.notionEditadoEm === pagina.editadoEm && mesmaOrdem
         && !(await subpaginasMudaram(payloadAnterior?.subpaginas))) {
         for (const sub of Object.keys(payloadAnterior?.subpaginas ?? {})) vistos.add(`capitulo:${sub}`);
         rel.inalterados.push(rotulo);
@@ -224,40 +229,59 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
       await trocarImagens(conversao.blocos, copiarImagem);
       const { numero, titulo } = separarNumero(pagina.titulo);
 
-      // Galerias (bancos embutidos): cada linha vira uma subpágina do livro, e a
-      // primeira imagem dela vira a capa do card, como na galeria do Notion.
+      // Subpáginas: linhas de galeria (bancos embutidos) e páginas filhas postas no
+      // texto (ex.: a Lista de Mercadorias). Cada uma vira uma página do livro; a
+      // primeira imagem da linha vira a capa do card, como na galeria do Notion.
+      // `subpaginas` guarda TODAS as descendentes e a data de cada uma.
       const subpaginas: Record<string, string> = {};
-      const galerias = conversao.blocos.filter((b): b is Extract<BlocoCompendio, { tipo: "galeria" }> => b.tipo === "galeria");
       let n = 0;
-      for (const galeria of galerias) {
-        for (const card of galeria.itens) {
+      const processarSubpaginas = async (
+        conv: ReturnType<typeof converterBlocos>,
+        paiPageId: string,
+        secaoSub: string,
+        rotuloPai: string,
+        profundidade: number,
+      ): Promise<void> => {
+        const cards = conv.blocos.flatMap((b) => (b.tipo === "galeria" ? b.itens : []));
+        const alvos = [
+          ...cards.map((card) => ({ pageId: card.pageId, titulo: card.titulo, card })),
+          ...conv.paginasFilhas.map((f) => ({ ...f, card: null })),
+        ];
+        for (const alvo of alvos) {
+          if (subpaginas[alvo.pageId]) continue;
           n++;
-          const rotuloSub = `${rotulo} › ${card.titulo}`;
-          vistos.add(`capitulo:${card.pageId}`);
+          const rotuloSub = `${rotuloPai} › ${alvo.titulo}`;
+          vistos.add(`capitulo:${alvo.pageId}`);
           try {
-            const sub = await notion.pagina(card.pageId);
-            subpaginas[card.pageId] = sub.editadoEm;
-            const convSub = converterBlocos(await notion.blocos(card.pageId));
+            const sub = await notion.pagina(alvo.pageId);
+            subpaginas[alvo.pageId] = sub.editadoEm;
+            const convSub = converterBlocos(await notion.blocos(alvo.pageId));
             if (convSub.naoSuportados.length) rel.naoSuportados[rotuloSub] = [...new Set(convSub.naoSuportados)];
             await trocarImagens(convSub.blocos, copiarImagem);
-            card.imagem = primeiraImagem(convSub.blocos);
-            if (card.icone && /^https?:/.test(card.icone)) card.icone = await copiarImagem(card.icone);
+            if (alvo.card) {
+              alvo.card.imagem = primeiraImagem(convSub.blocos);
+              if (alvo.card.icone && /^https?:/.test(alvo.card.icone)) alvo.card.icone = await copiarImagem(alvo.card.icone);
+            }
+            const tituloSub = alvo.titulo || sub.titulo;
+            // Primeiro as netas (a página precisa da capa dos próprios cards antes de ser gravada).
+            if (profundidade < PROFUNDIDADE_MAXIMA_SUBPAGINAS) await processarSubpaginas(convSub, alvo.pageId, tituloSub, rotuloSub, profundidade + 1);
             registrar(await gravar({
-              notionPageId: card.pageId,
+              notionPageId: alvo.pageId,
               notionEditadoEm: sub.editadoEm,
               numero: null,
-              titulo: card.titulo,
-              secao: titulo,
+              titulo: tituloSub,
+              secao: secaoSub,
               ordem: entrada.ordem + n / 1000,
               blocos: convSub.blocos,
               verbetes: convSub.verbetes,
-              paiPageId: entrada.notionPageId,
-            }, card.titulo), rotuloSub);
+              paiPageId,
+            }, tituloSub), rotuloSub);
           } catch (e) {
             rel.falhas.push({ capitulo: rotuloSub, erro: e instanceof Error ? e.message : String(e) });
           }
         }
-      }
+      };
+      await processarSubpaginas(conversao, entrada.notionPageId, titulo, rotulo, 1);
 
       registrar(await gravar({
         notionPageId: entrada.notionPageId,

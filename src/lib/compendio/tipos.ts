@@ -29,7 +29,7 @@ export type BlocoCompendio =
   | { tipo: "destaque"; icone: string | null; texto: TrechoCompendio[]; filhos: BlocoCompendio[] }
   | { tipo: "tabela"; cabecalhoLinha: boolean; cabecalhoColuna: boolean; linhas: TrechoCompendio[][][] }
   | { tipo: "imagem"; url: string; legenda: TrechoCompendio[] }
-  | { tipo: "link_pagina"; paginaNotionId: string }
+  | { tipo: "link_pagina"; paginaNotionId: string; titulo?: string }
   /** Banco de dados do Notion em galeria (Classes, Vertentes): cada card abre a página da linha. */
   | { tipo: "galeria"; titulo: string; itens: CardGaleria[] }
   | { tipo: "divisor" }

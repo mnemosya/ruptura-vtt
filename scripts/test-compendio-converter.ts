@@ -114,6 +114,9 @@ const bloco = (type: string, dados: Record<string, unknown>, filhos?: BlocoNotio
   assert.deepEqual(g.itens[0].etiquetas, ["Dificuldade: Média"]);
   assert.equal(r.blocos.length, 1, "banco sem linhas não gera galeria vazia");
   assert.deepEqual(r.naoSuportados, []);
+  const filhas = converterBlocos([{ id: "aaaa0000-0000-0000-0000-000000000001", type: "child_page", child_page: { title: "ARMAS E ARMADURAS" } }]);
+  assert.deepEqual(filhas.paginasFilhas, [{ pageId: "aaaa0000000000000000000000000001", titulo: "ARMAS E ARMADURAS" }]);
+  assert.ok(filhas.blocos[0].tipo === "link_pagina" && filhas.blocos[0].titulo === "ARMAS E ARMADURAS", "página filha vira link no lugar");
   console.log("5. galeria de banco embutido — OK");
 }
 

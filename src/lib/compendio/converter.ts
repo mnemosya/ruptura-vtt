@@ -44,6 +44,8 @@ export interface ResultadoConversao {
   verbetes: { titulo: string; ancora: string }[];
   /** Tipos do Notion sem equivalente, para o relatório da sincronização. */
   naoSuportados: string[];
+  /** Páginas filhas postas direto no texto (ex.: a Lista de Mercadorias): viram subpáginas do livro. */
+  paginasFilhas: { pageId: string; titulo: string }[];
 }
 
 export function semHifens(id: string): string {
@@ -99,6 +101,7 @@ function ehNavegacao(bloco: BlocoNotion): boolean {
 export function converterBlocos(blocos: BlocoNotion[]): ResultadoConversao {
   const verbetes: ResultadoConversao["verbetes"] = [];
   const naoSuportados: string[] = [];
+  const paginasFilhas: ResultadoConversao["paginasFilhas"] = [];
   const usadas = new Map<string, number>();
   const ancoraUnica = (texto: string) => {
     const base = ancoraDe(texto) || "secao";
@@ -212,8 +215,14 @@ export function converterBlocos(blocos: BlocoNotion[]): ResultadoConversao {
           });
           break;
         }
-        // Subpáginas e índices não fazem parte do texto do capítulo.
-        case "child_page":
+        case "child_page": {
+          const titulo = ((dados as { title?: string }).title ?? "").trim();
+          const pageId = semHifens(b.id);
+          paginasFilhas.push({ pageId, titulo });
+          saida.push({ tipo: "link_pagina", paginaNotionId: pageId, titulo });
+          break;
+        }
+        // Índices não fazem parte do texto do capítulo.
         case "table_of_contents":
         case "breadcrumb":
           break;
@@ -225,7 +234,7 @@ export function converterBlocos(blocos: BlocoNotion[]): ResultadoConversao {
     return saida;
   }
 
-  return { blocos: converter(blocos), verbetes, naoSuportados };
+  return { blocos: converter(blocos), verbetes, naoSuportados, paginasFilhas };
 }
 
 /** "22. CONDIÇÕES" → { numero: 22, titulo: "CONDIÇÕES" }. */

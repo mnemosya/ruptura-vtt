@@ -646,6 +646,8 @@ const LIVRO: LinhaCapitulo[] = [
   );
 }
 {
+  const comNeta: LinhaCapitulo[] = [...LIVRO, { pageId: "s1", numero: null, titulo: "ARMAS", secao: "x", ordem: 2.001, verbetes: [], paiPageId: "p21" }, { pageId: "s2", numero: null, titulo: "PISTOLAS", secao: "x", ordem: 2.002, verbetes: [], paiPageId: "s1" }];
+  ok("K5b (subpágina de subpágina: vizinhos e índice do capítulo raiz)", vizinhos(comNeta, "s2").proximo?.pageId === "p22" && agruparPorSecao(comNeta).every((g) => g.capitulos.every((c) => !c.paiPageId)), "ok");
   const v = vizinhos(LIVRO, "p21");
   ok("K5 (anterior e próximo na ordem do livro)", v.anterior?.pageId === "p1" && v.proximo?.pageId === "p22" && vizinhos(LIVRO, "p1").anterior === null, "ok");
 }
