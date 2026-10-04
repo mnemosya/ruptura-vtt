@@ -195,7 +195,7 @@ O índice de termos é montado pela própria sincronização, a partir dos títu
 
 ### 03/10/2026 — Compêndio da área autenticada
 
-- `/mesas/compendio` (menu "Compêndio" da conta) deixou de ser o catálogo da Biblioteca por tipo (magias, talentos, itens…) e passou a mostrar o mesmo livro, em página inteira (`LivroPagina`). Fora da mesa: leitura para qualquer conta logada, sem "Enviar ao chat" e sem "Fechar". O editor administrativo continua em `/admin/biblioteca`.
+- `/mesas/compendio` (menu "Compêndio" da conta) deixou de ser o catálogo da Biblioteca por tipo (magias, talentos, itens…) e passou a mostrar o mesmo livro (em 04/10/2026, no mesmo modal da mesa, para ter a tela toda; fechar volta para a página anterior). Fora da mesa: leitura para qualquer conta logada, sem "Enviar ao chat" e sem "Fechar". O editor administrativo continua em `/admin/biblioteca`.
 
 ### 03/10/2026 — Páginas filhas no texto
 

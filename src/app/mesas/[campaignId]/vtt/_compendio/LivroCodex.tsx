@@ -49,19 +49,7 @@ function gravarUltimoLido(pageId: string) {
   }
 }
 
-/**
- * O livro numa página inteira, sem modal (Compêndio da área autenticada,
- * fora de qualquer mesa): sem campanha não há chat, então sem "Enviar ao chat".
- */
-export function LivroPagina() {
-  return (
-    <div className={`fj-root ${oxanium.variable} fj-livro-pagina`}>
-      <Livro campaignId={null} inicial={null} />
-    </div>
-  );
-}
-
-export function LivroCodex({ campaignId, inicial, onClose }: { campaignId: string; inicial?: DestinoLivro | null; onClose: () => void }) {
+export function LivroCodex({ campaignId, inicial, onClose }: { campaignId: string | null; inicial?: DestinoLivro | null; onClose: () => void }) {
   const [montado, setMontado] = useState(false);
   useEffect(() => setMontado(true), []);
   if (!montado) return null;
