@@ -41,7 +41,15 @@ export function iconeDe(icone: IconeNotion | null | undefined): string | null {
   return icone.custom_emoji?.url ?? icone.external?.url ?? icone.file?.url ?? null;
 }
 
-export function criarClienteNotion(token: string | undefined = process.env.NOTION_TOKEN): ClienteNotion {
+export interface OpcoesClienteNotion {
+  /**
+   * Filhos já conhecidos de um bloco (ex.: guardados da última sincronização). Quando devolve uma
+   * lista, os filhos do bloco não são lidos do Notion. Ver scripts/notion/cacheBlocos.ts (--rapido).
+   */
+  reaproveitar?: (bloco: BlocoNotion) => BlocoNotion[] | undefined;
+}
+
+export function criarClienteNotion(token: string | undefined = process.env.NOTION_TOKEN, opcoes: OpcoesClienteNotion = {}): ClienteNotion {
   if (!token) throw new Error("NOTION_TOKEN não configurado (.env.local). Ver PLANO_COMPENDIO_NOTION.md, Fase 0.");
   let ultima = 0;
   let total = 0;
@@ -81,7 +89,7 @@ export function criarClienteNotion(token: string | undefined = process.env.NOTIO
     // Banco embutido (galeria): só as linhas; o conteúdo de cada uma é lido pelo sincronizador.
     for (const b of todos) {
       if (b.type === "child_database") b.linhas = await linhasDoBanco(b.id);
-      else if (b.has_children && b.type !== "child_page") b.filhos = await filhosDe(b.id);
+      else if (b.has_children && b.type !== "child_page") b.filhos = opcoes.reaproveitar?.(b) ?? (await filhosDe(b.id));
     }
     return todos;
   }

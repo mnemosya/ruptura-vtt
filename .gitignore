@@ -18,3 +18,6 @@ build/
 # os assets usados de fato ficam em public/console/ e public/humanbody/).
 /images/
 .tmp-validadores/
+
+# Cache local dos blocos do Notion para a sincronização rápida (scripts/notion/cacheBlocos.ts).
+.cache/
