@@ -40,6 +40,8 @@ export interface CardGaleria {
   pageId: string;
   titulo: string;
   descricao: string;
+  /** Texto de apoio (ex.: a Casa da Vertente), quando a linha tem outro texto além da descrição. */
+  rotulo?: string | null;
   /** Propriedades de seleção (ex.: "Dificuldade: Média"), como etiquetas. */
   etiquetas: string[];
   /** Primeira imagem da página da linha (preenchida pelo sincronizador). */

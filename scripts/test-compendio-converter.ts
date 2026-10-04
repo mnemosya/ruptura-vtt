@@ -112,6 +112,8 @@ const bloco = (type: string, dados: Record<string, unknown>, filhos?: BlocoNotio
   assert.equal(g.itens[0].descricao, "Cura, adapta e transforma organismos vivos.", "Descrição tem prioridade");
   assert.equal(g.itens[1].descricao, "Linha de frente", "sem Descrição, usa o primeiro texto (Papel)");
   assert.deepEqual(g.itens[0].etiquetas, ["Dificuldade: Média"]);
+  assert.equal(g.itens[0].rotulo, "Casa Orelis", "outro texto da linha vira rótulo (a Casa)");
+  assert.equal(g.itens[1].rotulo, null, "Classe só com Papel: sem rótulo");
   assert.equal(r.blocos.length, 1, "banco sem linhas não gera galeria vazia");
   assert.deepEqual(r.naoSuportados, []);
   const filhas = converterBlocos([{ id: "aaaa0000-0000-0000-0000-000000000001", type: "child_page", child_page: { title: "ARMAS E ARMADURAS" } }]);

@@ -9,6 +9,7 @@
 import { Fragment, type ReactNode } from "react";
 import type { BlocoCompendio, TrechoCompendio } from "../../../../../lib/compendio/tipos";
 import { resolverTermo, type DestinoLivro } from "./modelo";
+import { CORES_VERTENTE } from "../../../../_design/coresVertente";
 
 export interface ContextoLeitura {
   termos: Map<string, DestinoLivro>;
@@ -62,6 +63,20 @@ export function Texto({ trechos, ctx }: { trechos: TrechoCompendio[]; ctx: Conte
       })}
     </>
   );
+}
+
+/** Cor do card: a da Vertente (mesma paleta dos tokens do mapa); fora disso, o ciano do Códex. */
+function corDoCard(titulo: string): string {
+  const id = titulo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  return (CORES_VERTENTE as Record<string, string>)[id] ?? "var(--fj-cy)";
+}
+
+/** "Dificuldade: Média" → 2 (Fácil 1, Média 2, Difícil 3). */
+function nivelDeDificuldade(etiquetas: string[]): number | null {
+  const e = etiquetas.find((x) => /^dificuldade/i.test(x));
+  if (!e) return null;
+  const v = e.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return v.includes("facil") ? 1 : v.includes("media") ? 2 : v.includes("dificil") ? 3 : null;
 }
 
 /** Link para outra página do livro, no visual do botão de Códex da Forja (opção B, 04/10/2026). */
@@ -252,40 +267,58 @@ function Bloco({ b, ctx }: { b: BlocoCompendio; ctx: ContextoLeitura }) {
       );
     case "link_pagina":
       return <BotaoPagina pageId={b.paginaNotionId} tituloReserva={b.titulo} ctx={ctx} />;
-    case "galeria":
+    case "galeria": {
+      // Opção C (04/10/2026): dossiê em duotone na cor da Vertente; a cor some no hover.
+      const prefixo = /classe/i.test(b.titulo) ? "C" : /vertente/i.test(b.titulo) ? "V" : (b.titulo.trim()[0] ?? "A").toUpperCase();
       return (
         <div className="fj-livro-galeria" data-testid="compendio-galeria">
-          {b.itens.map((card) => (
-            <button type="button" key={card.pageId} className="fj-livro-card" onClick={() => ctx.ir({ pageId: card.pageId })} data-testid="compendio-card">
-              <span className="fj-livro-card__arte">
-                {card.imagem ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={card.imagem} alt="" loading="lazy" />
-                ) : (
-                  <span className="fj-livro-card__sem-arte" aria-hidden="true">{card.titulo.slice(0, 2)}</span>
-                )}
-              </span>
-              <span className="fj-livro-card__texto">
-                <span className="fj-livro-card__titulo">
-                  {card.icone && (/^https?:/.test(card.icone) ? (
+          {b.itens.map((card, k) => {
+            const cor = corDoCard(card.titulo);
+            const nivel = nivelDeDificuldade(card.etiquetas);
+            const outras = card.etiquetas.filter((e) => !/^dificuldade/i.test(e));
+            return (
+              <button type="button" key={card.pageId} className="fj-livro-card" style={{ "--card-cor": cor } as React.CSSProperties} onClick={() => ctx.ir({ pageId: card.pageId })} data-testid="compendio-card">
+                <span className="fj-livro-card__arte">
+                  {card.imagem && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={card.icone} alt="" className="fj-livro-card__icone" />
-                  ) : (
-                    <span className="fj-livro-card__icone" aria-hidden="true">{card.icone}</span>
-                  ))}
-                  {card.titulo}
-                </span>
-                {card.descricao && <span className="fj-livro-card__descricao">{card.descricao}</span>}
-                {card.etiquetas.length > 0 && (
-                  <span className="fj-livro-card__etiquetas">
-                    {card.etiquetas.map((e) => <span key={e} className="fj-livro-termo">{e}</span>)}
+                    <img src={card.imagem} alt="" loading="lazy" />
+                  )}
+                  <span className="fj-livro-card__tinta" aria-hidden="true" />
+                  <span className="fj-livro-card__varredura" aria-hidden="true" />
+                  <span className="fj-livro-card__codigo fj-mono fj-mono--pequeno">{prefixo}-{String(k + 1).padStart(2, "0")} · Arquivo</span>
+                  {card.rotulo && <span className="fj-livro-card__rotulo fj-mono fj-mono--pequeno">{card.rotulo}</span>}
+                  <span className="fj-livro-card__nome">
+                    {card.icone && (/^https?:/.test(card.icone) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={card.icone} alt="" className="fj-livro-card__icone" />
+                    ) : (
+                      <span className="fj-livro-card__icone" aria-hidden="true">{card.icone}</span>
+                    ))}
+                    {card.titulo}
                   </span>
-                )}
-              </span>
-            </button>
-          ))}
+                </span>
+                <span className="fj-livro-card__fio" aria-hidden="true" />
+                <span className="fj-livro-card__texto">
+                  {card.descricao && <span className="fj-livro-card__descricao">{card.descricao}</span>}
+                  {outras.length > 0 && (
+                    <span className="fj-livro-card__etiquetas">{outras.map((e) => <span key={e} className="fj-livro-termo">{e}</span>)}</span>
+                  )}
+                  <span className="fj-livro-card__rodape">
+                    {nivel ? (
+                      <span className="fj-livro-card__dificuldade" title={`Dificuldade: ${["Fácil", "Média", "Difícil"][nivel - 1]}`}>
+                        <span className="fj-mono fj-mono--pequeno">Dificuldade</span>
+                        {[1, 2, 3].map((n) => <span key={n} className={`fj-livro-card__losango ${n <= nivel ? "fj-livro-card__losango--cheio" : ""}`} />)}
+                      </span>
+                    ) : <span />}
+                    <span className="fj-livro-card__abrir">Abrir ›</span>
+                  </span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       );
+    }
     case "divisor":
       return <hr className="fj-livro-divisor" />;
     case "nao_suportado":

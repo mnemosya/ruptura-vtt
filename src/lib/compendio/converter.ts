@@ -207,7 +207,7 @@ export function converterBlocos(blocos: BlocoNotion[]): ResultadoConversao {
               pageId: semHifens(l.id),
               titulo: l.titulo,
               // "Descrição" quando existe; senão o primeiro texto preenchido (ex.: "Papel" nas Classes).
-              descricao: l.textos["Descrição"] ?? Object.values(l.textos).find((t) => t.trim()) ?? "",
+              ...descricaoERotulo(l.textos),
               etiquetas: Object.values(l.selecoes).filter(Boolean),
               imagem: null,
               icone: l.icone,
@@ -235,6 +235,18 @@ export function converterBlocos(blocos: BlocoNotion[]): ResultadoConversao {
   }
 
   return { blocos: converter(blocos), verbetes, naoSuportados, paginasFilhas };
+}
+
+/**
+ * Descrição do card: "Descrição", ou o primeiro texto preenchido (o "Papel" das Classes).
+ * Rótulo: o primeiro OUTRO texto preenchido (a "Casa-Vertente" das Vertentes).
+ */
+function descricaoERotulo(textos: Record<string, string>): { descricao: string; rotulo: string | null } {
+  const preenchidos = Object.entries(textos).filter(([, t]) => t.trim());
+  const chaveDescricao = textos["Descrição"]?.trim() ? "Descrição" : preenchidos[0]?.[0];
+  const descricao = chaveDescricao ? textos[chaveDescricao] : "";
+  const rotulo = preenchidos.find(([k]) => k !== chaveDescricao)?.[1] ?? null;
+  return { descricao, rotulo };
 }
 
 /** "22. CONDIÇÕES" → { numero: 22, titulo: "CONDIÇÕES" }. */
