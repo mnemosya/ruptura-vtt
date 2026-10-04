@@ -88,7 +88,7 @@
 /* ── Tabela ────────────────────────────────────────────── */
 .fj-livro-tabela-rolagem { overflow-x: auto; }
 .fj-livro-tabela { width: 100%; border-collapse: collapse; font-size: 15px; }
-.fj-livro-tabela th, .fj-livro-tabela td { border: 1px solid color-mix(in srgb, var(--fj-cy) 15%, transparent); padding: var(--hud-space-2) var(--hud-space-4); text-align: left; vertical-align: top; }
+.fj-livro-tabela th, .fj-livro-tabela td { border: 1px solid color-mix(in srgb, var(--fj-cy) 15%, transparent); padding: var(--hud-space-2) var(--hud-space-4); text-align: left; vertical-align: middle; }
 .fj-livro-tabela th { background: color-mix(in srgb, var(--fj-cy) 10%, transparent); font: 700 13px var(--fj-display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fj-gelo); }
 
 /* ── Imagem ────────────────────────────────────────────── */

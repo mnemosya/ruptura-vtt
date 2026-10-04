@@ -736,7 +736,7 @@
 .fj-regra__tabela-rolagem { overflow-x: auto; }
 .fj-regra__nota { border-left: 2px solid color-mix(in srgb, var(--fj-cy) 40%, transparent); padding-left: var(--hud-space-4); font-style: italic; color: var(--fj-apagado); }
 .fj-regra__tabela { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.4; }
-.fj-regra__tabela th, .fj-regra__tabela td { border: 1px solid color-mix(in srgb, var(--fj-cy) 15%, transparent); padding: var(--hud-space-2) var(--hud-space-3); text-align: left; vertical-align: top; }
+.fj-regra__tabela th, .fj-regra__tabela td { border: 1px solid color-mix(in srgb, var(--fj-cy) 15%, transparent); padding: var(--hud-space-2) var(--hud-space-3); text-align: left; vertical-align: middle; }
 .fj-regra__tabela th { background: color-mix(in srgb, var(--fj-cy) 10%, transparent); font: 700 12px var(--fj-display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fj-gelo); }
 .fj-regra__marca { position: absolute; left: 0; top: 0.55em; height: 6px; width: 6px; transform: rotate(45deg); background: color-mix(in srgb, var(--fj-cy) 70%, transparent); }
 
