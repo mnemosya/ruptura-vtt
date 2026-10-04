@@ -10,12 +10,12 @@ import type { BlocoCompendio, TrechoCompendio } from "../../../../../lib/compend
 /** Até quantos parágrafos de abertura sobem para o herói quando a página tem capa. */
 export const MAX_PARAGRAFOS_ABERTURA = 3;
 
-/** Epígrafe (citação de abertura) só sobe para o herói se for curta. */
-export const MAX_CARACTERES_EPIGRAFE = 600;
+/** Epígrafe (citação de abertura, com os parágrafos dentro dela) sobe para o herói até este tamanho. */
+export const MAX_CARACTERES_EPIGRAFE = 2000;
 
 /**
  * Com capa, a abertura da página vai para o herói, como no Códex de Classe:
- *   - uma epígrafe curta (citação) no começo;
+ *   - a epígrafe (citação de abertura, inclusive os parágrafos aninhados nela);
  *   - os parágrafos seguintes, até 3, parando no primeiro título, verbete, lista…
  * Se a página começa com UMA tabela ou imagem (as Classes abrem com a tabela de
  * Ranking; Braxus, com o mapa), ela fica no corpo, logo depois do herói, e os
@@ -34,7 +34,7 @@ export function separarAbertura(blocos: BlocoCompendio[]): { abertura: BlocoComp
     i = pularDivisores(i + 1);
   }
   const b = blocos[i];
-  if (b?.tipo === "citacao" && b.filhos.length === 0 && textoDe(b.texto).length <= MAX_CARACTERES_EPIGRAFE) {
+  if (b?.tipo === "citacao" && textoPlanoDosBlocos([b]).length <= MAX_CARACTERES_EPIGRAFE) {
     abertura.push(b);
     i = pularDivisores(i + 1);
   }
