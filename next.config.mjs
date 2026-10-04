@@ -18,6 +18,10 @@ const nextConfig = {
    * o deploy na Vercel sai sem esses arquivos e as rotas quebram com ENOENT.
    */
   outputFileTracingIncludes: { "/**": ["./content/**/*"] },
+  /** Não há página na raiz: o app começa em /mesas, que manda para /login quem não entrou. */
+  async redirects() {
+    return [{ source: "/", destination: "/mesas", permanent: false }];
+  },
 };
 
 export default nextConfig;
