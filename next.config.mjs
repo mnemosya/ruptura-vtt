@@ -11,6 +11,13 @@ const { version } = JSON.parse(readFileSync(new URL("./package.json", import.met
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: { NEXT_PUBLIC_APP_VERSION: version },
+  /**
+   * O servidor lê `content/` em tempo de execução (schemas do validador,
+   * ajustes e revisão do Compêndio) por caminhos montados com
+   * `process.cwd()`, que o rastreamento de arquivos não enxerga. Sem isto,
+   * o deploy na Vercel sai sem esses arquivos e as rotas quebram com ENOENT.
+   */
+  outputFileTracingIncludes: { "/**": ["./content/**/*"] },
 };
 
 export default nextConfig;
