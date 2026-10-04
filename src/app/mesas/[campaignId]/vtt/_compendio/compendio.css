@@ -184,3 +184,4 @@
 .fj-livro-nota__fio { height: 1px; flex: 1; background: linear-gradient(to right, color-mix(in srgb, var(--fj-cy) 45%, transparent), transparent); }
 .fj-livro-nota__corpo { padding-left: 17px; }
 .fj-livro-nota__corpo > * + * { margin-top: var(--hud-space-3); }
+

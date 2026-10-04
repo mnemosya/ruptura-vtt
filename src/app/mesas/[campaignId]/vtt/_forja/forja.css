@@ -734,6 +734,24 @@
 .fj-regra__bloco > * + * { margin-top: var(--hud-space-2); }
 .fj-regra__item { position: relative; padding-left: var(--hud-space-6); }
 .fj-regra__tabela-rolagem { overflow-x: auto; }
+/* ── Rolagem horizontal das tabelas largas: barra visível só no hover ── */
+.fj-livro-tabela-rolagem, .fj-regra__tabela-rolagem { padding-bottom: 4px; }
+/* Firefox: só as propriedades padrão. No Chrome/Safari elas desligariam a barra
+   personalizada abaixo (e a barra flutuante do sistema só aparece rolando). */
+@supports (-moz-appearance: none) {
+  .fj-livro-tabela-rolagem, .fj-regra__tabela-rolagem { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+  .fj-livro-tabela-rolagem:hover, .fj-regra__tabela-rolagem:hover { scrollbar-color: color-mix(in srgb, var(--fj-cy) 55%, transparent) color-mix(in srgb, var(--fj-abismo) 80%, transparent); }
+}
+/* Chrome/Safari: o Chrome não repinta a barra personalizada quando o :hover do elemento
+   muda. Contorno: o polegar herda a COR DE BORDA do elemento (borda de largura zero, nunca
+   aparece), e é essa cor que muda no hover — mudança que o Chrome repinta. */
+.fj-livro-tabela-rolagem, .fj-regra__tabela-rolagem { border: 0 solid transparent; transition: border-color var(--fj-dur-micro) ease; }
+.fj-livro-tabela-rolagem:hover, .fj-regra__tabela-rolagem:hover { border-color: rgba(0, 212, 255, 0.55); }
+.fj-livro-tabela-rolagem::-webkit-scrollbar, .fj-regra__tabela-rolagem::-webkit-scrollbar { height: 8px; }
+.fj-livro-tabela-rolagem::-webkit-scrollbar-track, .fj-regra__tabela-rolagem::-webkit-scrollbar-track { background: transparent; }
+.fj-livro-tabela-rolagem::-webkit-scrollbar-thumb, .fj-regra__tabela-rolagem::-webkit-scrollbar-thumb { border-color: inherit; border-style: solid; border-width: 0 0 8px 0; }
+.fj-livro-tabela-rolagem::-webkit-scrollbar-thumb:hover, .fj-regra__tabela-rolagem::-webkit-scrollbar-thumb:hover { border-color: #ff8a1f; }
+
 .fj-regra__nota { border-left: 2px solid color-mix(in srgb, var(--fj-cy) 40%, transparent); padding-left: var(--hud-space-4); font-style: italic; color: var(--fj-apagado); }
 .fj-regra__tabela { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.4; }
 .fj-regra__tabela th, .fj-regra__tabela td { border: 1px solid color-mix(in srgb, var(--fj-cy) 15%, transparent); padding: var(--hud-space-2) var(--hud-space-3); text-align: left; vertical-align: middle; }
