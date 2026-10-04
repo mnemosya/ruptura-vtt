@@ -65,8 +65,8 @@ export function Texto({ trechos, ctx }: { trechos: TrechoCompendio[]; ctx: Conte
 /** Botão "Expandir" sobre uma imagem: aparece só no hover (ou com foco do teclado). */
 export function BotaoExpandir({ onClick }: { onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="fj-mapa__expandir fj-livro-expandir" data-testid="compendio-expandir-imagem">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg> Expandir
+    <button type="button" onClick={onClick} className="fj-mapa__expandir fj-livro-expandir" aria-label="Expandir imagem" title="Expandir" data-testid="compendio-expandir-imagem">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
     </button>
   );
 }

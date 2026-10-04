@@ -167,7 +167,7 @@
 
 /* ── Expandir imagem (só no hover) e tela cheia ───────── */
 .fj-livro-figura__moldura { position: relative; }
-.fj-livro-expandir { opacity: 0; pointer-events: none; transition: var(--fj-trans); }
+.fj-livro-expandir { padding: var(--hud-space-2); opacity: 0; pointer-events: none; transition: var(--fj-trans); }
 .fj-livro-figura__moldura:hover .fj-livro-expandir, .fj-livro-heroi__arte:hover .fj-livro-expandir, .fj-livro-expandir:focus-visible { opacity: 1; pointer-events: auto; }
 .fj-livro-ampliada { cursor: zoom-out; }
 .fj-livro-ampliada__img { max-width: 100%; max-height: calc(100dvh - 140px); object-fit: contain; border: 1px solid color-mix(in srgb, var(--fj-cy) 25%, transparent); cursor: default; }
