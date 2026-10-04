@@ -62,7 +62,7 @@ export interface CapituloCompendio {
   /** Subpágina (linha de uma galeria): ID do capítulo onde a galeria está. */
   paiPageId?: string | null;
   /** Imagem do herói (topo da página). Sai do corpo quando veio da primeira imagem do capítulo. */
-  capa?: { url: string; largura: number; altura: number } | null;
+  capa?: { url: string; largura: number; altura: number; posicao?: string } | null;
   /** Subpáginas das galerias deste capítulo e a data de edição de cada uma. */
   subpaginas?: Record<string, string>;
 }

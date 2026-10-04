@@ -32,7 +32,7 @@ const ARQUIVO_AJUSTES = join("content", "v12", "compendio_ajustes.json");
 
 /** Ajustes por página (content/v12/compendio_ajustes.json). */
 interface AjustePagina {
-  capa?: { arquivo?: string; subirImagem?: number };
+  capa?: { arquivo?: string; subirImagem?: number; posicao?: string };
   desdobrarVerbetes?: string[];
 }
 
@@ -269,6 +269,13 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
 
   /** Capa da página: a escolhida à mão; senão a primeira imagem, qualquer que seja a proporção (sai do corpo). */
   async function definirCapa(pageId: string, blocos: BlocoCompendio[]): Promise<CapituloCompendio["capa"]> {
+    const capa = await escolherCapa(pageId, blocos);
+    // Enquadramento (object-position) escolhido à mão, ex.: "18% 60%" puxa a imagem para a direita.
+    const posicao = ajustes[pageId]?.capa?.posicao;
+    return capa && posicao ? { ...capa, posicao } : capa;
+  }
+
+  async function escolherCapa(pageId: string, blocos: BlocoCompendio[]): Promise<CapituloCompendio["capa"]> {
     const manual = await capaManual(pageId);
     if (manual) return manual;
     const n = ajustes[pageId]?.capa?.subirImagem;

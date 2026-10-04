@@ -411,7 +411,7 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
                   {capitulo.capa && (
                     <div className="fj-livro-heroi__arte">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={capitulo.capa.url} alt="" className="fj-codex__heroi-img" />
+                      <img src={capitulo.capa.url} alt="" className="fj-codex__heroi-img" style={capitulo.capa.posicao ? { objectPosition: capitulo.capa.posicao } : undefined} />
                       <BotaoExpandir onClick={() => setAmpliada({ url: capitulo.capa!.url, legenda: capitulo.titulo })} />
                     </div>
                   )}
