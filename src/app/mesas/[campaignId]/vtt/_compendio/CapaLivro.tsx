@@ -16,7 +16,7 @@ export function CapaLivro({
         <Image src={cidadeVosek} alt="Vista panorâmica de Vosek" fill sizes="(min-width: 1280px) 1028px, (min-width: 768px) calc(100vw - 320px), 100vw" className="fj-capa__imagem" priority />
         <div className="fj-capa__sombra" aria-hidden="true" />
         <div className="fj-capa__marca">
-          <span className="fj-mono fj-mono--cy fj-capa__frase">A ORDEM É UMA FACHADA.</span>
+          <span className="fj-mono fj-mono--cy fj-capa__frase">A ORDEM É UMA FACHADA</span>
           <MarcaRuptura className="fj-capa__logo" />
         </div>
         <div className="fj-capa__passarela" aria-hidden="true" />

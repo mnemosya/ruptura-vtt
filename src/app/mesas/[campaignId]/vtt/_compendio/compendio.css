@@ -35,7 +35,7 @@
 .fj-capa__frase { font-weight: 700; }
 .fj-capa__marca .ds-marca.fj-capa__logo { --ds-marca-tamanho: clamp(46px, 8vw, 82px); display: block; width: fit-content; margin: 20px auto 15px; }
 .fj-capa__passarela { position: absolute; z-index: 2; bottom: 58px; left: -2%; width: 104%; height: 10px; transform: rotate(-4deg); background: var(--fj-abismo); border-top: 1px solid color-mix(in srgb, var(--fj-cy) 45%, transparent); }
-.fj-capa__cidade-nome { position: absolute; z-index: 3; bottom: 91px; left: 28px; display: flex; flex-direction: column; gap: 5px; padding: 2px 8px 2px 12px; border-left: 2px solid var(--fj-cy); background: color-mix(in srgb, var(--fj-abismo) 85%, transparent); text-shadow: 0 1px 8px var(--fj-abismo); }
+.fj-capa__cidade-nome { position: absolute; z-index: 3; bottom: 91px; left: 28px; display: flex; flex-direction: column; gap: 2px; padding: 2px 8px 2px 12px; border-left: 2px solid var(--fj-cy); background: color-mix(in srgb, var(--fj-abismo) 45%, transparent); text-shadow: 0 1px 8px var(--fj-abismo); }
 .fj-capa__cidade-nome strong { font: 600 15px/1.4 var(--fj-display); letter-spacing: 0.28em; }
 .fj-capa__cidade-nome span { font: 500 10px/1.5 var(--fj-mono); letter-spacing: 0.08em; color: var(--fj-texto); }
 .fj-capa__subsolo { position: absolute; z-index: 3; bottom: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: var(--hud-space-4); min-height: 68px; padding: var(--hud-space-4) var(--hud-space-6); background: linear-gradient(0deg, var(--fj-abismo), color-mix(in srgb, var(--fj-abismo) 96%, transparent) 60%, transparent); font: 700 11px/1.5 var(--fj-mono); letter-spacing: 0.11em; color: var(--fj-gelo); text-shadow: 0 1px 8px var(--fj-abismo); }
