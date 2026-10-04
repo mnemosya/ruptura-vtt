@@ -43,7 +43,7 @@ export function CapaLivro({
           <p>O Império Central já não governa por convicção, mas por inércia. É nesse espaço de dúvida que você existe. Você é um magista refratário. Um erro fora dos planos do Império. Uma fagulha que não deveria existir. E agora a escolha está diante de você: se esconda, se venda ou incendeie o que ainda resta da ordem Imperial.</p>
           <p>Este livro te dá a munição, o terreno e as escolhas. O que vai restar, e quem você vai ser quando tudo desabar, depende de quais marcas você decidir cravar.</p>
         </div>
-        <div className="fj-capa__fecho">UMA FAGULHA QUE NÃO DEVERIA EXISTIR.<span aria-hidden="true">///</span></div>
+        <div className="fj-capa__fecho">VOCÊ É UMA FAGULHA QUE NÃO DEVERIA EXISTIR.<span aria-hidden="true">///</span></div>
       </div>
     </article>
   );
