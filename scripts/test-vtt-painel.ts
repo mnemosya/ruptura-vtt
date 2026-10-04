@@ -660,15 +660,17 @@ const LIVRO: LinhaCapitulo[] = [
   const c = separarAbertura([{ tipo: "citacao", texto: [{ texto: "epígrafe" }], filhos: [] }, par("a")]);
   const d = separarAbertura([{ tipo: "citacao", texto: [{ texto: "x".repeat(2100) }], filhos: [] }, par("a")]);
   const f = separarAbertura([{ tipo: "citacao", texto: [{ texto: "Desde os primeiros suspiros" }], filhos: [par("Assim como o coração"), par("O acesso e o controle")] }, { tipo: "titulo", nivel: 3, texto: [{ texto: "VERTENTES" }], ancora: "v" }]);
-  const e = separarAbertura([{ tipo: "destaque", icone: null, texto: [], filhos: [] }, par("a")]);
+  const e = separarAbertura([{ tipo: "lista", ordenada: false, itens: [] }, par("a")]);
+  const g = separarAbertura([{ tipo: "destaque", icone: null, texto: [{ texto: "A Biótica é" }], filhos: [] }, { tipo: "citacao", texto: [{ texto: "Vocês" }], filhos: [] }, tab, par("depois")]);
   ok(
-    "K7 (abertura do herói: até 3 parágrafos; tabela/imagem inicial fica logo depois; epígrafe com parágrafos aninhados sobe; o resto não mexe)",
+    "K7 (abertura do herói: até 3 parágrafos; tabela/imagem inicial fica logo depois; destaque e epígrafe sobem; o resto não mexe)",
     a.abertura.length === 3 && a.corpo[0].tipo === "paragrafo" &&
       b.abertura.length === 2 && b.corpo[0].tipo === "tabela" && b.corpo[1].tipo === "lista" &&
       c.abertura.length === 2 && c.abertura[0].tipo === "citacao" &&
       d.abertura.length === 0 && d.corpo.length === 2 &&
       e.abertura.length === 0 && e.corpo.length === 2 &&
-      f.abertura.length === 1 && f.abertura[0].tipo === "citacao" && f.corpo[0].tipo === "titulo",
+      f.abertura.length === 1 && f.abertura[0].tipo === "citacao" && f.corpo[0].tipo === "titulo" &&
+      g.abertura.length === 2 && g.abertura[0].tipo === "paragrafo" && g.abertura[1].tipo === "citacao" && g.corpo[0].tipo === "tabela",
     "ok",
   );
 }

@@ -15,6 +15,7 @@ export const MAX_CARACTERES_EPIGRAFE = 2000;
 
 /**
  * Com capa, a abertura da página vai para o herói, como no Códex de Classe:
+ *   - um destaque de apresentação no começo, como texto corrido (as Vertentes);
  *   - a epígrafe (citação de abertura, inclusive os parágrafos aninhados nela);
  *   - os parágrafos seguintes, até 3, parando no primeiro título, verbete, lista…
  * Se a página começa com UMA tabela ou imagem (as Classes abrem com a tabela de
@@ -31,6 +32,13 @@ export function separarAbertura(blocos: BlocoCompendio[]): { abertura: BlocoComp
   let adiado: BlocoCompendio | null = null;
   if (blocos[i]?.tipo === "tabela" || blocos[i]?.tipo === "imagem") {
     adiado = blocos[i];
+    i = pularDivisores(i + 1);
+  }
+  // Destaque de apresentação (as Vertentes abrem com "A Biótica é a vertente que…"):
+  // no herói vira texto corrido, sem a caixa — como o Códex de Vertente da Forja.
+  const d = blocos[i];
+  if (d?.tipo === "destaque" && textoPlanoDosBlocos([d]).length <= MAX_CARACTERES_EPIGRAFE) {
+    abertura.push({ tipo: "paragrafo", texto: d.texto }, ...d.filhos);
     i = pularDivisores(i + 1);
   }
   const b = blocos[i];

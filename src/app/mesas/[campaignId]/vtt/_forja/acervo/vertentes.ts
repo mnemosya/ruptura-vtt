@@ -48,6 +48,11 @@ export interface VertenteAcervo {
 
 const GRIMORIOS = grimoriosPrototipo as Record<string, Grimorio>;
 
+/** A extração do protótipo deixou divisores do Markdown (`---`) como parágrafos soltos no corpo. */
+function limparGrimorio(g: Grimorio): Grimorio {
+  return { ...g, body: g.body.filter((p) => p.trim() !== "---") };
+}
+
 const META: Array<{ id: VertenteId; nome: string; frase: string; gatilho: string }> = [
   { id: "biotica", nome: "Biótica", frase: "Carne, sangue e crescimento. Molda o que está vivo.", gatilho: "Foco mental + domínio corporal" },
   { id: "cinetica", nome: "Cinética", frase: "Movimento, impulso e inércia sob o seu comando.", gatilho: "Movimento corporal" },
@@ -62,7 +67,7 @@ export const VERTENTES_ACERVO: VertenteAcervo[] = META.map((m) => ({
   cor: CORES_VERTENTE[m.id],
   brilho: brilhoVertente(m.id),
   arte: `/forja/vertentes/${m.id}.webp`,
-  grimorio: GRIMORIOS[m.nome],
+  grimorio: limparGrimorio(GRIMORIOS[m.nome]),
 }));
 
 export const vertentePorNome = (nome: string) => VERTENTES_ACERVO.find((v) => v.nome === nome);
