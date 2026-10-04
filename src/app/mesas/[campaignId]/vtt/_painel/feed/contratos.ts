@@ -148,6 +148,8 @@ export interface SnapshotConteudo {
   descricao: string | null;
   tags: string[];
   estatisticas: { rotulo: string; valor: string }[];
+  /** Referência a um trecho do livro (Compêndio): onde abrir. */
+  livro?: { pageId: string; ancora: string | null } | null;
 }
 
 export interface CartaoReferencia extends CartaoComum {
@@ -642,6 +644,7 @@ function snapshotDoPayload(p: P): SnapshotConteudo {
     descricao: txt(p, "descricao", "descricao_curta"),
     tags: lista(p, "tags"),
     estatisticas: est,
+    livro: txt(p, "pageId") ? { pageId: txt(p, "pageId")!, ancora: txt(p, "ancora") ?? null } : null,
   };
 }
 

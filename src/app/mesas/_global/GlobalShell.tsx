@@ -32,20 +32,23 @@ import { setAppearOffline } from "../../../lib/campaign/presencePreferenceAction
 import { signOut } from "../../../lib/auth/actions";
 import {
   AlertTriangle, BookText, CheckCircle, ChevronDown, Eye, EyeOff, LayoutGrid, LogOut, Menu,
-  PanelLeftClose, PanelLeftOpen, Plus, Spinner, Ticket, User, UserCog, Users, X,
+  Plus, Spinner, Ticket, User, UserCog, Users, X,
 } from "../../_design/icons";
 import "../../_design/app.css";
+import "../../_design/areaGlobal.css";
+import { MarcaRuptura } from "../../_design/Marca";
+import { oxanium } from "../../_design/oxanium";
 
 export type NavKey = "campaigns" | "characters" | "compendium" | "account";
 
-const NAV_ITEMS: { key: NavKey; label: string; href: string; icon: React.ReactNode }[] = [
-  { key: "campaigns", label: "Minhas Campanhas", href: "/mesas", icon: <LayoutGrid size={18} strokeWidth={1.5} /> },
-  { key: "characters", label: "Personagens", href: "/mesas/personagens", icon: <Users size={18} strokeWidth={1.5} /> },
-  { key: "compendium", label: "Compêndio", href: "/mesas/compendio", icon: <BookText size={18} strokeWidth={1.5} /> },
-  { key: "account", label: "Conta e Preferências", href: "/mesas/conta", icon: <UserCog size={18} strokeWidth={1.5} /> },
+/** Grupos e números como o menu de passos da Forja; o ícone só aparece com a barra recolhida. */
+const NAV_ITEMS: { key: NavKey; label: string; grupo: string; href: string; icon: React.ReactNode }[] = [
+  { key: "campaigns", label: "Campanhas", grupo: "Operações", href: "/mesas", icon: <LayoutGrid size={18} strokeWidth={1.5} /> },
+  { key: "characters", label: "Personagens", grupo: "Operações", href: "/mesas/personagens", icon: <Users size={18} strokeWidth={1.5} /> },
+  { key: "compendium", label: "Compêndio", grupo: "Arquivo", href: "/mesas/compendio", icon: <BookText size={18} strokeWidth={1.5} /> },
+  { key: "account", label: "Conta", grupo: "Sistema", href: "/mesas/conta", icon: <UserCog size={18} strokeWidth={1.5} /> },
 ];
 
-const COLLAPSED_KEY = "ruptura.sidebar.collapsed";
 const PREFS_KEY = "ruptura.prefs";
 
 // ── Preferências visuais ────────────────────────────────────────────
@@ -230,8 +233,11 @@ export function GlobalShell({
   userEmail,
   displayName,
   aparecerOfflineInicial = false,
+  contagens = null,
   children,
 }: {
+  /** Números ao lado de Campanhas e Personagens no menu. Null = não mostra. */
+  contagens?: { campanhas: number; personagens: number } | null;
   userEmail: string;
   displayName: string | null;
   /** "Aparecer offline" lido no servidor — é preferência de CONTA, não deste navegador. */
@@ -242,7 +248,8 @@ export function GlobalShell({
   const pathname = usePathname();
   const ativo = rotaAtiva(pathname);
 
-  const [collapsed, setCollapsed] = useState(false);
+  // A barra não recolhe mais (o botão saiu no redesign da Fase 6).
+  const collapsed = false;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -259,7 +266,6 @@ export function GlobalShell({
   // divergir do HTML do servidor.
   useEffect(() => {
     try {
-      setCollapsed(window.localStorage.getItem(COLLAPSED_KEY) === "1");
       const raw = window.localStorage.getItem(PREFS_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<VisualPrefs>;
@@ -268,14 +274,6 @@ export function GlobalShell({
     } catch {
       /* localStorage indisponível (modo privado, etc.) — segue com o padrão. */
     }
-  }, []);
-
-  const toggleCollapsed = useCallback(() => {
-    setCollapsed((prev) => {
-      const next = !prev;
-      try { window.localStorage.setItem(COLLAPSED_KEY, next ? "1" : "0"); } catch { /* ignora */ }
-      return next;
-    });
   }, []);
 
   const togglePref = useCallback((key: keyof VisualPrefs) => {
@@ -350,6 +348,8 @@ export function GlobalShell({
 
   const rootClass = [
     "ra-root",
+    "ag",
+    oxanium.variable,
     prefs.highContrast ? "ra-hc" : "",
     prefs.reduceMotion ? "ra-reduce-motion ra-no-cursor" : "",
   ].filter(Boolean).join(" ");
@@ -399,48 +399,46 @@ export function GlobalShell({
                     <span className="ra2-brand-mark" aria-hidden="true">R</span>
                   ) : (
                     <span className="ra2-brand-full">
-                      <span className="ra2-brand-name">RUPTURA</span>
+                      <MarcaRuptura como="span" />
                       <span className="ra2-brand-sub" style={{ display: "block" }}>
-                        VTT ENGINE v{process.env.NEXT_PUBLIC_APP_VERSION ?? "0.0.0"}
+                        VTT · Terminal de operações
                       </span>
                     </span>
                   )}
                 </Link>
 
                 <div className="ra2-nav">
-                  {NAV_ITEMS.map((item) => {
+                  {NAV_ITEMS.map((item, i) => {
                     const isActive = ativo === item.key;
+                    const abreGrupo = i === 0 || NAV_ITEMS[i - 1].grupo !== item.grupo;
                     return (
+                      <div key={item.key} style={{ display: "contents" }}>
+                      {abreGrupo && (
+                        <div className="ag-nav-grupo" aria-hidden="true"><span className="ag-mono">{item.grupo}</span><i /></div>
+                      )}
                       <Link
-                        key={item.key}
                         href={item.href}
                         data-testid={`nav-${item.key}`}
                         aria-current={isActive ? "page" : undefined}
                         title={collapsed ? item.label : undefined}
                         className={`ra2-nav-item${isActive ? " ra2-nav-item--active" : ""}`}
                       >
+                        <span className="ag-nav-n" aria-hidden="true">0{i + 1}</span>
                         <span className="ra2-nav-icon">{item.icon}</span>
                         <span className="ra2-nav-label">{item.label}</span>
+                        {contagens && (item.key === "campaigns" || item.key === "characters") && (
+                          <span className="ag-nav-cont">{item.key === "campaigns" ? contagens.campanhas : contagens.personagens}</span>
+                        )}
                         {/* Destino pendente — ver `NavPending.tsx` e
                             `.ra2-nav-item:has(.mo-linkflag)` em app.css. */}
                         <LinkPending />
                       </Link>
+                      </div>
                     );
                   })}
                 </div>
 
                 <div className="ra2-sidebar-foot">
-                  <button
-                    type="button"
-                    data-testid="sidebar-recolher"
-                    className="ra2-collapse-btn"
-                    onClick={toggleCollapsed}
-                    aria-expanded={!collapsed}
-                    aria-label={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
-                  >
-                    {collapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-                    <span>Recolher</span>
-                  </button>
 
                   <button
                     type="button"

@@ -7,7 +7,7 @@ import { BotaoCodex, BotaoEscolha, FaixaEstado, IndiceCodex, SecHead, Shell, use
 import { Key, Mono, Panel } from "../ui";
 import type { SetDraft } from "../tipos";
 import type { DraftV12 } from "../../../../../../lib/rulesetV12";
-import { oxanium } from "../fonte";
+import { oxanium } from "../../../../../_design/oxanium";
 import type { RegiaoIdV12 } from "../../../../../../lib/rulesetV12/contracts";
 
 const reg = (id: string) => REGIOES.find((r) => r.id === id) ?? REGIOES[0];

@@ -25,6 +25,11 @@ export const REGIOES_V12 = {
 } as const;
 export type RegiaoIdV12 = keyof typeof REGIOES_V12;
 
+/** A região, se for uma das de `REGIOES_V12`; senão null (dado antigo ou vazio). */
+export function regiaoValida(valor: unknown): RegiaoIdV12 | null {
+  return typeof valor === "string" && valor in REGIOES_V12 ? (valor as RegiaoIdV12) : null;
+}
+
 export interface ContentReferenceV12 {
   content_type: "item" | "spell" | "class" | "subclass" | "background" | "quality" | "complication";
   slug: string;

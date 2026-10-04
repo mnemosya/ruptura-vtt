@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Minus, Square, Minimize2, Maximize2, X } from "lucide-react";
-import { oxanium } from "../../_design/fonteOxanium";
+import { oxanium } from "../../_design/oxanium";
 import { useConsoleWindow } from "./useConsoleWindow";
 import { ladoDoTrilho, type LadoTrilho } from "./geometry";
 import { useConsoleAncorado } from "./ConsoleCloseContext";

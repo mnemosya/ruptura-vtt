@@ -27,12 +27,12 @@ import type { OnlineSession } from "../../lib/campaign/onlineSessionActions";
 import { usePushToast } from "./_global/GlobalShell";
 import { usePresence } from "../_design/usePresence";
 import {
-  DecoBottom, DecoTop, OnlineTag, PageHead, RoleBadge, SectionHead,
-  campaignCoverStyle, relativeTime,
+  DecoBottom, PageHead, SectionHead, capaDaCampanha, nomeDaRegiao, relativeTime,
 } from "./_global/parts";
+import { REGIOES_V12, regiaoValida, type RegiaoIdV12 } from "../../lib/rulesetV12";
 import { textoDeParticipantes } from "./_global/participantes";
 import {
-  Activity, AlertTriangle, ChevronRight, Clock, Plus, RotateCw, ScrollText, Search, Spinner, User, Users, X,
+  Activity, AlertTriangle, Plus, RotateCw, ScrollText, Search, Spinner, User, Users, X,
 } from "../_design/icons";
 
 export interface CampaignCardData {
@@ -138,9 +138,12 @@ export default function MesasDashboardClient({
     });
   }, [campanhas, filter, search]);
 
-  const destaque = [...filtradas]
-    .filter((item) => !item.sessionError && item.latestSession?.ended_at === null)
-    .sort((a, b) => b.latestSession!.started_at.localeCompare(a.latestSession!.started_at) || a.campaign.id.localeCompare(b.campaign.id))[0];
+  // Destaque: a sessão em andamento; sem nenhuma, a campanha da última
+  // sessão registrada ("retomar operação").
+  const comSessao = filtradas
+    .filter((item) => !item.sessionError && item.latestSession)
+    .sort((a, b) => b.latestSession!.started_at.localeCompare(a.latestSession!.started_at) || a.campaign.id.localeCompare(b.campaign.id));
+  const destaque = comSessao.find((item) => item.latestSession!.ended_at === null) ?? comSessao[0];
   const resto = filtradas.filter((item) => item.campaign.id !== destaque?.campaign.id);
 
   useEffect(() => {
@@ -278,8 +281,13 @@ export default function MesasDashboardClient({
                     num grid de cards grandes com borda luminosa lê como
                     pipoca. Uma lista é um bloco de informação, e chega
                     como um bloco. */}
-                <div className="ra2-grid" data-testid="dash-mesas-lista">
+                <div className="ag-grade" data-testid="dash-mesas-lista">
                   {resto.map((item) => <CampaignCard key={item.campaign.id} data={item} />)}
+                  <button type="button" className="ag-nova ag-ch" onClick={abrirCriacao} data-testid="dash-cartao-nova">
+                    <span className="ag-nova__mais" aria-hidden="true">+</span>
+                    <span className="ag-mono ag-mono--cy">Nova campanha</span>
+                    <span className="ag-mono ag-mono--peq">Abrir um novo setor</span>
+                  </button>
                 </div>
               </>
             )}
@@ -305,52 +313,44 @@ export default function MesasDashboardClient({
 
 // ── Destaque ────────────────────────────────────────────────────────
 function FeaturedCampaign({ data }: { data: CampaignCardData }) {
-  const { campaign, role, narratorOnline, playerCount } = data;
-  const sabido = narratorOnline !== undefined && playerCount !== undefined;
-  const total = sabido ? playerCount + (narratorOnline ? 1 : 0) : null;
+  const { campaign, role, narratorOnline, playerCount, latestSession } = data;
+  const aoVivo = latestSession!.ended_at === null;
+  const regiao = nomeDaRegiao(campaign);
   const descricao = textoDeParticipantes(narratorOnline, playerCount);
   return (
-    <section className="ra2-featured" aria-label="Campanha em destaque" data-testid="dash-mesa-destaque">
-      <DecoTop />
-      <div className="ra2-cover" style={campaignCoverStyle(campaign.id)} aria-hidden="true" />
-      <div className="ra2-featured-scrim" aria-hidden="true" />
-      <div className="ra2-featured-edge ra2-featured-edge--l" aria-hidden="true" />
-      <div className="ra2-featured-edge ra2-featured-edge--r" aria-hidden="true" />
-
-      <div className="ra2-featured-body">
-        <RoleBadge role={role} style={{ position: "absolute", right: 29, top: 40 }} />
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 560 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <OnlineTag />
-            <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-              <h2 className="ra2-featured-title">{campaign.name}</h2>
-              <span className="ra2-featured-pessoas" data-testid="dash-destaque-participantes"
-                title={descricao} aria-label={descricao}>
-                <Users size={14} strokeWidth={1.4} aria-hidden="true" />
-                <span aria-hidden="true">{sabido ? total : "—"}</span>
-              </span>
-            </div>
+    <section className="ag-borda ag-ch" aria-label="Campanha em destaque" data-testid="dash-mesa-destaque">
+      <div className="ag-destaque ag-ch">
+        <div className="ag-destaque__capa" style={capaDaCampanha(campaign)} aria-hidden="true" />
+        <div className="ag-destaque__veu" aria-hidden="true" />
+        <div className="ag-destaque__corpo">
+          <span className="ag-mono ag-mono--am">
+            {aoVivo
+              ? "// Sessão em andamento"
+              : <>{"// Retomar operação · última sessão "}{relativeTime(latestSession!.started_at)}</>}
+          </span>
+          <h2 className="ag-destaque__titulo">{campaign.name}</h2>
+          <div className="ag-destaque__meta">
+            {regiao && <span>{regiao}</span>}
+            <span className={`ag-papel${role === "narrator" ? " ag-papel--narrador" : ""}`}>{role === "narrator" ? "Narrador" : "Jogador"}</span>
+            {aoVivo && <span data-testid="dash-destaque-participantes" title={descricao}><Users size={13} strokeWidth={1.4} aria-hidden="true" /> {descricao}</span>}
+            <span>{data.characterCount} {data.characterCount === 1 ? "personagem" : "personagens"}</span>
+            <span>
+              {aoVivo ? "Iniciada em " : "Sessão de "}
+              <time dateTime={latestSession!.started_at}>{new Date(latestSession!.started_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</time>
+            </span>
           </div>
-          <p className="ra2-featured-desc">Sessão iniciada em <time dateTime={data.latestSession!.started_at}>{new Date(data.latestSession!.started_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</time></p>
-        </div>
-
-        <div style={{ maxWidth: 280, marginTop: "auto" }}>
-          <Link
-            href={`/mesas/${campaign.id}`}
-            data-testid={`dash-abrir-${campaign.id}`}
-            className="ra2-primary ra2-btn-block"
-            aria-label={`${role === "narrator" ? "Entrar na" : "Abrir"} campanha ${campaign.name}`}
-          >
-            <ChevronRight size={16} strokeWidth={1.4} />
-            {role === "narrator" ? "Entrar na campanha" : "Abrir campanha"}
-          </Link>
+          <div className="ag-destaque__acoes">
+            <Link
+              href={`/mesas/${campaign.id}`}
+              data-testid={`dash-abrir-${campaign.id}`}
+              className="ag-entrar"
+              aria-label={`Entrar na campanha ${campaign.name}`}
+            >
+              Entrar na mesa ›
+            </Link>
+          </div>
         </div>
       </div>
-
-      <DecoBottom />
-      <div className="ra2-featured-frame" aria-hidden="true" />
-      <div className="ra2-featured-glow" aria-hidden="true" />
     </section>
   );
 }
@@ -358,32 +358,29 @@ function FeaturedCampaign({ data }: { data: CampaignCardData }) {
 // ── Card ────────────────────────────────────────────────────────────
 function CampaignCard({ data }: { data: CampaignCardData }) {
   const { campaign, role } = data;
+  const regiao = nomeDaRegiao(campaign);
+  const narrador = role === "narrator";
   return (
-    <div className="ra2-card" data-testid="dash-mesa-item">
-      <div className="ra2-card-inner">
-        <div className="ra2-cover" style={campaignCoverStyle(campaign.id)} aria-hidden="true" />
-        <div className="ra2-card-scrim" aria-hidden="true" />
-        <RoleBadge role={role} style={{ position: "absolute", left: 19, top: 19, zIndex: 2 }} />
-        <div className="ra2-card-body">
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <h3 className="ra2-card-title" title={campaign.name}>{campaign.name}</h3>
-            <span className="ra2-card-meta">
-              <Clock size={10} strokeWidth={1.4} />
-              {relativeTime(campaign.updated_at)}
-            </span>
+    <div className="ag-cartao-borda ag-borda ag-ch" data-testid="dash-mesa-item">
+      <div className="ag-cartao ag-ch">
+        <div className="ag-cartao__capa" style={capaDaCampanha(campaign)} aria-hidden="true" />
+        <div className="ag-cartao__veu" aria-hidden="true" />
+        <div className="ag-cartao__corpo">
+          <span className={`ag-etiqueta ag-etiqueta--${narrador ? "narrador" : "jogador"}`}>◆ {narrador ? "Narrador" : "Jogador"}</span>
+          <h3 className="ag-cartao__titulo" title={campaign.name}>{campaign.name}</h3>
+          <div className="ag-cartao__rodape">
+            <span className="ag-mono ag-mono--peq">{regiao ? `${regiao} · ` : ""}{relativeTime(campaign.updated_at)}</span>
+            <Link
+              href={`/mesas/${campaign.id}`}
+              data-testid={`dash-abrir-${campaign.id}`}
+              className="ag-entrar ag-entrar--peq"
+              aria-label={`${narrador ? "Entrar na" : "Abrir"} campanha ${campaign.name}`}
+            >
+              Entrar ›
+            </Link>
           </div>
-          <Link
-            href={`/mesas/${campaign.id}`}
-            data-testid={`dash-abrir-${campaign.id}`}
-            className="ra2-primary ra2-btn-block"
-            aria-label={`${role === "narrator" ? "Entrar na" : "Abrir"} campanha ${campaign.name}`}
-          >
-            <ChevronRight size={16} strokeWidth={1.4} />
-            {role === "narrator" ? "Entrar na campanha" : "Abrir campanha"}
-          </Link>
         </div>
       </div>
-      <DecoBottom />
     </div>
   );
 }
@@ -500,6 +497,7 @@ function CreateCampaignModal({
 }) {
   const { montado, visivel } = usePresence(aberto);
   const [nome, setNome] = useState("");
+  const [regiao, setRegiao] = useState<RegiaoIdV12 | null>(null);
   const [busy, setBusy] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -522,7 +520,7 @@ function CreateCampaignModal({
     setBusy(true);
     setErro(null);
     try {
-      const campaign = await createCampaign(trimmed);
+      const campaign = await createCampaign(trimmed, regiao);
       onCreated({
         campaign,
         role: "narrator",
@@ -566,10 +564,22 @@ function CreateCampaignModal({
             onKeyDown={(e) => { if (e.key === "Enter") handleCreate(); }}
             placeholder="Ex.: Ecos de Vosek"
           />
-          <span className="ra-hint">
-            Você entra como narrador. Descrição, capa e demais metadados ainda não existem no banco — quando
-            existirem, entram aqui.
-          </span>
+          <span className="ra-hint">Você entra como narrador.</span>
+        </div>
+
+        <div className="ra-field" style={{ marginBottom: 14 }}>
+          <label className="ra-flabel" htmlFor="nova-campanha-regiao">Região onde a campanha começa</label>
+          <select
+            id="nova-campanha-regiao"
+            data-testid="dash-nova-mesa-regiao"
+            className="ra-input"
+            value={regiao ?? ""}
+            onChange={(e) => setRegiao(regiaoValida(e.target.value))}
+          >
+            <option value="">Decidir depois</option>
+            {(Object.keys(REGIOES_V12) as RegiaoIdV12[]).map((id) => <option key={id} value={id}>{REGIOES_V12[id].nome}</option>)}
+          </select>
+          <span className="ra-hint">Dá a arte da campanha e o segundo idioma dos personagens na Forja. Pode mudar depois nas configurações da mesa.</span>
         </div>
 
         {erro && <p role="alert" style={{ color: "#ff8ea0", fontSize: 12, marginBottom: 14 }}>{erro}</p>}

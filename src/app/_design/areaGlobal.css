@@ -1,0 +1,260 @@
+/*
+ * Área autenticada global (Minhas Campanhas, Personagens, Compêndio,
+ * Conta) com o visual da Forja de Refratário — Fase 6.
+ *
+ * Camada POR CIMA de `app.css`, ativa pela classe `.ag` na raiz da casca
+ * (`GlobalShell`). Mantém a estrutura e o comportamento da casca
+ * (recolher, gaveta no celular, cursor, transições) e troca a pele:
+ * títulos em Oxanium cor de gelo com brilho, cantos chanfrados, painéis
+ * de vidro, menu em grupos numerados com sublinhado âmbar, grade
+ * hexagonal e varredura no fundo.
+ *
+ * Cores: as do app (ciano, gelo, âmbar #f5a200). O laranja da Forja
+ * (#ff8a1f) fica só em `forja.css`.
+ */
+.ag {
+  --ag-cy: #00d4ff;
+  --ag-gelo: #cfeff4;
+  --ag-texto: #b8d8e8;
+  --ag-apagado: #7f95b3;
+  --ag-am: #f5a200;
+  --ag-abismo: #06121c;
+  --ag-fundo: #0c1f2b;
+  --ag-display: var(--font-oxanium), "Oxanium", var(--font-orbitron), sans-serif;
+  --ag-mono: var(--font-mono), ui-monospace, monospace;
+  --ag-n: 12px;
+  --ag-trans: 150ms var(--mo-ease-standard, ease);
+}
+
+/* ── Formas e superfícies (as mesmas da Forja) ── */
+.ag .ag-ch { clip-path: polygon(0 0, calc(100% - var(--ag-n)) 0, 100% var(--ag-n), 100% 100%, var(--ag-n) 100%, 0 calc(100% - var(--ag-n))); }
+.ag .ag-tab { clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
+.ag .ag-hex { clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); }
+.ag .ag-borda { padding: 1px; background: linear-gradient(135deg, color-mix(in srgb, var(--ag-cy) 55%, transparent), color-mix(in srgb, var(--ag-cy) 8%, transparent) 50%, color-mix(in srgb, var(--ag-cy) 45%, transparent)); }
+.ag .ag-vidro { background: linear-gradient(180deg, color-mix(in srgb, var(--ag-fundo) 92%, transparent), color-mix(in srgb, var(--ag-abismo) 95%, transparent)); }
+.ag .ag-mono { font: 400 11px/1.4 var(--ag-mono); text-transform: uppercase; letter-spacing: 0.18em; color: var(--ag-apagado); }
+.ag .ag-mono--cy { color: var(--ag-cy); }
+.ag .ag-mono--am { color: var(--ag-am); }
+.ag .ag-mono--peq { font-size: 10px; }
+
+/* ── Fundo: grade hexagonal e varredura sobre a imagem ── */
+.ag .ra-bg-grid {
+  background-image: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--ag-cy) 8%, transparent) 1px, transparent 1.5px);
+  background-size: 22px 22px;
+}
+.ag .ra-bg::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: repeating-linear-gradient(0deg, color-mix(in srgb, var(--ag-cy) 4%, transparent) 0 1px, transparent 1px 3px);
+}
+
+/* ── Barra lateral ── */
+.ag .ra2-sidebar {
+  gap: 10px; width: 290px; padding: 28px 0 18px 40px;
+  /* Como o menu da Forja: sem painel nem borda, solto sobre o fundo. */
+  background: linear-gradient(90deg, rgba(6, 18, 28, 0.85), rgba(6, 18, 28, 0)); border-right: 0;
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+.ag .ra2-sidebar--collapsed { width: 76px; padding: 22px 12px 18px; }
+.ag .ra2-brand { min-height: 0; gap: 8px; padding-right: 18px; }
+.ag .ra2-brand { margin-bottom: 18px; }
+.ag .ra2-brand .ds-marca { --ds-marca-tamanho: 36px; }
+.ag .ra2-brand-sub { font-size: 11px; letter-spacing: 0.18em; color: var(--ag-cy); padding-top: 6px; }
+.ag .ra2-brand-mark { border-radius: 0; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); font-family: var(--ag-display); font-weight: 800; color: var(--ag-abismo); background: var(--ag-gelo); box-shadow: none; }
+
+.ag .ra2-nav { gap: 8px; }
+.ag .ag-nav-grupo { display: flex; align-items: center; gap: 12px; margin: 26px 18px 6px 0; }
+.ag .ra2-nav > div:first-child > .ag-nav-grupo { margin-top: 4px; }
+.ag .ag-nav-grupo .ag-mono { font-size: 10px; color: color-mix(in srgb, var(--ag-cy) 75%, transparent); }
+.ag .ag-nav-grupo i { height: 1px; flex: 1; background: color-mix(in srgb, var(--ag-cy) 15%, transparent); }
+.ag .ra2-sidebar--collapsed .ag-nav-grupo { display: none; }
+
+.ag .ra2-nav-item:not(.ra2-nav-logout) {
+  gap: 16px; padding: 13px 0 13px 16px; border: 0; border-radius: 0; width: 100%; --ra-chanfro-fio: transparent;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+  background: color-mix(in srgb, var(--ag-cy) 4%, transparent);
+  color: color-mix(in srgb, var(--ag-gelo) 62%, transparent); box-shadow: none;
+  transition: background var(--ag-trans), color var(--ag-trans);
+}
+.ag .ra2-nav-item:not(.ra2-nav-logout) > .ra2-nav-label { font: 600 15px/1.4 var(--ag-display); text-transform: uppercase; letter-spacing: 0.1em; opacity: 1; }
+.ag .ra2-nav-item:not(.ra2-nav-logout) > .ra2-nav-icon { display: none; }
+.ag .ag-nav-n { font: 400 10px var(--ag-mono); color: var(--ag-apagado); flex: none; }
+.ag .ag-nav-cont { margin-left: auto; margin-right: 26px; font: 500 10px var(--ag-mono); color: var(--ag-cy); }
+.ag .ra2-sidebar--collapsed .ag-nav-cont { display: none; }
+.ag .ra2-nav-item:not(.ra2-nav-logout):hover { background: color-mix(in srgb, var(--ag-cy) 10%, transparent); color: var(--ag-gelo); }
+/* `:not(.ra2-nav-logout)` iguala a especificidade da regra base acima; sem ele o item aberto perdia o destaque. */
+.ag .ra2-nav-item--active:not(.ra2-nav-logout), .ag .ra2-nav-item--active:not(.ra2-nav-logout):hover {
+  background: linear-gradient(to right, color-mix(in srgb, var(--ag-cy) 25%, transparent), color-mix(in srgb, var(--ag-cy) 5%, transparent));
+  color: var(--ag-gelo); box-shadow: none;
+}
+.ag .ra2-nav-item--active > .ra2-nav-label { color: var(--ag-gelo); }
+.ag .ra2-nav-item--active .ag-nav-n { color: var(--ag-am); }
+.ag .ra2-nav-item--active::before { top: auto; bottom: 0; left: 0; width: 85%; height: 3px; background: var(--ag-am); box-shadow: 0 0 10px var(--ag-am); }
+.ag .ra2-sidebar--collapsed .ra2-nav-item:not(.ra2-nav-logout) { justify-content: center; padding: 12px 0; clip-path: none; }
+.ag .ra2-sidebar--collapsed .ra2-nav-item:not(.ra2-nav-logout) > .ra2-nav-icon { display: flex; opacity: 0.8; }
+.ag .ra2-sidebar--collapsed .ag-nav-n { display: none; }
+.ag .ra2-sidebar-foot { padding-right: 18px; }
+.ag .ra2-sidebar--collapsed .ra2-sidebar-foot { padding-right: 0; }
+.ag .ra2-collapse-btn { border-radius: 0; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px)); }
+.ag .ra2-nav-logout { border-radius: 0; }
+.ag .ra2-nav-logout > .ra2-nav-label { font: 600 14px var(--ag-display); text-transform: uppercase; letter-spacing: 0.1em; }
+
+/* ── Topo e placa do perfil ── */
+.ag .ra2-topbar { background: linear-gradient(180deg, rgba(6, 18, 28, 0.7), rgba(6, 18, 28, 0.35)); border-bottom-color: color-mix(in srgb, var(--ag-cy) 10%, transparent); height: 64px; }
+.ag .ra2-profile {
+  gap: 12px; padding: 6px 14px 6px 22px; border: 0; border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - var(--ag-n)) 0, 100% var(--ag-n), 100% 100%, var(--ag-n) 100%, 0 calc(100% - var(--ag-n)));
+  background: linear-gradient(to right, color-mix(in srgb, var(--ag-cy) 5%, transparent), color-mix(in srgb, var(--ag-cy) 28%, transparent));
+}
+.ag .ra2-profile:hover { background: linear-gradient(to right, color-mix(in srgb, var(--ag-cy) 10%, transparent), color-mix(in srgb, var(--ag-cy) 38%, transparent)); }
+.ag .ra2-profile-avatar { width: 38px; height: 34px; border: 0; border-radius: 0; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); background: linear-gradient(135deg, #1d4a5c, #0b2230); color: var(--ag-gelo); }
+.ag .ra2-profile-name { font: 700 16px var(--ag-display); color: var(--ag-gelo); }
+
+/* ── Cabeçalho de página ── */
+.ag .ra-page-head { gap: 6px; }
+.ag .ra-eyebrow { font: 400 11px var(--ag-mono); letter-spacing: 0.45em; color: var(--ag-cy); }
+.ag .ra-h1 {
+  font: 800 40px/1.15 var(--ag-display); text-transform: uppercase; letter-spacing: 0.12em; color: var(--ag-gelo);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--ag-cy) 70%, transparent);
+}
+.ag .ra-page-head::after { content: ""; height: 2px; width: min(60%, 420px); margin-top: 4px; background: var(--ag-cy); box-shadow: 0 0 12px var(--ag-cy); }
+.ag .ra-h2 { font-family: var(--ag-display); font-weight: 700; letter-spacing: 0.14em; color: var(--ag-gelo); }
+.ag .ra-section-head .ra-h2 { font: 400 11px var(--ag-mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ag-cy); }
+.ag .ra-section-head .ra-line { background: color-mix(in srgb, var(--ag-cy) 15%, transparent); }
+.ag .ra-section-count { font-weight: 400; color: var(--ag-apagado); }
+
+/* ── Barra de ferramentas ── */
+.ag .ra2-search { border-radius: 0; border: 0; border-bottom: 1px solid color-mix(in srgb, var(--ag-cy) 35%, transparent); background: color-mix(in srgb, var(--ag-cy) 4%, transparent); }
+/* Seletor de papel: UMA peça chanfrada (só o canto do contêiner), segmentos
+   retos separados por fio, e o ativo marcado como o item aberto do menu —
+   degradê ciano e sublinhado âmbar. Sem o fio de chanfro por segmento, que
+   desenhava pontas ciano soltas no ativo. */
+.ag .ra2-segmented {
+  gap: 0; padding: 0; align-items: stretch; border: 1px solid color-mix(in srgb, var(--ag-cy) 22%, transparent);
+  background: color-mix(in srgb, var(--ag-abismo) 35%, transparent);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  --ra-chanfro: 10px; --ra-chanfro-fio: color-mix(in srgb, var(--ag-cy) 22%, transparent);
+}
+.ag .ra2-seg {
+  position: relative; border: 0; border-radius: 0; clip-path: none; --ra-chanfro-fio: transparent;
+  height: auto; padding: 0 22px; background: none; box-shadow: none;
+  font: 600 12px var(--ag-display); letter-spacing: 0.18em; color: color-mix(in srgb, var(--ag-gelo) 55%, transparent);
+}
+.ag .ra2-seg + .ra2-seg { border-left: 1px solid color-mix(in srgb, var(--ag-cy) 14%, transparent); }
+.ag .ra2-seg:not(.ra2-seg--active):hover { background: color-mix(in srgb, var(--ag-cy) 6%, transparent); color: var(--ag-gelo); }
+.ag .ra2-seg--active {
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--ag-cy) 22%, transparent), color-mix(in srgb, var(--ag-cy) 6%, transparent));
+  color: var(--ag-gelo); box-shadow: inset 0 -2px 0 var(--ag-am); --ra-chanfro-fio: transparent;
+}
+.ag .ra2-toolbar .ra2-secondary {
+  border: 0; border-radius: 0; padding: 12px 24px;
+  clip-path: polygon(0 0, calc(100% - var(--ag-n)) 0, 100% var(--ag-n), 100% 100%, var(--ag-n) 100%, 0 calc(100% - var(--ag-n)));
+  background: var(--ag-am); color: var(--ag-abismo);
+  font: 800 13px var(--ag-display); letter-spacing: 0.18em; text-transform: uppercase;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--ag-am) 45%, transparent);
+}
+.ag .ra2-toolbar .ra2-secondary:hover { background: color-mix(in srgb, var(--ag-am) 80%, white); }
+
+/* ── Botão principal (Entrar) ── */
+.ag .ag-entrar {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 26px; white-space: nowrap; flex: none;
+  clip-path: polygon(0 0, calc(100% - var(--ag-n)) 0, 100% var(--ag-n), 100% 100%, var(--ag-n) 100%, 0 calc(100% - var(--ag-n)));
+  background: var(--ag-cy); color: var(--ag-abismo); text-decoration: none;
+  font: 700 14px var(--ag-display); text-transform: uppercase; letter-spacing: 0.12em;
+  box-shadow: 0 0 20px color-mix(in srgb, var(--ag-cy) 50%, transparent);
+  transition: background var(--ag-trans);
+}
+.ag .ag-entrar:hover { background: var(--ag-gelo); }
+.ag .ag-entrar:focus-visible { outline: 2px solid var(--ag-gelo); outline-offset: 3px; }
+.ag .ag-entrar--peq { padding: 9px 18px; font-size: 12px; }
+
+/* ── Destaque: retomar operação ── */
+.ag .ag-destaque { position: relative; min-height: 250px; overflow: hidden; display: flex; }
+.ag .ag-destaque__capa, .ag .ag-cartao__capa { position: absolute; inset: 0; background-size: cover; background-position: center; }
+.ag .ag-destaque__capa { opacity: 0.8; }
+.ag .ag-destaque__veu { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(6, 18, 28, 0.97) 30%, rgba(6, 18, 28, 0.35) 70%, transparent), linear-gradient(0deg, rgba(6, 18, 28, 0.8), transparent 50%); }
+.ag .ag-destaque__corpo { position: relative; flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 28px 32px; }
+.ag .ag-destaque__titulo { margin: 0; font: 800 clamp(30px, 4vw, 46px)/1.05 var(--ag-display); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ag-gelo); text-shadow: 0 0 12px color-mix(in srgb, var(--ag-cy) 70%, transparent); overflow-wrap: anywhere; }
+.ag .ag-destaque__meta { display: flex; flex-wrap: wrap; gap: 6px 22px; font: 600 14px var(--font-rajdhani), sans-serif; color: var(--ag-texto); }
+.ag .ag-destaque__acoes { margin-top: auto; padding-top: 14px; display: flex; align-items: center; gap: 18px; }
+.ag .ag-papel { color: var(--ag-cy); }
+.ag .ag-papel--narrador { color: var(--ag-am); }
+.ag .ag-papel::before { content: "◆ "; }
+
+/* ── Cartões ── */
+.ag .ag-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px; padding-top: 16px; }
+.ag .ag-cartao-borda { transition: transform var(--ag-trans), filter var(--ag-trans); }
+.ag .ag-cartao-borda:hover { transform: translateY(-3px); filter: drop-shadow(0 0 10px color-mix(in srgb, var(--ag-cy) 30%, transparent)); }
+.ag .ag-cartao { position: relative; aspect-ratio: 1.12; overflow: hidden; }
+.ag .ag-cartao__capa { opacity: 0.55; }
+.ag .ag-cartao__veu { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(6, 18, 28, 0.97) 38%, rgba(6, 18, 28, 0.2)); }
+.ag .ag-cartao__corpo { position: relative; height: 100%; display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; }
+.ag .ag-etiqueta { align-self: flex-start; padding: 4px 10px; font: 500 10px var(--ag-mono); letter-spacing: 0.2em; text-transform: uppercase; border: 1px solid; }
+.ag .ag-etiqueta--narrador { color: var(--ag-am); border-color: color-mix(in srgb, var(--ag-am) 50%, transparent); background: color-mix(in srgb, var(--ag-am) 12%, transparent); }
+.ag .ag-etiqueta--jogador { color: var(--ag-cy); border-color: color-mix(in srgb, var(--ag-cy) 50%, transparent); background: color-mix(in srgb, var(--ag-cy) 10%, transparent); }
+.ag .ag-cartao__titulo { margin: auto 0 0; font: 700 19px/1.15 var(--ag-display); color: var(--ag-gelo); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ag .ag-cartao__rodape { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.ag .ag-nova {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; aspect-ratio: 1.12; width: 100%;
+  border: 1px dashed color-mix(in srgb, var(--ag-cy) 35%, transparent); color: var(--ag-cy); background-color: transparent; cursor: pointer;
+  background-image: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--ag-cy) 7%, transparent) 0 6px, transparent 6px 12px);
+  transition: background-color var(--ag-trans), border-color var(--ag-trans);
+}
+.ag .ag-nova:hover { background-color: color-mix(in srgb, var(--ag-cy) 6%, transparent); border-color: var(--ag-cy); }
+.ag .ag-nova:focus-visible { outline: 2px solid var(--ag-cy); outline-offset: 3px; }
+.ag .ag-nova__mais { font: 300 40px/1 var(--ag-display); }
+
+/* ── Painéis laterais (Atividade, Rede) ──
+   Sem caixa: como o painel lateral da Forja, cada um é um título em mono
+   com fio e uma lista solta. Atividade vira uma linha do tempo (fio
+   vertical com losangos); Rede, uma lista de avatares hexagonais com o
+   estado à direita. */
+.ag .ra2-side { gap: 30px; }
+.ag .ra2-panel {
+  border: 0; border-radius: 0; padding: 0; box-shadow: none; clip-path: none; background: none; outline: 0;
+  --ra-chanfro-fio: transparent;
+}
+.ag .ra2-panel::before, .ag .ra2-panel::after { display: none; }
+.ag .ra2-panel .ra-deco-bottom { display: none; }
+.ag .ra2-panel-title {
+  display: flex; align-items: center; gap: 10px; margin: 0 0 12px; padding: 0; background: none;
+  font: 400 11px var(--ag-mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ag-cy);
+}
+.ag .ra2-panel-title svg { display: none; }
+.ag .ra2-panel-title::after { content: ""; flex: 1; height: 1px; background: color-mix(in srgb, var(--ag-cy) 15%, transparent); }
+
+.ag .ra2-panel-list { position: relative; gap: 0; padding-left: 4px; }
+.ag .ra2-panel-list::before { content: ""; position: absolute; left: 7px; top: 10px; bottom: 10px; width: 1px; background: color-mix(in srgb, var(--ag-cy) 25%, transparent); }
+.ag .ra2-panel-sep { display: none; }
+.ag .ra2-panel-row { position: relative; gap: 14px; padding: 6px 0 12px; }
+.ag .ra2-panel-row .ra-diamond { position: relative; width: 8px; height: 8px; background: var(--ag-cy); box-shadow: 0 0 6px var(--ag-cy); }
+.ag .ra2-panel-list > div:first-child .ra-diamond { background: var(--ag-am); box-shadow: 0 0 8px var(--ag-am); }
+.ag .ra2-panel-row-main strong { font: 700 15px var(--ag-display); color: var(--ag-gelo); }
+.ag .ra2-panel-row-main span { font: 400 10px var(--ag-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ag-apagado); }
+
+.ag .ra2-people { gap: 4px; }
+.ag .ra2-person--link { padding: 8px 10px 8px 0; border: 0; border-radius: 0; clip-path: none; --ra-chanfro-fio: transparent; background: none; }
+.ag .ra2-person--link::before, .ag .ra2-person--link::after { display: none; }
+.ag .ra2-person--link:hover { background: linear-gradient(to right, color-mix(in srgb, var(--ag-cy) 12%, transparent), transparent); }
+.ag .ra2-person-avatar { width: 34px; height: 30px; border: 0; border-radius: 0; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); background: linear-gradient(135deg, #1d4a5c, #0b2230); color: var(--ag-gelo); --ra-chanfro-fio: transparent; }
+.ag .ra2-person-avatar::before, .ag .ra2-person-avatar::after { display: none; }
+.ag .ra2-person-name { font: 600 15px var(--ag-display); color: var(--ag-gelo); }
+.ag .ra2-person--off .ra2-person-name { color: var(--ag-apagado); }
+.ag .ra2-person-off { font: 400 10px var(--ag-mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--ag-apagado); }
+
+/* ── Modal de criação ── */
+.ag .ra-modal { border-radius: 0; clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px)); }
+
+@media (max-width: 720px) {
+  .ag .ra-h1 { font-size: 28px; }
+  .ag .ra-eyebrow { letter-spacing: 0.2em; }
+  .ag .ag-destaque__corpo { padding: 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ag .ag-cartao-borda, .ag .ag-cartao-borda:hover { transition: none; transform: none; }
+}
+.ra-reduce-motion.ag .ag-cartao-borda:hover { transform: none; }
+/* Gaveta do celular: fundo sólido (sobre o conteúdo, a transparência atrapalharia). */
+@media (max-width: 860px) {
+  .ag .ra2-sidebar-wrap .ra2-sidebar { width: 270px; padding: 24px 0 18px 24px; background: var(--ag-abismo); }
+  .ag .ra2-sidebar-wrap .ra2-nav-item:not(.ra2-nav-logout) { padding: 13px 0 13px 16px; }
+}

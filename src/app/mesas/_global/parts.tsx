@@ -10,6 +10,8 @@
  */
 
 import type { CSSProperties } from "react";
+import { REGIOES_V12, regiaoValida } from "../../../lib/rulesetV12";
+import type { Campaign } from "../../../lib/table";
 
 export type Role = "narrator" | "player";
 
@@ -70,6 +72,23 @@ export function campaignCoverStyle(id: string): CSSProperties {
     backgroundSize: `auto, ${scale}% auto`,
     backgroundPosition: `center, ${posX}% ${posY}%`,
   };
+}
+
+/** Nome da região da campanha, quando o narrador definiu. */
+export function nomeDaRegiao(campaign: Pick<Campaign, "regiao">): string | null {
+  const id = regiaoValida(campaign.regiao);
+  return id ? REGIOES_V12[id].nome : null;
+}
+
+/**
+ * Capa da campanha: a arte da REGIÃO onde ela começa (as mesmas imagens
+ * da Forja, `public/forja/regioes/`). Sem região definida, cai na capa
+ * derivada do id (`campaignCoverStyle`) — nada de foto inventada.
+ */
+export function capaDaCampanha(campaign: Pick<Campaign, "id" | "regiao">): CSSProperties {
+  const id = regiaoValida(campaign.regiao);
+  if (!id) return campaignCoverStyle(campaign.id);
+  return { backgroundImage: `url('/forja/regioes/${id}.webp')`, backgroundSize: "cover", backgroundPosition: "center" };
 }
 
 /** "há 2 dias", "agora mesmo" — a partir de um timestamp ISO do banco. */

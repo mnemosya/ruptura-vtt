@@ -67,15 +67,17 @@ import {
   totalDeUnidades,
 } from "../src/app/mesas/[campaignId]/vtt/_painel/bandoModelo";
 import {
-  CATEGORIAS_COMPENDIO,
-  chaveCache,
-  ehCategoriaCompendio,
-  filtrarLinhas,
-  resumoDoPayload,
-  rotuloDaOrigem,
-  termosDeBusca,
-  type LinhaCompendio,
-} from "../src/app/mesas/[campaignId]/vtt/_painel/compendioModelo";
+  agruparPorSecao,
+  buscarNoLivro,
+  indiceDeTermos,
+  resolverTermo,
+  indiceDoCapitulo,
+  rotuloCapitulo,
+  separarAbertura,
+  textoPlanoDosBlocos,
+  vizinhos,
+  type LinhaCapitulo,
+} from "../src/app/mesas/[campaignId]/vtt/_compendio/modelo";
 import { formatTableLogEntry } from "../src/lib/table/logPresentation";
 import type { TableLogEntry } from "../src/lib/table";
 import type { EntradaDiretorio, PastaDiretorio } from "../src/app/mesas/[campaignId]/vtt/_painel/acoes/personagensPainel";
@@ -607,54 +609,92 @@ function item(p: Partial<ItemBandoPainel> & { id: string; nome: string }): ItemB
   );
 }
 
-// ═════════════════════════ COMPÊNDIO ═════════════════════════
+// ═════════════════════════ COMPÊNDIO (livro do Notion) ═════════════════════════
 
-ok(
-  "K1 (as seis categorias pedidas)",
-  CATEGORIAS_COMPENDIO.join(",") === "magias,itens,runas,condicoes,companheiros" && !ehCategoriaCompendio("talentos") && ehCategoriaCompendio("runas") && !ehCategoriaCompendio("armas"),
-  CATEGORIAS_COMPENDIO.join(","),
-);
+const LIVRO: LinhaCapitulo[] = [
+  { pageId: "p22", numero: 22, titulo: "CONDIÇÕES", secao: "O JOGO EM MOVIMENTO", ordem: 3, verbetes: [{ titulo: "LENTO", ancora: "lento" }, { titulo: "SANGRANDO", ancora: "sangrando" }] },
+  { pageId: "p1", numero: 1, titulo: "BRAXUS", secao: "SOB A SOMBRA DO IMPÉRIO CENTRAL", ordem: 1, verbetes: [] },
+  { pageId: "p21", numero: 21, titulo: "CENAS DE COMBATE", secao: "O JOGO EM MOVIMENTO", ordem: 2, verbetes: [{ titulo: "Lento", ancora: "lento" }] },
+];
 {
-  const termos = termosDeBusca({
-    slug: "compressao",
-    nome: "Compressão",
-    payload: { vertente: "cognitivo", descricao: "um texto longo de regra que não deve entrar na busca", estatisticas: { tipo_magia: "ataque" } },
-  });
+  const g = agruparPorSecao(LIVRO);
   ok(
-    "K2 (busca cobre slug, nome e campos relevantes — nunca o texto de regra inteiro)",
-    termos.includes("compressao") && termos.includes("compressão") && termos.includes("cognitivo") && termos.includes("ataque") &&
-      !termos.some((t) => t.includes("texto longo de regra")),
-    JSON.stringify(termos),
+    "K1 (índice agrupa por seção, na ordem do livro)",
+    g.map((x) => x.secao).join("|") === "SOB A SOMBRA DO IMPÉRIO CENTRAL|O JOGO EM MOVIMENTO" && g[1].capitulos.map((c) => c.numero).join(",") === "21,22",
+    JSON.stringify(g.map((x) => [x.secao, x.capitulos.map((c) => c.numero)])),
   );
 }
 {
-  const resumo = resumoDoPayload({ categoria: "arma", subtipo: "longa", nivel: 2 });
-  const soDescricao = resumoDoPayload({ descricao_curta: "Comprime o espaço à volta do alvo." });
+  const r = buscarNoLivro(LIVRO, "sangr");
+  const semAcento = buscarNoLivro(LIVRO, "condicoes");
   ok(
-    "K3 (resumo curto sai de campos escalares, com fallback pra descrição curta — nunca JSON)",
-    resumo === "arma · longa · nível 2" && soDescricao.startsWith("Comprime") && !resumo.includes("{"),
-    `${resumo} | ${soDescricao}`,
+    "K2 (busca acha verbete e capítulo, sem acento e sem caixa)",
+    r.length === 1 && r[0].tipo === "verbete" && semAcento[0]?.tipo === "capitulo" && buscarNoLivro(LIVRO, "s").length === 0,
+    JSON.stringify(r),
   );
 }
-ok(
-  "K4 (procedência tem rótulo próprio pra oficial/modificado/homebrew)",
-  rotuloDaOrigem("oficial") === "Oficial" && rotuloDaOrigem("modificado").includes("Modificado") && rotuloDaOrigem("homebrew").includes("Homebrew"),
-  "ok",
-);
 {
-  const linhas: LinhaCompendio[] = [
-    { categoria: "magias", slug: "compressao", nome: "Compressão", origem: "oficial", subtitulo: null },
-    { categoria: "magias", slug: "elo-fantasma", nome: "Elo Fantasma", origem: "homebrew", subtitulo: null },
-  ];
+  const textos = new Map([["p22", "Recuperar pelo menos 1 PV reduz Sangrando em 1 nível."]]);
+  const r = buscarNoLivro(LIVRO, "recuperar", textos);
+  ok("K3 (busca no texto corrido devolve trecho)", r.length === 1 && r[0].tipo === "texto" && r[0].trecho.includes("Recuperar"), JSON.stringify(r));
+}
+{
+  const t = indiceDeTermos(LIVRO);
   ok(
-    "K5 (refino local usa a mesma regra da busca do servidor)",
-    filtrarLinhas(linhas, "elo").length === 1 && filtrarLinhas(linhas, "").length === 2 && filtrarLinhas(linhas, "compress")[0].slug === "compressao",
+    "K4 (etiqueta de termo vira link para o verbete; custo fica só etiqueta)",
+    resolverTermo("Lento", t)?.pageId === "p21" && resolverTermo("Sangrando", t)?.ancora === "sangrando" && resolverTermo("Envenenado 1", t) === null &&
+      resolverTermo("SANGRANDO 2", t)?.pageId === "p22" && resolverTermo("1 PA", t) === null,
     "ok",
   );
 }
+{
+  const comNeta: LinhaCapitulo[] = [...LIVRO, { pageId: "s1", numero: null, titulo: "ARMAS", secao: "x", ordem: 2.001, verbetes: [], paiPageId: "p21" }, { pageId: "s2", numero: null, titulo: "PISTOLAS", secao: "x", ordem: 2.002, verbetes: [], paiPageId: "s1" }];
+  ok("K5b (subpágina de subpágina: vizinhos e índice do capítulo raiz)", vizinhos(comNeta, "s2").proximo?.pageId === "p22" && agruparPorSecao(comNeta).every((g) => g.capitulos.every((c) => !c.paiPageId)), "ok");
+  const v = vizinhos(LIVRO, "p21");
+  ok("K5 (anterior e próximo na ordem do livro)", v.anterior?.pageId === "p1" && v.proximo?.pageId === "p22" && vizinhos(LIVRO, "p1").anterior === null, "ok");
+}
+{
+  const par = (t: string) => ({ tipo: "paragrafo" as const, texto: [{ texto: t }] });
+  const tab = { tipo: "tabela" as const, cabecalhoLinha: true, cabecalhoColuna: false, linhas: [] };
+  const a = separarAbertura([{ tipo: "divisor" }, par("a"), par("b"), par("c"), par("d"), { tipo: "titulo", nivel: 3, texto: [{ texto: "T" }], ancora: "t" }]);
+  const b = separarAbertura([tab, par("a"), par("b"), { tipo: "lista", ordenada: false, itens: [] }]);
+  const c = separarAbertura([{ tipo: "citacao", texto: [{ texto: "epígrafe" }], filhos: [] }, par("a")]);
+  const d = separarAbertura([{ tipo: "citacao", texto: [{ texto: "x".repeat(2100) }], filhos: [] }, par("a")]);
+  const f = separarAbertura([{ tipo: "citacao", texto: [{ texto: "Desde os primeiros suspiros" }], filhos: [par("Assim como o coração"), par("O acesso e o controle")] }, { tipo: "titulo", nivel: 3, texto: [{ texto: "VERTENTES" }], ancora: "v" }]);
+  const e = separarAbertura([{ tipo: "lista", ordenada: false, itens: [] }, par("a")]);
+  const g = separarAbertura([{ tipo: "destaque", icone: null, texto: [{ texto: "A Biótica é" }], filhos: [] }, { tipo: "citacao", texto: [{ texto: "Vocês" }], filhos: [] }, tab, par("depois")]);
+  ok(
+    "K7 (abertura do herói: até 3 parágrafos; tabela/imagem inicial fica logo depois; destaque e epígrafe sobem; o resto não mexe)",
+    a.abertura.length === 3 && a.corpo[0].tipo === "paragrafo" &&
+      b.abertura.length === 2 && b.corpo[0].tipo === "tabela" && b.corpo[1].tipo === "lista" &&
+      c.abertura.length === 2 && c.abertura[0].tipo === "citacao" &&
+      d.abertura.length === 0 && d.corpo.length === 2 &&
+      e.abertura.length === 0 && e.corpo.length === 2 &&
+      f.abertura.length === 1 && f.abertura[0].tipo === "citacao" && f.corpo[0].tipo === "titulo" &&
+      g.abertura.length === 2 && g.abertura[0].tipo === "paragrafo" && g.abertura[1].tipo === "citacao" && g.corpo[0].tipo === "tabela",
+    "ok",
+  );
+}
+{
+  const idx = indiceDoCapitulo([
+    { tipo: "paragrafo", texto: [{ texto: "x" }] },
+    { tipo: "titulo", nivel: 2, texto: [{ texto: "LISTA DE MERCADORIAS" }], ancora: "lista" },
+    { tipo: "link_pagina", paginaNotionId: "a1", titulo: "ARMAS" },
+    { tipo: "link_pagina", paginaNotionId: "a2", titulo: "FARMÁCIA" },
+    { tipo: "titulo", nivel: 3, texto: [{ texto: "VERTENTES" }], ancora: "vertentes" },
+    { tipo: "galeria", titulo: "VERTENTES", itens: [{ pageId: "v1", titulo: "BIÓTICA", descricao: "", etiquetas: [], imagem: null, icone: null }] },
+    { tipo: "titulo", nivel: 4, texto: [{ texto: "sub" }], ancora: "sub" },
+  ]);
+  ok(
+    "K8 (índice do capítulo: títulos com as subpáginas que vêm depois de cada um)",
+    idx.map((e) => `${e.texto}:${e.subpaginas.map((sp) => sp.titulo).join("+")}`).join("|") === "LISTA DE MERCADORIAS:ARMAS+FARMÁCIA|VERTENTES:BIÓTICA",
+    JSON.stringify(idx.map((e) => [e.texto, e.subpaginas.length])),
+  );
+}
 ok(
-  "K6 (cache de sessão trata consulta vazia e espaços como a mesma chave)",
-  chaveCache("magias", "  ") === chaveCache("magias", "") && chaveCache("magias", "Fogo") === chaveCache("magias", "fogo") && chaveCache("itens", "") !== chaveCache("magias", ""),
+  "K6 (rótulo e texto corrido)",
+  rotuloCapitulo(LIVRO[0]) === "22. CONDIÇÕES" &&
+    textoPlanoDosBlocos([{ tipo: "verbete", titulo: [{ texto: "LENTO" }], ancora: "lento", filhos: [{ tipo: "paragrafo", texto: [{ texto: "Efeito: " }, { texto: "metade", negrito: true }] }] }]) === "LENTO\nEfeito: metade",
   "ok",
 );
 

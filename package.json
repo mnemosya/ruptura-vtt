@@ -94,7 +94,10 @@
     "check:vtt-pastas-ui": "tsx scripts/dev/check-vtt-pastas-ui.ts",
     "check:vtt-dividir-grupo": "tsx scripts/dev/check-vtt-dividir-grupo.ts",
     "check:vtt-dividir-grupo-ui": "tsx scripts/dev/check-vtt-dividir-grupo-ui.ts",
-    "gc:vtt-imagens": "tsx scripts/dev/gc-vtt-imagens.ts"
+    "gc:vtt-imagens": "tsx scripts/dev/gc-vtt-imagens.ts",
+    "test:compendio-converter": "tsx scripts/test-compendio-converter.ts",
+    "notion:sincronizar": "tsx scripts/notion/sincronizar.ts",
+    "compendio:revisado": "tsx scripts/notion/marcar-revisado.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
