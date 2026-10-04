@@ -969,3 +969,11 @@
 
 .fj-revisao__pn { margin-top: var(--hud-space-4); display: flex; cursor: pointer; align-items: center; gap: var(--hud-space-3); font-size: 15px; color: var(--fj-texto); }
 .fj-revisao__pn input { accent-color: var(--fj-am); width: 16px; height: 16px; }
+
+/* Cabeçalho só em maiúsculas: a fonte reserva espaço para descendentes, e o texto
+   parecia colado no topo. Recorta a caixa do texto (topo das maiúsculas → linha de base);
+   sem suporte a text-box, compensa com mais respiro em cima. */
+.fj-regra__tabela th { padding-top: calc(var(--hud-space-2) + 2px); padding-bottom: calc(var(--hud-space-2) - 1px); }
+@supports (text-box: trim-both cap alphabetic) {
+  .fj-regra__tabela th { text-box: trim-both cap alphabetic; padding-block: 11px; }
+}

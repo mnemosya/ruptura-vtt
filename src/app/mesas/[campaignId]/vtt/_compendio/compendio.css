@@ -185,3 +185,11 @@
 .fj-livro-nota__corpo { padding-left: 17px; }
 .fj-livro-nota__corpo > * + * { margin-top: var(--hud-space-3); }
 
+
+/* Cabeçalho só em maiúsculas: a fonte reserva espaço para descendentes, e o texto
+   parecia colado no topo. Recorta a caixa do texto (topo das maiúsculas → linha de base);
+   sem suporte a text-box, compensa com mais respiro em cima. */
+.fj-livro-tabela th { padding-top: calc(var(--hud-space-2) + 2px); padding-bottom: calc(var(--hud-space-2) - 1px); }
+@supports (text-box: trim-both cap alphabetic) {
+  .fj-livro-tabela th { text-box: trim-both cap alphabetic; padding-block: 11px; }
+}
