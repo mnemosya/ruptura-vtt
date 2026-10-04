@@ -18,13 +18,55 @@
 
 /* ── Índice ────────────────────────────────────────────── */
 .fj-livro-indice-secao { padding: var(--hud-space-3) var(--hud-space-6) var(--hud-space-2); }
-.fj-livro-indice-secao .fj-mono { font-weight: 700; }
+.fj-livro-indice-secao .fj-mono { font-size: 12px; font-weight: 800; }
 .fj-livro-indice-rotulo { font-size: 12px; letter-spacing: 0.08em; text-align: left; }
 
 /* ── Abertura do capítulo ──────────────────────────────── */
 .fj-livro-heroi { background: linear-gradient(to right, color-mix(in srgb, var(--fj-cy) 8%, transparent), transparent 70%); }
 .fj-livro-heroi .fj-codex__heroi-texto { max-width: 880px; padding-block: 36px 28px; }
 .fj-livro-heroi .fj-codex__heroi-titulo { font-size: clamp(32px, 4vw, 52px); }
+
+/* ── Introdução do livro: Vosek ─────────────────────────── */
+.fj-capa { min-width: 0; }
+.fj-capa__cidade { position: relative; isolation: isolate; aspect-ratio: 1536 / 640; min-height: 300px; max-height: 430px; overflow: hidden; background: var(--fj-abismo); border-bottom: 1px solid color-mix(in srgb, var(--fj-am) 35%, transparent); }
+.fj-capa__imagem { object-fit: cover; object-position: center 58%; }
+.fj-capa__sombra { position: absolute; z-index: 1; inset: 0; pointer-events: none; background: linear-gradient(to bottom, color-mix(in srgb, var(--fj-abismo) 88%, transparent), color-mix(in srgb, var(--fj-abismo) 48%, transparent) 34%, transparent 72%); }
+.fj-capa__marca { position: relative; z-index: 2; padding: 34px var(--hud-space-5) 0; text-align: center; text-shadow: 0 2px 16px var(--fj-abismo); }
+.fj-capa__frase { font-weight: 700; }
+.fj-capa__marca .ds-marca.fj-capa__logo { --ds-marca-tamanho: clamp(46px, 8vw, 82px); display: block; width: fit-content; margin: 20px auto 15px; }
+.fj-capa__passarela { position: absolute; z-index: 2; bottom: 58px; left: -2%; width: 104%; height: 10px; transform: rotate(-4deg); background: var(--fj-abismo); border-top: 1px solid color-mix(in srgb, var(--fj-cy) 45%, transparent); }
+.fj-capa__cidade-nome { position: absolute; z-index: 3; bottom: 91px; left: 28px; display: flex; flex-direction: column; gap: 5px; padding: 2px 8px 2px 12px; border-left: 2px solid var(--fj-cy); background: color-mix(in srgb, var(--fj-abismo) 85%, transparent); text-shadow: 0 1px 8px var(--fj-abismo); }
+.fj-capa__cidade-nome strong { font: 600 15px/1.4 var(--fj-display); letter-spacing: 0.28em; }
+.fj-capa__cidade-nome span { font: 500 10px/1.5 var(--fj-mono); letter-spacing: 0.08em; color: var(--fj-texto); }
+.fj-capa__subsolo { position: absolute; z-index: 3; bottom: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: var(--hud-space-4); min-height: 68px; padding: var(--hud-space-4) var(--hud-space-6); background: linear-gradient(0deg, var(--fj-abismo), color-mix(in srgb, var(--fj-abismo) 96%, transparent) 60%, transparent); font: 700 11px/1.5 var(--fj-mono); letter-spacing: 0.11em; color: var(--fj-gelo); text-shadow: 0 1px 8px var(--fj-abismo); }
+.fj-capa__subsolo::before { content: ""; position: absolute; bottom: 0; left: 50%; width: 55px; height: 60px; transform: translateX(-50%); border-bottom: 2px solid var(--fj-am); background: radial-gradient(ellipse at bottom, color-mix(in srgb, var(--fj-am) 22%, transparent), transparent 70%); pointer-events: none; }
+.fj-capa__subsolo span { position: relative; z-index: 1; }
+.fj-capa__subsolo span:last-child { color: var(--fj-am); }
+.fj-capa__leitura { max-width: 880px; margin: 0 auto; padding: 36px clamp(24px, 6vw, 68px) 48px; }
+.fj-capa__secao { display: flex; align-items: center; gap: var(--hud-space-4); font: 400 11px/1.5 var(--fj-mono); letter-spacing: 0.15em; color: var(--fj-apagado); }
+.fj-capa__secao span:first-child { color: var(--fj-am); }
+.fj-capa__secao i { flex: 1; height: 1px; background: color-mix(in srgb, var(--fj-cy) 20%, transparent); }
+.fj-capa__leitura h2 { margin: 24px 0; font: 500 clamp(27px, 4vw, 38px)/1.2 var(--fj-display); letter-spacing: -0.015em; }
+.fj-capa__leitura h2 em { font-style: normal; color: var(--fj-am); }
+.fj-capa__retomar { display: flex; align-items: center; justify-content: space-between; gap: var(--hud-space-5); width: 100%; margin-bottom: 32px; padding: var(--hud-space-3) var(--hud-space-5); border-left: 2px solid var(--fj-am); background: color-mix(in srgb, var(--fj-cy) 8%, transparent); font: 700 14px/1.4 var(--fj-display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fj-gelo); transition: var(--fj-trans); }
+.fj-capa__retomar:hover { background: color-mix(in srgb, var(--fj-cy) 14%, transparent); color: var(--fj-cy); }
+.fj-capa__retomar small { display: block; margin-top: 3px; font: 400 11px/1.4 var(--fj-mono); text-transform: none; letter-spacing: 0.03em; color: var(--fj-apagado); }
+.fj-capa__retomar > span:last-child { color: var(--fj-cy); font-size: 20px; }
+.fj-capa__texto { max-width: 720px; }
+.fj-capa__texto p { margin-top: var(--hud-space-6); font-size: 17px; font-style: normal; line-height: 1.75; color: var(--fj-texto); }
+.fj-capa__texto p:first-child::first-letter { float: left; padding: 5px 9px 0 0; font: 500 52px/0.95 var(--fj-display); color: var(--fj-gelo); }
+.fj-capa__texto p:last-child { margin-top: var(--hud-space-7); padding-left: var(--hud-space-5); border-left: 2px solid var(--fj-am); color: var(--fj-gelo); }
+.fj-capa__fecho { display: flex; align-items: center; justify-content: space-between; gap: var(--hud-space-4); margin-top: 50px; padding-top: var(--hud-space-4); border-top: 1px solid color-mix(in srgb, var(--fj-cy) 20%, transparent); font: 400 10px/1.5 var(--fj-mono); letter-spacing: 0.12em; color: var(--fj-apagado); }
+.fj-capa__fecho span { font: 600 22px var(--fj-display); letter-spacing: -0.08em; color: var(--fj-am); }
+@media (max-width: 600px) {
+  .fj-capa__cidade { min-height: 300px; }
+  .fj-capa__marca { padding-top: 30px; }
+  .fj-capa__marca .ds-marca.fj-capa__logo { --ds-marca-tamanho: clamp(40px, 10vw, 60px); }
+  .fj-capa__imagem { object-position: center; }
+  .fj-capa__cidade-nome { left: 20px; }
+  .fj-capa__subsolo { padding-inline: var(--hud-space-4); font-size: 10px; letter-spacing: 0.02em; }
+  .fj-capa__texto p { font-size: 16px; }
+}
 
 .fj-codex__leitura:focus { outline: none; }
 
@@ -160,6 +202,9 @@
 /* Capa panorâmica (mapa de Braxus): ocupa o herói todo; o degradê escurece só a esquerda, onde fica o texto. */
 .fj-livro-heroi--panorama .fj-livro-heroi__arte { width: 100%; }
 .fj-livro-heroi--panorama .fj-codex__heroi-img { opacity: 0.85; mask-image: linear-gradient(to left, black 20%, rgba(0, 0, 0, 0.3) 55%, transparent 85%); -webkit-mask-image: linear-gradient(to left, black 20%, rgba(0, 0, 0, 0.3) 55%, transparent 85%); }
+@media (min-width: 768px) {
+  .fj-livro-heroi--braxus .fj-livro-heroi__arte { right: -160px; }
+}
 @media (max-width: 767px) {
   .fj-livro-heroi__arte, .fj-livro-heroi--panorama .fj-livro-heroi__arte { position: relative; width: 100%; height: 220px; }
   .fj-livro-heroi__arte .fj-codex__heroi-img { mask-image: linear-gradient(to top, transparent, black 40%); -webkit-mask-image: linear-gradient(to top, transparent, black 40%); }

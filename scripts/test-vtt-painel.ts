@@ -663,6 +663,7 @@ const LIVRO: LinhaCapitulo[] = [
   const f = separarAbertura([{ tipo: "citacao", texto: [{ texto: "Desde os primeiros suspiros" }], filhos: [par("Assim como o coração"), par("O acesso e o controle")] }, { tipo: "titulo", nivel: 3, texto: [{ texto: "VERTENTES" }], ancora: "v" }]);
   const e = separarAbertura([{ tipo: "lista", ordenada: false, itens: [] }, par("a")]);
   const g = separarAbertura([{ tipo: "destaque", icone: null, texto: [{ texto: "A Biótica é" }], filhos: [] }, { tipo: "citacao", texto: [{ texto: "Vocês" }], filhos: [] }, tab, par("depois")]);
+  const braxus = separarAbertura([{ tipo: "imagem", url: "/mapa.webp", legenda: [] }, par("a"), par("b"), par("c")], 1);
   ok(
     "K7 (abertura do herói: até 3 parágrafos; tabela/imagem inicial fica logo depois; destaque e epígrafe sobem; o resto não mexe)",
     a.abertura.length === 3 && a.corpo[0].tipo === "paragrafo" &&
@@ -672,6 +673,13 @@ const LIVRO: LinhaCapitulo[] = [
       e.abertura.length === 0 && e.corpo.length === 2 &&
       f.abertura.length === 1 && f.abertura[0].tipo === "citacao" && f.corpo[0].tipo === "titulo" &&
       g.abertura.length === 2 && g.abertura[0].tipo === "paragrafo" && g.abertura[1].tipo === "citacao" && g.corpo[0].tipo === "tabela",
+    "ok",
+  );
+  ok(
+    "K7b (Braxus: só o primeiro parágrafo sobe; mapa e outros dois ficam no corpo)",
+    braxus.abertura.length === 1 && braxus.abertura[0].tipo === "paragrafo" &&
+      braxus.corpo.length === 3 && braxus.corpo[0].tipo === "imagem" &&
+      braxus.corpo[1].tipo === "paragrafo" && braxus.corpo[2].tipo === "paragrafo",
     "ok",
   );
 }
@@ -689,6 +697,28 @@ const LIVRO: LinhaCapitulo[] = [
     "K8 (índice do capítulo: títulos com as subpáginas que vêm depois de cada um)",
     idx.map((e) => `${e.texto}:${e.subpaginas.map((sp) => sp.titulo).join("+")}`).join("|") === "LISTA DE MERCADORIAS:ARMAS+FARMÁCIA|VERTENTES:BIÓTICA",
     JSON.stringify(idx.map((e) => [e.texto, e.subpaginas.length])),
+  );
+}
+{
+  const idx = indiceDoCapitulo([
+    { tipo: "verbete", titulo: [{ texto: "QUEM VIVE EM VOSEK" }], ancora: "quem-vive", filhos: [
+      { tipo: "titulo", nivel: 2, texto: [{ texto: "Moradores" }], ancora: "moradores" },
+      { tipo: "verbete", titulo: [{ texto: "Bloco interno" }], ancora: "bloco-interno", filhos: [
+        { tipo: "titulo", nivel: 3, texto: [{ texto: "Detalhe" }], ancora: "detalhe" },
+      ] },
+      { tipo: "link_pagina", paginaNotionId: "pagina", titulo: "Página relacionada" },
+    ] },
+    { tipo: "verbete", titulo: [{ texto: "ESTRUTURA URBANA" }], ancora: "estrutura", filhos: [
+      { tipo: "titulo", nivel: 2, texto: [{ texto: "Distritos" }], ancora: "distritos" },
+    ] },
+  ]);
+  ok(
+    "K8b (índice mostra subcapítulos recolhíveis, sem seus blocos internos, e preserva subpáginas)",
+    idx.map((e) => e.texto).join("|") === "QUEM VIVE EM VOSEK|ESTRUTURA URBANA" &&
+      idx.every((e) => e.recolhivel) &&
+      idx[0].subpaginas.map((sp) => sp.titulo).join("|") === "Página relacionada" &&
+      idx[1].subpaginas.length === 0,
+    JSON.stringify(idx),
   );
 }
 ok(

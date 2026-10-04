@@ -17,12 +17,13 @@ export const MAX_CARACTERES_EPIGRAFE = 2000;
  * Com capa, a abertura da página vai para o herói, como no Códex de Classe:
  *   - um destaque de apresentação no começo, como texto corrido (as Vertentes);
  *   - a epígrafe (citação de abertura, inclusive os parágrafos aninhados nela);
- *   - os parágrafos seguintes, até 3, parando no primeiro título, verbete, lista…
+ *   - os parágrafos seguintes, até o limite da página (3 por padrão), parando
+ *     no primeiro título, verbete, lista…
  * Se a página começa com UMA tabela ou imagem (as Classes abrem com a tabela de
  * Ranking; Braxus, com o mapa), ela fica no corpo, logo depois do herói, e os
  * parágrafos que vêm depois dela sobem. Divisores no começo são pulados.
  */
-export function separarAbertura(blocos: BlocoCompendio[]): { abertura: BlocoCompendio[]; corpo: BlocoCompendio[] } {
+export function separarAbertura(blocos: BlocoCompendio[], limiteParagrafos = MAX_PARAGRAFOS_ABERTURA): { abertura: BlocoCompendio[]; corpo: BlocoCompendio[] } {
   const abertura: BlocoCompendio[] = [];
   const pularDivisores = (k: number) => {
     while (k < blocos.length && blocos[k].tipo === "divisor") k++;
@@ -47,7 +48,7 @@ export function separarAbertura(blocos: BlocoCompendio[]): { abertura: BlocoComp
     i = pularDivisores(i + 1);
   }
   let paragrafos = 0;
-  while (i < blocos.length && blocos[i].tipo === "paragrafo" && paragrafos < MAX_PARAGRAFOS_ABERTURA) {
+  while (i < blocos.length && blocos[i].tipo === "paragrafo" && paragrafos < limiteParagrafos) {
     abertura.push(blocos[i++]);
     paragrafos++;
   }
@@ -243,18 +244,20 @@ export function vizinhos(linhas: LinhaCapitulo[], pageId: string): { anterior: L
   return { anterior: i > 0 ? ordenadas[i - 1] : null, proximo: i >= 0 && i < ordenadas.length - 1 ? ordenadas[i + 1] : null };
 }
 
-/** Entrada do índice dentro de um capítulo: um título, com as subpáginas que vêm depois dele. */
+/** Entrada do índice dentro de um capítulo: um subcapítulo, com suas subpáginas. */
 export interface EntradaIndiceCapitulo {
   ancora: string | null;
   texto: string;
+  recolhivel?: boolean;
   subpaginas: { pageId: string; titulo: string }[];
 }
 
 /**
- * Índice de um capítulo: os títulos (até o nível 3) e, embaixo de cada um, as
- * subpáginas que aparecem depois dele no texto — cards de galeria (Vertentes,
- * Classes) e páginas filhas (Lista de Mercadorias). Subpáginas antes do primeiro
- * título ficam numa entrada sem âncora.
+ * Índice de um capítulo: títulos (até o nível 3) e verbetes recolhíveis são
+ * subcapítulos. Os títulos dentro de um verbete pertencem ao conteúdo dele,
+ * não viram entradas do índice. Cards de galeria e páginas filhas continuam
+ * associados ao subcapítulo onde aparecem. Subpáginas antes do primeiro
+ * subcapítulo ficam numa entrada sem âncora.
  */
 export function indiceDoCapitulo(blocos: BlocoCompendio[]): EntradaIndiceCapitulo[] {
   const entradas: EntradaIndiceCapitulo[] = [];
@@ -262,9 +265,21 @@ export function indiceDoCapitulo(blocos: BlocoCompendio[]): EntradaIndiceCapitul
     if (!entradas.length) entradas.push({ ancora: null, texto: "", subpaginas: [] });
     return entradas[entradas.length - 1];
   };
+  const subpaginasDe = (lista: BlocoCompendio[], entrada: EntradaIndiceCapitulo) => {
+    for (const b of lista) {
+      if (b.tipo === "galeria") entrada.subpaginas.push(...b.itens.map((c) => ({ pageId: c.pageId, titulo: c.titulo })));
+      else if (b.tipo === "link_pagina") entrada.subpaginas.push({ pageId: b.paginaNotionId, titulo: b.titulo ?? "" });
+      else if ("filhos" in b) subpaginasDe(b.filhos, entrada);
+    }
+  };
   const andar = (lista: BlocoCompendio[]) => {
     for (const b of lista) {
       if (b.tipo === "titulo" && b.nivel <= 3) entradas.push({ ancora: b.ancora, texto: textoDe(b.texto), subpaginas: [] });
+      else if (b.tipo === "verbete") {
+        const entrada = { ancora: b.ancora, texto: textoDe(b.titulo), recolhivel: true, subpaginas: [] };
+        entradas.push(entrada);
+        subpaginasDe(b.filhos, entrada);
+      }
       else if (b.tipo === "galeria") atual().subpaginas.push(...b.itens.map((c) => ({ pageId: c.pageId, titulo: c.titulo })));
       else if (b.tipo === "link_pagina") atual().subpaginas.push({ pageId: b.paginaNotionId, titulo: b.titulo ?? "" });
       else if ("filhos" in b) andar(b.filhos);

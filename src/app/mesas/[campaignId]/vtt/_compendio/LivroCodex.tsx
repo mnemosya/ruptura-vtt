@@ -17,6 +17,7 @@ import "../_forja/forja.css";
 import "./compendio.css";
 import { abrirCapituloAction, enviarSelecaoAoChatAction, enviarTrechoAoChatAction, listarCapitulosAction, textosDoLivroAction } from "./acoes";
 import { BotaoExpandir, Blocos, type ContextoLeitura } from "./Blocos";
+import { CapaLivro } from "./CapaLivro";
 import {
   agruparPorSecao,
   capituloRaiz,
@@ -31,6 +32,7 @@ import {
 } from "./modelo";
 
 const CHAVE_ULTIMO_LIDO = "ruptura:compendio:ultimo";
+const PAGINA_BRAXUS = "d1d0a13635528315a0980176a3020e19";
 
 /** Conveniência por navegador: falhar (aba privada, armazenamento bloqueado) só faz abrir no começo. */
 function lerUltimoLido(): string | null {
@@ -65,7 +67,8 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
   const [linhas, setLinhas] = useState<LinhaCapitulo[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [atual, setAtual] = useState<DestinoLivro | null>(inicial);
-  const [historico, setHistorico] = useState<DestinoLivro[]>([]);
+  const [historico, setHistorico] = useState<(DestinoLivro | null)[]>([]);
+  const [ultimoLido, setUltimoLido] = useState<string | null>(null);
   const [capitulos, setCapitulos] = useState<Map<string, CapituloCompendio>>(new Map());
   const [carregando, setCarregando] = useState(false);
   const [busca, setBusca] = useState("");
@@ -137,10 +140,9 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
       if (!vivo) return;
       if (!r.ok || !r.dados) return setErro(r.erro ?? "Não foi possível carregar o Compêndio.");
       setLinhas(r.dados);
-      // Sem destino pedido: volta ao último capítulo lido neste navegador; senão, o começo do livro.
+      // Sem destino pedido, a capa abre primeiro. O último capítulo aparece no botão de retomada.
       const ultimo = lerUltimoLido();
-      const retomar = ultimo && r.dados.some((c) => c.pageId === ultimo) ? ultimo : r.dados.find((c) => !c.paiPageId)?.pageId;
-      setAtual((a) => a ?? (retomar ? { pageId: retomar } : null));
+      setUltimoLido(ultimo && r.dados.some((c) => c.pageId === ultimo) ? ultimo : null);
     });
     return () => { vivo = false; };
   }, [campaignId]);
@@ -148,7 +150,10 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
   const capitulo = atual ? capitulos.get(atual.pageId) ?? null : null;
 
   useEffect(() => {
-    if (atual) gravarUltimoLido(atual.pageId);
+    if (atual) {
+      gravarUltimoLido(atual.pageId);
+      setUltimoLido(atual.pageId);
+    }
   }, [atual]);
 
   useEffect(() => {
@@ -212,10 +217,9 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
   // O foco entra no livro ao abrir: teclado (rolagem, Esc, Tab) passa a valer aqui, não no painel.
   useEffect(() => { scroller.current?.focus({ preventScroll: true }); }, [scroller]);
 
-  // Ao chegar num capítulo: abre o verbete pedido e rola até ele; sem âncora, volta ao topo.
+  // Ao trocar de página: abre a âncora pedida ou volta ao topo, inclusive na capa.
   useEffect(() => {
-    if (!capitulo || !atual) return;
-    if (atual.ancora) {
+    if (capitulo && atual?.ancora) {
       const ancora = atual.ancora;
       setAbertos((s) => (s.has(ancora) ? s : new Set(s).add(ancora)));
       requestAnimationFrame(() => scroller.current?.querySelector(`[id="${CSS.escape(ancora)}"]`)?.scrollIntoView({ block: "start" }));
@@ -229,14 +233,19 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
   const ir = useCallback((destino: DestinoLivro) => {
     setBusca("");
     const a = atualRef.current;
-    if (a && (a.pageId !== destino.pageId || a.ancora !== destino.ancora)) setHistorico((h) => [...h, a]);
+    if (!a || a.pageId !== destino.pageId || a.ancora !== destino.ancora) setHistorico((h) => [...h, a]);
     setAtual({ ...destino });
   }, []);
+  const irCapa = () => {
+    setBusca("");
+    if (atualRef.current) setHistorico((h) => [...h, atualRef.current]);
+    setAtual(null);
+  };
   const voltar = () => {
     const anterior = historico[historico.length - 1];
-    if (!anterior) return;
+    if (anterior === undefined) return;
     setHistorico(historico.slice(0, -1));
-    setAtual({ ...anterior });
+    setAtual(anterior ? { ...anterior } : null);
   };
 
   const termos = useMemo(() => indiceDeTermos(linhas ?? []), [linhas]);
@@ -262,13 +271,15 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
   };
 
   const linhaAtual = linhas?.find((c) => c.pageId === atual?.pageId) ?? null;
+  const destinoRetomar = (ultimoLido && linhas?.find((c) => c.pageId === ultimoLido))
+    ?? linhas?.find((c) => !c.paiPageId) ?? null;
   const { anterior, proximo } = linhas && atual ? vizinhos(linhas, atual.pageId) : { anterior: null, proximo: null };
   const resultados = linhas ? buscarNoLivro(linhas, busca, textos) : [];
   const buscando = busca.trim().length >= 2;
   // Com capa, a abertura vai para o herói (ver separarAbertura).
   const { abertura, corpo } = capitulo?.abertura?.length
     ? { abertura: capitulo.abertura, corpo: capitulo.blocos }
-    : capitulo?.capa ? separarAbertura(capitulo.blocos) : { abertura: [], corpo: capitulo?.blocos ?? [] };
+    : capitulo?.capa ? separarAbertura(capitulo.blocos, capitulo.notionPageId === PAGINA_BRAXUS ? 1 : undefined) : { abertura: [], corpo: capitulo?.blocos ?? [] };
   const capituloRaizCarregado = raizAtual ? capitulos.get(raizAtual) ?? null : null;
   const indiceAtivo = capituloRaizCarregado ? indiceDoCapitulo(capituloRaizCarregado.blocos) : [];
   const naRaiz = raizAtual === atual?.pageId;
@@ -307,7 +318,7 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
         <CabecalhoCodex
           icone={<span className="fj-ch-hex fj-codex-cab__sigla">{linhaAtual?.numero ?? "RP"}</span>}
           kicker={linhaAtual ? `Compêndio · ${linhaAtual.paiPageId ? titulos.get(linhaAtual.paiPageId) ?? linhaAtual.secao : linhaAtual.secao}` : "Compêndio · RUPTURA v1.2"}
-          titulo={linhaAtual?.titulo ?? "Compêndio"}
+          titulo={linhaAtual?.titulo ?? "Introdução"}
           onClose={onClose}
         >
           {avisoEnvio && <span className="fj-mono fj-mono--pequeno fj-mono--am" role="status" data-testid="compendio-aviso-envio">{avisoEnvio}</span>}
@@ -327,6 +338,12 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
 
         <div className="fj-codex__grade">
           <nav className="fj-sem-barra fj-indice" aria-label="Índice do livro">
+            <div className="fj-indice__grupo">
+              <button type="button" onClick={irCapa} className={`fj-indice__item ${!atual ? "fj-indice__item--ativo" : ""}`} aria-current={!atual ? "page" : undefined} data-testid="compendio-indice-capa">
+                <span className="fj-indice__n">00</span>
+                <span className="fj-indice__rotulo fj-livro-indice-rotulo">Introdução</span>
+              </button>
+            </div>
             {agruparPorSecao(linhas ?? []).map((g) => (
               <div key={g.secao} className="fj-indice__grupo">
                 <div className="fj-livro-indice-secao"><Mono pequeno tom="am">{g.secao}</Mono></div>
@@ -348,7 +365,11 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
                           {t.ancora && (
                             <button
                               type="button"
-                              onClick={() => (naRaiz ? go(t.ancora!) : ir({ pageId: c.pageId, ancora: t.ancora! }))}
+                              onClick={() => {
+                                if (t.recolhivel) setAbertos((s) => (s.has(t.ancora!) ? s : new Set(s).add(t.ancora!)));
+                                if (naRaiz) go(t.ancora!);
+                                else ir({ pageId: c.pageId, ancora: t.ancora! });
+                              }}
                               className={`fj-indice__sub ${naRaiz && active === t.ancora ? "fj-indice__sub--ativo" : ""}`}
                             >
                               {t.texto}
@@ -400,9 +421,14 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
                   ))}
                 </ul>
               </div>
+            ) : linhas && !atual ? (
+              <CapaLivro
+                retomar={destinoRetomar ? { titulo: rotuloCapitulo(destinoRetomar), ultimoLido: destinoRetomar.pageId === ultimoLido } : null}
+                onRetomar={() => { if (destinoRetomar) ir({ pageId: destinoRetomar.pageId }); }}
+              />
             ) : capitulo && linhaAtual ? (
               <article key={capitulo.notionPageId}>
-                <header className={`fj-codex__heroi fj-livro-heroi ${capitulo.capa ? "fj-livro-heroi--arte" : ""} ${capitulo.capa && capitulo.capa.largura > capitulo.capa.altura * 2 ? "fj-livro-heroi--panorama" : ""}`}>
+                <header className={`fj-codex__heroi fj-livro-heroi ${capitulo.capa ? "fj-livro-heroi--arte" : ""} ${capitulo.capa && capitulo.capa.largura > capitulo.capa.altura * 2 ? "fj-livro-heroi--panorama" : ""} ${capitulo.notionPageId === PAGINA_BRAXUS ? "fj-livro-heroi--braxus" : ""}`}>
                   {capitulo.capa && (
                     <div className="fj-livro-heroi__arte">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
