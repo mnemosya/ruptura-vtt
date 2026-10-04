@@ -253,9 +253,14 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
 
   const termos = useMemo(() => indiceDeTermos(linhas ?? []), [linhas]);
   const titulos = useMemo(() => new Map((linhas ?? []).map((c) => [c.pageId, rotuloCapitulo(c)])), [linhas]);
+  const paginas = useMemo(() => {
+    const porId = new Map((linhas ?? []).map((c) => [c.pageId, c]));
+    return new Map((linhas ?? []).map((c) => [c.pageId, { numero: c.numero, titulo: c.titulo, pai: c.paiPageId ? porId.get(c.paiPageId)?.titulo ?? c.secao : null }]));
+  }, [linhas]);
   const ctx: ContextoLeitura = {
     termos,
     titulos,
+    paginas,
     ir,
     abertos,
     expandir: (url, legenda) => setAmpliada({ url, legenda }),

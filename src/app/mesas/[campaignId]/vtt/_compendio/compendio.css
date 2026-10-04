@@ -71,7 +71,6 @@
 
 .fj-livro-link { color: var(--fj-cy); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--fj-cy) 40%, transparent); text-underline-offset: 3px; transition: var(--fj-trans); }
 .fj-livro-link:hover { color: var(--fj-am); text-decoration-color: var(--fj-am); }
-.fj-livro-link--bloco { font: 700 14px var(--fj-display); text-transform: uppercase; letter-spacing: 0.1em; text-decoration: none; }
 
 /* ── Verbete (bloco recolhível) ────────────────────────── */
 .fj-livro-verbete { scroll-margin-top: var(--hud-space-5); border-left: 2px solid color-mix(in srgb, var(--fj-cy) 25%, transparent); background: color-mix(in srgb, var(--fj-abismo) 35%, transparent); transition: var(--fj-trans); }
@@ -136,10 +135,6 @@
 .fj-livro-pagina { height: calc(100dvh - 120px); min-height: 520px; }
 .fj-livro-pagina .fj-codex { height: 100%; }
 
-/* Páginas filhas listadas no texto (ex.: a Lista de Mercadorias do cap. 24). */
-.fj-livro-texto > p:has(> .fj-livro-link--bloco) + p:has(> .fj-livro-link--bloco) { margin-top: var(--hud-space-1); }
-.fj-livro-link--bloco { display: block; width: 100%; border-left: 2px solid color-mix(in srgb, var(--fj-cy) 30%, transparent); background: color-mix(in srgb, var(--fj-abismo) 35%, transparent); padding: var(--hud-space-3) var(--hud-space-5); text-align: left; }
-.fj-livro-link--bloco:hover { border-left-color: var(--fj-am); background: color-mix(in srgb, var(--fj-am) 8%, transparent); }
 
 /* ── Menu de contexto da seleção ───────────────────────── */
 .fj-livro-menu { position: fixed; z-index: 1000; min-width: 200px; border: 1px solid color-mix(in srgb, var(--fj-cy) 45%, transparent); background: var(--fj-abismo); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 12px color-mix(in srgb, var(--fj-cy) 15%, transparent); padding: var(--hud-space-1); }
@@ -193,3 +188,18 @@
 @supports (text-box: trim-both cap alphabetic) {
   .fj-livro-tabela th { text-box: trim-both cap alphabetic; padding-block: 11px; }
 }
+
+/* ── Link de página: botão do Códex (opção B) ─────────── */
+.fj-livro-paginas { display: flex; flex-direction: column; gap: var(--hud-space-3); }
+.fj-livro-pagina-botao { position: relative; display: block; width: 100%; max-width: 560px; text-align: left; }
+.fj-livro-texto > .fj-livro-pagina-botao + .fj-livro-pagina-botao { margin-top: var(--hud-space-3); }
+.fj-livro-pagina-botao__borda { display: block; transition: var(--fj-trans); }
+.fj-livro-pagina-botao:hover .fj-livro-pagina-botao__borda { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--fj-cy) 40%, transparent)); }
+.fj-livro-pagina-botao__corpo { position: relative; display: flex; align-items: center; gap: var(--hud-space-5); overflow: hidden; padding: var(--hud-space-3) var(--hud-space-5) var(--hud-space-3) var(--hud-space-3); background: linear-gradient(to right, color-mix(in srgb, var(--fj-cy) 10%, var(--fj-fundo)), var(--fj-abismo)); }
+.fj-livro-pagina-botao:hover .fj-codex-botao__varredura { left: 100%; opacity: 1; }
+.fj-livro-pagina-botao__selo { display: grid; height: 46px; width: 52px; flex: none; place-items: center; background: color-mix(in srgb, var(--fj-cy) 22%, transparent); font: 700 15px var(--fj-mono); color: var(--fj-gelo); }
+.fj-livro-pagina-botao__texto { position: relative; display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
+.fj-livro-pagina-botao__titulo { font: 700 16px/1.3 var(--fj-display); text-transform: uppercase; letter-spacing: 0.14em; color: var(--fj-gelo); transition: var(--fj-trans); }
+.fj-livro-pagina-botao:hover .fj-livro-pagina-botao__titulo { color: var(--fj-cy); }
+.fj-livro-pagina-botao:hover .fj-codex-botao__setas span:first-child { opacity: 0.6; transform: translateX(4px); }
+.fj-livro-pagina-botao:hover .fj-codex-botao__setas span:last-child { opacity: 1; transform: translateX(6px); }

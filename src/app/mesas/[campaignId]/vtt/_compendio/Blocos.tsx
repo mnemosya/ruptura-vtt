@@ -14,6 +14,8 @@ export interface ContextoLeitura {
   termos: Map<string, DestinoLivro>;
   /** Títulos dos capítulos por ID, para links de página. */
   titulos: Map<string, string>;
+  /** Número, título e página-mãe de cada página, para o botão de link de página. */
+  paginas: Map<string, { numero: number | null; titulo: string; pai: string | null }>;
   ir: (destino: DestinoLivro) => void;
   /** Verbetes abertos (por âncora). */
   abertos: Set<string>;
@@ -59,6 +61,30 @@ export function Texto({ trechos, ctx }: { trechos: TrechoCompendio[]; ctx: Conte
         return <Fragment key={i}>{no}</Fragment>;
       })}
     </>
+  );
+}
+
+/** Link para outra página do livro, no visual do botão de Códex da Forja (opção B, 04/10/2026). */
+function BotaoPagina({ pageId, tituloReserva, ctx }: { pageId: string; tituloReserva?: string; ctx: ContextoLeitura }) {
+  const pagina = ctx.paginas.get(pageId);
+  const titulo = pagina?.titulo ?? tituloReserva ?? "Página";
+  const selo = pagina?.numero != null ? String(pagina.numero).padStart(2, "0") : titulo.replace(/[^A-Za-zÀ-ÿ ]/g, "").split(/\s+/).filter((p) => p.length > 2).slice(0, 2).map((p) => p[0]).join("");
+  // Capítulo: "Capítulo 8". Subpágina: só o nome da página-mãe ("Mercado Noturno").
+  const kicker = pagina?.numero != null ? `Capítulo ${pagina.numero}` : pagina?.pai ?? "Página";
+  return (
+    <button type="button" className="fj-livro-pagina-botao" onClick={() => ctx.ir({ pageId })} data-testid="compendio-link-pagina">
+      <span className="fj-borda fj-ch fj-livro-pagina-botao__borda">
+        <span className="fj-ch fj-livro-pagina-botao__corpo">
+          <span className="fj-codex-botao__varredura" />
+          <span className="fj-ch-hex fj-livro-pagina-botao__selo">{selo}</span>
+          <span className="fj-livro-pagina-botao__texto">
+            <span className="fj-mono fj-mono--pequeno fj-mono--am">{kicker}</span>
+            <span className="fj-livro-pagina-botao__titulo">{titulo}</span>
+          </span>
+          <span className="fj-codex-botao__setas" aria-hidden="true"><span>›</span><span>›</span></span>
+        </span>
+      </span>
+    </button>
   );
 }
 
@@ -148,6 +174,10 @@ function Bloco({ b, ctx }: { b: BlocoCompendio; ctx: ContextoLeitura }) {
       // em vez da caixa. O rótulo é o título do destaque, ou o negrito que abre o texto.
       const { rotulo, texto } = rotuloDoDestaque(b.texto);
       const filhos = b.filhos[0]?.tipo === "divisor" ? b.filhos.slice(1) : b.filhos;
+      // Destaque que só embrulha links de página: o botão já é o destaque.
+      if (!rotulo && texto.length === 0 && filhos.length > 0 && filhos.every((f) => f.tipo === "link_pagina")) {
+        return <div className="fj-livro-paginas"><Blocos blocos={filhos} ctx={ctx} /></div>;
+      }
       return (
         <div className="fj-livro-nota">
           <div className="fj-livro-nota__rotulo">
@@ -221,47 +251,7 @@ function Bloco({ b, ctx }: { b: BlocoCompendio; ctx: ContextoLeitura }) {
         </figure>
       );
     case "link_pagina":
-      return (
-        <p className="fj-livro-par">
-          <button type="button" className="fj-livro-link fj-livro-link--bloco" onClick={() => ctx.ir({ pageId: b.paginaNotionId })}>
-            › {ctx.titulos.get(b.paginaNotionId) ?? b.titulo ?? "Abrir página"}
-          </button>
-        </p>
-      );
-    case "galeria":
-      return (
-        <div className="fj-livro-galeria" data-testid="compendio-galeria">
-          {b.itens.map((card) => (
-            <button type="button" key={card.pageId} className="fj-livro-card" onClick={() => ctx.ir({ pageId: card.pageId })} data-testid="compendio-card">
-              <span className="fj-livro-card__arte">
-                {card.imagem ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={card.imagem} alt="" loading="lazy" />
-                ) : (
-                  <span className="fj-livro-card__sem-arte" aria-hidden="true">{card.titulo.slice(0, 2)}</span>
-                )}
-              </span>
-              <span className="fj-livro-card__texto">
-                <span className="fj-livro-card__titulo">
-                  {card.icone && (/^https?:/.test(card.icone) ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={card.icone} alt="" className="fj-livro-card__icone" />
-                  ) : (
-                    <span className="fj-livro-card__icone" aria-hidden="true">{card.icone}</span>
-                  ))}
-                  {card.titulo}
-                </span>
-                {card.descricao && <span className="fj-livro-card__descricao">{card.descricao}</span>}
-                {card.etiquetas.length > 0 && (
-                  <span className="fj-livro-card__etiquetas">
-                    {card.etiquetas.map((e) => <span key={e} className="fj-livro-termo">{e}</span>)}
-                  </span>
-                )}
-              </span>
-            </button>
-          ))}
-        </div>
-      );
+      return <BotaoPagina pageId={b.paginaNotionId} tituloReserva={b.titulo} ctx={ctx} />;
     case "divisor":
       return <hr className="fj-livro-divisor" />;
     case "nao_suportado":
