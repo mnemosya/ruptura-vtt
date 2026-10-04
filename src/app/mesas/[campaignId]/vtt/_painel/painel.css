@@ -2360,3 +2360,10 @@ textarea.rv-pn-input.rv-pn-input {
   font-size: 12px;
   font-weight: 400;
 }
+
+/* Compêndio — aviso de regras a revisar (Fase 5, só administradoras). */
+.rv-pn-compendio-revisar { margin: 0 0 8px; border-left: 2px solid var(--rv-ar); background: color-mix(in srgb, var(--rv-ar) 10%, transparent); padding: 6px 10px; font-size: 12px; color: var(--rv-tx, #cfe3ec); }
+.rv-pn-compendio-revisar summary { cursor: pointer; font-weight: 700; color: var(--rv-ar); }
+.rv-pn-compendio-revisar ul { margin: 6px 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
+.rv-pn-compendio-revisar p { margin: 0; opacity: 0.75; }
+.rv-pn-compendio-revisar code { font-size: 11px; }

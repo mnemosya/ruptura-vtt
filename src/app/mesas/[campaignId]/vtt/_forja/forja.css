@@ -10,7 +10,7 @@
  *     "ice" do protótipo (`--fj-gelo`). Vertentes vêm da paleta única
  *     (`_design/coresVertente.ts`), pelas variáveis `--vc`/`--vc-brilho`.
  *   - ESPAÇO, CHANFRO: as escalas `--hud-*` de `tokens.css`.
- *   - TIPO: Oxanium nos títulos (do protótipo); Rajdhani e JetBrains
+ *   - TIPO: Oxanium nos títulos (do protótipo); Exo 2 e JetBrains
  *     Mono do app no corpo e nos rótulos. Nenhum texto abaixo de 10px.
  *   - MOTION: curvas do app (`--mo-*`); as durações longas do protótipo
  *     (entrada `boot`, varreduras) ficam, porque são a cara da Forja.
@@ -38,7 +38,8 @@
   --fj-ok: #22d3aa;       /* --rm-success */
 
   --fj-display: var(--font-oxanium), "Oxanium", var(--font-orbitron), sans-serif;
-  --fj-corpo: var(--font-rajdhani), "Rajdhani", system-ui, sans-serif;
+  /* Exo 2 no corpo (03/10/2026): a Rajdhani, estreita e quadrada, cansava na leitura longa. */
+  --fj-corpo: var(--font-exo2), "Exo 2", system-ui, sans-serif;
   --fj-mono: var(--font-mono), ui-monospace, monospace;
 
   --fj-ease: var(--mo-ease-out, cubic-bezier(0.16, 1, 0.3, 1));
@@ -338,8 +339,7 @@
 .fj-titulo__conteudo { position: relative; display: flex; height: 100%; flex-direction: column; justify-content: center; padding: 0 40px; }
 @container forja (min-width: 1024px) { .fj-titulo__conteudo { padding-inline: 96px; } }
 .fj-titulo__marca { position: relative; margin-top: var(--hud-space-5); }
-.fj-titulo__logo { display: block; font: 800 clamp(4rem, 11cqi, 9.5rem)/0.85 var(--fj-display); letter-spacing: 0.04em; color: var(--fj-gelo); }
-.fj-titulo__logo--eco { position: absolute; inset: 0; color: color-mix(in srgb, var(--fj-am) 60%, transparent); mix-blend-mode: screen; text-shadow: none; }
+.fj-titulo__marca .ds-marca { --ds-marca-tamanho: clamp(4rem, 11cqi, 9.5rem); --ds-marca-eco: var(--fj-am); display: block; }
 .fj-titulo__sub { margin-top: var(--hud-space-4); display: flex; align-items: center; gap: var(--hud-space-4); }
 .fj-titulo__sub-fio { height: 2px; width: 64px; background: var(--fj-cy); box-shadow: 0 0 10px var(--fj-cy); }
 .fj-titulo__sub-texto { font: 600 18px var(--fj-display); text-transform: uppercase; letter-spacing: 0.5em; color: var(--fj-cy); }
@@ -733,6 +733,29 @@
 .fj-regra > * + * { margin-top: var(--hud-space-4); }
 .fj-regra__bloco > * + * { margin-top: var(--hud-space-2); }
 .fj-regra__item { position: relative; padding-left: var(--hud-space-6); }
+.fj-regra__tabela-rolagem { overflow-x: auto; }
+/* ── Rolagem horizontal das tabelas largas: barra visível só no hover ── */
+.fj-livro-tabela-rolagem, .fj-regra__tabela-rolagem { padding-bottom: 4px; }
+/* Firefox: só as propriedades padrão. No Chrome/Safari elas desligariam a barra
+   personalizada abaixo (e a barra flutuante do sistema só aparece rolando). */
+@supports (-moz-appearance: none) {
+  .fj-livro-tabela-rolagem, .fj-regra__tabela-rolagem { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+  .fj-livro-tabela-rolagem:hover, .fj-regra__tabela-rolagem:hover { scrollbar-color: color-mix(in srgb, var(--fj-cy) 55%, transparent) color-mix(in srgb, var(--fj-abismo) 80%, transparent); }
+}
+/* Chrome/Safari: o Chrome não repinta a barra personalizada quando o :hover do elemento
+   muda. Contorno: o polegar herda a COR DE BORDA do elemento (borda de largura zero, nunca
+   aparece), e é essa cor que muda no hover — mudança que o Chrome repinta. */
+.fj-livro-tabela-rolagem, .fj-regra__tabela-rolagem { border: 0 solid transparent; transition: border-color var(--fj-dur-micro) ease; }
+.fj-livro-tabela-rolagem:hover, .fj-regra__tabela-rolagem:hover { border-color: rgba(0, 212, 255, 0.55); }
+.fj-livro-tabela-rolagem::-webkit-scrollbar, .fj-regra__tabela-rolagem::-webkit-scrollbar { height: 8px; }
+.fj-livro-tabela-rolagem::-webkit-scrollbar-track, .fj-regra__tabela-rolagem::-webkit-scrollbar-track { background: transparent; }
+.fj-livro-tabela-rolagem::-webkit-scrollbar-thumb, .fj-regra__tabela-rolagem::-webkit-scrollbar-thumb { border-color: inherit; border-style: solid; border-width: 0 0 8px 0; }
+.fj-livro-tabela-rolagem::-webkit-scrollbar-thumb:hover, .fj-regra__tabela-rolagem::-webkit-scrollbar-thumb:hover { border-color: #ff8a1f; }
+
+.fj-regra__nota { border-left: 2px solid color-mix(in srgb, var(--fj-cy) 40%, transparent); padding-left: var(--hud-space-4); font-style: italic; color: var(--fj-apagado); }
+.fj-regra__tabela { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.4; }
+.fj-regra__tabela th, .fj-regra__tabela td { border: 1px solid color-mix(in srgb, var(--fj-cy) 15%, transparent); padding: var(--hud-space-2) var(--hud-space-3); text-align: left; vertical-align: middle; }
+.fj-regra__tabela th { background: color-mix(in srgb, var(--fj-cy) 10%, transparent); font: 700 12px var(--fj-display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fj-gelo); }
 .fj-regra__marca { position: absolute; left: 0; top: 0.55em; height: 6px; width: 6px; transform: rotate(45deg); background: color-mix(in srgb, var(--fj-cy) 70%, transparent); }
 
 /* Mapa do Império */
@@ -946,3 +969,11 @@
 
 .fj-revisao__pn { margin-top: var(--hud-space-4); display: flex; cursor: pointer; align-items: center; gap: var(--hud-space-3); font-size: 15px; color: var(--fj-texto); }
 .fj-revisao__pn input { accent-color: var(--fj-am); width: 16px; height: 16px; }
+
+/* Cabeçalho só em maiúsculas: a fonte reserva espaço para descendentes, e o texto
+   parecia colado no topo. Recorta a caixa do texto (topo das maiúsculas → linha de base);
+   sem suporte a text-box, compensa com mais respiro em cima. */
+.fj-regra__tabela th { padding-top: calc(var(--hud-space-2) + 2px); padding-bottom: calc(var(--hud-space-2) - 1px); }
+@supports (text-box: trim-both cap alphabetic) {
+  .fj-regra__tabela th { text-box: trim-both cap alphabetic; padding-block: 11px; }
+}

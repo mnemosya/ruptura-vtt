@@ -49,15 +49,16 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "../../../lib/auth/session";
 import { readAppearOffline } from "../../../lib/campaign/presencePreferenceActions";
 import { GlobalShell } from "../_global/GlobalShell";
+import { contagensDoMenu } from "../_global/contagens";
 
 export default async function AreaGlobalLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const presenca = await readAppearOffline();
+  const [presenca, contagens] = await Promise.all([readAppearOffline(), contagensDoMenu(user.id)]);
 
   return (
     <GlobalShell userEmail={user.email ?? "(sem email)"} displayName={user.displayName}
-      aparecerOfflineInicial={presenca.appearOffline}>
+      aparecerOfflineInicial={presenca.appearOffline} contagens={contagens}>
       {children}
     </GlobalShell>
   );
