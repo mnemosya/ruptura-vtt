@@ -44,21 +44,85 @@ export function SecHead({ n, t }: { n: string; t: string }) {
   );
 }
 
-/** Texto de regra: parágrafos, linhas com "›" viram lista e **destaques** ficam âmbar. */
+/** **destaques** em âmbar e *itálico*. */
+function comDestaques(texto: string): ReactNode[] {
+  // Negrito vazio ("****") que sobrou da extração: só some.
+  return texto.replace(/\*{4}/g, "").split(/(\*\*[^*]+\*\*|\*[^*\s][^*]*\*)/).map((t, k) => {
+    if (t.startsWith("**") && t.endsWith("**") && t.length > 4) return <strong key={k} className="fj-destaque">{t.slice(2, -2)}</strong>;
+    if (t.startsWith("*") && t.endsWith("*") && t.length > 2) return <em key={k}>{t.slice(1, -1)}</em>;
+    return t;
+  });
+}
+
+const ehLinhaTabela = (p: string) => p.trim().startsWith("|");
+const ehSeparadorTabela = (celulas: string[]) => celulas.length > 0 && celulas.every((c) => /^:?-{3,}:?$/.test(c));
+const celulasDe = (linha: string) => linha.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+
+/**
+ * Tabela em Markdown (`| a | b |` / `| --- | --- |`), como veio do texto extraído do
+ * protótipo. A primeira linha é o cabeçalho; as de separador são descartadas.
+ */
+function TabelaRegra({ linhas }: { linhas: string[] }) {
+  const todas = linhas.flatMap((l) => l.split("\n")).filter((l) => l.trim()).map(celulasDe).filter((c) => !ehSeparadorTabela(c));
+  const [cabecalho, ...corpo] = todas;
+  if (!cabecalho) return null;
+  return (
+    <div className="fj-regra__tabela-rolagem">
+      <table className="fj-regra__tabela">
+        <thead>
+          <tr>{cabecalho.map((c, i) => <th key={i}>{c.replace(/\*\*/g, "")}</th>)}</tr>
+        </thead>
+        <tbody>
+          {corpo.map((linha, i) => (
+            <tr key={i}>{linha.map((c, j) => <td key={j}>{comDestaques(c)}</td>)}</tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/**
+ * Texto de regra: parágrafos, linhas com "›" viram lista, **destaques** ficam âmbar e
+ * linhas de tabela em Markdown consecutivas viram uma tabela.
+ */
 export function RuleText({ text, className = "" }: { text: string; className?: string }) {
+  // Agrupa parágrafos: linhas de tabela vizinhas (separadas por linha em branco no texto extraído) formam uma tabela só.
+  // Um parágrafo que começa com linhas de tabela e continua com texto vira tabela + texto.
+  const blocos: ({ tipo: "texto"; p: string } | { tipo: "tabela"; linhas: string[] })[] = [];
+  for (const paragrafo of text.split("\n\n")) {
+    const linhas = paragrafo.split("\n");
+    let k = 0;
+    while (k < linhas.length && (ehLinhaTabela(linhas[k]) || (!linhas[k].trim() && k > 0))) k++;
+    if (k > 0) {
+      const ultimo = blocos[blocos.length - 1];
+      const tabela = linhas.slice(0, k).join("\n");
+      if (ultimo?.tipo === "tabela") ultimo.linhas.push(tabela);
+      else blocos.push({ tipo: "tabela", linhas: [tabela] });
+    }
+    const resto = linhas.slice(k).join("\n");
+    if (resto.trim()) blocos.push({ tipo: "texto", p: resto });
+  }
   return (
     <div className={`fj-regra ${className}`}>
-      {text.split("\n\n").map((p, i) => {
+      {blocos.map((bloco, i) => {
+        if (bloco.tipo === "tabela") return <TabelaRegra key={i} linhas={bloco.linhas} />;
+        const p = bloco.p;
         const marked = p.includes("›"), multi = p.includes("\n");
         return (
           <div key={i} className={multi ? "fj-regra__bloco" : ""}>
             {p.split("\n").map((raw, j) => {
+              // Linha de citação do Markdown ("> *Entenda melhor…*"): nota em itálico, sem o ">".
+              if (/^>\s*/.test(raw)) {
+                const nota = raw.replace(/^>\s*/, "");
+                return nota.trim() ? <p key={j} className="fj-regra__nota">{comDestaques(nota)}</p> : null;
+              }
               const item = marked ? raw.startsWith("›") : multi;
               const line = raw.replace(/^›\s*/, "");
               return (
                 <p key={j} className={item ? "fj-regra__item" : ""}>
                   {item && <span className="fj-regra__marca" />}
-                  {line.split(/(\*\*[^*]+\*\*)/).map((t, k) => (t.startsWith("**") ? <strong key={k} className="fj-destaque">{t.slice(2, -2)}</strong> : t))}
+                  {comDestaques(line)}
                 </p>
               );
             })}
