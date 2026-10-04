@@ -71,6 +71,27 @@ export function BotaoExpandir({ onClick }: { onClick: () => void }) {
   );
 }
 
+/**
+ * Rótulo de um destaque: o texto inteiro, quando ele é só um título em negrito
+ * (o conteúdo vem nos filhos); ou o negrito curto que abre o texto ("Gás arcano:").
+ */
+function rotuloDoDestaque(trechos: TrechoCompendio[]): { rotulo: string | null; texto: TrechoCompendio[] } {
+  const plano = trechos.map((t) => t.texto).join("").trim();
+  if (!plano) return { rotulo: null, texto: [] };
+  if (trechos.every((t) => t.negrito || !t.texto.trim()) && plano.length <= 80) return { rotulo: plano.replace(/:$/, ""), texto: [] };
+  const [primeiro, ...resto] = trechos;
+  if (primeiro?.negrito && !primeiro.termo && primeiro.texto.trim().length <= 60) {
+    const restante = [...resto];
+    // O texto continuava a frase do negrito ("Gás arcano: para funcionar…"); sem o rótulo na frente, abre em maiúscula.
+    if (restante[0]) {
+      const t = restante[0].texto.replace(/^\s+/, "");
+      restante[0] = { ...restante[0], texto: t.charAt(0).toLocaleUpperCase("pt-BR") + t.slice(1) };
+    }
+    return { rotulo: primeiro.texto.trim().replace(/:$/, ""), texto: restante };
+  }
+  return { rotulo: null, texto: trechos };
+}
+
 export function Blocos({ blocos, ctx }: { blocos: BlocoCompendio[]; ctx: ContextoLeitura }) {
   return (
     <>
@@ -122,16 +143,25 @@ function Bloco({ b, ctx }: { b: BlocoCompendio; ctx: ContextoLeitura }) {
           {b.filhos.length > 0 && <Blocos blocos={b.filhos} ctx={ctx} />}
         </blockquote>
       );
-    case "destaque":
+    case "destaque": {
+      // Opção A (04/10/2026): rótulo técnico — losango âmbar, nome espaçado e um fio —
+      // em vez da caixa. O rótulo é o título do destaque, ou o negrito que abre o texto.
+      const { rotulo, texto } = rotuloDoDestaque(b.texto);
+      const filhos = b.filhos[0]?.tipo === "divisor" ? b.filhos.slice(1) : b.filhos;
       return (
-        <div className="fj-codex__nota fj-livro-destaque">
-          {b.icone && <span className="fj-livro-destaque__icone" aria-hidden="true">{b.icone}</span>}
-          <div>
-            <p><Texto trechos={b.texto} ctx={ctx} /></p>
-            {b.filhos.length > 0 && <Blocos blocos={b.filhos} ctx={ctx} />}
+        <div className="fj-livro-nota">
+          <div className="fj-livro-nota__rotulo">
+            <span className="fj-livro-nota__losango" aria-hidden="true" />
+            {rotulo && <span className="fj-livro-nota__nome">{rotulo}</span>}
+            <span className="fj-livro-nota__fio" aria-hidden="true" />
+          </div>
+          <div className="fj-livro-nota__corpo">
+            {texto.length > 0 && <p><Texto trechos={texto} ctx={ctx} /></p>}
+            {filhos.length > 0 && <Blocos blocos={filhos} ctx={ctx} />}
           </div>
         </div>
       );
+    }
     case "verbete": {
       const aberto = ctx.abertos.has(b.ancora);
       return (

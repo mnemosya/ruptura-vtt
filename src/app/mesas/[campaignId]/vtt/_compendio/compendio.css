@@ -175,3 +175,12 @@
 /* Subpáginas no índice (Lista de Mercadorias, Vertentes, Classes), um nível abaixo do título. */
 .fj-livro-indice-subpagina { padding-left: 64px; font-size: 13px; }
 .fj-livro-indice-subpagina::before { content: "› "; color: color-mix(in srgb, var(--fj-cy) 60%, transparent); }
+
+/* ── Destaque: rótulo técnico (Opção A) ───────────────── */
+.fj-livro-nota { margin-top: var(--hud-space-6) !important; }
+.fj-livro-nota__rotulo { display: flex; align-items: center; gap: var(--hud-space-3); margin-bottom: var(--hud-space-2); }
+.fj-livro-nota__losango { width: 7px; height: 7px; flex: none; transform: rotate(45deg); background: var(--fj-am); }
+.fj-livro-nota__nome { font: 700 12px var(--fj-display); text-transform: uppercase; letter-spacing: 0.2em; color: var(--fj-am); }
+.fj-livro-nota__fio { height: 1px; flex: 1; background: linear-gradient(to right, color-mix(in srgb, var(--fj-cy) 45%, transparent), transparent); }
+.fj-livro-nota__corpo { padding-left: 17px; }
+.fj-livro-nota__corpo > * + * { margin-top: var(--hud-space-3); }
