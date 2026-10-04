@@ -18,6 +18,7 @@ import "./compendio.css";
 import { abrirCapituloAction, enviarSelecaoAoChatAction, enviarTrechoAoChatAction, listarCapitulosAction, textosDoLivroAction } from "./acoes";
 import { BotaoExpandir, Blocos, type ContextoLeitura } from "./Blocos";
 import { CapaLivro } from "./CapaLivro";
+import { posicaoDaCapa } from "./enquadramento";
 import {
   agruparPorSecao,
   capituloRaiz,
@@ -432,7 +433,7 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
                   {capitulo.capa && (
                     <div className="fj-livro-heroi__arte">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={capitulo.capa.url} alt="" className="fj-codex__heroi-img" style={capitulo.capa.posicao ? { objectPosition: capitulo.capa.posicao } : undefined} />
+                      <img src={capitulo.capa.url} alt="" className="fj-codex__heroi-img" style={posicaoDaCapa(capitulo.notionPageId) ? { objectPosition: posicaoDaCapa(capitulo.notionPageId) } : undefined} />
                       <BotaoExpandir onClick={() => setAmpliada({ url: capitulo.capa!.url, legenda: capitulo.titulo })} />
                     </div>
                   )}
