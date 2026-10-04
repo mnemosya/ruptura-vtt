@@ -18,6 +18,7 @@
 
 /* ── Índice ────────────────────────────────────────────── */
 .fj-livro-indice-secao { padding: var(--hud-space-3) var(--hud-space-6) var(--hud-space-2); }
+.fj-livro-indice-secao .fj-mono { font-weight: 700; }
 .fj-livro-indice-rotulo { font-size: 12px; letter-spacing: 0.08em; text-align: left; }
 
 /* ── Abertura do capítulo ──────────────────────────────── */

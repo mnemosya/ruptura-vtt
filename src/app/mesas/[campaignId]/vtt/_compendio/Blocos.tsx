@@ -252,6 +252,40 @@ function Bloco({ b, ctx }: { b: BlocoCompendio; ctx: ContextoLeitura }) {
       );
     case "link_pagina":
       return <BotaoPagina pageId={b.paginaNotionId} tituloReserva={b.titulo} ctx={ctx} />;
+    case "galeria":
+      return (
+        <div className="fj-livro-galeria" data-testid="compendio-galeria">
+          {b.itens.map((card) => (
+            <button type="button" key={card.pageId} className="fj-livro-card" onClick={() => ctx.ir({ pageId: card.pageId })} data-testid="compendio-card">
+              <span className="fj-livro-card__arte">
+                {card.imagem ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={card.imagem} alt="" loading="lazy" />
+                ) : (
+                  <span className="fj-livro-card__sem-arte" aria-hidden="true">{card.titulo.slice(0, 2)}</span>
+                )}
+              </span>
+              <span className="fj-livro-card__texto">
+                <span className="fj-livro-card__titulo">
+                  {card.icone && (/^https?:/.test(card.icone) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={card.icone} alt="" className="fj-livro-card__icone" />
+                  ) : (
+                    <span className="fj-livro-card__icone" aria-hidden="true">{card.icone}</span>
+                  ))}
+                  {card.titulo}
+                </span>
+                {card.descricao && <span className="fj-livro-card__descricao">{card.descricao}</span>}
+                {card.etiquetas.length > 0 && (
+                  <span className="fj-livro-card__etiquetas">
+                    {card.etiquetas.map((e) => <span key={e} className="fj-livro-termo">{e}</span>)}
+                  </span>
+                )}
+              </span>
+            </button>
+          ))}
+        </div>
+      );
     case "divisor":
       return <hr className="fj-livro-divisor" />;
     case "nao_suportado":

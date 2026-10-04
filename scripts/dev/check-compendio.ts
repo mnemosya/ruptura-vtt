@@ -119,6 +119,12 @@ async function main() {
     await page.screenshot({ path: `${SAIDA}/compendio-vosek.png` });
     ok("C7 índice troca de capítulo (Vosek)", true, `${imagens} imagem(ns)`);
 
+    // C16: galeria de banco embutido (Vertentes, cap. 16) desenhada com os 6 cards.
+    await page.locator('[data-testid="compendio-indice-capitulo"]', { hasText: "MAGIA E VERTENTES" }).click();
+    await page.waitForSelector('[data-testid="compendio-galeria"]', { timeout: 30000 }).catch(() => {});
+    const cards = await page.locator('[data-testid="compendio-card"]').count();
+    ok("C16 galeria das Vertentes com 6 cards", cards === 6, `${cards}`);
+
     await page.keyboard.press("Escape");
     await page.waitForSelector('[data-testid="compendio-livro"]', { state: "detached", timeout: 5000 });
     ok("C8 Esc fecha o livro", true);

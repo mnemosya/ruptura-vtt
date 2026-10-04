@@ -1,5 +1,5 @@
 {
-  "_sobre": "Ajustes por página do Compêndio (PLANO_COMPENDIO_NOTION), aplicados na sincronização. Chave: ID da página no Notion, sem hífens. capa.arquivo: imagem do repositório vira a capa do herói (as imagens da página continuam no corpo). capa.posicao: enquadramento da capa (object-position do CSS, ex.: \"15% 65%\" mostra mais da esquerda da imagem). capa.subirImagem: a N-ésima imagem do corpo (1 = primeira) sai do texto e vira a capa. desdobrarVerbetes: verbetes (blocos recolhíveis) com estes títulos viram títulos comuns, com o conteúdo à mostra. Sem ajuste, a capa é a primeira imagem da página, se ela abrir com uma.",
+  "_sobre": "Ajustes por página do Compêndio (PLANO_COMPENDIO_NOTION), aplicados na sincronização. Chave: ID da página no Notion, sem hífens. capa.arquivo: imagem do repositório vira a capa do herói (as imagens da página continuam no corpo). capa.substituirPrimeiraImagem: com capa.arquivo, a imagem que abria a página sai em vez de descer para o corpo. capa.posicao: enquadramento da capa (object-position do CSS, ex.: \"15% 65%\" mostra mais da esquerda da imagem). capa.subirImagem: a N-ésima imagem do corpo (1 = primeira) sai do texto e vira a capa. aberturaDaSecao: o texto da seção com este título vira a abertura do herói, e o título some. desdobrarVerbetes: verbetes (blocos recolhíveis) com estes títulos viram títulos comuns, com o conteúdo à mostra. Sem ajuste, a capa é a primeira imagem da página, se ela abrir com uma.",
   "paginas": {
     "d1d0a13635528315a0980176a3020e19": {
       "pagina": "1. BRAXUS",
@@ -38,6 +38,14 @@
       "capa": {
         "arquivo": "content/v12/capas/ilya-galayda-hightable-fhd.jpg",
         "posicao": "15% 65%"
+      }
+    },
+    "44c0a1363552821db82681a393ce7fb8": {
+      "pagina": "24. MERCADO NOTURNO",
+      "aberturaDaSecao": "COMO FUNCIONAM",
+      "capa": {
+        "arquivo": "content/v12/capas/c813ca7249b1729ad1d5250fc4b45370.jpg",
+        "substituirPrimeiraImagem": true
       }
     }
   }

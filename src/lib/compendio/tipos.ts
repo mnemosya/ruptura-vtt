@@ -63,6 +63,8 @@ export interface CapituloCompendio {
   paiPageId?: string | null;
   /** Imagem do herói (topo da página). Sai do corpo quando veio da primeira imagem do capítulo. */
   capa?: { url: string; largura: number; altura: number; posicao?: string } | null;
+  /** Abertura do herói escolhida à mão (ajuste aberturaDaSecao): substitui a abertura automática. */
+  abertura?: BlocoCompendio[] | null;
   /** Subpáginas das galerias deste capítulo e a data de edição de cada uma. */
   subpaginas?: Record<string, string>;
 }

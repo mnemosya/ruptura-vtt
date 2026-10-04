@@ -32,8 +32,10 @@ const ARQUIVO_AJUSTES = join("content", "v12", "compendio_ajustes.json");
 
 /** Ajustes por página (content/v12/compendio_ajustes.json). */
 interface AjustePagina {
-  capa?: { arquivo?: string; subirImagem?: number; posicao?: string };
+  capa?: { arquivo?: string; subirImagem?: number; posicao?: string; substituirPrimeiraImagem?: boolean };
   desdobrarVerbetes?: string[];
+  /** Título de uma seção cujo texto vira a abertura do herói (o título some). */
+  aberturaDaSecao?: string;
 }
 
 function normalizarTitulo(t: string): string {
@@ -62,6 +64,21 @@ function desdobrarVerbetes(blocos: BlocoCompendio[], titulos: string[]): Set<str
   };
   andar(blocos);
   return desdobradas;
+}
+
+/**
+ * Tira do corpo a seção com este título (o título e o que vem até o próximo título
+ * de mesmo nível ou maior) e devolve o conteúdo, para virar a abertura do herói.
+ */
+function tirarSecao(blocos: BlocoCompendio[], titulo: string): BlocoCompendio[] | null {
+  const i = blocos.findIndex((b) => b.tipo === "titulo" && normalizarTitulo(b.texto.map((t) => t.texto).join("")) === normalizarTitulo(titulo));
+  if (i < 0) return null;
+  const nivel = (blocos[i] as Extract<BlocoCompendio, { tipo: "titulo" }>).nivel;
+  let fim = i + 1;
+  while (fim < blocos.length && !(blocos[fim].tipo === "titulo" && (blocos[fim] as Extract<BlocoCompendio, { tipo: "titulo" }>).nivel <= nivel)) fim++;
+  const conteudo = blocos.slice(i + 1, fim).filter((b) => b.tipo !== "divisor");
+  blocos.splice(i, fim - i);
+  return conteudo;
 }
 
 /** Tira do corpo a N-ésima imagem (contando em toda a página) e a devolve. */
@@ -200,8 +217,13 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
   const porId = new Map((existentes ?? []).map((d) => [d.id as string, d]));
 
   if (!seco) {
+    // Preserva o resto do manifesto (ultimaVerificacao, ultimoResultado): reescrevê-lo
+    // inteiro apagava a data da última checagem, e o servidor passava a sincronizar a
+    // cada abertura do Compêndio — às vezes ao mesmo tempo que esta rodada.
+    const { data: pacote } = await supabase.from("content_packs").select("manifest").eq("id", PACK_COMPENDIO).maybeSingle();
+    const manifest = { ...((pacote?.manifest as Record<string, unknown> | null) ?? {}), origem: "notion", raiz: PAGINA_RAIZ_RUPTURA_V12 };
     const { error } = await supabase.from("content_packs").upsert(
-      { id: PACK_COMPENDIO, name: "RUPTURA v1.2 — livro (Notion)", version: "1.2", status: "published", manifest: { origem: "notion", raiz: PAGINA_RAIZ_RUPTURA_V12 } },
+      { id: PACK_COMPENDIO, name: "RUPTURA v1.2 — livro (Notion)", version: "1.2", status: "published", manifest },
       { onConflict: "id" },
     );
     if (error) throw new Error(`Falha ao registrar o pacote: ${error.message}`);
@@ -277,7 +299,14 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
 
   async function escolherCapa(pageId: string, blocos: BlocoCompendio[]): Promise<CapituloCompendio["capa"]> {
     const manual = await capaManual(pageId);
-    if (manual) return manual;
+    if (manual) {
+      // Troca de capa: a imagem que abria a página sai (em vez de descer para o corpo).
+      if (ajustes[pageId]?.capa?.substituirPrimeiraImagem) {
+        const i = blocos.findIndex((b) => b.tipo !== "divisor");
+        if (blocos[i]?.tipo === "imagem") blocos.splice(i, 1);
+      }
+      return manual;
+    }
     const n = ajustes[pageId]?.capa?.subirImagem;
     if (n) {
       const img = tirarImagem(blocos, n);
@@ -362,6 +391,8 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
       anotarDimensoes(conversao.blocos, dimensoes);
       aplicarDesdobrar(entrada.notionPageId, conversao);
       const capa = await definirCapa(entrada.notionPageId, conversao.blocos);
+      const secaoAbertura = ajustes[entrada.notionPageId]?.aberturaDaSecao;
+      const abertura = secaoAbertura ? tirarSecao(conversao.blocos, secaoAbertura) : null;
       const { numero, titulo } = separarNumero(pagina.titulo);
 
       // Subpáginas: linhas de galeria (bancos embutidos) e páginas filhas postas no
@@ -432,6 +463,7 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
         blocos: conversao.blocos,
         verbetes: conversao.verbetes,
         capa,
+        ...(abertura ? { abertura } : {}),
         ...(n ? { subpaginas } : {}),
       }, pagina.titulo), rotulo);
     } catch (e) {
@@ -453,6 +485,13 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
   // Imagens que nenhum documento publicado usa mais: removidas do bucket.
   // Só numa rodada limpa — com falha, um capítulo pode ter ficado com a versão antiga.
   if (!seco && rel.falhas.length === 0) rel.imagensOrfasRemovidas = await removerImagensOrfas(supabase);
+
+  // Toda rodada real conta como a checagem do período (linha de comando ou servidor):
+  // evita que o servidor dispare outra logo em seguida, ao mesmo tempo.
+  if (!seco) {
+    const { data: pacote } = await supabase.from("content_packs").select("manifest").eq("id", PACK_COMPENDIO).maybeSingle();
+    await supabase.from("content_packs").update({ manifest: { ...((pacote?.manifest as Record<string, unknown> | null) ?? {}), ultimaVerificacao: new Date().toISOString() } }).eq("id", PACK_COMPENDIO);
+  }
 
   rel.requisicoesNotion = notion.requisicoes();
   return rel;

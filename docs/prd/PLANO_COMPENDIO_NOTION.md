@@ -229,3 +229,9 @@ O índice de termos é montado pela própria sincronização, a partir dos títu
   - `capa.arquivo`: imagem do repositório como capa (Braxus);
   - `capa.subirImagem`: a N-ésima imagem do corpo sobe para o herói (Guerras Mágicas e Tecendo a Malha);
   - `desdobrarVerbetes`: verbetes viram títulos com o conteúdo à mostra (Sobrecarga e Ruptura).
+
+### 04/10/2026 — Mais ajustes e duas correções
+
+- Ajustes novos: `aberturaDaSecao` (o texto da seção vira a abertura do herói e o título some — Mercado Noturno, "Como funcionam") e `capa.substituirPrimeiraImagem` (a capa de arquivo troca a imagem que abria a página, em vez de empurrá-la para o corpo — Mercado Noturno).
+- Correção: a sincronização pela linha de comando reescrevia o manifesto do pacote e apagava `ultimaVerificacao`; o servidor então sincronizava a cada abertura do Compêndio, às vezes ao mesmo tempo que outra rodada (uma capa recém-enviada chegou a ser apagada como órfã). Agora o manifesto é mesclado e toda rodada real registra a checagem.
+- Correção: as galerias (Vertentes, Classes) tinham deixado de ser desenhadas por um erro de edição; `check-compendio` ganhou o critério C16 (6 cards das Vertentes).

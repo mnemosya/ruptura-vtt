@@ -278,7 +278,9 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
   const resultados = linhas ? buscarNoLivro(linhas, busca, textos) : [];
   const buscando = busca.trim().length >= 2;
   // Com capa, a abertura vai para o herói (ver separarAbertura).
-  const { abertura, corpo } = capitulo?.capa ? separarAbertura(capitulo.blocos) : { abertura: [], corpo: capitulo?.blocos ?? [] };
+  const { abertura, corpo } = capitulo?.abertura?.length
+    ? { abertura: capitulo.abertura, corpo: capitulo.blocos }
+    : capitulo?.capa ? separarAbertura(capitulo.blocos) : { abertura: [], corpo: capitulo?.blocos ?? [] };
   const capituloRaizCarregado = raizAtual ? capitulos.get(raizAtual) ?? null : null;
   const indiceAtivo = capituloRaizCarregado ? indiceDoCapitulo(capituloRaizCarregado.blocos) : [];
   const naRaiz = raizAtual === atual?.pageId;
