@@ -20,7 +20,6 @@
 
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   signInWithPassword,
   signUpWithPassword,
@@ -290,7 +289,6 @@ export function LoginForm({
   /** Bloco extra entre o cabeçalho e o formulário (ex.: o convite que trouxe a pessoa até aqui). */
   faixa?: ReactNode;
 }) {
-  const router = useRouter();
   const [mode, setMode] = useState<AuthMode>("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState(lockedEmail ?? "");
@@ -343,8 +341,11 @@ export function LoginForm({
       }
       await activatePendingEmailInvites().catch(() => []);
       setFeedback({ kind: "success", message: "Autenticação bem-sucedida. Iniciando sessão na malha…" });
-      router.push(redirectTo);
-      router.refresh();
+      // Carga completa em vez de router.push + refresh: a navegação do
+      // cliente, disparada junto com o refresh logo após gravar os cookies
+      // de sessão, ficava pendurada em produção e o botão nunca saía de
+      // "Processando…".
+      window.location.assign(redirectTo);
       return;
     }
 
@@ -361,8 +362,7 @@ export function LoginForm({
     }
     await activatePendingEmailInvites().catch(() => []);
     setFeedback({ kind: "success", message: "Conta criada. Iniciando sessão na malha…" });
-    router.push(redirectTo);
-    router.refresh();
+    window.location.assign(redirectTo);
   }
 
   async function handleRecover() {
