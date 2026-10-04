@@ -209,3 +209,11 @@ O índice de termos é montado pela própria sincronização, a partir dos títu
 - Vai só o trecho, com a origem: verbete (se a seleção estiver dentro de um) ou página, e o capítulo ("Trecho · Compêndio · 22. CONDIÇÕES"); "Abrir no livro" leva ao verbete.
 - O servidor confere que o trecho está naquela página do livro publicado (espaços e quebras normalizados) e recusa o que não confere; máximo de 1.500 caracteres.
 - Verificação: `check-compendio` com 15 critérios aprovados (C14 enviar a seleção, C15 cartão no chat).
+
+### 04/10/2026 — Herói com capa e Expandir
+
+- Capa do herói, como no Códex de Classe: a primeira imagem da página, se não for larga demais (≤ 2:1), sai do corpo e vira o fundo do herói. Capas escolhidas à mão em `content/v12/compendio_capas.json` (Braxus usa `content/v12/capas/braxus.webp`; as imagens do capítulo continuam no corpo). Capa panorâmica (> 2:1) ocupa o herói inteiro, com degradê escuro à esquerda.
+- A sincronização guarda largura e altura de cada imagem (releitura completa: 51 páginas, 23 com capa).
+- Abertura no herói (`separarAbertura`): epígrafe curta (citação ≤ 600 caracteres) e até 3 parágrafos; se a página começa com UMA tabela ou imagem (as Classes, Braxus), ela fica logo depois do herói e os parágrafos seguintes sobem — isso muda a ordem em relação ao Notion. Páginas que começam com destaque (as Vertentes) ficam só com o título sobre a capa.
+- "Expandir" em todas as imagens (corpo e capa), visível só no hover/foco, abrindo em tela cheia; Esc fecha a imagem antes do livro.
+- Em tela estreita (< 768px), a capa vai para cima do texto.

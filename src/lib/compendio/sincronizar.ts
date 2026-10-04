@@ -15,6 +15,8 @@
  */
 
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import sharp from "sharp";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { converterBlocos, separarNumero, type BlocoNotion } from "./converter";
@@ -26,6 +28,9 @@ import { avaliarRevisoes, lerFontesRevisao, type EstadoPaginaLivro, type Pendenc
 export const BUCKET_COMPENDIO = "compendio";
 /** Até onde o livro desce em páginas dentro de páginas (capítulo → subpágina → … ). */
 export const PROFUNDIDADE_MAXIMA_SUBPAGINAS = 3;
+/** Imagem mais larga que isso (largura/altura) não vira capa automática: mapas e panoramas ficam no corpo. */
+export const PROPORCAO_MAXIMA_CAPA = 2;
+const ARQUIVO_CAPAS = join("content", "v12", "compendio_capas.json");
 export const PACK_COMPENDIO = "notion-ruptura-v1-2";
 
 export interface RelatorioSincronizacao {
@@ -103,6 +108,18 @@ function primeiraImagem(blocos: BlocoCompendio[]): string | null {
   return null;
 }
 
+/** Percorre os blocos anotando largura e altura de cada imagem. */
+function anotarDimensoes(blocos: BlocoCompendio[], dims: Map<string, { largura: number; altura: number }>): void {
+  for (const b of blocos) {
+    if (b.tipo === "imagem") {
+      const d = dims.get(b.url);
+      if (d) Object.assign(b, d);
+    }
+    if ("filhos" in b) anotarDimensoes(b.filhos, dims);
+    if (b.tipo === "lista") for (const item of b.itens) anotarDimensoes(item.filhos, dims);
+  }
+}
+
 /** Percorre os blocos trocando a URL de cada imagem. */
 async function trocarImagens(blocos: BlocoCompendio[], trocar: (url: string) => Promise<string>): Promise<void> {
   for (const b of blocos) {
@@ -119,6 +136,7 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
     criados: [], atualizados: [], inalterados: [], arquivados: [], falhas: [], naoSuportados: {}, imagensCopiadas: 0, bytesOriginais: 0, bytesGravados: 0, imagensOrfasRemovidas: 0, requisicoesNotion: 0,
   };
 
+  const capasManuais = (JSON.parse(readFileSync(join(process.cwd(), ARQUIVO_CAPAS), "utf8")) as { capas: Record<string, { arquivo: string }> }).capas;
   const indice = lerIndice(await notion.blocos(PAGINA_RAIZ_RUPTURA_V12));
   log(`Índice: ${indice.length} capítulos.`);
 
@@ -138,12 +156,28 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
     if (error) throw new Error(`Falha ao registrar o pacote: ${error.message}`);
   }
 
+  /** Largura e altura de cada imagem já no bucket (pelo link público): o herói usa a proporção. */
+  const dimensoes = new Map<string, { largura: number; altura: number }>();
+  async function medir(publica: string, bytes?: Buffer): Promise<void> {
+    if (dimensoes.has(publica) || publica.endsWith(".svg")) return;
+    try {
+      const corpo = bytes ?? Buffer.from(await (await fetch(publica)).arrayBuffer());
+      const m = await sharp(corpo).metadata();
+      if (m.width && m.height) dimensoes.set(publica, { largura: m.width, altura: m.height });
+    } catch {
+      // sem medida: a imagem só não concorre a capa
+    }
+  }
+
   async function copiarImagem(url: string): Promise<string> {
     const caminho = chaveImagem(url);
     const publica = supabase.storage.from(BUCKET_COMPENDIO).getPublicUrl(caminho).data.publicUrl;
     if (seco) return publica;
     const { data: jaExiste } = await supabase.storage.from(BUCKET_COMPENDIO).list("", { search: caminho, limit: 1 });
-    if (jaExiste?.some((f) => f.name === caminho)) return publica;
+    if (jaExiste?.some((f) => f.name === caminho)) {
+      await medir(publica);
+      return publica;
+    }
     const resp = await fetch(url);
     if (!resp.ok) throw new Error(`imagem ${resp.status}`);
     const original = await resp.arrayBuffer();
@@ -155,7 +189,36 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
     const { error } = await supabase.storage.from(BUCKET_COMPENDIO).upload(caminho, corpo, { contentType: tipo, upsert: true });
     if (error) throw new Error(`upload da imagem: ${error.message}`);
     rel.imagensCopiadas++;
+    await medir(publica, corpo);
     return publica;
+  }
+
+  /** Capa escolhida à mão (content/v12/compendio_capas.json): sobe o arquivo do repositório já otimizado. */
+  async function capaManual(pageId: string): Promise<CapituloCompendio["capa"]> {
+    const entrada = capasManuais[pageId];
+    if (!entrada) return null;
+    const original = readFileSync(join(process.cwd(), entrada.arquivo));
+    const corpo = await otimizarImagem(original.buffer.slice(original.byteOffset, original.byteOffset + original.byteLength) as ArrayBuffer);
+    const caminho = `capa-${createHash("sha256").update(corpo).digest("hex").slice(0, 32)}.webp`;
+    const publica = supabase.storage.from(BUCKET_COMPENDIO).getPublicUrl(caminho).data.publicUrl;
+    if (!seco) {
+      const { error } = await supabase.storage.from(BUCKET_COMPENDIO).upload(caminho, corpo, { contentType: "image/webp", upsert: true });
+      if (error) throw new Error(`upload da capa: ${error.message}`);
+    }
+    const m = await sharp(corpo).metadata();
+    return { url: publica, largura: m.width ?? 0, altura: m.height ?? 0 };
+  }
+
+  /** Capa da página: a escolhida à mão; senão a primeira imagem, se não for larga demais (sai do corpo). */
+  async function definirCapa(pageId: string, blocos: BlocoCompendio[]): Promise<CapituloCompendio["capa"]> {
+    const manual = await capaManual(pageId);
+    if (manual) return manual;
+    const i = blocos.findIndex((b) => b.tipo !== "divisor");
+    const primeiro = blocos[i];
+    if (!primeiro || primeiro.tipo !== "imagem" || !primeiro.largura || !primeiro.altura) return null;
+    if (primeiro.largura / primeiro.altura > PROPORCAO_MAXIMA_CAPA) return null;
+    blocos.splice(i, 1);
+    return { url: primeiro.url, largura: primeiro.largura, altura: primeiro.altura };
   }
 
   const vistos = new Set<string>();
@@ -227,6 +290,8 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
       const conversao = converterBlocos(await notion.blocos(entrada.notionPageId));
       if (conversao.naoSuportados.length) rel.naoSuportados[rotulo] = [...new Set(conversao.naoSuportados)];
       await trocarImagens(conversao.blocos, copiarImagem);
+      anotarDimensoes(conversao.blocos, dimensoes);
+      const capa = await definirCapa(entrada.notionPageId, conversao.blocos);
       const { numero, titulo } = separarNumero(pagina.titulo);
 
       // Subpáginas: linhas de galeria (bancos embutidos) e páginas filhas postas no
@@ -258,6 +323,7 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
             const convSub = converterBlocos(await notion.blocos(alvo.pageId));
             if (convSub.naoSuportados.length) rel.naoSuportados[rotuloSub] = [...new Set(convSub.naoSuportados)];
             await trocarImagens(convSub.blocos, copiarImagem);
+            anotarDimensoes(convSub.blocos, dimensoes);
             if (alvo.card) {
               alvo.card.imagem = primeiraImagem(convSub.blocos);
               if (alvo.card.icone && /^https?:/.test(alvo.card.icone)) alvo.card.icone = await copiarImagem(alvo.card.icone);
@@ -265,6 +331,7 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
             const tituloSub = alvo.titulo || sub.titulo;
             // Primeiro as netas (a página precisa da capa dos próprios cards antes de ser gravada).
             if (profundidade < PROFUNDIDADE_MAXIMA_SUBPAGINAS) await processarSubpaginas(convSub, alvo.pageId, tituloSub, rotuloSub, profundidade + 1);
+            const capaSub = await definirCapa(alvo.pageId, convSub.blocos);
             registrar(await gravar({
               notionPageId: alvo.pageId,
               notionEditadoEm: sub.editadoEm,
@@ -274,6 +341,7 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
               ordem: entrada.ordem + n / 1000,
               blocos: convSub.blocos,
               verbetes: convSub.verbetes,
+              capa: capaSub,
               paiPageId,
             }, tituloSub), rotuloSub);
           } catch (e) {
@@ -292,6 +360,7 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
         ordem: entrada.ordem,
         blocos: conversao.blocos,
         verbetes: conversao.verbetes,
+        capa,
         ...(n ? { subpaginas } : {}),
       }, pagina.titulo), rotulo);
     } catch (e) {

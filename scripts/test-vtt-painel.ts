@@ -72,6 +72,7 @@ import {
   indiceDeTermos,
   resolverTermo,
   rotuloCapitulo,
+  separarAbertura,
   textoPlanoDosBlocos,
   vizinhos,
   type LinhaCapitulo,
@@ -650,6 +651,24 @@ const LIVRO: LinhaCapitulo[] = [
   ok("K5b (subpágina de subpágina: vizinhos e índice do capítulo raiz)", vizinhos(comNeta, "s2").proximo?.pageId === "p22" && agruparPorSecao(comNeta).every((g) => g.capitulos.every((c) => !c.paiPageId)), "ok");
   const v = vizinhos(LIVRO, "p21");
   ok("K5 (anterior e próximo na ordem do livro)", v.anterior?.pageId === "p1" && v.proximo?.pageId === "p22" && vizinhos(LIVRO, "p1").anterior === null, "ok");
+}
+{
+  const par = (t: string) => ({ tipo: "paragrafo" as const, texto: [{ texto: t }] });
+  const tab = { tipo: "tabela" as const, cabecalhoLinha: true, cabecalhoColuna: false, linhas: [] };
+  const a = separarAbertura([{ tipo: "divisor" }, par("a"), par("b"), par("c"), par("d"), { tipo: "titulo", nivel: 3, texto: [{ texto: "T" }], ancora: "t" }]);
+  const b = separarAbertura([tab, par("a"), par("b"), { tipo: "lista", ordenada: false, itens: [] }]);
+  const c = separarAbertura([{ tipo: "citacao", texto: [{ texto: "epígrafe" }], filhos: [] }, par("a")]);
+  const d = separarAbertura([{ tipo: "citacao", texto: [{ texto: "x".repeat(700) }], filhos: [] }, par("a")]);
+  const e = separarAbertura([{ tipo: "destaque", icone: null, texto: [], filhos: [] }, par("a")]);
+  ok(
+    "K7 (abertura do herói: até 3 parágrafos; tabela/imagem inicial fica logo depois; epígrafe curta sobe; o resto não mexe)",
+    a.abertura.length === 3 && a.corpo[0].tipo === "paragrafo" &&
+      b.abertura.length === 2 && b.corpo[0].tipo === "tabela" && b.corpo[1].tipo === "lista" &&
+      c.abertura.length === 2 && c.abertura[0].tipo === "citacao" &&
+      d.abertura.length === 0 && d.corpo.length === 2 &&
+      e.abertura.length === 0 && e.corpo.length === 2,
+    "ok",
+  );
 }
 ok(
   "K6 (rótulo e texto corrido)",

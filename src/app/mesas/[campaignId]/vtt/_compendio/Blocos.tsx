@@ -18,6 +18,8 @@ export interface ContextoLeitura {
   /** Verbetes abertos (por âncora). */
   abertos: Set<string>;
   alternar: (ancora: string) => void;
+  /** Abre a imagem em tela cheia. */
+  expandir?: (url: string, legenda: string) => void;
   /** Envia um verbete ao chat da mesa. */
   enviar?: (ancora: string) => void;
 }
@@ -57,6 +59,15 @@ export function Texto({ trechos, ctx }: { trechos: TrechoCompendio[]; ctx: Conte
         return <Fragment key={i}>{no}</Fragment>;
       })}
     </>
+  );
+}
+
+/** Botão "Expandir" sobre uma imagem: aparece só no hover (ou com foco do teclado). */
+export function BotaoExpandir({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="fj-mapa__expandir fj-livro-expandir" data-testid="compendio-expandir-imagem">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg> Expandir
+    </button>
   );
 }
 
@@ -167,8 +178,11 @@ function Bloco({ b, ctx }: { b: BlocoCompendio; ctx: ContextoLeitura }) {
     case "imagem":
       return (
         <figure className="fj-livro-figura">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={b.url} alt={b.legenda.map((t) => t.texto).join("")} loading="lazy" />
+          <div className="fj-livro-figura__moldura">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={b.url} alt={b.legenda.map((t) => t.texto).join("")} loading="lazy" width={b.largura} height={b.altura} />
+            {ctx.expandir && <BotaoExpandir onClick={() => ctx.expandir!(b.url, b.legenda.map((t) => t.texto).join(""))} />}
+          </div>
           {b.legenda.length > 0 && (
             <figcaption className="fj-mono fj-mono--pequeno">
               <Texto trechos={b.legenda} ctx={ctx} />

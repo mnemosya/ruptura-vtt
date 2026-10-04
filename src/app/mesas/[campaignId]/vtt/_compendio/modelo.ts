@@ -7,6 +7,47 @@
 import { ancoraDe } from "../../../../../lib/compendio/converter";
 import type { BlocoCompendio, TrechoCompendio } from "../../../../../lib/compendio/tipos";
 
+/** Até quantos parágrafos de abertura sobem para o herói quando a página tem capa. */
+export const MAX_PARAGRAFOS_ABERTURA = 3;
+
+/** Epígrafe (citação de abertura) só sobe para o herói se for curta. */
+export const MAX_CARACTERES_EPIGRAFE = 600;
+
+/**
+ * Com capa, a abertura da página vai para o herói, como no Códex de Classe:
+ *   - uma epígrafe curta (citação) no começo;
+ *   - os parágrafos seguintes, até 3, parando no primeiro título, verbete, lista…
+ * Se a página começa com UMA tabela ou imagem (as Classes abrem com a tabela de
+ * Ranking; Braxus, com o mapa), ela fica no corpo, logo depois do herói, e os
+ * parágrafos que vêm depois dela sobem. Divisores no começo são pulados.
+ */
+export function separarAbertura(blocos: BlocoCompendio[]): { abertura: BlocoCompendio[]; corpo: BlocoCompendio[] } {
+  const abertura: BlocoCompendio[] = [];
+  const pularDivisores = (k: number) => {
+    while (k < blocos.length && blocos[k].tipo === "divisor") k++;
+    return k;
+  };
+  let i = pularDivisores(0);
+  let adiado: BlocoCompendio | null = null;
+  if (blocos[i]?.tipo === "tabela" || blocos[i]?.tipo === "imagem") {
+    adiado = blocos[i];
+    i = pularDivisores(i + 1);
+  }
+  const b = blocos[i];
+  if (b?.tipo === "citacao" && b.filhos.length === 0 && textoDe(b.texto).length <= MAX_CARACTERES_EPIGRAFE) {
+    abertura.push(b);
+    i = pularDivisores(i + 1);
+  }
+  let paragrafos = 0;
+  while (i < blocos.length && blocos[i].tipo === "paragrafo" && paragrafos < MAX_PARAGRAFOS_ABERTURA) {
+    abertura.push(blocos[i++]);
+    paragrafos++;
+  }
+  // Sem abertura, nada muda de lugar.
+  if (abertura.length === 0) return { abertura, corpo: blocos };
+  return { abertura, corpo: adiado ? [adiado, ...blocos.slice(i)] : blocos.slice(i) };
+}
+
 /** Linha leve de um capítulo: o que a aba e o índice precisam, sem os blocos. */
 export interface LinhaCapitulo {
   pageId: string;

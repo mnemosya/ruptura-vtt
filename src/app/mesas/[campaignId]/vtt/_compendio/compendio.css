@@ -92,7 +92,7 @@
 .fj-livro-tabela th { background: color-mix(in srgb, var(--fj-cy) 10%, transparent); font: 700 13px var(--fj-display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fj-gelo); }
 
 /* ── Imagem ────────────────────────────────────────────── */
-.fj-livro-figura img { width: 100%; height: auto; border: 1px solid color-mix(in srgb, var(--fj-cy) 15%, transparent); }
+.fj-livro-figura img { display: block; width: 100%; height: auto; border: 1px solid color-mix(in srgb, var(--fj-cy) 15%, transparent); }
 .fj-livro-figura figcaption { margin-top: var(--hud-space-2); }
 
 /* ── Vizinhos e avisos ─────────────────────────────────── */
@@ -145,3 +145,29 @@
 .fj-livro-menu { position: fixed; z-index: 1000; min-width: 200px; border: 1px solid color-mix(in srgb, var(--fj-cy) 45%, transparent); background: var(--fj-abismo); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 12px color-mix(in srgb, var(--fj-cy) 15%, transparent); padding: var(--hud-space-1); }
 .fj-livro-menu__item { display: block; width: 100%; padding: var(--hud-space-2) var(--hud-space-4); text-align: left; font: 700 12px var(--fj-display); text-transform: uppercase; letter-spacing: 0.12em; color: var(--fj-gelo); transition: var(--fj-trans); }
 .fj-livro-menu__item:hover, .fj-livro-menu__item:focus-visible { background: color-mix(in srgb, var(--fj-am) 15%, transparent); color: var(--fj-am); outline: none; }
+
+/* ── Herói com capa (como o Códex de Classe) ───────────── */
+.fj-livro-heroi--arte { min-height: 340px; }
+.fj-livro-heroi__arte { position: absolute; inset-block: 0; right: 0; width: 60%; }
+.fj-livro-heroi__arte .fj-codex__heroi-img { width: 100%; }
+.fj-livro-heroi--arte .fj-codex__heroi-texto { max-width: 620px; padding-block: 40px 36px; }
+.fj-livro-abertura { margin-top: var(--hud-space-6); text-shadow: 0 1px 8px color-mix(in srgb, var(--fj-abismo) 85%, transparent); }
+.fj-livro-abertura > * + * { margin-top: var(--hud-space-4); }
+/* Capa panorâmica (mapa de Braxus): ocupa o herói todo; o degradê escurece só a esquerda, onde fica o texto. */
+.fj-livro-heroi--panorama .fj-livro-heroi__arte { width: 100%; }
+.fj-livro-heroi--panorama .fj-codex__heroi-img { opacity: 0.85; mask-image: linear-gradient(to left, black 20%, rgba(0, 0, 0, 0.3) 55%, transparent 85%); -webkit-mask-image: linear-gradient(to left, black 20%, rgba(0, 0, 0, 0.3) 55%, transparent 85%); }
+@media (max-width: 767px) {
+  .fj-livro-heroi__arte, .fj-livro-heroi--panorama .fj-livro-heroi__arte { position: relative; width: 100%; height: 220px; }
+  .fj-livro-heroi__arte .fj-codex__heroi-img { mask-image: linear-gradient(to top, transparent, black 40%); -webkit-mask-image: linear-gradient(to top, transparent, black 40%); }
+}
+
+/* Link para a página-mãe no herói de uma subpágina. */
+.fj-livro-pai { font: 700 13px var(--fj-display); text-transform: uppercase; letter-spacing: 0.12em; color: var(--fj-cy); transition: var(--fj-trans); }
+.fj-livro-pai:hover { color: var(--fj-am); }
+
+/* ── Expandir imagem (só no hover) e tela cheia ───────── */
+.fj-livro-figura__moldura { position: relative; }
+.fj-livro-expandir { opacity: 0; pointer-events: none; transition: var(--fj-trans); }
+.fj-livro-figura__moldura:hover .fj-livro-expandir, .fj-livro-heroi__arte:hover .fj-livro-expandir, .fj-livro-expandir:focus-visible { opacity: 1; pointer-events: auto; }
+.fj-livro-ampliada { cursor: zoom-out; }
+.fj-livro-ampliada__img { max-width: 100%; max-height: calc(100dvh - 140px); object-fit: contain; border: 1px solid color-mix(in srgb, var(--fj-cy) 25%, transparent); cursor: default; }

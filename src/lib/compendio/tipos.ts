@@ -28,7 +28,7 @@ export type BlocoCompendio =
   | { tipo: "verbete"; titulo: TrechoCompendio[]; ancora: string; filhos: BlocoCompendio[] }
   | { tipo: "destaque"; icone: string | null; texto: TrechoCompendio[]; filhos: BlocoCompendio[] }
   | { tipo: "tabela"; cabecalhoLinha: boolean; cabecalhoColuna: boolean; linhas: TrechoCompendio[][][] }
-  | { tipo: "imagem"; url: string; legenda: TrechoCompendio[] }
+  | { tipo: "imagem"; url: string; legenda: TrechoCompendio[]; largura?: number; altura?: number }
   | { tipo: "link_pagina"; paginaNotionId: string; titulo?: string }
   /** Banco de dados do Notion em galeria (Classes, Vertentes): cada card abre a página da linha. */
   | { tipo: "galeria"; titulo: string; itens: CardGaleria[] }
@@ -61,6 +61,8 @@ export interface CapituloCompendio {
   verbetes: { titulo: string; ancora: string }[];
   /** Subpágina (linha de uma galeria): ID do capítulo onde a galeria está. */
   paiPageId?: string | null;
+  /** Imagem do herói (topo da página). Sai do corpo quando veio da primeira imagem do capítulo. */
+  capa?: { url: string; largura: number; altura: number } | null;
   /** Subpáginas das galerias deste capítulo e a data de edição de cada uma. */
   subpaginas?: Record<string, string>;
 }

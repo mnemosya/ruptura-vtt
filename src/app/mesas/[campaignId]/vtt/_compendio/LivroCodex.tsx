@@ -16,13 +16,14 @@ import { oxanium } from "../../../../_design/oxanium";
 import "../_forja/forja.css";
 import "./compendio.css";
 import { abrirCapituloAction, enviarSelecaoAoChatAction, enviarTrechoAoChatAction, listarCapitulosAction, textosDoLivroAction } from "./acoes";
-import { Blocos, type ContextoLeitura } from "./Blocos";
+import { BotaoExpandir, Blocos, type ContextoLeitura } from "./Blocos";
 import {
   agruparPorSecao,
   capituloRaiz,
   buscarNoLivro,
   indiceDeTermos,
   rotuloCapitulo,
+  separarAbertura,
   vizinhos,
   type DestinoLivro,
   type LinhaCapitulo,
@@ -83,6 +84,11 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
   const pedindoTextos = useRef(false);
   const [abertos, setAbertos] = useState<Set<string>>(new Set());
   const [avisoEnvio, setAvisoEnvio] = useState<string | null>(null);
+
+  /** Imagem aberta em tela cheia ("Expandir"). */
+  const [ampliada, setAmpliada] = useState<{ url: string; legenda: string } | null>(null);
+  const ampliadaRef = useRef(ampliada);
+  ampliadaRef.current = ampliada;
 
   /** Menu de contexto sobre uma seleção (só na mesa: fora dela não há chat). */
   const [menuSelecao, setMenuSelecao] = useState<{ x: number; y: number; texto: string; ancora: string | null } | null>(null);
@@ -187,10 +193,11 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      if (menuSelecaoRef.current) {
+      if (menuSelecaoRef.current || ampliadaRef.current) {
         e.preventDefault();
         e.stopPropagation();
         setMenuSelecao(null);
+        setAmpliada(null);
         return;
       }
       if (!fecharRef.current) return;
@@ -239,6 +246,7 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
     titulos,
     ir,
     abertos,
+    expandir: (url, legenda) => setAmpliada({ url, legenda }),
     enviar: campaignId ? (ancora) => atual && void enviarAoChat(atual.pageId, ancora) : undefined,
     alternar: (ancora) => setAbertos((s) => {
       const n = new Set(s);
@@ -252,10 +260,25 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
   const { anterior, proximo } = linhas && atual ? vizinhos(linhas, atual.pageId) : { anterior: null, proximo: null };
   const resultados = linhas ? buscarNoLivro(linhas, busca, textos) : [];
   const buscando = busca.trim().length >= 2;
+  // Com capa, a abertura vai para o herói (ver separarAbertura).
+  const { abertura, corpo } = capitulo?.capa ? separarAbertura(capitulo.blocos) : { abertura: [], corpo: capitulo?.blocos ?? [] };
   const subtitulos = (capitulo?.blocos ?? []).filter((b) => b.tipo === "titulo" && b.nivel <= 3);
 
   return (
     <div className="fj-borda fj-ch fj-codex" data-testid="compendio-livro">
+      {ampliada && createPortal(
+        <div className={`fj-root ${oxanium.variable} fj-mapa-grande fj-livro-ampliada`} role="dialog" aria-modal="true" aria-label="Imagem ampliada" onClick={() => setAmpliada(null)} data-testid="compendio-imagem-ampliada">
+          <div className="fj-mapa-grande__topo" onClick={(e) => e.stopPropagation()}>
+            {ampliada.legenda && <span className="fj-mapa-grande__nome">{ampliada.legenda}</span>}
+            <button type="button" onClick={() => setAmpliada(null)} className="fj-fechar fj-mapa-grande__fechar">ESC · Fechar</button>
+          </div>
+          <div className="fj-mapa-grande__area">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={ampliada.url} alt={ampliada.legenda} className="fj-livro-ampliada__img" onClick={(e) => e.stopPropagation()} />
+          </div>
+        </div>,
+        document.body,
+      )}
       {menuSelecao && createPortal(
         <div className={`fj-root ${oxanium.variable}`}>
         <div
@@ -351,23 +374,35 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
               </div>
             ) : capitulo && linhaAtual ? (
               <article key={capitulo.notionPageId}>
-                <header className="fj-codex__heroi fj-livro-heroi">
+                <header className={`fj-codex__heroi fj-livro-heroi ${capitulo.capa ? "fj-livro-heroi--arte" : ""} ${capitulo.capa && capitulo.capa.largura > capitulo.capa.altura * 2 ? "fj-livro-heroi--panorama" : ""}`}>
+                  {capitulo.capa && (
+                    <div className="fj-livro-heroi__arte">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={capitulo.capa.url} alt="" className="fj-codex__heroi-img" />
+                      <BotaoExpandir onClick={() => setAmpliada({ url: capitulo.capa!.url, legenda: capitulo.titulo })} />
+                    </div>
+                  )}
                   <div className="fj-codex__heroi-texto">
                     {linhaAtual.paiPageId ? (
-                      <button type="button" className="fj-livro-link fj-livro-link--bloco" onClick={() => ir({ pageId: linhaAtual.paiPageId! })}>
+                      <button type="button" className="fj-livro-pai" onClick={() => ir({ pageId: linhaAtual.paiPageId! })}>
                         ‹ {titulos.get(linhaAtual.paiPageId) ?? linhaAtual.secao}
                       </button>
                     ) : (
                       <Mono tom="am">{linhaAtual.secao}{linhaAtual.numero != null ? ` · Capítulo ${linhaAtual.numero}` : ""}</Mono>
                     )}
                     <h2 className="fj-codex__heroi-titulo fj-glow">{capitulo.titulo}</h2>
+                    {abertura.length > 0 && (
+                      <div className="fj-codex__paragrafos fj-livro-abertura">
+                        <Blocos blocos={abertura} ctx={ctx} />
+                      </div>
+                    )}
                     {campaignId && <button type="button" className="fj-livro-enviar fj-livro-enviar--heroi" onClick={() => void enviarAoChat(capitulo.notionPageId, null)} data-testid="compendio-enviar-pagina">
                       Enviar ao chat
                     </button>}
                   </div>
                 </header>
                 <div className="fj-codex__coluna fj-livro-texto">
-                  <Blocos blocos={capitulo.blocos} ctx={ctx} />
+                  <Blocos blocos={corpo} ctx={ctx} />
                   <nav className="fj-livro-vizinhos" aria-label="Capítulos vizinhos">
                     {anterior ? (
                       <button type="button" className="fj-livro-vizinho" onClick={() => ir({ pageId: anterior.pageId })}>
