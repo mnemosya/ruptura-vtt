@@ -70,9 +70,31 @@ const CANAL_CODIGO: Record<RecursoEditavel, string> = {
 };
 
 /**
- * O traço: uma senoide de duas frequências que anda até a fração atual
- * e desce para a linha de base. A amplitude dobra no estado crítico —
- * é a mesma leitura, mais instável.
+ * Assinatura de cada canal: o desenho do traço, como num monitor de
+ * leito. PV bate como um eletrocardiograma, PE oscila como onda
+ * cerebral, Mana é uma senoide larga. Devolve o deslocamento acima da
+ * linha de base (positivo = sobe), em unidades do `viewBox`.
+ */
+const ASSINATURA: Record<RecursoEditavel, (x: number) => number> = {
+  pv: (x) => {
+    const t = x % 64;
+    if (t >= 20 && t < 22) return -(t - 20); // Q
+    if (t >= 22 && t < 25) return -2 + ((t - 22) / 3) * 13; // R
+    if (t >= 25 && t < 28) return 11 - ((t - 25) / 3) * 15; // S
+    if (t >= 28 && t < 30) return -4 + ((t - 28) / 2) * 4;
+    if (t >= 36 && t < 46) return Math.sin(((t - 36) / 10) * Math.PI) * 2.2; // T
+    return Math.sin(x * 0.2) * 0.3;
+  },
+  pe: (x) => Math.sin(x * 0.33) * 1.1 + Math.sin(x * 0.12) * 0.9 + Math.sin(x * 0.71) * 0.5,
+  mana: (x) => Math.sin(x * 0.085) * 2.6 * (0.75 + 0.25 * Math.sin(x * 0.02)),
+};
+
+/**
+ * O traço anda até a fração atual com a assinatura do canal e desce
+ * para a linha de base. Dali até o fim do canal segue o FANTASMA: o
+ * mesmo desenho, apagado, na base — o que o recurso perdeu continua
+ * visível como sinal ausente, em vez de o canal simplesmente acabar.
+ * A amplitude dobra no estado crítico — é a mesma leitura, mais instável.
  *
  * EM DÉFICIT (PE abaixo de zero) a fração não existe na escala: um
  * traço de comprimento zero deixava o canal vazio justamente no estado
@@ -87,27 +109,33 @@ const CANAL_CODIGO: Record<RecursoEditavel, string> = {
  * zero, no fundo do canal ao chegar no piso.
  */
 function tracado(
+  id: RecursoEditavel,
   atual: number,
   max: number,
   critico: boolean,
   deficit: boolean,
   /** 0 na superfície do déficit (valor 0), 1 no piso. */
   profundidade: number,
-): { pontos: string; fimX: number; baseY: number } {
+): { pontos: string; fantasma: string; fimX: number; baseY: number } {
   const razao = deficit ? 0.5 : max > 0 ? Math.max(0, Math.min(1, atual / max)) : 0;
   const fimX = CANAL.xMin + CANAL_LARGURA * razao;
-  const amplitude = critico ? 2.2 : 1.05;
+  const forma = ASSINATURA[id];
+  const ganho = critico ? 2 : 1;
   // O fundo útil do canal — 8 unidades acima da borda, para o traço não
   // encostar nela nem no rótulo de estado.
   const fundo = CANAL.altura - 10;
   const baseY = deficit ? CANAL.baseY + (fundo - CANAL.baseY) * profundidade : CANAL.baseY;
+  const passo = 1.5;
   const pontos: string[] = [];
-  for (let x = CANAL.xMin; x <= fimX; x += 4) {
-    const y = baseY + Math.sin(x * 0.19) * amplitude + Math.sin(x * 0.067) * amplitude * 0.45;
-    pontos.push(`${x.toFixed(1)},${y.toFixed(2)}`);
+  for (let x = CANAL.xMin; x <= fimX; x += passo) {
+    pontos.push(`${x.toFixed(1)},${(baseY - forma(x) * ganho).toFixed(2)}`);
   }
   if (razao > 0) pontos.push(`${fimX.toFixed(1)},${baseY.toFixed(2)}`);
-  return { pontos: pontos.join(" "), fimX, baseY };
+  const fantasma: string[] = [];
+  for (let x = fimX; x <= CANAL.xMax; x += passo) {
+    fantasma.push(`${x.toFixed(1)},${(CANAL.baseY - forma(x)).toFixed(2)}`);
+  }
+  return { pontos: pontos.join(" "), fantasma: fantasma.join(" "), fimX, baseY };
 }
 
 /**
@@ -168,7 +196,7 @@ function LinhaVital({
   /* Profundidade do déficit: 0 encostando no zero, 1 no piso. É ela
      que faz −3 e −6 lerem diferente. */
   const profundidade = deficit && piso < 0 ? Math.min(1, Math.abs(atual) / Math.abs(piso)) : 0;
-  const { pontos, fimX, baseY } = tracado(atual, max, critico, deficit, profundidade);
+  const { pontos, fantasma, fimX, baseY } = tracado(id, atual, max, critico, deficit, profundidade);
 
   return (
     <div
@@ -214,6 +242,7 @@ function LinhaVital({
 
         <svg className="rc-vres-svg" viewBox={`0 0 334 ${CANAL.altura}`} preserveAspectRatio="none" aria-hidden="true">
           <line className="rc-vres-track" x1={CANAL.xMin} y1={CANAL.baseY} x2={CANAL.xMax} y2={CANAL.baseY} />
+          <polyline className="rc-vres-fantasma" points={fantasma} />
           {(atual > 0 || deficit) && (
             <line className="rc-vres-guia" x1={fimX} x2={fimX} y1={baseY - 13} y2={baseY + 13} />
           )}
