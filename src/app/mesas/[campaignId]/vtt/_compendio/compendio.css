@@ -171,3 +171,7 @@
 .fj-livro-figura__moldura:hover .fj-livro-expandir, .fj-livro-heroi__arte:hover .fj-livro-expandir, .fj-livro-expandir:focus-visible { opacity: 1; pointer-events: auto; }
 .fj-livro-ampliada { cursor: zoom-out; }
 .fj-livro-ampliada__img { max-width: 100%; max-height: calc(100dvh - 140px); object-fit: contain; border: 1px solid color-mix(in srgb, var(--fj-cy) 25%, transparent); cursor: default; }
+
+/* Subpáginas no índice (Lista de Mercadorias, Vertentes, Classes), um nível abaixo do título. */
+.fj-livro-indice-subpagina { padding-left: 64px; font-size: 13px; }
+.fj-livro-indice-subpagina::before { content: "› "; color: color-mix(in srgb, var(--fj-cy) 60%, transparent); }

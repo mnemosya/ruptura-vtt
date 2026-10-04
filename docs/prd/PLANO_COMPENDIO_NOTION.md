@@ -217,3 +217,7 @@ O índice de termos é montado pela própria sincronização, a partir dos títu
 - Abertura no herói (`separarAbertura`): epígrafe (citação de abertura com os parágrafos aninhados nela, até 2.000 caracteres) e até 3 parágrafos; se a página começa com UMA tabela ou imagem (as Classes, Braxus), ela fica logo depois do herói e os parágrafos seguintes sobem — isso muda a ordem em relação ao Notion. Um destaque de apresentação no começo (as Vertentes) também sobe, como texto corrido, seguido da epígrafe — como o Códex de Vertente da Forja.
 - "Expandir" em todas as imagens (corpo e capa), visível só no hover/foco, abrindo em tela cheia; Esc fecha a imagem antes do livro.
 - Em tela estreita (< 768px), a capa vai para cima do texto.
+
+### 04/10/2026 — Subpáginas no índice
+
+- O índice do capítulo aberto mostra, embaixo de cada título, as subpáginas que vêm depois dele no texto (`indiceDoCapitulo`): Lista de Mercadorias (cap. 24), Vertentes (cap. 16) e Classes (cap. 9). Dentro de uma subpágina, o índice mostra a árvore do capítulo raiz com a página atual destacada (o capítulo raiz é carregado junto).

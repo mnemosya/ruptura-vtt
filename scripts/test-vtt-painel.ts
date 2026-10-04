@@ -71,6 +71,7 @@ import {
   buscarNoLivro,
   indiceDeTermos,
   resolverTermo,
+  indiceDoCapitulo,
   rotuloCapitulo,
   separarAbertura,
   textoPlanoDosBlocos,
@@ -672,6 +673,22 @@ const LIVRO: LinhaCapitulo[] = [
       f.abertura.length === 1 && f.abertura[0].tipo === "citacao" && f.corpo[0].tipo === "titulo" &&
       g.abertura.length === 2 && g.abertura[0].tipo === "paragrafo" && g.abertura[1].tipo === "citacao" && g.corpo[0].tipo === "tabela",
     "ok",
+  );
+}
+{
+  const idx = indiceDoCapitulo([
+    { tipo: "paragrafo", texto: [{ texto: "x" }] },
+    { tipo: "titulo", nivel: 2, texto: [{ texto: "LISTA DE MERCADORIAS" }], ancora: "lista" },
+    { tipo: "link_pagina", paginaNotionId: "a1", titulo: "ARMAS" },
+    { tipo: "link_pagina", paginaNotionId: "a2", titulo: "FARMÁCIA" },
+    { tipo: "titulo", nivel: 3, texto: [{ texto: "VERTENTES" }], ancora: "vertentes" },
+    { tipo: "galeria", titulo: "VERTENTES", itens: [{ pageId: "v1", titulo: "BIÓTICA", descricao: "", etiquetas: [], imagem: null, icone: null }] },
+    { tipo: "titulo", nivel: 4, texto: [{ texto: "sub" }], ancora: "sub" },
+  ]);
+  ok(
+    "K8 (índice do capítulo: títulos com as subpáginas que vêm depois de cada um)",
+    idx.map((e) => `${e.texto}:${e.subpaginas.map((sp) => sp.titulo).join("+")}`).join("|") === "LISTA DE MERCADORIAS:ARMAS+FARMÁCIA|VERTENTES:BIÓTICA",
+    JSON.stringify(idx.map((e) => [e.texto, e.subpaginas.length])),
   );
 }
 ok(

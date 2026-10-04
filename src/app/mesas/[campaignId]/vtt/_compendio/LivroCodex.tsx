@@ -22,6 +22,7 @@ import {
   capituloRaiz,
   buscarNoLivro,
   indiceDeTermos,
+  indiceDoCapitulo,
   rotuloCapitulo,
   separarAbertura,
   vizinhos,
@@ -176,6 +177,17 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
     return () => { vivo = false; };
   }, [atual, capitulos, campaignId]);
 
+  // Numa subpágina, o índice mostra a árvore do capítulo raiz: carrega o raiz também.
+  const raizAtual = atual && linhas ? capituloRaiz(linhas, atual.pageId) : null;
+  useEffect(() => {
+    if (!raizAtual || raizAtual === atual?.pageId || capitulos.has(raizAtual)) return;
+    let vivo = true;
+    void abrirCapituloAction(campaignId, raizAtual).then((r) => {
+      if (vivo && r.ok && r.dados) setCapitulos((m) => new Map(m).set(raizAtual, r.dados!));
+    });
+    return () => { vivo = false; };
+  }, [raizAtual, atual, capitulos, campaignId]);
+
   // A busca no texto corrido só carrega o livro inteiro na primeira vez que alguém procura.
   useEffect(() => {
     if (busca.trim().length < 2 || textos || pedindoTextos.current) return;
@@ -262,7 +274,9 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
   const buscando = busca.trim().length >= 2;
   // Com capa, a abertura vai para o herói (ver separarAbertura).
   const { abertura, corpo } = capitulo?.capa ? separarAbertura(capitulo.blocos) : { abertura: [], corpo: capitulo?.blocos ?? [] };
-  const subtitulos = (capitulo?.blocos ?? []).filter((b) => b.tipo === "titulo" && b.nivel <= 3);
+  const capituloRaizCarregado = raizAtual ? capitulos.get(raizAtual) ?? null : null;
+  const indiceAtivo = capituloRaizCarregado ? indiceDoCapitulo(capituloRaizCarregado.blocos) : [];
+  const naRaiz = raizAtual === atual?.pageId;
 
   return (
     <div className="fj-borda fj-ch fj-codex" data-testid="compendio-livro">
@@ -334,10 +348,29 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
                         <span className="fj-indice__n">{c.numero != null ? String(c.numero).padStart(2, "0") : "··"}</span>
                         <span className="fj-indice__rotulo fj-livro-indice-rotulo">{c.titulo}</span>
                       </button>
-                      {ativo && subtitulos.map((t) => t.tipo === "titulo" && (
-                        <button type="button" key={t.ancora} onClick={() => go(t.ancora)} className={`fj-indice__sub ${active === t.ancora ? "fj-indice__sub--ativo" : ""}`}>
-                          {t.texto.map((x) => x.texto).join("")}
-                        </button>
+                      {ativo && indiceAtivo.map((t, k) => (
+                        <div key={t.ancora ?? `sem-titulo-${k}`}>
+                          {t.ancora && (
+                            <button
+                              type="button"
+                              onClick={() => (naRaiz ? go(t.ancora!) : ir({ pageId: c.pageId, ancora: t.ancora! }))}
+                              className={`fj-indice__sub ${naRaiz && active === t.ancora ? "fj-indice__sub--ativo" : ""}`}
+                            >
+                              {t.texto}
+                            </button>
+                          )}
+                          {t.subpaginas.map((sp) => (
+                            <button
+                              type="button"
+                              key={sp.pageId}
+                              onClick={() => ir({ pageId: sp.pageId })}
+                              className={`fj-indice__sub fj-livro-indice-subpagina ${capituloRaiz(linhas ?? [], atual?.pageId ?? "") === c.pageId && (atual?.pageId === sp.pageId || (linhas ?? []).find((l) => l.pageId === atual?.pageId)?.paiPageId === sp.pageId) ? "fj-indice__sub--ativo" : ""}`}
+                              data-testid="compendio-indice-subpagina"
+                            >
+                              {sp.titulo || titulos.get(sp.pageId)}
+                            </button>
+                          ))}
+                        </div>
                       ))}
                     </div>
                   );

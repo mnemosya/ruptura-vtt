@@ -242,3 +242,34 @@ export function vizinhos(linhas: LinhaCapitulo[], pageId: string): { anterior: L
   const i = ordenadas.findIndex((c) => c.pageId === alvo);
   return { anterior: i > 0 ? ordenadas[i - 1] : null, proximo: i >= 0 && i < ordenadas.length - 1 ? ordenadas[i + 1] : null };
 }
+
+/** Entrada do índice dentro de um capítulo: um título, com as subpáginas que vêm depois dele. */
+export interface EntradaIndiceCapitulo {
+  ancora: string | null;
+  texto: string;
+  subpaginas: { pageId: string; titulo: string }[];
+}
+
+/**
+ * Índice de um capítulo: os títulos (até o nível 3) e, embaixo de cada um, as
+ * subpáginas que aparecem depois dele no texto — cards de galeria (Vertentes,
+ * Classes) e páginas filhas (Lista de Mercadorias). Subpáginas antes do primeiro
+ * título ficam numa entrada sem âncora.
+ */
+export function indiceDoCapitulo(blocos: BlocoCompendio[]): EntradaIndiceCapitulo[] {
+  const entradas: EntradaIndiceCapitulo[] = [];
+  const atual = () => {
+    if (!entradas.length) entradas.push({ ancora: null, texto: "", subpaginas: [] });
+    return entradas[entradas.length - 1];
+  };
+  const andar = (lista: BlocoCompendio[]) => {
+    for (const b of lista) {
+      if (b.tipo === "titulo" && b.nivel <= 3) entradas.push({ ancora: b.ancora, texto: textoDe(b.texto), subpaginas: [] });
+      else if (b.tipo === "galeria") atual().subpaginas.push(...b.itens.map((c) => ({ pageId: c.pageId, titulo: c.titulo })));
+      else if (b.tipo === "link_pagina") atual().subpaginas.push({ pageId: b.paginaNotionId, titulo: b.titulo ?? "" });
+      else if ("filhos" in b) andar(b.filhos);
+    }
+  };
+  andar(blocos);
+  return entradas;
+}
