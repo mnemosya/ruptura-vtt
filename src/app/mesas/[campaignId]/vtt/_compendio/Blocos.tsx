@@ -10,6 +10,8 @@ import { Fragment, type ReactNode } from "react";
 import type { BlocoCompendio, TrechoCompendio } from "../../../../../lib/compendio/tipos";
 import { resolverTermo, type DestinoLivro } from "./modelo";
 import { CORES_VERTENTE } from "../../../../_design/coresVertente";
+import { estiloDoCard } from "./enquadramento";
+
 
 export interface ContextoLeitura {
   termos: Map<string, DestinoLivro>;
@@ -281,7 +283,7 @@ function Bloco({ b, ctx }: { b: BlocoCompendio; ctx: ContextoLeitura }) {
                 <span className="fj-livro-card__arte">
                   {card.imagem && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={card.imagem} alt="" loading="lazy" />
+                    <img src={card.imagem} alt="" loading="lazy" style={estiloDoCard(card.pageId)} />
                   )}
                   <span className="fj-livro-card__tinta" aria-hidden="true" />
                   <span className="fj-livro-card__varredura" aria-hidden="true" />

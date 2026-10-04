@@ -16,7 +16,7 @@ export function CapaLivro({
         <Image src={cidadeVosek} alt="Vista panorâmica de Vosek" fill sizes="(min-width: 1280px) 1028px, (min-width: 768px) calc(100vw - 320px), 100vw" className="fj-capa__imagem" priority />
         <div className="fj-capa__sombra" aria-hidden="true" />
         <div className="fj-capa__marca">
-          <span className="fj-mono fj-mono--cy fj-capa__frase">A ORDEM É UMA FACHADA.</span>
+          <span className="fj-mono fj-mono--cy fj-capa__frase">A ORDEM É UMA FACHADA</span>
           <MarcaRuptura className="fj-capa__logo" />
         </div>
         <div className="fj-capa__passarela" aria-hidden="true" />
@@ -43,7 +43,7 @@ export function CapaLivro({
           <p>O Império Central já não governa por convicção, mas por inércia. É nesse espaço de dúvida que você existe. Você é um magista refratário. Um erro fora dos planos do Império. Uma fagulha que não deveria existir. E agora a escolha está diante de você: se esconda, se venda ou incendeie o que ainda resta da ordem Imperial.</p>
           <p>Este livro te dá a munição, o terreno e as escolhas. O que vai restar, e quem você vai ser quando tudo desabar, depende de quais marcas você decidir cravar.</p>
         </div>
-        <div className="fj-capa__fecho">UMA FAGULHA QUE NÃO DEVERIA EXISTIR.<span aria-hidden="true">///</span></div>
+        <div className="fj-capa__fecho">VOCÊ É UM MAGISTA REFRATÁRIO. UM ERRO FORA DOS PLANOS DO IMPÉRIO.<span aria-hidden="true">///</span></div>
       </div>
     </article>
   );
