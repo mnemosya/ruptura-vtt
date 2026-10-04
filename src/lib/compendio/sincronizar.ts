@@ -28,9 +28,60 @@ import { avaliarRevisoes, lerFontesRevisao, type EstadoPaginaLivro, type Pendenc
 export const BUCKET_COMPENDIO = "compendio";
 /** Até onde o livro desce em páginas dentro de páginas (capítulo → subpágina → … ). */
 export const PROFUNDIDADE_MAXIMA_SUBPAGINAS = 3;
-/** Imagem mais larga que isso (largura/altura) não vira capa automática: mapas e panoramas ficam no corpo. */
-export const PROPORCAO_MAXIMA_CAPA = 2;
-const ARQUIVO_CAPAS = join("content", "v12", "compendio_capas.json");
+const ARQUIVO_AJUSTES = join("content", "v12", "compendio_ajustes.json");
+
+/** Ajustes por página (content/v12/compendio_ajustes.json). */
+interface AjustePagina {
+  capa?: { arquivo?: string; subirImagem?: number };
+  desdobrarVerbetes?: string[];
+}
+
+function normalizarTitulo(t: string): string {
+  return t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+}
+
+/**
+ * Verbetes com estes títulos viram títulos comuns, com o conteúdo à mostra logo abaixo
+ * (ex.: Sobrecarga e Ruptura no cap. 17). Devolve as âncoras desdobradas.
+ */
+function desdobrarVerbetes(blocos: BlocoCompendio[], titulos: string[]): Set<string> {
+  const alvo = new Set(titulos.map(normalizarTitulo));
+  const desdobradas = new Set<string>();
+  const andar = (lista: BlocoCompendio[]) => {
+    for (let i = 0; i < lista.length; i++) {
+      const b = lista[i];
+      if (b.tipo === "verbete" && alvo.has(normalizarTitulo(b.titulo.map((t) => t.texto).join("")))) {
+        desdobradas.add(b.ancora);
+        andar(b.filhos);
+        lista.splice(i, 1, { tipo: "titulo", nivel: 3, texto: b.titulo.map((t) => ({ ...t, negrito: undefined })), ancora: b.ancora }, ...b.filhos);
+        i += b.filhos.length;
+        continue;
+      }
+      if ("filhos" in b) andar(b.filhos);
+    }
+  };
+  andar(blocos);
+  return desdobradas;
+}
+
+/** Tira do corpo a N-ésima imagem (contando em toda a página) e a devolve. */
+function tirarImagem(blocos: BlocoCompendio[], n: number): Extract<BlocoCompendio, { tipo: "imagem" }> | null {
+  let contador = 0;
+  const andar = (lista: BlocoCompendio[]): Extract<BlocoCompendio, { tipo: "imagem" }> | null => {
+    for (let i = 0; i < lista.length; i++) {
+      const b = lista[i];
+      if (b.tipo === "imagem" && ++contador === n) {
+        lista.splice(i, 1);
+        return b;
+      }
+      const filhos = "filhos" in b ? b.filhos : null;
+      const achada = filhos ? andar(filhos) : b.tipo === "lista" ? b.itens.map((it) => andar(it.filhos)).find(Boolean) ?? null : null;
+      if (achada) return achada;
+    }
+    return null;
+  };
+  return andar(blocos);
+}
 export const PACK_COMPENDIO = "notion-ruptura-v1-2";
 
 export interface RelatorioSincronizacao {
@@ -136,7 +187,7 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
     criados: [], atualizados: [], inalterados: [], arquivados: [], falhas: [], naoSuportados: {}, imagensCopiadas: 0, bytesOriginais: 0, bytesGravados: 0, imagensOrfasRemovidas: 0, requisicoesNotion: 0,
   };
 
-  const capasManuais = (JSON.parse(readFileSync(join(process.cwd(), ARQUIVO_CAPAS), "utf8")) as { capas: Record<string, { arquivo: string }> }).capas;
+  const ajustes = (JSON.parse(readFileSync(join(process.cwd(), ARQUIVO_AJUSTES), "utf8")) as { paginas: Record<string, AjustePagina> }).paginas;
   const indice = lerIndice(await notion.blocos(PAGINA_RAIZ_RUPTURA_V12));
   log(`Índice: ${indice.length} capítulos.`);
 
@@ -193,11 +244,11 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
     return publica;
   }
 
-  /** Capa escolhida à mão (content/v12/compendio_capas.json): sobe o arquivo do repositório já otimizado. */
+  /** Capa escolhida à mão (capa.arquivo em content/v12/compendio_ajustes.json): sobe o arquivo do repositório já otimizado. */
   async function capaManual(pageId: string): Promise<CapituloCompendio["capa"]> {
-    const entrada = capasManuais[pageId];
-    if (!entrada) return null;
-    const original = readFileSync(join(process.cwd(), entrada.arquivo));
+    const arquivo = ajustes[pageId]?.capa?.arquivo;
+    if (!arquivo) return null;
+    const original = readFileSync(join(process.cwd(), arquivo));
     const corpo = await otimizarImagem(original.buffer.slice(original.byteOffset, original.byteOffset + original.byteLength) as ArrayBuffer);
     const caminho = `capa-${createHash("sha256").update(corpo).digest("hex").slice(0, 32)}.webp`;
     const publica = supabase.storage.from(BUCKET_COMPENDIO).getPublicUrl(caminho).data.publicUrl;
@@ -209,14 +260,25 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
     return { url: publica, largura: m.width ?? 0, altura: m.height ?? 0 };
   }
 
-  /** Capa da página: a escolhida à mão; senão a primeira imagem, se não for larga demais (sai do corpo). */
+  function aplicarDesdobrar(pageId: string, conv: ReturnType<typeof converterBlocos>): void {
+    const titulos = ajustes[pageId]?.desdobrarVerbetes;
+    if (!titulos?.length) return;
+    const desdobradas = desdobrarVerbetes(conv.blocos, titulos);
+    conv.verbetes = conv.verbetes.filter((v) => !desdobradas.has(v.ancora));
+  }
+
+  /** Capa da página: a escolhida à mão; senão a primeira imagem, qualquer que seja a proporção (sai do corpo). */
   async function definirCapa(pageId: string, blocos: BlocoCompendio[]): Promise<CapituloCompendio["capa"]> {
     const manual = await capaManual(pageId);
     if (manual) return manual;
+    const n = ajustes[pageId]?.capa?.subirImagem;
+    if (n) {
+      const img = tirarImagem(blocos, n);
+      return img?.largura && img.altura ? { url: img.url, largura: img.largura, altura: img.altura } : null;
+    }
     const i = blocos.findIndex((b) => b.tipo !== "divisor");
     const primeiro = blocos[i];
     if (!primeiro || primeiro.tipo !== "imagem" || !primeiro.largura || !primeiro.altura) return null;
-    if (primeiro.largura / primeiro.altura > PROPORCAO_MAXIMA_CAPA) return null;
     blocos.splice(i, 1);
     return { url: primeiro.url, largura: primeiro.largura, altura: primeiro.altura };
   }
@@ -291,6 +353,7 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
       if (conversao.naoSuportados.length) rel.naoSuportados[rotulo] = [...new Set(conversao.naoSuportados)];
       await trocarImagens(conversao.blocos, copiarImagem);
       anotarDimensoes(conversao.blocos, dimensoes);
+      aplicarDesdobrar(entrada.notionPageId, conversao);
       const capa = await definirCapa(entrada.notionPageId, conversao.blocos);
       const { numero, titulo } = separarNumero(pagina.titulo);
 
@@ -331,6 +394,7 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
             const tituloSub = alvo.titulo || sub.titulo;
             // Primeiro as netas (a página precisa da capa dos próprios cards antes de ser gravada).
             if (profundidade < PROFUNDIDADE_MAXIMA_SUBPAGINAS) await processarSubpaginas(convSub, alvo.pageId, tituloSub, rotuloSub, profundidade + 1);
+            aplicarDesdobrar(alvo.pageId, convSub);
             const capaSub = await definirCapa(alvo.pageId, convSub.blocos);
             registrar(await gravar({
               notionPageId: alvo.pageId,

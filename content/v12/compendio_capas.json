@@ -1,6 +1,0 @@
-{
-  "_sobre": "Capas do herói do Compêndio escolhidas à mão (PLANO_COMPENDIO_NOTION). Sem entrada aqui, a capa é a primeira imagem do capítulo, se não for larga demais (mais que 2:1). Com entrada, a imagem do arquivo vira a capa e as imagens do capítulo continuam no corpo. Chave: ID da página no Notion, sem hífens.",
-  "capas": {
-    "d1d0a13635528315a0980176a3020e19": { "pagina": "1. BRAXUS", "arquivo": "content/v12/capas/braxus.webp" }
-  }
-}

@@ -221,3 +221,11 @@ O índice de termos é montado pela própria sincronização, a partir dos títu
 ### 04/10/2026 — Subpáginas no índice
 
 - O índice do capítulo aberto mostra, embaixo de cada título, as subpáginas que vêm depois dele no texto (`indiceDoCapitulo`): Lista de Mercadorias (cap. 24), Vertentes (cap. 16) e Classes (cap. 9). Dentro de uma subpágina, o índice mostra a árvore do capítulo raiz com a página atual destacada (o capítulo raiz é carregado junto).
+
+### 04/10/2026 — Ajustes por página e capa sem limite de proporção
+
+- A capa automática deixou de depender da proporção da imagem: toda página que abre com imagem ganha herói (Magistas, Vosek, Cenas de Combate, Mercado Noturno, Armas e Armaduras, Drones e Robôs, Combatente ficavam de fora por passar de 2:1).
+- `content/v12/compendio_capas.json` virou `content/v12/compendio_ajustes.json`, com ajustes por página aplicados na sincronização:
+  - `capa.arquivo`: imagem do repositório como capa (Braxus);
+  - `capa.subirImagem`: a N-ésima imagem do corpo sobe para o herói (Guerras Mágicas e Tecendo a Malha);
+  - `desdobrarVerbetes`: verbetes viram títulos com o conteúdo à mostra (Sobrecarga e Ruptura).
