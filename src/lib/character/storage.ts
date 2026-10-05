@@ -591,24 +591,24 @@ async function chamarRpcPersonagem(fn: string, args: Record<string, unknown>, er
   if (error) throw new CharacterStorageError(`${erro}: ${error.message}`, error);
 }
 
-export function requestCharacterJoin(characterId: string, campaignId: string): Promise<void> {
+export async function requestCharacterJoin(characterId: string, campaignId: string): Promise<void> {
   return chamarRpcPersonagem("solicitar_entrada_personagem", { p_character_id: characterId, p_campaign_id: campaignId }, "Falha ao enviar o personagem para a campanha");
 }
 
-export function cancelCharacterJoin(characterId: string): Promise<void> {
+export async function cancelCharacterJoin(characterId: string): Promise<void> {
   return chamarRpcPersonagem("cancelar_entrada_personagem", { p_character_id: characterId }, "Falha ao cancelar o pedido");
 }
 
-export function acceptCharacterJoin(characterId: string): Promise<void> {
+export async function acceptCharacterJoin(characterId: string): Promise<void> {
   return chamarRpcPersonagem("aceitar_pedido_personagem", { p_character_id: characterId }, "Falha ao aceitar o personagem");
 }
 
-export function rejectCharacterJoin(characterId: string): Promise<void> {
+export async function rejectCharacterJoin(characterId: string): Promise<void> {
   return chamarRpcPersonagem("recusar_pedido_personagem", { p_character_id: characterId }, "Falha ao recusar o personagem");
 }
 
 /** Narrador devolve um personagem de jogador: ele volta solto para o dono. */
-export function releaseCharacterFromCampaign(characterId: string): Promise<void> {
+export async function releaseCharacterFromCampaign(characterId: string): Promise<void> {
   return chamarRpcPersonagem("liberar_personagem_da_campanha", { p_character_id: characterId }, "Falha ao liberar o personagem da campanha");
 }
 
