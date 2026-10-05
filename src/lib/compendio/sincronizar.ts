@@ -125,6 +125,8 @@ interface OpcoesSincronizacao {
   forcar?: boolean;
   /** Relê só estes capítulos (número, ex.: 24), mesmo sem mudança no Notion. */
   forcarCapitulos?: number[];
+  /** Processa exclusivamente estes capítulos, sem arquivar páginas nem limpar imagens. */
+  somenteCapitulos?: number[];
   log?: (msg: string) => void;
 }
 
@@ -198,7 +200,8 @@ async function trocarImagens(blocos: BlocoCompendio[], trocar: (url: string) => 
 }
 
 export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<RelatorioSincronizacao> {
-  const { notion, supabase, seco = false, forcar = false, forcarCapitulos = [] } = op;
+  const { notion, supabase, seco = false, forcar = false, forcarCapitulos = [], somenteCapitulos = [] } = op;
+  const parcial = somenteCapitulos.length > 0;
   const log = op.log ?? (() => {});
   const rel: RelatorioSincronizacao = {
     criados: [], atualizados: [], inalterados: [], arquivados: [], falhas: [], naoSuportados: {}, imagensCopiadas: 0, bytesOriginais: 0, bytesGravados: 0, imagensOrfasRemovidas: 0, requisicoesNotion: 0,
@@ -369,6 +372,7 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
   }
 
   for (const entrada of indice) {
+    if (parcial && !somenteCapitulos.includes(separarNumero(entrada.tituloPagina).numero ?? -1)) continue;
     const id = `capitulo:${entrada.notionPageId}`;
     vistos.add(id);
     const rotulo = entrada.tituloPagina;
@@ -473,7 +477,7 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
   }
 
   // Capítulo que saiu do índice: arquivado, nunca apagado.
-  for (const d of existentes ?? []) {
+  for (const d of parcial ? [] : existentes ?? []) {
     if (vistos.has(d.id as string) || d.status === "archived") continue;
     if (!seco) {
       const { error } = await supabase.from("content_documents").update({ status: "archived" }).eq("id", d.id);
@@ -484,11 +488,11 @@ export async function sincronizarCompendio(op: OpcoesSincronizacao): Promise<Rel
 
   // Imagens que nenhum documento publicado usa mais: removidas do bucket.
   // Só numa rodada limpa — com falha, um capítulo pode ter ficado com a versão antiga.
-  if (!seco && rel.falhas.length === 0) rel.imagensOrfasRemovidas = await removerImagensOrfas(supabase);
+  if (!seco && !parcial && rel.falhas.length === 0) rel.imagensOrfasRemovidas = await removerImagensOrfas(supabase);
 
   // Toda rodada real conta como a checagem do período (linha de comando ou servidor):
   // evita que o servidor dispare outra logo em seguida, ao mesmo tempo.
-  if (!seco) {
+  if (!seco && !parcial) {
     const { data: pacote } = await supabase.from("content_packs").select("manifest").eq("id", PACK_COMPENDIO).maybeSingle();
     await supabase.from("content_packs").update({ manifest: { ...((pacote?.manifest as Record<string, unknown> | null) ?? {}), ultimaVerificacao: new Date().toISOString() } }).eq("id", PACK_COMPENDIO);
   }

@@ -4,7 +4,8 @@
  *   npx tsx scripts/notion/sincronizar.ts --seco     # só mostra o que mudaria
  *   npx tsx scripts/notion/sincronizar.ts            # grava
  *   npx tsx scripts/notion/sincronizar.ts --forcar   # relê todos os capítulos
- *   npx tsx scripts/notion/sincronizar.ts --capitulo=24   # relê só o capítulo 24
+ *   npx tsx scripts/notion/sincronizar.ts --capitulo=24   # força a releitura do capítulo 24
+ *   npx tsx scripts/notion/sincronizar.ts --somente=6 --capitulo=6   # publica apenas o capítulo 6
  *   npx tsx scripts/notion/sincronizar.ts --capitulo=14 --rapido   # relê o nível de cima; recolhíveis vêm do cache
  *   npx tsx scripts/notion/sincronizar.ts --capitulo=14 --rapido --reler="VIGOR,ATRIBUTOS"   # e relê esses recolhíveis
  *
@@ -23,8 +24,10 @@ config({ path: ".env.local" });
 
 const seco = process.argv.includes("--seco");
 const forcar = process.argv.includes("--forcar");
-// --capitulo=24 (ou --capitulo=9,16): relê só esses capítulos, mesmo sem mudança no Notion.
+// --capitulo=24 (ou --capitulo=9,16): força a releitura desses capítulos, mesmo sem mudança no Notion.
 const forcarCapitulos = (process.argv.find((a) => a.startsWith("--capitulo="))?.split("=")[1] ?? "")
+  .split(",").map(Number).filter((n) => Number.isInteger(n) && n > 0);
+const somenteCapitulos = (process.argv.find((a) => a.startsWith("--somente="))?.split("=")[1] ?? "")
   .split(",").map(Number).filter((n) => Number.isInteger(n) && n > 0);
 // --rapido: o conteúdo dos recolhíveis vem do cache da última sincronização (ver cacheBlocos.ts).
 const rapido = process.argv.includes("--rapido");
@@ -43,7 +46,7 @@ async function main() {
   const notion = cache.guardar(criarClienteNotion(undefined, rapido ? cache.opcoes : {}));
 
   console.log(seco ? "Modo seco: nada será gravado.\n" : rapido ? "Sincronizando (rápido)…\n" : "Sincronizando…\n");
-  const rel = await sincronizarCompendio({ notion, supabase, seco, forcar, forcarCapitulos, log: (m) => console.log(`  ${m}`) });
+  const rel = await sincronizarCompendio({ notion, supabase, seco, forcar, forcarCapitulos, somenteCapitulos, log: (m) => console.log(`  ${m}`) });
 
   console.log(`\nCriados: ${rel.criados.length} · atualizados: ${rel.atualizados.length} · inalterados: ${rel.inalterados.length} · arquivados: ${rel.arquivados.length}`);
   if (rel.arquivados.length) console.log(`Arquivados: ${rel.arquivados.join(", ")}`);
