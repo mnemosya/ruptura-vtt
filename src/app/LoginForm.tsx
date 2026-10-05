@@ -460,7 +460,7 @@ export function LoginForm({
                   onChange={(e) => setName(e.target.value)}
                   error={errors.name}
                   icon={<User size={13} />}
-                  placeholder="ex: Gabs"
+                  placeholder="ex: Kelsier Al'vere"
                   autoComplete="nickname"
                 />
               )}
@@ -475,7 +475,7 @@ export function LoginForm({
                 readOnly={!!lockedEmail}
                 error={errors.email}
                 icon={<Mail size={13} />}
-                placeholder="narrador@exemplo.com"
+                placeholder="ex: kelsier@scriptorium.de"
                 autoComplete="email"
               />
               {lockedEmail && (

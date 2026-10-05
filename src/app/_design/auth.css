@@ -309,7 +309,7 @@
 .rv-input-wrap:focus-within .rv-input-icon { color: #54acbe; }
 .rv-input {
   width: 100%; background: transparent; border: none; outline: none; color: #b8d8e8;
-  font-family: var(--font-corpo), sans-serif; font-size: 15px; font-weight: 500; padding: 13px 13px 13px 34px;
+  font-family: var(--font-corpo), sans-serif; font-size: 15px; font-weight: 400; padding: 13px 13px 13px 34px;
 }
 .rv-input--pwd { padding-right: 38px; }
 .rv-input::placeholder { color: rgba(84, 172, 190, 0.45); }
