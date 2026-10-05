@@ -21,7 +21,7 @@
  * passou a usar por causa deste port.
  *
  * As famílias tipográficas vêm de `next/font` (ver src/app/layout.tsx):
- * --font-orbitron / --font-rajdhani / --font-mono.
+ * --font-orbitron / --font-corpo / --font-mono.
  */
 
 @import "./motion.css";
@@ -40,7 +40,7 @@
   justify-content: center;
   background: #07090f;
   overflow: hidden;
-  font-family: var(--font-rajdhani), "Rajdhani", sans-serif;
+  font-family: var(--font-corpo), sans-serif;
   padding: 24px;
 }
 .rv-root button { font-family: inherit; }
@@ -309,7 +309,7 @@
 .rv-input-wrap:focus-within .rv-input-icon { color: #54acbe; }
 .rv-input {
   width: 100%; background: transparent; border: none; outline: none; color: #b8d8e8;
-  font-family: var(--font-rajdhani), sans-serif; font-size: 15px; font-weight: 500; padding: 13px 13px 13px 34px;
+  font-family: var(--font-corpo), sans-serif; font-size: 15px; font-weight: 500; padding: 13px 13px 13px 34px;
 }
 .rv-input--pwd { padding-right: 38px; }
 .rv-input::placeholder { color: rgba(84, 172, 190, 0.45); }
@@ -554,11 +554,11 @@
   border-radius: 2px 8px 2px 8px; corner-shape: round bevel round bevel;
 }
 .rv-join-campanha-nome {
-  font-family: var(--font-rajdhani), sans-serif; font-size: 20px; font-weight: 700; color: #eaf7ff;
+  font-family: var(--font-corpo), sans-serif; font-size: 20px; font-weight: 700; color: #eaf7ff;
   letter-spacing: 0.02em; overflow-wrap: anywhere;
 }
 .rv-join-papel { font-family: var(--font-mono), monospace; font-size: 9.5px; letter-spacing: 0.16em; color: rgba(84, 172, 190, 0.8); }
-.rv-join-texto { font-family: var(--font-rajdhani), sans-serif; font-size: 14px; line-height: 1.5; color: rgba(184, 216, 232, 0.8); margin: 0; }
+.rv-join-texto { font-family: var(--font-corpo), sans-serif; font-size: 14px; line-height: 1.5; color: rgba(184, 216, 232, 0.8); margin: 0; }
 .rv-join-texto strong { color: #d3ecf7; }
 .rv-join-acoes { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
 .rv-join-voltar {

@@ -38,8 +38,8 @@
   --fj-ok: #22d3aa;       /* --rm-success */
 
   --fj-display: var(--font-oxanium), "Oxanium", var(--font-orbitron), sans-serif;
-  /* Exo 2 no corpo (03/10/2026): a Rajdhani, estreita e quadrada, cansava na leitura longa. */
-  --fj-corpo: var(--font-exo2), "Exo 2", system-ui, sans-serif;
+  /* Exo 2 no corpo (03/10/2026), o mesmo `--font-corpo` do resto do VTT. */
+  --fj-corpo: var(--font-corpo), system-ui, sans-serif;
   --fj-mono: var(--font-mono), ui-monospace, monospace;
 
   --fj-ease: var(--mo-ease-out, cubic-bezier(0.16, 1, 0.3, 1));

@@ -122,7 +122,7 @@ export function RollCard({
      faces de cada dado: nesses, a fileira não aparece e fica só a
      faixa, que é o que o payload garante. */
   const termos = cartao.termos;
-  const base = cartao.maior != null && cartao.modo === "high"
+  const base = cartao.maior != null && cartao.modo !== "sum"
     ? cartao.maior
     : termos.length > 0
       ? termos.reduce((t, d) => t + d.valor, 0)
@@ -156,7 +156,7 @@ export function RollCard({
               respostas pra mesma pergunta. */}
           <DadosLivres
             termos={termos}
-            maior={cartao.modo === "high" ? cartao.maior : null}
+            maior={cartao.modo !== "sum" ? cartao.maior : null}
             acento={cartao.sucesso == null ? undefined : cartao.sucesso ? ACCENTS.cyan : ACCENTS.danger}
             size={40}
             landed

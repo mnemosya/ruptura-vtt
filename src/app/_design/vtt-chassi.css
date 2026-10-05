@@ -92,16 +92,14 @@
   /* ── Tipografia ─────────────────────────────────────────────────
      `display` (Chakra Petch) para título, rótulo e botão em caixa
      alta; `mono` (JetBrains Mono) para número e metadado; `body`
-     (Rajdhani) para texto corrido. As três entram por `next/font` no
-     layout raiz — nada é buscado de CDN.
+     (Exo 2, `--font-corpo`) para texto corrido. As três entram por
+     `next/font` no layout raiz — nada é buscado de CDN.
 
-     O corpo era INTER, e saiu do produto: o Console da ficha sempre
-     escreveu em Rajdhani, então a mesa e a ficha usavam duas fontes de
-     texto diferentes pela mesma razão nenhuma — e quem abre o Console
-     por cima do mapa via as duas lado a lado. Rajdhani já era o
-     fallback declarado aqui; virou a escolha. */
-  --rv-display: var(--font-chakra), var(--font-rajdhani), system-ui, sans-serif;
-  --rv-body: var(--font-rajdhani), system-ui, sans-serif;
+     O corpo foi INTER, depois Rajdhani (pra casar com o Console), e é
+     Exo 2 desde 05/10/2026: a Rajdhani, estreita e quadrada, cansava na
+     leitura longa. Mesa, Console, Forja e Códex usam o mesmo token. */
+  --rv-display: var(--font-chakra), var(--font-corpo), system-ui, sans-serif;
+  --rv-body: var(--font-corpo), system-ui, sans-serif;
   --rv-mono: var(--font-mono), ui-monospace, monospace;
 
   /* ── Geometria ──────────────────────────────────────────────── */

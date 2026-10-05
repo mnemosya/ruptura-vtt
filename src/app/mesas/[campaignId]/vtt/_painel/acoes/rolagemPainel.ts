@@ -356,8 +356,8 @@ export interface RegistrarRolagemLivreParams {
   /** Faces lidas da física, pareadas com o tipo de dado que as produziu. */
   dados: { faces: number; valor: number }[];
   modificador: number;
-  /** `high` = usa o maior dado (teste), `sum` = soma tudo. */
-  modo: "sum" | "high";
+  /** `high` = usa o maior dado, `low` = usa o menor, `sum` = soma tudo. */
+  modo: "sum" | "high" | "low";
   /**
    * CD opcional, igual à do teste de Ruptura. `null` = sem CD definida.
    *
@@ -392,7 +392,7 @@ export async function registrarRolagemLivreAction(
     }
     const modificador = inteiroNaFaixa(params.modificador, -MODIFICADOR_MAX, MODIFICADOR_MAX);
     if (modificador == null) return { ok: false, erro: `Modificador fora da faixa (−${MODIFICADOR_MAX} a +${MODIFICADOR_MAX}).` };
-    const modo = params.modo === "high" ? "high" : "sum";
+    const modo = params.modo === "high" || params.modo === "low" ? params.modo : "sum";
     const cd = params.cd == null ? null : inteiroNaFaixa(params.cd, 1, CD_MAX);
     if (params.cd != null && cd == null) return { ok: false, erro: `CD fora da faixa (1 a ${CD_MAX}).` };
 
@@ -421,7 +421,7 @@ export async function registrarRolagemLivreAction(
     }
 
     const valores = lancados.map((d) => Math.trunc(d.valor));
-    const base = modo === "high" ? Math.max(...valores) : valores.reduce((a, b) => a + b, 0);
+    const base = modo === "high" ? Math.max(...valores) : modo === "low" ? Math.min(...valores) : valores.reduce((a, b) => a + b, 0);
     const total = base + modificador;
     // Expressão canônica no formato que `rollExpression` aceita — o
     // card mostra "3d8+1d6+2", não uma lista solta de números.

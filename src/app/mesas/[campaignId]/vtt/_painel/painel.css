@@ -414,7 +414,7 @@
      duplicada porque `.rm-root button` continua lá; o que mudou foi a
      família pedida, não o mecanismo. */
   font-family: var(--rv-body);
-  font-size: 11.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
   cursor: pointer; text-decoration: none;
   transition: background .14s, border-color .14s, color .14s;
 }
@@ -900,7 +900,7 @@
 }
 .rv-pn-chat .pn-msg-texto {
   margin: 0; padding: 10px;
-  font-family: var(--font-rajdhani), sans-serif; font-weight: 500;
+  font-family: var(--font-corpo), sans-serif; font-weight: 500;
   font-size: 13px; line-height: 19.5px;
   /* `#d6e4f5` do arquivo é `--rv-ink`; os 83% viram transparência sobre
      o token, e não um cinza novo cravado na folha. */
@@ -993,7 +993,7 @@
 }
 .rv-pn-chat .pn-fixados-resumo {
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  color: var(--rv-ink); font: 500 12.5px var(--font-rajdhani), sans-serif;
+  color: var(--rv-ink); font: 500 12.5px var(--font-corpo), sans-serif;
 }
 
 /* IMAGEM NA MENSAGEM — ocupa a largura do card, com o espaço já
@@ -1205,11 +1205,10 @@
 
 /* ═══════════════════════ DIRETÓRIOS ═══════════════════════ */
 
-/* ── Tamanhos do diretório: +1px depois da troca de Inter por Rajdhani.
-   Rajdhani tem altura-de-x menor, então o MESMO `font-size` lê menor na
-   tela — o texto não encolheu, a fonte é que ocupa menos. O passo
-   repõe a leitura de antes sem mexer no ritmo entre os elementos, que
-   subiram todos juntos. */
+/* ── Tamanhos do diretório: tinham subido +1px na troca de Inter por
+   Rajdhani (altura-de-x menor, o mesmo `font-size` lia menor). Com a
+   Exo 2 (05/10/2026), de altura-de-x parecida com a da Inter, voltaram
+   aos valores de antes. */
 .rv-pn-busca {
   flex: none; display: flex; align-items: center; gap: 6px; margin: 6px 8px; padding: 5px 8px;
   border: 1px solid var(--pn-line-soft); border-radius: var(--pn-radius);
@@ -1222,14 +1221,14 @@
 .rv-pn-busca:focus-within { border-color: var(--pn-cy); }
 .rv-pn-busca-input {
   flex: 1; min-width: 0; border: none; background: transparent; color: var(--pn-txt-forte);
-  font-family: var(--rv-body); font-size: 13.5px;
+  font-family: var(--rv-body); font-size: 12.5px;
 }
 /* O PLACEHOLDER É DO VTT, não do navegador. Sem regra, ele herdava o
    cinza-padrão do agente do usuário — mais claro e com outro peso que
    todo o resto do painel, o que fazia o campo parecer de outro
    produto. `--pn-dim` é o mesmo tom dos rótulos vizinhos. */
 .rv-pn-busca-input::placeholder {
-  color: var(--pn-dim); opacity: 1; font-family: var(--rv-body); font-size: 13.5px;
+  color: var(--pn-dim); opacity: 1; font-family: var(--rv-body); font-size: 12.5px;
 }
 .rv-pn-busca-input:focus-visible { outline: none; }
 .rv-pn-busca-input::-webkit-search-cancel-button { display: none; }
@@ -1289,7 +1288,7 @@
    lados da faixa são "o que eu faço com a lista", e o switch é o único
    que não cria nada. O `padding` zerado deixa a margem por conta da
    linha (`.rv-pn-filtros`), pra ele encostar onde os outros encostam. */
-.rv-pn-switch.rv-pn-switch { padding: 0; margin-left: auto; font-size: 12px; gap: 7px; }
+.rv-pn-switch.rv-pn-switch { padding: 0; margin-left: auto; font-size: 11px; gap: 7px; }
 .rv-pn-switch .rv-fp-switch-tr { width: 26px; height: 15px; }
 .rv-pn-switch .rv-fp-switch-tr::after { width: 11px; height: 11px; }
 .rv-pn-switch input:checked + .rv-fp-switch-tr::after { transform: translateX(11px); }
@@ -1340,7 +1339,7 @@
 .rv-pn-check {
   display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
   font-family: var(--rv-display);
-  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--pn-dim);
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--pn-dim);
 }
 /* A CAIXA É DESENHADA. `accent-color` só tinge o controle nativo, que
    continua com o quadrado arredondado e o contorno claro do sistema —
@@ -1981,7 +1980,7 @@
 .rv-pn-linha-texto { min-width: 0; flex: 1; }
 .rv-pn-linha-nome {
   display: flex; align-items: baseline; gap: 8px;
-  font-family: var(--rv-body); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  font-family: var(--rv-body); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
   /* `--pn-txt`, e não `--pn-txt-forte`: uma lista inteira no branco mais
      alto do painel vira uma parede de texto de mesmo peso, e o realce
      deixa de realçar nada. Um degrau abaixo continua sendo CONTEÚDO —
@@ -1992,7 +1991,7 @@
 }
 .rv-pn-linha-sub {
   margin-top: 4px; font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--pn-dim);
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--pn-dim);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .rv-pn-linha-marca { flex: none; }

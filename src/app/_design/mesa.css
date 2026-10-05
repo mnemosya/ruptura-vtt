@@ -63,7 +63,7 @@
   min-height: 100vh;
   background: #07090f;
   color: var(--rm-text);
-  font-family: var(--font-rajdhani), system-ui, sans-serif;
+  font-family: var(--font-corpo), system-ui, sans-serif;
 }
 .rm-root *,
 .rm-root *::before,
@@ -220,7 +220,7 @@
 .rm-header-home:hover { color: var(--cy); }
 .rm-header-sep { color: rgba(184, 216, 232, 0.25); }
 .rm-header-nome {
-  font-family: var(--font-orbitron), var(--font-rajdhani), sans-serif;
+  font-family: var(--font-orbitron), var(--font-corpo), sans-serif;
   font-size: 15px; font-weight: 600; letter-spacing: 0.02em;
   color: var(--rm-text-strong);
   margin: 0;
@@ -457,7 +457,7 @@
   gap: var(--hud-space-6);
 }
 .rm-page-title {
-  font-family: var(--font-orbitron), var(--font-rajdhani), sans-serif;
+  font-family: var(--font-orbitron), var(--font-corpo), sans-serif;
   font-size: 20px; font-weight: 700; letter-spacing: 0.01em;
   color: var(--rm-text-strong);
   margin: 0 0 20px;
@@ -532,7 +532,7 @@
   border: 1px solid var(--rm-line-strong);
   background: transparent;
   color: var(--rm-text);
-  font-family: var(--font-rajdhani), sans-serif;
+  font-family: var(--font-corpo), sans-serif;
   font-size: 13px; font-weight: 600;
   cursor: pointer;
   text-decoration: none;
@@ -778,7 +778,7 @@
   border: 1px solid var(--rm-line-strong);
   background: rgba(0, 212, 255, 0.1);
   color: var(--cy);
-  font-family: var(--font-rajdhani), sans-serif;
+  font-family: var(--font-corpo), sans-serif;
   font-size: 13px; font-weight: 600;
   cursor: pointer;
   transition:

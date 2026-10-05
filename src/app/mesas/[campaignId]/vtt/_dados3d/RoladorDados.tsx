@@ -57,13 +57,14 @@ import { getRupturaPool, type RupturaSelectionMode } from "../../../../../lib/di
 
 const LOOSE = [4, 6, 8, 10, 12, 20, 100];
 
-/** Como o conjunto livre conta: somando tudo, ou pegando o maior. */
-type CountMode = "sum" | "high";
+/** Como o conjunto livre conta: somando tudo, ou pegando o maior ou o menor. */
+type CountMode = "sum" | "high" | "low";
 
 function ModeToggle({ value, onChange }: { value: CountMode; onChange: (m: CountMode) => void }) {
   const opts: { k: CountMode; label: string }[] = [
     { k: "sum", label: "Somar" },
     { k: "high", label: "Maior" },
+    { k: "low", label: "Menor" },
   ];
   return (
     <div className="rv-dados-modo" style={{ display: "inline-flex", borderRadius: 2, border: "1px solid #1c2b45" }}>
@@ -179,8 +180,9 @@ function FreePool({
     if (!r.ok) setErro(r.erro ?? "Falha ao registrar a rolagem.");
   };
 
-  const diceBase = results ? (mode === "high" ? Math.max(...results.map((d) => d.value)) : results.reduce((a, b) => a + b.value, 0)) : 0;
-  const bestIdx = results && mode === "high" ? results.reduce((bi, d, i, arr) => (d.value > arr[bi].value ? i : bi), 0) : -1;
+  const valores = results?.map((d) => d.value) ?? [];
+  const diceBase = results ? (mode === "high" ? Math.max(...valores) : mode === "low" ? Math.min(...valores) : valores.reduce((a, b) => a + b, 0)) : 0;
+  const bestIdx = results && mode !== "sum" ? valores.indexOf(diceBase) : -1;
   const finalSum = diceBase + mods;
 
   const dieSize = size - 4;
@@ -494,7 +496,7 @@ function RupturaTest({ s }: { s: ReturnType<typeof useTest> }) {
     return {
       id: a.id,
       rotulo: a.nome,
-      valor: `${definicao.quantidadeDados}d8 · ${definicao.modoSelecao === "lowest" ? "menor" : "maior"}`,
+      valor: `${definicao.quantidadeDados}d8 ${definicao.modoSelecao === "lowest" ? "↓" : "↑"}`,
     };
   });
   const opcoesPericia = [
@@ -511,9 +513,10 @@ function RupturaTest({ s }: { s: ReturnType<typeof useTest> }) {
           "Teste de Ruptura" saiu: o título da janela já diz o que é, e
           o nome da ficha ali repetia o que o "Rolando como" acima
           mostra. A perícia leva mais espaço que o atributo porque os
-          nomes dela são mais longos (Balística, Engenharia…) — se
-          alguma coluna tiver que apertar, que seja a menor. */}
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.35fr) auto", gap: 12, alignItems: "end" }}>
+          nomes dela são mais longos (Balística, Engenharia…). O pool do
+          atributo vai em seta (`3d8 ↑` maior, `3d8 ↓` menor): por extenso
+          ele empurrava o nome do atributo pra fora do campo. */}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.35fr) auto", gap: 8, alignItems: "end" }}>
         <Select label="Atributo" value={s.atributoId} onChange={s.setAtributoId} options={opcoesAtributo} />
         <Select label="Perícia" value={s.periciaId} onChange={s.setPericiaId} options={opcoesPericia} />
         <div>

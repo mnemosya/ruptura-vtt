@@ -31,7 +31,7 @@ import type { RupturaSelectionMode } from "../../../../../lib/dice";
 
 export const DISPLAY = "var(--font-chakra), 'Chakra Petch', sans-serif";
 export const MONO = "var(--font-mono), 'JetBrains Mono', monospace";
-export const BODY = "var(--font-rajdhani), Rajdhani, sans-serif";
+export const BODY = "var(--font-corpo), sans-serif";
 
 export const INK = "#b9c9dc";
 export const INK_DIM = "#7f95b3";
@@ -306,7 +306,7 @@ export function FaixaSoma({ base, modificador, total, cd, modo = "sum", nota, te
   modificador: number;
   total: number;
   cd?: number | null;
-  modo?: "sum" | "high";
+  modo?: "sum" | "high" | "low";
   nota?: ReactNode;
   testId?: string;
 }) {
@@ -339,7 +339,7 @@ export function FaixaSoma({ base, modificador, total, cd, modo = "sum", nota, te
       testIdTotal={testId}
       parcelas={<>
         {/* Mesma regra do teste: a base e a CD seguem o acento da faixa. */}
-        <Parcela>{modo === "high" ? "maior" : "soma"} {seg(String(base), acento.hex)}</Parcela>
+        <Parcela>{modo === "high" ? "maior" : modo === "low" ? "menor" : "soma"} {seg(String(base), acento.hex)}</Parcela>
         <Parcela>+ mod {seg(modificador >= 0 ? `+${modificador}` : String(modificador), acento.hex)}</Parcela>
         {temCd && <Parcela>· cd {seg(String(cd), acento.hex)}</Parcela>}
       </>}
@@ -764,7 +764,7 @@ export function Select({ label, value, onChange, options, disabled = false, labe
           <span className="rv-seletor-nome">{atual?.rotulo ?? "—"}</span>
           {atual?.valor && <kbd className="rv-tecla rv-seletor-medida">{atual.valor}</kbd>}
         </span>
-        <Chevron width={13} height={13} className="rv-seletor-seta" style={{ transform: pos ? "rotate(180deg)" : "none" }} />
+        <Chevron width={11} height={11} className="rv-seletor-seta" style={{ transform: pos ? "rotate(180deg)" : "none" }} />
       </button>
       {pos && typeof document !== "undefined" && createPortal(
         <div

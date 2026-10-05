@@ -25,15 +25,15 @@
  */
 
 import { useRef } from "react";
-import { ChevronsLeft, ChevronsRight, Library, MessageSquare, UsersRound, Users, BookText } from "lucide-react";
+import { ChevronsLeft, Tent, ChevronsRight, MessageSquare, UsersRound, Users, BookText } from "lucide-react";
 import { ABAS_ORDEM, ROTULO_ABA, proximaAbaPorSeta, type AbaId } from "./tipos";
 
 const ICONE: Record<AbaId, typeof MessageSquare> = {
   chat: MessageSquare,
   personagens: Users,
   participantes: UsersRound,
-  bando: BookText,
-  compendio: Library,
+  bando: Tent,
+  compendio: BookText,
 };
 
 export function PainelAbas({
