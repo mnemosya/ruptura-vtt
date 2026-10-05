@@ -370,7 +370,6 @@ function CampaignCard({ data }: { data: CampaignCardData }) {
         <div className="ag-cartao__corpo">
           <span className={`ag-etiqueta ag-etiqueta--${narrador ? "narrador" : "jogador"}`}>◆ {narrador ? "Narrador" : "Jogador"}</span>
           <h3 className="ag-cartao__titulo" title={campaign.name}>{campaign.name}</h3>
-          {campaign.description && <p className="ag-cartao__descricao" title={campaign.description}>{campaign.description}</p>}
           <div className="ag-cartao__rodape">
             <span className="ag-mono ag-mono--peq">{regiao ? `${regiao} · ` : ""}{relativeTime(campaign.updated_at)}</span>
             <Link
@@ -379,7 +378,7 @@ function CampaignCard({ data }: { data: CampaignCardData }) {
               className="ag-entrar ag-entrar--peq"
               aria-label={`${narrador ? "Entrar na" : "Abrir"} campanha ${campaign.name}`}
             >
-              Entrar ›
+              <span>Entrar</span><ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
             </Link>
           </div>
         </div>
