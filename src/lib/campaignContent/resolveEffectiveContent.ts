@@ -63,10 +63,11 @@ function paraConteudoEfetivoCampanha(row: CampaignContentDocumentRow, officialCu
  * publicado, substituído por override quando existir, mais os
  * homebrews publicados da campanha como entradas adicionais.
  */
-export async function resolveEffectiveList(campaignId: string, contentType: ContentType): Promise<ConteudoEfetivo[]> {
+/** `campaignId` nulo (personagem sem campanha): só o conteúdo oficial. */
+export async function resolveEffectiveList(campaignId: string | null, contentType: ContentType): Promise<ConteudoEfetivo[]> {
   const [oficiais, campanhaRows] = await Promise.all([
     listContentDocuments(contentType as ContentType),
-    listCampaignContentDocumentsPublic(campaignId, contentType),
+    campaignId ? listCampaignContentDocumentsPublic(campaignId, contentType) : Promise.resolve([]),
   ]);
 
   const overridesPorSlug = new Map(campanhaRows.filter((r) => r.origin_type === "override").map((r) => [r.slug, r]));
