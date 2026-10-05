@@ -121,12 +121,14 @@ export interface Criacao {
   concluir: (opcoes?: { pn?: boolean }) => Promise<string | null>;
 }
 
-export function useCriacao({ catalogos, regiaoCampanha, rankingInicial = "F", campaignId, completar }: {
+export function useCriacao({ catalogos, regiaoCampanha, rankingInicial = "F", campaignId, semCampanha = false, completar }: {
   catalogos: CatalogosCriacaoV12;
   regiaoCampanha: RegiaoIdV12 | null;
   rankingInicial?: RankingV12;
   /** Mesa onde o personagem é criado. Sem ela (prévia), nada é lido, gravado ou criado. */
   campaignId?: string;
+  /** Personagem sem campanha: cria solto, do jogador, sem rascunho salvo. */
+  semCampanha?: boolean;
   /**
    * Completar um personagem criado só com o nome: não lê nem grava o
    * rascunho da mesa (que é de outra criação) e, ao concluir, atualiza
@@ -267,7 +269,7 @@ export function useCriacao({ catalogos, regiaoCampanha, rankingInicial = "F", ca
 
   /* ---------- Conclusão ---------- */
   const concluir = useCallback(async (opcoes?: { pn?: boolean }) => {
-    if (!campaignId) return null;
+    if (!campaignId && !semCampanha) return null;
     setErroEnvio(null);
     setEnviando(true);
     // Para o salvamento antes: depois da criação a RPC recusa gravar um
@@ -276,7 +278,7 @@ export function useCriacao({ catalogos, regiaoCampanha, rankingInicial = "F", ca
     if (timerRef.current) clearTimeout(timerRef.current);
     await filaRef.current;
     const r = await criarPersonagemV12Action(
-      campaignId,
+      campaignId ?? null,
       escolhasCriacaoV12(dRef.current, catalogos.regioes),
       requestId,
       completar ? { characterId: completar.characterId } : { pn: Boolean(opcoes?.pn) },
@@ -288,7 +290,7 @@ export function useCriacao({ catalogos, regiaoCampanha, rankingInicial = "F", ca
       return null;
     }
     return r.dados.characterId;
-  }, [campaignId, catalogos.regioes, requestId, completar]);
+  }, [campaignId, semCampanha, catalogos.regioes, requestId, completar]);
 
   return {
     d, forja, set, setForja,
