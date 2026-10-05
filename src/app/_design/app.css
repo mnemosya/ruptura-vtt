@@ -428,7 +428,7 @@
 .ra2-search-icon { color: #418292; flex-shrink: 0; display: flex; }
 .ra2-search input {
   flex: 1; min-width: 0; background: transparent; border: none; outline: none;
-  font-family: var(--font-corpo), sans-serif; font-weight: 600; font-size: 15px; color: #cfeaf6;
+  font-family: var(--font-corpo), sans-serif; font-weight: 400; font-size: 15px; color: #cfeaf6;
 }
 .ra2-search input::placeholder { color: rgba(84, 172, 190, 0.6); }
 .ra2-search input::-webkit-search-cancel-button { -webkit-appearance: none; }
