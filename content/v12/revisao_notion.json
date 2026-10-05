@@ -62,8 +62,8 @@
       "rotulo": "Classe Caçador",
       "arquivo": "content/v12/db_classe_cacador_v1_2.json",
       "pageId": "3d90a13635528034a166dbb1dd0c2b3b",
-      "revisadoEm": "2026-10-01T04:32:31.000Z",
-      "hashRevisado": null
+      "revisadoEm": "2026-10-05T17:41:29.601Z",
+      "hashRevisado": "51e43f2ca6d1c458ae73cb18870cf4e943b3ee5c696cd306b6c994c77aed1ab8"
     },
     {
       "chave": "classe-combatente",
@@ -86,16 +86,16 @@
       "rotulo": "Classe Infiltrador",
       "arquivo": "content/v12/db_classe_infiltrador_v1_2.json",
       "pageId": "3d90a1363552807294c8d481c179bf01",
-      "revisadoEm": "2026-10-04T18:56:59.199Z",
-      "hashRevisado": "0ff254e359a84270f1b64a3adfb3090fff0f0fe745ddd304c3eb8042956714e0"
+      "revisadoEm": "2026-10-05T17:41:30.225Z",
+      "hashRevisado": "e1e92fcaddcf3acaa6cc5e1adf12e78053cdb575217c6af5763de529ffdcced9"
     },
     {
       "chave": "classe-tecnico",
       "rotulo": "Classe Técnico",
       "arquivo": "content/v12/db_classe_tecnico_v1_2.json",
       "pageId": "3d90a13635528045a101de4d967cd26c",
-      "revisadoEm": "2026-10-02T03:31:15.000Z",
-      "hashRevisado": null
+      "revisadoEm": "2026-10-05T17:41:28.727Z",
+      "hashRevisado": "71ee8c7346a7b1f6f5da63f2a992440d57c4734c51e3e53591d69b4d841aa57d"
     },
     {
       "chave": "classe-vanguarda",
