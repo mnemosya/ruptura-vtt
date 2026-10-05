@@ -52,11 +52,14 @@ assert.equal(parseDraftV12({ ...rascunho, pericias: { medicina: 5 } }), null);
 assert.equal(parseDraftV12({ ...rascunho, qualidades: [{ id: "aliado", pontos: 3 }] }), null);
 assert.equal(parseDraftV12({ ...rascunho, compras: { medkit: -1 } }), null);
 assert.equal(parseDraftV12({ ...rascunho, atributos: { corpo: 1, mente: 2 } }), null);
+assert.equal(parseDraftV12({ ...rascunho, rankingInicial: "S+" })?.rankingInicial, "S+");
+assert.equal(parseDraftV12({ ...rascunho, rankingInicial: "Z" }), null);
 
 // Restauração sem mudanças no conteúdo: nada descartado.
 const limpo = sanitizeDraftV12(rascunho, catalogos);
 assert.equal(limpo.descartados, 0);
 assert.deepEqual(limpo.draft, rascunho);
+assert.equal(sanitizeDraftV12({ ...rascunho, rankingInicial: "C" }, catalogos).draft.rankingInicial, "C");
 
 // Conteúdo mudou: opções que sumiram ou ficaram inválidas são removidas e contadas.
 const sujo = sanitizeDraftV12({

@@ -13,7 +13,7 @@
  * publicado acontece ao restaurar (`sanitizeDraftV12`).
  */
 
-import type { AttributeIdV12 } from "./contracts";
+import { RANKINGS_V12, type AttributeIdV12, type RankingV12 } from "./contracts";
 
 export const DRAFT_V12_SCHEMA_VERSION = 2 as const;
 export const DRAFT_V12_STEPS = 5;
@@ -45,6 +45,8 @@ export interface DraftV12 {
   pericias: Record<string, 0 | 1 | 2 | 3>;
   vertente: string;
   compras: Record<string, number>;
+  /** Escolha da Forja, inicialmente herdada da campanha. */
+  rankingInicial?: RankingV12;
   /**
    * O que só a Forja de Refratário coleta. Opcional: rascunhos do
    * assistente anterior não têm, e o assistente anterior ignora.
@@ -136,6 +138,9 @@ export function parseDraftV12(raw: unknown): DraftV12 | null {
   }
 
   let forja: DraftForjaV12 | undefined;
+  const rankingInicial = raw.rankingInicial === undefined ? undefined :
+    (RANKINGS_V12 as readonly unknown[]).includes(raw.rankingInicial) ? raw.rankingInicial as RankingV12 : null;
+  if (rankingInicial === null) return null;
   if (raw.forja !== undefined) {
     const f = raw.forja;
     if (!isObj(f) || !Number.isInteger(f.passo) || (f.passo as number) < 0 || (f.passo as number) >= FORJA_PASSOS) return null;
@@ -146,6 +151,7 @@ export function parseDraftV12(raw: unknown): DraftV12 | null {
 
   return {
     ...(forja ? { forja } : {}),
+    ...(rankingInicial ? { rankingInicial } : {}),
     schema_version: DRAFT_V12_SCHEMA_VERSION,
     ruleset_version: "1.2",
     step: raw.step as number,

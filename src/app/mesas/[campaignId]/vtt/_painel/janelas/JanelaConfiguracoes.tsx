@@ -19,8 +19,9 @@
 import { useEffect, useRef, useState } from "react";
 import { JanelaInterna } from "../ui/JanelaInterna";
 import { definirRegiaoCampanhaAction, renomearCampanhaAction } from "../../_acoes/campanhaActions";
-import { REGIOES_V12, regiaoValida, type RegiaoIdV12 } from "../../../../../../lib/rulesetV12";
+import { RANKINGS_V12, REGIOES_V12, regiaoValida, type RankingV12, type RegiaoIdV12 } from "../../../../../../lib/rulesetV12";
 import { useCampaignSession } from "../../../_shell/CampaignRealtimeProvider";
+import { setCampaignCover, setCampaignDescription, setCampaignInitialRanking } from "../../../../../../lib/campaign/metadataActions";
 
 type EstadoSalvar =
   | { tipo: "parado" }
@@ -36,9 +37,44 @@ export function JanelaConfiguracoes({ campaignId, onFechar }: { campaignId: stri
   const [estado, setEstado] = useState<EstadoSalvar>({ tipo: "parado" });
   const [regiao, setRegiao] = useState<RegiaoIdV12 | null>(regiaoValida(campaign.regiao));
   const [estadoRegiao, setEstadoRegiao] = useState<EstadoSalvar>({ tipo: "parado" });
+  const [rankingInicial, setRankingInicial] = useState<RankingV12>(campaign.initial_ranking ?? "F");
+  const [estadoRanking, setEstadoRanking] = useState<EstadoSalvar>({ tipo: "parado" });
+  const [descricao, setDescricao] = useState(campaign.description ?? "");
+  const [estadoDescricao, setEstadoDescricao] = useState<EstadoSalvar>({ tipo: "parado" });
+  const [estadoCapa, setEstadoCapa] = useState<EstadoSalvar>({ tipo: "parado" });
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const descriptionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
+  useEffect(() => () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (descriptionTimeoutRef.current) clearTimeout(descriptionTimeoutRef.current);
+  }, []);
+
+  function agendarDescricao(value: string) {
+    setDescricao(value);
+    if (descriptionTimeoutRef.current) clearTimeout(descriptionTimeoutRef.current);
+    descriptionTimeoutRef.current = setTimeout(async () => {
+      setEstadoDescricao({ tipo: "salvando" });
+      try {
+        await setCampaignDescription(campaignId, value);
+        setEstadoDescricao({ tipo: "salvo" });
+        void reloadCampaign?.();
+      } catch (error) {
+        setEstadoDescricao({ tipo: "erro", mensagem: error instanceof Error ? error.message : "Erro ao salvar." });
+      }
+    }, ESPERA_AUTOSAVE_MS);
+  }
+
+  async function trocarCapa(file: File | null) {
+    setEstadoCapa({ tipo: "salvando" });
+    try {
+      await setCampaignCover(campaignId, file);
+      setEstadoCapa({ tipo: "salvo" });
+      void reloadCampaign?.();
+    } catch (error) {
+      setEstadoCapa({ tipo: "erro", mensagem: error instanceof Error ? error.message : "Erro ao alterar capa." });
+    }
+  }
 
   async function gravar(valor: string) {
     setEstado({ tipo: "salvando" });
@@ -67,6 +103,20 @@ export function JanelaConfiguracoes({ campaignId, onFechar }: { campaignId: stri
     void reloadCampaign?.();
   }
 
+  async function trocarRanking(valor: RankingV12) {
+    const anterior = rankingInicial;
+    setRankingInicial(valor);
+    setEstadoRanking({ tipo: "salvando" });
+    try {
+      await setCampaignInitialRanking(campaignId, valor);
+      setEstadoRanking({ tipo: "salvo" });
+      void reloadCampaign?.();
+    } catch (error) {
+      setRankingInicial(anterior);
+      setEstadoRanking({ tipo: "erro", mensagem: error instanceof Error ? error.message : "Erro ao definir o ranking." });
+    }
+  }
+
   function agendar(valor: string) {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (!valor.trim()) {
@@ -81,7 +131,7 @@ export function JanelaConfiguracoes({ campaignId, onFechar }: { campaignId: stri
       aberta
       titulo="Configurações da mesa"
       largura={520}
-      altura={460}
+      altura={620}
       onFechar={onFechar}
       testId="painel-janela-configuracoes"
     >
@@ -117,6 +167,37 @@ export function JanelaConfiguracoes({ campaignId, onFechar }: { campaignId: stri
           {estadoRegiao.tipo === "salvando" && "Salvando…"}
           {estadoRegiao.tipo === "salvo" && <span data-ok="true">✓ Salvo</span>}
           {estadoRegiao.tipo === "erro" && <span data-erro="true">Falha ao salvar: {estadoRegiao.mensagem}</span>}
+        </p>
+
+        <label className="rv-config-rotulo" htmlFor="rv-config-ranking">Ranking inicial dos personagens</label>
+        <select id="rv-config-ranking" className="rv-cena-campo" value={rankingInicial}
+          data-testid="config-ranking-campanha" onChange={(e) => void trocarRanking(e.target.value as RankingV12)}>
+          {RANKINGS_V12.map((rank) => <option key={rank} value={rank}>Rank {rank}</option>)}
+        </select>
+        <p className="rv-config-estado" aria-live="polite">
+          {estadoRanking.tipo === "salvando" && "Salvando…"}
+          {estadoRanking.tipo === "salvo" && <span data-ok="true">✓ Salvo</span>}
+          {estadoRanking.tipo === "erro" && <span data-erro="true">Falha ao salvar: {estadoRanking.mensagem}</span>}
+        </p>
+
+        <label className="rv-config-rotulo" htmlFor="rv-config-descricao">Descrição</label>
+        <textarea id="rv-config-descricao" className="rv-cena-campo" rows={3} maxLength={1000}
+          value={descricao} onChange={(e) => agendarDescricao(e.target.value)} />
+        <p className="rv-config-estado" aria-live="polite">
+          {estadoDescricao.tipo === "salvando" && "Salvando…"}
+          {estadoDescricao.tipo === "salvo" && <span data-ok="true">✓ Salvo</span>}
+          {estadoDescricao.tipo === "erro" && <span data-erro="true">{estadoDescricao.mensagem}</span>}
+        </p>
+
+        <label className="rv-config-rotulo" htmlFor="rv-config-capa">Arte de capa</label>
+        {campaign.cover_path && <div role="img" aria-label="Capa atual da campanha" style={{ height: 130, backgroundImage: `url('/api/campaigns/${campaignId}/cover?v=${encodeURIComponent(campaign.cover_path)}')`, backgroundSize: "cover", backgroundPosition: "center", marginBottom: 10 }} />}
+        <input id="rv-config-capa" type="file" accept="image/png,image/jpeg,image/webp"
+          disabled={estadoCapa.tipo === "salvando"} onChange={(e) => { const file = e.target.files?.[0]; if (file) void trocarCapa(file); }} />
+        {campaign.cover_path && <button type="button" disabled={estadoCapa.tipo === "salvando"} onClick={() => void trocarCapa(null)}>Remover capa</button>}
+        <p className="rv-config-estado" aria-live="polite">
+          {estadoCapa.tipo === "salvando" && "Salvando…"}
+          {estadoCapa.tipo === "salvo" && <span data-ok="true">✓ Salvo</span>}
+          {estadoCapa.tipo === "erro" && <span data-erro="true">{estadoCapa.mensagem}</span>}
         </p>
 
         <p className="rv-config-nota">

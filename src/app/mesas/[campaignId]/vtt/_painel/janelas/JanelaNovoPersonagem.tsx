@@ -67,6 +67,7 @@ export function JanelaNovoPersonagem({
           campaignId={campaignId}
           nomeMesa={catalogos.nomeMesa ?? "Mesa"}
           regiaoCampanha={catalogos.regiaoMesa ?? undefined}
+          rankingInicial={catalogos.rankingMesa}
           completar={completar}
           onSair={onFechar}
           onConcluir={(id) => { onFechar(); onAbrirFicha(id); }}

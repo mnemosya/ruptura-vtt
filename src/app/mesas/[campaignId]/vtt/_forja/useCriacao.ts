@@ -22,6 +22,7 @@ import {
   type DraftV12,
   type PendenciaCriacaoV12,
   type RegiaoIdV12,
+  type RankingV12,
 } from "../../../../../lib/rulesetV12";
 import {
   apagarRascunhoV12Action,
@@ -60,12 +61,13 @@ function novoRequestId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 }
 
-export function rascunhoInicial(regiaoCampanha: RegiaoIdV12 | null, nome = ""): DraftV12 {
+export function rascunhoInicial(regiaoCampanha: RegiaoIdV12 | null, nome = "", rankingInicial: RankingV12 = "F"): DraftV12 {
   return {
     schema_version: DRAFT_V12_SCHEMA_VERSION,
     ruleset_version: "1.2",
     step: 1,
     nome,
+    rankingInicial,
     codinome: "",
     regiaoId: regiaoCampanha ?? "beldran",
     localOrigem: "",
@@ -119,9 +121,10 @@ export interface Criacao {
   concluir: (opcoes?: { pn?: boolean }) => Promise<string | null>;
 }
 
-export function useCriacao({ catalogos, regiaoCampanha, campaignId, completar }: {
+export function useCriacao({ catalogos, regiaoCampanha, rankingInicial = "F", campaignId, completar }: {
   catalogos: CatalogosCriacaoV12;
   regiaoCampanha: RegiaoIdV12 | null;
+  rankingInicial?: RankingV12;
   /** Mesa onde o personagem é criado. Sem ela (prévia), nada é lido, gravado ou criado. */
   campaignId?: string;
   /**
@@ -133,7 +136,7 @@ export function useCriacao({ catalogos, regiaoCampanha, campaignId, completar }:
 }): Criacao {
   const nomeInicial = completar?.nome;
   const persiste = Boolean(campaignId) && !completar;
-  const [d, setD] = useState<DraftV12>(() => rascunhoInicial(regiaoCampanha, nomeInicial));
+  const [d, setD] = useState<DraftV12>(() => rascunhoInicial(regiaoCampanha, nomeInicial, rankingInicial));
   const [estado, setEstado] = useState<EstadoRascunho>(persiste ? { tipo: "carregando" } : { tipo: "pronto" });
   const [aviso, setAviso] = useState<string | null>(null);
   const [conflito, setConflito] = useState(false);
@@ -179,7 +182,7 @@ export function useCriacao({ catalogos, regiaoCampanha, campaignId, completar }:
     if (dados.kind === "invalid") { setEstado({ tipo: "incompativel", mensagem: dados.message }); return; }
     if (dados.kind === "found") {
       const { draft, descartados } = sanitizeDraftV12(dados.payload, catalogos);
-      setD({ ...draft, forja: draft.forja ?? { ...FORJA_VAZIA, passo: [0, 0, 1, 4, 8, 8][draft.step] ?? 0 } });
+      setD({ ...draft, rankingInicial: draft.rankingInicial ?? rankingInicial, forja: draft.forja ?? { ...FORJA_VAZIA, passo: [0, 0, 1, 4, 8, 8][draft.step] ?? 0 } });
       setRequestId(dados.creationRequestId);
       revisaoRef.current = dados.revision;
       setTemRascunhoSalvo(true);
@@ -187,7 +190,7 @@ export function useCriacao({ catalogos, regiaoCampanha, campaignId, completar }:
     }
     sujoRef.current = false;
     setEstado({ tipo: "pronto" });
-  }, [campaignId, catalogos, persiste]);
+  }, [campaignId, catalogos, persiste, rankingInicial]);
 
   useEffect(() => { void carregar(); }, [carregar]);
 
@@ -248,9 +251,9 @@ export function useCriacao({ catalogos, regiaoCampanha, campaignId, completar }:
     setConflito(false);
     setTemRascunhoSalvo(false);
     setRequestId(novoRequestId());
-    setD(rascunhoInicial(regiaoCampanha, nomeInicial));
+    setD(rascunhoInicial(regiaoCampanha, nomeInicial, rankingInicial));
     setEstado({ tipo: "pronto" });
-  }, [campaignId, persiste, regiaoCampanha, nomeInicial]);
+  }, [campaignId, persiste, regiaoCampanha, nomeInicial, rankingInicial]);
 
   /* ---------- Classe: trocar limpa o que dependia dela ---------- */
   const trocarClasse = useCallback((slug: string) => {

@@ -13,7 +13,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { CatalogosCriacaoV12 } from "../_acoes/criacaoV12Actions";
-import { RANKINGS_V12, REGIOES_V12, perfisAtributosV12, resolveClassResourceV12, type AttributeIdV12, type ClassContentV12, type DraftV12, type RegiaoIdV12 } from "../../../../../lib/rulesetV12";
+import { RANKINGS_V12, REGIOES_V12, perfisAtributosV12, resolveClassResourceV12, type AttributeIdV12, type ClassContentV12, type DraftV12, type RankingV12, type RegiaoIdV12 } from "../../../../../lib/rulesetV12";
 import { BYTES_ORIGINAL_MAXIMO, ImagemRecusadaError, enviarParaUrlAssinada, prepararRecorteQuadrado, type ImagemPreparada } from "../../../../../lib/vtt/imagePreparation";
 import { cancelarUploadAction, definirAvatarPersonagemAction, finalizarUploadAvatarAction, reservarUploadAction } from "../_acoes/imageActions";
 import { JanelaRecorte } from "../../../../ficha/_console/RecorteImagem";
@@ -32,6 +32,7 @@ import { ClasseLateral } from "./passos/Classe";
 import { VertenteLateral } from "./passos/Vertente";
 import { Antecedente, FichaTracos, OrigemNarrativa, Tracos } from "./passos/Trajetoria";
 import { Pericias, PericiasLateral } from "./passos/Pericias";
+import { ProgressaoInicial } from "./ProgressaoInicial";
 
 export interface ForjaProps {
   catalogos: CatalogosCriacaoV12;
@@ -43,8 +44,8 @@ export interface ForjaProps {
   siglaNarrador?: string;
   /** Mesa onde o rascunho é salvo e o personagem é criado. Sem ela (prévia), nada é lido, gravado ou criado. */
   campaignId?: string;
-  /** Ranking em que o personagem começa. Hoje sempre F. */
-  rankingInicial?: string;
+  /** Ranking sugerido pela campanha, editável na Forja. */
+  rankingInicial?: RankingV12;
   /** Completar um personagem criado só com o nome (o "+ Personagem" do narrador). */
   completar?: { characterId: string; nome: string } | null;
   /** "Voltar à mesa": fecha a Forja. Sem ela (prévia), o botão não aparece. */
@@ -61,7 +62,7 @@ const ATRIBUTOS: Array<{ id: AttributeIdV12; nome: string; desc: string }> = [
 
 export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa de teste", siglaNarrador = "MJ", campaignId, rankingInicial = RANKING_INICIAL, completar = null, onSair, onConcluir }: ForjaProps) {
   const [started, setStarted] = useState(false);
-  const c = useCriacao({ catalogos, regiaoCampanha: regiaoFixa ?? null, campaignId, completar });
+  const c = useCriacao({ catalogos, regiaoCampanha: regiaoFixa ?? null, rankingInicial, campaignId, completar });
   const { d, set, passo } = c;
   const [view, setView] = useState({ regiao: d.regiaoId as string, classe: CLASSES_ACERVO[0].id, vertente: VERTENTES_ACERVO[0].id as string });
   const onView = (k: keyof typeof view) => (id: string) => setView((v) => ({ ...v, [k]: id }));
@@ -83,11 +84,14 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
   const avatar = useAvatarDaForja();
 
   const [pn, setPn] = useState(false);
+  const [progressao, setProgressao] = useState<{ characterId: string; alvo: RankingV12 } | null>(null);
   const selar = async () => {
     const id = await c.concluir({ pn: catalogos.ehNarrador && pn });
     if (!id || !campaignId) return;
     if (avatar.preparada) await avatar.enviar(campaignId, id);
-    onConcluir?.(id);
+    const alvo = d.rankingInicial ?? rankingInicial;
+    if (alvo === "F") onConcluir?.(id);
+    else setProgressao({ characterId: id, alvo });
   };
 
   const raiz = `fj-root ${oxanium.variable} mo-scope fj-forja`;
@@ -127,7 +131,7 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
             {centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente })}
           </main>
           <aside className="fj-sem-barra fj-lateral">
-            <PlacaIdentidade d={d} avatar={avatar.url} progress={c.sincronia} ranking={rankingInicial} />
+            <PlacaIdentidade d={d} avatar={avatar.url} progress={c.sincronia} ranking={d.rankingInicial ?? rankingInicial} onRankingChange={(ranking) => set({ rankingInicial: ranking })} />
             {c.conflito && (
               <div className="fj-aviso" role="alert">
                 <span>Este rascunho foi alterado em outra janela; o salvamento foi pausado para não sobrescrever.</span>
@@ -172,6 +176,9 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
           onCancelar={avatar.cancelarRecorte}
         />
       )}
+      {progressao && campaignId && <ProgressaoInicial key={progressao.characterId} campaignId={campaignId}
+        characterId={progressao.characterId} alvo={progressao.alvo}
+        onConcluir={() => { const id = progressao.characterId; setProgressao(null); onConcluir?.(id); }} />}
     </div>
   );
 }
@@ -302,7 +309,17 @@ function MenuLateral({ step, setStep, completos }: { step: number; setStep: (n: 
   );
 }
 
-function PlacaIdentidade({ d, avatar, progress, ranking }: { d: DraftV12; avatar: string; progress: number; ranking: string }) {
+function PlacaIdentidade({ d, avatar, progress, ranking, onRankingChange }: { d: DraftV12; avatar: string; progress: number; ranking: RankingV12; onRankingChange: (ranking: RankingV12) => void }) {
+  const [aberto, setAberto] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!aberto) return;
+    const fechar = (event: PointerEvent) => { if (!menuRef.current?.contains(event.target as Node)) setAberto(false); };
+    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") setAberto(false); };
+    document.addEventListener("pointerdown", fechar);
+    document.addEventListener("keydown", escape);
+    return () => { document.removeEventListener("pointerdown", fechar); document.removeEventListener("keydown", escape); };
+  }, [aberto]);
   return (
     <div>
       <div className="fj-placa">
@@ -314,9 +331,16 @@ function PlacaIdentidade({ d, avatar, progress, ranking }: { d: DraftV12; avatar
             <Mono tom="cy">RPI #0417 · {d.codinome || "—"}</Mono>
           </div>
         </div>
-        <div className="fj-placa__rank" aria-label={`Ranking ${ranking}`}>
-          <span className="fj-placa__rank-rotulo">Rank</span>
-          <span className="fj-placa__rank-valor fj-glow">{ranking}</span>
+        <div className="fj-placa__rank-wrap" ref={menuRef}>
+          <button type="button" className="fj-placa__rank" aria-label={`Ranking ${ranking}. Alterar ranking inicial`}
+            aria-expanded={aberto} aria-haspopup="true" onClick={() => setAberto((v) => !v)}>
+            <span className="fj-placa__rank-rotulo">Rank</span>
+            <span className="fj-placa__rank-valor fj-glow">{ranking}</span>
+          </button>
+          {aberto && <div className="fj-placa__rank-menu" role="group" aria-label="Ranking inicial do personagem">
+            {RANKINGS_V12.map((rank) => <button key={rank} type="button" aria-pressed={ranking === rank}
+              onClick={() => { onRankingChange(rank); setAberto(false); }} className="fj-placa__rank-opcao">{rank}</button>)}
+          </div>}
         </div>
       </div>
       <div className="fj-sincronia">

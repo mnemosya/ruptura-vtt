@@ -1,12 +1,8 @@
 /**
  * Peças visuais compartilhadas pelas telas da área autenticada global.
  *
- * O protótipo do Figma Make trazia capas de campanha vindas de banco de
- * imagens (mock). Campanhas reais não têm capa no banco — em vez de
- * inventar um campo ou puxar foto de terceiros, a "arte" de cada
- * campanha é derivada do próprio id: o mesmo fundo HUD da marca, com
- * enquadramento e tintura estáveis por campanha. Mesma linguagem
- * visual, zero dado inventado.
+ * Capas enviadas pelo narrador vêm do bucket privado via rota autorizada.
+ * Campanhas sem capa usam a arte da região ou um fundo estável por id.
  */
 
 import type { CSSProperties } from "react";
@@ -81,11 +77,10 @@ export function nomeDaRegiao(campaign: Pick<Campaign, "regiao">): string | null 
 }
 
 /**
- * Capa da campanha: a arte da REGIÃO onde ela começa (as mesmas imagens
- * da Forja, `public/forja/regioes/`). Sem região definida, cai na capa
- * derivada do id (`campaignCoverStyle`) — nada de foto inventada.
+ * Capa enviada, depois arte da região e enfim fundo derivado do id.
  */
-export function capaDaCampanha(campaign: Pick<Campaign, "id" | "regiao">): CSSProperties {
+export function capaDaCampanha(campaign: Pick<Campaign, "id" | "regiao" | "cover_path">): CSSProperties {
+  if (campaign.cover_path) return { backgroundImage: `url('/api/campaigns/${campaign.id}/cover?v=${encodeURIComponent(campaign.cover_path)}')`, backgroundSize: "cover", backgroundPosition: "center" };
   const id = regiaoValida(campaign.regiao);
   if (!id) return campaignCoverStyle(campaign.id);
   return { backgroundImage: `url('/forja/regioes/${id}.webp')`, backgroundSize: "cover", backgroundPosition: "center" };

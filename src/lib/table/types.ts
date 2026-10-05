@@ -25,6 +25,12 @@ export interface Campaign {
   turn_track_version: number;
   /** Região v1.2 onde a campanha começa (`REGIOES_V12`). Null = não definida. */
   regiao?: string | null;
+  /** Rank sugerido para personagens novos na Forja. */
+  initial_ranking?: import("../rulesetV12/contracts").RankingV12;
+  /** Texto simples; até 1000 caracteres. */
+  description?: string | null;
+  /** Caminho privado no bucket campaign-covers. */
+  cover_path?: string | null;
 }
 
 /** Visibilidade de uma entrada de log — hoje é só um campo de dados, sem filtro de RLS (ver migration). */

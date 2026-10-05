@@ -27,11 +27,11 @@ import "server-only";
  * dele (o conteúdo vem da API do Notion, com o token do servidor).
  *
  * REGRAS DE USO — não são sugestão:
- *   • só `lib/vtt/imageService.ts` e `lib/compendio/sincronizacaoAutomatica.ts` importam este módulo;
+ *   • só serviços server-only de imagens e a sincronização do Compêndio importam este módulo;
  *   • nenhuma Server Action de domínio o toca;
- *   • nada aqui recebe input do cliente sem ter passado por uma RPC de
- *     autorização antes (o caminho no bucket é DERIVADO no banco, via
- *     `vtt_imagem_storage_path`, nunca enviado pelo browser).
+ *   • a autorização acontece antes de cada acesso: imagens do VTT usam
+ *     RPC por asset; capas usam a linha da campanha via RLS e caminho
+ *     gerado pelo servidor, nunca um caminho enviado pelo browser.
  *
  * Requer `SUPABASE_SERVICE_ROLE_KEY`. Em ambiente que não a tenha (dev
  * anon, scripts de leitura), devolve `null` — quem chama trata como

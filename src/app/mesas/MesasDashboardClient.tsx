@@ -8,9 +8,7 @@
  * "Criar campanha" continua vivendo nesta mesma página; no redesign ela
  * virou um modal HUD, aberto pelo botão da barra de ferramentas ou pelo
  * item do menu de perfil (que chega como `?novo=1`). O formulário tem
- * só o campo que a criação real aceita hoje (`createCampaign(name)`) —
- * capa e cor de acento não existem no banco e por isso não foram
- * fingidas aqui.
+ * nome, descrição, região e capa são gravados pela ação de criação.
  *
  * Hero e atividade derivam de campaign_online_sessions, e a contagem de
  * participantes vem dos batimentos autenticados (0139) — conexão real,
@@ -21,8 +19,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus as LucidePlus } from "lucide-react";
-import { createCampaign } from "../../lib/table/storage";
+import { ArrowRight, ImagePlus, Plus as LucidePlus, Shield } from "lucide-react";
+import { createCampaignWithMetadata } from "../../lib/campaign/metadataActions";
 import type { Campaign } from "../../lib/table";
 import type { OnlineSession } from "../../lib/campaign/onlineSessionActions";
 import { usePushToast } from "./_global/GlobalShell";
@@ -30,11 +28,12 @@ import { usePresence } from "../_design/usePresence";
 import {
   DecoBottom, PageHead, SectionHead, capaDaCampanha, nomeDaRegiao, relativeTime,
 } from "./_global/parts";
-import { REGIOES_V12, regiaoValida, type RegiaoIdV12 } from "../../lib/rulesetV12";
+import { RANKINGS_V12, REGIOES_V12, regiaoValida, type RankingV12, type RegiaoIdV12 } from "../../lib/rulesetV12";
 import { textoDeParticipantes } from "./_global/participantes";
 import {
   Activity, AlertTriangle, Plus, RotateCw, ScrollText, Search, Spinner, User, Users, X,
 } from "../_design/icons";
+import createStyles from "./CreateCampaignModal.module.css";
 
 export interface CampaignCardData {
   latestSession?: OnlineSession | null;
@@ -160,12 +159,9 @@ export default function MesasDashboardClient({
   }, [router]);
 
   function handleCreated(data: CampaignCardData) {
-    setCampanhas((prev) => [data, ...prev]);
     setCreateOpen(false);
-    devolverFocoAoGatilho();
-    if (searchParams.get("novo") === "1") router.replace("/mesas");
     pushToast("success", `Campanha "${data.campaign.name}" criada.`);
-    router.refresh();
+    router.push(`/mesas/${data.campaign.id}`);
   }
 
   return (
@@ -331,6 +327,7 @@ function FeaturedCampaign({ data }: { data: CampaignCardData }) {
               : <>{"// Retomar operação · última sessão "}{relativeTime(latestSession!.started_at)}</>}
           </span>
           <h2 className="ag-destaque__titulo">{campaign.name}</h2>
+          {campaign.description && <p className="ag-destaque__descricao">{campaign.description}</p>}
           <div className="ag-destaque__identidade">
             {regiao && <span className="ag-destaque__regiao">Região · {regiao}</span>}
             <span className={`ag-papel${role === "narrator" ? " ag-papel--narrador" : ""}`}>{role === "narrator" ? "Narrador" : "Jogador"}</span>
@@ -373,6 +370,7 @@ function CampaignCard({ data }: { data: CampaignCardData }) {
         <div className="ag-cartao__corpo">
           <span className={`ag-etiqueta ag-etiqueta--${narrador ? "narrador" : "jogador"}`}>◆ {narrador ? "Narrador" : "Jogador"}</span>
           <h3 className="ag-cartao__titulo" title={campaign.name}>{campaign.name}</h3>
+          {campaign.description && <p className="ag-cartao__descricao" title={campaign.description}>{campaign.description}</p>}
           <div className="ag-cartao__rodape">
             <span className="ag-mono ag-mono--peq">{regiao ? `${regiao} · ` : ""}{relativeTime(campaign.updated_at)}</span>
             <Link
@@ -502,9 +500,19 @@ function CreateCampaignModal({
 }) {
   const { montado, visivel } = usePresence(aberto);
   const [nome, setNome] = useState("");
+  const [nomeTocado, setNomeTocado] = useState(false);
+  const [previewId, setPreviewId] = useState("preview");
   const [regiao, setRegiao] = useState<RegiaoIdV12 | null>(null);
+  const [rankingInicial, setRankingInicial] = useState<RankingV12>("F");
+  const [descricao, setDescricao] = useState("");
+  const [capa, setCapa] = useState<File | null>(null);
+  const [capaPreview, setCapaPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const capaInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => { setPreviewId(crypto.randomUUID()); }, []);
 
   // A devolução do foco ao gatilho é responsabilidade do PAI
   // (`devolverFocoAoGatilho`) — ver a nota lá: aqui dentro o
@@ -512,20 +520,44 @@ function CreateCampaignModal({
 
   useEffect(() => {
     if (!aberto) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !busy) onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !busy) onClose();
+      if (e.key !== "Tab") return;
+      const focusables = dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled)');
+      if (!focusables?.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [aberto, busy, onClose]);
+
+  useEffect(() => {
+    if (!capa) { setCapaPreview(null); return; }
+    const url = URL.createObjectURL(capa);
+    setCapaPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [capa]);
 
   if (!montado) return null;
 
   async function handleCreate() {
     const trimmed = nome.trim();
-    if (!trimmed || busy) return;
+    if (!trimmed) { setNomeTocado(true); return; }
+    if (busy) return;
     setBusy(true);
     setErro(null);
     try {
-      const campaign = await createCampaign(trimmed, regiao);
+      const form = new FormData();
+      form.set("name", trimmed);
+      form.set("id", previewId);
+      form.set("description", descricao);
+      form.set("region", regiao ?? "");
+      form.set("initial_ranking", rankingInicial);
+      if (capa) form.set("cover", capa);
+      const campaign = await createCampaignWithMetadata(form);
       onCreated({
         campaign,
         role: "narrator",
@@ -540,67 +572,97 @@ function CreateCampaignModal({
     }
   }
 
+  function handleCoverFile(file: File | null) {
+    if (file && !["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      setCapa(null);
+      setErro("Use uma imagem PNG, JPEG ou WebP.");
+      return;
+    }
+    if (file && file.size > 5 * 1024 * 1024) {
+      setCapa(null);
+      setErro("A capa deve ter até 5 MB.");
+      return;
+    }
+    setCapa(file);
+    setErro(null);
+  }
+
   return (
     <div
       className="ra-overlay"
       data-open={visivel}
       onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) onClose(); }}
     >
-      <div className="ra-modal" role="dialog" aria-modal="true" aria-labelledby="criar-campanha-titulo">
-        <button type="button" className="ra-iconbtn ra-modal-close" onClick={onClose} disabled={busy} aria-label="Fechar">
-          <X size={16} />
-        </button>
-
-        <div className="ra-eyebrow" style={{ marginBottom: 8 }}>SYS.FORGE // NOVA CAMPANHA</div>
-        <h2 id="criar-campanha-titulo" className="ra-h2" style={{ fontSize: 20, marginBottom: 22 }}>
-          Criar campanha
-        </h2>
-
-        <div className="ra-field" style={{ marginBottom: 14 }}>
-          <label className="ra-flabel" htmlFor="nova-campanha-nome">Nome da campanha</label>
-          <input
-            id="nova-campanha-nome"
-            data-testid="dash-nova-mesa"
-            className="ra-input"
-            value={nome}
-            autoFocus
-            maxLength={120}
-            onChange={(e) => setNome(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleCreate(); }}
-            placeholder="Ex.: Ecos de Vosek"
-          />
-          <span className="ra-hint">Você entra como narrador.</span>
-        </div>
-
-        <div className="ra-field" style={{ marginBottom: 14 }}>
-          <label className="ra-flabel" htmlFor="nova-campanha-regiao">Região onde a campanha começa</label>
-          <select
-            id="nova-campanha-regiao"
-            data-testid="dash-nova-mesa-regiao"
-            className="ra-input"
-            value={regiao ?? ""}
-            onChange={(e) => setRegiao(regiaoValida(e.target.value))}
-          >
-            <option value="">Decidir depois</option>
-            {(Object.keys(REGIOES_V12) as RegiaoIdV12[]).map((id) => <option key={id} value={id}>{REGIOES_V12[id].nome}</option>)}
-          </select>
-          <span className="ra-hint">Dá a arte da campanha e o segundo idioma dos personagens na Forja. Pode mudar depois nas configurações da mesa.</span>
-        </div>
-
-        {erro && <p role="alert" style={{ color: "#ff8ea0", fontSize: 12, marginBottom: 14 }}>{erro}</p>}
-
-        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-          <button type="button" className="ra-btn ra-btn--ghost" onClick={onClose} disabled={busy}>Cancelar</button>
-          <button
-            type="button"
-            className="ra-btn ra-btn--amber"
-            data-testid="dash-criar-mesa"
-            onClick={handleCreate}
-            disabled={busy || !nome.trim()}
-          >
-            {busy ? <><Spinner size={13} className="ra-spin" /> Forjando…</> : <><Plus size={14} /> Criar campanha</>}
+      <div ref={dialogRef} className={`ra-modal ${createStyles.modal}`} role="dialog" aria-modal="true" aria-labelledby="criar-campanha-titulo">
+        <h2 id="criar-campanha-titulo" className="sr-only">Criar campanha</h2>
+        <header className={createStyles.banner}>
+          <div className={createStyles.cover} style={capaPreview ? { backgroundImage: `url('${capaPreview}')` } : capaDaCampanha({ id: previewId, regiao })} aria-hidden="true" />
+          <div className={createStyles.veil} aria-hidden="true" />
+          <button type="button" className={createStyles.close} onClick={onClose} disabled={busy} aria-label="Fechar">
+            <X size={15} />
           </button>
+          <div className={createStyles.bannerCopy}>
+            <span className={createStyles.eyebrow}>SYS.FORGE // NOVA CAMPANHA</span>
+            <span className={createStyles.role}>◆ Narrador</span>
+            <p className={createStyles.previewName}>{nome.trim() || "Nome da campanha"}</p>
+          </div>
+          <button type="button" className={`${createStyles.button} ${createStyles.upload}`} onClick={() => capaInputRef.current?.click()} disabled={busy}>
+            <ImagePlus size={14} /> {capa ? "Trocar capa" : "Escolher capa"}
+          </button>
+          <input ref={capaInputRef} id="nova-campanha-capa" className={createStyles.fileInput} type="file"
+            accept="image/png,image/jpeg,image/webp" disabled={busy}
+            onChange={(e) => handleCoverFile(e.target.files?.[0] ?? null)} />
+        </header>
+
+        <div className={createStyles.coverStrip}>
+          <span>{capa ? "Sua capa · recorte central em 16:9" : "Capa padrão · PNG, JPEG ou WebP · até 5 MB"}</span>
+          {capa && <button type="button" className={createStyles.remove} disabled={busy}
+            onClick={() => { handleCoverFile(null); if (capaInputRef.current) capaInputRef.current.value = ""; }}>Remover capa</button>}
         </div>
+
+        <div className={createStyles.fields}>
+          <div className={createStyles.field}>
+            <label className={createStyles.label} htmlFor="nova-campanha-nome">Nome da campanha</label>
+            <input id="nova-campanha-nome" data-testid="dash-nova-mesa" className={createStyles.input}
+              value={nome} autoFocus maxLength={120}
+              onChange={(e) => { setNome(e.target.value); setNomeTocado(true); if (e.target.value.trim()) setErro(null); }}
+              onKeyDown={(e) => { if (e.key === "Enter") void handleCreate(); }}
+              placeholder="Ex.: Ecos de Vosek" />
+            {nomeTocado && !nome.trim() && <span role="alert" className={createStyles.fieldError}>Informe o nome da campanha.</span>}
+          </div>
+          <div className={createStyles.field}>
+            <label className={createStyles.label} htmlFor="nova-campanha-regiao">Região inicial <span className={createStyles.optional}>Opcional</span></label>
+            <select id="nova-campanha-regiao" data-testid="dash-nova-mesa-regiao" className={createStyles.input}
+              value={regiao ?? ""} onChange={(e) => setRegiao(regiaoValida(e.target.value))}>
+              <option value="">Decidir depois</option>
+              {(Object.keys(REGIOES_V12) as RegiaoIdV12[]).map((id) => <option key={id} value={id}>{REGIOES_V12[id].nome}</option>)}
+            </select>
+          </div>
+          <div className={createStyles.field}>
+            <label className={createStyles.label} htmlFor="nova-campanha-ranking">Ranking inicial</label>
+            <select id="nova-campanha-ranking" data-testid="dash-nova-mesa-ranking" className={createStyles.input}
+              value={rankingInicial} onChange={(e) => setRankingInicial(e.target.value as RankingV12)}>
+              {RANKINGS_V12.map((rank) => <option key={rank} value={rank}>Rank {rank}</option>)}
+            </select>
+          </div>
+          <div className={`${createStyles.field} ${createStyles.full}`}>
+            <label className={createStyles.label} htmlFor="nova-campanha-descricao">Descrição <span className={createStyles.optional}>Opcional</span></label>
+            <textarea id="nova-campanha-descricao" className={createStyles.input} value={descricao} maxLength={1000}
+              onChange={(e) => setDescricao(e.target.value)} rows={3} placeholder="Sobre o que é esta campanha?" />
+            <span className={createStyles.counter}>{descricao.length} / 1000</span>
+          </div>
+        </div>
+
+        {erro && <p role="alert" className={createStyles.error}>{erro}</p>}
+
+        <footer className={createStyles.footer}>
+          <span className={createStyles.footerNote}><Shield size={14} aria-hidden="true" /> Você entra como narrador.</span>
+          <button type="button" className={createStyles.button} onClick={onClose} disabled={busy}>Cancelar</button>
+          <button type="button" className={`${createStyles.button} ${createStyles.primary}`}
+            data-testid="dash-criar-mesa" onClick={handleCreate} disabled={busy || !nome.trim()}>
+            {busy ? <><Spinner size={13} className="ra-spin" /> Forjando…</> : <>Criar campanha <ArrowRight size={14} aria-hidden="true" /></>}
+          </button>
+        </footer>
       </div>
     </div>
   );
