@@ -46,6 +46,7 @@ import {
   MapPin,
   Pencil,
   Trash2,
+  Undo2,
   UserPlus,
   UserRound,
   Wand2,
@@ -54,6 +55,7 @@ import { MenuContextual, type ItemMenuContextual } from "../_shell/MenuContextua
 import { BotaoAba, BuscaDiretorio, CabecalhoGrupo, LinhaDiretorio, RodapeAcoes } from "./Diretorio";
 import { EstadoCarregando, EstadoErro, EstadoVazio } from "./Estados";
 import { BotaoTecnico, SecaoDossie } from "./ui/primitivas";
+import { PedidosEntrada } from "./PedidosEntrada";
 import { COR_RECURSO, ROTULO_RECURSO } from "../../../../ficha/_console/coresRecurso";
 import {
   MIME_PASTA_ARRASTADA,
@@ -68,6 +70,7 @@ import {
 } from "./personagensModelo";
 import {
   arquivarPersonagemPainelAction,
+  devolverPersonagemAoJogadorAction,
   criarPastaAction,
   criarPersonagemPainelAction,
   criarMeuPersonagemAction,
@@ -452,6 +455,22 @@ export function PersonagensTab({
           dica: "Abre a janela de acesso — conceder ou remover controle, sem sair da Mesa.",
           onSelecionar: () => onConfigurarAcesso(entrada.characterId),
         },
+        ...(entrada.tipo === "jogador"
+          ? [{
+              id: "devolver",
+              rotulo: "Devolver ao jogador",
+              icone: <Undo2 size={14} />,
+              separadorAntes: true,
+              dica: "Tira o personagem da campanha. Ele volta para a lista \"Sem campanha\" do jogador.",
+              onSelecionar: () =>
+                setConfirmacao({
+                  titulo: "Devolver ao jogador",
+                  mensagem: `Tirar "${entrada.nome}" da campanha? Ele volta para a página Personagens do jogador, que pode enviá-lo de novo depois.`,
+                  rotulo: "Devolver",
+                  onConfirmar: () => executar(() => devolverPersonagemAoJogadorAction(campaignId, entrada.characterId)),
+                }),
+            } satisfies ItemMenuContextual]
+          : []),
         {
           id: "arquivar",
           rotulo: "Arquivar",
@@ -1074,6 +1093,10 @@ export function PersonagensTab({
               <span className="rv-fp-switch-txt">Recursos</span>
             </label>
           </div>
+
+          {podeAdministrar && (
+            <PedidosEntrada campaignId={campaignId} visivel={visivel} onAceito={() => void carregar(incluirArquivados)} />
+          )}
 
           <div
             {...veuDaLista.atributos}
