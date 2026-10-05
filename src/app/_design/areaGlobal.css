@@ -166,7 +166,7 @@
 }
 .ag .ag-entrar:hover { background: var(--ag-gelo); }
 .ag .ag-entrar:focus-visible { outline: 2px solid var(--ag-gelo); outline-offset: 3px; }
-.ag .ag-entrar--peq { width: 100%; min-height: 36px; padding: 9px 18px; font-size: 12px; line-height: 1; }
+.ag .ag-entrar--peq { --ag-n: 8px; width: 100%; min-height: 36px; padding: 9px 18px; font-size: 12px; line-height: 1; }
 .ag .ag-entrar--peq span { transform: translateY(1px); }
 
 /* ── Destaque: retomar operação ── */
@@ -191,8 +191,8 @@
 .ag .ag-destaque__dado { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .ag .ag-destaque__dado + .ag-destaque__dado { border-left: 1px solid color-mix(in srgb, var(--ag-cy) 25%, transparent); padding-left: 24px; }
 .ag .ag-destaque__dado strong, .ag .ag-destaque__dado time { font: 600 15px/1.4 var(--font-corpo), sans-serif; color: var(--ag-gelo); }
-.ag .ag-destaque__entrar { min-width: 210px; justify-content: space-between; }
-.ag .ag-destaque__entrar span { font-size: 20px; line-height: 0.8; }
+.ag .ag-destaque__entrar { min-width: 210px; }
+.ag .ag-destaque__entrar span { transform: translateY(1px); }
 .ag .ag-papel { color: var(--ag-cy); }
 .ag .ag-papel--narrador { color: var(--ag-am); }
 .ag .ag-papel::before { content: "◆ "; }
@@ -212,7 +212,10 @@
 }
 
 /* ── Cartões ── */
-.ag .ag-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px; padding-top: 16px; }
+.ag .ra2-col { container: campanhas / inline-size; }
+.ag .ag-grade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; padding-top: 16px; }
+@container campanhas (max-width: 635px) { .ag .ag-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container campanhas (max-width: 417px) { .ag .ag-grade { grid-template-columns: minmax(0, 1fr); } }
 .ag .ag-cartao-borda { transition: transform var(--ag-trans), filter var(--ag-trans); }
 .ag .ag-cartao-borda:hover { transform: translateY(-3px); filter: drop-shadow(0 0 10px color-mix(in srgb, var(--ag-cy) 30%, transparent)); }
 .ag .ag-cartao { position: relative; aspect-ratio: 1.12; overflow: hidden; }

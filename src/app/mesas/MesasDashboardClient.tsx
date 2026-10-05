@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, ImagePlus, Plus as LucidePlus, Shield } from "lucide-react";
+import { ArrowRight, ChevronRight, ImagePlus, Shield } from "lucide-react";
 import { createCampaignWithMetadata } from "../../lib/campaign/metadataActions";
 import type { Campaign } from "../../lib/table";
 import type { OnlineSession } from "../../lib/campaign/onlineSessionActions";
@@ -31,7 +31,7 @@ import {
 import { RANKINGS_V12, REGIOES_V12, regiaoValida, type RankingV12, type RegiaoIdV12 } from "../../lib/rulesetV12";
 import { textoDeParticipantes } from "./_global/participantes";
 import {
-  Activity, AlertTriangle, Plus, RotateCw, ScrollText, Search, Spinner, User, Users, X,
+  Activity, AlertTriangle, RotateCw, ScrollText, Search, Spinner, User, Users, X,
 } from "../_design/icons";
 import createStyles from "./CreateCampaignModal.module.css";
 
@@ -61,6 +61,12 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: "narrator", label: "Narrador" },
   { id: "player", label: "Jogador" },
 ];
+
+function IconeMais() {
+  return <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="2 2 12 12" aria-hidden="true">
+    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4" stroke="currentColor" strokeWidth="0.35" />
+  </svg>;
+}
 
 export default function MesasDashboardClient({
   campanhasIniciais,
@@ -213,7 +219,7 @@ export default function MesasDashboardClient({
           data-testid="dash-abrir-criar-mesa"
           onClick={abrirCriacao}
         >
-          <LucidePlus size={17} strokeWidth={3} aria-hidden="true" />
+          <IconeMais />
           <span>Criar campanha</span>
         </button>
       </div>
@@ -244,7 +250,7 @@ export default function MesasDashboardClient({
           </p>
           <div className="ra-empty-actions">
             <button type="button" className="ra-btn ra-btn--amber" onClick={abrirCriacao}>
-              <Plus size={15} /> Criar campanha
+              <IconeMais /> Criar campanha
             </button>
           </div>
         </div>
@@ -349,7 +355,7 @@ function FeaturedCampaign({ data }: { data: CampaignCardData }) {
             className="ag-entrar ag-destaque__entrar"
             aria-label={`Entrar na campanha ${campaign.name}`}
           >
-            Entrar na mesa <span aria-hidden="true">›</span>
+            <ChevronRight size={17} strokeWidth={2} aria-hidden="true" /><span>Entrar na mesa</span>
           </Link>
         </div>
       </div>
@@ -378,7 +384,7 @@ function CampaignCard({ data }: { data: CampaignCardData }) {
               className="ag-entrar ag-entrar--peq"
               aria-label={`${narrador ? "Entrar na" : "Abrir"} campanha ${campaign.name}`}
             >
-              <span>Entrar</span><ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
+              <ChevronRight size={16} strokeWidth={2} aria-hidden="true" /><span>Entrar</span>
             </Link>
           </div>
         </div>
