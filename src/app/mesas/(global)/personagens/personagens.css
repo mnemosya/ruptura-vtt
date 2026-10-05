@@ -1,0 +1,72 @@
+/*
+ * Registro de personagens — linha compacta sobre os tokens da área global
+ * (`.ag`, areaGlobal.css): chanfro `ag-ch`, `ag-mono`, `ag-etiqueta`; botões
+ * e retrato na geometria da ficha/Console. O estado pinta a barra lateral e o retrato:
+ * ciano = em campanha, cinza = sem campanha, âmbar = aguardando narrador.
+ */
+.ag .pg-lista { list-style: none; margin: 0; padding: 16px 0 28px; display: flex; flex-direction: column; gap: 8px; }
+
+.ag .pg-linha {
+  --pg-estado: var(--ag-cy);
+  position: relative; display: flex; align-items: center; gap: 16px; min-height: 68px; padding: 0 16px 0 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--pg-estado) 7%, var(--ag-fundo)), var(--ag-fundo) 40%);
+  transition: background var(--ag-trans);
+}
+.ag .pg-linha::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 2px; background: var(--pg-estado); }
+.ag .pg-linha[data-estado="solto"] { --pg-estado: var(--ag-apagado); }
+.ag .pg-linha[data-estado="pendente"] { --pg-estado: var(--ag-am); }
+.ag .pg-linha:hover { background: linear-gradient(90deg, color-mix(in srgb, var(--pg-estado) 13%, var(--ag-fundo)), color-mix(in srgb, var(--ag-cy) 3%, var(--ag-fundo)) 60%); }
+
+.ag .pg-linha__abrir { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; padding: 12px 0 12px 16px; color: inherit; text-decoration: none; }
+.ag .pg-linha__abrir:focus-visible { outline: 2px solid var(--ag-cy); outline-offset: -2px; }
+
+/* Retrato: quadrado 44×44 com o canto da ficha (raio 4 · chanfro 8). */
+.ag .pg-linha__retrato {
+  flex: none; width: 44px; height: 44px; display: grid; place-items: center; overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--pg-estado) 45%, transparent);
+  border-radius: 4px 8px 4px 8px; corner-shape: round bevel round bevel;
+  background: color-mix(in srgb, var(--pg-estado) 14%, var(--ag-abismo)); color: var(--pg-estado);
+}
+.ag .pg-linha__retrato img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.ag .pg-linha__texto { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ag .pg-linha__nome { font: 700 16px/1.2 var(--ag-display); color: var(--ag-gelo); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: color var(--ag-trans); }
+.ag .pg-linha__abrir:hover .pg-linha__nome { color: var(--ag-cy); }
+.ag .pg-linha__meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.14em; }
+
+.ag .pg-linha__lado { flex: none; display: flex; align-items: center; gap: 14px; }
+.ag .pg-linha__quando { white-space: nowrap; }
+.ag .pg-linha__seta { color: var(--ag-cy); }
+.ag .pg-linha__erro { color: #ff6a80; font-size: 12px; line-height: 1.3; }
+
+/* Ação da linha: o botão primário do modal de campanha
+   (`CreateCampaignModal.module.css` → `.button.primary`). */
+.ag .pg-acao {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 34px; padding: 9px 13px; cursor: pointer; white-space: nowrap;
+  border: 1px solid rgba(69, 184, 201, 0.53);
+  border-radius: 4px 10px 4px 10px; corner-shape: round bevel round bevel;
+  background: rgba(69, 184, 201, 0.09); color: #45b8c9;
+  font: 700 11px var(--font-chakra), var(--font-corpo), sans-serif; letter-spacing: 0.1em; text-transform: uppercase;
+  transition: color 140ms, border-color 140ms, background 140ms;
+}
+.ag .pg-acao:hover:not(:disabled) { border-color: #45b8c9; background: rgba(69, 184, 201, 0.14); color: #6ff0ff; }
+.ag .pg-acao:focus-visible { outline: 2px solid #45b8c9; outline-offset: 2px; }
+.ag .pg-acao:disabled { opacity: 0.45; cursor: not-allowed; }
+/* Secundária: o `.button` neutro do mesmo modal. */
+.ag .pg-acao--neutra { border-color: #1c2b45; background: #070d17; color: #7f95b3; font-weight: 600; }
+.ag .pg-acao--neutra:hover:not(:disabled) { border-color: #2a3b58; background: rgba(255, 255, 255, 0.015); color: #b9c9dc; }
+
+/* Modal de envio — o modal de campanha, mais estreito e com a faixa mais baixa. */
+.ag .ra-modal.pg-modal.pg-modal { width: 520px; } /* vence `.ag .ra-modal.modal` do módulo */
+.ag .pg-modal header { min-height: 150px; }
+.pg-modal__capa:not([style]) {
+  background-image: repeating-linear-gradient(-45deg, rgba(69, 184, 201, 0.07) 0 6px, transparent 6px 12px);
+}
+.pg-modal__vazio { margin: 0; color: #7f95b3; font: 13px/1.5 var(--font-corpo), sans-serif; }
+
+@media (max-width: 640px) {
+  .ag .pg-linha { flex-wrap: wrap; padding-bottom: 12px; }
+  .ag .pg-linha__lado { padding-left: 74px; }
+  .ag .pg-linha__quando { display: none; }
+}
