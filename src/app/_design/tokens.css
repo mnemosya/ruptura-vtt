@@ -5,7 +5,7 @@
  * REGRA DESTE ARQUIVO: ele só ADICIONA nomes. Nenhum token já existente
  * (`--cy`, `--am`, `--rc-*`, `--rm-*`, `--font-*`) é declarado ou
  * sobrescrito aqui. O motivo é concreto e foi medido, não suposto:
- * `console.css` consome `--font-mono`/`--font-orbitron`/`--font-rajdhani`
+ * `console.css` consome `--font-mono`/`--font-orbitron`/`--font-corpo`
  * SEM redeclará-las no próprio escopo, então qualquer declaração nova
  * no `:root` com um desses nomes muda a tipografia do Console inteiro
  * sem ninguém ter tocado nele. `scripts/dev/check-console-baseline.ts`

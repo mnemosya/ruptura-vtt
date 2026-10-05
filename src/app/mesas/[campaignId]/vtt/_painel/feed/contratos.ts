@@ -110,8 +110,9 @@ export interface CartaoRolagem extends CartaoComum {
    * antigos, anteriores ao campo `termos` no payload.
    */
   termos: { faces: number; valor: number }[];
-  /** Modo com que os dados foram lidos: soma (padrão) ou maior dado. */
-  modo: "sum" | "high";
+  /** Modo com que os dados foram lidos: soma (padrão), maior ou menor dado. */
+  modo: "sum" | "high" | "low";
+  /** O dado que valeu — o maior, ou o MENOR quando `modo` é `low`. */
   maior: number | null;
   alvo: string | null;
   /** Modificadores automáticos aplicados, com nome da fonte. */
@@ -568,8 +569,8 @@ function projetarRolagem(entry: TableLogEntry): CartaoFeed {
     margem: txt(p, "margemRotulo", "margem", "faixa"),
     dados,
     termos: termosDoPayload(p),
-    modo: txt(p, "modo") === "high" ? "high" : "sum",
-    maior: destacarMaior && dados.length > 0 ? Math.max(...dados) : null,
+    modo: txt(p, "modo") === "high" ? "high" : txt(p, "modo") === "low" ? "low" : "sum",
+    maior: destacarMaior && dados.length > 0 ? (txt(p, "modo") === "low" ? Math.min(...dados) : Math.max(...dados)) : null,
     alvo: txt(p, "alvoNome", "targetName"),
     modificadores: efeitos
       .map((e) => ({ nome: typeof e.sourceName === "string" ? e.sourceName : "—", valor: typeof e.modifier === "number" ? e.modifier : 0 }))

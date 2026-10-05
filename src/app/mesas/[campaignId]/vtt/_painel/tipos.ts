@@ -9,8 +9,15 @@
 
 export type AbaId = "chat" | "personagens" | "participantes" | "bando" | "compendio";
 
-/** Ordem canônica das abas — a mesma na barra horizontal (aberto) e na faixa vertical (recolhido). */
-export const ABAS_ORDEM: readonly AbaId[] = ["chat", "personagens", "participantes", "bando", "compendio"];
+/**
+ * Ordem canônica das abas — a mesma na barra horizontal (aberto) e na faixa vertical (recolhido).
+ *
+ * "participantes" saiu da barra (05/10/2026): a lista de quem está na
+ * mesa segue acessível pela janela do menu da mesa. O id continua no
+ * tipo porque a janela usa; uma preferência salva nele cai no padrão
+ * via `ehAbaId`.
+ */
+export const ABAS_ORDEM: readonly AbaId[] = ["chat", "personagens", "bando", "compendio"];
 
 export const ROTULO_ABA: Record<AbaId, string> = {
   chat: "Chat Log",

@@ -26,7 +26,7 @@
   background: linear-gradient(160deg, #0b1424, #080e19);
   color: var(--modal-ink);
   box-shadow: var(--rv-shadow-win, 0 30px 70px rgba(0, 0, 0, .55));
-  font-family: var(--rv-body, var(--font-rajdhani), system-ui, sans-serif);
+  font-family: var(--rv-body, var(--font-corpo), system-ui, sans-serif);
   clip-path: polygon(0 0, calc(100% - var(--modal-notch)) 0, 100% var(--modal-notch), 100% 100%, var(--modal-notch) 100%, 0 calc(100% - var(--modal-notch)));
   corner-shape: square bevel square bevel;
 }

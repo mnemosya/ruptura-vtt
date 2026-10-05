@@ -109,7 +109,7 @@ function log(parcial: Partial<TableLogEntry> & { id: string; created_at: string 
 
 // ═════════════════════════ MOLDURA ═════════════════════════
 
-ok("M1 (as cinco abas, na ordem canônica)", ABAS_ORDEM.join(",") === "chat,personagens,participantes,bando,compendio", ABAS_ORDEM.join(","));
+ok("M1 (as quatro abas, na ordem canônica)", ABAS_ORDEM.join(",") === "chat,personagens,bando,compendio", ABAS_ORDEM.join(","));
 ok("M2 (ehAbaId recusa qualquer coisa fora do catálogo)", ehAbaId("chat") && !ehAbaId("mapa") && !ehAbaId(null) && !ehAbaId(3), "ok");
 
 {

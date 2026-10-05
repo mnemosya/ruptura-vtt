@@ -3,21 +3,21 @@
    que não carregam as mesmas folhas. Cores literais pelo mesmo motivo
    (a lista vive por portal, fora de qualquer escopo de tokens). */
 .rv-seletor-gatilho {
-  display: flex; align-items: center; gap: 6px; width: 100%; margin-top: 4px;
-  min-height: 34px; padding: 0 9px; text-align: left; cursor: pointer;
+  display: flex; align-items: center; gap: 4px; width: 100%; margin-top: 4px;
+  min-height: 34px; padding: 0 6px; text-align: left; cursor: pointer;
   border: 1px solid #1c2b45; background: transparent; color: #b9c9dc;
   border-radius: 4px 7px 4px 7px !important; corner-shape: round bevel round bevel;
-  font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: .02em; text-transform: uppercase;
+  font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: 0; text-transform: uppercase;
   transition: border-color .14s, background .14s, color .14s;
 }
 .rv-seletor-gatilho:not(:disabled):hover,
 .rv-seletor-gatilho[aria-expanded="true"] { border-color: color-mix(in srgb, #45b8c9 55%, transparent); color: #45b8c9; }
 .rv-seletor-gatilho:focus-visible { outline: 2px solid #45b8c9; outline-offset: 1px; }
 .rv-seletor-gatilho:disabled { color: #4f6285; cursor: not-allowed; }
-.rv-seletor-valor { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; white-space: nowrap; }
+.rv-seletor-valor { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; white-space: nowrap; }
 .rv-seletor-nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .rv-dados-painel .rv-seletor-valor { font-size: 12px; font-weight: 600; }
-.rv-seletor-medida { flex: none; font-size: 11px; }
+.rv-seletor-medida { flex: none; font-size: 11px; padding-inline: 3px; }
 .rv-seletor-seta { flex: none; color: #4f6285; transition: transform .14s; }
 
 .rv-seletor-lista {

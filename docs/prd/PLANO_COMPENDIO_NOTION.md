@@ -174,7 +174,7 @@ O índice de termos é montado pela própria sincronização, a partir dos títu
 - Cada linha é uma **subpágina** do livro (`paiPageId`): fora do índice e de Anterior/Próximo, dentro da busca e dos termos (o nome `BIÓTICA` vira link). Editar só uma Vertente faz o capítulo dela ser relido (`subpaginas` guarda a data de cada uma).
 - Ícones nativos do Notion (ex.: Sináptica) não vêm como imagem pela API e ficam sem ícone.
 - Sincronização forçada: 13 subpáginas criadas, capítulos 9, 16 e 27 atualizados, 18 imagens novas, 1.578 requisições.
-- Tipografia: corpo de toda a Forja (telas e Códex) trocado de Rajdhani para Exo 2 Regular (`--fj-corpo`). O resto do VTT segue em Rajdhani por ora.
+- Tipografia: corpo de toda a Forja (telas e Códex) trocado de Rajdhani para Exo 2 Regular (`--fj-corpo`). Em 05/10/2026 o resto do VTT (mesa, painel, Console, área global, login) seguiu: token único `--font-corpo` (Exo 2) e a Rajdhani saiu do produto.
 
 ### 03/10/2026 — Fase 4
 

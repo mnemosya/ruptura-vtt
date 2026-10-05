@@ -568,11 +568,11 @@
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 /* Mesma armadilha nos botões do trilho: Agir/Concluir e Passar saíam
-   em Rajdhani. Os de declarar janela (`≤2`/`3+`) ficam de fora de
-   propósito — o `≤` em mono fica esquisito; vão pra Rajdhani. */
+   na fonte de corpo. Os de declarar janela (`≤2`/`3+`) ficam de fora de
+   propósito — o `≤` em mono fica esquisito; vão pra fonte de corpo. */
 .rv-ator .rv-ator-agir,
 .rv-ator .rv-ator-passar { font-family: var(--font-mono), monospace; }
-.rv-ator .rv-ator-declara button { font-family: var(--font-rajdhani), "Rajdhani", sans-serif; font-size: 12px; }
+.rv-ator .rv-ator-declara button { font-family: var(--font-corpo), sans-serif; font-size: 12px; }
 
 /* ── Trilho de facção ── */
 .rv-faccao {
@@ -4926,7 +4926,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-cena-nova .rv-btn + .rv-btn { margin-left: -6px; }
 /* MESMA CAIXA DA BUSCA. O campo de nome usava o cinza dos campos de
    formulário e a fonte de display a 12px, do lado de uma busca em
-   Rajdhani 13,5px sobre `#0c1526` — dois campos de texto, na mesma
+   corpo 13,5px sobre `#0c1526` — dois campos de texto, na mesma
    janela, dizendo que eram coisas diferentes. São o mesmo gesto:
    escrever um nome. */
 .rv-cena-nova .rv-cena-campo {
@@ -6289,7 +6289,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* CLASSE DUPLICADA pra empatar com `.rm-root button { font-family:
    inherit }` (classe + elemento), que vinha DEPOIS e trocava o mono da
    fração pela fonte do corpo — o rótulo "PV" ao lado saía em JetBrains
-   e o "8/11" em Rajdhani, na mesma linha. Mesma armadilha que o painel
+   e o "8/11" na fonte de corpo, na mesma linha. Mesma armadilha que o painel
    já tinha documentado. */
 .rv-cartao-token__val.rv-cartao-token__val { font-family: var(--font-mono), monospace; }
 button.rv-cartao-token__val { cursor: text; }
@@ -6553,7 +6553,7 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
 .rv-ident-face {
   flex: none; width: 44px; align-self: stretch; display: grid; place-items: center; overflow: hidden;
   border-right: 1px solid #1c2b45; background: #0a1220;
-  font-family: var(--font-rajdhani), sans-serif; font-size: 12px; font-weight: 700; color: #4f6285;
+  font-family: var(--font-corpo), sans-serif; font-size: 12px; font-weight: 700; color: #4f6285;
 }
 .rv-ident-face img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rv-ident-nome {

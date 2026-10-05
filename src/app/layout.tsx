@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Chakra_Petch, Exo_2, Orbitron, Rajdhani, JetBrains_Mono } from "next/font/google";
+import { Chakra_Petch, Exo_2, Orbitron, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 /**
- * Tipografia da identidade Ruptura (Orbitron / Rajdhani / JetBrains Mono).
+ * Tipografia da identidade Ruptura (Orbitron / Exo 2 / JetBrains Mono).
  * Servidas por `next/font` (auto-hospedadas, sem requisição externa em
  * runtime) e expostas como variáveis CSS — as folhas de estilo em
  * `src/app/_design/*.css` referenciam `var(--font-orbitron)` etc.
@@ -19,19 +19,17 @@ const orbitron = Orbitron({
   display: "swap",
 });
 
-const rajdhani = Rajdhani({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-rajdhani",
-  display: "swap",
-});
-
-/** Corpo de texto da Forja e do Códex: a Rajdhani cansava na leitura longa (03/10/2026). O resto do VTT segue em Rajdhani. */
+/**
+ * Corpo de texto do VTT inteiro (`--font-corpo`). Era Rajdhani: estreita e
+ * quadrada, cansava na leitura longa. A Forja e o Códex trocaram primeiro
+ * (03/10/2026); o resto da mesa, o Console e a área global seguiram em
+ * 05/10/2026, e a Rajdhani saiu do produto.
+ */
 const exo2 = Exo_2({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
-  variable: "--font-exo2",
+  variable: "--font-corpo",
   display: "swap",
 });
 
@@ -44,10 +42,10 @@ const jetbrainsMono = JetBrains_Mono({
 
 /**
  * Tipografia do design de dados (`chat % dice tray`): Chakra Petch para
- * display, Rajdhani para corpo — a mesma do resto da mesa e do Console.
+ * display, Exo 2 (`--font-corpo`) para corpo — a mesma do resto da mesa.
  *
  * Inter saía daqui e foi REMOVIDA do produto: ela era o corpo do VTT
- * enquanto o Console escrevia em Rajdhani, e as duas apareciam lado a
+ * enquanto o Console escrevia em outra fonte, e as duas apareciam lado a
  * lado toda vez que alguém abria a ficha por cima do mapa. Uma fonte a
  * menos pra baixar também.
  */
@@ -65,7 +63,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${orbitron.variable} ${rajdhani.variable} ${jetbrainsMono.variable} ${chakraPetch.variable} ${exo2.variable}`}>
+    <html lang="pt-BR" className={`${orbitron.variable} ${jetbrainsMono.variable} ${chakraPetch.variable} ${exo2.variable}`}>
       {/* suppressHydrationWarning: extensões de navegador (ex.: ColorZilla/Grammarly)
           injetam atributos no <body> antes do React hidratar (ex.: cz-shortcut-listen) —
           falso positivo de mismatch, não um bug do app. Ver https://react.dev/link/hydration-mismatch */}
