@@ -320,37 +320,40 @@ function FeaturedCampaign({ data }: { data: CampaignCardData }) {
   const regiao = nomeDaRegiao(campaign);
   const descricao = textoDeParticipantes(narratorOnline, playerCount);
   return (
-    <section className="ag-borda ag-ch" aria-label="Campanha em destaque" data-testid="dash-mesa-destaque">
+    <section className="ag-destaque-borda ag-borda ag-ch" aria-label="Campanha em destaque" data-testid="dash-mesa-destaque">
       <div className="ag-destaque ag-ch">
         <div className="ag-destaque__capa" style={capaDaCampanha(campaign)} aria-hidden="true" />
         <div className="ag-destaque__veu" aria-hidden="true" />
         <div className="ag-destaque__corpo">
-          <span className="ag-mono ag-mono--am">
+          <span className="ag-mono ag-mono--am ag-destaque__status">
             {aoVivo
               ? "// Sessão em andamento"
               : <>{"// Retomar operação · última sessão "}{relativeTime(latestSession!.started_at)}</>}
           </span>
           <h2 className="ag-destaque__titulo">{campaign.name}</h2>
-          <div className="ag-destaque__meta">
-            {regiao && <span>{regiao}</span>}
+          <div className="ag-destaque__identidade">
+            {regiao && <span className="ag-destaque__regiao">Região · {regiao}</span>}
             <span className={`ag-papel${role === "narrator" ? " ag-papel--narrador" : ""}`}>{role === "narrator" ? "Narrador" : "Jogador"}</span>
-            {aoVivo && <span data-testid="dash-destaque-participantes" title={descricao}><Users size={13} strokeWidth={1.4} aria-hidden="true" /> {descricao}</span>}
-            <span>{data.characterCount} {data.characterCount === 1 ? "personagem" : "personagens"}</span>
-            <span>
-              {aoVivo ? "Iniciada em " : "Sessão de "}
-              <time dateTime={latestSession!.started_at}>{new Date(latestSession!.started_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</time>
-            </span>
           </div>
-          <div className="ag-destaque__acoes">
-            <Link
-              href={`/mesas/${campaign.id}`}
-              data-testid={`dash-abrir-${campaign.id}`}
-              className="ag-entrar"
-              aria-label={`Entrar na campanha ${campaign.name}`}
-            >
-              Entrar na mesa ›
-            </Link>
+          {aoVivo && <p className="ag-destaque__presenca" data-testid="dash-destaque-participantes" title={descricao}><span className="ag-destaque__presenca-ponto" aria-hidden="true" />{descricao}</p>}
+        </div>
+        <div className="ag-destaque__rodape">
+          <div className="ag-destaque__dado">
+            <span className="ag-mono">Elenco</span>
+            <strong>{data.characterCount} {data.characterCount === 1 ? "personagem" : "personagens"}</strong>
           </div>
+          <div className="ag-destaque__dado">
+            <span className="ag-mono">{aoVivo ? "Sessão iniciada" : "Última sessão"}</span>
+            <time dateTime={latestSession!.started_at}>{new Date(latestSession!.started_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</time>
+          </div>
+          <Link
+            href={`/mesas/${campaign.id}`}
+            data-testid={`dash-abrir-${campaign.id}`}
+            className="ag-entrar ag-destaque__entrar"
+            aria-label={`Entrar na campanha ${campaign.name}`}
+          >
+            Entrar na mesa <span aria-hidden="true">›</span>
+          </Link>
         </div>
       </div>
     </section>
