@@ -146,13 +146,14 @@
   color: var(--ag-gelo); box-shadow: inset 0 -2px 0 var(--ag-am); --ra-chanfro-fio: transparent;
 }
 .ag .ra2-toolbar .ra2-secondary {
-  border: 0; border-radius: 0; padding: 12px 24px;
+  border: 0; border-radius: 0; padding: 12px 24px; align-items: center;
   clip-path: polygon(0 0, calc(100% - var(--ag-n)) 0, 100% var(--ag-n), 100% 100%, var(--ag-n) 100%, 0 calc(100% - var(--ag-n)));
   background: var(--ag-am); color: var(--ag-abismo);
-  font: 800 13px var(--ag-display); letter-spacing: 0.18em; text-transform: uppercase;
+  font: 800 13px/1 var(--ag-display); letter-spacing: 0.18em; text-transform: uppercase;
   box-shadow: 0 0 18px color-mix(in srgb, var(--ag-am) 45%, transparent);
 }
-.ag .ra2-toolbar .ra2-secondary:hover { background: color-mix(in srgb, var(--ag-am) 80%, white); }
+.ag .ra2-toolbar .ra2-secondary span { transform: translateY(0.5px); }
+.ag .ra2-toolbar .ra2-secondary:hover { background: var(--ag-gelo); }
 
 /* ── Botão principal (Entrar) ── */
 .ag .ag-entrar {
@@ -170,8 +171,10 @@
 /* ── Destaque: retomar operação ── */
 .ag .ag-destaque { position: relative; min-height: 250px; overflow: hidden; display: flex; }
 .ag .ag-destaque__capa, .ag .ag-cartao__capa { position: absolute; inset: 0; background-size: cover; background-position: center; }
-.ag .ag-destaque__capa { opacity: 0.8; }
-.ag .ag-destaque__veu { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(6, 18, 28, 0.97) 30%, rgba(6, 18, 28, 0.35) 70%, transparent), linear-gradient(0deg, rgba(6, 18, 28, 0.8), transparent 50%); }
+.ag .ag-destaque__capa { opacity: 0.8; transition: transform 420ms ease, filter 420ms ease; }
+.ag .ag-destaque__veu { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(6, 18, 28, 0.97) 30%, rgba(6, 18, 28, 0.35) 70%, transparent), linear-gradient(0deg, rgba(6, 18, 28, 0.8), transparent 50%);  transition: opacity 420ms ease; }
+.ag .ag-destaque:is(:hover, :focus-within) .ag-destaque__capa { transform: scale(1.05); filter: brightness(1.16) saturate(1.13); }
+.ag .ag-destaque:is(:hover, :focus-within) .ag-destaque__veu { opacity: 0.84; }
 .ag .ag-destaque__corpo { position: relative; flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 28px 32px; }
 .ag .ag-destaque__titulo { margin: 0; font: 800 clamp(30px, 4vw, 46px)/1.05 var(--ag-display); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ag-gelo); text-shadow: 0 0 12px color-mix(in srgb, var(--ag-cy) 70%, transparent); overflow-wrap: anywhere; }
 .ag .ag-destaque__meta { display: flex; flex-wrap: wrap; gap: 6px 22px; font: 600 14px var(--font-rajdhani), sans-serif; color: var(--ag-texto); }
@@ -251,7 +254,9 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .ag .ag-cartao-borda, .ag .ag-cartao-borda:hover { transition: none; transform: none; }
+  .ag .ag-destaque__capa, .ag .ag-destaque__veu { transition: none; }
 }
+.ra-reduce-motion.ag .ag-destaque__capa, .ra-reduce-motion.ag .ag-destaque__veu { transition: none; }
 .ra-reduce-motion.ag .ag-cartao-borda:hover { transform: none; }
 /* Gaveta do celular: fundo sólido (sobre o conteúdo, a transparência atrapalharia). */
 @media (max-width: 860px) {

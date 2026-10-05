@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Plus as LucidePlus } from "lucide-react";
 import { createCampaign } from "../../lib/table/storage";
 import type { Campaign } from "../../lib/table";
 import type { OnlineSession } from "../../lib/campaign/onlineSessionActions";
@@ -216,7 +217,8 @@ export default function MesasDashboardClient({
           data-testid="dash-abrir-criar-mesa"
           onClick={abrirCriacao}
         >
-          <Plus size={16} strokeWidth={1.4} /> Criar campanha
+          <LucidePlus size={17} strokeWidth={3} aria-hidden="true" />
+          <span>Criar campanha</span>
         </button>
       </div>
 
