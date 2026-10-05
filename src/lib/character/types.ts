@@ -1065,6 +1065,12 @@ export interface CharacterRecord {
    * token herda a cara quando não tem retrato próprio.
    */
   avatar_image_id?: string | null;
+  /**
+   * Campanha para a qual o dono pediu entrada, enquanto o narrador não
+   * aceita nem recusa. Só existe em personagem solto (`campaign_id` nulo).
+   */
+  pending_campaign_id?: string | null;
+  pending_requested_at?: string | null;
 }
 
 // ---------------------------------------------------------------------

@@ -239,7 +239,8 @@ export async function createCharacterForCampaign(
  * `complete_character_creation_v2` revalida tudo no banco.
  */
 export async function createCharacterV2(
-  campaignId: string,
+  /** Nulo: personagem sem campanha, do próprio jogador, validado contra o conteúdo oficial. */
+  campaignId: string | null,
   choices: CreationChoicesV12,
   /** `characterId`: completa um personagem criado só com o nome em vez de criar outro. */
   options: { ownerLabel?: string; creationRequestId?: string; characterId?: string } = {},
@@ -557,6 +558,78 @@ export async function revokeCharacterControl(characterId: string, userId: string
   if (error) {
     throw new CharacterStorageError(`Falha ao remover controle do personagem "${characterId}": ${error.message}`, error);
   }
+}
+
+/* ── Personagem sem campanha ─────────────────────────────────────────
+   O jogador cria o personagem solto e depois pede entrada numa campanha;
+   o narrador aceita ou recusa. Ao sair da campanha, o personagem volta
+   solto para o dono. Tudo passa por funções do banco
+   (20261005200000_personagem_sem_campanha.sql): o narrador nunca lê
+   personagem solto alheio direto da tabela. */
+
+/** Personagens soltos (sem campanha) desta conta, inclusive os com pedido pendente. */
+export async function listMyLooseCharacters(): Promise<CharacterRecord[]> {
+  const client = await getScopedTableClient();
+  const user = await getCurrentUser();
+  if (!user) return [];
+  const { data, error } = await client
+    .from(TABLE)
+    .select()
+    .is("campaign_id", null)
+    .eq("owner_id", user.id)
+    .is("archived_at", null)
+    .order("updated_at", { ascending: false });
+  if (error) {
+    throw new CharacterStorageError(`Falha ao listar personagens sem campanha: ${error.message}`, error);
+  }
+  return (data as CharacterRecord[]) ?? [];
+}
+
+async function chamarRpcPersonagem(fn: string, args: Record<string, unknown>, erro: string): Promise<void> {
+  const client = await getScopedTableClient();
+  const { error } = await client.rpc(fn, args);
+  if (error) throw new CharacterStorageError(`${erro}: ${error.message}`, error);
+}
+
+export function requestCharacterJoin(characterId: string, campaignId: string): Promise<void> {
+  return chamarRpcPersonagem("solicitar_entrada_personagem", { p_character_id: characterId, p_campaign_id: campaignId }, "Falha ao enviar o personagem para a campanha");
+}
+
+export function cancelCharacterJoin(characterId: string): Promise<void> {
+  return chamarRpcPersonagem("cancelar_entrada_personagem", { p_character_id: characterId }, "Falha ao cancelar o pedido");
+}
+
+export function acceptCharacterJoin(characterId: string): Promise<void> {
+  return chamarRpcPersonagem("aceitar_pedido_personagem", { p_character_id: characterId }, "Falha ao aceitar o personagem");
+}
+
+export function rejectCharacterJoin(characterId: string): Promise<void> {
+  return chamarRpcPersonagem("recusar_pedido_personagem", { p_character_id: characterId }, "Falha ao recusar o personagem");
+}
+
+/** Narrador devolve um personagem de jogador: ele volta solto para o dono. */
+export function releaseCharacterFromCampaign(characterId: string): Promise<void> {
+  return chamarRpcPersonagem("liberar_personagem_da_campanha", { p_character_id: characterId }, "Falha ao liberar o personagem da campanha");
+}
+
+export interface PedidoEntradaPersonagem {
+  characterId: string;
+  nome: string;
+  ownerId: string;
+  payload: Character;
+  avatarImageId: string | null;
+  solicitadoEm: string;
+}
+
+/** Pedidos de entrada pendentes numa campanha — só o narrador dela. */
+export async function listCharacterJoinRequests(campaignId: string): Promise<PedidoEntradaPersonagem[]> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("listar_pedidos_personagem", { p_campaign_id: campaignId });
+  if (error) {
+    throw new CharacterStorageError(`Falha ao listar pedidos de personagem: ${error.message}`, error);
+  }
+  return ((data as { character_id: string; nome: string; owner_id: string; payload: Character; avatar_image_id: string | null; solicitado_em: string }[]) ?? [])
+    .map((r) => ({ characterId: r.character_id, nome: r.nome, ownerId: r.owner_id, payload: r.payload, avatarImageId: r.avatar_image_id, solicitadoEm: r.solicitado_em }));
 }
 
 /**
