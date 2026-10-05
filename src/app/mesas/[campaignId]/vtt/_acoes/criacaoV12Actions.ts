@@ -11,6 +11,7 @@
 
 import "server-only";
 import { resolveCampaignAccess } from "../../../../../lib/campaign/access";
+import { getCurrentUser } from "../../../../../lib/auth/session";
 import { resolveEffectiveList } from "../../../../../lib/campaignContent/resolveEffectiveContent";
 import {
   createCharacterV2,
@@ -69,7 +70,15 @@ export interface CatalogosCriacaoV12 {
   rankingMesa?: RankingV12;
 }
 
-async function exigirAcesso(campaignId: string) {
+/**
+ * Sem campanha (personagem solto, página Personagens): basta estar logado;
+ * `acesso` fica vazio e o conteúdo é só o oficial.
+ */
+async function exigirAcesso(campaignId: string | null) {
+  if (!campaignId) {
+    const user = await getCurrentUser();
+    return user ? { acesso: null } : { erro: "Sessão expirada." };
+  }
   const acesso = await resolveCampaignAccess(campaignId);
   if (acesso.kind !== "ok") {
     return { erro: acesso.kind === "no_session" ? "Sessão expirada." : "Você não tem acesso a esta campanha." };
@@ -94,7 +103,7 @@ function opcao(slug: string, payload: Record<string, unknown>): OpcaoTrajetoriaV
 
 const porNome = <T extends { nome: string }>(a: T, b: T) => a.nome.localeCompare(b.nome, "pt-BR");
 
-export async function lerCatalogosCriacaoV12Action(campaignId: string): Promise<ResultadoAcao<CatalogosCriacaoV12>> {
+export async function lerCatalogosCriacaoV12Action(campaignId: string | null): Promise<ResultadoAcao<CatalogosCriacaoV12>> {
   const v = await exigirAcesso(campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
 
@@ -144,7 +153,7 @@ export async function lerCatalogosCriacaoV12Action(campaignId: string): Promise<
 }
 
 export async function criarPersonagemV12Action(
-  campaignId: string,
+  campaignId: string | null,
   choices: CreationChoicesV12,
   creationRequestId: string,
   opcoes: { pn?: boolean; characterId?: string } = {},

@@ -29,7 +29,8 @@ export function JanelaNovoPersonagem({
   onAbrirFicha,
   onFechar,
 }: {
-  campaignId: string;
+  /** Nulo: personagem sem campanha (página Personagens da conta). */
+  campaignId: string | null;
   completar?: PersonagemACompletar | null;
   onAbrirFicha: (characterId: string) => void;
   onFechar: () => void;
@@ -64,8 +65,9 @@ export function JanelaNovoPersonagem({
       {catalogos ? (
         <Forja
           catalogos={catalogos}
-          campaignId={campaignId}
-          nomeMesa={catalogos.nomeMesa ?? "Mesa"}
+          campaignId={campaignId ?? undefined}
+          semCampanha={!campaignId}
+          nomeMesa={catalogos.nomeMesa ?? (campaignId ? "Mesa" : "Sem campanha")}
           regiaoCampanha={catalogos.regiaoMesa ?? undefined}
           rankingInicial={catalogos.rankingMesa}
           completar={completar}
@@ -74,7 +76,7 @@ export function JanelaNovoPersonagem({
         />
       ) : (
         <div className={`fj-root ${oxanium.variable} fj-janela__carregando`}>
-          {erro ? <p role="alert">{erro} <button type="button" onClick={onFechar}>Voltar à mesa</button></p> : <p>Preparando a Forja…</p>}
+          {erro ? <p role="alert">{erro} <button type="button" onClick={onFechar}>{campaignId ? "Voltar à mesa" : "Voltar"}</button></p> : <p>Preparando a Forja…</p>}
         </div>
       )}
     </div>,

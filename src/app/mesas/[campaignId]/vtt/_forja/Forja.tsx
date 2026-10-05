@@ -44,6 +44,12 @@ export interface ForjaProps {
   siglaNarrador?: string;
   /** Mesa onde o rascunho é salvo e o personagem é criado. Sem ela (prévia), nada é lido, gravado ou criado. */
   campaignId?: string;
+  /**
+   * Personagem sem campanha (página Personagens): sela sem mesa, sempre no
+   * Ranking F e sem avatar — a imagem é guardada na campanha, então o
+   * avatar vem depois que o personagem entrar numa.
+   */
+  semCampanha?: boolean;
   /** Ranking sugerido pela campanha, editável na Forja. */
   rankingInicial?: RankingV12;
   /** Completar um personagem criado só com o nome (o "+ Personagem" do narrador). */
@@ -60,9 +66,9 @@ const ATRIBUTOS: Array<{ id: AttributeIdV12; nome: string; desc: string }> = [
   { id: "animo", nome: "Ânimo", desc: "Vontade, presença e conexão." },
 ];
 
-export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa de teste", siglaNarrador = "MJ", campaignId, rankingInicial = RANKING_INICIAL, completar = null, onSair, onConcluir }: ForjaProps) {
+export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa de teste", siglaNarrador = "MJ", campaignId, semCampanha = false, rankingInicial = RANKING_INICIAL, completar = null, onSair, onConcluir }: ForjaProps) {
   const [started, setStarted] = useState(false);
-  const c = useCriacao({ catalogos, regiaoCampanha: regiaoFixa ?? null, rankingInicial, campaignId, completar });
+  const c = useCriacao({ catalogos, regiaoCampanha: regiaoFixa ?? null, rankingInicial, campaignId, semCampanha, completar });
   const { d, set, passo } = c;
   const [view, setView] = useState({ regiao: d.regiaoId as string, classe: CLASSES_ACERVO[0].id, vertente: VERTENTES_ACERVO[0].id as string });
   const onView = (k: keyof typeof view) => (id: string) => setView((v) => ({ ...v, [k]: id }));
@@ -87,7 +93,9 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
   const [progressao, setProgressao] = useState<{ characterId: string; alvo: RankingV12 } | null>(null);
   const selar = async () => {
     const id = await c.concluir({ pn: catalogos.ehNarrador && pn });
-    if (!id || !campaignId) return;
+    if (!id) return;
+    if (semCampanha) { onConcluir?.(id); return; }
+    if (!campaignId) return;
     if (avatar.preparada) await avatar.enviar(campaignId, id);
     const alvo = d.rankingInicial ?? rankingInicial;
     if (alvo === "F") onConcluir?.(id);
@@ -99,6 +107,7 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
     return (
       <div style={vars} className={raiz}>
         <Titulo
+          semCampanha={semCampanha}
           nomeMesa={nomeMesa}
           c={c}
           completar={completar}
@@ -128,10 +137,10 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
         <div className="fj-sem-barra fj-grade">
           <MenuLateral step={passo} setStep={c.irPara} completos={c.passosCompletos} />
           <main key={passo} className="fj-boot fj-centro">
-            {centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente })}
+            {centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente, semAvatar: semCampanha })}
           </main>
           <aside className="fj-sem-barra fj-lateral">
-            <PlacaIdentidade d={d} avatar={avatar.url} progress={c.sincronia} ranking={d.rankingInicial ?? rankingInicial} onRankingChange={(ranking) => set({ rankingInicial: ranking })} />
+            <PlacaIdentidade d={d} avatar={avatar.url} progress={c.sincronia} ranking={semCampanha ? "F" : d.rankingInicial ?? rankingInicial} onRankingChange={semCampanha ? undefined : (ranking) => set({ rankingInicial: ranking })} />
             {c.conflito && (
               <div className="fj-aviso" role="alert">
                 <span>Este rascunho foi alterado em outra janela; o salvamento foi pausado para não sobrescrever.</span>
@@ -158,7 +167,7 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
           step={passo}
           setStep={c.irPara}
           pendentes={c.pendencias.length}
-          podeSelar={Boolean(campaignId)}
+          podeSelar={Boolean(campaignId) || semCampanha}
           enviando={c.enviando}
           erro={c.erroEnvio}
           rotuloSelar={completar ? `Selar ${completar.nome}` : "Selar refratário"}
@@ -309,7 +318,7 @@ function MenuLateral({ step, setStep, completos }: { step: number; setStep: (n: 
   );
 }
 
-function PlacaIdentidade({ d, avatar, progress, ranking, onRankingChange }: { d: DraftV12; avatar: string; progress: number; ranking: RankingV12; onRankingChange: (ranking: RankingV12) => void }) {
+function PlacaIdentidade({ d, avatar, progress, ranking, onRankingChange }: { d: DraftV12; avatar: string; progress: number; ranking: RankingV12; onRankingChange?: (ranking: RankingV12) => void }) {
   const [aberto, setAberto] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -332,14 +341,14 @@ function PlacaIdentidade({ d, avatar, progress, ranking, onRankingChange }: { d:
           </div>
         </div>
         <div className="fj-placa__rank-wrap" ref={menuRef}>
-          <button type="button" className="fj-placa__rank" aria-label={`Ranking ${ranking}. Alterar ranking inicial`}
-            aria-expanded={aberto} aria-haspopup="true" onClick={() => setAberto((v) => !v)}>
+          <button type="button" className="fj-placa__rank" aria-label={onRankingChange ? `Ranking ${ranking}. Alterar ranking inicial` : `Ranking ${ranking}`}
+            aria-expanded={aberto} aria-haspopup="true" disabled={!onRankingChange} onClick={() => setAberto((v) => !v)}>
             <span className="fj-placa__rank-rotulo">Rank</span>
             <span className="fj-placa__rank-valor fj-glow">{ranking}</span>
           </button>
           {aberto && <div className="fj-placa__rank-menu" role="group" aria-label="Ranking inicial do personagem">
             {RANKINGS_V12.map((rank) => <button key={rank} type="button" aria-pressed={ranking === rank}
-              onClick={() => { onRankingChange(rank); setAberto(false); }} className="fj-placa__rank-opcao">{rank}</button>)}
+              onClick={() => { onRankingChange?.(rank); setAberto(false); }} className="fj-placa__rank-opcao">{rank}</button>)}
           </div>}
         </div>
       </div>
@@ -407,7 +416,8 @@ function Doca({ step, setStep, pendentes, podeSelar, enviando, erro, rotuloSelar
 }
 
 /* ================= TELA INICIAL ================= */
-function Titulo({ nomeMesa, c, completar, onContinuar, onNovo, onSair }: {
+function Titulo({ nomeMesa, c, completar, onContinuar, onNovo, onSair, semCampanha = false }: {
+  semCampanha?: boolean;
   nomeMesa: string;
   c: Criacao;
   completar: { characterId: string; nome: string } | null;
@@ -438,7 +448,7 @@ function Titulo({ nomeMesa, c, completar, onContinuar, onNovo, onSair }: {
       },
     });
   }
-  if (onSair) itens.push({ id: "sair", titulo: "Voltar à mesa", sub: nomeMesa, primario: false, acao: onSair });
+  if (onSair) itens.push({ id: "sair", titulo: semCampanha ? "Voltar" : "Voltar à mesa", sub: semCampanha ? "Personagens" : nomeMesa, primario: false, acao: onSair });
 
   const primario = itens.find((i) => i.primario && !i.desabilitado);
   useEffect(() => {
@@ -488,14 +498,25 @@ interface Contexto {
   view: Vista;
 }
 
-function centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente }: Contexto & {
+function centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente, semAvatar = false }: Contexto & {
   onView: (k: keyof Vista) => (id: string) => void;
   avatar: AvatarDaForja;
+  /** Sem campanha não há onde guardar a imagem: o avatar fica para depois. */
+  semAvatar?: boolean;
   nomeAntecedente?: string;
 }): ReactNode {
   const { d, set } = c;
   switch (c.passo) {
-    case 0: return (
+    case 0: return semAvatar ? (
+      <div className="fj-conceito">
+        <div className="fj-conceito__avatar">
+          <Holograma d={d} avatar={avatar.url} progress={c.sincronia} nomeAntecedente={nomeAntecedente} />
+        </div>
+        <div className="fj-conceito__rodape">
+          <Mono>O avatar é enviado depois que o personagem entrar numa campanha</Mono>
+        </div>
+      </div>
+    ) : (
       <div className="fj-conceito">
         <label className="fj-conceito__avatar">
           <Holograma d={d} avatar={avatar.url} progress={c.sincronia} nomeAntecedente={nomeAntecedente} />

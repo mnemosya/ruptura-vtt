@@ -20,8 +20,9 @@ import { listCampaigns } from "../../../../lib/table/storage";
 import {
   listCharactersForNarratorCampaign,
   listControlledCharacters,
+  listMyLooseCharacters,
 } from "../../../../lib/character/storage";
-import PersonagensGlobaisClient, { type PersonagemGlobal } from "./PersonagensGlobaisClient";
+import PersonagensGlobaisClient, { type CampanhaDestino, type PersonagemGlobal, type PersonagemSolto } from "./PersonagensGlobaisClient";
 
 export const dynamic = "force-dynamic";
 
@@ -30,10 +31,22 @@ export default async function PersonagensGlobaisPage() {
   if (!user) redirect("/login");
 
   let personagens: PersonagemGlobal[] = [];
+  let soltos: PersonagemSolto[] = [];
+  let destinos: CampanhaDestino[] = [];
   let errorMessage: string | null = null;
 
   try {
-    const campanhas = await listCampaigns();
+    const [campanhas, registrosSoltos] = await Promise.all([listCampaigns(), listMyLooseCharacters()]);
+    destinos = campanhas.map((c) => ({ id: c.id, nome: c.name, narra: c.owner_id === user.id }));
+    // Personagens sem campanha (criados na página Personagens ou devolvidos ao sair de uma).
+    soltos = registrosSoltos.map((c) => ({
+      id: c.id,
+      name: c.name,
+      updatedAt: c.updated_at,
+      pendente: c.pending_campaign_id
+        ? { campaignId: c.pending_campaign_id, campaignName: campanhas.find((x) => x.id === c.pending_campaign_id)?.name ?? "campanha" }
+        : null,
+    }));
     const listas = await Promise.all(
       campanhas.map(async (campaign): Promise<PersonagemGlobal[]> => {
         const role = campaign.owner_id === user.id ? "narrator" : "player";
@@ -61,6 +74,6 @@ export default async function PersonagensGlobaisPage() {
   }
 
   return (
-    <PersonagensGlobaisClient personagens={personagens} errorInicial={errorMessage} />
+    <PersonagensGlobaisClient personagens={personagens} soltos={soltos} destinos={destinos} errorInicial={errorMessage} />
   );
 }

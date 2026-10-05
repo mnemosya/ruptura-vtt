@@ -525,13 +525,17 @@ export default function CharacterSheetClient({
   const [productSessionState, setProductSessionState] = useState<ProductSessionState>("pending");
 
   async function loadProductSession() {
-    if (!initialCampaignId || !initialCharacterId) {
+    if (!initialCharacterId) {
       setProductSessionState("no_params");
       return;
     }
     setProductSessionState("pending");
     try {
-      const record = await getCharacterForCampaign(initialCampaignId, initialCharacterId);
+      // Sem campanha: personagem solto do próprio jogador (página
+      // Personagens). A RLS só devolve se a conta for a dona.
+      const record = initialCampaignId
+        ? await getCharacterForCampaign(initialCampaignId, initialCharacterId)
+        : await getCharacter(initialCharacterId).then((r) => (r && !r.campaign_id ? r : null));
       if (!record) {
         setProductSessionState("not_found");
         return;
@@ -743,7 +747,7 @@ export default function CharacterSheetClient({
       // (derivados) — storage.ts só carimba atualizado_em por cima.
       const toSave = normalizeCharacter(character, derivados);
       const record =
-        mode === "product"
+        mode === "product" && selectedCampaignId
           ? await updateCharacterSheetPayload(characterId as string, toSave)
           : await updateCharacter(characterId as string, toSave);
       lastSyncedCharacterRef.current = record.payload;
@@ -3232,7 +3236,7 @@ export default function CharacterSheetClient({
             computeDerivedStats(alvo.personagem.atributos, regras, alvo.personagem.mana_bonus_ruptura ?? 0, characterDerivedFormulas(alvo.personagem)),
           );
           const record =
-            mode === "product"
+            mode === "product" && selectedCampaignId
               ? await updateCharacterSheetPayload(characterId as string, toSave)
               : await updateCharacter(characterId as string, toSave);
           // Outra gravação começou enquanto esta ia e voltava: o payload
