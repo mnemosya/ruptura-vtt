@@ -21,7 +21,11 @@
 
 import { getScopedTableClient } from "../../../../../../lib/auth/scopedClient";
 import {
+  acceptCharacterJoin,
   archiveCharacter,
+  listCharacterJoinRequests,
+  rejectCharacterJoin,
+  releaseCharacterFromCampaign,
   createPendingCharacterV2,
   duplicateCharacter,
   getCharacterForCampaign,
@@ -42,6 +46,7 @@ import {
 import { getCharacterRules } from "../../../../../../lib/content";
 import { assinarDownloadUrls } from "../../../../../../lib/vtt/imageService";
 import { getCurrentUser } from "../../../../../../lib/auth/session";
+import { listCampaignRoster } from "../../../../../../lib/table/storage";
 import { exigirAcessoPainel, exigirNarradorPainel, mensagemDeErro, type ResultadoPainel } from "./comum";
 
 const TABELA_PASTAS = "campaign_character_folders";
@@ -572,5 +577,77 @@ export async function restaurarPersonagemPainelAction(campaignId: string, charac
     return { ok: true };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Falha ao restaurar o personagem.") };
+  }
+}
+
+/* ── Pedidos de entrada (personagem criado sem campanha) ──────────────
+   O jogador envia um personagem solto para a campanha; o narrador vê o
+   pedido aqui e aceita (o personagem entra e o jogador vira controlador)
+   ou recusa. "Devolver ao jogador" faz o caminho inverso. */
+
+export interface PedidoEntradaPainel {
+  characterId: string;
+  nome: string;
+  jogador: string;
+  ranking: string | null;
+  classe: string | null;
+  solicitadoEm: string;
+}
+
+export async function lerPedidosEntradaAction(campaignId: string): Promise<ResultadoPainel<PedidoEntradaPainel[]>> {
+  const v = await exigirNarradorPainel(campaignId);
+  if (!v.ok) return { ok: false, erro: v.erro };
+  try {
+    const [pedidos, roster] = await Promise.all([listCharacterJoinRequests(campaignId), listCampaignRoster(campaignId)]);
+    return {
+      ok: true,
+      dados: pedidos.map((p) => {
+        const progressao = (p.payload as { progressao?: { ranking?: string; classe_id?: string } }).progressao;
+        return {
+          characterId: p.characterId,
+          nome: p.nome,
+          jogador: roster.find((r) => r.userId === p.ownerId)?.displayName ?? "Jogador",
+          ranking: progressao?.ranking ?? null,
+          classe: progressao?.classe_id ?? null,
+          solicitadoEm: p.solicitadoEm,
+        };
+      }),
+    };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Falha ao carregar os pedidos de entrada.") };
+  }
+}
+
+export async function aceitarPedidoEntradaAction(campaignId: string, characterId: string): Promise<ResultadoPainel> {
+  const v = await exigirNarradorPainel(campaignId);
+  if (!v.ok) return { ok: false, erro: v.erro };
+  try {
+    await acceptCharacterJoin(characterId);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Falha ao aceitar o personagem.") };
+  }
+}
+
+export async function recusarPedidoEntradaAction(campaignId: string, characterId: string): Promise<ResultadoPainel> {
+  const v = await exigirNarradorPainel(campaignId);
+  if (!v.ok) return { ok: false, erro: v.erro };
+  try {
+    await rejectCharacterJoin(characterId);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Falha ao recusar o personagem.") };
+  }
+}
+
+/** Tira um personagem de jogador da campanha: ele volta para a lista "Sem campanha" do jogador. */
+export async function devolverPersonagemAoJogadorAction(campaignId: string, characterId: string): Promise<ResultadoPainel> {
+  const v = await exigirNarradorPainel(campaignId);
+  if (!v.ok) return { ok: false, erro: v.erro };
+  try {
+    await releaseCharacterFromCampaign(characterId);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Falha ao devolver o personagem ao jogador.") };
   }
 }

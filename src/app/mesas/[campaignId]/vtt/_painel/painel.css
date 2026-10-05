@@ -2366,3 +2366,13 @@ textarea.rv-pn-input.rv-pn-input {
 .rv-pn-compendio-revisar ul { margin: 6px 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
 .rv-pn-compendio-revisar p { margin: 0; opacity: 0.75; }
 .rv-pn-compendio-revisar code { font-size: 11px; }
+
+/* ── Pedidos de entrada (personagem criado sem campanha) ── */
+.rv-pn-pedidos { margin: 6px 8px; padding: 8px; border: 1px solid color-mix(in srgb, var(--rv-am, #f5a200) 35%, transparent); border-radius: var(--pn-radius); background: color-mix(in srgb, var(--rv-am, #f5a200) 6%, #0c1526); }
+.rv-pn-pedidos-lista { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rv-pn-pedido { display: flex; align-items: center; gap: 8px; }
+.rv-pn-pedido-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.rv-pn-pedido-nome { color: var(--pn-txt-forte); font: 600 13px var(--rv-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rv-pn-pedido-meta { color: var(--pn-dim); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rv-pn-pedido-acoes { flex: none; display: flex; gap: 6px; }
+.rv-pn-pedidos-erro { margin: 6px 0 0; color: var(--rv-dg, #ff5a6e); font-size: 12px; }
