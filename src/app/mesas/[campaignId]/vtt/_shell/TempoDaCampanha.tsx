@@ -120,6 +120,7 @@ export function TempoDaCampanha({ campaignId, ehNarrador }: { campaignId: string
   const resumo = ehNarrador && existeEstado ? rascunho : atual;
   const IconeResumo = ICONES_CONDICAO[resumo.condicao];
   const IconeCondicao = ICONES_CONDICAO[visto.condicao];
+  const IconePreview = ICONES_CONDICAO[preview?.condicao ?? "ceu_limpo"];
   return <>
     <button ref={chipRef} type="button" className="rv-tempo-chip" onClick={() => { setAberto((v) => !v); setErro(null); }}
       aria-label={`Tempo da campanha: ${tituloData(resumo)}. ${existeEstado ? nomeCondicao(resumo.condicao) : "Clima não definido"}.${temMudancas && existeEstado ? " Alterações não publicadas." : ""} Abrir detalhes`}
@@ -198,11 +199,19 @@ export function TempoDaCampanha({ campaignId, ehNarrador }: { campaignId: string
           <label>Observação<textarea maxLength={300} value={rascunho.descricao} onChange={(e) => alterar({ descricao: e.target.value })} /></label>
         </section>}
         {ehNarrador && <>
-          {preview && <div className="rv-tempo-preview" role="status"><strong>Prévia privada · seed {seed}</strong>
-            <span>{nomeCondicao(preview.condicao)} · alvo {preview.temperaturaAlvoC} °C · vento {preview.vento}</span>
-            <span>Duração prevista: {Math.round(((preview.climaAteMinuto ?? 0) - (preview.climaDesdeMinuto ?? 0)) / 60)} h</span>
+          {preview && <section className="rv-tempo-secao rv-tempo-preview" role="status" aria-label="Prévia privada do clima">
+            <h3 className="rv-tempo-rotulo">Prévia do sorteio <span className="rv-tempo-preview-privada">Privada</span></h3>
+            <div className="rv-tempo-condicao" data-especial={condicaoEspecial(preview.condicao)}>
+              <IconePreview size={23} aria-hidden="true" />
+              <span><strong>{nomeCondicao(preview.condicao)}</strong><small>{preview.regiao} · vento {NOMES_VENTO[preview.vento]}</small></span>
+              <b>{preview.temperaturaAlvoC} °C</b>
+            </div>
+            <div className="rv-tempo-preview-meta">
+              <span>Duração estimada: {Math.round(((preview.climaAteMinuto ?? 0) - (preview.climaDesdeMinuto ?? 0)) / 60)} h</span>
+              <span>Seed {seed}</span>
+            </div>
             <div className="rv-tempo-preview-acoes"><button type="button" disabled={salvando} onClick={() => void salvar(preview)}>Aplicar clima</button><button type="button" onClick={() => setPreview(null)}>Descartar</button></div>
-          </div>}
+          </section>}
           <div className="rv-tempo-publicar"><span>{!existeEstado ? "Defina a data inicial da campanha" : temMudancas ? "Alterações ainda não publicadas" : "Todos veem o estado da campanha"}</span><button type="button" disabled={salvando || (existeEstado && !temMudancas)} onClick={() => void salvar(rascunho)}>{salvando ? "Salvando…" : "Publicar alterações"}</button></div>
         </>}
         {erro && <p role="alert" className="rv-tempo-erro">{erro} <button type="button" onClick={() => void recarregar()}>Recarregar</button></p>}

@@ -371,9 +371,11 @@
 .rv-tempo-corpo button:disabled { opacity: .5; cursor: default; }
 .rv-tempo-sortear { margin-top: 0; }
 .rv-tempo-editar-btn { margin-left: auto; }
-.rv-tempo-preview { display: grid; gap: 7px; margin: 12px 16px; padding: 11px; border: 1px solid var(--rv-cy); background: var(--rv-cy-soft); font: 11px var(--rv-mono); }
-.rv-tempo-preview strong { color: var(--rv-cy-hi); text-transform: uppercase; }
-.rv-tempo-preview-acoes { display: flex; gap: 6px; }
+.rv-tempo-preview-privada { color: var(--rv-cy); font: 10px var(--rv-mono); letter-spacing: .04em; }
+.rv-tempo-preview-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 5px 12px; margin-top: 10px; color: var(--rv-ink-dim); font: 10px var(--rv-mono); }
+.rv-tempo-preview-meta span:last-child { color: var(--rv-ink-faint); }
+.rv-tempo-preview-acoes { display: flex; justify-content: flex-end; gap: 6px; margin-top: 12px; }
+.rv-tempo-preview-acoes button:first-child { border-color: var(--rv-cy); color: var(--rv-cy-hi); }
 .rv-tempo-publicar { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 9px; padding: 12px 16px; color: var(--rv-ink-dim); font: 10px var(--rv-mono); }
 .rv-tempo-publicar button { border-color: var(--rv-cy); color: var(--rv-cy-hi); }
 .rv-tempo-erro { margin: 0 16px 12px; color: var(--rv-dg); }
