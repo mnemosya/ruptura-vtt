@@ -16,6 +16,10 @@ import {
   REGIOES_V12,
   escolhasCriacaoV12,
   pendenciasCriacaoV12,
+  etapasProgressaoV12,
+  pendenciasProgressaoV12,
+  rankingsDaProgressaoV12,
+  type EtapaProgressaoV12,
   sanitizeDraftV12,
   type CampoCriacaoV12,
   type DraftForjaV12,
@@ -41,7 +45,7 @@ export type EstadoRascunho =
   | { tipo: "pronto" };
 
 /** Passo da Forja → etapa do assistente anterior (o `step` do rascunho, 1 a 5). */
-const ETAPA_DO_PASSO = [1, 2, 2, 2, 3, 3, 3, 3, 5] as const;
+const ETAPA_DO_PASSO = [1, 2, 2, 2, 3, 3, 3, 3, 3, 5] as const;
 
 /** Em que passo da Forja cada campo é resolvido. */
 export const PASSO_DO_CAMPO: Record<CampoCriacaoV12, number> = {
@@ -54,7 +58,8 @@ export const PASSO_DO_CAMPO: Record<CampoCriacaoV12, number> = {
   atributos: 5,
   pericias: 6,
   vertente: 7,
-  compras: 8,
+  progressao: 8,
+  compras: 9,
 };
 
 function novoRequestId(): string {
@@ -102,6 +107,9 @@ export interface Criacao {
   pendencias: PendenciaCriacaoV12[];
   /** Por passo da Forja: está resolvido? O último (Revisão) = sem pendência nenhuma. */
   passosCompletos: boolean[];
+  /** Etapas da progressão inicial (rank acima de F); vazio no F. */
+  etapas: EtapaProgressaoV12[];
+  temProgressao: boolean;
   /** De 0 a 1: campos resolvidos sobre o total. */
   sincronia: number;
   aviso: string | null;
@@ -161,16 +169,26 @@ export function useCriacao({ catalogos, regiaoCampanha, rankingInicial = "F", ca
   const set = useCallback((p: Partial<DraftV12>) => setD((o) => ({ ...o, ...p })), []);
   const setForja = useCallback((p: Partial<DraftForjaV12>) => setD((o) => ({ ...o, forja: { ...(o.forja ?? FORJA_VAZIA), ...p } })), []);
 
-  const pendencias = useMemo(() => pendenciasCriacaoV12(d, catalogos), [d, catalogos]);
+  // Progressão inicial: só existe com rank acima de F; entra nas pendências
+  // como mais um campo (e na Sincronia como mais um passo).
+  const etapas = useMemo(
+    () => etapasProgressaoV12(d, catalogos.classes.find((x) => x.slug === d.classeSlug), catalogos.subclasses ?? []),
+    [d, catalogos],
+  );
+  const temProgressao = rankingsDaProgressaoV12(d.rankingInicial).length > 0;
+  const pendencias = useMemo(
+    () => [...pendenciasCriacaoV12(d, catalogos), ...(temProgressao && !d.classeSlug ? [] : pendenciasProgressaoV12(etapas))],
+    [d, catalogos, etapas, temProgressao],
+  );
   const passosCompletos = useMemo(() => {
     const abertos = new Set(pendencias.map((p) => PASSO_DO_CAMPO[p.campo]));
-    return Array.from({ length: 9 }, (_, i) => (i === 8 ? pendencias.length === 0 : !abertos.has(i)));
+    return Array.from({ length: 10 }, (_, i) => (i === 9 ? pendencias.length === 0 : !abertos.has(i)));
   }, [pendencias]);
   const sincronia = useMemo(() => {
-    const total = 9; // CAMPOS_CRIACAO_V12
+    const total = 9 + (temProgressao ? 1 : 0); // CAMPOS_CRIACAO_V12 (+ progressão)
     const abertos = new Set(pendencias.filter((p) => p.campo !== "compras").map((p) => p.campo)).size;
     return (total - abertos) / total;
-  }, [pendencias]);
+  }, [pendencias, temProgressao]);
 
   /* ---------- leitura do rascunho ---------- */
   const carregar = useCallback(async () => {
@@ -264,7 +282,8 @@ export function useCriacao({ catalogos, regiaoCampanha, rankingInicial = "F", ca
     if (o.perfilPericias || Object.keys(o.pericias).length > 0) {
       setAviso("A Classe mudou: as Perícias foram limpas, porque as opções de cada valor dependem dela.");
     }
-    set({ classeSlug: slug, perfilPericias: "", pericias: {} });
+    // As escolhas da progressão (Subclasse, pontos) dependem da Classe: recomeçam.
+    set({ classeSlug: slug, perfilPericias: "", pericias: {}, avancos: {} });
   }, [set]);
 
   /* ---------- Conclusão ---------- */
@@ -295,7 +314,7 @@ export function useCriacao({ catalogos, regiaoCampanha, rankingInicial = "F", ca
   return {
     d, forja, set, setForja,
     passo: forja.passo, irPara, trocarClasse,
-    pendencias, passosCompletos, sincronia,
+    pendencias, passosCompletos, sincronia, etapas, temProgressao,
     aviso, dispensarAviso: () => setAviso(null),
     persiste, estado, salvando, conflito, temRascunhoSalvo,
     recarregar: () => { setConflito(false); void carregar(); },

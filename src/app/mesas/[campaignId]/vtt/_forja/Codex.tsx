@@ -201,10 +201,7 @@ export function BotaoCodex({ arte, kicker, titulo, legenda, onOpen, hexCor, posi
           </span>
         </span>
       </span>
-      <span className="fj-codex-botao__rodape">
-        {legenda ? <Mono pequeno>{legenda}</Mono> : <span />}
-        <Key k="I" />
-      </span>
+      {legenda && <span className="fj-codex-botao__rodape"><Mono pequeno>{legenda}</Mono></span>}
     </button>
   );
 }

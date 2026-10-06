@@ -4,8 +4,9 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { CLASSES_ACERVO, type RankDossie } from "../acervo/classes";
 import { vertentePorNome } from "../acervo/vertentes";
-import { BotaoCodex, BotaoEscolha, CabecalhoCodex, FaixaEstado, IndiceCodex, RuleText, SecHead, Shell, useAtalhoCodex, useIndiceAtivo, type ItemIndice } from "../Codex";
-import { Mono, Panel } from "../ui";
+import { BotaoCodex, BotaoEscolha, CabecalhoCodex, IndiceCodex, RuleText, SecHead, Shell, useAtalhoCodex, useIndiceAtivo, type ItemIndice } from "../Codex";
+import { Mono } from "../ui";
+import { CartaoDossie } from "./CartaoDossie";
 import type { DraftV12 } from "../../../../../../lib/rulesetV12";
 
 const title = (s: string) => s.toLowerCase().replace(/(^|\s)(\p{L})/gu, (_, a: string, c: string) => a + c.toUpperCase());
@@ -58,33 +59,36 @@ export function ClasseLateral({ d, escolher, id }: { d: DraftV12; escolher: (slu
 
   return (
     <>
-      <Panel title={c.nome} right={<Mono tom="cy">{c.sigla}</Mono>} ambar={on}>
-        <FaixaEstado on={on} confirmado="SELECIONADA" pendente="VISUALIZANDO · NÃO CONFIRMADA" />
-
-        <div key={id} className="fj-boot">
-          <Mono tom="am">Papel · {dos.role}</Mono>
-          <p className="fj-lado__destaque fj-lado__destaque--grande">{c.frase}</p>
-          <p className="fj-lado__resumo">{dos.intro[0]}</p>
-
-          <dl className="fj-lado__lista">
-            <div><dt><Mono pequeno>Você começa com</Mono></dt><dd className="fj-lado__chips">{now.map((f) => title(f.n)).join(" · ")}</dd></div>
-            <div>
-              <dt><Mono pequeno>Afinidade máxima</Mono></dt>
-              <dd className="fj-lado__afinidades">
+      <CartaoDossie
+        arte={c.arte}
+        posicaoArte="top"
+        kicker={`Classe · ${c.sigla}`}
+        nome={c.nome}
+        on={on}
+        selo={on ? "Selecionada" : "Visualizando"}
+        frase={c.frase}
+        linhas={[
+          { rotulo: "Papel", valor: dos.role },
+          { rotulo: "Você começa com", valor: now.map((f) => title(f.n)).join(" · "), ambar: true },
+          {
+            rotulo: "Afinidade máxima",
+            valor: (
+              <span className="fj-lado__afinidades">
                 {top.map((s) => {
                   const v = vertentePorNome(s.v);
                   return <span key={s.v} className="fj-lado__afinidade"><span className="fj-losango" style={v ? { background: v.cor } : undefined} />{s.v}</span>;
                 })}
-              </dd>
-            </div>
-            <div><dt><Mono pequeno>Caminhos · Ranking E</Mono></dt><dd className="fj-lado__caminhos">{dos.subs.map((s) => s.n).join(" · ")}</dd></div>
-          </dl>
-        </div>
-
-        <div className="fj-lado__codex">
-          <BotaoCodex arte={c.arte} posicaoArte="topo" kicker={`Dossiê · ${c.sigla}-01`} titulo="Ler códex completo" legenda="Regras · Progressão · Subclasses" onOpen={() => setOpen(true)} />
-        </div>
-      </Panel>
+              </span>
+            ),
+          },
+          { rotulo: "Subclasses · Ranking E", valor: dos.subs.map((s) => s.n).join(" · ") },
+        ]}
+        codex={
+          <div className="fj-lado__codex">
+            <BotaoCodex arte={c.arte} posicaoArte="topo" kicker={`Dossiê · ${c.nome}`} titulo="Ler códex completo" onOpen={() => setOpen(true)} />
+          </div>
+        }
+      />
 
       {open && createPortal(
         <Shell rotulo={`Códex de ${c.nome}`} onClose={() => setOpen(false)}>

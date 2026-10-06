@@ -30,6 +30,7 @@ import {
   type RegiaoIdV12,
   type RankingV12,
   type ClassContentV12,
+  type SubclassContentV12,
   type CreationChoicesV12,
   type DraftV12,
   type TrajectoryOptionContentV12,
@@ -54,6 +55,8 @@ export interface OpcaoTrajetoriaV12 {
 
 export interface CatalogosCriacaoV12 {
   classes: ClassContentV12[];
+  /** Subclasses publicadas (efetivas), para a progressão inicial acima do F. */
+  subclasses: SubclassContentV12[];
   pericias: Array<{ id: string; nome: string }>;
   regioes: Array<{ id: string; nome: string; idioma: string }>;
   vertentes: string[];
@@ -108,9 +111,10 @@ export async function lerCatalogosCriacaoV12Action(campaignId: string | null): P
   if (v.erro) return { ok: false, erro: v.erro };
 
   try {
-    const [regrasDoc, classes, antecedentes, qualidades, complicacoes, itens] = await Promise.all([
+    const [regrasDoc, classes, subclasses, antecedentes, qualidades, complicacoes, itens] = await Promise.all([
       getCharacterRules(),
       resolveEffectiveList(campaignId, "class"),
+      resolveEffectiveList(campaignId, "subclass"),
       resolveEffectiveList(campaignId, "background"),
       resolveEffectiveList(campaignId, "quality"),
       resolveEffectiveList(campaignId, "complication"),
@@ -127,6 +131,7 @@ export async function lerCatalogosCriacaoV12Action(campaignId: string | null): P
         regiaoMesa: regiaoValida(v.acesso?.campaign.regiao),
         rankingMesa: v.acesso?.campaign.initial_ranking ?? "F",
         classes: classes.map((c) => c.payload as unknown as ClassContentV12),
+        subclasses: subclasses.map((c) => c.payload as unknown as SubclassContentV12),
         pericias: regras.pericias.map((p) => ({ id: p.id, nome: p.nome })).sort(porNome),
         regioes: Object.entries(REGIOES_V12).map(([id, r]) => ({ id, nome: r.nome, idioma: r.idioma })),
         vertentes: [...VERTENTES_V12],

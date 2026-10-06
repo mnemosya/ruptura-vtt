@@ -10,7 +10,8 @@ const ATRIBUTOS: { id: AttributeIdV12; nome: string }[] = [
 ];
 
 export function ProgressaoInicial({ campaignId, characterId, alvo, onConcluir }: {
-  campaignId: string;
+  /** Nulo: personagem sem campanha (o dono avança com o conteúdo oficial). */
+  campaignId: string | null;
   characterId: string;
   alvo: RankingV12;
   onConcluir: () => void;

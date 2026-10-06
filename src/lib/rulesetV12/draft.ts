@@ -14,6 +14,7 @@
  */
 
 import { RANKINGS_V12, type AttributeIdV12, type RankingV12 } from "./contracts";
+import type { DraftAvancoV12 } from "./progressaoInicial";
 
 export const DRAFT_V12_SCHEMA_VERSION = 2 as const;
 export const DRAFT_V12_STEPS = 5;
@@ -54,6 +55,11 @@ export interface DraftV12 {
    * etapas do assistente, para os dois lerem o mesmo rascunho).
    */
   forja?: DraftForjaV12;
+  /**
+   * Escolhas da progressão inicial (rank acima de F): uma por Ranking
+   * atravessado. Ver `progressaoInicial.ts`.
+   */
+  avancos?: Partial<Record<RankingV12, DraftAvancoV12>>;
 }
 
 export interface DraftForjaV12 {
@@ -65,7 +71,7 @@ export interface DraftForjaV12 {
 }
 
 /** Passos da Forja de Refratário (Conceito … Revisão). */
-export const FORJA_PASSOS = 9;
+export const FORJA_PASSOS = 10;
 
 const MAX_SERIALIZED_LENGTH = 100_000;
 const MAX_TEXT = 2_000;
@@ -149,8 +155,32 @@ export function parseDraftV12(raw: unknown): DraftV12 | null {
     forja = { passo: f.passo as number, ...t };
   }
 
+  let avancos: Partial<Record<RankingV12, DraftAvancoV12>> | undefined;
+  if (raw.avancos !== undefined) {
+    if (!isObj(raw.avancos)) return null;
+    avancos = {};
+    for (const [r, a] of Object.entries(raw.avancos)) {
+      if (!(RANKINGS_V12 as readonly string[]).includes(r) || !isObj(a) || !isObj(a.pericias)) return null;
+      const pericias: Record<string, number> = {};
+      for (const [k, v] of Object.entries(a.pericias)) {
+        if (k.length > 64 || !Number.isInteger(v) || (v as number) < 0 || (v as number) > 10) return null;
+        pericias[k] = v as number;
+      }
+      if (a.subclasse_id !== undefined && (!isText(a.subclasse_id))) return null;
+      if (a.vertente !== undefined && (!isText(a.vertente))) return null;
+      if (a.atributo !== undefined && !["corpo", "mente", "animo"].includes(a.atributo as string)) return null;
+      avancos[r as RankingV12] = {
+        pericias,
+        ...(a.subclasse_id ? { subclasse_id: a.subclasse_id as string } : {}),
+        ...(a.atributo ? { atributo: a.atributo as AttributeIdV12 } : {}),
+        ...(a.vertente ? { vertente: a.vertente as string } : {}),
+      };
+    }
+  }
+
   return {
     ...(forja ? { forja } : {}),
+    ...(avancos ? { avancos } : {}),
     ...(rankingInicial ? { rankingInicial } : {}),
     schema_version: DRAFT_V12_SCHEMA_VERSION,
     ruleset_version: "1.2",

@@ -25,7 +25,9 @@ export type CampoCriacaoV12 =
   | "atributos"
   | "pericias"
   | "vertente"
-  | "compras";
+  | "compras"
+  /** Escolhas da progressão inicial (rank acima de F). Fora de CAMPOS_CRIACAO_V12. */
+  | "progressao";
 
 export interface PendenciaCriacaoV12 {
   campo: CampoCriacaoV12;
@@ -85,7 +87,6 @@ export function pendenciasCriacaoV12(d: DraftV12, cat: CatalogoPendenciasV12): P
   const perfilPer = classe?.criacao.perfis_pericias.find((x) => x.slug === d.perfilPericias);
 
   if (!d.nome.trim()) p.push({ campo: "nome", texto: "Defina o nome do personagem." });
-  if (!d.localOrigem.trim()) p.push({ campo: "local", texto: "Defina a cidade, distrito ou comunidade de origem." });
   if (!d.antecedenteId) p.push({ campo: "antecedente", texto: "Escolha um Antecedente." });
 
   const q = somaPontosV12(d.qualidades);

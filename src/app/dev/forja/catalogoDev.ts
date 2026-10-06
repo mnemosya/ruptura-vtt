@@ -7,7 +7,7 @@
  * aqui é só a transcrição versionada no repositório.
  */
 import type { CatalogosCriacaoV12, OpcaoTrajetoriaV12 } from "../../mesas/[campaignId]/vtt/_acoes/criacaoV12Actions";
-import { REGIOES_V12, type ClassContentV12, type TrajectoryOptionContentV12 } from "../../../lib/rulesetV12/contracts";
+import { REGIOES_V12, type ClassContentV12, type SubclassContentV12, type TrajectoryOptionContentV12 } from "../../../lib/rulesetV12/contracts";
 import { VERTENTES_V12 } from "../../../lib/rulesetV12/creation";
 import trajetoria from "../../../../content/v12/db_trajetoria_v1_2.json";
 import ancora from "../../../../content/v12/db_classe_ancora_v1_2.json";
@@ -33,7 +33,9 @@ function opcao(p: TrajectoryOptionContentV12): OpcaoTrajetoriaV12 {
 }
 
 export function catalogoDev(): CatalogosCriacaoV12 {
-  const classes = [ancora, cacador, combatente, face, infiltrador, tecnico, vanguarda].map((d) => (d as unknown as { classes: ClassContentV12[] }).classes[0]);
+  const arquivos = [ancora, cacador, combatente, face, infiltrador, tecnico, vanguarda] as unknown as Array<{ classes: ClassContentV12[]; subclasses: SubclassContentV12[] }>;
+  const classes = arquivos.map((d) => d.classes[0]);
+  const subclasses = arquivos.flatMap((d) => d.subclasses);
   const t = trajetoria as unknown as {
     backgrounds: Array<{ slug: string; nome: string; descricao: string; familiaridade: string }>;
     qualities: TrajectoryOptionContentV12[];
@@ -42,6 +44,7 @@ export function catalogoDev(): CatalogosCriacaoV12 {
   return {
     ehNarrador: false,
     classes,
+    subclasses,
     // Na mesa vem de `character_rule` (getCharacterRules); aqui, da transcrição das regras.
     pericias: (regras as unknown as { pericias: Array<{ id: string; nome: string }> }).pericias.map((p) => ({ id: p.id, nome: p.nome })).sort(porNome),
     regioes: Object.entries(REGIOES_V12).map(([id, r]) => ({ id, nome: r.nome, idioma: r.idioma })),

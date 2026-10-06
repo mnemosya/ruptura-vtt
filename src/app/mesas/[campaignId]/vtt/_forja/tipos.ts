@@ -16,6 +16,8 @@ export const PASSOS = [
   { key: "atributos", label: "Atributos", group: "MECÂNICA" },
   { key: "pericias", label: "Perícias", group: "MECÂNICA" },
   { key: "vertente", label: "Vertente", group: "MECÂNICA" },
+  /** Só aparece com rank inicial acima de F (escolhas de cada avanço). */
+  { key: "progressao", label: "Progressão", group: "MECÂNICA" },
   { key: "revisao", label: "Revisão", group: "SELAGEM" },
 ] as const;
 

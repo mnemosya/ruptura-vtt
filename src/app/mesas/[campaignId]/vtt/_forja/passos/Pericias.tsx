@@ -57,43 +57,45 @@ export function Pericias({ d, set, catalogos, classe, irParaClasse }: {
         </div>
       )} />
 
-      <div className="fj-perfis" role="radiogroup" aria-label="Perfil de Perícias">
-        {classe.criacao.perfis_pericias.map((p) => {
-          const on = p.slug === d.perfilPericias;
-          return (
-            <button type="button" role="radio" aria-checked={on} key={p.slug} onClick={() => set({ perfilPericias: p.slug })} className={`fj-ch-tab fj-perfil ${on ? "fj-perfil--on" : ""}`}>
-              <span className="fj-perfil__nome">{p.nome}</span>
-              <span className="fj-perfil__valores">{p.quantidades.valor_3}×3 · {p.quantidades.valor_2}×2 · {p.quantidades.valor_1}×1</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="fj-borda fj-ch fj-pericias">
-        <div className="fj-ch fj-vidro fj-sem-barra fj-pericias__rolagem">
-          {!perfil && <p className="fj-pericias__aviso">Escolha um perfil acima para distribuir os valores.</p>}
-          <div className="fj-pericias__grade">
-            {lista.map((p) => {
-              const atual = d.pericias[p.id] ?? 0;
-              const permitidos = niveisPericiaV12(classe, p.id);
-              return (
-                <div key={p.id} className={`fj-pericia ${atual ? "fj-pericia--on" : ""}`}>
-                  <span className="fj-pericia__nome">
-                    {especialidades.has(p.id) && <span className="fj-losango fj-losango--sm fj-losango--ambar" title="Especialidade da Classe" />}
-                    {p.nome}
-                  </span>
-                  <span className="fj-pericia__niveis" role="radiogroup" aria-label={`Valor de ${p.nome}`}>
-                    {NIVEIS.map((v) => {
-                      const cota = v === 0 || !perfil ? Infinity : perfil.quantidades[`valor_${v}`];
-                      const bloqueado = !perfil || !permitidos.includes(v) || (v !== atual && v !== 0 && n[v as 1 | 2 | 3] >= cota);
-                      return (
-                        <button type="button" role="radio" aria-checked={atual === v} key={v} disabled={bloqueado && atual !== v} onClick={() => definir(p.id, v)} className={`fj-nivel-btn ${atual === v ? "fj-nivel-btn--on" : ""}`}>{v}</button>
-                      );
-                    })}
-                  </span>
-                </div>
-              );
-            })}
+      <div className="fj-pericias-bloco">
+        <div className="fj-borda fj-ch fj-pericias">
+          <div className="fj-ch fj-vidro fj-sem-barra fj-pericias__rolagem">
+            {/* Os perfis ficam DENTRO do card, no topo, como uma faixa contínua. */}
+            <div className="fj-perfis fj-perfis--faixa" role="radiogroup" aria-label="Perfil de Perícias">
+              {classe.criacao.perfis_pericias.map((p) => {
+                const on = p.slug === d.perfilPericias;
+                return (
+                  <button type="button" role="radio" aria-checked={on} key={p.slug} onClick={() => set({ perfilPericias: p.slug })} className={`fj-perfil ${on ? "fj-perfil--on" : ""}`}>
+                    <span className="fj-perfil__nome">{p.nome}</span>
+                    <span className="fj-perfil__valores">{p.quantidades.valor_3}×3 · {p.quantidades.valor_2}×2 · {p.quantidades.valor_1}×1</span>
+                  </button>
+                );
+              })}
+            </div>
+            {!perfil && <p className="fj-pericias__aviso">Escolha um perfil acima para distribuir os valores.</p>}
+            <div className="fj-pericias__grade">
+              {lista.map((p) => {
+                const atual = d.pericias[p.id] ?? 0;
+                const permitidos = niveisPericiaV12(classe, p.id);
+                return (
+                  <div key={p.id} className={`fj-pericia ${atual ? "fj-pericia--on" : ""}`}>
+                    <span className="fj-pericia__nome">
+                      {especialidades.has(p.id) && <span className="fj-losango fj-losango--sm fj-losango--ambar" title="Especialidade da Classe" />}
+                      {p.nome}
+                    </span>
+                    <span className="fj-pericia__niveis" role="radiogroup" aria-label={`Valor de ${p.nome}`}>
+                      {NIVEIS.map((v) => {
+                        const cota = v === 0 || !perfil ? Infinity : perfil.quantidades[`valor_${v}`];
+                        const bloqueado = !perfil || !permitidos.includes(v) || (v !== atual && v !== 0 && n[v as 1 | 2 | 3] >= cota);
+                        return (
+                          <button type="button" role="radio" aria-checked={atual === v} key={v} disabled={bloqueado && atual !== v} onClick={() => definir(p.id, v)} className={`fj-nivel-btn ${atual === v ? "fj-nivel-btn--on" : ""}`}>{v}</button>
+                        );
+                      })}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

@@ -26,20 +26,6 @@ function Dificuldade({ diff, cor }: { diff: string; cor: string }) {
   );
 }
 
-/**
- * As magias do nível 1 não são escolhidas na criação: o servidor grava a
- * escolha como pendente até o catálogo de magias v1.2 ser publicado.
- */
-function MagiasPendentes({ id }: { id: string }) {
-  const n = magiasIniciais(id);
-  return (
-    <div className="fj-vagas">
-      <span className="fj-vagas__pips" aria-hidden="true">{Array.from({ length: n }).map((_, i) => <span key={i} className="fj-losango fj-losango--md fj-losango--contorno" />)}</span>
-      <Mono pequeno>{n} magias · escolha depois da criação</Mono>
-    </div>
-  );
-}
-
 function Essencia({ id }: { id: string }) {
   const v = vmeta(id), d = v.grimorio;
   return (
@@ -61,7 +47,6 @@ function Essencia({ id }: { id: string }) {
         <Dificuldade diff={d.diff} cor={v.cor} />
         <span className="fj-essencia__gatilho">{v.gatilho}</span>
       </div>
-      <MagiasPendentes id={id} />
     </div>
   );
 }

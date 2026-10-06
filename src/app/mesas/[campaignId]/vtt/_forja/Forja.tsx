@@ -13,7 +13,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { CatalogosCriacaoV12 } from "../_acoes/criacaoV12Actions";
-import { RANKINGS_V12, REGIOES_V12, perfisAtributosV12, resolveClassResourceV12, type AttributeIdV12, type ClassContentV12, type DraftV12, type RankingV12, type RegiaoIdV12 } from "../../../../../lib/rulesetV12";
+import { RANKINGS_V12, REGIOES_V12, escolhasDoAvancoV12, perfisAtributosV12, resolveClassResourceV12, type AttributeIdV12, type ClassContentV12, type DraftV12, type RankingV12, type RegiaoIdV12 } from "../../../../../lib/rulesetV12";
 import { BYTES_ORIGINAL_MAXIMO, ImagemRecusadaError, enviarParaUrlAssinada, prepararRecorteQuadrado, type ImagemPreparada } from "../../../../../lib/vtt/imagePreparation";
 import { cancelarUploadAction, definirAvatarPersonagemAction, finalizarUploadAvatarAction, reservarUploadAction } from "../_acoes/imageActions";
 import { JanelaRecorte } from "../../../../ficha/_console/RecorteImagem";
@@ -33,6 +33,8 @@ import { VertenteLateral } from "./passos/Vertente";
 import { Antecedente, FichaTracos, OrigemNarrativa, Tracos } from "./passos/Trajetoria";
 import { Pericias, PericiasLateral } from "./passos/Pericias";
 import { ProgressaoInicial } from "./ProgressaoInicial";
+import { Progressao, ProgressaoLateral } from "./passos/Progressao";
+import { avancarRankingV12Action } from "../_acoes/evolucaoV12Actions";
 
 export interface ForjaProps {
   catalogos: CatalogosCriacaoV12;
@@ -45,9 +47,10 @@ export interface ForjaProps {
   /** Mesa onde o rascunho é salvo e o personagem é criado. Sem ela (prévia), nada é lido, gravado ou criado. */
   campaignId?: string;
   /**
-   * Personagem sem campanha (página Personagens): sela sem mesa, sempre no
-   * Ranking F e sem avatar — a imagem é guardada na campanha, então o
-   * avatar vem depois que o personagem entrar numa.
+   * Personagem sem campanha (página Personagens): sela sem mesa, com o
+   * conteúdo oficial, e sem avatar — a imagem é guardada na campanha, então
+   * o avatar vem depois que o personagem entrar numa. O rank inicial é
+   * livre, como com campanha: sela no F e a progressão sobe até o escolhido.
    */
   semCampanha?: boolean;
   /** Ranking sugerido pela campanha, editável na Forja. */
@@ -91,15 +94,26 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
 
   const [pn, setPn] = useState(false);
   const [progressao, setProgressao] = useState<{ characterId: string; alvo: RankingV12 } | null>(null);
+  const [aplicando, setAplicando] = useState(false);
+  // O passo Progressão só existe com rank acima de F.
+  const ocultoPasso = (i: number) => PASSOS[i]?.key === "progressao" && !c.temProgressao;
   const selar = async () => {
     const id = await c.concluir({ pn: catalogos.ehNarrador && pn });
     if (!id) return;
-    if (semCampanha) { onConcluir?.(id); return; }
-    if (!campaignId) return;
-    if (avatar.preparada) await avatar.enviar(campaignId, id);
+    if (!campaignId && !semCampanha) return;
+    // Avatar só existe com campanha (a imagem é guardada nela).
+    if (campaignId && avatar.preparada) await avatar.enviar(campaignId, id);
     const alvo = d.rankingInicial ?? rankingInicial;
-    if (alvo === "F") onConcluir?.(id);
-    else setProgressao({ characterId: id, alvo });
+    if (alvo === "F") { onConcluir?.(id); return; }
+    // Aplica Ranking a Ranking as escolhas feitas no passo Progressão. Se
+    // algum avanço falhar, a janela de Progressão inicial assume dali.
+    setAplicando(true);
+    for (const etapa of c.etapas) {
+      const r = await avancarRankingV12Action(campaignId ?? null, id, escolhasDoAvancoV12(etapa));
+      if (!r.ok) { setAplicando(false); setProgressao({ characterId: id, alvo }); return; }
+    }
+    setAplicando(false);
+    onConcluir?.(id);
   };
 
   const raiz = `fj-root ${oxanium.variable} mo-scope fj-forja`;
@@ -132,15 +146,15 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
       <div className="fj-scan fj-cobre fj-palco__scan" />
 
       <div className="fj-palco">
-        <BarraTopo group={cur.group} label={cur.label} onExit={() => { void c.salvarAgora(); setStarted(false); }} nomeMesa={nomeMesa} siglaNarrador={siglaNarrador} status={status} />
+        <BarraTopo group={cur.group} label={cur.label} onExit={() => { void c.salvarAgora(); setStarted(false); }} />
 
         <div className="fj-sem-barra fj-grade">
-          <MenuLateral step={passo} setStep={c.irPara} completos={c.passosCompletos} />
+          <MenuLateral step={passo} setStep={c.irPara} completos={c.passosCompletos} nomeMesa={nomeMesa} siglaNarrador={siglaNarrador} status={status} oculto={ocultoPasso} />
           <main key={passo} className="fj-boot fj-centro">
             {centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente, semAvatar: semCampanha })}
           </main>
           <aside className="fj-sem-barra fj-lateral">
-            <PlacaIdentidade d={d} avatar={avatar.url} progress={c.sincronia} ranking={semCampanha ? "F" : d.rankingInicial ?? rankingInicial} onRankingChange={semCampanha ? undefined : (ranking) => set({ rankingInicial: ranking })} />
+            <PlacaIdentidade d={d} avatar={avatar.url} progress={c.sincronia} ranking={d.rankingInicial ?? rankingInicial} onRankingChange={(ranking) => set({ rankingInicial: ranking })} />
             {c.conflito && (
               <div className="fj-aviso" role="alert">
                 <span>Este rascunho foi alterado em outra janela; o salvamento foi pausado para não sobrescrever.</span>
@@ -166,9 +180,10 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
         <Doca
           step={passo}
           setStep={c.irPara}
+          oculto={ocultoPasso}
           pendentes={c.pendencias.length}
           podeSelar={Boolean(campaignId) || semCampanha}
-          enviando={c.enviando}
+          enviando={c.enviando || aplicando}
           erro={c.erroEnvio}
           rotuloSelar={completar ? `Selar ${completar.nome}` : "Selar refratário"}
           onSelar={() => void selar()}
@@ -185,7 +200,7 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
           onCancelar={avatar.cancelarRecorte}
         />
       )}
-      {progressao && campaignId && <ProgressaoInicial key={progressao.characterId} campaignId={campaignId}
+      {progressao && (campaignId || semCampanha) && <ProgressaoInicial key={progressao.characterId} campaignId={campaignId ?? null}
         characterId={progressao.characterId} alvo={progressao.alvo}
         onConcluir={() => { const id = progressao.characterId; setProgressao(null); onConcluir?.(id); }} />}
     </div>
@@ -259,7 +274,7 @@ function useAvatarDaForja() {
 }
 type AvatarDaForja = ReturnType<typeof useAvatarDaForja>;
 
-function BarraTopo({ group, label, onExit, nomeMesa, siglaNarrador, status }: { group: string; label: string; onExit: () => void; nomeMesa: string; siglaNarrador: string; status: string }) {
+function BarraTopo({ group, label, onExit }: { group: string; label: string; onExit: () => void }) {
   return (
     <header className="fj-topo">
       <button type="button" onClick={onExit} className="fj-topo__sair">
@@ -272,25 +287,18 @@ function BarraTopo({ group, label, onExit, nomeMesa, siglaNarrador, status }: { 
         </div>
         <div className="fj-topo__placa-fio" />
       </div>
-      <div className="fj-topo__mesa">
-        <div>
-          <Mono>Mesa ativa</Mono>
-          <div className="fj-topo__mesa-nome">{nomeMesa}</div>
-          {status && <span className="fj-topo__status" aria-live="polite"><Mono pequeno tom="cy">{status}</Mono></span>}
-        </div>
-        <span className="fj-ch-hex fj-topo__narrador">{siglaNarrador}</span>
-      </div>
     </header>
   );
 }
 
-function MenuLateral({ step, setStep, completos }: { step: number; setStep: (n: number) => void; completos: boolean[] }) {
+function MenuLateral({ step, setStep, completos, nomeMesa, siglaNarrador, status, oculto = () => false }: { step: number; setStep: (n: number) => void; completos: boolean[]; nomeMesa: string; siglaNarrador: string; status: string; oculto?: (i: number) => boolean }) {
   let last = "";
   return (
     <nav className="fj-menu" aria-label="Passos da forja">
       <div className="fj-ch-tab fj-menu__titulo fj-glow">Forja</div>
       <div className="fj-menu__lista">
         {PASSOS.map((s, i) => {
+          if (oculto(i)) return null;
           const hdr = s.group !== last;
           last = s.group;
           const on = i === step;
@@ -299,7 +307,7 @@ function MenuLateral({ step, setStep, completos }: { step: number; setStep: (n: 
               {hdr && <div className="fj-menu__grupo"><Mono pequeno tom="cy">{s.group}</Mono><span className="fj-menu__grupo-fio" /></div>}
               <button type="button" title={s.label} onClick={() => setStep(i)} aria-current={on ? "step" : undefined} className={`fj-ch-tab fj-menu__passo ${on ? "fj-menu__passo--atual" : ""}`}>
                 {on && <span className="fj-menu__sublinhado" />}
-                <span className="fj-menu__n">0{i + 1}</span>
+                <span className="fj-menu__n">{String(i + 1).padStart(2, "0")}</span>
                 <span className="fj-menu__rotulo">{s.label}</span>
                 <span className="fj-sr">{completos[i] ? ", concluído" : ", pendente"}</span>
                 <span className={`fj-menu__estado ${completos[i] ? "fj-menu__estado--feito" : ""}`} aria-hidden="true" />
@@ -308,11 +316,15 @@ function MenuLateral({ step, setStep, completos }: { step: number; setStep: (n: 
           );
         })}
       </div>
-      <div className="fj-menu__aviso">
-        <Panel ambar title="Aviso">
-          <p className="fj-menu__aviso-texto">Registro não selado. Refratários sem RPI forjado não podem entrar na mesa.</p>
-          <div className="fj-hazard-a fj-menu__aviso-faixa" />
-        </Panel>
+      {/* A mesa no rodapé do menu: o selo de quem narra primeiro, o nome
+          ao lado, alinhado à esquerda — e o estado do rascunho embaixo. */}
+      <div className="fj-menu__mesa">
+        <span className="fj-ch-hex fj-menu__narrador">{siglaNarrador}</span>
+        <div>
+          <Mono>Mesa ativa</Mono>
+          <div className="fj-menu__mesa-nome">{nomeMesa}</div>
+          {status && <span className="fj-menu__status" aria-live="polite"><Mono pequeno tom="cy">{status}</Mono></span>}
+        </div>
       </div>
     </nav>
   );
@@ -364,8 +376,10 @@ function PlacaIdentidade({ d, avatar, progress, ranking, onRankingChange }: { d:
   );
 }
 
-function Doca({ step, setStep, pendentes, podeSelar, enviando, erro, rotuloSelar, onSelar }: {
+function Doca({ step, setStep, oculto = () => false, pendentes, podeSelar, enviando, erro, rotuloSelar, onSelar }: {
   step: number;
+  /** Passo que não existe agora (Progressão com rank F): a navegação pula. */
+  oculto?: (i: number) => boolean;
   setStep: (n: number) => void;
   pendentes: number;
   podeSelar: boolean;
@@ -375,6 +389,8 @@ function Doca({ step, setStep, pendentes, podeSelar, enviando, erro, rotuloSelar
   onSelar: () => void;
 }) {
   const podeSelarAgora = podeSelar && pendentes === 0 && !enviando;
+  const proximo = (i: number) => { let n = i + 1; while (n < PASSOS.length - 1 && oculto(n)) n++; return n; };
+  const anterior = (i: number) => { let n = i - 1; while (n > 0 && oculto(n)) n--; return Math.max(0, n); };
   // Atalhos da doca: Q volta, E confirma (ou sela, no último passo), U abre o avatar.
   // Não disparam enquanto se digita nem com modificadores.
   useEffect(() => {
@@ -384,23 +400,24 @@ function Doca({ step, setStep, pendentes, podeSelar, enviando, erro, rotuloSelar
       if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
       if (document.querySelector(".rc-recorte-janela, [aria-modal='true']")) return;
       const tecla = e.key.toLowerCase();
-      if (tecla === "q" && step > 0) setStep(step - 1);
-      else if (tecla === "e") { if (step < PASSOS.length - 1) setStep(step + 1); else if (podeSelarAgora) onSelar(); }
+      if (tecla === "q" && step > 0) setStep(anterior(step));
+      else if (tecla === "e") { if (step < PASSOS.length - 1) setStep(proximo(step)); else if (podeSelarAgora) onSelar(); }
       else if (tecla === "u") document.getElementById("fj-avatar-arquivo")?.click();
       else return;
       e.preventDefault();
     };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
-  }, [step, setStep, podeSelarAgora, onSelar]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- proximo/anterior derivam de `oculto`
+  }, [step, setStep, podeSelarAgora, onSelar, oculto]);
   const motivo = pendentes > 0 ? "Resolva as pendências da Revisão." : !podeSelar ? "O Selar cria o personagem dentro da mesa." : undefined;
   return (
     <footer className="fj-doca">
-      <button type="button" onClick={() => setStep(Math.max(0, step - 1))} className="fj-doca__voltar"><Key k="Q" /> Voltar</button>
+      <button type="button" onClick={() => setStep(anterior(step))} className="fj-doca__voltar"><Key k="Q" /> Voltar</button>
       {step < PASSOS.length - 1 ? (
-        <button type="button" onClick={() => setStep(step + 1)} className="fj-doca__avancar">
+        <button type="button" onClick={() => setStep(proximo(step))} className="fj-doca__avancar">
           <span className="fj-doca__confirmar">Confirmar</span>
-          <span className="fj-ch fj-doca__proximo">{PASSOS[step + 1].label} ›</span>
+          <span className="fj-ch fj-doca__proximo">{PASSOS[proximo(step)].label} ›</span>
           <Key k="E" />
         </button>
       ) : (
@@ -523,10 +540,11 @@ function centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente, s
           <span className="fj-conceito__carregar"><Key k="U" /> {avatar.preparada ? "Trocar avatar" : "Carregar avatar"}</span>
           <input id="fj-avatar-arquivo" type="file" accept="image/png,image/jpeg,image/webp" className="fj-sr" onChange={(e) => { const f = e.target.files?.[0]; if (f) avatar.escolher(f); e.target.value = ""; }} />
         </label>
-        <div className="fj-conceito__rodape">
-          <Mono>Avatar enviado pelo jogador · projetado como registro holográfico</Mono>
-          {avatar.preparada && <button type="button" onClick={avatar.remover} className="fj-conceito__remover">Remover avatar</button>}
-        </div>
+        {avatar.preparada && (
+          <div className="fj-conceito__rodape">
+            <button type="button" onClick={avatar.remover} className="fj-conceito__remover">Remover avatar</button>
+          </div>
+        )}
       </div>
     );
     case 1: return <Carrossel items={REGIOES.map((r) => ({ id: r.id, nome: r.nome, img: r.img, top: `CAPITAL · ${r.capital.toUpperCase()}`, sub: r.tag, color: r.tint }))} value={d.regiaoId} viewId={view.regiao} onView={onView("regiao")} onPick={(id) => set({ regiaoId: id, localOrigem: id === d.regiaoId ? d.localOrigem : "" })} cta="Fixar origem" />;
@@ -536,7 +554,8 @@ function centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente, s
     case 5: return <Atributos d={d} set={set} perfis={perfisAtributosV12(catalogos.classes, d.classeSlug)} avatar={avatar.url} progress={c.sincronia} nomeAntecedente={nomeAntecedente} />;
     case 6: return <Pericias d={d} set={set} catalogos={catalogos} classe={classe} irParaClasse={() => c.irPara(4)} />;
     case 7: return <Carrossel items={VERTENTES_ACERVO.map((v) => ({ id: v.id, nome: v.nome, img: v.arte, top: "VERTENTE PRIMÁRIA", sub: v.frase.split(".")[0], color: v.cor }))} value={d.vertente} viewId={view.vertente} onView={onView("vertente")} onPick={(id) => set({ vertente: id })} cta="Sintonizar" />;
-    default: return <div className="fj-revisao-centro"><Holograma d={d} avatar={avatar.url} progress={1} solid nomeAntecedente={nomeAntecedente} /></div>;
+    case 8: return <Progressao d={d} set={set} catalogos={catalogos} etapas={c.etapas} irParaClasse={() => c.irPara(4)} />;
+    default: return <div className="fj-revisao-centro"><Holograma d={d} avatar={avatar.url} progress={c.sincronia} solid={c.sincronia >= 1} nomeAntecedente={nomeAntecedente} /></div>;
   }
 }
 
@@ -548,34 +567,42 @@ function centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente, s
  */
 function Atributos({ d, set, perfis, avatar, progress, nomeAntecedente }: { d: DraftV12; set: SetDraft; perfis: ClassContentV12["criacao"]["perfis_atributos"]; avatar: string; progress: number; nomeAntecedente?: string }) {
   const perfil = perfis.find((p) => p.slug === d.perfilAtributos);
+  // Escolher o perfil NÃO distribui os valores: quem cria decide onde
+  // cada um vai. Trocar de perfil limpa a distribuição anterior.
   const escolherPerfil = (slug: string) => {
-    const p = perfis.find((x) => x.slug === slug);
-    if (!p) return;
-    set({ perfilAtributos: slug, atributos: { corpo: p.valores[0], mente: p.valores[1], animo: p.valores[2] } });
+    if (slug === d.perfilAtributos) return;
+    set({ perfilAtributos: slug, atributos: { corpo: null, mente: null, animo: null } });
   };
-  const trocar = (alvo: AttributeIdV12, dir: 1 | -1) => {
+  /**
+   * Põe `v` em `alvo`. Se todos os `v` do perfil já estão em outros
+   * atributos, troca com um deles — nunca é preciso tirar um valor para
+   * poder colocá-lo noutro lugar. Clicar no valor atual limpa.
+   */
+  const escolher = (alvo: AttributeIdV12, v: number) => {
     if (!perfil) return;
     const atual = d.atributos[alvo];
-    if (atual === null) return;
-    const distintos = [...new Set(perfil.valores)].sort((a, b) => a - b);
-    const vizinho = distintos[distintos.indexOf(atual) + dir];
-    if (vizinho === undefined) return;
-    const outro = ATRIBUTOS.find((a) => a.id !== alvo && d.atributos[a.id] === vizinho);
-    if (!outro) return;
-    set({ atributos: { ...d.atributos, [alvo]: vizinho, [outro.id]: atual } });
+    if (atual === v) { set({ atributos: { ...d.atributos, [alvo]: null } }); return; }
+    const total = perfil.valores.filter((x) => x === v).length;
+    const outros = ATRIBUTOS.filter((a) => a.id !== alvo && d.atributos[a.id] === v);
+    if (outros.length < total) { set({ atributos: { ...d.atributos, [alvo]: v } }); return; }
+    set({ atributos: { ...d.atributos, [alvo]: v, [outros[0].id]: atual } });
   };
   const no = (i: number) => {
     const a = ATRIBUTOS[i];
     const v = d.atributos[a.id];
-    const distintos = perfil ? [...new Set(perfil.valores)].sort((x, y) => x - y) : [];
+    const opcoes = perfil ? [...new Set(perfil.valores)].sort((x, y) => x - y) : [];
+    const dono = (x: number) => {
+      const total = perfil?.valores.filter((y) => y === x).length ?? 0;
+      const outros = ATRIBUTOS.filter((o) => o.id !== a.id && d.atributos[o.id] === x);
+      return outros.length >= total ? outros[0]?.nome : undefined;
+    };
     return (
       <NoAtributo
         valor={v}
         name={a.nome}
         desc={a.desc}
-        podeMenos={v !== null && distintos.indexOf(v) > 0}
-        podeMais={v !== null && distintos.indexOf(v) < distintos.length - 1}
-        onBump={(dir) => trocar(a.id, dir)}
+        opcoes={opcoes.map((x) => ({ valor: x, trocaCom: dono(x) }))}
+        onEscolher={(x) => escolher(a.id, x)}
       />
     );
   };
@@ -606,15 +633,31 @@ function Atributos({ d, set, perfis, avatar, progress, nomeAntecedente }: { d: D
   );
 }
 
-function NoAtributo({ valor, onBump, name, desc, podeMenos, podeMais }: { valor: number | null; onBump: (d: 1 | -1) => void; name: string; desc: string; podeMenos: boolean; podeMais: boolean }) {
+function NoAtributo({ valor, onEscolher, name, desc, opcoes }: {
+  valor: number | null;
+  onEscolher: (v: number) => void;
+  name: string;
+  desc: string;
+  /** Valores do perfil; `trocaCom` = atributo que cederia o valor (troca). */
+  opcoes: Array<{ valor: number; trocaCom?: string }>;
+}) {
   return (
     <div className="fj-atributo">
       <Panel title={name}>
         <p className="fj-atributo__desc">{desc}</p>
         <div className="fj-atributo__controle">
-          <button type="button" disabled={!podeMenos} onClick={() => onBump(-1)} className="fj-ch fj-atributo__btn" aria-label={`Diminuir ${name}`}>−</button>
-          <span key={valor ?? "x"} className="fj-boot fj-atributo__valor fj-glow">{valor ?? "–"}</span>
-          <button type="button" disabled={!podeMais} onClick={() => onBump(1)} className="fj-ch fj-atributo__btn fj-atributo__btn--mais" aria-label={`Aumentar ${name}`}>+</button>
+          <span key={valor ?? "x"} className={`fj-boot fj-atributo__valor ${valor === null ? "fj-atributo__valor--vazio" : "fj-glow"}`}>{valor ?? "–"}</span>
+          {opcoes.length > 0 ? (
+            <span className="fj-atributo__opcoes" role="group" aria-label={`Valor de ${name}`}>
+              {opcoes.map((o) => (
+                <button type="button" key={o.valor} onClick={() => onEscolher(o.valor)} aria-pressed={valor === o.valor}
+                  title={valor === o.valor ? "Limpar" : o.trocaCom ? `Trocar com ${o.trocaCom}` : undefined}
+                  className={`fj-ch fj-atributo__opcao ${valor === o.valor ? "fj-atributo__opcao--on" : o.trocaCom ? "fj-atributo__opcao--troca" : ""}`}>
+                  {o.valor}
+                </button>
+              ))}
+            </span>
+          ) : <Mono pequeno>Escolha um perfil</Mono>}
         </div>
         <div className="fj-atributo__seg"><Seg value={valor ?? 0} max={3} /></div>
       </Panel>
@@ -685,6 +728,7 @@ function lateral({ c, catalogos, classe, view, regiaoCampanha, setRegiaoCampanha
     }
     case 6: return <PericiasLateral classe={classe} catalogos={catalogos} />;
     case 7: return <VertenteLateral d={d} set={set} id={view.vertente} />;
+    case 8: return <ProgressaoLateral etapas={c.etapas} />;
     default: return <Revisao c={c} catalogos={catalogos} classe={classe} pn={pn} setPn={setPn} />;
   }
 }
@@ -699,7 +743,7 @@ function Revisao({ c, catalogos, classe, pn, setPn }: { c: Criacao; catalogos: C
     .filter(Boolean)
     .join(" · ");
   const rows: [string, string][] = [
-    ["Região", d.localOrigem ? `${regiao} · ${d.localOrigem}` : ""],
+    ["Região", regiao],
     ["Antecedente", catalogos.antecedentes.find((x) => x.slug === d.antecedenteId)?.nome ?? ""],
     ["Qualidades", nomes(catalogos.qualidades, d.qualidades)],
     ["Complicações", nomes(catalogos.complicacoes, d.complicacoes)],
@@ -721,7 +765,7 @@ function Revisao({ c, catalogos, classe, pn, setPn }: { c: Criacao; catalogos: C
         <p className="fj-revisao__nota">Magias iniciais e equipamento ficam para depois da criação.</p>
         {catalogos.ehNarrador && c.persiste && (
           <label className="fj-revisao__pn">
-            <input type="checkbox" checked={pn} onChange={(e) => setPn(e.target.checked)} />
+            <input type="checkbox" className="fj-check" checked={pn} onChange={(e) => setPn(e.target.checked)} />
             <span>É um PN (personagem do narrador)</span>
           </label>
         )}

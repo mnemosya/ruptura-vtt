@@ -44,16 +44,16 @@ export function Holograma({ d, avatar, progress, size = "lg", solid = false, nom
           </div>
         </div>
 
-        <Fragmento on={!!reg} lugar="origem" label="ORIGEM" value={reg?.nome} sub={reg?.sector} />
+        <Fragmento on={!!reg} lugar="origem" label="REGIÃO" value={reg?.nome} />
         <Fragmento on={!!d.antecedenteId} lugar="antecedente" label="ANTECEDENTE" value={nomeAntecedente} />
+        {/* Classe no mesmo desenho da Vertente: arte no hexágono + nome. */}
         {cls && (
           <div className="fj-boot fj-holo__classe">
-            <span className="fj-spin fj-holo__classe-anel" />
-            <span className="fj-ch-hex fj-holo__classe-hex" />
-            <div className="fj-holo__classe-texto">
-              <div className="fj-holo__classe-sigla">{cls.sigla}</div>
-              <div className="fj-holo__classe-rotulo">CLASSE</div>
-            </div>
+            <span className="fj-ch-hex fj-holo__vertente-hex fj-holo__classe-hex">
+              {/* eslint-disable-next-line @next/next/no-img-element -- arte estática pequena, sem otimização */}
+              <img src={cls.arte} alt="" />
+            </span>
+            <span className="fj-holo__vertente-nome fj-holo__classe-nome">{cls.nome}</span>
           </div>
         )}
         {vt && (
