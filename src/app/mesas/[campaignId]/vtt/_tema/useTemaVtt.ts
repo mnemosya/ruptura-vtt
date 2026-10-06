@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { oxanium } from "../../../../_design/oxanium";
 
 /**
  * Tema experimental do VTT (redesign na linguagem da Forja).
@@ -34,8 +35,14 @@ export function useTemaVtt(): void {
   useEffect(() => {
     const raiz = document.documentElement;
     const tema = lerTema();
-    if (tema === "atual") raiz.removeAttribute("data-tema");
-    else raiz.setAttribute("data-tema", tema);
-    return () => raiz.removeAttribute("data-tema");
+    if (tema === "atual") return;
+    // A Forja titula em Oxanium, que fica fora do layout raiz (ver
+    // `oxanium.ts`); no `<html>` ela alcança também os portais.
+    raiz.setAttribute("data-tema", tema);
+    raiz.classList.add(oxanium.variable);
+    return () => {
+      raiz.removeAttribute("data-tema");
+      raiz.classList.remove(oxanium.variable);
+    };
   }, []);
 }

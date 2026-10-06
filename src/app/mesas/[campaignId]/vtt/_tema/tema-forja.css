@@ -10,5 +10,64 @@
    Ordem prevista: 1) tokens (--rv-*, --rc-*, --pn-*) → valores --fj-*;
    2) componentes (trilho, painel, janelas, tipografia). */
 
-[data-tema="forja"] {
+/* ── 1. Tokens do chassi do VTT ───────────────────────────────────
+   Mesma lista de raízes de `vtt-chassi.css`: os tokens são declarados
+   NELAS, então redefinir no `<html>` não bastaria. `[data-tema] :is()`
+   ganha da classe solta por especificidade, sem `!important`.
+
+   A troca de linguagem, em resumo: o azul-marinho frio vira o petróleo
+   da Forja (`--fj-abismo`/`--fj-fundo`), o ciano dessaturado `#45b8c9`
+   vira o ciano pleno da marca, e as linhas ganham o tom esverdeado. */
+[data-tema="forja"] :is(.rv-mesa, .pn-jan, .pn-menu, .rv-modal-fundo, .rv-gaveta, .rv-dica-portal, .rup-mesa-arena) {
+  /* Fundos — --fj-abismo #06121c, --fj-fundo #0c1f2b */
+  --rv-ground: #06121c;
+  --rv-ground-2: #081925;
+  --rv-sunken: #05101a;
+  --rv-panel: #0c1f2b;
+  --rv-panel-2: #112a39;
+  --rv-panel-grad: linear-gradient(160deg, #0c1f2b, #06121c);
+  --rv-peca: #0a1b26;
+
+  /* Linhas — petróleo, não marinho */
+  --rv-line: #14303f;
+  --rv-line-2: #122a38;
+  --rv-line-strong: #1a3a4b;
+  --rv-line-hover: #22526a;
+  --rv-line-max: #2a6178;
+
+  /* Acentos — ciano pleno; perigo e sucesso da Forja */
+  --rv-cy: #00d4ff;
+  --rv-cy-hi: #6ff0ff;
+  --rv-cy-texto: #33dcff;
+  --rv-cy-borda: #0a96b8;
+  --rv-dg: #ff5f74;
+  --rv-ok: #22d3aa;
+
+  --rv-cy-soft: rgba(0, 212, 255, 0.09);
+  --rv-dg-soft: rgba(255, 95, 116, 0.09);
+  --rv-ok-soft: rgba(34, 211, 170, 0.09);
+
+  /* Tinta — --fj-texto #b8d8e8 */
+  --rv-ink: #b8d8e8;
+  --rv-ink-dim: #7f95b3;
+  --rv-ink-faint: #4f7086;
+  --rv-ink-mute: #46647a;
+
+  /* Tipografia — Oxanium nos títulos, como a Forja */
+  --rv-display: var(--font-oxanium), "Oxanium", var(--font-chakra), sans-serif;
+}
+
+/* ── 2. Tokens do Console ─────────────────────────────────────────
+   O Console tem cromo próprio, com valores já resolvidos (ver o
+   comentário em `console.css`): sem isto ele ficaria marinho no meio
+   de uma mesa petróleo. */
+[data-tema="forja"] :is(.rc-window-wrap, .rc-cursor-scope, .rc-fichaheader) {
+  --rc-line: #1a3a4b;
+  --rc-line-soft: #122a38;
+  --rc-surface: rgba(12, 31, 43, 0.96);
+  --rc-panel: rgba(17, 42, 57, 0.72);
+  --rc-text: #b8d8e8;
+  --rc-danger: #ff5f74;
+  --rc-ok: #22d3aa;
+  --rc-trilho-ativo: #00d4ff;
 }
