@@ -23,7 +23,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MousePointer2, Ruler, PaintBucket, MapPin, Images, Layers, Menu, Hexagon, Swords, Minus, Undo2, Redo2, Loader2, UserPlus, Box, Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2, Dices, ImageUp, ScrollText, ChevronDown } from "lucide-react";
+import { MousePointer2, Ruler, PaintBucket, MapPin, Images, Layers, Menu, Hexagon, Swords, Minus, Undo2, Redo2, Loader2, UserPlus, Box, Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2, Dices, ImageUp, ScrollText, ChevronDown, Type, Palette } from "lucide-react";
+import { HexColorInput, HexColorPicker } from "react-colorful";
 import { Plus } from "../../../_design/icons";
 import { MapaHex, TAM, type EstadoVisualToken, type CenaMapa } from "./_mapa/MapaHex";
 import { useTargets } from "./_realtime/useTargets";
@@ -86,6 +87,9 @@ import {
   HEX_COR_AREA, ancoraDaRegiao, caixaDaRegiao, origemDeAura, regiaoDaArea, resolverArea, validarParametros,
 } from "./_dominio/areaEfeito";
 import { type PontoAxial, axialParaMundo } from "./_dominio/escalaMapa";
+import { CORES_ANOTACAO, corAnotacaoValida, hexDaAnotacao, limitarTraco, type AnotacaoCena, type CorAnotacao, type CorPredefinida } from "./_dominio/anotacoes";
+import { useAnotacoesDaCena } from "./_shell/useAnotacoesDaCena";
+import { JanelaFerramenta } from "./_shell/JanelaFerramenta";
 import type { ImagemCena } from "./_dominio/imagemCena";
 import { camposDeParametros, corValida, parametrosDaAreaPersistida } from "./_dominio/areaPersistida";
 import {
@@ -164,6 +168,7 @@ const COR_MARCA_HEX: Record<string, string> = {
 const ICONE_FERRAMENTA: Record<FerramentaId, typeof MousePointer2> = {
   interagir: MousePointer2, dados: Dices, medir: Ruler, marcar: MapPin, terreno: PaintBucket, objetos: Box,
   imagens: Images, areas: Hexagon, rodadas: Swords,
+  desenhar: Pencil, texto: Type,
 };
 
 
@@ -4290,6 +4295,135 @@ export function VttClient({
   }, [aplicarCamadas]);
   const restaurarCamadasPadrao = useCallback(() => { void aplicarCamadas(CAMADAS_PADRAO); }, [aplicarCamadas]);
 
+  // Desenhos e textos compartilham a camada, mas nunca o estado dos sinais de Marcar.
+  const anotacoesCena = useAnotacoesDaCena(campaignId, estadoCena?.cena.id ?? null);
+  const [anotacaoSelecionadaId, setAnotacaoSelecionadaId] = useState<string | null>(null);
+  const [pontoTextoPendente, setPontoTextoPendente] = useState<PontoAxial | null>(null);
+  const [textoRascunho, setTextoRascunho] = useState("");
+  const [textoBase, setTextoBase] = useState<string | null>(null);
+  const [corAnotacao, setCorAnotacao] = useState<CorAnotacao>("ciano");
+  const [anotacaoPrivada, setAnotacaoPrivada] = useState(false);
+  const [seletorCorAberto, setSeletorCorAberto] = useState(false);
+  const [corRascunho, setCorRascunho] = useState<string>(CORES_ANOTACAO.ciano);
+  const [espessuraAnotacao, setEspessuraAnotacao] = useState(2);
+  const [tamanhoTexto, setTamanhoTexto] = useState(16);
+  const textoAnotacaoRef = useRef<HTMLTextAreaElement | null>(null);
+  const anotacaoSelecionada = anotacoesCena.anotacoes.find((a) => a.id === anotacaoSelecionadaId
+    && ((ferramenta === "desenhar" && a.tipo === "desenho") || (ferramenta === "texto" && a.tipo === "texto"))) ?? null;
+  useEffect(() => { setAnotacaoSelecionadaId(null); setPontoTextoPendente(null); }, [estadoCena?.cena.id]);
+  useEffect(() => { setAnotacaoSelecionadaId(null); setPontoTextoPendente(null); setSeletorCorAberto(false); }, [ferramenta]);
+  useEffect(() => {
+    const texto = anotacaoSelecionada?.tipo === "texto" ? anotacaoSelecionada.texto ?? "" : "";
+    setTextoRascunho(texto); setTextoBase(texto);
+  }, [anotacaoSelecionadaId]);
+
+  const criarAnotacaoComHistorico = useCallback(async (dados: { tipo: "desenho" | "texto"; pontos: PontoAxial[]; texto: string | null; cor: CorAnotacao; espessura: number; tamanho: number; privada: boolean }) => {
+    const r = await anotacoesCena.criar(dados);
+    if (!r.ok || !usuarioId) return r;
+    const atual = { id: r.dados.id, revision: r.dados.revision };
+    executarComando({
+      rotulo: dados.tipo === "desenho" ? "Desenhar" : "Inserir texto",
+      autorId: usuarioId,
+      desfazer: async () => {
+        const linha = anotacoesCena.anotacoesRef.current.find((a) => a.id === atual.id);
+        if (!linha || JSON.stringify(linha.pontos) !== JSON.stringify(dados.pontos)
+          || linha.texto !== dados.texto || linha.cor !== dados.cor
+          || linha.espessura !== dados.espessura || linha.tamanho !== dados.tamanho || linha.privada !== dados.privada) {
+          setErroAcao("A anotação mudou desde a criação. Selecione-a antes de remover."); return;
+        }
+        await anotacoesCena.remover(atual.id, linha.revision);
+      },
+      executar: async () => {
+        const novo = await anotacoesCena.criar(dados);
+        if (novo.ok) { atual.id = novo.dados.id; atual.revision = novo.dados.revision; }
+      },
+    });
+    if (dados.tipo === "texto") setAnotacaoSelecionadaId(r.dados.id);
+    setPontoTextoPendente(null);
+    setTextoRascunho("");
+  }, [anotacoesCena.criar, anotacoesCena.remover, anotacoesCena.anotacoesRef, executarComando, usuarioId]);
+
+  const atualizarAnotacaoComHistorico = useCallback(async (original: AnotacaoCena, patch: { pontos?: PontoAxial[]; texto?: string; cor?: CorAnotacao; espessura?: number; tamanho?: number; privada?: boolean }) => {
+    const r = await anotacoesCena.atualizar(original.id, original.revision, patch);
+    if (!r.ok || !usuarioId) return r;
+    const inverso: typeof patch = {};
+    if (patch.pontos !== undefined) inverso.pontos = original.pontos;
+    if (patch.texto !== undefined) inverso.texto = original.texto ?? "";
+    if (patch.cor !== undefined) inverso.cor = original.cor;
+    if (patch.espessura !== undefined) inverso.espessura = original.espessura;
+    if (patch.tamanho !== undefined) inverso.tamanho = original.tamanho;
+    if (patch.privada !== undefined) inverso.privada = original.privada;
+    const aplicarSeAtual = async (esperado: typeof patch, mudanca: typeof patch) => {
+      const atual = anotacoesCena.anotacoesRef.current.find((a) => a.id === original.id);
+      if (!atual || Object.entries(esperado).some(([chave, valor]) => JSON.stringify(atual[chave as keyof AnotacaoCena]) !== JSON.stringify(valor))) {
+        setErroAcao("A anotação mudou desde esta ação. Selecione-a novamente antes de desfazer.");
+        return;
+      }
+      await anotacoesCena.atualizar(original.id, atual.revision, mudanca);
+    };
+    executarComando({
+      rotulo: original.tipo === "texto" ? "Editar texto" : "Editar desenho", autorId: usuarioId,
+      desfazer: async () => aplicarSeAtual(patch, inverso),
+      executar: async () => aplicarSeAtual(inverso, patch),
+    });
+    return r;
+  }, [anotacoesCena.atualizar, anotacoesCena.anotacoesRef, executarComando, usuarioId]);
+
+  const removerAnotacaoComHistorico = useCallback(async (original: AnotacaoCena) => {
+    const r = await anotacoesCena.remover(original.id, original.revision);
+    if (!r.ok || !usuarioId) return;
+    const atual = { id: original.id, revision: original.revision };
+    const dados = { tipo: original.tipo, pontos: original.pontos, texto: original.texto, cor: original.cor, espessura: original.espessura, tamanho: original.tamanho, privada: original.privada };
+    executarComando({
+      rotulo: "Remover anotação", autorId: usuarioId,
+      executar: async () => { await anotacoesCena.remover(atual.id, atual.revision); },
+      desfazer: async () => { const novo = await anotacoesCena.criar(dados); if (novo.ok) { atual.id = novo.dados.id; atual.revision = novo.dados.revision; } },
+    });
+    setAnotacaoSelecionadaId(null);
+  }, [anotacoesCena.criar, anotacoesCena.remover, executarComando, usuarioId]);
+
+  const criarTraco = useCallback((pontos: PontoAxial[]) => {
+    if (camadas.anotacoes.bloqueada || !camadas.anotacoes.visivel) return;
+    const simplificado = limitarTraco(pontos);
+    if (simplificado.length < 2) return;
+    void criarAnotacaoComHistorico({ tipo: "desenho", pontos: simplificado, texto: null, cor: corAnotacao, espessura: espessuraAnotacao, tamanho: 16, privada: anotacaoPrivada });
+  }, [camadas.anotacoes, corAnotacao, espessuraAnotacao, anotacaoPrivada, criarAnotacaoComHistorico]);
+  const inserirTexto = useCallback((ponto: PontoAxial) => {
+    if (camadas.anotacoes.bloqueada || !camadas.anotacoes.visivel) return;
+    setAnotacaoSelecionadaId(null);
+    setPontoTextoPendente(ponto);
+    setTextoRascunho("");
+    requestAnimationFrame(() => textoAnotacaoRef.current?.focus());
+  }, [camadas.anotacoes]);
+  const salvarTexto = useCallback(() => {
+    const texto = textoRascunho.trim();
+    if (!texto) return;
+    if (pontoTextoPendente) {
+      void criarAnotacaoComHistorico({ tipo: "texto", pontos: [pontoTextoPendente], texto, cor: corAnotacao, espessura: 2, tamanho: tamanhoTexto, privada: anotacaoPrivada });
+    } else if (anotacaoSelecionada?.tipo === "texto" && anotacaoSelecionada.texto !== texto) {
+      if (anotacaoSelecionada.texto !== textoBase) {
+        setErroAcao("O texto mudou em outra sessão. Selecione-o novamente antes de salvar.");
+        return;
+      }
+      void atualizarAnotacaoComHistorico(anotacaoSelecionada, { texto }).then((r) => { if (r?.ok) setTextoBase(texto); });
+    }
+  }, [textoRascunho, textoBase, pontoTextoPendente, anotacaoSelecionada, corAnotacao, tamanhoTexto, anotacaoPrivada, criarAnotacaoComHistorico, atualizarAnotacaoComHistorico]);
+  const moverAnotacao = useCallback((id: string, pontos: PontoAxial[]) => {
+    const a = anotacoesCena.anotacoesRef.current.find((item) => item.id === id);
+    if (a && (ehNarrador || a.autorId === usuarioId)) void atualizarAnotacaoComHistorico(a, { pontos });
+  }, [anotacoesCena.anotacoesRef, ehNarrador, usuarioId, atualizarAnotacaoComHistorico]);
+  const podeEditarAnotacao = useCallback((a: AnotacaoCena) => ehNarrador || a.autorId === usuarioId, [ehNarrador, usuarioId]);
+  useEffect(() => {
+    if (!anotacaoSelecionada || (ferramenta !== "desenhar" && ferramenta !== "texto")) return;
+    const aoTeclar = (e: KeyboardEvent) => {
+      if ((e.key !== "Delete" && e.key !== "Backspace") || elementoEhEditavel(document.activeElement as HTMLElement | null)) return;
+      if (camadas.anotacoes.bloqueada || (!ehNarrador && anotacaoSelecionada.autorId !== usuarioId)) return;
+      e.preventDefault(); void removerAnotacaoComHistorico(anotacaoSelecionada);
+    };
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, [anotacaoSelecionada, ferramenta, camadas.anotacoes.bloqueada, ehNarrador, usuarioId, removerAnotacaoComHistorico]);
+
   // ── CONFIGURAÇÕES DA CENA ────────────────────────────────────────
   // A janela própria saiu junto com o botão do trilho: os parâmetros de
   // QUALQUER cena — inclusive a aberta — se editam pelo cartão dela no
@@ -6027,6 +6161,16 @@ export function VttClient({
             }
             marcas={marcasExibidas}
             onClicarMarca={onClicarMarca}
+            anotacoes={anotacoesCena.anotacoes}
+            anotacoesSceneId={estadoCena?.cena.id}
+            anotacaoSelecionadaId={anotacaoSelecionadaId}
+            onSelecionarAnotacao={setAnotacaoSelecionadaId}
+            podeEditarAnotacao={podeEditarAnotacao}
+            onCriarTraco={criarTraco}
+            corTracoAtual={hexDaAnotacao(corAnotacao)}
+            espessuraTracoAtual={espessuraAnotacao}
+            onInserirTexto={inserirTexto}
+            onMoverAnotacao={moverAnotacao}
             onPan={onPanMapa}
             onWheelZoom={onWheelZoom}
             movimentosVisuais={movimentosVisuais}
@@ -6066,6 +6210,97 @@ export function VttClient({
           />
         </div>
 
+        {(ferramenta === "desenhar" || ferramenta === "texto") && (
+          <JanelaFerramenta id={ferramenta} icone={ferramenta === "desenhar" ? <Pencil size={16} /> : <Type size={16} />}
+            titulo={ferramenta === "desenhar" ? "Desenhar" : "Texto"} modo="Desenhos e textos"
+            rotulo={ferramenta === "desenhar" ? "Ferramenta Desenhar" : "Ferramenta Texto"}
+            rotuloFechar="Fechar ferramenta" aoFechar={() => trocarFerramenta("interagir")}
+            className={`rv-janela-anotacoes${ferramenta === "desenhar" ? " rv-janela-desenhar" : ""}`}>
+          <div className="rv-fp-corpo rv-anotacoes-painel">
+            <p>{camadas.anotacoes.bloqueada ? "A camada está bloqueada." : !camadas.anotacoes.visivel ? "A camada está oculta." :
+              ferramenta === "desenhar" ? "Arraste no mapa para desenhar. Clique em um traço para selecionar." : "Clique no mapa para inserir texto. Arraste um texto para mover."}</p>
+            <div className="rv-anotacoes-cores" role="group" aria-label="Cor da anotação">
+              {(Object.keys(CORES_ANOTACAO) as CorPredefinida[]).map((cor) => <button key={cor} type="button" title={cor} aria-label={`Cor ${cor}`}
+                aria-pressed={(anotacaoSelecionada?.cor ?? corAnotacao) === cor} disabled={camadas.anotacoes.bloqueada || !camadas.anotacoes.visivel}
+                style={{ background: CORES_ANOTACAO[cor] }} onClick={() => {
+                  setSeletorCorAberto(false);
+                  setCorAnotacao(cor);
+                  if (anotacaoSelecionada && (ehNarrador || anotacaoSelecionada.autorId === usuarioId)) void atualizarAnotacaoComHistorico(anotacaoSelecionada, { cor });
+                }} />)}
+              <button type="button" className="rv-anotacoes-cor-custom" title="Escolher outra cor" aria-label="Escolher outra cor"
+                aria-expanded={seletorCorAberto} aria-pressed={(anotacaoSelecionada?.cor ?? corAnotacao).startsWith("#")}
+                disabled={camadas.anotacoes.bloqueada || !camadas.anotacoes.visivel}
+                style={{ ["--cor-escolhida" as string]: hexDaAnotacao(anotacaoSelecionada?.cor ?? corAnotacao) }}
+                onClick={() => {
+                  setCorRascunho(hexDaAnotacao(anotacaoSelecionada?.cor ?? corAnotacao));
+                  setSeletorCorAberto((aberto) => !aberto);
+                }}><Palette size={16} /></button>
+            </div>
+            {seletorCorAberto && <div className="rv-anotacoes-seletor" role="group" aria-label="Cor personalizada">
+              <HexColorPicker color={corRascunho} onChange={setCorRascunho} aria-label="Selecionar cor" />
+              <div className="rv-anotacoes-seletor-rodape">
+                <span className="rv-anotacoes-amostra" style={{ background: corRascunho }} aria-hidden="true" />
+                <HexColorInput color={corRascunho} onChange={setCorRascunho} prefixed aria-label="Cor hexadecimal" />
+                <button type="button" disabled={!corRascunho.startsWith("#") || !corAnotacaoValida(corRascunho)} onClick={() => {
+                  const cor = corRascunho.toLowerCase() as CorAnotacao;
+                  setCorAnotacao(cor);
+                  setSeletorCorAberto(false);
+                  if (anotacaoSelecionada && (ehNarrador || anotacaoSelecionada.autorId === usuarioId)) void atualizarAnotacaoComHistorico(anotacaoSelecionada, { cor });
+                }}>Aplicar</button>
+              </div>
+            </div>}
+            {ferramenta === "desenhar" && <label><span className="rv-anotacoes-titulo-controle">Espessura</span>
+              <select value={anotacaoSelecionada?.tipo === "desenho" ? anotacaoSelecionada.espessura : espessuraAnotacao}
+                disabled={camadas.anotacoes.bloqueada || (anotacaoSelecionada !== null && !ehNarrador && anotacaoSelecionada.autorId !== usuarioId)}
+                onChange={(e) => { const n = Number(e.target.value); setEspessuraAnotacao(n); if (anotacaoSelecionada?.tipo === "desenho") void atualizarAnotacaoComHistorico(anotacaoSelecionada, { espessura: n }); }}>
+                {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </label>}
+            {ferramenta === "texto" && <label><span className="rv-anotacoes-titulo-controle">Tamanho</span>
+              <select value={anotacaoSelecionada?.tipo === "texto" ? anotacaoSelecionada.tamanho : tamanhoTexto}
+                disabled={camadas.anotacoes.bloqueada || (anotacaoSelecionada !== null && !ehNarrador && anotacaoSelecionada.autorId !== usuarioId)}
+                onChange={(e) => { const n = Number(e.target.value); setTamanhoTexto(n); if (anotacaoSelecionada?.tipo === "texto") void atualizarAnotacaoComHistorico(anotacaoSelecionada, { tamanho: n }); }}>
+                {[12, 16, 20, 24, 28, 32].map((n) => <option key={n} value={n}>{n} px</option>)}
+              </select>
+            </label>}
+            <div className="rv-fp-grupo rv-anotacoes-visibilidade">
+              <span className="rv-fp-rotulo" id="rv-anotacoes-visibilidade">Visibilidade</span>
+              <div className="rv-fp-seg" role="group" aria-labelledby="rv-anotacoes-visibilidade">
+                {([true, false] as const).map((privada) => {
+                  const Icone = privada ? EyeOff : Eye;
+                  return <button key={String(privada)} type="button" className="rv-fp-seg-btn"
+                    aria-pressed={(anotacaoSelecionada?.privada ?? anotacaoPrivada) === privada}
+                    disabled={camadas.anotacoes.bloqueada || !camadas.anotacoes.visivel
+                      || (anotacaoSelecionada !== null && anotacaoSelecionada.autorId !== usuarioId)}
+                    onClick={() => {
+                      setAnotacaoPrivada(privada);
+                      if (anotacaoSelecionada && anotacaoSelecionada.privada !== privada)
+                        void atualizarAnotacaoComHistorico(anotacaoSelecionada, { privada });
+                    }}>
+                    <Icone size={15} />
+                    <span className="rv-fp-seg-nome">{privada ? "Só pra você" : "Pra mesa"}</span>
+                    <span className="rv-fp-seg-sub">{privada ? "nem o narrador vê" : "todos veem"}</span>
+                  </button>;
+                })}
+              </div>
+            </div>
+            {ferramenta === "texto" && (pontoTextoPendente || anotacaoSelecionada?.tipo === "texto") && <>
+              <textarea ref={textoAnotacaoRef} value={textoRascunho} maxLength={500} rows={3} placeholder="Digite o texto no mapa" aria-label="Texto no mapa"
+                disabled={camadas.anotacoes.bloqueada || (!pontoTextoPendente && anotacaoSelecionada !== null && !ehNarrador && anotacaoSelecionada.autorId !== usuarioId)}
+                onChange={(e) => setTextoRascunho(e.target.value)} onKeyDown={(e) => {
+                  if (e.key === "Escape") { e.preventDefault(); setPontoTextoPendente(null); setAnotacaoSelecionadaId(null); e.currentTarget.blur(); }
+                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); salvarTexto(); }
+                }} />
+              <button type="button" onClick={salvarTexto} disabled={!textoRascunho.trim() || camadas.anotacoes.bloqueada || (!pontoTextoPendente && anotacaoSelecionada !== null && !ehNarrador && anotacaoSelecionada.autorId !== usuarioId)}>Salvar texto <kbd>Ctrl+Enter</kbd></button>
+            </>}
+            {anotacaoSelecionada && <button type="button" className="rv-anotacoes-remover"
+              disabled={camadas.anotacoes.bloqueada || (!ehNarrador && anotacaoSelecionada.autorId !== usuarioId)}
+              onClick={() => { void removerAnotacaoComHistorico(anotacaoSelecionada); }}><Trash2 size={14} /> Remover seleção</button>}
+            {anotacoesCena.erro && <p role="alert">{anotacoesCena.erro}</p>}
+          </div>
+          </JanelaFerramenta>
+        )}
+
         {/* CENA ATIVA — no rodapé do palco, não mais como título
             sobreposto no canto superior. O título ocupava a faixa onde
             a mesa mais olha (o alto do mapa) pra repetir um dado que é
@@ -6095,6 +6330,7 @@ export function VttClient({
             <span className="rv-cena-chip__nome">{estadoCena.cena.nome}</span>
           </p>
         ))}
+
 
         {ferramenta === "terreno" && ehNarrador && (
           <PainelTerreno

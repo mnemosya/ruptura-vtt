@@ -35,6 +35,9 @@ ok("2c (narrador vê Áreas)", ferramentasParaPapel(true).includes("areas"), JSO
 ok("2d (jogador não vê Objetos)", !ferramentasParaPapel(false).includes("objetos"), JSON.stringify(ferramentasParaPapel(false)));
 ok("2e (narrador vê Objetos)", ferramentasParaPapel(true).includes("objetos"), JSON.stringify(ferramentasParaPapel(true)));
 ok("2f (todos veem Rolar Dados)", ferramentasParaPapel(false).includes("dados") && ferramentasParaPapel(true).includes("dados"), JSON.stringify(ferramentasParaPapel(false)));
+ok("2g (todos podem desenhar e escrever no mapa)",
+  [false, true].every((papel) => ferramentasParaPapel(papel).includes("desenhar") && ferramentasParaPapel(papel).includes("texto")),
+  JSON.stringify(ferramentasParaPapel(false)));
 
 // ── Atalhos ──────────────────────────────────────────────────────
 const disponiveisJogador = ferramentasParaPapel(false);

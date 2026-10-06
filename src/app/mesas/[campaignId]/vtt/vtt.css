@@ -1510,6 +1510,68 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-condicao-item input:checked ~ .rv-fp-switch-txt { color: var(--txt-forte); }
 
 /* ── Painel de camadas ─────────────────────────────────────────── */
+.rv-fp.rv-janela-anotacoes { width: 400px; }
+.rv-fp-corpo.rv-anotacoes-painel { display: grid; gap: 12px; color: #c4d4e7; }
+.rv-janela-desenhar .rv-anotacoes-painel { gap: 18px; padding-top: 18px; padding-bottom: 22px; }
+.rv-anotacoes-painel p { margin: 0; font-size: 12px; line-height: 1.4; }
+.rv-anotacoes-painel label {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  color: var(--txt-forte); font-family: var(--rv-display), sans-serif;
+  font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+}
+.rv-anotacoes-titulo-controle {
+  padding-left: 9px; border-left: 2px solid var(--jf-acento, var(--cy));
+  line-height: 1.2;
+}
+.rv-anotacoes-painel select, .rv-anotacoes-painel textarea, .rv-anotacoes-painel > button {
+  background: #101d31; border: 1px solid #2b405c; border-radius: 5px; color: #eafcff; padding: 7px;
+  font: inherit;
+}
+.rv-anotacoes-painel label select {
+  --rv-notch: 4px;
+  color: var(--txt-forte); font-family: var(--font-mono), monospace;
+  font-size: 11px; font-weight: 600; letter-spacing: .02em; text-transform: none;
+  cursor: pointer; transition: background-color .15s, border-color .15s, color .15s;
+}
+.rv-anotacoes-painel label select:hover:not(:disabled) {
+  background-color: #1a3048; border-color: #4c7795; color: #fff;
+}
+.rv-anotacoes-painel textarea { width: 100%; resize: vertical; box-sizing: border-box; }
+.rv-anotacoes-painel > button { cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px; }
+.rv-anotacoes-painel button:disabled { opacity: .45; cursor: not-allowed; }
+.rv-anotacoes-painel :focus-visible { outline: 2px solid #00d4ff; outline-offset: 2px; }
+.rv-anotacoes-cores { display: flex; align-items: center; gap: 7px; }
+.rv-anotacoes-cores button { width: 27px; height: 27px; border: 2px solid transparent; border-radius: 5px; cursor: pointer; }
+.rv-anotacoes-cores button[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 1px #00d4ff; }
+.rv-anotacoes-cores .rv-anotacoes-cor-custom {
+  width: 31px; height: 31px; margin-left: 5px; display: grid; place-items: center;
+  color: #eafcff; background: #101d31; border: 1px solid #3b5873;
+  box-shadow: inset 0 -3px var(--cor-escolhida); transition: background .15s, border-color .15s;
+}
+.rv-anotacoes-cores .rv-anotacoes-cor-custom:hover { background: #1a3048; border-color: #76b2cf; }
+.rv-anotacoes-seletor {
+  padding: 12px; border: 1px solid #31516a; border-radius: 6px;
+  background: #0c1929; box-shadow: inset 0 1px rgba(255,255,255,.04);
+}
+.rv-anotacoes-seletor .react-colorful { width: 100%; height: 142px; }
+.rv-anotacoes-seletor .react-colorful__saturation { border-radius: 4px 4px 0 0; border-bottom: 0; }
+.rv-anotacoes-seletor .react-colorful__hue { height: 17px; border-radius: 0 0 4px 4px; }
+.rv-anotacoes-seletor .react-colorful__pointer { width: 18px; height: 18px; border: 2px solid #fff; }
+.rv-anotacoes-seletor-rodape { display: flex; align-items: center; gap: 8px; margin-top: 11px; }
+.rv-anotacoes-amostra { flex: 0 0 27px; height: 27px; border: 1px solid #7892a8; border-radius: 4px; }
+.rv-anotacoes-seletor-rodape input {
+  min-width: 0; width: 100%; padding: 6px 8px; color: #eafcff;
+  background: #101d31; border: 1px solid #2b405c; border-radius: 4px;
+  font: 12px var(--font-mono), monos; letter-spacing: .05em;
+}
+.rv-anotacoes-seletor-rodape button {
+  padding: 6px 10px; color: #041520; background: #00d4ff; border: 0; border-radius: 4px;
+  font: 700 11px var(--font-mono), monospace; cursor: pointer;
+}
+.rv-anotacoes-seletor-rodape button:hover { background: #6ee8ff; }
+.rv-anotacoes-seletor-rodape button:disabled { opacity: .45; cursor: not-allowed; }
+.rv-anotacoes-remover { color: #ff9bad !important; }
+
 /* Camadas usa a casca comum (`JanelaFerramenta`) desde a transcrição
    do estudo — posição, moldura e rodapé vêm de lá. O que resta aqui é
    só a linha da pilha, mais abaixo, em "PILHA DA CENA". */
