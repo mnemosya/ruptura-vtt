@@ -75,6 +75,14 @@
   --rv-ok: #4fae82;
   --rv-slate: #6f83a3;
 
+  /* Tokens extraídos de literais (redesign-forja, passo 2). O tema
+     experimental os redefine; com ele desligado, valem estes. */
+  --rv-peca: #0c1526;        /* fundo sólido das peças do trilho */
+  --rv-marca: #00d4ff;       /* ciano da marca */
+  --rv-marca-rgb: 0, 212, 255;
+  --rv-cy-texto: #35c7d8;
+  --rv-cy-borda: #108bac;
+
   --rv-cy-soft: rgba(69, 184, 201, 0.09);
   --rv-am-soft: rgba(255, 138, 31, 0.09);
   --rv-dg-soft: rgba(209, 80, 104, 0.09);

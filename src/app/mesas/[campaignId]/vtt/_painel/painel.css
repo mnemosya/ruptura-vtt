@@ -177,9 +177,9 @@
      encolhido. Duas faixas de ícones em lados opostos da mesma tela
      são a mesma peça. */
   width: 36px; height: 36px; border-radius: var(--rv-r-peca);
-  color: #7f95b3;
-  border: 1px solid rgba(0, 212, 255, .15);
-  background: #0c1526;
+  color: var(--rv-ink-dim, #7f95b3);
+  border: 1px solid rgba(var(--rv-marca-rgb, 0, 212, 255), .15);
+  background: var(--rv-peca, #0c1526);
   transition: color .14s, background .14s, border-color .14s;
 }
 /* Deitadas, elas esticam: a altura sobe pra 38 e a largura se divide
@@ -196,18 +196,18 @@
    lugar do `#0c1526` deixaria os hexágonos aparecerem por dentro da
    aba. A lavagem vai por cima; a peça continua opaca. */
 .rv-aba.rv-aba:hover {
-  color: #d3f4ff; border-color: #108bac;
-  background: linear-gradient(rgba(0, 212, 255, .09), rgba(0, 212, 255, .09)), #0c1526;
+  color: #d3f4ff; border-color: var(--rv-cy-borda, #108bac);
+  background: linear-gradient(rgba(var(--rv-marca-rgb, 0, 212, 255), .09), rgba(var(--rv-marca-rgb, 0, 212, 255), .09)), var(--rv-peca, #0c1526);
 }
 .rv-aba.rv-aba[aria-selected="true"] {
   color: var(--pn-cy);
-  border-color: #108bac;
-  background: linear-gradient(rgba(0, 212, 255, .14), rgba(0, 212, 255, .14)), #0c1526;
-  box-shadow: 0 0 9px rgba(0, 212, 255, .25);
+  border-color: var(--rv-cy-borda, #108bac);
+  background: linear-gradient(rgba(var(--rv-marca-rgb, 0, 212, 255), .14), rgba(var(--rv-marca-rgb, 0, 212, 255), .14)), var(--rv-peca, #0c1526);
+  box-shadow: 0 0 9px rgba(var(--rv-marca-rgb, 0, 212, 255), .25);
 }
 .rv-aba.rv-aba[aria-selected="true"]:hover {
   color: var(--pn-cy);
-  background: linear-gradient(rgba(0, 212, 255, .14), rgba(0, 212, 255, .14)), #0c1526;
+  background: linear-gradient(rgba(var(--rv-marca-rgb, 0, 212, 255), .14), rgba(var(--rv-marca-rgb, 0, 212, 255), .14)), var(--rv-peca, #0c1526);
 }
 /* A barra grossa de seleção (2px colada na borda da faixa) saiu: com o
    fio em volta da aba ela virava um segundo anúncio do mesmo estado. */
@@ -407,7 +407,7 @@
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 6px 11px; min-height: 26px;
   border: 1px solid var(--rv-line-strong); border-radius: var(--rv-r);
-  background: #0c1526; color: var(--rv-ink-dim);
+  background: var(--rv-peca, #0c1526); color: var(--rv-ink-dim);
   /* CORPO, e não display: em caixa alta e com espaçamento, o Chakra
      Petch pesava demais pra um botão secundário de painel — ele
      competia com o nome do personagem ao lado. A classe segue
@@ -647,7 +647,7 @@
   /* O fundo das PEÇAS, o mesmo dos cartões — `--rv-sunken` era o tom
      de sulco, de quando o painel era uma coluna e o composer um rebaixo
      dentro dela. */
-  background: #0c1526;
+  background: var(--rv-peca, #0c1526);
 }
 .pn-composer-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 /* `padding: 2px 6px` com fonte em caixa alta e `letter-spacing` deixava
@@ -679,14 +679,14 @@
   position: relative;
   flex: 1; min-width: 0; display: flex; align-items: flex-start;
   padding: 8px 12px;
-  border: 1px solid var(--rv-line, #182338); border-radius: var(--rv-r);
-  background: var(--rv-panel, #0c1420);
+  border: 1px solid var(--rv-line, var(--rv-line, #182338)); border-radius: var(--rv-r);
+  background: var(--rv-panel, var(--rv-panel, #0c1420));
   transition: border-color .14s, background .14s;
 }
 .pn-composer-campo::before {
   content: "\203a"; flex: none;
   padding-right: 8px;
-  color: #35c7d8; font: 400 10px/15px var(--font-mono), monospace;
+  color: var(--rv-cy-texto, #35c7d8); font: 400 10px/15px var(--font-mono), monospace;
   pointer-events: none;
 }
 /* HOVER antes do foco: o campo é um alvo grande e mudo, e sem resposta
@@ -699,10 +699,10 @@
    degrau só acima do fio parado, e num campo desta largura a diferença
    não se lê. O ciano continua reservado pro FOCO. */
 .pn-composer-campo:hover {
-  border-color: #2a3b58;
-  background: linear-gradient(rgba(255, 255, 255, .015), rgba(255, 255, 255, .015)), var(--rv-panel, #0c1420);
+  border-color: var(--rv-line-max, #2a3b58);
+  background: linear-gradient(rgba(255, 255, 255, .015), rgba(255, 255, 255, .015)), var(--rv-panel, var(--rv-panel, #0c1420));
 }
-.pn-composer-campo:focus-within { border-color: color-mix(in srgb, #35c7d8 55%, transparent); }
+.pn-composer-campo:focus-within { border-color: color-mix(in srgb, var(--rv-cy-texto, #35c7d8) 55%, transparent); }
 /* `.rv-painel textarea { font-family: inherit }` (lá em cima nesta
    folha) tem uma classe E um elemento — especificidade maior que uma
    classe sozinha. Sem o `.rv-painel` aqui, a fonte mono era descartada
@@ -727,13 +727,13 @@
   flex: none; width: 36px; height: 36px; align-self: flex-end;
   display: grid; place-items: center;
   border: 1px solid #1c4a52; border-radius: var(--rv-r);
-  background: #0b1924; color: #35c7d8; cursor: pointer;
+  background: #0b1924; color: var(--rv-cy-texto, #35c7d8); cursor: pointer;
   transition: background .14s, border-color .14s;
 }
-.pn-composer-enviar:hover:not(:disabled) { border-color: #35c7d8; background: #0e2230; }
+.pn-composer-enviar:hover:not(:disabled) { border-color: var(--rv-cy-texto, #35c7d8); background: #0e2230; }
 .pn-composer-enviar:disabled { cursor: not-allowed; }
 .pn-composer-enviar:disabled svg { opacity: .4; }
-.pn-composer-enviar:focus-visible { outline: 2px solid #35c7d8; outline-offset: 2px; }
+.pn-composer-enviar:focus-visible { outline: 2px solid var(--rv-cy-texto, #35c7d8); outline-offset: 2px; }
 /* ANEXAR IMAGEM — chip só de ícone, na fileira de "Falar como" e
    visibilidade: mesma altura (26px), mesma moldura, quadrado. */
 .pn-chipbtn.pn-chipbtn--icone { width: 26px; padding: 0; justify-content: center; }
@@ -745,7 +745,7 @@
   border: 1px solid #1c4a52; border-radius: 4px 7px 4px 7px; corner-shape: round bevel round bevel;
   background: #0b1924;
 }
-.pn-composer-anexo-img { width: 44px; height: 44px; flex: none; object-fit: cover; border-radius: 3px; border: 1px solid #1c2b45; }
+.pn-composer-anexo-img { width: 44px; height: 44px; flex: none; object-fit: cover; border-radius: 3px; border: 1px solid var(--rv-line-strong, #1c2b45); }
 .pn-composer-anexo-nome {
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   color: var(--rv-ink); font: 11px var(--font-mono), monospace; letter-spacing: .04em;
@@ -845,7 +845,7 @@
      A ESPINHA e o cabeçalho continuam um degrau acima porque usam
      `--rv-raise` — um clareado TRANSLÚCIDO, não um hex —, então a
      proporção entre os dois se mantém sozinha sobre o fundo novo. */
-  background: #0c1526; clip-path: none;
+  background: var(--rv-peca, #0c1526); clip-path: none;
   transition: border-color .14s, background .14s;
 }
 /* HOVER: o fio sobe pro `--rv-line-strong` e o fundo ganha um degrau —
@@ -862,8 +862,8 @@
      cima do fundo do cartão (duas paradas iguais num gradiente é como
      se sobrepõe uma camada translúcida a um hex). Com 4% a mancha
      chamava mais atenção que a mensagem que ela deveria destacar. */
-  border-color: #2a3b58;
-  background: linear-gradient(rgba(255, 255, 255, .015), rgba(255, 255, 255, .015)), #0c1526;
+  border-color: var(--rv-line-max, #2a3b58);
+  background: linear-gradient(rgba(255, 255, 255, .015), rgba(255, 255, 255, .015)), var(--rv-peca, #0c1526);
 }
 /* O desenho não tem fio de acento; ele sobrevive SÓ onde carrega
    informação que o cabeçalho não dá: narração e mensagem privada. */
@@ -929,7 +929,7 @@
 .rv-pn-chat .pn-feed-item:hover .pn-feed-menu-btn,
 .rv-pn-chat .pn-feed-item:focus-within .pn-feed-menu-btn,
 .rv-pn-chat .pn-feed-item[data-menu-aberto] .pn-feed-menu-btn {
-  width: 24px; opacity: 1; border-color: #1c2b45;
+  width: 24px; opacity: 1; border-color: var(--rv-line-strong, #1c2b45);
   margin-left: max(0px, calc(8px - var(--pn-cab-gap, 0px)));
 }
 .rv-pn-chat .pn-feed-menu-btn:hover,
@@ -943,18 +943,18 @@
   position: absolute; right: 8px; top: 50%; transform: translateY(-50%); z-index: 2;
   display: flex; --pn-cab-gap: 0px;
 }
-.rv-pn-chat .pn-msg-cont-acoes .pn-feed-menu-btn { background: #0c1526; }
+.rv-pn-chat .pn-msg-cont-acoes .pn-feed-menu-btn { background: var(--rv-peca, #0c1526); }
 /* FIXADO: etiqueta âmbar montada na borda de cima, fora do conteúdo. */
 .rv-pn-chat .pn-feed-fixado {
   position: absolute; top: -7px; left: 12px; z-index: 2;
   display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px;
   border: 1px solid color-mix(in srgb, var(--rv-am) 45%, transparent); border-radius: var(--rv-r);
-  background: #0c1526; color: var(--rv-am);
+  background: var(--rv-peca, #0c1526); color: var(--rv-am);
   font: 600 9px/12px var(--font-mono), monospace; letter-spacing: .12em; text-transform: uppercase;
   pointer-events: none;
 }
 .rv-pn-chat .pn-feed-item[data-fixado] { margin-top: 6px; }
-.rv-pn-chat .pn-feed-item[data-fixado] > :is(.pn-cartao, .pn-msg) { border-color: color-mix(in srgb, var(--rv-am) 35%, #16233a); }
+.rv-pn-chat .pn-feed-item[data-fixado] > :is(.pn-cartao, .pn-msg) { border-color: color-mix(in srgb, var(--rv-am) 35%, var(--rv-line-2, #16233a)); }
 /* Vindo da faixa de fixados: o card acende por um instante. */
 .rv-pn-chat .pn-feed-item[data-destaque] > :is(.pn-cartao, .pn-msg) { animation: pn-feed-destaque 1.6s ease-out; }
 @keyframes pn-feed-destaque {
@@ -965,8 +965,8 @@
 /* FAIXA DE FIXADOS — no topo do chat, recolhível. Cada linha leva ao
    card no feed. */
 .rv-pn-chat .pn-fixados {
-  flex: none; margin: 8px 8px 0; border: 1px solid color-mix(in srgb, var(--rv-am) 30%, #16233a);
-  border-radius: 4px 8px 4px 8px; corner-shape: round bevel round bevel; background: #0c1526;
+  flex: none; margin: 8px 8px 0; border: 1px solid color-mix(in srgb, var(--rv-am) 30%, var(--rv-line-2, #16233a));
+  border-radius: 4px 8px 4px 8px; corner-shape: round bevel round bevel; background: var(--rv-peca, #0c1526);
 }
 .rv-pn-chat .pn-fixados-cab {
   width: 100%; display: flex; align-items: center; gap: 7px; padding: 7px 10px;
@@ -979,14 +979,14 @@
 .rv-pn-chat .pn-fixados-cab[aria-expanded="false"] .pn-fixados-chevron { transform: rotate(-90deg); }
 .rv-pn-chat .pn-fixados-lista {
   list-style: none; margin: 0; padding: 0 4px 4px; max-height: 132px; overflow-y: auto; scrollbar-width: thin;
-  border-top: 1px solid #16233a;
+  border-top: 1px solid var(--rv-line-2, #16233a);
 }
 .rv-pn-chat .pn-fixados-item {
   width: 100%; display: flex; align-items: baseline; gap: 8px; padding: 6px 6px; margin-top: 3px;
   border: 1px solid transparent; background: transparent; cursor: pointer; text-align: left;
   --rv-notch: 6px;
 }
-.rv-pn-chat .pn-fixados-item:hover { border-color: #1c2b45; background: color-mix(in srgb, var(--rv-am) 6%, transparent); }
+.rv-pn-chat .pn-fixados-item:hover { border-color: var(--rv-line-strong, #1c2b45); background: color-mix(in srgb, var(--rv-am) 6%, transparent); }
 .rv-pn-chat .pn-fixados-autor {
   flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   color: var(--rv-cy); font: 600 10px var(--font-mono), monospace; letter-spacing: .1em; text-transform: uppercase;
@@ -1000,7 +1000,7 @@
    reservado pela proporção gravada; clicar amplia. */
 .rv-pn-chat .pn-msg-imagem {
   display: block; width: calc(100% - 20px); max-height: 260px; margin: 10px 10px 0; padding: 0;
-  border: 1px solid #1c2b45; border-radius: var(--rv-r); overflow: hidden;
+  border: 1px solid var(--rv-line-strong, #1c2b45); border-radius: var(--rv-r); overflow: hidden;
   background: #0a1220; cursor: zoom-in;
 }
 .rv-pn-chat .pn-msg-imagem img { width: 100%; height: 100%; max-height: 260px; object-fit: contain; display: block; }
@@ -1015,7 +1015,7 @@
 /* Imagem excluída da biblioteca depois do envio: fica o registro. */
 .rv-pn-chat .pn-msg-imagem-removida {
   display: flex; align-items: center; gap: 7px; margin: 10px 10px 0; padding: 10px 12px;
-  border: 1px dashed #1c2b45; border-radius: var(--rv-r);
+  border: 1px dashed var(--rv-line-strong, #1c2b45); border-radius: var(--rv-r);
   color: var(--rv-ink-faint); font: 11px var(--font-mono), monospace; letter-spacing: .08em; text-transform: uppercase;
 }
 .rv-pn-chat .pn-msg-imagem-removida:last-child { margin-bottom: 10px; }
@@ -1054,7 +1054,7 @@
   /* O FUNDO DOS CARTÕES (`#0c1526`): o composer é a peça de baixo da
      mesma coluna, e o degradê quase preto que ele tinha o afundava —
      lia como o fim do painel, não como o campo em que se escreve. */
-  background: #0c1526;
+  background: var(--rv-peca, #0c1526);
 }
 /* Campo e botão de enviar NÃO têm mais sobrescrita aqui: as cores do
    Figma (`#0c1420`/`#182338` no campo, `#0b1924`/`#1c4a52` no botão)
@@ -1062,7 +1062,7 @@
    era inversão minha, não do design. */
 
 /* Chat · B original — ShellB/dossiê, sem reaproveitar o card compacto anterior. */
-.rv-pn-chat .pn-cartao { display:block; padding:0; border:1px solid var(--rv-line-2); border-radius:var(--rv-r); background:#0c1526; clip-path:none; overflow:visible; transition:border-color .14s, background .14s; }
+.rv-pn-chat .pn-cartao { display:block; padding:0; border:1px solid var(--rv-line-2); border-radius:var(--rv-r); background:var(--rv-peca, #0c1526); clip-path:none; overflow:visible; transition:border-color .14s, background .14s; }
 .rv-pn-chat .pn-cartao::before,.rv-pn-chat .pn-cartao::after { content:none; }
 .pn-cartao-layout { display:flex; min-width:0; }
 /* Sem espinha: o chat não repete o tipo do card numa faixa lateral. */
@@ -1077,12 +1077,12 @@
    em caixa alta na cor do lado, fundo tingido como o hover dela. */
 .rv-pn-chat .pn-cartao-pers {
   display:flex; align-items:stretch; min-height:48px; overflow:hidden;
-  border-bottom:1px solid #1c2b45; border-radius:var(--rv-r) var(--rv-r) 0 0;
-  background:color-mix(in srgb, var(--fg-a) 7%, #0c1526);
+  border-bottom:1px solid var(--rv-line-strong, #1c2b45); border-radius:var(--rv-r) var(--rv-r) 0 0;
+  background:color-mix(in srgb, var(--fg-a) 7%, var(--rv-peca, #0c1526));
 }
 .rv-pn-chat .pn-cartao-pers-face {
   flex:none; width:54px; display:flex; align-items:center; justify-content:center;
-  border-right:1px solid #1c2b45; color:#4f6285;
+  border-right:1px solid var(--rv-line-strong, #1c2b45); color:var(--rv-ink-faint, #4f6285);
   font:700 15px var(--rv-display); letter-spacing:.04em;
 }
 .rv-pn-chat .pn-cartao-pers-img { width:100%; height:100%; object-fit:cover; display:block; }
@@ -1094,7 +1094,7 @@
 .rv-pn-chat .pn-cartao-pers { padding-right:12px; }
 .rv-pn-chat .pn-cartao-pers-hora { align-self:center; flex:none; color:var(--rv-ink-faint); font:10px var(--font-mono),monospace; letter-spacing:.12em; }
 .rv-pn-chat .pn-cartao-pers + .pn-cartao-layout .pn-cartao-nome { margin-top:2px; }
-.rv-pn-chat .pn-cartao-subtitulo { margin-top:4px; color:#7f95b3; font:9px var(--font-mono),monospace; letter-spacing:.1em; text-transform:uppercase; }
+.rv-pn-chat .pn-cartao-subtitulo { margin-top:4px; color:var(--rv-ink-dim, #7f95b3); font:9px var(--font-mono),monospace; letter-spacing:.1em; text-transform:uppercase; }
 .rv-pn-chat .pn-cartao-estado { margin-top:9px; }
 .rv-pn-chat .pn-cartao-corpo { gap:10px; margin-top:11px; padding:0; }
 .rv-pn-chat .pn-cartao-detalhes { margin-top:10px; padding-top:10px; border-top:1px dashed #1c2c44; }
@@ -1216,7 +1216,7 @@
      se clica ou se digita é PEÇA, e peça tem a mesma superfície.
      `--pn-inset` era o tom de campo rebaixado, de quando o painel era
      uma coluna e o campo um sulco dentro dela. */
-  background: #0c1526; color: var(--pn-dim); transition: border-color .14s;
+  background: var(--rv-peca, #0c1526); color: var(--pn-dim); transition: border-color .14s;
 }
 .rv-pn-busca:focus-within { border-color: var(--pn-cy); }
 .rv-pn-busca-input {
@@ -1302,7 +1302,7 @@
 .rv-pn-switch input:checked ~ .rv-fp-switch-txt { color: var(--pn-txt-forte); }
 .rv-pn-select.rv-pn-select, .rv-pn-input.rv-pn-input {
   padding: 3px 6px; border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
-  background: #0c1526; color: var(--pn-txt-forte);
+  background: var(--rv-peca, #0c1526); color: var(--pn-txt-forte);
   /* CORPO. Monoespaçado é a fonte de NÚMERO e metadado; "A–Z" e
      "Manual" são palavras, e em JetBrains elas ficavam largas e
      técnicas demais pro que o controle faz. */
@@ -1376,7 +1376,7 @@
 .rv-pn-chip.rv-pn-chip {
   display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px;
   border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
-  background: #0c1526; color: var(--pn-dim);
+  background: var(--rv-peca, #0c1526); color: var(--pn-dim);
   font-family: var(--rv-display);
   font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
 }
@@ -1402,7 +1402,7 @@
      container mais escuro que o conteúdo é o que faz o conteúdo
      parecer estar dentro dele. Igual aos dois, a pasta e os cartões
      dela viravam uma mancha só. */
-  background: #0a1120;
+  background: var(--rv-ground-2, #0a1120);
   overflow: hidden;
   transition: border-color .14s, background .14s;
 }
@@ -1415,7 +1415,7 @@
    dele: hover e "solta aqui" continuam dizendo coisas diferentes. */
 .rv-pn-scroll--pers .rv-pn-no:has(> [data-testid="painel-personagens-pasta"]:hover) {
   border-color: color-mix(in srgb, var(--pn-cy) 35%, var(--pn-line-soft));
-  background: color-mix(in srgb, var(--pn-cy) 6%, #0a1120);
+  background: color-mix(in srgb, var(--pn-cy) 6%, var(--rv-ground-2, #0a1120));
 }
 .rv-pn-scroll--pers .rv-pn-no > [data-testid="painel-personagens-pasta"] {
   margin-top: 0; border: none; border-radius: 0; background: transparent;
@@ -1570,7 +1570,7 @@
   max-width: 260px; padding: 7px 10px 7px 7px;
   border: 1px solid color-mix(in srgb, var(--pn-cy) 45%, transparent);
   border-radius: var(--pn-radius);
-  background: color-mix(in srgb, var(--pn-cy) 10%, #0a1120);
+  background: color-mix(in srgb, var(--pn-cy) 10%, var(--rv-ground-2, #0a1120));
   box-shadow: 0 10px 24px rgba(0, 0, 0, .5);
   /* Levemente translúcido: é uma peça EM TRÂNSITO, não uma que chegou. */
   opacity: .92;
@@ -1738,14 +1738,14 @@
   position: relative; display: flex; flex-direction: column; overflow: hidden;
   height: 100%; min-height: 0; border-radius: var(--rv-r);
   background: linear-gradient(160deg, #0b1424, #080e19);
-  border: 1px solid color-mix(in srgb, var(--fg-a, #45b8c9) 27%, #18263f);
+  border: 1px solid color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 27%, #18263f);
 }
 .rv-fg-card--neutro { border-color: #18263f; }
 
 /* Cantos — `Brackets` (size 13, inset 8, opacity .55). */
 .rv-fg-brackets span {
   position: absolute; width: 13px; height: 13px; opacity: .55;
-  border-color: var(--fg-a, #45b8c9); border-style: solid; border-width: 0;
+  border-color: var(--fg-a, var(--rv-cy, #45b8c9)); border-style: solid; border-width: 0;
 }
 /* Longhand pelo mesmo motivo do `.pn-cartao-canto`. */
 .rv-fg-brackets .rv-fg-bk-tl { top: 8px; left: 8px; border-top-width: 1px; border-left-width: 1px; }
@@ -1757,27 +1757,27 @@
 .rv-fg-espinha {
   position: absolute; left: 0; top: 0; bottom: 0; width: 36px; z-index: 1;
   display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-  padding: 16px 0; border-right: 1px solid #16233a; background: rgba(255, 255, 255, 0.013);
+  padding: 16px 0; border-right: 1px solid var(--rv-line-2, #16233a); background: rgba(255, 255, 255, 0.013);
 }
 .rv-fg-espinha-topo {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.05em; color: var(--fg-a, #45b8c9);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.05em; color: var(--fg-a, var(--rv-cy, #45b8c9));
 }
 .rv-fg-espinha-rotulo {
   font-family: var(--rv-display);
   font-size: 10px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase;
-  color: var(--fg-a, #45b8c9); writing-mode: vertical-rl; transform: rotate(180deg); opacity: .85;
+  color: var(--fg-a, var(--rv-cy, #45b8c9)); writing-mode: vertical-rl; transform: rotate(180deg); opacity: .85;
 }
 .rv-fg-espinha-ponto {
   width: 6px; height: 6px; border-radius: 50%;
-  background: var(--fg-a, #45b8c9); box-shadow: 0 0 6px var(--fg-a, #45b8c9);
+  background: var(--fg-a, var(--rv-cy, #45b8c9)); box-shadow: 0 0 6px var(--fg-a, var(--rv-cy, #45b8c9));
 }
 
 /* Corpo do cartão — `pl-9` (36px, o mesmo da lombada). */
 .rv-fg-corpo { position: relative; display: flex; min-width: 0; flex: 1; min-height: 0; flex-direction: column; padding-left: 36px; }
 .rv-fg-cab {
   display: flex; align-items: flex-start; gap: 12px; padding: 16px 16px 12px;
-  border-bottom: 1px solid #16233a;
+  border-bottom: 1px solid var(--rv-line-2, #16233a);
 }
 .rv-pn-detalhe-titulo {
   margin: 0; font-family: var(--rv-body);
@@ -1790,15 +1790,15 @@
   font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--pn-dim);
 }
 .rv-pn-detalhe-sub i {
-  width: 4px; height: 4px; border-radius: 50%; background: var(--fg-a, #45b8c9); font-style: normal;
+  width: 4px; height: 4px; border-radius: 50%; background: var(--fg-a, var(--rv-cy, #45b8c9)); font-style: normal;
 }
 .rv-fg-cab-selo {
   flex: none; padding: 4px 10px; border-radius: var(--rv-r);
   font-family: var(--rv-display);
   font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--fg-a, #45b8c9);
-  border: 1px solid color-mix(in srgb, var(--fg-a, #45b8c9) 40%, transparent);
-  background: color-mix(in srgb, var(--fg-a, #45b8c9) 9%, transparent);
+  color: var(--fg-a, var(--rv-cy, #45b8c9));
+  border: 1px solid color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 40%, transparent);
+  background: color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 9%, transparent);
 }
 .rv-fg-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 20px; }
 
@@ -1807,7 +1807,7 @@
   display: flex; flex-direction: column; overflow: hidden; height: 100%; min-height: 0;
   border-radius: var(--rv-r); background: linear-gradient(160deg, #0b1424, #080e19); border: 1px solid #18263f;
 }
-.rv-fg-lista-cab { padding: 14px 16px 10px; border-bottom: 1px solid #16233a; }
+.rv-fg-lista-cab { padding: 14px 16px 10px; border-bottom: 1px solid var(--rv-line-2, #16233a); }
 .rv-fg-lista-titulo {
   font-family: var(--rv-display);
   font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--pn-txt-forte);
@@ -1822,10 +1822,10 @@
 .rv-pn-linha {
   position: relative; display: flex; width: 100%; align-items: center; gap: 12px;
   /* `--pn-recuo` vem do componente e carrega o nível da árvore. */
-  padding: 10px 12px 10px var(--pn-recuo, 12px); border-radius: var(--rv-r); border: 1px solid #16233a; background: transparent;
+  padding: 10px 12px 10px var(--pn-recuo, 12px); border-radius: var(--rv-r); border: 1px solid var(--rv-line-2, #16233a); background: transparent;
   text-align: left; cursor: pointer; transition: background .14s, border-color .14s;
 }
-.rv-pn-linha:hover { border-color: #1c2b45; }
+.rv-pn-linha:hover { border-color: var(--rv-line-strong, #1c2b45); }
 /* O NOME acompanha o hover, igual ao do cartão de pasta
    (`.rv-pn-grupo-btn:hover`): o cartão inteiro é clicável, e só a
    borda mudando não dizia que aquilo abre alguma coisa.
@@ -1836,17 +1836,17 @@
 .rv-pn-linha:hover .rv-pn-linha-nome { color: var(--fg-a, var(--pn-cy)); }
 .rv-pn-linha:focus-visible { outline: 2px solid var(--rv-cy); outline-offset: 1px; }
 .rv-pn-linha[data-sel="true"] {
-  border-color: color-mix(in srgb, var(--fg-a, #45b8c9) 47%, transparent);
-  background: color-mix(in srgb, var(--fg-a, #45b8c9) 9%, transparent);
+  border-color: color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 47%, transparent);
+  background: color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 9%, transparent);
 }
 .rv-pn-linha[data-sel="true"]::before {
   content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-  width: 2px; height: 24px; border-radius: 0 1px 1px 0; background: var(--fg-a, #45b8c9);
+  width: 2px; height: 24px; border-radius: 0 1px 1px 0; background: var(--fg-a, var(--rv-cy, #45b8c9));
 }
 .rv-pn-face {
   flex: none; display: flex; height: 36px; width: 36px; align-items: center; justify-content: center;
   border-radius: var(--rv-r); font-family: var(--rv-display); font-size: 11px; font-weight: 700;
-  border: 1px solid #1c2b45; color: #4f6285; background: transparent;
+  border: 1px solid var(--rv-line-strong, #1c2b45); color: var(--rv-ink-faint, #4f6285); background: transparent;
 }
 /* ── A LINHA DA ABA PERSONAGENS ──────────────────────────────────────
    Escopada em `.rv-pn-scroll--pers` de propósito: `LinhaDiretorio` é a
@@ -1869,15 +1869,15 @@
    aqui: superfície que se clica. */
 .rv-pn-scroll--pers .rv-pn-linha {
   align-items: stretch; gap: 0; padding: 0; overflow: hidden; min-height: 56px;
-  background: #0c1526;
+  background: var(--rv-peca, #0c1526);
   transition: background-color .16s, border-color .16s;
 }
 /* HOVER no acento da linha (`--fg-a`: ciano no PJ, vermelho no PN) —
    borda e fundo, em cor lisa. Sem fio lateral e sem varredura. */
 .rv-pn-scroll--pers .rv-pn-linha:hover,
 .rv-pn-scroll--pers .rv-pn-linha:focus-visible {
-  border-color: color-mix(in srgb, var(--fg-a, #45b8c9) 55%, transparent);
-  background: color-mix(in srgb, var(--fg-a, #45b8c9) 11%, #0c1526);
+  border-color: color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 55%, transparent);
+  background: color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 11%, var(--rv-peca, #0c1526));
 }
 /* O SELECIONADO tem que vencer o fundo acima — as duas regras empatam
    em especificidade (`.rv-pn-scroll--pers .rv-pn-linha` contra
@@ -1885,7 +1885,7 @@
    realce sumia. O acento agora é misturado SOBRE a cor do cartão, e
    não sobre transparente, que era o que ele supunha antes. */
 .rv-pn-scroll--pers .rv-pn-linha[data-sel="true"] {
-  background: color-mix(in srgb, var(--fg-a, #45b8c9) 12%, #0c1526);
+  background: color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 12%, var(--rv-peca, #0c1526));
 }
 /* O recuo da árvore vira MARGEM do cartão inteiro. Como padding, ele
    empurrava o avatar pra dentro e deixava uma faixa de fundo à
@@ -1916,7 +1916,7 @@
    menos as bordas: 41px com o switch desligado, 69px com ele ligado. */
 .rv-pn-scroll--pers .rv-pn-face {
   align-self: stretch; width: 54px; height: auto;
-  border: none; border-right: 1px solid #1c2b45; border-radius: 0;
+  border: none; border-right: 1px solid var(--rv-line-strong, #1c2b45); border-radius: 0;
 }
 .rv-pn-scroll--pers[data-recursos="true"] .rv-pn-face { width: 70px; }
 /* A sigla acompanha a caixa maior: 11px num quadrado de 54 ficava
@@ -1924,7 +1924,7 @@
    avatar — precisa ter o mesmo peso de leitura. */
 .rv-pn-scroll--pers .rv-pn-face { font-size: 15px; letter-spacing: .04em; }
 .rv-pn-scroll--pers .rv-pn-linha[data-sel="true"] .rv-pn-face {
-  border-right-color: color-mix(in srgb, var(--fg-a, #45b8c9) 55%, transparent);
+  border-right-color: color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 55%, transparent);
 }
 /* O vão fica DEPOIS da borda do avatar — é ela que separa, e o espaço
    é o respiro entre a divisória e o texto. 16px: a divisória já é um
@@ -1973,9 +1973,9 @@
 .rv-pn-face:has(.rv-pn-face-img) { padding: 0; overflow: hidden; }
 .rv-pn-face-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rv-pn-linha[data-sel="true"] .rv-pn-face {
-  color: var(--fg-a, #45b8c9);
-  border-color: color-mix(in srgb, var(--fg-a, #45b8c9) 55%, transparent);
-  background: color-mix(in srgb, var(--fg-a, #45b8c9) 9%, transparent);
+  color: var(--fg-a, var(--rv-cy, #45b8c9));
+  border-color: color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 55%, transparent);
+  background: color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 9%, transparent);
 }
 .rv-pn-linha-texto { min-width: 0; flex: 1; }
 .rv-pn-linha-nome {
@@ -2009,7 +2009,7 @@
   font-size: 9px; font-weight: 700; letter-spacing: .08em;
   color: var(--rec-cor);
 }
-.rv-pn-linha-rec-trilha { position: relative; height: 4px; flex: 1; min-width: 0; overflow: hidden; border-radius: var(--rv-r-sm); background: #16233a; }
+.rv-pn-linha-rec-trilha { position: relative; height: 4px; flex: 1; min-width: 0; overflow: hidden; border-radius: var(--rv-r-sm); background: var(--rv-line-2, #16233a); }
 .rv-pn-linha-rec-trilha i {
   display: block; height: 100%; border-radius: var(--rv-r-sm); background: var(--rec-cor);
   box-shadow: 0 0 5px color-mix(in srgb, var(--rec-cor) 53%, transparent);
@@ -2024,17 +2024,17 @@
 /* Barra de recurso (HpBar/BarMeter) — fina, contínua, com glow. Só
    aqui: o resto do painel usa células discretas de propósito (ver
    `.pn-recurso`); a referência mostra PV/PE/Mana como trilha contínua. */
-.rv-fg-barra { position: relative; height: 6px; width: 100%; overflow: hidden; border-radius: var(--rv-r-sm); background: #16233a; }
+.rv-fg-barra { position: relative; height: 6px; width: 100%; overflow: hidden; border-radius: var(--rv-r-sm); background: var(--rv-line-2, #16233a); }
 .rv-fg-barra i {
-  display: block; height: 100%; border-radius: var(--rv-r-sm); background: var(--fg-a, #45b8c9);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--fg-a, #45b8c9) 53%, transparent);
+  display: block; height: 100%; border-radius: var(--rv-r-sm); background: var(--fg-a, var(--rv-cy, #45b8c9));
+  box-shadow: 0 0 6px color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 53%, transparent);
 }
 
 /* StatBlock — grade de células centradas, número grande em cima, rótulo embaixo. */
 .rv-fg-statgrid { display: grid; gap: 6px; grid-template-columns: repeat(var(--rv-fg-cols, 5), minmax(0, 1fr)); }
 .rv-fg-statcell {
   display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px;
-  border-radius: var(--rv-r); border: 1px solid #16233a; background: #0c1420;
+  border-radius: var(--rv-r); border: 1px solid var(--rv-line-2, #16233a); background: var(--rv-panel, #0c1420);
 }
 .rv-fg-statcell b {
   font-family: var(--font-mono), ui-monospace, monospace;
@@ -2046,8 +2046,8 @@
 }
 
 /* StatTile — barra de acento à esquerda + rótulo + número grande colorido. */
-.rv-fg-stattile { position: relative; overflow: hidden; border-radius: var(--rv-r); padding: 12px; background: #0c1420; border: 1px solid #16233a; }
-.rv-fg-stattile::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--fg-a, #45b8c9); }
+.rv-fg-stattile { position: relative; overflow: hidden; border-radius: var(--rv-r); padding: 12px; background: var(--rv-panel, #0c1420); border: 1px solid var(--rv-line-2, #16233a); }
+.rv-fg-stattile::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--fg-a, var(--rv-cy, #45b8c9)); }
 .rv-fg-stattile-inner { padding-left: 8px; }
 .rv-fg-stattile-rotulo {
   font-family: var(--rv-display);
@@ -2055,7 +2055,7 @@
 }
 .rv-fg-stattile-valor {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 22px; font-weight: 700; line-height: 1.15; color: var(--fg-a, #45b8c9);
+  font-size: 22px; font-weight: 700; line-height: 1.15; color: var(--fg-a, var(--rv-cy, #45b8c9));
 }
 .rv-fg-stattile-sub {
   font-family: var(--font-mono), ui-monospace, monospace;
@@ -2068,14 +2068,14 @@
   display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; max-width: 100%;
   border-radius: var(--rv-r); font-family: var(--rv-display);
   font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
-  color: var(--fg-a, #45b8c9);
-  border: 1px solid color-mix(in srgb, var(--fg-a, #45b8c9) 44%, transparent);
-  background: color-mix(in srgb, var(--fg-a, #45b8c9) 9%, transparent);
+  color: var(--fg-a, var(--rv-cy, #45b8c9));
+  border: 1px solid color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 44%, transparent);
+  background: color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 9%, transparent);
 }
 
 /* Linha de pips (reputação) — quadrados discretos, acesos até o valor. */
 .rv-fg-pips { display: flex; gap: 4px; }
-.rv-fg-pip { width: 10px; height: 10px; border-radius: var(--rv-r); background: #16233a; }
+.rv-fg-pip { width: 10px; height: 10px; border-radius: var(--rv-r); background: var(--rv-line-2, #16233a); }
 .rv-fg-pip[data-on="true"] {
   background: var(--fg-a, #ff8a1f);
   box-shadow: 0 0 4px color-mix(in srgb, var(--fg-a, #ff8a1f) 66%, transparent);
@@ -2091,18 +2091,18 @@
 }
 
 /* Barra de abas do Bando — sublinhado, não pílula. */
-.rv-fg-tabs { display: flex; align-items: flex-end; gap: 2px; padding: 12px 16px 0; border-bottom: 1px solid #16233a; }
+.rv-fg-tabs { display: flex; align-items: flex-end; gap: 2px; padding: 12px 16px 0; border-bottom: 1px solid var(--rv-line-2, #16233a); }
 .rv-fg-tab {
   padding: 8px 16px 10px; border: none; border-bottom: 2px solid transparent; background: none; cursor: pointer;
   font-family: var(--rv-display);
-  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: #4f6285;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: var(--rv-ink-faint, #4f6285);
   transition: color .14s, border-color .14s;
 }
 .rv-fg-tab[data-ativo="true"] { color: var(--rv-am); border-bottom-color: var(--rv-am); }
 .rv-fg-tab:focus-visible { outline: 2px solid var(--rv-cy); outline-offset: 2px; }
 
 .rv-fg-linha-longa {
-  display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--rv-r); border: 1px solid #16233a;
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--rv-r); border: 1px solid var(--rv-line-2, #16233a);
 }
 .rv-fg-linha-longa-ponto { width: 6px; height: 6px; flex: none; border-radius: 50%; }
 .rv-fg-texto {
@@ -2207,21 +2207,21 @@
 
 .rv-org-busca {
   display: flex; align-items: center; gap: 7px; padding: 6px 9px; border-radius: 3px;
-  background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(84, 172, 190, 0.22); color: var(--txt-dim);
+  background: rgba(var(--rv-marca-rgb, 0, 212, 255), 0.05); border: 1px solid rgba(84, 172, 190, 0.22); color: var(--txt-dim);
 }
 .rv-org-busca input {
   flex: 1; min-width: 0; background: none; border: 0; outline: none; color: var(--txt);
   font: inherit; font-size: 12px;
 }
-.rv-org-busca:focus-within { border-color: rgba(0, 212, 255, 0.55); }
+.rv-org-busca:focus-within { border-color: rgba(var(--rv-marca-rgb, 0, 212, 255), 0.55); }
 
 .rv-org-chip {
   padding: 3px 9px; border-radius: 999px; cursor: pointer; font-size: 11px; letter-spacing: 0.04em;
-  background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(84, 172, 190, 0.22); color: var(--txt-dim);
+  background: rgba(var(--rv-marca-rgb, 0, 212, 255), 0.05); border: 1px solid rgba(84, 172, 190, 0.22); color: var(--txt-dim);
 }
 .rv-org-chip:hover { border-color: rgba(84, 172, 190, 0.45); color: var(--txt); }
-.rv-org-chip:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.6); outline-offset: 1px; }
-.rv-org-chip[data-ativo] { background: rgba(0, 212, 255, 0.16); border-color: rgba(0, 212, 255, 0.6); color: #d8eef8; }
+.rv-org-chip:focus-visible { outline: 2px solid rgba(var(--rv-marca-rgb, 0, 212, 255), 0.6); outline-offset: 1px; }
+.rv-org-chip[data-ativo] { background: rgba(var(--rv-marca-rgb, 0, 212, 255), 0.16); border-color: rgba(var(--rv-marca-rgb, 0, 212, 255), 0.6); color: #d8eef8; }
 .rv-org-chip[data-ativo][data-acento="am"] { background: rgba(240, 190, 90, 0.16); border-color: rgba(240, 190, 90, 0.6); color: #f6e6c6; }
 
 .rv-org-itens { list-style: none; margin: 0; padding: 0; overflow-y: auto; min-height: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; }
@@ -2231,9 +2231,9 @@
   padding: 8px 10px; border-radius: 3px; cursor: pointer; text-align: left;
   background: transparent; border: 1px solid transparent; color: var(--txt);
 }
-.rv-org-item:hover { background: rgba(0, 212, 255, 0.06); border-color: rgba(84, 172, 190, 0.22); }
-.rv-org-item:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.6); outline-offset: -2px; }
-.rv-org-item--sel { background: rgba(0, 212, 255, 0.1); border-color: rgba(0, 212, 255, 0.45); }
+.rv-org-item:hover { background: rgba(var(--rv-marca-rgb, 0, 212, 255), 0.06); border-color: rgba(84, 172, 190, 0.22); }
+.rv-org-item:focus-visible { outline: 2px solid rgba(var(--rv-marca-rgb, 0, 212, 255), 0.6); outline-offset: -2px; }
+.rv-org-item--sel { background: rgba(var(--rv-marca-rgb, 0, 212, 255), 0.1); border-color: rgba(var(--rv-marca-rgb, 0, 212, 255), 0.45); }
 .rv-org-item-tipo {
   font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(150, 174, 186, 0.9);
 }
@@ -2247,7 +2247,7 @@
   font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
 }
 .rv-org-selo[data-estado="rascunho"] { background: rgba(240, 190, 90, 0.14); color: rgba(240, 200, 120, 0.95); }
-.rv-org-selo[data-estado="publicado"] { background: rgba(0, 212, 255, 0.14); color: rgba(150, 224, 250, 0.95); }
+.rv-org-selo[data-estado="publicado"] { background: rgba(var(--rv-marca-rgb, 0, 212, 255), 0.14); color: rgba(150, 224, 250, 0.95); }
 .rv-org-selo[data-estado="arquivado"] { background: rgba(150, 174, 186, 0.14); color: rgba(180, 198, 208, 0.9); }
 
 .rv-org-detalhe { padding-left: 16px; overflow-y: auto; min-height: 0; }
@@ -2260,9 +2260,9 @@
 .rv-org-campo { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--txt-dim); }
 .rv-org-campo input, .rv-org-campo textarea {
   padding: 7px 9px; border-radius: 3px; font: inherit; font-size: 13px; color: var(--txt);
-  background: rgba(0, 212, 255, 0.04); border: 1px solid rgba(84, 172, 190, 0.22); resize: vertical;
+  background: rgba(var(--rv-marca-rgb, 0, 212, 255), 0.04); border: 1px solid rgba(84, 172, 190, 0.22); resize: vertical;
 }
-.rv-org-campo input:focus, .rv-org-campo textarea:focus { outline: none; border-color: rgba(0, 212, 255, 0.55); }
+.rv-org-campo input:focus, .rv-org-campo textarea:focus { outline: none; border-color: rgba(var(--rv-marca-rgb, 0, 212, 255), 0.55); }
 
 .rv-org-det-acoes { display: flex; flex-wrap: wrap; gap: 7px; }
 .rv-org-det-acoes--fim { margin-top: 6px; padding-top: 12px; border-top: 1px solid rgba(84, 172, 190, 0.16); }
@@ -2276,11 +2276,11 @@
 .rv-org-relacoes { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .rv-org-relacao {
   display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 3px; cursor: pointer;
-  font-size: 12px; background: rgba(0, 212, 255, 0.05);
+  font-size: 12px; background: rgba(var(--rv-marca-rgb, 0, 212, 255), 0.05);
   border: 1px solid rgba(84, 172, 190, 0.22); color: var(--txt);
 }
-.rv-org-relacao:hover { border-color: rgba(0, 212, 255, 0.5); }
-.rv-org-relacao:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.6); outline-offset: 1px; }
+.rv-org-relacao:hover { border-color: rgba(var(--rv-marca-rgb, 0, 212, 255), 0.5); }
+.rv-org-relacao:focus-visible { outline: 2px solid rgba(var(--rv-marca-rgb, 0, 212, 255), 0.6); outline-offset: 1px; }
 
 @media (max-width: 860px) {
   .rv-org { grid-template-columns: 1fr; }
@@ -2294,7 +2294,7 @@
 .rv-org-participantes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
 .rv-org-participantes li {
   display: flex; align-items: center; gap: 9px; padding: 6px 9px; border-radius: 3px;
-  background: rgba(0, 212, 255, 0.04); border: 1px solid rgba(84, 172, 190, 0.18); font-size: 12.5px;
+  background: rgba(var(--rv-marca-rgb, 0, 212, 255), 0.04); border: 1px solid rgba(84, 172, 190, 0.18); font-size: 12.5px;
 }
 .rv-org-participantes li[data-incluido="false"] { opacity: 0.5; }
 .rv-org-participantes li[data-incluido="false"] .rv-org-part-nome { text-decoration: line-through; }
@@ -2311,8 +2311,8 @@
   flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 3px; cursor: pointer;
   background: transparent; border: 1px solid rgba(84, 172, 190, 0.28); color: var(--txt-dim);
 }
-.rv-org-part-btn:hover:not(:disabled) { border-color: rgba(0, 212, 255, 0.55); color: var(--txt); }
-.rv-org-part-btn:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.6); outline-offset: 1px; }
+.rv-org-part-btn:hover:not(:disabled) { border-color: rgba(var(--rv-marca-rgb, 0, 212, 255), 0.55); color: var(--txt); }
+.rv-org-part-btn:focus-visible { outline: 2px solid rgba(var(--rv-marca-rgb, 0, 212, 255), 0.6); outline-offset: 1px; }
 .rv-org-part-btn:disabled { opacity: 0.45; cursor: default; }
 .rv-org-part-nome[data-carregando] { color: rgba(150, 174, 186, 0.5); }
 
@@ -2368,7 +2368,7 @@ textarea.rv-pn-input.rv-pn-input {
 .rv-pn-compendio-revisar code { font-size: 11px; }
 
 /* ── Pedidos de entrada (personagem criado sem campanha) ── */
-.rv-pn-pedidos { margin: 6px 8px; padding: 8px; border: 1px solid color-mix(in srgb, var(--rv-am, #f5a200) 35%, transparent); border-radius: var(--pn-radius); background: color-mix(in srgb, var(--rv-am, #f5a200) 6%, #0c1526); }
+.rv-pn-pedidos { margin: 6px 8px; padding: 8px; border: 1px solid color-mix(in srgb, var(--rv-am, #f5a200) 35%, transparent); border-radius: var(--pn-radius); background: color-mix(in srgb, var(--rv-am, #f5a200) 6%, var(--rv-peca, #0c1526)); }
 .rv-pn-pedidos-lista { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .rv-pn-pedido { display: flex; align-items: center; gap: 8px; }
 .rv-pn-pedido-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; }

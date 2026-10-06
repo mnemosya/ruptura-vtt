@@ -1,0 +1,14 @@
+/* ════════════════════ TEMA EXPERIMENTAL: FORJA ════════════════════
+   Redesign do VTT na linguagem da Forja, em teste. Liga com
+   `?tema=forja` (ver `useTemaVtt.ts`).
+
+   REGRA DA FOLHA: todo seletor começa com `[data-tema="forja"]`.
+   Sem o atributo nada aqui casa, e o visual atual fica intocado.
+   Não editar `vtt.css`/`painel.css`/`console.css` por causa do tema —
+   sobrescrever daqui.
+
+   Ordem prevista: 1) tokens (--rv-*, --rc-*, --pn-*) → valores --fj-*;
+   2) componentes (trilho, painel, janelas, tipografia). */
+
+[data-tema="forja"] {
+}

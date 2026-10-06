@@ -159,6 +159,8 @@ import {
 import type { CharacterRulesPayload, ReactionRules } from "../../../../lib/character";
 import "../../../_design/console.css";
 import "./vtt.css";
+import "./_tema/tema-forja.css";
+import { useTemaVtt } from "./_tema/useTemaVtt";
 
 type EstadoCenaVtt = Awaited<ReturnType<typeof lerCenaAtiva>>["dados"];
 
@@ -293,6 +295,7 @@ export function VttClient({
 }) {
   const ehNarrador = papel === "narrator";
 
+  useTemaVtt();
   const [ferramenta, setFerramenta] = useState<FerramentaId>("interagir");
 
   const [zoom, setZoom] = useState(1);
