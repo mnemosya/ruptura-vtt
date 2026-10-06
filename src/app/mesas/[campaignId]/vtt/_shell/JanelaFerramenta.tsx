@@ -41,7 +41,7 @@
 
 import {
   createContext, useCallback, useContext, useEffect, useRef, useState,
-  type ReactNode,
+  type ReactNode, type RefObject,
 } from "react";
 import { X } from "lucide-react";
 import {
@@ -92,6 +92,8 @@ export interface JanelaFerramentaProps {
   acoesCabecalho?: ReactNode;
   /** Classes/atributos próprios do painel (largura, `data-fase`, …). */
   className?: string;
+  /** Abre e permanece imediatamente acima deste elemento, sem posição salva ou arrasto. */
+  ancoraAcimaDe?: RefObject<HTMLElement | null>;
   testId?: string;
   testIdCabecalho?: string;
   /** Ganchos de teste dos botões do cabeçalho (cada painel mantém os seus). */
@@ -130,12 +132,13 @@ const ESPINHA: Partial<Record<JanelaId, { indice: string; acento: string }>> = {
   // desenho do mapa daquela que mexe em objeto tático (âmbar) — duas
   // coisas que se parecem na tela e não se parecem em nada na regra.
   imagens:   { indice: "10", acento: "#7f9bd1" },
+  tempo:    { indice: "13", acento: "#5bbdcc" },
 };
 
 export function JanelaFerramenta({
   id, indice, acento, icone, titulo, modo, modoAtributos, rotulo, rotuloFechar, aoFechar,
   recolhido, aoAlternarRecolhido, rotuloRecolher, acoesCabecalho,
-  className, testId, testIdCabecalho, testIdRecolher, testIdFechar, atributos, children,
+  className, ancoraAcimaDe, testId, testIdCabecalho, testIdRecolher, testIdFechar, atributos, children,
 }: JanelaFerramentaProps) {
   const ctx = useContext(JanelasContexto);
   const espinha = ESPINHA[id];
@@ -147,6 +150,20 @@ export function JanelaFerramenta({
   useEffect(() => { posicaoRef.current = posicao; }, [posicao]);
 
   const limitar = useCallback((p: PosicaoJanela) => limitarPosicaoJanela(p, asideRef.current), []);
+
+  const posicaoAcimaDaAncora = useCallback((): PosicaoJanela | null => {
+    const ancora = ancoraAcimaDe?.current;
+    const janela = asideRef.current;
+    const pai = janela?.offsetParent;
+    if (!ancora || !janela || !pai) return null;
+    const caixaAncora = ancora.getBoundingClientRect();
+    const caixaPai = pai.getBoundingClientRect();
+    return limitar({
+      x: caixaAncora.left - caixaPai.left,
+      y: caixaAncora.top - caixaPai.top - janela.offsetHeight - 8,
+      manual: false,
+    });
+  }, [ancoraAcimaDe, limitar]);
 
   const gravar = useCallback((p: PosicaoJanela) => {
     setPosicao(p);
@@ -164,6 +181,10 @@ export function JanelaFerramenta({
    * ativa).
    */
   useEffect(() => {
+    if (ancoraAcimaDe) {
+      setPosicao(posicaoAcimaDaAncora());
+      return;
+    }
     if (!ctx) return;
     const lembrada = carregarPosicaoJanela(ctx.usuarioId, ctx.campaignId, id);
     const alvo = lembrada.manual ? lembrada : { ...ancoraPadraoJanela(), manual: false };
@@ -171,10 +192,10 @@ export function JanelaFerramenta({
     // `asideRef`, que já existe neste ponto do efeito (o DOM foi
     // commitado antes dos efeitos rodarem).
     setPosicao(limitar(alvo));
-  }, [ctx, id, limitar]);
+  }, [ancoraAcimaDe, ctx, id, limitar, posicaoAcimaDaAncora]);
 
   const aoPressionarCabecalho = (e: React.PointerEvent) => {
-    if (e.button !== 0 || !posicao) return;
+    if (ancoraAcimaDe || e.button !== 0 || !posicao) return;
     // Botões do cabeçalho (recolher/fechar) clicam, não arrastam.
     if ((e.target as HTMLElement).closest("button")) return;
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
@@ -204,6 +225,12 @@ export function JanelaFerramenta({
    */
   useEffect(() => {
     const ajustar = () => {
+      if (ancoraAcimaDe) {
+        const ancorada = posicaoAcimaDaAncora();
+        const atual = posicaoRef.current;
+        if (ancorada && (!atual || ancorada.x !== atual.x || ancorada.y !== atual.y)) setPosicao(ancorada);
+        return;
+      }
       const atual = posicaoRef.current;
       if (!atual || arrastoRef.current) return; // no meio de um arrasto, quem manda é o ponteiro
       const limitada = limitar(atual);
@@ -216,16 +243,17 @@ export function JanelaFerramenta({
     window.addEventListener("resize", ajustar);
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(ajustar);
     if (observer && asideRef.current) observer.observe(asideRef.current);
+    if (observer && ancoraAcimaDe?.current) observer.observe(ancoraAcimaDe.current);
     return () => {
       window.removeEventListener("resize", ajustar);
       observer?.disconnect();
     };
-  }, [ctx, id, limitar]);
+  }, [ancoraAcimaDe, ctx, id, limitar, posicaoAcimaDaAncora]);
 
   return (
     <section
       ref={asideRef}
-      className={`rv-flutuante rv-fp${recolhido ? " rv-fp--recolhida" : ""}${className ? ` ${className}` : ""}`}
+      className={`rv-flutuante rv-fp${recolhido ? " rv-fp--recolhida" : ""}${ancoraAcimaDe ? " rv-fp--ancorada" : ""}${className ? ` ${className}` : ""}`}
       role="group"
       aria-label={rotulo}
       data-testid={testId}

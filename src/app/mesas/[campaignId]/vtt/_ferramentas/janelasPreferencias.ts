@@ -34,7 +34,7 @@ import type { FerramentaId } from "./controlador";
  * descuido: a primeira configura a cena aberta (nome, local, grade), a
  * segunda é o catálogo da campanha inteira.
  */
-export type JanelaId = FerramentaId | "camadas" | "token" | "cena" | "cenas";
+export type JanelaId = FerramentaId | "camadas" | "token" | "cena" | "cenas" | "tempo";
 
 export interface PosicaoJanela {
   /** Canto superior esquerdo, relativo ao palco (`.rv-palco`). */

@@ -90,6 +90,7 @@ import { type PontoAxial, axialParaMundo } from "./_dominio/escalaMapa";
 import { CORES_ANOTACAO, corAnotacaoValida, hexDaAnotacao, limitarTraco, type AnotacaoCena, type CorAnotacao, type CorPredefinida } from "./_dominio/anotacoes";
 import { useAnotacoesDaCena } from "./_shell/useAnotacoesDaCena";
 import { JanelaFerramenta } from "./_shell/JanelaFerramenta";
+import { TempoDaCampanha } from "./_shell/TempoDaCampanha";
 import type { ImagemCena } from "./_dominio/imagemCena";
 import { camposDeParametros, corValida, parametrosDaAreaPersistida } from "./_dominio/areaPersistida";
 import {
@@ -6017,16 +6018,36 @@ export function VttClient({
                longe das ferramentas, porque o que ela vai fazer (sair
                pra "Minhas campanhas", voltar pro início) não age sobre
                o mapa. */}
-        <button
-          ref={botaoMenuMesaRef}
-          type="button" className="rv-ferr-btn rv-ferr-menu"
-          aria-label="Menu da mesa" aria-haspopup="menu" aria-expanded={menuMesa !== null}
-          data-testid="vtt-menu-mesa-btn"
-          onClick={() => setMenuMesa((a) => (a ? null : posicaoAoLadoDe(botaoMenuMesaRef.current)))}
-        >
-          <Menu size={17} />
-          <span className="rv-dica">Menu da mesa</span>
-        </button>
+        <div className="rv-menu-cena">
+          <button
+            ref={botaoMenuMesaRef}
+            type="button" className="rv-ferr-btn rv-ferr-menu"
+            aria-label="Menu da mesa" aria-haspopup="menu" aria-expanded={menuMesa !== null}
+            data-testid="vtt-menu-mesa-btn"
+            onClick={() => setMenuMesa((a) => (a ? null : posicaoAoLadoDe(botaoMenuMesaRef.current)))}
+          >
+            <Menu size={17} />
+            <span className="rv-dica">Menu da mesa</span>
+          </button>
+          {estadoCena && (ehNarrador ? (
+            <button
+              type="button" className="rv-cena-chip"
+              onClick={alternarCatalogoCenas}
+              aria-haspopup="dialog" aria-expanded={painelCenasAberto}
+              title="Trocar de cena"
+              data-testid="cena-chip"
+            >
+              <span className="rv-cena-chip__rot">Cena ativa:</span>
+              <span className="rv-cena-chip__nome">{estadoCena.cena.nome}</span>
+              <ChevronDown size={14} aria-hidden="true" />
+            </button>
+          ) : (
+            <p className="rv-cena-chip" data-estatico="true" data-testid="cena-chip">
+              <span className="rv-cena-chip__rot">Cena ativa:</span>
+              <span className="rv-cena-chip__nome">{estadoCena.cena.nome}</span>
+            </p>
+          ))}
+        </div>
         {menuMesa && (
           <MenuDaMesa posicao={menuMesa} onFechar={() => setMenuMesa(null)} disparadorRef={botaoMenuMesaRef} />
         )}
@@ -6301,36 +6322,7 @@ export function VttClient({
           </JanelaFerramenta>
         )}
 
-        {/* CENA ATIVA — no rodapé do palco, não mais como título
-            sobreposto no canto superior. O título ocupava a faixa onde
-            a mesa mais olha (o alto do mapa) pra repetir um dado que é
-            de contexto, não de jogo; aqui ele cabe numa linha e ainda
-            vira o atalho pra TROCAR de cena.
-
-            Pro narrador é um botão que abre o catálogo — a mesma janela
-            do botão da barra, pelo mesmo caminho (`alternarCatalogoCenas`).
-            Pro jogador é texto: `list_vtt_scenes` não conta a ele que
-            existem outras cenas, e oferecer um seletor que não abre nada
-            seria a UI prometendo o que o servidor nega. */}
-        {estadoCena && (ehNarrador ? (
-          <button
-            type="button" className="rv-cena-chip"
-            onClick={alternarCatalogoCenas}
-            aria-haspopup="dialog" aria-expanded={painelCenasAberto}
-            title="Trocar de cena"
-            data-testid="cena-chip"
-          >
-            <span className="rv-cena-chip__rot">Cena ativa:</span>
-            <span className="rv-cena-chip__nome">{estadoCena.cena.nome}</span>
-            <ChevronDown size={14} aria-hidden="true" />
-          </button>
-        ) : (
-          <p className="rv-cena-chip" data-estatico="true" data-testid="cena-chip">
-            <span className="rv-cena-chip__rot">Cena ativa:</span>
-            <span className="rv-cena-chip__nome">{estadoCena.cena.nome}</span>
-          </p>
-        ))}
-
+        <TempoDaCampanha campaignId={campaignId} ehNarrador={ehNarrador} />
 
         {ferramenta === "terreno" && ehNarrador && (
           <PainelTerreno

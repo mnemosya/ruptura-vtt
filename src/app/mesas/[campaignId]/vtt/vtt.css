@@ -236,6 +236,7 @@
 }
 .rv-ferr-btn:focus-visible, .rv-aba:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 .rv-ferr-menu { color: #8ba3b4; }
+.rv-menu-cena { position: relative; width: 36px; height: 36px; flex: none; }
 .rv-ferr-sep { width: 20px; height: 1px; background: rgba(255,255,255,.08); margin: 5px 0; }
 
 /* ── Palco ───────────────────────────────────────────────── */
@@ -266,44 +267,114 @@
   user-select: none; -webkit-user-select: none;
 }
 
-/* CENA ATIVA — chip no RODAPÉ do palco (Figma 467:5999).
-   Substituiu o título sobreposto no canto superior esquerdo, que
-   ocupava a faixa onde a mesa mais olha pra repetir um dado de
-   contexto. Aqui cabe numa linha e ainda é o atalho pra trocar de
-   cena.
-
-   Fica acima do mapa (`z-index`) mas abaixo das janelas de ferramenta,
-   e nunca cobre os trilhos de facção — eles terminam em
-   `bottom: 108px`, este começa em 12. */
+/* CENA ATIVA — alinhada ao botão Menu da mesa no topo do trilho. */
 /* CLASSE DUPLICADA — mesma armadilha do `.rv-btn` logo abaixo:
    `.rm-root button` (classe + ELEMENTO) vence uma classe sozinha e
    força `font-family: inherit`, então a fonte pedida aqui nunca valia.
    Duas vezes a mesma classe empata em força e desempata pela ordem. */
 .rv-cena-chip.rv-cena-chip {
-  position: absolute; left: 10px; bottom: 12px; z-index: 14;
+  position: absolute; left: calc(100% + 8px); top: 0; z-index: 14;
   display: inline-flex; align-items: center; gap: 8px;
-  max-width: min(520px, calc(100% - 40px));
-  margin: 0; padding: 8px 12px;
-  border: 1px solid var(--rv-line); border-radius: var(--rv-r);
-  background: var(--rv-panel);
+  width: max-content; max-width: min(520px, calc(100vw - 68px)); height: 36px;
+  margin: 0; padding: 0 12px;
+  border: 1px solid rgba(0, 212, 255, .15); border-radius: var(--rv-r);
+  background: #0c1526;
   font-family: var(--font-mono), ui-monospace, monospace;
   /* +1px como o resto do que trocou de fonte — ver a nota de tamanhos
      no `painel.css`. */
   font-size: 11px; line-height: 15px;
   color: var(--rv-ink-dim);
   cursor: pointer;
-  transition: border-color .14s, background .14s;
+  transition: color .14s, border-color .14s, background .14s;
 }
 .rv-cena-chip[data-estatico="true"] { cursor: default; }
-.rv-cena-chip:not([data-estatico]):hover { border-color: var(--rv-line-hover); background: var(--rv-panel-2); }
+.rv-cena-chip:not([data-estatico]):hover {
+  color: #d3f4ff; border-color: #108bac;
+  background: linear-gradient(rgba(0, 212, 255, .09), rgba(0, 212, 255, .09)), #0c1526;
+}
+.rv-cena-chip:not([data-estatico]):hover .rv-cena-chip__nome { color: #d3f4ff; }
 .rv-cena-chip:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 .rv-cena-chip__rot { flex: none; color: #637a9d; }
 /* O nome é o que pode ser longo — é ele que corta, nunca o rótulo nem
    o chevron (que some primeiro se a janela for estreita demais). */
 .rv-cena-chip__nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #abbfdf; }
 .rv-cena-chip svg { flex: none; color: var(--rv-ink-faint); }
-.rv-cena-chip:not([data-estatico]):hover svg { color: var(--rv-ink-dim); }
+.rv-cena-chip:not([data-estatico]):hover svg { color: #d3f4ff; }
 
+.rv-tempo-chip.rv-tempo-chip {
+  position: absolute; left: 10px; bottom: 12px; z-index: 14;
+  display: flex; align-items: center; gap: 10px;
+  max-width: min(430px, calc(100% - 40px)); min-height: 38px;
+  padding: 7px 12px; border: 1px solid var(--rv-line); border-left: 2px solid var(--rv-cy); border-radius: 3px 8px 3px 8px;
+  background: var(--rv-panel); color: var(--rv-ink); cursor: pointer;
+  font: 11px var(--rv-mono); text-align: left;
+}
+.rv-tempo-chip:hover { border-color: var(--rv-line-hover); border-left-color: var(--rv-cy); background: var(--rv-panel-2); }
+.rv-tempo-chip[data-pendente="true"] { border-left-color: var(--rv-am); }
+.rv-tempo-chip[data-pendente="true"] .rv-tempo-chip-hora { color: var(--rv-am); }
+.rv-tempo-chip:focus-visible { outline: 2px solid var(--rv-cy); outline-offset: 2px; }
+.rv-tempo-chip > svg:first-child { flex: none; color: var(--rv-cy); }
+.rv-tempo-chip-hora { flex: none; color: var(--rv-cy); font-size: 14px; font-weight: 500; }
+.rv-tempo-chip-separador { flex: none; height: 15px; width: 1px; background: var(--rv-line-max); }
+.rv-tempo-chip-data { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--rv-ink-dim); }
+.rv-tempo-chip-temp { flex: none; color: var(--rv-ink-dim); }
+.rv-tempo-chip-seta { flex: none; color: var(--rv-cy); transition: transform .16s; }
+.rv-tempo-chip-seta[data-aberto="true"] { transform: rotate(180deg); }
+.rv-tempo-chip-carregando { color: var(--rv-ink-dim); }
+.rv-fp.rv-tempo-janela { width: min(440px, calc(100vw - 24px)); z-index: 21; }
+.rv-fp-corpo.rv-tempo-corpo { display: grid; gap: 0; min-height: 0; max-height: min(74vh, 760px); overflow: auto; padding: 0; color: var(--rv-ink); font: 12px var(--rv-body); }
+.rv-tempo-secao { padding: 14px 16px; border-bottom: 1px solid var(--rv-line); }
+.rv-tempo-secao[aria-label="Calendário Imperial"] { padding-top: 18px; }
+.rv-tempo-mes-cab { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 3px 8px; margin-bottom: 13px; }
+.rv-tempo-mes { color: var(--rv-ink); font: 600 17px var(--rv-display); text-transform: uppercase; letter-spacing: .07em; }
+.rv-tempo-ano { color: var(--rv-ink-dim); font: 10px var(--rv-mono); text-transform: uppercase; }
+.rv-tempo-mes-nav { display: flex; grid-column: 2; grid-row: 1 / span 2; gap: 4px; }
+.rv-tempo-mes-nav button { padding: 5px; }
+.rv-tempo-calendario { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; }
+.rv-tempo-dia-semana, .rv-tempo-dia { min-height: 32px; display: grid; place-items: center; text-align: center; font: 11px var(--rv-mono); }
+.rv-tempo-dia-semana { min-height: 22px; color: var(--rv-ink-faint); }
+.rv-tempo-corpo .rv-tempo-dia { justify-content: center; border: 1px solid var(--rv-line); background: var(--rv-sunken); color: var(--rv-ink-dim); border-radius: 2px; padding: 0; }
+.rv-tempo-corpo .rv-tempo-dia:hover { border-color: var(--rv-line-hover); color: var(--rv-ink); }
+.rv-tempo-corpo .rv-tempo-dia[aria-pressed="true"], .rv-tempo-dia[data-atual="true"] { border-color: var(--rv-cy); background: var(--rv-cy-soft); color: var(--rv-cy-hi); }
+.rv-tempo-calendario-rodape { display: flex; justify-content: space-between; align-items: center; padding: 12px 0 6px; color: var(--rv-ink-dim); font: 10px var(--rv-mono); }
+.rv-tempo-horario { color: var(--rv-cy-hi); font: 600 19px var(--rv-mono); }
+.rv-tempo-atalhos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin: 5px 0 12px; }
+.rv-tempo-editar-data { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 9px; }
+.rv-tempo-corpo label { display: grid; gap: 5px; color: var(--rv-ink-dim); font: 10px var(--rv-display); text-transform: uppercase; letter-spacing: .06em; }
+.rv-tempo-corpo input, .rv-tempo-corpo select, .rv-tempo-corpo textarea { box-sizing: border-box; width: 100%; min-width: 0; padding: 8px; border: 1px solid var(--rv-line-strong); border-radius: 2px; background: var(--rv-sunken); color: var(--rv-ink); font: 12px var(--rv-mono); color-scheme: dark; }
+.rv-tempo-corpo input:focus-visible, .rv-tempo-corpo select:focus-visible, .rv-tempo-corpo textarea:focus-visible { outline: 1px solid var(--rv-cy); outline-offset: 1px; }
+.rv-tempo-corpo textarea { min-height: 48px; resize: vertical; }
+.rv-tempo-rotulo { display: flex; align-items: center; gap: 9px; margin: 0 0 12px; color: var(--rv-ink-faint); font: 600 10px var(--rv-display); text-transform: uppercase; letter-spacing: .16em; }
+.rv-tempo-rotulo::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--rv-line-strong), transparent); }
+.rv-tempo-condicao { display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 8px; min-width: 0; padding: 12px; border: 1px solid var(--rv-line-strong); background: var(--rv-panel-2); }
+.rv-tempo-condicao > svg { color: var(--rv-cy); }
+.rv-tempo-condicao > span { display: grid; min-width: 0; gap: 3px; }
+.rv-tempo-condicao strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--rv-ink); font: 600 13px var(--rv-display); text-transform: uppercase; }
+.rv-tempo-condicao small { color: var(--rv-ink-dim); font: 10px var(--rv-mono); }
+.rv-tempo-condicao b { color: var(--rv-ink); font: 600 20px var(--rv-mono); white-space: nowrap; }
+.rv-tempo-condicao[data-especial="true"] { border-color: var(--rv-ar); background: var(--rv-ar-soft); }
+.rv-tempo-condicao[data-especial="true"] > svg, .rv-tempo-condicao[data-especial="true"] strong { color: var(--rv-ar); }
+.rv-tempo-detalhes { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 9px; margin: 10px 0 12px; color: var(--rv-ink-dim); font: 10px var(--rv-mono); }
+.rv-tempo-ajuda, .rv-tempo-aurora, .rv-tempo-saturacao { margin: 8px 0; color: var(--rv-ink-dim); font: 11px var(--rv-body); }
+.rv-tempo-saturacao { padding: 7px 9px; border-left: 2px solid var(--rv-ar); background: var(--rv-ar-soft); color: var(--rv-ar); font-family: var(--rv-display); text-transform: uppercase; }
+.rv-tempo-aurora { color: var(--rv-ar); }
+.rv-tempo-campo-clima { margin: 13px 0 0; }
+.rv-tempo-condicao-acoes { display: flex; gap: 7px; margin-top: 12px; }
+.rv-tempo-editor { display: grid; gap: 10px; background: var(--rv-sunken); }
+.rv-tempo-editor .rv-tempo-editar-data { margin-top: 0; }
+.rv-tempo-aurora-controle.rv-tempo-aurora-controle { display: flex; align-items: center; gap: 7px; margin: 12px 0; }
+.rv-tempo-aurora-controle input { width: auto; accent-color: var(--rv-ar); }
+.rv-tempo-corpo button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 7px 9px; border: 1px solid var(--rv-line-strong); border-radius: 2px; background: var(--rv-panel-2); color: var(--rv-ink); font: 600 10px var(--rv-display); text-transform: uppercase; letter-spacing: .05em; cursor: pointer; }
+.rv-tempo-corpo button:hover { border-color: var(--rv-line-hover); color: var(--rv-cy-hi); }
+.rv-tempo-corpo button:disabled { opacity: .5; cursor: default; }
+.rv-tempo-sortear { margin-top: 0; }
+.rv-tempo-editar-btn { margin-left: auto; }
+.rv-tempo-preview { display: grid; gap: 7px; margin: 12px 16px; padding: 11px; border: 1px solid var(--rv-cy); background: var(--rv-cy-soft); font: 11px var(--rv-mono); }
+.rv-tempo-preview strong { color: var(--rv-cy-hi); text-transform: uppercase; }
+.rv-tempo-preview-acoes { display: flex; gap: 6px; }
+.rv-tempo-publicar { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 9px; padding: 12px 16px; color: var(--rv-ink-dim); font: 10px var(--rv-mono); }
+.rv-tempo-publicar button { border-color: var(--rv-cy); color: var(--rv-cy-hi); }
+.rv-tempo-erro { margin: 0 16px 12px; color: var(--rv-dg); }
 /* A cor e a opacidade da linha vêm da CENA (0122), por variável: elas
    mudam por cena e o CSS não pode saber qual está aberta. Os padrões
    aqui são os mesmos que a constante antiga tinha — uma cena nunca
@@ -2007,6 +2078,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    `touch-action: none` é o que faz o gesto funcionar em toque sem o
    navegador roubá-lo pra rolagem. */
 .rv-fp-cab { cursor: grab; touch-action: none; user-select: none; }
+.rv-fp--ancorada .rv-fp-cab, .rv-fp--ancorada .rv-fp-cab:active { cursor: default; }
 .rv-fp-cab:active { cursor: grabbing; }
 /* Os botões do cabeçalho clicam, não arrastam. */
 .rv-fp-cab button { cursor: pointer; }
