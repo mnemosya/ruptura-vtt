@@ -9,7 +9,7 @@
      ground   #060a12   panel    #0c1420   panel-2  #111d31
      line     #182338   line-2   #16233a   strong   #1c2b45
      hover    #243352   max      #2a3b58
-     cyan     #45b8c9   amber    #cf9a3e   danger   #d15068
+     cyan     #45b8c9   amber    #ff8a1f   danger   #d15068
      magenta  #c25a8c   arcane   #8878d6   good     #4fae82
      slate    #6f83a3   ink      #b9c9dc   dim      #7f95b3
      faint    #4f6285   soft     accent @ 9%        raio 2–3px
@@ -68,7 +68,7 @@
   /* ── Acentos (dessaturados — ver o cabeçalho) ───────────────── */
   --rv-cy: #45b8c9;
   --rv-cy-hi: #6ff0ff;
-  --rv-am: #cf9a3e;
+  --rv-am: #ff8a1f;
   --rv-dg: #d15068;
   --rv-mg: #c25a8c;
   --rv-ar: #8878d6;
@@ -76,7 +76,7 @@
   --rv-slate: #6f83a3;
 
   --rv-cy-soft: rgba(69, 184, 201, 0.09);
-  --rv-am-soft: rgba(207, 154, 62, 0.09);
+  --rv-am-soft: rgba(255, 138, 31, 0.09);
   --rv-dg-soft: rgba(209, 80, 104, 0.09);
   --rv-mg-soft: rgba(194, 90, 140, 0.09);
   --rv-ar-soft: rgba(136, 120, 214, 0.09);

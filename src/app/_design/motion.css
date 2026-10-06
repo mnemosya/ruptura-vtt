@@ -584,7 +584,7 @@
 .mo-boot-terminal-row > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mo-boot-terminal-row i {
   display: block; flex: none; width: 5px; height: 10px; margin-left: 4px;
-  background: var(--am, #cf9a3e); opacity: 0;
+  background: var(--am, #ff8a1f); opacity: 0;
 }
 .mo-boot-terminal-row em {
   margin-left: auto; padding-left: 8px;

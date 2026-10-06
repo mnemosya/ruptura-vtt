@@ -2452,7 +2452,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* Ícone ACESO enquanto há combate, mesmo com outra ferramenta ativa:
    é estado da mesa, não da ferramenta. Distinto de `aria-pressed`
    (ferramenta selecionada), que continua sendo o realce forte. */
-.rv-ferr-btn[data-ativo="true"] { color: var(--am); }
+.rv-ferr-btn[data-ativo="true"] { color: var(--am); border-color: color-mix(in srgb, var(--am) 55%, transparent); }
 .rv-ferr-btn[data-ativo="true"]:not([aria-pressed="true"]) {
   background: linear-gradient(var(--rv-am-soft), var(--rv-am-soft)), #0c1526;
 }
@@ -3560,7 +3560,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .rv-fp-previa-sub { font-size: 11px; color: #7f95b3; }
-.rv-fp-previa[data-privada] .rv-fp-previa-sub { color: #cf9a3e; }
+.rv-fp-previa[data-privada] .rv-fp-previa-sub { color: #ff8a1f; }
 
 /* Fileira de cores — barras largas, como no estudo: a selecionada fica
    opaca e ganha contorno; as outras recuam pra .45. */
@@ -4576,7 +4576,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   border-bottom: 1px solid var(--rv-line-strong);
   background: linear-gradient(180deg, #0b1322, #070c16);
   box-shadow: 0 24px 64px rgba(0, 0, 0, .72);
-  --jf-acento: #cf9a3e;
+  --jf-acento: #ff8a1f;
 }
 /* O BOTÃO PRINCIPAL DA GAVETA É ÂMBAR. `.rv-btn--pri` nasce ciano
    porque ciano é a cor da mesa; aqui dentro a cor é `--jf-acento`, e

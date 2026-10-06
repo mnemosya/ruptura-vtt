@@ -2077,8 +2077,8 @@
 .rv-fg-pips { display: flex; gap: 4px; }
 .rv-fg-pip { width: 10px; height: 10px; border-radius: var(--rv-r); background: #16233a; }
 .rv-fg-pip[data-on="true"] {
-  background: var(--fg-a, #cf9a3e);
-  box-shadow: 0 0 4px color-mix(in srgb, var(--fg-a, #cf9a3e) 66%, transparent);
+  background: var(--fg-a, #ff8a1f);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--fg-a, #ff8a1f) 66%, transparent);
 }
 
 /* Emblema hexagonal do Bando. */
