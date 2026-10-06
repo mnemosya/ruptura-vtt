@@ -18,7 +18,7 @@
  * precisa enxergar o que escondeu pra poder trabalhar.
  *
  * Bloqueio de interação só existe pras camadas que TÊM ação própria:
- * Terreno funcional (pintar), Marcações (criar/apagar) e Tokens
+ * Terreno funcional (pintar), Marcações (criar/apagar), Desenhos e textos e Tokens
  * (selecionar/arrastar). Grade/terreno decorativo/objetos/pings não
  * têm ação própria pra travar — só visibilidade.
  *
@@ -47,7 +47,7 @@ import { Eye, EyeOff, Layers, Lock, RotateCcw, Unlock } from "lucide-react";
 import { JanelaFerramenta } from "./JanelaFerramenta";
 
 export type CamadaId =
-  | "imagemFundo" | "tiles" | "grade" | "terrenoFuncional" | "objetos" | "marcas" | "tokens" | "pings";
+  | "imagemFundo" | "tiles" | "grade" | "terrenoFuncional" | "objetos" | "marcas" | "anotacoes" | "tokens" | "pings";
 
 export interface EstadoUmaCamada {
   visivel: boolean;
@@ -100,6 +100,7 @@ export const CAMADAS_DEFINICAO: DefinicaoCamada[] = [
   { id: "tokens", rotulo: "Tokens", temBloqueio: true, grupo: "cena", descricao: "quem está em cena" },
   { id: "grade", rotulo: "Grade", temBloqueio: false, grupo: "ferramentas", descricao: "referência de distância" },
   { id: "marcas", rotulo: "Marcações", temBloqueio: true, grupo: "ferramentas", descricao: "sinais deixados na mesa" },
+  { id: "anotacoes", rotulo: "Desenhos e textos", temBloqueio: true, grupo: "ferramentas", descricao: "anotações livres da cena" },
   { id: "pings", rotulo: "Pings", temBloqueio: false, grupo: "ferramentas", descricao: "sinal momentâneo" },
 ];
 
@@ -121,6 +122,7 @@ const SIGLA_CAMADA: Record<CamadaId, string> = {
   terrenoFuncional: "T",
   objetos: "O",
   marcas: "M",
+  anotacoes: "DT",
   tokens: "TK",
   pings: "P",
 };
@@ -142,6 +144,7 @@ export const CAMADAS_PADRAO: EstadoCamadas = {
   terrenoFuncional: { visivel: true, bloqueada: false },
   objetos: { visivel: true, bloqueada: false },
   marcas: { visivel: true, bloqueada: false },
+  anotacoes: { visivel: true, bloqueada: false },
   tokens: { visivel: true, bloqueada: false },
   pings: { visivel: true, bloqueada: false },
 };

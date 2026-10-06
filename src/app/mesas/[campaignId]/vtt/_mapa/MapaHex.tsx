@@ -16,7 +16,7 @@
  * alvo de hover/clique e portadora de estado (terreno, área, alcance).
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GLIFO_DO_SINAL, SINAIS_MARCA } from "../_dominio/sinaisDeMarca";
 import {
   type Hex,
@@ -39,6 +39,7 @@ import {
 } from "../_dados/cenaDemo";
 import { type TokenApresentacao } from "../_dominio/tokenApresentacao";
 import { ehCamadaDeFerramenta } from "../_shell/PainelCamadas";
+import { type AnotacaoCena, hexDaAnotacao } from "../_dominio/anotacoes";
 
 /**
  * Cena pronta pra este componente desenhar — `tokens`, `nome`,
@@ -108,6 +109,29 @@ import { CORES_VERTENTE } from "../../../../_design/coresVertente";
 const COR_JA_AGIU = "#5f7492";
 
 export const TAM = 26; // raio do hexágono em px do mundo
+
+const AnotacaoNoMapa = memo(function AnotacaoNoMapa({ a, selecionada, delta, bloqueada, podeEditar, interativa, onPressionar }: {
+  a: AnotacaoCena; selecionada: boolean; delta: { dq: number; dr: number } | null;
+  bloqueada: boolean; podeEditar: boolean; interativa: boolean;
+  onPressionar: (e: React.PointerEvent<SVGGElement>, a: AnotacaoCena) => void;
+}) {
+  const pontos = delta ? a.pontos.map((p) => ({ q: p.q + delta.dq, r: p.r + delta.dr })) : a.pontos;
+  const pixels = pontos.map((p) => hexParaPixel(p, TAM));
+  const cor = hexDaAnotacao(a.cor);
+  const caminho = pixels.map((p) => `${p.x},${p.y}`).join(" ");
+  return <g data-annotation-id={a.id} pointerEvents={interativa ? "visiblePainted" : "none"} onPointerDown={(e) => onPressionar(e, a)}
+    style={{ cursor: bloqueada ? "default" : podeEditar ? "move" : "pointer" }}>
+    {a.tipo === "desenho" ? <>
+      <polyline points={caminho} fill="none" stroke="transparent" strokeWidth={Math.max(12, a.espessura + 8)} strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points={caminho} fill="none" stroke={cor} strokeWidth={a.espessura} strokeLinecap="round" strokeLinejoin="round" pointerEvents="none" />
+      {selecionada && <polyline points={caminho} fill="none" stroke="#ffffff" opacity="0.5" strokeWidth={a.espessura + 4} strokeDasharray="4 5" pointerEvents="none" />}
+    </> : <text x={pixels[0]?.x ?? 0} y={pixels[0]?.y ?? 0} fontSize={a.tamanho} fill={cor}
+      paintOrder="stroke fill" stroke="#0b141c" strokeWidth="3" strokeLinejoin="round"
+      textDecoration={selecionada ? "underline" : undefined}>
+      {(a.texto ?? "").split("\n").map((linha, i) => <tspan key={i} x={pixels[0]?.x ?? 0} dy={i === 0 ? 0 : a.tamanho * 1.25}>{linha || " "}</tspan>)}
+    </text>}
+  </g>;
+});
 
 /**
  * Quatro arcos iguais do retículo, com uma folga de 20° centrada em
@@ -297,7 +321,17 @@ export interface PropsMapaHex {
   /** Ferramenta ativa — controla se o mapa aceita arrastar token / pintar célula. */
   // Espelha `FerramentaId` (`_ferramentas/controlador.ts`) — repetido
   // como literal para o mapa não depender do módulo de ferramentas.
-  ferramenta?: "interagir" | "dados" | "medir" | "marcar" | "terreno" | "objetos" | "imagens" | "areas" | "rodadas";
+  ferramenta?: "interagir" | "dados" | "medir" | "marcar" | "desenhar" | "texto" | "terreno" | "objetos" | "imagens" | "areas" | "rodadas";
+  anotacoes?: readonly AnotacaoCena[];
+  anotacoesSceneId?: string | null;
+  anotacaoSelecionadaId?: string | null;
+  onSelecionarAnotacao?: (id: string | null) => void;
+  podeEditarAnotacao?: (anotacao: AnotacaoCena) => boolean;
+  onCriarTraco?: (pontos: PontoAxial[]) => void;
+  corTracoAtual?: string;
+  espessuraTracoAtual?: number;
+  onInserirTexto?: (ponto: PontoAxial) => void;
+  onMoverAnotacao?: (id: string, pontos: PontoAxial[]) => void;
 
   /**
    * ÁREAS DE EFEITO — desenho (camada visual, `pointer-events: none`) e
@@ -448,8 +482,8 @@ export interface PropsMapaHex {
 
   /**
    * Marcações PERSISTIDAS (ferramenta "Marcar") — camada mínima desta
-   * fase: um ponto colorido por marcação, sem linha/seta/desenho/texto
-   * (o schema já suporta os outros tipos pra um projeto futuro). Não
+   * fase: um ponto colorido por marcação. Desenhos e textos agora vivem
+   * na camada própria `anotacoes`, apesar dos valores legados do schema. Não
    * confundir com "Ping" (`pingsExibidos`, abaixo) — marcação fica no
    * mapa até alguém apagar; ping desaparece sozinho em ~2s e nunca vai
    * pro banco. `podeApagar` decide se o clique nesta marcação
@@ -626,6 +660,16 @@ export function MapaHex({
   objetoEmMovimentoId,
   marcas,
   onClicarMarca,
+  anotacoes,
+  anotacoesSceneId,
+  anotacaoSelecionadaId,
+  onSelecionarAnotacao,
+  podeEditarAnotacao,
+  onCriarTraco,
+  corTracoAtual,
+  espessuraTracoAtual,
+  onInserirTexto,
+  onMoverAnotacao,
   pingsExibidos,
   onPingCelula,
   onPan,
@@ -753,6 +797,94 @@ export function MapaHex({
     const { zoom: z, pan: pa } = zoomPanAtualRef.current;
     return { x: (p.x - pa.x) / z, y: (p.y - pa.y) / z };
   }, []);
+  const [tracoPreview, setTracoPreview] = useState<PontoAxial[]>([]);
+  const [movimentoAnotacao, setMovimentoAnotacao] = useState<{ id: string; dq: number; dr: number } | null>(null);
+  const limparGestoAnotacaoRef = useRef<(() => void) | null>(null);
+  useEffect(() => () => limparGestoAnotacaoRef.current?.(), []);
+  useEffect(() => { limparGestoAnotacaoRef.current?.(); setTracoPreview([]); setMovimentoAnotacao(null); }, [anotacoesSceneId, ferramenta]);
+
+  const axialDoPonteiroAnotacao = useCallback((clientX: number, clientY: number) => {
+    const p = pontoMundo(clientX, clientY);
+    return p ? mundoParaAxial(p.x, p.y, TAM) : null;
+  }, [pontoMundo]);
+
+  const pressionarParaAnotacao = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+    if (e.button !== 0 || (ferramenta !== "desenhar" && ferramenta !== "texto")
+      || !cVisivel("anotacoes") || cBloqueada("anotacoes")) return;
+    if ((e.target as Element).closest("[data-annotation-id]")) return;
+    const inicio = axialDoPonteiroAnotacao(e.clientX, e.clientY);
+    if (!inicio) return;
+    e.preventDefault(); e.stopPropagation();
+    onSelecionarAnotacao?.(null);
+    if (ferramenta === "texto") { onInserirTexto?.(inicio); return; }
+    let pontos: PontoAxial[] = [inicio];
+    let frame = 0;
+    const mover = (ev: PointerEvent) => {
+      const p = axialDoPonteiroAnotacao(ev.clientX, ev.clientY);
+      if (!p) return;
+      const ultimo = pontos[pontos.length - 1];
+      if (Math.hypot(p.q - ultimo.q, p.r - ultimo.r) < 0.012) return;
+      if (pontos.length < 4096) pontos.push(p);
+      if (!frame) frame = requestAnimationFrame(() => { setTracoPreview(pontos.slice()); frame = 0; });
+    };
+    const limpar = () => {
+      window.removeEventListener("pointermove", mover);
+      window.removeEventListener("pointerup", soltar);
+      window.removeEventListener("pointercancel", cancelar);
+      window.removeEventListener("blur", cancelar);
+      if (frame) cancelAnimationFrame(frame);
+      limparGestoAnotacaoRef.current = null;
+      setTracoPreview([]);
+    };
+    const soltar = (ev: PointerEvent) => {
+      const p = axialDoPonteiroAnotacao(ev.clientX, ev.clientY);
+      if (p && Math.hypot(p.q - pontos[pontos.length - 1].q, p.r - pontos[pontos.length - 1].r) > 0.01) pontos = [...pontos, p];
+      limpar();
+      if (pontos.length > 1) onCriarTraco?.(pontos);
+    };
+    const cancelar = () => limpar();
+    window.addEventListener("pointermove", mover);
+    window.addEventListener("pointerup", soltar);
+    window.addEventListener("pointercancel", cancelar);
+    window.addEventListener("blur", cancelar);
+    limparGestoAnotacaoRef.current = limpar;
+    setTracoPreview(pontos);
+  }, [ferramenta, camadas, axialDoPonteiroAnotacao, onSelecionarAnotacao, onInserirTexto, onCriarTraco]);
+
+  const pressionarAnotacao = useCallback((e: React.PointerEvent<SVGGElement>, a: AnotacaoCena) => {
+    if (e.button !== 0 || !onSelecionarAnotacao || cBloqueada("anotacoes")
+      || (ferramenta === "desenhar" ? a.tipo !== "desenho" : ferramenta === "texto" ? a.tipo !== "texto" : true)) return;
+    e.preventDefault(); e.stopPropagation();
+    onSelecionarAnotacao(a.id);
+    if (!podeEditarAnotacao?.(a)) return;
+    const inicio = axialDoPonteiroAnotacao(e.clientX, e.clientY);
+    if (!inicio) return;
+    let delta = { dq: 0, dr: 0 };
+    const mover = (ev: PointerEvent) => {
+      const p = axialDoPonteiroAnotacao(ev.clientX, ev.clientY);
+      if (!p) return;
+      delta = { dq: p.q - inicio.q, dr: p.r - inicio.r };
+      setMovimentoAnotacao({ id: a.id, ...delta });
+    };
+    const limpar = () => {
+      window.removeEventListener("pointermove", mover);
+      window.removeEventListener("pointerup", soltar);
+      window.removeEventListener("pointercancel", cancelar);
+      window.removeEventListener("blur", cancelar);
+      setMovimentoAnotacao(null);
+      limparGestoAnotacaoRef.current = null;
+    };
+    const soltar = () => {
+      limpar();
+      if (Math.hypot(delta.dq, delta.dr) > 0.02) onMoverAnotacao?.(a.id, a.pontos.map((p) => ({ q: p.q + delta.dq, r: p.r + delta.dr })));
+    };
+    const cancelar = () => limpar();
+    window.addEventListener("pointermove", mover);
+    window.addEventListener("pointerup", soltar);
+    window.addEventListener("pointercancel", cancelar);
+    window.addEventListener("blur", cancelar);
+    limparGestoAnotacaoRef.current = limpar;
+  }, [camadas, ferramenta, axialDoPonteiroAnotacao, onSelecionarAnotacao, onMoverAnotacao, podeEditarAnotacao]);
 
   // Espelho síncrono do `arrasto` mais recente — `soltar()` precisa
   // dele pra chamar `onSoltarToken` (um efeito colateral real: dispara
@@ -2213,6 +2345,7 @@ export function MapaHex({
       preserveAspectRatio="xMidYMid meet"
       role="img"
       aria-label={`Mapa da cena ${cena.nome}, grade hexagonal de ${cena.largura} por ${cena.altura} metros`}
+      onPointerDownCapture={pressionarParaAnotacao}
       onPointerDown={onPointerDownSvg}
       onContextMenu={(e) => { if (onPan || onMenuContextual) e.preventDefault(); }}
       onKeyDown={(e) => {
@@ -2608,6 +2741,21 @@ export function MapaHex({
                 </g>
               );
             })}
+          </g>
+        )}
+
+        {/* Anotações da cena: ferramenta e camada próprias, sem semântica de Marcar. */}
+        {cVisivel("anotacoes") && (
+          <g className="rv-camada-anotacoes" pointerEvents={ferramenta === "desenhar" || ferramenta === "texto" ? "visiblePainted" : "none"}>
+            {anotacoes?.map((a) => <AnotacaoNoMapa key={a.id} a={a}
+              selecionada={anotacaoSelecionadaId === a.id}
+              delta={movimentoAnotacao?.id === a.id ? movimentoAnotacao : null}
+              bloqueada={cBloqueada("anotacoes")}
+              podeEditar={podeEditarAnotacao?.(a) ?? false}
+              interativa={(ferramenta === "desenhar" && a.tipo === "desenho") || (ferramenta === "texto" && a.tipo === "texto")}
+              onPressionar={pressionarAnotacao} />)}
+            {tracoPreview.length > 0 && <polyline points={tracoPreview.map((p) => { const px = hexParaPixel(p, TAM); return `${px.x},${px.y}`; }).join(" ")}
+              fill="none" stroke={corTracoAtual ?? "#00d4ff"} strokeWidth={espessuraTracoAtual ?? 2} strokeLinecap="round" strokeLinejoin="round" opacity="0.8" pointerEvents="none" />}
           </g>
         )}
 

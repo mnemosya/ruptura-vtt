@@ -49,23 +49,38 @@ export interface EtapaProgressaoV12 {
 
 const ESCOLHA_VAZIA: DraftAvancoV12 = { pericias: {} };
 
-/** Rankings atravessados entre o F e o alvo (E … alvo). Vazio quando o alvo é F. */
-export function rankingsDaProgressaoV12(alvo: RankingV12 | undefined): RankingV12[] {
+/** Rankings atravessados entre `de` (F na criação) e o alvo. Vazio quando o alvo não passa de `de`. */
+export function rankingsDaProgressaoV12(alvo: RankingV12 | undefined, de: RankingV12 = "F"): RankingV12[] {
   const i = alvo ? RANKINGS_V12.indexOf(alvo) : 0;
-  return i > 0 ? RANKINGS_V12.slice(1, i + 1) : [];
+  const j = RANKINGS_V12.indexOf(de);
+  return i > j ? RANKINGS_V12.slice(j + 1, i + 1) : [];
 }
 
+/**
+ * Ponto de partida de uma EVOLUÇÃO (personagem já criado): o Ranking
+ * atual e os valores da ficha. Sem ela, a progressão parte do F com os
+ * valores do rascunho (a criação).
+ */
+export interface PartidaProgressaoV12 {
+  de: RankingV12;
+  base: BaseProgressaoV12;
+}
+
+/** O que a progressão lê do rascunho (na evolução, só o alvo e as escolhas). */
+export type DraftProgressaoV12 = Pick<DraftV12, "rankingInicial" | "avancos"> & Partial<Pick<DraftV12, "atributos" | "pericias" | "vertente">>;
+
 export function etapasProgressaoV12(
-  d: DraftV12,
+  d: DraftProgressaoV12,
   classe: ClassContentV12 | undefined,
   subclasses: SubclassContentV12[],
+  partida?: PartidaProgressaoV12,
 ): EtapaProgressaoV12[] {
-  const ranks = rankingsDaProgressaoV12(d.rankingInicial);
+  const ranks = rankingsDaProgressaoV12(d.rankingInicial, partida?.de);
   if (!classe || !ranks.length) return [];
   const daClasse = subclasses.filter((s) => s.classe_slug === classe.slug && classe.subclasses.includes(s.slug));
 
-  let base: BaseProgressaoV12 = {
-    atributos: { corpo: d.atributos.corpo ?? 0, mente: d.atributos.mente ?? 0, animo: d.atributos.animo ?? 0 },
+  let base: BaseProgressaoV12 = partida?.base ?? {
+    atributos: { corpo: d.atributos?.corpo ?? 0, mente: d.atributos?.mente ?? 0, animo: d.atributos?.animo ?? 0 },
     pericias: { ...d.pericias },
     vertentes: d.vertente ? { [d.vertente]: 1 } : {},
   };

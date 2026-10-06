@@ -621,7 +621,7 @@
 .fj-codex-botao__rodape { margin-top: var(--hud-space-2); display: flex; align-items: center; justify-content: space-between; padding: 0 var(--hud-space-1); }
 
 /* Narrativa do Antecedente */
-.fj-area-livre { width: 100%; resize: none; outline: none; font: 400 18px/1.4 var(--fj-corpo); color: var(--fj-gelo); }
+.fj-area-livre { width: 100%; resize: none; outline: none; font: 400 15px/1.5 var(--fj-corpo); color: var(--fj-gelo); }
 .fj-rpi { margin-top: var(--hud-space-3); display: flex; align-items: center; justify-content: space-between; border-top: 1px solid color-mix(in srgb, var(--fj-cy) 15%, transparent); padding-top: var(--hud-space-3); }
 .fj-rpi__input { width: 160px; border-bottom: 1px solid color-mix(in srgb, var(--fj-cy) 40%, transparent); text-align: right; font: 400 16px var(--fj-mono); letter-spacing: 0.3em; color: var(--fj-cy); outline: none; }
 .fj-rpi__input:focus { border-bottom-color: var(--fj-am); }
@@ -1253,7 +1253,7 @@
 .fj-prog__cartao--on, .fj-prog__cartao--on:hover { border-color: var(--fj-am) !important; background: color-mix(in srgb, var(--fj-am) 14%, transparent); }
 .fj-prog__cartao:disabled { opacity: 0.35; cursor: not-allowed; }
 .fj-prog__cartao-nome { font: 700 15px var(--fj-display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fj-gelo); }
-.fj-prog__subclasses { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--hud-space-3); }
+.fj-prog__subclasses { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--hud-space-3); }
 .fj-prog__subclasse-desc { font-size: 13px; line-height: 1.4; color: var(--fj-texto); }
 .fj-prog__atributos { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--hud-space-3); }
 .fj-prog__atributo-valor { font: 800 26px/1 var(--fj-display); color: var(--fj-gelo); }
@@ -1335,3 +1335,35 @@
 .fj-prog-trilha__no--on .fj-prog-hex { transform: scale(1.2); }
 .fj-prog-trilha__no--on { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--fj-cy) 75%, transparent)); }
 .fj-prog-trilha__no--on.fj-prog-trilha__no--feito { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--fj-am) 75%, transparent)); }
+
+/* Recursos iniciais: mais respiro, e o valor numa coluna própria à
+   direita da barra (antes ficava por cima do fim dela). */
+.fj-recursos { gap: var(--hud-space-4); }
+.fj-recurso { padding-bottom: 0; border-bottom: 0; }
+.fj-recurso__moldura { padding: var(--hud-space-3) 0 var(--hud-space-1) var(--hud-space-5); }
+.fj-recurso__topo { gap: var(--hud-space-4); }
+.fj-recurso__nome { font-size: 16px; letter-spacing: 0.04em; }
+.fj-recurso__trilho { display: grid; grid-template-columns: 1fr 34px; align-items: center; gap: var(--hud-space-3); height: auto; margin-top: var(--hud-space-3); background: none; }
+.fj-recurso__trilho::before { content: ""; grid-column: 1; grid-row: 1; height: 12px; background: color-mix(in srgb, var(--fj-am) 15%, transparent); }
+.fj-recurso__barra { position: static; grid-column: 1; grid-row: 1; justify-self: start; height: 12px; inset: auto; }
+.fj-recurso__valor { position: static; grid-column: 2; grid-row: 1; text-align: right; font: 800 18px/1 var(--fj-display); }
+/* PA: losangos no lugar da barra. */
+.fj-recurso__pa { display: grid; grid-template-columns: 1fr 34px; align-items: center; gap: var(--hud-space-3); margin-top: var(--hud-space-3); }
+.fj-recurso__pips { display: flex; gap: 8px; padding-left: 2px; }
+.fj-recurso__pips > span { width: 11px; height: 11px; transform: rotate(45deg); background: var(--fj-am); box-shadow: 0 0 6px color-mix(in srgb, var(--fj-am) 60%, transparent); }
+
+/* Painel com aba de título: o chanfro inverte (superior-esquerdo e
+   inferior-direito) para o canto livre encaixar ao lado da aba. */
+.fj-painel--com-titulo > .fj-ch,
+.fj-painel--com-titulo > .fj-ch > .fj-ch {
+  clip-path: polygon(var(--hud-notch-sm) 0, 100% 0, 100% calc(100% - var(--hud-notch-sm)), calc(100% - var(--hud-notch-sm)) 100%, 0 100%, 0 var(--hud-notch-sm));
+}
+
+/* Forja de evolução: sem o menu de passos — o centro e a lateral. */
+@container forja (min-width: 1024px) {
+  .fj-grade.fj-grade--evolucao { grid-template-columns: minmax(0, 1fr) 380px; }
+}
+.fj-evolucao__placa { display: flex; align-items: center; justify-content: space-between; gap: var(--hud-space-4); margin-bottom: var(--hud-space-5); padding: var(--hud-space-4) var(--hud-space-5); border-left: 2px solid var(--fj-cy); background: color-mix(in srgb, var(--fj-cy) 10%, transparent); }
+.fj-evolucao__salto { display: inline-flex; align-items: baseline; gap: 8px; font: 800 28px/1 var(--fj-display); color: var(--fj-gelo); }
+.fj-evolucao__salto em { font-style: normal; font-size: 18px; color: var(--fj-am); }
+.fj-evolucao__salto .fj-glow { color: var(--fj-cy); }

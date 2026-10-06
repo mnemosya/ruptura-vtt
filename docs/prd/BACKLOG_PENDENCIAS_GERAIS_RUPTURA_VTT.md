@@ -1075,7 +1075,9 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### TOOL-02 — Criar ferramenta de desenho livre
 
-- **Status:** Bloqueada
+- **Status:** Em validação
+- **Decisão (2026-10-05):** ferramenta **Desenhar** própria, disponível para narrador e jogadores; camada compartilhada **Desenhos e textos**, independente de **Marcar**. O autor gerencia o próprio traço e o narrador gerencia os traços públicos. Traços são persistentes; seis cores rápidas e seletor hexadecimal, espessura 1–6, seleção, deslocamento, remoção por inteiro e undo/redo local. Cada traço pode ser **Só pra você** (nem o narrador vê) ou **Pra mesa** (todos veem).
+- **Implementação:** prévia contínua, simplificação e limite de 512 pontos por traço; tabela própria `vtt_scene_annotations`, RLS por cena/autoria/privacidade, limite de 500 anotações por cena, Realtime por invalidação sem conteúdo e releitura autorizada, cópia na duplicação completa. Não existe exportação de cena no app hoje; uma futura exportação deve incluir as linhas desta tabela. Migrações aplicadas ao banco configurado em 2026-10-05. Falta validação manual da interação no mapa com dois participantes.
 - **Descrição:** permitir traços sobre a cena com criação, preview, persistência, sincronização, seleção e remoção, usando a infraestrutura de objetos/camadas quando compatível.
 - **Área afetada:** mapa, toolbar, camadas, realtime, banco e exportação de cena.
 - **Prioridade sugerida:** P2
@@ -1085,7 +1087,9 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### TOOL-03 — Criar ferramenta de texto no mapa
 
-- **Status:** Bloqueada
+- **Status:** Em validação
+- **Decisão (2026-10-05):** ferramenta **Texto** própria, disponível para todos, na mesma camada dos desenhos. Texto simples, seis cores rápidas ou cor hexadecimal, tamanho 12–32, multilinha e escala junto ao mapa; autor e narrador podem editar, mover e remover textos públicos. Textos privados são visíveis apenas ao autor.
+- **Implementação:** edição por teclado, seleção e arrasto, atualização com revisão para recusar sobrescrita concorrente, renderização SVG como texto puro e undo/redo local. Compartilha a migração e a política de privacidade de TOOL-02; falta validação manual da interação no mapa com dois participantes.
 - **Descrição:** inserir, editar, mover, estilizar e remover textos na cena, com autorização e sincronização consistentes com outras entidades do mapa.
 - **Área afetada:** mapa, toolbar, camadas, realtime e banco.
 - **Prioridade sugerida:** P2

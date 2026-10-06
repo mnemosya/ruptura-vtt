@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 /** Painel com aba de título à direita e borda chanfrada. `ambar` = estado confirmado. */
 export function Panel({ title, right, children, className = "", ambar }: { title?: string; right?: ReactNode; children: ReactNode; className?: string; ambar?: boolean }) {
   return (
-    <div className={`fj-painel ${className}`}>
+    <div className={`fj-painel ${title ? "fj-painel--com-titulo" : ""} ${className}`}>
       {title && (
         <div className="fj-painel__topo">
           <div className={`fj-painel__aba fj-ch-l ${ambar ? "fj-painel__aba--ambar" : ""}`}>

@@ -881,12 +881,12 @@ async function main() {
 
     const comBloqueio = mod.CAMADAS_DEFINICAO.filter((d) => d.temBloqueio).map((d) => d.id).sort();
     ok(
-      "camadas-6 (só terrenoFuncional/marcas/tokens têm bloqueio de interação — as demais só visibilidade)",
+      "camadas-6 (camadas interativas têm bloqueio próprio)",
       // `imagemFundo` e `tiles` entraram na lista quando as imagens
       // passaram a ser arrastadas no canvas: o que se arrasta precisa
       // poder ser travado. A lista antiga é de antes disso.
       JSON.stringify(comBloqueio)
-        === JSON.stringify(["imagemFundo", "marcas", "terrenoFuncional", "tiles", "tokens"]),
+        === JSON.stringify(["anotacoes", "imagemFundo", "marcas", "terrenoFuncional", "tiles", "tokens"]),
       JSON.stringify(comBloqueio),
     );
 

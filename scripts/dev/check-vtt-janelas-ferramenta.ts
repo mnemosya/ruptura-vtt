@@ -36,6 +36,8 @@ const JANELAS: { nome: string; tecla: string; rotulo: string; botao?: string; se
   { nome: "objetos", tecla: "o", rotulo: "Ferramenta Objetos" },
   { nome: "rodadas", tecla: "r", rotulo: "Ferramenta Rodadas" },
   { nome: "marcar", tecla: "d", rotulo: "Ferramenta Marcar" },
+  { nome: "desenhar", tecla: "f", rotulo: "Ferramenta Desenhar" },
+  { nome: "texto", tecla: "x", rotulo: "Ferramenta Texto" },
   { nome: "camadas", tecla: "", rotulo: "Camadas do mapa", botao: "Camadas do mapa" },
   // "Configurações da cena" SAIU — a janela não existe mais, e o que
   // ela fazia (renomear, tamanho, camadas) mora hoje no cartão da cena
