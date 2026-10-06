@@ -23,7 +23,9 @@
  *     — simplesmente não mostra o bloco.
  */
 
+import { useEffect, useRef, useState } from "react";
 import { ArrowUpCircle, Check, Crosshair, Sliders, Wand2 } from "lucide-react";
+import { RANKINGS_V12, type RankingV12 } from "../../../../lib/rulesetV12";
 import type { ConsoleApi, ConsoleModo } from "../types";
 import { useVerNoMapa } from "../ConsoleCloseContext";
 
@@ -208,19 +210,47 @@ export function PassoValor({
  * Evolução livre: em v1.2 a ficha só muda pelo pacote do próximo Ranking
  * (capítulo 25), validado no servidor.
  */
-export function AvancoChip({ ranking, onAbrir }: { ranking: string; onAbrir: () => void }) {
+export function AvancoChip({ ranking, onEscolher }: { ranking: string; onEscolher: (alvo: RankingV12) => void }) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef<HTMLSpanElement | null>(null);
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node)) setAberto(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setAberto(false); };
+    document.addEventListener("pointerdown", fora);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("pointerdown", fora); document.removeEventListener("keydown", esc); };
+  }, [aberto]);
+  const atual = RANKINGS_V12.indexOf(ranking as RankingV12);
   return (
-    <button
-      type="button"
-      className="rc-modo-chip"
-      onClick={onAbrir}
-      title="Aplicar o avanço do próximo Ranking (Marco de Progressão)"
-      data-testid="console-avanco-chip"
-    >
-      <span className="rc-modo-chip-ico" aria-hidden="true">
-        <ArrowUpCircle size={12} strokeWidth={2} />
-      </span>
-      Ranking {ranking}
-    </button>
+    <span className="rc-rank-escolha" ref={ref}>
+      <button
+        type="button"
+        className="rc-modo-chip"
+        onClick={() => setAberto((v) => !v)}
+        aria-expanded={aberto}
+        aria-haspopup="true"
+        title="Evoluir o Ranking (abre a Forja)"
+        data-testid="console-avanco-chip"
+      >
+        <span className="rc-modo-chip-ico" aria-hidden="true">
+          <ArrowUpCircle size={12} strokeWidth={2} />
+        </span>
+        Ranking {ranking}
+      </button>
+      {/* O mesmo seletor da placa da Forja: os Rankings até o atual ficam
+          apagados; escolher um acima abre a Forja de evolução até ele. */}
+      {aberto && (
+        <span className="rc-rank-menu" role="group" aria-label="Evoluir até o Ranking">
+          <span className="rc-rank-menu__titulo">Evoluir até</span>
+          <span className="rc-rank-menu__grade">
+            {RANKINGS_V12.map((r, i) => (
+              <button key={r} type="button" disabled={i <= atual} aria-current={i === atual ? "true" : undefined}
+                className="rc-rank-menu__opcao" onClick={() => { setAberto(false); onEscolher(r); }}>{r}</button>
+            ))}
+          </span>
+        </span>
+      )}
+    </span>
   );
 }

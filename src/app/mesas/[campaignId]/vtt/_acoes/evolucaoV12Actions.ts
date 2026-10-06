@@ -28,6 +28,7 @@ import {
   type CharacterV2,
   type ClassContentV12,
   type FeatureV12,
+  type PartidaProgressaoV12,
   type RankAdvancementV12,
   type RankingV12,
   type SubclassContentV12,
@@ -122,6 +123,41 @@ export async function lerAvancoV12Action(campaignId: string | null, characterId:
     };
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : "Falha ao ler o avanço de Ranking." };
+  }
+}
+
+/** Personagem já criado, como ponto de partida da Forja de evolução. */
+export interface PartidaEvolucaoV12 {
+  nome: string;
+  classeSlug: string;
+  partida: PartidaProgressaoV12;
+}
+
+export async function lerPartidaEvolucaoV12Action(campaignId: string | null, characterId: string): Promise<ResultadoAcao<PartidaEvolucaoV12>> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  try {
+    const c = await carregar(campaignId, characterId);
+    if ("erro" in c) return { ok: false, erro: c.erro };
+    const p = c.character;
+    return {
+      ok: true,
+      dados: {
+        nome: p.nome ?? "",
+        classeSlug: p.progressao.classe_id,
+        partida: {
+          de: p.progressao.ranking,
+          base: {
+            atributos: { corpo: p.atributos.corpo ?? 0, mente: p.atributos.mente ?? 0, animo: p.atributos.animo ?? 0 },
+            pericias: { ...p.pericias },
+            vertentes: { ...p.magia.niveis_vertente },
+            ...(p.progressao.subclasse_id ? { subclasse_id: p.progressao.subclasse_id } : {}),
+          },
+        },
+      },
+    };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : "Falha ao ler o personagem." };
   }
 }
 

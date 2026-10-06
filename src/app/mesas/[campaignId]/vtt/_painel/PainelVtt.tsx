@@ -66,6 +66,7 @@ const JanelaLivro = dynamic(() => import("./janelas/JanelaLivro").then((m) => m.
 const JanelaConfiguracoes = dynamic(() => import("./janelas/JanelaConfiguracoes").then((m) => m.JanelaConfiguracoes), { ssr: false });
 const JanelaConteudo = dynamic(() => import("./janelas/JanelaConteudo").then((m) => m.JanelaConteudo), { ssr: false });
 const JanelaOrganizador = dynamic(() => import("./janelas/organizador/JanelaOrganizador").then((m) => m.JanelaOrganizador), { ssr: false });
+const JanelaEvolucao = dynamic(() => import("./janelas/JanelaEvolucao").then((m) => m.JanelaEvolucao), { ssr: false });
 const JanelaNovoPersonagem = dynamic(() => import("./janelas/JanelaNovoPersonagem").then((m) => m.JanelaNovoPersonagem), { ssr: false });
 import { JanelaAcessoPersonagem, JanelaJogadoresConvites } from "./janelas/JanelasAdmin";
 import { JanelaInterna } from "./ui/JanelaInterna";
@@ -676,6 +677,16 @@ export function PainelVtt({
           completar={janelas.completar}
           onAbrirFicha={(id) => consoleDaMesa?.abrir(id)}
           onFechar={() => janelas.fechar("novo-personagem")}
+        />
+      )}
+      {/* Evolução de Ranking: a ficha fecha ao abrir a Forja e volta ao sair ou selar. */}
+      {janelas.evolucao && (
+        <JanelaEvolucao
+          key={`${janelas.evolucao.characterId}-${janelas.evolucao.alvo}`}
+          campaignId={campaignId}
+          characterId={janelas.evolucao.characterId}
+          alvo={janelas.evolucao.alvo}
+          onFechar={() => { const id = janelas.evolucao?.characterId; janelas.fecharEvolucao(); if (id) consoleDaMesa?.abrir(id); }}
         />
       )}
       {janelas.aberta("livro") && (

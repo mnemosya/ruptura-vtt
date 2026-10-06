@@ -42,8 +42,6 @@ export interface ForjaProps {
   regiaoCampanha?: RegiaoIdV12;
   /** Nome da mesa no topo. */
   nomeMesa?: string;
-  /** Sigla de quem narra, no selo do topo. */
-  siglaNarrador?: string;
   /** Mesa onde o rascunho é salvo e o personagem é criado. Sem ela (prévia), nada é lido, gravado ou criado. */
   campaignId?: string;
   /**
@@ -69,7 +67,7 @@ const ATRIBUTOS: Array<{ id: AttributeIdV12; nome: string; desc: string }> = [
   { id: "animo", nome: "Ânimo", desc: "Vontade, presença e conexão." },
 ];
 
-export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa de teste", siglaNarrador = "MJ", campaignId, semCampanha = false, rankingInicial = RANKING_INICIAL, completar = null, onSair, onConcluir }: ForjaProps) {
+export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa de teste", campaignId, semCampanha = false, rankingInicial = RANKING_INICIAL, completar = null, onSair, onConcluir }: ForjaProps) {
   const [started, setStarted] = useState(false);
   const c = useCriacao({ catalogos, regiaoCampanha: regiaoFixa ?? null, rankingInicial, campaignId, semCampanha, completar });
   const { d, set, passo } = c;
@@ -149,7 +147,7 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
         <BarraTopo group={cur.group} label={cur.label} onExit={() => { void c.salvarAgora(); setStarted(false); }} />
 
         <div className="fj-sem-barra fj-grade">
-          <MenuLateral step={passo} setStep={c.irPara} completos={c.passosCompletos} nomeMesa={nomeMesa} siglaNarrador={siglaNarrador} status={status} oculto={ocultoPasso} />
+          <MenuLateral step={passo} setStep={c.irPara} completos={c.passosCompletos} nomeMesa={nomeMesa} status={status} oculto={ocultoPasso} />
           <main key={passo} className="fj-boot fj-centro">
             {centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente, semAvatar: semCampanha })}
           </main>
@@ -274,7 +272,7 @@ function useAvatarDaForja() {
 }
 type AvatarDaForja = ReturnType<typeof useAvatarDaForja>;
 
-function BarraTopo({ group, label, onExit }: { group: string; label: string; onExit: () => void }) {
+export function BarraTopo({ group, label, onExit }: { group: string; label: string; onExit: () => void }) {
   return (
     <header className="fj-topo">
       <button type="button" onClick={onExit} className="fj-topo__sair">
@@ -291,7 +289,13 @@ function BarraTopo({ group, label, onExit }: { group: string; label: string; onE
   );
 }
 
-function MenuLateral({ step, setStep, completos, nomeMesa, siglaNarrador, status, oculto = () => false }: { step: number; setStep: (n: number) => void; completos: boolean[]; nomeMesa: string; siglaNarrador: string; status: string; oculto?: (i: number) => boolean }) {
+/** Selo da mesa: as iniciais das duas primeiras palavras que contam ("Mesa de Teste" → MT). */
+function siglaDaMesa(nome: string) {
+  const palavras = nome.split(/\s+/).filter((p) => p && !/^(d[aeo]s?|e|a|o)$/i.test(p));
+  return (palavras.slice(0, 2).map((p) => p[0]).join("") || "—").toUpperCase();
+}
+
+function MenuLateral({ step, setStep, completos, nomeMesa, status, oculto = () => false }: { step: number; setStep: (n: number) => void; completos: boolean[]; nomeMesa: string; status: string; oculto?: (i: number) => boolean }) {
   let last = "";
   return (
     <nav className="fj-menu" aria-label="Passos da forja">
@@ -316,10 +320,10 @@ function MenuLateral({ step, setStep, completos, nomeMesa, siglaNarrador, status
           );
         })}
       </div>
-      {/* A mesa no rodapé do menu: o selo de quem narra primeiro, o nome
+      {/* A mesa no rodapé do menu: o selo com as iniciais da mesa, o nome
           ao lado, alinhado à esquerda — e o estado do rascunho embaixo. */}
       <div className="fj-menu__mesa">
-        <span className="fj-ch-hex fj-menu__narrador">{siglaNarrador}</span>
+        <span className="fj-ch-hex fj-menu__narrador" aria-hidden="true">{siglaDaMesa(nomeMesa)}</span>
         <div>
           <Mono>Mesa ativa</Mono>
           <div className="fj-menu__mesa-nome">{nomeMesa}</div>
@@ -398,7 +402,10 @@ function Doca({ step, setStep, oculto = () => false, pendentes, podeSelar, envia
       if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.defaultPrevented) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-      if (document.querySelector(".rc-recorte-janela, [aria-modal='true']")) return;
+      // A própria Forja abre dentro de uma janela `aria-modal` na mesa: só
+      // bloqueia um modal que esteja POR CIMA dela (Códex, mapa, recorte…).
+      const modais = [...document.querySelectorAll(".rc-recorte-janela, [aria-modal='true']")];
+      if (modais.some((m) => !m.querySelector(".fj-doca"))) return;
       const tecla = e.key.toLowerCase();
       if (tecla === "q" && step > 0) setStep(anterior(step));
       else if (tecla === "e") { if (step < PASSOS.length - 1) setStep(proximo(step)); else if (podeSelarAgora) onSelar(); }
@@ -720,7 +727,16 @@ function lateral({ c, catalogos, classe, view, regiaoCampanha, setRegiaoCampanha
                   </div>
                 );
               })}
-              <p className="fj-recursos__nota">PA no Ranking {RANKINGS_V12[0]}: {classe.progressao[RANKINGS_V12[0]]?.pa ?? "—"}</p>
+              {/* PA no mesmo desenho dos recursos: o valor em losangos, sem barra (não é um recurso que se gasta da ficha). */}
+              <div className="fj-recurso fj-recurso--pa">
+                <div className="fj-ch-l fj-recurso__moldura">
+                  <div className="fj-recurso__topo"><span className="fj-recurso__nome">PA</span><Mono tom="cy">Ranking {d.rankingInicial ?? RANKINGS_V12[0]}</Mono></div>
+                  <div className="fj-recurso__pa">
+                    <span className="fj-recurso__pips">{Array.from({ length: classe.progressao[d.rankingInicial ?? RANKINGS_V12[0]]?.pa ?? 0 }).map((_, i) => <span key={i} />)}</span>
+                    <span className="fj-recurso__valor">{classe.progressao[d.rankingInicial ?? RANKINGS_V12[0]]?.pa ?? "—"}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : <p className="fj-recursos__nota">Escolha um perfil para ver os recursos.</p>}
         </Panel>

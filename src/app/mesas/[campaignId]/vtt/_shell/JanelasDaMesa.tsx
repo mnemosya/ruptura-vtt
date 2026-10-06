@@ -16,6 +16,7 @@
  */
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import type { RankingV12 } from "../../../../../lib/rulesetV12";
 
 /** Cada janela que a mesa sabe abrir sem navegar. */
 export type JanelaDaMesa =
@@ -37,6 +38,12 @@ export interface PersonagemACompletar {
   nome: string;
 }
 
+/** Personagem já criado subindo até `alvo` na Forja de evolução. */
+export interface PersonagemAEvoluir {
+  characterId: string;
+  alvo: RankingV12;
+}
+
 interface ValorJanelas {
   aberta: (janela: JanelaDaMesa) => boolean;
   abrir: (janela: JanelaDaMesa) => void;
@@ -44,6 +51,10 @@ interface ValorJanelas {
   /** Quando presente, "novo-personagem" abre completando este personagem. */
   completar: PersonagemACompletar | null;
   abrirCompletar: (alvo: PersonagemACompletar) => void;
+  evolucao: PersonagemAEvoluir | null;
+  /** Nulo fora da mesa: aí a ficha abre a Forja de evolução por conta própria. */
+  abrirEvolucao: ((alvo: PersonagemAEvoluir) => void) | null;
+  fecharEvolucao: () => void;
 }
 
 const Contexto = createContext<ValorJanelas | null>(null);
@@ -51,6 +62,8 @@ const Contexto = createContext<ValorJanelas | null>(null);
 export function ProvedorJanelasDaMesa({ children }: { children: React.ReactNode }) {
   const [abertas, setAbertas] = useState<ReadonlySet<JanelaDaMesa>>(new Set());
   const [completar, setCompletar] = useState<PersonagemACompletar | null>(null);
+  const [evolucao, setEvolucao] = useState<PersonagemAEvoluir | null>(null);
+  const fecharEvolucao = useCallback(() => setEvolucao(null), []);
 
   const abrir = useCallback((janela: JanelaDaMesa) => {
     setAbertas((atual) => {
@@ -77,8 +90,8 @@ export function ProvedorJanelasDaMesa({ children }: { children: React.ReactNode 
   }, [abrir]);
 
   const valor = useMemo<ValorJanelas>(
-    () => ({ aberta: (j) => abertas.has(j), abrir, fechar, completar, abrirCompletar }),
-    [abertas, abrir, fechar, completar, abrirCompletar],
+    () => ({ aberta: (j) => abertas.has(j), abrir, fechar, completar, abrirCompletar, evolucao, abrirEvolucao: setEvolucao, fecharEvolucao }),
+    [abertas, abrir, fechar, completar, abrirCompletar, evolucao, fecharEvolucao],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
@@ -89,7 +102,7 @@ export function ProvedorJanelasDaMesa({ children }: { children: React.ReactNode 
  * galeria de estilos monta o painel sozinho, e um contexto obrigatório
  * transformaria "quero ver o componente" em "monte a mesa inteira".
  */
-const INERTE: ValorJanelas = { aberta: () => false, abrir: () => {}, fechar: () => {}, completar: null, abrirCompletar: () => {} };
+const INERTE: ValorJanelas = { aberta: () => false, abrir: () => {}, fechar: () => {}, completar: null, abrirCompletar: () => {}, evolucao: null, abrirEvolucao: null, fecharEvolucao: () => {} };
 
 export function useJanelasDaMesa(): ValorJanelas {
   return useContext(Contexto) ?? INERTE;

@@ -58,7 +58,11 @@ import { MinimizedDockContent } from "./panels/MinimizedDockContent";
 import { PinsRow, ConditionsPanel } from "./panels/PinsAndConditions";
 import { AvancoChip, CompletarCriacaoChip, ModoChip, VerNoMapaChip, GravacaoChip } from "./panels/ModoEvolucao";
 import { useJanelasDaMesa } from "../../mesas/[campaignId]/vtt/_shell/JanelasDaMesa";
-import { AvancoRankingModal } from "./panels/AvancoRankingModal";
+import dynamic from "next/dynamic";
+import { useConsoleCloseOverride } from "./ConsoleCloseContext";
+import type { RankingV12 } from "../../../lib/rulesetV12";
+// A Forja de evolução (e o forja.css) só carregam quando alguém evolui.
+const JanelaEvolucao = dynamic(() => import("../../mesas/[campaignId]/vtt/_painel/janelas/JanelaEvolucao").then((m) => m.JanelaEvolucao), { ssr: false });
 import {
   AttackModal,
   BackpackPickerModal,
@@ -89,7 +93,7 @@ type Aux =
   | { tipo: "resistir-atributo" }
   | { tipo: "retorno-colapso"; recurso: "pv" | "pe"; valor: number; desfecho: "morte" | "coma" }
   | { tipo: "aviso"; titulo: string; mensagem: string }
-  | { tipo: "avanco" }
+  | { tipo: "avanco"; alvo: RankingV12 }
   | null;
 
 export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; onClose: () => void; api: ConsoleApi }) {
@@ -113,6 +117,18 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
   /** Criado só com o nome ("+ Personagem"): ainda falta passar pelo assistente v1.2. */
   const criacaoPendente = (api.character as unknown as { criacao_pendente?: boolean }).criacao_pendente === true;
   const janelas = useJanelasDaMesa();
+  const fecharConsole = useConsoleCloseOverride();
+  /**
+   * Na mesa, a Forja de evolução é uma janela da mesa: a ficha fecha e
+   * reabre quando a Forja sai ou sela. Fora dela (Personagens), a ficha
+   * abre a Forja por cima de si mesma.
+   */
+  const evoluir = (alvo: RankingV12) => {
+    if (janelas.abrirEvolucao && api.mesa && fecharConsole) {
+      janelas.abrirEvolucao({ characterId: api.mesa.characterId, alvo });
+      fecharConsole();
+    } else setAux({ tipo: "avanco", alvo });
+  };
   const tabpanelRef = useRef<HTMLDivElement>(null);
 
   /** Última aba de NAVEGAÇÃO (nunca "personagem") — pra restaurar ao
@@ -443,7 +459,7 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
             )}
             {!api.somenteLeitura && !criacaoPendente && <ModoChip modo={api.modo} onAlternar={api.definirModo} v12={rankingV12 != null} />}
             {!api.somenteLeitura && !criacaoPendente && rankingV12 && api.mesa && (
-              <AvancoChip ranking={rankingV12} onAbrir={() => setAux({ tipo: "avanco" })} />
+              <AvancoChip ranking={rankingV12} onEscolher={(alvo) => evoluir(alvo)} />
             )}
           </>
         }
@@ -522,7 +538,7 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
       )}
 
       {aux?.tipo === "avanco" && api.mesa && (
-        <AvancoRankingModal campaignId={api.mesa.campaignId} characterId={api.mesa.characterId} onFechar={() => setAux(null)} />
+        <JanelaEvolucao campaignId={api.mesa.campaignId} characterId={api.mesa.characterId} alvo={aux.alvo} onFechar={() => setAux(null)} />
       )}
 
       {aux?.tipo === "surto" && (

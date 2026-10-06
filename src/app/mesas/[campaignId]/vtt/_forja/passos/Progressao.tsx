@@ -5,6 +5,7 @@ import type { CatalogosCriacaoV12 } from "../../_acoes/criacaoV12Actions";
 import {
   ATRIBUTO_MAXIMO_V12,
   NIVEL_MAXIMO_VERTENTE_V12,
+  RANKINGS_V12,
   VERTENTES_V12,
   type AttributeIdV12,
   type DraftAvancoV12,
@@ -16,7 +17,6 @@ import { VERTENTES_ACERVO } from "../acervo/vertentes";
 import { Mono, Panel } from "../ui";
 import { Cabecalho } from "./Trajetoria";
 import { SemClasse } from "./Pericias";
-import type { SetDraft } from "../tipos";
 
 const ATRIBUTOS: Array<{ id: AttributeIdV12; nome: string }> = [
   { id: "corpo", nome: "Corpo" }, { id: "mente", nome: "Mente" }, { id: "animo", nome: "Ânimo" },
@@ -27,7 +27,7 @@ const nomeVertente = (id: string) => VERTENTES_ACERVO.find((v) => v.id === id)?.
 const primeira = (t: string) => t.split(/(?<=[.!?])\s/)[0];
 
 /** Resumo de uma etapa na trilha: o que foi escolhido, ou o que ela pede. */
-function resumoEtapa(e: EtapaProgressaoV12, catalogos: CatalogosCriacaoV12): string {
+function resumoEtapa(e: EtapaProgressaoV12, catalogos: Pick<CatalogosCriacaoV12, "subclasses" | "pericias">): string {
   const a = e.avanco, x = e.escolha;
   if (!e.faltas.length) {
     const sub = a.escolhe_subclasse ? (catalogos.subclasses ?? []).find((s) => s.slug === x.subclasse_id)?.nome : undefined;
@@ -47,15 +47,20 @@ function resumoEtapa(e: EtapaProgressaoV12, catalogos: CatalogosCriacaoV12): str
  * concede (com o que cada característica faz) e o que ele pede.
  * Ao selar, os avanços são aplicados em sequência com estas escolhas.
  */
-export function Progressao({ d, set, catalogos, etapas, irParaClasse }: {
-  d: DraftV12;
-  set: SetDraft;
-  catalogos: CatalogosCriacaoV12;
+export function Progressao({ d, set, catalogos, etapas, irParaClasse, kicker = "Mecânica · 09", semSalto = false }: {
+  d: Pick<DraftV12, "classeSlug" | "avancos">;
+  set: (p: Pick<DraftV12, "avancos">) => void;
+  catalogos: Pick<CatalogosCriacaoV12, "subclasses" | "pericias">;
   etapas: EtapaProgressaoV12[];
   irParaClasse: () => void;
+  kicker?: string;
+  /** Sem o "F → X" do cabeçalho (a evolução já mostra o salto na placa). */
+  semSalto?: boolean;
 }) {
   const [aberto, setAberto] = useState<RankingV12 | null>(null);
-  const cabecalho = <Cabecalho kicker="Mecânica · 09" title="Progressão" right={etapas.length ? <Mono tom="cy">F → {etapas[etapas.length - 1].para}</Mono> : undefined} />;
+  // O Ranking de onde a trilha parte: F na criação, o atual na evolução.
+  const de = etapas.length ? RANKINGS_V12[RANKINGS_V12.indexOf(etapas[0].para) - 1] : "F";
+  const cabecalho = <Cabecalho kicker={kicker} title="Progressão" right={etapas.length && !semSalto ? <Mono tom="cy">{de} → {etapas[etapas.length - 1].para}</Mono> : undefined} />;
   if (!d.classeSlug) return <div className="fj-passo">{cabecalho}<SemClasse irParaClasse={irParaClasse} oque="As escolhas de cada Ranking" /></div>;
   if (!etapas.length) return <div className="fj-passo">{cabecalho}<p className="fj-vazio">Com o rank inicial F não há progressão a escolher.</p></div>;
 
@@ -200,7 +205,7 @@ export function Progressao({ d, set, catalogos, etapas, irParaClasse }: {
 }
 
 /** Painel lateral: o estado de cada Ranking da progressão. */
-export function ProgressaoLateral({ etapas }: { etapas: EtapaProgressaoV12[] }) {
+export function ProgressaoLateral({ etapas, nota = "Ao selar, o personagem nasce no F e sobe Ranking a Ranking com estas escolhas. Magias adicionais ficam pendentes na ficha." }: { etapas: EtapaProgressaoV12[]; nota?: string }) {
   if (!etapas.length) return null;
   const faltam = etapas.filter((e) => e.faltas.length).length;
   return (
@@ -213,7 +218,7 @@ export function ProgressaoLateral({ etapas }: { etapas: EtapaProgressaoV12[] }) 
           </li>
         ))}
       </ul>
-      <p className="fj-prog-lado__nota">Ao selar, o personagem nasce no F e sobe Ranking a Ranking com estas escolhas. Magias adicionais ficam pendentes na ficha.</p>
+      <p className="fj-prog-lado__nota">{nota}</p>
     </Panel>
   );
 }

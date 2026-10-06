@@ -109,7 +109,7 @@ export function OrigemNarrativa({ d, set, forja, setForja }: { d: DraftV12; set:
     <div className="fj-pilha">
       <Panel title="Como se tornou refratário">
         <label className="fj-sr" htmlFor="fj-origem">Como se tornou refratário</label>
-        <textarea id="fj-origem" rows={6} value={forja.relato} onChange={(e) => setForja({ relato: e.target.value })} placeholder="O dia em que a ruptura te tocou…" className="fj-area-livre" />
+        <textarea id="fj-origem" rows={6} value={forja.relato} onChange={(e) => setForja({ relato: e.target.value })} placeholder="ex: Meu exame nunca chegou aos registros oficiais. Minha mãe trabalhava no setor responsável e apagou tudo antes que alguém pudesse me encaminhar. Desde então, vivo com um nome que não é meu." className="fj-area-livre" />
         <div className="fj-rpi">
           <label htmlFor="fj-rpi-codinome"><Mono>Codinome</Mono></label>
           <input id="fj-rpi-codinome" value={d.codinome} onChange={(e) => set({ codinome: e.target.value.toUpperCase() })} className="fj-rpi__input" />
