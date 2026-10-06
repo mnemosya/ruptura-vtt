@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, ChevronUp, CloudSun, Dices } from "lucide-react";
+import {
+  ChevronLeft, ChevronRight, ChevronUp, Cloud, CloudDrizzle, CloudFog, CloudLightning,
+  CloudRain, CloudRainWind, CloudSnow, CloudSun, CloudSunRain, Dices, Gem, Snowflake,
+  Sun, Wind, Zap, type LucideIcon,
+} from "lucide-react";
 import { getBrowserSupabaseClient } from "../../../../../lib/supabase/browserClient";
 import { lerTempoCampanhaAction, salvarTempoCampanhaAction } from "../_acoes/tempoActions";
 import {
@@ -11,9 +15,32 @@ import {
   sortearClima, validarTempo, type Condicao, type TempoCampanha,
 } from "../_dominio/tempoCampanha";
 import { JanelaFerramenta } from "./JanelaFerramenta";
+import { Select } from "../_dados3d/ResultadoRolagem";
 
 const DIAS = Array.from({ length: 30 }, (_, i) => i + 1);
 const SEMANA = [1, 2, 3, 4, 5, 6];
+const ICONES_CONDICAO: Record<Condicao, LucideIcon> = {
+  ceu_limpo: Sun,
+  parcialmente_nublado: CloudSun,
+  nublado: Cloud,
+  neblina: CloudFog,
+  chuva_leve: CloudDrizzle,
+  chuva: CloudRain,
+  chuva_forte: CloudRainWind,
+  tempestade: CloudLightning,
+  neve_leve: Snowflake,
+  neve: CloudSnow,
+  nevasca: Wind,
+  chuva_iridescente: CloudSunRain,
+  nevoeiro_cristalino: Gem,
+  tempestade_arcana: Zap,
+};
+const OPCOES_CONDICAO = CONDICOES_CLIMATICAS.map(({ id, nome }) => {
+  const Icone = ICONES_CONDICAO[id];
+  return { id, rotulo: nome, icone: <Icone size={15} /> };
+});
+const OPCOES_REGIAO = REGIOES.map((id) => ({ id, rotulo: id }));
+const OPCOES_VENTO = VENTOS.map((id) => ({ id, rotulo: NOMES_VENTO[id] }));
 function dataPronta(t: TempoCampanha) { return minutoImperial(t) !== null; }
 function tituloData(t: TempoCampanha) {
   if (!dataPronta(t)) return "Data não definida";
@@ -91,12 +118,14 @@ export function TempoDaCampanha({ campaignId, ehNarrador }: { campaignId: string
   const mesVisivel = rascunho.mes ?? 1, anoVisivel = rascunho.ano ?? 186;
   const visto = ehNarrador ? rascunho : atual;
   const resumo = ehNarrador && existeEstado ? rascunho : atual;
+  const IconeResumo = ICONES_CONDICAO[resumo.condicao];
+  const IconeCondicao = ICONES_CONDICAO[visto.condicao];
   return <>
     <button ref={chipRef} type="button" className="rv-tempo-chip" onClick={() => { setAberto((v) => !v); setErro(null); }}
       aria-label={`Tempo da campanha: ${tituloData(resumo)}. ${existeEstado ? nomeCondicao(resumo.condicao) : "Clima não definido"}.${temMudancas && existeEstado ? " Alterações não publicadas." : ""} Abrir detalhes`}
       data-pendente={temMudancas && existeEstado && ehNarrador}
       aria-expanded={aberto} data-testid="tempo-campanha-chip">
-      <CloudSun size={15} aria-hidden="true" />
+      <IconeResumo size={15} aria-hidden="true" />
       {carregando ? <span className="rv-tempo-chip-carregando">Carregando…</span> : <>
         <strong className="rv-tempo-chip-hora">{resumo.hora ?? "––:––"}</strong>
         <span className="rv-tempo-chip-separador" aria-hidden="true" />
@@ -106,7 +135,7 @@ export function TempoDaCampanha({ campaignId, ehNarrador }: { campaignId: string
       </>}
       <ChevronUp size={14} className="rv-tempo-chip-seta" data-aberto={aberto} aria-hidden="true" />
     </button>
-    {aberto && <JanelaFerramenta id="tempo" icone={<CloudSun size={16} />} titulo="Tempo e clima"
+    {aberto && <JanelaFerramenta id="tempo" icone={<IconeCondicao size={16} />} titulo="Tempo e clima"
       modo="Calendário Imperial · campanha" rotulo="Tempo e clima da campanha"
       rotuloFechar="Fechar tempo e clima" aoFechar={() => setAberto(false)} className="rv-tempo-janela" ancoraAcimaDe={chipRef}>
       <div className="rv-fp-corpo rv-tempo-corpo">
@@ -134,7 +163,7 @@ export function TempoDaCampanha({ campaignId, ehNarrador }: { campaignId: string
         <section className="rv-tempo-secao" aria-label="Condições climáticas">
           <h3 className="rv-tempo-rotulo">Condições atuais</h3>
           <div className="rv-tempo-condicao" data-especial={condicaoEspecial(visto.condicao)}>
-            <CloudSun size={23} aria-hidden="true" />
+            <IconeCondicao size={23} aria-hidden="true" />
             <span><strong>{existeEstado ? nomeCondicao(visto.condicao) : "Clima não definido"}</strong><small>{existeEstado ? `${visto.regiao} · vento ${visto.vento}` : "Aguardando o narrador"}</small></span>
             <b>{existeEstado && visto.temperaturaC !== null ? `${visto.temperaturaC} °C` : "—"}</b>
           </div>
@@ -156,15 +185,12 @@ export function TempoDaCampanha({ campaignId, ehNarrador }: { campaignId: string
             <label>Ano CI<input type="number" min={0} max={9999} value={rascunho.ano ?? ""} onChange={(e) => mudarData({ ano: e.target.value === "" ? null : Number(e.target.value) })} /></label>
             <label>Horário<input type="time" value={rascunho.hora ?? ""} onChange={(e) => mudarData({ hora: e.target.value || null })} /></label>
           </div>
-          <label className="rv-tempo-campo-clima">Condição
-            <select value={rascunho.condicao} onChange={(e) => selecionarClima(e.target.value as Condicao)}>
-              {CONDICOES_CLIMATICAS.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-            </select>
-          </label>
+          <Select label="Condição" className="rv-tempo-campo-clima" value={rascunho.condicao}
+            onChange={(id) => selecionarClima(id as Condicao)} options={OPCOES_CONDICAO} />
           <div className="rv-tempo-editar-data">
-            <label>Região<select value={rascunho.regiao} onChange={(e) => mudarData({ regiao: e.target.value as TempoCampanha["regiao"] })}>{REGIOES.map((r) => <option key={r} value={r}>{r}</option>)}</select></label>
+            <Select label="Região" value={rascunho.regiao} onChange={(id) => mudarData({ regiao: id as TempoCampanha["regiao"] })} options={OPCOES_REGIAO} />
             <label>Temperatura °C<input type="number" min={-100} max={100} step="0.1" value={rascunho.temperaturaC ?? ""} onChange={(e) => alterar({ temperaturaC: e.target.value === "" ? null : Number(e.target.value) })} /></label>
-            <label>Vento<select value={rascunho.vento} onChange={(e) => alterar({ vento: e.target.value as TempoCampanha["vento"] })}>{VENTOS.map((v) => <option key={v} value={v}>{NOMES_VENTO[v]}</option>)}</select></label>
+            <Select label="Vento" value={rascunho.vento} onChange={(id) => alterar({ vento: id as TempoCampanha["vento"] })} options={OPCOES_VENTO} />
             <label>Temperatura alvo °C<input type="number" min={-100} max={100} step="0.1" value={rascunho.temperaturaAlvoC ?? ""} onChange={(e) => alterar({ temperaturaAlvoC: e.target.value === "" ? null : Number(e.target.value) })} /></label>
             <label>Duração restante (h)<input type="number" min={1} max={720} value={rascunho.climaAteMinuto === null || minutoImperial(rascunho) === null ? "" : Math.max(0, Math.round((rascunho.climaAteMinuto - minutoImperial(rascunho)!) / 60))} onChange={(e) => { const agora = minutoImperial(rascunho); if (agora !== null && e.target.value !== "") alterar({ climaAteMinuto: Math.min(agora + Number(e.target.value) * 60, 10000 * 360 * 1440 - 1) }); }} /></label>
           </div>

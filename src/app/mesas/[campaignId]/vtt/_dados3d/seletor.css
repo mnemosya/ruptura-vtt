@@ -15,6 +15,8 @@
 .rv-seletor-gatilho:focus-visible { outline: 2px solid #45b8c9; outline-offset: 1px; }
 .rv-seletor-gatilho:disabled { color: #4f6285; cursor: not-allowed; }
 .rv-seletor-valor { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; white-space: nowrap; }
+.rv-seletor-icone { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 16px; color: #45b8c9; }
+.rv-seletor-icone svg { width: 15px; height: 15px; }
 .rv-seletor-nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .rv-dados-painel .rv-seletor-valor { font-size: 12px; font-weight: 600; }
 .rv-seletor-medida { flex: none; font-size: 11px; padding-inline: 3px; }

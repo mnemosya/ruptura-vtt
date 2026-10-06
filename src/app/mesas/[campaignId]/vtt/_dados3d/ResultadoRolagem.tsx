@@ -707,7 +707,7 @@ export const VISIBILIDADES: { v: TableLogVisibility; label: string; dica: string
  */
 export function Select({ label, value, onChange, options, disabled = false, labelOculto = false, className, testId }: {
   label: string; value: string; onChange: (id: string) => void;
-  options: { id: string; rotulo: string; valor?: string }[]; disabled?: boolean;
+  options: { id: string; rotulo: string; valor?: string; icone?: ReactNode }[]; disabled?: boolean;
   labelOculto?: boolean; className?: string; testId?: string;
 }) {
   const gatilho = useRef<HTMLButtonElement>(null);
@@ -761,6 +761,7 @@ export function Select({ label, value, onChange, options, disabled = false, labe
         onClick={() => (pos ? fechar() : abrir())}
       >
         <span id={`${idRotulo}-valor`} className="rv-seletor-valor">
+          {atual?.icone && <span className="rv-seletor-icone" aria-hidden="true">{atual.icone}</span>}
           <span className="rv-seletor-nome">{atual?.rotulo ?? "—"}</span>
           {atual?.valor && <kbd className="rv-tecla rv-seletor-medida">{atual.valor}</kbd>}
         </span>
@@ -783,6 +784,7 @@ export function Select({ label, value, onChange, options, disabled = false, labe
               className="rv-seletor-opcao"
               onClick={() => { onChange(o.id); fechar(); gatilho.current?.focus(); }}
             >
+              {o.icone && <span className="rv-seletor-icone" aria-hidden="true">{o.icone}</span>}
               <span className="rv-seletor-nome">{o.rotulo}</span>
               {o.valor && <kbd className="rv-tecla rv-seletor-medida">{o.valor}</kbd>}
             </button>

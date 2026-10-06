@@ -366,6 +366,8 @@
 .rv-tempo-aurora-controle input { width: auto; accent-color: var(--rv-ar); }
 .rv-tempo-corpo button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 7px 9px; border: 1px solid var(--rv-line-strong); border-radius: 2px; background: var(--rv-panel-2); color: var(--rv-ink); font: 600 10px var(--rv-display); text-transform: uppercase; letter-spacing: .05em; cursor: pointer; }
 .rv-tempo-corpo button:hover { border-color: var(--rv-line-hover); color: var(--rv-cy-hi); }
+.rv-tempo-corpo .rv-seletor-gatilho { display: flex; justify-content: space-between; gap: 4px; width: 100%; min-height: 34px; padding: 0 6px; border-radius: 4px 7px 4px 7px; background: transparent; color: #b9c9dc; font: 11px var(--rv-mono); text-align: left; letter-spacing: 0; }
+.rv-tempo-corpo .rv-seletor-gatilho:hover, .rv-tempo-corpo .rv-seletor-gatilho[aria-expanded="true"] { border-color: color-mix(in srgb, #45b8c9 55%, transparent); color: #45b8c9; }
 .rv-tempo-corpo button:disabled { opacity: .5; cursor: default; }
 .rv-tempo-sortear { margin-top: 0; }
 .rv-tempo-editar-btn { margin-left: auto; }
