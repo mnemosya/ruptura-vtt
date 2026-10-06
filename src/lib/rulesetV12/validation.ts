@@ -302,7 +302,8 @@ export function validateCharacterV2(value: unknown): ValidationResultV12<Charact
   const trajectory = requireRecord(root.trajetoria, "trajetoria", errors);
   const regiao = requireSlug(trajectory.regiao_id, "trajetoria.regiao_id", errors);
   if (regiao && !(regiao in REGIOES_V12)) errors.push(`trajetoria.regiao_id: "${regiao}" não é uma das cinco regiões do Império.`);
-  requireString(trajectory.local_origem, "trajetoria.local_origem", errors);
+  // Local de origem saiu da Forja (05/10/2026): opcional, pode vir vazio.
+  optionalString(trajectory.local_origem, "trajetoria.local_origem", errors);
   requireStringArray(trajectory.idiomas, "trajetoria.idiomas", errors, 1);
   const background = requireRecord(trajectory.antecedente, "trajetoria.antecedente", errors);
   requireSlug(background.antecedente_id, "trajetoria.antecedente.antecedente_id", errors);

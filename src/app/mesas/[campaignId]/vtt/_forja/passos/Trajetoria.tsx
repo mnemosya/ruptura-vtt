@@ -33,10 +33,14 @@ const semFamiliaridade = (descricao: string, familiaridade: string) => (familiar
 
 export function Antecedente({ d, set, catalogos }: { d: DraftV12; set: SetDraft; catalogos: CatalogosCriacaoV12 }) {
   const lista = catalogos.antecedentes;
-  const idx = Math.max(0, lista.findIndex((x) => x.slug === d.antecedenteId));
-  const cur = lista[idx];
-  if (!cur) return <p className="fj-vazio">Nenhum Antecedente publicado para esta mesa.</p>;
-  const linked = d.antecedenteId === cur.slug;
+  // Ver e vincular são coisas diferentes: clicar na lista só abre o
+  // registro; o botão "Vincular antecedente" é que grava a escolha.
+  // Nada vem vinculado; sem escolha, abre no primeiro registro (Acadêmico) só para leitura.
+  const [vendo, setVendo] = useState<string>(d.antecedenteId || lista[0]?.slug || "");
+  const idx = lista.findIndex((x) => x.slug === vendo);
+  const cur = idx >= 0 ? lista[idx] : undefined;
+  if (!lista.length) return <p className="fj-vazio">Nenhum Antecedente publicado para esta mesa.</p>;
+  const linked = !!cur && d.antecedenteId === cur.slug;
   return (
     <div className="fj-passo">
       <Cabecalho kicker="Trajetória · 02" title="Antecedente" right={<Mono>{lista.length} registros</Mono>} />
@@ -46,7 +50,7 @@ export function Antecedente({ d, set, catalogos }: { d: DraftV12; set: SetDraft;
             {lista.map((bg, i) => {
               const on = bg.slug === d.antecedenteId;
               return (
-                <button type="button" key={bg.slug} onClick={() => set({ antecedenteId: bg.slug })} aria-pressed={on} className={`fj-indice-lista__item ${on ? "fj-indice-lista__item--on" : ""}`}>
+                <button type="button" key={bg.slug} onClick={() => setVendo(bg.slug)} aria-current={bg.slug === cur?.slug ? "true" : undefined} className={`fj-indice-lista__item ${on ? "fj-indice-lista__item--on" : ""} ${bg.slug === cur?.slug ? "fj-indice-lista__item--vendo" : ""}`}>
                   <span className="fj-indice-lista__n">{pad(i)}</span>
                   <span className="fj-indice-lista__nome">{bg.nome}</span>
                   {on && <span className="fj-losango fj-losango--sm fj-losango--ambar fj-indice-lista__marca" />}
@@ -55,6 +59,14 @@ export function Antecedente({ d, set, catalogos }: { d: DraftV12; set: SetDraft;
             })}
           </div>
         </div>
+        {!cur ? (
+          <div className="fj-borda fj-ch fj-mestre-detalhe__registro">
+            <div className="fj-ch fj-vidro fj-registro fj-registro--vazio">
+              <Mono tom="cy">Nenhum antecedente vinculado</Mono>
+              <p>Escolha um antecedente na lista para ler o registro e vinculá-lo.</p>
+            </div>
+          </div>
+        ) : (
         <div className={`${linked ? "fj-borda-ambar" : "fj-borda"} fj-ch fj-mestre-detalhe__registro`}>
           <div key={cur.slug} className="fj-ch fj-vidro fj-boot fj-sem-barra fj-registro">
             <span className="fj-registro__marca-dagua">{pad(idx)}</span>
@@ -71,11 +83,17 @@ export function Antecedente({ d, set, catalogos }: { d: DraftV12; set: SetDraft;
                 <p>{cur.familiaridade}</p>
               </div>
             )}
+            <div className="fj-registro__acoes">
+              {linked
+                ? <button type="button" onClick={() => set({ antecedenteId: "" })} className="fj-ch fj-botao-fantasma">Desvincular</button>
+                : <button type="button" onClick={() => set({ antecedenteId: cur.slug })} className="fj-ch fj-botao-vincular" data-testid="forja-vincular-antecedente">Vincular antecedente</button>}
+            </div>
             <div className="fj-registro__trilho" aria-hidden="true">
               {lista.map((x, i) => <span key={x.slug} className={`fj-registro__passo ${i === idx ? "fj-registro__passo--atual" : i < idx ? "fj-registro__passo--antes" : ""}`} />)}
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );
@@ -87,10 +105,9 @@ export function Antecedente({ d, set, catalogos }: { d: DraftV12; set: SetDraft;
  * Nada aqui é obrigatório.
  */
 export function OrigemNarrativa({ d, set, forja, setForja }: { d: DraftV12; set: SetDraft; forja: DraftForjaV12; setForja: (p: Partial<DraftForjaV12>) => void }) {
-  const preenchidos = [...Object.values(d.antecedente), ...Object.values(d.refratario), ...Object.values(d.rpi)].filter((v) => v.trim()).length;
   return (
     <div className="fj-pilha">
-      <Panel title="Como se tornou refratário" right={<Mono tom="cy">Narrativo</Mono>}>
+      <Panel title="Como se tornou refratário">
         <label className="fj-sr" htmlFor="fj-origem">Como se tornou refratário</label>
         <textarea id="fj-origem" rows={6} value={forja.relato} onChange={(e) => setForja({ relato: e.target.value })} placeholder="O dia em que a ruptura te tocou…" className="fj-area-livre" />
         <div className="fj-rpi">
@@ -99,13 +116,8 @@ export function OrigemNarrativa({ d, set, forja, setForja }: { d: DraftV12; set:
         </div>
       </Panel>
 
-      <details className="fj-detalhes">
-        <summary className="fj-detalhes__resumo">
-          <span>Detalhes para o narrador</span>
-          <Mono pequeno>{preenchidos ? `${preenchidos}/9 preenchidos` : "Opcional"}</Mono>
-        </summary>
-        <div className="fj-borda fj-ch">
-          <div className="fj-ch fj-vidro fj-detalhes__corpo">
+      <Panel title="Detalhes para o narrador">
+          <div className="fj-detalhes__corpo">
             <Grupo titulo="Antecedente">
               <CampoCurto rotulo="Meio" valor={d.antecedente.meio} onChange={(v) => set({ antecedente: { ...d.antecedente, meio: v } })} />
               <CampoCurto rotulo="Papel" valor={d.antecedente.papel} onChange={(v) => set({ antecedente: { ...d.antecedente, papel: v } })} />
@@ -122,8 +134,7 @@ export function OrigemNarrativa({ d, set, forja, setForja }: { d: DraftV12; set:
               <CampoCurto rotulo="Como o RPI chegou às suas mãos" valor={d.rpi.origem} onChange={(v) => set({ rpi: { ...d.rpi, origem: v } })} />
             </Grupo>
           </div>
-        </div>
-      </details>
+      </Panel>
     </div>
   );
 }
@@ -189,22 +200,20 @@ export function Tracos({ d, set, catalogos }: { d: DraftV12; set: SetDraft; cata
 
   return (
     <div className="fj-passo" data-tipo={tipo}>
-      <Cabecalho kicker="Trajetória · 03" title="Qualidades & Complicações" right={
-        <div className="fj-orcamentos">
-          <div className="fj-orcamento"><Mono tom="cy">Qualidades</Mono><Pips n={somaPontosV12(d.qualidades)} max={QUALIDADES} tipo="qualidades" /></div>
-          <div className="fj-orcamento"><Mono tom="am">Complicações</Mono><Pips n={somaPontosV12(d.complicacoes)} max={COMPLICACOES_MINIMO} tipo="complicacoes" /></div>
-        </div>
-      } />
+      <Cabecalho kicker="Trajetória · 03" title="Qualidades & Complicações" />
+      {/* O seletor ocupa a largura toda e carrega o orçamento de cada lado
+          (os pips), no lugar do contador que repetia os dois nomes acima. */}
+      <div className="fj-segmentado fj-segmentado--largo" role="tablist" aria-label="Qualidades ou Complicações">
+        {(["qualidades", "complicacoes"] as const).map((k) => (
+          <button type="button" role="tab" aria-selected={tipo === k} key={k} onClick={() => { setTipo(k); setLvl(null); }} title={`${catalogos[k].length} opções`} className={`fj-segmentado__op fj-segmentado__op--${k} ${tipo === k ? "fj-segmentado__op--on" : ""}`}>
+            {ROTULO[k]}
+            <Pips n={somaPontosV12(d[k])} max={k === "qualidades" ? QUALIDADES : COMPLICACOES_MINIMO} tipo={k} />
+          </button>
+        ))}
+      </div>
       <div className="fj-mestre-detalhe fj-mestre-detalhe--tracos">
         <div className="fj-tracos__coluna">
-          <div className="fj-tracos__abas" role="tablist">
-            {(["qualidades", "complicacoes"] as const).map((k) => (
-              <button type="button" role="tab" aria-selected={tipo === k} key={k} onClick={() => { setTipo(k); setLvl(null); }} className={`fj-ch-tab fj-tracos__aba fj-tracos__aba--${k} ${tipo === k ? "fj-tracos__aba--on" : ""}`}>
-                {ROTULO[k]} <span className="fj-tracos__qtd">{catalogos[k].length}</span>
-              </button>
-            ))}
-          </div>
-          <div className="fj-borda fj-ch fj-tracos__lista">
+          <div className={`${tipo === "complicacoes" ? "fj-borda-ambar" : "fj-borda"} fj-ch fj-tracos__lista`}>
             <div className="fj-ch fj-vidro fj-sem-barra fj-tracos__rolagem">
               {categorias.map((cat) => {
                 const items = list.filter((x) => (x.categoria ?? "") === cat);
@@ -232,7 +241,7 @@ export function Tracos({ d, set, catalogos }: { d: DraftV12; set: SetDraft; cata
           </div>
         </div>
 
-        <div className={`${minhas.length && tipo === "complicacoes" ? "fj-borda-ambar" : "fj-borda"} fj-ch fj-mestre-detalhe__registro`}>
+        <div className={`${tipo === "complicacoes" ? "fj-borda-ambar" : "fj-borda"} fj-ch fj-mestre-detalhe__registro`}>
           <div key={tipo + cur.slug} className="fj-ch fj-vidro fj-boot fj-sem-barra fj-registro fj-registro--traco">
             <div className="fj-registro__linha">
               <Mono className="fj-tom-tipo">{tipo === "qualidades" ? "Qualidade" : "Complicação"} · {nomeCategoria(cur.categoria)}</Mono>
@@ -248,9 +257,11 @@ export function Tracos({ d, set, catalogos }: { d: DraftV12; set: SetDraft; cata
             <div className="fj-traco__acoes">
               <div className="fj-traco__custos">
                 <Mono>Custo</Mono>
-                {cur.custos.map((c) => (
-                  <button type="button" key={c} disabled={cur.custos.length < 2} onClick={() => setLvl(c)} className={`fj-ch-tab fj-traco__custo-btn ${level === c ? "fj-traco__custo-btn--on" : ""}`}>{c} pt</button>
-                ))}
+                <span className="fj-custo-seg" role="radiogroup" aria-label="Custo">
+                  {cur.custos.map((c) => (
+                    <button type="button" role="radio" aria-checked={level === c} key={c} disabled={cur.custos.length < 2} onClick={() => setLvl(c)} className={`fj-custo-seg__op ${level === c ? "fj-custo-seg__op--on" : ""}`}>{c} pt</button>
+                  ))}
+                </span>
               </div>
               <div className="fj-traco__botoes">
                 {minhas.length > 0 && <button type="button" onClick={remover} className="fj-ch fj-botao-fantasma">{cur.repetivel && minhas.length > 1 ? "Remover uma" : "Remover"}</button>}

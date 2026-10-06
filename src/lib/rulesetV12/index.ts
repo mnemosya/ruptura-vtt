@@ -4,5 +4,6 @@ export * from "./creation";
 export * from "./draft";
 export * from "./pendencias";
 export * from "./progression";
+export * from "./progressaoInicial";
 export * from "./accessChallenge";
 export * from "./crew";

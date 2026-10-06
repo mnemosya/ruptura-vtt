@@ -3,8 +3,9 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { MAPA_DO_IMPERIO, REGIOES, REGRAS_DE_ORIGEM, type RegiaoAcervo } from "../acervo/regioes";
-import { BotaoCodex, BotaoEscolha, FaixaEstado, IndiceCodex, SecHead, Shell, useAtalhoCodex, useIndiceAtivo, type ItemIndice } from "../Codex";
-import { Key, Mono, Panel } from "../ui";
+import { BotaoCodex, BotaoEscolha, IndiceCodex, SecHead, Shell, useAtalhoCodex, useIndiceAtivo, type ItemIndice } from "../Codex";
+import { Key, Mono } from "../ui";
+import { CartaoDossie } from "./CartaoDossie";
 import type { SetDraft } from "../tipos";
 import type { DraftV12 } from "../../../../../../lib/rulesetV12";
 import { oxanium } from "../../../../../_design/oxanium";
@@ -41,48 +42,33 @@ export function RegiaoLateral({ d, set, id, regiaoCampanha, setRegiaoCampanha }:
 
   return (
     <>
-      <Panel title={r.nome} right={<Mono tom="cy">{r.lang}</Mono>} ambar={on}>
-        <FaixaEstado on={on} confirmado="ORIGEM FIXADA" pendente="VISUALIZANDO · NÃO CONFIRMADA" />
-
-        <div key={id} className="fj-boot">
-          <Mono tom="am">Como é crescer aqui</Mono>
-          <p className="fj-lado__destaque">{r.grow}</p>
-          <p className="fj-lado__citacao" style={{ borderColor: r.tint }}>{r.mark}</p>
-
-          <dl className="fj-lado__dados">
-            <div className="fj-lado__dado"><dt><Mono pequeno>Capital</Mono></dt><dd className="fj-lado__valor">{r.capital}</dd></div>
-            <div className="fj-lado__dado"><dt><Mono pequeno>Idiomas</Mono></dt><dd className="fj-lado__valor fj-lado__valor--am">{langs.join(" · ")}</dd></div>
-          </dl>
-          {setRegiaoCampanha ? (
-            <label className="fj-campo fj-lado__campo">
-              <Mono pequeno>A campanha começa em</Mono>
-              <select value={regiaoCampanha ?? ""} onChange={(e) => setRegiaoCampanha(e.target.value as RegiaoIdV12)} className="fj-campo__input fj-campo__select">
-                <option value="" disabled>Escolha a região</option>
-                {REGIOES.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}
-              </select>
-            </label>
-          ) : null}
-          <p className="fj-lado__nota">
-            {regiaoCampanha ? `Mesa começa em ${reg(regiaoCampanha).nome}. ` : "Informe onde a campanha começa para somar o idioma dela. "}
-            {regiaoCampanha && (langs.length === 1 ? "Mesma língua — apenas um idioma." : `Inclui ${langs[1]} da região da campanha.`)}
-          </p>
-
-          <label className="fj-campo fj-lado__campo">
-            <Mono pequeno>Cidade, distrito ou comunidade</Mono>
-            <input
-              value={on ? d.localOrigem : ""}
-              disabled={!on}
-              onChange={(e) => set({ localOrigem: e.target.value })}
-              placeholder={on ? `Ex.: níveis baixos de ${r.capital}` : "Fixe a origem para especificar"}
-              className="fj-campo__input fj-campo__input--display"
-            />
+      <CartaoDossie
+        arte={r.img}
+        kicker="Região"
+        nome={r.nome}
+        on={on}
+        selo={on ? "Origem fixada" : "Visualizando"}
+        frase={r.grow}
+        linhas={[
+          { rotulo: "Capital", valor: r.capital },
+          { rotulo: "Idiomas", valor: langs.join(" · "), ambar: true },
+        ]}
+        codex={
+          <div className="fj-lado__codex">
+            <BotaoCodex arte={r.img} kicker={`Atlas · ${r.nome}`} titulo="Ler códex regional" onOpen={() => setOpen(true)} />
+          </div>
+        }
+      >
+        {setRegiaoCampanha ? (
+          <label className="fj-campo fj-dossie__campo">
+            <Mono pequeno>A campanha começa em</Mono>
+            <select value={regiaoCampanha ?? ""} onChange={(e) => setRegiaoCampanha(e.target.value as RegiaoIdV12)} className="fj-campo__input fj-campo__select">
+              <option value="" disabled>Escolha a região</option>
+              {REGIOES.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}
+            </select>
           </label>
-        </div>
-
-        <div className="fj-lado__codex">
-          <BotaoCodex arte={r.img} kicker="Atlas · Braxus Vantahl" titulo="Abrir códex regional" legenda="Mapa · Cultura · Nomes · Regras" onOpen={() => setOpen(true)} />
-        </div>
-      </Panel>
+        ) : null}
+      </CartaoDossie>
 
       {open && createPortal(
         <Shell rotulo="Códex regional" onClose={() => setOpen(false)}>

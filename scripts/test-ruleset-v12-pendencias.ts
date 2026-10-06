@@ -53,7 +53,7 @@ const vazio: DraftV12 = {
 
 // Rascunho vazio: uma pendência por campo, nenhuma sobre texto narrativo.
 const campos = new Set(pendenciasCriacaoV12(vazio, cat).map((p) => p.campo));
-assert.deepEqual([...campos].sort(), ["antecedente", "atributos", "classe", "complicacoes", "local", "nome", "pericias", "qualidades", "vertente"]);
+assert.deepEqual([...campos].sort(), ["antecedente", "atributos", "classe", "complicacoes", "nome", "pericias", "qualidades", "vertente"]);
 
 const completo: DraftV12 = {
   ...vazio,

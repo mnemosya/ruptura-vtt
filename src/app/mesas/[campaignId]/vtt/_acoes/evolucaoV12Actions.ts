@@ -15,7 +15,8 @@
 import "server-only";
 import { resolveCampaignAccess } from "../../../../../lib/campaign/access";
 import { resolveEffectiveList } from "../../../../../lib/campaignContent/resolveEffectiveContent";
-import { advanceCharacterRankingV2, getCharacterForCampaign } from "../../../../../lib/character/storage";
+import { advanceCharacterRankingV2, getCharacter, getCharacterForCampaign } from "../../../../../lib/character/storage";
+import { getCurrentUser } from "../../../../../lib/auth/session";
 import { getCharacterRules } from "../../../../../lib/content";
 import type { Character, CharacterRulesPayload } from "../../../../../lib/character/types";
 import {
@@ -51,7 +52,12 @@ export interface PacoteAvancoV12 {
   niveisVertente: Record<string, number>;
 }
 
-async function exigirAcesso(campaignId: string) {
+/** Sem campanha (personagem solto do jogador): basta estar logado; a RLS e a RPC conferem o dono. */
+async function exigirAcesso(campaignId: string | null) {
+  if (!campaignId) {
+    const user = await getCurrentUser();
+    return user ? { acesso: null } : { erro: "Sessão expirada." };
+  }
   const acesso = await resolveCampaignAccess(campaignId);
   if (acesso.kind !== "ok") {
     return { erro: acesso.kind === "no_session" ? "Sessão expirada." : "Você não tem acesso a esta campanha." };
@@ -59,9 +65,11 @@ async function exigirAcesso(campaignId: string) {
   return { acesso };
 }
 
-async function carregar(campaignId: string, characterId: string) {
-  const record = await getCharacterForCampaign(campaignId, characterId);
-  if (!record) return { erro: "Personagem não encontrado nesta campanha." as const };
+async function carregar(campaignId: string | null, characterId: string) {
+  const record = campaignId
+    ? await getCharacterForCampaign(campaignId, characterId)
+    : await getCharacter(characterId).then((r) => (r && !r.campaign_id ? r : null));
+  if (!record) return { erro: "Personagem não encontrado." as const };
   const personagem = record.payload as unknown;
   const v = validateCharacterV2(personagem);
   if (!v.ok) return { erro: "Este personagem não segue a RUPTURA v1.2; o avanço de Ranking não se aplica a ele." as const };
@@ -87,7 +95,7 @@ async function carregar(campaignId: string, characterId: string) {
   return { character, ctx, regras };
 }
 
-export async function lerAvancoV12Action(campaignId: string, characterId: string): Promise<ResultadoAcao<PacoteAvancoV12 | null>> {
+export async function lerAvancoV12Action(campaignId: string | null, characterId: string): Promise<ResultadoAcao<PacoteAvancoV12 | null>> {
   const v = await exigirAcesso(campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
   try {
@@ -118,7 +126,7 @@ export async function lerAvancoV12Action(campaignId: string, characterId: string
 }
 
 export async function avancarRankingV12Action(
-  campaignId: string,
+  campaignId: string | null,
   characterId: string,
   escolhas: AdvancementChoicesV12,
 ): Promise<ResultadoAcao<{ ranking: RankingV12 }>> {
