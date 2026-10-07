@@ -90,7 +90,7 @@
   border-radius: var(--rv-r);
   background: var(--rv-panel);
   box-shadow:
-    inset 0 0 0 1px var(--rv-line-strong, #1c2b45),
+    inset 0 0 0 1px var(--rv-line-strong, var(--rv-line-strong, #1c2b45)),
     inset 2px 0 0 var(--jf-acento, var(--cy)),
     var(--sombra);
   backdrop-filter: blur(9px);
@@ -106,7 +106,7 @@
   font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700;
   letter-spacing: 0; text-transform: none;
   padding: 1px 5px; border-radius: var(--rv-r);
-  border: 1px solid var(--rv-line-2, #16233a); background: var(--rv-sunken, var(--rv-raise));
+  border: 1px solid var(--rv-line-2, var(--rv-line-2, #16233a)); background: var(--rv-sunken, var(--rv-raise));
   color: var(--jf-acento, var(--cy));
 }
 .rv-ferr-btn:hover .rv-dica, .rv-ferr-btn:focus-visible .rv-dica,
@@ -192,8 +192,8 @@
      translúcido, ele deixava a arte do mapa atravessar e cada botão
      mudava de tom conforme o que passava por baixo. Um pouco mais claro
      que o mapa, a peça se separa dele sem precisar de moldura. */
-  border: 1px solid rgba(0, 212, 255, .15); border-radius: var(--rv-r-peca);
-  background: #0c1526; color: #7f95b3; cursor: pointer;
+  border: 1px solid rgba(var(--rv-marca-rgb, 0, 212, 255), .15); border-radius: var(--rv-r-peca);
+  background: var(--rv-peca, #0c1526); color: var(--rv-ink-dim, #7f95b3); cursor: pointer;
   transition: color .14s, background .14s, border-color .14s;
 }
 /* A BORDA DO HOVER É A DO ATIVO. O que separa "estou passando por
@@ -206,8 +206,8 @@
    hexágonos. Duas camadas — gradiente chapado da lavagem sobre a cor
    sólida — dão o mesmo tom com a peça ainda opaca. */
 .rv-ferr-btn:hover {
-  color: #d3f4ff; border-color: #108bac;
-  background: linear-gradient(rgba(0, 212, 255, .09), rgba(0, 212, 255, .09)), #0c1526;
+  color: #d3f4ff; border-color: var(--rv-cy-borda, #108bac);
+  background: linear-gradient(rgba(var(--rv-marca-rgb, 0, 212, 255), .09), rgba(var(--rv-marca-rgb, 0, 212, 255), .09)), var(--rv-peca, #0c1526);
 }
 /* ATIVO EM CIANO. O realce continua sendo borda + fundo + brilho, como
    no Console; o que muda é o ícone, que era quase branco e agora é a
@@ -217,9 +217,9 @@
      não era o mesmo azul mais forte: era outra superfície, e num trilho
      de doze botões a peça ligada pesava mais que o mapa atrás dela.
      .14 contra os .09 do hover mantém a hierarquia com um gesto só. */
-  color: var(--cy); border-color: #108bac;
-  background: linear-gradient(rgba(0, 212, 255, .14), rgba(0, 212, 255, .14)), #0c1526;
-  box-shadow: 0 0 9px rgba(0, 212, 255, .25);
+  color: var(--cy); border-color: var(--rv-cy-borda, #108bac);
+  background: linear-gradient(rgba(var(--rv-marca-rgb, 0, 212, 255), .14), rgba(var(--rv-marca-rgb, 0, 212, 255), .14)), var(--rv-peca, #0c1526);
+  box-shadow: 0 0 9px rgba(var(--rv-marca-rgb, 0, 212, 255), .25);
 }
 /* PRESSIONADO — dura o gesto e acaba com ele.
    Distinto de `[aria-pressed="true"]`, que é ESTADO: aquele diz "a
@@ -231,8 +231,8 @@
    Era a última assimetria entre os dois trilhos: o Console tinha os
    quatro estados por exigência do CON-02, o VTT tinha três. */
 .rv-ferr-btn:active:not(:disabled) {
-  border-color: #108bac;
-  background: linear-gradient(rgba(0, 212, 255, .2), rgba(0, 212, 255, .2)), #0c1526;
+  border-color: var(--rv-cy-borda, #108bac);
+  background: linear-gradient(rgba(var(--rv-marca-rgb, 0, 212, 255), .2), rgba(var(--rv-marca-rgb, 0, 212, 255), .2)), var(--rv-peca, #0c1526);
 }
 .rv-ferr-btn:focus-visible, .rv-aba:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 .rv-ferr-menu { color: #8ba3b4; }
@@ -248,7 +248,7 @@
    no preto quase neutro de `--rv-ground`, e a emenda entre mapa e
    moldura aparecia como uma mudança de cor. Token próprio: `--rv-ground`
    segue servindo o chrome (selects, botões, modais), que não muda. */
-.rv-mesa { --rv-mapa-fundo: #070e1c; }
+.rv-mesa { --rv-mapa-fundo: var(--fj-fundo-2, #070e1c); }
 /* O MAPA TEM CANTO, como as peças que flutuam sobre ele. Com os
    trilhos soltos das bordas, o palco deixou de ser "o que sobra entre
    as barras" e virou uma superfície própria — e superfície com canto
@@ -277,8 +277,8 @@
   display: inline-flex; align-items: center; gap: 8px;
   width: max-content; max-width: min(520px, calc(100vw - 68px)); height: 36px;
   margin: 0; padding: 0 12px;
-  border: 1px solid rgba(0, 212, 255, .15); border-radius: var(--rv-r);
-  background: #0c1526;
+  border: 1px solid rgba(var(--rv-marca-rgb, 0, 212, 255), .15); border-radius: var(--rv-r);
+  background: var(--rv-peca, #0c1526);
   font-family: var(--font-mono), ui-monospace, monospace;
   /* +1px como o resto do que trocou de fonte — ver a nota de tamanhos
      no `painel.css`. */
@@ -289,8 +289,8 @@
 }
 .rv-cena-chip[data-estatico="true"] { cursor: default; }
 .rv-cena-chip:not([data-estatico]):hover {
-  color: #d3f4ff; border-color: #108bac;
-  background: linear-gradient(rgba(0, 212, 255, .09), rgba(0, 212, 255, .09)), #0c1526;
+  color: #d3f4ff; border-color: var(--rv-cy-borda, #108bac);
+  background: linear-gradient(rgba(var(--rv-marca-rgb, 0, 212, 255), .09), rgba(var(--rv-marca-rgb, 0, 212, 255), .09)), var(--rv-peca, #0c1526);
 }
 .rv-cena-chip:not([data-estatico]):hover .rv-cena-chip__nome { color: #d3f4ff; }
 .rv-cena-chip:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
@@ -366,8 +366,8 @@
 .rv-tempo-aurora-controle input { width: auto; accent-color: var(--rv-ar); }
 .rv-tempo-corpo button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 7px 9px; border: 1px solid var(--rv-line-strong); border-radius: 2px; background: var(--rv-panel-2); color: var(--rv-ink); font: 600 10px var(--rv-display); text-transform: uppercase; letter-spacing: .05em; cursor: pointer; }
 .rv-tempo-corpo button:hover { border-color: var(--rv-line-hover); color: var(--rv-cy-hi); }
-.rv-tempo-corpo .rv-seletor-gatilho { display: flex; justify-content: space-between; gap: 4px; width: 100%; min-height: 34px; padding: 0 6px; border-radius: 4px 7px 4px 7px; background: transparent; color: #b9c9dc; font: 11px var(--rv-mono); text-align: left; letter-spacing: 0; }
-.rv-tempo-corpo .rv-seletor-gatilho:hover, .rv-tempo-corpo .rv-seletor-gatilho[aria-expanded="true"] { border-color: color-mix(in srgb, #45b8c9 55%, transparent); color: #45b8c9; }
+.rv-tempo-corpo .rv-seletor-gatilho { display: flex; justify-content: space-between; gap: 4px; width: 100%; min-height: 34px; padding: 0 6px; border-radius: 4px 7px 4px 7px; background: transparent; color: var(--rv-ink, #b9c9dc); font: 11px var(--rv-mono); text-align: left; letter-spacing: 0; }
+.rv-tempo-corpo .rv-seletor-gatilho:hover, .rv-tempo-corpo .rv-seletor-gatilho[aria-expanded="true"] { border-color: color-mix(in srgb, var(--rv-cy, #45b8c9) 55%, transparent); color: var(--rv-cy, #45b8c9); }
 .rv-tempo-corpo button:disabled { opacity: .5; cursor: default; }
 .rv-tempo-sortear { margin-top: 0; }
 .rv-tempo-editar-btn { margin-left: auto; }
@@ -433,11 +433,11 @@
 .rv-token-sigla { font-family: var(--font-mono), monospace; font-weight: 700; fill: #eef7fc; pointer-events: none; }
 .rv-token-condicao-badge {
   fill: var(--am);
-  stroke: #0d141b;
+  stroke: var(--fj-fundo-3, #0d141b);
   stroke-width: 1.5;
   filter: drop-shadow(0 0 3px color-mix(in srgb, var(--am) 55%, transparent));
 }
-.rv-token:focus-visible .rv-token-condicao-badge { stroke: #0d141b; stroke-width: 1.5; }
+.rv-token:focus-visible .rv-token-condicao-badge { stroke: var(--fj-fundo-3, #0d141b); stroke-width: 1.5; }
 .rv-token-aura { animation: rv-pulso 1.9s ease-in-out infinite; }
 .rv-token-apto { animation: rv-gira 9s linear infinite; }
 .rv-token-alvo { animation: rv-pulso 1.3s ease-in-out infinite; }
@@ -544,8 +544,8 @@
      controles, e a placa é uma `section`. */
   border-radius: 4px var(--rv-notch, 10px) 4px var(--rv-notch, 10px);
   corner-shape: round bevel round bevel;
-  border: 1px solid #1b2a44;
-  background: linear-gradient(160deg, #101b2e, #0a1220);
+  border: 1px solid var(--fj-fundo-7, #1b2a44);
+  background: linear-gradient(160deg, var(--fj-fundo-5, #101b2e), var(--fj-fundo-3, #0a1220));
   box-shadow: 0 24px 48px rgba(0, 0, 0, .55), 0 4px 12px rgba(0, 0, 0, .4);
   text-align: center;
 }
@@ -727,7 +727,7 @@
   position: relative; width: 46px; height: 46px; flex: none; padding: 0; overflow: visible;
   display: grid; place-items: center; cursor: pointer;
   border: 1.5px solid var(--linha-hover); border-radius: 50%;
-  background: #12222d; color: var(--txt-forte);
+  background: var(--fj-fundo-5, #12222d); color: var(--txt-forte);
   font: 700 12px var(--font-mono), monospace;
   transition: border-color .16s, box-shadow .16s, transform .12s;
 }
@@ -761,7 +761,7 @@
   position: absolute; right: -3px; bottom: -3px; min-width: 18px; height: 18px; padding: 0 4px;
   display: grid; place-items: center; border-radius: var(--rv-r-pill);
   background: var(--am); color: #14100a; font: 700 10px var(--font-mono), monospace;
-  box-shadow: 0 0 0 2px #0b1219;
+  box-shadow: 0 0 0 2px var(--fj-fundo-2, #0b1219);
 }
 /* Selo do retrato (check de quem agiu, × de quem saiu) — mesma peça do
    "×" de cancelar (`.rv-ator-cancelar`): 20px, anel e ícone neutros,
@@ -772,9 +772,9 @@
      "×" na caixa em volta — assim os dois caem no mesmo ponto. */
   position: absolute; top: -3px; left: -7px; width: 20px; height: 20px;
   display: grid; place-items: center; border-radius: 50%;
-  border: 1px solid #4f6285;
-  background: #0b1a22; color: var(--rv-ink-dim);
-  box-shadow: 0 0 0 2px #0b1219;
+  border: 1px solid var(--rv-ink-faint, #4f6285);
+  background: var(--fj-fundo-3, #0b1a22); color: var(--rv-ink-dim);
+  box-shadow: 0 0 0 2px var(--fj-fundo-2, #0b1219);
 }
 .rv-faccao--pn .rv-ator-marca { left: auto; right: -7px; }
 
@@ -861,9 +861,9 @@
   position: absolute; top: -2px; left: -6px; z-index: 1;
   width: 20px; height: 20px; padding: 0; cursor: pointer;
   display: grid; place-items: center;
-  border: 1px solid #4f6285; border-radius: 50% !important;
-  background: #0b1a22; color: var(--rv-ink-dim);
-  box-shadow: 0 0 0 2px #0b1219;
+  border: 1px solid var(--rv-ink-faint, #4f6285); border-radius: 50% !important;
+  background: var(--fj-fundo-3, #0b1a22); color: var(--rv-ink-dim);
+  box-shadow: 0 0 0 2px var(--fj-fundo-2, #0b1219);
   transition: color .14s, border-color .14s;
 }
 .rv-faccao--pn .rv-ator-retrato-caixa .rv-ator-cancelar { left: auto; right: -6px; }
@@ -988,7 +988,7 @@
    fundo da coluna. */
 .rv-painel {
   display: flex; z-index: 20; flex: none;
-  background: linear-gradient(180deg, #080f1e 0%, #080f1e 55%, #060b16 100%);
+  background: linear-gradient(180deg, var(--fj-fundo-2, #080f1e) 0%, var(--fj-fundo-2, #080f1e) 55%, var(--fj-fundo-1, #060b16) 100%);
 }
 /* ABERTO ele é uma PEÇA, como as abas e como o mapa: solto 8px das
    bordas e com o mesmo canto de 4px. Era uma coluna colada na janela
@@ -1081,7 +1081,7 @@
 .rv-msg--narracao { background: var(--rv-am-soft); }
 .rv-msg--sistema { background: transparent; font-style: italic; }
 .rv-msg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-.rv-msg-face { width: 22px; height: 22px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #1c2b38; color: #cfe6f2; font-size: 10px; font-weight: 700; }
+.rv-msg-face { width: 22px; height: 22px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--fj-fundo-7, #1c2b38); color: #cfe6f2; font-size: 10px; font-weight: 700; }
 .rv-msg-head strong { font-size: 12px; color: var(--txt-forte); }
 .rv-msg-head time { margin-left: auto; font-family: var(--font-mono), monospace; font-size: 10px; color: var(--txt-dim); }
 .rv-msg-l { margin: 0 0 2px; font-size: 12.5px; line-height: 1.45; }
@@ -1106,7 +1106,7 @@
 /* A tela de espera da mesa: só o palco escuro e, no meio, o painel de
    carga compartilhado (`BootPanel`) — o `.mo-boot-stage` de dentro é
    quem centraliza. */
-.rv-mesa--carregando { display: flex; align-items: center; justify-content: center; width: 100%; height: 100vh; background: #0a0e14; color: var(--txt-dim); font-size: 13px; }
+.rv-mesa--carregando { display: flex; align-items: center; justify-content: center; width: 100%; height: 100vh; background: var(--fj-fundo-1, #0a0e14); color: var(--txt-dim); font-size: 13px; }
 .rv-mesa-erro { max-width: 40ch; text-align: center; line-height: 1.5; }
 .rv-spin { animation: rv-spin 1s linear infinite; color: var(--cy); }
 @keyframes rv-spin { to { transform: rotate(360deg); } }
@@ -1162,8 +1162,8 @@
 .rv-menu-contextual {
   --jf-acento: var(--rv-cy, var(--cy));
   position: fixed; z-index: 70; min-width: 216px; padding: 6px 6px 6px 42px;
-  border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r);
-  background: linear-gradient(180deg, #0b1322, #080e19);
+  border: 1px solid var(--rv-line-2, var(--rv-line-2, #16233a)); border-radius: var(--rv-r);
+  background: linear-gradient(180deg, var(--fj-fundo-3, #0b1322), var(--fj-fundo-2, #080e19));
   box-shadow: var(--sombra);
   display: flex; flex-direction: column; gap: 1px;
 }
@@ -1173,7 +1173,7 @@
    mono 8.5px, caixa alta, `letter-spacing: .12em`, em `--rv-ink-faint`. */
 .rv-menu-cab {
   margin: 2px 2px 5px; padding-bottom: 6px;
-  border-bottom: 1px solid var(--rv-line-2, #16233a);
+  border-bottom: 1px solid var(--rv-line-2, var(--rv-line-2, #16233a));
   color: var(--rv-ink-faint); font: 8.5px var(--font-mono), monospace;
   letter-spacing: .12em; text-transform: uppercase;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -1293,17 +1293,17 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
      encolher. O piso de 120px que havia aqui fazia o par estourar a
      linha e o rótulo longo ("Uma célula (1 m)") quebrar em duas. */
   flex: 1 1 0; min-width: 0; padding: 10px 12px; text-align: center; cursor: pointer;
-  border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r); background: transparent;
+  border: 1px solid var(--rv-line-2, var(--rv-line-2, #16233a)); border-radius: var(--rv-r); background: transparent;
   font-family: var(--rv-display), sans-serif;
   font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
   color: #c3d2e8;
   transition: border-color .14s, background .14s, color .14s;
 }
-.rv-segmentado-item:hover { border-color: color-mix(in srgb, var(--jf-acento, #45b8c9) 40%, transparent); }
+.rv-segmentado-item:hover { border-color: color-mix(in srgb, var(--jf-acento, var(--rv-cy, #45b8c9)) 40%, transparent); }
 .rv-segmentado-item[aria-checked="true"], .rv-segmentado-item[aria-pressed="true"] {
-  border-color: var(--jf-acento, #45b8c9);
-  background: color-mix(in srgb, var(--jf-acento, #45b8c9) 9%, transparent);
-  color: var(--jf-acento, #45b8c9);
+  border-color: var(--jf-acento, var(--rv-cy, #45b8c9));
+  background: color-mix(in srgb, var(--jf-acento, var(--rv-cy, #45b8c9)) 9%, transparent);
+  color: var(--jf-acento, var(--rv-cy, #45b8c9));
 }
 .rv-segmentado-item:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 1px; }
 
@@ -1325,7 +1325,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   display: flex; align-items: center; gap: 12px; padding: 9px 14px 9px 15px; border-radius: var(--rv-r);
   background: var(--rv-panel, rgba(13,20,28,.96));
   box-shadow:
-    inset 0 0 0 1px var(--rv-line-strong, #1c2b45),
+    inset 0 0 0 1px var(--rv-line-strong, var(--rv-line-strong, #1c2b45)),
     inset 2px 0 0 var(--jf-acento),
     var(--sombra);
   backdrop-filter: blur(9px);
@@ -1334,7 +1334,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-escolha-posicao[data-fase="erro"] {
   --jf-acento: var(--dg);
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--dg) 30%, var(--rv-line-strong, #1c2b45)),
+    inset 0 0 0 1px color-mix(in srgb, var(--dg) 30%, var(--rv-line-strong, var(--rv-line-strong, #1c2b45))),
     inset 2px 0 0 var(--dg),
     var(--sombra);
 }
@@ -1375,7 +1375,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   display: flex; align-items: center; gap: 12px;
   margin: -2px -2px 4px; padding: 10px 12px;
   border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
-  background: #0c1526;
+  background: var(--rv-peca, #0c1526);
 }
 /* DUAS PERGUNTAS, DOIS DESENHOS: o disco responde "de que lado ele
    está" (PJ/PN/neutro, a cor do lado) e a PEGADA responde "de que
@@ -1385,7 +1385,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   flex: none; width: 52px; height: 52px; display: grid; place-items: center;
   border-radius: var(--rv-r-pill); overflow: hidden;
   border: 2px solid var(--rv-lado-cor, var(--rv-slate));
-  background: color-mix(in srgb, var(--rv-lado-cor, var(--rv-slate)) 12%, #070d17);
+  background: color-mix(in srgb, var(--rv-lado-cor, var(--rv-slate)) 12%, var(--fj-fundo-1, #070d17));
   color: var(--rv-lado-cor, var(--rv-slate));
 }
 .rv-token-disco[data-lado="neutro"] { border-style: dashed; }
@@ -1599,7 +1599,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   line-height: 1.2;
 }
 .rv-anotacoes-painel select, .rv-anotacoes-painel textarea, .rv-anotacoes-painel > button {
-  background: #101d31; border: 1px solid #2b405c; border-radius: 5px; color: #eafcff; padding: 7px;
+  background: var(--fj-fundo-5, #101d31); border: 1px solid #2b405c; border-radius: 5px; color: #eafcff; padding: 7px;
   font: inherit;
 }
 .rv-anotacoes-painel label select {
@@ -1609,24 +1609,24 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   cursor: pointer; transition: background-color .15s, border-color .15s, color .15s;
 }
 .rv-anotacoes-painel label select:hover:not(:disabled) {
-  background-color: #1a3048; border-color: #4c7795; color: #fff;
+  background-color: var(--fj-fundo-7, #1a3048); border-color: #4c7795; color: #fff;
 }
 .rv-anotacoes-painel textarea { width: 100%; resize: vertical; box-sizing: border-box; }
 .rv-anotacoes-painel > button { cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px; }
 .rv-anotacoes-painel button:disabled { opacity: .45; cursor: not-allowed; }
-.rv-anotacoes-painel :focus-visible { outline: 2px solid #00d4ff; outline-offset: 2px; }
+.rv-anotacoes-painel :focus-visible { outline: 2px solid var(--rv-marca, #00d4ff); outline-offset: 2px; }
 .rv-anotacoes-cores { display: flex; align-items: center; gap: 7px; }
 .rv-anotacoes-cores button { width: 27px; height: 27px; border: 2px solid transparent; border-radius: 5px; cursor: pointer; }
-.rv-anotacoes-cores button[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 1px #00d4ff; }
+.rv-anotacoes-cores button[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 1px var(--rv-marca, #00d4ff); }
 .rv-anotacoes-cores .rv-anotacoes-cor-custom {
   width: 31px; height: 31px; margin-left: 5px; display: grid; place-items: center;
-  color: #eafcff; background: #101d31; border: 1px solid #3b5873;
+  color: #eafcff; background: var(--fj-fundo-5, #101d31); border: 1px solid #3b5873;
   box-shadow: inset 0 -3px var(--cor-escolhida); transition: background .15s, border-color .15s;
 }
-.rv-anotacoes-cores .rv-anotacoes-cor-custom:hover { background: #1a3048; border-color: #76b2cf; }
+.rv-anotacoes-cores .rv-anotacoes-cor-custom:hover { background: var(--fj-fundo-7, #1a3048); border-color: #76b2cf; }
 .rv-anotacoes-seletor {
   padding: 12px; border: 1px solid #31516a; border-radius: 6px;
-  background: #0c1929; box-shadow: inset 0 1px rgba(255,255,255,.04);
+  background: var(--fj-fundo-4, #0c1929); box-shadow: inset 0 1px rgba(255,255,255,.04);
 }
 .rv-anotacoes-seletor .react-colorful { width: 100%; height: 142px; }
 .rv-anotacoes-seletor .react-colorful__saturation { border-radius: 4px 4px 0 0; border-bottom: 0; }
@@ -1636,11 +1636,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-anotacoes-amostra { flex: 0 0 27px; height: 27px; border: 1px solid #7892a8; border-radius: 4px; }
 .rv-anotacoes-seletor-rodape input {
   min-width: 0; width: 100%; padding: 6px 8px; color: #eafcff;
-  background: #101d31; border: 1px solid #2b405c; border-radius: 4px;
+  background: var(--fj-fundo-5, #101d31); border: 1px solid #2b405c; border-radius: 4px;
   font: 12px var(--font-mono), monos; letter-spacing: .05em;
 }
 .rv-anotacoes-seletor-rodape button {
-  padding: 6px 10px; color: #041520; background: #00d4ff; border: 0; border-radius: 4px;
+  padding: 6px 10px; color: #041520; background: var(--rv-marca, #00d4ff); border: 0; border-radius: 4px;
   font: 700 11px var(--font-mono), monospace; cursor: pointer;
 }
 .rv-anotacoes-seletor-rodape button:hover { background: #6ee8ff; }
@@ -1746,7 +1746,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-area-campo > span { flex: 0 0 96px; }
 .rv-area-campo input[type="number"], .rv-area-campo input[type="text"], .rv-area-campo select {
   flex: 1 1 auto; min-width: 0; padding: 4px 7px; border-radius: var(--rv-r);
-  border: 1px solid var(--linha); background: rgba(8,13,18,.85); color: var(--txt); font: inherit; font-size: 11.5px;
+  border: 1px solid var(--linha); background: rgba(var(--fj-fundo-1-rgb, 8, 13, 18),.85); color: var(--txt); font: inherit; font-size: 11.5px;
 }
 .rv-area-campo input:disabled { opacity: .5; }
 .rv-area-campo em { font-style: normal; font-size: 10px; color: var(--txt-dim); }
@@ -1772,15 +1772,15 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   height: 4px; border-radius: var(--rv-r-pill);
   background: linear-gradient(
     90deg,
-    var(--jf-acento, #45b8c9) 0 var(--rv-slider-pct, 50%),
-    #1c2b45 var(--rv-slider-pct, 50%) 100%
+    var(--jf-acento, var(--rv-cy, #45b8c9)) 0 var(--rv-slider-pct, 50%),
+    var(--rv-line-strong, #1c2b45) var(--rv-slider-pct, 50%) 100%
   );
 }
 .rv-area-campo input[type="range"]::-moz-range-track {
-  height: 4px; border-radius: var(--rv-r-pill); background: #1c2b45;
+  height: 4px; border-radius: var(--rv-r-pill); background: var(--rv-line-strong, #1c2b45);
 }
 .rv-area-campo input[type="range"]::-moz-range-progress {
-  height: 4px; border-radius: var(--rv-r-pill); background: var(--jf-acento, #45b8c9);
+  height: 4px; border-radius: var(--rv-r-pill); background: var(--jf-acento, var(--rv-cy, #45b8c9));
 }
 .rv-area-campo input[type="range"]::-webkit-slider-thumb {
   appearance: none; -webkit-appearance: none;
@@ -1793,10 +1793,10 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-area-campo input[type="range"]:focus-visible { outline: none; }
 .rv-area-campo input[type="range"]:focus-visible::-webkit-slider-thumb {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 0 0 3px color-mix(in srgb, var(--jf-acento, #45b8c9) 35%, transparent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 0 0 3px color-mix(in srgb, var(--jf-acento, var(--rv-cy, #45b8c9)) 35%, transparent);
 }
 .rv-area-campo input[type="range"]:focus-visible::-moz-range-thumb {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 0 0 3px color-mix(in srgb, var(--jf-acento, #45b8c9) 35%, transparent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 0 0 3px color-mix(in srgb, var(--jf-acento, var(--rv-cy, #45b8c9)) 35%, transparent);
 }
 .rv-area-campo input[type="range"]:disabled { opacity: .4; cursor: not-allowed; }
 /* Linha de apoio de campo — explicação curta que não pode depender de
@@ -1804,14 +1804,14 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    par rótulo+input. */
 .rv-area-campo-apoio {
   flex: 1 0 100%; margin-top: 2px;
-  font-size: 11px; line-height: 1.35; color: #4f6285;
+  font-size: 11px; line-height: 1.35; color: var(--rv-ink-faint, #4f6285);
 }
 .rv-area-campo[data-com-apoio] { flex-wrap: wrap; }
 
 .rv-area-slider-val {
   flex: 0 0 auto; min-width: 40px; text-align: right;
   font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 700;
-  color: var(--jf-acento, #45b8c9);
+  color: var(--jf-acento, var(--rv-cy, #45b8c9));
 }
 
 /* Ocupa o que sobra da linha do campo. Sem `flex: 1` o grupo era
@@ -1907,7 +1907,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-area-aura-origem { display: flex; flex-direction: column; gap: 5px; width: 100%; }
 .rv-area-escolher-token { justify-content: center; font-size: 11px; }
 .rv-area-escolher-token[aria-pressed="true"] { background: color-mix(in srgb, var(--cy) 22%, transparent); color: var(--cy); box-shadow: inset 0 0 0 1px var(--cy); }
-.rv-area-busca { padding: 4px 7px; border-radius: var(--rv-r); border: 1px solid var(--linha); background: rgba(8,13,18,.85); color: var(--txt); font: inherit; font-size: 11.5px; }
+.rv-area-busca { padding: 4px 7px; border-radius: var(--rv-r); border: 1px solid var(--linha); background: rgba(var(--fj-fundo-1-rgb, 8, 13, 18),.85); color: var(--txt); font: inherit; font-size: 11.5px; }
 
 .rv-area-rodape { display: flex; flex-direction: column; gap: 6px; padding-top: 7px; border-top: 1px solid var(--linha-2); }
 .rv-area-rodape-texto { font-size: 11px; color: var(--cy); }
@@ -1939,7 +1939,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   padding: 8px 9px 9px 11px; border-radius: var(--rv-r);
   background: var(--rv-panel, #0e1620);
   box-shadow:
-    inset 0 0 0 1px var(--rv-line-strong, #1c2b45),
+    inset 0 0 0 1px var(--rv-line-strong, var(--rv-line-strong, #1c2b45)),
     inset 2px 0 0 var(--jf-acento),
     var(--sombra);
   backdrop-filter: blur(9px);
@@ -1986,7 +1986,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-area-acao-flutuante--excluir {
   padding: 6px 8px; margin-left: 4px;
   color: color-mix(in srgb, var(--dg) 70%, var(--rv-ink-dim, #8aa));
-  box-shadow: -5px 0 0 -4px var(--rv-line-2, #16233a);
+  box-shadow: -5px 0 0 -4px var(--rv-line-2, var(--rv-line-2, #16233a));
 }
 .rv-area-acao-flutuante--excluir:hover:not(:disabled) {
   border-color: color-mix(in srgb, var(--dg) 55%, transparent);
@@ -2027,10 +2027,10 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    hexes/áreas atravessarem o botão bem no momento em que ele mais
    precisa ser lido. A cor muda, a opacidade efetiva não. */
 .rv-area-edicao-rapida-btn:hover, .rv-area-edicao-rapida-btn:focus-visible {
-  background: color-mix(in srgb, var(--jf-acento) 18%, #0e1620);
+  background: color-mix(in srgb, var(--jf-acento) 18%, var(--fj-fundo-4, #0e1620));
   border-color: var(--jf-acento); color: #fff;
 }
-.rv-area-edicao-rapida-btn:active { background: color-mix(in srgb, var(--jf-acento) 26%, #0b1119); }
+.rv-area-edicao-rapida-btn:active { background: color-mix(in srgb, var(--jf-acento) 26%, var(--fj-fundo-2, #0b1119)); }
 .rv-area-edicao-rapida-btn:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: 2px; }
 .rv-area-edicao-rapida-btn:hover .rv-dica, .rv-area-edicao-rapida-btn:focus-visible .rv-dica { opacity: 1; transition-delay: .35s; }
 .rv-area-edicao-rapida-btn .rv-dica { left: 50%; top: calc(100% + 8px); transform: translateX(-50%); }
@@ -2254,7 +2254,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-trecho {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 2px 7px 2px 3px; border-radius: var(--rv-r-pill);
-  background: rgba(9,14,20,.5); font-size: 10.5px; color: var(--txt);
+  background: rgba(var(--fj-fundo-1-rgb, 9, 14, 20),.5); font-size: 10.5px; color: var(--txt);
 }
 /* Número do trecho: quem lê "3 · 4 m" precisa saber que é o TERCEIRO
    trecho, não 3 metros — o círculo separa índice de medida. */
@@ -2294,7 +2294,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-rodape {
   flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px;
   padding: 10px 12px; border-top: 1px solid var(--linha-2);
-  background: rgba(9, 14, 20, .55);
+  background: rgba(var(--fj-fundo-1-rgb, 9, 14, 20), .55);
 }
 .rv-fp-acoes { display: flex; gap: 6px; }
 .rv-fp-acoes .rv-btn { flex: 1 1 auto; justify-content: center; padding: 10px 12px; font-size: 12px; }
@@ -2359,7 +2359,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-dano { display: flex; gap: 5px; align-items: stretch; }
 .rv-fp-dano input {
   width: 66px; flex: 0 0 auto; min-width: 0; padding: 6px 8px; border-radius: var(--rv-r);
-  border: 1px solid var(--linha); background: rgba(8,13,18,.85);
+  border: 1px solid var(--linha); background: rgba(var(--fj-fundo-1-rgb, 8, 13, 18),.85);
   color: var(--txt); font: inherit; font-size: 12px;
 }
 .rv-fp-dano input:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
@@ -2371,7 +2371,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-campo > span { font-size: 10.5px; color: var(--txt-dim); }
 .rv-fp-campo input[type="text"], .rv-fp-campo input[type="number"], .rv-fp-campo select {
   width: 100%; min-width: 0; padding: 7px 9px; border-radius: var(--rv-r);
-  border: 1px solid var(--linha); background: rgba(8,13,18,.85);
+  border: 1px solid var(--linha); background: rgba(var(--fj-fundo-1-rgb, 8, 13, 18),.85);
   color: var(--txt); font: inherit; font-size: 12px;
 }
 .rv-fp-campo input:focus-visible, .rv-fp-campo select:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
@@ -2452,9 +2452,9 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* Ícone ACESO enquanto há combate, mesmo com outra ferramenta ativa:
    é estado da mesa, não da ferramenta. Distinto de `aria-pressed`
    (ferramenta selecionada), que continua sendo o realce forte. */
-.rv-ferr-btn[data-ativo="true"] { color: var(--am); }
+.rv-ferr-btn[data-ativo="true"] { color: var(--am); border-color: color-mix(in srgb, var(--am) 55%, transparent); }
 .rv-ferr-btn[data-ativo="true"]:not([aria-pressed="true"]) {
-  background: linear-gradient(var(--rv-am-soft), var(--rv-am-soft)), #0c1526;
+  background: linear-gradient(var(--rv-am-soft), var(--rv-am-soft)), var(--rv-peca, #0c1526);
 }
 .rv-ferr-badge {
   position: absolute; right: 1px; top: 1px; min-width: 14px; height: 14px; padding: 0 3px;
@@ -2487,7 +2487,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 .rv-rodadas-sigla {
   width: 24px; height: 24px; flex: none; display: grid; place-items: center; border-radius: var(--rv-r);
-  background: #16222d; color: #eef7fc; font: 700 10px var(--font-mono), monospace;
+  background: var(--fj-fundo-6, #16222d); color: #eef7fc; font: 700 10px var(--font-mono), monospace;
   box-shadow: inset 0 0 0 1px var(--linha);
 }
 .rv-rodadas-sigla[data-vertente="energetica"] { box-shadow: inset 0 0 0 1px var(--cy); background: #0d2732; }
@@ -2735,17 +2735,17 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-grupo > .rv-fp-rotulo {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--rv-display), sans-serif;
-  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: #4f6285;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: var(--rv-ink-faint, #4f6285);
 }
 .rv-fp-grupo > .rv-fp-rotulo::before {
   content: counter(rvfpsec, decimal-leading-zero);
   flex: none; font-family: var(--font-mono), monospace;
   font-size: 10px; font-weight: 700; letter-spacing: .1em;
-  color: color-mix(in srgb, var(--jf-acento, #35c7d8) 70%, transparent);
+  color: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 70%, transparent);
 }
 .rv-fp-grupo > .rv-fp-rotulo::after {
   content: ""; flex: 1; height: 1px;
-  background: linear-gradient(90deg, #18263f, transparent);
+  background: linear-gradient(90deg, var(--fj-fundo-7, #18263f), transparent);
 }
 
 /* ── Readout (placas de indicador) ── */
@@ -2753,33 +2753,33 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-placa {
   position: relative; overflow: hidden; padding: 10px 12px;
   display: flex; flex-direction: column; gap: 5px;
-  background: #0c1420; border: 1px solid #16233a; border-radius: var(--rv-r);
+  background: var(--rv-panel, #0c1420); border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r);
 }
 .rv-fp-placa::before {
   content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 2px;
-  background: var(--rv-placa-cor, var(--jf-acento, #35c7d8));
+  background: var(--rv-placa-cor, var(--jf-acento, var(--rv-cy-texto, #35c7d8)));
 }
 .rv-fp-placa[data-acento="am"] { --rv-placa-cor: #e0a53a; }
-.rv-fp-placa[data-acento="neutro"] { --rv-placa-cor: #7f95b3; }
+.rv-fp-placa[data-acento="neutro"] { --rv-placa-cor: var(--rv-ink-dim, #7f95b3); }
 .rv-fp-placa-rot {
   display: block; padding-left: 6px;
   font-family: var(--rv-display), sans-serif;
-  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: #4f6285;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: var(--rv-ink-faint, #4f6285);
 }
 .rv-fp-placa-val {
   display: block; padding-left: 6px;
   font-family: var(--font-mono), monospace;
   font-size: 22px; font-weight: 700; line-height: 1.25;
-  color: var(--rv-placa-cor, var(--jf-acento, #35c7d8));
+  color: var(--rv-placa-cor, var(--jf-acento, var(--rv-cy-texto, #35c7d8)));
 }
-.rv-fp-placa-un { margin-left: 4px; font-size: 10px; font-weight: 400; color: #4f6285; }
+.rv-fp-placa-un { margin-left: 4px; font-size: 10px; font-weight: 400; color: var(--rv-ink-faint, #4f6285); }
 
 /* ── Segmented / OptionTile ── */
 .rv-fp-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
 .rv-fp-seg-btn {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   padding: 12px; text-align: center;
-  border: 1px solid #16233a; border-radius: var(--rv-r); background: transparent;
+  border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r); background: transparent;
   transition: border-color .14s, background .14s, color .14s;
 }
 /* A borda do hover segue o ACENTO DA FERRAMENTA, não um azul fixo.
@@ -2788,18 +2788,18 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    azul-marinho — duas cores discordando na mesma peça. 40% é o degrau
    entre o repouso (`#16233a`) e o selecionado (acento cheio). */
 .rv-fp-seg-btn:hover {
-  border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent);
-  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 9%, transparent);
+  border-color: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 40%, transparent);
+  background: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 9%, transparent);
 }
 .rv-fp-seg-btn[aria-pressed="true"] {
-  border-color: var(--jf-acento, #35c7d8);
-  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 9%, transparent);
+  border-color: var(--jf-acento, var(--rv-cy-texto, #35c7d8));
+  background: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 9%, transparent);
 }
 .rv-fp-seg-nome {
   font-family: var(--rv-display), sans-serif;
   font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #c3d2e8;
 }
-.rv-fp-seg-btn[aria-pressed="true"] .rv-fp-seg-nome { color: var(--jf-acento, #35c7d8); }
+.rv-fp-seg-btn[aria-pressed="true"] .rv-fp-seg-nome { color: var(--jf-acento, var(--rv-cy-texto, #35c7d8)); }
 .rv-fp-seg-sub {
   font-family: var(--font-mono), monospace;
   font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
@@ -2809,56 +2809,56 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   /* Sempre MAIS FRACO que o título: o apoio explica, não compete. No
      card selecionado o título vai no acento cheio e o apoio fica a
      60% dele. */
-  color: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent);
+  color: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 40%, transparent);
 }
 .rv-fp-seg-btn[aria-pressed="true"] .rv-fp-seg-sub {
-  color: color-mix(in srgb, var(--jf-acento, #35c7d8) 60%, transparent);
+  color: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 60%, transparent);
 }
 /* O ícone do produto continua o mesmo — daqui sai só a cor. */
-.rv-fp-seg-btn > svg { color: #6f83a3; }
-.rv-fp-seg-btn[aria-pressed="true"] > svg { color: var(--jf-acento, #35c7d8); }
+.rv-fp-seg-btn > svg { color: var(--rv-slate, #6f83a3); }
+.rv-fp-seg-btn[aria-pressed="true"] > svg { color: var(--jf-acento, var(--rv-cy-texto, #35c7d8)); }
 
 /* Lista alta (tipo de terreno, presets) — o OptionTile em linha. */
 .rv-fp-opcoes { display: flex; flex-direction: column; gap: 8px; }
 .rv-fp-opcao {
   position: relative; gap: 16px; padding: 12px;
-  border: 1px solid #16233a; border-radius: var(--rv-r); background: transparent;
+  border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r); background: transparent;
   box-shadow: none; color: #c3d2e8;
   transition: border-color .14s, background .14s, color .14s;
 }
 .rv-fp-opcao:hover {
-  border-color: color-mix(in srgb, var(--rv-op-cor, #35c7d8) 40%, transparent);
-  background: color-mix(in srgb, var(--rv-op-cor, var(--jf-acento, #35c7d8)) 9%, transparent);
+  border-color: color-mix(in srgb, var(--rv-op-cor, var(--rv-cy-texto, #35c7d8)) 40%, transparent);
+  background: color-mix(in srgb, var(--rv-op-cor, var(--jf-acento, var(--rv-cy-texto, #35c7d8))) 9%, transparent);
 }
 .rv-fp-opcao[aria-pressed="true"] {
-  border-color: var(--rv-op-cor, var(--jf-acento, #35c7d8));
-  background: color-mix(in srgb, var(--rv-op-cor, var(--jf-acento, #35c7d8)) 9%, transparent);
-  color: var(--rv-op-cor, var(--jf-acento, #35c7d8));
+  border-color: var(--rv-op-cor, var(--jf-acento, var(--rv-cy-texto, #35c7d8)));
+  background: color-mix(in srgb, var(--rv-op-cor, var(--jf-acento, var(--rv-cy-texto, #35c7d8))) 9%, transparent);
+  color: var(--rv-op-cor, var(--jf-acento, var(--rv-cy-texto, #35c7d8)));
   box-shadow: none;
 }
 .rv-fp-opcao[aria-pressed="true"]::before {
   content: ""; position: absolute; left: 4px; top: 4px;
   width: 4px; height: 4px; border-radius: 50%;
-  background: var(--rv-op-cor, var(--jf-acento, #35c7d8));
+  background: var(--rv-op-cor, var(--jf-acento, var(--rv-cy-texto, #35c7d8)));
 }
 .rv-fp-opcao-txt { gap: 4px; }
-.rv-fp-opcao-ic { color: #6f83a3; }
-.rv-fp-opcao[aria-pressed="true"] .rv-fp-opcao-ic { color: var(--rv-op-cor, var(--jf-acento, #35c7d8)); }
+.rv-fp-opcao-ic { color: var(--rv-slate, #6f83a3); }
+.rv-fp-opcao[aria-pressed="true"] .rv-fp-opcao-ic { color: var(--rv-op-cor, var(--jf-acento, var(--rv-cy-texto, #35c7d8))); }
 .rv-fp-opcao-nome {
   font-family: var(--rv-display), sans-serif;
   font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: inherit;
 }
 .rv-fp-opcao-efeito {
   font-family: var(--font-mono), monospace;
-  font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #4f6285;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--rv-ink-faint, #4f6285);
 }
-.rv-fp-opcao[aria-pressed="true"] .rv-fp-opcao-efeito { color: color-mix(in srgb, var(--rv-op-cor, var(--jf-acento, #35c7d8)) 70%, transparent); }
+.rv-fp-opcao[aria-pressed="true"] .rv-fp-opcao-efeito { color: color-mix(in srgb, var(--rv-op-cor, var(--jf-acento, var(--rv-cy-texto, #35c7d8))) 70%, transparent); }
 
 /* TERRENO — cada tipo herda a cor que ele TEM no mapa (âmbar da
    hachura de `rv-dificil-real`, vermelho de `rv-bloqueado-real`). */
 .rv-fp-opcao[data-tipo="dificil"] { --rv-op-cor: #f5a200; }
 .rv-fp-opcao[data-tipo="bloqueado"] { --rv-op-cor: #e0455f; }
-.rv-fp-opcao[data-tipo="apagar"] { --rv-op-cor: #7f95b3; }
+.rv-fp-opcao[data-tipo="apagar"] { --rv-op-cor: var(--rv-ink-dim, #7f95b3); }
 
 /* ── KeyCap ── */
 .rv-fp-atalhos {
@@ -2872,85 +2872,85 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   display: inline-flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
 }
 .rv-fp-atalhos li > span {
-  font-family: var(--font-mono), monospace; font-size: 10px; color: #4f6285;
+  font-family: var(--font-mono), monospace; font-size: 10px; color: var(--rv-ink-faint, #4f6285);
 }
 .rv-fp-tecla {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 22px; padding: 4px 6px;
-  border: 1px solid #2a3b58; border-radius: var(--rv-r); background: #0c1420;
-  font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 500; color: #7f95b3;
+  border: 1px solid var(--rv-line-max, #2a3b58); border-radius: var(--rv-r); background: var(--rv-panel, #0c1420);
+  font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 500; color: var(--rv-ink-dim, #7f95b3);
 }
 
 /* ── NoteRow (instrução e aviso) ── */
 .rv-fp-instrucao, .rv-fp-medida-aviso {
   display: flex; align-items: center; gap: 10px; margin: 0;
   padding: 8px 12px; border-radius: var(--rv-r);
-  border: 1px solid color-mix(in srgb, var(--rv-nota-cor, var(--jf-acento, #35c7d8)) 16%, transparent);
-  border-left: 2px solid var(--rv-nota-cor, var(--jf-acento, #35c7d8));
-  background: color-mix(in srgb, var(--rv-nota-cor, var(--jf-acento, #35c7d8)) 6%, transparent);
-  font-size: 11px; line-height: 1.4; color: #7f95b3;
+  border: 1px solid color-mix(in srgb, var(--rv-nota-cor, var(--jf-acento, var(--rv-cy-texto, #35c7d8))) 16%, transparent);
+  border-left: 2px solid var(--rv-nota-cor, var(--jf-acento, var(--rv-cy-texto, #35c7d8)));
+  background: color-mix(in srgb, var(--rv-nota-cor, var(--jf-acento, var(--rv-cy-texto, #35c7d8))) 6%, transparent);
+  font-size: 11px; line-height: 1.4; color: var(--rv-ink-dim, #7f95b3);
 }
-.rv-fp-instrucao > svg, .rv-fp-medida-aviso > svg { flex: none; color: var(--rv-nota-cor, var(--jf-acento, #35c7d8)); }
+.rv-fp-instrucao > svg, .rv-fp-medida-aviso > svg { flex: none; color: var(--rv-nota-cor, var(--jf-acento, var(--rv-cy-texto, #35c7d8))); }
 .rv-fp-medida-aviso { --rv-nota-cor: #e0a53a; }
 .rv-fp-medida-aviso[data-grave="true"] { --rv-nota-cor: #e0455f; }
 .rv-fp-nota {
   display: flex; align-items: center; gap: 6px; margin: 0;
   font-family: var(--font-mono), monospace;
-  font-size: 10px; letter-spacing: .04em; color: #4f6285;
+  font-size: 10px; letter-spacing: .04em; color: var(--rv-ink-faint, #4f6285);
 }
 .rv-fp-nota > svg { flex: none; opacity: .8; }
 /* ── Campos (Field / SelectField) ── */
 .rv-fp-campo > span {
   font-family: var(--rv-display), sans-serif;
-  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: #4f6285;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: var(--rv-ink-faint, #4f6285);
 }
 .rv-fp-campo input[type="text"], .rv-fp-campo input[type="number"], .rv-fp-campo select {
   margin-top: 6px; padding: 8px 12px;
-  border: 1px solid #16233a; border-radius: var(--rv-r); background: transparent;
-  font-size: 12px; color: #b9c9dc;
+  border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r); background: transparent;
+  font-size: 12px; color: var(--rv-ink, #b9c9dc);
 }
 .rv-fp-campo input:focus-visible, .rv-fp-campo select:focus-visible {
-  outline: none; border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 55%, transparent);
+  outline: none; border-color: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 55%, transparent);
 }
 /* Placeholder na paleta do VTT (`--rv-ink-faint`). O padrão do
    navegador é um cinza neutro que não pertence a esta folha e destoa
    de todo o resto do texto secundário. */
-.rv-fp-campo input::placeholder { color: #4f6285; opacity: 1; }
+.rv-fp-campo input::placeholder { color: var(--rv-ink-faint, #4f6285); opacity: 1; }
 
 /* ── Rodapé (footer + CommandButton) ── */
 .rv-fp-rodape {
   padding: 12px 16px; gap: 8px;
-  border-top: 1px solid #16233a; background: rgba(255, 255, 255, .015);
+  border-top: 1px solid var(--rv-line-2, #16233a); background: rgba(255, 255, 255, .015);
 }
 .rv-fp-rodape .rv-fp-rotulo {
   font-family: var(--rv-display), sans-serif;
-  font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .16em; color: #4f6285;
+  font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .16em; color: var(--rv-ink-faint, #4f6285);
 }
 .rv-fp-rodape .rv-fp-primaria,
 .rv-fp-rodape .rv-btn.rv-fp-primaria {
   margin-left: auto;
   display: inline-flex; align-items: center; gap: 8px;
   padding: 10px 20px; border-radius: var(--rv-r);
-  border: 1px solid color-mix(in srgb, var(--jf-acento, #35c7d8) 53%, transparent);
-  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 9%, transparent);
-  color: var(--jf-acento, #35c7d8);
+  border: 1px solid color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 53%, transparent);
+  background: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 9%, transparent);
+  color: var(--jf-acento, var(--rv-cy-texto, #35c7d8));
   font-family: var(--rv-display), sans-serif;
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .22em;
 }
 .rv-fp-rodape .rv-fp-primaria::before { content: "▹"; opacity: .7; }
-.rv-fp-rodape .rv-fp-primaria:hover:not(:disabled) { border-color: var(--jf-acento, #35c7d8); }
+.rv-fp-rodape .rv-fp-primaria:hover:not(:disabled) { border-color: var(--jf-acento, var(--rv-cy-texto, #35c7d8)); }
 
 /* ── Trechos (detalhe da régua) ── */
 .rv-fp-trechos { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .rv-fp-trecho {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 8px; border: 1px solid #16233a; border-radius: var(--rv-r); background: #0c1420;
+  padding: 4px 8px; border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r); background: var(--rv-panel, #0c1420);
 }
 .rv-fp-trecho-n {
-  font-family: var(--font-mono), monospace; font-size: 10px; color: #4f6285;
+  font-family: var(--font-mono), monospace; font-size: 10px; color: var(--rv-ink-faint, #4f6285);
 }
 .rv-fp-trecho-d {
-  font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700; color: #7f95b3;
+  font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700; color: var(--rv-ink-dim, #7f95b3);
 }
 
 /* ── ÁREAS: a mesma transcrição, sobre a marcação própria do painel ──
@@ -2967,21 +2967,21 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-area-grupo-titulo, .rv-area-secao-cab, .rv-area-lista-titulo {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--rv-display), sans-serif;
-  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: #4f6285;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: var(--rv-ink-faint, #4f6285);
 }
 .rv-area-grupo-titulo::before, .rv-area-secao-cab::before, .rv-area-lista-titulo::before {
   content: counter(rvfpsec, decimal-leading-zero);
   flex: none; font-family: var(--font-mono), monospace;
   font-size: 10px; font-weight: 700; letter-spacing: .1em;
-  color: color-mix(in srgb, var(--jf-acento, #35c7d8) 70%, transparent);
+  color: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 70%, transparent);
 }
 .rv-area-grupo-titulo::after, .rv-area-secao-cab::after, .rv-area-lista-titulo::after {
   content: ""; flex: 1; height: 1px;
-  background: linear-gradient(90deg, #18263f, transparent);
+  background: linear-gradient(90deg, var(--fj-fundo-7, #18263f), transparent);
 }
 /* A seta de dobrar vem ANTES da numeração e some do fluxo do rótulo. */
-.rv-area-secao-cab > svg { order: -1; color: #4f6285; }
-.rv-area-secao-cab:hover { color: #b9c9dc; }
+.rv-area-secao-cab > svg { order: -1; color: var(--rv-ink-faint, #4f6285); }
+.rv-area-secao-cab:hover { color: var(--rv-ink, #b9c9dc); }
 .rv-area-secao-corpo { gap: 10px; padding-top: 2px; }
 .rv-area-lista { border-top: none; padding-top: 0; gap: 6px; }
 
@@ -2989,67 +2989,67 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-area-tipos { gap: 8px; }
 .rv-area-tipo {
   position: relative; gap: 6px; padding: 12px 8px;
-  border: 1px solid #16233a; border-radius: var(--rv-r);
+  border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r);
   background: transparent; box-shadow: none; color: #c3d2e8;
 }
-.rv-area-tipo:hover { background: transparent; border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent); color: #b9c9dc; }
+.rv-area-tipo:hover { background: transparent; border-color: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 40%, transparent); color: var(--rv-ink, #b9c9dc); }
 .rv-area-tipo[aria-pressed="true"] {
-  border-color: var(--jf-acento, #35c7d8); box-shadow: none;
-  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 9%, transparent);
-  color: var(--jf-acento, #35c7d8);
+  border-color: var(--jf-acento, var(--rv-cy-texto, #35c7d8)); box-shadow: none;
+  background: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 9%, transparent);
+  color: var(--jf-acento, var(--rv-cy-texto, #35c7d8));
 }
 .rv-area-tipo[aria-pressed="true"]::before {
   content: ""; position: absolute; left: 4px; top: 4px;
-  width: 4px; height: 4px; border-radius: 50%; background: var(--jf-acento, #35c7d8);
+  width: 4px; height: 4px; border-radius: 50%; background: var(--jf-acento, var(--rv-cy-texto, #35c7d8));
 }
-.rv-area-glifo { font-size: 19px; color: #6f83a3; }
-.rv-area-tipo[aria-pressed="true"] .rv-area-glifo { color: var(--jf-acento, #35c7d8); }
+.rv-area-glifo { font-size: 19px; color: var(--rv-slate, #6f83a3); }
+.rv-area-tipo[aria-pressed="true"] .rv-area-glifo { color: var(--jf-acento, var(--rv-cy-texto, #35c7d8)); }
 .rv-area-nome {
   font-family: var(--rv-display), sans-serif;
   font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
 }
 
 /* Field */
-.rv-area-campo { gap: 10px; font-size: 12px; color: #b9c9dc; }
+.rv-area-campo { gap: 10px; font-size: 12px; color: var(--rv-ink, #b9c9dc); }
 .rv-area-campo > span {
   flex: 0 0 96px;
   font-family: var(--rv-display), sans-serif;
-  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: #4f6285;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: var(--rv-ink-faint, #4f6285);
 }
 .rv-area-campo input[type="number"], .rv-area-campo input[type="text"],
 .rv-area-campo select, .rv-area-busca {
-  padding: 8px 12px; border: 1px solid #16233a; border-radius: var(--rv-r);
-  background: transparent; font-size: 12px; color: #b9c9dc;
+  padding: 8px 12px; border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r);
+  background: transparent; font-size: 12px; color: var(--rv-ink, #b9c9dc);
 }
 .rv-area-campo input:focus-visible, .rv-area-campo select:focus-visible, .rv-area-busca:focus-visible {
-  outline: none; border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 55%, transparent);
+  outline: none; border-color: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 55%, transparent);
 }
 .rv-area-campo em {
   font-family: var(--font-mono), monospace;
-  font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #4f6285;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--rv-ink-faint, #4f6285);
 }
 
 /* CheckRow */
 .rv-area-check {
   gap: 10px; padding: 10px 12px;
-  border: 1px solid #16233a; border-radius: var(--rv-r);
-  font-size: 12px; color: #b9c9dc;
+  border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r);
+  font-size: 12px; color: var(--rv-ink, #b9c9dc);
 }
-.rv-area-check input { accent-color: var(--jf-acento, #35c7d8); width: 16px; height: 16px; }
+.rv-area-check input { accent-color: var(--jf-acento, var(--rv-cy-texto, #35c7d8)); width: 16px; height: 16px; }
 
 /* NoteRow */
 .rv-area-instrucao, .rv-area-dica {
   margin: 0; padding: 8px 12px; border-radius: var(--rv-r);
-  border: 1px solid color-mix(in srgb, var(--jf-acento, #35c7d8) 16%, transparent);
-  border-left: 2px solid var(--jf-acento, #35c7d8);
-  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 6%, transparent);
-  font-size: 11px; line-height: 1.4; color: #7f95b3;
+  border: 1px solid color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 16%, transparent);
+  border-left: 2px solid var(--jf-acento, var(--rv-cy-texto, #35c7d8));
+  background: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 6%, transparent);
+  font-size: 11px; line-height: 1.4; color: var(--rv-ink-dim, #7f95b3);
 }
 .rv-area-aviso, .rv-area-fixo {
   margin: 0; padding: 8px 12px; border-radius: var(--rv-r);
   border: 1px solid rgba(224, 165, 58, .16); border-left: 2px solid #e0a53a;
   background: rgba(224, 165, 58, .06);
-  font-size: 11px; line-height: 1.4; color: #7f95b3;
+  font-size: 11px; line-height: 1.4; color: var(--rv-ink-dim, #7f95b3);
 }
 .rv-area-erro {
   margin: 0; padding: 8px 12px; border-radius: var(--rv-r);
@@ -3060,43 +3060,43 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* Readout — o resumo da forma */
 .rv-area-resumo-forma, .rv-area-regua, .rv-area-valor-fixo {
   position: relative; overflow: hidden; margin: 0; padding: 10px 12px 10px 18px;
-  background: #0c1420; border: 1px solid #16233a; border-radius: var(--rv-r);
-  font-family: var(--font-mono), monospace; font-size: 12px; color: #b9c9dc;
+  background: var(--rv-panel, #0c1420); border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r);
+  font-family: var(--font-mono), monospace; font-size: 12px; color: var(--rv-ink, #b9c9dc);
 }
 .rv-area-resumo-forma::before, .rv-area-regua::before, .rv-area-valor-fixo::before {
   content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 2px;
-  background: var(--jf-acento, #35c7d8);
+  background: var(--jf-acento, var(--rv-cy-texto, #35c7d8));
 }
 
-.rv-area-rodape { gap: 8px; padding: 12px 0 0; border-top: 1px solid #16233a; }
+.rv-area-rodape { gap: 8px; padding: 12px 0 0; border-top: 1px solid var(--rv-line-2, #16233a); }
 
 /* ── Presets de objeto: o mesmo `OptionTile`, e as etiquetas em `MiniTag` ── */
 .rv-fp-presets { gap: 8px; }
 .rv-fp-preset {
   position: relative; gap: 6px; padding: 12px 8px;
-  border: 1px solid #16233a; border-radius: var(--rv-r);
+  border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r);
   background: transparent; box-shadow: none; color: #c3d2e8;
   font-family: var(--rv-display), sans-serif;
   font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
 }
-.rv-fp-preset:hover { background: transparent; border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent); color: #b9c9dc; }
+.rv-fp-preset:hover { background: transparent; border-color: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 40%, transparent); color: var(--rv-ink, #b9c9dc); }
 .rv-fp-preset[aria-pressed="true"] {
-  border-color: var(--jf-acento, #35c7d8); box-shadow: none;
-  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 9%, transparent);
-  color: var(--jf-acento, #35c7d8);
+  border-color: var(--jf-acento, var(--rv-cy-texto, #35c7d8)); box-shadow: none;
+  background: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 9%, transparent);
+  color: var(--jf-acento, var(--rv-cy-texto, #35c7d8));
 }
 .rv-fp-preset[aria-pressed="true"]::before {
   content: ""; position: absolute; left: 4px; top: 4px;
-  width: 4px; height: 4px; border-radius: 50%; background: var(--jf-acento, #35c7d8);
+  width: 4px; height: 4px; border-radius: 50%; background: var(--jf-acento, var(--rv-cy-texto, #35c7d8));
 }
-.rv-fp-preset-ic { color: #6f83a3; }
-.rv-fp-preset[aria-pressed="true"] .rv-fp-preset-ic { color: var(--jf-acento, #35c7d8); }
+.rv-fp-preset-ic { color: var(--rv-slate, #6f83a3); }
+.rv-fp-preset[aria-pressed="true"] .rv-fp-preset-ic { color: var(--jf-acento, var(--rv-cy-texto, #35c7d8)); }
 
 /* MiniTag */
 .rv-fp-tag {
-  padding: 2px 6px; border: 1px solid #1c2b45; border-radius: var(--rv-r); background: transparent;
+  padding: 2px 6px; border: 1px solid var(--rv-line-strong, #1c2b45); border-radius: var(--rv-r); background: transparent;
   font-family: var(--rv-display), sans-serif;
-  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: #7f95b3;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--rv-ink-dim, #7f95b3);
 }
 .rv-fp-tag--cy { border-color: color-mix(in srgb, var(--rv-cy) 40%, transparent); color: var(--rv-cy); background: transparent; }
 .rv-fp-tag--am { border-color: rgba(224, 165, 58, .4); color: #e0a53a; background: transparent; }
@@ -3108,17 +3108,17 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* A ficha do preset — o painel de leitura do estudo, com a barra de acento. */
 .rv-fp-obj {
   position: relative; overflow: hidden; gap: 8px; padding: 12px 12px 12px 18px;
-  background: #0c1420; border: 1px solid #16233a; border-radius: var(--rv-r);
+  background: var(--rv-panel, #0c1420); border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r);
 }
 .rv-fp-obj::before {
   content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 2px;
-  background: var(--jf-acento, #35c7d8);
+  background: var(--jf-acento, var(--rv-cy-texto, #35c7d8));
 }
 .rv-fp-obj-nome {
   font-family: var(--rv-display), sans-serif;
-  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #b9c9dc;
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--rv-ink, #b9c9dc);
 }
-.rv-fp-obj .rv-fp-switch-sub { font-size: 11px; line-height: 1.4; color: #7f95b3; }
+.rv-fp-obj .rv-fp-switch-sub { font-size: 11px; line-height: 1.4; color: var(--rv-ink-dim, #7f95b3); }
 /* `1fr` é `minmax(auto, 1fr)`: com `keep-all`, uma palavra longa
    ("PERSONALIZADO") vira o mínimo da coluna e estoura a janela.
    `minmax(0, 1fr)` devolve o controle da largura à grade. */
@@ -3142,31 +3142,31 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-rodadas-secao h3, .rv-rodadas-rotulo {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--rv-display), sans-serif;
-  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: #4f6285;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: var(--rv-ink-faint, #4f6285);
 }
 .rv-rodadas-secao h3::before {
   content: counter(rvfpsec, decimal-leading-zero);
   flex: none; font-family: var(--font-mono), monospace;
   font-size: 10px; font-weight: 700; letter-spacing: .1em;
-  color: color-mix(in srgb, var(--jf-acento, #35c7d8) 70%, transparent);
+  color: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 70%, transparent);
 }
 .rv-rodadas-secao h3::after {
   content: ""; flex: 1; height: 1px;
-  background: linear-gradient(90deg, #18263f, transparent);
+  background: linear-gradient(90deg, var(--fj-fundo-7, #18263f), transparent);
 }
 
 /* Segmented — modo do combate e lado que emboscou */
 .rv-rodadas-modos { gap: 8px; }
 .rv-rodadas-modo, .rv-rodadas-lado {
-  padding: 10px 12px; border: 1px solid #16233a; border-radius: var(--rv-r); background: transparent;
+  padding: 10px 12px; border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r); background: transparent;
   /* Sem o texto de apoio (virou dica flutuante) sobrou só o nome:
      alinhado à esquerda ele ficava encostado numa borda de uma caixa
      larga. Centralizado, os dois cards do par leem como um segmentado. */
   align-items: center; justify-content: center; text-align: center;
 }
 .rv-rodadas-modo:hover, .rv-rodadas-lado:hover {
-  border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent);
-  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 9%, transparent);
+  border-color: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 40%, transparent);
+  background: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 9%, transparent);
 }
 .rv-rodadas-modo strong {
   font-family: var(--rv-display), sans-serif;
@@ -3209,42 +3209,42 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   border: none; background: transparent; cursor: pointer;
   font-family: var(--rv-display), sans-serif;
   font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em;
-  color: color-mix(in srgb, var(--jf-acento, #35c7d8) 70%, transparent);
+  color: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 70%, transparent);
 }
-.rv-rodadas-massa-btn:hover { color: var(--jf-acento, #35c7d8); }
-.rv-rodadas-massa-btn:focus-visible { outline: 2px solid var(--jf-acento, #35c7d8); outline-offset: 2px; }
+.rv-rodadas-massa-btn:hover { color: var(--jf-acento, var(--rv-cy-texto, #35c7d8)); }
+.rv-rodadas-massa-btn:focus-visible { outline: 2px solid var(--jf-acento, var(--rv-cy-texto, #35c7d8)); outline-offset: 2px; }
 
 .rv-rodadas-lista { display: flex; flex-direction: column; gap: 8px; }
 .rv-rodadas-item {
   display: flex; align-items: center; gap: 12px;
-  padding: 10px 12px; border: 1px solid #16233a; border-radius: var(--rv-r);
+  padding: 10px 12px; border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r);
   background: transparent; cursor: pointer;
   transition: border-color .14s, background .14s;
 }
-.rv-rodadas-item:hover { border-color: #1c2b45; }
+.rv-rodadas-item:hover { border-color: var(--rv-line-strong, #1c2b45); }
 /* O caixote de marcar CONTINUA caixote aqui: isto é escolha numa
    lista, não uma configuração liga/desliga. */
 .rv-rodadas-item input[type="checkbox"] {
   flex: none; width: 16px; height: 16px; margin: 0;
-  accent-color: var(--jf-acento, #35c7d8); cursor: pointer;
+  accent-color: var(--jf-acento, var(--rv-cy-texto, #35c7d8)); cursor: pointer;
 }
 .rv-rodadas-sigla {
   flex: none; display: grid; place-items: center;
   width: 30px; height: 30px; border-radius: var(--rv-r);
-  border: 1px solid color-mix(in srgb, var(--jf-acento, #35c7d8) 30%, transparent);
-  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 30%, transparent);
+  background: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 8%, transparent);
   font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700;
-  color: var(--jf-acento, #35c7d8);
+  color: var(--jf-acento, var(--rv-cy-texto, #35c7d8));
 }
 .rv-rodadas-item-txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 auto; }
 .rv-rodadas-nome {
   font-family: var(--rv-display), sans-serif;
-  font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #b9c9dc;
+  font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--rv-ink, #b9c9dc);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .rv-rodadas-item-sub {
   font-family: var(--font-mono), monospace;
-  font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #4f6285;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--rv-ink-faint, #4f6285);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 /* Etiqueta do lado — a cor é a do lado, não a da ferramenta. */
@@ -3267,10 +3267,10 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-rodadas-resumo {
   margin: 0; min-width: 0; flex: 1 1 auto;
   font-family: var(--font-mono), monospace;
-  font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #4f6285;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--rv-ink-faint, #4f6285);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.rv-rodadas-resumo strong { color: #7f95b3; }
+.rv-rodadas-resumo strong { color: var(--rv-ink-dim, #7f95b3); }
 .rv-rodadas-rodape .rv-fp-primaria { white-space: nowrap; }
 
 .rv-rodadas-modo-caixa { position: relative; display: flex; }
@@ -3278,11 +3278,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-rodadas-modo-dica {
   position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 5;
   padding: 8px 10px; border-radius: var(--rv-r);
-  border: 1px solid #2a3b58; background: #0c1420;
+  border: 1px solid var(--rv-line-max, #2a3b58); background: var(--rv-panel, #0c1420);
   box-shadow: 0 8px 20px rgba(0, 0, 0, .55);
   /* Frase, não etiqueta: caixa mista, sem tracking, na tipografia das
      outras notas em prosa das janelas. */
-  font-size: 11px; line-height: 1.4; color: #7f95b3; text-align: left;
+  font-size: 11px; line-height: 1.4; color: var(--rv-ink-dim, #7f95b3); text-align: left;
   opacity: 0; visibility: hidden; transform: translateY(-3px);
   transition: opacity .14s ease, transform .14s ease, visibility .14s;
   pointer-events: none;
@@ -3292,24 +3292,24 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   opacity: 1; visibility: visible; transform: translateY(0);
 }
 .rv-rodadas-modo[aria-checked="true"], .rv-rodadas-lado[aria-checked="true"][data-lado="pj"] {
-  border-color: var(--jf-acento, #35c7d8);
-  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 9%, transparent);
-  color: var(--jf-acento, #35c7d8);
+  border-color: var(--jf-acento, var(--rv-cy-texto, #35c7d8));
+  background: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 9%, transparent);
+  color: var(--jf-acento, var(--rv-cy-texto, #35c7d8));
 }
-.rv-rodadas-modo[aria-checked="true"] strong { color: var(--jf-acento, #35c7d8); }
+.rv-rodadas-modo[aria-checked="true"] strong { color: var(--jf-acento, var(--rv-cy-texto, #35c7d8)); }
 
 /* NoteRow */
 .rv-rodadas-vazio {
   padding: 8px 12px; border-radius: var(--rv-r);
-  border: 1px solid color-mix(in srgb, var(--jf-acento, #35c7d8) 16%, transparent);
-  border-left: 2px solid var(--jf-acento, #35c7d8);
-  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 6%, transparent);
-  font-size: 11px; line-height: 1.4; color: #7f95b3;
+  border: 1px solid color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 16%, transparent);
+  border-left: 2px solid var(--jf-acento, var(--rv-cy-texto, #35c7d8));
+  background: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 6%, transparent);
+  font-size: 11px; line-height: 1.4; color: var(--rv-ink-dim, #7f95b3);
 }
 .rv-rodadas-aviso {
   margin: 0; padding: 8px 12px; border-radius: var(--rv-r);
   border: 1px solid rgba(224, 165, 58, .16); border-left: 2px solid #e0a53a;
-  background: rgba(224, 165, 58, .06); font-size: 11px; color: #7f95b3;
+  background: rgba(224, 165, 58, .06); font-size: 11px; color: var(--rv-ink-dim, #7f95b3);
 }
 .rv-rodadas-erro {
   padding: 8px 12px; border-radius: var(--rv-r);
@@ -3317,7 +3317,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   background: rgba(224, 69, 95, .06); font-size: 11px; color: #e0455f;
 }
 
-.rv-rodadas-rodape { gap: 8px; padding-top: 12px; border-top: 1px solid #16233a; }
+.rv-rodadas-rodape { gap: 8px; padding-top: 12px; border-top: 1px solid var(--rv-line-2, #16233a); }
 
 /* ── COMBATE ATIVO ────────────────────────────────────────────────
    O mesmo desenho da configuração, com o conteúdo do combate em curso:
@@ -3343,7 +3343,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-rodadas-regra-valor {
   font-family: var(--font-mono), monospace;
-  font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: #7f95b3;
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--rv-ink-dim, #7f95b3);
 }
 
 /* Linha de participante — a mesma ficha do item de configuração, mas
@@ -3380,12 +3380,12 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-rodadas-mini, .rv-rodadas-olho {
   display: grid; place-items: center;
   width: 26px; height: 26px; padding: 0;
-  border: 1px solid #1c2b45; border-radius: var(--rv-r);
-  background: transparent; color: #4f6285; cursor: pointer;
+  border: 1px solid var(--rv-line-strong, #1c2b45); border-radius: var(--rv-r);
+  background: transparent; color: var(--rv-ink-faint, #4f6285); cursor: pointer;
   transition: color .14s, border-color .14s, background .14s;
 }
 .rv-rodadas-mini:hover:not(:disabled),
-.rv-rodadas-olho:hover:not(:disabled) { color: #b9c9dc; border-color: #2a3b58; background: rgba(255, 255, 255, .04); }
+.rv-rodadas-olho:hover:not(:disabled) { color: var(--rv-ink, #b9c9dc); border-color: var(--rv-line-max, #2a3b58); background: rgba(255, 255, 255, .04); }
 .rv-rodadas-mini:focus-visible,
 .rv-rodadas-olho:focus-visible { outline: 2px solid var(--jf-acento, #e0a53a); outline-offset: 2px; }
 .rv-rodadas-mini:disabled, .rv-rodadas-olho:disabled { opacity: .35; cursor: not-allowed; }
@@ -3409,7 +3409,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-rodadas-dica {
   position: fixed; z-index: 60; pointer-events: none;
   max-width: 220px; padding: 6px 9px; border-radius: var(--rv-r);
-  border: 1px solid #2a3b58; background: #0c1420;
+  border: 1px solid var(--rv-line-max, #2a3b58); background: var(--rv-panel, #0c1420);
   box-shadow: 0 8px 20px rgba(0, 0, 0, .55);
   font-size: 11px; line-height: 1.35; color: #c3d2e8; text-align: left;
 }
@@ -3421,7 +3421,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   flex: 0 1 auto; padding: 0; border: 0; background: transparent; cursor: pointer;
   font-family: var(--rv-display), sans-serif;
   font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em;
-  color: #4f6285; transition: color .14s;
+  color: var(--rv-ink-faint, #4f6285); transition: color .14s;
 }
 .rv-rodadas-encerrar:hover:not(:disabled) { color: #e0455f; }
 .rv-rodadas-encerrar:focus-visible { outline: 2px solid #e0455f; outline-offset: 3px; }
@@ -3463,19 +3463,19 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-camadas-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .rv-camadas-item {
   display: flex; align-items: center; gap: 12px;
-  padding: 10px 12px; border: 1px solid #16233a; border-radius: var(--rv-r);
+  padding: 10px 12px; border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r);
 }
 .rv-camadas-sigla {
   flex: none; display: flex; align-items: center; justify-content: center;
   width: 32px; height: 32px; border-radius: var(--rv-r);
   border: 1px solid rgba(69, 184, 201, .27);
   font-family: var(--rv-display), sans-serif;
-  font-size: 10px; font-weight: 700; color: #45b8c9;
+  font-size: 10px; font-weight: 700; color: var(--rv-cy, #45b8c9);
 }
 .rv-camadas-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; }
 .rv-camadas-nome {
   font-family: var(--rv-display), sans-serif;
-  font-size: 11px; font-weight: 600; color: #b9c9dc;
+  font-size: 11px; font-weight: 600; color: var(--rv-ink, #b9c9dc);
   /* Mesma caixa alta dos demais rótulos do VTT. O tamanho cai 1px
      porque caixa alta ocupa mais largura, e a lista tem nomes longos
      ("OBJETOS / COBERTURAS") que não podem truncar. */
@@ -3483,7 +3483,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-camadas-sub {
   font-family: var(--font-mono), monospace;
-  font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #4f6285;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--rv-ink-faint, #4f6285);
 }
 /* O estudo tinha um selo "VISÍVEL/OCULTA" na ponta da linha — lá ele
    era o ÚNICO indicador, porque nada funcionava. Aqui existe o olho, e
@@ -3491,18 +3491,18 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    esmaece quando a camada está oculta: é o mesmo recado, sem um
    segundo elemento pra ler. */
 .rv-camadas-item[data-oculta] .rv-camadas-sigla {
-  color: #6f83a3; border-color: rgba(111, 131, 163, .33);
+  color: var(--rv-slate, #6f83a3); border-color: rgba(111, 131, 163, .33);
 }
-.rv-camadas-item[data-oculta] .rv-camadas-nome { color: #6f83a3; }
+.rv-camadas-item[data-oculta] .rv-camadas-nome { color: var(--rv-slate, #6f83a3); }
 .rv-camadas-btn {
   flex: none; display: flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border: 1px solid #16233a; border-radius: var(--rv-r);
-  background: transparent; color: #6f83a3; cursor: pointer;
+  width: 28px; height: 28px; border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r);
+  background: transparent; color: var(--rv-slate, #6f83a3); cursor: pointer;
   transition: color .14s, border-color .14s;
 }
-.rv-camadas-btn:hover { color: #b9c9dc; border-color: #1c2b45; }
-.rv-camadas-btn[aria-pressed="false"] { color: #4f6285; }
-.rv-camadas-btn:focus-visible { outline: 2px solid var(--jf-acento, #45b8c9); outline-offset: 1px; }
+.rv-camadas-btn:hover { color: var(--rv-ink, #b9c9dc); border-color: var(--rv-line-strong, #1c2b45); }
+.rv-camadas-btn[aria-pressed="false"] { color: var(--rv-ink-faint, #4f6285); }
+.rv-camadas-btn:focus-visible { outline: 2px solid var(--jf-acento, var(--rv-cy, #45b8c9)); outline-offset: 1px; }
 
 /* Ação SECUNDÁRIA do rodapé (`PanelShell`): texto, não botão cheio —
    é o "Restaurar padrão"/"Descartar"/"Cancelar" do estudo, que fica à
@@ -3512,14 +3512,14 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   padding: 10px 12px; border: none; background: transparent; cursor: pointer;
   font-family: var(--rv-display), sans-serif;
   font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .16em;
-  color: #4f6285; transition: color .14s;
+  color: var(--rv-ink-faint, #4f6285); transition: color .14s;
 }
-.rv-fp-rodape .rv-fp-secundaria:hover { color: #7f95b3; }
+.rv-fp-rodape .rv-fp-secundaria:hover { color: var(--rv-ink-dim, #7f95b3); }
 /* Secundária DESTRUTIVA — descarta trabalho (limpar seleção). Continua
    secundária no peso; só a cor avisa. */
 .rv-fp-rodape .rv-fp-secundaria--perigo { color: color-mix(in srgb, #e0455f 70%, transparent); }
 .rv-fp-rodape .rv-fp-secundaria--perigo:hover { color: #e0455f; }
-.rv-fp-rodape .rv-fp-secundaria:focus-visible { outline: 2px solid var(--jf-acento, #45b8c9); outline-offset: 2px; }
+.rv-fp-rodape .rv-fp-secundaria:focus-visible { outline: 2px solid var(--jf-acento, var(--rv-cy, #45b8c9)); outline-offset: 2px; }
 /* O olho é o ÚLTIMO elemento da linha, sempre — é o único controle que
    toda camada tem, então é o único que pode ocupar a mesma coluna em
    todas elas. O cadeado, que só existe em três, entra antes. Com o olho
@@ -3542,52 +3542,52 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   /* A cor da MARCA escolhida, não o acento da ferramenta. O rosa que
      aparecia aqui era o acento da janela Marcar vazando por cima de
      uma prévia que existe justamente pra mostrar a cor selecionada. */
-  border: 1px solid color-mix(in srgb, var(--marca, #45b8c9) 18%, #16233a);
-  background: color-mix(in srgb, var(--marca, #45b8c9) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--marca, var(--rv-cy, #45b8c9)) 18%, var(--rv-line-2, #16233a));
+  background: color-mix(in srgb, var(--marca, var(--rv-cy, #45b8c9)) 4%, transparent);
 }
 .rv-fp-previa-marca {
   flex: none; display: flex; align-items: center; justify-content: center;
   width: 44px; height: 44px; border-radius: var(--rv-r); transform: rotate(45deg);
-  border: 1px solid var(--marca, #45b8c9);
-  background: color-mix(in srgb, var(--marca, #45b8c9) 9%, transparent);
-  color: var(--marca, #45b8c9);
+  border: 1px solid var(--marca, var(--rv-cy, #45b8c9));
+  background: color-mix(in srgb, var(--marca, var(--rv-cy, #45b8c9)) 9%, transparent);
+  color: var(--marca, var(--rv-cy, #45b8c9));
 }
 .rv-fp-previa-marca > svg { transform: rotate(-45deg); }
 .rv-fp-previa-txt { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .rv-fp-previa-nome {
   font-family: var(--rv-display), sans-serif;
-  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: #b9c9dc;
+  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--rv-ink, #b9c9dc);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.rv-fp-previa-sub { font-size: 11px; color: #7f95b3; }
-.rv-fp-previa[data-privada] .rv-fp-previa-sub { color: #cf9a3e; }
+.rv-fp-previa-sub { font-size: 11px; color: var(--rv-ink-dim, #7f95b3); }
+.rv-fp-previa[data-privada] .rv-fp-previa-sub { color: #ff8a1f; }
 
 /* Fileira de cores — barras largas, como no estudo: a selecionada fica
    opaca e ganha contorno; as outras recuam pra .45. */
 .rv-fp-cores { display: flex; gap: 8px; }
 .rv-fp-cor {
   flex: 1 1 0; height: 32px; border: none; border-radius: var(--rv-r); cursor: pointer;
-  background: var(--marca, #45b8c9); opacity: .45;
+  background: var(--marca, var(--rv-cy, #45b8c9)); opacity: .45;
   outline: none; transition: opacity .14s, box-shadow .14s;
 }
 .rv-fp-cor:hover { opacity: .8; }
-.rv-fp-cor[aria-pressed="true"] { opacity: 1; box-shadow: 0 0 0 2px var(--marca, #45b8c9); }
-.rv-fp-cor:focus-visible { box-shadow: 0 0 0 2px #0b1424, 0 0 0 4px var(--marca, #45b8c9); }
+.rv-fp-cor[aria-pressed="true"] { opacity: 1; box-shadow: 0 0 0 2px var(--marca, var(--rv-cy, #45b8c9)); }
+.rv-fp-cor:focus-visible { box-shadow: 0 0 0 2px var(--fj-fundo-4, #0b1424), 0 0 0 4px var(--marca, var(--rv-cy, #45b8c9)); }
 
 /* CheckRow */
 .rv-fp-check {
   display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; border: 1px solid #16233a; border-radius: var(--rv-r); cursor: pointer;
+  padding: 10px 12px; border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r); cursor: pointer;
 }
-.rv-fp-check:hover { border-color: #1c2b45; }
-.rv-fp-check input { width: 16px; height: 16px; flex: none; accent-color: var(--jf-acento, #45b8c9); cursor: pointer; }
+.rv-fp-check:hover { border-color: var(--rv-line-strong, #1c2b45); }
+.rv-fp-check input { width: 16px; height: 16px; flex: none; accent-color: var(--jf-acento, var(--rv-cy, #45b8c9)); cursor: pointer; }
 .rv-fp-check-txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 auto; }
-.rv-fp-check-nome { font-size: 12px; color: #b9c9dc; }
+.rv-fp-check-nome { font-size: 12px; color: var(--rv-ink, #b9c9dc); }
 .rv-fp-check-sub {
   font-family: var(--font-mono), monospace;
-  font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #4f6285;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--rv-ink-faint, #4f6285);
 }
-.rv-fp-check-ic { flex: none; color: #4f6285; }
+.rv-fp-check-ic { flex: none; color: var(--rv-ink-faint, #4f6285); }
 
 /* ═══ INTERRUPTOR ═══════════════════════════════════════════════════
    Toda CONFIGURAÇÃO liga/desliga é um interruptor, não um quadradinho:
@@ -3631,17 +3631,17 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-campo { display: flex; flex-direction: column; }
 .rv-fp-campo input[type="text"], .rv-fp-campo input[type="number"], .rv-fp-campo textarea {
   width: 100%; min-width: 0; margin-top: 6px;
-  padding: 8px 12px; border: 1px solid #16233a; border-radius: var(--rv-r);
-  background: transparent; font: inherit; font-size: 12px; color: #b9c9dc;
+  padding: 8px 12px; border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r);
+  background: transparent; font: inherit; font-size: 12px; color: var(--rv-ink, #b9c9dc);
 }
 .rv-fp-campo textarea { resize: vertical; line-height: 1.4; }
 .rv-fp-campo input:focus-visible, .rv-fp-campo textarea:focus-visible {
-  outline: none; border-color: color-mix(in srgb, var(--jf-acento, #45b8c9) 55%, transparent);
+  outline: none; border-color: color-mix(in srgb, var(--jf-acento, var(--rv-cy, #45b8c9)) 55%, transparent);
 }
 /* Unidade sob o campo, discreta — não compete com o valor. */
 .rv-fp-campo em {
   margin-top: 4px; font-family: var(--font-mono), monospace; font-style: normal;
-  font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #4f6285;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--rv-ink-faint, #4f6285);
 }
 .rv-fp-campos-lado { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 
@@ -3654,8 +3654,8 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    VALORES passam a ser os do estudo. */
 
 .rv-janela-token {
-  background: linear-gradient(160deg, #0b1424, #080e19);
-  border: 1px solid #18263f;
+  background: linear-gradient(160deg, var(--fj-fundo-4, #0b1424), var(--fj-fundo-2, #080e19));
+  border: 1px solid var(--fj-fundo-7, #18263f);
   box-shadow: 0 30px 70px rgba(0, 0, 0, .55);
   border-radius: var(--rv-r);
 }
@@ -3671,21 +3671,21 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-janela-token .rv-field > label,
 .rv-janela-token .rv-field legend {
   font-family: var(--rv-display), sans-serif;
-  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: #4f6285;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: var(--rv-ink-faint, #4f6285);
 }
 /* O PLACEHOLDER É DO VTT, não do navegador: sem regra ele herdava o
    cinza e a fonte do agente do usuário — outro peso, outro tom, e o
    campo parecia de outro produto. */
 .rv-janela-token .rv-field input::placeholder {
-  color: #4f6285; opacity: 1;
+  color: var(--rv-ink-faint, #4f6285); opacity: 1;
   font-family: var(--rv-body); font-size: 12px; letter-spacing: 0;
 }
 .rv-janela-token .rv-field input[type="text"],
 .rv-janela-token .rv-field input[type="number"],
 .rv-janela-token .rv-field select {
   margin-top: 6px; padding: 8px 12px;
-  border: 1px solid #16233a; border-radius: var(--rv-r); background: transparent;
-  font-size: 12px; color: #b9c9dc;
+  border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r); background: transparent;
+  font-size: 12px; color: var(--rv-ink, #b9c9dc);
 }
 .rv-janela-token .rv-field input:focus-visible,
 .rv-janela-token .rv-field select:focus-visible {
@@ -3696,7 +3696,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    explicação de duas linhas vira um bloco ilegível. */
 .rv-janela-token .rv-field-ajuda {
   margin-top: 6px; font-size: 11px; line-height: 1.4;
-  text-transform: none; letter-spacing: 0; color: #7f95b3;
+  text-transform: none; letter-spacing: 0; color: var(--rv-ink-dim, #7f95b3);
 }
 .rv-janela-token .rv-form-linha { gap: 12px; }
 /* Nome + Sigla partilham a linha, mas a ajuda de cada um tem tamanhos
@@ -3715,7 +3715,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    INLINE"): era aqui que ele estava preso, e por isso a mesma peça
    desenhava certo na janela de token e crua em qualquer outra. */
 .rv-janela-token .rv-segmentado-item[aria-checked="true"] {
-  border-color: #45b8c9; background: rgba(69, 184, 201, .09); color: #45b8c9; font-weight: 600;
+  border-color: var(--rv-cy, #45b8c9); background: rgba(69, 184, 201, .09); color: var(--rv-cy, #45b8c9); font-weight: 600;
 }
 
 /* CheckRow — as bandeiras de comportamento (visível, travado…) */
@@ -3743,15 +3743,15 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-mais-opcoes > summary {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--rv-display), sans-serif;
-  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: #4f6285;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: var(--rv-ink-faint, #4f6285);
 }
 .rv-janela-token .rv-mais-opcoes > summary::after {
   content: ""; flex: 1; height: 1px;
-  background: linear-gradient(90deg, #18263f, transparent);
+  background: linear-gradient(90deg, var(--fj-fundo-7, #18263f), transparent);
 }
 .rv-janela-token .rv-condicoes-grade { gap: 8px 12px; }
-.rv-janela-token .rv-condicao-item { font-size: 12px; color: #b9c9dc; }
-.rv-janela-token .rv-condicao-item input { accent-color: #45b8c9; }
+.rv-janela-token .rv-condicao-item { font-size: 12px; color: var(--rv-ink, #b9c9dc); }
+.rv-janela-token .rv-condicao-item input { accent-color: var(--rv-cy, #45b8c9); }
 .rv-janela-token .rv-camadas-tag { flex: none; }
 
 /* Rodapé e CommandButton */
@@ -3760,7 +3760,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    espinha; aqui só o acento e o fato de ela ser `position: fixed` (é
    janela de formulário, não peça do palco). */
 .rv-janela-token.rv-fp {
-  --jf-acento: #45b8c9;
+  --jf-acento: var(--rv-cy, #45b8c9);
   /* A largura é a DESTA janela, não a das ferramentas: `.rv-fp` traz
      320/400px, e o formulário de token tem duas colunas de campo. O
      `max-height` volta ao viewport (as ferramentas se limitam ao
@@ -3810,7 +3810,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-janela-token .rv-fp-rotulo {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--rv-display), sans-serif;
-  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: #4f6285;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: var(--rv-ink-faint, #4f6285);
   cursor: default;
 }
 .rv-janela-token .rv-fp-rotulo::before {
@@ -3821,7 +3821,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-janela-token .rv-fp-rotulo::after {
   content: ""; flex: 1; height: 1px;
-  background: linear-gradient(90deg, #18263f, transparent);
+  background: linear-gradient(90deg, var(--fj-fundo-7, #18263f), transparent);
 }
 /* `summary` da seção 04 continua clicável e mostra o estado no fim. */
 .rv-janela-token details.rv-fp-grupo > summary.rv-fp-rotulo { cursor: pointer; list-style: none; }
@@ -3829,31 +3829,31 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 .rv-janela-token .rv-modal-rodape {
   padding: 12px 16px; gap: 8px;
-  border-top: 1px solid #16233a; background: rgba(255, 255, 255, .015);
+  border-top: 1px solid var(--rv-line-2, #16233a); background: rgba(255, 255, 255, .015);
 }
 .rv-janela-token .rv-modal-rodape .rv-btn--ghost {
   border: none; background: transparent;
   font-family: var(--rv-display), sans-serif;
-  font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .16em; color: #4f6285;
+  font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .16em; color: var(--rv-ink-faint, #4f6285);
 }
-.rv-janela-token .rv-modal-rodape .rv-btn--ghost:hover { color: #7f95b3; background: transparent; }
+.rv-janela-token .rv-modal-rodape .rv-btn--ghost:hover { color: var(--rv-ink-dim, #7f95b3); background: transparent; }
 .rv-janela-token .rv-modal-rodape .rv-btn--pri {
   margin-left: auto;
   padding: 10px 20px; border-radius: var(--rv-r);
   border: 1px solid rgba(69, 184, 201, .53); background: rgba(69, 184, 201, .09);
-  color: #45b8c9;
+  color: var(--rv-cy, #45b8c9);
   font-family: var(--rv-display), sans-serif;
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .22em;
 }
 .rv-janela-token .rv-modal-rodape .rv-btn--pri::before { content: "▹"; opacity: .7; margin-right: 8px; }
-.rv-janela-token .rv-modal-rodape .rv-btn--pri:hover:not(:disabled) { border-color: #45b8c9; }
+.rv-janela-token .rv-modal-rodape .rv-btn--pri:hover:not(:disabled) { border-color: var(--rv-cy, #45b8c9); }
 .rv-janela-token .rv-form-aviso {
   margin: 0; padding: 8px 12px; border-radius: var(--rv-r);
   border: 1px solid rgba(224, 165, 58, .16); border-left: 2px solid #e0a53a;
   background: rgba(224, 165, 58, .06);
-  font-size: 11px; line-height: 1.4; color: #7f95b3;
+  font-size: 11px; line-height: 1.4; color: var(--rv-ink-dim, #7f95b3);
 }
-.rv-janela-token .rv-imagem-preview { border: 1px solid #16233a; border-radius: var(--rv-r); }
+.rv-janela-token .rv-imagem-preview { border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r); }
 /* Quatro ladrilhos numa fileira só — o `grid-cols-4` do estudo. */
 .rv-fp-seg--4 { grid-auto-flow: unset; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 /* Quatro cards numa linha só cabiam espremendo o respiro lateral pra
@@ -3865,16 +3865,16 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* Contagem no cabeçalho — o `meta` do `PanelShell`. */
 .rv-fp-meta {
   font-family: var(--font-mono), monospace;
-  font-size: 10px; text-transform: uppercase; letter-spacing: .14em; color: #4f6285;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .14em; color: var(--rv-ink-faint, #4f6285);
 }
 /* `select` dentro de campo segue o mesmo tratamento do input. */
 .rv-fp-campo select {
   width: 100%; min-width: 0; margin-top: 6px;
-  padding: 8px 12px; border: 1px solid #16233a; border-radius: var(--rv-r);
-  background: transparent; font: inherit; font-size: 12px; color: #b9c9dc;
+  padding: 8px 12px; border: 1px solid var(--rv-line-2, #16233a); border-radius: var(--rv-r);
+  background: transparent; font: inherit; font-size: 12px; color: var(--rv-ink, #b9c9dc);
 }
 .rv-fp-campo select:focus-visible {
-  outline: none; border-color: color-mix(in srgb, var(--jf-acento, #45b8c9) 55%, transparent);
+  outline: none; border-color: color-mix(in srgb, var(--jf-acento, var(--rv-cy, #45b8c9)) 55%, transparent);
 }
 .rv-marca-rotulo { pointer-events: none; font-family: var(--font-mono), monospace; }
 /* ── Editor de retrato (`_shell/EditorRetratoToken.tsx`) ─────────────
@@ -3930,7 +3930,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-editor-retrato__disco-acao {
   position: absolute; left: 0; right: 0; bottom: 0;
   padding: 5px 0 7px;
-  background: linear-gradient(to top, rgba(5,10,15,.92), rgba(5,10,15,0));
+  background: linear-gradient(to top, rgba(var(--fj-fundo-0-rgb, 5, 10, 15),.92), rgba(var(--fj-fundo-0-rgb, 5, 10, 15),0));
   color: var(--rv-ink);
   font: 700 9px var(--rv-display); letter-spacing: .14em; text-transform: uppercase;
   opacity: 0; transition: opacity .14s;
@@ -4071,7 +4071,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   filter: url(#rv-brilho);
 }
 .rv-imagem-cena__alca {
-  fill: #0a0e14; stroke: #7f9bd1; stroke-width: 1.6;
+  fill: var(--fj-fundo-1, #0a0e14); stroke: #7f9bd1; stroke-width: 1.6;
 }
 .rv-imagem-cena__alca:hover { fill: #7f9bd1; }
 
@@ -4081,7 +4081,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   stroke: #7f9bd1; stroke-width: 1.4; stroke-dasharray: 3 3; opacity: .8;
 }
 .rv-imagem-cena__giro {
-  fill: #0a0e14; stroke: #7f9bd1; stroke-width: 1.6;
+  fill: var(--fj-fundo-1, #0a0e14); stroke: #7f9bd1; stroke-width: 1.6;
 }
 .rv-imagem-cena__giro:hover { fill: #7f9bd1; }
 
@@ -4092,7 +4092,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-arrastando-imagem {
   position: absolute; inset: 0; z-index: 40; pointer-events: none;
   display: flex; padding: 12px;
-  background: rgba(6, 11, 20, .72); backdrop-filter: blur(3px);
+  background: rgba(var(--fj-fundo-1-rgb, 6, 11, 20), .72); backdrop-filter: blur(3px);
   animation: rv-arrastando-entra .14s ease-out;
 }
 .rv-arrastando-imagem-caixa {
@@ -4123,7 +4123,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   width: min(380px, calc(100vw - 32px)); max-height: calc(100dvh - 48px);
   padding: 16px;
   border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
-  background: linear-gradient(180deg, #0b1322, #080e19);
+  background: linear-gradient(180deg, var(--fj-fundo-3, #0b1322), var(--fj-fundo-2, #080e19));
   box-shadow: 0 20px 56px rgba(0, 0, 0, .7);
 }
 .rv-colocar-imagem__cab { display: flex; align-items: center; gap: 10px; }
@@ -4161,7 +4161,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-colocar-imagem__preview {
   display: grid; place-items: center; max-height: 190px; overflow: hidden;
   border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
-  background-color: #0d1219;
+  background-color: var(--fj-fundo-2, #0d1219);
   background-image:
     linear-gradient(45deg, rgba(255,255,255,.04) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.04) 75%),
     linear-gradient(45deg, rgba(255,255,255,.04) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.04) 75%);
@@ -4340,7 +4340,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 48px);
   padding: 16px;
   border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
-  background: linear-gradient(180deg, #0b1322, #080e19);
+  background: linear-gradient(180deg, var(--fj-fundo-3, #0b1322), var(--fj-fundo-2, #080e19));
   box-shadow: 0 20px 56px rgba(0, 0, 0, .7);
 }
 .rv-biblioteca__cab { display: flex; align-items: center; gap: 10px; }
@@ -4414,7 +4414,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-biblioteca__selo {
   position: absolute; left: 4px; bottom: 4px;
   padding: 1px 5px; border-radius: var(--rv-r);
-  background: rgba(8, 12, 18, .88);
+  background: rgba(var(--fj-fundo-1-rgb, 8, 12, 18), .88);
   font-family: var(--font-mono), monospace;
   font-size: 8px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
 }
@@ -4431,14 +4431,14 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   position: absolute; top: 10px; right: 10px; z-index: 2;
   display: grid; place-items: center; width: 22px; height: 22px; padding: 0;
   border: 1px solid color-mix(in srgb, var(--rv-dg) 45%, transparent); border-radius: var(--rv-r);
-  background: rgba(8, 12, 18, .86); color: var(--rv-dg);
+  background: rgba(var(--fj-fundo-1-rgb, 8, 12, 18), .86); color: var(--rv-dg);
   cursor: pointer; opacity: 0; pointer-events: none;
   transition: opacity .12s, color .14s, border-color .14s, background .14s;
 }
 .rv-biblioteca__celula:hover .rv-biblioteca__excluir,
 .rv-biblioteca__celula:focus-within .rv-biblioteca__excluir { opacity: 1; pointer-events: auto; }
 .rv-biblioteca__excluir:hover:not(:disabled) {
-  border-color: var(--rv-dg); background: color-mix(in srgb, var(--rv-dg) 26%, rgba(8,12,18,.9)); color: #ffb3bd;
+  border-color: var(--rv-dg); background: color-mix(in srgb, var(--rv-dg) 26%, rgba(var(--fj-fundo-1-rgb, 8, 12, 18),.9)); color: #ffb3bd;
 }
 .rv-biblioteca__excluir:focus-visible { opacity: 1; pointer-events: auto; outline: 2px solid var(--rv-dg); outline-offset: 2px; }
 .rv-biblioteca__excluir:disabled { opacity: .4; cursor: not-allowed; }
@@ -4449,7 +4449,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   position: absolute; inset: 0; z-index: 3;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
   padding: 8px; border: 1px solid color-mix(in srgb, var(--rv-dg) 45%, transparent); border-radius: var(--rv-r);
-  background: rgba(8, 12, 18, .95);
+  background: rgba(var(--fj-fundo-1-rgb, 8, 12, 18), .95);
 }
 .rv-biblioteca__confirmar p {
   margin: 0; font-family: var(--rv-display), sans-serif;
@@ -4574,9 +4574,9 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   /* A galeria monta a gaveta dentro de um bloco da página; colada no
      topo da tela ela cobriria a galeria inteira. */
   border-bottom: 1px solid var(--rv-line-strong);
-  background: linear-gradient(180deg, #0b1322, #070c16);
+  background: linear-gradient(180deg, var(--fj-fundo-3, #0b1322), var(--fj-fundo-1, #070c16));
   box-shadow: 0 24px 64px rgba(0, 0, 0, .72);
-  --jf-acento: #cf9a3e;
+  --jf-acento: #ff8a1f;
 }
 /* O BOTÃO PRINCIPAL DA GAVETA É ÂMBAR. `.rv-btn--pri` nasce ciano
    porque ciano é a cor da mesa; aqui dentro a cor é `--jf-acento`, e
@@ -4610,7 +4610,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   width: 54px; height: 22px; padding: 0;
   border: 1px solid var(--rv-line-strong); border-top: none;
   border-radius: 0 0 3px 3px;
-  background: linear-gradient(180deg, #0b1322, #070c16);
+  background: linear-gradient(180deg, var(--fj-fundo-3, #0b1322), var(--fj-fundo-1, #070c16));
   color: var(--rv-ink-faint); cursor: pointer;
   box-shadow: 0 10px 20px rgba(0, 0, 0, .45);
   transition: color .14s, border-color .14s, background .14s;
@@ -4665,11 +4665,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    ao lado de uma busca e de cartões com superfície própria; no painel a
    regra já é essa (aba, cartão, busca e botão dividem a mesma
    superfície). */
-.rv-gav-cab .rv-btn:not(.rv-btn--pri) { background: #0c1526; }
+.rv-gav-cab .rv-btn:not(.rv-btn--pri) { background: var(--rv-peca, #0c1526); }
 .rv-gav-fechar {
   width: 28px; height: 28px; flex: none; padding: 0; display: grid; place-items: center;
   border: 1px solid var(--rv-line-strong); border-radius: var(--rv-r);
-  background: #0c1526; color: var(--rv-ink-faint); cursor: pointer;
+  background: var(--rv-peca, #0c1526); color: var(--rv-ink-faint); cursor: pointer;
   transition: color .14s, border-color .14s;
 }
 .rv-gav-fechar:hover { color: var(--rv-ink); border-color: var(--rv-line-hover, var(--jf-acento)); }
@@ -4936,7 +4936,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-cena-selo {
   display: inline-flex; align-items: center; gap: 4px; flex: none;
   padding: 3px 7px; border-radius: var(--rv-r);
-  background: rgba(6, 10, 18, .88);
+  background: rgba(var(--fj-fundo-1-rgb, 6, 10, 18), .88);
   font-family: var(--font-mono), monospace; font-size: 8.5px; font-weight: 700;
   letter-spacing: .1em; text-transform: uppercase;
 }
@@ -4955,19 +4955,21 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   padding: 2px 6px; border-radius: var(--rv-r);
   font-family: var(--font-mono), monospace; font-size: 8.5px;
   letter-spacing: .06em; text-transform: uppercase; color: var(--rv-ink-dim);
-  background: rgba(6, 10, 18, .88); box-shadow: inset 0 0 0 1px var(--rv-line-2);
+  background: rgba(var(--fj-fundo-1-rgb, 6, 10, 18), .88); box-shadow: inset 0 0 0 1px var(--rv-line-2);
   max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-/* Mandado para cá é decisão de alguém: leva o acento de "isto foi você
-   quem fez". Quem está aqui porque a mesa está fica neutro. */
-.rv-cena-jogador[data-atribuido] { color: var(--jf-acento); box-shadow: inset 0 0 0 1px currentColor; }
+/* Jogador mandado para esta cena: o mesmo verde do selo "Jogadores
+   aqui" — é a mesma informação (onde os jogadores estão), só que por
+   nome. O âmbar ficou para "Você está aqui", que é sobre o narrador.
+   Quem está aqui porque a mesa está fica neutro. */
+.rv-cena-jogador[data-atribuido] { color: var(--rv-ok); box-shadow: inset 0 0 0 1px currentColor; }
 .rv-cena-jogador[data-mais] { color: var(--rv-ink-dim); font-weight: 700; }
 
 /* "Soltar aqui" — só enquanto um jogador paira. Sem isso, soltar vira
    aposta; é a mesma razão de a pasta realçar. */
 .rv-cena-solte {
   position: absolute; inset: 0; display: grid; place-items: center;
-  background: color-mix(in srgb, var(--rv-ok) 22%, rgba(6, 10, 18, .8));
+  background: color-mix(in srgb, var(--rv-ok) 22%, rgba(var(--fj-fundo-1-rgb, 6, 10, 18), .8));
   color: var(--rv-ink);
   font-family: var(--rv-display), sans-serif;
   font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
@@ -5007,7 +5009,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   position: absolute; right: 6px; top: 6px; z-index: 2;
   display: flex; align-items: center; gap: 2px;
   padding: 2px; border-radius: var(--rv-r);
-  background: rgba(6, 10, 18, .92); border: 1px solid var(--rv-line-2);
+  background: rgba(var(--fj-fundo-1-rgb, 6, 10, 18), .92); border: 1px solid var(--rv-line-2);
   opacity: 0; transition: opacity .12s;
 }
 .rv-cena-ladrilho:hover .rv-cena-acoes,
@@ -5070,7 +5072,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-cena-nova .rv-cena-campo {
   min-width: 260px;
   padding: 5px 9px;
-  background: #0c1526; border-color: var(--rv-line-strong);
+  background: var(--rv-peca, #0c1526); border-color: var(--rv-line-strong);
   color: var(--rv-ink);
   font-family: var(--rv-body); font-size: 13.5px;
 }
@@ -5302,7 +5304,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-session-actions { display: flex; gap: 8px; }
 .rv-session-button { padding: 8px; border: 1px solid var(--linha-forte); border-radius: var(--rv-r); background: var(--rv-panel-grad); white-space: nowrap; }
 .rv-session-actions .rv-session-button { flex: 1; }
-.rv-session-button:not(:disabled):hover { background: #1b2b3e; border-color: #647e9c; color: #dce6f3; }
+.rv-session-button:not(:disabled):hover { background: var(--fj-fundo-7, #1b2b3e); border-color: #647e9c; color: #dce6f3; }
 .rv-session-button--danger { background: #44262f; color: #ffd4db; border-color: #8a505c; }
 .rv-session-button--danger:not(:disabled):hover { background: #5b303c; border-color: #ba7383; color: #ffe5ea; }
 .rv-session button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
@@ -5402,7 +5404,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   position: fixed; z-index: 80;
   display: flex; flex-direction: column; width: 176px; padding: 4px;
   border-radius: var(--rv-r);
-  background: linear-gradient(180deg, #0b1322, #080e19);
+  background: linear-gradient(180deg, var(--fj-fundo-3, #0b1322), var(--fj-fundo-2, #080e19));
   border: 1px solid var(--rv-line-2);
   box-shadow: var(--sombra, 0 8px 24px rgba(0,0,0,.45));
 }
@@ -5480,7 +5482,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-cena-busca-casca {
   display: flex; align-items: center; gap: 6px;
   padding: 5px 8px; border-radius: var(--rv-r);
-  border: 1px solid var(--rv-line-strong); background: #0c1526;
+  border: 1px solid var(--rv-line-strong); background: var(--rv-peca, #0c1526);
   color: var(--rv-ink-faint);
 }
 .rv-cena-busca-casca:focus-within { border-color: var(--jf-acento); color: var(--jf-acento); }
@@ -5644,12 +5646,12 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   padding: 0; overflow: hidden;
   border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
   /* `#0c1526`, o fundo das peças — o mesmo do cartão de personagem. */
-  background: #0c1526; color: var(--rv-ink-dim); cursor: pointer; text-align: left;
+  background: var(--rv-peca, #0c1526); color: var(--rv-ink-dim); cursor: pointer; text-align: left;
   font-family: var(--rv-display), sans-serif; font-size: 11px;
   transition: background .12s, border-color .12s, color .12s;
 }
 .rv-minicena-btn:hover {
-  background: color-mix(in srgb, var(--jf-acento) 16%, #0c1526);
+  background: color-mix(in srgb, var(--jf-acento) 16%, var(--rv-peca, #0c1526));
   border-color: color-mix(in srgb, var(--jf-acento) 45%, transparent);
   color: var(--rv-ink);
 }
@@ -5657,7 +5659,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    ferramenta: ela já é âmbar parada, e trocar de família no hover leria
    como outro estado. */
 .rv-minicena[data-vista] .rv-minicena-btn:hover {
-  background: color-mix(in srgb, var(--rv-am) 16%, #0c1526);
+  background: color-mix(in srgb, var(--rv-am) 16%, var(--rv-peca, #0c1526));
   border-color: color-mix(in srgb, var(--rv-am) 60%, transparent);
 }
 .rv-minicena-btn:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: 1px; }
@@ -5668,7 +5670,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    passar o mouse por cima dela não diria nada. */
 .rv-minicena[data-vista] .rv-minicena-btn {
   border-color: color-mix(in srgb, var(--rv-am) 40%, transparent);
-  background: color-mix(in srgb, var(--rv-am) 8%, #0c1526);
+  background: color-mix(in srgb, var(--rv-am) 8%, var(--rv-peca, #0c1526));
 }
 /* O RETÂNGULO é a cena: mesma ideia do cartão grande, onde o mapa é a
    superfície inteira. Aqui ele encolhe pra um selo de 26×18 — o
@@ -5814,7 +5816,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   width: min(410px, 100%);
   display: flex; flex-direction: column;
   border-left: 1px solid var(--rv-line-strong);
-  background: linear-gradient(180deg, #0b1322, #070c16);
+  background: linear-gradient(180deg, var(--fj-fundo-3, #0b1322), var(--fj-fundo-1, #070c16));
   box-shadow: -16px 0 40px rgba(0, 0, 0, .5);
 }
 .rv-gav-folha-cab {
@@ -5861,7 +5863,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    viravam 2px — a prévia sumia justamente na folha mais cheia. */
 .rv-gav-grade-previa {
   height: 54px; flex: none; border-radius: var(--rv-r); border: 1px solid var(--rv-line-2);
-  background-color: #0d1219;
+  background-color: var(--fj-fundo-2, #0d1219);
   background-image:
     linear-gradient(45deg, rgba(255,255,255,.05) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.05) 75%),
     linear-gradient(45deg, rgba(255,255,255,.05) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.05) 75%),
@@ -5948,7 +5950,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-gav-mapa-previa {
   display: grid; place-items: center; flex: none; height: 190px; overflow: hidden;
   border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
-  background-color: #0d1219;
+  background-color: var(--fj-fundo-2, #0d1219);
   background-image:
     linear-gradient(45deg, rgba(255,255,255,.04) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.04) 75%),
     linear-gradient(45deg, rgba(255,255,255,.04) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.04) 75%);
@@ -6090,11 +6092,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   background: var(--rv-raise); box-shadow: inset 0 0 0 1px var(--rv-line-2);
   max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-/* Mandado para cá é decisão de alguém: leva o acento da janela, que é
-   a cor de "isto foi você quem fez". */
+/* Jogador mandado para esta cena: o verde do selo "Jogadores aqui" — a
+   mesma informação, por nome. O âmbar fica para "Você está aqui". */
 .rv-cena-jogador[data-atribuido] {
-  color: var(--jf-acento, var(--cy));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--jf-acento, var(--cy)) 45%, transparent);
+  color: var(--rv-ok);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rv-ok) 45%, transparent);
   background: none;
 }
 /* "+2" — o resto dos nomes vive no `title`. */
@@ -6169,8 +6171,8 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
      hex sai mais escuro e menos azul aqui. Somando de volta o desvio
      medido (R −1, G +1, B +6), este é o número que RENDERIZA como o
      do desenho. */
-  border: 1px solid #18263f; border-radius: 6px;
-  background: #101c32;
+  border: 1px solid var(--fj-fundo-7, #18263f); border-radius: 6px;
+  background: var(--fj-fundo-5, #101c32);
   box-shadow: 0 16px 20px rgba(0, 0, 0, .5);
   /* A entrada é curta de propósito: o cartão já custou a espera do
      hover, e uma animação longa em cima disso leria como lentidão. */
@@ -6201,27 +6203,27 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   bottom: -8px;
 }
 .rv-cartao-token[data-seta-lado="acima"] .rv-cartao-token__seta::before {
-  border-top: 8px solid #18263f;
+  border-top: 8px solid var(--fj-fundo-7, #18263f);
 }
 .rv-cartao-token[data-seta-lado="acima"] .rv-cartao-token__seta::after {
   left: 1px;
   top: -1px;
   border-left-width: 6px;
   border-right-width: 6px;
-  border-top: 7px solid #101c32;
+  border-top: 7px solid var(--fj-fundo-5, #101c32);
 }
 .rv-cartao-token[data-seta-lado="abaixo"] .rv-cartao-token__seta {
   top: -8px;
 }
 .rv-cartao-token[data-seta-lado="abaixo"] .rv-cartao-token__seta::before {
-  border-bottom: 8px solid #18263f;
+  border-bottom: 8px solid var(--fj-fundo-7, #18263f);
 }
 .rv-cartao-token[data-seta-lado="abaixo"] .rv-cartao-token__seta::after {
   left: 1px;
   top: 1px;
   border-left-width: 6px;
   border-right-width: 6px;
-  border-bottom: 7px solid #101c32;
+  border-bottom: 7px solid var(--fj-fundo-5, #101c32);
 }
 @keyframes rv-cartao-token-entra {
   from { opacity: 0; transform: translateY(3px); }
@@ -6240,7 +6242,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    O atributo é explícito porque a seta também é filha do cartão e não
    deve, sozinha, criar um divisor sob o cabeçalho. */
 .rv-cartao-token__cab[data-com-conteudo] {
-  padding-bottom: 8px; border-bottom: 1px solid #18263f;
+  padding-bottom: 8px; border-bottom: 1px solid var(--fj-fundo-7, #18263f);
 }
 /* A ETIQUETA DE LADO fica no MESMO tamanho e entreletra do nome, um
    degrau abaixo na tinta (47% contra 88%): ela qualifica o nome, não
@@ -6274,7 +6276,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-cartao-token__recursos + .rv-cartao-token__condicoes {
   margin-top: 8px;
-  border-top: 1px solid #18263f;
+  border-top: 1px solid var(--fj-fundo-7, #18263f);
 }
 .rv-cartao-token__secao-cab {
   display: flex;
@@ -6347,9 +6349,9 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   width: 18px;
   height: 18px;
   flex: none;
-  border: 1px solid color-mix(in srgb, var(--am) 30%, #18263f);
+  border: 1px solid color-mix(in srgb, var(--am) 30%, var(--fj-fundo-7, #18263f));
   border-radius: var(--rv-r);
-  background: color-mix(in srgb, var(--am) 7%, #0d182a);
+  background: color-mix(in srgb, var(--am) 7%, var(--fj-fundo-4, #0d182a));
   color: var(--am);
   font-family: var(--font-mono), monospace;
   font-size: 10px;
@@ -6486,8 +6488,8 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   z-index: 70; width: min(340px, calc(100% - 32px));
   padding: 16px;
-  border: 1px solid #18263f; border-radius: var(--rv-r-peca);
-  background: linear-gradient(160deg, #0b1424, #080e19);
+  border: 1px solid var(--fj-fundo-7, #18263f); border-radius: var(--rv-r-peca);
+  background: linear-gradient(160deg, var(--fj-fundo-4, #0b1424), var(--fj-fundo-2, #080e19));
   box-shadow: var(--rv-shadow-win, 0 30px 70px rgba(0, 0, 0, .55));
 }
 
@@ -6549,7 +6551,7 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
    `clip-path` recorta. */
 :is(.rv-cena-busca-casca, .rv-dados-tabs, .rv-dados-modo, .rv-dados-stepper, .rv-fp-tamanhos .rv-fp-seg-btn, .rv-fp-preset) {
   --rv-selecao-chanfro: var(--rv-notch, 10px);
-  --rv-selecao-fio: #16233a;
+  --rv-selecao-fio: var(--rv-line-2, #16233a);
   position: relative;
   border-radius: 4px 0 4px 0 !important;
   clip-path: polygon(
@@ -6581,17 +6583,17 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
 }
 
 .rv-cena-busca-casca:focus-within {
-  --rv-selecao-fio: var(--jf-acento, #35c7d8);
+  --rv-selecao-fio: var(--jf-acento, var(--rv-cy-texto, #35c7d8));
 }
 
 .rv-fp-tamanhos .rv-fp-seg-btn:hover,
 .rv-fp-preset:hover {
-  --rv-selecao-fio: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent);
+  --rv-selecao-fio: color-mix(in srgb, var(--jf-acento, var(--rv-cy-texto, #35c7d8)) 40%, transparent);
 }
 
 .rv-fp-tamanhos .rv-fp-seg-btn[aria-pressed="true"],
 .rv-fp-preset[aria-pressed="true"] {
-  --rv-selecao-fio: var(--jf-acento, #35c7d8);
+  --rv-selecao-fio: var(--jf-acento, var(--rv-cy-texto, #35c7d8));
 }
 
 /* ── Configurar permissões (JanelaAcessoPersonagem) ──────────────────
@@ -6661,10 +6663,10 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
    hover e no escolhido. Cores literais: a lista vive por portal, fora
    de onde os tokens `--rv-*` existem. */
 .rv-ident-cartao {
-  --fg-a: #45b8c9;
+  --fg-a: var(--rv-cy, #45b8c9);
   position: relative; display: flex; align-items: stretch; gap: 12px;
   width: 100%; min-height: 44px; margin-top: 4px; padding: 0 12px 0 0; overflow: hidden;
-  border: 1px solid #16233a; background: #0c1526; color: #b9c9dc;
+  border: 1px solid var(--rv-line-2, #16233a); background: var(--rv-peca, #0c1526); color: var(--rv-ink, #b9c9dc);
   text-align: left; cursor: pointer;
   border-radius: 4px 8px 4px 8px !important; corner-shape: round bevel round bevel;
   transition: background-color .16s, border-color .16s, color .16s;
@@ -6674,12 +6676,12 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
 .rv-ident-cartao:focus-visible,
 .rv-ident-gatilho[aria-expanded="true"] {
   border-color: color-mix(in srgb, var(--fg-a) 55%, transparent);
-  background: color-mix(in srgb, var(--fg-a) 11%, #0c1526);
+  background: color-mix(in srgb, var(--fg-a) 11%, var(--rv-peca, #0c1526));
   color: var(--fg-a);
 }
 .rv-ident-cartao[aria-selected="true"] {
   border-color: color-mix(in srgb, var(--fg-a) 47%, transparent);
-  background: color-mix(in srgb, var(--fg-a) 12%, #0c1526);
+  background: color-mix(in srgb, var(--fg-a) 12%, var(--rv-peca, #0c1526));
   color: var(--fg-a);
 }
 .rv-ident-cartao[aria-selected="true"]::before {
@@ -6690,19 +6692,19 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
 .rv-ident-cartao:disabled { opacity: .5; cursor: not-allowed; }
 .rv-ident-face {
   flex: none; width: 44px; align-self: stretch; display: grid; place-items: center; overflow: hidden;
-  border-right: 1px solid #1c2b45; background: #0a1220;
-  font-family: var(--font-corpo), sans-serif; font-size: 12px; font-weight: 700; color: #4f6285;
+  border-right: 1px solid var(--rv-line-strong, #1c2b45); background: var(--fj-fundo-3, #0a1220);
+  font-family: var(--font-corpo), sans-serif; font-size: 12px; font-weight: 700; color: var(--rv-ink-faint, #4f6285);
 }
 .rv-ident-face img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rv-ident-nome {
   flex: 1; align-self: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
 }
-.rv-ident-seta { flex: none; align-self: center; color: #4f6285; transition: transform .14s; }
+.rv-ident-seta { flex: none; align-self: center; color: var(--rv-ink-faint, #4f6285); transition: transform .14s; }
 .rv-ident-lista {
   position: fixed; z-index: 610; display: flex; flex-direction: column; gap: 6px;
   max-height: min(320px, 50vh); overflow-y: auto; padding: 6px;
-  border: 1px solid #1c2b45; background: #0b1322; box-shadow: 0 18px 40px rgba(0, 0, 0, .6);
+  border: 1px solid var(--rv-line-strong, #1c2b45); background: var(--fj-fundo-3, #0b1322); box-shadow: 0 18px 40px rgba(0, 0, 0, .6);
   border-radius: 4px 10px 4px 10px; corner-shape: round bevel round bevel;
 }
 .rv-ident-lista .rv-ident-cartao { margin-top: 0; }
@@ -6711,17 +6713,17 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
 .rv-imagem-ampliada {
   position: fixed; inset: 0; z-index: 900;
   display: grid; place-items: center; padding: 40px;
-  background: rgba(4, 8, 15, .88); backdrop-filter: blur(4px);
+  background: rgba(var(--fj-fundo-0-rgb, 4, 8, 15), .88); backdrop-filter: blur(4px);
   cursor: zoom-out; animation: rv-imagem-ampliada-entra .14s ease-out;
 }
 .rv-imagem-ampliada img {
   max-width: 100%; max-height: 100%; object-fit: contain; cursor: default;
-  border: 1px solid #1c2b45; border-radius: 4px; box-shadow: 0 20px 60px rgba(0, 0, 0, .6);
+  border: 1px solid var(--rv-line-strong, #1c2b45); border-radius: 4px; box-shadow: 0 20px 60px rgba(0, 0, 0, .6);
 }
 .rv-imagem-ampliada-fechar {
   position: absolute; top: 16px; right: 16px; width: 36px; height: 36px;
   display: grid; place-items: center; padding: 0; cursor: pointer;
-  border: 1px solid #1c2b45; border-radius: 4px; background: #0c1526; color: #b9c9dc;
+  border: 1px solid var(--rv-line-strong, #1c2b45); border-radius: 4px; background: var(--rv-peca, #0c1526); color: var(--rv-ink, #b9c9dc);
 }
-.rv-imagem-ampliada-fechar:hover { color: #45b8c9; border-color: color-mix(in srgb, #45b8c9 45%, transparent); }
+.rv-imagem-ampliada-fechar:hover { color: var(--rv-cy, #45b8c9); border-color: color-mix(in srgb, var(--rv-cy, #45b8c9) 45%, transparent); }
 @keyframes rv-imagem-ampliada-entra { from { opacity: 0; } }

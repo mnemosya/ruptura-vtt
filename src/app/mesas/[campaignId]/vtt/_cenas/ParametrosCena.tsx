@@ -32,6 +32,8 @@ export interface ValoresParametros {
   gradeCor: string;
   gradeOpacidade: number;
   celulaPx: number;
+  /** Se os jogadores veem o nome — escondido, o servidor nem o envia a eles. */
+  mostrarNome: boolean;
 }
 
 export interface PropsParametrosCena {
@@ -85,6 +87,7 @@ export function ParametrosCena(p: PropsParametrosCena) {
     gradeCor: p.cena.gradeCor,
     gradeOpacidade: p.cena.gradeOpacidade,
     celulaPx: p.cena.celulaPx,
+    mostrarNome: p.cena.mostrarNome,
   });
 
   // Trocar de cena com a folha aberta recarrega os campos. Sem isto, a
@@ -94,10 +97,10 @@ export function ParametrosCena(p: PropsParametrosCena) {
       nome: p.cena.nome, local: p.cena.local, resumo: p.cena.resumo,
       largura: p.cena.largura, altura: p.cena.altura,
       gradeCor: p.cena.gradeCor, gradeOpacidade: p.cena.gradeOpacidade,
-      celulaPx: p.cena.celulaPx,
+      celulaPx: p.cena.celulaPx, mostrarNome: p.cena.mostrarNome,
     });
   }, [p.cena.id, p.cena.nome, p.cena.local, p.cena.resumo, p.cena.largura, p.cena.altura,
-      p.cena.gradeCor, p.cena.gradeOpacidade, p.cena.celulaPx]);
+      p.cena.gradeCor, p.cena.gradeOpacidade, p.cena.celulaPx, p.cena.mostrarNome]);
 
   useEffect(() => {
     function aoTeclar(e: KeyboardEvent) {
@@ -111,7 +114,7 @@ export function ParametrosCena(p: PropsParametrosCena) {
     v.nome !== p.cena.nome || v.local !== p.cena.local || v.resumo !== p.cena.resumo
     || v.largura !== p.cena.largura || v.altura !== p.cena.altura
     || v.gradeCor !== p.cena.gradeCor || v.gradeOpacidade !== p.cena.gradeOpacidade
-    || v.celulaPx !== p.cena.celulaPx;
+    || v.celulaPx !== p.cena.celulaPx || v.mostrarNome !== p.cena.mostrarNome;
   const nomeValido = v.nome.trim().length > 0;
 
   /* Pixels → células, ARREDONDANDO: meia célula não existe na grade, e
@@ -154,6 +157,21 @@ export function ParametrosCena(p: PropsParametrosCena) {
             data-testid="parametros-nome"
             onChange={(e) => setV((a) => ({ ...a, nome: e.target.value }))}
           />
+        </label>
+
+        <label className="rv-fp-switch">
+          <input
+            type="checkbox" checked={v.mostrarNome}
+            data-testid="parametros-mostrar-nome"
+            onChange={(e) => setV((a) => ({ ...a, mostrarNome: e.target.checked }))}
+          />
+          <span className="rv-fp-switch-tr" aria-hidden="true" />
+          <span className="rv-fp-switch-txt">
+            <span>Mostrar o nome aos jogadores</span>
+            <span className="rv-fp-switch-sub">
+              {v.mostrarNome ? "Aparece no chip de cena da mesa." : "Só você vê o nome; ele nem chega aos jogadores."}
+            </span>
+          </span>
         </label>
 
         <label className="rv-fp-campo">

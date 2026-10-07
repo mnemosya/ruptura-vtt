@@ -43,7 +43,7 @@ const SEM_EFEITO = () => {};
 function cena(over: Partial<DadosCartaoCena> & { id: string; nome: string }): DadosCartaoCena {
   return {
     local: null, resumo: null, largura: 26, altura: 18,
-    gradeCor: "#96bed7", gradeOpacidade: 0.07, celulaPx: 70,
+    gradeCor: "#96bed7", gradeOpacidade: 0.07, celulaPx: 70, mostrarNome: true,
     ordem: 0, revision: 3, arquivadaEm: null, apresentada: false,
     duplicadaDe: null, miniaturaImageId: null, pastaId: null,
     criadaEm: "2026-01-01T00:00:00Z", atualizadaEm: "2026-01-01T00:00:00Z",

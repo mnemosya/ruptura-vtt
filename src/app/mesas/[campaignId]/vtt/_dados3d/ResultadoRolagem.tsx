@@ -41,7 +41,7 @@ export type Accent = { key: string; hex: string; soft: string };
 
 export const ACCENTS: Record<string, Accent> = {
   cyan: { key: "cyan", hex: "#45b8c9", soft: "rgba(69,184,201,0.09)" },
-  amber: { key: "amber", hex: "#cf9a3e", soft: "rgba(207,154,62,0.09)" },
+  amber: { key: "amber", hex: "#ff8a1f", soft: "rgba(255,138,31,0.09)" },
   danger: { key: "danger", hex: "#d15068", soft: "rgba(209,80,104,0.09)" },
   magenta: { key: "magenta", hex: "#c25a8c", soft: "rgba(194,90,140,0.09)" },
   arcane: { key: "arcane", hex: "#8878d6", soft: "rgba(136,120,214,0.09)" },
@@ -130,7 +130,7 @@ export function GroupLabel({ children, right }: { children: ReactNode; right?: R
   return (
     <div style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
       <span style={{ fontFamily: DISPLAY, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.24em", color: "rgba(53,199,216,0.7)" }}>{children}</span>
-      <span style={{ height: 1, flex: 1, background: "linear-gradient(90deg,#18263f,transparent)" }} />
+      <span style={{ height: 1, flex: 1, background: "linear-gradient(90deg,var(--fj-fundo-7, #18263f),transparent)" }} />
       {right}
     </div>
   );
@@ -149,7 +149,7 @@ export function Leitura({ label, children }: { label: string; children: ReactNod
     <div style={{ display: "block", minWidth: 0 }}>
       <span style={{ fontFamily: DISPLAY, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.16em", color: INK_FAINT }}>{label}</span>
       <div style={{
-        marginTop: 4, borderRadius: 2, border: "1px solid #1c2b45", background: "transparent",
+        marginTop: 4, borderRadius: 2, border: "1px solid var(--fj-fundo-7, #1c2b45)", background: "transparent",
         padding: "9px 10px", fontFamily: BODY, fontSize: 12, color: INK,
         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
       }}>
@@ -581,8 +581,8 @@ export function MolduraRolagem({ indice, codigo, titulo, modo, acento = ACCENTS.
         maxHeight: "min(660px, calc(100dvh - 32px))",
         display: "flex", flexDirection: "column", overflow: "hidden",
         paddingLeft: 36, borderRadius: "4px 10px 4px 10px",
-        background: "linear-gradient(160deg, #0b1424, #080e19)",
-        border: "1px solid #182338",
+        background: "linear-gradient(160deg, var(--fj-fundo-4, #0b1424), var(--fj-fundo-2, #080e19))",
+        border: "1px solid var(--fj-fundo-6, #182338)",
         boxShadow: "0 30px 70px rgba(0, 0, 0, 0.55)",
         fontSize: 12, color: INK,
       }}
@@ -593,7 +593,7 @@ export function MolduraRolagem({ indice, codigo, titulo, modo, acento = ACCENTS.
       <span aria-hidden="true" onPointerDown={iniciarArrasto} style={{
         position: "absolute", left: 0, top: 0, bottom: 0, width: 36,
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between",
-        padding: "14px 0", borderRight: "1px solid #16233a", background: "rgba(255, 255, 255, 0.015)",
+        padding: "14px 0", borderRight: "1px solid var(--fj-fundo-6, #16233a)", background: "rgba(255, 255, 255, 0.015)",
         cursor: arrastando ? "grabbing" : "grab", touchAction: "none", userSelect: "none",
       }}>
         <span style={{ color: acento, font: `700 10px ${MONO}`, letterSpacing: "0.1em" }}>{indice}</span>
@@ -607,7 +607,7 @@ export function MolduraRolagem({ indice, codigo, titulo, modo, acento = ACCENTS.
 
       <header onPointerDown={iniciarArrasto} style={{
         display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px 12px",
-        borderBottom: "1px solid #16233a",
+        borderBottom: "1px solid var(--fj-fundo-6, #16233a)",
         cursor: arrastando ? "grabbing" : "grab", touchAction: "none", userSelect: "none",
       }}>
         <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: "1 1 auto" }}>
@@ -628,7 +628,7 @@ export function MolduraRolagem({ indice, codigo, titulo, modo, acento = ACCENTS.
           type="button" aria-label={rotuloFechar} onClick={aoFechar}
           style={{
             flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "center",
-            width: 24, height: 24, border: "1px solid #1c2b45", borderRadius: 2,
+            width: 24, height: 24, border: "1px solid var(--fj-fundo-7, #1c2b45)", borderRadius: 2,
             background: "transparent", color: INK_FAINT, cursor: "pointer",
           }}
         >
@@ -839,7 +839,7 @@ export function CampoCD({ value, onChange }: { value: string; onChange: (v: stri
     onChange(String(Math.min(99, Math.max(1, base + delta))));
   };
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 48, padding: "8px 10px", border: "1px solid #16233a", borderRadius: 2, background: "#0a1220" }}>
+    <div className="rv-cd-caixa" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 48, padding: "8px 10px", border: "1px solid var(--fj-fundo-6, #16233a)", borderRadius: 2, background: "var(--fj-fundo-3, #0a1220)" }}>
       <label htmlFor={id} style={{ display: "flex", minWidth: 0, flexDirection: "column", gap: 3, cursor: "text" }}>
         <span style={{ fontFamily: DISPLAY, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", color: ACCENTS.cyan.hex }}>
           Definir CD
@@ -1038,7 +1038,7 @@ export function RollButton({ label, solid = false, disabled = false, onRoll, onC
   // pedido explícito: tirar.
   const fundoOcioso = solid ? ACCENTS.cyan.hex : ACCENTS.cyan.soft;
   const skin: CSSProperties = disabled
-    ? { color: "#4a5a78", background: "transparent", border: "1px solid #1c2b45" }
+    ? { color: "#4a5a78", background: "transparent", border: "1px solid var(--fj-fundo-7, #1c2b45)" }
     : carregando
       ? { color: corCarga, background: fundoOcioso, border: `1px solid ${corCarga}` }
       : solid

@@ -644,6 +644,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
         gradeCor: v.gradeCor,
         gradeOpacidade: v.gradeOpacidade,
         celulaPx: v.celulaPx,
+        mostrarNome: v.mostrarNome,
         revisionEsperada: cena.revision,
       });
       if (!r.ok || !r.dados) {
@@ -658,7 +659,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
               ...x, nome: g.nome, local: g.local, resumo: g.resumo,
               largura: g.largura, altura: g.altura,
               gradeCor: g.gradeCor, gradeOpacidade: g.gradeOpacidade, celulaPx: g.celulaPx,
-              revision: g.revision,
+              mostrarNome: g.mostrarNome, revision: g.revision,
             }
           : x
       )));

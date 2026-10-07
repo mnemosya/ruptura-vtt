@@ -4035,6 +4035,7 @@ export default function CharacterSheetClient({
       setCharacter(next);
     },
     descartarItem: handleRemoveItem,
+    comprarItem: handleBuyItem,
     carga: cargaAtual,
     glossario: glossarioDeRegras,
     /* As propriedades saem inteiras de `deriveItemProperties` — modelo,
@@ -4147,6 +4148,8 @@ export default function CharacterSheetClient({
               consoleCloseOverride?.();
             }}
             api={consoleApi}
+            // "Mercado" da mesa pede a aba antiga "inventario": no Console é a Mochila (onde fica a loja provisória).
+            abaInicial={initialTab === "inventario" ? "mochila" : undefined}
           />
         </ConsoleErrorBoundary>
       )}

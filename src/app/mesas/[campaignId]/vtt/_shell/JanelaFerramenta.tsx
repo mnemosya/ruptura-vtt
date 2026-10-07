@@ -124,9 +124,9 @@ const ESPINHA: Partial<Record<JanelaId, { indice: string; acento: string }>> = {
   desenhar:  { indice: "11", acento: "#00d4ff" },
   texto:     { indice: "12", acento: "#7f9bd1" },
   areas:     { indice: "04", acento: "#8878d6" },
-  rodadas:   { indice: "05", acento: "#cf9a3e" },
+  rodadas:   { indice: "05", acento: "#ff8a1f" },
   terreno:   { indice: "06", acento: "#4fae82" },
-  objetos:   { indice: "07", acento: "#cf9a3e" },
+  objetos:   { indice: "07", acento: "#ff8a1f" },
   // Azul de planta: imagem de cena é a PLANTA por baixo do tabuleiro, e
   // o acento próprio é o que separa, de relance, a janela que mexe no
   // desenho do mapa daquela que mexe em objeto tático (âmbar) — duas

@@ -218,7 +218,7 @@
      Trocar o ciano foi tentado e desfeito — é ele que dá identidade ao
      Console; o que destoava era a moldura em volta. */
   --rc-cy: #00d4ff;
-  --rc-am: #cf9a3e;          /* --rv-am */
+  --rc-am: #ff8a1f;          /* --rv-am */
   --rc-line: #1c2b45;     /* --rv-line-strong */
   --rc-line-soft: #16233a;/* --rv-line-2 */
   --rc-surface: rgba(12, 20, 32, 0.96);  /* --rv-panel, com alfa: a janela é flutuante */
@@ -284,7 +284,7 @@
    Só as cores são compartilhadas — o layout continua sendo da janela. */
 .rc-fichaheader {
   --rc-cy: #00d4ff;
-  --rc-am: #cf9a3e;
+  --rc-am: #ff8a1f;
   --rc-line: #1c2b45;
   --rc-line-soft: #16233a;
   --rc-surface: rgba(12, 20, 32, 0.96);
@@ -1553,7 +1553,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   /* Abaixo do ativo, que baixou junto: hover é um passo INTERMEDIÁRIO
      entre parado e selecionado, e empatado com ele deixava de dizer
      qual aba está aberta. */
-  background: rgba(207, 154, 62, 0.09);
+  background: rgba(255, 138, 31, 0.09);
   color: var(--rc-am);
 }
 /* O FUNDO É DISCRETO. A 32% o âmbar virava um bloco sólido e o ícone
@@ -1562,8 +1562,8 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    o ícone em âmbar cheio; o fundo só sustenta os três. */
 .rc-tabrail-btn--personagem[aria-selected="true"] {
   border-color: color-mix(in srgb, var(--rc-am) 60%, var(--rc-surface-3));
-  background: rgba(207, 154, 62, 0.16);
-  box-shadow: 0 0 9px rgba(207, 154, 62, 0.2);
+  background: rgba(255, 138, 31, 0.16);
+  box-shadow: 0 0 9px rgba(255, 138, 31, 0.2);
   color: var(--rc-am);
 }
 
@@ -2395,7 +2395,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-aux-defesa-aviso {
   display: flex; align-items: flex-start; gap: 8px;
   padding: 8px 10px; margin-bottom: 10px;
-  border: 1px solid rgba(207, 154, 62, 0.35);
+  border: 1px solid rgba(255, 138, 31, 0.35);
   background: color-mix(in srgb, var(--rc-am) 8%, transparent);
   border-radius: var(--rc-r-sm);
   font-size: 12px; line-height: 16px; color: rgba(238, 203, 143, 0.92);
@@ -4832,3 +4832,12 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
 .rc-rank-menu__opcao:focus-visible { outline: 2px solid #ff8a1f; outline-offset: 2px; }
 .rc-rank-menu__opcao:disabled { cursor: default; opacity: 0.35; }
 .rc-rank-menu__opcao[aria-current="true"] { opacity: 1; border-color: #ff8a1f; color: #ff8a1f; background: rgba(255, 138, 31, 0.1); }
+
+/* PROVISÓRIO — loja simples na aba Inventário. */
+.rc-loja { display: grid; gap: 8px; margin-top: 12px; }
+.rc-loja__filtros { display: flex; gap: 6px; }
+.rc-loja__filtros input { flex: 1; min-width: 0; }
+.rc-loja__filtros input, .rc-loja__filtros select { padding: 6px 8px; border: 1px solid rgba(69, 184, 201, 0.35); background: #07111b; color: #e6f6ff; font-size: 12px; }
+.rc-loja__lista { list-style: none; margin: 0; padding: 0; max-height: 280px; overflow-y: auto; display: grid; gap: 4px; }
+.rc-loja__lista li { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; font-size: 12px; }
+.rc-loja__preco { color: #ff8a1f; font-variant-numeric: tabular-nums; }

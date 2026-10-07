@@ -2368,9 +2368,9 @@ export function MapaHex({
             Mesma escada de luminosidade de antes (claro no foco,
             escuro na borda) — só o matiz mudou. */}
         <radialGradient id="rv-piso" cx="42%" cy="34%" r="78%">
-          <stop offset="0%" stopColor="#17243a" />
-          <stop offset="55%" stopColor="#101a2c" />
-          <stop offset="100%" stopColor="#080f1e" />
+          <stop offset="0%" style={{ stopColor: "var(--fj-fundo-6, #17243a)" }} />
+          <stop offset="55%" style={{ stopColor: "var(--fj-fundo-5, #101a2c)" }} />
+          <stop offset="100%" style={{ stopColor: "var(--fj-fundo-2, #080f1e)" }} />
         </radialGradient>
         <filter id="rv-ruido" x="0" y="0" width="100%" height="100%">
           <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed="7" result="n" />
@@ -2586,9 +2586,9 @@ export function MapaHex({
           return (
             <g className="rv-moldura-mapa" pointerEvents="none">
               <rect x={x0} y={y0} width={x1 - x0} height={y1 - y0} rx={r} ry={r}
-                fill="none" stroke="#1c2b45" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+                fill="none" style={{ stroke: "var(--fj-fundo-7, #1c2b45)" }} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
               <rect x={x0 + eco} y={y0 + eco} width={x1 - x0 - eco * 2} height={y1 - y0 - eco * 2} rx={r} ry={r}
-                fill="none" stroke="#16233a" strokeWidth={1} opacity={0.75} vectorEffect="non-scaling-stroke" />
+                fill="none" style={{ stroke: "var(--fj-fundo-6, #16233a)" }} strokeWidth={1} opacity={0.75} vectorEffect="non-scaling-stroke" />
             </g>
           );
         })()}

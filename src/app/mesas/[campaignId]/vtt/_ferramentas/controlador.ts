@@ -203,7 +203,13 @@ export type AcaoAtalho =
    * (ferramentas) e Q/E (girar token em posicionamento).
    */
   | { tipo: "adicionar-token" }
-  | { tipo: "camadas" };
+  | { tipo: "camadas" }
+  /**
+   * Volta a câmera ao enquadramento de entrada da cena (80%, mapa
+   * centralizado). Tecla 1, livre como as outras simples: nenhum atalho
+   * da mesa usa números.
+   */
+  | { tipo: "enquadrar" };
 
 /**
  * Interpreta um evento de teclado em uma ação, ou `null` se não for
@@ -231,6 +237,7 @@ export function interpretarAtalho(evento: {
   if (!mod && !evento.shiftKey) {
     if (tecla === "n") return { tipo: "adicionar-token" };
     if (tecla === "c") return { tipo: "camadas" };
+    if (tecla === "1") return { tipo: "enquadrar" };
     const ferramenta = TECLA_PARA_FERRAMENTA[tecla];
     if (ferramenta && ferramentasDisponiveis.includes(ferramenta)) return { tipo: "ferramenta", id: ferramenta };
   }

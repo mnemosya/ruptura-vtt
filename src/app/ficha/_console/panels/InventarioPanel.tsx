@@ -445,6 +445,7 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
           </div>
 
           <Carteira carteira={api.character.carteira} onDefinir={api.definirCarteira} leitura={api.somenteLeitura} />
+          {!api.somenteLeitura && <LojaProvisoria api={api} />}
         </div>
 
         <div className="rc-inv-detalhe">
@@ -787,6 +788,52 @@ function DetalheDoItem({
           </button>
         </div>
       </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * PROVISÓRIO — a loja da ficha antiga, sem desenho: só para conseguir
+ * comprar itens e testar Inventário e Equipamentos. Usa `purchaseItem`
+ * (desconta da carteira escolhida; falha vai para o log da ficha).
+ */
+function LojaProvisoria({ api }: { api: ConsoleApi }) {
+  const [aberta, setAberta] = useState(false);
+  const [busca, setBusca] = useState("");
+  const [carteira, setCarteira] = useState<WalletId>("aretz_informal");
+  const itens = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    return [...api.catalogo.values()]
+      .filter((i) => !q || i.nome.toLowerCase().includes(q))
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
+      .slice(0, 60);
+  }, [api.catalogo, busca]);
+  return (
+    <div className="rc-loja">
+      <button type="button" className="rc-ghost" onClick={() => setAberta((v) => !v)}>
+        {aberta ? "Fechar mercado" : "Mercado (provisório)"}
+      </button>
+      {aberta && (
+        <>
+          <div className="rc-loja__filtros">
+            <input type="search" placeholder="Buscar item…" value={busca} onChange={(e) => setBusca(e.target.value)} />
+            <select value={carteira} onChange={(e) => setCarteira(e.target.value as WalletId)}>
+              <option value="aretz_informal">Aretz</option>
+              <option value="cdi">CDI</option>
+              <option value="cdi_craqueada">CDI craqueada</option>
+            </select>
+          </div>
+          <ul className="rc-loja__lista">
+            {itens.map((i) => (
+              <li key={i.slug}>
+                <span>{i.nome}</span>
+                <span className="rc-loja__preco">{i.preco ?? 0}</span>
+                <button type="button" className="rc-ghost" onClick={() => api.comprarItem(i.slug, 1, carteira, i.preco ?? 0)}>Comprar</button>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );

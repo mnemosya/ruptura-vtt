@@ -9,7 +9,7 @@
      ground   #060a12   panel    #0c1420   panel-2  #111d31
      line     #182338   line-2   #16233a   strong   #1c2b45
      hover    #243352   max      #2a3b58
-     cyan     #45b8c9   amber    #cf9a3e   danger   #d15068
+     cyan     #45b8c9   amber    #ff8a1f   danger   #d15068
      magenta  #c25a8c   arcane   #8878d6   good     #4fae82
      slate    #6f83a3   ink      #b9c9dc   dim      #7f95b3
      faint    #4f6285   soft     accent @ 9%        raio 2–3px
@@ -68,15 +68,23 @@
   /* ── Acentos (dessaturados — ver o cabeçalho) ───────────────── */
   --rv-cy: #45b8c9;
   --rv-cy-hi: #6ff0ff;
-  --rv-am: #cf9a3e;
+  --rv-am: #ff8a1f;
   --rv-dg: #d15068;
   --rv-mg: #c25a8c;
   --rv-ar: #8878d6;
   --rv-ok: #4fae82;
   --rv-slate: #6f83a3;
 
+  /* Tokens extraídos de literais (redesign-forja, passo 2). O tema
+     experimental os redefine; com ele desligado, valem estes. */
+  --rv-peca: #0c1526;        /* fundo sólido das peças do trilho */
+  --rv-marca: #00d4ff;       /* ciano da marca */
+  --rv-marca-rgb: 0, 212, 255;
+  --rv-cy-texto: #35c7d8;
+  --rv-cy-borda: #108bac;
+
   --rv-cy-soft: rgba(69, 184, 201, 0.09);
-  --rv-am-soft: rgba(207, 154, 62, 0.09);
+  --rv-am-soft: rgba(255, 138, 31, 0.09);
   --rv-dg-soft: rgba(209, 80, 104, 0.09);
   --rv-mg-soft: rgba(194, 90, 140, 0.09);
   --rv-ar-soft: rgba(136, 120, 214, 0.09);
@@ -207,6 +215,21 @@
 /* Peças baixas: o corte fixo de 10px chegava a 40–70% da altura e
    comia o rótulo. Aqui o chanfro acompanha a altura (~¼ dela), na
    mesma proporção que a área autenticada já usa. */
+/* ── O PADRÃO DO CORTE É POR TIPO, não 10px para tudo ─────────────
+   Os 10px de `--rv-notch` servem às SUPERFÍCIES (cartão, janela, menu,
+   modal). Um CONTROLE tem 24–32px de altura, e 10px comia um terço dele
+   — o que obrigava cada botão novo a entrar na lista de exceções abaixo.
+   Agora controle nasce com 7px; superfície continua com 10px.
+
+   `:where()` zera a especificidade: qualquer exceção por classe abaixo
+   (ex.: `.rv-dados-tabs button`, 10px nas abas de 50px) continua
+   ganhando. Só ajuste aqui um controle GRANDE (>40px) ou MUITO pequeno
+   (<20px); os do meio já saem certos. */
+:where(.rv-mesa, .pn-jan, .pn-menu, .rv-modal-fundo, .rv-gaveta, .rup-mesa-arena, .rv-mesa-dados-overlay)
+  :where(button, input, select, textarea, [role="button"], [role="tab"], [role="menuitem"], [role="menuitemradio"]) {
+  --rv-notch: 7px;
+}
+
 .rv-rodadas-etapa { --rv-notch: 4px; }   /* 14px de altura */
 .pn-cartao-expandir { --rv-notch: 5px; } /* 21px */
 .rv-ator-agir { --rv-notch: 6px; }       /* 24px */
@@ -214,6 +237,10 @@
 .rv-menu-item { --rv-notch: 7px; }       /* 30px */
 .rv-menu-mesa-item { --rv-notch: 7px; }  /* ~32px — itens do menu da mesa */
 .rv-cena-chip { --rv-notch: 8px; }       /* 33px */
+.rv-gaveta .rv-btn { --rv-notch: 7px; }  /* 28–29px — Nova cena, Arquivo, Reagrupar */
+.rv-pasta-degrau { --rv-notch: 7px; }    /* 27px — trilha de pastas */
+.rv-pasta-nome { --rv-notch: 4px; }      /* 15px — nome da pasta na árvore */
+.rv-cena-busca-casca { --rv-notch: 7px; } /* ~30px — busca da gaveta de cenas */
 .rv-pn-filtros-acoes .pn-btn,             /* 29px — + Personagem, Pasta */
 .rv-pn-rodape .pn-btn { --rv-notch: 7px; } /* 29px — Abrir Personagens… */
 .rv-pn-input { --rv-notch: 6px; }            /* ~22px — campos compactos do painel */
@@ -229,6 +256,9 @@
 .rv-dados-visib button,
 .rv-dados-modo button { --rv-notch: 6px; }
 .rv-dados-tabs button { --rv-notch: 10px; }  /* abas do topo: 50px, corte padrão */
+/* A moldura das abas herdava os 7px do painel (`.rv-dados-painel`) e
+   ficava com um corte menor que o das abas que ela abraça. */
+.rv-dados-tabs { --rv-notch: 10px; }
 
 /* Caixas compostas só por ícone são exceção deliberada. O pictograma
    já concentra toda a leitura dentro de uma área pequena; chanfrar a
