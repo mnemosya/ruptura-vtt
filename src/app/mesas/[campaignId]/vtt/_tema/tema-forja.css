@@ -212,17 +212,24 @@
 }
 
 /* ── Pilha de contexto: cena sobre o tempo ──────────────────────
-   Com o tema, o chip de cena sai de junto do menu (`VttClient`) e vem
-   para o canto inferior esquerdo, EM CIMA do relógio e com a mesma peça
-   dele (`.rv-tempo-chip`). A pilha é quem se posiciona; os chips dentro
-   dela deixam de ser absolutos e alinham pela esquerda. */
+   O chip de cena fica no canto inferior esquerdo, EM CIMA do relógio e
+   com a mesma peça dele (`.rv-tempo-chip`). O relógio NÃO entra na
+   pilha: `.rv-contexto` é posicionada, e a janela de Tempo e clima
+   (absoluta, ancorada no palco) ficava presa à altura dela. Então a
+   pilha é só a cena, erguida pela altura do relógio (38px) + o vão. */
 :root[data-tema="forja"] .rv-contexto {
-  position: absolute; left: 10px; bottom: 12px; z-index: 14;
-  display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
-  max-width: calc(100% - 40px);
+  position: absolute; left: 10px; bottom: calc(12px + 38px + 10px); z-index: 14;
+  display: flex; max-width: calc(100% - 40px);
 }
 :root[data-tema="forja"] .rv-contexto .rv-tempo-chip.rv-tempo-chip {
   position: static; max-width: 100%; min-width: 0; margin: 0;
+}
+/* Cena e relógio: chanfro só no canto superior direito — a barra ciano
+   da esquerda já marca a peça, e o corte em dois cantos brigava com
+   ela. `!important` porque o chanfro global do chassi também usa. */
+:root[data-tema="forja"] .rv-tempo-chip.rv-tempo-chip {
+  border-radius: 2px var(--rv-notch, 10px) 2px 2px !important;
+  corner-shape: round bevel round round !important;
 }
 :root[data-tema="forja"] .rv-contexto-cena__nome {
   min-width: 0; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;

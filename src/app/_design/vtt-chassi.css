@@ -215,6 +215,21 @@
 /* Peças baixas: o corte fixo de 10px chegava a 40–70% da altura e
    comia o rótulo. Aqui o chanfro acompanha a altura (~¼ dela), na
    mesma proporção que a área autenticada já usa. */
+/* ── O PADRÃO DO CORTE É POR TIPO, não 10px para tudo ─────────────
+   Os 10px de `--rv-notch` servem às SUPERFÍCIES (cartão, janela, menu,
+   modal). Um CONTROLE tem 24–32px de altura, e 10px comia um terço dele
+   — o que obrigava cada botão novo a entrar na lista de exceções abaixo.
+   Agora controle nasce com 7px; superfície continua com 10px.
+
+   `:where()` zera a especificidade: qualquer exceção por classe abaixo
+   (ex.: `.rv-dados-tabs button`, 10px nas abas de 50px) continua
+   ganhando. Só ajuste aqui um controle GRANDE (>40px) ou MUITO pequeno
+   (<20px); os do meio já saem certos. */
+:where(.rv-mesa, .pn-jan, .pn-menu, .rv-modal-fundo, .rv-gaveta, .rup-mesa-arena, .rv-mesa-dados-overlay)
+  :where(button, input, select, textarea, [role="button"], [role="tab"], [role="menuitem"], [role="menuitemradio"]) {
+  --rv-notch: 7px;
+}
+
 .rv-rodadas-etapa { --rv-notch: 4px; }   /* 14px de altura */
 .pn-cartao-expandir { --rv-notch: 5px; } /* 21px */
 .rv-ator-agir { --rv-notch: 6px; }       /* 24px */

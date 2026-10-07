@@ -1,51 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { oxanium } from "../../../../_design/oxanium";
 
 /**
- * Tema experimental do VTT (redesign na linguagem da Forja).
+ * Tema do VTT: a linguagem da Forja.
  *
- * Liga com `?tema=forja` na URL e fica lembrado neste navegador;
- * `?tema=atual` desliga. Sem o atributo, nenhuma regra de
- * `tema-forja.css` casa e o VTT é exatamente o de hoje.
- *
- * O atributo vai no `<html>`, não no `.rv-mesa`: o Console e as janelas
- * flutuantes são da casca da campanha e ficam fora da árvore do VTT.
+ * Começou como experimento ligado por `?tema=forja` e virou o único tema
+ * (07/10/2026). O atributo `data-tema="forja"` continua existindo porque
+ * é por ele que `tema-forja.css` sobrescreve o chassi; ele vai no
+ * `<html>`, não no `.rv-mesa`, porque o Console e as janelas flutuantes
+ * são da casca da campanha e ficam fora da árvore do VTT.
  */
-export type TemaVtt = "atual" | "forja";
+export type TemaVtt = "forja";
 
-const CHAVE = "rv-tema";
-const TEMAS: readonly TemaVtt[] = ["atual", "forja"];
-
-function lerTema(): TemaVtt {
-  const daUrl = new URLSearchParams(window.location.search).get("tema");
-  if (daUrl && (TEMAS as readonly string[]).includes(daUrl)) {
-    try { localStorage.setItem(CHAVE, daUrl); } catch {}
-    return daUrl as TemaVtt;
-  }
-  try {
-    const salvo = localStorage.getItem(CHAVE);
-    if (salvo && (TEMAS as readonly string[]).includes(salvo)) return salvo as TemaVtt;
-  } catch {}
-  return "atual";
-}
+const TEMA: TemaVtt = "forja";
 
 export function useTemaVtt(): TemaVtt {
-  const [temaAtivo, setTemaAtivo] = useState<TemaVtt>("atual");
   useEffect(() => {
     const raiz = document.documentElement;
-    const tema = lerTema();
-    setTemaAtivo(tema);
-    if (tema === "atual") return;
     // A Forja titula em Oxanium, que fica fora do layout raiz (ver
     // `oxanium.ts`); no `<html>` ela alcança também os portais.
-    raiz.setAttribute("data-tema", tema);
+    raiz.setAttribute("data-tema", TEMA);
     raiz.classList.add(oxanium.variable);
+
+    // Restos do experimento: links antigos com `?tema=` e a escolha que
+    // ficava guardada no navegador.
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("tema")) {
+      url.searchParams.delete("tema");
+      window.history.replaceState(window.history.state, "", url);
+    }
+    try { localStorage.removeItem("rv-tema"); } catch {}
+
     return () => {
       raiz.removeAttribute("data-tema");
       raiz.classList.remove(oxanium.variable);
     };
   }, []);
-  return temaAtivo;
+  return TEMA;
 }

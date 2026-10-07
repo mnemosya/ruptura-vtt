@@ -295,7 +295,7 @@ export function VttClient({
 }) {
   const ehNarrador = papel === "narrator";
 
-  const temaVtt = useTemaVtt();
+  useTemaVtt();
   const [ferramenta, setFerramenta] = useState<FerramentaId>("interagir");
 
   const [zoom, setZoom] = useState(1);
@@ -6065,24 +6065,6 @@ export function VttClient({
             <Menu size={17} />
             <span className="rv-dica">Menu da mesa</span>
           </button>
-          {estadoCena && temaVtt !== "forja" && (ehNarrador ? (
-            <button
-              type="button" className="rv-cena-chip"
-              onClick={alternarCatalogoCenas}
-              aria-haspopup="dialog" aria-expanded={painelCenasAberto}
-              title="Trocar de cena"
-              data-testid="cena-chip"
-            >
-              <span className="rv-cena-chip__rot">Cena ativa:</span>
-              <span className="rv-cena-chip__nome">{estadoCena.cena.nome}</span>
-              <ChevronDown size={14} aria-hidden="true" />
-            </button>
-          ) : estadoCena.cena.nome && (
-            <p className="rv-cena-chip" data-estatico="true" data-testid="cena-chip">
-              <span className="rv-cena-chip__rot">Cena ativa:</span>
-              <span className="rv-cena-chip__nome">{estadoCena.cena.nome}</span>
-            </p>
-          ))}
         </div>
         {menuMesa && (
           <MenuDaMesa posicao={menuMesa} onFechar={() => setMenuMesa(null)} disparadorRef={botaoMenuMesaRef} />
@@ -6358,9 +6340,8 @@ export function VttClient({
           </JanelaFerramenta>
         )}
 
-        {temaVtt === "forja" ? (
-          /* Tema Forja: a cena sai do canto do menu e vira a primeira peça
-             da faixa de contexto (onde · quando), no estilo do relógio. */
+        {/* A cena, na peça do relógio, logo acima dele — ver "Pilha de
+            contexto" em `tema-forja.css`. */}
           <div className="rv-contexto">
             {estadoCena && (ehNarrador ? (
               <button type="button" className="rv-tempo-chip rv-contexto-cena"
@@ -6389,11 +6370,11 @@ export function VttClient({
                 <strong className="rv-contexto-cena__nome">{estadoCena.cena.nome}</strong>
               </p>
             ))}
-            <TempoDaCampanha campaignId={campaignId} ehNarrador={ehNarrador} />
           </div>
-        ) : (
-          <TempoDaCampanha campaignId={campaignId} ehNarrador={ehNarrador} />
-        )}
+        {/* O relógio fica FORA de `.rv-contexto`: ela é posicionada, e
+            a janela de Tempo e clima (absoluta, ancorada no palco) ficava
+            presa à altura da pilha. */}
+        <TempoDaCampanha campaignId={campaignId} ehNarrador={ehNarrador} />
 
         {ferramenta === "terreno" && ehNarrador && (
           <PainelTerreno
