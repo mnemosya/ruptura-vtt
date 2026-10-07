@@ -275,7 +275,7 @@
 .rv-pn-scroll {
   /* A cor com que o véu de rolagem se funde (`[data-rolavel]` no
      chassi) — o fundo do próprio painel. */
-  --rv-veu-cor: #080f1e;   /* o fundo do painel (`.rv-painel`) */
+  --rv-veu-cor: var(--fj-fundo-2, #080f1e);   /* o fundo do painel (`.rv-painel`) */
   --rv-veu-recuo: 8px;     /* o padding abaixo, que o véu precisa cobrir */
   flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden;
   /* 8px nos quatro lados — o mesmo número do vão entre os cartões. Era
@@ -622,14 +622,14 @@
      acesa em volta de um botão que só leva ao fim da lista. O ciano
      fica no texto e no ícone, que é onde ele diz "clique aqui". */
   border: 1px solid var(--pn-line-soft); border-radius: var(--rv-r-md);
-  background: #101b33; color: var(--pn-cy);
+  background: var(--fj-fundo-6, #101b33); color: var(--pn-cy);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
   cursor: pointer; box-shadow: 0 6px 18px rgba(0, 0, 0, .6);
   transition: border-color .14s, background .14s, color .14s;
 }
 .rv-pn-chat-novas svg { width: 15px; height: 15px; }
-.rv-pn-chat-novas:hover { background: #16233f; border-color: color-mix(in srgb, var(--pn-cy) 45%, transparent); }
+.rv-pn-chat-novas:hover { background: var(--fj-fundo-7, #16233f); border-color: color-mix(in srgb, var(--pn-cy) 45%, transparent); }
 .rv-pn-chat-novas:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 2px; }
 /* VOLTAR PRO FIM é o mesmo botão com outro recado: ninguém chegou, só
    se subiu muito. Neutro no TOM — o ciano é do aviso de NOVIDADE, e
@@ -727,10 +727,10 @@
   flex: none; width: 36px; height: 36px; align-self: flex-end;
   display: grid; place-items: center;
   border: 1px solid #1c4a52; border-radius: var(--rv-r);
-  background: #0b1924; color: var(--rv-cy-texto, #35c7d8); cursor: pointer;
+  background: var(--fj-fundo-4, #0b1924); color: var(--rv-cy-texto, #35c7d8); cursor: pointer;
   transition: background .14s, border-color .14s;
 }
-.pn-composer-enviar:hover:not(:disabled) { border-color: var(--rv-cy-texto, #35c7d8); background: #0e2230; }
+.pn-composer-enviar:hover:not(:disabled) { border-color: var(--rv-cy-texto, #35c7d8); background: var(--fj-fundo-5, #0e2230); }
 .pn-composer-enviar:disabled { cursor: not-allowed; }
 .pn-composer-enviar:disabled svg { opacity: .4; }
 .pn-composer-enviar:focus-visible { outline: 2px solid var(--rv-cy-texto, #35c7d8); outline-offset: 2px; }
@@ -743,7 +743,7 @@
 .pn-composer-anexo {
   display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 6px;
   border: 1px solid #1c4a52; border-radius: 4px 7px 4px 7px; corner-shape: round bevel round bevel;
-  background: #0b1924;
+  background: var(--fj-fundo-4, #0b1924);
 }
 .pn-composer-anexo-img { width: 44px; height: 44px; flex: none; object-fit: cover; border-radius: 3px; border: 1px solid var(--rv-line-strong, #1c2b45); }
 .pn-composer-anexo-nome {
@@ -762,7 +762,7 @@
    aquilo é uma linha de comando. A regra some junto com o elemento. */
 
 /* ═══ CHAT B — dossiê de campo do protótipo, sobre dados reais ═══ */
-.rv-painel .rv-pn-chat { background: linear-gradient(160deg, rgba(11,19,34,.96), rgba(8,14,25,.98)); }
+.rv-painel .rv-pn-chat { background: linear-gradient(160deg, rgba(var(--fj-fundo-3-rgb, 11, 19, 34),.96), rgba(var(--fj-fundo-2-rgb, 8, 14, 25),.98)); }
 /* UM VÃO SÓ, 8px — o mesmo número do padding do container e o mesmo que
    a lista de personagens usa. Eram 9/10/10 de padding e 7 de gap: três
    números para dizer "um respiro", e nenhum deles igual ao do lado. */
@@ -784,7 +784,7 @@
   padding: 8px 9px 8px 34px;
   border-radius: 4px 0 4px 0;
   border-color: rgba(43,63,94,.72);
-  background: linear-gradient(145deg, rgba(11,19,34,.97), rgba(7,13,23,.98));
+  background: linear-gradient(145deg, rgba(var(--fj-fundo-3-rgb, 11, 19, 34),.97), rgba(var(--fj-fundo-1-rgb, 7, 13, 23),.98));
   clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
 }
 .rv-pn-chat .pn-cartao::before {
@@ -1001,14 +1001,14 @@
 .rv-pn-chat .pn-msg-imagem {
   display: block; width: calc(100% - 20px); max-height: 260px; margin: 10px 10px 0; padding: 0;
   border: 1px solid var(--rv-line-strong, #1c2b45); border-radius: var(--rv-r); overflow: hidden;
-  background: #0a1220; cursor: zoom-in;
+  background: var(--fj-fundo-3, #0a1220); cursor: zoom-in;
 }
 .rv-pn-chat .pn-msg-imagem img { width: 100%; height: 100%; max-height: 260px; object-fit: contain; display: block; }
 .rv-pn-chat .pn-msg-imagem:hover:not(:disabled) { border-color: color-mix(in srgb, var(--rv-cy) 45%, transparent); }
 .rv-pn-chat .pn-msg-imagem:focus-visible { outline: 2px solid var(--rv-cy); outline-offset: 1px; }
 .rv-pn-chat .pn-msg-imagem[data-carregando] {
   cursor: default;
-  background: linear-gradient(100deg, #0a1220 30%, #111d31 50%, #0a1220 70%) 0 0 / 200% 100%;
+  background: linear-gradient(100deg, var(--fj-fundo-3, #0a1220) 30%, var(--fj-fundo-5, #111d31) 50%, var(--fj-fundo-3, #0a1220) 70%) 0 0 / 200% 100%;
   animation: pn-msg-imagem-carrega 1.2s linear infinite;
 }
 @keyframes pn-msg-imagem-carrega { to { background-position: -200% 0; } }
@@ -1028,7 +1028,7 @@
 .rv-pn-chat { position: relative; }
 .rv-pn-chat .pn-chat-soltar {
   position: absolute; inset: 0; z-index: 30; padding: 10px;
-  display: flex; background: rgba(6, 11, 20, .78); backdrop-filter: blur(3px);
+  display: flex; background: rgba(var(--fj-fundo-1-rgb, 6, 11, 20), .78); backdrop-filter: blur(3px);
   pointer-events: none; animation: pn-soltar-entra .14s ease-out;
 }
 .rv-pn-chat .pn-chat-soltar-caixa {
@@ -1050,7 +1050,7 @@
 }
 
 .rv-pn-chat .pn-composer {
-  padding: 8px 10px 10px; border-top-color: rgba(28,43,69,.9);
+  padding: 8px 10px 10px; border-top-color: rgba(var(--fj-fundo-7-rgb, 28, 43, 69),.9);
   /* O FUNDO DOS CARTÕES (`#0c1526`): o composer é a peça de baixo da
      mesma coluna, e o degradê quase preto que ele tinha o afundava —
      lia como o fim do painel, não como o campo em que se escreve. */
@@ -1097,7 +1097,7 @@
 .rv-pn-chat .pn-cartao-subtitulo { margin-top:4px; color:var(--rv-ink-dim, #7f95b3); font:9px var(--font-mono),monospace; letter-spacing:.1em; text-transform:uppercase; }
 .rv-pn-chat .pn-cartao-estado { margin-top:9px; }
 .rv-pn-chat .pn-cartao-corpo { gap:10px; margin-top:11px; padding:0; }
-.rv-pn-chat .pn-cartao-detalhes { margin-top:10px; padding-top:10px; border-top:1px dashed #1c2c44; }
+.rv-pn-chat .pn-cartao-detalhes { margin-top:10px; padding-top:10px; border-top:1px dashed var(--fj-fundo-7, #1c2c44); }
 .rv-pn-chat .pn-cartao-acoes { flex-direction:row; align-items:stretch; gap:8px; margin-top:12px; padding:0; border:0; }
 .rv-pn-chat .pn-cartao-acoes > :not(.pn-cartao-expandir) { flex:1; }
 .rv-pn-chat .pn-cartao-expandir { width:auto; height:auto; padding:4px 2px; border:0; color:var(--rv-ink-faint); font:10px var(--font-mono),monospace; transform:none!important; }
@@ -1737,10 +1737,10 @@
 .rv-fg-card {
   position: relative; display: flex; flex-direction: column; overflow: hidden;
   height: 100%; min-height: 0; border-radius: var(--rv-r);
-  background: linear-gradient(160deg, #0b1424, #080e19);
-  border: 1px solid color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 27%, #18263f);
+  background: linear-gradient(160deg, var(--fj-fundo-4, #0b1424), var(--fj-fundo-2, #080e19));
+  border: 1px solid color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 27%, var(--fj-fundo-7, #18263f));
 }
-.rv-fg-card--neutro { border-color: #18263f; }
+.rv-fg-card--neutro { border-color: var(--fj-fundo-7, #18263f); }
 
 /* Cantos — `Brackets` (size 13, inset 8, opacity .55). */
 .rv-fg-brackets span {
@@ -1805,7 +1805,7 @@
 /* Lista à esquerda — cartão fino com cabeçalho + linhas. */
 .rv-fg-lista-card {
   display: flex; flex-direction: column; overflow: hidden; height: 100%; min-height: 0;
-  border-radius: var(--rv-r); background: linear-gradient(160deg, #0b1424, #080e19); border: 1px solid #18263f;
+  border-radius: var(--rv-r); background: linear-gradient(160deg, var(--fj-fundo-4, #0b1424), var(--fj-fundo-2, #080e19)); border: 1px solid var(--fj-fundo-7, #18263f);
 }
 .rv-fg-lista-cab { padding: 14px 16px 10px; border-bottom: 1px solid var(--rv-line-2, #16233a); }
 .rv-fg-lista-titulo {

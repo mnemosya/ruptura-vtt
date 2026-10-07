@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { oxanium } from "../../../../_design/oxanium";
 
 /**
@@ -31,10 +31,12 @@ function lerTema(): TemaVtt {
   return "atual";
 }
 
-export function useTemaVtt(): void {
+export function useTemaVtt(): TemaVtt {
+  const [temaAtivo, setTemaAtivo] = useState<TemaVtt>("atual");
   useEffect(() => {
     const raiz = document.documentElement;
     const tema = lerTema();
+    setTemaAtivo(tema);
     if (tema === "atual") return;
     // A Forja titula em Oxanium, que fica fora do layout raiz (ver
     // `oxanium.ts`); no `<html>` ela alcança também os portais.
@@ -45,4 +47,5 @@ export function useTemaVtt(): void {
       raiz.classList.remove(oxanium.variable);
     };
   }, []);
+  return temaAtivo;
 }

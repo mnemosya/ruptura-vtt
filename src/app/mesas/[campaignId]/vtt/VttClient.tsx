@@ -5858,10 +5858,11 @@ export function VttClient({
       // é só o teclado concordando com a tela.
       else if (acao.tipo === "adicionar-token") { if (ehNarrador && estadoCenaRef.current) abrirCriarToken(); }
       else if (acao.tipo === "camadas") { if (ehNarrador) alternarCamadas(); }
+      else if (acao.tipo === "enquadrar") enquadrarMapa();
     }
     window.addEventListener("keydown", ouvir);
     return () => window.removeEventListener("keydown", ouvir);
-  }, [ferramentasDisponiveis, desfazer, refazer, trocarFerramenta, ehNarrador, abrirCriarToken, alternarCamadas]);
+  }, [ferramentasDisponiveis, desfazer, refazer, trocarFerramenta, ehNarrador, abrirCriarToken, alternarCamadas, enquadrarMapa]);
 
   // Ferramenta ativa some da barra (ex.: papel mudou) — nunca fica presa numa ferramenta invisível. Passa por `trocarFerramenta` como qualquer outra troca — nunca um `setFerramenta` divergente.
   useEffect(() => { if (!ferramentasDisponiveis.includes(ferramenta)) trocarFerramenta("interagir"); }, [ferramentasDisponiveis, ferramenta, trocarFerramenta]);
@@ -6045,7 +6046,7 @@ export function VttClient({
             <Menu size={17} />
             <span className="rv-dica">Menu da mesa</span>
           </button>
-          {estadoCena && (ehNarrador ? (
+          {estadoCena && temaVtt !== "forja" && (ehNarrador ? (
             <button
               type="button" className="rv-cena-chip"
               onClick={alternarCatalogoCenas}
@@ -6338,7 +6339,35 @@ export function VttClient({
           </JanelaFerramenta>
         )}
 
-        <TempoDaCampanha campaignId={campaignId} ehNarrador={ehNarrador} />
+        {temaVtt === "forja" ? (
+          /* Tema Forja: a cena sai do canto do menu e vira a primeira peça
+             da faixa de contexto (onde · quando), no estilo do relógio. */
+          <div className="rv-contexto">
+            {estadoCena && (ehNarrador ? (
+              <button type="button" className="rv-tempo-chip rv-contexto-cena"
+                onClick={alternarCatalogoCenas}
+                aria-haspopup="dialog" aria-expanded={painelCenasAberto}
+                aria-label={`Cena ativa: ${estadoCena.cena.nome}. Trocar de cena`}
+                data-testid="cena-chip">
+                <MapPin size={15} aria-hidden="true" />
+                <span className="rv-tempo-chip-data">Cena</span>
+                <span className="rv-tempo-chip-separador" aria-hidden="true" />
+                <strong className="rv-contexto-cena__nome">{estadoCena.cena.nome}</strong>
+                <ChevronDown size={14} className="rv-tempo-chip-seta" aria-hidden="true" />
+              </button>
+            ) : (
+              <p className="rv-tempo-chip rv-contexto-cena" data-estatico="true" data-testid="cena-chip">
+                <MapPin size={15} aria-hidden="true" />
+                <span className="rv-tempo-chip-data">Cena</span>
+                <span className="rv-tempo-chip-separador" aria-hidden="true" />
+                <strong className="rv-contexto-cena__nome">{estadoCena.cena.nome}</strong>
+              </p>
+            ))}
+            <TempoDaCampanha campaignId={campaignId} ehNarrador={ehNarrador} />
+          </div>
+        ) : (
+          <TempoDaCampanha campaignId={campaignId} ehNarrador={ehNarrador} />
+        )}
 
         {ferramenta === "terreno" && ehNarrador && (
           <PainelTerreno

@@ -73,6 +73,25 @@
   --rc-trilho-ativo: #00d4ff;
 }
 
+/* ── 2b. Fundos que eram literais ─────────────────────────────────
+   Os azuis-marinho escritos direto em `vtt.css`/`painel.css` viraram
+   `var(--fj-fundo-N, <literal>)`, agrupados em faixas de luminosidade
+   (0 = mais escuro). Só ESTA folha define `--fj-fundo-*`: com o tema
+   desligado a variável não existe e vale o literal. Cada faixa mantém a
+   luminosidade do marinho e troca só o matiz pelo petróleo. Fica no
+   `<html>` para alcançar também os portais. */
+:root[data-tema="forja"] {
+  --fj-fundo-0: #030b11; --fj-fundo-0-rgb: 3, 11, 17;
+  --fj-fundo-1: #050f17; --fj-fundo-1-rgb: 5, 15, 23;
+  --fj-fundo-2: #06121c; --fj-fundo-2-rgb: 6, 18, 28;
+  --fj-fundo-3: #081722; --fj-fundo-3-rgb: 8, 23, 34;
+  --fj-fundo-4: #0b1c29; --fj-fundo-4-rgb: 11, 28, 41;
+  --fj-fundo-5: #0d2231; --fj-fundo-5-rgb: 13, 34, 49;
+  --fj-fundo-6: #102a3b; --fj-fundo-6-rgb: 16, 42, 59;
+  --fj-fundo-7: #163648; --fj-fundo-7-rgb: 22, 54, 72;
+}
+:root[data-tema="forja"] .rm-root--vtt { background: #050f17; }
+
 /* ════════════════════ 3. FORMA DOS ELEMENTOS ════════════════════
    Escolhidas em 06/10/2026 entre duas ou três opções por elemento,
    testadas ao vivo na mesa. Retratos, chips flutuantes e títulos
@@ -82,28 +101,39 @@
    global do chassi os força assim (ver `vtt-chassi.css`). */
 
 /* ── Trilho de ferramentas · Faixa ─────────────────────────────────
-   A coluna vira UMA peça de vidro e os botões perdem a caixa; o ativo
-   ganha barra lateral e lavagem, como o menu de passos da Forja. */
+   A coluna vira UMA peça de vidro e os botões perdem a caixa. O ativo
+   é a mesma peça da aba selecionada do painel — bloco ciano chanfrado,
+   ícone escuro —, para os dois trilhos dizerem "é esta" do mesmo jeito. */
 :root[data-tema="forja"] .rv-ferramentas {
-  padding: 6px 0; border: 1px solid #1a3a4b; border-radius: 2px;
+  padding: 6px; border: 1px solid #1a3a4b; border-radius: 2px;
   background: linear-gradient(180deg, rgba(12, 31, 43, .94), rgba(6, 18, 28, .96));
   box-shadow: 0 12px 30px rgba(0, 0, 0, .45);
 }
+/* A coluna de vidro é mais larga que o botão solto (36 + 2×6 de
+   margem + 2×1 de fio = 50px): a coluna de jogadores, que o VTT põe a
+   `8 + 36 + 10`, encostava nela. Mesmo respiro de 10px, a partir da
+   borda nova. Abaixo de 1040px o VTT já reposiciona a facção. */
+@media (min-width: 1041px) {
+  :root[data-tema="forja"] .rv-faccao--pj { left: calc(8px + 50px + 10px); }
+}
 :root[data-tema="forja"] .rv-ferr-btn {
-  width: 42px; border-color: transparent; border-radius: 0 !important; background: transparent;
+  border-color: transparent; background: transparent;
+  border-radius: 2px 10px !important; corner-shape: round bevel !important;
 }
 :root[data-tema="forja"] .rv-ferr-btn:hover {
   color: #cfeff4; border-color: transparent; background: rgba(0, 212, 255, .07);
 }
 :root[data-tema="forja"] .rv-ferr-btn[aria-pressed="true"] {
-  color: #00d4ff; border-color: transparent;
-  background: linear-gradient(90deg, rgba(0, 212, 255, .2), transparent);
-  box-shadow: inset 2px 0 0 #00d4ff;
+  color: #06121c; border-color: #00d4ff; background: #00d4ff;
+  box-shadow: 0 0 14px rgba(0, 212, 255, .45);
 }
-:root[data-tema="forja"] .rv-ferr-btn[aria-pressed="true"] svg { filter: drop-shadow(0 0 4px rgba(0, 212, 255, .7)); }
-/* Combate em curso: a mesma barra, em âmbar. */
+/* Combate em curso, com outra ferramenta ativa: a mesma peça chanfrada,
+   vazada em âmbar. Uma barra lateral (`inset` box-shadow) acompanharia o
+   chanfro e entortaria no canto de baixo. */
 :root[data-tema="forja"] .rv-ferr-btn[data-ativo="true"]:not([aria-pressed="true"]) {
-  color: var(--rv-am); border-color: transparent; box-shadow: inset 2px 0 0 var(--rv-am);
+  color: var(--rv-am);
+  border-color: color-mix(in srgb, var(--rv-am) 60%, transparent);
+  background: color-mix(in srgb, var(--rv-am) 10%, transparent);
 }
 
 /* ── Abas do painel · Chanfro cheio ───────────────────────────── */
@@ -152,4 +182,37 @@
   background:
     radial-gradient(circle at 50% 50%, rgba(0, 212, 255, .1) 1px, transparent 1.5px) 0 0 / 22px 22px,
     var(--rv-mapa-fundo);
+}
+
+/* ── Pilha de contexto: cena sobre o tempo ──────────────────────
+   Com o tema, o chip de cena sai de junto do menu (`VttClient`) e vem
+   para o canto inferior esquerdo, EM CIMA do relógio e com a mesma peça
+   dele (`.rv-tempo-chip`). A pilha é quem se posiciona; os chips dentro
+   dela deixam de ser absolutos e alinham pela esquerda. */
+:root[data-tema="forja"] .rv-contexto {
+  position: absolute; left: 10px; bottom: 12px; z-index: 14;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+  max-width: calc(100% - 40px);
+}
+:root[data-tema="forja"] .rv-contexto .rv-tempo-chip.rv-tempo-chip {
+  position: static; max-width: 100%; min-width: 0; margin: 0;
+}
+:root[data-tema="forja"] .rv-contexto-cena__nome {
+  min-width: 0; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--rv-ink); font-size: 12px; font-weight: 500;
+}
+/* O `<p>` do jogador não é controle, e o chanfro global do chassi só
+   pega controles: repete aqui o corte que o botão do relógio recebe. */
+:root[data-tema="forja"] .rv-contexto-cena[data-estatico="true"] {
+  cursor: default;
+  border-radius: 4px var(--rv-notch, 10px) 4px var(--rv-notch, 10px); corner-shape: round bevel round bevel;
+}
+:root[data-tema="forja"] .rv-contexto-cena[data-estatico="true"]:hover {
+  border-color: var(--rv-line); border-left-color: var(--rv-cy); background: var(--rv-panel);
+}
+
+/* Ícone escuro sobre o bloco ciano lê mais fino do que é: o traço
+   ganha um pouco de peso só nos selecionados (aba e trilho). */
+:root[data-tema="forja"] :is(.rv-aba.rv-aba[aria-selected="true"], .rv-ferr-btn[aria-pressed="true"]) svg {
+  stroke-width: 2.4;
 }
