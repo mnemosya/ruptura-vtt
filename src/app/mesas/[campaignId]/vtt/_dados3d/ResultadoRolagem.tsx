@@ -839,7 +839,7 @@ export function CampoCD({ value, onChange }: { value: string; onChange: (v: stri
     onChange(String(Math.min(99, Math.max(1, base + delta))));
   };
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 48, padding: "8px 10px", border: "1px solid var(--fj-fundo-6, #16233a)", borderRadius: 2, background: "var(--fj-fundo-3, #0a1220)" }}>
+    <div className="rv-cd-caixa" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 48, padding: "8px 10px", border: "1px solid var(--fj-fundo-6, #16233a)", borderRadius: 2, background: "var(--fj-fundo-3, #0a1220)" }}>
       <label htmlFor={id} style={{ display: "flex", minWidth: 0, flexDirection: "column", gap: 3, cursor: "text" }}>
         <span style={{ fontFamily: DISPLAY, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", color: ACCENTS.cyan.hex }}>
           Definir CD

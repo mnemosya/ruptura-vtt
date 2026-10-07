@@ -241,6 +241,9 @@
 .rv-dados-visib button,
 .rv-dados-modo button { --rv-notch: 6px; }
 .rv-dados-tabs button { --rv-notch: 10px; }  /* abas do topo: 50px, corte padrão */
+/* A moldura das abas herdava os 7px do painel (`.rv-dados-painel`) e
+   ficava com um corte menor que o das abas que ela abraça. */
+.rv-dados-tabs { --rv-notch: 10px; }
 
 /* Caixas compostas só por ícone são exceção deliberada. O pictograma
    já concentra toda a leitura dentro de uma área pequena; chanfrar a

@@ -180,6 +180,30 @@
     linear-gradient(180deg, rgba(12, 31, 43, .94), rgba(6, 18, 28, .96));
 }
 
+/* ── Bandeja de dados · mesma cor da caixa do chat ────────────────
+   Vizinha do composer na coluna. O MESMO degradê não basta: a bandeja
+   tem 37px e o composer ~115px, e o degradê espremido escurece rápido
+   — ficava visivelmente mais escura. Leva o tom do TOPO do composer,
+   que é o que encosta nela, chapado e OPACO: aberta, a bandeja cresce
+   por cima do feed, e com transparência as linhas do chat apareciam
+   através dela. `#0c1f2b` é o que o .94 do composer resulta sobre o
+   fundo do painel. `!important` porque o fundo vem inline de
+   `RoladorDados`. */
+:root[data-tema="forja"] .rv-bandeja-casca {
+  background: #0c1f2b !important;
+}
+
+/* A sombra que descola a bandeja do feed (`.pn-bandeja-dados`, para
+   cima) era preta a 55% e lia como uma faixa escura sobre o chat. Mais
+   curta, mais leve e no petróleo do abismo em vez de preto. */
+:root[data-tema="forja"] .pn-bandeja-dados { box-shadow: 0 -4px 14px rgba(3, 11, 17, .3); }
+
+/* A caixa "Definir CD" era um poço ESCURO (#081722) no meio da bandeja
+   (#0c1f2b) e destoava. Agora sobe um degrau em vez de afundar: um
+   sopro de ciano por cima da cor da bandeja, que a separa sem mudar de
+   família. `!important` porque o fundo vem inline de `ResultadoRolagem`. */
+:root[data-tema="forja"] .rv-cd-caixa { background: rgba(0, 212, 255, .04) !important; }
+
 /* ── Fundo do palco · Grade de pontos ─────────────────────────── */
 :root[data-tema="forja"] .rv-palco {
   background:

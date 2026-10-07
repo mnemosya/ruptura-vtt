@@ -830,8 +830,12 @@ export function BandejaDados({ campaignId = null, personagemSugerido = null }: {
     /* `className` e não só estilo inline: encostada no composer (no
        Chat) ela perde os cantos de baixo, e isso é decisão de LAYOUT de
        quem a hospeda — o raio sai daqui pra que a folha possa mandar. */
-    <div className="rv-bandeja-casca" {...aoPassarMouse({ "border-color": "#2a3b58" })}
-      style={{ background: "linear-gradient(160deg,var(--fj-fundo-3, #0b1322),var(--fj-fundo-2, #080e19))", border: "1px solid var(--fj-fundo-6, #16233a)", transition: "border-color .14s" }}>
+    /* Borda em LONGHANDS, não `border: 1px solid var(...)`: com `var()`
+       no atalho, `style.getPropertyValue("border-color")` volta vazio,
+       e o `aoPassarMouse` "restaurava" a cor para nada — a borda caía
+       em `currentColor` e ficava clara depois do primeiro hover. */
+    <div className="rv-bandeja-casca" {...aoPassarMouse({ "border-color": "var(--fj-fundo-7, #2a3b58)" })}
+      style={{ background: "linear-gradient(160deg,var(--fj-fundo-3, #0b1322),var(--fj-fundo-2, #080e19))", borderWidth: 1, borderStyle: "solid", borderColor: "var(--fj-fundo-6, #16233a)", transition: "border-color .14s" }}>
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} data-testid="painel-bandeja-dados"
         {...aoPassarMouse({ background: "rgba(255,255,255,.015)" })}
         style={{ display: "flex", width: "100%", alignItems: "center", gap: 10, padding: "10px 14px", border: 0, background: "transparent", cursor: "pointer", transition: "background .14s" }}>
