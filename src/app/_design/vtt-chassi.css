@@ -222,6 +222,10 @@
 .rv-menu-item { --rv-notch: 7px; }       /* 30px */
 .rv-menu-mesa-item { --rv-notch: 7px; }  /* ~32px — itens do menu da mesa */
 .rv-cena-chip { --rv-notch: 8px; }       /* 33px */
+.rv-gaveta .rv-btn { --rv-notch: 7px; }  /* 28–29px — Nova cena, Arquivo, Reagrupar */
+.rv-pasta-degrau { --rv-notch: 7px; }    /* 27px — trilha de pastas */
+.rv-pasta-nome { --rv-notch: 4px; }      /* 15px — nome da pasta na árvore */
+.rv-cena-busca-casca { --rv-notch: 7px; } /* ~30px — busca da gaveta de cenas */
 .rv-pn-filtros-acoes .pn-btn,             /* 29px — + Personagem, Pasta */
 .rv-pn-rodape .pn-btn { --rv-notch: 7px; } /* 29px — Abrir Personagens… */
 .rv-pn-input { --rv-notch: 6px; }            /* ~22px — campos compactos do painel */

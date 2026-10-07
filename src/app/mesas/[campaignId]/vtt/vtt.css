@@ -4958,9 +4958,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   background: rgba(var(--fj-fundo-1-rgb, 6, 10, 18), .88); box-shadow: inset 0 0 0 1px var(--rv-line-2);
   max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-/* Mandado para cá é decisão de alguém: leva o acento de "isto foi você
-   quem fez". Quem está aqui porque a mesa está fica neutro. */
-.rv-cena-jogador[data-atribuido] { color: var(--jf-acento); box-shadow: inset 0 0 0 1px currentColor; }
+/* Jogador mandado para esta cena: o mesmo verde do selo "Jogadores
+   aqui" — é a mesma informação (onde os jogadores estão), só que por
+   nome. O âmbar ficou para "Você está aqui", que é sobre o narrador.
+   Quem está aqui porque a mesa está fica neutro. */
+.rv-cena-jogador[data-atribuido] { color: var(--rv-ok); box-shadow: inset 0 0 0 1px currentColor; }
 .rv-cena-jogador[data-mais] { color: var(--rv-ink-dim); font-weight: 700; }
 
 /* "Soltar aqui" — só enquanto um jogador paira. Sem isso, soltar vira
@@ -6090,11 +6092,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   background: var(--rv-raise); box-shadow: inset 0 0 0 1px var(--rv-line-2);
   max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-/* Mandado para cá é decisão de alguém: leva o acento da janela, que é
-   a cor de "isto foi você quem fez". */
+/* Jogador mandado para esta cena: o verde do selo "Jogadores aqui" — a
+   mesma informação, por nome. O âmbar fica para "Você está aqui". */
 .rv-cena-jogador[data-atribuido] {
-  color: var(--jf-acento, var(--cy));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--jf-acento, var(--cy)) 45%, transparent);
+  color: var(--rv-ok);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rv-ok) 45%, transparent);
   background: none;
 }
 /* "+2" — o resto dos nomes vive no `title`. */
