@@ -579,6 +579,7 @@ export async function salvarConfigCenaAction(params: {
   gradeCor?: string;
   gradeOpacidade?: number;
   celulaPx?: number;
+  mostrarNome?: boolean;
   revisionEsperada: number;
 }): Promise<ResultadoAcao<{ cena: CenaVtt }>> {
   const v = await exigirAcesso(params.campaignId);
@@ -588,6 +589,7 @@ export async function salvarConfigCenaAction(params: {
     largura: params.largura, altura: params.altura,
     gradeCor: params.gradeCor, gradeOpacidade: params.gradeOpacidade,
     celulaPx: params.celulaPx,
+    mostrarNome: params.mostrarNome,
     revisionEsperada: params.revisionEsperada,
   });
   if (!r.ok || !r.cena) return { ok: false, erro: r.erro };

@@ -52,6 +52,11 @@ export interface CenaVtt {
   gradeOpacidade: number;
   /** Pixels por célula (0123) — só conversão, para encaixar mapas prontos. */
   celulaPx: number;
+  /**
+   * Se os jogadores veem o nome (20261006220000). Escondido, o servidor
+   * nem manda o nome a eles: chega `nome` vazio.
+   */
+  mostrarNome: boolean;
   revision: number;
   /**
    * Visibilidade e bloqueio de cada camada do mapa, DA MESA (migration
@@ -530,6 +535,8 @@ export interface CartaoCena {
   gradeOpacidade: number;
   /** Pixels por célula (0123) — só conversão, para encaixar mapas prontos. */
   celulaPx: number;
+  /** Se os jogadores veem o nome — ver `CenaVtt.mostrarNome`. */
+  mostrarNome: boolean;
   ordem: number;
   revision: number;
   arquivadaEm: string | null;
@@ -559,7 +566,8 @@ export async function listarCenas(campaignId: string, incluirArquivadas = false)
 
   return (Array.isArray(data) ? (data as Record<string, unknown>[]) : []).map((c) => ({
     id: c.id as string,
-    nome: c.nome as string,
+    // Escondido do jogador, o catálogo manda `nome: null` (20261006220000).
+    nome: (c.nome as string | null) ?? "",
     local: (c.local as string | null) ?? null,
     resumo: (c.resumo as string | null) ?? null,
     largura: c.largura as number,
@@ -567,6 +575,7 @@ export async function listarCenas(campaignId: string, incluirArquivadas = false)
     gradeCor: (c.grade_cor as string | null) ?? GRADE_COR_PADRAO,
     gradeOpacidade: Number(c.grade_opacidade ?? GRADE_OPACIDADE_PADRAO),
     celulaPx: Number(c.celula_px ?? CELULA_PX_PADRAO),
+    mostrarNome: c.mostrar_nome !== false,
     ordem: c.ordem as number,
     revision: c.revision as number,
     arquivadaEm: (c.arquivada_em as string | null) ?? null,
@@ -643,6 +652,7 @@ function cartaoDeLinhaDeCena(linha: Record<string, unknown>): CartaoCena {
     gradeCor: (linha.grade_cor as string | null) ?? GRADE_COR_PADRAO,
     gradeOpacidade: Number(linha.grade_opacidade ?? GRADE_OPACIDADE_PADRAO),
     celulaPx: Number(linha.celula_px ?? CELULA_PX_PADRAO),
+    mostrarNome: linha.mostrar_nome !== false,
     ordem: linha.ordem as number,
     revision: linha.revision as number,
     arquivadaEm: (linha.archived_at as string | null) ?? null,
@@ -979,12 +989,17 @@ export async function carregarCena(sceneId: string): Promise<EstadoCena | null> 
 
   const { data: cenaRow, error: erroCena } = await client
     .from("vtt_scenes")
-    .select("id, campaign_id, nome, local, resumo, largura, altura, grade_cor, grade_opacidade, celula_px, revision, camadas")
+    // Sem `nome`: a coluna não é legível direto (20261006220000). Ele vem
+    // de `vtt_nome_da_cena`, que só o entrega a quem pode vê-lo.
+    .select("id, campaign_id, local, resumo, largura, altura, grade_cor, grade_opacidade, celula_px, mostrar_nome, revision, camadas")
     .eq("id", sceneId)
     .maybeSingle();
 
   if (erroCena) throw new VttStorageError(`Falha ao ler a cena: ${erroCena.message}`, erroCena);
   if (!cenaRow) return null;
+
+  const { data: nomeCena, error: erroNome } = await client.rpc("vtt_nome_da_cena", { p_scene_id: sceneId });
+  if (erroNome) throw new VttStorageError(`Falha ao ler o nome da cena: ${erroNome.message}`, erroNome);
 
   const [tokensRes, terrenoRes, marcasRes, areasRes, objetosRes, medicoesRes, trilhaRes] = await Promise.all([
     client.rpc("read_vtt_scene_tokens", { p_scene_id: sceneId }),
@@ -1027,13 +1042,14 @@ export async function carregarCena(sceneId: string): Promise<EstadoCena | null> 
     cena: {
       id: sceneId,
       campaignId: cenaRow.campaign_id as string,
-      nome: cenaRow.nome as string,
+      nome: (nomeCena as string | null) ?? "",
       local: (cenaRow.local as string | null) ?? null,
       resumo: (cenaRow.resumo as string | null) ?? null,
       largura: cenaRow.largura as number,
       gradeCor: (cenaRow.grade_cor as string | null) ?? GRADE_COR_PADRAO,
       gradeOpacidade: Number(cenaRow.grade_opacidade ?? GRADE_OPACIDADE_PADRAO),
       celulaPx: Number(cenaRow.celula_px ?? CELULA_PX_PADRAO),
+      mostrarNome: cenaRow.mostrar_nome !== false,
       altura: cenaRow.altura as number,
       revision: cenaRow.revision as number,
       camadas: (cenaRow.camadas as Record<string, unknown> | null) ?? {},
@@ -2172,6 +2188,7 @@ export async function definirConfigDaCena(params: {
   gradeCor?: string;
   gradeOpacidade?: number;
   celulaPx?: number;
+  mostrarNome?: boolean;
   revisionEsperada: number;
 }): Promise<ResultadoEscrita & { cena?: CenaVtt }> {
   const client = await getScopedTableClient();
@@ -2186,6 +2203,7 @@ export async function definirConfigDaCena(params: {
     p_grade_cor: params.gradeCor ?? null,
     p_grade_opacidade: params.gradeOpacidade ?? null,
     p_celula_px: params.celulaPx ?? null,
+    p_mostrar_nome: params.mostrarNome ?? null,
   });
   if (error) return { ok: false, erro: error.message };
   const linha = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
@@ -2203,6 +2221,7 @@ export async function definirConfigDaCena(params: {
       gradeCor: (linha.grade_cor as string | null) ?? GRADE_COR_PADRAO,
       gradeOpacidade: Number(linha.grade_opacidade ?? GRADE_OPACIDADE_PADRAO),
       celulaPx: Number(linha.celula_px ?? CELULA_PX_PADRAO),
+      mostrarNome: linha.mostrar_nome !== false,
       revision: linha.revision as number,
       camadas: (linha.camadas as Record<string, unknown> | null) ?? {},
     },

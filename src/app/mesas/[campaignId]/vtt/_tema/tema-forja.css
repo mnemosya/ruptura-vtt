@@ -115,6 +115,9 @@
    borda nova. Abaixo de 1040px o VTT já reposiciona a facção. */
 @media (min-width: 1041px) {
   :root[data-tema="forja"] .rv-faccao--pj { left: calc(8px + 50px + 10px); }
+  /* O chip de cena desceu para o relógio (ver "Pilha de contexto"):
+     o topo ficou livre e as facções sobem, mantendo um respiro da borda. */
+  :root[data-tema="forja"] .rv-faccao { top: 32px; }
 }
 :root[data-tema="forja"] .rv-ferr-btn {
   border-color: transparent; background: transparent;
@@ -216,3 +219,5 @@
 :root[data-tema="forja"] :is(.rv-aba.rv-aba[aria-selected="true"], .rv-ferr-btn[aria-pressed="true"]) svg {
   stroke-width: 2.4;
 }
+/* Nome escondido dos jogadores: só o narrador vê o chip, e com o aviso. */
+:root[data-tema="forja"] .rv-contexto-cena__oculto { flex: none; color: var(--rv-am); }

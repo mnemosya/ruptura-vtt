@@ -4554,6 +4554,11 @@ export function VttClient({
     const centro = centroDaGrade(larguraCamera, alturaCamera, TAM);
     setZoom(ZOOM_ENTRADA);
     setPan(panParaCentralizar(centro, ZOOM_ENTRADA, larguraCamera, alturaCamera, TAM));
+    // E então centra na área VISÍVEL (entre trilho e painel), como a
+    // tecla 1. No quadro seguinte: o `estadoCenaRef` e a medida do
+    // painel (`--rv-painel-aberto-ocupa`) só chegam depois dos efeitos.
+    const quadro = requestAnimationFrame(() => enquadrarMapa());
+    return () => cancelAnimationFrame(quadro);
     // Só quando a CENA muda — não a cada ajuste de tamanho pela janela
     // de Configurações, que puxaria a câmera no meio da digitação.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -5828,6 +5833,20 @@ export function VttClient({
     const cena = estadoCenaRef.current?.cena;
     if (!cena) return;
     const novoPan = panParaCentralizar(centroDaGrade(cena.largura, cena.altura, TAM), ZOOM_ENTRADA, cena.largura, cena.altura, TAM);
+    // `panParaCentralizar` centra no palco INTEIRO, mas o trilho cobre a
+    // esquerda e o painel aberto a direita: o mapa aparecia deslocado
+    // para o lado do painel. Corrige pelo meio da faixa que sobra, em
+    // pixels de tela convertidos para unidades do viewBox.
+    const svg = document.querySelector<SVGSVGElement>(".rv-palco svg.rv-mapa");
+    const escala = svg?.getScreenCTM()?.a;
+    if (svg && escala) {
+      const palco = svg.getBoundingClientRect();
+      const mesa = svg.closest<HTMLElement>(".rv-mesa");
+      const painel = mesa ? parseFloat(getComputedStyle(mesa).getPropertyValue("--rv-painel-aberto-ocupa")) || 0 : 0;
+      const trilho = document.querySelector(".rv-ferramentas")?.getBoundingClientRect().right ?? palco.left;
+      const meioVisivel = (Math.max(palco.left, trilho) + palco.right - painel) / 2;
+      novoPan.x += (meioVisivel - (palco.left + palco.right) / 2) / escala;
+    }
     marcarZoomPan(ZOOM_ENTRADA, novoPan);
     setZoom(ZOOM_ENTRADA);
     setPan(novoPan);
@@ -6058,7 +6077,7 @@ export function VttClient({
               <span className="rv-cena-chip__nome">{estadoCena.cena.nome}</span>
               <ChevronDown size={14} aria-hidden="true" />
             </button>
-          ) : (
+          ) : estadoCena.cena.nome && (
             <p className="rv-cena-chip" data-estatico="true" data-testid="cena-chip">
               <span className="rv-cena-chip__rot">Cena ativa:</span>
               <span className="rv-cena-chip__nome">{estadoCena.cena.nome}</span>
@@ -6347,15 +6366,22 @@ export function VttClient({
               <button type="button" className="rv-tempo-chip rv-contexto-cena"
                 onClick={alternarCatalogoCenas}
                 aria-haspopup="dialog" aria-expanded={painelCenasAberto}
-                aria-label={`Cena ativa: ${estadoCena.cena.nome}. Trocar de cena`}
+                aria-label={`Cena ativa: ${estadoCena.cena.nome}${estadoCena.cena.mostrarNome ? "" : " (nome oculto para os jogadores)"}. Trocar de cena`}
                 data-testid="cena-chip">
                 <MapPin size={15} aria-hidden="true" />
                 <span className="rv-tempo-chip-data">Cena</span>
                 <span className="rv-tempo-chip-separador" aria-hidden="true" />
                 <strong className="rv-contexto-cena__nome">{estadoCena.cena.nome}</strong>
+                {!estadoCena.cena.mostrarNome && (
+                  <EyeOff size={13} className="rv-contexto-cena__oculto" aria-hidden="true">
+                    <title>Nome oculto para os jogadores</title>
+                  </EyeOff>
+                )}
                 <ChevronDown size={14} className="rv-tempo-chip-seta" aria-hidden="true" />
               </button>
-            ) : (
+            ) : estadoCena.cena.mostrarNome && estadoCena.cena.nome && (
+              /* Nome escondido: o servidor nem o manda (20261006220000),
+                 então o jogador não tem chip para ver. */
               <p className="rv-tempo-chip rv-contexto-cena" data-estatico="true" data-testid="cena-chip">
                 <MapPin size={15} aria-hidden="true" />
                 <span className="rv-tempo-chip-data">Cena</span>
