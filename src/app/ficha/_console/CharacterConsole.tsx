@@ -96,8 +96,8 @@ type Aux =
   | { tipo: "avanco"; alvo: RankingV12 }
   | null;
 
-export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; onClose: () => void; api: ConsoleApi }) {
-  const [aba, setAba] = useState<AbaId>("personagem");
+export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto: boolean; onClose: () => void; api: ConsoleApi; abaInicial?: AbaId }) {
+  const [aba, setAba] = useState<AbaId>(abaInicial ?? "personagem");
   /**
    * FOCO é o padrão de abertura: o Console abre na ficha do
    * personagem, não numa aba de gestão. Painel continua a um clique no

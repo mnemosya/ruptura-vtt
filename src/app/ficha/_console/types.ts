@@ -215,6 +215,8 @@ export interface ConsoleApi {
    * participação ativa no servidor.
    */
   definirCarteira: (walletId: WalletId, valor: number) => void;
+  /** PROVISÓRIO: compra do catálogo (`purchaseItem`), para testar Inventário e Equipamentos. */
+  comprarItem: (itemSlug: string, quantidade: number, walletId: WalletId, precoUnitario: number) => void;
   editarPericia: (id: string, valor: number) => void;
   /**
    * Renomeia a personagem. Vale em qualquer modo — nome não é evolução,
