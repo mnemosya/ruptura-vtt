@@ -295,7 +295,7 @@ export function VttClient({
 }) {
   const ehNarrador = papel === "narrator";
 
-  useTemaVtt();
+  const temaVtt = useTemaVtt();
   const [ferramenta, setFerramenta] = useState<FerramentaId>("interagir");
 
   const [zoom, setZoom] = useState(1);
@@ -5819,6 +5819,19 @@ export function VttClient({
     setHistorico(r.historico);
     if (r.comando) r.comando.executar();
   }, [usuarioId, ehNarrador]);
+
+  /**
+   * Atalho 1: volta ao enquadramento com que a cena abre (`ZOOM_ENTRADA`,
+   * mapa inteiro centralizado) — a mesma conta do efeito de entrada.
+   */
+  const enquadrarMapa = useCallback(() => {
+    const cena = estadoCenaRef.current?.cena;
+    if (!cena) return;
+    const novoPan = panParaCentralizar(centroDaGrade(cena.largura, cena.altura, TAM), ZOOM_ENTRADA, cena.largura, cena.altura, TAM);
+    marcarZoomPan(ZOOM_ENTRADA, novoPan);
+    setZoom(ZOOM_ENTRADA);
+    setPan(novoPan);
+  }, [marcarZoomPan]);
 
   // ── Atalhos globais ────────────────────────────────────────────
   useEffect(() => {
