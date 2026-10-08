@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Chakra_Petch, Exo_2, Orbitron, JetBrains_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
@@ -70,6 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           falso positivo de mismatch, não um bug do app. Ver https://react.dev/link/hydration-mismatch */}
       <body suppressHydrationWarning>
         {children}
+        <Analytics />
         <SpeedInsights />
       </body>
     </html>
