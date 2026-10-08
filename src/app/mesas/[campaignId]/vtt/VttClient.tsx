@@ -28,7 +28,7 @@ import { HexColorInput, HexColorPicker } from "react-colorful";
 import { Plus } from "../../../_design/icons";
 import { MapaHex, TAM, type EstadoVisualToken, type CenaMapa } from "./_mapa/MapaHex";
 import { useTargets } from "./_realtime/useTargets";
-import { Crosshair } from "lucide-react";
+import { Crosshair, FilePlus } from "lucide-react";
 import { AcoesRapidasToken } from "./_shell/AcoesRapidasToken";
 import type { CategoriaAcaoToken } from "./_dominio/targets";
 import { type AlcaArea, type AreaDesenhavel, type EstadoVisualArea, type GuiaGesto } from "./_mapa/CamadaAreas";
@@ -75,7 +75,7 @@ import {
   pintarTerrenoAction, criarMarcaAction, apagarMarcaAction, rotacionarTokenAction, apontarTokenAction,
   criarMedicaoAction, apagarMedicaoAction, limparMedicoesAction,
   obterControleAction, criarTokenAction, editarTokenAction,
-  duplicarTokenAction, removerTokenAction, definirFlagsTokenAction, enviarPingAction, listarPersonagensAction,
+  duplicarTokenAction, removerTokenAction, definirFlagsTokenAction, criarFichaDoTokenAction, enviarPingAction, listarPersonagensAction,
   criarAreaAction, atualizarAreaAction, duplicarAreaAction, removerAreaAction, lerObjetosCenaAction,
   iniciarTrilhaAction, atualizarTrilhaAction, encerrarTrilhaAction, lerTrilhaAction,
   criarObjetoAction, removerObjetoAction, atualizarObjetoAction, moverObjetoAction, danificarObjetoAction,
@@ -968,6 +968,21 @@ export function VttClient({
   const [versaoPalco, setVersaoPalco] = useState(0);
   /** "O narrador mudou a cena" — some sozinho. */
   const [avisoPalco, setAvisoPalco] = useState<string | null>(null);
+  /**
+   * TOK-03 — camada do narrador, à la camada GM do Roll20. É um MODO do
+   * rail, não um lugar: o mapa é o mesmo, e todo token que o narrador
+   * põe enquanto ela está ligada nasce `visivel = false` (TOK-02) — os
+   * jogadores não recebem nada, nem pela leitura nem pelo realtime.
+   * Trocar um token de camada depois é o clique direito (Ocultar/Revelar
+   * com outro nome). Só do narrador, e só nesta tela: não é estado da cena.
+   */
+  const [camadaNarrador, setCamadaNarrador] = useState(false);
+  const camadaNarradorRef = useRef(camadaNarrador);
+  useEffect(() => { camadaNarradorRef.current = camadaNarrador; }, [camadaNarrador]);
+  /** Rascunho de token novo já na camada certa — vale para N, arrasto da aba Personagens e soltar direto. */
+  const naCamadaAtual = useCallback((v: ValoresFormularioToken): ValoresFormularioToken => (
+    camadaNarradorRef.current ? { ...v, visivel: false } : v
+  ), []);
 
   /**
    * O que este cliente FAZ quando a mesa muda de cena.
@@ -2373,7 +2388,7 @@ export function VttClient({
 
   const abrirCriarToken = useCallback(() => {
     fecharJanelasDeBotao();
-    setFluxoToken({ fase: "configurando", modo: "criar", valoresIniciais: valoresPadraoNovoToken(), ancoraPreservada: null, orientacaoPreservada: 0 });
+    setFluxoToken({ fase: "configurando", modo: "criar", valoresIniciais: naCamadaAtual(valoresPadraoNovoToken()), ancoraPreservada: null, orientacaoPreservada: 0 });
   }, [fecharJanelasDeBotao]);
   const abrirEditarToken = useCallback((tokenId: string) => {
     const t = tokenPorId.get(tokenId);
@@ -2408,7 +2423,7 @@ export function VttClient({
   const iniciarTokenDePersonagem = useCallback((p: PersonagemArrastado, ancora: Hex | null = null) => {
     if (!estadoCena || !ehNarrador) return;
     setFerramenta("interagir");
-    setFluxoToken({ fase: "posicionando", rascunho: rascunhoDePersonagem(p), ancora, orientacao: 0 });
+    setFluxoToken({ fase: "posicionando", rascunho: naCamadaAtual(rascunhoDePersonagem(p)), ancora, orientacao: 0 });
   }, [estadoCena, ehNarrador]);
 
 
@@ -2637,7 +2652,7 @@ export function VttClient({
     const arrastado = personagemArrastadoRef.current;
     if (!fluxoTokenRef.current && arrastado) {
       setFerramenta("interagir");
-      setFluxoToken({ fase: "posicionando", rascunho: rascunhoDePersonagem(arrastado), ancora: hex, orientacao: 0 });
+      setFluxoToken({ fase: "posicionando", rascunho: naCamadaAtual(rascunhoDePersonagem(arrastado)), ancora: hex, orientacao: 0 });
       return;
     }
     moverPosicionamento(hex);
@@ -2790,7 +2805,7 @@ export function VttClient({
        fantasma aparece e o clique escolhe. */
     if (hex) {
       setFerramenta("interagir");
-      criarTokenEm(rascunhoDePersonagem(personagem), hex, 0);
+      criarTokenEm(naCamadaAtual(rascunhoDePersonagem(personagem)), hex, 0);
       return;
     }
     iniciarTokenDePersonagem(personagem, hex);
@@ -2913,6 +2928,38 @@ export function VttClient({
     // Duplicação NÃO entra em undo/redo — mesmo motivo de criação: id
     // novo a cada chamada, redo não restauraria a MESMA cópia.
   }, [campaignId, tokenPorId, estadoCena, terrenoReal, ocupadosExcluindo, mesclarTokenNoEstado]);
+
+  /**
+   * TOK-01 — "Criar ficha" de um token avulso. Um fluxo só, chamado pelo
+   * menu contextual e pelo editor do token: a RPC cria o PN e vincula na
+   * mesma transação, então não existe ficha órfã nem token meio
+   * vinculado. A lista de fichas do narrador é relida para o seletor do
+   * editor já mostrar a nova.
+   */
+  const criarFichaDoTokenHandler = useCallback(async (
+    tokenId: string,
+  ): Promise<{ ok: true; characterId: string } | { ok: false; erro: string }> => {
+    const t = estadoCenaRef.current?.tokens.find((x) => x.id === tokenId);
+    if (!t) return { ok: false, erro: "Token não encontrado." };
+    if (t.characterId) return { ok: false, erro: "Este token já tem uma ficha vinculada." };
+    const r = await criarFichaDoTokenAction({ campaignId, tokenId, revisionEsperada: t.revision });
+    if (!r.ok || !r.dados) {
+      const erro = r.erro ?? "Não foi possível criar a ficha.";
+      setErroAcao(erro);
+      return { ok: false, erro };
+    }
+    const { characterId, nome, revision } = r.dados;
+    setEstadoCena((c) => c ? { ...c, tokens: c.tokens.map((x) => x.id === tokenId ? { ...x, characterId, revision } : x) } : c);
+    setFluxoToken((f) => f && f.fase === "configurando" && f.modo === "editar" && f.tokenId === tokenId
+      ? { ...f, valoresIniciais: { ...f.valoresIniciais, characterId } }
+      : f);
+    setErroAcao(null);
+    setAvisoPalco(`Ficha "${nome}" criada como PN e vinculada ao token. Complete-a na aba Personagens.`);
+    listarPersonagensAction(campaignId)
+      .then((l) => { if (l.ok && l.dados) setPersonagensNarrador(l.dados); })
+      .catch(() => { /* o vínculo já existe; a lista se acerta na próxima leitura */ });
+    return { ok: true, characterId };
+  }, [campaignId]);
 
   // ── Ocultar/revelar e travar/destravar — `set_vtt_token_flags`
   // (narrador-only). Entram em undo/redo (reversão exata: flag volta
@@ -4741,7 +4788,7 @@ export function VttClient({
              a seleção misturada, "Ocultar" some com todos em vez de
              inverter cada um — inverter faria o resultado depender do
              estado anterior de cada token, não do que foi pedido. */
-          { id: "lote-ocultar", rotulo: `${todosOcultos ? "Revelar" : "Ocultar"} (${n})`,
+          { id: "lote-ocultar", rotulo: `${todosOcultos ? "Mover para a camada de tokens" : "Mover para a camada do narrador"} (${n})`,
             icone: todosOcultos ? <Eye size={14} /> : <EyeOff size={14} />, separadorAntes: true,
             onSelecionar: () => void emLote("Visibilidade", (a) => aplicarFlagsLote(a, { visivel: todosOcultos })) },
           { id: "lote-bloquear", rotulo: `${todosBloqueados ? "Desbloquear" : "Bloquear"} (${n})`,
@@ -4818,11 +4865,15 @@ export function VttClient({
       return [
         ...itemFicha,
         { id: "editar", rotulo: "Editar", icone: <Pencil size={14} />, onSelecionar: () => abrirEditarToken(tokenId), separadorAntes: itemFicha.length > 0 },
+        ...(t.characterId ? [] : [{
+          id: "criar-ficha", rotulo: "Criar ficha", icone: <FilePlus size={14} />,
+          onSelecionar: () => { void criarFichaDoTokenHandler(tokenId); },
+        }]),
         itemRetrato,
         { id: "duplicar", rotulo: "Duplicar", icone: <Copy size={14} />, onSelecionar: () => duplicarTokenHandler(tokenId) },
         ...itensGiro.map((item, i) => (i === 0 ? { ...item, separadorAntes: true } : item)),
         ...itensForma,
-        { id: "ocultar", rotulo: t.visivel ? "Ocultar" : "Revelar", icone: t.visivel ? <EyeOff size={14} /> : <Eye size={14} />, onSelecionar: () => definirFlagsHandler(tokenId, "visivel"), separadorAntes: true },
+        { id: "ocultar", rotulo: t.visivel ? "Mover para a camada do narrador" : "Mover para a camada de tokens", icone: t.visivel ? <EyeOff size={14} /> : <Eye size={14} />, onSelecionar: () => definirFlagsHandler(tokenId, "visivel"), separadorAntes: true },
         { id: "bloquear", rotulo: t.bloqueado ? "Desbloquear" : "Bloquear", icone: t.bloqueado ? <Unlock size={14} /> : <Lock size={14} />, onSelecionar: () => definirFlagsHandler(tokenId, "bloqueado") },
         { id: "remover", rotulo: "Remover", icone: <Trash2 size={14} />, perigoso: true, onSelecionar: () => setConfirmandoRemocao(t), separadorAntes: true },
       ];
@@ -6100,6 +6151,24 @@ export function VttClient({
               <Layers size={17} />
               <span className="rv-dica">Camadas do mapa<kbd>C</kbd></span>
             </button>
+            {/* Camada do narrador (TOK-03): um MODO, não uma janela nem
+                uma ferramenta de ponteiro — dá para selecionar, arrastar
+                da aba Personagens e criar com N normalmente; só muda que
+                o que nasce enquanto ela está ligada fica oculto. */}
+            <button
+              type="button" className="rv-ferr-btn" data-tipo="modo" data-testid="vtt-camada-narrador"
+              aria-pressed={camadaNarrador}
+              aria-label={camadaNarrador ? "Camada do narrador ligada" : "Camada do narrador"}
+              onClick={() => {
+                setCamadaNarrador((v) => !v);
+                setAvisoPalco(camadaNarrador
+                  ? "Camada de tokens: o que você puser agora os jogadores veem."
+                  : "Camada do narrador: o que você puser agora só você vê.");
+              }}
+            >
+              <EyeOff size={17} />
+              <span className="rv-dica">{camadaNarrador ? "Camada do narrador (ligada)" : "Camada do narrador"}</span>
+            </button>
             {ferramentasDoNarrador.map(botaoDeFerramenta)}
           </>
         )}
@@ -6854,6 +6923,7 @@ export function VttClient({
           onConfirmarEdicao={confirmarEdicaoToken}
           onContinuarParaPosicionar={iniciarPosicionamento}
           onFechar={fecharGerenciador}
+          onCriarFicha={fluxoToken.modo === "editar" && ehNarrador ? () => criarFichaDoTokenHandler(fluxoToken.tokenId) : undefined}
         />
       )}
 

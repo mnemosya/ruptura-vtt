@@ -84,6 +84,7 @@ import {
   atualizarArea,
   duplicarArea,
   removerArea,
+  criarFichaDoToken,
   type AreaVtt,
   type CorMarca,
   type ObjetoVtt,
@@ -1048,6 +1049,21 @@ export async function removerTokenAction(params: { campaignId: string; tokenId: 
   const r = await removerToken(params.tokenId);
   if (!r.ok) return { ok: false, erro: r.erro };
   return { ok: true };
+}
+
+/** TOK-01. Só o narrador — a RPC recusa qualquer outro. */
+export async function criarFichaDoTokenAction(params: {
+  campaignId: string;
+  tokenId: string;
+  revisionEsperada: number;
+}): Promise<ResultadoAcao<{ characterId: string; nome: string; revision: number }>> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  if (v.acesso!.role !== "narrator") return { ok: false, erro: "Só o narrador cria ficha a partir de um token." };
+
+  const r = await criarFichaDoToken({ tokenId: params.tokenId, revisionEsperada: params.revisionEsperada });
+  if (!r.ok) return { ok: false, erro: r.erro };
+  return { ok: true, dados: { characterId: r.characterId, nome: r.nome, revision: r.revision } };
 }
 
 export async function definirFlagsTokenAction(params: {
