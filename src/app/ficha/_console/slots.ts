@@ -111,6 +111,20 @@ export function projectBodySlots(
 ): BodySlotProjection {
   const empunhados = inventario.filter((i) => i.estado === "empunhado").sort(ordemEstavel);
   const acessoRapido = inventario.filter((i) => i.estado === "acesso_rapido").sort(ordemEstavel);
+  /* O encaixe ESCOLHIDO manda (`encaixeEscolhido`); itens sem escolha
+     (antigos) ocupam o que sobrar, na ordem estável. */
+  function distribuir(itens: InventoryItemInstance[], ids: [BodySlotId, BodySlotId]): [InventoryItemInstance | null, InventoryItemInstance | null] {
+    const out: [InventoryItemInstance | null, InventoryItemInstance | null] = [null, null];
+    const sobra: InventoryItemInstance[] = [];
+    for (const i of itens) {
+      const k = ids.indexOf(i.encaixeEscolhido as BodySlotId);
+      if (k >= 0 && !out[k]) out[k] = i; else sobra.push(i);
+    }
+    for (const i of sobra) { const k = out.indexOf(null); if (k < 0) break; out[k] = i; }
+    return out;
+  }
+  const [primaria, secundaria] = distribuir(empunhados, ["arma_primaria", "arma_secundaria"]);
+  const [rapido1, rapido2] = distribuir(acessoRapido, ["acesso_rapido_1", "acesso_rapido_2"]);
 
   // Fonte defensiva ATIVA — `equipadoDefensivo` é o que realmente
   // fornece MIT/PD hoje (ver getEquippedDefenseProfile em defense.ts).
@@ -130,10 +144,10 @@ export function projectBodySlots(
     ["membro_superior", armaduraDaRegiao("membro_superior")],
     ["membro_inferior", armaduraDaRegiao("membro_inferior")],
     ["escudo", escudo],
-    ["arma_primaria", empunhados[0] ?? null],
-    ["arma_secundaria", empunhados[1] ?? null],
-    ["acesso_rapido_1", acessoRapido[0] ?? null],
-    ["acesso_rapido_2", acessoRapido[1] ?? null],
+    ["arma_primaria", primaria],
+    ["arma_secundaria", secundaria],
+    ["acesso_rapido_1", rapido1],
+    ["acesso_rapido_2", rapido2],
   ];
 
   const usados = new Set<string>();

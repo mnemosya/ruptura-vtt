@@ -68,6 +68,7 @@ import {
   getSpellAttackProfile,
   purchaseItem,
   setItemLoadoutState,
+  setItemEmEncaixe,
   applyToqueDeMidas,
   endToqueDeMidas,
   applyShieldDamage,
@@ -168,6 +169,7 @@ import { useConsoleCloseOverride } from "../../ficha/_console/ConsoleCloseContex
 import { PainelAcaoToken, type OpcaoAcaoToken } from "../../mesas/[campaignId]/vtt/_shell/PainelAcaoToken";
 import { PainelRolagem } from "../../ficha/_console/panels/PainelRolagem";
 import { contextoAcaoTokenAction } from "../../mesas/[campaignId]/vtt/_painel/acoes/targetsPainel";
+import { declararAtaqueAction } from "../../mesas/[campaignId]/vtt/_painel/acoes/ataquePainel";
 import type { AlvoAcaoToken, ContextoAcaoToken, PedidoAcaoToken } from "../../mesas/[campaignId]/vtt/_dominio/targets";
 import { deriveItemUseKind, getItemUsePreview, getItemUsePaCost } from "../../../lib/character/itemUse";
 import { registrarRolagemPericiaAction } from "../../mesas/[campaignId]/vtt/_painel/acoes/rolagemPainel";
@@ -2510,7 +2512,7 @@ export default function CharacterSheetClient({
       addLogEntry("recurso", "Item não encontrado na Biblioteca para equipar.");
       return;
     }
-    const next = equipDefensiveItem(current, instanceId, item);
+    const next = equipDefensiveItem(current, instanceId, item, itemsIniciais);
     if (next === current) return;
     characterRef.current = next;
     setCharacter(next);
@@ -3742,7 +3744,12 @@ export default function CharacterSheetClient({
   // `null` na rota /ficha normal; vira `router.back()` só quando esta
   // árvore está montada dentro da rota interceptada do modal.
   const consoleCloseOverride = useConsoleCloseOverride();
-  const [rolagemToken, setRolagemToken] = useState<{ pericia: string; nome: string; visibilidade: "public" | "gm" } | null>(null);
+  const [rolagemToken, setRolagemToken] = useState<{
+    pericia: string;
+    nome: string;
+    visibilidade: "public" | "gm";
+    onRolado?: (entrada: { atributoId: string; periciaId: string | null; modificador: number; dados: number[] }) => void;
+  } | null>(null);
 
   // Modo product (/ficha): antes de mostrar qualquer ficha, exige o
   // personagem já resolvido por campanha+id (ver
@@ -3889,7 +3896,7 @@ export default function CharacterSheetClient({
      * partir de dados que já existem: é o que deixa os d8 de verdade da
      * mesa e o sorteio interno terminarem no MESMO resultado.
      */
-    rolarTeste: ({ atributoId, periciaId, modificador, cd, dados, visibilidade, intencao }) => {
+    rolarTeste: ({ atributoId, periciaId, modificador, cd, dados, visibilidade, intencao, publicar }) => {
       const atributoDef = regras?.atributos.find((a) => a.id === atributoId);
       const periciaDef = periciaId ? regras?.pericias.find((p) => p.id === periciaId) : null;
       const params = {
@@ -3908,7 +3915,7 @@ export default function CharacterSheetClient({
         "rolagem_pericia",
         `Console — ${alvo}: ${r.dados.join(", ")} → ${r.modoSelecao === "lowest" ? "menor" : "maior"} ${r.dadoEscolhido}, total ${r.total}${cd != null ? ` (CD ${cd})` : ""}.`,
       );
-      void publicarRolagemNaMesa(atributoId, periciaId, r.dados, modificador, cd, visibilidade, intencao ?? null);
+      if (publicar !== false) void publicarRolagemNaMesa(atributoId, periciaId, r.dados, modificador, cd, visibilidade, intencao ?? null);
       return r;
     },
 
@@ -3986,9 +3993,15 @@ export default function CharacterSheetClient({
         handleEquipDefensive(instanceId);
         return;
       }
-      const estado: ItemLoadoutState =
-        slot === "arma_primaria" || slot === "arma_secundaria" ? "empunhado" : "acesso_rapido";
-      handleSetItemEstado(instanceId, estado);
+      if (slot === "arma_primaria" || slot === "arma_secundaria" || slot === "acesso_rapido_1" || slot === "acesso_rapido_2") {
+        // A mão/posição escolhida fica gravada — sem isto a ordem de
+        // aquisição decidia, e a secundária virava primária.
+        const next = setItemEmEncaixe(characterRef.current, instanceId, slot);
+        characterRef.current = next;
+        setCharacter(next);
+        return;
+      }
+      handleSetItemEstado(instanceId, "acesso_rapido");
     },
     desequipar: (instanceId: string) => {
       const instancia = character.inventario?.find((i) => i.id === instanceId);
@@ -4085,7 +4098,7 @@ export default function CharacterSheetClient({
         const municao = c.instanceId && modelo?.usesAmmunition ? checkAttackAmmoBlock(character, itemsIniciais, { weaponInstanceId: c.instanceId }) : null;
         return { id: c.instanceId ?? "__desarmado__", nome: c.nome, custo: acao?.custoLabel ?? "Custo indisponível", aviso: acao?.warning, alvo: "obrigatorio", pericia: resolucao.skill,
           fatos: [{ rotulo: "Dano-base", valor: resolucao.danoBase ?? "—" }, { rotulo: "Perícia", valor: regras?.pericias.find(p => p.id === resolucao.skill)?.nome ?? resolucao.skill ?? "—" }],
-          detalhe: "Após confirmar, abre a rolagem. Defesa e aplicação de dano permanecem manuais.",
+          detalhe: "Após confirmar, abre a rolagem. Com alvo, o ataque segue no chat: o alvo defende, você escolhe a região pela margem e o narrador aplica o dano.",
           bloqueio: !acao?.enabled ? acao?.disabledReason ?? "Ação indisponível." : municao ? "Munição indisponível; confira arma e aljava na ficha." : !resolucao.skill ? "Perícia de ataque não definida no catálogo." : null };
       });
     } else if (acaoToken.categoria === "conjurar") {
@@ -4119,7 +4132,26 @@ export default function CharacterSheetClient({
         if (!attackActionContent || !getAttackWeaponCandidates(antes, itemsIniciais).some(c => (c.instanceId ?? "__desarmado__") === opcao.id)) throw new Error("Arma indisponível.");
         const ok = await handleUseAction(attackActionContent.id, opcao.id === "__desarmado__" ? null : opcao.id, r.dados);
         if (!ok) throw new Error("Ataque bloqueado. Confira PA, condições e munição.");
-        if (opcao.pericia) setRolagemToken({ pericia: opcao.pericia, nome: `Atacar · ${opcao.nome}${r.dados.alvoNome ? ` → ${r.dados.alvoNome}` : ""}`, visibilidade: r.dados.logVisibility });
+        const ctx = r.dados;
+        const desarmado = opcao.id === "__desarmado__" ? resolveAttackDetails(antes, attackActionContent, null) : null;
+        if (opcao.pericia) setRolagemToken({
+          pericia: opcao.pericia,
+          nome: `Atacar · ${opcao.nome}${ctx.alvoNome ? ` → ${ctx.alvoNome}` : ""}`,
+          visibilidade: ctx.logVisibility,
+          // Com alvo, a rolagem abre o ATAQUE CONTESTADO no chat: a
+          // defesa, a região (pela margem) e o dano seguem no cartão.
+          onRolado: ctx.alvoTokenId ? (entrada) => {
+            void declararAtaqueAction({
+              campaignId: ctx.campaignId,
+              actorTokenId: ctx.actorTokenId,
+              alvoTokenId: ctx.alvoTokenId!,
+              armaInstanceId: opcao.id === "__desarmado__" ? null : opcao.id,
+              armaNome: opcao.nome,
+              ...entrada,
+              desarmado: desarmado ? { danoFormula: desarmado.danoBase, tipoDano: desarmado.tipoDano, subtipoDano: desarmado.subtipoDano } : null,
+            }).then((d) => { if (!d.ok) addLogEntry("recurso", `Ataque não registrado na mesa: ${d.erro ?? "erro desconhecido"}.`); });
+          } : undefined,
+        });
       } else if (acaoToken.categoria === "conjurar") await handleCastSpell(opcao.id, r.dados);
       else await handleUseItem(opcao.id, undefined, r.dados);
       if (characterRef.current === antes) throw new Error("Ação não executada. Confira os recursos e as condições de uso na ficha.");

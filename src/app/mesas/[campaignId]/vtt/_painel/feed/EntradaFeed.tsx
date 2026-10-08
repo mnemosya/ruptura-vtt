@@ -47,6 +47,14 @@ export interface AcoesFeed {
   /** Ação EXPLÍCITA de centralizar a câmera num token (a única exceção ao invariante de não mexer na cena). */
   onFocarToken?: (tokenId: string) => void;
   podeAplicarDano: boolean;
+  /** Ataque contestado — defesa (quem controla o alvo ou o narrador) e região (quem atacou). */
+  onDefender?: (cartaoId: string, escolha: import("./AttackWorkflowCard").EscolhaDefesa, cartao: import("./contratos").CartaoAtaque, forca?: number) => void;
+  onEscolherRegiao?: (cartao: import("./contratos").CartaoAtaque, regiao: string, forca: number) => void;
+  /** Narrador: prévia do "Aplicar dano". */
+  onPreverDano?: (cartaoId: string) => Promise<import("./AttackWorkflowCard").PreviaDanoCartao | null>;
+  /** Personagens que esta conta controla — decide quem vê cada passo. */
+  meusPersonagens?: readonly string[];
+  ehNarrador?: boolean;
 }
 
 export function EntradaFeed({
@@ -103,6 +111,12 @@ export function EntradaFeed({
           erro={acoes.errosPorCartao[cartao.id] ?? null}
           onAplicarDano={() => acoes.onAplicarDano(cartao.id)}
           onFocarAlvo={acoes.onFocarToken}
+          podeDefender={!!acoes.ehNarrador || (!!cartao.alvoCharacterId && !!acoes.meusPersonagens?.includes(cartao.alvoCharacterId))}
+          podeInformarDefesa={!!acoes.ehNarrador}
+          podeEscolherRegiao={!!acoes.ehNarrador || (!!cartao.atacanteCharacterId && !!acoes.meusPersonagens?.includes(cartao.atacanteCharacterId))}
+          onDefender={(escolha, forca) => acoes.onDefender?.(cartao.id, escolha, cartao, forca)}
+          onEscolherRegiao={(regiao, forca) => acoes.onEscolherRegiao?.(cartao, regiao, forca)}
+          onPreverDano={acoes.onPreverDano ? () => acoes.onPreverDano!(cartao.id) : undefined}
         />
       );
     case "magia":

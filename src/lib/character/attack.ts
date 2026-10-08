@@ -28,6 +28,7 @@ import { resolveDamageWithMitPd, type DefenseSourceInput } from "./defense";
 import { applyDamageThroughTemporaryPv } from "./temporaryPv";
 import type { Character, CollapseRulesPayload } from "./types";
 import {
+  armaduraDaRegiao,
   deriveItemProperties,
   setItemMitAtual,
   setItemPdAtual,
@@ -213,11 +214,12 @@ export function rollExtraMarginDie(formula: string, rng: () => number = Math.ran
 /** MIT lido do equipamento defensivo ATIVO do alvo (`getEquippedDefenseProfile`) — modelo atual não tem MIT por região (checkpoint v0.58 documentou isso como fora de escopo); o mesmo valor flat vale para qualquer região escolhida. `region` fica no parâmetro só para deixar a chamada explícita sobre qual região está sendo resolvida (uso futuro se o modelo evoluir para MIT por região). */
 export function getRegionMit(
   defense: EquippedDefenseProfile | undefined,
-  _region: BodyRegion,
+  region: BodyRegion | "",
 ): { mit: number; source: "structured" | "manual" | "none" } {
-  if (defense?.armadura) {
-    return { mit: defense.armadura.mitAtual, source: "structured" };
-  }
+  // Com região: a armadura DAQUELA região (uma por região). Sem região:
+  // a armadura "única" das chamadas antigas.
+  const armadura = region ? armaduraDaRegiao(defense, region) : defense?.armadura;
+  if (armadura) return { mit: armadura.mitAtual, source: "structured" };
   return { mit: 0, source: "none" };
 }
 
@@ -375,6 +377,12 @@ export function applyAttackDamage(params: {
   wasBlocked?: boolean;
   /** Perfil defensivo ATIVO do alvo (`getEquippedDefenseProfile`, `inventory.ts`) — ausente = sem MIT/PD, comportamento antigo. */
   defense?: EquippedDefenseProfile;
+  /**
+   * Região atingida. Presente = vale a armadura DESSA região (uma por
+   * região); sem armadura nela, o golpe passa sem MIT. Ausente = a
+   * armadura "única" de antes.
+   */
+  region?: BodyRegion;
   nowIso: string;
   rng?: () => number;
   collapseRules?: CollapseRulesPayload | null;
@@ -383,8 +391,9 @@ export function applyAttackDamage(params: {
 }): AttackDamageResult {
   const rollResult = rollDamageFormula(params.formula, params.rng);
 
-  const armorInput: DefenseSourceInput | undefined = params.defense?.armadura
-    ? { atual: params.defense.armadura.mitAtual, max: params.defense.armadura.mitMax, tipoProtecao: params.defense.armadura.tipoProtecao }
+  const armadura = params.region ? armaduraDaRegiao(params.defense, params.region) : params.defense?.armadura;
+  const armorInput: DefenseSourceInput | undefined = armadura
+    ? { atual: armadura.mitAtual, max: armadura.mitMax, tipoProtecao: armadura.tipoProtecao }
     : undefined;
   const shieldInput: DefenseSourceInput | undefined = params.defense?.escudo
     ? { atual: params.defense.escudo.pdAtual, max: params.defense.escudo.pdMax, tipoProtecao: params.defense.escudo.tipoProtecao }
@@ -406,8 +415,8 @@ export function applyAttackDamage(params: {
   let withDamage = damage.character;
 
   // Persiste o MIT/PD atualizado na instância equipada (checkpoint v0.58) — só quando algo foi de fato absorvido.
-  if (params.defense?.armadura && resolved.mitigatedByMit > 0) {
-    withDamage = setItemMitAtual(withDamage, params.defense.armadura.instance.id, resolved.mitAfter ?? params.defense.armadura.mitAtual, params.defense.armadura.mitMax);
+  if (armadura && resolved.mitigatedByMit > 0) {
+    withDamage = setItemMitAtual(withDamage, armadura.instance.id, resolved.mitAfter ?? armadura.mitAtual, armadura.mitMax);
   }
   if (params.defense?.escudo && resolved.mitigatedByPd > 0) {
     withDamage = setItemPdAtual(withDamage, params.defense.escudo.instance.id, resolved.pdAfter ?? params.defense.escudo.pdAtual, params.defense.escudo.pdMax);

@@ -1,0 +1,298 @@
+/* =====================================================================
+   INVENTÁRIO HUD — tradução das classes Tailwind do protótipo
+   (`inventario/src/Inventory.tsx`) para CSS do projeto.
+
+   Cor de item = `--rv-vertente-cor`, resolvida por `data-vertente` (a
+   paleta canônica mora em vtt.css e console.css). Aqui ela vira `--k`
+   só para encurtar os `color-mix`.
+   ===================================================================== */
+
+.ih {
+  /* Tokens da Forja (`_forja/forja.css`). Eles só existem dentro de
+     `.fj-root`, então cada um traz o valor da Forja como reserva: no
+     Console aberto fora dela o resultado é o mesmo. */
+  --ih-cy: var(--fj-cy, #00d4ff);
+  --ih-amb: var(--fj-am, #ff8a1f);
+  --ih-ice: var(--fj-gelo, #cfeff4);
+  --ih-texto: var(--fj-texto, #b8d8e8);
+  --ih-dim: var(--fj-apagado, #7f95b3);
+  --ih-fundo: var(--fj-abismo, #06121c);
+  --ih-fundo-2: var(--fj-fundo, #0c1f2b);
+  --ih-casco: var(--fj-fundo-1, #050f17);
+  --ih-perigo: var(--fj-perigo, #ff5f74);
+  --ih-display: var(--fj-display, var(--font-oxanium), "Oxanium", var(--font-chakra), sans-serif);
+  --ih-corpo: var(--fj-corpo, var(--font-corpo), system-ui, sans-serif);
+  --ih-mono: var(--fj-mono, var(--font-mono), ui-monospace, monospace);
+
+  position: relative; display: flex; flex-direction: column; height: 100%; min-height: 0;
+  color: var(--ih-ice); font-family: var(--ih-corpo);
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 45%, var(--ih-fundo-2) 0%, var(--ih-fundo) 75%);
+  padding: 18px 24px;
+  box-sizing: border-box; overflow: hidden;
+}
+.ih::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .35;
+  background-image: linear-gradient(color-mix(in srgb, var(--ih-cy) 6%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--ih-cy) 6%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+}
+.ih::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .6;
+  background-image: repeating-linear-gradient(0deg, color-mix(in srgb, var(--ih-cy) 4%, transparent) 0 1px, transparent 1px 3px);
+}
+.ih > * { position: relative; z-index: 1; }
+.ih [data-vertente] { --k: var(--rv-vertente-cor, var(--ih-cy)); }
+:where(.ih) button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+:where(.ih) button:disabled { cursor: default; }
+
+/* ── tipografia utilitária ── */
+.ih-tag { font-family: var(--ih-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .2em; }
+.ih-mono { font-family: var(--ih-mono); font-size: 12px; }
+.ih-pequeno { font-size: 10px; }
+.ih-fraco { color: var(--ih-dim); }
+.ih-cor { color: var(--k); }
+.ih-dir { text-align: right; justify-self: end; }
+.ih-aretz { color: var(--ih-amb); }
+
+/* ── topo: abas, busca, carteira ── */
+.ih-topo { display: flex; align-items: flex-end; gap: 24px; flex: none; flex-wrap: wrap; }
+.ih-abas { display: flex; align-items: flex-end; gap: 4px; }
+.ih-aba {
+  position: relative; display: flex; align-items: center; gap: 8px; padding: 4px 12px 8px;
+  color: var(--ih-dim); transition: color .15s;
+}
+.ih-aba:hover, .ih-aba[data-ativo] { color: var(--ih-ice); }
+.ih-aba-n {
+  display: grid; place-items: center; width: 20px; height: 20px;
+  border: 1px solid color-mix(in srgb, var(--ih-cy) 25%, transparent);
+  font-family: var(--ih-mono); font-size: 10px; color: color-mix(in srgb, var(--ih-cy) 60%, transparent);
+  transition: all .15s;
+}
+.ih-aba:hover .ih-aba-n { border-color: color-mix(in srgb, var(--ih-cy) 60%, transparent); }
+.ih-aba[data-ativo] .ih-aba-n { border-color: var(--ih-cy); background: var(--ih-cy); color: var(--ih-fundo); }
+.ih-aba-rot { font-family: var(--ih-display); font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: .14em; }
+.ih-aba-qtd { font-family: var(--ih-mono); font-size: 11px; color: var(--ih-dim); }
+.ih-aba::after {
+  content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px;
+  background: var(--ih-cy); box-shadow: 0 0 10px var(--ih-cy);
+  transform: scaleX(0); transform-origin: left; transition: transform .3s;
+}
+.ih-aba[data-ativo]::after { transform: scaleX(1); }
+
+.ih-topo-dir { margin-left: auto; display: flex; align-items: center; gap: 20px; }
+.ih-busca {
+  display: flex; align-items: center; gap: 8px; width: 220px; padding-bottom: 6px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ih-cy) 20%, transparent); color: var(--ih-dim);
+}
+.ih-busca:focus-within { border-bottom-color: var(--ih-cy); color: var(--ih-cy); }
+.ih-busca input {
+  flex: 1; min-width: 0; background: transparent; border: 0; outline: none;
+  color: var(--ih-ice); font-family: var(--ih-corpo); font-size: 15px;
+}
+.ih-busca input::placeholder { color: color-mix(in srgb, var(--ih-dim) 60%, transparent); }
+.ih-busca-tecla { font-family: var(--ih-mono); font-size: 10px; color: var(--ih-dim); }
+
+.ih-carteira {
+  display: flex; align-items: center; gap: 12px; padding: 6px 28px 6px 6px;
+  border: 1px solid color-mix(in srgb, var(--ih-amb) 40%, transparent);
+  background: color-mix(in srgb, var(--ih-amb) 6%, transparent);
+}
+.ih-carteira-hex {
+  display: grid; place-items: center; width: 36px; height: 36px;
+  background: var(--ih-amb); color: var(--ih-fundo);
+  font-family: var(--ih-display); font-size: 20px; font-weight: 900;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+}
+.ih-carteira-txt { display: flex; flex-direction: column; line-height: 1; gap: 2px; }
+.ih-carteira-txt .ih-tag { color: color-mix(in srgb, var(--ih-amb) 70%, transparent); }
+.ih-carteira { position: relative; min-width: 168px; box-sizing: border-box; }
+.ih-carteira[data-editavel] { cursor: pointer; }
+.ih-carteira[data-editavel]:hover { border-color: color-mix(in srgb, var(--ih-amb) 70%, transparent); }
+.ih-carteira-campo { max-width: 100%; background: transparent; border: 0; border-bottom: 1px solid var(--ih-amb); outline: none; color: var(--ih-ice); padding: 0; }
+.ih-carteira-aviso {
+  position: absolute; right: 0; top: calc(100% + 6px); width: 240px; z-index: 40; padding: 6px 8px;
+  background: var(--ih-casco); border: 1px solid var(--ih-amb); color: var(--ih-amb); font-size: 12px;
+}
+.ih-carteira-val { font-family: var(--ih-display); font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ── palco ── */
+.ih-palco { position: relative; flex: 1; min-height: 0; margin-top: 22px; overflow-y: auto; scrollbar-width: none; }
+.ih-palco::-webkit-scrollbar { display: none; }
+.ih-boot { max-width: 980px; margin: 0 auto; animation: ih-boot .5s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes ih-boot {
+  from { opacity: 0; transform: translateY(10px) scaleY(.96); filter: brightness(2) blur(3px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+/* ── régua ── */
+.ih-regua { margin-bottom: 24px; }
+.ih-regua-cab { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+.ih-regua-cab > .ih-tag { color: var(--ih-dim); }
+.ih-regua-num { font-family: var(--ih-display); font-size: 40px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+.ih-regua-num[data-excedido] { color: var(--ih-amb); text-shadow: 0 0 12px color-mix(in srgb, var(--ih-amb) 67%, transparent); }
+.ih-regua-cap { font-size: 20px; color: var(--ih-dim); }
+.ih-regua-estado { margin-left: auto; color: color-mix(in srgb, var(--ih-cy) 70%, transparent) !important; }
+.ih-regua-estado[data-alerta] { color: var(--ih-amb) !important; }
+.ih-regua-trilho { display: flex; height: 12px; gap: 7px; }
+.ih-trecho { position: relative; display: flex; flex-basis: 0; gap: 2px; transition: opacity .15s; }
+.ih-trecho[data-apagado] { opacity: .25; }
+.ih-seg {
+  flex: 1; height: 100%; transform: skewX(-24deg);
+  background: color-mix(in srgb, var(--ih-cy) 80%, transparent); transition: background .2s, box-shadow .2s;
+}
+.ih-trecho[data-aceso] .ih-seg { background: var(--k); box-shadow: 0 0 10px var(--k); }
+.ih-seg[data-excedente] { background: var(--ih-amb); box-shadow: 0 0 8px var(--ih-amb); }
+.ih-seg[data-vazio] { background: color-mix(in srgb, var(--ih-cy) 10%, transparent); }
+.ih-trecho-nome {
+  position: absolute; left: 0; top: 100%; margin-top: 6px; white-space: nowrap; pointer-events: none;
+  font-family: var(--ih-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .16em;
+  color: var(--k); opacity: 0; transition: opacity .15s;
+}
+.ih-trecho[data-aceso] .ih-trecho-nome { opacity: 1; }
+
+/* ── lista ── */
+.ih-lin {
+  position: relative; display: grid; width: 100%; align-items: center; gap: 16px;
+  grid-template-columns: 44px 1fr 130px 150px 110px;
+  padding: 8px 12px; text-align: left;
+  border-bottom: 1px solid color-mix(in srgb, var(--ih-cy) 7%, transparent);
+  transition: background .15s;
+  animation: ih-boot .5s cubic-bezier(.2,.8,.2,1) both;
+}
+.ih-lin--cab { animation: none; padding-bottom: 8px; border-bottom-color: color-mix(in srgb, var(--ih-cy) 20%, transparent); color: var(--ih-dim); }
+.ih-lin::before {
+  content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 2px; background: var(--k);
+  opacity: 0; transition: opacity .15s;
+}
+.ih-lin[data-quente] { background: color-mix(in srgb, var(--k) 7%, transparent); }
+.ih-lin[data-sel] { background: color-mix(in srgb, var(--k) 14%, transparent); }
+.ih-lin[data-quente]::before, .ih-lin[data-sel]::before { opacity: 1; }
+.ih-lin-icone {
+  display: grid; place-items: center; width: 36px; height: 36px; color: var(--k);
+  border: 1px solid color-mix(in srgb, var(--k) 35%, transparent);
+}
+.ih-lin-icone--vazio { border: 1px dashed color-mix(in srgb, var(--ih-cy) 25%, transparent); }
+.ih-lin-nome { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.ih-nome { font-family: var(--ih-display); font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.ih-ocupa { display: flex; align-items: center; gap: 8px; }
+.ih-blocos { display: flex; gap: 2px; }
+.ih-bloco { width: 14px; height: 12px; background: var(--k, var(--ih-cy)); }
+.ih-bloco[data-excedente] {
+  background: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--ih-amb) 33%, transparent) 0 5px, transparent 5px 10px);
+  border: 1px solid var(--ih-amb);
+}
+.ih-bloco[data-vazio] { background: none; border: 1px dashed color-mix(in srgb, var(--ih-cy) 40%, transparent); }
+.ih-valor { font-family: var(--ih-display); font-size: 15px; font-variant-numeric: tabular-nums; color: var(--ih-texto); }
+.ih-local { color: var(--ih-texto); }
+.ih-local[data-local="equipado"] { color: var(--ih-cy); }
+.ih-local[data-local="abrigo"] { color: var(--ih-amb); }
+.ih-lin--livre { opacity: .6; animation: none; }
+.ih-lista-pe { display: flex; justify-content: space-between; padding: 8px 12px 0; border-top: 1px solid color-mix(in srgb, var(--ih-cy) 20%, transparent); }
+.ih-quieto { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 56px 0; text-align: center; }
+.ih-quieto .ih-tag { color: var(--ih-dim); }
+.ih-quieto-tit { font-family: var(--ih-display); font-size: 20px; font-weight: 700; text-transform: uppercase; }
+
+/* ── cartão flutuante ── */
+.ih-cartao { position: absolute; z-index: 30; opacity: 0; transition: opacity .2s; }
+.ih-cartao[data-pronto] { opacity: 1; }
+.ih-cartao::before {
+  content: ""; position: absolute; top: 50%; width: 16px; height: 1px; background: var(--k);
+}
+.ih-cartao[data-lado="e"]::before { left: -16px; }
+.ih-cartao[data-lado="d"]::before { display: none; }
+.ih-cartao-caixa {
+  position: relative; overflow: hidden; background: var(--ih-casco); border: 1px solid var(--k);
+  box-shadow: 0 0 0 4px var(--ih-fundo), 0 0 0 5px color-mix(in srgb, var(--k) 25%, transparent), 0 40px 80px -10px #000;
+}
+.ih-cartao-arte {
+  position: relative; height: 120px; overflow: hidden;
+  background: radial-gradient(ellipse at 70% 50%, color-mix(in srgb, var(--k) 35%, var(--ih-fundo-2)) 0%, var(--ih-casco) 70%);
+}
+.ih-cartao-arte::before {
+  content: ""; position: absolute; inset: 0;
+  background-image: repeating-linear-gradient(135deg, color-mix(in srgb, var(--k) 12%, transparent) 0 1px, transparent 1px 7px);
+}
+.ih-cartao-arte-glifo {
+  position: absolute; right: -8px; top: 50%; transform: translateY(-50%); color: var(--k); opacity: .8;
+  filter: drop-shadow(0 0 24px var(--k));
+}
+.ih-cartao-sobre { position: absolute; left: 16px; top: 12px; display: flex; align-items: center; gap: 8px; }
+.ih-losango { width: 4px; height: 4px; transform: rotate(45deg); background: var(--ih-dim); }
+.ih-cartao-fechar {
+  position: absolute !important; right: 8px; top: 8px; display: grid; place-items: center; width: 28px; height: 28px;
+  background: rgba(0,0,0,.4) !important; color: color-mix(in srgb, var(--ih-ice) 70%, transparent) !important;
+}
+.ih-cartao-fechar:hover { color: var(--ih-ice) !important; }
+.ih .ih-cartao-caixa .ih-cartao-nome {
+  position: absolute; left: 16px; bottom: 12px; max-width: 230px; margin: 0;
+  font-family: var(--ih-display); font-size: 28px; font-weight: 900; line-height: .95; text-transform: uppercase;
+  letter-spacing: .02em; color: var(--ih-ice); text-shadow: 0 2px 0 #000;
+}
+.ih-cartao-corpo { max-height: 46vh; overflow-y: auto; scrollbar-width: none; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.ih-cartao-desc { margin: 0; font-size: 15px; line-height: 1.35; color: var(--ih-texto); }
+.ih-destaque { display: flex; align-items: flex-end; gap: 12px; }
+.ih-destaque-val { font-family: var(--ih-display); font-size: 44px; font-weight: 900; line-height: .85; color: var(--k); }
+.ih-destaque-txt { display: flex; flex-direction: column; padding-bottom: 2px; line-height: 1.2; font-size: 15px; color: var(--ih-texto); }
+.ih-chips { display: flex; gap: 8px; }
+.ih-chip { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--ih-cy) 15%, transparent); }
+.ih-chip-v { display: flex; align-items: center; gap: 4px; height: 16px; }
+.ih-chip-num { font-family: var(--ih-display); font-size: 16px; font-weight: 700; }
+.ih-pa { width: 12px; height: 12px; transform: rotate(45deg); border: 1px solid var(--ih-cy); background: color-mix(in srgb, var(--ih-cy) 30%, transparent); }
+.ih-carga { width: 6px; height: 12px; background: color-mix(in srgb, var(--ih-texto) 12%, transparent); }
+.ih-carga[data-cheia] { background: var(--k); box-shadow: 0 0 6px var(--k); }
+.ih-stats { margin: 0; border-top: 1px solid color-mix(in srgb, var(--ih-cy) 8%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--ih-cy) 8%, transparent); }
+.ih-stats > div { display: flex; align-items: baseline; justify-content: space-between; padding: 6px 0; }
+.ih-stats > div + div { border-top: 1px solid color-mix(in srgb, var(--ih-cy) 8%, transparent); }
+.ih-stats dd { margin: 0; font-size: 15px; font-weight: 600; }
+.ih-props { display: flex; flex-wrap: wrap; gap: 6px; }
+.ih-prop {
+  padding: 2px 8px; background: color-mix(in srgb, var(--k) 15%, transparent); color: var(--k);
+  font-family: var(--ih-display); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+}
+
+.ih-cartao-acoes { border-top: 1px solid color-mix(in srgb, var(--ih-cy) 15%, transparent); background: rgba(0,0,0,.3); padding: 12px; }
+.ih-mover { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 8px; }
+.ih-mover-op {
+  display: flex !important; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px !important;
+  border: 1px solid color-mix(in srgb, var(--ih-cy) 20%, transparent) !important;
+}
+.ih-mover-op:hover:not(:disabled) { border-color: var(--ih-cy) !important; background: color-mix(in srgb, var(--ih-cy) 10%, transparent) !important; }
+.ih-mover-op:disabled { opacity: .4; }
+.ih-acoes-linha { display: flex; align-items: center; gap: 8px; }
+.ih-passo { display: flex; align-items: center; height: 40px; border: 1px solid color-mix(in srgb, var(--ih-cy) 25%, transparent); }
+.ih-passo button { width: 32px; height: 100%; color: var(--ih-cy) !important; }
+.ih-passo button:disabled { color: color-mix(in srgb, var(--ih-dim) 30%, transparent) !important; }
+.ih-passo span { width: 32px; text-align: center; font-family: var(--ih-display); font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ih-usar {
+  flex: 1; height: 40px; background: var(--k) !important; color: var(--ih-fundo) !important;
+  font-family: var(--ih-display) !important; font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: .2em;
+  transition: filter .15s;
+}
+.ih-usar:hover:not(:disabled) { filter: brightness(1.1); }
+.ih-usar:disabled { background: color-mix(in srgb, var(--ih-cy) 10%, transparent) !important; color: color-mix(in srgb, var(--ih-dim) 60%, transparent) !important; }
+.ih-quad {
+  position: relative; display: grid !important; place-items: center; width: 40px; height: 40px; overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--ih-cy) 30%, transparent) !important; transition: all .15s;
+}
+.ih-quad:hover, .ih-quad[data-ativo] { border-color: var(--ih-cy) !important; }
+.ih-quad[data-ativo] { background: var(--ih-cy) !important; color: var(--ih-fundo) !important; }
+.ih-descartar { border-color: color-mix(in srgb, var(--ih-perigo) 30%, transparent) !important; color: color-mix(in srgb, var(--ih-perigo) 70%, transparent) !important; }
+.ih-descartar:hover { color: var(--ih-perigo) !important; border-color: color-mix(in srgb, var(--ih-perigo) 60%, transparent) !important; }
+.ih-descartar svg { position: relative; }
+.ih-descartar-enche { position: absolute; left: 0; right: 0; bottom: 0; background: color-mix(in srgb, var(--ih-perigo) 30%, transparent); }
+
+.ih-rodape { flex: none; margin-top: 14px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--ih-cy) 10%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ih-boot, .ih-lin { animation: none; }
+}
+
+/* botão Mercado — âmbar, ao lado da carteira */
+.ih-mercado {
+  display: flex !important; align-items: center; gap: 10px; height: 50px; padding: 0 16px !important;
+  border: 1px solid color-mix(in srgb, var(--ih-amb) 40%, transparent) !important; color: var(--ih-amb) !important; transition: all .15s;
+}
+.ih-mercado:hover { border-color: var(--ih-amb) !important; background: var(--ih-amb) !important; color: var(--ih-fundo) !important; }
+.ih-mercado-rot { font-family: var(--ih-display); font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: .2em; }
+.ih-mercado-tecla { font-family: var(--ih-mono); font-size: 10px; opacity: .6; }

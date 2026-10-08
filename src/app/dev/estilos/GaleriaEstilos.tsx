@@ -32,6 +32,10 @@ import { TrilhaFaccoes } from "../../mesas/[campaignId]/vtt/_turnos/TrilhaFaccoe
 import { VitrineCartaoToken } from "./GaleriaCartaoToken";
 import { DialogFigma } from "./GaleriaInventarioFigma";
 import { InventarioFiel } from "./GaleriaInventarioFiel";
+import { InventarioHudGaleria } from "./GaleriaInventarioHud";
+import { MercadoHud } from "./hud/MercadoHud";
+import { EquipamentoHud } from "./hud/EquipamentoHud";
+import { MagiasHud } from "./hud/MagiasHud";
 import { VitrineCamadas, VitrineDados, VitrineMarcar, VitrineMedir, VitrineMoldura as VitrineMolduraJanela } from "./GaleriaJanelas";
 import { VitrineGaveta, VitrineLadrilho, VitrineParametros } from "./GaleriaCenas";
 import {
@@ -291,6 +295,38 @@ function TrilhaDeFaccoes() {
 }
 
 function montarPecas(campaignId: string | null): Peca[] { return [
+  { chave: "equipamento-hud", grupo: "Console do personagem", rotulo: "Equipamento (HUD)", render: () => (
+    <Secao
+      titulo="Aba Equipamento — versão HUD (prévia)"
+      sub={<>Adaptação do protótipo <code>inventario equip magia/</code>: encaixes ligados por fio ao corpo, gaveta que empurra o palco e ficha do item em modal. A silhueta é a nossa (<code>bodySilhouette.tsx</code>) e os encaixes são os do modelo real. O mesmo componente do Console, com dados de exemplo. Componente: <code>ficha/_console/panels/hud/EquipamentoHud.tsx</code>.</>}
+    >
+      <EquipamentoHud />
+    </Secao>
+  ) },
+  { chave: "magias-hud", grupo: "Console do personagem", rotulo: "Magias (HUD)", render: () => (
+    <Secao
+      titulo="Aba Magias — versão HUD (prévia)"
+      sub={<>Anel das seis vertentes, grimório por nível e leitura completa em modal (custo de mana e PA, CD = 6 + nível, fusão). Cores de vertente canônicas. O mesmo componente do Console, com dados de exemplo. Componente: <code>ficha/_console/panels/hud/MagiasHud.tsx</code>.</>}
+    >
+      <MagiasHud />
+    </Secao>
+  ) },
+  { chave: "mercado-hud", grupo: "Console do personagem", rotulo: "Mercado (HUD)", render: () => (
+    <Secao
+      titulo="Mercado — versão HUD (prévia)"
+      sub={<>Abre de dentro do Inventário (botão Mercado / tecla M). Opção Catálogo: categorias, cartões e ficha do produto. O mesmo componente do Console, com dados de exemplo. Componente: <code>ficha/_console/panels/hud/MercadoHud.tsx</code>.</>}
+    >
+      <MercadoHud />
+    </Secao>
+  ) },
+  { chave: "inventario-hud", grupo: "Console do personagem", rotulo: "Inventário (HUD)", render: () => (
+    <Secao
+      titulo="Aba Inventário — versão HUD (prévia)"
+      sub={<>Adaptação do protótipo do Figma Make (<code>inventario/</code>): régua de espaços, lista, abas numeradas, busca com <code>/</code>, carteira e cartão flutuante. Dados de exemplo e estado local — nada aqui toca ficha. Componente: <code>ficha/_console/panels/inventario/InventarioHud.tsx</code>.</>}
+    >
+      <InventarioHudGaleria />
+    </Secao>
+  ) },
   { chave: "inventario-figma", grupo: "Console do personagem", rotulo: "Inventário (Figma)", render: () => (
     <Secao
       titulo="Aba Inventário — cópia fiel do Figma"
