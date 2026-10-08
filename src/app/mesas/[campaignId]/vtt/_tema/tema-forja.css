@@ -174,7 +174,7 @@
 
 /* ── Caixa do chat · Listrado ─────────────────────────────────── */
 :root[data-tema="forja"] .pn-composer {
-  padding-top: 10px; border-top-color: transparent;
+  padding-top: 14px; border-top-color: transparent;
   background:
     repeating-linear-gradient(-45deg, rgba(0, 212, 255, .16) 0 5px, transparent 5px 10px) top / 100% 4px no-repeat,
     linear-gradient(180deg, rgba(12, 31, 43, .94), rgba(6, 18, 28, .96));
