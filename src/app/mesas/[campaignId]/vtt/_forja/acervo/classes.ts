@@ -11,7 +11,7 @@
  * (`content/v12/db_classe_*`, campos `caracteristicas`, `progressao`,
  * `subclasses`) e este import sai.
  */
-import dossiesPrototipo from "../../../../../../../High-Fidelity Character Creator Exploration/src/forge/classes.json";
+import dossiesPrototipo from "./classesPrototipo.json";
 
 export type Caracteristica = { n: string; d: string };
 export type RankDossie = { r: string; lead: string; feats: Caracteristica[] };
