@@ -10,7 +10,7 @@
  * pendentes, como o servidor já faz) e o texto passa a vir do conteúdo
  * publicado quando o capítulo de magias fechar.
  */
-import grimoriosPrototipo from "../../../../../../../High-Fidelity Character Creator Exploration/src/forge/vertentes.json";
+import grimoriosPrototipo from "./vertentesPrototipo.json";
 import { CORES_VERTENTE, brilhoVertente } from "../../../../../_design/coresVertente";
 
 export type MagiaGrimorio = { n: string; tags: string[]; type: string; range: string; dur: string; req: string; d: string };
