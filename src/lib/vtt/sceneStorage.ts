@@ -1249,6 +1249,25 @@ export async function rotacionarToken(params: {
  * (`set_vtt_token_flags`, migration 0066). Ligada ao menu contextual
  * do token (gerenciamento completo, migration 0073).
  */
+/**
+ * TOK-01 — cria um PN pendente com nome/retrato do token e vincula, numa
+ * transação só (`create_character_from_vtt_token`). Só o narrador; recusa
+ * token que já tem ficha.
+ */
+export async function criarFichaDoToken(params: { tokenId: string; revisionEsperada: number }): Promise<
+  { ok: true; characterId: string; nome: string; revision: number } | { ok: false; erro: string }
+> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("create_character_from_vtt_token", {
+    p_token_id: params.tokenId,
+    p_expected_revision: params.revisionEsperada,
+  });
+  if (error) return { ok: false, erro: error.message };
+  const d = data as { characterId?: string; characterName?: string; tokenRevision?: number } | null;
+  if (!d?.characterId) return { ok: false, erro: "Criação recusada pelo servidor." };
+  return { ok: true, characterId: d.characterId, nome: d.characterName ?? "", revision: d.tokenRevision ?? 0 };
+}
+
 export async function definirFlagsToken(params: {
   tokenId: string;
   bloqueado: boolean;

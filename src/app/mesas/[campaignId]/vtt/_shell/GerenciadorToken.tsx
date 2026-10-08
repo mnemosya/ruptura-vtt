@@ -366,7 +366,7 @@ function usePosicaoJanelaFlutuante(aberto: boolean) {
 
 export function GerenciadorToken({
   aberto, modo, valoresIniciais, personagens, largura, altura, terrenoReal, ocupadosPorOutros,
-  onConfirmarEdicao, onContinuarParaPosicionar, onFechar,
+  onConfirmarEdicao, onContinuarParaPosicionar, onFechar, onCriarFicha,
 }: {
   aberto: boolean;
   modo: "criar" | "editar";
@@ -382,8 +382,15 @@ export function GerenciadorToken({
   /** Só chamado no modo CRIAR — NUNCA toca a rede; só entrega o rascunho validado pra `VttClient.tsx` iniciar o posicionamento. */
   onContinuarParaPosicionar: (valores: ValoresFormularioToken) => void;
   onFechar: () => void;
+  /**
+   * TOK-01 — só no modo EDITAR, só para o narrador. Cria a ficha (PN) e
+   * vincula NO SERVIDOR na hora, numa transação; devolve o id da ficha ou
+   * a mensagem de erro. O mesmo fluxo do item "Criar ficha" do menu.
+   */
+  onCriarFicha?: () => Promise<{ ok: true; characterId: string } | { ok: false; erro: string }>;
 }) {
   const [valores, setValores] = useState(valoresIniciais);
+  const [criandoFicha, setCriandoFicha] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [siglaEditadaManualmente, setSiglaEditadaManualmente] = useState(siglaJaEditada(modo, valoresIniciais));
@@ -802,6 +809,22 @@ export function GerenciadorToken({
               {personagensRotulados.map((p) => <option key={p.id} value={p.id}>{p.rotulo}</option>)}
             </select>
           </label>
+          {modo === "editar" && onCriarFicha && !valoresIniciais.characterId && !valores.characterId && (
+            <button type="button" className="rv-btn rv-btn--ghost" data-testid="token-criar-ficha" disabled={criandoFicha}
+              onClick={async () => {
+                setCriandoFicha(true);
+                setErro(null);
+                try {
+                  const r = await onCriarFicha();
+                  if (r.ok) setValores((v) => ({ ...v, characterId: r.characterId }));
+                  else setErro(r.erro);
+                } finally {
+                  setCriandoFicha(false);
+                }
+              }}>
+              {criandoFicha ? "Criando ficha…" : "Criar ficha (PN) com o nome e o retrato deste token"}
+            </button>
+          )}
           {/* Os dois interruptores lado a lado, no lugar dos cartões de
               duas linhas: são duas chaves de liga/desliga, não duas
               decisões que precisem de parágrafo. O que cada uma faz
