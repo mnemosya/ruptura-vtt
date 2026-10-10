@@ -171,7 +171,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
       <header style={{ display: "flex", alignItems: "center", gap: 24, padding: "14px 24px", borderBottom: "1px solid rgba(0,212,255,.1)" }}>
         <div>
           <Tag style={{ color: AMB, opacity: .8 }}>// lista de mercadorias</Tag>
-          <h2 className="hx-display" style={{ margin: 0, fontSize: 28, fontWeight: 900, textTransform: "uppercase", lineHeight: 1 }}>Mercado<span className="hx-amb">.</span></h2>
+          <h2 className="hx-display" style={{ margin: 0, fontSize: 28, fontWeight: 900, textTransform: "uppercase", lineHeight: 1 }}>Mercado noturno<span className="hx-amb">.</span></h2>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 24 }}>
           <div style={{ textAlign: "right" }}><Tag className="hx-dim">mochila</Tag><div className="hx-display" style={{ fontSize: 18, fontWeight: 700 }}>{usados}<span className="hx-dim">/{capacidade}</span></div></div>

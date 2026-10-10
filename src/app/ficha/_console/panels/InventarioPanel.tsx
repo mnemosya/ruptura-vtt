@@ -241,7 +241,8 @@ function itemDoHud(api: ConsoleApi, instancia: InventoryItemInstance): ItemHud {
  */
 const GRUPOS_MERCADO: { prefixo: string; nome: string; glifo: string }[] = [
   { prefixo: "acessorios", nome: "Acessórios", glifo: "M4 14v-2a8 8 0 0 1 16 0v2M4 14h3v6H4v-6Zm13 0h3v6h-3v-6Z" },
-  { prefixo: "armaduras_e_escudos", nome: "Armaduras e escudos", glifo: "M12 2 4 5v7c0 5 3.5 8 8 10 4.5-2 8-5 8-10V5l-8-3Z" },
+  { prefixo: "armaduras", nome: "Armaduras", glifo: "M12 2 4 5v7c0 5 3.5 8 8 10 4.5-2 8-5 8-10V5l-8-3Zm0 0v20M4 10h16" },
+  { prefixo: "escudos", nome: "Escudos", glifo: "M4 3h16v9c0 5-4 8-8 10-4-2-8-5-8-10V3Zm8 4v10m-4-5h8" },
   { prefixo: "armas", nome: "Armas", glifo: "M3 21 14 10m0 0 3-7 4 4-7 3Zm-9 7 3 3M6 15l3 3" },
   { prefixo: "dispositivos_tecnologicos", nome: "Dispositivos tecnológicos", glifo: "M3 8h18v10H3V8Zm4-4h10M7 13h2m3 0h5" },
   { prefixo: "drones_e_robos", nome: "Drones e robôs", glifo: "M7 8h10v9H7V8Zm3-4h4v4h-4V4Zm-6 8h3m10 0h3M10 12h.01M14 12h.01M9 20h6" },
@@ -257,15 +258,19 @@ const GRUPOS_MERCADO: { prefixo: string; nome: string; glifo: string }[] = [
 
 /** Subcategoria pela categoria, quando o grupo junta mais de uma. */
 const SUB_DA_CATEGORIA: Record<string, string> = {
-  armadura: "Armaduras", escudo: "Escudos",
   modulo_escalpo: "Módulos de escalpo", veneno: "Venenos", dispositivo: "Dispositivos",
   veiculo: "Veículos", modulo_veicular: "Módulos veiculares", mobilidade: "Equipamentos de mobilidade",
 };
 
+/** "ARMAS DE FOGO" → "Armas de fogo". */
+const frase = (t: string) => t.charAt(0).toLocaleUpperCase("pt-BR") + t.slice(1).toLocaleLowerCase("pt-BR");
+/** Leves → médias → pesadas, pelo fim do nome (cobre "médias" e "médios"). */
+const ORDEM_PESO = ["leves", "dias", "dios", "pesadas", "pesados"];
+
 /** Ordem das subcategorias na lista lateral; as não listadas vêm depois. */
 const ORDEM_SUB = [
   "Armas corpo a corpo", "Armas de arremesso e disparo", "Armas de fogo", "Armas de energia",
-  "Armaduras", "Escudos", "Equipamentos de mobilidade", "Veículos", "Módulos veiculares",
+  "Equipamentos de mobilidade", "Veículos", "Módulos veiculares",
 ];
 
 /**
@@ -282,16 +287,24 @@ const MUNICAO: Record<string, { sub: string; tipo: string; ordem: number }> = {
 };
 
 function grupoESubDoModelo(modelo: ItemContent): Pick<ProdutoHud, "grupo" | "sub" | "subOrdem" | "tipo"> {
+  /* Armaduras e escudos vêm da mesma seção do conteúdo
+     (`armaduras_e_escudos_…`), mas são grupos separados no Mercado. O
+     subtipo do conteúdo vira a subcategoria ("ARMADURAS LEVES" → "Armaduras leves"). */
+  if (modelo.categoria === "armadura" || modelo.categoria === "escudo") {
+    const g = GRUPOS_MERCADO.find((x) => x.prefixo === (modelo.categoria === "armadura" ? "armaduras" : "escudos"))!;
+    const sub = modelo.subtipo ? frase(modelo.subtipo) : null;
+    return { grupo: { id: g.prefixo, nome: g.nome, glifo: g.glifo }, sub, subOrdem: sub ? ORDEM_PESO.findIndex((p) => sub.endsWith(p)) : undefined };
+  }
   if (modelo.categoria === "municao") {
     const g = GRUPOS_MERCADO.find((x) => x.prefixo === "municao")!;
     const m = modelo.subtipo ? MUNICAO[modelo.subtipo] : undefined;
     return { grupo: { id: g.prefixo, nome: g.nome, glifo: g.glifo }, sub: m?.sub ?? null, subOrdem: m?.ordem, tipo: m?.tipo ?? null };
   }
-  const g = GRUPOS_MERCADO.find((x) => x.prefixo !== "municao" && modelo.slug.startsWith(`${x.prefixo}_`));
+  const g = GRUPOS_MERCADO.find((x) => !["municao", "armaduras", "escudos"].includes(x.prefixo) && modelo.slug.startsWith(`${x.prefixo}_`));
   if (!g) return {};
   // Armas se dividem pelo subtipo do conteúdo ("ARMAS DE FOGO" → "Armas de fogo").
   const sub = modelo.categoria === "arma" && modelo.subtipo
-    ? modelo.subtipo.charAt(0).toLocaleUpperCase("pt-BR") + modelo.subtipo.slice(1).toLocaleLowerCase("pt-BR")
+    ? frase(modelo.subtipo)
     : g.prefixo === "dispositivos_tecnologicos" ? null : SUB_DA_CATEGORIA[modelo.categoria] ?? null;
   const i = sub ? ORDEM_SUB.indexOf(sub) : -1;
   return { grupo: { id: g.prefixo, nome: g.nome, glifo: g.glifo }, sub, subOrdem: i >= 0 ? i : undefined };

@@ -20,7 +20,7 @@ import { createPortal } from "react-dom";
 import "./janela-mercado.css";
 
 /** Duração da saída em `janela-mercado.css` — só desmonta depois dela. */
-const SAIDA_MS = 200;
+const SAIDA_MS = 500;
 
 export function JanelaMercado({ onFechar: fecharDeVez, children }: { onFechar: () => void; children: (fechar: () => void) => ReactNode }) {
   const [montado, setMontado] = useState(false);
@@ -73,7 +73,7 @@ export function JanelaMercado({ onFechar: fecharDeVez, children }: { onFechar: (
         tabIndex={-1}
         role="dialog"
         aria-modal="true"
-        aria-label="Mercado"
+        aria-label="Mercado noturno"
         className="jm-janela"
       >
         {children(onFechar)}
