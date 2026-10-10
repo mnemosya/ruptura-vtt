@@ -333,7 +333,7 @@
   background: var(--pn-inset);
 }
 .pn-modulo-ico {
-  flex: none; display: flex; align-items: center; justify-content: center; padding: 0 5px;
+  flex: none; display: flex; align-items: center; justify-content: center; aspect-ratio: 1; padding: 0;
   border-right: 1px solid var(--pn-a-line);
   background: var(--pn-a-soft); color: var(--pn-a);
 }
