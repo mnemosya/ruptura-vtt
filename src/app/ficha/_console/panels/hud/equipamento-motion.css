@@ -1,0 +1,92 @@
+/* Um único progresso controla a borda da revelação e a posição da luz. */
+@property --hx-eq-progresso {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+.hx-eq-motion {
+  animation: eq-leitura 1500ms linear 60ms both;
+}
+/* Abertura do módulo: leitura do corpo → conexões → encaixes.
+   Só apresentação; nenhuma etapa bloqueia os botões ou muda o layout. */
+.rc-eq-outer .rc-modcab {
+  animation: eq-modulo 120ms ease-out both;
+}
+.hx-eq-motion.hx-grade::before,
+.hx-eq-motion > .hx-scan {
+  animation: eq-textura 120ms ease-out backwards;
+}
+.hx-eq-corpo {
+  clip-path: inset(0 0 calc((1 - var(--hx-eq-progresso)) * 100%) 0);
+}
+.hx-eq-varredura {
+  animation: eq-varredura 1680ms linear 60ms both;
+  opacity: 0;
+  transform: translateY(calc(var(--hx-eq-progresso) * 613px - 44px));
+}
+.hx-eq-fio {
+  animation: eq-fio 180ms cubic-bezier(.2,.8,.2,1) var(--eq-fio-delay) backwards;
+}
+.hx-eq-ponto {
+  animation: eq-modulo 100ms ease-out var(--eq-fio-delay) backwards;
+}
+.hx-eq-slot {
+  --eq-deslocamento: -6px;
+  animation: eq-slot 190ms cubic-bezier(.2,.8,.2,1) var(--eq-slot-delay) backwards;
+}
+.hx-eq-slot[data-lado="d"] { --eq-deslocamento: 6px; }
+.hx-eq-slot .hx-encaixe:not([data-vazio])::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  border: 1px solid var(--eq-item-cor);
+  box-shadow: 0 0 12px -3px var(--eq-item-cor), inset 0 0 12px -5px var(--eq-item-cor);
+  opacity: 0;
+  animation: eq-confirmacao 140ms ease-out calc(var(--eq-slot-delay) + 100ms) backwards;
+}
+.hx-eq-instrucao {
+  animation: eq-modulo 140ms ease-out 1600ms backwards;
+}
+[data-testid="console-tab-equipamentos"][aria-selected="true"] > svg {
+  animation: eq-tab 200ms ease-out;
+}
+
+@keyframes eq-modulo { from { opacity: 0; } }
+@keyframes eq-textura { from { opacity: 0; } }
+@keyframes eq-leitura {
+  from { --hx-eq-progresso: 0; }
+  to { --hx-eq-progresso: 1; }
+}
+@keyframes eq-varredura {
+  0% { opacity: 0; }
+  7.142857% { opacity: 1; }
+  /* A leitura termina em 1500 ms; o fade ocupa só os 180 ms seguintes. */
+  89.285714% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes eq-fio { from { stroke-dasharray: 1; stroke-dashoffset: 1; } to { stroke-dasharray: 1; stroke-dashoffset: 0; } }
+@keyframes eq-slot {
+  from { opacity: 0; transform: translateX(var(--eq-deslocamento)); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes eq-confirmacao { from { opacity: .65; } to { opacity: 0; } }
+@keyframes eq-tab { 35% { filter: drop-shadow(0 0 5px #00d4ff); } }
+
+/* A primeira interação encerra a entrada até a aba ser remontada. */
+.hx-eq-motion[data-eq-entrada-encerrada],
+.hx-eq-motion[data-eq-entrada-encerrada] :is(.hx-eq-fio, .hx-eq-ponto, .hx-eq-slot, .hx-eq-varredura, .hx-eq-instrucao),
+.hx-eq-motion[data-eq-entrada-encerrada] .hx-encaixe::after {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hx-eq-motion { animation: none; }
+  .rc-eq-outer .rc-modcab,
+  .hx-eq-motion.hx-grade::before,
+  .hx-eq-motion > .hx-scan,
+  .hx-eq-motion :is(.hx-eq-corpo, .hx-eq-fio, .hx-eq-ponto, .hx-eq-slot, .hx-eq-instrucao) {
+    animation: eq-modulo 100ms ease-out backwards;
+  }
+  .hx-eq-motion .hx-eq-varredura,
+  .hx-eq-motion .hx-encaixe::after,
+  [data-testid="console-tab-equipamentos"][aria-selected="true"] > svg { animation: none; }
+  .hx-eq-motion *, .hx-eq-motion *::before, .hx-eq-motion *::after { transition: none !important; }
+}

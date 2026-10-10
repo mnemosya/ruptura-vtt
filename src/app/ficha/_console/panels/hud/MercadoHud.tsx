@@ -14,9 +14,10 @@
  * Inventário.
  */
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { oxanium } from "../../../../_design/oxanium";
 import "./hud-base.css";
+import "./mercado-layout.css";
 
 const AMB = "#ff8a1f", CASCO = "#081925", PERIGO = "#ff5f74", OK = "#22d3aa";
 const RAR: Record<string, string> = { comum: "#7f95b3", incomum: OK, raro: "#8b5cf6", "muito raro": "#8b5cf6", lendario: AMB, lendário: AMB };
@@ -107,8 +108,65 @@ const separarTipo = (nome: string): { titulo: string; tipo: string | null } => {
   return m ? { titulo: m[1], tipo: m[2] } : { titulo: nome, tipo: null };
 };
 const sem = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+/** Cada grupo do mercado tem uma cor própria, independente da vertente. */
+const CORES_CATEGORIAS: Record<string, string> = {
+  acessorios: "#5ccbb3",
+  armaduras: "#f5a200",
+  "armaduras e escudos": "#f5a200",
+  escudos: "#7894f4",
+  armas: "#e0455f",
+  "dispositivos tecnologicos": "#35c7d8",
+  "drones e robos": "#b2ce62",
+  escalpos: "#c578d9",
+  explosivos: "#f07a1f",
+  farmacia: "#4fb36e",
+  "ferramentas e utilidades": "#ddd27b",
+  municao: "#c3a06c",
+  mobilidade: "#569fdf",
+  trajes: "#c88456",
+  vertinas: "#8b5cf6",
+};
+const estiloGrupo = (nome: string, vertente: string): React.CSSProperties | undefined => {
+  const cor = CORES_CATEGORIAS[sem(nome)] ?? (vertente === "nenhuma" ? "#8eaef0" : undefined);
+  return cor ? { ["--k" as string]: cor } : undefined;
+};
 
 export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onFechar }: PropsMercadoHud) {
+  const raiz = useRef<HTMLDivElement>(null);
+  const botaoCategorias = useRef<HTMLButtonElement>(null);
+  const tituloDetalhe = useRef<HTMLHeadingElement>(null);
+  const ultimoCartao = useRef<HTMLButtonElement | null>(null);
+  const navId = useId();
+  const [layout, setLayout] = useState<"amplo" | "medio" | "compacto">("amplo");
+  const [categoriasAbertas, setCategoriasAbertas] = useState(false);
+  const [categoriasOcultas, setCategoriasOcultas] = useState(false);
+  const categoriasVisiveis = layout === "amplo" ? !categoriasOcultas : categoriasAbertas;
+  const [detalheAberto, setDetalheAberto] = useState(false);
+  useEffect(() => {
+    const el = raiz.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const largura = entry.contentRect.width;
+      setLayout(largura < 720 ? "compacto" : largura < 1120 ? "medio" : "amplo");
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    if (layout === "compacto" && detalheAberto) tituloDetalhe.current?.focus();
+  }, [layout, detalheAberto]);
+  useEffect(() => {
+    if (categoriasAbertas && layout !== "amplo") raiz.current?.querySelector<HTMLButtonElement>(".hm-categorias button")?.focus();
+  }, [categoriasAbertas, layout]);
+  const fecharCategorias = () => {
+    if (layout === "amplo") setCategoriasOcultas(true);
+    else setCategoriasAbertas(false);
+    requestAnimationFrame(() => botaoCategorias.current?.focus());
+  };
+  const voltarCatalogo = () => {
+    setDetalheAberto(false);
+    requestAnimationFrame(() => ultimoCartao.current?.focus());
+  };
   const grupoDe = (p: ProdutoHud) => p.grupo?.id ?? p.categoria;
   const categorias = useMemo(() => {
     const m = new Map<string, { id: string; nome: string; vertente: string; n: number; g: string; subs: Map<string, number> }>();
@@ -154,7 +212,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
     : categorias.filter((c) => !cat || c.id === cat)
         .map((c) => ({ c, xs: lista.filter((p) => grupoDe(p) === c.id).sort(porNome) }))
         .filter((g) => g.xs.length);
-  const abrirGrupo = (id: string | null) => { setCat(id); setSub(null); };
+  const abrirGrupo = (id: string | null) => { setCat(id); setSub(null); setSel(null); setN(1); };
 
   const custo = sel ? sel.preco * n : 0;
   const cabe = !!sel && usados + sel.espacos * n <= capacidade;
@@ -165,24 +223,26 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
   };
 
   return (
-    <div className={`hx ${oxanium.variable}`} style={{ position: "relative", display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", border: "1px solid rgba(255,138,31,.4)", boxShadow: "0 0 0 6px var(--hx-abismo), 0 0 0 7px rgba(255,138,31,.13), 0 60px 120px #000" }}
+    <div ref={raiz} className={`hx hm-mercado ${oxanium.variable}`} data-detalhe={detalheAberto || undefined} data-categorias={categoriasAbertas || undefined} data-categorias-ocultas={categoriasOcultas || undefined} style={{ position: "relative", display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", border: "1px solid rgba(255,138,31,.4)", boxShadow: "0 0 0 6px var(--hx-abismo), 0 0 0 7px rgba(255,138,31,.13), 0 60px 120px #000" }}
       onKeyDown={(e) => { if (e.key === "Escape" && onFechar) { e.stopPropagation(); onFechar(); } }}>
       <span style={{ position: "absolute", left: 0, right: 0, top: 0, height: 2, background: AMB, boxShadow: `0 0 14px ${AMB}` }} />
-      <header style={{ display: "flex", alignItems: "center", gap: 24, padding: "14px 24px", borderBottom: "1px solid rgba(0,212,255,.1)" }}>
-        <div>
+      <header className="hm-cabecalho">
+        <div className="hm-identidade">
           <Tag style={{ color: AMB, opacity: .8 }}>// lista de mercadorias</Tag>
-          <h2 className="hx-display" style={{ margin: 0, fontSize: 28, fontWeight: 900, textTransform: "uppercase", lineHeight: 1 }}>Mercado noturno<span className="hx-amb">.</span></h2>
+          <h2 className="hx-display hm-titulo">Mercado noturno<span className="hx-amb">.</span></h2>
         </div>
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 24 }}>
+        <div className="hm-carteira">
           <div style={{ textAlign: "right" }}><Tag className="hx-dim">mochila</Tag><div className="hx-display" style={{ fontSize: 18, fontWeight: 700 }}>{usados}<span className="hx-dim">/{capacidade}</span></div></div>
           <div style={{ textAlign: "right" }}><Tag style={{ color: AMB, opacity: .7 }}>aretz</Tag><div className="hx-display" style={{ fontSize: 22, fontWeight: 900 }}><Aretz /> {fmt(saldo)}</div></div>
-          {onFechar && <button type="button" aria-label="Fechar mercado" className="hx-fechar-quad" onClick={onFechar}><Svg d="M6 6l12 12M18 6 6 18" tam={16} /></button>}
         </div>
+        {onFechar && <button type="button" aria-label="Fechar mercado" className="hx-fechar-quad hm-fechar" onClick={onFechar}><Svg d="M6 6l12 12M18 6 6 18" tam={16} /></button>}
       </header>
 
-      <div style={{ display: "grid", minHeight: 0, flex: 1, gridTemplateColumns: "minmax(220px, 300px) minmax(0, 1fr) minmax(320px, 420px)" }}>
-        <nav className="hx-semsb" aria-label="Categorias" style={{ overflowY: "auto", borderRight: "1px solid rgba(0,212,255,.1)", padding: "16px 12px" }}>
-          <button type="button" onClick={() => abrirGrupo(null)} className="hx-cat-linha" data-ativo={!cat || undefined} style={{ marginBottom: 8 }}>
+      <div className="hm-corpo">
+        {layout !== "amplo" && categoriasAbertas && <button type="button" className="hm-filtro-fundo" aria-label="Fechar categorias" onClick={fecharCategorias} />}
+        <nav id={navId} className="hm-categorias" aria-label="Categorias" inert={!categoriasVisiveis}>
+          <div className="hm-categorias-cab"><Tag className="hx-amb">Categorias</Tag><button type="button" className="hm-recolher" data-tooltip="Esconder categorias" aria-label="Esconder painel de categorias" onClick={fecharCategorias}><Svg d="M3 4h18v16H3V4Zm5 0v16m8-12-4 4 4 4m-4-4h7" tam={18} /></button></div>
+          <button type="button" onClick={() => { abrirGrupo(null); if (layout !== "amplo") fecharCategorias(); }} className="hx-cat-linha" data-ativo={!cat || undefined} style={{ marginBottom: 8 }}>
             <span className="hx-display" style={{ flex: 1, fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".14em" }}>Tudo</span><Tag className="hx-dim">{produtos.length}</Tag>
           </button>
           {categorias.map((c) => {
@@ -190,19 +250,20 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
             const temSubs = c.subs.size > 0;
             return (
               <div key={c.id}>
-                <button type="button" onClick={() => abrirGrupo(on ? null : c.id)} className="hx-cat-linha"
-                  data-ativo={on || undefined} data-vertente={c.vertente} aria-expanded={temSubs ? on : undefined}>
+                <button type="button" onClick={() => { abrirGrupo(on ? null : c.id); if (!temSubs && layout !== "amplo") fecharCategorias(); }} className="hx-cat-linha"
+                  data-ativo={on || undefined} data-vertente={c.vertente} style={estiloGrupo(c.nome, c.vertente)} aria-expanded={temSubs ? on : undefined}>
                   <span className="hx-cat-fio" />
                   <span className="hx-cat-ico"><Svg d={c.g} tam={18} /></span>
                   <span style={{ flex: 1, fontSize: 15, fontWeight: 600, lineHeight: 1.2 }}>{c.nome}</span>
-                  {temSubs && <Svg d={on ? "m6 9 6 6 6-6" : "m9 6 6 6-6 6"} tam={12} style={{ opacity: .6 }} />}
                   <Tag className="hx-dim" style={{ opacity: .7 }}>{c.n}</Tag>
+                  {temSubs && <Svg d={on ? "m6 9 6 6 6-6" : "m9 6 6 6-6 6"} tam={12} style={{ opacity: .6 }} />}
                 </button>
                 {on && temSubs && (
-                  <div className="hx-subs" data-vertente={c.vertente}>
+                  <div className="hx-subs" data-vertente={c.vertente} style={estiloGrupo(c.nome, c.vertente)}>
+                    <button type="button" className="hx-sub-linha" data-ativo={!sub || undefined} onClick={() => { setSub(null); if (layout !== "amplo") fecharCategorias(); }}>Todos de {c.nome}</button>
                     {[...c.subs.entries()].map(([nome, qtd]) => (
                       <button key={nome} type="button" className="hx-sub-linha" data-ativo={sub === nome || undefined}
-                        onClick={() => setSub(sub === nome ? null : nome)}>
+                        onClick={() => { setSub(sub === nome ? null : nome); setSel(null); setN(1); if (layout !== "amplo") fecharCategorias(); }}>
                         <span className="hx-sub-ponto" />
                         <span style={{ flex: 1 }}>{nome}</span>
                         <Tag className="hx-dim" style={{ opacity: .6 }}>{qtd}</Tag>
@@ -215,27 +276,30 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
           })}
         </nav>
 
-        <div style={{ display: "flex", minHeight: 0, flexDirection: "column" }}>
-          <div style={{ padding: "16px 24px 0" }}>
+        <div className="hm-catalogo" inert={(layout === "compacto" && detalheAberto) || (layout !== "amplo" && categoriasAbertas)}>
+          <div className="hm-ferramentas">
+            <button ref={botaoCategorias} type="button" className="hm-filtro" hidden={categoriasVisiveis} data-tooltip="Mostrar categorias" aria-label="Mostrar categorias" aria-expanded={categoriasVisiveis} aria-controls={navId} onClick={() => { if (layout === "amplo") setCategoriasOcultas(false); else setCategoriasAbertas(true); }}>
+              <Svg d={categoriasVisiveis ? "M3 4h18v16H3V4Zm5 0v16m8-12-4 4 4 4m-4-4h7" : "M3 4h18v16H3V4Zm5 0v16m5-12 4 4-4 4m4-4h-7"} tam={20} />
+            </button>
             <label className="hx-busca">
               <Svg d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm9 16-4-4" tam={16} />
               <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar mercadoria…" aria-label="Buscar mercadoria" />
             </label>
           </div>
-          <div className="hx-semsb" style={{ minHeight: 0, flex: 1, overflowY: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 28 }}>
+          <div className="hm-lista">
             {grupos.map(({ c, xs }) => (
-              <section key={c.id} data-vertente={c.vertente}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, color: "var(--k)" }}>
+              <section key={c.id} data-vertente={c.vertente} style={estiloGrupo(xs[0].grupo?.nome ?? xs[0].categoriaRotulo, c.vertente)}>
+                <div className="hm-secao-titulo" style={{ color: "var(--k)" }}>
                   <Svg d={c.g} tam={16} />
                   <span className="hx-display" style={{ fontSize: 14, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".18em" }}>{c.nome}</span>
                   <Tag className="hx-dim" style={{ opacity: .6 }}>{xs.length}</Tag>
                   <span style={{ height: 1, flex: 1, background: "linear-gradient(90deg, color-mix(in srgb, var(--k) 27%, transparent), transparent)" }} />
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+                <div className="hm-grade">
                   {xs.map((p) => {
                     const on = p.slug === sel?.slug, pobre = p.preco > saldo;
                     return (
-                      <button key={p.slug} type="button" onClick={() => { setSel(p.slug); setN(1); }} className="hx-produto" data-ativo={on || undefined} aria-pressed={on}>
+                      <button key={p.slug} type="button" onClick={(e) => { ultimoCartao.current = e.currentTarget; setSel(p.slug); setN(1); setDetalheAberto(true); }} className="hx-produto" data-ativo={on || undefined} aria-pressed={on}>
                         <span className="hx-produto-arte">
                           <span className="hx-produto-trama" />
                           <Svg d={p.glifo ?? glifo(p.categoria)} tam={52} cor="var(--k)" traco={1.1} style={{ opacity: .85, filter: "drop-shadow(0 0 10px color-mix(in srgb, var(--k) 50%, transparent))" }} />
@@ -246,10 +310,10 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                           )}
                         </span>
                         <span className="hx-produto-fio" />
-                        <span style={{ display: "block", borderTop: "1px solid rgba(0,212,255,.1)", background: CASCO, padding: "10px 12px", textAlign: "left" }}>
-                          <span className="hx-display" style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 14, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".03em" }}>{separarTipo(p.nome).titulo}</span>
-                          <span style={{ marginTop: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            <span className="hx-display" style={{ fontSize: 15, fontWeight: 700, color: pobre ? "var(--hx-dim)" : undefined, textDecoration: pobre ? "line-through" : undefined }}><Aretz /> {fmt(p.preco)}</span>
+                        <span className="hm-card-info">
+                          <span className="hx-display hm-card-nome">{separarTipo(p.nome).titulo}</span>
+                          <span className="hm-card-preco hx-display" style={{ color: pobre ? "var(--hx-dim)" : undefined, textDecoration: pobre ? "line-through" : undefined }}><Aretz /> {fmt(p.preco)}</span>
+                          <span className="hm-card-espacos">
                             <Espacos n={p.espacos} />
                           </span>
                         </span>
@@ -264,51 +328,54 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
         </div>
 
         {sel ? (
-          <aside key={sel.slug} className="hx-boot" data-vertente={sel.vertente} style={{ display: "flex", minHeight: 0, flexDirection: "column", borderLeft: "1px solid rgba(0,212,255,.1)", background: CASCO }}>
-            {/* Cabeçalho no fluxo: cresce com o título em vez de subir por
-                cima da categoria. O título vai até perto do ícone, e o tipo
-                entre parênteses ("AS-10 Overdrive (Pistola pesada)") vira
-                subtítulo. */}
-            <div style={{ position: "relative", minHeight: 120, flexShrink: 0, overflow: "hidden", padding: "12px 16px 14px", display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 14, background: `radial-gradient(ellipse at 70% 50%, color-mix(in srgb, var(--k) 35%, ${CASCO}) 0%, ${CASCO} 70%)` }}>
-              <span style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(135deg, color-mix(in srgb, var(--k) 12%, transparent) 0 1px, transparent 1px 7px)" }} />
-              <span style={{ position: "absolute", right: -8, top: "50%", transform: "translateY(-50%)", opacity: .8 }}><Svg d={sel.glifo ?? glifo(sel.categoria)} tam={140} cor="var(--k)" traco={.9} style={{ filter: "drop-shadow(0 0 24px var(--k))" }} /></span>
-              <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
-                <Tag style={{ color: "var(--k)" }}>{sel.categoriaRotulo}</Tag>
-                {sel.raridade && <><span style={{ width: 4, height: 4, transform: "rotate(45deg)", background: corRaridade(sel.raridade) }} /><Tag style={{ color: corRaridade(sel.raridade) }}>{sel.raridade}</Tag></>}
+          <aside className="hm-detalhe" data-vertente={sel.vertente} style={estiloGrupo(sel.grupo?.nome ?? sel.categoriaRotulo, sel.vertente)} inert={(layout === "compacto" && !detalheAberto) || (layout !== "amplo" && categoriasAbertas)} aria-label="Detalhes do produto">
+            <button type="button" className="hm-voltar" onClick={voltarCatalogo}><Svg d="m14 5-7 7 7 7" tam={16} />Voltar ao catálogo</button>
+            <div key={sel.slug} className="hm-leitura">
+              {/* Cabeçalho no fluxo: cresce com o título em vez de subir por
+                  cima da categoria. O título vai até perto do ícone, e o tipo
+                  entre parênteses ("AS-10 Overdrive (Pistola pesada)") vira
+                  subtítulo. */}
+              <div className="hm-produto-cab" style={{ background: `radial-gradient(ellipse at 70% 50%, color-mix(in srgb, var(--k) 35%, ${CASCO}) 0%, ${CASCO} 70%)` }}>
+                <span style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(135deg, color-mix(in srgb, var(--k) 12%, transparent) 0 1px, transparent 1px 7px)" }} />
+                <span className="hm-produto-glifo"><Svg d={sel.glifo ?? glifo(sel.categoria)} tam={140} cor="var(--k)" traco={.9} style={{ filter: "drop-shadow(0 0 24px var(--k))" }} /></span>
+                <div className="hm-produto-tags">
+                  <Tag style={{ color: "var(--k)" }}>{sel.categoriaRotulo}</Tag>
+                  {sel.raridade && <><span style={{ width: 4, height: 4, transform: "rotate(45deg)", background: corRaridade(sel.raridade) }} /><Tag style={{ color: corRaridade(sel.raridade) }}>{sel.raridade}</Tag></>}
+                </div>
+                {(() => {
+                  const separado = separarTipo(sel.nome);
+                  const titulo = separado.titulo, tipo = sel.tipo ?? separado.tipo;
+                  return (
+                    <div className="hm-produto-identidade">
+                      <h3 ref={tituloDetalhe} tabIndex={-1} className="hx-display hm-produto-nome">{titulo}</h3>
+                      {tipo && <Tag style={{ display: "block", marginTop: 6, color: "var(--hx-ice)", opacity: .7 }}>{tipo}</Tag>}
+                    </div>
+                  );
+                })()}
               </div>
-              {(() => {
-                const separado = separarTipo(sel.nome);
-                const titulo = separado.titulo, tipo = sel.tipo ?? separado.tipo;
-                return (
-                  <div style={{ position: "relative", maxWidth: "calc(100% - 96px)" }}>
-                    <h3 className="hx-display" style={{ margin: 0, fontSize: 26, fontWeight: 900, textTransform: "uppercase", lineHeight: .95, letterSpacing: ".02em", textShadow: "0 2px 0 #000", overflowWrap: "anywhere" }}>{titulo}</h3>
-                    {tipo && <Tag style={{ display: "block", marginTop: 6, color: "var(--hx-ice)", opacity: .7 }}>{tipo}</Tag>}
+              <div className="hm-descricao">
+                {sel.descricao && <div style={{ fontSize: 15, lineHeight: 1.35, color: "var(--hx-texto)" }}>{sel.descricao}</div>}
+                {sel.destaque && (
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 12 }}>
+                    <span className="hx-display" style={{ fontSize: 40, fontWeight: 900, lineHeight: .85, color: "var(--k)" }}>{sel.destaque.valor}</span>
+                    <div style={{ paddingBottom: 2, lineHeight: 1.2 }}><Tag className="hx-dim">{sel.destaque.rotulo}</Tag><div style={{ fontSize: 14, color: "var(--hx-texto)" }}>{sel.destaque.sufixo}</div></div>
                   </div>
-                );
-              })()}
-            </div>
-            <div className="hx-semsb" style={{ minHeight: 0, flex: 1, overflowY: "auto", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 16 }}>
-              {sel.descricao && <div style={{ fontSize: 15, lineHeight: 1.35, color: "var(--hx-texto)" }}>{sel.descricao}</div>}
-              {sel.destaque && (
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 12 }}>
-                  <span className="hx-display" style={{ fontSize: 40, fontWeight: 900, lineHeight: .85, color: "var(--k)" }}>{sel.destaque.valor}</span>
-                  <div style={{ paddingBottom: 2, lineHeight: 1.2 }}><Tag className="hx-dim">{sel.destaque.rotulo}</Tag><div style={{ fontSize: 14, color: "var(--hx-texto)" }}>{sel.destaque.sufixo}</div></div>
+                )}
+                <div>
+                  <Stat k="Espaços / item" v={sel.espacos} />
+                  {sel.pa != null && <Stat k="Custo" v={`${sel.pa} PA`} />}
+                  {sel.municao != null && <Stat k="Munição" v={sel.municao} />}
+                  {sel.cargas != null && <Stat k="Cargas" v={sel.cargas} />}
+                  {sel.linhas?.map((l) => <Stat key={l.rotulo} k={l.rotulo} v={l.valor} />)}
                 </div>
-              )}
-              <div>
-                <Stat k="Espaços / item" v={sel.espacos} />
-                {sel.pa != null && <Stat k="Custo" v={`${sel.pa} PA`} />}
-                {sel.municao != null && <Stat k="Munição" v={sel.municao} />}
-                {sel.cargas != null && <Stat k="Cargas" v={sel.cargas} />}
-                {sel.linhas?.map((l) => <Stat key={l.rotulo} k={l.rotulo} v={l.valor} />)}
+                {sel.propriedades && sel.propriedades.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {sel.propriedades.map((x) => <span key={x} className="hx-display" style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--k) 15%, transparent)", color: "var(--k)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em" }}>{x}</span>)}
+                  </div>
+                )}
               </div>
-              {sel.propriedades && sel.propriedades.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {sel.propriedades.map((x) => <span key={x} className="hx-display" style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--k) 15%, transparent)", color: "var(--k)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em" }}>{x}</span>)}
-                </div>
-              )}
             </div>
-            <div style={{ borderTop: "1px solid rgba(255,138,31,.25)", background: "rgba(0,0,0,.3)", padding: 16 }}>
+            <div className="hm-compra">
               <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
                 <div className="hx-passo">
                   <button type="button" disabled={n <= 1} onClick={() => setN(n - 1)} aria-label="Menos">−</button>
@@ -330,7 +397,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
               <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between" }}><Tag className="hx-dim" style={{ opacity: .7 }}>saldo após</Tag><Tag className="hx-dim">₳ {fmt(Math.max(0, saldo - custo))}</Tag></div>
             </div>
           </aside>
-        ) : <aside style={{ borderLeft: "1px solid rgba(0,212,255,.1)" }} />}
+        ) : <aside className="hm-detalhe" />}
       </div>
     </div>
   );
