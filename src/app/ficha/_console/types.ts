@@ -126,6 +126,8 @@ export interface ConsoleApi {
      * mostra a perícia e a intenção se perde.
      */
     intencao?: { tipo: string; nome: string } | null;
+    /** `false` = não grava a rolagem na mesa (o ataque contestado grava os dados no próprio cartão). */
+    publicar?: boolean;
   }) => RupturaRollResult;
 
   /** Grava PV/PE/Mana — passa por `updateRecursoAtual` (cura automática + colapso). */

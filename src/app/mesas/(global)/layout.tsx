@@ -57,7 +57,7 @@ export default async function AreaGlobalLayout({ children }: { children: React.R
   const [presenca, contagens] = await Promise.all([readAppearOffline(), contagensDoMenu(user.id)]);
 
   return (
-    <GlobalShell userEmail={user.email ?? "(sem email)"} displayName={user.displayName}
+    <GlobalShell userEmail={user.email ?? "(sem email)"} displayName={user.displayName} avatarPath={user.avatarPath} visualPrefsIniciais={user.visualPrefs}
       aparecerOfflineInicial={presenca.appearOffline} contagens={contagens}>
       {children}
     </GlobalShell>

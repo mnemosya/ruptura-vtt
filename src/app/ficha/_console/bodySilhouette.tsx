@@ -40,7 +40,7 @@ export function BodySilhouette({
       <defs>
         <linearGradient id="rc-eq-body-hover-grad" x1="0" y1="0" x2="0" y2="1">
           <stop stopColor="#00D4FF" stopOpacity="0.26" />
-          <stop offset="1" stopColor="#007F99" stopOpacity="0.43" />
+          <stop offset="1" stopColor="#007f99" stopOpacity="0.43" />
         </linearGradient>
       </defs>
       <g opacity="0.76">
@@ -51,7 +51,7 @@ export function BodySilhouette({
               key={i}
               d={p.d}
               fill={ativo ? "url(#rc-eq-body-hover-grad)" : p.fill}
-              stroke={ativo ? "#0B6D89" : "none"}
+              stroke={ativo ? "#0b7489" : "none"}
               strokeWidth={ativo ? 1 : 0}
               style={ativo ? { mixBlendMode: "screen" } : undefined}
               pointerEvents="fill"

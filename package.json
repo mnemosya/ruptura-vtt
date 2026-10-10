@@ -102,6 +102,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
+    "@vercel/analytics": "2.0.1",
+    "@vercel/speed-insights": "2.0.0",
     "cannon-es": "^0.20.0",
     "dotenv": "^16.4.5",
     "lucide-react": "^1.28.0",

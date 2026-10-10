@@ -212,6 +212,20 @@ export interface CartaoAtaque extends CartaoComum {
   alvo: string | null;
   alvoTokenId: string | null;
   alvoCharacterId: string | null;
+  /** Ficha do atacante — decide quem vê "escolher região" (ataque contestado). */
+  atacanteCharacterId: string | null;
+  /** Regiões que a margem de impacto libera ao atacante (`resolveMarginBand`). */
+  regioesPermitidas: string[];
+  /** Defesa usada ("Esquivar", "Bloquear"…) — `null` antes da defesa. */
+  defesaNome: string | null;
+  /** O ataque é do fluxo CONTESTADO da mesa (tem passos de defesa e região). */
+  contestado: boolean;
+  /** Faces de cada rolagem do ataque contestado, para o cartão mostrar os dados. */
+  dadosAtaque: number[];
+  dadosDefesa: number[];
+  dadosDano: number[];
+  /** Fórmula do dano da arma ("1d6") — o atacante rola isto ao escolher a região. */
+  danoFormula: string | null;
   acertou: boolean | null;
   margem: number | null;
   faixaMargem: string | null;
@@ -705,8 +719,14 @@ function projetarAtaque(entry: TableLogEntry): CartaoFeed {
   const pvDepois = num(p, "pvDepois", "pvAtual");
   const dano = num(p, "dano", "danoTotal", "danoAplicado");
 
+  const contestado = txt(p, "source") === "vtt_ataque_contestado";
+  const totalDefesa = num(p, "totalDefesa", "defensorTotal");
   const estado: EstadoAtaque =
-    pvDepois != null ? "resolvido" : acertou === false ? "errou" : dano != null ? "aguardando_aplicacao" : "aguardando_dano";
+    pvDepois != null || p.danoAplicado === true ? "resolvido"
+      : acertou === false ? "errou"
+        : dano != null ? "aguardando_aplicacao"
+          : contestado && totalDefesa == null ? "aguardando_defesa"
+            : "aguardando_dano";
 
   return {
     ...comum(entry),
@@ -720,10 +740,18 @@ function projetarAtaque(entry: TableLogEntry): CartaoFeed {
     modulosAtaque: modAtaque,
     modulosDefesa: modDefesa,
     totalAtaque: num(p, "totalAtaque", "atacanteTotal"),
-    totalDefesa: num(p, "totalDefesa", "defensorTotal"),
+    totalDefesa,
     alvo: txt(p, "alvoNome", "defensorNome", "targetCharacterName"),
     alvoTokenId: txt(p, "alvoTokenId"),
     alvoCharacterId: txt(p, "alvoCharacterId", "defensorCharacterId", "targetCharacterId"),
+    atacanteCharacterId: txt(p, "atacanteCharacterId"),
+    regioesPermitidas: Array.isArray(p.regioesPermitidas) ? (p.regioesPermitidas as unknown[]).filter((x): x is string => typeof x === "string") : [],
+    defesaNome: txt(p, "defesaNome"),
+    contestado,
+    dadosAtaque: numeros(p, "dadosAtaque", "atacanteDados"),
+    dadosDefesa: numeros(p, "dadosDefesa", "defensorDados"),
+    dadosDano: numeros(p, "dadosDano"),
+    danoFormula: txt(p, "danoFormula"),
     acertou,
     margem: num(p, "margem"),
     faixaMargem: txt(p, "faixaMargem", "margemRotulo", "banda"),
@@ -980,6 +1008,10 @@ export const PROJETORES: Record<string, Projetor> = {
 
   attack_resolved: projetarAtaque,
   spell_attack_resolved: projetarAtaque,
+  /* Ataque contestado da mesa (`ataquePainel.ts`): declarado → defendido
+     → resolvido → dano aplicado, todos com o mesmo `workflowId`. */
+  attack_declared: projetarAtaque,
+  attack_defended: projetarAtaque,
   /* Passo de aplicação de dano — compartilha `workflowId` com o ataque
      de origem, então SUBSTITUI o card em vez de criar outro (ver
      `projetarFeed`). É assim que o card "evolui" no mesmo lugar. */

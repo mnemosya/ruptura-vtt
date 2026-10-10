@@ -9,18 +9,23 @@
  * (com nova tentativa).
  *
  * As preferências visuais ("reduzir movimento", "alto contraste") são do
- * shell (contexto + localStorage): valem para este navegador, não são
- * dados de conta — não há hoje onde persistí-las no servidor, e criar
- * uma tabela só para isso está fora do escopo deste redesign.
+ * shell (`useVisualPrefs`), que as salva na conta em
+ * `user_metadata.visual_prefs`; o avatar fica em `user_metadata.avatar_path`.
  */
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ImageUp } from "lucide-react";
 import { signOut, updateDisplayName } from "../../../../lib/auth/actions";
+import { prepararRecorteQuadrado, TIPOS_ACEITOS } from "../../../../lib/vtt/imagePreparation";
+import { JanelaRecorte } from "../../../ficha/_console/RecorteImagem";
+import { enviarAvatarConta, removerAvatarConta } from "./avatarActions";
+// A janela de recorte (`.rc-recorte-janela`) é estilizada no CSS do Console.
+import "../../../_design/console.css";
 import { useVisualPrefs } from "../../_global/GlobalShell";
 import { PageHead } from "../../_global/parts";
 import {
-  AlertTriangle, Check, LogOut, Mail, Monitor, Shield, Spinner, User, Zap,
+  AlertTriangle, Check, Lock, LogOut, Monitor, Shield, Spinner, User, Zap,
 } from "../../../_design/icons";
 
 type SaveState = { kind: "idle" } | { kind: "saving" } | { kind: "saved" } | { kind: "error"; message: string };
@@ -52,19 +57,17 @@ function SaveIndicator({ state, onRetry }: { state: SaveState; onRetry: () => vo
       </span>
     );
   }
-  return (
-    <span className="ra-save ra-save--idle" role="status" aria-live="polite">
-      · Salvamento automático ativo
-    </span>
-  );
+  return null;
 }
 
 export default function ContaClient({
   email,
   displayNameInicial,
+  avatarPathInicial,
 }: {
   email: string;
   displayNameInicial: string | null;
+  avatarPathInicial: string | null;
 }) {
   const router = useRouter();
   const { prefs, togglePref } = useVisualPrefs();
@@ -74,6 +77,42 @@ export default function ContaClient({
   const [signingOut, setSigningOut] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef(displayNameInicial ?? "");
+  const [avatarPath, setAvatarPath] = useState(avatarPathInicial);
+  const [arquivoAvatar, setArquivoAvatar] = useState<File | null>(null);
+  const [avatarOcupado, setAvatarOcupado] = useState(false);
+  const [avatarErro, setAvatarErro] = useState<string | null>(null);
+  const inputAvatar = useRef<HTMLInputElement>(null);
+
+  async function salvarAvatar(recorte: { x: number; y: number; tamanho: number }) {
+    if (!arquivoAvatar) return;
+    setAvatarOcupado(true);
+    setAvatarErro(null);
+    try {
+      const preparada = await prepararRecorteQuadrado(arquivoAvatar, recorte);
+      URL.revokeObjectURL(preparada.previewUrl);
+      const form = new FormData();
+      form.append("avatar", preparada.blob, "avatar.webp");
+      const res = await enviarAvatarConta(form);
+      if (!res.ok) throw new Error(res.error);
+      setAvatarPath(res.avatarPath);
+      setArquivoAvatar(null);
+      router.refresh();
+    } catch (e) {
+      setAvatarErro(e instanceof Error ? e.message : "Falha ao enviar o avatar.");
+    } finally {
+      setAvatarOcupado(false);
+    }
+  }
+
+  async function removerAvatar() {
+    setAvatarOcupado(true);
+    setAvatarErro(null);
+    const res = await removerAvatarConta();
+    setAvatarOcupado(false);
+    if (!res.ok) { setAvatarErro(res.error); return; }
+    setAvatarPath(null);
+    router.refresh();
+  }
 
   async function persist(value: string) {
     setSaveState({ kind: "saving" });
@@ -110,59 +149,104 @@ export default function ContaClient({
     router.refresh();
   }
 
-  const nomeVisivel = displayName.trim() || email.split("@")[0];
-
   return (
     <div className="ra2-page ra2-page--narrow ra2-view-enter">
       <PageHead eyebrow="SYS.OPERATOR // PERFIL" title="Conta e preferências" />
 
-      <div className="ra-module" style={{ display: "flex", gap: 20, alignItems: "center" }}>
-        <span
-          aria-hidden="true"
-          style={{
-            width: 82, height: 82, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-            border: "1px solid rgba(0,212,255,.35)", background: "rgba(0,212,255,.06)", color: "#418292",
-            // O chanfro saiu com os demais da área autenticada. Este
-            // estava INLINE, e por isso escapou de uma varredura que só
-            // olhou as folhas de estilo.
-            borderRadius: "var(--ra-r)",
-            boxShadow: "0 0 20px rgba(0,212,255,.16)",
-          }}
-        >
-          <User size={36} strokeWidth={1.1} />
-        </span>
-        <div style={{ minWidth: 0 }}>
-          <div className="ra-h3">{nomeVisivel}</div>
-          <div
-            className="ra-mono"
-            style={{ fontSize: 12.5, color: "rgba(184,216,232,.6)", marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}
-          >
-            <Mail size={12} />
-            <span data-testid="conta-email" style={{ wordBreak: "break-all" }}>{email}</span>
-          </div>
-        </div>
-      </div>
-
       <div className="ra-module">
         <div className="ra-module-title">Identidade</div>
-        <div className="ra-field">
-          <label className="ra-flabel" htmlFor="conta-nome-exibicao">Nome de exibição</label>
-          <input
-            id="conta-nome-exibicao"
-            data-testid="conta-nome-exibicao"
-            className="ra-input"
-            type="text"
-            value={displayName}
-            maxLength={60}
-            onChange={(e) => { setDisplayName(e.target.value); scheduleSave(e.target.value); }}
-            placeholder="Como você quer aparecer nas suas campanhas"
-          />
-          <div style={{ marginTop: 8 }}>
-            <SaveIndicator state={saveState} onRetry={() => persist(displayName)} />
+        <div style={{ display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
+          {/* Avatar: o próprio quadro é o botão de trocar. */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, flex: "none" }}>
+            <button
+              type="button"
+              data-testid="conta-avatar"
+              aria-label={avatarPath ? "Trocar avatar" : "Enviar avatar"}
+              title={avatarPath ? "Trocar avatar" : "Enviar avatar"}
+              disabled={avatarOcupado}
+              onClick={() => inputAvatar.current?.click()}
+              className="ra-avatar-upload"
+            >
+              {avatarOcupado ? (
+                <Spinner size={22} className="ra-spin" />
+              ) : avatarPath ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={`/api/conta/avatar?v=${encodeURIComponent(avatarPath)}`} alt="" width={112} height={112} />
+              ) : (
+                <User size={40} strokeWidth={1.1} />
+              )}
+              <span className="ra-avatar-upload__veu" aria-hidden="true">
+                <ImageUp size={20} strokeWidth={1.5} />
+                <span>{avatarPath ? "Trocar" : "Enviar"}</span>
+              </span>
+            </button>
+            {avatarPath && (
+              <button type="button" className="ra-linkbtn" disabled={avatarOcupado} onClick={() => void removerAvatar()}>
+                Remover
+              </button>
+            )}
           </div>
-          <span className="ra-hint">
-            É o nome que o narrador vê em Jogadores e convites, e que aparece na Rede da sua home.
-          </span>
+          <input
+            ref={inputAvatar}
+            type="file"
+            accept={TIPOS_ACEITOS.join(",")}
+            hidden
+            onChange={(ev) => {
+              const f = ev.target.files?.[0];
+              ev.target.value = "";
+              if (f) { setAvatarErro(null); setArquivoAvatar(f); }
+            }}
+          />
+          {arquivoAvatar && (
+            <JanelaRecorte
+              arquivo={arquivoAvatar}
+              ocupado={avatarOcupado}
+              erro={avatarErro}
+              onConfirmar={(r) => void salvarAvatar(r)}
+              onCancelar={() => { setArquivoAvatar(null); setAvatarErro(null); }}
+            />
+          )}
+
+          <div style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: 18 }}>
+            <div className="ra-field" style={{ margin: 0 }}>
+              <label className="ra-flabel" htmlFor="conta-nome-exibicao">Nome de exibição</label>
+              <input
+                id="conta-nome-exibicao"
+                data-testid="conta-nome-exibicao"
+                className="ra-input"
+                type="text"
+                value={displayName}
+                maxLength={60}
+                onChange={(e) => { setDisplayName(e.target.value); scheduleSave(e.target.value); }}
+                placeholder="Como você quer aparecer nas suas campanhas"
+              />
+              <span className="ra-hint" style={{ marginTop: 6 }}>
+                É como você aparece para as pessoas das suas campanhas: na mesa, na Rede e no seu perfil.
+              </span>
+              {saveState.kind !== "idle" && (
+                <div style={{ marginTop: 6 }}>
+                  <SaveIndicator state={saveState} onRetry={() => persist(displayName)} />
+                </div>
+              )}
+            </div>
+
+            <div className="ra-field" style={{ margin: 0 }}>
+              <span className="ra-flabel">E-mail</span>
+              <div
+                className="ra-mono"
+                style={{ fontSize: 12.5, color: "rgba(184,216,232,.6)", display: "flex", alignItems: "center", gap: 6 }}
+              >
+                <Lock size={12} />
+                <span data-testid="conta-email" style={{ wordBreak: "break-all" }}>{email}</span>
+              </div>
+            </div>
+
+            {avatarErro && !arquivoAvatar && (
+              <div className="ra-save ra-save--error" role="alert">
+                <AlertTriangle size={11} /> {avatarErro}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -204,11 +288,6 @@ export default function ContaClient({
             <span className="ra-switch-knob" />
           </button>
         </div>
-
-        <p className="ra-hint" style={{ marginTop: 12 }}>
-          Guardadas neste navegador. Avatar e demais preferências pessoais ainda não têm onde ser
-          persistidos no servidor nesta versão.
-        </p>
       </div>
 
       <div className="ra-module">

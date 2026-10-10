@@ -56,7 +56,7 @@ function InfoCanonica({ label, valor }: { label: string; valor: string }) {
   return (
     <div>
       <span style={{ display: "block", fontFamily: DISPLAY, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.16em", color: INK_FAINT }}>{label}</span>
-      <div style={{ marginTop: 4, minHeight: 32, display: "flex", alignItems: "center", padding: "6px 9px", borderRadius: 4, border: "1px solid #243b50", background: "#101b2a", color: INK, fontFamily: MONO, fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+      <div style={{ marginTop: 4, minHeight: 32, display: "flex", alignItems: "center", padding: "6px 9px", borderRadius: 4, border: "1px solid #244050", background: "#10202a", color: INK, fontFamily: MONO, fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase" }}>
         {valor}
       </div>
     </div>
@@ -81,7 +81,16 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
   api: ConsoleApi;
   prefill: PrefillRolagem;
   onFechar: () => void;
-  acaoToken?: { nome: string; visibilidade: "public" | "gm" };
+  acaoToken?: {
+    nome: string;
+    visibilidade: "public" | "gm";
+    /**
+     * Ataque CONTESTADO (com alvo): chamado com a rolagem pronta, para
+     * abrir o cartão de ataque no chat (`declararAtaqueAction`). As faces
+     * são as mesmas que acabaram de ser gravadas na rolagem.
+     */
+    onRolado?: (entrada: { atributoId: string; periciaId: string | null; modificador: number; dados: number[] }) => void;
+  };
 }) {
   const mesa = api.mesa;
   // "Narrador" no seletor de visibilidade só existe pra quem é
@@ -152,7 +161,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
     // A física primeiro: as faces do teste são as que os corpos
     // mostrarem quando pararem — nunca sorteadas antes.
     const pedido: PhysicsDieSpec[] = Array.from({ length: nd8 }, (_, i) => ({ id: `teste-${i}`, sides: 8 }));
-    const fisicos = await rolarNaMesa(pedido, "#35c7d8", forca);
+    const fisicos = await rolarNaMesa(pedido, "#00d4ff", forca);
     const dados = fisicos.map((d) => d.value);
 
     // A Reação da defesa é gasta AQUI, junto da rolagem que ela paga.
@@ -170,9 +179,18 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
       intencao: acaoToken ? { tipo: "ATAQUE", nome: acaoToken.nome } : prefill.tipo === "defesa"
         ? { tipo: "DEFESA", nome: prefill.acao }
         : prefill.tipo === "colapso" ? { tipo: "COLAPSO", nome: "Teste decisivo" } : null,
+      // Ataque contestado: os dados vão para o cartão do ataque, não
+      // para um cartão de rolagem à parte.
+      publicar: acaoToken?.onRolado ? false : undefined,
     });
 
     setResultado(r);
+    acaoToken?.onRolado?.({
+      atributoId,
+      periciaId: periciaId === SEM_PERICIA ? null : periciaId,
+      modificador: mods + (info?.penalidade ?? 0),
+      dados: r.dados,
+    });
     if (testeColapso) api.aplicarTesteDecisivoColapso(r.dados);
     setRolando(false);
     setLanded(true);
@@ -237,10 +255,10 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
             </div>
           </div>}
 
-          <div style={{ borderRadius: 4, padding: 14, background: "#0c1420", border: "1px solid #16233a" }}>
+          <div style={{ borderRadius: 4, padding: 14, background: "#0c1920", border: "1px solid #162d3a" }}>
             <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: INK_FAINT }}>
-                Pool · <span style={{ color: "#35c7d8" }}>{nd8}d8</span> · {pool.modoSelecao === "lowest" ? "menor dado" : "maior dado"}
+                Pool · <span style={{ color: "#00d4ff" }}>{nd8}d8</span> · {pool.modoSelecao === "lowest" ? "menor dado" : "maior dado"}
               </span>
               <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: INK_FAINT }}>
                 {cdInput.trim() === "" ? "sem CD definida" : `cd ${cdInput}`}

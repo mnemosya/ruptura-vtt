@@ -187,7 +187,8 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
     categoria: String(raw.categoria ?? ""),
     categoria_label: typeof raw.categoria_label === "string" ? raw.categoria_label : undefined,
     subtipo: typeof raw.subtipo === "string" ? raw.subtipo : undefined,
-    raridade: typeof raw.raridade === "string" ? raw.raridade : undefined,
+    // O conteúdo grava "muito_raro"; a interface nunca mostra o "_" do identificador.
+    raridade: typeof raw.raridade === "string" ? raw.raridade.replace(/_/g, " ") : undefined,
     preco: typeof raw.preco === "number" && Number.isFinite(raw.preco) ? raw.preco : 0,
     descricao_curta: typeof raw.descricao_curta === "string" ? raw.descricao_curta : undefined,
     tags: asStringArray(raw.tags),
@@ -268,9 +269,9 @@ export const WALLET_LABELS: Record<WalletId, string> = {
 // ---------------------------------------------------------------------
 
 /**
- * Onde a instância está. Os quatro primeiros são formas de CARREGAR
- * (todos pesam — ver `ESTADOS_QUE_OCUPAM` em carga.ts); "abrigo" é o
- * que ficou guardado fora do corpo e por isso não pesa.
+ * Onde a instância está. Os quatro primeiros são formas de CARREGAR,
+ * mas só "mochila" ocupa espaço (ver `ESTADOS_QUE_OCUPAM` em carga.ts);
+ * "abrigo" é o que ficou guardado fora do corpo.
  *
  * "abrigo" entrou junto com a aba Inventário do Console, que tem
  * Mochila / Equipado / Abrigo / Todos como filtros. Sem ele o terceiro
@@ -302,6 +303,8 @@ export interface InstalledRune {
   ativa?: boolean;
 }
 
+export type EncaixeEscolhido = "arma_primaria" | "arma_secundaria" | "acesso_rapido_1" | "acesso_rapido_2";
+
 export interface InventoryItemInstance {
   id: string;
   itemSlug: string;
@@ -311,6 +314,14 @@ export interface InventoryItemInstance {
   subtipo?: string;
   quantidade: number;
   estado: ItemLoadoutState;
+  /**
+   * Encaixe escolhido no Equipamento para armas empunhadas e acessos
+   * rápidos. Sem isto a mão saía da ORDEM DE AQUISIÇÃO: equipar uma
+   * adaga na secundária a punha na primária quando a primária estava
+   * vazia. Ausente (itens antigos) = ocupa o primeiro encaixe livre,
+   * como antes. Some quando o item muda de estado.
+   */
+  encaixeEscolhido?: EncaixeEscolhido;
   adquiridoEm: string;
   precoPago?: number;
   /** Runas instaladas nesta instância (checkpoint v0.56) — ausente = nenhuma ainda. */
@@ -830,7 +841,31 @@ export function removeItemTechnicalPropertyBySource(
 
 export function setItemLoadoutState(character: Character, instanceId: string, estado: ItemLoadoutState): Character {
   const atual = character.inventario ?? [];
-  const next = atual.map((item) => (item.id === instanceId ? { ...item, estado } : item));
+  const next = atual.map((item) => {
+    if (item.id !== instanceId) return item;
+    // Mudou de estado: o encaixe escolhido não vale mais.
+    const { encaixeEscolhido: _descartado, ...resto } = item;
+    return { ...resto, estado };
+  });
+  return { ...character, inventario: next };
+}
+
+/**
+ * Põe uma arma ou consumível num encaixe ESPECÍFICO do Equipamento
+ * (mão primária/secundária, acesso rápido 1/2). Quem já tinha esse
+ * encaixe escolhido volta para a mochila — o encaixe é de um item só.
+ */
+export function setItemEmEncaixe(character: Character, instanceId: string, encaixe: EncaixeEscolhido): Character {
+  const estado: ItemLoadoutState = encaixe === "arma_primaria" || encaixe === "arma_secundaria" ? "empunhado" : "acesso_rapido";
+  const atual = character.inventario ?? [];
+  const next = atual.map((item) => {
+    if (item.id === instanceId) return { ...item, estado, encaixeEscolhido: encaixe };
+    if (item.estado === estado && item.encaixeEscolhido === encaixe) {
+      const { encaixeEscolhido: _descartado, ...resto } = item;
+      return { ...resto, estado: "mochila" as ItemLoadoutState };
+    }
+    return item;
+  });
   return { ...character, inventario: next };
 }
 
@@ -1495,13 +1530,34 @@ export function getItemMitAtual(instance: InventoryItemInstance, item?: Pick<Ite
  * equipar. Vestir é as duas coisas ao mesmo tempo: a peça está no
  * corpo (estado) e é a que conta para a defesa (flag).
  */
-export function equipDefensiveItem(character: Character, instanceId: string, item: ItemContent): Character {
+export function equipDefensiveItem(
+  character: Character,
+  instanceId: string,
+  item: ItemContent,
+  /**
+   * Catálogo para ler as REGIÕES das outras armaduras vestidas. Com ele,
+   * a armadura nova só desloca as que cobrem alguma região em comum —
+   * braços e tronco convivem. Sem ele (chamadas antigas), vale a regra
+   * de antes: uma armadura por personagem.
+   */
+  catalogo?: Map<string, ItemContent> | ItemContent[],
+): Character {
   const slot: DefensiveEquipmentSlot | null =
     item.categoria === "armadura" ? "armadura" : item.categoria === "escudo" ? "escudo" : null;
   if (!slot) return character;
 
   const inventario = character.inventario ?? [];
   if (!inventario.some((i) => i.id === instanceId)) return character;
+  const porSlug = catalogo == null ? null : catalogo instanceof Map ? catalogo : new Map(catalogo.map((m) => [m.slug, m]));
+  /** A peça vestida `i` sai para dar lugar à nova? */
+  const desloca = (i: InventoryItemInstance): boolean => {
+    if (slot !== "armadura" || !porSlug) return true;
+    const regioes = porSlug.get(i.itemSlug)?.regioes ?? [];
+    // Sem região conhecida de um dos lados, não dá para provar que não
+    // se sobrepõem — desloca, como antes.
+    if (!regioes.length || !item.regioes.length) return true;
+    return regioes.some((r) => item.regioes.includes(r));
+  };
 
   const nextInventario = inventario.map((i) => {
     if (i.id === instanceId) {
@@ -1516,7 +1572,7 @@ export function equipDefensiveItem(character: Character, instanceId: string, ite
         pdAtual: slot === "escudo" ? i.pdAtual ?? item.pdMax ?? undefined : i.pdAtual,
       };
     }
-    if (i.equipamentoSlot === slot && i.equipadoDefensivo) {
+    if (i.equipamentoSlot === slot && i.equipadoDefensivo && desloca(i)) {
       // A peça deslocada sai do corpo junto com a flag — senão ela
       // continuaria ocupando a região na projeção dos slots.
       return {
@@ -1602,8 +1658,17 @@ export function setItemMunicaoAtual(character: Character, instanceId: string, va
   return { ...character, inventario: next };
 }
 
+export interface ArmaduraVestida { instance: InventoryItemInstance; item: ItemContent; mitMax: number; mitAtual: number; tipoProtecao: string | null }
+
 export interface EquippedDefenseProfile {
-  armadura?: { instance: InventoryItemInstance; item: ItemContent; mitMax: number; mitAtual: number; tipoProtecao: string | null };
+  /**
+   * Armadura "única" das chamadas antigas (sem região): a que cobre o
+   * tronco, ou a primeira vestida. Quem sabe a região usa
+   * `armaduraDaRegiao`.
+   */
+  armadura?: ArmaduraVestida;
+  /** Todas as armaduras vestidas — uma por região (ver `equipDefensiveItem`). */
+  armaduras: ArmaduraVestida[];
   escudo?: { instance: InventoryItemInstance; item: ItemContent; pdMax: number; pdAtual: number; tipoProtecao: string | null };
 }
 
@@ -1615,7 +1680,7 @@ export interface EquippedDefenseProfile {
  */
 export function getEquippedDefenseProfile(character: Pick<Character, "inventario">, items: ItemContent[]): EquippedDefenseProfile {
   const bySlug = new Map(items.map((i) => [i.slug, i]));
-  const profile: EquippedDefenseProfile = {};
+  const profile: EquippedDefenseProfile = { armaduras: [] };
 
   for (const instance of character.inventario ?? []) {
     if (!instance.equipadoDefensivo) continue;
@@ -1623,14 +1688,20 @@ export function getEquippedDefenseProfile(character: Pick<Character, "inventario
     if (!item || item.status !== "published") continue;
 
     if (instance.equipamentoSlot === "armadura" && item.mitMax != null) {
-      profile.armadura = { instance, item, mitMax: item.mitMax, mitAtual: getItemMitAtual(instance, item), tipoProtecao: item.tipoProtecao };
+      profile.armaduras.push({ instance, item, mitMax: item.mitMax, mitAtual: getItemMitAtual(instance, item), tipoProtecao: item.tipoProtecao });
     }
     if (instance.equipamentoSlot === "escudo" && item.pdMax != null) {
       profile.escudo = { instance, item, pdMax: item.pdMax, pdAtual: getItemPdAtual(instance, item), tipoProtecao: item.tipoProtecao };
     }
   }
 
+  profile.armadura = profile.armaduras.find((a) => a.item.regioes.includes("tronco")) ?? profile.armaduras[0];
   return profile;
+}
+
+/** A armadura vestida que cobre esta região ("cabeca" | "tronco" | "bracos" | "pernas"), se houver. */
+export function armaduraDaRegiao(defense: EquippedDefenseProfile | undefined, regiao: string): ArmaduraVestida | undefined {
+  return defense?.armaduras.find((a) => a.item.regioes.includes(regiao));
 }
 
 // ---------------------------------------------------------------------

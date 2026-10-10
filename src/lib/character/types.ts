@@ -848,6 +848,8 @@ export interface Character {
         aqui porque `Character` não importa daquele módulo. "abrigo" =
         guardado fora do corpo (não pesa) — ver carga.ts. */
     estado: "equipado" | "empunhado" | "acesso_rapido" | "mochila" | "abrigo";
+    /** Encaixe escolhido no Equipamento (mão/posição) — ver `setItemEmEncaixe`. */
+    encaixeEscolhido?: "arma_primaria" | "arma_secundaria" | "acesso_rapido_1" | "acesso_rapido_2";
     adquiridoEm: string;
     precoPago?: number;
     /**

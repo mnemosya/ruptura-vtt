@@ -45,7 +45,12 @@ import { registrarRolagemLivreAction } from "./acoes/rolagemPainel";
 import { lerComandoRolagem, type ComandoRolagem } from "./feed/comandoRolagem";
 import { useRolarNaMesa } from "../_dados3d/ContextoMesaDados";
 import type { PhysicsDieSpec } from "../_dados3d/ArenaDados";
-import { aplicarDanoDoAtaqueAction } from "./acoes/combatePainel";
+import { aplicarDanoDoAtaqueAction, preverDanoAction } from "./acoes/combatePainel";
+import { registrarDefesaAction, resolverDanoAction } from "./acoes/ataquePainel";
+import { DEFESAS_CARTAO, type EscolhaDefesa } from "./feed/AttackWorkflowCard";
+import type { CartaoAtaque } from "./feed/contratos";
+import { getRupturaPool } from "../../../../../lib/dice";
+import { lerContextoRolagemAction } from "./acoes/rolagemPainel";
 import { EstadoErro, EstadoVazio } from "./Estados";
 
 /** Acento das rolagens feitas pelo chat — o mesmo ciano do composer. */
@@ -525,6 +530,65 @@ export function ChatTab({
     });
   }, []);
 
+  /* Ataque contestado: um executor só para defesa e região — mesma
+     guarda de clique duplo e mesmo erro por cartão do "Aplicar dano". */
+  const passoDoAtaque = useCallback(
+    async (cartaoId: string, executar: () => Promise<{ ok: boolean; erro?: string }>) => {
+      if (aplicandoId) return;
+      setAplicandoId(cartaoId);
+      setErrosPorCartao((e) => { const { [cartaoId]: _fora, ...resto } = e; return resto; });
+      try {
+        const r = await executar();
+        if (!r.ok) { setErrosPorCartao((e) => ({ ...e, [cartaoId]: r.erro ?? "Falha no ataque." })); return; }
+        await reloadLogs();
+      } catch (e) {
+        setErrosPorCartao((er) => ({ ...er, [cartaoId]: e instanceof Error ? e.message : "Falha de rede." }));
+      } finally {
+        setAplicandoId(null);
+      }
+    },
+    [aplicandoId, reloadLogs],
+  );
+  /* Defesa: quem defende ROLA os dados na mesa 3D — a pool sai do
+     atributo da ficha do alvo; o servidor confere as faces. */
+  const defender = useCallback(
+    (cartaoId: string, escolha: EscolhaDefesa, cartao: CartaoAtaque, forca?: number) => passoDoAtaque(cartaoId, async () => {
+      if ("total" in escolha) return registrarDefesaAction({ campaignId, logId: cartaoId, total: escolha.total });
+      const def = DEFESAS_CARTAO.find((d) => d.id === escolha.defesa)!;
+      let dados: number[] | undefined;
+      if (rolarNaMesa && cartao.alvoCharacterId) {
+        const ctx = await lerContextoRolagemAction(campaignId, cartao.alvoCharacterId);
+        const atributo = ctx.dados?.ficha?.atributos.find((a) => a.id === def.atributo);
+        if (atributo) {
+          const n = getRupturaPool(atributo.valor).quantidadeDados;
+          const fisicos = await rolarNaMesa(Array.from({ length: n }, (_, i) => ({ id: `defesa-${i}`, sides: 8 })), "#9fb4c7", forca);
+          dados = fisicos.map((d) => d.value);
+        }
+      }
+      return registrarDefesaAction({ campaignId, logId: cartaoId, defesa: escolha.defesa, dados });
+    }),
+    [passoDoAtaque, campaignId, rolarNaMesa],
+  );
+  /* Região + dano: o atacante rola os dados do dano na mesa 3D (o dado
+     extra do crítico vai por último). */
+  const escolherRegiao = useCallback(
+    (cartao: CartaoAtaque, regiao: string, forca: number) => passoDoAtaque(cartao.id, async () => {
+      const m = cartao.danoFormula ? /^(\d+)d(\d+)/.exec(cartao.danoFormula.replace(/\s+/g, "")) : null;
+      let dados: number[] | undefined;
+      if (rolarNaMesa && m) {
+        const n = Number(m[1]) + (cartao.faixaMargem === "critical" ? 1 : 0), lados = Number(m[2]);
+        const fisicos = await rolarNaMesa(Array.from({ length: n }, (_, i) => ({ id: `dano-${i}`, sides: lados })), "#ff5f74", forca);
+        dados = fisicos.map((d) => d.value);
+      }
+      return resolverDanoAction({ campaignId, logId: cartao.id, regiao: regiao as "cabeca" | "tronco" | "bracos" | "pernas", dados });
+    }),
+    [passoDoAtaque, campaignId, rolarNaMesa],
+  );
+  const preverDano = useCallback(async (cartaoId: string) => {
+    const r = await preverDanoAction({ campaignId, logId: cartaoId });
+    return r.ok && r.dados ? r.dados : null;
+  }, [campaignId]);
+
   const acoes: AcoesFeed = useMemo(
     () => ({
       onAplicarDano: aplicarDano,
@@ -532,8 +596,13 @@ export function ChatTab({
       errosPorCartao,
       onFocarToken,
       podeAplicarDano: role === "narrator",
+      onDefender: defender,
+      onEscolherRegiao: escolherRegiao,
+      onPreverDano: role === "narrator" ? preverDano : undefined,
+      meusPersonagens: viewer.controlledCharacterIds,
+      ehNarrador: role === "narrator",
     }),
-    [aplicarDano, aplicandoId, errosPorCartao, onFocarToken, role],
+    [aplicarDano, aplicandoId, errosPorCartao, onFocarToken, role, defender, escolherRegiao, preverDano, viewer.controlledCharacterIds],
   );
 
   /** Bolhas otimistas viram cartões de mensagem com o mesmo contrato — sem um caminho de render paralelo. */

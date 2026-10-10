@@ -6,6 +6,7 @@ import { canonicalVertenteId, checkSpellVertenteLevel, describeSpellManualEffect
 import type { ConsoleApi } from "../types";
 import { TextoComRegras } from "../TextoComRegras";
 import { CabecalhoModulo } from "./CabecalhoModulo";
+import { MagiasHud, type MagiaHud } from "./hud/MagiasHud";
 
 const VERTENTES = [
   ["cinetica", "Cinética"], ["energetica", "Energética"], ["material", "Material"],
@@ -24,7 +25,66 @@ function evolucaoDeMagias(api: ConsoleApi): boolean {
   return api.magias.sheetMode === "evolucao" && (api.character as { schema_version?: number }).schema_version !== 2;
 }
 
+/**
+ * Em jogo, a aba é o HUD do protótipo (`hud/MagiasHud.tsx`): anel das
+ * vertentes, grimório por nível e leitura em modal. A lista antiga
+ * fica para o Modo Evolução v1 (aprender/esquecer) e para o catálogo
+ * indisponível, que o HUD não trata.
+ */
 export function MagiasPanel({ api }: { api: ConsoleApi }) {
+  const m = api.magias;
+  if (!evolucaoDeMagias(api) && !m.catalogError) return <MagiasEmJogo api={api} />;
+  return <MagiasLista api={api} />;
+}
+
+function MagiasEmJogo({ api }: { api: ConsoleApi }) {
+  const m = api.magias;
+  const aprendidas = m.spells.filter((s) => s.status === "published" && m.magiasAprendidas.some((a) => a.spellSlug === s.slug));
+  const nivelDe = (vertente: string) => getVertenteLevel({ niveis_vertente: m.niveisVertente }, vertente);
+  const magias: MagiaHud[] = aprendidas.map((s) => {
+    const dano = getSpellDamageEffect(s);
+    const res = resolveSpellResistance(s, nivelDe(s.vertente));
+    return {
+      slug: s.slug,
+      nome: s.nome,
+      vertente: canonicalVertenteId(s.vertente),
+      nivel: s.estatisticas.nivel,
+      tipo: s.estatisticas.tipo_magia ?? "",
+      mana: s.estatisticas.custo_mana,
+      pa: s.estatisticas.custo_pa,
+      alcance: s.estatisticas.alcanceTexto ?? null,
+      area: s.estatisticas.areaTexto ?? null,
+      duracao: s.estatisticas.duracaoTexto ?? null,
+      reacao: !!s.estatisticas.usa_reacao,
+      descricao: s.descricao_curta ? <TextoComRegras texto={s.descricao_curta} glossario={api.glossario} /> : null,
+      efeito: s.descricao_longa ? <TextoComRegras texto={s.descricao_longa} glossario={api.glossario} /> : null,
+      dano: dano ? String(dano.dado ?? dano.valor) : null,
+      resistencia: res ? `${res.acoes.join(" / ")} · ${res.cd != null ? `CD ${res.cd}` : "CD não definida"}${res.condicional ? " (condicional)" : ""}` : null,
+      manuais: describeSpellManualEffects(s).map((t, i) => <TextoComRegras key={i} texto={`Manual: ${t}`} glossario={api.glossario} />),
+      bloqueada: checkSpellVertenteLevel(s, { niveis_vertente: m.niveisVertente }).aboveLevel,
+    };
+  });
+  const niveis = Object.fromEntries(VERTENTES.map(([id]) => [id, nivelDe(id)]));
+  return <section className="rc-eq-outer" aria-label="Magias">
+    <div className="rc-eq-card-outer rc-inv-moldura">
+      <CabecalhoModulo id="ID://MAGIAS" mod="MOD.ARC // 07" />
+      <div className="rc-inv" data-testid="console-magias">
+        <MagiasHud
+          magias={magias}
+          niveis={niveis}
+          mana={{ atual: api.character.recursos_atuais?.mana ?? 0, max: api.derivados.mana_max ?? 0 }}
+          somenteLeitura={api.somenteLeitura}
+          onConjurar={m.onCast}
+          onConjurarComFusao={m.onCastWithFusion}
+          onRolarDano={m.onRollDamage}
+          vazio="Nenhuma magia aprendida. As magias chegam pelo avanço de Ranking."
+        />
+      </div>
+    </div>
+  </section>;
+}
+
+function MagiasLista({ api }: { api: ConsoleApi }) {
   const m = api.magias;
   const evolucao = evolucaoDeMagias(api);
   const [vertente, setVertente] = useState("");

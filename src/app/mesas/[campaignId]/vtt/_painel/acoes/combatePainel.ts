@@ -31,7 +31,18 @@
 import { getScopedTableClient } from "../../../../../../lib/auth/scopedClient";
 import { getCurrentUser } from "../../../../../../lib/auth/session";
 import { getCharacter, updateCharacter } from "../../../../../../lib/character/storage";
-import { applyGmDamage, normalizeCharacter } from "../../../../../../lib/character";
+import {
+  applyGmDamage,
+  armaduraDaRegiao,
+  getEquippedDefenseProfile,
+  normalizeCharacter,
+  normalizeItemContent,
+  resolveDamageWithMitPd,
+  setItemMitAtual,
+  setItemPdAtual,
+  type BodyRegion,
+} from "../../../../../../lib/character";
+import { listItems } from "../../../../../../lib/content";
 import { addLog } from "../../../../../../lib/table/storage";
 import type { TableLogEntry } from "../../../../../../lib/table";
 import { exigirNarradorPainel, mensagemDeErro, type ResultadoPainel } from "./comum";
@@ -45,7 +56,11 @@ export interface ResultadoAplicacaoDano {
   pvAntes: number;
   pvDepois: number;
   alvoNome: string;
+  /** Quanto a armadura da região absorveu (0 sem região ou sem armadura que case). */
+  mitigado?: number;
 }
+
+const REGIOES: readonly BodyRegion[] = ["cabeca", "tronco", "bracos", "pernas"];
 
 /** Lê a entrada de log do ataque, pelo id, já filtrada por visibilidade no servidor. */
 async function lerEntrada(campaignId: string, logId: string): Promise<TableLogEntry | null> {
@@ -67,6 +82,95 @@ async function lerEntrada(campaignId: string, logId: string): Promise<TableLogEn
  * dano nem o alvo. Os dois são relidos do payload gravado, então um
  * browser adulterado não consegue aplicar 999 de dano em quem quiser.
  */
+/**
+ * O dano que chega ao PV: região escolhida pelo ATACANTE (gravada no
+ * ataque) → armadura dessa região, ou PD do escudo se a defesa foi
+ * Bloquear → `resolveDamageWithMitPd` (só absorve se a proteção casar
+ * com o tipo de dano). Devolve o personagem com o desgaste de MIT/PD já
+ * aplicado — quem chama decide se grava (aplicar) ou só mostra (prévia).
+ */
+async function calcularDano(personagemInicial: ReturnType<typeof normalizeCharacter>, p: Record<string, unknown>, dano: number) {
+  let personagem = personagemInicial;
+  const regiaoBruta = typeof p.regiao === "string" ? p.regiao : null;
+  const regiao = regiaoBruta && (REGIOES as readonly string[]).includes(regiaoBruta) ? (regiaoBruta as BodyRegion) : null;
+  const bloqueou = p.bloqueou === true;
+  let danoFinal = dano, mitigado = 0;
+  let resumoDefesa: string | null = null, armaduraNome: string | null = null;
+  let protecao: { tipo: "mit" | "pd"; antes: number; depois: number; max: number } | null = null;
+  if (regiao || bloqueou) {
+    const itens = (await listItems()).map((d) => normalizeItemContent(d.payload as Record<string, unknown>));
+    const perfil = getEquippedDefenseProfile(personagem, itens);
+    const txt = (...k: string[]) => { for (const c of k) if (typeof p[c] === "string" && p[c]) return p[c] as string; return undefined; };
+    const armadura = !bloqueou && regiao ? armaduraDaRegiao(perfil, regiao) : undefined;
+    const escudo = bloqueou ? perfil.escudo : undefined;
+    if (armadura || escudo) {
+      const r = resolveDamageWithMitPd({
+        damageAmount: dano,
+        damageType: txt("tipoDano", "danoTipo", "damageType"),
+        damageSubtype: txt("subtipoDano", "danoSubtipo", "damageSubtype"),
+        wasBlocked: bloqueou,
+        armor: armadura ? { atual: armadura.mitAtual, max: armadura.mitMax, tipoProtecao: armadura.tipoProtecao } : undefined,
+        shield: escudo ? { atual: escudo.pdAtual, max: escudo.pdMax, tipoProtecao: escudo.tipoProtecao } : undefined,
+      });
+      danoFinal = r.finalDamage;
+      mitigado = r.mitigatedByMit + r.mitigatedByPd;
+      resumoDefesa = r.summary;
+      armaduraNome = (armadura ?? escudo)!.instance.itemNome;
+      if (armadura) protecao = { tipo: "mit", antes: armadura.mitAtual, depois: r.mitAfter ?? armadura.mitAtual, max: armadura.mitMax };
+      if (escudo) protecao = { tipo: "pd", antes: escudo.pdAtual, depois: r.pdAfter ?? escudo.pdAtual, max: escudo.pdMax };
+      if (armadura && r.mitigatedByMit > 0) personagem = setItemMitAtual(personagem, armadura.instance.id, r.mitAfter ?? armadura.mitAtual, armadura.mitMax);
+      if (escudo && r.mitigatedByPd > 0) personagem = setItemPdAtual(personagem, escudo.instance.id, r.pdAfter ?? escudo.pdAtual, escudo.pdMax);
+    }
+  }
+  return { personagem, danoFinal, mitigado, resumoDefesa, armaduraNome, regiao, bloqueou, protecao };
+}
+
+export interface PreviaDano {
+  dano: number;
+  danoRolado: number | null;
+  ajusteMargem: number | null;
+  regiao: string | null;
+  bloqueou: boolean;
+  armadura: string | null;
+  protecao: { tipo: "mit" | "pd"; antes: number; depois: number; max: number } | null;
+  mitigado: number;
+  danoFinal: number;
+  pvAntes: number;
+  pvDepois: number;
+  alvoNome: string;
+}
+
+/** O que "Aplicar dano" VAI fazer — sem gravar nada. Só o narrador. */
+export async function preverDanoAction(params: { campaignId: string; logId: string }): Promise<ResultadoPainel<PreviaDano>> {
+  const v = await exigirNarradorPainel(params.campaignId);
+  if (!v.ok) return { ok: false, erro: v.erro };
+  try {
+    const entrada = await lerEntrada(params.campaignId, params.logId);
+    if (!entrada) return { ok: false, erro: "Este ataque não está mais disponível." };
+    const p = entrada.payload as Record<string, unknown>;
+    const dano = typeof p.dano === "number" ? p.dano : null;
+    const alvoId = typeof p.alvoCharacterId === "string" ? p.alvoCharacterId : null;
+    if (dano == null || !alvoId) return { ok: false, erro: "Sem dano ou alvo para prever." };
+    const alvo = await getCharacter(alvoId);
+    if (!alvo) return { ok: false, erro: "Personagem alvo não encontrado." };
+    const personagem = normalizeCharacter(alvo.payload);
+    const c = await calcularDano(personagem, p, dano);
+    const simulado = applyGmDamage(c.personagem, "pv", c.danoFinal, new Date().toISOString());
+    return {
+      ok: true,
+      dados: {
+        dano,
+        danoRolado: typeof p.danoBrutoRolado === "number" ? p.danoBrutoRolado : null,
+        ajusteMargem: typeof p.ajusteMargem === "number" ? p.ajusteMargem : null,
+        regiao: c.regiao, bloqueou: c.bloqueou, armadura: c.armaduraNome, protecao: c.protecao,
+        mitigado: c.mitigado, danoFinal: c.danoFinal, pvAntes: simulado.before, pvDepois: simulado.after, alvoNome: alvo.name,
+      },
+    };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Falha ao prever o dano.") };
+  }
+}
+
 export async function aplicarDanoDoAtaqueAction(params: {
   campaignId: string;
   /** `table_logs.id` do evento de ataque. */
@@ -124,16 +228,21 @@ export async function aplicarDanoDoAtaqueAction(params: {
       throw new Error(erroPasso.message);
     }
 
-    // ── Regra canônica de dano. ──
-    const personagem = normalizeCharacter(alvo.payload);
+    // ── Regra canônica de dano (a MESMA conta da prévia). ──
     const agoraIso = new Date().toISOString();
-    const resultado = applyGmDamage(personagem, "pv", dano, agoraIso);
+    const calc = await calcularDano(normalizeCharacter(alvo.payload), p, dano);
+    const { danoFinal, mitigado, resumoDefesa, armaduraNome, regiao } = calc;
+    const personagem = calc.personagem;
+
+    const resultado = applyGmDamage(personagem, "pv", danoFinal, agoraIso);
+    const ehPn = personagem.metadados?.tipo_personagem === "pn";
     const salvo = await updateCharacter(alvoId, resultado.character);
 
     try {
       await addLog({
         campaignId: params.campaignId,
-        characterId: alvoId,
+        // Do atacante: o cartão do ataque é dele do começo ao fim (retrato).
+        characterId: typeof p.atacanteCharacterId === "string" ? p.atacanteCharacterId : alvoId,
         type: "attack_damage_applied",
         visibility: entrada.visibility,
         payload: {
@@ -145,9 +254,17 @@ export async function aplicarDanoDoAtaqueAction(params: {
           characterNome: salvo.name,
           alvoNome: salvo.name,
           alvoCharacterId: alvoId,
-          dano,
-          pvAntes: resultado.before,
-          pvDepois: resultado.after,
+          dano: danoFinal,
+          danoBruto: dano,
+          regiao,
+          armadura: armaduraNome,
+          mitigado,
+          resumoDefesa,
+          /* PV de PN não vai para o registro: o cartão é visto pela mesa
+             inteira e o número exporia a vida do PN aos jogadores. Fica só
+             a marca de que o dano entrou. Personagem de jogador mantém. */
+          ...(ehPn ? {} : { pvAntes: resultado.before, pvDepois: resultado.after }),
+          danoAplicado: true,
           source: "vtt_painel_combate",
         },
       });
@@ -158,7 +275,7 @@ export async function aplicarDanoDoAtaqueAction(params: {
 
     return {
       ok: true,
-      dados: { aplicadoAgora: true, pvAntes: resultado.before, pvDepois: resultado.after, alvoNome: salvo.name },
+      dados: { aplicadoAgora: true, pvAntes: resultado.before, pvDepois: resultado.after, alvoNome: salvo.name, mitigado },
     };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Falha ao aplicar o dano.") };

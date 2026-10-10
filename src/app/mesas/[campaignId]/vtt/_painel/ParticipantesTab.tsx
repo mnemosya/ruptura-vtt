@@ -34,6 +34,7 @@ import {
 } from "./participantesModelo";
 import { lerControlesParticipantesAction, type ControlesDeParticipantes } from "./acoes/participantesPainel";
 import { iniciaisDe } from "./chatModelo";
+import { AvatarUsuario } from "../../../../_design/AvatarUsuario";
 
 export function ParticipantesTab({
   campaignId,
@@ -171,7 +172,7 @@ export function ParticipantesTab({
                 {linhas.map((p) => (
                   <LinhaDiretorio
                     key={p.userId}
-                    face={iniciaisDe(p.displayName)}
+                    face={<AvatarUsuario userId={p.userId} fallback={iniciaisDe(p.displayName)} />}
                     nome={p.displayName}
                     acento={p.role === "narrator" ? "var(--rv-am)" : "var(--rv-cy)"}
                     subtitulo={

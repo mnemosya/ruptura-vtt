@@ -197,7 +197,7 @@ export const ROTULO_VISIBILIDADE: Record<TableLogVisibility, string> = {
 export type FamiliaEntrada = "mensagem" | "narracao" | "rolagem" | "sistema" | "combate" | "magia" | "condicao" | "turno";
 
 const TIPOS_ROLAGEM = new Set(["rolagem_pericia", "rolagem_expressao", "overload_will_roll"]);
-const TIPOS_COMBATE = new Set(["attack_resolved", "defense_reaction_used", "action_used", "spell_attack_used", "spell_attack_resolved"]);
+const TIPOS_COMBATE = new Set(["attack_declared", "attack_defended", "attack_damage_applied", "attack_resolved", "defense_reaction_used", "action_used", "spell_attack_used", "spell_attack_resolved"]);
 const TIPOS_MAGIA = new Set(["spell_cast"]);
 const TIPOS_TURNO = new Set(["round_ended", "round_end_processed", "scene_ended", "scene_end_processed", "scene_rupture_pending", "round_pa_reduced_by_condition"]);
 

@@ -1,0 +1,64 @@
+/* Abertura do Mercado — o painel se desdobra.
+   A janela nasce como uma faixa vertical no centro e se abre para os
+   lados (recorte animado, expo-out); só depois o conteúdo aparece, com
+   as três colunas em sequência. O fundo escurece à parte. Saída: o
+   painel se fecha de volta para o centro, mais rápido. */
+
+.jm-fundo {
+  position: fixed; inset: 0; z-index: 600;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(3, 9, 15, .72); backdrop-filter: blur(3px);
+  animation: jm-fundo-in 220ms ease-out both;
+}
+.jm-janela {
+  position: relative; width: 90vw; height: 88vh; outline: none;
+  animation: jm-desdobra 460ms cubic-bezier(0.16, 1, 0.3, 1) 40ms both;
+}
+/* O conteúdo espera o painel abrir quase todo. */
+.jm-janela .hx > div:last-child > * {
+  animation: jm-coluna-in 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.jm-janela .hx > div:last-child > :nth-child(1) { animation-delay: 260ms; }
+.jm-janela .hx > div:last-child > :nth-child(2) { animation-delay: 310ms; }
+.jm-janela .hx > div:last-child > :nth-child(3) { animation-delay: 360ms; }
+.jm-janela .hx > header { animation: jm-coluna-in 300ms cubic-bezier(0.16, 1, 0.3, 1) 220ms both; }
+
+/* Saída: o painel se fecha de volta para a faixa do centro, num
+   movimento só, DESACELERANDO ao chegar nela (ease-out) — acelerar até o
+   fim fazia o último trecho acontecer num piscar. A transparência começa
+   na metade e vai até o fim, sem queda brusca. Usa `transform` (scaleX), que a GPU anima sem repintar;
+   o recorte animado da abertura, aqui, engasgava. O conteúdo some logo no
+   começo (para não aparecer espremido), e o fundo clareia junto.
+   Total: 480ms — `SAIDA_MS` no componente desmonta logo depois. */
+.jm-fundo[data-saindo] { animation: jm-fundo-out 480ms cubic-bezier(0.33, 1, 0.68, 1) both; backdrop-filter: none; }
+.jm-fundo[data-saindo] .jm-janela {
+  animation: jm-recolhe 480ms cubic-bezier(0.33, 1, 0.68, 1) both;
+  will-change: transform, opacity;
+}
+.jm-fundo[data-saindo] .jm-janela .hx > header,
+.jm-fundo[data-saindo] .jm-janela .hx > div:last-child > * { animation: jm-conteudo-out 180ms linear both; }
+
+@keyframes jm-fundo-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes jm-fundo-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes jm-desdobra {
+  0% { clip-path: inset(-140px 49.5% -140px 49.5%); opacity: 0; }
+  12% { opacity: 1; }
+  100% { clip-path: inset(-140px -140px -140px -140px); opacity: 1; }
+}
+@keyframes jm-recolhe {
+  0% { clip-path: none; transform: scaleX(1); opacity: 1; }
+  45% { opacity: 1; }
+  100% { clip-path: none; transform: scaleX(.015); opacity: 0; }
+}
+@keyframes jm-conteudo-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes jm-coluna-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jm-janela, .jm-janela .hx > header, .jm-janela .hx > div:last-child > *, .jm-fundo[data-saindo] .jm-janela {
+    animation-name: jm-fundo-in; animation-duration: 150ms; animation-delay: 0ms;
+  }
+  .jm-fundo[data-saindo], .jm-fundo[data-saindo] .jm-janela { animation-name: jm-fundo-out; animation-delay: 0ms; }
+}

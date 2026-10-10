@@ -74,9 +74,9 @@ console.log("✓ capacidade: 10 da mochila básica, e não muda com atributo");
 
 // ── 4. o que pesa e o que não pesa ────────────────────────────────
 assert.equal(ocupaEspaco("mochila"), true);
-assert.equal(ocupaEspaco("equipado"), true);
-assert.equal(ocupaEspaco("empunhado"), true);
-assert.equal(ocupaEspaco("acesso_rapido"), true);
+assert.equal(ocupaEspaco("equipado"), false, "O que está no corpo não ocupa a mochila.");
+assert.equal(ocupaEspaco("empunhado"), false);
+assert.equal(ocupaEspaco("acesso_rapido"), false);
 assert.equal(ocupaEspaco("abrigo"), false, "Guardar no abrigo existe justamente para não carregar.");
 
 let personagem = createInitialCharacter(null, "Carregador de Teste");
