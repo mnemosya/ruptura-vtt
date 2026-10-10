@@ -5,11 +5,8 @@
  * quem mexer aqui saiba exatamente qual é o tamanho dela. Antes deste
  * arquivo:
  *
- *   - o custo em espaços de um item NÃO existe em campo nenhum. Cheguei
- *     a derivá-lo de `estatisticas.classe_porte` (leve/media/pesada) e
- *     estava errado: porte é como a arma se maneja, não quanto ela
- *     ocupa de mochila. Enquanto a regra não existir, todo item conta
- *     1 — ver `espacosDoItem`.
+ *   - o custo em espaços de um item vem de `estatisticas.espacos_texto`
+ *     — ver `espacosDoItem`.
  *
  *   - a capacidade é da MOCHILA, não do personagem: cada modelo tem a
  *     sua e a básica tem 10. Nenhum item de mochila existe publicado
@@ -23,23 +20,25 @@ import type { Character } from "./types";
 import type { InventoryItemInstance, ItemContent, ItemLoadoutState } from "./inventory";
 
 /**
- * QUANTOS ESPAÇOS UM ITEM OCUPA — e o buraco que isso ainda é.
+ * QUANTOS ESPAÇOS UM ITEM OCUPA — lido de `estatisticas.espacos_texto`
+ * (ver `ItemContent.espacosTexto`). Os valores publicados são:
  *
- * Eu tinha ligado isto a `estatisticas.classe_porte` (leve/media/
- * pesada), e estava ERRADO: classe de porte diz como a arma ou a
- * armadura se maneja, não quanto ela ocupa de mochila. São dois eixos
- * diferentes e o campo não é fonte para este.
+ *   - um número, às vezes com nota: "3", "1 (kit)", "1 (6 shurikens)"
+ *     → o número inicial (o kit/pacote inteiro conta como um item);
+ *   - "Carga" (lança, alabarda, escudo torre, bicicleta…) → 0: é levado
+ *     à mão ou à parte, não cabe dentro da mochila;
+ *   - "Não aplicável" (CDI craqueada) → 0.
  *
- * Nenhum outro campo do conteúdo publicado diz o custo em espaços.
- * Então, até a regra existir, TODO item conta 1 — que é o único valor
- * que não inventa nada: não dá desconto e não pune. A função existe
- * assim mesmo, com este nome, porque é ela que o resto do sistema
- * chama; no dia em que a fonte aparecer (campo novo por item, tabela
- * por categoria, o que for), é só este corpo que muda, e a grade já
- * sabe estender o cartão que ocupar mais de um.
+ * Sem o campo (modelo ausente ou item sem o dado), conta 1 — o valor
+ * que não dá desconto nem pune. `classe_porte` NÃO é fonte: diz como a
+ * arma se maneja, não quanto ocupa.
  */
-export function espacosDoItem(_modelo: ItemContent | undefined): number {
-  return 1;
+export function espacosDoItem(modelo: ItemContent | undefined): number {
+  const texto = modelo?.espacosTexto?.trim();
+  if (!texto) return 1;
+  const numero = /^\d+/.exec(texto);
+  if (numero) return Number(numero[0]);
+  return 0;
 }
 
 /**
