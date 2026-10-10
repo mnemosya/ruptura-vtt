@@ -8,6 +8,7 @@
 
 import { useState } from "react";
 import { MercadoHud as Mercado, type ProdutoHud } from "../../../ficha/_console/panels/hud/MercadoHud";
+import { JanelaMercado } from "../../../ficha/_console/panels/hud/JanelaMercado";
 
 type Raridade = "comum" | "incomum" | "raro";
 type Cat = { id: string; nome: string; c: string; g: string };
@@ -90,15 +91,19 @@ const PRODUTOS: ProdutoHud[] = CATALOGO.map((i) => ({
 export function MercadoHud({ onFechar }: { onFechar?: () => void } = {}) {
   const [saldo, setSaldo] = useState(3000);
   const [usados, setUsados] = useState(6);
-  return (
-    <div className="hx" style={{ padding: 24 }}>
-      <div style={{ height: 760, maxWidth: 1100, margin: "0 auto" }}>
-        <Mercado produtos={PRODUTOS} saldo={saldo} usados={usados} capacidade={10} onFechar={onFechar}
+  const conteudo = (fechar?: () => void) => (
+        <Mercado produtos={PRODUTOS} saldo={saldo} usados={usados} capacidade={10} onFechar={fechar}
           onComprar={(slug, n) => {
             const p = PRODUTOS.find((x) => x.slug === slug)!;
             setSaldo((v) => v - p.preco * n);
             setUsados((u) => u + p.espacos * n);
           }} />
+  );
+  if (onFechar) return <JanelaMercado onFechar={onFechar}>{conteudo}</JanelaMercado>;
+  return (
+    <div className="hx" style={{ padding: "clamp(8px, 2vw, 24px)" }}>
+      <div style={{ height: "min(900px, calc(100dvh - 48px))", maxWidth: 1440, margin: "0 auto" }}>
+        {conteudo()}
       </div>
     </div>
   );

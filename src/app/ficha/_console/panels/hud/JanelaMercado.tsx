@@ -47,9 +47,9 @@ export function JanelaMercado({ onFechar: fecharDeVez, children }: { onFechar: (
       const el = janela.current;
       if (e.key !== "Tab" || !el) return;
       e.stopPropagation();
-      const alvos = el.querySelectorAll<HTMLElement>(
+      const alvos = [...el.querySelectorAll<HTMLElement>(
         'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
-      );
+      )].filter((alvo) => alvo.getClientRects().length > 0 && !alvo.closest("[inert]"));
       if (alvos.length === 0) { e.preventDefault(); return; }
       const primeiro = alvos[0], ultimo = alvos[alvos.length - 1];
       const dentro = el.contains(document.activeElement);

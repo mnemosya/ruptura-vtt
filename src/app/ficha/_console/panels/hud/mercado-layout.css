@@ -1,0 +1,106 @@
+/* A largura do próprio mercado decide quantos painéis cabem.
+   O catálogo mantém cards legíveis, inclusive fora do portal do VTT. */
+.hm-mercado { container: mercado / inline-size; min-width: 0; }
+.hm-cabecalho { display: flex; flex: none; align-items: center; gap: 20px; padding: 18px 24px; border-bottom: 1px solid rgba(0,212,255,.1); }
+.hm-identidade { min-width: 0; }
+.hm-mercado .hm-titulo { display: block; margin: 0; font-family: var(--hx-display); font-size: 28px; font-weight: 900; text-transform: uppercase; line-height: 1.1; letter-spacing: 0; color: var(--hx-ice); }
+.hm-mercado .hm-titulo::after { display: none; }
+.hm-carteira { margin-left: auto; display: flex; align-items: center; gap: 24px; flex: none; }
+.hm-mercado .hx-fechar-quad { width: 44px; height: 44px; }
+.hm-fechar { flex: none; }
+.hm-corpo { position: relative; display: grid; min-height: 0; flex: 1; grid-template-columns: 232px minmax(0,1fr) clamp(320px,29cqw,360px); }
+.hm-categorias { min-height: 0; overflow-y: auto; border-right: 1px solid rgba(0,212,255,.1); padding: 16px 10px; background: var(--hx-abismo); scrollbar-width: thin; scrollbar-color: #24404c transparent; }
+.hm-categorias .hx-cat-linha { gap: 8px; padding: 10px !important; min-height: 44px; border: 1px solid transparent !important; }
+.hm-categorias .hx-cat-linha[data-ativo] { border-color: color-mix(in srgb, var(--k, var(--hx-amb)) 35%, transparent) !important; }
+.hm-categorias .hx-cat-fio { left: -1px; top: 50%; bottom: auto; height: 50%; transform: translateY(-50%); }
+.hm-categorias .hx-sub-linha { min-height: 44px; border: 1px solid transparent !important; }
+.hm-categorias .hx-sub-linha[data-ativo] { border-color: color-mix(in srgb, var(--k, var(--hx-amb)) 35%, transparent) !important; }
+.hm-filtro-fundo, .hm-voltar { display: none; }
+.hm-catalogo { display: flex; min-height: 0; min-width: 0; flex-direction: column; }
+.hm-ferramentas { flex: none; display: flex; align-items: center; gap: 12px; padding: 18px 20px 0; }
+.hm-lista { min-height: 0; flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 28px; scrollbar-width: thin; scrollbar-color: #24404c transparent; }
+.hm-lista section { min-width: 0; }
+.hm-secao-titulo { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.hm-secao-titulo > svg { flex: none; }
+.hm-secao-titulo .hx-display { line-height: 1.4; overflow-wrap: anywhere; }
+.hm-grade { display: grid; grid-template-columns: repeat(auto-fill,minmax(min(100%,max(160px,calc((100% - 24px)/3))),1fr)); gap: 12px; }
+.hm-mercado .hx-produto { min-width: 0; height: 216px; }
+.hm-mercado .hx-produto-arte { min-height: 108px; }
+.hm-card-info { display: flex; flex-direction: column; gap: 6px; flex: none; padding: 10px 12px; border-top: 1px solid rgba(0,212,255,.1); background: var(--hx-casco); text-align: left; }
+.hm-card-nome { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; min-height: 38px; font-size: 14px; line-height: 19px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; overflow-wrap: anywhere; }
+.hm-card-preco { font-size: 16px; font-weight: 700; white-space: nowrap; }
+.hm-card-espacos { display: flex; min-height: 8px; overflow: hidden; }
+.hm-detalhe { display: flex; min-height: 0; min-width: 0; flex-direction: column; border-left: 1px solid rgba(0,212,255,.1); background: var(--hx-casco); }
+.hm-produto-cab { position: relative; min-height: 128px; flex: none; overflow: hidden; padding: 14px 18px 18px; display: flex; flex-direction: column; justify-content: space-between; gap: 22px; }
+.hm-produto-glifo { position: absolute; right: -8px; top: 50%; transform: translateY(-50%); opacity: .5; pointer-events: none; }
+.hm-produto-tags { position: relative; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.hm-produto-tags .hx-tag { overflow-wrap: anywhere; }
+.hm-produto-identidade { position: relative; padding-right: 28px; }
+.hm-produto-nome { margin: 0; font-size: 26px; font-weight: 900; text-transform: uppercase; line-height: 1.1; letter-spacing: .02em; text-shadow: 0 2px 0 #000; overflow-wrap: anywhere; outline: none; }
+.hm-leitura { min-height: 0; flex: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #24404c transparent; }
+.hm-descricao { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+.hm-descricao > * { flex-shrink: 0; }
+.hm-compra { flex: none; border-top: 1px solid rgba(255,138,31,.25); background: rgba(0,0,0,.3); padding: 16px 18px; }
+.hm-compra .hx-passo { height: 44px; }
+.hm-compra .hx-passo button { width: 44px; }
+.hm-mercado button:focus-visible { outline: 2px solid var(--hx-cy); outline-offset: -2px; }
+
+.hm-categorias-cab { display: flex; align-items: center; justify-content: space-between; padding: 0 10px 12px; margin-bottom: 8px; border-bottom: 1px solid #24404c; }
+.hm-ferramentas .hx-busca { flex: 1; min-width: 0; }
+.hm-filtro, .hm-recolher { position: relative; display: grid; place-items: center; flex: none; width: 44px; height: 44px; color: var(--hx-dim) !important; }
+.hm-filtro[hidden] { display: none; }
+.hm-filtro:hover, .hm-recolher:hover { color: var(--hx-amb) !important; background: rgba(255,138,31,.06) !important; }
+.hm-filtro::after, .hm-recolher::after {
+  content: attr(data-tooltip); position: absolute; top: calc(100% + 6px); z-index: 15;
+  padding: 7px 10px; border: 1px solid rgba(255,138,31,.25); background: var(--hx-casco);
+  box-shadow: 0 4px 14px #0006; color: var(--hx-ice); font-size: 12px; white-space: nowrap;
+  opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 120ms ease-out;
+}
+.hm-filtro::after { left: 0; }
+.hm-recolher::after { right: 0; }
+.hm-filtro:is(:hover, :focus-visible)::after, .hm-recolher:is(:hover, :focus-visible)::after { opacity: 1; visibility: visible; }
+
+@container mercado (width >= 1120px) {
+  .hm-mercado[data-categorias-ocultas] .hm-corpo { grid-template-columns: minmax(0,1fr) clamp(320px,29cqw,360px); }
+  .hm-mercado[data-categorias-ocultas] .hm-categorias { display: none; }
+}
+
+@container mercado (width < 1120px) {
+  .hm-corpo { grid-template-columns: minmax(0,1fr) 320px; }
+  .hm-categorias { display: none; position: absolute; inset: 0 auto 0 0; width: min(320px,100%); z-index: 10; box-shadow: 12px 0 36px #0008; }
+  .hm-mercado[data-categorias] .hm-categorias { display: block; }
+  .jm-janela .hm-mercado .hm-corpo > .hm-categorias { animation: none; }
+  .hm-filtro-fundo { display: block; position: absolute; inset: 0; z-index: 9; background: #03090f99 !important; cursor: default; }
+}
+
+@container mercado (width < 720px) {
+  .hm-cabecalho { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; padding: 16px; }
+  .hm-mercado .hm-titulo { font-size: clamp(20px,4.5cqw,26px); }
+  .hm-identidade { grid-column: 1; grid-row: 1; }
+  .hm-identidade > .hx-tag { font-size: 9px; letter-spacing: .15em; }
+  .hm-fechar { grid-column: 2; grid-row: 1; align-self: start; }
+  .hm-carteira { margin: 0; grid-column: 1 / -1; grid-row: 2; justify-content: space-between; padding-top: 10px; border-top: 1px solid rgba(0,212,255,.08); }
+  .hm-carteira > div { display: flex; gap: 8px; align-items: baseline; }
+  .hm-carteira .hx-display { font-size: 18px !important; }
+  .hm-corpo { grid-template-columns: minmax(0,1fr); }
+  .hm-detalhe { display: none; border-left: 0; }
+  .hm-mercado[data-detalhe] .hm-detalhe { display: flex; }
+  .jm-janela .hm-mercado .hm-corpo > .hm-detalhe { animation: none; }
+  .hm-mercado[data-detalhe] .hm-catalogo { display: none; }
+  .hm-ferramentas { padding: 14px 14px 0; }
+  .hm-lista { padding: 18px 14px; gap: 24px; }
+  .hm-grade { grid-template-columns: repeat(auto-fill,minmax(min(100%,max(144px,calc((100% - 20px)/3))),1fr)); gap: 10px; }
+  .hm-secao-titulo .hx-display { font-size: 12px !important; letter-spacing: .1em !important; }
+  .hm-voltar { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 10px 16px !important; flex: none; border-bottom: 1px solid rgba(0,212,255,.1) !important; color: var(--hx-dim) !important; font-size: 13px !important; }
+  .hm-produto-cab { min-height: 110px; gap: 16px; }
+  .hm-produto-nome { font-size: 24px; }
+}
+
+/* Em janelas baixas, a leitura tem prioridade sobre a ilustração. */
+@media (max-height: 650px) {
+  .hm-cabecalho { padding-top: 10px; padding-bottom: 10px; }
+  .hm-produto-cab { min-height: 90px; gap: 12px; padding-top: 10px; padding-bottom: 12px; }
+  .hm-produto-nome { font-size: 22px; }
+  .hm-compra { padding: 10px 16px; }
+  .hm-compra > div:first-child { margin-bottom: 8px !important; }
+}

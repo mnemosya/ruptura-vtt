@@ -19,10 +19,11 @@
  * callback. Quem lê o inventário é o `EquipmentPanel`.
  */
 
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { BODY_PATHS, type BodyRegiao } from "../../bodySilhouette";
 import { oxanium } from "../../../../_design/oxanium";
 import "./hud-base.css";
+import "./equipamento-motion.css";
 
 export type EncaixeHud =
   | "cabeca" | "tronco" | "membro_superior" | "membro_inferior"
@@ -133,48 +134,61 @@ const Svg = ({ d, tam, cor, traco = 1.5, opac = 1, style }: { d: string; tam: nu
 
 export function EquipamentoHud(props: PropsEquipamentoHud) {
   const { encaixes } = props;
+  const [entradaEncerrada, setEntradaEncerrada] = useState(false);
   const [sel, setSel] = useState<EncaixeHud | null>(null);
   const [ver, setVer] = useState<PecaHud | null>(null);
   const [hover, setHover] = useState<EncaixeHud | null>(null);
-  const abrir = (e: EncaixeHud | null) => { setSel(e); setVer(null); };
+  const abrir = (e: EncaixeHud | null) => { setEntradaEncerrada(true); setSel(e); setVer(null); };
   /* Altura útil do palco → altura da figura. */
   const palcoRef = useRef<HTMLDivElement>(null);
   const [alturaPalco, setAlturaPalco] = useState(640);
-  /* Sem transição até a primeira medida: a figura nascia com 640 de
-     palpite e, ao medir, ia até o lugar — um "motion de entrada" que
-     ninguém pediu. Depois de medido, as transições voltam (gaveta). */
-  const [medido, setMedido] = useState(false);
-  /* Mede ANTES da primeira pintura: o primeiro quadro já sai com a altura
-     real, e nada se mexe ao abrir a aba. */
-  useLayoutEffect(() => {
-    const h = palcoRef.current?.getBoundingClientRect().height;
-    if (h) setAlturaPalco(h);
-  }, []);
   useEffect(() => {
     const el = palcoRef.current;
     if (!el) return;
-    let quadro = 0;
-    const ro = new ResizeObserver(([e]) => {
-      setAlturaPalco(e.contentRect.height);
-      if (!quadro) quadro = requestAnimationFrame(() => requestAnimationFrame(() => setMedido(true)));
-    });
+    const ro = new ResizeObserver(([e]) => setAlturaPalco(e.contentRect.height));
     ro.observe(el);
-    return () => { ro.disconnect(); cancelAnimationFrame(quadro); };
+    return () => ro.disconnect();
   }, []);
-  const trans = (t: string) => (medido ? t : "none");
   const FH = Math.max(420, Math.min(900, alturaPalco - 120)), FS = FH / 613, FW = 201 * FS;
   const TOPO = Math.max(16, (alturaPalco - FH) / 2);
-  const folga = sel ? FOLGA_ABERTO : FOLGA_FECHADO;
+  // Um mesmo valor interpola toda a geometria: gaveta, corpo, slots e fios.
+  const gavetaAberta = sel !== null;
+  const [aberturaGaveta, setAberturaGaveta] = useState(0);
+  const aberturaGavetaRef = useRef(0);
+  useEffect(() => {
+    const destino = gavetaAberta ? 1 : 0;
+    const origem = aberturaGavetaRef.current;
+    if (origem === destino) return;
+    const atualizar = (valor: number) => {
+      aberturaGavetaRef.current = valor;
+      setAberturaGaveta(valor);
+    };
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      atualizar(destino);
+      return;
+    }
+    let frame: number;
+    const inicio = performance.now();
+    const animar = (agora: number) => {
+      const progresso = Math.min(1, (agora - inicio) / 340);
+      const suavizado = 1 - Math.pow(1 - progresso, 3);
+      atualizar(origem + (destino - origem) * suavizado);
+      if (progresso < 1) frame = requestAnimationFrame(animar);
+    };
+    frame = requestAnimationFrame(animar);
+    return () => cancelAnimationFrame(frame);
+  }, [gavetaAberta]);
+  const folga = FOLGA_FECHADO + (FOLGA_ABERTO - FOLGA_FECHADO) * aberturaGaveta;
   const PALCO = FW + 2 * (S + folga), FX = (PALCO - FW) / 2;
 
   return (
-    <div className={`hx hx-grade ${oxanium.variable}`} style={{ position: "relative", height: "100%", minHeight: 620, overflow: "hidden" }}
+    <div className={`hx hx-grade hx-eq-motion ${oxanium.variable}`} data-eq-entrada-encerrada={entradaEncerrada || undefined} onFocusCapture={() => setEntradaEncerrada(true)} style={{ position: "relative", height: "100%", minHeight: 620, overflow: "hidden" }}
       onKeyDown={(ev) => { if (ev.key === "Escape") { if (ver) setVer(null); else setSel(null); } }}>
       <div className="hx-scan" style={{ position: "absolute", inset: 0, opacity: .6, pointerEvents: "none" }} />
       <div style={{ position: "relative", display: "flex", height: "100%" }}>
         <div ref={palcoRef} style={{ position: "relative", minWidth: 0, flex: 1 }} onClick={(ev) => { if (!(ev.target as Element).closest("button,g[data-r]")) abrir(null); }}>
-          <div style={{ position: "absolute", top: 0, height: "100%", width: PALCO, left: `calc(50% - ${PALCO / 2}px)`, transition: trans("width .3s ease-out, left .3s ease-out") }}>
-            <div style={{ position: "absolute", top: TOPO, left: FX, height: FH }}>
+          <div style={{ position: "absolute", top: 0, height: "100%", width: PALCO, left: `calc(50% - ${PALCO / 2}px)` }}>
+            <div className="hx-eq-corpo" style={{ position: "absolute", top: TOPO, left: FX, height: FH }}>
               <Corpo encaixes={encaixes} sel={sel} hover={hover} altura={FH}
                 onSel={(p) => abrir(ENCAIXE_DO_PATH[p])} onHover={(p) => setHover(p ? ENCAIXE_DO_PATH[p] : null)} />
             </div>
@@ -185,9 +199,9 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
                 const ocupante = encaixes[w.e], cf = on && ocupante ? corDe(ocupante) : CY;
                 const sx = w.lado === "e" ? S : PALCO - S, sy = w.y * FH + S / 2, ex = w.lado === "e" ? sx + 22 : sx - 22;
                 return (
-                  <g key={w.e} opacity={on ? 1 : .35}>
-                    <polyline points={`${sx},${sy} ${ex},${sy} ${bx},${by}`} fill="none" stroke={cf} strokeOpacity={on ? .85 : .25} strokeWidth="1" />
-                    <circle cx={bx} cy={by} r={on ? 3 : 2} fill={cf} fillOpacity={on ? 1 : .4} />
+                  <g key={w.e} opacity={on ? 1 : .35} style={{ ["--eq-fio-delay" as string]: `${60 + (w.pt[1] / 613) * 1500}ms` }}>
+                    <polyline className="hx-eq-fio" pathLength="1" points={`${bx},${by} ${ex},${sy} ${sx},${sy}`} fill="none" stroke={cf} strokeOpacity={on ? .85 : .25} strokeWidth="1" />
+                    <circle className="hx-eq-ponto" cx={bx} cy={by} r={on ? 3 : 2} fill={cf} fillOpacity={on ? 1 : .4} />
                   </g>
                 );
               })}
@@ -195,7 +209,7 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
             {FIOS.map((w) => {
               const p = encaixes[w.e];
               return (
-                <div key={w.e} style={{ position: "absolute", top: TOPO + w.y * FH, [w.lado === "e" ? "left" : "right"]: 0, display: "flex", flexDirection: "column", alignItems: w.lado === "e" ? "flex-start" : "flex-end", gap: 4, transition: trans("top .3s ease-out") }}
+                <div key={w.e} className="hx-eq-slot" data-lado={w.lado} style={{ ["--eq-slot-delay" as string]: `${160 + (w.pt[1] / 613) * 1500}ms`, ["--eq-item-cor" as string]: p ? corDe(p) : CY, position: "absolute", top: TOPO + w.y * FH, [w.lado === "e" ? "left" : "right"]: 0, display: "flex", flexDirection: "column", alignItems: w.lado === "e" ? "flex-start" : "flex-end", gap: 4 }}
                   onMouseEnter={() => setHover(w.e)} onMouseLeave={() => setHover(null)}>
                   <Encaixe peca={p} encaixe={w.e} ativo={sel === w.e} quente={hover === w.e} onClick={() => abrir(sel === w.e ? null : w.e)} />
                   <Tag className="hx-dim" style={{ fontSize: 8, opacity: .7 }}>{ROTULO[w.e]}</Tag>
@@ -203,10 +217,10 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
               );
             })}
           </div>
-          {!sel && <Tag className="hx-dim" style={{ position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)", fontSize: 9, opacity: .6, pointerEvents: "none" }}>selecione um encaixe</Tag>}
+          <Tag className="hx-dim hx-eq-instrucao" style={{ position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)", fontSize: 9, opacity: .6, visibility: sel ? "hidden" : "visible", pointerEvents: "none" }}>selecione um encaixe</Tag>
         </div>
 
-        <aside aria-hidden={!sel} style={{ position: "relative", flexShrink: 0, overflow: "hidden", width: sel ? GAVETA : 0, transition: "width .3s ease-out", background: "rgba(12,31,43,.35)", backdropFilter: "blur(2px)" }}>
+        <aside aria-hidden={!sel} style={{ position: "relative", flexShrink: 0, overflow: "hidden", width: aberturaGaveta * GAVETA, background: "rgba(12,31,43,.35)", backdropFilter: "blur(2px)" }}>
           <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: 1, background: "linear-gradient(180deg, rgba(0,212,255,0), rgba(0,212,255,.5), rgba(0,212,255,0))" }} />
           <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: GAVETA, display: "flex", flexDirection: "column" }}>
             {sel && <Gaveta key={sel} {...props} sel={sel} onFechar={() => abrir(null)} onVer={setVer} />}
@@ -229,12 +243,25 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
 }
 
 function Encaixe({ peca, encaixe, ativo, quente, onClick }: { peca: PecaHud | null; encaixe: EncaixeHud; ativo: boolean; quente?: boolean; onClick: () => void }) {
+  const previaId = useId();
   const cor = peca ? corDe(peca) : CY;
+  const resumo = peca?.categoria === "arma" && peca.dano
+    ? `Dano ${peca.dano.dado}${peca.dano.tipo ? ` · ${peca.dano.tipo}` : ""}`
+    : peca?.categoria === "armadura" && peca.mit
+      ? `MIT ${peca.mit[0]}/${peca.mit[1]}`
+      : peca?.categoria === "escudo" && peca.pd
+        ? `PD ${peca.pd[0]}/${peca.pd[1]}` : null;
   const selo = peca?.mit ? peca.mit[0] : peca?.pd ? peca.pd[0] : undefined;
   return (
     <button type="button" onClick={onClick} className="hx-encaixe" data-vazio={!peca || undefined} data-ativo={ativo || undefined} data-quente={quente || undefined}
-      aria-label={`${ROTULO[encaixe]}: ${peca ? peca.nome : "vazio"}`} aria-pressed={ativo} style={{ width: S, height: S, ["--k" as string]: cor }}>
+      aria-label={`${ROTULO[encaixe]}: ${peca ? peca.nome : "vazio"}`} aria-pressed={ativo} aria-describedby={peca ? previaId : undefined} style={{ width: S, height: S, ["--k" as string]: cor }}>
       <span className="hx-encaixe-placa" />
+      {peca && (
+        <span id={previaId} role="tooltip" className="hx-eq-previa">
+          <span className="hx-eq-previa-nome">{peca.nome}</span>
+          {resumo && <span className="hx-eq-previa-stat">{resumo}</span>}
+        </span>
+      )}
       {peca && <span style={{ position: "absolute", right: 0, top: 0, width: 0, height: 0, borderLeft: "8px solid transparent", borderTop: `8px solid ${corRar(peca.raridade)}` }} />}
       <span style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", display: "grid" }}>
         <Svg d={peca ? glifoDe(peca) : G_VAZIO[encaixe]} tam={S * .46} cor={peca ? cor : CY} opac={peca ? 1 : .22} />
@@ -250,12 +277,19 @@ function Corpo({ encaixes, sel, hover, altura, onSel, onHover }: {
   encaixes: Record<EncaixeHud, PecaHud | null>; sel: EncaixeHud | null; hover: EncaixeHud | null; altura: number;
   onSel: (p: BodyRegiao) => void; onHover: (p: BodyRegiao | null) => void;
 }) {
+  const recorteId = useId();
   return (
     <svg viewBox="0 0 201 613" height={altura} style={{ display: "block", overflow: "visible" }} aria-hidden="true">
       <defs>
+        <clipPath id={`${recorteId}-scan`}>{BODY_PATHS.map((path, i) => <path key={i} d={path.d} />)}</clipPath>
+        <linearGradient id={`${recorteId}-luz`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={CY} stopOpacity="0" />
+          <stop offset=".8" stopColor={CY} stopOpacity=".16" />
+          <stop offset="1" stopColor="#6ff0ff" stopOpacity=".65" />
+        </linearGradient>
         {/* Contorno INTERNO: o traço é o dobro da largura e recortado
             pelo próprio path — só a metade de dentro aparece. */}
-        {BODY_PATHS.map((path, i) => <clipPath key={i} id={`hx-corpo-recorte-${i}`}><path d={path.d} /></clipPath>)}
+        {BODY_PATHS.map((path, i) => <clipPath key={i} id={`${recorteId}-regiao-${i}`}><path d={path.d} /></clipPath>)}
       </defs>
       {BODY_PATHS.map((path, i) => {
         const e = ENCAIXE_DO_PATH[path.regiao], p = encaixes[e];
@@ -269,12 +303,15 @@ function Corpo({ encaixes, sel, hover, altura, onSel, onHover }: {
             {/* Hover: a cor da PRÓPRIA região um pouco mais forte, chapada —
                 sem degradê nem ciano por cima da armadura (virava rosa). */}
             {on && <path d={path.d} fill={c} fillOpacity={pr ? .14 : .08} />}
-            <path d={path.d} fill="none" clipPath={`url(#hx-corpo-recorte-${i})`}
+            <path d={path.d} fill="none" clipPath={`url(#${recorteId}-regiao-${i})`}
               stroke={c} strokeOpacity={on ? .75 : pr ? .35 : .1} strokeWidth={on ? 1.6 : 1.2}
               strokeDasharray="3 3" style={{ transition: "stroke-opacity .2s, stroke-width .2s", mixBlendMode: "screen" }} />
           </g>
         );
       })}
+      <g clipPath={`url(#${recorteId}-scan)`} pointerEvents="none">
+        <rect className="hx-eq-varredura" x="0" y="0" width="201" height="44" fill={`url(#${recorteId}-luz)`} />
+      </g>
     </svg>
   );
 }
