@@ -15,17 +15,17 @@ const HEX_D =
   "M38 1.51953L74.01 24.0258C74.3024 24.2085 74.48 24.529 74.48 24.8738V63.2853C74.48 63.6301 74.3024 63.9505 74.01 64.1333L38.53 86.3083C38.2057 86.5109 37.7943 86.5109 37.47 86.3083L1.99002 64.1333C1.69764 63.9505 1.52002 63.6301 1.52002 63.2853V24.8738C1.52002 24.529 1.69764 24.2085 1.99002 24.0258L38 1.51953Z";
 
 export const ATTR_HEX_STYLE: Record<keyof CharacterAttributes, { fill: string; stroke: string; strokeOpacity: number }> = {
-  corpo: { fill: "#0D2324", stroke: "#26FF00", strokeOpacity: 0.14 },
-  mente: { fill: "#1B2339", stroke: "#6A4ABD", strokeOpacity: 0.45 },
+  corpo: { fill: "#0d2024", stroke: "#26FF00", strokeOpacity: 0.14 },
+  mente: { fill: "#1b2e39", stroke: "#6A4ABD", strokeOpacity: 0.45 },
   animo: { fill: "#0E2431", stroke: "#00D4FF", strokeOpacity: 0.14 },
 };
 
 /** Fill + borda no hover — valores exatos do prompt (cores sólidas, não
  * a mesma cor do estado padrão com opacidade maior). */
 export const ATTR_HEX_HOVER: Record<keyof CharacterAttributes, { fill: string; stroke: string }> = {
-  corpo: { fill: "#123433", stroke: "#206C32" },
-  mente: { fill: "#202B49", stroke: "#5E41AF" },
-  animo: { fill: "#102E40", stroke: "#108BAC" },
+  corpo: { fill: "#122e34", stroke: "#206C32" },
+  mente: { fill: "#203a49", stroke: "#5E41AF" },
+  animo: { fill: "#102E40", stroke: "#00d4ff" },
 };
 
 export function AttrHexPolygon({ attr }: { attr: keyof CharacterAttributes }) {
@@ -84,7 +84,7 @@ export function AnimoIcon() {
     <svg viewBox="0 0 14 14" fill="none" aria-hidden="true">
       <path
         d="M1.1665 5.54211C1.16653 4.21325 1.98576 3.02193 3.22661 2.54635C4.46746 2.07076 5.87306 2.40935 6.76125 3.39778C6.82302 3.46383 6.90941 3.50131 6.99984 3.50131C7.09027 3.50131 7.17665 3.46383 7.23842 3.39778C8.12399 2.40273 9.53303 2.05975 10.7768 2.53648C12.0207 3.0132 12.8395 4.21008 12.8332 5.54211C12.8332 6.87795 11.9582 7.87545 11.0832 8.75045L7.8795 11.8497C7.65963 12.1022 7.34184 12.2481 7.00701 12.2502C6.67217 12.2524 6.35256 12.1105 6.1295 11.8608L2.9165 8.75045C2.0415 7.87545 1.1665 6.88378 1.1665 5.54211"
-        stroke="#0596B7"
+        stroke="#00d4ff"
         strokeOpacity="0.9"
         strokeWidth="1.16667"
         strokeLinecap="round"
@@ -103,5 +103,5 @@ export const ATTR_ICONS: Record<keyof CharacterAttributes, () => React.JSX.Eleme
 export const ATTR_LABEL_COLOR: Record<keyof CharacterAttributes, string> = {
   corpo: "#23903C",
   mente: "#6A49BC",
-  animo: "#0596B7",
+  animo: "#00d4ff",
 };

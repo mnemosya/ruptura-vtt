@@ -16,13 +16,13 @@ export const CONSOLE_RESOURCE_DEFINITIONS: { id: RecursoEditavel; rotulo: string
   // usa, e marcar isso como crítico ensinaria a ignorar o alarme.
   { id: "pv", rotulo: "PV", corTexto: "#FF5F74", corBarra: "rgba(196, 75, 95, 0.72)", corVazado: "185, 81, 98", bgBadge: "rgba(185, 81, 98, 0.10)", Icone: HeartPulse, avisa: true },
   { id: "pe", rotulo: "PE", corTexto: "#8B5CF6", corBarra: "rgba(123, 85, 190, 0.72)", corVazado: "115, 88, 173", bgBadge: "rgba(115, 88, 173, 0.10)", Icone: Brain, avisa: true },
-  { id: "mana", rotulo: "Mana", corTexto: "#00D4FF", corBarra: "rgba(28, 150, 175, 0.72)", corVazado: "37, 138, 160", bgBadge: "rgba(37, 138, 160, 0.10)", Icone: Zap, avisa: false },
+  { id: "mana", rotulo: "Mana", corTexto: "#00D4FF", corBarra: "rgba(0, 212, 255, 0.72)", corVazado: "37, 138, 160", bgBadge: "rgba(0, 212, 255, 0.10)", Icone: Zap, avisa: false },
 ];
 
 function MinusIcon() {
   return (
     <svg viewBox="0 0 11 11" fill="none" shapeRendering="crispEdges" aria-hidden="true">
-      <path d="M2.2915 4.99984H8.70817V5.99984H2.2915V4.99984Z" fill="#418292" />
+      <path d="M2.2915 4.99984H8.70817V5.99984H2.2915V4.99984Z" fill="#418492" />
     </svg>
   );
 }
@@ -34,7 +34,7 @@ function PlusIcon() {
     // mais sólido que os braços, lendo como outra cor. Mesma razão
     // do "+" de Equipamento e do conjunto em `_design/icons`.
     <svg viewBox="0 0 11 11" fill="none" shapeRendering="crispEdges" aria-hidden="true">
-      <path d="M4.99984 2.2915H5.99984V4.99984H8.70817V5.99984H5.99984V8.70817H4.99984V5.99984H2.2915V4.99984H4.99984V2.2915Z" fill="#418292" />
+      <path d="M4.99984 2.2915H5.99984V4.99984H8.70817V5.99984H5.99984V8.70817H4.99984V5.99984H2.2915V4.99984H4.99984V2.2915Z" fill="#418492" />
     </svg>
   );
 }

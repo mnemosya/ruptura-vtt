@@ -70,31 +70,31 @@
 .rv-token-flow { display: flex; flex-direction: column; gap: 18px; min-height: 100%; padding: 18px; box-sizing: border-box; font-family: var(--font-corpo), sans-serif; font-size: 14px; color: var(--rc-text-forte); }
 .rv-token-flow p, .rv-token-flow h3 { margin: 0; line-height: 1.45; }
 .rv-token-flow h3 { font-size: 20px; font-weight: 600; }
-.rv-token-flow__passos { display: flex; align-items: center; gap: 10px; font: 10px var(--font-mono), monospace; color: #60798c; }
+.rv-token-flow__passos { display: flex; align-items: center; gap: 10px; font: 10px var(--font-mono), monospace; color: #607c8c; }
 .rv-token-flow__passos span { white-space: nowrap; }
 .rv-token-flow__passos b { font-weight: 400; margin-left: 5px; }
 .rv-token-flow__passos [data-ativo="true"] { color: var(--rc-teal); }
 .rv-token-flow__passos i { height: 1px; background: var(--rc-btn-border); flex: 1; }
-.rv-token-flow__intro p { color: #90a5b5; margin-top: 4px; }
+.rv-token-flow__intro p { color: #90a7b5; margin-top: 4px; }
 .rv-token-flow__lista { display: grid; gap: 8px; }
 .rv-token-flow button.rv-token-flow__opcao { display: flex; flex-direction: column; align-items: stretch; gap: 6px; text-align: left; padding: 14px; }
 .rv-token-flow__opcao-nome { display: flex; justify-content: space-between; font: 600 16px var(--font-corpo), sans-serif; }
-.rv-token-flow small { display: block; font: 10px/1.5 var(--font-mono), monospace; color: #90a5b5; }
-.rv-token-flow__resumo { padding: 14px 16px; background: #101d2c; border: 1px solid #243b50; border-left: 2px solid var(--rc-teal); }
+.rv-token-flow small { display: block; font: 10px/1.5 var(--font-mono), monospace; color: #90a7b5; }
+.rv-token-flow__resumo { padding: 14px 16px; background: #10222c; border: 1px solid #244050; border-left: 2px solid var(--rc-teal); }
 .rv-token-flow__resumo-top, .rv-token-flow__secao { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .rv-token-flow__resumo-top { margin-bottom: 5px; }
-.rv-token-flow__rotulo { color: #90a5b5; text-transform: uppercase; letter-spacing: .12em; font: 10px var(--font-mono), monospace; }
+.rv-token-flow__rotulo { color: #90a7b5; text-transform: uppercase; letter-spacing: .12em; font: 10px var(--font-mono), monospace; }
 .rv-token-flow button.rv-token-flow__trocar { min-height: 24px; padding: 3px 8px; }
-.rv-token-flow__fatos { display: flex; gap: 22px; margin: 14px 0 0; padding-top: 12px; border-top: 1px solid #243b50; }
-.rv-token-flow__fatos dt { font: 10px var(--font-mono), monospace; color: #90a5b5; margin-bottom: 5px; }
+.rv-token-flow__fatos { display: flex; gap: 22px; margin: 14px 0 0; padding-top: 12px; border-top: 1px solid #244050; }
+.rv-token-flow__fatos dt { font: 10px var(--font-mono), monospace; color: #90a7b5; margin-bottom: 5px; }
 .rv-token-flow__fatos dd { margin: 0; font: 500 12px var(--font-mono), monospace; }
 .rv-token-flow__alvos { display: grid; gap: 10px; }
-.rv-token-flow__secao > span:last-child { color: #90a5b5; font: 10px var(--font-mono), monospace; }
-.rv-token-flow__alvo-vazio { display: flex; align-items: center; gap: 14px; min-height: 78px; padding: 12px 16px; border: 1px dashed #345063; background: #101b2a66; }
+.rv-token-flow__secao > span:last-child { color: #90a7b5; font: 10px var(--font-mono), monospace; }
+.rv-token-flow__alvo-vazio { display: flex; align-items: center; gap: 14px; min-height: 78px; padding: 12px 16px; border: 1px dashed #345063; background: #10202a66; }
 .rv-token-flow__alvo-vazio strong { font-size: 16px; font-weight: 500; }
-.rv-token-flow__alvo-vazio p { color: #90a5b5; margin-top: 7px; font: 11px var(--font-mono), monospace; }
+.rv-token-flow__alvo-vazio p { color: #90a7b5; margin-top: 7px; font: 11px var(--font-mono), monospace; }
 .rv-token-flow kbd { padding: 2px 5px; border: 1px solid #345063; border-radius: 3px; color: #bed3df; font: inherit; }
-.rv-token-flow__mira { font: 30px var(--font-mono), monospace; color: #60798c; }
+.rv-token-flow__mira { font: 30px var(--font-mono), monospace; color: #607c8c; }
 .rv-token-flow__alvo-lista { display: grid; gap: 6px; max-height: 132px; overflow-y: auto; padding: 3px; margin: -3px; }
 .rv-token-flow__alvo-lista:empty { display: none; }
 .rv-token-flow__alvo-lista button { display: flex; align-items: center; gap: 10px; text-align: left; min-height: 46px; }
@@ -102,14 +102,14 @@
 .rv-token-flow button[aria-pressed="true"] { --token-fio: var(--rc-btn-border-active); --token-fundo: var(--rc-btn-bg-hover); }
 .rv-token-flow__radio { flex: none; display: grid; place-items: center; width: 13px; height: 13px; border: 1px solid #48677a; border-radius: 2px; color: var(--rc-cy); }
 .rv-token-flow [aria-pressed="true"] .rv-token-flow__radio { background: rgba(0, 212, 255, .09); border-color: color-mix(in srgb, var(--rc-cy) 65%, #48677a); box-shadow: none; }
-.rv-token-flow__alvo-proprio { padding: 12px; border: 1px solid #243b50; }
-.rv-token-flow .rv-token-flow__nota { color: #90a5b5; font-size: 12px; line-height: 1.5; }
-.rv-token-flow__rodape { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 14px; border-top: 1px solid #243b50; }
-.rv-token-flow__rodape > span { color: #90a5b5; max-width: 145px; font: 10px/1.5 var(--font-mono), monospace; }
+.rv-token-flow__alvo-proprio { padding: 12px; border: 1px solid #244050; }
+.rv-token-flow .rv-token-flow__nota { color: #90a7b5; font-size: 12px; line-height: 1.5; }
+.rv-token-flow__rodape { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 14px; border-top: 1px solid #244050; }
+.rv-token-flow__rodape > span { color: #90a7b5; max-width: 145px; font: 10px/1.5 var(--font-mono), monospace; }
 .rv-token-flow button.rv-token-flow__confirmar { --token-fio: var(--rc-btn-border-active); --token-fundo: var(--rc-btn-bg-hover); min-width: 152px; }
 .rv-token-flow [role="alert"] { color: #f0acb9; font-size: 13px; padding: 8px 10px; border-left: 2px solid #c66a7c; background: #351b2840; }
 .rv-token-flow button:disabled { opacity: .5; cursor: not-allowed; }
-.rv-target-status { position: absolute; bottom: 90px; left: 80px; z-index: 50; max-width: 360px; padding: 10px; background: #101b2a; color: #eaf7ff; font: 11px var(--font-mono), monospace; }
+.rv-target-status { position: absolute; bottom: 90px; left: 80px; z-index: 50; max-width: 360px; padding: 10px; background: #10202a; color: #eaf7ff; font: 11px var(--font-mono), monospace; }
 
 /* `cursor.css` só esconde o cursor nativo em button/a/input/select/
    label/[role=button] — a topbar (drag) e o canto de resize são <div>s
@@ -157,13 +157,13 @@
 }
 .rc-modo-chip[data-evolucao="true"] .rc-modo-chip-ico { color: inherit; }
 .rc-modo-chip[data-evolucao="true"]:hover { border-color: var(--rc-am); background: color-mix(in srgb, var(--rc-am) 18%, transparent); }
-/* O ícone tem a MESMA cor do ícone de "Rolar defesa" (#0485A3, fixado
+/* O ícone tem a MESMA cor do ícone de "Rolar defesa" (#0488a3, fixado
    lá no TSX) e não acompanha o texto no hover — igual lá, onde a cor é
    atributo do SVG e só o rótulo clareia. Os ícones do Console são
    lucide com `stroke="currentColor"`, então basta pintar o invólucro;
    a única exceção é o estado LIGADO do Evoluir, logo abaixo, onde o
    âmbar é o estado e vale pro chip inteiro. */
-.rc-modo-chip-ico { display: grid; place-items: center; flex: none; color: #0485a3; }
+.rc-modo-chip-ico { display: grid; place-items: center; flex: none; color: #0488a3; }
 .rc-modo-chip-ico svg { display: block; }
 
 /* Passo −/+ dentro de um card de atributo/perícia. Compacto de
@@ -190,7 +190,7 @@
 /* ── Janela ────────────────────────────────────────────────────── */
 .rc-backdrop {
   position: fixed; inset: 0; z-index: 500;
-  background: rgba(4, 7, 12, 0.66);
+  background: rgba(4, 9, 12, 0.66);
   backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
   animation: rc-fade 0.16s ease both;
 }
@@ -219,13 +219,13 @@
      Console; o que destoava era a moldura em volta. */
   --rc-cy: #00d4ff;
   --rc-am: #ff8a1f;          /* --rv-am */
-  --rc-line: #1c2b45;     /* --rv-line-strong */
-  --rc-line-soft: #16233a;/* --rv-line-2 */
-  --rc-surface: rgba(12, 20, 32, 0.96);  /* --rv-panel, com alfa: a janela é flutuante */
-  --rc-panel: rgba(17, 29, 49, 0.72);    /* --rv-panel-2 */
-  --rc-text: #b9c9dc;     /* --rv-ink */
+  --rc-line: #1c3645;     /* --rv-line-strong */
+  --rc-line-soft: #162d3a;/* --rv-line-2 */
+  --rc-surface: rgba(12, 25, 32, 0.96);  /* --rv-panel, com alfa: a janela é flutuante */
+  --rc-panel: rgba(17, 37, 49, 0.72);    /* --rv-panel-2 */
+  --rc-text: #b8d8e8;     /* --rv-ink */
   --rc-dim: #7f95b3;      /* --rv-ink-dim */
-  --rc-danger: #d15068;   /* --rv-dg */
+  --rc-danger: #ff5f74;   /* --rv-dg */
   --rc-ok: #4fae82;       /* --rv-ok */
   /* CON-02 — as recorrentes que ainda não tinham nome. Sem nome, cada
      uso era uma decisão nova: 24 lugares escreviam a tinta do texto à
@@ -236,7 +236,7 @@
      (#124a68) que os cabeçalhos usavam era mais forte que a borda do
      próprio card e roubava a leitura. */
   --rc-fio-sutil: rgba(0, 212, 255, 0.14);
-  --rc-teal: #45b8c9;        /* ciano dessaturado dos rótulos técnicos */
+  --rc-teal: #00d4ff;        /* ciano dessaturado dos rótulos técnicos */
   --rc-surface-2: #0c1f2b;   /* fundo dos blocos dentro da janela */
   --rc-surface-3: #06121c;   /* o mais fundo — poços e trilhos */
 
@@ -256,7 +256,7 @@
 
   /* Base única dos botões e controles segmentados do painel do
      personagem. Os estados abaixo derivam deste mesmo par. */
-  --rc-btn-bg: #161e31;
+  --rc-btn-bg: #162731;
   --rc-btn-border: #122f41;
   --rc-btn-bg-hover: color-mix(in srgb, var(--rc-btn-bg) 86%, var(--rc-cy));
   --rc-btn-border-hover: color-mix(in srgb, var(--rc-btn-border) 70%, var(--rc-cy));
@@ -273,7 +273,7 @@
      O resto do Console continua no `#00d4ff`. Trocar o acento INTEIRO
      já foi tentado e desfeito (ver a nota em `.rc-window-wrap`); o que
      muda aqui é só a peça que fica ombro a ombro com o VTT. */
-  --rc-trilho-ativo: #45b8c9;  /* = --rv-cy */
+  --rc-trilho-ativo: #00d4ff;  /* = --rv-cy */
 }
 
 /* Os TOKENS valem também para o cabeçalho de /ficha, que é irmão da
@@ -285,16 +285,16 @@
 .rc-fichaheader {
   --rc-cy: #00d4ff;
   --rc-am: #ff8a1f;
-  --rc-line: #1c2b45;
-  --rc-line-soft: #16233a;
-  --rc-surface: rgba(12, 20, 32, 0.96);
-  --rc-panel: rgba(17, 29, 49, 0.72);
-  --rc-text: #b9c9dc;
+  --rc-line: #1c3645;
+  --rc-line-soft: #162d3a;
+  --rc-surface: rgba(12, 25, 32, 0.96);
+  --rc-panel: rgba(17, 37, 49, 0.72);
+  --rc-text: #b8d8e8;
   --rc-dim: #7f95b3;
-  --rc-danger: #d15068;
+  --rc-danger: #ff5f74;
   --rc-ok: #4fae82;
   --rc-text-forte: #eaf7ff;
-  --rc-teal: #45b8c9;
+  --rc-teal: #00d4ff;
   --rc-surface-2: #0c1f2b;
   --rc-surface-3: #06121c;
 }
@@ -338,7 +338,7 @@
   border-radius: var(--rc-r-window);
   border: 1px solid var(--rc-line);
   background: url("/console/bg-console-do-personagem.svg") center / cover no-repeat, var(--rc-surface);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.72), inset 0 0 60px rgba(17, 29, 49, 0.1);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.72), inset 0 0 60px rgba(17, 37, 49, 0.1);
 }
 .rc-window-wrap[data-mode="maximized"] .rc-window { border-radius: 0; }
 /* O corpo precisa do mesmo recorte, senão o fundo quadrado aparece por
@@ -352,7 +352,7 @@
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 0 12px 0 20px; height: 44px;
   border-bottom: 1px solid var(--rc-line);
-  background: linear-gradient(92deg, #111d31 0%, #0c1420 100%);
+  background: linear-gradient(92deg, #112531 0%, #0c1920 100%);
   touch-action: none;
 }
 /* A decoração principal pertence ao chassi da janela, não ao card de
@@ -397,17 +397,17 @@
   /* O ciano cheio fazia três ícones utilitários competirem com o
      conteúdo da ficha, que é onde a atenção deve estar. Atenuado no
      repouso e cheio no hover, quando a intenção já é de mexer. */
-  color: rgba(0, 212, 255, 0.62);
+  color: #00d4ff;
   cursor: pointer;
   transition: color 0.14s, background 0.14s, border-color 0.14s;
 }
-.rc-winbtn:hover { color: var(--rc-text); background: rgba(0, 212, 255, 0.14); border-color: #6fe0ff; }
+.rc-winbtn:hover { color: var(--rc-text); background: rgba(0, 212, 255, 0.14); border-color: #6ff0ff; }
 .rc-winbtn:active { background: rgba(0, 212, 255, 0.24); }
 .rc-winbtn:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 2px; }
 /* Fechar já nasce na paleta de perigo — não só no hover. */
-.rc-winbtn--close { border-color: rgba(209, 80, 104, 0.6); color: var(--rc-danger); }
-.rc-winbtn--close:hover { color: color-mix(in srgb, var(--rc-danger) 75%, #fff); background: rgba(209, 80, 104, 0.18); border-color: color-mix(in srgb, var(--rc-danger) 75%, #fff); }
-.rc-winbtn--close:active { background: rgba(209, 80, 104, 0.28); }
+.rc-winbtn--close { border-color: rgba(255, 95, 116, 0.6); color: var(--rc-danger); }
+.rc-winbtn--close:hover { color: color-mix(in srgb, var(--rc-danger) 75%, #fff); background: rgba(255, 95, 116, 0.18); border-color: color-mix(in srgb, var(--rc-danger) 75%, #fff); }
+.rc-winbtn--close:active { background: rgba(255, 95, 116, 0.28); }
 .rc-winbtn--close:focus-visible { outline-color: var(--rc-danger); }
 
 /* Mesma linguagem das dicas do trilho de ferramentas: etiqueta mono
@@ -498,7 +498,7 @@
 .rc-hscroll-trilho {
   position: relative;
   width: 100%; height: 4px;
-  background: rgba(12, 20, 32, 0.6);
+  background: rgba(12, 25, 32, 0.6);
   border-top: 1px solid rgba(0, 212, 255, 0.14);
   pointer-events: auto;
   transition: height 0.12s;
@@ -523,7 +523,7 @@
 .rc-vscroll-trilho {
   position: relative;
   width: 4px; height: 100%;
-  background: rgba(12, 20, 32, 0.6);
+  background: rgba(12, 25, 32, 0.6);
   border-left: 1px solid rgba(0, 212, 255, 0.14);
   pointer-events: auto;
   transition: width 0.12s;
@@ -641,7 +641,7 @@
 .rc-label {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
-  color: rgba(0, 212, 255, 0.72);
+  color: #00d4ff;
 }
 .rc-label--danger { color: var(--rc-danger); }
 .rc-label--am { color: var(--rc-am); }
@@ -654,7 +654,7 @@
   display: block; width: fit-content; margin: 0 auto 10px;
   padding: 4px 22px;
   border: 1px solid var(--rc-line);
-  background: #123640;
+  background: #123840;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
   color: var(--rc-text);
@@ -685,8 +685,8 @@
 .rc-avatar-fill {
   position: absolute; inset: 0;
   display: grid; place-items: center;
-  background: rgba(17, 29, 49, 0.73);
-  color: rgba(0, 212, 255, 0.55);
+  background: rgba(17, 37, 49, 0.73);
+  color: #00d4ff;
   border: 1px solid rgba(0, 212, 255, 0.14);
   /* O MESMO raio dos cards (4px). Quadrado de canto vivo, o fio do
      quadro era a única borda reta da coluna. */
@@ -697,8 +697,8 @@
      LEITURA, e não como um buraco esperando imagem. Com foto, a
      imagem cobre tudo e a grade some sozinha. */
   background-image:
-    linear-gradient(rgba(0, 200, 240, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 200, 240, 0.08) 1px, transparent 1px);
+    linear-gradient(rgba(0, 212, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.08) 1px, transparent 1px);
   background-size: 10px 10px;
 }
 .rc-avatar-fill img { width: 100%; height: 100%; object-fit: cover; }
@@ -716,7 +716,7 @@
    quadro junto com o conteúdo — um overlay irmão escaparia dos cantos. */
 .rc-avatar-troca {
   position: absolute; inset: 0; display: grid; place-items: center;
-  background: rgba(10, 14, 20, .66); color: #cfe0f7;
+  background: rgba(10, 16, 20, .66); color: #cfe8f7;
   opacity: 0; transition: opacity .12s ease;
 }
 .rc-avatar:hover .rc-avatar-troca,
@@ -733,7 +733,7 @@
   position: absolute; top: 7px; right: 7px; z-index: 2;
   display: grid; place-items: center; width: 26px; height: 26px;
   border: 1px solid color-mix(in srgb, var(--rc-danger) 45%, transparent); border-radius: var(--rc-r);
-  background: rgba(10, 14, 20, .82); color: var(--rc-danger);
+  background: rgba(10, 16, 20, .82); color: var(--rc-danger);
   cursor: pointer; opacity: 0; pointer-events: none;
   transition: opacity .12s ease, background .14s, border-color .14s, color .14s;
 }
@@ -741,7 +741,7 @@
 .rc-avatar-wrap:focus-within .rc-avatar-remover { opacity: 1; pointer-events: auto; }
 .rc-avatar-remover:hover:not(:disabled) {
   border-color: var(--rc-danger);
-  background: color-mix(in srgb, var(--rc-danger) 26%, rgba(10, 14, 20, .9));
+  background: color-mix(in srgb, var(--rc-danger) 26%, rgba(10, 16, 20, .9));
   color: #ffb3bd;
 }
 .rc-avatar-remover:focus-visible { opacity: 1; pointer-events: auto; outline: 2px solid var(--rc-danger); outline-offset: 2px; }
@@ -755,7 +755,7 @@
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
   padding: 10px;
   border: 1px solid color-mix(in srgb, var(--rc-danger) 45%, transparent); border-radius: var(--rc-r);
-  background: rgba(8, 12, 18, .95);
+  background: rgba(8, 14, 18, .95);
 }
 .rc-avatar-confirmar p {
   margin: 0; text-align: center;
@@ -902,7 +902,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   width: 100%; padding: 16px 16px 0; gap: 0;
   border-radius: var(--rc-r-card);
   border: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(17, 29, 49, 0.70);
+  background: rgba(17, 37, 49, 0.70);
 }
 .rc-nric-nome-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }
 .rc-nric-nome {
@@ -919,9 +919,9 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
      CONTEXTUAL (verde em Corpo, roxo em Mente) e só recebe valor dentro
      de `.rc-skill`. Aqui ele não resolveria, e a coincidência de valor
      com a cor de Ânimo não os torna a mesma decisão. */
-  font-size: 22px; font-weight: 700; color: #0596B7; text-align: center;
+  font-size: 22px; font-weight: 700; color: #00d4ff; text-align: center;
 }
-.rc-nric-badge[data-vazio="true"] { color: rgba(5, 150, 183, 0.35); }
+.rc-nric-badge[data-vazio="true"] { color: rgba(0, 212, 255, 0.35); }
 
 /* Atributos — hexágono REAL (path exato do Figma, cantos arredondados
    via bezier, não `polygon()`), fill+stroke por atributo. */
@@ -941,10 +941,10 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-nric-integ-label {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase;
-  color: rgba(0, 212, 255, 0.72);
+  color: #00d4ff;
 }
 .rc-nric-integ-val { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; font-weight: 700; color: var(--rc-text); }
-.rc-nric-integ-total { font-weight: 400; color: rgba(214, 228, 245, 0.60); }
+.rc-nric-integ-total { font-weight: 400; color: rgba(214, 234, 245, 0.60); }
 /* Uma única superfície SVG: cada segmento ocupa a mesma unidade no
    viewBox, independentemente da largura física ou da quantidade. */
 /* 12px: a MESMA altura dos pips de Sobrecarga (`.rc-nsob-pip`). As
@@ -1011,7 +1011,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   padding: 16px; gap: 6px;
   border-radius: var(--rc-r-card);
   border: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(17, 29, 49, 0.70);
+  background: rgba(17, 37, 49, 0.70);
 }
 .rc-nsob-head { display: flex; justify-content: space-between; align-items: baseline; align-self: stretch; }
 .rc-nsob-label {
@@ -1019,7 +1019,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: var(--rc-am);
 }
 .rc-nsob-val { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; font-weight: 700; color: var(--rc-text); }
-.rc-nsob-total { font-weight: 400; color: rgba(214, 228, 245, 0.60); }
+.rc-nsob-total { font-weight: 400; color: rgba(214, 234, 245, 0.60); }
 .rc-nsob-pips { display: flex; justify-content: center; align-items: flex-start; align-self: stretch; }
 .rc-nsob-pip { flex: 1; min-width: 0; height: 12px; padding: 0; border: none; background: none; cursor: pointer; }
 .rc-nsob-pip:not(:first-child) { margin-left: -10px; }
@@ -1035,17 +1035,17 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   padding: 16px;
   border-radius: var(--rc-r-card);
   border: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(17, 29, 49, 0.70);
+  background: rgba(17, 37, 49, 0.70);
 }
 .rc-ndesl-label {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: rgba(214, 228, 245, 0.88);
+  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: rgba(214, 234, 245, 0.88);
 }
 .rc-ndesl-val { display: flex; align-items: baseline; font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px; font-weight: 700; color: var(--rc-text); }
 .rc-ndesl-medida { position: relative; outline: none; }
 .rc-ndesl-medida:focus-visible { border-radius: 2px; box-shadow: 0 0 0 1px var(--rc-cy); }
-.rc-ndesl-separador { margin-inline: 6px; font-weight: 400; color: rgba(214, 228, 245, 0.55); }
-.rc-ndesl-correr { font-weight: 400; color: rgba(214, 228, 245, 0.55); }
+.rc-ndesl-separador { margin-inline: 6px; font-weight: 400; color: rgba(214, 234, 245, 0.55); }
+.rc-ndesl-correr { font-weight: 400; color: rgba(214, 234, 245, 0.55); }
 .rc-ndesl-dica {
   position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%);
   display: flex; align-items: center; padding: 5px 9px 5px 10px; white-space: nowrap; z-index: 40;
@@ -1074,12 +1074,12 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   padding: 16px; gap: 16px;
   border-radius: var(--rc-r-card);
   border: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(17, 29, 49, 0.70);
+  background: rgba(17, 37, 49, 0.70);
 }
 .rc-npr { display: flex; flex-direction: column; align-items: flex-start; width: 100%; gap: 6px; }
 .rc-npr-label {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: rgba(214, 228, 245, 0.88);
+  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: rgba(214, 234, 245, 0.88);
 }
 .rc-npr-row { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 1px 0; }
 .rc-npr-pips { display: flex; align-items: flex-start; gap: 2px; flex-wrap: wrap; }
@@ -1097,7 +1097,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    "Estabilizar" são o MESMO componente do Figma (Button Primary), e as
    três regras abaixo precisam continuar iguais em tudo menos largura e
    alinhamento: fundo `var(--rc-surface-2)`, fio ciano a 8%, texto na tinta do
-   Console. O fundo tinha virado `#0c1420` (o `--rv-panel` do VTT), que
+   Console. O fundo tinha virado `#0c1920` (o `--rv-panel` do VTT), que
    é neutro e faz o botão sumir dentro do painel. */
 .rc-npr-defesa {
   display: flex; height: 28px; padding: 0 6px; justify-content: center; align-items: center; gap: 6px;
@@ -1124,17 +1124,17 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    atributos. */
 .rc-diapip { display: block; }
 .rc-diapip path { transition: fill 0.12s, stroke 0.12s; }
-.rc-diapip[data-on="false"] .rc-diapip-inset { fill: rgba(18, 49, 67, 0.2); stroke: #0c3d4e; }
-.rc-diapip[data-on="true"] .rc-diapip-outer { fill: rgba(4, 158, 192, 0.43); stroke: none; }
-.rc-diapip[data-on="true"] .rc-diapip-inset { fill: none; stroke: rgba(0, 212, 255, 0.18); }
+.rc-diapip[data-on="false"] .rc-diapip-inset { fill: rgba(18, 49, 67, 0.2); stroke: #0c434e; }
+.rc-diapip[data-on="true"] .rc-diapip-outer { fill: rgba(0, 212, 255, 0.9); stroke: none; }
+.rc-diapip[data-on="true"] .rc-diapip-inset { fill: none; stroke: rgba(111, 240, 255, 0.5); }
 .rc-pip-btn:hover .rc-diapip[data-on="true"] .rc-diapip-inset { fill: rgba(255, 95, 116, 0.14); stroke: rgba(255, 95, 116, 0.4); }
-.rc-pip-btn:hover .rc-diapip[data-on="false"] .rc-diapip-inset { fill: rgba(4, 158, 192, 0.22); stroke: rgba(0, 212, 255, 0.35); }
+.rc-pip-btn:hover .rc-diapip[data-on="false"] .rc-diapip-inset { fill: rgba(0, 212, 255, 0.22); stroke: rgba(0, 212, 255, 0.35); }
 .rc-pip-btn:disabled .rc-diapip { opacity: 0.5; }
 /* Prévia de TRILHA (vários pips de uma vez, não só o hovered — igual
    Integridade). Precisa vir DEPOIS das regras de `:hover` acima pra
    ganhar em empate de especificidade quando os dois se aplicam. */
 .rc-diapip[data-preview="empty"] .rc-diapip-inset { fill: rgba(255, 95, 116, 0.14); stroke: rgba(255, 95, 116, 0.4); }
-.rc-diapip[data-preview="fill"] .rc-diapip-inset { fill: rgba(4, 158, 192, 0.22); stroke: rgba(0, 212, 255, 0.35); }
+.rc-diapip[data-preview="fill"] .rc-diapip-inset { fill: rgba(0, 212, 255, 0.22); stroke: rgba(0, 212, 255, 0.35); }
 /* Controle de valor PA/Reações — o "−" e o "+" ficam COLADOS nos
    cantos do box externo (sem padding nem gap separando), e a única
    borda que cada um desenha é o divisor do lado de dentro: dar borda
@@ -1148,7 +1148,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-npr-btn {
   display: flex; padding: 0 6px; align-items: center; justify-content: center; flex: none;
   border: none; background: none;
-  color: #418292; cursor: pointer;
+  color: #418492; cursor: pointer;
   transition: background 0.14s, color 0.14s;
 }
 .rc-npr-btn:first-child { border-right: 1px solid var(--rc-btn-border); }
@@ -1157,7 +1157,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-npr-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .rc-npr-btn:hover:not(:disabled) { background: var(--rc-btn-bg-hover); }
 .rc-npr-btn:active:not(:disabled) { background: var(--rc-btn-bg-active); }
-.rc-npr-btn:hover:not(:disabled) svg path { stroke: #6fe0ff; }
+.rc-npr-btn:hover:not(:disabled) svg path { stroke: #6ff0ff; }
 .rc-npr-btn:focus-visible { outline: 2px solid var(--rc-btn-border-hover); outline-offset: -2px; }
 .rc-npr-num {
   display: flex; flex: 1 0 auto; min-width: 35px; padding: 0 6px;
@@ -1228,7 +1228,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   border-right: 1px solid rgba(0, 212, 255, 0.14);
   border-left: 1px solid rgba(0, 212, 255, 0.14);
   border-radius: var(--rc-r-caption) var(--rc-r-caption) 0 0;
-  background: rgba(17, 29, 49, 0.50);
+  background: rgba(17, 37, 49, 0.50);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase;
   color: var(--rc-danger);
@@ -1238,7 +1238,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   padding: 8px; gap: 12px; flex: 1 0 0; align-self: stretch; width: 100%; box-sizing: border-box;
   border: 1px solid rgba(0, 212, 255, 0.14);
   border-radius: var(--rc-r-card);
-  background: rgba(17, 29, 49, 0.70);
+  background: rgba(17, 37, 49, 0.70);
 }
 .rc-ncol-mid { display: flex; justify-content: center; align-items: center; gap: 8px; }
 .rc-ncol-pips { display: flex; align-items: flex-start; gap: 2px; }
@@ -1254,13 +1254,13 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    que é o oposto do que o estado significa. */
 .rc-colpip { display: block; }
 .rc-colpip path { transition: fill 0.12s, stroke-opacity 0.12s; stroke: var(--rc-danger); stroke-opacity: 0.5; }
-.rc-colpip[data-on="false"] path { fill: rgba(209, 80, 104, 0.08); }
-.rc-colpip[data-on="true"] path { fill: rgba(209, 80, 104, 0.50); }
-.rc-ncol-pip:hover:not(:disabled) .rc-colpip path { fill: rgba(209, 80, 104, 0.30); stroke-opacity: 0.95; }
+.rc-colpip[data-on="false"] path { fill: rgba(255, 95, 116, 0.08); }
+.rc-colpip[data-on="true"] path { fill: rgba(255, 95, 116, 0.50); }
+.rc-ncol-pip:hover:not(:disabled) .rc-colpip path { fill: rgba(255, 95, 116, 0.30); stroke-opacity: 0.95; }
 .rc-ncol-morte {
   display: flex; padding: 4px; justify-content: center; align-items: center;
-  border: 1px solid rgba(209, 80, 104, 0.50);
-  background: rgba(209, 80, 104, 0.20);
+  border: 1px solid rgba(255, 95, 116, 0.50);
+  background: rgba(255, 95, 116, 0.20);
 }
 .rc-ncol-morte svg { width: 12px; height: 12px; display: block; }
 .rc-ncol-estabilizar {
@@ -1285,7 +1285,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   gap: 8px; width: 100%;
   border: 1px solid rgba(0, 212, 255, 0.14);
   border-radius: var(--rc-r-card);
-  background: rgba(17, 29, 49, 0.70);
+  background: rgba(17, 37, 49, 0.70);
 }
 .rc-nres-row { display: flex; align-items: center; gap: 4px; }
 .rc-nres-row[data-resource="pv"] { --rc-nres-tone: #d47482; }
@@ -1322,8 +1322,8 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   content: "0";
   position: absolute; left: 50%; top: -1px; bottom: -1px;
   width: 1px;
-  background: rgba(196, 209, 224, 0.4);
-  color: rgba(196, 209, 224, 0.62);
+  background: rgba(196, 214, 224, 0.4);
+  color: rgba(196, 214, 224, 0.62);
   font: 8px/8px var(--font-mono), ui-monospace, monospace;
   text-indent: 4px;
 }
@@ -1354,7 +1354,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   width: 30px; flex-shrink: 0;
   font-family: var(--font-corpo), sans-serif;
   font-size: 13px; font-weight: 600; line-height: 18px;
-  color: rgba(214, 228, 245, 0.8);
+  color: rgba(214, 234, 245, 0.8);
 }
 .rc-nres-adj {
   display: flex; width: 68px; height: 24px; padding: 0 4px;
@@ -1368,14 +1368,14 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-nres-btn {
   position: absolute; inset: 0; width: 50%; padding: 0 2px;
   border: none; background: none; cursor: pointer;
-  display: flex; align-items: center; color: #418292;
+  display: flex; align-items: center; color: #418492;
   transition: color 0.14s;
 }
 .rc-nres-btn:first-child { left: 0; justify-content: flex-start; }
 .rc-nres-btn:last-child { left: auto; right: 0; justify-content: flex-end; }
 .rc-nres-btn svg { width: 11px; height: 11px; display: block; }
 .rc-nres-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.rc-nres-btn:hover:not(:disabled) svg path { stroke: #6fe0ff; }
+.rc-nres-btn:hover:not(:disabled) svg path { stroke: #6ff0ff; }
 .rc-nres-btn:focus-visible { outline: 2px solid var(--rc-btn-border-hover); outline-offset: -2px; }
 .rc-nres-val {
   position: relative; z-index: 1;
@@ -1384,7 +1384,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   border: none; background: none;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 12px; font-weight: 600; line-height: 16px;
-  color: rgba(214, 228, 245, 0.8);
+  color: rgba(214, 234, 245, 0.8);
   cursor: pointer;
   box-sizing: border-box;
 }
@@ -1424,7 +1424,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
      baixo da janela) atravessar entre os ícones, e as abas ficavam
      ilegíveis dependendo do que passava por trás. Ele é chassi da
      janela, não conteúdo dela. */
-  background: #0e1420;
+  background: #0e1920;
 }
 
 /* ── Trilho do lado ESQUERDO ────────────────────────────────────────
@@ -1451,10 +1451,10 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    encosta na janela, pelo mesmo motivo da borda do trilho. */
 .rc-window-wrap[data-trilho="esquerda"] .rc-tabrail-btn--modo[aria-selected="true"] {
   border-left: 1px solid rgba(0, 212, 255, 0.15);
-  border-right: 1px solid #108bac;
+  border-right: 1px solid #00d4ff;
 }
 .rc-tabrail-group { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.rc-tabrail-divider { height: 1px; align-self: stretch; background: #0e3647; }
+.rc-tabrail-divider { height: 1px; align-self: stretch; background: #0e3d47; }
 .rc-tabrail-btn {
   position: relative;
   width: 36px; height: 36px; padding: 8.5px 0;
@@ -1464,20 +1464,20 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
      está aberto por cima da mesa. */
   border-radius: var(--rc-r);
   border: 1px solid rgba(0, 212, 255, 0.15);
-  background: #0c1526;
+  background: #0c1c26;
   color: var(--rc-dim);
   cursor: pointer;
   transition: color 0.14s, background 0.14s, border-color 0.14s;
 }
 /* A borda do hover é a MESMA do ativo — ver `.rv-ferr-btn` no VTT.
    E a LAVAGEM VEM POR CIMA DO FUNDO, não no lugar dele: substituindo,
-   o botão perdia a própria base (`#0c1526`) e ficava translúcido sobre
+   o botão perdia a própria base (`#0c1c26`) e ficava translúcido sobre
    o que estivesse atrás — em cima do mapa isso muda de cor conforme a
    cena. É a mesma receita do trilho de ferramentas do VTT, que já
    trazia essa nota escrita. */
 .rc-tabrail-btn:hover {
-  color: #d3f4ff; border-color: #108bac;
-  background: linear-gradient(rgba(0, 212, 255, 0.09), rgba(0, 212, 255, 0.09)), #0c1526;
+  color: #d3f4ff; border-color: #00d4ff;
+  background: linear-gradient(rgba(0, 212, 255, 0.09), rgba(0, 212, 255, 0.09)), #0c1c26;
 }
 /* PRESSIONADO — um degrau acima do selecionado, sem brilho: o brilho
    diz "é esta", e enquanto o dedo está em cima a informação é outra,
@@ -1486,24 +1486,24 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    (`.rv-ferr-btn:active`) — por um tempo não definia, e esta era a
    última diferença entre os dois trilhos. */
 .rc-tabrail-btn:active:not(:disabled) {
-  background: linear-gradient(rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.2)), #0c1526;
-  border-color: #108bac;
+  background: linear-gradient(rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.2)), #0c1c26;
+  border-color: #00d4ff;
 }
 /* DESABILITADO — mesma receita do VTT (`.rv-ferr-btn:disabled`). Hoje o
    trilho não desabilita aba nenhuma; a regra existe para que a primeira
    que precisar não invente um tratamento próprio. */
 .rc-tabrail-btn:disabled { opacity: .35; cursor: not-allowed; }
-.rc-tabrail-btn:disabled:hover { background: #0c1526; border-color: rgba(0, 212, 255, 0.15); color: var(--rc-dim); }
+.rc-tabrail-btn:disabled:hover { background: #0c1c26; border-color: rgba(0, 212, 255, 0.15); color: var(--rc-dim); }
 /* O ícone da aba ATIVA é CIANO, não branco: a cor da marca é o que diz
    "é esta", e um branco mais forte que o dos vizinhos exigia comparar
    dois cinzas pra descobrir qual estava selecionada. Mesma regra no
    trilho de ferramentas do VTT (`.rv-ferr-btn`). */
 .rc-tabrail-btn[aria-selected="true"] {
-  color: var(--rc-trilho-ativo); border-color: #108bac;
+  color: var(--rc-trilho-ativo); border-color: #00d4ff;
   /* .14 contra os .09 do hover — a mesma hierarquia por lavagem do
-     `.rv-ferr-btn`. Antes era `#123640`, uma cor sólida que não
+     `.rv-ferr-btn`. Antes era `#123840`, uma cor sólida que não
      pertencia à escala e não mantinha relação com o passo do hover. */
-  background: linear-gradient(rgba(0, 212, 255, 0.14), rgba(0, 212, 255, 0.14)), #0c1526;
+  background: linear-gradient(rgba(0, 212, 255, 0.14), rgba(0, 212, 255, 0.14)), #0c1c26;
   box-shadow: 0 0 9px rgba(0, 212, 255, 0.25);
 }
 .rc-tabrail-btn:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 2px; }
@@ -1513,15 +1513,15 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
      Literais com fallback porque o Console também roda fora da mesa. */
   display: flex; align-items: center; padding: 5px 9px 5px 10px; white-space: nowrap;
   border: 0; border-radius: var(--rv-r, 4px);
-  background: var(--rv-panel, rgba(12, 21, 38, 0.92));
+  background: var(--rv-panel, rgba(12, 28, 38, 0.92));
   box-shadow:
-    inset 0 0 0 1px var(--rv-line-strong, #1c2b45),
-    inset 2px 0 0 var(--rv-cy, #45b8c9),
+    inset 0 0 0 1px var(--rv-line-strong, #1c3645),
+    inset 2px 0 0 var(--rv-cy, #00d4ff),
     0 10px 28px rgba(0, 0, 0, .5);
   backdrop-filter: blur(9px);
   font-family: var(--rv-display, var(--font-chakra)), sans-serif;
   font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
-  color: var(--rv-ink, #b9c9dc);
+  color: var(--rv-ink, #b8d8e8);
   opacity: 0; pointer-events: none; z-index: 5;
   transition: opacity 0.12s;
 }
@@ -1534,8 +1534,8 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    ficam iguais às outras abas (herdados de `.rc-tabrail-btn`, sem
    modificador aqui). */
 .rc-tabrail-btn--modo[aria-selected="true"] {
-  border-left: 1px solid #108bac;
-  background: linear-gradient(rgba(0, 212, 255, 0.14), rgba(0, 212, 255, 0.14)), #0c1526;
+  border-left: 1px solid #00d4ff;
+  background: linear-gradient(rgba(0, 212, 255, 0.14), rgba(0, 212, 255, 0.14)), #0c1c26;
   box-shadow: none;
 }
 
@@ -1544,7 +1544,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    um passo intermediário ENTRE default e active, não os mesmos tons. */
 .rc-tabrail-btn--personagem {
   border: 1px solid color-mix(in srgb, var(--rc-am) 35%, var(--rc-surface-3));
-  background: rgba(12, 20, 32, 0.70);
+  background: rgba(12, 25, 32, 0.70);
   color: color-mix(in srgb, var(--rc-am) 70%, var(--rc-surface-3));
 }
 /* Mesma regra dentro da paleta âmbar: a borda do hover é a do ativo. */
@@ -1592,7 +1592,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   position: relative;
   flex: 1 0 0; align-self: stretch; width: 100%; min-height: 0;
   border-radius: var(--rc-r-card); border: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(17, 29, 49, 0.70);
+  background: rgba(17, 37, 49, 0.70);
   box-sizing: border-box;
   /* Contêiner do trilho (4 → 2 colunas) e rolagem vertical quando o
      trilho em duas linhas não cabe junto da silhueta. */
@@ -1657,7 +1657,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   /* `background-color` e sem `transition: background`: a cor e a
      varredura do hover são declaradas juntas mais abaixo, e o atalho
      aqui apagava a camada de varredura. */
-  background-color: rgba(5, 18, 29, 0.7);
+  background-color: rgba(5, 20, 29, 0.7);
   box-sizing: border-box;
   position: relative;
   /* Este card participa de um diagrama com posicionamento absoluto.
@@ -1674,7 +1674,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   content: "";
   position: absolute; left: 0; top: 0; bottom: 0;
   width: 1px; z-index: 2;
-  background: #6fe3ff;
+  background: #6ff0ff;
   box-shadow: 0 0 6px rgba(0, 212, 255, 0.45);
   opacity: 0;
   transform: scaleY(0); transform-origin: center;
@@ -1757,8 +1757,8 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    `background-color` fica explícito porque a camada de varredura é
    `background-image`, e o atalho zeraria a cor do card. */
 .rc-eq-box, .rc-eq-quick {
-  background-color: rgba(5, 18, 29, 0.7);
-  background-image: linear-gradient(90deg, rgba(0, 212, 255, 0.09), rgba(22, 79, 106, 0.05));
+  background-color: rgba(5, 20, 29, 0.7);
+  background-image: linear-gradient(90deg, rgba(0, 212, 255, 0.09), rgba(22, 92, 106, 0.05));
   background-repeat: no-repeat;
   background-size: 0% 100%;
   transition: background-size 0.32s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1809,16 +1809,16 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-eq-ico {
   flex: none; display: flex; justify-content: center; align-items: center;
   padding: 0; border-radius: 0; background: none;
-  color: #4b879c;
+  color: #4b8e9c;
 }
 .rc-eq-ico svg { width: 18px; height: 18px; display: block; }
 .rc-eq-inner:hover .rc-eq-ico, .rc-eq-inner:focus-visible .rc-eq-ico { color: var(--rc-cy); }
 .rc-eq-equipar-txt {
-  color: rgba(214, 228, 245, 0.65);
+  color: rgba(214, 234, 245, 0.65);
   font-family: var(--font-corpo), sans-serif; font-size: 14px; font-weight: 600; line-height: 19px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.rc-eq-inner:hover .rc-eq-equipar-txt, .rc-eq-inner:focus-visible .rc-eq-equipar-txt { color: rgba(214, 228, 245, 0.83); }
+.rc-eq-inner:hover .rc-eq-equipar-txt, .rc-eq-inner:focus-visible .rc-eq-equipar-txt { color: rgba(214, 234, 245, 0.83); }
 
 .rc-eq-corpo { min-width: 0; flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 .rc-eq-nome {
@@ -1831,16 +1831,16 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-eq-pips { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
 .rc-eq-pipbtn { width: 14px; height: 14px; padding: 0; border: none; background: none; cursor: pointer; }
 .rc-eq-valor {
-  color: rgba(214, 228, 245, 0.80);
+  color: rgba(214, 234, 245, 0.80);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 12px; font-weight: 500; line-height: 16px;
 }
 .rc-eq-dano {
-  color: rgba(214, 228, 245, 0.85);
+  color: rgba(214, 234, 245, 0.85);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 12px; font-style: normal; font-weight: 400; line-height: 16px;
 }
-.rc-eq-valor-total { font-weight: 400; color: rgba(214, 228, 245, 0.60); }
+.rc-eq-valor-total { font-weight: 400; color: rgba(214, 234, 245, 0.60); }
 
 /* Acesso rápido — mesma estrutura, paleta âmbar. */
 /* TRILHO — quatro CARDS no pé do painel, não quatro fatias de uma
@@ -1871,7 +1871,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   border-radius: var(--rc-r-card);
   /* `background-color`, não o atalho: ele apagaria a camada de
      varredura do hover declarada mais acima. */
-  background-color: rgba(5, 18, 29, 0.7);
+  background-color: rgba(5, 20, 29, 0.7);
   box-sizing: border-box;
   position: relative;
   border-radius: 4px 9px 4px 9px;
@@ -1892,14 +1892,14 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-eq-quick:hover::before { opacity: 0.8; transform: scaleY(1); }
 .rc-eq-quick .rc-eq-box-label {
   border-bottom-color: color-mix(in srgb, var(--rc-am) 22%, transparent);
-  color: #b08a4a;
+  color: color-mix(in srgb, var(--rc-am) 80%, transparent);
 }
 .rc-eq-quick:hover .rc-eq-box-label { color: color-mix(in srgb, var(--rc-am) 80%, #fff); }
 .rc-eq-quick-inner { background: transparent; }
 .rc-eq-quick-inner:hover, .rc-eq-quick-inner:focus-visible {
   background: color-mix(in srgb, var(--rc-am) 5%, transparent);
 }
-.rc-eq-ico--quick { background: none; color: #8a6a2e; }
+.rc-eq-ico--quick { background: none; color: color-mix(in srgb, var(--rc-am) 65%, transparent); }
 .rc-eq-quick-inner:hover .rc-eq-ico--quick, .rc-eq-quick-inner:focus-visible .rc-eq-ico--quick { color: var(--rc-am); }
 
 /* ── Perícias v2 (spec Figma) ─────────────────────────────────────
@@ -1931,7 +1931,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   padding: 0;
   border-radius: var(--rc-r-card);
   border: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(17, 29, 49, 0.7);
+  background: rgba(17, 37, 49, 0.7);
 }
 
 /* O desenho das LINHAS da tabela de perícias está no fim desta folha
@@ -1952,7 +1952,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   padding: 16px; width: 100%; cursor: pointer;
   border: 1px dashed rgba(0, 212, 255, 0.14);
   border-radius: var(--rc-r);
-  background: rgba(17, 29, 49, 0.70);
+  background: rgba(17, 37, 49, 0.70);
   color: inherit;
   transition: border-color 0.14s, background 0.14s;
 }
@@ -1984,7 +1984,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    translúcidas se cruzando somam alfa no cruzamento — o miolo do sinal
    fica mais forte que os braços. `#869fb0` é o antigo
    `rgba(184, 216, 232, 0.7)` composto sobre o fundo do próprio slot
-   (`rgba(17, 29, 49, 0.70)` sobre a janela `#0c1420`), e `#02bee6` é o
+   (`rgba(17, 37, 49, 0.70)` sobre a janela `#0c1920`), e `#00d4ff` é o
    `rgba(0, 212, 255, 0.88)` do hover sobre esse mesmo fundo. Como a
    janela tem alfa .96, o mapa por trás ainda desloca isso por uma
    fração de tom — imperceptível, mas é por isso que o valor é "o
@@ -1994,7 +1994,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   transition: color 0.14s;
 }
 .rc-pin:not([data-preenchido="true"]):hover .rc-pin-empty-icon {
-  color: #02bee6;
+  color: #00d4ff;
 }
 .rc-pin:not([data-preenchido="true"]):hover .rc-pin-empty-txt {
   color: rgba(214, 238, 247, 0.9);
@@ -2007,13 +2007,13 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 }
 .rc-pin-empty-txt {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 12px; font-weight: 400; text-transform: uppercase; color: rgba(214, 228, 245, 0.70);
+  font-size: 12px; font-weight: 400; text-transform: uppercase; color: rgba(214, 234, 245, 0.70);
   transition: color 0.14s;
 }
 .rc-pin-x {
   position: absolute; top: 3px; right: 3px; cursor: pointer;
   display: grid; place-items: center; width: 20px; height: 20px;
-  border: none; background: transparent; color: rgba(214, 228, 245, 0.5);
+  border: none; background: transparent; color: rgba(214, 234, 245, 0.5);
 }
 .rc-pin-x:hover { color: color-mix(in srgb, var(--rc-danger) 45%, #fff); }
 .rc-pin-x:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 1px; }
@@ -2028,7 +2028,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   width: 100%;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase;
-  color: rgba(214, 228, 245, 0.88);
+  color: rgba(214, 234, 245, 0.88);
 }
 .rc-ncond-card {
   /* `gap: 8px 6px` — 8px entre LINHAS (título → tags, e entre linhas de
@@ -2040,12 +2040,12 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   display: flex; padding: 16px 16px 8px; align-items: flex-start; align-content: flex-start; gap: 8px 6px;
   flex-wrap: wrap; width: 100%;
   border-radius: var(--rc-r-card); border: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(17, 29, 49, 0.70);
+  background: rgba(17, 37, 49, 0.70);
 }
 .rc-ncond-tag {
   display: inline-flex; height: 28px; padding: 0 6px; align-items: center; gap: 6px;
-  border: 1px solid rgba(209, 80, 104, 0.50);
-  background: rgba(209, 80, 104, 0.08);
+  border: 1px solid rgba(255, 95, 116, 0.50);
+  background: rgba(255, 95, 116, 0.08);
 }
 .rc-ncond-abrir {
   background: none; border: none; color: color-mix(in srgb, var(--rc-danger) 75%, #fff); font: inherit; padding: 0; cursor: pointer;
@@ -2067,12 +2067,12 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   color: rgba(234, 247, 255, 0.65); cursor: pointer;
   transition: background 0.14s, border-color 0.14s, color 0.14s;
 }
-/* Mesmo achatamento do "+" dos pins, aqui sobre `--rc-btn-bg` (#161e31,
-   opaco): `rgba(234, 247, 255, 0.65)` vira `#a0abb7`. O rótulo ao lado
+/* Mesmo achatamento do "+" dos pins, aqui sobre `--rc-btn-bg` (#162731,
+   opaco): `rgba(234, 247, 255, 0.65)` vira `#a0afb7`. O rótulo ao lado
    segue com a cor translúcida herdada — o tom pintado é o mesmo. No
    hover a cor do botão já é opaca (`--rc-text-forte`), então o ícone
    volta a herdar. */
-.rc-ncond-add svg { color: #a0abb7; }
+.rc-ncond-add svg { color: #a0afb7; }
 .rc-ncond-add:hover svg { color: inherit; }
 .rc-ncond-add:hover { background: var(--rc-btn-bg-hover); border-color: var(--rc-btn-border-hover); color: var(--rc-text-forte); }
 .rc-ncond-add:active { background: var(--rc-btn-bg-active); border-color: var(--rc-btn-border-active); }
@@ -2092,7 +2092,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   padding: 5px 10px;
   border: 1px solid rgba(0, 212, 255, 0.35); background: transparent;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(0, 212, 255, 0.85);
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #00d4ff;
   transition: background 0.14s, border-color 0.14s, color 0.14s;
 }
 .rc-ghost:hover:not(:disabled) { background: rgba(0, 212, 255, 0.14); border-color: var(--rc-cy); color: var(--rc-text); }
@@ -2108,7 +2108,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   display: flex; align-items: center; gap: 14px;
   padding: 10px 12px 10px 12px;
   border: 1px solid var(--rc-line);
-  background: rgba(12, 20, 32, 0.97);
+  background: rgba(12, 25, 32, 0.97);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
   color: var(--rc-text);
   font-family: var(--font-corpo), sans-serif;
@@ -2119,7 +2119,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-dock-av {
   flex: none; width: 40px; height: 40px; display: grid; place-items: center;
   border: 1px solid var(--rc-line); background: rgba(0, 212, 255, 0.08);
-  color: rgba(0, 212, 255, 0.75); overflow: hidden;
+  color: #00d4ff; overflow: hidden;
 }
 .rc-dock-av img { width: 100%; height: 100%; object-fit: cover; }
 .rc-dock-info { display: flex; flex-direction: column; gap: 5px; }
@@ -2129,7 +2129,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-dock-tag {
   flex: none; width: 30px;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.04em; color: rgba(214, 228, 245, 0.85);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.04em; color: rgba(214, 234, 245, 0.85);
 }
 .rc-dock-bar {
   position: relative; width: 76px; height: 8px;
@@ -2160,14 +2160,14 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 /* ── Modais auxiliares (placeholders funcionais) ───────────────── */
 .rc-aux-backdrop {
   position: fixed; inset: 0; z-index: 520;
-  background: rgba(4, 7, 12, 0.6);
+  background: rgba(4, 9, 12, 0.6);
   display: grid; place-items: center; padding: 24px;
 }
 .rc-aux {
   --rc-card-fio: var(--rc-line);
   width: 460px; max-width: 100%; max-height: 80vh; overflow: auto;
   border: 1px solid var(--rc-line, rgba(0, 212, 255, 0.3));
-  background: rgb(13, 20, 29);
+  background: rgb(13, 23, 29);
   color: var(--rc-text);
   font-family: var(--font-corpo), sans-serif;
   padding: 18px 20px;
@@ -2189,7 +2189,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-picker-backdrop {
   position: fixed; inset: 0; z-index: 520;
   display: grid; place-items: center; padding: 24px;
-  background: rgba(4, 7, 12, 0.6);
+  background: rgba(4, 9, 12, 0.6);
 }
 .rc-picker-backdrop[data-nao-modal="true"] { background: transparent; pointer-events: none; }
 .rc-picker-backdrop[data-nao-modal="true"] > .rc-picker { pointer-events: auto; }
@@ -2200,7 +2200,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rv-token-picker > p { padding: 10px 16px; margin: 0; }
 .rv-token-picker > .rv-token-picker__aviso { background: color-mix(in srgb, var(--rc-am) 7%, transparent); border-block: 1px solid color-mix(in srgb, var(--rc-am) 25%, transparent); }
 .rv-token-picker__resumo, .rv-token-picker__alvos { padding: 14px 16px; }
-.rv-token-picker__resumo { background: #101c2c; border-bottom: 1px solid var(--rc-line); }
+.rv-token-picker__resumo { background: #10222c; border-bottom: 1px solid var(--rc-line); }
 .rv-token-picker__resumo h3 { margin: 8px 0; font: 500 14px/1.4 var(--font-mono), monospace; }
 .rv-token-picker__alvos { display: grid; gap: 10px; }
 .rv-token-picker .rv-token-flow__fatos dd { font: 600 16px/1 var(--font-corpo), sans-serif; }
@@ -2228,7 +2228,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   width: 460px; max-width: 100%; max-height: 80vh;
   display: flex; flex-direction: column; overflow: hidden;
   border: 1px solid #254053; border-radius: var(--rc-r-window);
-  background: #0c1420; color: var(--rc-text);
+  background: #0c1920; color: var(--rc-text);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
   font-family: var(--font-corpo), sans-serif;
 }
@@ -2238,7 +2238,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   flex: none; display: flex; align-items: center; justify-content: space-between;
   min-height: 53px; padding: 12px 16px;
   border-bottom: 1px solid var(--rc-line);
-  background: linear-gradient(92deg, #111d31, #0c1420);
+  background: linear-gradient(92deg, #112531, #0c1920);
 }
 .rc-picker-cab[data-arrastavel="true"] { cursor: grab; touch-action: none; user-select: none; }
 .rc-picker-cab[data-arrastavel="true"]:active { cursor: grabbing; }
@@ -2260,8 +2260,8 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-picker-fechar:focus-visible { outline: 2px solid var(--rc-btn-border-hover); outline-offset: 2px; }
 .rc-picker-modulo {
   flex: none; display: flex; justify-content: space-between; gap: 8px; padding: 8px 16px;
-  border-bottom: 1px solid #124051;
-  background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(0, 212, 255, 0.016) 3px 4px), #101c2c;
+  border-bottom: 1px solid #124651;
+  background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(0, 212, 255, 0.016) 3px 4px), #10222c;
   color: #7ca6bc;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px; font-weight: 400; letter-spacing: 0.1em;
@@ -2271,7 +2271,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-picker-grade {
   --rc-picker-fio: #163647;
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: hidden;
-  background: linear-gradient(90deg, #101d2e, #0b1825);
+  background: linear-gradient(90deg, #10232e, #0b1b25);
 }
 .rc-picker-opcao {
   position: relative; display: flex; align-items: center; gap: 9px;
@@ -2279,7 +2279,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   border: 0; border-bottom: 1px solid var(--rc-picker-fio);
   outline: 1px solid transparent; outline-offset: -1px;
   background-color: transparent;
-  background-image: linear-gradient(90deg, color-mix(in srgb, var(--rc-cy) 16%, transparent), rgba(22, 79, 106, 0.08));
+  background-image: linear-gradient(90deg, color-mix(in srgb, var(--rc-cy) 16%, transparent), rgba(22, 92, 106, 0.08));
   background-repeat: no-repeat; background-size: 0% 100%;
   color: var(--rc-text); text-align: left; cursor: pointer;
   font-family: var(--font-corpo), sans-serif; font-size: 14px; font-weight: 500;
@@ -2323,7 +2323,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 }
 .rc-picker-indice[data-atalho="true"] {
   display: grid; place-items: center; height: 18px;
-  border: 1px solid #244557; border-radius: 3px; background: #0a1824; color: #79a0b6;
+  border: 1px solid #244557; border-radius: 3px; background: #0a1a24; color: #79a0b6;
 }
 .rc-picker-nome { flex: 1; min-width: 0; }
 .rc-picker-marca { flex: none; display: grid; place-items: center; width: 14px; height: 14px; color: #52758d; }
@@ -2331,7 +2331,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-picker-opcao[aria-pressed="true"] .rc-picker-marca { color: var(--rc-cy); }
 .rc-picker-rodape {
   flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 12px 16px; border-top: 1px solid var(--rc-line); background: #0b1522;
+  padding: 12px 16px; border-top: 1px solid var(--rc-line); background: #0b1a22;
 }
 .rc-picker-status {
   min-width: 0; color: var(--rc-dim);
@@ -2339,7 +2339,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 }
 .rc-picker-aplicar {
   flex: none; display: inline-flex; align-items: center; gap: 7px; min-height: 30px;
-  padding: 6px 12px; border: 1px solid #236078; border-radius: var(--rc-r-sm);
+  padding: 6px 12px; border: 1px solid #236a78; border-radius: var(--rc-r-sm);
   background: #153143; color: var(--rc-text); cursor: pointer;
   font-family: var(--font-corpo), sans-serif; font-size: 13px; font-weight: 500;
   transition: background 0.14s, border-color 0.14s, color 0.14s;
@@ -2350,7 +2350,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   width: 10.3333px; height: 12.6686px;
   max-width: none; object-fit: fill;
 }
-.rc-picker-aplicar:hover:not(:disabled) { border-color: #358ba7; background: #193e52; color: var(--rc-text-forte); }
+.rc-picker-aplicar:hover:not(:disabled) { border-color: #00d4ff; background: #193e52; color: var(--rc-text-forte); }
 .rc-picker-aplicar:active:not(:disabled) { background: #102d3d; }
 .rc-picker-aplicar:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 2px; }
 .rc-picker-aplicar:disabled { opacity: 0.42; cursor: not-allowed; }
@@ -2382,7 +2382,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   border: 1px solid rgba(0, 212, 255, 0.35);
   font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px; color: var(--rc-text);
 }
-.rc-aux-dado[data-maior="true"] { border-color: var(--rc-cy, var(--rc-cy)); background: #111d31; color: var(--rc-text); font-weight: 700; }
+.rc-aux-dado[data-maior="true"] { border-color: var(--rc-cy, var(--rc-cy)); background: #112531; color: var(--rc-text); font-weight: 700; }
 .rc-aux-total {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 20px; font-weight: 700; color: var(--rc-text);
@@ -2398,7 +2398,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   border: 1px solid rgba(255, 138, 31, 0.35);
   background: color-mix(in srgb, var(--rc-am) 8%, transparent);
   border-radius: var(--rc-r-sm);
-  font-size: 12px; line-height: 16px; color: rgba(238, 203, 143, 0.92);
+  font-size: 12px; line-height: 16px; color: color-mix(in srgb, var(--rc-am) 55%, var(--rc-text));
 }
 .rc-aux-defesa-aviso svg { flex-shrink: 0; margin-top: 1px; color: var(--rc-am, var(--rc-am)); }
 .rc-aux-defesa-aviso strong { color: var(--rc-am); }
@@ -2427,7 +2427,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   position: fixed; top: 0; left: 0; right: 0; z-index: 510;
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; padding: 10px 20px; flex-wrap: wrap;
-  background: #060a12;
+  background: #061012;
   border-bottom: 1px solid var(--rc-line);
   color: var(--rc-text);
 }
@@ -2442,12 +2442,12 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px;
 }
-.rc-fichaheader-badge--narrator { background: color-mix(in srgb, var(--rc-am) 20%, #0c1420); border: 1px solid color-mix(in srgb, var(--rc-am) 45%, var(--rc-surface-3)); color: color-mix(in srgb, var(--rc-am) 75%, #fff); }
-.rc-fichaheader-badge--player { background: #111d31; border: 1px solid var(--rc-line); color: #5ec8ff; }
+.rc-fichaheader-badge--narrator { background: color-mix(in srgb, var(--rc-am) 20%, #0c1920); border: 1px solid color-mix(in srgb, var(--rc-am) 45%, var(--rc-surface-3)); color: color-mix(in srgb, var(--rc-am) 75%, #fff); }
+.rc-fichaheader-badge--player { background: #112531; border: 1px solid var(--rc-line); color: #5ec8ff; }
 .rc-fichaheader-seletor { display: flex; align-items: center; gap: 6px; font-size: 12px; }
 .rc-fichaheader-seletor-rotulo { opacity: 0.6; }
 .rc-fichaheader-select {
-  background: #0c1420; color: inherit;
+  background: #0c1920; color: inherit;
   border: 1px solid #333; border-radius: var(--rc-r);
   padding: 6px 10px; font-size: 13px; max-width: 220px;
 }
@@ -2464,13 +2464,13 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-recorte { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .rc-recorte--carregando {
   padding: 24px; font-family: var(--font-mono), monospace;
-  font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--jr-tinta-fraca, #4f6285);
+  font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--jr-tinta-fraca, #4f7185);
 }
 .rc-recorte__janela {
   position: relative; overflow: hidden; touch-action: none; cursor: grab;
   /* Canto vivo: a moldura é o próprio recorte que vai ser gravado, e o
      raio de 4px arredondava uma borda que no destino é reta. */
-  border: 1px solid var(--jr-linha, var(--rc-line-soft)); background: var(--jr-fundo, #070d17);
+  border: 1px solid var(--jr-linha, var(--rc-line-soft)); background: var(--jr-fundo, #071117);
 }
 .rc-recorte__janela:active { cursor: grabbing; }
 /* Camada de baixo: o que FICA DE FORA, escurecido. Sem ela a pessoa não
@@ -2485,7 +2485,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    padrão do navegador — um slider de sistema no meio do VTT.
    O Chrome não tem `::-moz-range-progress`, então o preenchimento vem
    de um gradiente cuja parada o componente escreve em `--jr-pct`. */
-.rc-recorte__zoom { display: flex; align-items: center; gap: 10px; width: 100%; color: var(--jr-tinta-fraca, #4f6285); }
+.rc-recorte__zoom { display: flex; align-items: center; gap: 10px; width: 100%; color: var(--jr-tinta-fraca, #4f7185); }
 .rc-recorte__zoom input[type="range"] {
   flex: 1; min-width: 0; height: 16px; margin: 0;
   appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer;
@@ -2503,11 +2503,11 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-recorte__zoom input[type="range"]::-webkit-slider-thumb {
   appearance: none; -webkit-appearance: none;
   width: 16px; height: 16px; margin-top: -6px; border: none; border-radius: 999px;
-  background: #f4f8fc; box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+  background: #f4f9fc; box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
 }
 .rc-recorte__zoom input[type="range"]::-moz-range-thumb {
   width: 16px; height: 16px; border: none; border-radius: 999px;
-  background: #f4f8fc; box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+  background: #f4f9fc; box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
 }
 .rc-recorte__zoom input[type="range"]:focus-visible { outline: none; }
 .rc-recorte__zoom input[type="range"]:focus-visible::-webkit-slider-thumb {
@@ -2529,7 +2529,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-recorte__dica {
   margin: 0; font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
-  color: var(--jr-tinta-fraca, #4f6285); text-align: center;
+  color: var(--jr-tinta-fraca, #4f7185); text-align: center;
 }
 
 /* Rodapé com a hierarquia de três níveis do VTT: descartar é discreta
@@ -2592,20 +2592,20 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
      `currentColor`. Era isso que deixava a janela com cara de página
      sem folha de estilo: brackets brancos, botões crus, slider cinza.
      Os valores abaixo são os mesmos `--rc-*`, já resolvidos. */
-  --jr-acento: #45b8c9;      /* = --rc-teal */
-  --jr-linha: #16233a;       /* = --rc-line-soft */
-  --jr-linha-forte: #1c2b45; /* = --rc-line */
-  --jr-tinta: #b9c9dc;       /* = --rc-text */
+  --jr-acento: #00d4ff;      /* = --rc-teal */
+  --jr-linha: #162d3a;       /* = --rc-line-soft */
+  --jr-linha-forte: #1c3645; /* = --rc-line */
+  --jr-tinta: #b8d8e8;       /* = --rc-text */
   --jr-tinta-dim: #7f95b3;   /* = --rc-dim */
-  --jr-tinta-fraca: #4f6285; /* --rv-ink-faint */
-  --jr-fundo: #070d17;    /* --rv-sunken */
-  --jr-perigo: #d15068;   /* --rv-dg */
+  --jr-tinta-fraca: #4f7185; /* --rv-ink-faint */
+  --jr-fundo: #071117;    /* --rv-sunken */
+  --jr-perigo: #ff5f74;   /* --rv-dg */
 
   position: fixed; z-index: 521; left: 50%; top: 50%; transform: translate(-50%, -50%);
   padding-left: 36px;
   /* Canto vivo, como as janelas de ferramenta do VTT. */
   border: 1px solid var(--jr-linha);
-  background: linear-gradient(180deg, #0b1322, #080e19);
+  background: linear-gradient(180deg, #0b1a22, #081319);
   box-shadow: 0 20px 56px rgba(0, 0, 0, .7);
   /* Nunca mais alta que a tela: a janela de recorte tem 240px fixos e,
      com cabeçalho e rodapé, passava de 400px — numa janela de
@@ -2697,7 +2697,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 
 /* Magias compartilha abas, cards e detalhe com Inventário. */
 /* Escalpos: dossiê de registros reais, sem estados demonstrativos. */
-.rc-esc { container-type: inline-size; --rv-vertente-cor: #36b4cc; }
+.rc-esc { container-type: inline-size; --rv-vertente-cor: #00d4ff; }
 .rc-esc .rc-esc-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .rc-esc .rc-esc-card .rc-inv-card-nome { flex-direction: column; align-items: flex-start; justify-content: center; gap: 6px; min-height: 70px; }
 .rc-esc-card .rc-inv-card-nome small { color: var(--rc-dim); font: 10px var(--font-mono), monospace; text-transform: uppercase; }
@@ -2811,16 +2811,16 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   background-color: transparent;
   background-image: linear-gradient(90deg, rgba(0, 212, 255, .13), rgba(0, 212, 255, .035) 72%, transparent);
   background-repeat: no-repeat; background-size: 0% 100%;
-  color: rgba(214, 228, 245, 0.45);
+  color: rgba(214, 234, 245, 0.45);
   font: 600 13px/18px var(--font-corpo), sans-serif;
   transition: background-size .28s cubic-bezier(.4, 0, .2, 1), background-color .28s cubic-bezier(.4, 0, .2, 1), border-color .14s, color .14s;
 }
-.rc-inv-aba:hover { --rc-card-fio: rgba(0, 212, 255, 0.35); background-size: 72% 100%; color: rgba(214, 228, 245, 0.83); border-color: rgba(0, 212, 255, 0.35); }
+.rc-inv-aba:hover { --rc-card-fio: rgba(0, 212, 255, 0.35); background-size: 72% 100%; color: rgba(214, 234, 245, 0.83); border-color: rgba(0, 212, 255, 0.35); }
 .rc-inv-aba:focus-visible { outline: 1px solid var(--rc-cy); outline-offset: -2px; }
 .rc-inv-aba[data-ativo] {
-  --rc-card-fio: #108bac;
+  --rc-card-fio: #00d4ff;
   background-color: var(--rc-line); background-size: 100% 100%;
-  border-color: #108bac; color: rgba(214, 228, 245, 0.83);
+  border-color: #00d4ff; color: rgba(214, 234, 245, 0.83);
 }
 .rc-inv-aba-n {
   flex: none; font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700;
@@ -2840,12 +2840,12 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-inv-busca-linha {
   flex: none; height: 48px; padding: 8px 12px 9px;
   border-bottom: 1px solid rgba(0, 212, 255, 0.15);
-  background: rgba(12, 20, 32, 0.7);
+  background: rgba(12, 25, 32, 0.7);
 }
 .rc-inv-busca {
   display: flex; align-items: center; gap: 8px; height: 30px; padding: 5px 9px;
   border: 1px solid var(--rc-line); border-radius: var(--rc-r-sm);
-  background: rgba(17, 29, 49, 0.45); color: rgba(214, 228, 245, 0.45);
+  background: rgba(17, 37, 49, 0.45); color: rgba(214, 234, 245, 0.45);
   transition: border-color .14s;
 }
 .rc-inv-busca:focus-within { border-color: rgba(0, 212, 255, 0.45); }
@@ -2853,7 +2853,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   flex: 1 0 0; min-width: 0; border: 0; background: none; outline: none;
   color: var(--rc-text); font: 500 13px/18px var(--font-corpo), sans-serif;
 }
-.rc-inv-busca input::placeholder { color: rgba(214, 228, 245, 0.45); }
+.rc-inv-busca input::placeholder { color: rgba(214, 234, 245, 0.45); }
 .rc-inv-busca input::-webkit-search-cancel-button { filter: grayscale(1) opacity(.5); }
 
 .rc-inv-rolo {
@@ -2866,8 +2866,8 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   display: flex; align-items: center; gap: 12px; flex: none;
   padding: 8px 12px;
   border-bottom: 1px solid var(--rc-line);
-  background-color: #0e1826;
-  background-image: repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(24, 46, 64, .11) 5px);
+  background-color: #0e1d26;
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(24, 49, 64, .11) 5px);
 }
 .rc-inv-cap-num {
   flex: none;
@@ -2889,7 +2889,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   --rc-card-chanfro: 2px;
   --rc-card-fio: var(--rc-line);
   flex: 1 1 0; min-width: 0;
-  border: 1px solid var(--rc-line); background: #203044;
+  border: 1px solid var(--rc-line); background: #203744;
   transition: background .18s ease-out, border-color .18s ease-out;
 }
 .rc-inv-medidor-un[data-cheio] {
@@ -2913,22 +2913,22 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 }
 /* Cópia da prévia aprovada: face + rodapé e estados contínuos. */
 .rc-inv-card{position:relative;min-width:0;display:flex;border:0;border-radius:4px 0 4px 0;padding:1px;background:#254053;text-align:left;cursor:pointer;clip-path:polygon(0 0,calc(100% - var(--rc-card-chanfro)) 0,100% var(--rc-card-chanfro),100% 100%,var(--rc-card-chanfro) 100%,0 calc(100% - var(--rc-card-chanfro)));font-family:inherit;color:inherit;transition:background-color .32s cubic-bezier(.4,0,.2,1)}
-.rc-inv-card-face{width:100%;display:flex;flex-direction:column;border-radius:4px 0 4px 0;background-color:#101c2b;background-image:linear-gradient(90deg,color-mix(in srgb,var(--rv-vertente-cor) 14%,transparent),rgba(22,79,106,.08)),linear-gradient(90deg,color-mix(in srgb,var(--rv-vertente-cor) 3%,transparent),transparent 45%);background-repeat:no-repeat;background-size:0% 100%,100% 100%;clip-path:polygon(0 0,calc(100% - var(--rc-card-chanfro)) 0,100% var(--rc-card-chanfro),100% 100%,var(--rc-card-chanfro) 100%,0 calc(100% - var(--rc-card-chanfro)));transition:background-size .32s cubic-bezier(.4,0,.2,1),background-color .32s cubic-bezier(.4,0,.2,1)}
-.rc-inv-card-nome{display:flex;align-items:center;flex:1;min-height:38px;padding:8px 13px;font:300 11px/1.25 var(--font-mono), 'JetBrains Mono', monospace;color:#dce8f6;overflow-wrap:anywhere}
-.rc-inv-card-footer{display:flex;align-items:center;justify-content:space-between;gap:7px;padding:8px 13px;min-height:34px;border-top:1px solid #243448;background-color:#0c1826;background-image:linear-gradient(90deg,color-mix(in srgb,var(--rv-vertente-cor) 11%,transparent),rgba(22,79,106,.06));background-repeat:no-repeat;background-size:0% 100%;transition:background-size .32s cubic-bezier(.4,0,.2,1),background-color .32s cubic-bezier(.4,0,.2,1),border-color .32s cubic-bezier(.4,0,.2,1)}
+.rc-inv-card-face{width:100%;display:flex;flex-direction:column;border-radius:4px 0 4px 0;background-color:#10212b;background-image:linear-gradient(90deg,color-mix(in srgb,var(--rv-vertente-cor) 14%,transparent),rgba(22, 92, 106,.08)),linear-gradient(90deg,color-mix(in srgb,var(--rv-vertente-cor) 3%,transparent),transparent 45%);background-repeat:no-repeat;background-size:0% 100%,100% 100%;clip-path:polygon(0 0,calc(100% - var(--rc-card-chanfro)) 0,100% var(--rc-card-chanfro),100% 100%,var(--rc-card-chanfro) 100%,0 calc(100% - var(--rc-card-chanfro)));transition:background-size .32s cubic-bezier(.4,0,.2,1),background-color .32s cubic-bezier(.4,0,.2,1)}
+.rc-inv-card-nome{display:flex;align-items:center;flex:1;min-height:38px;padding:8px 13px;font:300 11px/1.25 var(--font-mono), 'JetBrains Mono', monospace;color:#dcecf6;overflow-wrap:anywhere}
+.rc-inv-card-footer{display:flex;align-items:center;justify-content:space-between;gap:7px;padding:8px 13px;min-height:34px;border-top:1px solid #243b48;background-color:#0c1c26;background-image:linear-gradient(90deg,color-mix(in srgb,var(--rv-vertente-cor) 11%,transparent),rgba(22, 92, 106,.06));background-repeat:no-repeat;background-size:0% 100%;transition:background-size .32s cubic-bezier(.4,0,.2,1),background-color .32s cubic-bezier(.4,0,.2,1),border-color .32s cubic-bezier(.4,0,.2,1)}
 .rc-inv-card-cat{display:flex;align-items:center;gap:7px;min-width:0;font:500 10px/1.2 var(--font-mono), 'JetBrains Mono', monospace;color:var(--rc-dim)}
 .rc-inv-card-espacos{display:flex;gap:3px;flex:none;align-items:center}
 .rc-inv-card-espacos i{width:5px;height:5px;background:var(--rv-vertente-cor);display:block}
-.rc-inv-qtd{flex:none;font:500 12px var(--font-mono), 'JetBrains Mono', monospace;color:#b1c6dc;white-space:nowrap}
-.rc-inv-qtd small{font-size:10px;color:#7189a5;margin-right:3px;font-weight:400}
+.rc-inv-qtd{flex:none;font:500 12px var(--font-mono), 'JetBrains Mono', monospace;color:#b1ccdc;white-space:nowrap}
+.rc-inv-qtd small{font-size:10px;color:#7192a5;margin-right:3px;font-weight:400}
 .rc-inv-card::before{content:'';position:absolute;z-index:2;left:0;top:0;bottom:0;width:1px;background:color-mix(in srgb,var(--rv-vertente-cor) 65%,#fff);box-shadow:0 0 6px color-mix(in srgb,var(--rv-vertente-cor) 70%,transparent);opacity:0;transform:scaleY(0);transform-origin:top;transition:transform .32s cubic-bezier(.4,0,.2,1),opacity .1s ease-out;pointer-events:none}
 .rc-inv-card:hover{background:color-mix(in srgb,var(--rv-vertente-cor) 28%,#254053)}
 .rc-inv-card:hover .rc-inv-card-face{background-size:100% 100%,100% 100%}
-.rc-inv-card:hover .rc-inv-card-footer{background-size:100% 100%;border-top-color:color-mix(in srgb,var(--rv-vertente-cor) 24%,#243448)}
+.rc-inv-card:hover .rc-inv-card-footer{background-size:100% 100%;border-top-color:color-mix(in srgb,var(--rv-vertente-cor) 24%,#243b48)}
 .rc-inv-card:hover::before{opacity:.8;transform:scaleY(1)}
 .rc-inv-card[aria-pressed=true]{background:color-mix(in srgb,var(--rv-vertente-cor) 34%,#254053)}
-.rc-inv-card[aria-pressed=true] .rc-inv-card-face{background-color:#142439;background-image:linear-gradient(90deg,color-mix(in srgb,var(--rv-vertente-cor) 18%,transparent) 0%,color-mix(in srgb,var(--rv-vertente-cor) 8%,transparent) 68%,rgba(22,79,106,.08) 100%),linear-gradient(90deg,color-mix(in srgb,var(--rv-vertente-cor) 4%,transparent),transparent 72%);background-size:100% 100%,100% 100%}
-.rc-inv-card[aria-pressed=true] .rc-inv-card-footer{background-color:#111f2f;background-image:linear-gradient(90deg,color-mix(in srgb,var(--rv-vertente-cor) 14%,transparent) 0%,color-mix(in srgb,var(--rv-vertente-cor) 6%,transparent) 72%,rgba(22,79,106,.06) 100%);background-size:100% 100%;border-top-color:color-mix(in srgb,var(--rv-vertente-cor) 32%,#243448)}
+.rc-inv-card[aria-pressed=true] .rc-inv-card-face{background-color:#142b39;background-image:linear-gradient(90deg,color-mix(in srgb,var(--rv-vertente-cor) 18%,transparent) 0%,color-mix(in srgb,var(--rv-vertente-cor) 8%,transparent) 68%,rgba(22, 92, 106,.08) 100%),linear-gradient(90deg,color-mix(in srgb,var(--rv-vertente-cor) 4%,transparent),transparent 72%);background-size:100% 100%,100% 100%}
+.rc-inv-card[aria-pressed=true] .rc-inv-card-footer{background-color:#11242f;background-image:linear-gradient(90deg,color-mix(in srgb,var(--rv-vertente-cor) 14%,transparent) 0%,color-mix(in srgb,var(--rv-vertente-cor) 6%,transparent) 72%,rgba(22, 92, 106,.06) 100%);background-size:100% 100%;border-top-color:color-mix(in srgb,var(--rv-vertente-cor) 32%,#243b48)}
 .rc-inv-card[aria-pressed=true]::before{opacity:1;transform:scaleY(1);box-shadow:0 0 8px color-mix(in srgb,var(--rv-vertente-cor) 82%,transparent)}
 .rc-inv-card:focus-visible{outline:2px solid #00d4ff;outline-offset:-3px}
 .rc-inv-card:focus-visible .rc-inv-card-face{background-size:100% 100%,100% 100%}
@@ -2957,7 +2957,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 /* ── Coluna do detalhe ───────────────────────────────────────────── */
 .rc-inv-detalhe {
   position: relative; flex: 1 0 0; min-width: 0; min-height: 0;
-  border-left: 1px solid var(--rc-line); background: rgba(12, 20, 32, 0.7);
+  border-left: 1px solid var(--rc-line); background: rgba(12, 25, 32, 0.7);
 }
 .rc-inv-det {
   display: flex; flex-direction: column; gap: 16px;
@@ -2967,7 +2967,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-inv-det-titulo { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .rc-inv-det-titulo h3 {
   margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  color: rgba(214, 228, 245, 0.8);
+  color: rgba(214, 234, 245, 0.8);
   font: 600 20px/24px var(--font-corpo), sans-serif;
 }
 .rc-inv-etiquetas { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -2982,7 +2982,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .8px;
 }
 .rc-inv-det-desc {
-  margin: 0; flex: none; color: rgba(214, 228, 245, 0.65);
+  margin: 0; flex: none; color: rgba(214, 234, 245, 0.65);
   font: 500 14px/16px var(--font-corpo), sans-serif;
 }
 
@@ -2998,7 +2998,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 }
 .rc-inv-destaque-principal {
   flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 4px;
-  padding: 10px; background: rgba(17, 29, 49, 0.45);
+  padding: 10px; background: rgba(17, 37, 49, 0.45);
 }
 .rc-inv-destaque-lado { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; }
 .rc-inv-destaque-lado > * + * { border-top: 1px solid var(--rc-line); }
@@ -3008,12 +3008,12 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   padding: 6px 10px; min-width: 0;
 }
 .rc-inv-rot {
-  color: rgba(214, 228, 245, 0.65); text-transform: uppercase;
+  color: rgba(214, 234, 245, 0.65); text-transform: uppercase;
   font: 600 14px/16px var(--font-corpo), sans-serif;
 }
 .rc-inv-mini .rc-inv-rot { font-size: 12px; }
 .rc-inv-val {
-  color: rgba(214, 228, 245, 0.8);
+  color: rgba(214, 234, 245, 0.8);
   font-family: var(--font-mono), monospace; font-size: 16px; line-height: 24px;
 }
 /* O dano principal QUEBRA em vez de cortar: "1d6 cortante ou
@@ -3024,7 +3024,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    apagado. */
 .rc-inv-val-sufixo {
   font-style: normal; font-size: 12px; font-weight: 400; line-height: 16px;
-  color: rgba(214, 228, 245, 0.65);
+  color: rgba(214, 234, 245, 0.65);
 }
 .rc-inv-val-sufixo::before { content: " "; }
 .rc-inv-mini .rc-inv-val {
@@ -3046,14 +3046,14 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-inv-linha dt {
   flex: 0 0 110px; padding: 6px 10px;
   border-right: 1px solid var(--rc-line);
-  background: rgba(17, 29, 49, 0.45);
-  color: rgba(214, 228, 245, 0.65);
+  background: rgba(17, 37, 49, 0.45);
+  color: rgba(214, 234, 245, 0.65);
   font: 600 13px/14px var(--font-corpo), sans-serif;
 }
 .rc-inv-linha dd {
   flex: 1 0 0; min-width: 0; margin: 0; padding: 6px 10px;
-  background: rgba(12, 20, 32, 0.6);
-  color: rgba(214, 228, 245, 0.8);
+  background: rgba(12, 25, 32, 0.6);
+  color: rgba(214, 234, 245, 0.8);
   font: 500 13px/14px var(--font-corpo), sans-serif;
 }
 
@@ -3070,7 +3070,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 }
 
 .rc-inv-efeito { border: 1px solid var(--rc-line); border-radius: var(--rc-r-sm); }
-.rc-inv-efeito-corpo { padding: 10px; background: rgba(17, 29, 49, 0.45); }
+.rc-inv-efeito-corpo { padding: 10px; background: rgba(17, 37, 49, 0.45); }
 
 /* ── Rodapé do detalhe ───────────────────────────────────────────── */
 /* Preso embaixo, como no desenho: a descrição pode ser longa e rolar,
@@ -3081,12 +3081,12 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   /* Opaco, não translúcido: quando o painel de mover ou a confirmação
      abrem, o rodapé cresce pra cima e passa por cima da tabela — com
      alfa, o conteúdo de trás aparecia através do contador. */
-  border-top: 1px solid var(--rc-line); background: #0e1826;
+  border-top: 1px solid var(--rc-line); background: #0e1d26;
 }
 .rc-inv-stepper { display: flex; align-items: stretch; height: 38px; }
 .rc-inv-passo {
   flex: none; width: 33px; display: flex; align-items: center; justify-content: center;
-  cursor: pointer; border: 1px solid var(--rc-line); background: rgba(17, 29, 49, 0.45);
+  cursor: pointer; border: 1px solid var(--rc-line); background: rgba(17, 37, 49, 0.45);
   color: var(--rc-cy); font: inherit; font-size: 15px; line-height: 1;
   transition: background .14s, color .14s;
 }
@@ -3099,8 +3099,8 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-inv-stepper span {
   flex: 1 0 0; display: flex; align-items: center; justify-content: center; padding: 10px;
   border-top: 1px solid var(--rc-line); border-bottom: 1px solid var(--rc-line);
-  background: rgba(8, 20, 32, 0.7);
-  color: rgba(214, 228, 245, 0.65);
+  background: rgba(8, 23, 32, 0.7);
+  color: rgba(214, 234, 245, 0.65);
   font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 700; line-height: 16px;
 }
 
@@ -3110,12 +3110,12 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-inv-stepper-descartar {
   flex: none; width: 38px; display: flex; align-items: center; justify-content: center;
   margin-left: 8px; cursor: pointer;
-  border: 1px solid var(--rc-line); background: rgba(17, 29, 49, 0.45);
+  border: 1px solid var(--rc-line); background: rgba(17, 37, 49, 0.45);
   color: var(--rc-cy);
   transition: background .14s, border-color .14s, color .14s;
 }
 .rc-inv-stepper-descartar:hover {
-  border-color: var(--rc-danger); color: var(--rc-danger); background: rgba(209, 80, 104, .12);
+  border-color: var(--rc-danger); color: var(--rc-danger); background: rgba(255, 95, 116, .12);
 }
 .rc-inv-stepper-descartar:focus-visible { outline: 1px solid var(--rc-danger); outline-offset: 1px; }
 
@@ -3126,7 +3126,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-inv-mover {
   display: flex; flex-direction: column; gap: 8px; padding: 10px;
   border: 1px solid rgba(0, 212, 255, .35); border-radius: var(--rc-r-sm);
-  background: rgba(10, 20, 34, 0.96);
+  background: rgba(10, 25, 34, 0.96);
 }
 .rc-inv-mover-cab {
   margin: 0; color: var(--rc-dim);
@@ -3138,13 +3138,13 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
   padding: 7px 9px; cursor: pointer; text-align: left;
   border: 1px solid var(--rc-line); border-radius: var(--rc-r-sm);
-  background: rgba(17, 29, 49, 0.45); color: var(--rc-text);
+  background: rgba(17, 37, 49, 0.45); color: var(--rc-text);
   font: 600 12px/16px var(--font-corpo), sans-serif;
   transition: background .14s, border-color .14s, color .14s;
 }
 .rc-inv-mover-op:hover:not(:disabled) { border-color: rgba(0, 212, 255, .65); color: var(--rc-cy); }
 .rc-inv-mover-op:focus-visible { outline: 1px solid var(--rc-cy); outline-offset: 1px; }
-.rc-inv-mover-op:disabled { cursor: not-allowed; color: var(--rc-dim); background: rgba(12, 20, 32, .5); }
+.rc-inv-mover-op:disabled { cursor: not-allowed; color: var(--rc-dim); background: rgba(12, 25, 32, .5); }
 .rc-inv-mover-motivo {
   font-size: 10px; font-weight: 400; line-height: 12px; color: var(--rc-dim);
   white-space: normal;
@@ -3154,11 +3154,11 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    do sistema — a ação nasceu ali e a resposta fica ali. */
 .rc-inv-confirma {
   display: flex; flex-direction: column; gap: 8px; padding: 10px;
-  border: 1px solid rgba(209, 80, 104, .5); border-radius: var(--rc-r-sm);
+  border: 1px solid rgba(255, 95, 116, .5); border-radius: var(--rc-r-sm);
   background: rgba(36, 14, 20, 0.92);
 }
 .rc-inv-confirma p {
-  margin: 0; color: rgba(214, 228, 245, 0.8);
+  margin: 0; color: rgba(214, 234, 245, 0.8);
   font: 500 13px/16px var(--font-corpo), sans-serif;
 }
 .rc-inv-confirma p strong { font-weight: 700; color: var(--rc-text); }
@@ -3174,7 +3174,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   background-color: transparent;
   background-image: linear-gradient(90deg, rgba(0, 212, 255, .13), rgba(0, 212, 255, .035) 72%, transparent);
   background-repeat: no-repeat; background-size: 0% 100%;
-  color: rgba(214, 228, 245, 0.88);
+  color: rgba(214, 234, 245, 0.88);
   font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 700;
   letter-spacing: 2.42px; text-transform: uppercase; white-space: nowrap;
   transition: background-size .28s cubic-bezier(.4, 0, .2, 1), background-color .28s cubic-bezier(.4, 0, .2, 1), border-color .14s, color .14s;
@@ -3188,8 +3188,8 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    igual com as outras, ela domina a linha. */
 .rc-inv-btn--primaria { --rc-card-fio: rgba(0, 212, 255, 0.45); flex: 0 1 230px; border-color: rgba(0, 212, 255, 0.45); background-color: rgba(0, 212, 255, 0.10); }
 .rc-inv-btn--mover { flex: 0 0 96px; padding-inline: 12px; }
-.rc-inv-btn--perigo { --rc-card-fio: rgba(209, 80, 104, .5); border-color: rgba(209, 80, 104, .5); color: var(--rc-danger); background-image: linear-gradient(90deg, rgba(209, 80, 104, .16), rgba(209, 80, 104, .04) 72%, transparent); }
-.rc-inv-btn--perigo:hover:not(:disabled) { --rc-card-fio: var(--rc-danger); border-color: var(--rc-danger); background-color: rgba(209, 80, 104, .08); color: var(--rc-danger); }
+.rc-inv-btn--perigo { --rc-card-fio: rgba(255, 95, 116, .5); border-color: rgba(255, 95, 116, .5); color: var(--rc-danger); background-image: linear-gradient(90deg, rgba(255, 95, 116, .16), rgba(255, 95, 116, .04) 72%, transparent); }
+.rc-inv-btn--perigo:hover:not(:disabled) { --rc-card-fio: var(--rc-danger); border-color: var(--rc-danger); background-color: rgba(255, 95, 116, .08); color: var(--rc-danger); }
 /* ── Termo de regra dentro de um texto ───────────────────────────── */
 /* Estilo DO TEXTO, não caixa por cima dele: peso, cor e um pontilhado
    discreto. Assim acompanha a quebra de linha, o tamanho da fonte e a
@@ -3199,7 +3199,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   text-decoration: underline dotted; text-underline-offset: 2px;
 }
 .rc-termo[data-tipo="acao"] { color: var(--rc-cy); text-decoration-color: rgba(0, 212, 255, 0.45); }
-.rc-termo[data-tipo="condicao"] { color: var(--rc-danger); text-decoration-color: rgba(209, 80, 104, 0.45); }
+.rc-termo[data-tipo="condicao"] { color: var(--rc-danger); text-decoration-color: rgba(255, 95, 116, 0.45); }
 .rc-termo:hover, .rc-termo:focus-visible { text-decoration-style: solid; outline: none; }
 
 .rc-termo-dica {
@@ -3208,13 +3208,13 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   display: flex; flex-direction: column; gap: 4px;
   max-width: 280px; padding: 8px 10px; pointer-events: none;
   border: 1px solid var(--rc-line); border-radius: var(--rc-r-sm);
-  background: rgba(8, 14, 24, 0.97);
+  background: rgba(8, 18, 24, 0.97);
   box-shadow: 0 12px 32px rgba(0, 0, 0, .55);
   color: var(--rc-text);
   font-family: var(--font-corpo), sans-serif;
 }
 .rc-termo-dica[data-tipo="acao"] { border-color: rgba(0, 212, 255, .4); }
-.rc-termo-dica[data-tipo="condicao"] { border-color: rgba(209, 80, 104, .4); }
+.rc-termo-dica[data-tipo="condicao"] { border-color: rgba(255, 95, 116, .4); }
 .rc-termo-dica-cab {
   display: flex; align-items: baseline; gap: 6px;
   color: var(--rc-text); font: 600 13px/16px var(--font-corpo), sans-serif;
@@ -3223,7 +3223,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   font-style: normal; font-family: var(--font-mono), monospace;
   font-size: 9.5px; letter-spacing: .7px; text-transform: uppercase; color: var(--rc-dim);
 }
-.rc-termo-dica-txt { font-size: 12px; line-height: 1.4; color: rgba(214, 228, 245, 0.75); }
+.rc-termo-dica-txt { font-size: 12px; line-height: 1.4; color: rgba(214, 234, 245, 0.75); }
 .rc-termo-dica-txt--vazio { font-style: italic; color: var(--rc-dim); }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3240,7 +3240,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   display: flex; flex-direction: column; gap: 3px; flex: none;
   padding: 8px 12px 9px;
   border-top: 1px solid var(--rc-line);
-  background: #0e1826;
+  background: #0e1d26;
 }
 .rc-inv-carteira-linha { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .rc-inv-carteira-rot {
@@ -3360,7 +3360,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-bio-leitura dt, .rc-bio-leitura dd { text-transform: uppercase; }
 .rc-bio-leitura dd { text-align: right; }
 .rc-bio-leitura dt { margin: 0; }
-.rc-bio-leitura dd { margin: 0; color: rgba(214, 228, 245, 0.72); }
+.rc-bio-leitura dd { margin: 0; color: rgba(214, 234, 245, 0.72); }
 
 /* SITUAÇÃO DO RPI. As três situações do livro, e a cor diz o que cada
    uma significa: VERDE passa na verificação; ÂMBAR é o Sinalizado —
@@ -3534,7 +3534,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 }
 .rc-nric-attr[data-attr="corpo"] { --rc-attr-cor: #23903c; }
 .rc-nric-attr[data-attr="mente"] { --rc-attr-cor: #6a49bc; }
-.rc-nric-attr[data-attr="animo"] { --rc-attr-cor: #0596b7; }
+.rc-nric-attr[data-attr="animo"] { --rc-attr-cor: #00d4ff; }
 /* A célula inteira é o alvo de rolagem, então ela inteira reage —
    antes o hover morava no polígono. O marcador cresce junto: é o
    mesmo gesto que o `stroke` fazia, com o que sobrou da forma. */
@@ -3610,7 +3610,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
      nasceu clara. */
   background-color: transparent;
   background-image:
-    linear-gradient(90deg, color-mix(in srgb, var(--rc-skill-cor) 16%, transparent), rgba(22, 79, 106, 0.08)),
+    linear-gradient(90deg, color-mix(in srgb, var(--rc-skill-cor) 16%, transparent), rgba(22, 92, 106, 0.08)),
     linear-gradient(90deg, color-mix(in srgb, var(--rc-skill-cor) 4%, transparent), transparent 45%);
   background-repeat: no-repeat;
   background-size: 0% 100%, 100% 100%;
@@ -3706,7 +3706,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 /* As MESMAS três cores das perícias em card e da matriz de atributos. */
 .rc-sensor-row[data-attr="corpo"] { --rc-skill-cor: #23903c; }
 .rc-sensor-row[data-attr="mente"] { --rc-skill-cor: #6a49bc; }
-.rc-sensor-row[data-attr="animo"] { --rc-skill-cor: #0596b7; }
+.rc-sensor-row[data-attr="animo"] { --rc-skill-cor: #00d4ff; }
 
 /* Resumo da perícia no hover/foco (`DicaPericiaBalao`, SkillsGrid).
    Compacto: a frase curta e, embaixo, o atributo base cheio e os
@@ -3715,7 +3715,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-pericia-dica {
   position: fixed; z-index: 1000; max-width: 260px;
   padding: 8px 10px;
-  background: #0d1826; border: 1px solid var(--rc-line);
+  background: #0d1d26; border: 1px solid var(--rc-line);
   border-radius: 4px 10px 4px 10px; corner-shape: round bevel round bevel;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
   pointer-events: none;
@@ -3739,7 +3739,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 }
 .rc-pericia-dica-atributos span[data-attr="corpo"] { --rc-dica-cor: #23903c; }
 .rc-pericia-dica-atributos span[data-attr="mente"] { --rc-dica-cor: #6a49bc; }
-.rc-pericia-dica-atributos span[data-attr="animo"] { --rc-dica-cor: #0596b7; }
+.rc-pericia-dica-atributos span[data-attr="animo"] { --rc-dica-cor: #00d4ff; }
 /* Secundário: só o contorno — é alternativa, não o padrão da perícia. */
 .rc-pericia-dica-atributos span[data-secundario] { background: transparent; color: var(--rc-dim); }
 
@@ -3849,7 +3849,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-vres-linha:last-child { border-bottom: none; }
 .rc-vres-linha[data-resource="pv"] { --rc-vres-cor: #d84f6c; }
 .rc-vres-linha[data-resource="pe"] { --rc-vres-cor: #8d62e8; }
-.rc-vres-linha[data-resource="mana"] { --rc-vres-cor: #00c4e7; }
+.rc-vres-linha[data-resource="mana"] { --rc-vres-cor: #00d4ff; }
 
 /* O CANAL — poço mais fundo que o card, com a grade de 18px que dá a
    escala da leitura. */
@@ -3944,7 +3944,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    fio à direita dele já separa os dois. */
 .rc-vres-numbox {
   display: grid; grid-template-columns: minmax(0, 1fr) 22px;
-  background: rgba(7, 19, 31, 0.55);
+  background: rgba(7, 22, 31, 0.55);
 }
 /* O ALVO É O BLOCO INTEIRO. O `/máximo` mora DENTRO do card de valor
    (via `maxClassName`), e o card ocupa toda a caixa: não sobra canto
@@ -4176,7 +4176,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   content: "";
   position: absolute; left: 0; right: 0; bottom: 2px; height: 1px;
   /* Ciano de alfa baixa, não `--rc-line`: aquele é o fio ESTRUTURAL
-     (#1c2b45) e, no fundo do card, o traço aparecia tão pouco que o
+     (#1c3645) e, no fundo do card, o traço aparecia tão pouco que o
      hover parecia não estar acontecendo. */
   background: rgba(0, 212, 255, 0.3);
   transform: scaleX(0); transform-origin: left center;
@@ -4225,8 +4225,8 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    linha de ativação usa `::before`, e não `::after`. */
 .rc-pin:not([data-preenchido]) {
   border-style: dashed;
-  border-color: rgba(34, 88, 115, 0.62);
-  background: rgba(7, 19, 31, 0.24);
+  border-color: rgba(34, 101, 115, 0.62);
+  background: rgba(7, 22, 31, 0.24);
   /* Listras diagonais na cor das linhas do console (azul arroxeado):
      marcam o slot como área vazia, à espera de algo. */
   background-image: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--rc-line) 40%, transparent) 0 6px, transparent 6px 12px);
@@ -4246,8 +4246,8 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   z-index: 1;
 }
 .rc-pin:not([data-preenchido]):hover {
-  border-color: rgba(34, 88, 115, 0.95);
-  background-color: rgba(8, 24, 38, 0.5);
+  border-color: rgba(34, 101, 115, 0.95);
+  background-color: rgba(8, 27, 38, 0.5);
 }
 .rc-pin:not([data-preenchido]):hover::before { width: 36px; }
 .rc-pin:not([data-preenchido]):hover > * { opacity: 1; }
@@ -4329,7 +4329,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   display: grid; grid-template-columns: 20px minmax(0, 1fr) 20px;
   align-self: stretch;
   border-left: 1px solid var(--rc-fio-sutil);
-  background: rgba(4, 16, 26, 0.14);
+  background: rgba(4, 18, 26, 0.14);
 }
 .rc-acao-ctrl button {
   min-width: 0; display: grid; place-items: center;
@@ -4361,14 +4361,14 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   width: 100%; height: 35px;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 0; border: 0;
-  background: rgba(5, 18, 29, 0.5);
+  background: rgba(5, 20, 29, 0.5);
   color: #afc0c9; cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
 .rc-acao-defesa-ico { display: grid; place-items: center; color: #5f879a; transition: color 0.15s ease; }
 .rc-acao-defesa-ico :is(svg, img) { transition: filter 0.15s ease, transform 0.15s ease; }
 .rc-acao-defesa-txt { font-family: var(--font-corpo), sans-serif; font-size: 14px; font-weight: 600; line-height: 1; }
-.rc-acao-defesa:hover:not(:disabled) { background: rgba(8, 28, 43, 0.82); color: #d0dce2; }
+.rc-acao-defesa:hover:not(:disabled) { background: rgba(8, 30, 43, 0.82); color: #d0dce2; }
 .rc-acao-defesa:hover:not(:disabled) .rc-acao-defesa-ico { color: var(--rc-cy); }
 .rc-acao-defesa:hover:not(:disabled) .rc-acao-defesa-ico :is(svg, img) {
   transform: scale(1.08);
@@ -4405,7 +4405,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   width: 64px;
   display: grid; grid-template-columns: minmax(0, 1fr) 19px;
   border-left: 1px solid var(--rc-fio-sutil);
-  background: rgba(4, 16, 26, 0.28);
+  background: rgba(4, 18, 26, 0.28);
 }
 .rc-eq-readout-main {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
@@ -4478,7 +4478,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: stretch;
   height: 36px;
   border-bottom: 1px solid var(--rc-fio-sutil);
-  background: rgba(4, 16, 26, 0.38);
+  background: rgba(4, 18, 26, 0.38);
 }
 /* O risco ciano do canto — a mesma marca de vértice dos módulos. */
 .rc-arma-cab::before {
@@ -4490,7 +4490,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-  color: #4f7e94;
+  color: #4f8894;
 }
 .rc-arma-cab-id b { font-weight: 700; color: var(--rc-text); letter-spacing: 0.08em; }
 .rc-arma-swap, .rc-arma-fechar {
@@ -4554,7 +4554,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   position: relative; min-height: 62px;
   display: flex; flex-direction: column; justify-content: center; gap: 5px;
   padding: 0 16px; border: 0; border-right: 1px solid var(--rc-fio-sutil);
-  background: rgba(4, 16, 26, 0.22);
+  background: rgba(4, 18, 26, 0.22);
   text-align: left; color: #9daeb7;
   transition: color 0.14s, background 0.14s;
 }
@@ -4577,14 +4577,14 @@ button.rc-arma-acao:disabled { opacity: 0.45; cursor: not-allowed; }
   width: 2px; background: var(--rc-cy); opacity: 0.55;
 }
 /* O dano é leitura, não botão: fundo mais fundo e sem cursor. */
-.rc-arma-acao--dado { background: rgba(4, 16, 26, 0.4); color: var(--rc-dim); }
+.rc-arma-acao--dado { background: rgba(4, 18, 26, 0.4); color: var(--rc-dim); }
 
 /* ── Vista de troca ────────────────────────────────────────────── */
 .rc-arma-lista { display: grid; }
 .rc-arma-opcao {
   min-height: 52px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch;
   border-bottom: 1px solid var(--rc-fio-sutil);
-  background: rgba(5, 18, 29, 0.15);
+  background: rgba(5, 20, 29, 0.15);
   transition: background 0.14s;
 }
 .rc-arma-opcao:hover { background: rgba(0, 212, 255, 0.03); }
@@ -4603,7 +4603,7 @@ button.rc-arma-acao:disabled { opacity: 0.45; cursor: not-allowed; }
 .rc-arma-equipar {
   min-width: 78px; padding: 0 12px;
   border: 0; border-left: 1px solid var(--rc-fio-sutil);
-  background: rgba(4, 16, 26, 0.28); color: #638394;
+  background: rgba(4, 18, 26, 0.28); color: #638394;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
   cursor: pointer; transition: color 0.14s, background 0.14s;
@@ -4679,7 +4679,7 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
 .rc-eq-vazio, .rc-eq-inner--leitura { cursor: default; }
 .rc-eq-vazio:hover, .rc-eq-inner--leitura:hover { background: transparent; }
 .rc-eq-inner--leitura .rc-eq-nome { cursor: default; }
-.rc-eq-vazio .rc-eq-equipar-txt { color: rgba(214, 228, 245, 0.4); }
+.rc-eq-vazio .rc-eq-equipar-txt { color: rgba(214, 234, 245, 0.4); }
 .rc-eq-readout[data-leitura] { grid-template-columns: minmax(0, 1fr); }
 /* Inventário em leitura: a quantidade ocupa a caixa do contador. */
 .rc-inv-stepper[data-leitura] span { border: 1px solid var(--rc-line); gap: 8px; }
@@ -4690,30 +4690,30 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
 .rc-inv-carteira-val[data-leitura] { cursor: default; }
 
 /* ── Alvo da ação do token — no molde do cartão da aba Personagens ──
-   (`.rv-pn-scroll--pers .rv-pn-linha`): superfície `#0c1526`, fio fino,
+   (`.rv-pn-scroll--pers .rv-pn-linha`): superfície `#0c1c26`, fio fino,
    hover no ACENTO DO LADO (borda + fundo) e o escolhido com a barra
    lateral de 2px e o tom do acento. Ciano pro PJ, vermelho pro PN — os
    mesmos valores de `--rv-cy`/`--rv-dg` (literais: o seletor vive por
    portal, fora de onde esses tokens existem). */
 .rv-token-picker__lista-alvos { display: flex; flex-direction: column; gap: 6px; }
 .rv-alvo-cartao {
-  --fg-a: #45b8c9;
+  --fg-a: #00d4ff;
   position: relative; display: flex; align-items: stretch; gap: 12px; width: 100%; min-height: 48px;
   padding: 0 14px 0 0; overflow: hidden; text-align: left; cursor: pointer;
-  border: 1px solid #16233a;
+  border: 1px solid #162d3a;
   /* O chanfro do cartão da aba (raio nos cantos retos, corte nos outros). */
   border-radius: 4px 8px 4px 8px; corner-shape: round bevel round bevel;
-  background: #0c1526; color: #b9c9dc;
+  background: #0c1c26; color: #b8d8e8;
   transition: background-color .16s, border-color .16s, color .16s;
 }
-.rv-alvo-cartao[data-lado="pn"] { --fg-a: #d15068; }
+.rv-alvo-cartao[data-lado="pn"] { --fg-a: #ff5f74; }
 /* O ROSTO na altura inteira do cartão, encostado à esquerda — como o
    avatar do cartão da aba Personagens. Sem retrato, a sigla. */
 .rv-alvo-cartao-face {
   flex: none; width: 48px; align-self: stretch;
   display: grid; place-items: center; overflow: hidden;
-  border-right: 1px solid #1c2b45; background: #0a1220;
-  font-family: var(--font-corpo), sans-serif; font-size: 13px; font-weight: 700; color: #4f6285;
+  border-right: 1px solid #1c3645; background: #0a1820;
+  font-family: var(--font-corpo), sans-serif; font-size: 13px; font-weight: 700; color: #4f7185;
 }
 .rv-alvo-cartao-face img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rv-alvo-cartao-nome {
@@ -4724,12 +4724,12 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
 .rv-alvo-cartao:not(:disabled):hover,
 .rv-alvo-cartao:focus-visible {
   border-color: color-mix(in srgb, var(--fg-a) 55%, transparent);
-  background: color-mix(in srgb, var(--fg-a) 11%, #0c1526);
+  background: color-mix(in srgb, var(--fg-a) 11%, #0c1c26);
   color: var(--fg-a);
 }
 .rv-alvo-cartao[aria-pressed="true"] {
   border-color: color-mix(in srgb, var(--fg-a) 47%, transparent);
-  background: color-mix(in srgb, var(--fg-a) 12%, #0c1526);
+  background: color-mix(in srgb, var(--fg-a) 12%, #0c1c26);
   color: var(--fg-a);
 }
 .rv-alvo-cartao[aria-pressed="true"]::before {
@@ -4766,9 +4766,9 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
 }
 
 /* Janelas de ferramenta (`rc-picker`): a tinta padrão do Console
-   (#d6e4f5) é quase branca e gritava em título, opções e valores.
+   (#d6eaf5) é quase branca e gritava em título, opções e valores.
    Aqui ela desce um degrau — o ciano segue sendo o que acende. */
-.rc-picker { --rc-text: #aebfd4; --rc-text-forte: #c3d2e3; }
+.rc-picker { --rc-text: #aec6d4; --rc-text-forte: #c3d7e3; }
 
 /* O nome da ação escolhida, no resumo do passo "Confirmar": é o dado da
    janela — em ciano e caixa alta. */
@@ -4779,10 +4779,10 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
 .rv-moldura-rolagem { corner-shape: round bevel round bevel; }
 
 /* HISTÓRIA (IdentityAside): textos livres vindos da Forja de Refratário. */
-.rc-historia { margin: 2px 0 6px; border-top: 1px solid var(--rc-line-soft, #16233a); padding-top: 6px; }
+.rc-historia { margin: 2px 0 6px; border-top: 1px solid var(--rc-line-soft, #162d3a); padding-top: 6px; }
 .rc-historia-resumo {
   cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px;
-  font: 10px var(--font-mono), monospace; text-transform: uppercase; letter-spacing: 0.18em; color: var(--rc-teal, #45b8c9);
+  font: 10px var(--font-mono), monospace; text-transform: uppercase; letter-spacing: 0.18em; color: var(--rc-teal, #00d4ff);
 }
 .rc-historia-resumo::-webkit-details-marker { display: none; }
 .rc-historia-resumo::before { content: "›"; transition: transform 140ms; }
@@ -4790,7 +4790,7 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
 .rc-historia-resumo:focus-visible { outline: 2px solid var(--rc-cy, #00d4ff); outline-offset: 2px; }
 .rc-historia-lista { margin: 6px 0 0; display: grid; gap: 6px; }
 .rc-historia-lista dt { font: 10px var(--font-mono), monospace; text-transform: uppercase; letter-spacing: 0.14em; color: var(--rc-dim, #7f95b3); }
-.rc-historia-lista dd { margin: 1px 0 0; font: 400 13px/1.45 var(--font-corpo), sans-serif; color: var(--rc-text, #b9c9dc); white-space: pre-line; }
+.rc-historia-lista dd { margin: 1px 0 0; font: 400 13px/1.45 var(--font-corpo), sans-serif; color: var(--rc-text, #b8d8e8); white-space: pre-line; }
 
 /* ── Leituras na fonte da Forja ────────────────────────────────────
    Nome, selo de Ranking, leitura do RPI, atributos, Integridade, Sobrecarga, PA e
@@ -4818,17 +4818,17 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
 .rc-rank-menu {
   position: absolute; z-index: 30; top: calc(100% + 6px); right: 0;
   display: grid; gap: 8px; padding: 10px;
-  border: 1px solid #45b8c9; background: #07111b; box-shadow: 0 14px 30px #000a;
+  border: 1px solid #00d4ff; background: #07141b; box-shadow: 0 14px 30px #000a;
   border-radius: 0 10px 0 10px; corner-shape: bevel;
 }
-.rc-rank-menu__titulo { font: 600 10px/1 var(--font-mono, ui-monospace), monospace; letter-spacing: 0.2em; text-transform: uppercase; color: #45b8c9; }
+.rc-rank-menu__titulo { font: 600 10px/1 var(--font-mono, ui-monospace), monospace; letter-spacing: 0.2em; text-transform: uppercase; color: #00d4ff; }
 .rc-rank-menu__grade { display: grid; grid-template-columns: repeat(4, 42px); gap: 4px; }
 .rc-rank-menu__opcao {
   display: grid; place-items: center; min-height: 34px; padding: 0; cursor: pointer;
-  border: 1px solid rgba(69, 184, 201, 0.35); background: rgba(69, 184, 201, 0.1); color: #e6f6ff;
+  border: 1px solid rgba(0, 212, 255, 0.35); background: rgba(0, 212, 255, 0.1); color: #e6f6ff;
   font: 700 14px var(--font-chakra), var(--font-corpo), sans-serif;
 }
-.rc-rank-menu__opcao:hover:not(:disabled) { border-color: #45b8c9; background: rgba(69, 184, 201, 0.28); }
+.rc-rank-menu__opcao:hover:not(:disabled) { border-color: #00d4ff; background: rgba(0, 212, 255, 0.28); }
 .rc-rank-menu__opcao:focus-visible { outline: 2px solid #ff8a1f; outline-offset: 2px; }
 .rc-rank-menu__opcao:disabled { cursor: default; opacity: 0.35; }
 .rc-rank-menu__opcao[aria-current="true"] { opacity: 1; border-color: #ff8a1f; color: #ff8a1f; background: rgba(255, 138, 31, 0.1); }
@@ -4837,7 +4837,7 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
 .rc-loja { display: grid; gap: 8px; margin-top: 12px; }
 .rc-loja__filtros { display: flex; gap: 6px; }
 .rc-loja__filtros input { flex: 1; min-width: 0; }
-.rc-loja__filtros input, .rc-loja__filtros select { padding: 6px 8px; border: 1px solid rgba(69, 184, 201, 0.35); background: #07111b; color: #e6f6ff; font-size: 12px; }
+.rc-loja__filtros input, .rc-loja__filtros select { padding: 6px 8px; border: 1px solid rgba(0, 212, 255, 0.35); background: #07141b; color: #e6f6ff; font-size: 12px; }
 .rc-loja__lista { list-style: none; margin: 0; padding: 0; max-height: 280px; overflow-y: auto; display: grid; gap: 4px; }
 .rc-loja__lista li { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; font-size: 12px; }
 .rc-loja__preco { color: #ff8a1f; font-variant-numeric: tabular-nums; }
