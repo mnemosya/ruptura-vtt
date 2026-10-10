@@ -56,21 +56,21 @@
 .ih-aretz { color: var(--ih-amb); }
 
 /* ── topo: abas, busca, carteira ── */
-.ih-topo { display: flex; align-items: flex-end; gap: 24px; flex: none; flex-wrap: wrap; }
+.ih-topo { display: flex; flex-direction: column; gap: 22px; flex: none; }
+/* As duas linhas divisórias (embaixo das abas e em cima da régua) vão de
+   borda a borda: avançam sobre o recuo de 24px do `.ih` e devolvem o
+   mesmo recuo por dentro, para o conteúdo não sair do lugar. */
+.ih-topo-linha {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  margin: 0 -24px; padding: 0 24px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ih-cy) 14%, transparent);
+}
 .ih-abas { display: flex; align-items: flex-end; gap: 4px; }
 .ih-aba {
   position: relative; display: flex; align-items: center; gap: 8px; padding: 4px 12px 8px;
   color: var(--ih-dim); transition: color .15s;
 }
 .ih-aba:hover, .ih-aba[data-ativo] { color: var(--ih-ice); }
-.ih-aba-n {
-  display: grid; place-items: center; width: 20px; height: 20px;
-  border: 1px solid color-mix(in srgb, var(--ih-cy) 25%, transparent);
-  font-family: var(--ih-mono); font-size: 10px; color: color-mix(in srgb, var(--ih-cy) 60%, transparent);
-  transition: all .15s;
-}
-.ih-aba:hover .ih-aba-n { border-color: color-mix(in srgb, var(--ih-cy) 60%, transparent); }
-.ih-aba[data-ativo] .ih-aba-n { border-color: var(--ih-cy); background: var(--ih-cy); color: var(--ih-fundo); }
 .ih-aba-rot { font-family: var(--ih-display); font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: .14em; }
 .ih-aba-qtd { font-family: var(--ih-mono); font-size: 11px; color: var(--ih-dim); }
 .ih-aba::after {
@@ -79,13 +79,21 @@
   transform: scaleX(0); transform-origin: left; transition: transform .3s;
 }
 .ih-aba[data-ativo]::after { transform: scaleX(1); }
+/* A primeira aba alinha com a borda da busca embaixo. */
+.ih-aba:first-child { padding-left: 0; }
+.ih-aba:first-child::after { left: 0; }
 
-.ih-topo-dir { margin-left: auto; display: flex; align-items: center; gap: 20px; }
+.ih-ferramentas { display: flex; align-items: center; gap: 12px; }
 .ih-busca {
-  display: flex; align-items: center; gap: 8px; width: 220px; padding-bottom: 6px;
-  border-bottom: 1px solid color-mix(in srgb, var(--ih-cy) 20%, transparent); color: var(--ih-dim);
+  display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; height: 38px; padding: 0 14px; box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--ih-cy) 25%, transparent); color: var(--ih-dim);
+  transition: border-color .15s, background .15s, color .15s;
 }
-.ih-busca:focus-within { border-bottom-color: var(--ih-cy); color: var(--ih-cy); }
+.ih-busca:hover { border-color: color-mix(in srgb, var(--ih-cy) 50%, transparent); }
+.ih-busca:focus-within {
+  border-color: var(--ih-cy); color: var(--ih-cy);
+  background: color-mix(in srgb, var(--ih-cy) 6%, transparent);
+}
 .ih-busca input {
   flex: 1; min-width: 0; background: transparent; border: 0; outline: none;
   color: var(--ih-ice); font-family: var(--ih-corpo); font-size: 15px;
@@ -94,39 +102,40 @@
 .ih-busca-tecla { font-family: var(--ih-mono); font-size: 10px; color: var(--ih-dim); }
 
 .ih-carteira {
-  display: flex; align-items: center; gap: 12px; padding: 6px 28px 6px 6px;
-  border: 1px solid color-mix(in srgb, var(--ih-amb) 40%, transparent);
-  background: color-mix(in srgb, var(--ih-amb) 6%, transparent);
+  position: relative; display: flex; align-items: center; gap: 8px; padding: 0 2px 8px; box-sizing: border-box;
 }
 .ih-carteira-hex {
-  display: grid; place-items: center; width: 36px; height: 36px;
+  display: grid; place-items: center; width: 22px; height: 22px;
   background: var(--ih-amb); color: var(--ih-fundo);
-  font-family: var(--ih-display); font-size: 20px; font-weight: 900;
+  font-family: var(--ih-display); font-size: 13px; font-weight: 900;
   clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
 }
-.ih-carteira-txt { display: flex; flex-direction: column; line-height: 1; gap: 2px; }
-.ih-carteira-txt .ih-tag { color: color-mix(in srgb, var(--ih-amb) 70%, transparent); }
-.ih-carteira { position: relative; min-width: 168px; box-sizing: border-box; }
+.ih-carteira-txt { display: flex; align-items: baseline; line-height: 1; }
+/* O rótulo "Aretz" sai da vista (o hexágono ₳ já diz o que é), mas fica para leitor de tela. */
+.ih-carteira-txt .ih-tag { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .ih-carteira[data-editavel] { cursor: pointer; }
-.ih-carteira[data-editavel]:hover { border-color: color-mix(in srgb, var(--ih-amb) 70%, transparent); }
+.ih-carteira[data-editavel]:hover .ih-carteira-val { color: var(--ih-amb); }
 .ih-carteira-campo { max-width: 100%; background: transparent; border: 0; border-bottom: 1px solid var(--ih-amb); outline: none; color: var(--ih-ice); padding: 0; }
 .ih-carteira-aviso {
   position: absolute; right: 0; top: calc(100% + 6px); width: 240px; z-index: 40; padding: 6px 8px;
   background: var(--ih-casco); border: 1px solid var(--ih-amb); color: var(--ih-amb); font-size: 12px;
 }
-.ih-carteira-val { font-family: var(--ih-display); font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ih-carteira-val { font-family: var(--ih-display); font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ih-ice); transition: color .15s; }
 
 /* ── palco ── */
 .ih-palco { position: relative; flex: 1; min-height: 0; margin-top: 22px; overflow-y: auto; scrollbar-width: none; }
 .ih-palco::-webkit-scrollbar { display: none; }
-.ih-boot { max-width: 980px; margin: 0 auto; animation: ih-boot .5s cubic-bezier(.2,.8,.2,1) both; }
+.ih-boot { animation: ih-boot .5s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes ih-boot {
   from { opacity: 0; transform: translateY(10px) scaleY(.96); filter: brightness(2) blur(3px); }
   to { opacity: 1; transform: none; filter: none; }
 }
 
 /* ── régua ── */
-.ih-regua { margin-bottom: 24px; }
+.ih-regua-base {
+  flex: none; margin: 14px -24px 0; padding: 14px 24px 0;
+  border-top: 1px solid color-mix(in srgb, var(--ih-cy) 14%, transparent);
+}
 .ih-regua-cab { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
 .ih-regua-cab > .ih-tag { color: var(--ih-dim); }
 .ih-regua-num { font-family: var(--ih-display); font-size: 40px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
@@ -145,7 +154,7 @@
 .ih-seg[data-excedente] { background: var(--ih-amb); box-shadow: 0 0 8px var(--ih-amb); }
 .ih-seg[data-vazio] { background: color-mix(in srgb, var(--ih-cy) 10%, transparent); }
 .ih-trecho-nome {
-  position: absolute; left: 0; top: 100%; margin-top: 6px; white-space: nowrap; pointer-events: none;
+  position: absolute; left: 0; bottom: 100%; margin-bottom: 6px; white-space: nowrap; pointer-events: none;
   font-family: var(--ih-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .16em;
   color: var(--k); opacity: 0; transition: opacity .15s;
 }
@@ -154,7 +163,7 @@
 /* ── lista ── */
 .ih-lin {
   position: relative; display: grid; width: 100%; align-items: center; gap: 16px;
-  grid-template-columns: 44px 1fr 130px 150px 110px;
+  grid-template-columns: 44px minmax(0, 1fr) 112px 112px 72px;
   padding: 8px 12px; text-align: left;
   border-bottom: 1px solid color-mix(in srgb, var(--ih-cy) 7%, transparent);
   transition: background .15s;
@@ -183,6 +192,7 @@
   border: 1px solid var(--ih-amb);
 }
 .ih-bloco[data-vazio] { background: none; border: 1px dashed color-mix(in srgb, var(--ih-cy) 40%, transparent); }
+.ih-lin--livre .ih-blocos { gap: 5px; }
 .ih-valor { font-family: var(--ih-display); font-size: 15px; font-variant-numeric: tabular-nums; color: var(--ih-texto); }
 .ih-local { color: var(--ih-texto); }
 .ih-local[data-local="equipado"] { color: var(--ih-cy); }
@@ -288,9 +298,9 @@
   .ih-boot, .ih-lin { animation: none; }
 }
 
-/* botão Mercado — âmbar, ao lado da carteira */
+/* botão Mercado — âmbar, ao lado da busca */
 .ih-mercado {
-  display: flex !important; align-items: center; gap: 10px; height: 50px; padding: 0 16px !important;
+  display: flex !important; align-items: center; gap: 10px; height: 38px; padding: 0 14px !important;
   border: 1px solid color-mix(in srgb, var(--ih-amb) 40%, transparent) !important; color: var(--ih-amb) !important; transition: all .15s;
 }
 .ih-mercado:hover { border-color: var(--ih-amb) !important; background: var(--ih-amb) !important; color: var(--ih-fundo) !important; }

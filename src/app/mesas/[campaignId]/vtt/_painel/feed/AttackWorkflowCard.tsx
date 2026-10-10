@@ -354,7 +354,7 @@ export function AttackWorkflowCard({
       )}
 
       {/* Linha principal: ATAQUE × DEFESA + DANO. */}
-      <Modulos colunas={cartao.dano != null ? 3 : 2}>
+      <Modulos colunas={2}>
         <Modulo
           rotulo="Ataque"
           valor={cartao.totalAtaque ?? "—"}

@@ -6,13 +6,14 @@
  *
  * Mostra o que existe e já é autorizado: nome, presença real, as
  * campanhas EM COMUM com quem está olhando e os personagens da pessoa
- * nelas. Sem e-mail, sem biografia, sem avatar — nada disso existe no
- * banco, e inventar aqui seria mock.
+ * nelas, e o avatar da conta quando houver. Sem e-mail e sem biografia —
+ * isso não existe no banco, e inventar aqui seria mock.
  */
 
 import Link from "next/link";
 import { readUserProfile } from "../../lib/campaign/userProfileActions";
 import { User, Users } from "../_design/icons";
+import { AvatarUsuario } from "../_design/AvatarUsuario";
 import "./perfil.css";
 
 export interface PerfilPageContentParams {
@@ -35,7 +36,9 @@ export async function PerfilPageContent({ searchParams }: { searchParams: Promis
   return (
     <div className="rv-perfil" data-testid="perfil">
       <header className="rv-perfil-cab">
-        <span className="rv-perfil-face" aria-hidden="true"><User size={22} strokeWidth={1.3} /></span>
+        <span className="rv-perfil-face" aria-hidden="true" style={{ overflow: "hidden" }}>
+          <AvatarUsuario userId={profile.user_id} versao={profile.avatar_path} fallback={<User size={22} strokeWidth={1.3} />} />
+        </span>
         <div className="rv-perfil-ident">
           <h1 className="rv-perfil-nome" data-testid="perfil-nome">{profile.display_name}</h1>
           <span className="ra-online" data-offline={!profile.online || undefined} data-testid="perfil-presenca">

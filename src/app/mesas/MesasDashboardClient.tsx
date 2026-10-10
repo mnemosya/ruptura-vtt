@@ -34,6 +34,7 @@ import {
   Activity, AlertTriangle, RotateCw, ScrollText, Search, Spinner, User, Users, X,
 } from "../_design/icons";
 import createStyles from "./CreateCampaignModal.module.css";
+import { AvatarUsuario } from "../_design/AvatarUsuario";
 
 export interface CampaignCardData {
   latestSession?: OnlineSession | null;
@@ -464,7 +465,9 @@ function NetworkPanel({ campanhas, currentUserId, currentUserName, presenca, ind
             <Link key={p.userId} href={`/perfil?userId=${p.userId}`}
               className={`ra2-person ra2-person--link${online ? "" : " ra2-person--off"}`}
               data-testid={p.eu ? "rede-pessoa-eu" : "rede-pessoa"}>
-              <span className="ra2-person-avatar" aria-hidden="true"><User size={14} strokeWidth={1.3} /></span>
+              <span className="ra2-person-avatar" aria-hidden="true" style={{ overflow: "hidden" }}>
+                <AvatarUsuario userId={p.userId} fallback={<User size={14} strokeWidth={1.3} />} />
+              </span>
               <div className="ra2-person-main">
                 <span className="ra2-person-name">{p.name}{p.eu ? " (você)" : ""}</span>
                 {indisponivel

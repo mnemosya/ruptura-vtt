@@ -3,9 +3,8 @@
  * preferências pessoais da conta. Fora de qualquer campanha (menu
  * geral, não menu de campanha).
  *
- * Avatar e demais preferências pessoais (além do nome de exibição)
- * ainda não têm um lugar de armazenamento definido — pendência
- * registrada no checkpoint da Fase 3, não bloqueia esta página.
+ * O avatar fica no bucket privado `account-avatars`, com o caminho em
+ * `user_metadata.avatar_path` (mesmo lugar do nome de exibição).
  */
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "../../../../lib/auth/session";
@@ -18,6 +17,6 @@ export default async function ContaPage() {
   if (!user) redirect("/login");
 
   return (
-    <ContaClient email={user.email ?? "(sem email)"} displayNameInicial={user.displayName} />
+    <ContaClient email={user.email ?? "(sem email)"} displayNameInicial={user.displayName} avatarPathInicial={user.avatarPath} />
   );
 }

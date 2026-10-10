@@ -16,9 +16,8 @@
  *   - cursor HUD próprio.
  *
  * As preferências visuais ("reduzir movimento", "alto contraste") vivem
- * aqui em contexto + `localStorage`: são preferências de renderização
- * desta instalação, não dados de conta (não há hoje onde persistí-las
- * no servidor — ver pendência em docs/checkpoints).
+ * aqui em contexto, salvas na conta (`user_metadata.visual_prefs`) e
+ * espelhadas no `localStorage`.
  */
 
 import {
@@ -29,7 +28,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { LinkPending, NavPendingProvider } from "../../_design/NavPending";
 import { BootMinDurationOverlay } from "../../_boundaries/BootMinDurationOverlay";
 import { setAppearOffline } from "../../../lib/campaign/presencePreferenceActions";
-import { signOut } from "../../../lib/auth/actions";
+import { signOut, updateVisualPrefs } from "../../../lib/auth/actions";
 import {
   AlertTriangle, BookText, CheckCircle, ChevronDown, Eye, EyeOff, LayoutGrid, LogOut, Menu,
   Plus, Spinner, Ticket, User, UserCog, Users, X,
@@ -232,6 +231,8 @@ function rotaAtiva(pathname: string): NavKey | null {
 export function GlobalShell({
   userEmail,
   displayName,
+  avatarPath = null,
+  visualPrefsIniciais = null,
   aparecerOfflineInicial = false,
   contagens = null,
   children,
@@ -240,6 +241,10 @@ export function GlobalShell({
   contagens?: { campanhas: number; personagens: number } | null;
   userEmail: string;
   displayName: string | null;
+  /** Caminho do avatar da conta; muda a cada troca e serve de chave de cache da imagem. */
+  avatarPath?: string | null;
+  /** Preferências visuais salvas na conta; null quando nunca foram salvas. */
+  visualPrefsIniciais?: VisualPrefs | null;
   /** "Aparecer offline" lido no servidor — é preferência de CONTA, não deste navegador. */
   aparecerOfflineInicial?: boolean;
   children: React.ReactNode;
@@ -255,33 +260,38 @@ export function GlobalShell({
   const [signingOut, setSigningOut] = useState(false);
   const [aparecerOffline, setAparecerOffline] = useState(aparecerOfflineInicial);
   const [presencaOcupada, setPresencaOcupada] = useState(false);
-  const [prefs, setPrefs] = useState<VisualPrefs>({ reduceMotion: false, highContrast: false });
+  const [prefs, setPrefs] = useState<VisualPrefs>(visualPrefsIniciais ?? { reduceMotion: false, highContrast: false });
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastSeq = useRef(0);
 
   const bgRef = useRef<HTMLDivElement>(null);
   useParallax(bgRef, 20, !prefs.reduceMotion);
 
-  // Estado guardado localmente — lido depois da hidratação para não
-  // divergir do HTML do servidor.
+  // Conta que nunca salvou: herda o que este navegador guardava antes de
+  // as preferências irem para a conta, e já grava lá. Depois da
+  // hidratação, para não divergir do HTML do servidor.
   useEffect(() => {
+    if (visualPrefsIniciais) return;
     try {
       const raw = window.localStorage.getItem(PREFS_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<VisualPrefs>;
-        setPrefs({ reduceMotion: !!parsed.reduceMotion, highContrast: !!parsed.highContrast });
+        const herdadas = { reduceMotion: !!parsed.reduceMotion, highContrast: !!parsed.highContrast };
+        setPrefs(herdadas);
+        void updateVisualPrefs(herdadas);
       }
     } catch {
       /* localStorage indisponível (modo privado, etc.) — segue com o padrão. */
     }
-  }, []);
+  }, [visualPrefsIniciais]);
 
+  const prefsRef = useRef(prefs);
+  prefsRef.current = prefs;
   const togglePref = useCallback((key: keyof VisualPrefs) => {
-    setPrefs((prev) => {
-      const next = { ...prev, [key]: !prev[key] };
-      try { window.localStorage.setItem(PREFS_KEY, JSON.stringify(next)); } catch { /* ignora */ }
-      return next;
-    });
+    const next = { ...prefsRef.current, [key]: !prefsRef.current[key] };
+    setPrefs(next);
+    try { window.localStorage.setItem(PREFS_KEY, JSON.stringify(next)); } catch { /* ignora */ }
+    void updateVisualPrefs(next);
   }, []);
 
   const pushToast = useCallback((kind: ToastKind, text: string) => {
@@ -487,7 +497,12 @@ export function GlobalShell({
                     aria-haspopup="menu"
                     aria-expanded={menuOpen}
                   >
-                    <span className="ra2-profile-avatar" aria-hidden="true"><User size={15} strokeWidth={1.4} /></span>
+                    <span className="ra2-profile-avatar" aria-hidden="true" style={{ overflow: "hidden" }}>
+                      {avatarPath
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={`/api/conta/avatar?v=${encodeURIComponent(avatarPath)}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <User size={15} strokeWidth={1.4} />}
+                    </span>
                     <span className="ra2-profile-name">{shortName}</span>
                     {/* A etiqueta era "Online" fixo — dizia a mesma coisa
                         para quem tinha acabado de se esconder. */}

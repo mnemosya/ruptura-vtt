@@ -147,8 +147,8 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const FH = Math.max(420, Math.min(900, alturaPalco - 72)), FS = FH / 613, FW = 201 * FS;
-  const TOPO = Math.max(16, (alturaPalco - FH - 36) / 2);
+  const FH = Math.max(420, Math.min(900, alturaPalco - 120)), FS = FH / 613, FW = 201 * FS;
+  const TOPO = Math.max(16, (alturaPalco - FH) / 2);
   const folga = sel ? FOLGA_ABERTO : FOLGA_FECHADO;
   const PALCO = FW + 2 * (S + folga), FX = (PALCO - FW) / 2;
 
@@ -242,7 +242,6 @@ function Corpo({ encaixes, sel, hover, altura, onSel, onHover }: {
             pelo próprio path — só a metade de dentro aparece. */}
         {BODY_PATHS.map((path, i) => <clipPath key={i} id={`hx-corpo-recorte-${i}`}><path d={path.d} /></clipPath>)}
       </defs>
-      <ellipse cx="100" cy="608" rx="70" ry="5" fill={CY} opacity=".07" />
       {BODY_PATHS.map((path, i) => {
         const e = ENCAIXE_DO_PATH[path.regiao], p = encaixes[e];
         const pr = p && ehArmadura(e) ? p : null, c = pr ? corDe(pr) : CY;
