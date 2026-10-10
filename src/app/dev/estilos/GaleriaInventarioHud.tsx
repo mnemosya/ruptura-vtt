@@ -74,11 +74,7 @@ export function InventarioHudGaleria() {
   return (
     <div style={{ position: "relative", height: 720, border: "1px solid #12303a" }}>
       {mercado && (
-        <div onKeyDown={(e) => { if (e.key === "Escape") setMercado(false); }}
-          onClick={(e) => { if (e.target === e.currentTarget) setMercado(false); }}
-          style={{ position: "fixed", inset: 0, zIndex: 50, overflow: "auto", background: "rgba(6,18,28,.8)", backdropFilter: "blur(3px)" }}>
-          <MercadoHud onFechar={() => setMercado(false)} />
-        </div>
+        <MercadoHud onFechar={() => setMercado(false)} />
       )}
       <InventarioHud
         itens={itens}

@@ -263,3 +263,23 @@
 .hx-destino { padding: 6px 0 !important; color: var(--hx-dim) !important; transition: all .15s; }
 .hx-destino:hover { color: var(--hx-ice) !important; }
 .hx-destino[data-ativo] { background: rgba(0, 212, 255, .15) !important; color: var(--hx-cy) !important; }
+
+/* Prévia do equipamento: abre para o centro do palco, no hover ou foco. */
+.hx-eq-motion .hx-eq-slot:is(:hover, :focus-within) { z-index: 4; }
+.hx-eq-previa {
+  position: absolute; top: 50%; left: calc(100% + 12px); z-index: 5;
+  display: flex; flex-direction: column; gap: 5px; width: max-content;
+  max-width: 220px; padding: 9px 12px; transform: translateY(-50%);
+  border: 1px solid color-mix(in srgb, var(--k) 45%, transparent);
+  border-left: 2px solid var(--k); background: #081925;
+  box-shadow: 0 6px 20px #0006; text-align: left; pointer-events: none;
+  opacity: 0; visibility: hidden;
+  transition: opacity 120ms ease-out, visibility 0s linear 120ms;
+}
+.hx-eq-slot[data-lado="d"] .hx-eq-previa { left: auto; right: calc(100% + 12px); }
+.hx-encaixe:is(:hover, :focus-visible) .hx-eq-previa {
+  opacity: 1; visibility: visible;
+  transition: opacity 120ms ease-out 100ms, visibility 0s;
+}
+.hx-eq-previa-nome { font: 600 12px/1.4 var(--hx-display); color: var(--hx-ice); overflow-wrap: anywhere; }
+.hx-eq-previa-stat { font: 10px/1.4 var(--hx-mono); color: var(--k); }
