@@ -43,16 +43,12 @@ export function espacosDoItem(_modelo: ItemContent | undefined): number {
 }
 
 /**
- * Estados que PESAM no personagem. "abrigo" é o único que não conta:
- * é o que ficou guardado fora do corpo, e guardar existe justamente
- * para não carregar. Os outros quatro estão todos no personagem —
- * equipado, empunhado e acesso rápido são formas de carregar, não
- * alternativas a carregar.
+ * Estados que ocupam ESPAÇO DE MOCHILA. Só a própria mochila: a
+ * capacidade é dela (ver `capacidadeDeCarga`), e o que está no corpo —
+ * equipado, empunhado, acesso rápido — não está dentro dela. O abrigo
+ * também não conta: é o que ficou guardado fora do personagem.
  */
 export const ESTADOS_QUE_OCUPAM: readonly ItemLoadoutState[] = [
-  "equipado",
-  "empunhado",
-  "acesso_rapido",
   "mochila",
 ];
 
@@ -61,7 +57,7 @@ export function ocupaEspaco(estado: ItemLoadoutState): boolean {
 }
 
 export interface ResumoDeCarga {
-  /** Espaços em uso — soma de quantidade × porte de tudo que não está no abrigo. */
+  /** Espaços em uso — soma de quantidade × porte do que está na mochila. */
   ocupados: number;
   /** Capacidade total. */
   capacidade: number;
