@@ -128,6 +128,16 @@ personagem = {
 assert.equal(resumoDeCarga(personagem, porSlug).excedido, true);
 console.log("✓ carga: excedido é reportado");
 
+// Espaços vêm de `estatisticas.espacos_texto`.
+const comEspacos = (t: string | null) => ({ espacosTexto: t }) as ItemContent;
+assert.equal(espacosDoItem(comEspacos("3")), 3, "rifle de precisão = 3.");
+assert.equal(espacosDoItem(comEspacos("1 (kit)")), 1);
+assert.equal(espacosDoItem(comEspacos("1 (6 shurikens)")), 1);
+assert.equal(espacosDoItem(comEspacos("Carga")), 0, "carga vai fora da mochila.");
+assert.equal(espacosDoItem(comEspacos("Não aplicável")), 0);
+assert.equal(espacosDoItem(comEspacos(null)), 1, "sem dado conta 1.");
+console.log("✓ carga: espaços lidos do conteúdo");
+
 // ── 5. termos de regra dentro de um texto ─────────────────────────
 const glossario: TermoDeRegra[] = [
   { tipo: "acao", slug: "resistir", nome: "Resistir", descricao: "Teste de defesa." },
