@@ -567,3 +567,7 @@
 }
 .rv-join-voltar:hover { color: rgba(84, 172, 190, 1); }
 .rv-join-voltar:focus-visible { outline: 1px solid rgba(0, 212, 255, 0.5); outline-offset: 2px; }
+
+/* Input e botão de envio: cantos retos, sem chanfro. */
+.rv-input-wrap, .rv-submit, .auth-submit-btn { clip-path: none; }
+.rv-input-wrap::after, .rv-submit::after, .auth-submit-btn::after { content: none; }
