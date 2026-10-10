@@ -12,6 +12,8 @@ export interface UserProfileCampaign {
 export interface UserProfile {
   user_id: string;
   display_name: string;
+  /** Caminho no bucket `account-avatars`; a imagem sai por /api/usuarios/<id>/avatar. */
+  avatar_path?: string | null;
   is_self: boolean;
   online: boolean;
   campaigns: UserProfileCampaign[];

@@ -54,6 +54,10 @@ export interface AuthUser {
    * conta ainda não definiu um.
    */
   displayName: string | null;
+  /** Caminho do avatar no bucket `account-avatars`, só se estiver na pasta do próprio usuário. */
+  avatarPath: string | null;
+  /** "Reduzir movimento" e "alto contraste"; null quando a conta nunca salvou. */
+  visualPrefs: { reduceMotion: boolean; highContrast: boolean } | null;
 }
 
 export async function readAuthTokens(): Promise<AuthTokens | null> {
@@ -113,10 +117,18 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Aut
     const { data, error } = await supabase.auth.getUser(tokens.access_token);
     if (error || !data.user) return null;
     const displayName = data.user.user_metadata?.display_name;
+    const avatarPath = data.user.user_metadata?.avatar_path;
+    const visualPrefs = data.user.user_metadata?.visual_prefs;
     return {
       id: data.user.id,
       email: data.user.email ?? null,
       displayName: typeof displayName === "string" && displayName.trim() ? displayName.trim() : null,
+      // `user_metadata` é editável pelo próprio usuário: só vale caminho
+      // dentro da pasta dele, senão daria para apontar para o avatar alheio.
+      avatarPath: typeof avatarPath === "string" && avatarPath.startsWith(`${data.user.id}/`) ? avatarPath : null,
+      visualPrefs: visualPrefs && typeof visualPrefs === "object"
+        ? { reduceMotion: !!visualPrefs.reduceMotion, highContrast: !!visualPrefs.highContrast }
+        : null,
     };
   } catch {
     return null;

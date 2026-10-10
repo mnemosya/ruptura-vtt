@@ -312,3 +312,21 @@ export async function updateDisplayName(displayName: string): Promise<AuthAction
     return { ok: false, error: err instanceof Error ? err.message : "Erro desconhecido ao atualizar nome de exibição." };
   }
 }
+
+/**
+ * Preferências visuais da conta ("reduzir movimento", "alto contraste"):
+ * em `user_metadata.visual_prefs`, ao lado do nome e do avatar — valem em
+ * qualquer navegador onde a pessoa entrar.
+ */
+export async function updateVisualPrefs(prefs: { reduceMotion: boolean; highContrast: boolean }): Promise<AuthActionResult> {
+  try {
+    const client = await getScopedTableClient();
+    const { error } = await client.auth.updateUser({
+      data: { visual_prefs: { reduceMotion: !!prefs.reduceMotion, highContrast: !!prefs.highContrast } },
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Erro desconhecido ao salvar preferências." };
+  }
+}
