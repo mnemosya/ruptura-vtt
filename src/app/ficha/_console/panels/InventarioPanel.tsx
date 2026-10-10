@@ -47,7 +47,7 @@ import { CabecalhoModulo } from "./CabecalhoModulo";
  * ferramenta, dispositivo e veículo são o guarda-chuva "utilitário"
  * (sináptica).
  */
-const VERTENTE_DA_CATEGORIA: Record<string, string> = {
+export const VERTENTE_DA_CATEGORIA: Record<string, string> = {
   arma: "cinetica",
   municao: "cinetica",
   explosivo: "energetica",
@@ -150,7 +150,7 @@ const OCULTAVEL_POR_PORTE: Record<string, string> = {
   pesada: "Não",
 };
 
-function descricaoDeOcultavel(modelo: ItemContent | undefined): string | null {
+export function descricaoDeOcultavel(modelo: ItemContent | undefined): string | null {
   if (!modelo) return null;
   if (modelo.ocultavel) return OCULTAVEL_ROTULO[modelo.ocultavel] ?? modelo.ocultavel;
   if (modelo.classePorte) return OCULTAVEL_POR_PORTE[modelo.classePorte] ?? null;
@@ -478,7 +478,7 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
  * "1d6 físico cortante" seria dizer duas vezes a mesma coisa, sendo a
  * primeira a menos informativa.
  */
-function descricaoDoDano(modelo: ItemContent | undefined): { dado: string; tipo: string | null } | null {
+export function descricaoDoDano(modelo: ItemContent | undefined): { dado: string; tipo: string | null } | null {
   if (!modelo?.danoBase) return null;
   const dado = modelo.danoBase;
   if (modelo.subtipoDano) return { dado, tipo: modelo.subtipoDano };
@@ -489,7 +489,7 @@ function descricaoDoDano(modelo: ItemContent | undefined): { dado: string; tipo:
 }
 
 /** O alcance como se lê: "Adjacente", "Adjacente (até 2 m)", "10 m (máx 20 m)". */
-function descricaoDoAlcance(modelo: ItemContent | undefined): string | null {
+export function descricaoDoAlcance(modelo: ItemContent | undefined): string | null {
   const a = modelo?.alcance;
   if (!a) return null;
   if (a.tipo === "adjacente") {
