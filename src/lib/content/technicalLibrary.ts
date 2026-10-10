@@ -61,7 +61,7 @@ export function normalizeTechnicalContentItem(raw: Record<string, unknown>): Tec
     nome: typeof raw.nome === "string" && raw.nome.trim() !== "" ? raw.nome : slug || id || "Sem nome",
     categoria: typeof raw.categoria === "string" ? raw.categoria : undefined,
     categoriaLabel: typeof raw.categoria_label === "string" ? raw.categoria_label : undefined,
-    raridade: typeof raw.raridade === "string" ? raw.raridade : undefined,
+    raridade: typeof raw.raridade === "string" ? raw.raridade.replace(/_/g, " ") : undefined,
     raridadeLabel: typeof raw.raridade_label === "string" ? raw.raridade_label : undefined,
     descricaoCurta: typeof raw.descricao_curta === "string" ? raw.descricao_curta : undefined,
     descricaoLonga: typeof raw.descricao_longa === "string" ? raw.descricao_longa : undefined,

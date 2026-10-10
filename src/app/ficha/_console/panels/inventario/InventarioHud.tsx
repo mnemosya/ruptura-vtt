@@ -128,10 +128,10 @@ export function InventarioHud(props: PropsInventarioHud) {
   const buscaRef = useRef<HTMLInputElement>(null);
 
   const mochila = itens.filter((i) => i.local === "mochila");
-  /* A régua mede o que o personagem CARREGA: tudo menos o abrigo
-     (`ESTADOS_QUE_OCUPAM`, lib/character/carga.ts). A mochila vem
-     primeiro, e o que está no corpo fecha a fila. */
-  const carregados = [...mochila, ...itens.filter((i) => i.local === "equipado")];
+  /* A régua mede a MOCHILA: só o que está nela ocupa espaço
+     (`ESTADOS_QUE_OCUPAM`, lib/character/carga.ts). Equipado e abrigo
+     não entram. */
+  const carregados = mochila;
   const ocupados = carregados.reduce((a, i) => a + i.ocupa, 0);
   let cursor = 0;
   const inicio = new Map(carregados.map((it) => { const s = cursor; cursor += it.ocupa; return [it.id, s] as const; }));
@@ -175,17 +175,20 @@ export function InventarioHud(props: PropsInventarioHud) {
   return (
     <div className={`ih ${oxanium.variable}`} onKeyDown={aoTeclar}>
       <div className="ih-topo">
+        {/* Faixa 1: onde o item está + saldo. Faixa 2: ferramentas. */}
+        <div className="ih-topo-linha">
         <nav className="ih-abas" role="tablist" aria-label="Onde o item está">
-          {VISTAS.map((v, i) => (
+          {VISTAS.map((v) => (
             <button key={v.id} type="button" role="tab" aria-selected={vista === v.id}
               className="ih-aba" data-ativo={vista === v.id || undefined} onClick={() => irPara(v.id)}>
-              <span className="ih-aba-n">{i + 1}</span>
               <span className="ih-aba-rot">{v.rotulo}</span>
               <span className="ih-aba-qtd">{contagem[v.id]}</span>
             </button>
           ))}
         </nav>
-        <div className="ih-topo-dir">
+          <Carteira valor={props.aretz} onDefinir={props.somenteLeitura ? undefined : props.onDefinirAretz} />
+        </div>
+        <div className="ih-ferramentas">
           <label className="ih-busca">
             <Glifo d={IC.busca} tam={15} />
             <input ref={buscaRef} value={busca} onChange={(e) => setBusca(e.target.value)}
@@ -201,16 +204,11 @@ export function InventarioHud(props: PropsInventarioHud) {
               <span className="ih-mercado-tecla">M</span>
             </button>
           )}
-          <Carteira valor={props.aretz} onDefinir={props.somenteLeitura ? undefined : props.onDefinirAretz} />
         </div>
       </div>
 
       <div ref={palco} className="ih-palco" onClick={(e) => { if (e.target === e.currentTarget) setAncora(null); }}>
         <div key={vista} className="ih-boot">
-          {vista === "mochila" && (
-            <Regua itens={carregados} capacidade={capacidade} ocupados={ocupados} livre={livre}
-              casa={casa} filtrando={!!termo} quente={quente} setQuente={setQuente} sel={ancora?.id} abrir={abrir} />
-          )}
           <Lista
             itens={vista === "todos" ? itens : itens.filter((i) => i.local === vista)}
             vista={vista} capacidade={capacidade} casa={casa} termo={busca} inicio={inicio}
@@ -221,7 +219,7 @@ export function InventarioHud(props: PropsInventarioHud) {
 
         {selecionado && ancora && (
           <CartaoItem key={selecionado.id} item={selecionado} ancora={ancora} palco={palco}
-            podeCrescer={selecionado.local === "abrigo" || ocupados + selecionado.espacosPorItem <= capacidade}
+            podeCrescer={selecionado.local !== "mochila" || ocupados + selecionado.espacosPorItem <= capacidade}
             somenteLeitura={!!props.somenteLeitura}
             destinos={props.destinosDe(selecionado)}
             onFechar={() => setAncora(null)}
@@ -231,6 +229,14 @@ export function InventarioHud(props: PropsInventarioHud) {
             onDescartar={() => { props.onDescartar(selecionado.id); setAncora(null); }} />
         )}
       </div>
+
+      {/* A régua fica fora do palco rolável, ancorada embaixo. */}
+      {vista === "mochila" && (
+        <div className="ih-regua-base">
+          <Regua itens={carregados} capacidade={capacidade} ocupados={ocupados} livre={livre}
+            casa={casa} filtrando={!!termo} quente={quente} setQuente={setQuente} sel={ancora?.id} abrir={abrir} />
+        </div>
+      )}
 
       {props.rodape && <div className="ih-rodape">{props.rodape}</div>}
     </div>

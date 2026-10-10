@@ -187,7 +187,8 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
     categoria: String(raw.categoria ?? ""),
     categoria_label: typeof raw.categoria_label === "string" ? raw.categoria_label : undefined,
     subtipo: typeof raw.subtipo === "string" ? raw.subtipo : undefined,
-    raridade: typeof raw.raridade === "string" ? raw.raridade : undefined,
+    // O conteúdo grava "muito_raro"; a interface nunca mostra o "_" do identificador.
+    raridade: typeof raw.raridade === "string" ? raw.raridade.replace(/_/g, " ") : undefined,
     preco: typeof raw.preco === "number" && Number.isFinite(raw.preco) ? raw.preco : 0,
     descricao_curta: typeof raw.descricao_curta === "string" ? raw.descricao_curta : undefined,
     tags: asStringArray(raw.tags),
@@ -268,9 +269,9 @@ export const WALLET_LABELS: Record<WalletId, string> = {
 // ---------------------------------------------------------------------
 
 /**
- * Onde a instância está. Os quatro primeiros são formas de CARREGAR
- * (todos pesam — ver `ESTADOS_QUE_OCUPAM` em carga.ts); "abrigo" é o
- * que ficou guardado fora do corpo e por isso não pesa.
+ * Onde a instância está. Os quatro primeiros são formas de CARREGAR,
+ * mas só "mochila" ocupa espaço (ver `ESTADOS_QUE_OCUPAM` em carga.ts);
+ * "abrigo" é o que ficou guardado fora do corpo.
  *
  * "abrigo" entrou junto com a aba Inventário do Console, que tem
  * Mochila / Equipado / Abrigo / Todos como filtros. Sem ele o terceiro
