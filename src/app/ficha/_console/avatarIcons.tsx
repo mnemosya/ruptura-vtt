@@ -32,7 +32,7 @@ export function AvatarUserIcon() {
       <defs>
         <linearGradient id="rc-avatar-user-grad" x1="32" y1="0" x2="32" y2="66" gradientUnits="userSpaceOnUse">
           <stop stopColor="#00D4FF" stopOpacity="0.43" />
-          <stop offset="1" stopColor="#007F99" stopOpacity="0.71" />
+          <stop offset="1" stopColor="#007f99" stopOpacity="0.71" />
         </linearGradient>
       </defs>
     </svg>
@@ -57,11 +57,11 @@ export function AvatarUploadIcon() {
       <defs>
         <linearGradient id="rc-avatar-upload-grad-1" x1="32" y1="33.0952" x2="32" y2="57" gradientUnits="userSpaceOnUse">
           <stop stopColor="#00D4FF" stopOpacity="0.43" />
-          <stop offset="1" stopColor="#007F99" stopOpacity="0.71" />
+          <stop offset="1" stopColor="#007f99" stopOpacity="0.71" />
         </linearGradient>
         <linearGradient id="rc-avatar-upload-grad-2" x1="32" y1="33.0952" x2="32" y2="57" gradientUnits="userSpaceOnUse">
           <stop stopColor="#00D4FF" stopOpacity="0.43" />
-          <stop offset="1" stopColor="#007F99" stopOpacity="0.71" />
+          <stop offset="1" stopColor="#007f99" stopOpacity="0.71" />
         </linearGradient>
       </defs>
     </svg>

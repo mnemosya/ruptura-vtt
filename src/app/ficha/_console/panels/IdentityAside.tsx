@@ -76,7 +76,7 @@ function IntegrityPip({
   preview?: "fill" | "empty";
 }) {
   if (preview) {
-    const fill = preview === "fill" ? "rgba(4, 158, 192, 0.22)" : "rgba(255, 95, 116, 0.14)";
+    const fill = preview === "fill" ? "rgba(0, 212, 255, 0.22)" : "rgba(255, 95, 116, 0.14)";
     const stroke = preview === "fill" ? "rgba(0, 212, 255, 0.35)" : "rgba(255, 95, 116, 0.4)";
     return (
       <>
@@ -87,8 +87,8 @@ function IntegrityPip({
   if (cheio) {
     return (
       <>
-        <path d={PIP_OUTER[position]} fill="#049EC0" fillOpacity="0.43" />
-        <path d={PIP_INSET[position]} fill="none" stroke="#00D4FF" strokeOpacity="0.18" />
+        <path d={PIP_OUTER[position]} fill="#00d4ff" fillOpacity="0.9" />
+        <path d={PIP_INSET[position]} fill="none" stroke="#6ff0ff" strokeOpacity="0.5" />
       </>
     );
   }
@@ -106,7 +106,7 @@ function IntegrityPip({
   }
   return (
     <>
-      <path d={PIP_INSET[position]} fill="#123143" fillOpacity="0.2" stroke="#0C3D4E" />
+      <path d={PIP_INSET[position]} fill="#123143" fillOpacity="0.2" stroke="#0c434e" />
     </>
   );
 }
