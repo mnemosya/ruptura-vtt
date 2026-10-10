@@ -42,6 +42,12 @@ export interface ItemHud {
   local: LocalHud;
   /** Rótulo fino do local (“Empunhado”, “Acesso rápido”) quando difere do local. */
   localRotulo?: string;
+  /**
+   * Tipo do item, mostrado como etiqueta ao lado do nome ("Flecha" numa
+   * munição chamada "Explosiva"). Ausente = o que estiver entre parênteses
+   * no nome ("AS-10 Overdrive (Pistola pesada)").
+   */
+  tipo?: string | null;
   espacosPorItem: number;
   /** Espaços que o item ocupa NA MOCHILA (já com a regra de pilha aplicada). */
   ocupa: number;
@@ -117,6 +123,12 @@ const VISTAS: { id: VistaHud; rotulo: string }[] = [
 ];
 
 interface Ancora { id: string; x: number; y: number; w: number; h: number }
+
+/** "AS-10 Overdrive (Pistola pesada)" → título e tipo. Sem parênteses, o tipo é null. */
+function separarTipo(nome: string): { titulo: string; tipo: string | null } {
+  const m = /^(.+?)\s*\(([^)]+)\)\s*$/.exec(nome);
+  return m ? { titulo: m[1], tipo: m[2] } : { titulo: nome, tipo: null };
+}
 
 export function InventarioHud(props: PropsInventarioHud) {
   const { itens, capacidade } = props;
@@ -362,7 +374,8 @@ function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, s
             onClick={(e) => abrir(it.id, e.currentTarget)}>
             <span className="ih-lin-icone"><Glifo d={GLIFO[it.categoria] ?? GLIFO_PADRAO} tam={20} /></span>
             <span className="ih-lin-nome">
-              <span className="ih-nome">{it.nome}</span>
+              <span className="ih-nome">{separarTipo(it.nome).titulo}</span>
+              {(it.tipo ?? separarTipo(it.nome).tipo) && <span className="ih-tag ih-fraco">{it.tipo ?? separarTipo(it.nome).tipo}</span>}
               {it.quantidade > 1 && <span className="ih-mono ih-fraco">×{it.quantidade}</span>}
               {(it.cargas || it.municao) && (
                 <span className="ih-tag ih-fraco">{it.cargas ? "cargas" : "mun."} {(it.cargas ?? it.municao)!.join("/")}</span>

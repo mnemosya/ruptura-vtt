@@ -218,6 +218,7 @@ function itemDoHud(api: ConsoleApi, instancia: InventoryItemInstance): ItemHud {
     quantidade: instancia.quantidade,
     local,
     localRotulo: local === "equipado" && instancia.estado !== "equipado" ? ROTULO_DO_ESTADO[instancia.estado] : undefined,
+    tipo: modelo ? grupoESubDoModelo(modelo).tipo ?? null : null,
     espacosPorItem: espacosDoItem(modelo),
     ocupa: espacosDaInstancia(instancia, modelo),
     preco: modelo?.preco ?? null,

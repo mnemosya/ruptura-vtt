@@ -19,7 +19,7 @@
  * callback. Quem lê o inventário é o `EquipmentPanel`.
  */
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { BODY_PATHS, type BodyRegiao } from "../../bodySilhouette";
 import { oxanium } from "../../../../_design/oxanium";
 import "./hud-base.css";
@@ -140,13 +140,28 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
   /* Altura útil do palco → altura da figura. */
   const palcoRef = useRef<HTMLDivElement>(null);
   const [alturaPalco, setAlturaPalco] = useState(640);
+  /* Sem transição até a primeira medida: a figura nascia com 640 de
+     palpite e, ao medir, ia até o lugar — um "motion de entrada" que
+     ninguém pediu. Depois de medido, as transições voltam (gaveta). */
+  const [medido, setMedido] = useState(false);
+  /* Mede ANTES da primeira pintura: o primeiro quadro já sai com a altura
+     real, e nada se mexe ao abrir a aba. */
+  useLayoutEffect(() => {
+    const h = palcoRef.current?.getBoundingClientRect().height;
+    if (h) setAlturaPalco(h);
+  }, []);
   useEffect(() => {
     const el = palcoRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(([e]) => setAlturaPalco(e.contentRect.height));
+    let quadro = 0;
+    const ro = new ResizeObserver(([e]) => {
+      setAlturaPalco(e.contentRect.height);
+      if (!quadro) quadro = requestAnimationFrame(() => requestAnimationFrame(() => setMedido(true)));
+    });
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => { ro.disconnect(); cancelAnimationFrame(quadro); };
   }, []);
+  const trans = (t: string) => (medido ? t : "none");
   const FH = Math.max(420, Math.min(900, alturaPalco - 120)), FS = FH / 613, FW = 201 * FS;
   const TOPO = Math.max(16, (alturaPalco - FH) / 2);
   const folga = sel ? FOLGA_ABERTO : FOLGA_FECHADO;
@@ -158,7 +173,7 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
       <div className="hx-scan" style={{ position: "absolute", inset: 0, opacity: .6, pointerEvents: "none" }} />
       <div style={{ position: "relative", display: "flex", height: "100%" }}>
         <div ref={palcoRef} style={{ position: "relative", minWidth: 0, flex: 1 }} onClick={(ev) => { if (!(ev.target as Element).closest("button,g[data-r]")) abrir(null); }}>
-          <div style={{ position: "absolute", top: 0, height: "100%", width: PALCO, left: `calc(50% - ${PALCO / 2}px)`, transition: "width .3s ease-out, left .3s ease-out" }}>
+          <div style={{ position: "absolute", top: 0, height: "100%", width: PALCO, left: `calc(50% - ${PALCO / 2}px)`, transition: trans("width .3s ease-out, left .3s ease-out") }}>
             <div style={{ position: "absolute", top: TOPO, left: FX, height: FH }}>
               <Corpo encaixes={encaixes} sel={sel} hover={hover} altura={FH}
                 onSel={(p) => abrir(ENCAIXE_DO_PATH[p])} onHover={(p) => setHover(p ? ENCAIXE_DO_PATH[p] : null)} />
@@ -180,7 +195,7 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
             {FIOS.map((w) => {
               const p = encaixes[w.e];
               return (
-                <div key={w.e} style={{ position: "absolute", top: TOPO + w.y * FH, [w.lado === "e" ? "left" : "right"]: 0, display: "flex", flexDirection: "column", alignItems: w.lado === "e" ? "flex-start" : "flex-end", gap: 4, transition: "top .3s ease-out" }}
+                <div key={w.e} style={{ position: "absolute", top: TOPO + w.y * FH, [w.lado === "e" ? "left" : "right"]: 0, display: "flex", flexDirection: "column", alignItems: w.lado === "e" ? "flex-start" : "flex-end", gap: 4, transition: trans("top .3s ease-out") }}
                   onMouseEnter={() => setHover(w.e)} onMouseLeave={() => setHover(null)}>
                   <Encaixe peca={p} encaixe={w.e} ativo={sel === w.e} quente={hover === w.e} onClick={() => abrir(sel === w.e ? null : w.e)} />
                   <Tag className="hx-dim" style={{ fontSize: 8, opacity: .7 }}>{ROTULO[w.e]}</Tag>
