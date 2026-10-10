@@ -108,6 +108,28 @@ const separarTipo = (nome: string): { titulo: string; tipo: string | null } => {
   return m ? { titulo: m[1], tipo: m[2] } : { titulo: nome, tipo: null };
 };
 const sem = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+/** Cada grupo do mercado tem uma cor própria, independente da vertente. */
+const CORES_CATEGORIAS: Record<string, string> = {
+  acessorios: "#5ccbb3",
+  armaduras: "#f5a200",
+  "armaduras e escudos": "#f5a200",
+  escudos: "#7894f4",
+  armas: "#e0455f",
+  "dispositivos tecnologicos": "#35c7d8",
+  "drones e robos": "#b2ce62",
+  escalpos: "#c578d9",
+  explosivos: "#f07a1f",
+  farmacia: "#4fb36e",
+  "ferramentas e utilidades": "#ddd27b",
+  municao: "#c3a06c",
+  mobilidade: "#569fdf",
+  trajes: "#c88456",
+  vertinas: "#8b5cf6",
+};
+const estiloGrupo = (nome: string, vertente: string): React.CSSProperties | undefined => {
+  const cor = CORES_CATEGORIAS[sem(nome)] ?? (vertente === "nenhuma" ? "#8eaef0" : undefined);
+  return cor ? { ["--k" as string]: cor } : undefined;
+};
 
 export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onFechar }: PropsMercadoHud) {
   const raiz = useRef<HTMLDivElement>(null);
@@ -117,6 +139,8 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
   const navId = useId();
   const [layout, setLayout] = useState<"amplo" | "medio" | "compacto">("amplo");
   const [categoriasAbertas, setCategoriasAbertas] = useState(false);
+  const [categoriasOcultas, setCategoriasOcultas] = useState(false);
+  const categoriasVisiveis = layout === "amplo" ? !categoriasOcultas : categoriasAbertas;
   const [detalheAberto, setDetalheAberto] = useState(false);
   useEffect(() => {
     const el = raiz.current;
@@ -134,7 +158,11 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
   useEffect(() => {
     if (categoriasAbertas && layout !== "amplo") raiz.current?.querySelector<HTMLButtonElement>(".hm-categorias button")?.focus();
   }, [categoriasAbertas, layout]);
-  const fecharCategorias = () => { setCategoriasAbertas(false); requestAnimationFrame(() => botaoCategorias.current?.focus()); };
+  const fecharCategorias = () => {
+    if (layout === "amplo") setCategoriasOcultas(true);
+    else setCategoriasAbertas(false);
+    requestAnimationFrame(() => botaoCategorias.current?.focus());
+  };
   const voltarCatalogo = () => {
     setDetalheAberto(false);
     requestAnimationFrame(() => ultimoCartao.current?.focus());
@@ -195,7 +223,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
   };
 
   return (
-    <div ref={raiz} className={`hx hm-mercado ${oxanium.variable}`} data-detalhe={detalheAberto || undefined} data-categorias={categoriasAbertas || undefined} style={{ position: "relative", display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", border: "1px solid rgba(255,138,31,.4)", boxShadow: "0 0 0 6px var(--hx-abismo), 0 0 0 7px rgba(255,138,31,.13), 0 60px 120px #000" }}
+    <div ref={raiz} className={`hx hm-mercado ${oxanium.variable}`} data-detalhe={detalheAberto || undefined} data-categorias={categoriasAbertas || undefined} data-categorias-ocultas={categoriasOcultas || undefined} style={{ position: "relative", display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", border: "1px solid rgba(255,138,31,.4)", boxShadow: "0 0 0 6px var(--hx-abismo), 0 0 0 7px rgba(255,138,31,.13), 0 60px 120px #000" }}
       onKeyDown={(e) => { if (e.key === "Escape" && onFechar) { e.stopPropagation(); onFechar(); } }}>
       <span style={{ position: "absolute", left: 0, right: 0, top: 0, height: 2, background: AMB, boxShadow: `0 0 14px ${AMB}` }} />
       <header className="hm-cabecalho">
@@ -211,9 +239,9 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
       </header>
 
       <div className="hm-corpo">
-        {categoriasAbertas && <button type="button" className="hm-filtro-fundo" aria-label="Fechar categorias" onClick={fecharCategorias} />}
-        <nav id={navId} className="hm-categorias" aria-label="Categorias" inert={layout !== "amplo" && !categoriasAbertas}>
-          <div className="hm-categorias-cab"><Tag className="hx-amb">Categorias</Tag><button type="button" className="hx-fechar-quad" aria-label="Fechar categorias" onClick={fecharCategorias}><Svg d="M6 6l12 12M18 6 6 18" tam={16} /></button></div>
+        {layout !== "amplo" && categoriasAbertas && <button type="button" className="hm-filtro-fundo" aria-label="Fechar categorias" onClick={fecharCategorias} />}
+        <nav id={navId} className="hm-categorias" aria-label="Categorias" inert={!categoriasVisiveis}>
+          <div className="hm-categorias-cab"><Tag className="hx-amb">Categorias</Tag><button type="button" className="hm-recolher" data-tooltip="Esconder categorias" aria-label="Esconder painel de categorias" onClick={fecharCategorias}><Svg d="M3 4h18v16H3V4Zm5 0v16m8-12-4 4 4 4m-4-4h7" tam={18} /></button></div>
           <button type="button" onClick={() => { abrirGrupo(null); if (layout !== "amplo") fecharCategorias(); }} className="hx-cat-linha" data-ativo={!cat || undefined} style={{ marginBottom: 8 }}>
             <span className="hx-display" style={{ flex: 1, fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".14em" }}>Tudo</span><Tag className="hx-dim">{produtos.length}</Tag>
           </button>
@@ -223,15 +251,15 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
             return (
               <div key={c.id}>
                 <button type="button" onClick={() => { abrirGrupo(on ? null : c.id); if (!temSubs && layout !== "amplo") fecharCategorias(); }} className="hx-cat-linha"
-                  data-ativo={on || undefined} data-vertente={c.vertente} aria-expanded={temSubs ? on : undefined}>
+                  data-ativo={on || undefined} data-vertente={c.vertente} style={estiloGrupo(c.nome, c.vertente)} aria-expanded={temSubs ? on : undefined}>
                   <span className="hx-cat-fio" />
                   <span className="hx-cat-ico"><Svg d={c.g} tam={18} /></span>
                   <span style={{ flex: 1, fontSize: 15, fontWeight: 600, lineHeight: 1.2 }}>{c.nome}</span>
-                  {temSubs && <Svg d={on ? "m6 9 6 6 6-6" : "m9 6 6 6-6 6"} tam={12} style={{ opacity: .6 }} />}
                   <Tag className="hx-dim" style={{ opacity: .7 }}>{c.n}</Tag>
+                  {temSubs && <Svg d={on ? "m6 9 6 6 6-6" : "m9 6 6 6-6 6"} tam={12} style={{ opacity: .6 }} />}
                 </button>
                 {on && temSubs && (
-                  <div className="hx-subs" data-vertente={c.vertente}>
+                  <div className="hx-subs" data-vertente={c.vertente} style={estiloGrupo(c.nome, c.vertente)}>
                     <button type="button" className="hx-sub-linha" data-ativo={!sub || undefined} onClick={() => { setSub(null); if (layout !== "amplo") fecharCategorias(); }}>Todos de {c.nome}</button>
                     {[...c.subs.entries()].map(([nome, qtd]) => (
                       <button key={nome} type="button" className="hx-sub-linha" data-ativo={sub === nome || undefined}
@@ -250,8 +278,8 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
 
         <div className="hm-catalogo" inert={(layout === "compacto" && detalheAberto) || (layout !== "amplo" && categoriasAbertas)}>
           <div className="hm-ferramentas">
-            <button ref={botaoCategorias} type="button" className="hm-filtro" aria-expanded={categoriasAbertas} aria-controls={navId} onClick={() => setCategoriasAbertas(!categoriasAbertas)}>
-              <Svg d="M4 6h16M7 12h10M10 18h4" tam={18} /><span>{aberto?.nome ?? "Categorias"}{sub ? ` · ${sub}` : ""}</span><Svg d="m6 9 6 6 6-6" tam={12} />
+            <button ref={botaoCategorias} type="button" className="hm-filtro" hidden={categoriasVisiveis} data-tooltip="Mostrar categorias" aria-label="Mostrar categorias" aria-expanded={categoriasVisiveis} aria-controls={navId} onClick={() => { if (layout === "amplo") setCategoriasOcultas(false); else setCategoriasAbertas(true); }}>
+              <Svg d={categoriasVisiveis ? "M3 4h18v16H3V4Zm5 0v16m8-12-4 4 4 4m-4-4h7" : "M3 4h18v16H3V4Zm5 0v16m5-12 4 4-4 4m4-4h-7"} tam={20} />
             </button>
             <label className="hx-busca">
               <Svg d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm9 16-4-4" tam={16} />
@@ -260,7 +288,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
           </div>
           <div className="hm-lista">
             {grupos.map(({ c, xs }) => (
-              <section key={c.id} data-vertente={c.vertente}>
+              <section key={c.id} data-vertente={c.vertente} style={estiloGrupo(xs[0].grupo?.nome ?? xs[0].categoriaRotulo, c.vertente)}>
                 <div className="hm-secao-titulo" style={{ color: "var(--k)" }}>
                   <Svg d={c.g} tam={16} />
                   <span className="hx-display" style={{ fontSize: 14, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".18em" }}>{c.nome}</span>
@@ -300,7 +328,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
         </div>
 
         {sel ? (
-          <aside className="hm-detalhe" data-vertente={sel.vertente} inert={(layout === "compacto" && !detalheAberto) || (layout !== "amplo" && categoriasAbertas)} aria-label="Detalhes do produto">
+          <aside className="hm-detalhe" data-vertente={sel.vertente} style={estiloGrupo(sel.grupo?.nome ?? sel.categoriaRotulo, sel.vertente)} inert={(layout === "compacto" && !detalheAberto) || (layout !== "amplo" && categoriasAbertas)} aria-label="Detalhes do produto">
             <button type="button" className="hm-voltar" onClick={voltarCatalogo}><Svg d="m14 5-7 7 7 7" tam={16} />Voltar ao catálogo</button>
             <div key={sel.slug} className="hm-leitura">
               {/* Cabeçalho no fluxo: cresce com o título em vez de subir por

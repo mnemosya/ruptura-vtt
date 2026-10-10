@@ -10,11 +10,14 @@
 .hm-fechar { flex: none; }
 .hm-corpo { position: relative; display: grid; min-height: 0; flex: 1; grid-template-columns: 232px minmax(0,1fr) clamp(320px,29cqw,360px); }
 .hm-categorias { min-height: 0; overflow-y: auto; border-right: 1px solid rgba(0,212,255,.1); padding: 16px 10px; background: var(--hx-abismo); scrollbar-width: thin; scrollbar-color: #24404c transparent; }
-.hm-categorias .hx-cat-linha { gap: 8px; padding: 10px !important; min-height: 44px; }
-.hm-categorias .hx-sub-linha { min-height: 44px; }
-.hm-categorias-cab, .hm-filtro, .hm-filtro-fundo, .hm-voltar { display: none; }
+.hm-categorias .hx-cat-linha { gap: 8px; padding: 10px !important; min-height: 44px; border: 1px solid transparent !important; }
+.hm-categorias .hx-cat-linha[data-ativo] { border-color: color-mix(in srgb, var(--k, var(--hx-amb)) 35%, transparent) !important; }
+.hm-categorias .hx-cat-fio { left: -1px; top: 50%; bottom: auto; height: 50%; transform: translateY(-50%); }
+.hm-categorias .hx-sub-linha { min-height: 44px; border: 1px solid transparent !important; }
+.hm-categorias .hx-sub-linha[data-ativo] { border-color: color-mix(in srgb, var(--k, var(--hx-amb)) 35%, transparent) !important; }
+.hm-filtro-fundo, .hm-voltar { display: none; }
 .hm-catalogo { display: flex; min-height: 0; min-width: 0; flex-direction: column; }
-.hm-ferramentas { flex: none; display: flex; flex-direction: column; gap: 12px; padding: 18px 20px 0; }
+.hm-ferramentas { flex: none; display: flex; align-items: center; gap: 12px; padding: 18px 20px 0; }
 .hm-lista { min-height: 0; flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 28px; scrollbar-width: thin; scrollbar-color: #24404c transparent; }
 .hm-lista section { min-width: 0; }
 .hm-secao-titulo { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
@@ -42,15 +45,31 @@
 .hm-compra .hx-passo button { width: 44px; }
 .hm-mercado button:focus-visible { outline: 2px solid var(--hx-cy); outline-offset: -2px; }
 
+.hm-categorias-cab { display: flex; align-items: center; justify-content: space-between; padding: 0 10px 12px; margin-bottom: 8px; border-bottom: 1px solid #24404c; }
+.hm-ferramentas .hx-busca { flex: 1; min-width: 0; }
+.hm-filtro, .hm-recolher { position: relative; display: grid; place-items: center; flex: none; width: 44px; height: 44px; color: var(--hx-dim) !important; }
+.hm-filtro[hidden] { display: none; }
+.hm-filtro:hover, .hm-recolher:hover { color: var(--hx-amb) !important; background: rgba(255,138,31,.06) !important; }
+.hm-filtro::after, .hm-recolher::after {
+  content: attr(data-tooltip); position: absolute; top: calc(100% + 6px); z-index: 15;
+  padding: 7px 10px; border: 1px solid rgba(255,138,31,.25); background: var(--hx-casco);
+  box-shadow: 0 4px 14px #0006; color: var(--hx-ice); font-size: 12px; white-space: nowrap;
+  opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 120ms ease-out;
+}
+.hm-filtro::after { left: 0; }
+.hm-recolher::after { right: 0; }
+.hm-filtro:is(:hover, :focus-visible)::after, .hm-recolher:is(:hover, :focus-visible)::after { opacity: 1; visibility: visible; }
+
+@container mercado (width >= 1120px) {
+  .hm-mercado[data-categorias-ocultas] .hm-corpo { grid-template-columns: minmax(0,1fr) clamp(320px,29cqw,360px); }
+  .hm-mercado[data-categorias-ocultas] .hm-categorias { display: none; }
+}
+
 @container mercado (width < 1120px) {
   .hm-corpo { grid-template-columns: minmax(0,1fr) 320px; }
   .hm-categorias { display: none; position: absolute; inset: 0 auto 0 0; width: min(320px,100%); z-index: 10; box-shadow: 12px 0 36px #0008; }
   .hm-mercado[data-categorias] .hm-categorias { display: block; }
   .jm-janela .hm-mercado .hm-corpo > .hm-categorias { animation: none; }
-  .hm-categorias-cab { display: flex; align-items: center; justify-content: space-between; padding: 0 10px 12px; margin-bottom: 8px; border-bottom: 1px solid #24404c; }
-  .hm-filtro { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 12px !important; border: 1px solid rgba(255,138,31,.25) !important; background: rgba(255,138,31,.04) !important; text-align: left; color: var(--hx-ice) !important; font-size: 13px !important; }
-  .hm-filtro span { flex: 1; min-width: 0; }
-  .hm-filtro svg { flex: none; color: var(--hx-amb); }
   .hm-filtro-fundo { display: block; position: absolute; inset: 0; z-index: 9; background: #03090f99 !important; cursor: default; }
 }
 
