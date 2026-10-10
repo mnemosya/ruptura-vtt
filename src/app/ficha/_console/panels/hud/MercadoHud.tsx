@@ -58,6 +58,21 @@ export interface ProdutoHud {
   cargas?: number | null;
   /** Traço próprio do ícone; ausente = o da categoria. */
   glifo?: string;
+  /**
+   * Grupo de topo da lista lateral (ex.: "Armaduras e escudos", que junta
+   * duas categorias). Ausente = a própria categoria.
+   */
+  grupo?: { id: string; nome: string; glifo?: string };
+  /** Subcategoria dentro do grupo (ex.: "Armas de fogo"). Null = nenhuma. */
+  sub?: string | null;
+  /** Posição da subcategoria na lista lateral; sem ela, a ordem de chegada. */
+  subOrdem?: number;
+  /**
+   * Etiqueta de tipo no cartão e subtítulo na ficha (ex.: "Flecha" numa
+   * munição chamada só "Explosiva"). Ausente = o que estiver entre
+   * parênteses no nome.
+   */
+  tipo?: string | null;
 }
 
 export interface PropsMercadoHud {
@@ -86,25 +101,60 @@ const Stat = ({ k, v }: { k: string; v: ReactNode }) => (
     <Tag className="hx-dim">{k}</Tag><span style={{ fontSize: 15, fontWeight: 600, textAlign: "right" }}>{v}</span>
   </div>
 );
+/** "AS-10 Overdrive (Pistola pesada)" → título e tipo. Sem parênteses, o tipo é null. */
+const separarTipo = (nome: string): { titulo: string; tipo: string | null } => {
+  const m = /^(.+?)\s*\(([^)]+)\)\s*$/.exec(nome);
+  return m ? { titulo: m[1], tipo: m[2] } : { titulo: nome, tipo: null };
+};
 const sem = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onFechar }: PropsMercadoHud) {
+  const grupoDe = (p: ProdutoHud) => p.grupo?.id ?? p.categoria;
   const categorias = useMemo(() => {
-    const m = new Map<string, { id: string; nome: string; vertente: string; n: number; g: string }>();
+    const m = new Map<string, { id: string; nome: string; vertente: string; n: number; g: string; subs: Map<string, number> }>();
+    const ordem = new Map<string, number>();
     for (const p of produtos) {
-      const c = m.get(p.categoria) ?? { id: p.categoria, nome: p.categoriaRotulo, vertente: p.vertente, n: 0, g: p.glifo ?? glifo(p.categoria) };
-      c.n++; m.set(p.categoria, c);
+      const id = grupoDe(p);
+      const c = m.get(id) ?? {
+        id, nome: p.grupo?.nome ?? p.categoriaRotulo, vertente: p.vertente, n: 0,
+        g: p.grupo?.glifo ?? p.glifo ?? glifo(p.categoria), subs: new Map<string, number>(),
+      };
+      c.n++;
+      if (p.sub) {
+        c.subs.set(p.sub, (c.subs.get(p.sub) ?? 0) + 1);
+        if (p.subOrdem != null) ordem.set(p.sub, p.subOrdem);
+      }
+      m.set(id, c);
+    }
+    for (const c of m.values()) {
+      c.subs = new Map([...c.subs.entries()].sort(([a], [b]) => (ordem.get(a) ?? 50) - (ordem.get(b) ?? 50)));
     }
     return [...m.values()].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   }, [produtos]);
   const [cat, setCat] = useState<string | null>(null);
+  const [sub, setSub] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [selSlug, setSel] = useState<string | null>(null);
   const [n, setN] = useState(1);
   const [feito, setFeito] = useState(false);
-  const lista = useMemo(() => produtos.filter((p) => (!cat || p.categoria === cat) && sem(p.nome).includes(sem(q))), [produtos, cat, q]);
+  const lista = useMemo(
+    () => produtos.filter((p) => (!cat || grupoDe(p) === cat) && (!sub || p.sub === sub) && sem(p.nome).includes(sem(q))),
+    [produtos, cat, sub, q],
+  );
   const sel = produtos.find((p) => p.slug === selSlug) ?? lista[0] ?? produtos[0] ?? null;
-  const grupos = categorias.filter((c) => !cat || c.id === cat).map((c) => ({ c, xs: lista.filter((p) => p.categoria === c.id).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")) })).filter((g) => g.xs.length);
+  const porNome = (a: ProdutoHud, b: ProdutoHud) => a.nome.localeCompare(b.nome, "pt-BR");
+  /* Com um grupo aberto que tem subcategorias, as seções são as
+     subcategorias (na ordem da lista lateral); senão, uma por grupo. */
+  const aberto = categorias.find((c) => c.id === cat);
+  const grupos = aberto && aberto.subs.size > 0
+    ? [...aberto.subs.keys()].filter((s) => !sub || s === sub)
+        .map((s) => ({ c: { ...aberto, id: `${aberto.id}/${s}`, nome: s }, xs: lista.filter((p) => p.sub === s).sort(porNome) }))
+        .concat([{ c: { ...aberto, id: `${aberto.id}/-`, nome: `Outros ${aberto.nome.toLocaleLowerCase("pt-BR")}` }, xs: sub ? [] : lista.filter((p) => !p.sub).sort(porNome) }])
+        .filter((g) => g.xs.length)
+    : categorias.filter((c) => !cat || c.id === cat)
+        .map((c) => ({ c, xs: lista.filter((p) => grupoDe(p) === c.id).sort(porNome) }))
+        .filter((g) => g.xs.length);
+  const abrirGrupo = (id: string | null) => { setCat(id); setSub(null); };
 
   const custo = sel ? sel.preco * n : 0;
   const cabe = !!sel && usados + sel.espacos * n <= capacidade;
@@ -130,20 +180,37 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
         </div>
       </header>
 
-      <div style={{ display: "grid", minHeight: 0, flex: 1, gridTemplateColumns: "minmax(140px, 220px) minmax(0, 1fr) minmax(240px, 320px)" }}>
+      <div style={{ display: "grid", minHeight: 0, flex: 1, gridTemplateColumns: "minmax(220px, 300px) minmax(0, 1fr) minmax(320px, 420px)" }}>
         <nav className="hx-semsb" aria-label="Categorias" style={{ overflowY: "auto", borderRight: "1px solid rgba(0,212,255,.1)", padding: "16px 12px" }}>
-          <button type="button" onClick={() => setCat(null)} className="hx-cat-linha" data-ativo={!cat || undefined} style={{ marginBottom: 8 }}>
+          <button type="button" onClick={() => abrirGrupo(null)} className="hx-cat-linha" data-ativo={!cat || undefined} style={{ marginBottom: 8 }}>
             <span className="hx-display" style={{ flex: 1, fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".14em" }}>Tudo</span><Tag className="hx-dim">{produtos.length}</Tag>
           </button>
           {categorias.map((c) => {
             const on = cat === c.id;
+            const temSubs = c.subs.size > 0;
             return (
-              <button key={c.id} type="button" onClick={() => setCat(on ? null : c.id)} className="hx-cat-linha" data-ativo={on || undefined} data-vertente={c.vertente}>
-                <span className="hx-cat-fio" />
-                <span className="hx-cat-ico"><Svg d={c.g} tam={18} /></span>
-                <span style={{ flex: 1, fontSize: 15, fontWeight: 600, lineHeight: 1.2 }}>{c.nome}</span>
-                <Tag className="hx-dim" style={{ opacity: .7 }}>{c.n}</Tag>
-              </button>
+              <div key={c.id}>
+                <button type="button" onClick={() => abrirGrupo(on ? null : c.id)} className="hx-cat-linha"
+                  data-ativo={on || undefined} data-vertente={c.vertente} aria-expanded={temSubs ? on : undefined}>
+                  <span className="hx-cat-fio" />
+                  <span className="hx-cat-ico"><Svg d={c.g} tam={18} /></span>
+                  <span style={{ flex: 1, fontSize: 15, fontWeight: 600, lineHeight: 1.2 }}>{c.nome}</span>
+                  {temSubs && <Svg d={on ? "m6 9 6 6 6-6" : "m9 6 6 6-6 6"} tam={12} style={{ opacity: .6 }} />}
+                  <Tag className="hx-dim" style={{ opacity: .7 }}>{c.n}</Tag>
+                </button>
+                {on && temSubs && (
+                  <div className="hx-subs" data-vertente={c.vertente}>
+                    {[...c.subs.entries()].map(([nome, qtd]) => (
+                      <button key={nome} type="button" className="hx-sub-linha" data-ativo={sub === nome || undefined}
+                        onClick={() => setSub(sub === nome ? null : nome)}>
+                        <span className="hx-sub-ponto" />
+                        <span style={{ flex: 1 }}>{nome}</span>
+                        <Tag className="hx-dim" style={{ opacity: .6 }}>{qtd}</Tag>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>
@@ -164,7 +231,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                   <Tag className="hx-dim" style={{ opacity: .6 }}>{xs.length}</Tag>
                   <span style={{ height: 1, flex: 1, background: "linear-gradient(90deg, color-mix(in srgb, var(--k) 27%, transparent), transparent)" }} />
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
                   {xs.map((p) => {
                     const on = p.slug === sel?.slug, pobre = p.preco > saldo;
                     return (
@@ -173,10 +240,14 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                           <span className="hx-produto-trama" />
                           <Svg d={p.glifo ?? glifo(p.categoria)} tam={52} cor="var(--k)" traco={1.1} style={{ opacity: .85, filter: "drop-shadow(0 0 10px color-mix(in srgb, var(--k) 50%, transparent))" }} />
                           <span style={{ position: "absolute", right: 0, top: 0, width: 0, height: 0, borderLeft: "14px solid transparent", borderTop: `14px solid ${corRaridade(p.raridade)}` }} />
+                          {/* O tipo vai no pé da arte, logo acima do nome: no rodapé ele quebrava o cartão. */}
+                          {(p.tipo ?? separarTipo(p.nome).tipo) && (
+                            <Tag className="hx-dim" style={{ position: "absolute", left: 12, right: 12, bottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "left", opacity: .8 }}>{p.tipo ?? separarTipo(p.nome).tipo}</Tag>
+                          )}
                         </span>
                         <span className="hx-produto-fio" />
                         <span style={{ display: "block", borderTop: "1px solid rgba(0,212,255,.1)", background: CASCO, padding: "10px 12px", textAlign: "left" }}>
-                          <span className="hx-display" style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 14, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".03em" }}>{p.nome}</span>
+                          <span className="hx-display" style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 14, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".03em" }}>{separarTipo(p.nome).titulo}</span>
                           <span style={{ marginTop: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                             <span className="hx-display" style={{ fontSize: 15, fontWeight: 700, color: pobre ? "var(--hx-dim)" : undefined, textDecoration: pobre ? "line-through" : undefined }}><Aretz /> {fmt(p.preco)}</span>
                             <Espacos n={p.espacos} />
@@ -194,14 +265,27 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
 
         {sel ? (
           <aside key={sel.slug} className="hx-boot" data-vertente={sel.vertente} style={{ display: "flex", minHeight: 0, flexDirection: "column", borderLeft: "1px solid rgba(0,212,255,.1)", background: CASCO }}>
-            <div style={{ position: "relative", height: 120, flexShrink: 0, overflow: "hidden", background: `radial-gradient(ellipse at 70% 50%, color-mix(in srgb, var(--k) 35%, ${CASCO}) 0%, ${CASCO} 70%)` }}>
+            {/* Cabeçalho no fluxo: cresce com o título em vez de subir por
+                cima da categoria. O título vai até perto do ícone, e o tipo
+                entre parênteses ("AS-10 Overdrive (Pistola pesada)") vira
+                subtítulo. */}
+            <div style={{ position: "relative", minHeight: 120, flexShrink: 0, overflow: "hidden", padding: "12px 16px 14px", display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 14, background: `radial-gradient(ellipse at 70% 50%, color-mix(in srgb, var(--k) 35%, ${CASCO}) 0%, ${CASCO} 70%)` }}>
               <span style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(135deg, color-mix(in srgb, var(--k) 12%, transparent) 0 1px, transparent 1px 7px)" }} />
               <span style={{ position: "absolute", right: -8, top: "50%", transform: "translateY(-50%)", opacity: .8 }}><Svg d={sel.glifo ?? glifo(sel.categoria)} tam={140} cor="var(--k)" traco={.9} style={{ filter: "drop-shadow(0 0 24px var(--k))" }} /></span>
-              <div style={{ position: "absolute", left: 16, top: 12, display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
                 <Tag style={{ color: "var(--k)" }}>{sel.categoriaRotulo}</Tag>
                 {sel.raridade && <><span style={{ width: 4, height: 4, transform: "rotate(45deg)", background: corRaridade(sel.raridade) }} /><Tag style={{ color: corRaridade(sel.raridade) }}>{sel.raridade}</Tag></>}
               </div>
-              <h3 className="hx-display" style={{ position: "absolute", bottom: 12, left: 16, margin: 0, maxWidth: 230, fontSize: 26, fontWeight: 900, textTransform: "uppercase", lineHeight: .95, letterSpacing: ".02em", textShadow: "0 2px 0 #000" }}>{sel.nome}</h3>
+              {(() => {
+                const separado = separarTipo(sel.nome);
+                const titulo = separado.titulo, tipo = sel.tipo ?? separado.tipo;
+                return (
+                  <div style={{ position: "relative", maxWidth: "calc(100% - 96px)" }}>
+                    <h3 className="hx-display" style={{ margin: 0, fontSize: 26, fontWeight: 900, textTransform: "uppercase", lineHeight: .95, letterSpacing: ".02em", textShadow: "0 2px 0 #000", overflowWrap: "anywhere" }}>{titulo}</h3>
+                    {tipo && <Tag style={{ display: "block", marginTop: 6, color: "var(--hx-ice)", opacity: .7 }}>{tipo}</Tag>}
+                  </div>
+                );
+              })()}
             </div>
             <div className="hx-semsb" style={{ minHeight: 0, flex: 1, overflowY: "auto", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 16 }}>
               {sel.descricao && <div style={{ fontSize: 15, lineHeight: 1.35, color: "var(--hx-texto)" }}>{sel.descricao}</div>}
@@ -240,7 +324,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                 <div className="hx-display" role="status" style={{ display: "grid", placeItems: "center", height: 44, border: `1px solid ${OK}80`, background: `${OK}1a`, color: OK, fontSize: 13, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".2em" }}>✓ Comprado</div>
               ) : (
                 <button type="button" disabled={custo > saldo || !cabe} onClick={comprar} className="hx-btn-ambar" style={{ width: "100%" }}>
-                  {custo > saldo ? "Saldo insuficiente" : !cabe ? "Sem espaço na mochila" : "Comprar → mochila"}
+                  {custo > saldo ? "Saldo insuficiente" : !cabe ? "Sem espaço na mochila" : "Comprar"}
                 </button>
               )}
               <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between" }}><Tag className="hx-dim" style={{ opacity: .7 }}>saldo após</Tag><Tag className="hx-dim">₳ {fmt(Math.max(0, saldo - custo))}</Tag></div>

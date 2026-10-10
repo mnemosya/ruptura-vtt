@@ -173,12 +173,29 @@
 .hx-cat-linha[data-ativo] .hx-cat-fio { opacity: 1; }
 .hx-cat-ico { display: grid; color: var(--hx-dim); transition: color .15s; }
 .hx-cat-linha:hover .hx-cat-ico, .hx-cat-linha[data-ativo] .hx-cat-ico { color: var(--k); }
+/* Subcategorias do grupo aberto: recuadas sob o ícone, com fio à esquerda. */
+.hx-subs { display: flex; flex-direction: column; margin: 4px 0 8px 21px; padding-left: 8px; border-left: 1px solid rgba(0, 212, 255, .12); }
+.hx-sub-linha { display: flex !important; width: 100%; align-items: center; gap: 10px; padding: 6px 8px !important; text-align: left; font-size: 13.5px; line-height: 1.3; color: color-mix(in srgb, var(--hx-ice) 55%, transparent) !important; transition: color .15s, background .15s; }
+.hx-sub-linha:hover { color: var(--hx-ice) !important; background: rgba(255, 255, 255, .03) !important; }
+.hx-sub-linha[data-ativo] { color: var(--hx-ice) !important; background: color-mix(in srgb, var(--k, var(--hx-amb)) 10%, transparent) !important; }
+.hx-sub-ponto { flex: none; width: 4px; height: 4px; transform: rotate(45deg); background: color-mix(in srgb, var(--hx-ice) 35%, transparent); }
+.hx-sub-linha[data-ativo] .hx-sub-ponto { background: var(--k, var(--hx-amb)); }
 .hx-sub-linha { display: flex !important; width: 100%; align-items: center; gap: 8px; padding: 6px 12px 6px 16px !important; text-align: left; color: color-mix(in srgb, var(--hx-ice) 55%, transparent) !important; }
 .hx-sub-linha:hover, .hx-sub-linha[data-ativo] { color: var(--hx-ice) !important; }
 .hx-sub-linha[data-vazio] { color: color-mix(in srgb, var(--hx-dim) 40%, transparent) !important; }
 
-.hx-produto { position: relative; display: flex !important; flex-direction: column; height: 188px; overflow: hidden; border: 1px solid rgba(0, 212, 255, .1) !important; transition: border-color .2s; }
-.hx-produto:hover { border-color: color-mix(in srgb, var(--k) 35%, transparent) !important; }
+.hx-produto { position: relative; display: flex !important; flex-direction: column; height: 188px; overflow: hidden; border: 1px solid rgba(0, 212, 255, .1) !important; transition: border-color .2s, box-shadow .2s, background-color .2s; }
+/* Hover que não depende da cor da categoria: nas categorias cinza a
+   borda só na cor delas quase não mudava. A borda mistura gelo, a arte
+   clareia, e o fio de baixo aparece pela metade. */
+.hx-produto:hover {
+  border-color: color-mix(in srgb, color-mix(in srgb, var(--k) 65%, var(--hx-ice)) 70%, transparent) !important;
+  box-shadow: inset 0 0 22px color-mix(in srgb, var(--k) 14%, transparent), 0 0 0 1px color-mix(in srgb, var(--hx-ice) 6%, transparent);
+  background-color: rgba(255, 255, 255, .025) !important;
+}
+.hx-produto-arte { transition: filter .2s; }
+.hx-produto:hover .hx-produto-arte { filter: brightness(1.35); }
+.hx-produto:hover:not([data-ativo]) .hx-produto-fio { transform: scaleX(.35); }
 .hx-produto[data-ativo] { border-color: color-mix(in srgb, var(--k) 55%, transparent) !important; }
 .hx-produto-arte { position: relative; display: grid; flex: 1; place-items: center; background: radial-gradient(ellipse at 50% 55%, color-mix(in srgb, var(--k) 18%, var(--hx-casco)) 0%, var(--hx-casco) 70%); }
 .hx-produto-trama { position: absolute; inset: 0; opacity: .5; background-image: repeating-linear-gradient(135deg, color-mix(in srgb, var(--k) 8%, transparent) 0 1px, transparent 1px 8px); }
@@ -194,10 +211,32 @@
 .hx-passo--ambar span { width: 24px; font-size: 14px; }
 
 .hx-btn-ambar {
-  height: 44px; background: var(--hx-amb) !important; color: var(--hx-abismo) !important; transition: filter .15s;
+  position: relative; overflow: hidden; height: 44px; background: var(--hx-amb) !important; color: var(--hx-abismo) !important;
   font-family: var(--hx-display); font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: .2em;
+  transition: filter .2s, box-shadow .25s, letter-spacing .25s cubic-bezier(0.16, 1, 0.3, 1), transform .1s;
 }
-.hx-btn-ambar:hover:not(:disabled) { filter: brightness(1.1); }
+/* Hover: acende (brilho em volta), as letras abrem um pouco e um reflexo
+   atravessa o botão uma vez. Clique: afunda. */
+.hx-btn-ambar::before {
+  content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .55), transparent);
+  transform: skewX(-20deg) translateX(0); opacity: 0;
+}
+.hx-btn-ambar:hover:not(:disabled) {
+  filter: brightness(1.08); letter-spacing: .26em;
+  box-shadow: 0 0 0 1px rgba(255, 186, 120, .6), 0 0 22px rgba(255, 138, 31, .45), 0 0 48px rgba(255, 138, 31, .18);
+}
+.hx-btn-ambar:hover:not(:disabled)::before { animation: hx-reflexo .7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.hx-btn-ambar:active:not(:disabled) { transform: translateY(1px) scale(.99); filter: brightness(.96); }
+@keyframes hx-reflexo {
+  from { opacity: 1; transform: skewX(-20deg) translateX(0); }
+  to { opacity: 0; transform: skewX(-20deg) translateX(520%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hx-btn-ambar:hover:not(:disabled)::before { animation: none; }
+  .hx-btn-ambar { transition: filter .2s, box-shadow .25s; }
+  .hx-btn-ambar:hover:not(:disabled) { letter-spacing: .2em; }
+}
 .hx-btn-ambar:disabled { background: rgba(255, 255, 255, .05) !important; color: var(--hx-dim) !important; }
 .hx-btn-contorno { height: 44px; padding: 0 12px !important; border: 1px solid rgba(0, 212, 255, .3) !important; color: var(--hx-cy) !important; font-family: var(--hx-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .14em; }
 .hx-btn-contorno:hover:not(:disabled) { border-color: var(--hx-cy) !important; }

@@ -84,6 +84,7 @@ const PRODUTOS: ProdutoHud[] = CATALOGO.map((i) => ({
   preco: i.preco, espacos: Math.max(i.espacos, 1), raridade: i.raridade, descricao: i.desc,
   destaque: i.destaque ? { rotulo: i.destaque[0], valor: i.destaque[1], sufixo: i.destaque[2] } : null,
   propriedades: i.props, linhas: i.meta?.map(([rotulo, valor]) => ({ rotulo, valor })), pa: i.pa ?? null, municao: i.municao ?? null, cargas: i.cargas ?? null,
+  grupo: { id: i.m, nome: CATS.find((c) => c.id === i.m)!.nome, glifo: CATS.find((c) => c.id === i.m)!.g }, sub: i.sub ?? null,
 }));
 
 export function MercadoHud({ onFechar }: { onFechar?: () => void } = {}) {

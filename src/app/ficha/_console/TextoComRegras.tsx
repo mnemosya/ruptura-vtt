@@ -19,6 +19,9 @@
  * componente não tem lista própria: termo que não está publicado não
  * fica grifado, e isso é o comportamento certo (grifar sem ter regra
  * pra mostrar seria pior que não grifar).
+ *
+ * O conteúdo vem do Notion com `**negrito**` em markdown; esses trechos
+ * viram `<strong>` (e os termos dentro deles continuam grifados).
  */
 
 import { useMemo, type ReactNode } from "react";
@@ -37,15 +40,20 @@ export function TextoComRegras({
 }) {
   const pedacos = useMemo<ReactNode[]>(
     () =>
-      separarTermos(texto, glossario).map((p, i) =>
-        p.termo ? (
-          <TermoComDica key={`${i}-${p.termo.slug}`} termo={p.termo}>
-            {p.texto}
-          </TermoComDica>
-        ) : (
-          p.texto
-        ),
-      ),
+      // Partes ímpares do split são o miolo de `**…**`.
+      texto.split(/\*\*(.+?)\*\*/g).flatMap((trecho, j) => {
+        if (!trecho) return [];
+        const comTermos = separarTermos(trecho, glossario).map((p, i) =>
+          p.termo ? (
+            <TermoComDica key={`${j}-${i}-${p.termo.slug}`} termo={p.termo}>
+              {p.texto}
+            </TermoComDica>
+          ) : (
+            p.texto
+          ),
+        );
+        return j % 2 === 1 ? [<strong key={`b${j}`} className="rc-negrito">{comTermos}</strong>] : comTermos;
+      }),
     [texto, glossario],
   );
 
