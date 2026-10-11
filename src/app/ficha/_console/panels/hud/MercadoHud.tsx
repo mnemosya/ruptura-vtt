@@ -356,7 +356,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
               {complementos.length > 0 && <section className="hm-complementos" aria-label="Complementos do escalpo">
                 <div className="hm-complementos-cab"><Tag className="hx-dim">{complementos.every(p => p.categoria === "veneno") ? "Venenos compatíveis" : "Módulos compatíveis"}</Tag><Tag>{complementos.length}</Tag></div>
                 <div className="hm-complementos-lista">{complementos.map(p => <button key={p.slug} type="button" className="hm-complemento" aria-pressed={alvo?.slug === p.slug} onClick={() => escolherComplemento(p.slug)}>
-                  <ItemCategoryIcon category={p.categoria} size={16} />
+                  <ItemCategoryIcon category={p.categoria} group={p.grupo?.nome} weaponName={p.nome} size={16} />
                   <span className="hm-complemento-texto"><strong>{p.nome}</strong>{alvo?.slug === p.slug && <span className="hm-complemento-descricao">{p.descricao}<span>{p.espacos} espaço{p.espacos !== 1 ? "s" : ""} / item</span></span>}</span><span className="hm-complemento-preco">₳ {fmt(p.preco)}</span>
                 </button>)}</div>
               </section>}

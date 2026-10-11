@@ -1,6 +1,6 @@
 # Mapeamento de ícones filled — mercado e inventário
 
-Fonte: `icones/filled icons/` (24 SVGs). Levantamento em 11/10/2026. Este documento propõe as substituições filled. A separação de estrutura dorsal e mochila já foi implementada com `DorsalStructureIcon`.
+Fonte: `icones/filled icons/`. Levantamento em 11/10/2026: 24 SVGs originais, mais `kinetics.svg` adicionado posteriormente. As trocas diretas e as distinções de armas abaixo estão implementadas no componente compartilhado. Estrutura dorsal usa `DorsalStructureIcon`. Flechas, aljava e poções usam regras restritas de categoria e nome canônico. `kinetics.svg` está disponível nos dados, sem associação a uma categoria de mercado/inventário definida.
 
 ## Vínculo atual
 
@@ -52,10 +52,10 @@ Todos os 24 arquivos novos têm um destino possível acima. `arrows`, `quiver` e
 
 Manoplas, tonfa, martelo pesado, bastão, corrente leve, pistolas, submetralhadora, carabina, rifles, escopetas, metralhadora e armas de energia conservam seus desenhos atuais. Dispositivos, drones/robôs, escalpos/módulos, ferramentas, veículos/mobilidade, vertinas e partes anatômicas também não têm substitutos diretos. Estrutura dorsal já usa o desenho próprio `DorsalStructureIcon`, com eixo central e suportes laterais; mochila equipada conserva `Backpack`.
 
-## Integração recomendada
+## Integração implementada e verificação
 
 1. Criar um renderer compartilhado para os SVGs filled, preservando proporção, tamanho e `currentColor`. Não reutilizar a compensação de traço do `WeaponIcon` sem adaptá-la: ela foi feita para os desenhos antigos de contornos expandidos.
 2. Atualizar os tipos de arma individualmente, evitando trocar globalmente `knife`, `handaxe`, `spear` ou `pistol`, pois cada chave antiga atende itens que agora precisam de desenhos diferentes.
 3. Atualizar a tabela de categorias em `itemIcons.tsx` para as trocas diretas.
 4. Para flechas, aljava e poção, resolver a identidade visual com metadados canônicos e fornecer os mesmos campos no mercado e no inventário; evitar regras locais em cada tela.
-5. Conferir a mesma mercadoria nas listas e detalhes das duas telas e nos equipamentos, nos tamanhos existentes de 16 a 150 px. Os arquivos da pasta de origem ainda não são consumidos automaticamente pela aplicação.
+5. Conferir a mesma mercadoria nas listas e detalhes das duas telas e nos equipamentos, nos tamanhos existentes de 16 a 150 px. Os paths da pasta de origem estão incorporados em `filledIconData.ts` e renderizados por `FilledIcon`, sem contorno adicional. Atualizações nos SVGs precisam regenerar esses dados.

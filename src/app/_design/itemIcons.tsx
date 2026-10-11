@@ -2,6 +2,8 @@ import type { ComponentType } from "react";
 import { AmmoIcon } from "./AmmoIcon";
 import { ArmorIcon } from "./ArmorIcon";
 import { DorsalStructureIcon } from "./DorsalStructureIcon";
+import { FilledIcon } from "./FilledIcon";
+import { filledCategoryIcon, filledWeaponIconForName } from "./filledIconMapping";
 import { WeaponIcon } from "./WeaponIcon";
 import { weaponIconForName } from "./weaponIconMapping";
 import { Backpack, Bike, Bomb, Bot, CircuitBoard, Cpu, Cross, Droplet, Footprints, Hand, Headphones, Package, Pill, Puzzle, Syringe,  ShieldHalf, Shirt, Swords, UserRound, Wrench, type LucideProps } from "lucide-react";
@@ -27,8 +29,13 @@ const ICONS: Record<string, ComponentType<LucideProps>> = {
 const key = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_");
 
 export function ItemCategoryIcon({ category, group, weaponName, ...props }: LucideProps & { category: string; group?: string; weaponName?: string }) {
+  const isWeapon = ["arma", "armas"].includes(key(category)) || group && key(group) === "armas";
+  const filledWeapon = isWeapon ? filledWeaponIconForName(weaponName) : null;
+  if (filledWeapon) return <FilledIcon icon={filledWeapon} {...props} />;
   const weapon = ["arma", "armas"].includes(key(category)) || group && key(group) === "armas" ? weaponIconForName(weaponName) : null;
   if (weapon) return <WeaponIcon weapon={weapon} {...props} />;
+  const filled = filledCategoryIcon(category, weaponName) ?? (group ? filledCategoryIcon(group, weaponName) : null);
+  if (filled) return <FilledIcon icon={filled} {...props} />;
   const Icon = ICONS[key(category)] ?? (group ? ICONS[key(group)] : undefined) ?? Package;
   return <Icon aria-hidden="true" focusable="false" {...props} />;
 }
