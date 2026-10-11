@@ -6067,7 +6067,9 @@ export function VttClient({
         aria-label={id === "rodadas" && trilha
           ? `${ROTULO_FERRAMENTA[id]} (${ATALHO_FERRAMENTA[id]}) — rodada ${trilha.rodada} em andamento`
           : `${ROTULO_FERRAMENTA[id]} (${ATALHO_FERRAMENTA[id]})`}
-        onClick={() => trocarFerramenta(id)}>
+        // Clicar de novo na ferramenta ativa FECHA ela: volta a Interagir,
+        // que é o "nenhuma ferramenta" do trilho.
+        onClick={() => trocarFerramenta(ferramenta === id && id !== "interagir" ? "interagir" : id)}>
         <Icone size={17} strokeWidth={1.6} />
         {id === "rodadas" && trilha && <span className="rv-ferr-badge" aria-hidden="true">{trilha.rodada}</span>}
         <span className="rv-dica">
