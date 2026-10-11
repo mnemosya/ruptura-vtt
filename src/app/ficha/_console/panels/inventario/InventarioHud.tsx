@@ -1,6 +1,10 @@
 "use client";
 
 import { estiloCategoria } from "../../../../_design/itemCategoryColors";
+import { FichaItemModal, type PecaHud } from "../hud/EquipamentoHud";
+import { ResourceValueCard } from "../ResourceValueCard";
+import { ArrowRight, Eye, Hand, Package, Shirt, Trash2, Users, Warehouse, Zap } from "lucide-react";
+import { createPortal } from "react-dom";
 import { ItemCategoryIcon } from "../../../../_design/itemIcons";
 
 /**
@@ -85,6 +89,8 @@ export interface PropsInventarioHud {
   onAjustar: (id: string, delta: number) => void;
   onMover: (id: string, destinoId: string) => void;
   onDescartar: (id: string) => void;
+  /** Ficha completa do item para o modal (o mesmo da aba Equipamentos). Ausente = cartão antigo. */
+  fichaDe?: (id: string) => PecaHud | null;
   /** Abre o Mercado (botão ao lado da carteira e tecla M). Ausente = sem botão. */
   onAbrirMercado?: () => void;
   /** Slot no rodapé da lista — o mercado provisório entra aqui. */
@@ -128,6 +134,7 @@ export function InventarioHud(props: PropsInventarioHud) {
   const [busca, setBusca] = useState("");
   const [quente, setQuente] = useState<string | null>(null);
   const [ancora, setAncora] = useState<Ancora | null>(null);
+  const [menuDe, setMenuDe] = useState<{ id: string; x: number; y: number } | null>(null);
   const palco = useRef<HTMLDivElement>(null);
   const buscaRef = useRef<HTMLInputElement>(null);
 
@@ -218,13 +225,27 @@ export function InventarioHud(props: PropsInventarioHud) {
             vista={vista} capacidade={capacidade} casa={casa} termo={busca} inicio={inicio}
             livre={vista === "mochila" && !termo ? livre : 0}
             quente={quente} setQuente={setQuente} sel={ancora?.id} abrir={abrir}
+            onMenu={props.somenteLeitura ? undefined : (id, x, y) => setMenuDe({ id, x, y })}
           />
         </div>
 
+        {menuDe && (() => {
+          const it = itens.find((i) => i.id === menuDe.id);
+          if (!it) return null;
+          return (
+            <MenuDoItemInventario item={it} x={menuDe.x} y={menuDe.y} destinos={props.destinosDe(it)}
+              onFechar={() => setMenuDe(null)}
+              onVer={(el) => abrir(it.id, el)}
+              onUsar={() => props.onUsar(it.id)}
+              onMover={(d) => props.onMover(it.id, d)}
+              onDescartar={() => props.onDescartar(it.id)} />
+          );
+        })()}
         {selecionado && ancora && (
           <CartaoItem key={selecionado.id} item={selecionado} ancora={ancora} palco={palco}
             podeCrescer={selecionado.local !== "mochila" || ocupados + selecionado.espacosPorItem <= capacidade}
             somenteLeitura={!!props.somenteLeitura}
+            ficha={props.fichaDe?.(selecionado.id) ?? null}
             destinos={props.destinosDe(selecionado)}
             onFechar={() => setAncora(null)}
             onUsar={() => props.onUsar(selecionado.id)}
@@ -339,11 +360,12 @@ function Regua({ itens, capacidade, ocupados, livre, casa, filtrando, quente, se
 }
 
 /* ── lista ── */
-function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, setQuente, sel, abrir }: {
+function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, setQuente, sel, abrir, onMenu }: {
   itens: ItemHud[]; vista: VistaHud; capacidade: number; casa: (i: ItemHud) => boolean; termo: string; livre: number;
   inicio: Map<string, number>;
   quente: string | null; setQuente: (s: string | null) => void; sel?: string;
   abrir: (id: string, el: HTMLElement) => void;
+  onMenu?: (id: string, x: number, y: number) => void;
 }) {
   const naMochila = vista === "mochila";
   const linhas = itens.filter(casa);
@@ -361,11 +383,12 @@ function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, s
       {linhas.map((it, ix) => {
         const s = inicio.get(it.id) ?? 0;
         return (
-          <button key={it.id} type="button" className="ih-lin" data-vertente={it.vertente}
+          <button key={it.id} type="button" className="ih-lin" data-id={it.id} data-vertente={it.vertente}
             data-quente={quente === it.id || undefined} data-sel={sel === it.id || undefined}
             style={{ ...estiloCategoria(it.temaCategoria ?? it.categoria, it.vertente), animationDelay: `${ix * 25}ms` }}
             onMouseEnter={() => setQuente(it.id)} onMouseLeave={() => setQuente(null)}
-            onClick={(e) => abrir(it.id, e.currentTarget)}>
+            onClick={(e) => abrir(it.id, e.currentTarget)}
+            onContextMenu={onMenu ? (e) => { e.preventDefault(); onMenu(it.id, e.clientX, e.clientY); } : undefined}>
             <span className="ih-lin-icone"><ItemCategoryIcon category={it.categoria} weaponName={it.weaponName ?? it.nome} size={20} strokeWidth={1.6} /></span>
             <span className="ih-lin-nome">
               <span className="ih-nome">{separarTipo(it.nome).titulo}</span>
@@ -426,8 +449,8 @@ function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, s
 }
 
 /* ── cartão flutuante ── */
-function CartaoItem({ item: it, ancora, palco, podeCrescer, somenteLeitura, destinos, onFechar, onUsar, onAjustar, onMover, onDescartar }: {
-  item: ItemHud; ancora: Ancora; palco: React.RefObject<HTMLDivElement | null>;
+function CartaoItem({ item: it, ancora, palco, podeCrescer, somenteLeitura, destinos, onFechar, onUsar, onAjustar, onMover, onDescartar, ficha }: {
+  item: ItemHud; ancora: Ancora; palco: React.RefObject<HTMLDivElement | null>; ficha?: PecaHud | null;
   podeCrescer: boolean; somenteLeitura: boolean; destinos: DestinoHud[];
   onFechar: () => void; onUsar: () => void; onAjustar: (d: number) => void;
   onMover: (destino: string) => void; onDescartar: () => void;
@@ -438,6 +461,7 @@ function CartaoItem({ item: it, ancora, palco, podeCrescer, somenteLeitura, dest
   const L = 360;
 
   useEffect(() => {
+    if (ficha) return;
     const p = palco.current!;
     const largura = p.clientWidth;
     const altura = p.scrollHeight;
@@ -451,6 +475,7 @@ function CartaoItem({ item: it, ancora, palco, podeCrescer, somenteLeitura, dest
   }, [ancora, it, palco, movendo]);
 
   useEffect(() => {
+    if (ficha) return;
     const h = (e: MouseEvent) => {
       const alvo = e.target as HTMLElement;
       if (ref.current && !ref.current.contains(alvo) && !alvo.closest(".ih-lin, .ih-trecho")) onFechar();
@@ -464,6 +489,42 @@ function CartaoItem({ item: it, ancora, palco, podeCrescer, somenteLeitura, dest
     ...(it.preco != null ? [{ rotulo: "Preço base", valor: <><span className="ih-aretz">₳</span> {fmt(it.preco)}</> }] : []),
     ...(it.linhas ?? []).map((l) => ({ rotulo: l.rotulo, valor: l.valor })),
   ], [it]);
+
+  const acoes = (
+    <div className="ih-cartao-acoes">
+              {movendo && (
+                <div className="ih-mover ih-boot">
+                  {destinos.map((d) => (
+                    <button key={d.id} type="button" className="ih-mover-op" disabled={d.motivo != null}
+                      title={d.motivo ?? undefined} onClick={() => onMover(d.id)}>
+                      <span className="ih-tag">{d.rotulo}</span>
+                      <span className="ih-mono ih-fraco ih-pequeno">{d.motivo ? "indisponível" : "→"}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="ih-acoes-linha">
+                <div className="ih-passo">
+                  <button type="button" disabled={it.quantidade <= 1} onClick={() => onAjustar(-1)} aria-label="Diminuir quantidade">−</button>
+                  <span aria-live="polite">{it.quantidade}</span>
+                  <button type="button" disabled={!podeCrescer} onClick={() => onAjustar(+1)} aria-label="Aumentar quantidade">+</button>
+                </div>
+                <button type="button" className="ih-usar" disabled={!it.usavel} onClick={onUsar}
+                  title={it.usavel ? undefined : "Este item não declara uso automatizável."}>
+                  {it.usavel ? "Usar" : "Passivo"}
+                </button>
+                <button type="button" className="ih-quad" data-ativo={movendo || undefined} aria-expanded={movendo}
+                  onClick={() => setMovendo((m) => !m)} title="Mover"><Glifo d={IC.mover} tam={16} /></button>
+                <Descartar onFeito={onDescartar} />
+              </div>
+            </div>
+  );
+
+  if (ficha) {
+    return <FichaItemModal p={ficha} fixo onFechar={onFechar} rodape={somenteLeitura ? undefined : (
+      <RodapeItem item={it} podeCrescer={podeCrescer} destinos={destinos} onUsar={onUsar} onAjustar={onAjustar} onMover={onMover} onDescartar={onDescartar} />
+    )} />;
+  }
 
   return (
     <div ref={ref} className="ih-cartao" data-vertente={it.vertente} data-lado={pos?.lado}
@@ -515,35 +576,7 @@ function CartaoItem({ item: it, ancora, palco, podeCrescer, somenteLeitura, dest
           )}
         </div>
 
-        {!somenteLeitura && (
-          <div className="ih-cartao-acoes">
-            {movendo && (
-              <div className="ih-mover ih-boot">
-                {destinos.map((d) => (
-                  <button key={d.id} type="button" className="ih-mover-op" disabled={d.motivo != null}
-                    title={d.motivo ?? undefined} onClick={() => onMover(d.id)}>
-                    <span className="ih-tag">{d.rotulo}</span>
-                    <span className="ih-mono ih-fraco ih-pequeno">{d.motivo ? "indisponível" : "→"}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="ih-acoes-linha">
-              <div className="ih-passo">
-                <button type="button" disabled={it.quantidade <= 1} onClick={() => onAjustar(-1)} aria-label="Diminuir quantidade">−</button>
-                <span aria-live="polite">{it.quantidade}</span>
-                <button type="button" disabled={!podeCrescer} onClick={() => onAjustar(+1)} aria-label="Aumentar quantidade">+</button>
-              </div>
-              <button type="button" className="ih-usar" disabled={!it.usavel} onClick={onUsar}
-                title={it.usavel ? undefined : "Este item não declara uso automatizável."}>
-                {it.usavel ? "Usar" : "Passivo"}
-              </button>
-              <button type="button" className="ih-quad" data-ativo={movendo || undefined} aria-expanded={movendo}
-                onClick={() => setMovendo((m) => !m)} title="Mover"><Glifo d={IC.mover} tam={16} /></button>
-              <Descartar onFeito={onDescartar} />
-            </div>
-          </div>
-        )}
+        {!somenteLeitura && acoes}
       </div>
     </div>
   );
@@ -565,5 +598,142 @@ function Descartar({ onFeito }: { onFeito: () => void }) {
       title="Excluir item" aria-label="Excluir item">
       <Glifo d={IC.lixo} tam={16} />
     </button>
+  );
+}
+
+/**
+ * Rodapé do modal de item: quantidade (− valor +, o valor editável como
+ * nos recursos: "5", "+1", "-2"), a ação principal (Usar, ou "Passivo")
+ * e "⋯" com o resto — cada destino com nome e, isolado, Descartar com
+ * confirmação.
+ */
+function RodapeItem({ item: it, podeCrescer, destinos, onUsar, onAjustar, onMover, onDescartar }: {
+  item: ItemHud; podeCrescer: boolean; destinos: DestinoHud[];
+  onUsar: () => void; onAjustar: (d: number) => void; onMover: (destino: string) => void; onDescartar: () => void;
+}) {
+  const [menu, setMenu] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menu) { setConfirmando(false); return; }
+    const fora = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node)) setMenu(false); };
+    const tecla = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); setMenu(false); } };
+    window.addEventListener("pointerdown", fora);
+    window.addEventListener("keydown", tecla, true);
+    return () => { window.removeEventListener("pointerdown", fora); window.removeEventListener("keydown", tecla, true); };
+  }, [menu]);
+  return (
+    <div className="ih-modal-acoes" ref={ref}>
+      <span className="ih-modal-acoes-qtd">
+        <button type="button" disabled={it.quantidade <= 1} onClick={() => onAjustar(-1)} aria-label="Diminuir quantidade">−</button>
+        <ResourceValueCard atual={it.quantidade} max={podeCrescer ? 9999 : it.quantidade} min={1} rotulo="Quantidade" mostrarMax={false}
+          className="ih-modal-acoes-valor" inputClassName="ih-modal-acoes-input" testIdPrefix="console-inv"
+          onGravar={(v) => { if (v !== it.quantidade) onAjustar(v - it.quantidade); }} />
+        <button type="button" disabled={!podeCrescer} onClick={() => onAjustar(+1)} aria-label="Aumentar quantidade">+</button>
+        <small>unid.</small>
+      </span>
+      <span style={{ flex: 1 }} />
+      {it.usavel && <button type="button" className="ih-modal-acoes-usar" onClick={onUsar}>Usar</button>}
+      <button type="button" className="ih-modal-acoes-mais" data-on={menu || undefined} aria-expanded={menu} aria-haspopup="menu"
+        aria-label="Mais ações" onClick={() => setMenu((m) => !m)}>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></svg>
+      </button>
+      {menu && (
+        <div className="ih-modal-acoes-menu" role="menu">
+          {/* Só os destinos possíveis — os indisponíveis só poluíam a lista. */}
+          {destinos.filter((d) => d.motivo == null).map((d) => (
+            <button key={d.id} type="button" role="menuitem" className="ih-modal-acoes-item" onClick={() => { setMenu(false); onMover(d.id); }}>
+              {iconeDestino(d)}{rotuloDestino(d)}
+            </button>
+          ))}
+          {destinos.some((d) => d.motivo == null) && <span className="ih-modal-acoes-sep" />}
+          <button type="button" role="menuitem" className="ih-modal-acoes-item" data-perigo data-confirmando={confirmando || undefined}
+            onClick={() => { if (confirmando) { setMenu(false); onDescartar(); } else setConfirmando(true); }}>
+            <Trash2 aria-hidden="true" />{confirmando ? "Clique de novo para descartar" : "Descartar"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Texto da ação de cada destino: guardar, mover ou equipar — com o lugar por extenso. */
+function rotuloDestino(d: DestinoHud): string {
+  const lugar = d.rotulo.toLowerCase();
+  if (d.id === "abrigo") return "Guardar no abrigo";
+  if (d.id === "mochila") return "Guardar na mochila";
+  if (d.id === "bando") return "Mandar para o bando";
+  if (d.id.startsWith("acesso_rapido")) return `Mover para ${lugar}`;
+  if (d.id.startsWith("arma_") || d.id === "escudo") return `Equipar: ${lugar}`;
+  if (d.id === "equipado") return "Equipar";
+  if (d.id === "suporte_municao") return `Equipar: ${lugar}`;
+  return `Equipar: ${lugar}`;
+}
+
+/** Ícone de cada destino no menu "⋯". */
+function iconeDestino(d: DestinoHud) {
+  if (d.id === "abrigo") return <Warehouse aria-hidden="true" />;
+  if (d.id === "mochila") return <Package aria-hidden="true" />;
+  if (d.id === "bando") return <Users aria-hidden="true" />;
+  if (d.id.startsWith("acesso_rapido")) return <Zap aria-hidden="true" />;
+  if (d.id.startsWith("arma_") || d.id === "escudo") return <Hand aria-hidden="true" />;
+  return <Shirt aria-hidden="true" />;
+}
+
+/**
+ * Menu do botão direito numa linha do inventário — o mesmo desenho do
+ * menu da aba Equipamentos (`.hx-menu`): cabeçalho com o item, a ação
+ * principal em barra (Usar, quando o item tem uso; senão Ver item), o
+ * resto em lista com ícones e Descartar isolado, com confirmação.
+ */
+function MenuDoItemInventario({ item: it, x, y, destinos, onFechar, onVer, onUsar, onMover, onDescartar }: {
+  item: ItemHud; x: number; y: number; destinos: DestinoHud[];
+  onFechar: () => void; onVer: (el: HTMLElement) => void; onUsar: () => void; onMover: (d: string) => void; onDescartar: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ left: x, top: y });
+  const [confirmando, setConfirmando] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (el) setPos({ left: Math.min(x, window.innerWidth - el.offsetWidth - 8), top: Math.min(y, window.innerHeight - el.offsetHeight - 8) });
+    el?.querySelector<HTMLButtonElement>("button")?.focus({ preventScroll: true });
+    const fora = (ev: PointerEvent) => { if (!ref.current?.contains(ev.target as Node)) onFechar(); };
+    const tecla = (ev: KeyboardEvent) => { if (ev.key === "Escape") { ev.stopPropagation(); onFechar(); } };
+    window.addEventListener("pointerdown", fora);
+    window.addEventListener("keydown", tecla, true);
+    return () => { window.removeEventListener("pointerdown", fora); window.removeEventListener("keydown", tecla, true); };
+  }, [x, y, onFechar]);
+  const fazer = (f: () => void) => () => { f(); onFechar(); };
+  const verItem = () => { const linha = document.querySelector<HTMLElement>(`.ih-lin[data-id="${it.id}"]`); if (linha) onVer(linha); };
+  const possiveis = destinos.filter((d) => d.motivo == null);
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div ref={ref} className="hx-menu" role="menu" aria-label={`Ações de ${it.nome}`}
+      style={{ ...estiloCategoria(it.temaCategoria ?? it.categoria, it.vertente), left: pos.left, top: pos.top }}
+      onContextMenu={(ev) => ev.preventDefault()}>
+      <div className="hx-menu-cab">
+        <span className="hx-menu-icone" aria-hidden="true"><ItemCategoryIcon category={it.categoria} weaponName={it.weaponName ?? it.nome} size={18} strokeWidth={1.6} /></span>
+        <span className="hx-menu-id">
+          <span className="hx-menu-nome">{separarTipo(it.nome).titulo}</span>
+          <span className="hx-menu-meta"><span>{it.categoriaRotulo}</span>{it.quantidade > 1 && <span>×{it.quantidade}</span>}</span>
+        </span>
+      </div>
+      {it.usavel
+        ? <button type="button" role="menuitem" className="hx-menu-acao" onClick={fazer(onUsar)}>Usar<ArrowRight aria-hidden="true" /></button>
+        : <button type="button" role="menuitem" className="hx-menu-acao" onClick={fazer(verItem)}>Ver item<ArrowRight aria-hidden="true" /></button>}
+      <div className="hx-menu-secao">
+        {it.usavel && <button type="button" role="menuitem" className="hx-menu-item" onClick={fazer(verItem)}><Eye aria-hidden="true" />Ver item</button>}
+        {possiveis.map((d) => (
+          <button key={d.id} type="button" role="menuitem" className="hx-menu-item" onClick={fazer(() => onMover(d.id))}>{iconeDestino(d)}{rotuloDestino(d)}</button>
+        ))}
+      </div>
+      <div className="hx-menu-secao">
+        <button type="button" role="menuitem" className="hx-menu-item" data-perigo data-confirmando={confirmando || undefined}
+          onClick={() => { if (confirmando) { onDescartar(); onFechar(); } else setConfirmando(true); }}>
+          <Trash2 aria-hidden="true" />{confirmando ? "Clique de novo para descartar" : "Descartar"}
+        </button>
+      </div>
+    </div>,
+    document.body,
   );
 }

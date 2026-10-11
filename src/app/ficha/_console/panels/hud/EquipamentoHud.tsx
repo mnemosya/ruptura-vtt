@@ -26,6 +26,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { BODY_PATHS, type BodyRegiao } from "../../bodySilhouette";
 import { oxanium } from "../../../../_design/oxanium";
+import { useCentroDoConsole } from "../../useCentroDoConsole";
 import { ArrowLeftRight, ArrowRight, Crosshair, Eye, Hand, Package, RotateCcw, Trash2, Warehouse, X, Zap } from "lucide-react";
 import { useDicaPortal } from "../../../../mesas/[campaignId]/vtt/_painel/ui/DicaPortal";
 import { ResourceValueCard } from "../ResourceValueCard";
@@ -721,6 +722,35 @@ function MenuDoItem({ p, x, y, encaixe, onFechar, onEquipar, onTrazer, onVer, on
 }
 
 /* ── ficha completa ── */
+/**
+ * O MODAL DE ITEM — o mesmo da aba Equipamentos, reaproveitado pelo
+ * Inventário. `rodape` recebe as ações de quem abriu (quantidade, usar,
+ * mover, descartar…). `fixo`: posição fixa (cobre a janela do Console)
+ * em vez de absoluta no palco de quem chama.
+ */
+export function FichaItemModal({ p, onFechar, rodape, fixo = false }: { p: PecaHud; onFechar: () => void; rodape?: ReactNode; fixo?: boolean }) {
+  /* `fixo` sai por PORTAL no body: dentro do palco rolável do Inventário,
+     o modal ficava preso ao contexto de empilhamento dele e a régua de
+     espaços (irmã de fora) passava por cima. */
+  // Centro da janela do Console: o modal sai pelo body, mas centraliza NELE, não na tela.
+  const centro = useCentroDoConsole();
+  const noCentro = fixo && centro ? { position: "absolute" as const, left: centro.x, top: centro.y, transform: "translate(-50%, -50%)" } : undefined;
+  const modal = (
+    <div className={`hx ${oxanium.variable}`} onClick={(ev) => { if (ev.target === ev.currentTarget) onFechar(); }}
+      style={{ position: fixo ? "fixed" : "absolute", inset: 0, zIndex: fixo ? 700 : 40, display: "grid", placeItems: "center", background: "rgba(6,18,28,.75)", backdropFilter: "blur(2px)" }}>
+      <div style={noCentro ? { ...noCentro, width: 420, maxWidth: "calc(100% - 32px)" } : { display: "contents" }}>
+      <div className="hx-edge hx-ch hx-pop" role="dialog" aria-label={p.nome} style={{ width: 420, maxWidth: noCentro ? "100%" : "calc(100% - 32px)", boxShadow: "0 30px 80px -20px #000" }}>
+        <div className="hx-ch" style={{ position: "relative", display: "flex", flexDirection: "column", maxHeight: "min(660px, calc(100vh - 160px))", background: CASCO }}>
+          <Ficha p={p} voltar={onFechar} />
+          {rodape && <div style={{ flexShrink: 0, borderTop: "1px solid rgba(0,212,255,.1)", padding: "10px 16px" }}>{rodape}</div>}
+        </div>
+      </div>
+      </div>
+    </div>
+  );
+  return fixo && typeof document !== "undefined" ? createPortal(<div className="rc-cursor-scope">{modal}</div>, document.body) : modal;
+}
+
 function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
   const c = corDe(p), pr = prot(p.protecao);
   return (
@@ -750,7 +780,7 @@ function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
           </span>
         </div>
       </div>
-      <div className="hx-semsb" style={{ minHeight: 0, flex: 1, overflowY: "auto", padding: "16px 16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div className="hx-semsb" style={{ minHeight: 0, flex: "0 1 auto", overflowY: "auto", padding: "16px 16px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
         {p.dano && (
           <div style={{ display: "flex", alignItems: "center", borderLeft: `2px solid ${PERIGO}`, background: "#0a1b26", padding: "10px 12px" }}>
             <Tag className="hx-dim" style={{ fontSize: 10 }}>dano</Tag>

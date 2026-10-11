@@ -23,7 +23,8 @@ import { CabecalhoModulo } from "./CabecalhoModulo";
 import { EquipamentoHud, type EncaixeHud, type PecaHud } from "./hud/EquipamentoHud";
 import { temaDoModelo, VERTENTE_DA_CATEGORIA, descricaoDeOcultavel, descricaoDoAlcance, descricaoDoDano } from "./InventarioPanel";
 
-function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
+/** Item do inventário → peça do HUD de equipamento (também alimenta o modal de item do Inventário). */
+export function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
   const modelo = api.catalogo.get(inst.itemSlug);
   const categoria = modelo?.categoria ?? inst.categoria;
   const dano = descricaoDoDano(modelo);

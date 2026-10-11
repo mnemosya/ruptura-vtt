@@ -28,6 +28,7 @@ import type { InventoryItemInstance, ItemContent, ItemLoadoutState } from "../..
 import { TextoComRegras } from "../TextoComRegras";
 import { itemCabeNoSlot, type BodySlotId } from "../slots";
 import type { ConsoleApi } from "../types";
+import { pecaDe } from "./EquipmentPanel";
 import { CabecalhoModulo } from "./CabecalhoModulo";
 import { InventarioHud, type DestinoHud, type ItemHud, type LocalHud } from "./inventario/InventarioHud";
 import { MercadoHud, type ProdutoHud } from "./hud/MercadoHud";
@@ -444,6 +445,8 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
               else if (d?.estado) api.moverItemPara(id, d.estado);
             }}
             onDescartar={(id) => api.descartarItem(id)}
+            // O modal de item é o MESMO da aba Equipamentos.
+            fichaDe={(id) => { const inst = api.character.inventario?.find((i) => i.id === id); return inst ? pecaDe(api, inst) : null; }}
             onAbrirMercado={api.somenteLeitura ? undefined : () => setMercado(true)}
           />
         </div>

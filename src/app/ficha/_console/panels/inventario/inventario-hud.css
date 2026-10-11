@@ -310,3 +310,43 @@
 .ih-mercado:hover { border-color: var(--ih-amb) !important; background: var(--ih-amb) !important; color: var(--ih-fundo) !important; }
 .ih-mercado-rot { font-family: var(--ih-display); font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: .2em; }
 .ih-mercado-tecla { font-family: var(--ih-mono); font-size: 10px; opacity: .6; }
+
+/* ── Rodapé do modal de item: quantidade · ação principal · ⋯ ─────── */
+.ih-modal-acoes { position: relative; display: flex; align-items: center; gap: 8px; }
+.ih-modal-acoes-qtd { display: flex; align-items: center; }
+.ih-modal-acoes-qtd > button { width: 26px; height: 28px; padding: 0; border: 1px solid #17394a; background: transparent; color: #9fb2c8; cursor: pointer; font: 700 14px var(--font-mono), monospace; transition: color .18s, border-color .18s, background .18s; }
+.ih-modal-acoes-qtd > button:hover:not(:disabled) { color: #00d4ff; border-color: #00d4ff; background: rgba(0, 212, 255, .08); }
+.ih-modal-acoes-qtd > button:disabled { color: #2a3b58; border-color: #16303f; cursor: not-allowed; }
+.ih-modal-acoes-qtd small { margin-left: 8px; font: 500 10px var(--font-mono), monospace; letter-spacing: 1.4px; text-transform: uppercase; color: #4f6285; }
+.ih-modal-acoes-valor { box-sizing: border-box; min-width: 40px; height: 28px; padding: 0 6px; display: grid; place-items: center; border: 0; border-top: 1px solid #17394a; border-bottom: 1px solid #17394a; background: transparent; color: #e6f6ff; cursor: text; font: 700 14px var(--font-mono), monospace; }
+button.ih-modal-acoes-valor:hover { background: rgba(0, 212, 255, .06); }
+.ih-modal-acoes-valor[data-invalido="true"] { border-color: #ff5f74; }
+.ih-modal-acoes-input { box-sizing: border-box; width: 40px; padding: 0; border: 0; outline: none; background: transparent; text-align: center; color: #00d4ff; font: 700 14px var(--font-mono), monospace; }
+.ih-modal-acoes-usar { height: 34px; padding: 0 18px; border: 0; background: #00d4ff; color: #06121c; cursor: pointer; font: 700 11px var(--font-mono), monospace; letter-spacing: 2px; text-transform: uppercase; transition: background .2s; }
+.ih-modal-acoes-usar:hover { background: #45e0ff; }
+.ih-modal-acoes-passivo { font: 600 11px var(--font-mono), monospace; letter-spacing: 1.6px; text-transform: uppercase; color: #3a5068; }
+.ih-modal-acoes-mais { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid #17394a; background: transparent; color: #9fb2c8; cursor: pointer; transition: color .2s, border-color .2s; }
+.ih-modal-acoes-mais:hover, .ih-modal-acoes-mais[data-on] { color: #00d4ff; border-color: #00d4ff; }
+.ih-modal-acoes-menu { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 5; width: 220px; padding: 4px; background: #0a1620; border: 1px solid #1a3646; box-shadow: 0 16px 36px rgba(0, 0, 0, .6); animation: ih-modal-acoes-menu .2s cubic-bezier(.05, .7, .1, 1) both; }
+@keyframes ih-modal-acoes-menu { from { opacity: 0; translate: 0 6px; } to { opacity: 1; translate: 0 0; } }
+.ih-modal-acoes-item { position: relative; display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: 0; background: transparent; cursor: pointer; text-align: left;
+  font: 500 13px var(--font-corpo), sans-serif; color: #9fb2c8; transition: background .2s cubic-bezier(.4, 1, .6, 1), color .2s cubic-bezier(.4, 1, .6, 1); }
+.ih-modal-acoes-item svg { width: 15px; height: 15px; stroke-width: 1.8; color: #4f6285; transition: color .2s, translate .2s cubic-bezier(.4, 1, .6, 1); }
+.ih-modal-acoes-item::before { content: ""; position: absolute; left: 0; top: 7px; bottom: 7px; width: 2px; background: #00d4ff; transform: scaleY(0); transition: transform .26s cubic-bezier(.05, .7, .1, 1); }
+.ih-modal-acoes-item:hover, .ih-modal-acoes-item:focus-visible { background: rgba(0, 212, 255, .06); color: #e6f6ff; outline: none; }
+.ih-modal-acoes-item:hover::before, .ih-modal-acoes-item:focus-visible::before { transform: scaleY(1); }
+.ih-modal-acoes-item:hover svg, .ih-modal-acoes-item:focus-visible svg { color: #00d4ff; translate: 2px 0; }
+/* Descartar: neutro parado; o vermelho só aparece na mira (barra, ícone, texto quente). */
+.ih-modal-acoes-item[data-perigo] svg { color: #6a7f99; }
+.ih-modal-acoes-item[data-perigo]::before { background: #ff5f74; }
+.ih-modal-acoes-item[data-perigo]:hover, .ih-modal-acoes-item[data-perigo]:focus-visible { background: rgba(255, 95, 116, .06); color: #ff8a97; }
+.ih-modal-acoes-item[data-perigo]:hover svg, .ih-modal-acoes-item[data-perigo]:focus-visible svg { color: #ff5f74; }
+.ih-modal-acoes-item[data-confirmando], .ih-modal-acoes-item[data-confirmando] svg { color: #ff5f74; }
+.ih-modal-acoes-sep { display: block; height: 1px; margin: 4px 8px; background: #16303f; }
+@media (prefers-reduced-motion: reduce) { .ih-modal-acoes-menu { animation: none; } }
+/* Retos como o "Usar": a regra global do chassi dá raio/chanfro a botões de
+   ícone — aqui não. E o valor só tem fio em cima e embaixo; os lados são
+   os fios do − e do +, senão a borda dobrava. */
+.ih-modal-acoes-mais.ih-modal-acoes-mais, .ih-modal-acoes-qtd > button.ih-modal-acoes-qtd-b { border-radius: 0 !important; corner-shape: round !important; clip-path: none !important; }
+.ih-modal-acoes-qtd .ih-modal-acoes-valor.ih-modal-acoes-valor { border-left: 0 !important; border-right: 0 !important; border-radius: 0 !important; corner-shape: round !important; clip-path: none !important; box-shadow: none !important; }
+.ih-modal-acoes-qtd > button { border-radius: 0 !important; corner-shape: round !important; clip-path: none !important; }
