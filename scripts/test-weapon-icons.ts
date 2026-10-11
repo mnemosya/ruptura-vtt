@@ -61,5 +61,7 @@ assert.equal(filledCategoryIcon("municao", "Munição 9 mm"), "bullets");
 assert.equal(filledCategoryIcon("acessorio", "Aljava"), "quiver");
 assert.equal(filledCategoryIcon("farmacia", "Poção de cura"), "potion");
 assert.equal(filledCategoryIcon("farmacia", "Antibiótico"), null);
+assert.equal(filledCategoryIcon("vertina"), "potion");
+assert.equal(filledCategoryIcon("Vertinas"), "potion");
 assert.equal(filledCategoryIcon("veneno", "Veneno"), null);
 console.log("✓ Ícones filled: tipos distintos, munições e estrutura dorsal independente");
