@@ -8,6 +8,7 @@ const WEAPONS: Record<string, FilledIconName> = {
   machado_de_mao: "axe", machado_de_guerra: "battleaxe", alabarda: "halberd", lanca: "lance",
   shuriken: "shuriken", arco_curto: "bow", arco_longo: "bow", arco_composto: "bow",
   besta_leve: "crossbow", besta_pesada: "crossbow", revolver: "revolver",
+  pistola_de_bolso: "pocket gun",
 };
 
 const CATEGORIES: Record<string, FilledIconName> = {

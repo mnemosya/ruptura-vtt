@@ -28,6 +28,7 @@ for (const [name, expected] of [
   ["Machado de mão", "axe"], ["Machado de guerra", "battleaxe"],
   ["Alabarda", "halberd"], ["Lança", "lance"],
   ["Modelo especial (Revólver)", "revolver"], ["FL-2 Edgelord (Espada longa)", "longsword"],
+  ["Pistola de bolso", "pocket gun"], ["Modelo especial (Pistola de bolso)", "pocket gun"],
 ] as const) {
   assert.equal(filledWeaponIconForName(name), expected);
   assert.ok(FILLED_ICON_DATA[expected].paths.length);
