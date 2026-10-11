@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import { AmmoIcon } from "./AmmoIcon";
 import { ArmorIcon } from "./ArmorIcon";
+import { DorsalStructureIcon } from "./DorsalStructureIcon";
 import { WeaponIcon } from "./WeaponIcon";
 import { weaponIconForName } from "./weaponIconMapping";
 import { Backpack, Bike, Bomb, Bot, CircuitBoard, Cpu, Cross, Droplet, Footprints, Hand, Headphones, Package, Pill, Puzzle, Syringe,  ShieldHalf, Shirt, Swords, UserRound, Wrench, type LucideProps } from "lucide-react";
@@ -20,7 +21,7 @@ const ICONS: Record<string, ComponentType<LucideProps>> = {
   veiculo: Bike, mobilidade: Bike, modulo_veicular: Wrench,
   traje: Shirt, trajes: Shirt, vertina: Syringe, vertinas: Syringe,
   acesso_rapido: Cross, acessorio_1: Headphones, acessorio_2: Headphones,
-  estrutura_dorsal: Backpack, mochila_equipada: Backpack, locomocao: Bike,
+  estrutura_dorsal: DorsalStructureIcon, mochila_equipada: Backpack, locomocao: Bike,
   cabeca: UserRound, tronco: Shirt, membro_superior: Hand, membro_inferior: Footprints,
 };
 const key = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_");
