@@ -67,7 +67,7 @@
 /* moldura no tamanho do Console (860 × 760), com o cabeçalho canônico */
 .hx-console { position: relative; display: flex; flex-direction: column; width: 860px; height: 760px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--hx-cy) 15%, transparent); background: var(--hx-casco); }
 .hx-console-cab { position: relative; display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; border-bottom: 1px solid color-mix(in srgb, var(--hx-cy) 10%, transparent); }
-.hx-console-cab .hx-tag { font-size: 9px; }
+.hx-console-cab .hx-tag { font-size: 10px; }
 .hx-console-corpo { position: relative; flex: 1; min-height: 0; }
 
 /* animações */
@@ -269,7 +269,7 @@
 .hx-eq-previa {
   position: absolute; top: 50%; left: calc(100% + 12px); z-index: 5;
   display: flex; flex-direction: column; gap: 5px; width: max-content;
-  max-width: 220px; padding: 9px 12px; transform: translateY(-50%);
+  max-width: 300px; padding: 9px 12px; transform: translateY(-50%);
   border: 1px solid color-mix(in srgb, var(--k) 45%, transparent);
   border-left: 2px solid var(--k); background: #081925;
   box-shadow: 0 6px 20px #0006; text-align: left; pointer-events: none;
@@ -282,7 +282,7 @@
   transition: opacity 120ms ease-out 100ms, visibility 0s;
 }
 .hx-eq-previa-nome { font: 600 12px/1.4 var(--hx-display); color: var(--hx-ice); overflow-wrap: anywhere; }
-.hx-eq-previa-stat { font: 10px/1.4 var(--hx-mono); color: var(--k); }
+.hx-eq-previa-stat { font: 10px/1.4 var(--hx-mono); color: var(--k); white-space: nowrap; }
 
 /* ── Cartão equipado: coluna de comando ─────────────────────────────
    As ações moram numa coluna colada à borda direita do cartão, só
@@ -331,3 +331,82 @@ button.hx-mun-valor:hover { border-color: rgba(0, 212, 255, .35); background: rg
 }
 .hx-secao-acao:hover { color: #ff8a1f; }
 .hx-secao-acao:focus-visible { outline: 2px solid #00d4ff; outline-offset: 2px; }
+
+/* ── Cartão disponível: o cartão inteiro é o botão ──────────────────
+   Hover: a borda acende, uma barra na cor do item sobe na esquerda e o
+   prompt "↵ vestir" acende. Ver o item: o olho ao lado do prompt (ou
+   clique direito). Curvas: ease-out 220 ms / desaceleração enfática. */
+.hx-cartao[data-acao] { position: relative; transition: border-color .22s cubic-bezier(.4, 1, .6, 1), background .22s cubic-bezier(.4, 1, .6, 1); }
+.hx-cartao[data-acao]::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--k); transform: scaleY(0); transition: transform .28s cubic-bezier(.05, .7, .1, 1); pointer-events: none; }
+.hx-cartao[data-acao]:hover::after, .hx-cartao[data-acao]:focus-visible::after { transform: scaleY(1); }
+.hx-cartao[data-acao]:focus-visible { outline: 2px solid var(--k); outline-offset: 2px; }
+.hx-cartao-prompt { position: absolute; right: 10px; bottom: 8px; z-index: 2; display: flex; align-items: center; gap: 8px; }
+.hx-cartao-acao { display: inline-flex; align-items: center; gap: 6px; font: 700 10px var(--font-mono), monospace; letter-spacing: 1.6px; text-transform: uppercase; color: #4f6285; transition: color .22s cubic-bezier(.4, 1, .6, 1); }
+.hx-cartao-tecla { display: inline-grid; place-items: center; min-width: 16px; height: 16px; padding: 0 3px; box-sizing: border-box; border: 1px solid #2a3b58; border-bottom-width: 2px; font: 700 10px var(--font-mono), monospace; color: #6a7f99; transition: color .22s, background .22s, border-color .22s; }
+.hx-cartao[data-acao]:hover .hx-cartao-acao, .hx-cartao[data-acao]:focus-visible .hx-cartao-acao { color: var(--k); }
+.hx-cartao[data-acao]:hover .hx-cartao-tecla, .hx-cartao[data-acao]:focus-visible .hx-cartao-tecla { border-color: var(--k); background: var(--k); color: #06121c; }
+.hx-cartao-ver { display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 1px solid transparent; background: transparent; color: #4f6285; cursor: pointer; opacity: 0; transition: opacity .2s, color .18s, border-color .18s; }
+.hx-cartao[data-acao]:hover .hx-cartao-ver, .hx-cartao-ver:focus-visible { opacity: 1; }
+.hx-cartao-ver:hover { color: #e6f6ff; border-color: #2a3b58; }
+@media (prefers-reduced-motion: reduce) { .hx-cartao[data-acao], .hx-cartao[data-acao] * { transition-duration: .01ms !important; } }
+/* Espaço do prompt: só a ÚLTIMA linha (a dos números) divide a altura
+   com ele — reservar no cartão inteiro espremia o título e soltava a tag. */
+.hx-cartao[data-acao] .hx-cartao-stats { padding-right: 96px; }
+
+/* ── Menu do botão direito (item disponível) ────────────────────────
+   Cabeçalho com a identidade do item (fio e ícone na cor dele, nome e
+   resumo), a ação principal como barra larga, o resto em lista, e o
+   destrutivo isolado. Curvas: entrada com desaceleração enfática (M3),
+   hover em ease-out de ~200 ms. */
+.hx-menu { --dec: cubic-bezier(.05, .7, .1, 1); --out: cubic-bezier(.4, 1, .6, 1);
+  position: fixed; z-index: 640; width: 240px; box-sizing: border-box; background: #0a1620; border: 1px solid #1a3646;
+  box-shadow: 0 20px 44px rgba(0, 0, 0, .65); font-family: var(--font-corpo), sans-serif;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); animation: hx-menu-in .26s var(--dec) both; }
+.hx-menu::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--k); }
+@keyframes hx-menu-in { from { opacity: 0; translate: 0 -6px; } to { opacity: 1; translate: 0 0; } }
+.hx-menu-cab { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; align-items: center; padding: 14px 14px 12px; }
+.hx-menu-icone { width: 34px; height: 34px; display: grid; place-items: center; background: color-mix(in srgb, var(--k) 14%, #0a1620); }
+.hx-menu-id { display: grid; gap: 4px; min-width: 0; }
+.hx-menu-nome { font: 700 14px/1.1 var(--font-chakra), sans-serif; text-transform: uppercase; letter-spacing: .05em; color: #e6f6ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hx-menu-meta { display: flex; gap: 8px; font: 500 10px var(--font-mono), monospace; letter-spacing: 1.3px; text-transform: uppercase; color: #4f6285; white-space: nowrap; overflow: hidden; min-width: 0; }
+.hx-menu-meta span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.hx-menu-meta b { color: #ff5f74; font-weight: 700; }
+.hx-menu-acao { display: flex; align-items: center; justify-content: space-between; width: calc(100% - 20px); margin: 0 10px 10px; height: 38px; padding: 0 14px; border: 0; cursor: pointer;
+  background: #00d4ff; color: #06121c; font: 700 11px var(--font-mono), monospace; letter-spacing: 2px; text-transform: uppercase;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%); transition: background .2s var(--out), letter-spacing .25s var(--dec); }
+.hx-menu-acao svg { width: 16px; height: 16px; stroke-width: 2; transition: translate .25s var(--dec); }
+.hx-menu-acao:hover, .hx-menu-acao:focus-visible { background: #45e0ff; letter-spacing: 2.6px; outline: none; }
+.hx-menu-acao:hover svg, .hx-menu-acao:focus-visible svg { translate: 3px 0; }
+.hx-menu-secao { padding: 4px 6px 6px; border-top: 1px solid #122a38; }
+.hx-menu-item { position: relative; display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: center; gap: 10px; width: 100%; padding: 8px; border: 0; background: transparent; cursor: pointer; text-align: left;
+  font: 500 13px var(--font-corpo), sans-serif; color: #9fb2c8; transition: background .2s var(--out), color .2s var(--out); }
+.hx-menu-item svg { width: 15px; height: 15px; stroke-width: 1.8; color: #4f6285; transition: color .2s var(--out), translate .2s var(--out); }
+.hx-menu-item::before { content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: 2px; background: #00d4ff; transform: scaleY(0); transition: transform .26s var(--dec); }
+.hx-menu-item:hover, .hx-menu-item:focus-visible { background: rgba(0, 212, 255, .07); color: #e6f6ff; outline: none; }
+.hx-menu-item:hover::before, .hx-menu-item:focus-visible::before { transform: scaleY(1); }
+.hx-menu-item:hover svg, .hx-menu-item:focus-visible svg { color: #00d4ff; translate: 2px 0; }
+.hx-menu-item[data-perigo] { color: #c9707e; }
+.hx-menu-item[data-perigo] svg, .hx-menu-item[data-perigo]:hover svg { color: #ff5f74; }
+.hx-menu-item[data-perigo]::before { background: #ff5f74; }
+.hx-menu-item[data-perigo]:hover, .hx-menu-item[data-perigo]:focus-visible { background: rgba(255, 95, 116, .09); color: #ffb3bd; }
+.hx-menu-item[data-confirmando] { color: #ff5f74; }
+@media (prefers-reduced-motion: reduce) { .hx-menu, .hx-menu * { animation: none !important; transition-duration: .01ms !important; } }
+
+/* ── Propriedades no detalhe do item ───────────────────────────────
+   Uma linha de termos, como os termos de regra grifados no texto:
+   sublinhado tracejado na cor do item, losango entre eles; a regra
+   abre na dica do VTT ao passar o mouse ou focar. */
+.hx-props { display: grid; gap: 8px; }
+.hx-props-lista { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 8px; line-height: 1.6; }
+.hx-prop { color: var(--k, #00d4ff); font: 600 13px var(--hx-display); text-transform: uppercase; letter-spacing: .1em; cursor: help;
+  border-bottom: 1px dashed color-mix(in srgb, var(--k, #00d4ff) 60%, transparent); transition: color .18s, border-color .18s; }
+.hx-prop:hover, .hx-prop:focus-visible { color: color-mix(in srgb, var(--k, #00d4ff) 70%, #fff); border-bottom-style: solid; outline: none; }
+
+/* Dica da propriedade: nome na cor do item + a regra em texto corrido. */
+.hx-prop-dica { position: fixed; z-index: 660; width: 260px; box-sizing: border-box; padding: 9px 12px; pointer-events: none;
+  background: #0c1c26; box-shadow: inset 0 0 0 1px #1c3645, inset 2px 0 0 var(--k, #00d4ff), 0 14px 30px rgba(0, 0, 0, .55);
+  font: 400 13px/1.45 var(--font-corpo), sans-serif; color: #b9c9dc; animation: hx-prop-dica .18s cubic-bezier(.05, .7, .1, 1) both; }
+.hx-prop-dica[data-acima] { transform: translateY(-100%); }
+.hx-prop-dica b { display: block; margin-bottom: 3px; font: 700 10px var(--font-mono), monospace; letter-spacing: 1.6px; text-transform: uppercase; color: var(--k, #00d4ff); }
+@keyframes hx-prop-dica { from { opacity: 0; translate: 0 4px; } to { opacity: 1; translate: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .hx-prop-dica { animation: none; } }

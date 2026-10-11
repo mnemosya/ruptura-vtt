@@ -41,6 +41,9 @@ function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
     suporteMunicao: !!modelo?.suporteMunicao,
     modosAtaque: modelo?.modosAtaque, modoAtaqueEscolhido: inst.modoAtaqueEscolhido,
     temaCategoria: modelo ? temaDoModelo(modelo) : undefined,
+    duasMaos: modelo?.maos === 2,
+    // "Ocultável" já tem linha própria (Sim/Parcial/Não) — como etiqueta, contradizia o "Não".
+    propriedades: api.propriedadesDoItem(inst.id).filter((t) => !/ocult/i.test(`${t.slug} ${t.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "")}`)).map((t) => ({ nome: t.nome, descricao: t.descricao })),
     categoria,
     categoriaRotulo: modelo?.categoria_label ?? categoria,
     vertente: VERTENTE_DA_CATEGORIA[categoria] ?? "nenhuma",
@@ -113,6 +116,8 @@ export function EquipmentPanel({
             onEquipar={(id, e) => api.equiparNoSlot(id, e)}
             onTirar={(id) => api.desequipar(id)}
             onTrazer={(id) => api.moverItemPara(id, "mochila")}
+            onMover={(id, estado) => api.moverItemPara(id, estado)}
+            onDescartar={(id) => api.descartarItem(id)}
             onModoAtaque={(id, modo) => api.definirModoAtaque?.(id, modo)}
             onDefinirMit={(id, v) => api.definirMit(id, v)}
             onDefinirPd={(id, v) => api.definirPd(id, v)}

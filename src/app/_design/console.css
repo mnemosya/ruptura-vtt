@@ -1268,7 +1268,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-collapse-name svg, .rc-collapse-outcome svg, .rc-collapse-stabilize svg, .rc-collapse-resolve svg { width: 15px; height: 15px; flex-shrink: 0; }
 .rc-collapse-detail { color: var(--rc-text); font: 400 12px var(--font-corpo), sans-serif; }
 .rc-collapse-meter { min-width: 0; }
-.rc-collapse-meter-head { display: flex; justify-content: space-between; gap: 6px; color: var(--rc-text); font: 400 9px var(--font-mono), monospace; text-transform: uppercase; font-variant-numeric: tabular-nums; }
+.rc-collapse-meter-head { display: flex; justify-content: space-between; gap: 6px; color: var(--rc-text); font: 400 10px var(--font-mono), monospace; text-transform: uppercase; font-variant-numeric: tabular-nums; }
 .rc-collapse-track { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
 .rc-collapse-segment { min-width: 0; height: 28px; padding: 8px 0; border: 0; background: transparent; cursor: pointer; }
 .rc-collapse-segment span { display: block; height: 12px; background: var(--rc-line); clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%); }
@@ -1399,7 +1399,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   width: 1px;
   background: rgba(196, 214, 224, 0.4);
   color: rgba(196, 214, 224, 0.62);
-  font: 8px/8px var(--font-mono), ui-monospace, monospace;
+  font: 10px/10px var(--font-mono), ui-monospace, monospace;
   text-indent: 4px;
 }
 .rc-nres-pips--negative {
@@ -2289,7 +2289,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(0, 212, 255, 0.016) 3px 4px), #10222c;
   color: #7ca6bc;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; font-weight: 400; letter-spacing: 0.1em;
+  font-size: 10px; font-weight: 400; letter-spacing: 0.1em;
 }
 .rc-picker-modulo span:last-child { color: #537d94; }
 .rc-picker-corpo { min-height: 0; overflow: auto; }
@@ -2344,7 +2344,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-picker-opcao[aria-pressed="true"] { background-color: #0e2b3a; box-shadow: inset 2px 0 var(--rc-cy); }
 .rc-picker-indice {
   flex: none; width: 18px; color: #5f859b;
-  font-family: var(--font-mono), ui-monospace, monospace; font-size: 9px; font-weight: 400;
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 10px; font-weight: 400;
 }
 .rc-picker-indice[data-atalho="true"] {
   display: grid; place-items: center; height: 18px;
@@ -2553,7 +2553,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    rodapé — nunca competindo com o título da janela. */
 .rc-recorte__dica {
   margin: 0; font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+  font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
   color: var(--jr-tinta-fraca, #4f7185); text-align: center;
 }
 
@@ -3246,7 +3246,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 }
 .rc-termo-dica-cab em {
   font-style: normal; font-family: var(--font-mono), monospace;
-  font-size: 9.5px; letter-spacing: .7px; text-transform: uppercase; color: var(--rc-dim);
+  font-size: 10px; letter-spacing: .7px; text-transform: uppercase; color: var(--rc-dim);
 }
 .rc-termo-dica-txt { font-size: 12px; line-height: 1.4; color: rgba(214, 234, 245, 0.75); }
 .rc-termo-dica-txt--vazio { font-style: italic; color: var(--rc-dim); }
@@ -3353,7 +3353,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   padding: 0 var(--rc-cab-pad);
   border-bottom: 1px solid var(--rc-fio-sutil);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; letter-spacing: 0.06em;
+  font-size: 10px; letter-spacing: 0.06em;
   color: #7796aa;
   white-space: nowrap; overflow: hidden;
 }
@@ -3368,7 +3368,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-skills-card .rc-vazio { padding: 0 10px 12px; }
 /* O card de Colapso tem 114px e padding de 8px. */
 .rc-ncol-card .rc-modcab { --rc-cab-pad: 8px; }
-.rc-ncol-card .rc-modcab-id { font-size: 8px; }
+.rc-ncol-card .rc-modcab-id { font-size: 10px; }
 /* Geometria (sangria, recuo e fio) vem da regra de bloco do card —
    ver `.rc-nric-card > *` mais abaixo. Aqui só a grade e a tinta. */
 /* O RÓTULO abre a linha à esquerda; o VALOR encosta na direita. É
@@ -3379,7 +3379,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   display: grid; grid-template-columns: auto minmax(0, 1fr);
   gap: 2px 12px;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; line-height: 1.6;
+  font-size: 10px; line-height: 1.6;
   color: #66869b;
 }
 .rc-bio-leitura dt, .rc-bio-leitura dd { text-transform: uppercase; }
@@ -3770,7 +3770,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 
 .rc-sensor-index {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 8px; font-weight: 600; color: #587587;
+  font-size: 10px; font-weight: 600; color: #587587;
 }
 .rc-sensor-name {
   overflow: hidden;
@@ -3891,7 +3891,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-vres-canal-cod {
   position: absolute; left: 7px; top: 6px; z-index: 7;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 8px; font-weight: 700; letter-spacing: 0.05em;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
   color: var(--rc-vres-cor); pointer-events: none;
 }
 
@@ -3900,7 +3900,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-vres-delta {
   position: absolute; right: 7px; top: 6px; z-index: 9;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 8px; font-weight: 700;
+  font-size: 10px; font-weight: 700;
   color: var(--rc-vres-cor); pointer-events: none;
   animation: rc-vres-delta 850ms ease;
 }
@@ -3923,7 +3923,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   content: "50%";
   position: absolute; top: 6px; left: 5px;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 8px; font-weight: 600; color: #4d7082;
+  font-size: 10px; font-weight: 600; color: #4d7082;
 }
 /* Zona de déficit: hachurada entre o valor atual e a marca de 50%. O
    componente calcula `left`/`width` porque os dois saem do valor. */
@@ -3936,7 +3936,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-vres-estado {
   position: absolute; right: 7px; bottom: 6px; z-index: 8;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 8px; font-weight: 700; letter-spacing: 0.05em;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
   color: var(--rc-vres-cor); pointer-events: none;
 }
 
@@ -3961,7 +3961,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-vres-pct {
   margin-top: 5px;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 8px; font-weight: 600; line-height: 1; color: #557487;
+  font-size: 10px; font-weight: 600; line-height: 1; color: #557487;
 }
 .rc-vres-linha[data-baixo] .rc-vres-pct { color: var(--rc-vres-cor); }
 
@@ -4379,7 +4379,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-acao-total {
   position: relative; top: 3px; white-space: nowrap;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 8px; font-weight: 600; line-height: 1; color: #617d8f;
+  font-size: 10px; font-weight: 600; line-height: 1; color: #617d8f;
 }
 
 .rc-acao-defesa {
@@ -4461,7 +4461,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 }
 .rc-eq-valor-total {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; font-weight: 600; color: #617f90;
+  font-size: 10px; font-weight: 600; color: #617f90;
 }
 /* Os controles repetem a coluna de −/+ dos Vitais e dos canais de
    ação: 19px, empilhados, separados por fio. */
@@ -4485,7 +4485,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   display: flex; align-items: center; justify-content: center;
   width: auto; min-width: 56px; max-width: 40%; padding: 0 8px;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; font-weight: 700; color: #afc0c8;
+  font-size: 10px; font-weight: 700; color: #afc0c8;
 }
 /* O nome do item preenchido é o texto de maior peso do card. */
 /* 500, não 700: o nome do item é o texto de corpo do card — o que
@@ -4525,7 +4525,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   min-width: 0; display: flex; align-items: center; gap: 6px; padding: 0 14px;
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
   color: #4f8894;
 }
 .rc-arma-cab-id b { font-weight: 700; color: var(--rc-text); letter-spacing: 0.08em; }
@@ -4539,7 +4539,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 }
 .rc-arma-swap {
   padding: 0 12px;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
 }
 .rc-arma-fechar { width: 36px; font-size: 15px; line-height: 1; }
 .rc-arma-swap:hover, .rc-arma-fechar:hover { color: var(--rc-cy); background: rgba(0, 212, 255, 0.06); }
@@ -4554,14 +4554,14 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-arma-sub {
   margin-top: 6px;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
   color: #58798b;
 }
 .rc-arma-tag {
   flex: none; display: inline-flex; align-items: center; height: 23px; padding: 0 8px;
   border: 1px solid rgba(0, 212, 255, 0.22); background: rgba(0, 212, 255, 0.035);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.055em; text-transform: uppercase;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.055em; text-transform: uppercase;
   color: #759daf;
 }
 
@@ -4580,7 +4580,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-arma-celula:last-child { border-right: 0; }
 .rc-arma-rotulo {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
   color: #56798b;
 }
 .rc-arma-valor { font-family: var(--font-corpo), sans-serif; font-size: 16px; font-weight: 600; line-height: 1; color: #c3d0d6; }
@@ -4598,7 +4598,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-arma-acao-titulo { font-family: var(--font-corpo), sans-serif; font-size: 15px; font-weight: 600; line-height: 1; color: inherit; }
 .rc-arma-acao-meta {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.055em; text-transform: uppercase;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.055em; text-transform: uppercase;
   color: #587b8d;
 }
 button.rc-arma-acao { cursor: pointer; }
@@ -4632,7 +4632,7 @@ button.rc-arma-acao:disabled { opacity: 0.45; cursor: not-allowed; }
 }
 .rc-arma-opcao-meta {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.055em; text-transform: uppercase; color: #58798b;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.055em; text-transform: uppercase; color: #58798b;
 }
 .rc-arma-opcao[data-atual] .rc-arma-opcao-nome { color: var(--rc-text); }
 .rc-arma-opcao[data-atual] .rc-arma-opcao-meta { color: var(--rc-cy); }
@@ -4641,7 +4641,7 @@ button.rc-arma-acao:disabled { opacity: 0.45; cursor: not-allowed; }
   border: 0; border-left: 1px solid var(--rc-fio-sutil);
   background: rgba(4, 18, 26, 0.28); color: #638394;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
   cursor: pointer; transition: color 0.14s, background 0.14s;
 }
 .rc-arma-equipar:hover:not(:disabled) { color: var(--rc-cy); background: rgba(0, 212, 255, 0.06); }
@@ -4659,7 +4659,7 @@ button.rc-arma-acao:disabled { opacity: 0.45; cursor: not-allowed; }
   border: 1px solid color-mix(in srgb, var(--rc-danger) 24%, transparent); border-radius: var(--rc-r-sm);
   background: transparent; color: #966473;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.055em; text-transform: uppercase;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.055em; text-transform: uppercase;
   cursor: pointer; transition: color 0.14s, border-color 0.14s, background 0.14s;
 }
 .rc-arma-desequipar:hover {

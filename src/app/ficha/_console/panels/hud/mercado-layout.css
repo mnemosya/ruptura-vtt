@@ -84,7 +84,7 @@
   .hm-cabecalho { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; padding: 16px; }
   .hm-mercado .hm-titulo { font-size: clamp(20px,4.5cqw,26px); }
   .hm-identidade { grid-column: 1; grid-row: 1; }
-  .hm-identidade > .hx-tag { font-size: 9px; letter-spacing: .15em; }
+  .hm-identidade > .hx-tag { font-size: 10px; letter-spacing: .15em; }
   .hm-fechar { grid-column: 2; grid-row: 1; align-self: start; }
   .hm-carteira { margin: 0; grid-column: 1 / -1; grid-row: 2; justify-content: space-between; padding-top: 10px; border-top: 1px solid rgba(0,212,255,.08); }
   .hm-carteira > div { display: flex; gap: 8px; align-items: baseline; }

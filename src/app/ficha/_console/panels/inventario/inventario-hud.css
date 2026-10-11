@@ -159,6 +159,7 @@
   color: var(--k); opacity: 0; transition: opacity .15s;
 }
 .ih-trecho[data-aceso] .ih-trecho-nome { opacity: 1; }
+.ih-trecho[data-lado="fim"] .ih-trecho-nome { left: auto; right: 0; }
 
 /* ── lista ── */
 .ih-lin {

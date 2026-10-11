@@ -4,10 +4,10 @@ export const CORES_CATEGORIAS: Record<string, string> = {
   acessorios: "#5ccbb3",
   armaduras: "#f5a200",
   "armaduras e escudos": "#f5a200",
-  // Armadura pela proteção que dá (`tipo_protecao`): física fica no âmbar
-  // do grupo, energética em azul elétrico, híbrida no violeta entre as duas.
-  "armaduras fisica": "#f5a200",
-  "armaduras energetica": "#3fb4ff",
+  // Armadura pela proteção que dá (`tipo_protecao`): física em vermelho,
+  // energética no âmbar do grupo, híbrida no violeta.
+  "armaduras fisica": "#ff5f74",
+  "armaduras energetica": "#f5a200",
   "armaduras hibrida": "#b07cff",
   escudos: "#7894f4",
   armas: "#e0455f",

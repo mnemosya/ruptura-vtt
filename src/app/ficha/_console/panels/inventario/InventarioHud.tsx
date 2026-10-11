@@ -316,6 +316,8 @@ function Regua({ itens, capacidade, ocupados, livre, casa, filtrando, quente, se
           return (
             <button key={t.it.id} type="button" className="ih-trecho" data-vertente={t.it.vertente}
               data-aceso={aceso || undefined} data-apagado={(filtrando && !casa(t.it)) || undefined}
+              // Da metade da régua em diante o nome abre para a ESQUERDA — à direita ele saía da janela.
+              data-lado={t.s + t.n / 2 > Math.max(ocupados, capacidade) / 2 ? "fim" : undefined}
               style={{ ...estiloCategoria(t.it.temaCategoria ?? t.it.categoria, t.it.vertente), flexGrow: t.n }} title={`${t.it.nome} · ${t.n} esp.`}
               onMouseEnter={() => setQuente(t.it.id)} onMouseLeave={() => setQuente(null)}
               onClick={(e) => abrir(t.it.id, e.currentTarget)}>
@@ -367,10 +369,12 @@ function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, s
             <span className="ih-lin-icone"><ItemCategoryIcon category={it.categoria} weaponName={it.weaponName ?? it.nome} size={20} strokeWidth={1.6} /></span>
             <span className="ih-lin-nome">
               <span className="ih-nome">{separarTipo(it.nome).titulo}</span>
-              {(it.tipo ?? separarTipo(it.nome).tipo) && <span className="ih-tag ih-fraco">{it.tipo ?? separarTipo(it.nome).tipo}</span>}
+              {/* Arma de família ("SW-80 Parallax (Rifle de precisão)") não repete o tipo
+                  aqui; célula de energia já diz o que é no rótulo das cargas. */}
+              {it.categoria !== "arma" && it.tipo !== "Célula" && (it.tipo ?? separarTipo(it.nome).tipo) && <span className="ih-tag ih-fraco">{it.tipo ?? separarTipo(it.nome).tipo}</span>}
               {it.quantidade > 1 && <span className="ih-mono ih-fraco">×{it.quantidade}</span>}
               {(it.cargas || it.municao) && (
-                <span className="ih-tag ih-fraco">{it.cargas ? "cargas" : "mun."} {(it.cargas ?? it.municao)!.join("/")}</span>
+                <span className="ih-tag ih-fraco">{it.cargas ? (it.tipo === "Célula" ? "células" : "cargas") : "munição"} {(it.cargas ?? it.municao)!.join("/")}</span>
               )}
             </span>
             <span className="ih-tag ih-cor">{it.categoriaRotulo}</span>

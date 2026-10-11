@@ -110,7 +110,7 @@ function BarraMana({ mana }: { mana: { atual: number; max: number } }) {
   const max = Math.max(mana.max, 0), cheias = Math.max(0, Math.min(mana.atual, max));
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-      <Tag className="hx-dim" style={{ fontSize: 9 }}>mana</Tag>
+      <Tag className="hx-dim" style={{ fontSize: 10 }}>mana</Tag>
       <span style={{ display: "flex", flex: 1, gap: 3 }}>
         {Array.from({ length: max }, (_, i) => (
           <span key={i} style={{ height: 10, flex: 1, transform: "skewX(-20deg)", background: i < cheias ? CY : "rgba(0,212,255,.08)", boxShadow: i < cheias ? `0 0 8px -2px ${CY}` : undefined }} />
@@ -144,17 +144,17 @@ function Titulo({ m, nivel }: { m: MagiaHud; nivel: number | null | undefined })
       <span style={{ position: "absolute", left: 0, right: 0, top: 0, height: 2, background: `linear-gradient(90deg, ${c}, ${c}00 70%)` }} />
       <div className="hx-display" style={{ fontSize: 22, fontWeight: 900, textTransform: "uppercase", lineHeight: 1, letterSpacing: ".06em" }}>{m.nome}</div>
       <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
-        <Tag style={{ fontSize: 9, letterSpacing: ".16em", color: c }}>{v.nome}</Tag>
+        <Tag style={{ fontSize: 10, letterSpacing: ".16em", color: c }}>{v.nome}</Tag>
         {sep}
-        <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Tag className="hx-dim" style={{ fontSize: 8 }}>nv</Tag><Pips n={m.nivel} c={c} /></span>
-        {m.tipo && <>{sep}<Tag style={{ fontSize: 9, letterSpacing: ".16em", color: corTipo(m.tipo) }}>{m.tipo}</Tag></>}
+        <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Tag className="hx-dim" style={{ fontSize: 10 }}>nv</Tag><Pips n={m.nivel} c={c} /></span>
+        {m.tipo && <>{sep}<Tag style={{ fontSize: 10, letterSpacing: ".16em", color: corTipo(m.tipo) }}>{m.tipo}</Tag></>}
         <span style={{ marginLeft: "auto", display: "flex" }}>
           <span title="seu nível na vertente" style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", background: "rgba(0,212,255,.07)" }}>
-            <Tag className="hx-dim" style={{ fontSize: 8 }}>nv</Tag>
-            <span className="hx-display" style={{ fontSize: 13, fontWeight: 900, color: c }}>{nivel ?? "—"}<span className="hx-dim" style={{ fontSize: 9 }}>/5</span></span>
+            <Tag className="hx-dim" style={{ fontSize: 10 }}>nv</Tag>
+            <span className="hx-display" style={{ fontSize: 13, fontWeight: 900, color: c }}>{nivel ?? "—"}<span className="hx-dim" style={{ fontSize: 10 }}>/5</span></span>
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", background: c + "24" }}>
-            <Tag style={{ fontSize: 8, color: c }}>cd</Tag>
+            <Tag style={{ fontSize: 10, color: c }}>cd</Tag>
             <span className="hx-display" style={{ fontSize: 15, fontWeight: 900 }}>{cd ?? "—"}</span>
           </span>
         </span>
@@ -168,13 +168,13 @@ function Leitura({ m, mana }: { m: MagiaHud; mana: { atual: number; max: number 
   const c = VERT(m.vertente).c;
   const Fato = ({ l, v }: { l: string; v: ReactNode }) => (
     <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, padding: "6px 0", borderBottom: "1px solid rgba(0,212,255,.08)" }}>
-      <Tag className="hx-dim" style={{ fontSize: 9 }}>{l}</Tag><span style={{ fontSize: 14, fontWeight: 600, textAlign: "right" }}>{v}</span>
+      <Tag className="hx-dim" style={{ fontSize: 10 }}>{l}</Tag><span style={{ fontSize: 14, fontWeight: 600, textAlign: "right" }}>{v}</span>
     </div>
   );
   const Dia = ({ n, on, c: cc }: { n: number; on: number; c: string }) => (
     <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
       {Array.from({ length: Math.min(n, 6) }, (_, i) => <i key={i} style={{ width: 7, height: 7, transform: "rotate(45deg)", background: i < on ? cc : "transparent", border: `1px solid ${cc}`, opacity: i < on ? 1 : .55 }} />)}
-      {n > 6 && <span className="hx-mono" style={{ fontSize: 9, color: cc }}>+{n - 6}</span>}
+      {n > 6 && <span className="hx-mono" style={{ fontSize: 10, color: cc }}>+{n - 6}</span>}
     </span>
   );
   return (
@@ -182,21 +182,21 @@ function Leitura({ m, mana }: { m: MagiaHud; mana: { atual: number; max: number 
       <div style={{ display: "flex", alignItems: "stretch", borderLeft: `2px solid ${mc}`, background: CASCO }}>
         <div style={{ flex: 1, padding: "10px 16px 10px 12px" }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-            <Tag className="hx-dim" style={{ fontSize: 8 }}>custo</Tag>
-            {m.mana != null && <span className="hx-mono" style={{ fontSize: 9, color: falta ? mc : "var(--hx-dim)" }}>{falta ? `faltam ${custo - mana.atual}` : `resta ${mana.atual - custo}`}</span>}
+            <Tag className="hx-dim" style={{ fontSize: 10 }}>custo</Tag>
+            {m.mana != null && <span className="hx-mono" style={{ fontSize: 10, color: falta ? mc : "var(--hx-dim)" }}>{falta ? `faltam ${custo - mana.atual}` : `resta ${mana.atual - custo}`}</span>}
           </div>
           <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 10 }}>
             <span className="hx-display" style={{ fontSize: 24, fontWeight: 900, lineHeight: 1, color: mc }}>{m.mana ?? "—"}</span>
-            <span className="hx-mono hx-dim" style={{ fontSize: 9 }}>mana</span>
+            <span className="hx-mono hx-dim" style={{ fontSize: 10 }}>mana</span>
             <span style={{ marginLeft: "auto" }}><Dia n={custo} on={Math.min(custo, mana.atual)} c={mc} /></span>
           </div>
         </div>
         <div style={{ margin: 8, width: 1, transform: "skewX(-20deg)", background: "rgba(0,212,255,.2)" }} />
         <div style={{ flex: 1, padding: "10px 16px" }}>
-          <Tag className="hx-dim" style={{ fontSize: 8, display: "block" }}>ação</Tag>
+          <Tag className="hx-dim" style={{ fontSize: 10, display: "block" }}>ação</Tag>
           <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 10 }}>
             <span className="hx-display hx-amb" style={{ fontSize: 24, fontWeight: 900, lineHeight: 1 }}>{m.pa}</span>
-            <span className="hx-mono hx-dim" style={{ fontSize: 9 }}>PA</span>
+            <span className="hx-mono hx-dim" style={{ fontSize: 10 }}>PA</span>
             <span style={{ marginLeft: "auto" }}><Dia n={m.pa} on={m.pa} c={AMB} /></span>
           </div>
         </div>
@@ -275,29 +275,29 @@ export function MagiasHud(props: PropsMagiasHud) {
                   <span className="hx-ch-hex" style={{ display: "grid", placeItems: "center", width: lado.w, height: lado.h, opacity: on || n ? 1 : .55, transition: "all .2s", background: on ? x.c : x.c + "1f" }}>
                     <Glifo v={x} tam={on ? 24 : 20} traco={1.8} cor={on ? "#031014" : x.c} />
                   </span>
-                  <span className="hx-mono" style={{ fontSize: 9, letterSpacing: ".16em", color: on ? x.c : niveis[x.id] ? "var(--hx-dim)" : "#46647a" }}>{x.s} <span className="hx-dim">{n}</span></span>
+                  <span className="hx-mono" style={{ fontSize: 10, letterSpacing: ".16em", color: on ? x.c : niveis[x.id] ? "var(--hx-dim)" : "#46647a" }}>{x.s} <span className="hx-dim">{n}</span></span>
                 </button>
               );
             })}
             <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", display: "grid", placeItems: "center", width: 118, height: 118, borderRadius: "50%", border: `1px solid ${c}55`, background: `radial-gradient(circle, ${c}22, transparent 70%)`, transition: "all .5s" }}>
               <div style={{ textAlign: "center" }}>
                 <div className="hx-display" style={{ fontSize: 34, fontWeight: 900, lineHeight: 1, color: c }}>{nv ?? "—"}</div>
-                <Tag className="hx-dim" style={{ fontSize: 8 }}>nível / 5</Tag>
+                <Tag className="hx-dim" style={{ fontSize: 10 }}>nível / 5</Tag>
               </div>
             </div>
           </div>
           <div key={vid} className="hx-rise" style={{ marginTop: 16, width: "100%", padding: "0 24px", textAlign: "center" }}>
             <div className="hx-display" style={{ fontSize: 24, fontWeight: 900, textTransform: "uppercase", lineHeight: 1, letterSpacing: ".18em", color: c }}>{v.nome}</div>
-            <Tag className="hx-dim" style={{ marginTop: 8, display: "block", fontSize: 9 }}>{nv ? "vertente aprendida" : nv === 0 ? "vertente não aprendida" : "nível não definido"}</Tag>
+            <Tag className="hx-dim" style={{ marginTop: 8, display: "block", fontSize: 10 }}>{nv ? "vertente aprendida" : nv === 0 ? "vertente não aprendida" : "nível não definido"}</Tag>
             <div className="hx-ch" style={{ marginTop: 16, padding: 1, background: "rgba(0,212,255,.1)" }}>
               <div className="hx-ch" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", background: CASCO }}>
                 {([
                   ["nível", <>{nv ?? "—"}<span className="hx-dim" style={{ fontSize: 12 }}>/5</span></>, <Pips key="p" n={nv ?? 0} c={c} />],
-                  ["cd", cdDe(nv) ?? "—", <span key="s" className="hx-mono hx-dim" style={{ fontSize: 9 }}>{nv != null ? `6 + ${nv}` : "indisponível"}</span>],
-                  ["magias", daVertente.length, <span key="m" className="hx-mono hx-dim" style={{ fontSize: 9 }}>conhecidas</span>],
+                  ["cd", cdDe(nv) ?? "—", <span key="s" className="hx-mono hx-dim" style={{ fontSize: 10 }}>{nv != null ? `6 + ${nv}` : "indisponível"}</span>],
+                  ["magias", daVertente.length, <span key="m" className="hx-mono hx-dim" style={{ fontSize: 10 }}>conhecidas</span>],
                 ] as [string, ReactNode, ReactNode][]).map(([l, val, sub], i) => (
                   <div key={l} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 0", borderLeft: i ? "1px solid rgba(0,212,255,.1)" : undefined }}>
-                    <Tag className="hx-dim" style={{ fontSize: 8 }}>{l}</Tag>
+                    <Tag className="hx-dim" style={{ fontSize: 10 }}>{l}</Tag>
                     <span className="hx-display" style={{ fontSize: 24, fontWeight: 900, lineHeight: 1, color: l === "nível" ? c : GELO }}>{val}</span>
                     <span style={{ display: "flex", height: 10, alignItems: "center" }}>{sub}</span>
                   </div>
@@ -328,12 +328,12 @@ export function MagiasHud(props: PropsMagiasHud) {
                             <span style={{ width: 3, alignSelf: "stretch", background: corTipo(m.tipo) }} />
                             <span style={{ minWidth: 0, flex: 1 }}>
                               <span className="hx-display" style={{ display: "block", fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em" }}>{m.nome}</span>
-                              <span className="hx-mono hx-dim" style={{ display: "block", marginTop: 4, fontSize: 9, textTransform: "uppercase", letterSpacing: ".14em" }}>
+                              <span className="hx-mono hx-dim" style={{ display: "block", marginTop: 4, fontSize: 10, textTransform: "uppercase", letterSpacing: ".14em" }}>
                                 {[m.alcance, m.duracao].filter(Boolean).join(" · ")}{m.tipo && <> · <span style={{ color: corTipo(m.tipo) }}>{m.tipo}</span></>}
                               </span>
                             </span>
-                            <span style={{ textAlign: "right" }}><span className="hx-display hx-cy" style={{ fontSize: 18, fontWeight: 900, lineHeight: 1 }}>{m.mana ?? "—"}</span><Tag className="hx-dim" style={{ display: "block", fontSize: 8 }}>mana</Tag></span>
-                            <span style={{ textAlign: "right" }}><span className="hx-display hx-amb" style={{ fontSize: 18, fontWeight: 900, lineHeight: 1 }}>{m.pa}</span><Tag className="hx-dim" style={{ display: "block", fontSize: 8 }}>pa</Tag></span>
+                            <span style={{ textAlign: "right" }}><span className="hx-display hx-cy" style={{ fontSize: 18, fontWeight: 900, lineHeight: 1 }}>{m.mana ?? "—"}</span><Tag className="hx-dim" style={{ display: "block", fontSize: 10 }}>mana</Tag></span>
+                            <span style={{ textAlign: "right" }}><span className="hx-display hx-amb" style={{ fontSize: 18, fontWeight: 900, lineHeight: 1 }}>{m.pa}</span><Tag className="hx-dim" style={{ display: "block", fontSize: 10 }}>pa</Tag></span>
                           </span>
                         </button>
                       </div>
@@ -381,7 +381,7 @@ export function MagiasHud(props: PropsMagiasHud) {
                         <option value="">sem fusão</option>
                         {outras.map((o) => <option key={o.slug} value={o.slug}>{o.nome} ({VERT(o.vertente).nome})</option>)}
                       </select>
-                      <span className="hx-mono hx-dim" style={{ fontSize: 9 }}>+1 sobrecarga</span>
+                      <span className="hx-mono hx-dim" style={{ fontSize: 10 }}>+1 sobrecarga</span>
                     </div>
                   )}
                   <div style={{ display: "flex", gap: 8 }}>

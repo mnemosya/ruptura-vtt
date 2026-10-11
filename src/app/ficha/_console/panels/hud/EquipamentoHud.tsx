@@ -23,9 +23,10 @@ import { ItemCategoryIcon } from "../../../../_design/itemIcons";
  */
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { BODY_PATHS, type BodyRegiao } from "../../bodySilhouette";
 import { oxanium } from "../../../../_design/oxanium";
-import { Crosshair, Hand, RotateCcw, X } from "lucide-react";
+import { ArrowLeftRight, ArrowRight, Crosshair, Eye, Hand, Package, RotateCcw, Trash2, Warehouse, X, Zap } from "lucide-react";
 import { useDicaPortal } from "../../../../mesas/[campaignId]/vtt/_painel/ui/DicaPortal";
 import { ResourceValueCard } from "../ResourceValueCard";
 import "./hud-base.css";
@@ -52,6 +53,10 @@ export interface PecaHud {
   raridade?: string | null;
   onde: "equipado" | "mochila" | "abrigo";
   espacos: number;
+  /** Propriedades do item (Perfuração, Precisão…), com a regra de cada uma. */
+  propriedades?: { nome: string; descricao: string | null }[];
+  /** Arma de duas mãos — não oferece "equipar na outra mão". */
+  duasMaos?: boolean;
   /** "fisica" | "energetica" | "hibrida" — armaduras e escudos. */
   protecao?: string | null;
   mit?: [number, number] | null;
@@ -75,6 +80,8 @@ export interface PropsEquipamentoHud {
   onEquipar: (id: string, e: EncaixeHud) => void;
   onTirar: (id: string) => void;
   onTrazer: (id: string) => void;
+  onMover?: (id: string, estado: "acesso_rapido" | "abrigo" | "mochila") => void;
+  onDescartar?: (id: string) => void;
   onDefinirMit: (id: string, valor: number) => void;
   onDefinirPd: (id: string, valor: number) => void;
   onDefinirMunicao?: (id: string, valor: number) => void;
@@ -87,9 +94,9 @@ const CY = "#00d4ff", AMB = "#ff8a1f", CASCO = "#081925", PERIGO = "#ff5f74", OK
 const RAR: Record<string, string> = { comum: "#7f95b3", incomum: OK, raro: "#8b5cf6" };
 const corRar = (r?: string | null) => (r ? RAR[r.toLowerCase()] ?? "#7f95b3" : "#7f95b3");
 const PROT: Record<string, { c: string; s: string; nome: string }> = {
-  /* Físico = vermelho (cinética), energético = laranja (energética). */
+  /* Físico e energético em vermelho; híbrido em roxo. */
   fisica: { c: "#e0455f", s: "FIS", nome: "Físico" },
-  energetica: { c: "#f07a1f", s: "ENE", nome: "Energético" },
+  energetica: { c: "#e0455f", s: "ENE", nome: "Energético" },
   hibrida: { c: "#8b5cf6", s: "HIB", nome: "Híbrido" },
 };
 const prot = (p?: string | null) => (p ? PROT[p.toLowerCase()] ?? null : null);
@@ -199,7 +206,7 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
             </div>
             <svg style={{ position: "absolute", left: 0, top: TOPO, pointerEvents: "none", overflow: "visible" }} width={PALCO} height={FH}>
               {FIOS.map((w) => {
-                const on = sel === w.e || hover === w.e, bx = FX + w.pt[0] * FS, by = w.pt[1] * FS;
+                const on = mesmoAlvo(encaixes, sel, w.e) || mesmoAlvo(encaixes, hover, w.e), bx = FX + w.pt[0] * FS, by = w.pt[1] * FS;
                 /* O fio aceso segue a cor do item do encaixe (ciano quando vazio). */
                 const ocupante = encaixes[w.e], cf = on && ocupante ? corDe(ocupante) : CY;
                 const sx = w.lado === "e" ? S : PALCO - S, sy = w.y * FH + S / 2, ex = w.lado === "e" ? sx + 22 : sx - 22;
@@ -216,13 +223,13 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
               return (
                 <div key={w.e} className="hx-eq-slot" data-lado={w.lado} style={{ ["--eq-slot-delay" as string]: `${160 + (w.pt[1] / 613) * 1050}ms`, ["--eq-item-cor" as string]: p ? corDe(p) : CY, position: "absolute", top: TOPO + w.y * FH, [w.lado === "e" ? "left" : "right"]: 0, display: "flex", flexDirection: "column", alignItems: w.lado === "e" ? "flex-start" : "flex-end", gap: 4 }}
                   onMouseEnter={() => setHover(w.e)} onMouseLeave={() => setHover(null)}>
-                  <Encaixe peca={p} encaixe={w.e} lado={w.lado} ativo={sel === w.e} quente={hover === w.e} onClick={() => abrir(sel === w.e ? null : w.e)} />
-                  <Tag className="hx-dim" style={{ fontSize: 8, opacity: .7 }}>{ROTULO[w.e]}</Tag>
+                  <Encaixe peca={p} encaixe={w.e} lado={w.lado} ativo={sel === w.e} quente={mesmoAlvo(encaixes, hover, w.e)} onClick={() => abrir(sel === w.e ? null : w.e)} />
+                  <Tag className="hx-dim" style={{ fontSize: 10, opacity: .7 }}>{ROTULO[w.e]}</Tag>
                 </div>
               );
             })}
           </div>
-          <Tag className="hx-dim hx-eq-instrucao" style={{ position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)", fontSize: 9, opacity: .6, visibility: sel ? "hidden" : "visible", pointerEvents: "none" }}>selecione um encaixe</Tag>
+          <Tag className="hx-dim hx-eq-instrucao" style={{ position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)", fontSize: 10, opacity: .6, visibility: sel ? "hidden" : "visible", pointerEvents: "none" }}>selecione um encaixe</Tag>
         </div>
 
         <aside aria-hidden={!sel} style={{ position: "relative", flexShrink: 0, overflow: "hidden", width: aberturaGaveta * GAVETA, background: "rgba(12,31,43,.35)", backdropFilter: "blur(2px)" }}>
@@ -247,6 +254,40 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
   );
 }
 
+/**
+ * Termo de propriedade. A dica é PRÓPRIA (não a etiqueta curta do VTT):
+ * nome na cor do item e a regra inteira em texto corrido, numa caixa com
+ * espinha na cor do item — a regra é frase, não rótulo.
+ */
+function Propriedade({ nome, descricao, cor }: { nome: string; descricao: string | null; cor: string }) {
+  const [pos, setPos] = useState<{ x: number; y: number; acima: boolean } | null>(null);
+  const abrir = (el: HTMLElement) => {
+    const r = el.getBoundingClientRect();
+    const acima = r.bottom + 90 > window.innerHeight;
+    setPos({ x: Math.min(Math.max(r.left, 8), window.innerWidth - 268), y: acima ? r.top - 8 : r.bottom + 8, acima });
+  };
+  return (
+    <>
+      <span tabIndex={0} className="hx-prop" aria-describedby={pos ? `prop-${nome}` : undefined}
+        onMouseEnter={(e) => abrir(e.currentTarget)} onMouseLeave={() => setPos(null)}
+        onFocus={(e) => abrir(e.currentTarget)} onBlur={() => setPos(null)}>{nome}</span>
+      {pos && descricao && typeof document !== "undefined" && createPortal(
+        <span id={`prop-${nome}`} role="tooltip" className="hx-prop-dica" data-acima={pos.acima || undefined}
+          style={{ left: pos.x, top: pos.y, ["--k" as string]: cor }}>
+          <b>{nome}</b>{descricao}
+        </span>,
+        document.body,
+      )}
+    </>
+  );
+}
+
+/** Mais de um tipo de dano: "cortante ou perfurante" → "cortante/perfurante" (a prévia não quebra linha). */
+function abreviarDano(tipo: string): string {
+  const partes = tipo.split(/\s+ou\s+|\s*\/\s*|\s*,\s*/).filter(Boolean);
+  return partes.length < 2 ? tipo : partes.join("/");
+}
+
 /** "SW-80 Parallax (Rifle de precisão)" → título + tipo, como na lista do inventário. */
 function separarTipo(nome: string): { titulo: string; tipo: string | null } {
   const m = /^(.+?)\s*\(([^)]+)\)\s*$/.exec(nome);
@@ -257,7 +298,7 @@ function Encaixe({ peca, encaixe, ativo, quente, onClick, lado = "e" }: { peca: 
   const previaId = useId();
   const cor = peca ? corDe(peca) : CY;
   const resumo = peca?.categoria === "arma" && peca.dano
-    ? `Dano ${peca.dano.dado}${peca.dano.tipo ? ` · ${peca.dano.tipo}` : ""}`
+    ? `Dano ${peca.dano.dado}${peca.dano.tipo ? ` · ${abreviarDano(peca.dano.tipo)}` : ""}`
     : peca?.categoria === "armadura" && peca.mit
       ? `MIT ${peca.mit[0]}/${peca.mit[1]}`
       : peca?.categoria === "escudo" && peca.pd
@@ -306,19 +347,33 @@ function Corpo({ encaixes, sel, hover, altura, onSel, onHover }: {
       </defs>
       {BODY_PATHS.map((path, i) => {
         const e = ENCAIXE_DO_PATH[path.regiao], p = encaixes[e];
-        const pr = p && ehArmadura(e) ? p : null, c = pr ? corDe(pr) : CY;
-        const f = pr?.mit ? .18 + .4 * (pr.mit[0] / Math.max(pr.mit[1], 1)) : pr ? .3 : 0;
-        const on = sel === e || hover === e;
+        // Armadura vestida E arma empunhada preenchem a região (a mão, no caso da arma).
+        const pr = p && (ehArmadura(e) || ehArma(e)) ? p : null, c = pr ? corDe(pr) : CY;
+        const f = pr?.mit ? .18 + .4 * (pr.mit[0] / Math.max(pr.mit[1], 1)) : pr ? .5 : 0;
+        const on = mesmoAlvo(encaixes, sel, e) || mesmoAlvo(encaixes, hover, e);
         return (
           <g key={i} data-r style={{ cursor: "pointer" }} onClick={() => onSel(path.regiao)} onMouseEnter={() => onHover(path.regiao)} onMouseLeave={() => onHover(null)}>
             <path d={path.d} fill={path.fill} />
-            {pr && <path d={path.d} fill={c} fillOpacity={f} />}
+            {/* Coberta: véu translúcido + listras diagonais finas e juntas
+                (4 px) na cor da armadura, mais fortes quanto mais MIT resta;
+                contorno sólido. A anatomia segue visível. */}
+            {pr && (
+              <>
+                <defs>
+                  <pattern id={`${recorteId}-placa-${i}`} width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                    <rect width="4" height="4" fill={c} fillOpacity={f * .5} />
+                    <line x1="0.5" y1="0" x2="0.5" y2="4" stroke={c} strokeOpacity={Math.min(.75, f + .2)} strokeWidth="1" />
+                  </pattern>
+                </defs>
+                <path d={path.d} fill={`url(#${recorteId}-placa-${i})`} />
+              </>
+            )}
             {/* Hover: a cor da PRÓPRIA região um pouco mais forte, chapada —
                 sem degradê nem ciano por cima da armadura (virava rosa). */}
             {on && <path d={path.d} fill={c} fillOpacity={pr ? .14 : .08} />}
             <path d={path.d} fill="none" clipPath={`url(#${recorteId}-regiao-${i})`}
-              stroke={c} strokeOpacity={on ? .75 : pr ? .35 : .1} strokeWidth={on ? 1.6 : 1.2}
-              strokeDasharray="3 3" style={{ transition: "stroke-opacity .2s, stroke-width .2s", mixBlendMode: "screen" }} />
+              stroke={c} strokeOpacity={on ? .9 : pr ? .8 : .1} strokeWidth={pr ? (on ? 2.4 : 2) : on ? 1.6 : 1.2}
+              strokeDasharray={pr ? undefined : "3 3"} style={{ transition: "stroke-opacity .2s, stroke-width .2s", mixBlendMode: "screen" }} />
           </g>
         );
       })}
@@ -329,13 +384,29 @@ function Corpo({ encaixes, sel, hover, altura, onSel, onHover }: {
   );
 }
 
+/**
+ * Mesmo encaixe — ou o PAR de mãos de uma arma de duas mãos (o mesmo item
+ * em Primária e Secundária): o hover/seleção de um acende os dois.
+ */
+function mesmoAlvo(encaixes: Record<EncaixeHud, PecaHud | null>, a: EncaixeHud | null, b: EncaixeHud): boolean {
+  if (a === b) return true;
+  if (!a || !ehArma(a) || !ehArma(b)) return false;
+  const pa = encaixes[a], pb = encaixes[b];
+  return !!pa && !!pb && pa.id === pb.id;
+}
+
 /* ── gaveta ── */
-const ProtTag = ({ p }: { p?: string | null }) => { const x = prot(p); return x ? <span className="hx-mono" style={{ fontSize: 9, letterSpacing: ".16em", color: x.c }}>{x.s}</span> : null; };
-const Cobertura = ({ p }: { p: PecaHud }) => (
-  <span title={(p.regioes ?? []).join(", ")} style={{ display: "inline-flex", gap: 2 }}>
-    {REGIOES.map((r) => <span key={r.id} style={{ width: 9, height: 7, transform: "skewX(-20deg)", background: p.regioes?.includes(r.id) ? corDe(p) : "rgba(0,212,255,.08)" }} />)}
-  </span>
-);
+/* `cor`: a do ITEM — o tipo de proteção acompanha a cor da peça (que já
+   varia com física/energética/híbrida), não uma paleta paralela. */
+const ProtTag = ({ p, cor }: { p?: string | null; cor?: string }) => { const x = prot(p); return x ? <span className="hx-mono" style={{ fontSize: 10, letterSpacing: ".16em", color: cor ?? x.c }}>{x.s}</span> : null; };
+/* Cobertura por extenso — só quando a armadura protege MAIS de uma
+   região; com uma só, o encaixe onde ela está já diz qual é. Os pips de
+   antes, colados no "2/2" da MIT, liam como contagem. */
+const Cobertura = ({ p }: { p: PecaHud }) => {
+  const nomes = REGIOES.filter((r) => p.regioes?.includes(r.id)).map((r) => r.nome);
+  if (nomes.length <= 1) return null;
+  return <Tag className="hx-dim" style={{ display: "block", fontSize: 10, lineHeight: 1.4 }}>{nomes.length === REGIOES.length ? "Corpo inteiro" : nomes.join(", ")}</Tag>;
+};
 const Btn = ({ children, onClick, ambar }: { children: ReactNode; onClick: () => void; ambar?: boolean }) => (
   <button type="button" className="hx-btn-acao" data-ambar={ambar || undefined} onClick={(ev) => { ev.stopPropagation(); onClick(); }}>{children}</button>
 );
@@ -353,27 +424,50 @@ function Secao({ titulo, acao, children }: { titulo: string; acao?: ReactNode; c
   );
 }
 const Vazio = ({ children }: { children: ReactNode }) => (
-  <div style={{ display: "grid", placeItems: "center", minHeight: 52, padding: "8px 12px", border: "1px dashed rgba(0,212,255,.2)", textAlign: "center" }}><Tag className="hx-dim" style={{ fontSize: 9 }}>{children}</Tag></div>
+  <div style={{ display: "grid", placeItems: "center", minHeight: 52, padding: "8px 12px", border: "1px dashed rgba(0,212,255,.2)", textAlign: "center" }}><Tag className="hx-dim" style={{ fontSize: 10 }}>{children}</Tag></div>
 );
 
-function Cartao({ p, acoes, comando, apagado, marca, pe, onVer, ativo }: { p: PecaHud; acoes?: ReactNode; comando?: ReactNode; apagado?: boolean; marca?: string; pe?: ReactNode; onVer: () => void; ativo?: boolean }) {
+/**
+ * `acao`: o cartão INTEIRO é o botão (itens disponíveis). Clicar faz a
+ * ação; o prompt "↵ vestir" no canto acende no hover. Ver o item fica no
+ * olho ao lado do prompt (ou no clique direito).
+ */
+function Cartao({ p, acoes, comando, apagado, marca, pe, onVer, ativo, ganho, acao, onMenu }: { p: PecaHud; acoes?: ReactNode; comando?: ReactNode; apagado?: boolean; marca?: string; pe?: ReactNode; onVer: () => void; ativo?: boolean; ganho?: number; acao?: { rotulo: string; onClick: () => void; ambar?: boolean }; onMenu?: (x: number, y: number) => void }) {
   return (
-    <div onClick={onVer} className={`hx-ch hx-cartao ${ativo ? "hx-edge" : ""}`} style={{ ["--k" as string]: corDe(p), cursor: "pointer", opacity: apagado ? .6 : 1 }}>
+    <div onClick={acao ? acao.onClick : onVer} onContextMenu={acao ? (ev) => { ev.preventDefault(); if (onMenu) onMenu(ev.clientX, ev.clientY); else onVer(); } : undefined}
+      role={acao ? "button" : undefined} tabIndex={acao ? 0 : undefined} aria-label={acao ? `${acao.rotulo} ${p.nome}` : undefined}
+      onKeyDown={acao ? (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); acao.onClick(); } } : undefined}
+      data-acao={acao ? "true" : undefined}
+      className={`hx-ch hx-cartao ${ativo ? "hx-edge" : ""}`} style={{ ["--k" as string]: acao?.ambar ? AMB : corDe(p), cursor: "pointer", opacity: apagado ? .6 : 1 }}>
+      {acao && (
+        <span className="hx-cartao-prompt">
+          <button type="button" className="hx-cartao-ver" aria-label={`Ver ${p.nome}`} title="Ver item"
+            onClick={(ev) => { ev.stopPropagation(); onVer(); }}><Eye size={14} strokeWidth={1.8} aria-hidden="true" /></button>
+          <span className="hx-cartao-acao"><span className="hx-cartao-tecla" aria-hidden="true">↵</span>{acao.rotulo}</span>
+        </span>
+      )}
       <div className="hx-ch hx-cartao-miolo" style={{ position: "relative" }}>
-        {marca && <span className="hx-mono" style={{ position: "absolute", right: 12, top: 0, padding: "1px 6px", background: "rgba(255,138,31,.15)", fontSize: 8, textTransform: "uppercase", letterSpacing: ".16em", color: AMB }}>{marca}</span>}
+        {marca && <span className="hx-mono" style={{ position: "absolute", right: 12, top: 0, padding: "1px 6px", background: "rgba(255,138,31,.15)", fontSize: 10, textTransform: "uppercase", letterSpacing: ".16em", color: AMB }}>{marca}</span>}
         <div style={comando ? { display: "grid", gridTemplateColumns: "minmax(0,1fr) 46px" } : undefined}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px" }}>
           <div style={{ minWidth: 0, flex: 1, paddingTop: 2 }}>
-            <div className="hx-display" style={{ fontSize: 13, fontWeight: 700, textTransform: "uppercase", lineHeight: 1.15, letterSpacing: ".04em" }}>{separarTipo(p.nome).titulo}</div>
-            {separarTipo(p.nome).tipo && <Tag className="hx-dim" style={{ display: "block", marginTop: 3, fontSize: 9, opacity: .75 }}>{separarTipo(p.nome).tipo}</Tag>}
-            <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 10px" }}>
-              <ProtTag p={p.protecao} />
-              {p.regioes && p.regioes.length > 0 && <Cobertura p={p} />}
-              {p.mit && <span className="hx-display" style={{ fontSize: 12, fontWeight: 700, opacity: .75 }}>{p.mit[0]}<span className="hx-dim">/{p.mit[1]}</span></span>}
-              {p.pd && <span className="hx-display" style={{ fontSize: 12, fontWeight: 700, opacity: .75 }}>PD {p.pd[0]}<span className="hx-dim">/{p.pd[1]}</span></span>}
-              {p.dano && <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6 }}><span className="hx-display" style={{ fontSize: 15, fontWeight: 900, color: PERIGO }}>{p.dano.dado}</span>{p.dano.tipo && <Tag style={{ fontSize: 8, color: PERIGO, opacity: .7 }}>{p.dano.tipo}</Tag>}</span>}
-              {!p.protecao && !p.dano && <Tag className="hx-dim" style={{ fontSize: 8 }}>{p.categoriaRotulo}</Tag>}
+            {/* O tipo de proteção (FIS/HIB/ENE) mora no canto direito da linha do nome. */}
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
+              <div className="hx-display" style={{ fontSize: 13, fontWeight: 700, textTransform: "uppercase", lineHeight: 1.15, letterSpacing: ".04em" }}>{separarTipo(p.nome).titulo}</div>
+              <ProtTag p={p.protecao} cor={corDe(p)} />
             </div>
+            {separarTipo(p.nome).tipo && <Tag className="hx-dim" style={{ display: "block", marginTop: 3, fontSize: 10, opacity: .75 }}>{separarTipo(p.nome).tipo}</Tag>}
+            {/* Cobertura em linha própria: na linha dos números ela quebrava e empurrava a MIT. */}
+            {p.regioes && p.regioes.length > 1 && <div style={{ marginTop: 3 }}><Cobertura p={p} /></div>}
+            {/* Com o pé (MIT/PD em barra), a linha de números repetiria o mesmo valor: some. */}
+            {!(pe && (p.mit || p.pd) && !p.dano) && <div className="hx-cartao-stats" style={{ marginTop: 6, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 10px" }}>
+              {p.mit && <span className="hx-display" style={{ fontSize: 12, fontWeight: 700, opacity: .75 }}>{p.mit[0]}<span className="hx-dim">/{p.mit[1]}</span></span>}
+              {/* Quanto de MIT a troca ganha — junto do número que ela muda. */}
+              {ganho != null && ganho > 0 && <span className="hx-display" style={{ fontSize: 12, fontWeight: 900, color: OK }}>▲{ganho}</span>}
+              {p.pd && <span className="hx-display" style={{ fontSize: 12, fontWeight: 700, opacity: .75 }}>PD {p.pd[0]}<span className="hx-dim">/{p.pd[1]}</span></span>}
+              {p.dano && <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6 }}><span className="hx-display" style={{ fontSize: 15, fontWeight: 900, color: PERIGO }}>{p.dano.dado}</span>{p.dano.tipo && <Tag style={{ fontSize: 10, color: PERIGO, opacity: .7 }}>{p.dano.tipo}</Tag>}</span>}
+              {!p.protecao && !p.dano && <Tag className="hx-dim" style={{ fontSize: 10 }}>{p.categoriaRotulo}</Tag>}
+            </div>}
           </div>
           {acoes && <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>{acoes}</div>}
         </div>
@@ -417,7 +511,7 @@ function Municao({ atual, max, onMudar }: { atual: number; max: number; onMudar?
   );
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <Tag className="hx-dim" style={{ fontSize: 8 }}>mun.</Tag>
+      <Tag className="hx-dim" style={{ fontSize: 10 }}>mun.</Tag>
       <span className="hx-mun-barra" aria-hidden="true">
         <i style={{ width: `${max > 0 ? Math.min(100, (atual / max) * 100) : 0}%` }} />
         {marcas.map((m) => <b key={m} style={{ left: `${(m / max) * 100}%` }} />)}
@@ -438,7 +532,7 @@ function Passo({ rotulo, atual, max, cor, onMudar }: { rotulo: string; atual: nu
   );
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <Tag className="hx-dim" style={{ fontSize: 8 }}>{rotulo}</Tag>
+      <Tag className="hx-dim" style={{ fontSize: 10 }}>{rotulo}</Tag>
       {onMudar && b(-1, atual <= 0)}
       <span style={{ display: "flex", flex: 1, gap: 3, padding: "0 2px" }}>
         {Array.from({ length: Math.max(max, 1) }, (_, i) => <span key={i} style={{ height: 8, flex: 1, transform: "skewX(-20deg)", transition: "background .15s", background: i < atual ? cor : "rgba(0,212,255,.07)", boxShadow: i < atual ? `0 0 8px -1px ${cor}` : undefined }} />)}
@@ -453,7 +547,7 @@ function Cabeca({ chapeu, titulo, onFechar }: { chapeu: string; titulo: string; 
   return (
     <div style={{ position: "relative", flexShrink: 0, paddingTop: 16 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px 0 16px" }}>
-        <Tag style={{ fontSize: 9, color: "rgba(0,212,255,.6)" }}>{chapeu}</Tag>
+        <Tag style={{ fontSize: 10, color: "rgba(0,212,255,.6)" }}>{chapeu}</Tag>
         <button type="button" onClick={onFechar} aria-label="Fechar" className="hx-ch-hex hx-fechar"><Svg d="M6 6l12 12M18 6 6 18" tam={14} cor="currentColor" traco={2} /></button>
       </div>
       <div style={{ marginTop: 4, display: "flex", alignItems: "center" }}>
@@ -470,10 +564,14 @@ function Gaveta(props: PropsEquipamentoHud & { sel: EncaixeHud; onFechar: () => 
   const { sel: e, encaixes, somenteLeitura: leitura, onVer } = props;
   const atual = encaixes[e];
   const cands = props.candidatos(e).sort((a, b) => (a.onde === "abrigo" ? 1 : 0) - (b.onde === "abrigo" ? 1 : 0) || a.nome.localeCompare(b.nome, "pt-BR"));
+  const [menu, setMenu] = useState<{ p: PecaHud; x: number; y: number } | null>(null);
   const corpo = (c: ReactNode) => <div className="hx-boot hx-semsb" style={{ minHeight: 0, flex: 1, overflowY: "auto", padding: "0 16px 24px" }}>{c}</div>;
   const chapeu = ehArmadura(e) ? "proteção" : ehArma(e) ? "mãos" : e === "traje" ? "vestuário" : e === "suporte_municao" ? "munição" : "acesso rápido";
 
-  const comandoDoAtual = (p: PecaHud) => leitura ? undefined : (
+  /* Sem nenhuma ação (armadura, traje…), a coluna não existe: vazia,
+     ela sobrava como um retângulo morto no canto do cartão. */
+  const temComando = (p: PecaHud) => !!((ehArma(e) && (p.dano || p.modosAtaque?.length)) || p.municao || p.suporteMunicao || (!ehArma(e) && !ehArmadura(e) && p.usavel));
+  const comandoDoAtual = (p: PecaHud) => leitura || !temComando(p) ? undefined : (
     <>
       {ehArma(e) && (p.dano || p.modosAtaque?.length) && <Comando primario rotulo="Atacar" icone={<Crosshair size={17} strokeWidth={1.8} />} onClick={() => props.onAtacar(e)} />}
       {(p.municao || p.suporteMunicao) && <Comando rotulo="Recarregar" icone={<RotateCcw size={17} strokeWidth={1.8} />} onClick={() => props.onRecarregar(p.id)} />}
@@ -506,7 +604,7 @@ function Gaveta(props: PropsEquipamentoHud & { sel: EncaixeHud; onFechar: () => 
             <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 16, padding: "8px 4px" }}>
               <span className="hx-display" style={{ fontSize: 46, fontWeight: 900, lineHeight: .8, color: hc, textShadow: `0 0 24px ${hc}66` }}>{base}</span>
               <div style={{ lineHeight: 1.2 }}>
-                <Tag className="hx-dim" style={{ display: "block", fontSize: 9 }}>mitigação</Tag>
+                <Tag className="hx-dim" style={{ display: "block", fontSize: 10 }}>mitigação</Tag>
                 <span className="hx-display" style={{ marginTop: 4, display: "block", fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".14em", color: hc }}>{atual ? pr?.nome ?? "—" : "desprotegido"}</span>
               </div>
             </div>
@@ -528,14 +626,97 @@ function Gaveta(props: PropsEquipamentoHud & { sel: EncaixeHud; onFechar: () => 
             {cands.length ? cands.map((p) => {
               const ab = p.onde === "abrigo";
               const ganho = ehArmadura(e) && p.mit ? p.mit[0] - (atual?.mit?.[0] ?? 0) : 0;
-              return <Cartao key={p.id} p={p} apagado={ab} marca={ab ? "abrigo" : undefined} onVer={() => onVer(p)}
-                acoes={<>{ganho > 0 && <span className="hx-display" style={{ textAlign: "center", fontSize: 12, fontWeight: 900, color: OK }}>▲{ganho}</span>}
-                  <Btn ambar={ab} onClick={() => (ab ? props.onTrazer(p.id) : props.onEquipar(p.id, e))}>{ab ? "trazer" : ehArmadura(e) ? "vestir" : "equipar"}</Btn></>} />;
+              return <Cartao key={p.id} p={p} apagado={ab} marca={ab ? "abrigo" : undefined} onVer={() => onVer(p)} ganho={ganho}
+                acao={{ rotulo: ab ? "trazer" : ehArmadura(e) ? "vestir" : "equipar", ambar: ab, onClick: () => (ab ? props.onTrazer(p.id) : props.onEquipar(p.id, e)) }}
+                onMenu={(x, y) => setMenu({ p, x, y })} />;
             }) : <Vazio>nenhum item compatível na mochila ou no abrigo</Vazio>}
           </Secao>
         )}
       </>)}
+      {menu && (
+        <MenuDoItem
+          p={menu.p} x={menu.x} y={menu.y} encaixe={e}
+          onFechar={() => setMenu(null)}
+          onEquipar={(enc) => props.onEquipar(menu.p.id, enc)}
+          onTrazer={() => props.onTrazer(menu.p.id)}
+          onVer={() => onVer(menu.p)}
+          onMover={props.onMover ? (estado) => props.onMover?.(menu.p.id, estado) : undefined}
+          onDescartar={props.onDescartar ? () => props.onDescartar?.(menu.p.id) : undefined}
+        />
+      )}
     </>
+  );
+}
+
+/**
+ * Menu do botão direito de um item DISPONÍVEL. Cabeçalho com o item e
+ * de onde ele vem; as duas ações mais usadas (equipar e ver) como blocos;
+ * o resto em lista; "Descartar" isolado embaixo, com segundo clique de
+ * confirmação (não dá para desfazer pela ficha). Só aparece o que faz
+ * sentido para aquele item.
+ */
+function MenuDoItem({ p, x, y, encaixe, onFechar, onEquipar, onTrazer, onVer, onMover, onDescartar }: {
+  p: PecaHud; x: number; y: number; encaixe: EncaixeHud;
+  onFechar: () => void; onEquipar: (e: EncaixeHud) => void; onTrazer: () => void; onVer: () => void;
+  onMover?: (estado: "acesso_rapido" | "abrigo" | "mochila") => void; onDescartar?: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ left: x, top: y });
+  const [confirmando, setConfirmando] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (el) setPos({ left: Math.min(x, window.innerWidth - el.offsetWidth - 8), top: Math.min(y, window.innerHeight - el.offsetHeight - 8) });
+    el?.querySelector<HTMLButtonElement>("button")?.focus({ preventScroll: true });
+    const fora = (ev: PointerEvent) => { if (!ref.current?.contains(ev.target as Node)) onFechar(); };
+    const tecla = (ev: KeyboardEvent) => { if (ev.key === "Escape") { ev.stopPropagation(); onFechar(); } };
+    window.addEventListener("pointerdown", fora);
+    window.addEventListener("keydown", tecla, true);
+    return () => { window.removeEventListener("pointerdown", fora); window.removeEventListener("keydown", tecla, true); };
+  }, [x, y, onFechar]);
+  const fazer = (f: () => void) => () => { f(); onFechar(); };
+  const noAbrigo = p.onde === "abrigo";
+  const verbo = noAbrigo ? "Trazer" : ehArmadura(encaixe) ? "Vestir" : "Equipar";
+  const outra: EncaixeHud | null = ehArma(encaixe) && !p.duasMaos && !noAbrigo ? (encaixe === "arma_primaria" ? "arma_secundaria" : "arma_primaria") : null;
+  const titulo = separarTipo(p.nome).titulo;
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div ref={ref} className="hx-menu" role="menu" aria-label={`Ações de ${p.nome}`} style={{ left: pos.left, top: pos.top, ["--k" as string]: corDe(p) }}
+      onContextMenu={(ev) => ev.preventDefault()}>
+      <div className="hx-menu-cab">
+        <span className="hx-menu-icone" aria-hidden="true">
+          <ItemCategoryIcon category={p.categoria} weaponName={p.weaponName ?? p.nome} size={18} color={corDe(p)} strokeWidth={1.6} />
+        </span>
+        <span className="hx-menu-id">
+          <span className="hx-menu-nome">{titulo}</span>
+          <span className="hx-menu-meta">
+            {p.dano ? <><b>{p.dano.dado}</b>{p.dano.tipo && <span>{p.dano.tipo}</span>}</>
+              : p.mit ? <span>MIT {p.mit[0]}/{p.mit[1]}</span>
+              : p.pd ? <span>PD {p.pd[0]}/{p.pd[1]}</span>
+              : <span>{separarTipo(p.nome).tipo ?? p.categoriaRotulo}</span>}
+          </span>
+        </span>
+      </div>
+      <button type="button" role="menuitem" className="hx-menu-acao" onClick={fazer(noAbrigo ? onTrazer : () => onEquipar(encaixe))}>
+        {verbo}<ArrowRight aria-hidden="true" />
+      </button>
+      <div className="hx-menu-secao">
+        <button type="button" role="menuitem" className="hx-menu-item" onClick={fazer(onVer)}><Eye aria-hidden="true" />Ver item</button>
+        {outra && <button type="button" role="menuitem" className="hx-menu-item" onClick={fazer(() => onEquipar(outra))}><ArrowLeftRight aria-hidden="true" />Equipar na outra mão</button>}
+        {onMover && !noAbrigo && p.espacos <= 1 && <button type="button" role="menuitem" className="hx-menu-item" onClick={fazer(() => onMover("acesso_rapido"))}><Zap aria-hidden="true" />Mover para acesso rápido</button>}
+        {onMover && (noAbrigo
+          ? <button type="button" role="menuitem" className="hx-menu-item" onClick={fazer(() => onMover("mochila"))}><Package aria-hidden="true" />Trazer para a mochila</button>
+          : <button type="button" role="menuitem" className="hx-menu-item" onClick={fazer(() => onMover("abrigo"))}><Warehouse aria-hidden="true" />Guardar no abrigo</button>)}
+      </div>
+      {onDescartar && (
+        <div className="hx-menu-secao">
+          <button type="button" role="menuitem" className="hx-menu-item" data-perigo data-confirmando={confirmando || undefined}
+            onClick={() => { if (confirmando) { onDescartar(); onFechar(); } else setConfirmando(true); }}>
+            <Trash2 aria-hidden="true" />{confirmando ? "Clique de novo para descartar" : "Descartar"}
+          </button>
+        </div>
+      )}
+    </div>,
+    document.body,
   );
 }
 
@@ -556,25 +737,30 @@ function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
         <div className="hx-display" style={{ fontSize: 22, fontWeight: 900, textTransform: "uppercase", lineHeight: 1, letterSpacing: ".06em" }}>{separarTipo(p.nome).titulo}</div>
         {separarTipo(p.nome).tipo && <Tag className="hx-dim" style={{ display: "block", marginTop: 6, fontSize: 10, opacity: .75 }}>{separarTipo(p.nome).tipo}</Tag>}
         <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
-          <Tag style={{ fontSize: 9, letterSpacing: ".16em", color: c }}>{p.categoriaRotulo}</Tag>
-          {p.raridade && <><span style={{ width: 1, height: 12, background: "rgba(0,212,255,.2)" }} /><Tag style={{ fontSize: 9, letterSpacing: ".16em", color: corRar(p.raridade) }}>{p.raridade}</Tag></>}
+          <Tag style={{ fontSize: 10, letterSpacing: ".16em", color: c }}>{p.categoriaRotulo}</Tag>
+          {p.raridade && <><span style={{ width: 1, height: 12, background: "rgba(0,212,255,.2)" }} /><Tag style={{ fontSize: 10, letterSpacing: ".16em", color: corRar(p.raridade) }}>{p.raridade}</Tag></>}
           <span style={{ marginLeft: "auto", display: "flex" }}>
-            <span style={{ display: "flex", alignItems: "center", padding: "4px 8px", background: "rgba(0,212,255,.07)" }}><Tag className="hx-dim" style={{ fontSize: 8 }}>{p.onde}</Tag></span>
-            <span style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", background: c + "24" }}><Tag style={{ fontSize: 8, color: c }}>esp</Tag><span className="hx-display" style={{ fontSize: 15, fontWeight: 900, lineHeight: 1 }}>{p.espacos}</span></span>
+            <span style={{ display: "flex", alignItems: "center", padding: "4px 8px", background: "rgba(0,212,255,.07)" }}><Tag className="hx-dim" style={{ fontSize: 10 }}>{p.onde}</Tag></span>
+            {/* Espaços como os blocos do inventário: um quadradinho por espaço. */}
+            <span title={`Ocupa ${p.espacos} ${p.espacos === 1 ? "espaço" : "espaços"}`} aria-label={`Ocupa ${p.espacos} espaços`}
+              style={{ display: "flex", alignItems: "center", gap: 2, padding: "4px 8px", background: c + "24" }}>
+              <span className="hx-display" style={{ fontSize: 15, fontWeight: 900, lineHeight: 1, marginRight: 6 }}>{p.espacos}</span>
+              {Array.from({ length: Math.max(p.espacos, 0) }, (_, i) => <span key={i} style={{ width: 14, height: 12, background: c }} />)}
+            </span>
           </span>
         </div>
       </div>
       <div className="hx-semsb" style={{ minHeight: 0, flex: 1, overflowY: "auto", padding: "16px 16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
         {p.dano && (
           <div style={{ display: "flex", alignItems: "center", borderLeft: `2px solid ${PERIGO}`, background: "#0a1b26", padding: "10px 12px" }}>
-            <Tag className="hx-dim" style={{ fontSize: 8 }}>dano</Tag>
+            <Tag className="hx-dim" style={{ fontSize: 10 }}>dano</Tag>
             <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "baseline", gap: 6 }}><span className="hx-display" style={{ fontSize: 30, fontWeight: 900, lineHeight: 1, color: PERIGO }}>{p.dano.dado}</span>{p.dano.tipo && <Tag style={{ fontSize: 10, color: PERIGO, opacity: .7 }}>{p.dano.tipo}</Tag>}</span>
           </div>
         )}
         {pr && (p.mit || p.pd) && (
           <div style={{ borderLeft: `2px solid ${c}`, background: "#0a1b26", padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ display: "flex", alignItems: "baseline", gap: 8 }}><Tag className="hx-dim" style={{ fontSize: 8 }}>resistência</Tag><span className="hx-display" style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".14em", color: c }}>{pr.nome}</span></span>
+              <span style={{ display: "flex", alignItems: "baseline", gap: 8 }}><Tag className="hx-dim" style={{ fontSize: 10 }}>resistência</Tag><span className="hx-display" style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".14em", color: c }}>{pr.nome}</span></span>
               {p.regioes && p.regioes.length > 0 && <Cobertura p={p} />}
             </div>
             {p.mit && <Passo rotulo="mit" atual={p.mit[0]} max={p.mit[1]} cor={c} />}
@@ -584,11 +770,20 @@ function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
         {p.linhas && p.linhas.length > 0 && (
           <div>{p.linhas.map((l) => (
             <div key={l.rotulo} style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 16, padding: "8px 0", borderBottom: "1px solid rgba(0,212,255,.08)" }}>
-              <Tag className="hx-dim" style={{ fontSize: 9 }}>{l.rotulo}</Tag><span style={{ textAlign: "right", fontSize: 14, fontWeight: 600 }}>{l.valor}</span>
+              <Tag className="hx-dim" style={{ fontSize: 10 }}>{l.rotulo}</Tag><span style={{ textAlign: "right", fontSize: 14, fontWeight: 600 }}>{l.valor}</span>
             </div>
           ))}</div>
         )}
-        {p.descricao && <div style={{ fontSize: 14, lineHeight: 1.6, color: "var(--hx-texto)", opacity: .85 }}>{p.descricao}</div>}
+        {/* Propriedades: uma linha da tabela, como Alcance e Mãos — rótulo à esquerda, termos à direita. */}
+        {p.propriedades && p.propriedades.length > 0 && (
+          <div className="hx-props" style={{ ["--k" as string]: corDe(p), display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 16, padding: "8px 0", borderBottom: "1px solid rgba(0,212,255,.08)", marginTop: p.linhas?.length ? -10 : 0 }}>
+            <Tag className="hx-dim" style={{ fontSize: 10, flex: "none" }}>propriedades</Tag>
+            <div className="hx-props-lista" style={{ justifyContent: "flex-end", textAlign: "right" }}>
+              {p.propriedades.map((x) => <Propriedade key={x.nome} nome={x.nome} descricao={x.descricao} cor={corDe(p)} />)}
+            </div>
+          </div>
+        )}
+        {p.descricao && <div style={{ fontSize: 14, fontWeight: 400, lineHeight: 1.6, color: "var(--hx-texto)", opacity: .85 }}>{p.descricao}</div>}
       </div>
     </>
   );

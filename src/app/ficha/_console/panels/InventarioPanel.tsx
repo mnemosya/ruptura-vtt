@@ -350,6 +350,15 @@ function produtoDoModelo(api: ConsoleApi, modelo: ItemContent): ProdutoHud {
   if (alcance) linhas.push({ rotulo: "Alcance", valor: alcance });
   if (modelo.alcanceArremessoMetros != null) linhas.push({ rotulo: "Arremesso", valor: `${modelo.alcanceArremessoMetros} m` });
   if (modelo.areaMetros != null) linhas.push({ rotulo: "Área", valor: `${modelo.areaMetros} m de raio` });
+  // Armadura/escudo: CONTRA O QUÊ protege (física/energética/híbrida) e ONDE (regiões).
+  const PROTECAO: Record<string, string> = { fisica: "Física", energetica: "Energética", hibrida: "Híbrida" };
+  const tipoProt = modelo.tipoProtecao?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (tipoProt && PROTECAO[tipoProt]) linhas.push({ rotulo: "Proteção", valor: PROTECAO[tipoProt] });
+  if (modelo.categoria === "armadura" && modelo.regioes.length > 0) {
+    const NOMES: Record<string, string> = { cabeca: "Cabeça", tronco: "Tronco", bracos: "Braços", pernas: "Pernas" };
+    const nomes = modelo.regioes.map((r) => NOMES[r] ?? r);
+    linhas.push({ rotulo: "Cobertura", valor: nomes.length >= 4 ? "Corpo inteiro" : nomes.join(", ") });
+  }
   if (modelo.mitMax != null) linhas.push({ rotulo: "MIT", valor: String(modelo.mitMax) });
   if (modelo.pdMax != null) linhas.push({ rotulo: "PD", valor: String(modelo.pdMax) });
   if (ocultavel) linhas.push({ rotulo: "Ocultável", valor: ocultavel });
