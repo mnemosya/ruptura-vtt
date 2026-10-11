@@ -88,6 +88,17 @@ const PRODUTOS: ProdutoHud[] = CATALOGO.map((i) => ({
   grupo: { id: i.m, nome: CATS.find((c) => c.id === i.m)!.nome, glifo: CATS.find((c) => c.id === i.m)!.g }, sub: i.sub ?? null,
 }));
 
+// Exemplos reais para revisar seleção e compra de complementos na galeria.
+const exemplosEscalpos: ProdutoHud[] = [
+  { slug: "escalpos_ouvidos_de_cacador", nome: "Ouvidos de Caçador", sub: "Audição", preco: 1200, descricao: "Expande os sentidos com módulos de audição.", categoria: "escalpo" },
+  { slug: "escalpos_beijo_da_morte", nome: "Beijo da Morte", sub: "Interno", preco: 2500, descricao: "Armazena uma dose de veneno que pode ser aplicada por contato com a boca.", categoria: "escalpo" },
+  { slug: "escalpos_cdi_craqueada", nome: "CDI Craqueada", sub: "Identidade", preco: 500, descricao: "Movimenta valores sem vinculá-los diretamente ao RPI ativo.", categoria: "escalpo" },
+  { slug: "escalpos_escuta_ampliada", nome: "Escuta Ampliada", preco: 800, descricao: "Capta sons comuns a até 100 m.", categoria: "modulo_escalpo", parentSlugs: ["escalpos_ouvidos_de_cacador"] },
+  { slug: "escalpos_cartografia_acustica", nome: "Cartografia Acústica", preco: 1000, descricao: "Percebe superfícies e obstáculos a até 10 m sem enxergá-los.", categoria: "modulo_escalpo", parentSlugs: ["escalpos_ouvidos_de_cacador"] },
+  { slug: "escalpos_toxico", nome: "Tóxico", preco: 100, descricao: "Causa 2d8 de dano tóxico. O alvo fica Envenenado.", categoria: "veneno", parentSlugs: ["escalpos_beijo_da_morte"] },
+].map(p => ({ ...p, categoriaRotulo: p.categoria === "escalpo" ? "Escalpo" : "Complemento", vertente: "nenhuma", espacos: 1, grupo: { id: "escalpos", nome: "Escalpos", glifo: CATS.find(c => c.id === "escalpos")!.g } }));
+PRODUTOS.push(...exemplosEscalpos);
+
 export function MercadoHud({ onFechar }: { onFechar?: () => void } = {}) {
   const [saldo, setSaldo] = useState(3000);
   const [usados, setUsados] = useState(6);

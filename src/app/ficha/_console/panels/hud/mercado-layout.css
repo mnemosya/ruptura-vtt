@@ -10,11 +10,18 @@
 .hm-fechar { flex: none; }
 .hm-corpo { position: relative; display: grid; min-height: 0; flex: 1; grid-template-columns: 232px minmax(0,1fr) clamp(320px,29cqw,360px); }
 .hm-categorias { min-height: 0; overflow-y: auto; border-right: 1px solid rgba(0,212,255,.1); padding: 16px 10px; background: var(--hx-abismo); scrollbar-width: thin; scrollbar-color: #24404c transparent; }
+.hm-categorias > div + div { margin-top: 4px; }
 .hm-categorias .hx-cat-linha { gap: 8px; padding: 10px !important; min-height: 44px; border: 1px solid transparent !important; }
 .hm-categorias .hx-cat-linha[data-ativo] { border-color: color-mix(in srgb, var(--k, var(--hx-amb)) 35%, transparent) !important; }
 .hm-categorias .hx-cat-fio { left: -1px; top: 50%; bottom: auto; height: 50%; transform: translateY(-50%); }
 .hm-categorias .hx-sub-linha { min-height: 44px; border: 1px solid transparent !important; }
+.hm-categorias .hx-sub-linha + .hx-sub-linha { margin-top: 4px; }
 .hm-categorias .hx-sub-linha[data-ativo] { border-color: color-mix(in srgb, var(--k, var(--hx-amb)) 35%, transparent) !important; }
+.hm-categorias :is(.hx-cat-linha, .hx-sub-linha) { transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease; }
+.hm-categorias :is(.hx-cat-linha, .hx-sub-linha):hover:not([data-ativo]) {
+  background: color-mix(in srgb, var(--k, var(--hx-amb)) 7%, transparent) !important;
+  border-color: color-mix(in srgb, var(--k, var(--hx-amb)) 22%, transparent) !important;
+}
 .hm-filtro-fundo, .hm-voltar { display: none; }
 .hm-catalogo { display: flex; min-height: 0; min-width: 0; flex-direction: column; }
 .hm-ferramentas { flex: none; display: flex; align-items: center; gap: 12px; padding: 18px 20px 0; }
@@ -27,9 +34,9 @@
 .hm-mercado .hx-produto { min-width: 0; height: 216px; }
 .hm-mercado .hx-produto-arte { min-height: 108px; }
 .hm-card-info { display: flex; flex-direction: column; gap: 6px; flex: none; padding: 10px 12px; border-top: 1px solid rgba(0,212,255,.1); background: var(--hx-casco); text-align: left; }
-.hm-card-nome { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; min-height: 38px; font-size: 14px; line-height: 19px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; overflow-wrap: anywhere; }
+.hm-card-nome { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 14px; line-height: 19px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; overflow-wrap: anywhere; }
 .hm-card-preco { font-size: 16px; font-weight: 700; white-space: nowrap; }
-.hm-card-espacos { display: flex; min-height: 8px; overflow: hidden; }
+.hm-card-espacos { display: flex; align-items: center; gap: 8px; min-height: 8px; overflow: hidden; }
 .hm-detalhe { display: flex; min-height: 0; min-width: 0; flex-direction: column; border-left: 1px solid rgba(0,212,255,.1); background: var(--hx-casco); }
 .hm-produto-cab { position: relative; min-height: 128px; flex: none; overflow: hidden; padding: 14px 18px 18px; display: flex; flex-direction: column; justify-content: space-between; gap: 22px; }
 .hm-produto-glifo { position: absolute; right: -8px; top: 50%; transform: translateY(-50%); opacity: .5; pointer-events: none; }
@@ -104,3 +111,32 @@
   .hm-compra { padding: 10px 16px; }
   .hm-compra > div:first-child { margin-bottom: 8px !important; }
 }
+.hm-card-complementos { font-size: 11px; line-height: 1.4; color: var(--hx-dim); margin-left: auto; }
+.hm-detalhe[data-escalpo] .hm-produto-cab { min-height: 112px; gap: 18px; }
+.hm-detalhe[data-escalpo] .hm-produto-glifo { opacity: .2; }
+.hm-detalhe[data-escalpo] .hm-produto-cab > span:first-child { opacity: .35; }
+.hm-detalhe[data-escalpo] .hm-descricao { font-size: 13px; gap: 14px; }
+.hm-escalpo-base { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 10px; background: color-mix(in srgb, var(--k) 3%, transparent); border: 1px solid color-mix(in srgb, var(--k) 20%, transparent); color: var(--hx-texto); padding: 12px; min-height: 54px; font: inherit; text-align: left; cursor: pointer; transition: background .15s ease, border-color .15s ease; }
+.hm-escalpo-base:hover { background: color-mix(in srgb, var(--k) 9%, transparent); border-color: color-mix(in srgb, var(--k) 45%, transparent); }
+.hm-escalpo-base[aria-pressed=true] { background: color-mix(in srgb, var(--k) 10%, transparent); border-color: color-mix(in srgb, var(--k) 40%, transparent); }
+.hm-base-identidade { display: grid; gap: 3px; min-width: 0; }
+.hm-base-identidade strong { font-size: 13px; line-height: 1.4; }
+.hm-base-identidade > span { font-size: 11px; line-height: 1.4; color: var(--hx-dim); }
+.hm-base-preco { font-size: 12px; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .hm-escalpo-base { transition: none; } }
+.hm-complementos { padding: 0 18px 20px; }
+.hm-complementos-cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 4px 0 14px; }
+.hm-complementos-cab > :last-child { color: var(--k); }
+.hm-complementos-lista { display: grid; gap: 6px; border-left: 1px solid color-mix(in srgb, var(--k) 30%, transparent); padding-left: 12px; }
+.hm-complemento { position: relative; display: grid; grid-template-columns: 16px minmax(0,1fr) auto; align-items: start; gap: 9px; padding: 11px 9px; background: transparent; color: var(--hx-texto); border: 1px solid transparent; text-align: left; font: inherit; min-height: 44px; cursor: pointer; }
+.hm-complemento::before { content: ''; position: absolute; width: 12px; height: 1px; top: 22px; left: -13px; background: color-mix(in srgb, var(--k) 30%, transparent); }
+.hm-complemento > svg { margin-top: 2px; color: var(--hx-dim); }
+.hm-complemento:hover { background: color-mix(in srgb, var(--k) 6%, transparent); }
+.hm-complemento[aria-pressed=true] { background: color-mix(in srgb, var(--k) 10%, transparent); border-color: color-mix(in srgb, var(--k) 30%, transparent); }
+.hm-complemento[aria-pressed=true] > svg { color: var(--k); }
+.hm-complemento-texto { min-width: 0; font-size: 13px; line-height: 1.4; }
+.hm-complemento-descricao { display: block; color: var(--hx-dim); font-size: 12px; line-height: 1.55; margin-top: 6px; }
+.hm-complemento-descricao > span:last-child { display: block; margin-top: 6px; }
+.hm-complemento-preco { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.hm-compra-alvo { display: grid; gap: 5px; margin-bottom: 15px; }
+.hm-compra-alvo strong { font-size: 13px; line-height: 1.4; color: var(--hx-texto); }

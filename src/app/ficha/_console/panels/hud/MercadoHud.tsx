@@ -1,5 +1,7 @@
 "use client";
 
+import { ItemCategoryIcon } from "../../../../_design/itemIcons";
+
 /**
  * MERCADO — a opção "Catálogo" do protótipo
  * (`inventario equip magia/src/Market.tsx`), na linguagem da Forja.
@@ -24,23 +26,11 @@ const RAR: Record<string, string> = { comum: "#7f95b3", incomum: OK, raro: "#8b5
 const corRaridade = (r?: string | null) => (r ? RAR[r.toLowerCase()] ?? "#7f95b3" : "#7f95b3");
 const fmt = (n: number) => n.toLocaleString("pt-BR");
 
-/** Glifo por categoria (mesmos traços do Inventário). */
-export const GLIFO_CATEGORIA: Record<string, string> = {
-  arma: "M3 21 14 10m0 0 3-7 4 4-7 3Zm-9 7 3 3M6 15l3 3",
-  armadura: "M12 2 4 5v7c0 5 3.5 8 8 10 4.5-2 8-5 8-10V5l-8-3Zm0 0v20M4 10h16",
-  escudo: "M4 3h16v9c0 5-4 8-8 10-4-2-8-5-8-10V3Zm8 4v10m-4-5h8",
-  ferramenta: "M14 5a5 5 0 0 0 5 6l-9 10-4-4 10-9a5 5 0 0 1-2-3Z",
-  farmacia: "M9 2h6v7h7v6h-7v7H9v-7H2V9h7V2Z",
-  dispositivo: "M5 3h14v18H5V3Zm3 3h8v6H8V6Zm1 10h2m2 0h2",
-  veiculo: "M3 15l2-6h14l2 6v4H3v-4Zm3 4v2m12-2v2M6 15h2m8 0h2",
-  vertina: "M12 1 19 12 12 23 5 12 12 1Zm0 6-3 5 3 5 3-5-3-5Z",
-  municao: "M6 22V9l2-6 2 6v13m4 0V9l2-6 2 6v13",
-  explosivo: "M12 8a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm3-1 3-4m0 0 2 1m-2-1-1-2",
-};
-const GLIFO_PADRAO = "M4 4h16v16H4V4Zm4 4h8v8H8V8Z";
-const glifo = (cat: string) => GLIFO_CATEGORIA[cat] ?? GLIFO_PADRAO;
+import { X, Search, PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
 
 export interface ProdutoHud {
+  /** Complementos aparecem na ficha de seus escalpos base. */
+  parentSlugs?: string[];
   slug: string;
   nome: string;
   categoria: string;
@@ -88,9 +78,6 @@ export interface PropsMercadoHud {
 
 const Tag = ({ children, style, className = "" }: { children: ReactNode; style?: React.CSSProperties; className?: string }) =>
   <span className={`hx-tag ${className}`} style={style}>{children}</span>;
-const Svg = ({ d, tam, cor = "currentColor", traco = 1.6, style }: { d: string; tam: number; cor?: string; traco?: number; style?: React.CSSProperties }) => (
-  <svg viewBox="0 0 24 24" width={tam} height={tam} fill="none" stroke={cor} strokeWidth={traco} strokeLinecap="round" strokeLinejoin="round" style={style} aria-hidden="true"><path d={d} /></svg>
-);
 const Aretz = () => <span className="hx-amb">₳</span>;
 const Espacos = ({ n }: { n: number }) => (
   <span title={`${n} espaço${n === 1 ? "" : "s"}`} style={{ display: "flex", gap: 2 }}>
@@ -168,14 +155,15 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
     requestAnimationFrame(() => ultimoCartao.current?.focus());
   };
   const grupoDe = (p: ProdutoHud) => p.grupo?.id ?? p.categoria;
+  const bases = useMemo(() => produtos.filter(p => !p.parentSlugs?.length), [produtos]);
   const categorias = useMemo(() => {
-    const m = new Map<string, { id: string; nome: string; vertente: string; n: number; g: string; subs: Map<string, number> }>();
+    const m = new Map<string, { id: string; nome: string; vertente: string; n: number; subs: Map<string, number> }>();
     const ordem = new Map<string, number>();
-    for (const p of produtos) {
+    for (const p of bases) {
       const id = grupoDe(p);
       const c = m.get(id) ?? {
         id, nome: p.grupo?.nome ?? p.categoriaRotulo, vertente: p.vertente, n: 0,
-        g: p.grupo?.glifo ?? p.glifo ?? glifo(p.categoria), subs: new Map<string, number>(),
+        subs: new Map<string, number>(),
       };
       c.n++;
       if (p.sub) {
@@ -188,18 +176,23 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
       c.subs = new Map([...c.subs.entries()].sort(([a], [b]) => (ordem.get(a) ?? 50) - (ordem.get(b) ?? 50)));
     }
     return [...m.values()].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-  }, [produtos]);
+  }, [bases]);
   const [cat, setCat] = useState<string | null>(null);
   const [sub, setSub] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [selSlug, setSel] = useState<string | null>(null);
+  const [complementoSlug, setComplemento] = useState<string | null>(null);
   const [n, setN] = useState(1);
   const [feito, setFeito] = useState(false);
   const lista = useMemo(
-    () => produtos.filter((p) => (!cat || grupoDe(p) === cat) && (!sub || p.sub === sub) && sem(p.nome).includes(sem(q))),
-    [produtos, cat, sub, q],
+    () => bases.filter((p) => (!cat || grupoDe(p) === cat) && (!sub || p.sub === sub) && (sem(p.nome).includes(sem(q)) || produtos.some(c => c.parentSlugs?.includes(p.slug) && sem(c.nome).includes(sem(q))))),
+    [bases, produtos, cat, sub, q],
   );
-  const sel = produtos.find((p) => p.slug === selSlug) ?? lista[0] ?? produtos[0] ?? null;
+  const sel = lista.find((p) => p.slug === selSlug) ?? lista[0] ?? null;
+  const complementos = produtos.filter(p => sel && p.parentSlugs?.includes(sel.slug));
+  const alvo = complementos.find(p => p.slug === complementoSlug) ?? sel;
+  const familiaEscalpo = sel?.grupo?.id === "escalpos" && sel.categoria !== "modulo_escalpo" && sel.categoria !== "veneno";
+  const escolherComplemento = (slug: string | null) => { setComplemento(slug); setN(1); setFeito(false); };
   const porNome = (a: ProdutoHud, b: ProdutoHud) => a.nome.localeCompare(b.nome, "pt-BR");
   /* Com um grupo aberto que tem subcategorias, as seções são as
      subcategorias (na ordem da lista lateral); senão, uma por grupo. */
@@ -212,13 +205,13 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
     : categorias.filter((c) => !cat || c.id === cat)
         .map((c) => ({ c, xs: lista.filter((p) => grupoDe(p) === c.id).sort(porNome) }))
         .filter((g) => g.xs.length);
-  const abrirGrupo = (id: string | null) => { setCat(id); setSub(null); setSel(null); setN(1); };
+  const abrirGrupo = (id: string | null) => { setCat(id); setSub(null); setSel(null); setComplemento(null); setFeito(false); setN(1); };
 
-  const custo = sel ? sel.preco * n : 0;
-  const cabe = !!sel && usados + sel.espacos * n <= capacidade;
+  const custo = alvo ? alvo.preco * n : 0;
+  const cabe = !!alvo && usados + alvo.espacos * n <= capacidade;
   const comprar = () => {
-    if (!sel) return;
-    onComprar(sel.slug, n);
+    if (!alvo) return;
+    onComprar(alvo.slug, n);
     setFeito(true); setTimeout(() => setFeito(false), 1200); setN(1);
   };
 
@@ -235,15 +228,15 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
           <div style={{ textAlign: "right" }}><Tag className="hx-dim">mochila</Tag><div className="hx-display" style={{ fontSize: 18, fontWeight: 700 }}>{usados}<span className="hx-dim">/{capacidade}</span></div></div>
           <div style={{ textAlign: "right" }}><Tag style={{ color: AMB, opacity: .7 }}>aretz</Tag><div className="hx-display" style={{ fontSize: 22, fontWeight: 900 }}><Aretz /> {fmt(saldo)}</div></div>
         </div>
-        {onFechar && <button type="button" aria-label="Fechar mercado" className="hx-fechar-quad hm-fechar" onClick={onFechar}><Svg d="M6 6l12 12M18 6 6 18" tam={16} /></button>}
+        {onFechar && <button type="button" aria-label="Fechar mercado" className="hx-fechar-quad hm-fechar" onClick={onFechar}><X size={16} aria-hidden="true" /></button>}
       </header>
 
       <div className="hm-corpo">
         {layout !== "amplo" && categoriasAbertas && <button type="button" className="hm-filtro-fundo" aria-label="Fechar categorias" onClick={fecharCategorias} />}
         <nav id={navId} className="hm-categorias" aria-label="Categorias" inert={!categoriasVisiveis}>
-          <div className="hm-categorias-cab"><Tag className="hx-amb">Categorias</Tag><button type="button" className="hm-recolher" data-tooltip="Esconder categorias" aria-label="Esconder painel de categorias" onClick={fecharCategorias}><Svg d="M3 4h18v16H3V4Zm5 0v16m8-12-4 4 4 4m-4-4h7" tam={18} /></button></div>
+          <div className="hm-categorias-cab"><Tag className="hx-amb">Categorias</Tag><button type="button" className="hm-recolher" data-tooltip="Esconder categorias" aria-label="Esconder painel de categorias" onClick={fecharCategorias}><PanelLeftClose size={18} aria-hidden="true" /></button></div>
           <button type="button" onClick={() => { abrirGrupo(null); if (layout !== "amplo") fecharCategorias(); }} className="hx-cat-linha" data-ativo={!cat || undefined} style={{ marginBottom: 8 }}>
-            <span className="hx-display" style={{ flex: 1, fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".14em" }}>Tudo</span><Tag className="hx-dim">{produtos.length}</Tag>
+            <span className="hx-display" style={{ flex: 1, fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".14em" }}>Tudo</span><Tag className="hx-dim">{bases.length}</Tag>
           </button>
           {categorias.map((c) => {
             const on = cat === c.id;
@@ -253,17 +246,17 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                 <button type="button" onClick={() => { abrirGrupo(on ? null : c.id); if (!temSubs && layout !== "amplo") fecharCategorias(); }} className="hx-cat-linha"
                   data-ativo={on || undefined} data-vertente={c.vertente} style={estiloGrupo(c.nome, c.vertente)} aria-expanded={temSubs ? on : undefined}>
                   <span className="hx-cat-fio" />
-                  <span className="hx-cat-ico"><Svg d={c.g} tam={18} /></span>
+                  <span className="hx-cat-ico"><ItemCategoryIcon category={c.nome} size={18} /></span>
                   <span style={{ flex: 1, fontSize: 15, fontWeight: 600, lineHeight: 1.2 }}>{c.nome}</span>
                   <Tag className="hx-dim" style={{ opacity: .7 }}>{c.n}</Tag>
-                  {temSubs && <Svg d={on ? "m6 9 6 6 6-6" : "m9 6 6 6-6 6"} tam={12} style={{ opacity: .6 }} />}
+                  {temSubs && (on ? <ChevronDown size={12} aria-hidden="true" style={{ opacity: .6 }} /> : <ChevronRight size={12} aria-hidden="true" style={{ opacity: .6 }} />)}
                 </button>
                 {on && temSubs && (
                   <div className="hx-subs" data-vertente={c.vertente} style={estiloGrupo(c.nome, c.vertente)}>
                     <button type="button" className="hx-sub-linha" data-ativo={!sub || undefined} onClick={() => { setSub(null); if (layout !== "amplo") fecharCategorias(); }}>Todos de {c.nome}</button>
                     {[...c.subs.entries()].map(([nome, qtd]) => (
                       <button key={nome} type="button" className="hx-sub-linha" data-ativo={sub === nome || undefined}
-                        onClick={() => { setSub(sub === nome ? null : nome); setSel(null); setN(1); if (layout !== "amplo") fecharCategorias(); }}>
+                        onClick={() => { setSub(sub === nome ? null : nome); setSel(null); escolherComplemento(null); if (layout !== "amplo") fecharCategorias(); }}>
                         <span className="hx-sub-ponto" />
                         <span style={{ flex: 1 }}>{nome}</span>
                         <Tag className="hx-dim" style={{ opacity: .6 }}>{qtd}</Tag>
@@ -279,10 +272,10 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
         <div className="hm-catalogo" inert={(layout === "compacto" && detalheAberto) || (layout !== "amplo" && categoriasAbertas)}>
           <div className="hm-ferramentas">
             <button ref={botaoCategorias} type="button" className="hm-filtro" hidden={categoriasVisiveis} data-tooltip="Mostrar categorias" aria-label="Mostrar categorias" aria-expanded={categoriasVisiveis} aria-controls={navId} onClick={() => { if (layout === "amplo") setCategoriasOcultas(false); else setCategoriasAbertas(true); }}>
-              <Svg d={categoriasVisiveis ? "M3 4h18v16H3V4Zm5 0v16m8-12-4 4 4 4m-4-4h7" : "M3 4h18v16H3V4Zm5 0v16m5-12 4 4-4 4m4-4h-7"} tam={20} />
+              {categoriasVisiveis ? <PanelLeftClose size={20} aria-hidden="true" /> : <PanelLeftOpen size={20} aria-hidden="true" />}
             </button>
             <label className="hx-busca">
-              <Svg d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm9 16-4-4" tam={16} />
+              <Search size={16} aria-hidden="true" />
               <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar mercadoria…" aria-label="Buscar mercadoria" />
             </label>
           </div>
@@ -290,7 +283,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
             {grupos.map(({ c, xs }) => (
               <section key={c.id} data-vertente={c.vertente} style={estiloGrupo(xs[0].grupo?.nome ?? xs[0].categoriaRotulo, c.vertente)}>
                 <div className="hm-secao-titulo" style={{ color: "var(--k)" }}>
-                  <Svg d={c.g} tam={16} />
+                  <ItemCategoryIcon category={xs[0].grupo?.nome ?? xs[0].categoriaRotulo} size={16} />
                   <span className="hx-display" style={{ fontSize: 14, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".18em" }}>{c.nome}</span>
                   <Tag className="hx-dim" style={{ opacity: .6 }}>{xs.length}</Tag>
                   <span style={{ height: 1, flex: 1, background: "linear-gradient(90deg, color-mix(in srgb, var(--k) 27%, transparent), transparent)" }} />
@@ -298,11 +291,13 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                 <div className="hm-grade">
                   {xs.map((p) => {
                     const on = p.slug === sel?.slug, pobre = p.preco > saldo;
+                    const filhos = produtos.filter(c => c.parentSlugs?.includes(p.slug));
+                    const rotulo = filhos.every(c => c.categoria === "veneno") ? "veneno" : "módulo";
                     return (
-                      <button key={p.slug} type="button" onClick={(e) => { ultimoCartao.current = e.currentTarget; setSel(p.slug); setN(1); setDetalheAberto(true); }} className="hx-produto" data-ativo={on || undefined} aria-pressed={on}>
+                      <button key={p.slug} type="button" onClick={(e) => { ultimoCartao.current = e.currentTarget; setSel(p.slug); escolherComplemento(null); setDetalheAberto(true); }} className="hx-produto" data-ativo={on || undefined} aria-pressed={on}>
                         <span className="hx-produto-arte">
                           <span className="hx-produto-trama" />
-                          <Svg d={p.glifo ?? glifo(p.categoria)} tam={52} cor="var(--k)" traco={1.1} style={{ opacity: .85, filter: "drop-shadow(0 0 10px color-mix(in srgb, var(--k) 50%, transparent))" }} />
+                          <ItemCategoryIcon category={p.categoria} group={p.grupo?.nome} weaponName={p.nome} size={52} color="var(--k)" strokeWidth={1.1} style={{ opacity: .85, filter: "drop-shadow(0 0 10px color-mix(in srgb, var(--k) 50%, transparent))" }} />
                           <span style={{ position: "absolute", right: 0, top: 0, width: 0, height: 0, borderLeft: "14px solid transparent", borderTop: `14px solid ${corRaridade(p.raridade)}` }} />
                           {/* O tipo vai no pé da arte, logo acima do nome: no rodapé ele quebrava o cartão. */}
                           {(p.tipo ?? separarTipo(p.nome).tipo) && (
@@ -315,6 +310,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                           <span className="hm-card-preco hx-display" style={{ color: pobre ? "var(--hx-dim)" : undefined, textDecoration: pobre ? "line-through" : undefined }}><Aretz /> {fmt(p.preco)}</span>
                           <span className="hm-card-espacos">
                             <Espacos n={p.espacos} />
+                            {filhos.length > 0 && <span className="hm-card-complementos">{filhos.length} {rotulo}{filhos.length !== 1 ? "s" : ""}</span>}
                           </span>
                         </span>
                       </button>
@@ -328,8 +324,8 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
         </div>
 
         {sel ? (
-          <aside className="hm-detalhe" data-vertente={sel.vertente} style={estiloGrupo(sel.grupo?.nome ?? sel.categoriaRotulo, sel.vertente)} inert={(layout === "compacto" && !detalheAberto) || (layout !== "amplo" && categoriasAbertas)} aria-label="Detalhes do produto">
-            <button type="button" className="hm-voltar" onClick={voltarCatalogo}><Svg d="m14 5-7 7 7 7" tam={16} />Voltar ao catálogo</button>
+          <aside className="hm-detalhe" data-escalpo={familiaEscalpo || undefined} data-vertente={sel.vertente} style={estiloGrupo(sel.grupo?.nome ?? sel.categoriaRotulo, sel.vertente)} inert={(layout === "compacto" && !detalheAberto) || (layout !== "amplo" && categoriasAbertas)} aria-label="Detalhes do produto">
+            <button type="button" className="hm-voltar" onClick={voltarCatalogo}><ChevronLeft size={16} aria-hidden="true" />Voltar ao catálogo</button>
             <div key={sel.slug} className="hm-leitura">
               {/* Cabeçalho no fluxo: cresce com o título em vez de subir por
                   cima da categoria. O título vai até perto do ícone, e o tipo
@@ -337,7 +333,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                   subtítulo. */}
               <div className="hm-produto-cab" style={{ background: `radial-gradient(ellipse at 70% 50%, color-mix(in srgb, var(--k) 35%, ${CASCO}) 0%, ${CASCO} 70%)` }}>
                 <span style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(135deg, color-mix(in srgb, var(--k) 12%, transparent) 0 1px, transparent 1px 7px)" }} />
-                <span className="hm-produto-glifo"><Svg d={sel.glifo ?? glifo(sel.categoria)} tam={140} cor="var(--k)" traco={.9} style={{ filter: "drop-shadow(0 0 24px var(--k))" }} /></span>
+                <span className="hm-produto-glifo"><ItemCategoryIcon category={sel.categoria} group={sel.grupo?.nome} weaponName={sel.nome} size={140} color="var(--k)" strokeWidth={.9} style={{ filter: "drop-shadow(0 0 24px var(--k))" }} /></span>
                 <div className="hm-produto-tags">
                   <Tag style={{ color: "var(--k)" }}>{sel.categoriaRotulo}</Tag>
                   {sel.raridade && <><span style={{ width: 4, height: 4, transform: "rotate(45deg)", background: corRaridade(sel.raridade) }} /><Tag style={{ color: corRaridade(sel.raridade) }}>{sel.raridade}</Tag></>}
@@ -373,9 +369,21 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                     {sel.propriedades.map((x) => <span key={x} className="hx-display" style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--k) 15%, transparent)", color: "var(--k)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em" }}>{x}</span>)}
                   </div>
                 )}
+                {familiaEscalpo && <button type="button" className="hm-escalpo-base" aria-pressed={alvo === sel} onClick={() => escolherComplemento(null)}>
+                  <span className="hm-base-identidade"><strong>{sel.sub === "Identidade" ? "Item de identidade" : "Escalpo base"}</strong><span>{alvo === sel ? "Selecionado para compra" : "Selecionar para compra"}</span></span>
+                  <strong className="hm-base-preco">₳ {fmt(sel.preco)}</strong>
+                </button>}
               </div>
+              {complementos.length > 0 && <section className="hm-complementos" aria-label="Complementos do escalpo">
+                <div className="hm-complementos-cab"><Tag className="hx-dim">{complementos.every(p => p.categoria === "veneno") ? "Venenos compatíveis" : "Módulos compatíveis"}</Tag><Tag>{complementos.length}</Tag></div>
+                <div className="hm-complementos-lista">{complementos.map(p => <button key={p.slug} type="button" className="hm-complemento" aria-pressed={alvo?.slug === p.slug} onClick={() => escolherComplemento(p.slug)}>
+                  <ItemCategoryIcon category={p.categoria} size={16} />
+                  <span className="hm-complemento-texto"><strong>{p.nome}</strong>{alvo?.slug === p.slug && <span className="hm-complemento-descricao">{p.descricao}<span>{p.espacos} espaço{p.espacos !== 1 ? "s" : ""} / item</span></span>}</span><span className="hm-complemento-preco">₳ {fmt(p.preco)}</span>
+                </button>)}</div>
+              </section>}
             </div>
             <div className="hm-compra">
+              {familiaEscalpo && alvo && <div className="hm-compra-alvo"><Tag className="hx-dim">{alvo === sel ? (sel.sub === "Identidade" ? "Identidade" : "Escalpo base") : alvo.categoria === "veneno" ? "Dose de veneno" : "Módulo"}</Tag><strong>{alvo.nome}</strong></div>}
               <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
                 <div className="hx-passo">
                   <button type="button" disabled={n <= 1} onClick={() => setN(n - 1)} aria-label="Menos">−</button>
@@ -391,7 +399,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                 <div className="hx-display" role="status" style={{ display: "grid", placeItems: "center", height: 44, border: `1px solid ${OK}80`, background: `${OK}1a`, color: OK, fontSize: 13, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".2em" }}>✓ Comprado</div>
               ) : (
                 <button type="button" disabled={custo > saldo || !cabe} onClick={comprar} className="hx-btn-ambar" style={{ width: "100%" }}>
-                  {custo > saldo ? "Saldo insuficiente" : !cabe ? "Sem espaço na mochila" : "Comprar"}
+                  {custo > saldo ? "Saldo insuficiente" : !cabe ? "Sem espaço na mochila" : familiaEscalpo ? `Comprar ${alvo === sel ? (sel.sub === "Identidade" ? "item" : "escalpo") : alvo?.categoria === "veneno" ? "veneno" : "módulo"}` : "Comprar"}
                 </button>
               )}
               <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between" }}><Tag className="hx-dim" style={{ opacity: .7 }}>saldo após</Tag><Tag className="hx-dim">₳ {fmt(Math.max(0, saldo - custo))}</Tag></div>
