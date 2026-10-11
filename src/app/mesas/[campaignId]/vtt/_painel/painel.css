@@ -1256,7 +1256,8 @@
    desce pra linha de baixo, que é o mesmo arranjo de antes. */
 .rv-pn-linha-busca .rv-pn-busca { flex: 1 1 150px; min-width: 0; margin: 0; }
 .rv-pn-linha-busca .rv-pn-ordem { flex: 0 0 96px; align-self: stretch; }
-.rv-pn-linha-busca .rv-pn-ordem .rv-seletor-gatilho { height: 100%; margin-top: 0; }
+/* Mesma superfície da busca ao lado — peça, não sulco. */
+.rv-pn-linha-busca .rv-pn-ordem .rv-seletor-gatilho { height: 100%; margin-top: 0; padding: 0 8px 0 14px; background: var(--rv-peca, #0c1526); }
 .rv-pn-linha-busca .rv-pn-ordem .rv-seletor-valor { font-size: 12px; font-weight: 600; }
 /* MESMA ALTURA da busca. O select vem do bloco de filtros, que é mais
    baixo (22px contra 29px); lado a lado na mesma faixa, a diferença
@@ -1275,9 +1276,7 @@
    com ela: em coluna estreita os dois botões não cabem lado a lado. */
 .rv-pn-filtros-acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 
-/* O switch de recursos herda o interruptor do VTT (`.rv-fp-switch`) e
-   só encolhe: a coluna do painel é estreita, e o alvo de 34×19 do
-   formulário come metade da largura útil. */
+/* O switch de recursos herda o interruptor do VTT (`.rv-fp-switch`). */
 /* CLASSE DUPLICADA de propósito. `.rv-fp-switch` mora em `vtt.css` e
    tem a mesma especificidade que `.rv-pn-switch`; empatadas, quem
    ganha é a ordem das folhas — e era a de lá, então o `padding: 6px
@@ -1288,16 +1287,30 @@
    lados da faixa são "o que eu faço com a lista", e o switch é o único
    que não cria nada. O `padding` zerado deixa a margem por conta da
    linha (`.rv-pn-filtros`), pra ele encostar onde os outros encostam. */
-.rv-pn-switch.rv-pn-switch { padding: 0; margin-left: auto; font-size: 11px; gap: 7px; }
-.rv-pn-switch .rv-fp-switch-tr { width: 26px; height: 15px; }
-.rv-pn-switch .rv-fp-switch-tr::after { width: 11px; height: 11px; }
-.rv-pn-switch input:checked + .rv-fp-switch-tr::after { transform: translateX(11px); }
-/* SEM CAIXA ALTA. Os rótulos em versalete do painel nomeiam SEÇÕES; um
-   interruptor é controle, e gritar o nome dele o fazia disputar
-   atenção com os cabeçalhos sem ser um. */
+/* Mesma PEÇA dos botões da linha (`.pn-btn`: borda, superfície, altura
+   e rótulo em caixa alta) — era o único controle arredondado e em caixa
+   normal numa faixa de botões retos, e destoava. Continua interruptor:
+   o trilho fica dentro da peça, reto como o resto do painel. */
+.rv-pn-switch.rv-pn-switch {
+  margin-left: auto; gap: 8px; padding: 6px 11px; min-height: 26px;
+  border: 1px solid var(--rv-line-strong);
+  /* O chanfro que a regra global do chassi dá aos botões — o `label`
+     não é alcançado por ela, então vem daqui. */
+  border-radius: 4px 7px 4px 7px; corner-shape: round bevel round bevel;
+  background: var(--rv-peca, #0c1526);
+  transition: border-color .14s;
+}
+.rv-pn-switch.rv-pn-switch:hover { border-color: color-mix(in srgb, var(--pn-cy) 45%, transparent); }
+.rv-pn-switch .rv-fp-switch-tr {
+  width: 24px; height: 12px; border-radius: 2px;
+  background: transparent; box-shadow: inset 0 0 0 1px var(--rv-line-max, #2a3b58);
+}
+.rv-pn-switch .rv-fp-switch-tr::after { left: 2px; top: 2px; width: 8px; height: 8px; border-radius: 1px; }
+.rv-pn-switch input:checked + .rv-fp-switch-tr { box-shadow: inset 0 0 0 1px var(--pn-cy); background: color-mix(in srgb, var(--pn-cy) 18%, transparent); }
+.rv-pn-switch input:checked + .rv-fp-switch-tr::after { transform: translateX(12px); }
 .rv-pn-switch .rv-fp-switch-txt {
   font-family: var(--rv-body);
-  font-size: 12.5px; font-weight: 600; letter-spacing: normal; text-transform: none; color: var(--pn-dim);
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--rv-ink-dim);
 }
 .rv-pn-switch input:checked ~ .rv-fp-switch-txt { color: var(--pn-txt-forte); }
 .rv-pn-select.rv-pn-select, .rv-pn-input.rv-pn-input {

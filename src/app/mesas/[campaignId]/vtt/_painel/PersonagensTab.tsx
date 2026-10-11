@@ -34,9 +34,11 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Archive,
   ArchiveRestore,
+  ChevronDown,
   Copy,
   ExternalLink,
   FolderPlus,
@@ -1009,10 +1011,11 @@ export function PersonagensTab({
           <div className="rv-pn-filtros">
             {podeAdministrar && (
               <span className="rv-pn-filtros-acoes">
-                <BotaoAba
+                <BotaoNovoPersonagem
                   desabilitado={ocupado}
                   testId="painel-personagens-criar"
-                  onClick={() =>
+                  onAssistente={() => janelas.abrir("novo-personagem")}
+                  onEmBranco={() =>
                     setPedido({
                       titulo: "Novo personagem",
                       rotulo: "Nome",
@@ -1027,16 +1030,7 @@ export function PersonagensTab({
                       },
                     })
                   }
-                >
-                  <UserPlus size={13} /> Personagem
-                </BotaoAba>
-                <BotaoAba
-                  desabilitado={ocupado}
-                  testId="painel-personagens-assistente"
-                  onClick={() => janelas.abrir("novo-personagem")}
-                >
-                  <Wand2 size={13} /> Criar com assistente
-                </BotaoAba>
+                />
                 <BotaoAba
                   desabilitado={ocupado}
                   testId="painel-personagens-nova-pasta"
@@ -1057,10 +1051,11 @@ export function PersonagensTab({
                 sem a opção de PN: isso é organização da mesa. */}
             {!ehNarrador && (
               <span className="rv-pn-filtros-acoes">
-                <BotaoAba
+                <BotaoNovoPersonagem
                   desabilitado={ocupado}
                   testId="painel-personagens-criar-jogador"
-                  onClick={() =>
+                  onAssistente={() => janelas.abrir("novo-personagem")}
+                  onEmBranco={() =>
                     setPedido({
                       titulo: "Novo personagem",
                       rotulo: "Nome",
@@ -1070,16 +1065,7 @@ export function PersonagensTab({
                       },
                     })
                   }
-                >
-                  <UserPlus size={13} /> Personagem
-                </BotaoAba>
-                <BotaoAba
-                  desabilitado={ocupado}
-                  testId="painel-personagens-assistente-jogador"
-                  onClick={() => janelas.abrir("novo-personagem")}
-                >
-                  <Wand2 size={13} /> Criar com assistente
-                </BotaoAba>
+                />
               </span>
             )}
             <label className="rv-fp-switch rv-pn-switch">
@@ -1292,5 +1278,79 @@ export function PersonagensTab({
         testId="painel-personagens-confirmar"
       />
     </div>
+  );
+}
+
+/**
+ * "Personagem ▾" — um botão só para os dois jeitos de criar (pelo
+ * assistente ou em branco). A lista é a do seletor do VTT (`Select`, o
+ * mesmo do A–Z ao lado): mesmas classes, mesma posição, mesmo teclado.
+ */
+function BotaoNovoPersonagem({
+  desabilitado,
+  testId,
+  onEmBranco,
+  onAssistente,
+}: {
+  desabilitado?: boolean;
+  testId?: string;
+  onEmBranco: () => void;
+  onAssistente: () => void;
+}) {
+  const ancora = useRef<HTMLSpanElement>(null);
+  const lista = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; width: number } | null>(null);
+  const fechar = useCallback(() => setPos(null), []);
+  const opcoes = [
+    { id: "assistente", rotulo: "Com assistente", descricao: "Passo a passo da criação.", icone: <Wand2 size={12} />, acao: onAssistente },
+    { id: "em-branco", rotulo: "Em branco", descricao: "Só o nome; a ficha se preenche depois.", icone: <UserPlus size={12} />, acao: onEmBranco },
+  ];
+  useEffect(() => {
+    if (!pos) return;
+    requestAnimationFrame(() => lista.current?.querySelector<HTMLButtonElement>("button")?.focus());
+    const fora = (e: PointerEvent) => {
+      const alvo = e.target as Node;
+      if (!lista.current?.contains(alvo) && !ancora.current?.contains(alvo)) fechar();
+    };
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); fechar(); return; }
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      e.preventDefault();
+      const itens = Array.from(lista.current?.querySelectorAll<HTMLButtonElement>("button") ?? []);
+      const i = itens.indexOf(document.activeElement as HTMLButtonElement);
+      itens[e.key === "ArrowDown" ? Math.min(itens.length - 1, i + 1) : Math.max(0, i - 1)]?.focus();
+    };
+    window.addEventListener("pointerdown", fora);
+    window.addEventListener("keydown", tecla, true);
+    return () => { window.removeEventListener("pointerdown", fora); window.removeEventListener("keydown", tecla, true); };
+  }, [pos, fechar]);
+  const abrir = () => {
+    const r = ancora.current?.getBoundingClientRect();
+    if (r) setPos({ left: r.left, top: r.bottom + 6, width: r.width });
+  };
+  return (
+    <>
+      <span ref={ancora} style={{ display: "inline-flex" }}>
+        <BotaoAba desabilitado={desabilitado} testId={testId} onClick={() => (pos ? fechar() : abrir())}>
+          <UserPlus size={13} /> Personagem <ChevronDown size={12} aria-hidden="true" />
+        </BotaoAba>
+      </span>
+      {pos && typeof document !== "undefined" && createPortal(
+        <div ref={lista} className="rv-seletor-lista" role="menu" aria-label="Novo personagem"
+          style={{ left: pos.left, top: pos.top, minWidth: pos.width }} data-testid={testId ? `${testId}-menu` : undefined}>
+          {opcoes.map((o) => (
+            <button key={o.id} type="button" role="menuitem" className="rv-seletor-opcao" data-com-descricao="true"
+              onClick={() => { fechar(); o.acao(); }}>
+              <span className="rv-seletor-icone" aria-hidden="true">{o.icone}</span>
+              <span className="rv-seletor-texto">
+                <span className="rv-seletor-nome">{o.rotulo}</span>
+                <span className="rv-seletor-desc">{o.descricao}</span>
+              </span>
+            </button>
+          ))}
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }

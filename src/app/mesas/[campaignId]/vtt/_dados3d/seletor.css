@@ -42,6 +42,13 @@
   border-color: color-mix(in srgb, #45b8c9 45%, transparent);
   background: color-mix(in srgb, #45b8c9 10%, transparent); color: #45b8c9;
 }
+/* Opção com descrição: nome em cima, o que ela faz embaixo (em
+   caixa normal, na fonte do corpo); o ícone alinha com o nome. */
+.rv-seletor-opcao[data-com-descricao="true"] { align-items: flex-start; gap: 10px; padding: 8px 12px; white-space: normal; }
+.rv-seletor-opcao[data-com-descricao="true"] .rv-seletor-icone { margin-top: 1px; }
+.rv-seletor-texto { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rv-seletor-desc { font-family: var(--font-chakra), var(--rv-body, sans-serif), sans-serif; font-size: 12px; letter-spacing: 0; text-transform: none; color: #6f84a3; }
+.rv-seletor-opcao:hover .rv-seletor-desc, .rv-seletor-opcao:focus-visible .rv-seletor-desc { color: #9fb2c8; }
 .rv-seletor-opcao[aria-selected="true"] { color: #45b8c9; background: color-mix(in srgb, #45b8c9 8%, transparent); }
 .rv-seletor-opcao[aria-selected="true"]::before {
   content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%);

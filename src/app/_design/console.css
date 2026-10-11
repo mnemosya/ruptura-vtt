@@ -156,6 +156,9 @@ button.rc-modo-chip[data-icone="true"]::after { content: none; }
 .rc-modo-chip[data-icone="true"]:hover .rc-modo-chip-ico,
 .rc-modo-chip[data-icone="true"]:focus-visible .rc-modo-chip-ico { color: #22e0ff; filter: drop-shadow(0 0 4px rgba(0, 212, 255, .55)); }
 .rc-modo-chip-ico { transition: color .14s, filter .14s; }
+/* Ajustar ligado (Modo Evolução) é âmbar: o acender do hover segue a cor dele. */
+.rc-modo-chip[data-evolucao="true"][data-icone="true"]:hover .rc-modo-chip-ico,
+.rc-modo-chip[data-evolucao="true"][data-icone="true"]:focus-visible .rc-modo-chip-ico { color: var(--rc-am); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--rc-am) 55%, transparent)); }
 /* Dica do VTT (`useDicaPortal`) fora da mesa: `vtt.css` só carrega nas
    rotas do VTT, então a ficha aberta em outro lugar traz aqui a mesma
    etiqueta, com os valores do chassi como reserva. */

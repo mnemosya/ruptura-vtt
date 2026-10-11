@@ -75,6 +75,8 @@ async function main() {
     // --- 1. O campo do diálogo tem corpo de leitura, não o dos filtros ---
     {
       await page.locator('[data-testid="painel-personagens-criar"]').click();
+      // "Personagem" virou menu: em branco × com assistente.
+      await page.getByRole("menuitem", { name: /Em branco/ }).click();
       await page.waitForSelector('[data-testid="painel-dialogo-campo"]', { timeout: 10000 });
       const campo = await page.evaluate(() =>
         getComputedStyle(document.querySelector('[data-testid="painel-dialogo-campo"]')!).fontSize);
@@ -108,6 +110,8 @@ async function main() {
     // --- 3. Confirmar sem nome é impossível ---
     {
       await page.locator('[data-testid="painel-personagens-criar"]').click();
+      // "Personagem" virou menu: em branco × com assistente.
+      await page.getByRole("menuitem", { name: /Em branco/ }).click();
       await page.waitForSelector('[data-testid="painel-dialogo-campo"]', { timeout: 10000 });
       const desabilitado = await page.locator('[data-testid="painel-dialogo-confirmar"]').isDisabled();
       registrar("3 (confirmar fica indisponível sem nome)", desabilitado, `disabled=${desabilitado}`);
@@ -131,6 +135,8 @@ async function main() {
     // --- 5. Confirmar duas vezes não cria dois ---
     {
       await page.locator('[data-testid="painel-personagens-criar"]').click();
+      // "Personagem" virou menu: em branco × com assistente.
+      await page.getByRole("menuitem", { name: /Em branco/ }).click();
       await page.waitForSelector('[data-testid="painel-dialogo-campo"]', { timeout: 10000 });
       await page.locator('[data-testid="painel-dialogo-campo"]').fill("Duplo");
       await page.evaluate(() => {
@@ -145,6 +151,8 @@ async function main() {
     // --- 6. A marcação de PN continua existindo (CHAR-01 ainda não entregou o seletor) ---
     {
       await page.locator('[data-testid="painel-personagens-criar"]').click();
+      // "Personagem" virou menu: em branco × com assistente.
+      await page.getByRole("menuitem", { name: /Em branco/ }).click();
       await page.waitForSelector('[data-testid="painel-dialogo-campo"]', { timeout: 10000 });
       const temPn = await page.locator('[data-testid="painel-dialogo-marcacao"]').count();
       await page.keyboard.press("Escape");
