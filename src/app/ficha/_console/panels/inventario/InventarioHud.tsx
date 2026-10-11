@@ -3,7 +3,7 @@
 import { estiloCategoria } from "../../../../_design/itemCategoryColors";
 import { FichaItemModal, type PecaHud } from "../hud/EquipamentoHud";
 import { ResourceValueCard } from "../ResourceValueCard";
-import { ArrowRight, Eye, Hand, Package, Shirt, Trash2, Users, Warehouse, Zap } from "lucide-react";
+import { ArrowRight, ArrowRightLeft, Backpack, Check, ChevronUp, Eye, Hand, ListChecks, Package, Shirt, Trash2, Users, Warehouse, X, Zap } from "lucide-react";
 import { createPortal } from "react-dom";
 import { ItemCategoryIcon } from "../../../../_design/itemIcons";
 
@@ -132,6 +132,16 @@ export function InventarioHud(props: PropsInventarioHud) {
   const { itens, capacidade } = props;
   const [vista, setVista] = useState<VistaHud>("mochila");
   const [busca, setBusca] = useState("");
+  const [emSelecao, setEmSelecao] = useState(false);
+  const [menuLote, setMenuLote] = useState(false);
+  const [marcados, setMarcados] = useState<Set<string>>(new Set());
+  const visiveis = itens.filter(i => (vista === "todos" || i.local === vista) && (!busca.trim() || `${i.nome} ${i.categoriaRotulo}`.toLocaleLowerCase("pt-BR").includes(busca.trim().toLocaleLowerCase("pt-BR"))));
+  const escolhidos = visiveis.filter(i => marcados.has(i.id));
+  const alternar = (id: string) => setMarcados(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+  const moverSelecionados = (destino: "mochila" | "abrigo") => {
+    escolhidos.filter(i => i.local !== destino).forEach(i => props.onMover(i.id, destino));
+    setMarcados(new Set()); setEmSelecao(false); setMenuLote(false);
+  };
   const [quente, setQuente] = useState<string | null>(null);
   const [ancora, setAncora] = useState<Ancora | null>(null);
   const [menuDe, setMenuDe] = useState<{ id: string; x: number; y: number } | null>(null);
@@ -164,12 +174,14 @@ export function InventarioHud(props: PropsInventarioHud) {
     const r = el.getBoundingClientRect();
     setAncora({ id, x: r.left - s.left, y: r.top - s.top + palco.current!.scrollTop, w: r.width, h: r.height });
   };
-  const irPara = (v: VistaHud) => { setVista(v); setAncora(null); };
+  const irPara = (v: VistaHud) => { setVista(v); setAncora(null); setMarcados(new Set()); };
 
   /* Atalhos só com o foco DENTRO do inventário: no VTT, 1–4 e `/`
      são de outras ferramentas, e um ouvinte global roubaria as teclas. */
   function aoTeclar(e: React.KeyboardEvent) {
     if (e.key === "Escape") {
+      if (menuLote) { setMenuLote(false); e.stopPropagation(); return; }
+      if (emSelecao) { setEmSelecao(false); setMarcados(new Set()); e.stopPropagation(); return; }
       if (ancora) setAncora(null);
       else { setBusca(""); buscaRef.current?.blur(); }
       return;
@@ -184,7 +196,7 @@ export function InventarioHud(props: PropsInventarioHud) {
   const livre = capacidade - ocupados;
 
   return (
-    <div className={`ih ${oxanium.variable}`} onKeyDown={aoTeclar}>
+    <div className={`ih ${oxanium.variable}`} data-selecao={emSelecao || undefined} onKeyDown={aoTeclar}>
       <div className="ih-topo">
         {/* Faixa 1: onde o item está + saldo. Faixa 2: ferramentas. */}
         <div className="ih-topo-linha">
@@ -202,12 +214,19 @@ export function InventarioHud(props: PropsInventarioHud) {
         <div className="ih-ferramentas">
           <label className="ih-busca">
             <Glifo d={IC.busca} tam={15} />
-            <input ref={buscaRef} value={busca} onChange={(e) => setBusca(e.target.value)}
+            <input ref={buscaRef} value={busca} onChange={(e) => { setBusca(e.target.value); setMarcados(new Set()); }}
               placeholder="Rastrear item…" aria-label="Buscar item no inventário" />
             {busca
               ? <button type="button" className="ih-busca-tecla" onClick={() => setBusca("")}>esc</button>
               : <span className="ih-busca-tecla">/</span>}
           </label>
+          {!props.somenteLeitura && <button type="button" className="ih-selecao-botao" aria-pressed={emSelecao}
+            aria-label={emSelecao ? "Encerrar seleção" : "Selecionar vários itens"}
+            title={emSelecao ? "Encerrar seleção" : "Selecionar vários itens"}
+            onClick={() => {
+              setAncora(null); setMenuDe(null); setMenuLote(false);
+              setEmSelecao(!emSelecao); setMarcados(new Set());
+            }}><ListChecks size={18} strokeWidth={1.6} aria-hidden="true" /></button>}
           {props.onAbrirMercado && !props.somenteLeitura && (
             <button type="button" className="ih-mercado" onClick={() => { setAncora(null); props.onAbrirMercado!(); }}>
               <Glifo d="M3 4h2l2 11h11l2-8H6m3 13a1 1 0 1 0 0-.01M17 20a1 1 0 1 0 0-.01" tam={18} />
@@ -218,6 +237,7 @@ export function InventarioHud(props: PropsInventarioHud) {
         </div>
       </div>
 
+      <div className="ih-lista-area">
       <div ref={palco} className="ih-palco" onClick={(e) => { if (e.target === e.currentTarget) setAncora(null); }}>
         <div key={vista} className="ih-boot">
           <Lista
@@ -225,7 +245,8 @@ export function InventarioHud(props: PropsInventarioHud) {
             vista={vista} capacidade={capacidade} casa={casa} termo={busca} inicio={inicio}
             livre={vista === "mochila" && !termo ? livre : 0}
             quente={quente} setQuente={setQuente} sel={ancora?.id} abrir={abrir}
-            onMenu={props.somenteLeitura ? undefined : (id, x, y) => setMenuDe({ id, x, y })}
+            marcados={emSelecao && !props.somenteLeitura ? marcados : undefined} onMarcar={alternar}
+            onMenu={emSelecao || props.somenteLeitura ? undefined : (id, x, y) => setMenuDe({ id, x, y })}
           />
         </div>
 
@@ -255,6 +276,32 @@ export function InventarioHud(props: PropsInventarioHud) {
         )}
       </div>
 
+      {emSelecao && !props.somenteLeitura && <div className="ih-lote-ancora">
+        <div className="ih-lote" role="toolbar" aria-label="Mover itens selecionados"
+          onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setMenuLote(false); }}>
+          <span className="ih-lote-contagem" aria-live="polite"><strong>{escolhidos.length}</strong><span>{escolhidos.length === 1 ? "selecionado" : "selecionados"}</span></span>
+          <button type="button" className="ih-lote-todos" disabled={!visiveis.length}
+            aria-pressed={visiveis.length > 0 && escolhidos.length === visiveis.length}
+            title={escolhidos.length === visiveis.length ? "Limpar seleção" : "Selecionar todos os itens visíveis"}
+            onClick={() => { setMenuLote(false); setMarcados(escolhidos.length === visiveis.length ? new Set() : new Set(visiveis.map(i => i.id))); }}>
+            <span>{visiveis.length > 0 && escolhidos.length === visiveis.length ? "Limpar" : "Selecionar todos"}</span>
+          </button>
+          <span className="ih-lote-separador" aria-hidden="true" />
+          <div className="ih-lote-destinos">
+            <button type="button" className="ih-lote-mover" aria-expanded={menuLote} aria-controls="ih-lote-destinos"
+              disabled={!escolhidos.length} onClick={() => setMenuLote(!menuLote)}>
+              <ArrowRightLeft size={16} strokeWidth={1.7} /><span>Mover itens</span><ChevronUp size={14} data-aberto={menuLote || undefined} />
+            </button>
+            {menuLote && <div id="ih-lote-destinos" className="ih-lote-menu" aria-label="Destino dos itens">
+              <span className="ih-tag">Mover para</span>
+              <button type="button" disabled={!escolhidos.some(i => i.local !== "mochila")} onClick={() => moverSelecionados("mochila")}><Backpack size={17} strokeWidth={1.6} />Mochila<ArrowRight size={14} /></button>
+              <button type="button" disabled={!escolhidos.some(i => i.local !== "abrigo")} onClick={() => moverSelecionados("abrigo")}><Warehouse size={17} strokeWidth={1.6} />Abrigo<ArrowRight size={14} /></button>
+            </div>}
+          </div>
+          <button type="button" className="ih-lote-fechar" title="Encerrar seleção" aria-label="Encerrar seleção" onClick={() => { setEmSelecao(false); setMarcados(new Set()); setMenuLote(false); }}><X size={16} strokeWidth={1.7} /></button>
+        </div>
+      </div>}
+      </div>
       {/* A régua fica fora do palco rolável, ancorada embaixo. */}
       {vista === "mochila" && (
         <div className="ih-regua-base">
@@ -360,12 +407,13 @@ function Regua({ itens, capacidade, ocupados, livre, casa, filtrando, quente, se
 }
 
 /* ── lista ── */
-function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, setQuente, sel, abrir, onMenu }: {
+function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, setQuente, sel, abrir, onMenu, marcados, onMarcar }: {
   itens: ItemHud[]; vista: VistaHud; capacidade: number; casa: (i: ItemHud) => boolean; termo: string; livre: number;
   inicio: Map<string, number>;
   quente: string | null; setQuente: (s: string | null) => void; sel?: string;
   abrir: (id: string, el: HTMLElement) => void;
   onMenu?: (id: string, x: number, y: number) => void;
+  marcados?: Set<string>; onMarcar?: (id: string) => void;
 }) {
   const naMochila = vista === "mochila";
   const linhas = itens.filter(casa);
@@ -384,12 +432,13 @@ function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, s
         const s = inicio.get(it.id) ?? 0;
         return (
           <button key={it.id} type="button" className="ih-lin" data-id={it.id} data-vertente={it.vertente}
-            data-quente={quente === it.id || undefined} data-sel={sel === it.id || undefined}
+            data-quente={quente === it.id || undefined} data-sel={(marcados?.has(it.id) || sel === it.id) || undefined}
+            aria-pressed={marcados ? marcados.has(it.id) : undefined}
             style={{ ...estiloCategoria(it.temaCategoria ?? it.categoria, it.vertente), animationDelay: `${ix * 25}ms` }}
             onMouseEnter={() => setQuente(it.id)} onMouseLeave={() => setQuente(null)}
-            onClick={(e) => abrir(it.id, e.currentTarget)}
+            onClick={(e) => marcados ? onMarcar?.(it.id) : abrir(it.id, e.currentTarget)}
             onContextMenu={onMenu ? (e) => { e.preventDefault(); onMenu(it.id, e.clientX, e.clientY); } : undefined}>
-            <span className="ih-lin-icone"><ItemCategoryIcon category={it.categoria} weaponName={it.weaponName ?? it.nome} size={20} strokeWidth={1.6} /></span>
+            <span className="ih-lin-icone" data-selecao={marcados ? true : undefined}>{marcados ? <span className="ih-marca" data-marcado={marcados.has(it.id) || undefined}><Check size={18} strokeWidth={1.8} /></span> : <ItemCategoryIcon category={it.categoria} weaponName={it.weaponName ?? it.nome} size={20} strokeWidth={1.6} />}</span>
             <span className="ih-lin-nome">
               <span className="ih-nome">{separarTipo(it.nome).titulo}</span>
               {/* Arma de família ("SW-80 Parallax (Rifle de precisão)") não repete o tipo

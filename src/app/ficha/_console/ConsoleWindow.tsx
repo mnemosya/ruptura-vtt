@@ -176,7 +176,8 @@ export function ConsoleWindow({
         const alvo = e.target;
         const emCampo =
           alvo instanceof Element && alvo.closest("input, textarea, select, [contenteditable='true']") !== null;
-        if (emCampo || document.querySelector(".rc-aux")) return;
+        const emSelecaoInventario = alvo instanceof Element && alvo.closest(".ih[data-selecao]") !== null;
+        if (emCampo || emSelecaoInventario || document.querySelector(".rc-aux")) return;
         e.stopPropagation();
         fechar();
         return;
