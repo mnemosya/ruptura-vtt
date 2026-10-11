@@ -727,7 +727,7 @@ function formatSystemLog(type: string, payload: Record<string, unknown>): string
     const dado = typeof payload.danoDado === "string" ? payload.danoDado : "1d4";
     const dano = typeof payload.danoPsiquico === "number" ? payload.danoPsiquico : "?";
     const ruptura = payload.rupturaPendente === true ? " — Ruptura pendente!" : "";
-    return `Surto de Sobrecarga — ${characterNome}: ${tipo} (${indice}/${max}) — ${dano} dano psíquico (${dado}, aplicação manual)${ruptura}`;
+    return `Surto de Sobrecarga — ${characterNome}: ${tipo} (${indice}/${max}) — ${dano} dano psíquico (${dado})${ruptura}`;
   }
   if (type === "overload_will_roll") {
     const total = typeof payload.total === "number" ? payload.total : "?";

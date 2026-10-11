@@ -173,6 +173,53 @@ button.rc-modo-chip[data-icone="true"]::after { content: none; }
   transform: translate(-50%, calc(-100% - 8px));
 }
 .rv-dica-portal .rv-dica--portal[data-lado="abaixo"] { transform: translate(-50%, 8px); }
+/* ── Descanso: painel com prévia do resultado ───────────────────────
+   Seletor Curto | Longo, uma linha por recurso (antes → depois, barra
+   na cor do recurso: a parte cheia é o que já há, a translúcida é o que
+   o descanso devolve) e um botão só. Vive por portal no `body`. */
+.rc-descanso {
+  position: fixed; z-index: 620; width: 300px; padding: 0 14px 14px;
+  display: grid; gap: 12px;
+  border: 1px solid #1c3645; background: #07121b; box-shadow: 0 18px 40px rgba(0, 0, 0, .6);
+  color: #b9c9dc; font-family: var(--font-corpo), sans-serif;
+}
+/* Encaixado no topo do painel: sem recuo, só o fio de baixo o separa. */
+.rc-descanso__seg { display: grid; grid-template-columns: 1fr 1fr; margin: 0 -14px; border-bottom: 1px solid #1c3645; }
+.rc-descanso__seg button {
+  padding: 8px 0; border: 0; background: transparent; cursor: pointer;
+  font: 500 11px/1 var(--font-mono), ui-monospace, monospace; letter-spacing: 1.4px; text-transform: uppercase;
+  color: #7f95b3; transition: color .14s, background .14s;
+}
+.rc-descanso__seg button:hover { color: #d0dce2; }
+.rc-descanso__seg button[aria-pressed="true"] { background: rgba(0, 212, 255, .12); color: #00d4ff; box-shadow: inset 0 -1px 0 #00d4ff; }
+.rc-descanso__seg button:focus-visible { outline: 2px solid #00d4ff; outline-offset: -2px; }
+.rc-descanso__linhas { display: grid; gap: 4px; }
+.rc-descanso__linha { display: grid; grid-template-columns: 58px minmax(0, 1fr) 70px; align-items: center; gap: 10px; min-height: 22px; }
+.rc-descanso__linha[data-igual] { opacity: .45; }
+.rc-descanso__rot { font: 600 11px/1 var(--font-mono), ui-monospace, monospace; letter-spacing: 1.4px; text-transform: uppercase; color: var(--rc-desc-cor); }
+.rc-descanso__barra { position: relative; height: 6px; background: #0f202b; }
+.rc-descanso__barra i { position: absolute; inset: 0 auto 0 0; background: var(--rc-desc-cor); transition: width .2s ease; }
+.rc-descanso__barra i[data-fantasma] { opacity: .32; }
+.rc-descanso__val { text-align: right; font: 600 12px/1 var(--font-mono), ui-monospace, monospace; color: #e6f6ff; font-variant-numeric: tabular-nums; }
+.rc-descanso__val span { color: #4f6285; }
+.rc-descanso__nota { margin: 0; font-size: 12px; color: #6a7f99; }
+/* O botão é o `.rv-btn--pri` do VTT; aqui só o tamanho no painel. Fora
+   da mesa `vtt.css` não carrega, então a receita vem de reserva, com os
+   valores do chassi. */
+.rc-descanso__cta { justify-content: center; width: 100%; height: 34px; }
+.rc-descanso .rv-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px;
+  border: 1px solid var(--rv-line-strong, #1c2b45); border-radius: var(--rv-r, 4px);
+  font-family: var(--rv-display, var(--font-chakra)), sans-serif;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  cursor: pointer; transition: color .14s, border-color .14s, background .14s;
+}
+.rc-descanso .rv-btn--pri {
+  border-color: color-mix(in srgb, var(--rv-cy, #45b8c9) 53%, transparent);
+  background: var(--rv-cy-soft, rgba(69, 184, 201, 0.09)); color: var(--rv-cy, #45b8c9); font-weight: 700;
+}
+.rc-descanso .rv-btn--pri:hover:not(:disabled) { border-color: var(--rv-cy, #45b8c9); background: color-mix(in srgb, var(--rv-cy, #45b8c9) 14%, transparent); }
+.rc-descanso .rv-btn:focus-visible { outline: 2px solid var(--rv-cy, #45b8c9); outline-offset: 2px; }
 .rc-modo-chip:hover { background: var(--rc-btn-bg-hover); border-color: var(--rc-btn-border-hover); color: var(--rc-text-forte); }
 .rc-modo-chip:not([data-evolucao="true"]):active { background: var(--rc-btn-bg-active); border-color: var(--rc-btn-border-active); }
 .rc-modo-chip:focus-visible { outline: 2px solid var(--rc-btn-border-hover); outline-offset: 2px; }

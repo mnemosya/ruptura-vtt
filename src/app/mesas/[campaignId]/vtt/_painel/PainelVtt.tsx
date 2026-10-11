@@ -441,21 +441,6 @@ export function PainelVtt({
   const abrirConsole = useCallback((id: string) => consoleDaMesa?.abrir(id), [consoleDaMesa]);
   const aquecerConsole = useCallback(() => consoleDaMesa?.aquecer(), [consoleDaMesa]);
 
-  /**
-   * Empresta ao Console a câmera do mapa enquanto o VTT está montado.
-   *
-   * A ficha vive na casca da campanha, ACIMA do VTT, e por isso não
-   * alcança a câmera sozinha. Registrando aqui, "Ver no mapa" aparece
-   * na ficha só onde existe mapa — em Personagens ou na Mesa a ação
-   * simplesmente não é oferecida, em vez de existir e não fazer nada.
-   */
-  const registrarFocoNoMapa = consoleDaMesa?.registrarFocoNoMapa;
-  useEffect(() => {
-    if (!registrarFocoNoMapa) return;
-    registrarFocoNoMapa(onFocarToken ?? null);
-    return () => registrarFocoNoMapa(null);
-  }, [registrarFocoNoMapa, onFocarToken]);
-
   const aberto = prefs.aberto;
   const abaAtiva = prefs.aba;
 

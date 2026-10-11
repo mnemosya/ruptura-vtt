@@ -199,7 +199,8 @@ function formatOverloadSurge(payload: Record<string, unknown>): string {
   const dado = typeof payload.danoDado === "string" ? payload.danoDado : "1d4";
   const dano = typeof payload.danoPsiquico === "number" ? payload.danoPsiquico : "?";
   const ruptura = payload.rupturaPendente === true ? " — Ruptura pendente!" : "";
-  return `Surto de Sobrecarga — ${characterNome}: ${tipo} (${indice}/${max}) — ${dano} dano psíquico (${dado}, aplicação manual)${ruptura}`;
+  const pe = typeof payload.peAntes === "number" && typeof payload.peDepois === "number" ? `, PE ${payload.peAntes} → ${payload.peDepois}` : "";
+  return `Surto de Sobrecarga — ${characterNome}: ${tipo} (${indice}/${max}) — ${dano} dano psíquico (${dado}${pe})${ruptura}`;
 }
 
 /** Checkpoint v0.37: cartão de overload_will_roll. */

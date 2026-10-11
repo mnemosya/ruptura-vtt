@@ -56,7 +56,7 @@ import { SkillsGrid } from "./panels/SkillsGrid";
 import { TabRail } from "./panels/TabRail";
 import { MinimizedDockContent } from "./panels/MinimizedDockContent";
 import { PinsRow, ConditionsPanel } from "./panels/PinsAndConditions";
-import { AvancoChip, CompletarCriacaoChip, ModoChip, VerNoMapaChip, GravacaoChip } from "./panels/ModoEvolucao";
+import { AvancoChip, CompletarCriacaoChip, DescansoChip, ModoChip, GravacaoChip } from "./panels/ModoEvolucao";
 import { useJanelasDaMesa } from "../../mesas/[campaignId]/vtt/_shell/JanelasDaMesa";
 import dynamic from "next/dynamic";
 import { useConsoleCloseOverride } from "./ConsoleCloseContext";
@@ -78,6 +78,7 @@ import { ABAS, type AbaId } from "./tabs";
 import type { ViewMode } from "./viewMode";
 import { FOCO_MAX_W, FOCO_ALTURA_INICIAL } from "./geometry";
 import { PainelRolagem, type PrefillRolagem } from "./panels/PainelRolagem";
+import { useRolarNaMesa } from "../../mesas/[campaignId]/vtt/_dados3d/ContextoMesaDados";
 import type { ConsoleApi, ConsolePin } from "./types";
 import { parseTerceiroSegmentoThreshold, pisoPeNegativo, type CharacterAttributes, type InventoryItemInstance, type ItemContent } from "../../../lib/character";
 
@@ -105,6 +106,20 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
    */
   const [viewMode, setViewMode] = useState<ViewMode>("foco");
   const [aux, setAux] = useState<Aux>(null);
+  const rolarNaMesa = useRolarNaMesa();
+  /**
+   * O dano psíquico do surto rola nos dados 3D da mesa (cor do PE): as
+   * faces que pararem SÃO o dano. Sem mesa (fora do VTT) ou com fórmula
+   * que não for NdS(+M), cai no sorteio de sempre.
+   */
+  async function rolarSurto(tipo: string) {
+    const m = /^(\d+)d(\d+)([+-]\d+)?$/.exec(api.dadoDoSurto.replace(/\s+/g, ""));
+    if (!rolarNaMesa || !m) { api.usarSobrecarga(tipo); return; }
+    const pedido = Array.from({ length: Number(m[1]) }, (_, i) => ({ id: `surto-${i}`, sides: Number(m[2]) }));
+    const fisicos = await rolarNaMesa(pedido, "#8d62e8");
+    const total = fisicos.reduce((soma, d) => soma + d.value, 0) + (m[3] ? Number(m[3]) : 0);
+    api.usarSobrecarga(tipo, Math.max(0, total));
+  }
   /**
    * Personagem RUPTURA v1.2: o avanço de Ranking é o caminho da progressão;
    * o Modo Evolução continua ao lado, só para corrigir Atributos e Perícias
@@ -451,12 +466,12 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
             ) : (
               <GravacaoChip estado={api.gravacao.estado} erro={api.gravacao.erro} />
             )}
-            <VerNoMapaChip />
             {!api.somenteLeitura && criacaoPendente && api.mesa && (
               <CompletarCriacaoChip
                 onAbrir={() => api.mesa && janelas.abrirCompletar({ characterId: api.mesa.characterId, nome: api.character.nome })}
               />
             )}
+            {!api.somenteLeitura && !criacaoPendente && <DescansoChip character={api.character} derivados={api.derivados} onDescansar={api.descansar} />}
             {!api.somenteLeitura && !criacaoPendente && <ModoChip modo={api.modo} onAlternar={api.definirModo} v12={rankingV12 != null} />}
             {!api.somenteLeitura && !criacaoPendente && rankingV12 && api.mesa && (
               <AvancoChip ranking={rankingV12} onEscolher={(alvo) => evoluir(alvo)} />
@@ -545,8 +560,8 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
         <SurgePickerModal
           tipos={api.tiposDeSurto}
           onEscolher={(t) => {
-            api.usarSobrecarga(t);
             setAux(null);
+            void rolarSurto(t);
           }}
           onFechar={() => setAux(null)}
         />

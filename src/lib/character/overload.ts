@@ -95,6 +95,8 @@ export function useOverloadSurge(
   rules?: OverloadRulesPayload | null,
   /** Override do limite diário por talento (Mago › Ascensão → 5). Só vale quando > limite canônico. Ruptura acompanha o novo limite. */
   maxPerDayOverride?: number | null,
+  /** Total já rolado fora daqui (os dados 3D da mesa). Sem ele, rola com `rng`. */
+  danoRolado?: number | null,
 ): UseOverloadSurgeResult {
   const usadosAntes = character.sobrecarga_usada_dia ?? 0;
   const maxCanonico = getOverloadMaxPerDay(rules);
@@ -112,7 +114,7 @@ export function useOverloadSurge(
 
   const indice = usadosAntes + 1;
   const dado = getOverloadSurgeDamageDie(rules);
-  const danoPsiquico = rollDamageFormula(dado, rng);
+  const danoPsiquico = typeof danoRolado === "number" ? danoRolado : rollDamageFormula(dado, rng);
   const surge: OverloadSurgeSummary = { tipo, indice, danoPsiquico, criadoEm: nowIso };
   const terceiro = indice >= maxPerDay;
 
@@ -124,13 +126,10 @@ export function useOverloadSurge(
     ruptura_nivel_pendente: terceiro ? (character.ruptura_nivel_pendente ?? 1) : character.ruptura_nivel_pendente,
   };
 
-  // A regra canônica declara `surto.aplicar_dano_na_hora: true`, mas o RECURSO-alvo do dano
-  // psíquico não é estruturado em lugar nenhum do conteúdo — aplicar em PE seria regra
-  // inventada. Continua manual, com aviso explícito (pendência de conteúdo).
+  // O dano psíquico vai em PE (cap. 16 da 1.2) — quem aplica é o chamador,
+  // pelo caminho de edição de recurso (piso negativo, Integridade, Colapso).
   const willRule = getOverloadWillTestRule(rules);
-  const warnings = [
-    `Dano psíquico de ${danoPsiquico} (${dado}) não é aplicado automaticamente a nenhum recurso — o conteúdo não estrutura o recurso-alvo; ajuste PE manualmente se for o caso.`,
-  ];
+  const warnings: string[] = [];
   if (terceiro) {
     warnings.push(
       `${indice}º surto do dia — Ruptura pendente. Role ${willRule.pericia} CD ${willRule.cd}; falha aplica ${willRule.falhaCondicao} por ${willRule.falhaDuracao}.`,

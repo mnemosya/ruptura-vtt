@@ -140,7 +140,14 @@ export interface ConsoleApi {
   ajustarReacoes: (delta: number) => void;
 
   /** Aplica um surto de Sobrecarga pelo fluxo existente (inclui Ruptura no 3º). */
-  usarSobrecarga: (tipo: string) => void;
+  /** `danoRolado`: total dos dados 3D da mesa; sem ele, o dano é sorteado. */
+  usarSobrecarga: (tipo: string, danoRolado?: number) => void;
+  /** Fórmula do dano psíquico do surto (ex.: "1d4"), da regra canônica. */
+  dadoDoSurto: string;
+  /** Desfaz o último surto do dia (só o contador; não mexe em Ruptura pendente). */
+  removerSobrecarga: () => void;
+  /** Descanso curto (Mana += metade) ou longo (PV/PE/Mana, temporários) — regras do cap. 16, em `rest.ts`. */
+  descansar: (tipo: "curto" | "longo") => void;
   /** Rótulos de surto publicados nas regras. */
   tiposDeSurto: readonly string[];
   /** `false` quando novos surtos estão bloqueados até o próximo descanso longo. */
@@ -148,8 +155,6 @@ export interface ConsoleApi {
 
   avancarColapso: () => void;
   aplicarTesteDecisivoColapso: (dados: number[]) => void;
-  /** Desfaz o último surto do dia (só o contador; não mexe em Ruptura pendente). */
-  removerSobrecarga: () => void;
   estabilizarColapso: () => void;
 
   /** Move um item entre mochila/equipado/empunhado/acesso rápido. */

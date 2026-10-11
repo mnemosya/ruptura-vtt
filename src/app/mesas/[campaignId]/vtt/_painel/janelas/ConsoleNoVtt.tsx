@@ -196,18 +196,11 @@ export function ConsoleNoVtt({
 
   const pronto = abertura && abertura.personagem.id === characterId && catalogos && !catalogos.erroFatal;
 
-  // "Ver no mapa" precisa das DUAS pontas: um mapa montado (só o VTT
-  // registra a câmera) e o personagem posicionado na cena. Faltando
-  // qualquer uma, a ação não é oferecida.
-  const focar = consoleDaMesa?.focarNoMapa ?? null;
-  const tokenNaCena = abertura?.tokenNaCena ?? null;
-  const verNoMapa = focar && tokenNaCena ? () => focar(tokenNaCena) : null;
-
   // Console pronto: ele monta a PRÓPRIA janela (`ConsoleWindow`). Só o
   // significado de "fechar" é redefinido.
   if (pronto) {
     return (
-      <ConsoleCloseProvider onClose={onFechar} ancorado verNoMapa={verNoMapa}>
+      <ConsoleCloseProvider onClose={onFechar} ancorado>
         {/* `data-janela-turno` diz em que janela do combate da MESA a
             ficha acredita estar — "fora" quando não há combate. Mesmo
             papel do `data-character-id` ao lado: é estado real da

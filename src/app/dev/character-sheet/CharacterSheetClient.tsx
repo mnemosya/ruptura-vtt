@@ -1192,7 +1192,8 @@ export default function CharacterSheetClient({
   /** Botão "Aplicar descanso curto" (checkpoint v0.36, PRD 10.4) — Mana += floor(manaMax/2), nada mais. */
   async function handleApplyShortRest() {
     const nowIso = new Date().toISOString();
-    const result = applyShortRest(character, derivados, nowIso);
+    const result = applyShortRest(characterRef.current, derivados, nowIso);
+    characterRef.current = result.character;
     setCharacter(result.character);
     addLogEntry("descanso", `Descanso curto — Mana ${result.before.mana} → ${result.after.mana}.`);
     await persistRest("rest_short", result);
@@ -1207,14 +1208,15 @@ export default function CharacterSheetClient({
    * ativos podem ser removidos automaticamente pelo mesmo mecanismo,
    * sem duplicar a lógica de cura aqui.
    */
-  async function handleApplyLongRest() {
-    const confirmado = window.confirm(
+  async function handleApplyLongRest(opcoes?: { jaConfirmado?: boolean }) {
+    // O Console confirma no próprio menu de descanso; a ficha antiga, aqui.
+    const confirmado = opcoes?.jaConfirmado === true || window.confirm(
       "Aplicar descanso longo (8h)? PV recupera Corpo+2, PE recupera Mente+2, Mana volta ao máximo, PV/Mana temporários são removidos e Sobrecarga é resetada. Integridade NÃO é recuperada.",
     );
     if (!confirmado) return;
 
     const nowIso = new Date().toISOString();
-    const result = applyLongRest(character, derivados, nowIso);
+    const result = applyLongRest(characterRef.current, derivados, nowIso);
     const { condicoes: proximasCondicoes, removidas } = applyAutoHealRemoval(
       result.character.condicoes_ativas ?? [],
       result.before.pv,
@@ -1222,7 +1224,9 @@ export default function CharacterSheetClient({
       nowIso,
     );
 
-    setCharacter({ ...result.character, condicoes_ativas: proximasCondicoes });
+    const proximo = { ...result.character, condicoes_ativas: proximasCondicoes };
+    characterRef.current = proximo;
+    setCharacter(proximo);
     addLogEntry(
       "descanso",
       `Descanso longo — PV ${result.before.pv} → ${result.after.pv}, PE ${result.before.pe} → ${result.after.pe}, Mana ${result.before.mana} → ${result.after.mana}.`,
@@ -1250,24 +1254,39 @@ export default function CharacterSheetClient({
     await persistAutomatedActionExecution(next);
   }
 
-  async function handleUseOverloadSurge(tipo: string) {
+  async function handleUseOverloadSurge(tipo: string, danoRolado?: number) {
     const nowIso = new Date().toISOString();
     const sobrecargaAntes = character.sobrecarga_usada_dia ?? 0;
     const overloadRules = regras?.sobrecarga;
     const maxSurtos = getOverloadMaxPerDay(overloadRules);
-    const result = useOverloadSurge(character, tipo, nowIso, undefined, overloadRules);
+    const result = useOverloadSurge(characterRef.current, tipo, nowIso, undefined, overloadRules, undefined, danoRolado);
 
     if (!result.surge) {
       addLogEntry("recurso", result.warnings[0] ?? "Limite de surtos de Sobrecarga atingido.");
       return;
     }
 
-    characterRef.current = result.character;
-    setCharacter(result.character);
+    // Dano psíquico do surto vai direto em PE (cap. 16 da 1.2: "dano
+    // psíquico … causado por Sobrecargas … reduz os PE"), pelo mesmo
+    // caminho da edição de recurso — piso negativo, perda de
+    // Integridade e Colapso inclusos.
+    const peAntes = result.character.recursos_atuais?.pe ?? 0;
+    const peDepois = parseRecursoAtual(peAntes - result.surge.danoPsiquico, pisoPeNegativo(derivados.pe_max));
+    const comDano = applyConsoleMutation(
+      result.character,
+      { type: "resource", resource: "pe", value: peDepois, nowIso },
+      { derived: derivados, rules: regras, reactionRules },
+    );
+    characterRef.current = comDano.character;
+    setCharacter(comDano.character);
+    if (comDano.meta.collapseStarted) {
+      addLogEntry("recurso", "Colapso iniciado (PE no limite) — Inconsciente aplicado.");
+      void persistCollapseEvent("collapse_started", { tipo: comDano.meta.collapseStarted });
+    }
     const dado = getOverloadSurgeDamageDie(overloadRules);
     addLogEntry(
       "recurso",
-      `Surto de Sobrecarga (${tipo}) — ${result.surge.indice}/${maxSurtos}, dano psíquico ${result.surge.danoPsiquico} (${dado}, não aplicado automaticamente).`,
+      `Surto de Sobrecarga (${tipo}) — ${result.surge.indice}/${maxSurtos}, dano psíquico ${result.surge.danoPsiquico} (${dado}) — PE ${peAntes} → ${peDepois}.`,
     );
     if (result.requiresWillRoll) {
       const willRule = getOverloadWillTestRule(overloadRules);
@@ -1275,7 +1294,7 @@ export default function CharacterSheetClient({
       setOverloadWillRollPending(true);
     }
 
-    await persistAutomatedActionExecution(result.character);
+    await persistAutomatedActionExecution(comDano.character);
 
     if (selectedCampaignId) {
       try {
@@ -1293,6 +1312,8 @@ export default function CharacterSheetClient({
             danoPsiquico: result.surge.danoPsiquico,
             danoDado: dado,
             sobrecargaAntes,
+            peAntes,
+            peDepois,
             sobrecargaDepois: result.surge.indice,
             rupturaPendente: result.rupturePending,
             requiresWillRoll: result.requiresWillRoll,
@@ -3987,13 +4008,15 @@ export default function CharacterSheetClient({
     ajustarPa: (delta) => ajustarPaConsole(delta),
     ajustarReacoes: (delta) => ajustarReacoesConsole(delta),
 
-    usarSobrecarga: (tipo) => void handleUseOverloadSurge(tipo),
+    usarSobrecarga: (tipo, danoRolado) => void handleUseOverloadSurge(tipo, danoRolado),
+    dadoDoSurto: getOverloadSurgeDamageDie(regras?.sobrecarga),
+    removerSobrecarga: () => void handleRemoveOverloadSurge(),
+    descansar: (tipo) => void (tipo === "curto" ? handleApplyShortRest() : handleApplyLongRest({ jaConfirmado: true })),
     tiposDeSurto: OVERLOAD_SURGE_TYPES,
     // Ruptura pendente bloqueia novos surtos até o próximo descanso longo.
     podeUsarSobrecarga: !(character.ruptura_pendente ?? false),
 
     avancarColapso: handleAdvanceCollapseSegmentManual,
-    removerSobrecarga: () => void handleRemoveOverloadSurge(),
     aplicarTesteDecisivoColapso: (dados) => void handleResolveCollapseDecisiveTest(dados),
     estabilizarColapso: handleStabilizeCollapse,
 
@@ -4400,7 +4423,7 @@ export default function CharacterSheetClient({
           onResetarReacoes={handleResetReactions}
           atributos={character.atributos}
           onApplyShortRest={handleApplyShortRest}
-          onApplyLongRest={handleApplyLongRest}
+          onApplyLongRest={() => void handleApplyLongRest()}
           sobrecargaUsadaDia={character.sobrecarga_usada_dia ?? 0}
           rupturaEspecialAscensao={character.ruptura_especial_ascensao ?? null}
           rupturaPendente={character.ruptura_pendente ?? false}

@@ -23,49 +23,15 @@
  *     — simplesmente não mostra o bloco.
  */
 
-import { useEffect, useRef, useState } from "react";
-import { ArrowUpCircle, Check, Crosshair, Sliders, Wand2 } from "lucide-react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { ArrowUpCircle, Check, Moon, Sliders, Wand2 } from "lucide-react";
+import { MAX_OVERLOAD_SURGES_PER_DAY, type Character, type DerivedStats } from "../../../../lib/character";
+import { applyLongRest, applyShortRest } from "../../../../lib/character/rest";
 import { RANKINGS_V12, type RankingV12 } from "../../../../lib/rulesetV12";
 import type { ConsoleApi, ConsoleModo } from "../types";
-import { useVerNoMapa } from "../ConsoleCloseContext";
 // A dica padrão do VTT, por portal (não é recortada pela janela da ficha).
 import { useDicaPortal } from "../../../mesas/[campaignId]/vtt/_painel/ui/DicaPortal";
-
-/**
- * "Ver no mapa" — leva a câmera até o token deste personagem e fecha a
- * ficha.
- *
- * Só aparece quando existe pra onde ir: dentro do VTT E com o
- * personagem posicionado na cena. Em Personagens, na Mesa, ou com um
- * personagem que não está em jogo, o botão não é renderizado — melhor
- * ausente do que presente e inerte.
- *
- * Mora aqui, junto do `ModoChip`, porque é a mesma peça de UI: uma
- * ação de barra de título do Console.
- */
-export function VerNoMapaChip() {
-  const verNoMapa = useVerNoMapa();
-  const { alvo, dica } = useDicaPortal("Ver no mapa", { lado: "abaixo" });
-  if (!verNoMapa) return null;
-  return (
-    <>
-    <button
-      {...alvo}
-      type="button"
-      className="rc-modo-chip"
-      onClick={verNoMapa}
-      data-testid="console-ver-no-mapa"
-      aria-label="Ver no mapa"
-      data-icone="true"
-    >
-      <span className="rc-modo-chip-ico" aria-hidden="true">
-        <Crosshair size={15} strokeWidth={2} />
-      </span>
-    </button>
-    {dica}
-    </>
-  );
-}
 
 /**
  * O QUE ESTÁ ACONTECENDO COM A GRAVAÇÃO — só quando há o que dizer.
@@ -261,5 +227,150 @@ export function AvancoChip({ ranking, onEscolher }: { ranking: string; onEscolhe
         </span>
       )}
     </span>
+  );
+}
+
+/**
+ * Descanso (cap. 16, "Descansos e recuperação"). Painel ancorado ao
+ * botão: escolhe Curto ou Longo e mostra a PRÉVIA do resultado com os
+ * números deste personagem (antes → depois, em barra na cor do recurso).
+ * Ver o que muda é a confirmação: um botão só aplica. A prévia sai das
+ * mesmas funções puras que aplicam o descanso (`lib/character/rest.ts`),
+ * então o que se vê é exatamente o que acontece.
+ */
+type TipoDescanso = "curto" | "longo";
+
+const LINHAS_DESCANSO: { chave: "pv" | "pe" | "mana" | "sobrecarga_usada_dia"; rotulo: string; cor: string }[] = [
+  { chave: "pv", rotulo: "PV", cor: "#d84f6c" },
+  { chave: "pe", rotulo: "PE", cor: "#8d62e8" },
+  { chave: "mana", rotulo: "Mana", cor: "#00d4ff" },
+  { chave: "sobrecarga_usada_dia", rotulo: "Sobrec.", cor: "#ff8a1f" },
+];
+
+export function DescansoChip({
+  character,
+  derivados,
+  onDescansar,
+}: {
+  character: Character;
+  derivados: DerivedStats;
+  onDescansar: (tipo: TipoDescanso) => void;
+}) {
+  const [aberto, setAberto] = useState(false);
+  const [tipo, setTipo] = useState<TipoDescanso>("curto");
+  const ancora = useRef<HTMLButtonElement | null>(null);
+  const painel = useRef<HTMLDivElement | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const { alvo, dica } = useDicaPortal("Descansar", { lado: "abaixo" });
+
+  useLayoutEffect(() => {
+    if (!aberto || !ancora.current) return;
+    const r = ancora.current.getBoundingClientRect();
+    const largura = painel.current?.offsetWidth ?? 300;
+    setPos({ top: r.bottom + 6, left: Math.max(8, Math.min(r.right - largura, window.innerWidth - largura - 8)) });
+  }, [aberto]);
+
+  useEffect(() => {
+    if (!aberto) return;
+    // Esc fecha SÓ o painel: o Console escuta o Esc no `document` e
+    // fecharia a ficha inteira — o `window` em captura vem antes.
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      setAberto(false);
+      ancora.current?.focus({ preventScroll: true });
+    };
+    const fora = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (painel.current?.contains(t) || ancora.current?.contains(t)) return;
+      setAberto(false);
+    };
+    window.addEventListener("keydown", tecla, true);
+    window.addEventListener("pointerdown", fora);
+    return () => { window.removeEventListener("keydown", tecla, true); window.removeEventListener("pointerdown", fora); };
+  }, [aberto]);
+
+  const previa = useMemo(() => {
+    if (!aberto) return null;
+    const agora = new Date().toISOString();
+    return tipo === "curto" ? applyShortRest(character, derivados, agora) : applyLongRest(character, derivados, agora);
+  }, [aberto, tipo, character, derivados]);
+
+  const maximo = { pv: derivados.pv_max ?? 0, pe: derivados.pe_max ?? 0, mana: derivados.mana_max ?? 0, sobrecarga_usada_dia: MAX_OVERLOAD_SURGES_PER_DAY };
+  const linhas = previa
+    ? LINHAS_DESCANSO.filter((l) => tipo === "longo" || l.chave === "mana")
+    : [];
+  const fracao = (v: number, max: number) => (max > 0 ? Math.max(0, Math.min(1, v / max)) * 100 : 0);
+
+  return (
+    <>
+      <button
+        {...alvo}
+        ref={ancora}
+        type="button"
+        className="rc-modo-chip"
+        data-icone="true"
+        aria-label="Descansar"
+        aria-expanded={aberto}
+        aria-haspopup="dialog"
+        onClick={() => setAberto((v) => !v)}
+        data-testid="console-descanso-chip"
+      >
+        <span className="rc-modo-chip-ico" aria-hidden="true">
+          <Moon size={15} strokeWidth={2} />
+        </span>
+      </button>
+      {!aberto && dica}
+      {aberto && previa && typeof document !== "undefined" && createPortal(
+        <div
+          ref={painel}
+          className="rc-descanso"
+          role="dialog"
+          aria-label="Descansar"
+          style={pos ? { top: pos.top, left: pos.left } : { visibility: "hidden" }}
+          data-testid="console-descanso-painel"
+          // Portal ainda propaga eventos pela árvore React: sem isto, o
+          // arrastar da janela do Console pegava o clique (e o selecionar
+          // texto) do painel e movia a ficha.
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <div className="rc-descanso__seg" role="group" aria-label="Tipo de descanso">
+            {(["curto", "longo"] as const).map((t) => (
+              <button key={t} type="button" aria-pressed={tipo === t} onClick={() => setTipo(t)} data-testid={`console-descanso-${t}`}>
+                {t === "curto" ? "Curto · 30 min" : "Longo · 8 h"}
+              </button>
+            ))}
+          </div>
+          <div className="rc-descanso__linhas">
+            {linhas.map((l) => {
+              const antes = previa.before[l.chave];
+              const depois = previa.after[l.chave];
+              const max = maximo[l.chave];
+              return (
+                <div key={l.chave} className="rc-descanso__linha" style={{ ["--rc-desc-cor" as string]: l.cor }} data-igual={antes === depois || undefined}>
+                  <span className="rc-descanso__rot">{l.rotulo}</span>
+                  <span className="rc-descanso__barra" aria-hidden="true">
+                    <i style={{ width: `${fracao(Math.max(antes, depois), max)}%` }} data-fantasma="true" />
+                    <i style={{ width: `${fracao(Math.min(antes, depois), max)}%` }} />
+                  </span>
+                  <span className="rc-descanso__val">{antes}<span> → </span>{depois}</span>
+                </div>
+              );
+            })}
+          </div>
+          {tipo === "longo" && <p className="rc-descanso__nota">Zera PV e Mana temporários.</p>}
+          <button
+            type="button"
+            className="rv-btn rv-btn--pri rc-descanso__cta"
+            onClick={() => { setAberto(false); onDescansar(tipo); }}
+            data-testid="console-descanso-aplicar"
+          >
+            {tipo === "longo" ? "Descansar 8 h" : "Descansar 30 min"}
+          </button>
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }

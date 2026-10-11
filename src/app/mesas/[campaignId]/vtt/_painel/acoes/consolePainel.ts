@@ -28,7 +28,7 @@ import { getCharacterForCampaign } from "../../../../../../lib/character/storage
 import { getCharacterRules } from "../../../../../../lib/content";
 import type { CharacterRecord, CharacterRulesPayload } from "../../../../../../lib/character";
 import { exigirAcessoPainel, mensagemDeErro, type ResultadoPainel } from "./comum";
-import { lerTrilhaDaCenaAtiva, tokenDoPersonagemNaCenaAtiva } from "../../../../../../lib/vtt/sceneStorage";
+import { lerTrilhaDaCenaAtiva } from "../../../../../../lib/vtt/sceneStorage";
 import type { TurnWindow } from "../../../../../../lib/table/turnTrack";
 
 export interface AberturaConsole {
@@ -53,13 +53,6 @@ export interface AberturaConsole {
    * a ficha obedece.
    */
   janelaDeTurno: TurnWindow | null;
-  /**
-   * Token DESTE personagem na cena ativa, ou `null` se ele não está no
-   * mapa. É o que permite ir da ficha para o tabuleiro: sem isso, o
-   * Console não tinha como saber sequer se o personagem que ele mostra
-   * está em jogo agora.
-   */
-  tokenNaCena: string | null;
 }
 
 /** `vtt_turn_tracks` fala "rapidos/lentos"; a ficha fala "rapida/lenta". */
@@ -82,13 +75,12 @@ export async function abrirConsoleAction(campaignId: string, characterId: string
   const v = await exigirAcessoPainel(campaignId);
   if (!v.ok) return { ok: false, erro: v.erro };
   try {
-    const [personagem, regrasDoc, trilha, tokenNaCena] = await Promise.all([
+    const [personagem, regrasDoc, trilha] = await Promise.all([
       getCharacterForCampaign(campaignId, characterId),
       getCharacterRules().catch(() => null),
       // Best-effort: sem cena, sem combate ou sem acesso à trilha, a
       // ficha simplesmente abre fora de combate — como abria antes.
       lerTrilhaDaCenaAtiva(campaignId).catch(() => null),
-      tokenDoPersonagemNaCenaAtiva(campaignId, characterId).catch(() => null),
     ]);
     if (!personagem) return { ok: false, erro: "Personagem não encontrado ou fora do seu acesso." };
     return {
@@ -101,7 +93,6 @@ export async function abrirConsoleAction(campaignId: string, characterId: string
         // escrita dele continua passando pela RPC restrita por coluna.
         podeEditar: true,
         janelaDeTurno: janelaDaTrilha(trilha),
-        tokenNaCena,
       },
     };
   } catch (e) {

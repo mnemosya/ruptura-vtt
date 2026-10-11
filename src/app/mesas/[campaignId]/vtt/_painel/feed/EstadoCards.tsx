@@ -139,7 +139,7 @@ export function OverloadCard({
     >
       <Modulos colunas={2}>
         {cartao.indice != null && (
-          <Modulo rotulo="Surto" valor={cartao.indice} sub={`/${cartao.maximo}`} acento="mana" />
+          <Modulo rotulo="Surto" valor={cartao.indice} sub={`/${cartao.maximo}`} acento="am" />
         )}
         {cartao.danoPsiquico != null && (
           <Modulo
@@ -152,9 +152,17 @@ export function OverloadCard({
           />
         )}
       </Modulos>
-      {/* A regra manda aplicar o dano à mão — o card diz isso em vez de
-          fingir que já aconteceu. */}
-      <p className="pn-texto">Aplicação manual do dano.</p>
+      {/* O dano já foi aplicado em PE — mesma faixa do "Dano aplicado" do
+          card de ataque. Logs antigos (sem PE) não têm a faixa. */}
+      {cartao.peAntes != null && cartao.peDepois != null && (
+        <FaixaResultado
+          rotulo="Dano aplicado"
+          valor={`PE ${cartao.peAntes} → ${cartao.peDepois}`}
+          acento="ok"
+          icone={<Zap />}
+          testId="painel-feed-sobrecarga-pe"
+        />
+      )}
     </CartaoBase>
   );
 }

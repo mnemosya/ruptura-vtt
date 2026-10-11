@@ -54,18 +54,6 @@ interface ApiConsoleDaMesa {
    * saindo de `/ficha`; sem rota, ele precisa ser explícito.
    */
   fechadaEm: number;
-  /**
-   * Leva a câmera até um token e fecha a ficha. `null` fora do VTT —
-   * em Personagens ou na Mesa não há mapa pra focar, e a ficha não
-   * pode oferecer uma ação que não vai a lugar nenhum.
-   *
-   * Quem sabe mover a câmera é o VTT, que fica ABAIXO deste provider;
-   * por isso ele registra a função aqui em vez de o provider tentar
-   * alcançá-lo.
-   */
-  focarNoMapa: ((tokenId: string) => void) | null;
-  /** Chamado pelo VTT ao montar, com a sua própria função de foco. */
-  registrarFocoNoMapa: (fn: ((tokenId: string) => void) | null) => void;
 }
 
 const Contexto = createContext<ApiConsoleDaMesa | null>(null);
@@ -98,11 +86,6 @@ export function ProvedorConsoleDaMesa({ campaignId, children }: { campaignId: st
     setDe(characterId);
   }, []);
   const [fechadaEm, setFechadaEm] = useState(0);
-  const [focoNoMapa, setFocoNoMapa] = useState<((tokenId: string) => void) | null>(null);
-  // `useState` com função exige o wrapper: `setFocoNoMapa(fn)` chamaria `fn`.
-  const registrarFocoNoMapa = useCallback((fn: ((tokenId: string) => void) | null) => {
-    setFocoNoMapa(() => fn);
-  }, []);
 
   const [abaInicial, setAbaInicial] = useState<string | null>(null);
   const abrir = useCallback((characterId: string, aba?: string) => {
@@ -128,14 +111,10 @@ export function ProvedorConsoleDaMesa({ campaignId, children }: { campaignId: st
     router.refresh();
   }, [router]);
   const aquecer = useCallback(() => precarregarConsole(campaignId), [campaignId]);
-  const focarNoMapa = useMemo(
-    () => (focoNoMapa ? (tokenId: string) => { focoNoMapa(tokenId); fechar(); } : null),
-    [focoNoMapa, fechar],
-  );
 
   const api = useMemo(
-    () => ({ abrir, abrirAcaoToken, fecharAcaoToken, definirAlvosNoMapa, aquecer, aberto: de !== null, fechadaEm, focarNoMapa, registrarFocoNoMapa }),
-    [abrir, abrirAcaoToken, fecharAcaoToken, aquecer, de, fechadaEm, focarNoMapa, registrarFocoNoMapa],
+    () => ({ abrir, abrirAcaoToken, fecharAcaoToken, definirAlvosNoMapa, aquecer, aberto: de !== null, fechadaEm }),
+    [abrir, abrirAcaoToken, fecharAcaoToken, aquecer, de, fechadaEm],
   );
 
   /**

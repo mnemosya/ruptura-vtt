@@ -30,21 +30,14 @@ interface Hospedeiro {
    * consulta em interrupção.
    */
   ancorado: boolean;
-  /**
-   * Ação "Ver no mapa" — leva a câmera até o token deste personagem e
-   * fecha a ficha. `null` quando não há mapa (Personagens, Mesa) ou
-   * quando o personagem não está na cena: a ficha não oferece um botão
-   * que não vai a lugar nenhum.
-   */
-  verNoMapa: (() => void) | null;
 }
 
 const ConsoleCloseContext = createContext<Hospedeiro | null>(null);
 
 export function ConsoleCloseProvider({
-  onClose, ancorado = false, verNoMapa = null, children,
-}: { onClose: () => void; ancorado?: boolean; verNoMapa?: (() => void) | null; children: ReactNode }) {
-  const valor = useMemo(() => ({ onClose, ancorado, verNoMapa }), [onClose, ancorado, verNoMapa]);
+  onClose, ancorado = false, children,
+}: { onClose: () => void; ancorado?: boolean; children: ReactNode }) {
+  const valor = useMemo(() => ({ onClose, ancorado }), [onClose, ancorado]);
   return <ConsoleCloseContext.Provider value={valor}>{children}</ConsoleCloseContext.Provider>;
 }
 
@@ -56,9 +49,4 @@ export function useConsoleCloseOverride(): (() => void) | null {
 /** `false` na rota /ficha, onde o Console É a página e não há nada vivo embaixo. */
 export function useConsoleAncorado(): boolean {
   return useContext(ConsoleCloseContext)?.ancorado ?? false;
-}
-
-/** `null` quando não há mapa pra focar — a ação não deve nem aparecer. */
-export function useVerNoMapa(): (() => void) | null {
-  return useContext(ConsoleCloseContext)?.verNoMapa ?? null;
 }

@@ -328,6 +328,9 @@ export interface CartaoSobrecarga extends CartaoComum {
   maximo: number;
   danoPsiquico: number | null;
   danoDado: string | null;
+  /** PE antes e depois do dano do surto (aplicado na hora). `null` em logs antigos. */
+  peAntes: number | null;
+  peDepois: number | null;
   rupturaPendente: boolean;
 }
 
@@ -885,6 +888,8 @@ function projetarSobrecarga(entry: TableLogEntry): CartaoFeed {
     maximo: num(p, "maxSurtos") ?? 3,
     danoPsiquico: num(p, "danoPsiquico", "dano"),
     danoDado: txt(p, "danoDado"),
+    peAntes: num(p, "peAntes"),
+    peDepois: num(p, "peDepois"),
     rupturaPendente: bool(p, "rupturaPendente") ?? false,
   };
 }
