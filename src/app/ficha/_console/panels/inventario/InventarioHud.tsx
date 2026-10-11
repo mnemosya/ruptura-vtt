@@ -77,6 +77,7 @@ export interface DestinoHud { id: string; rotulo: string; motivo: string | null 
 export interface PropsInventarioHud {
   itens: ItemHud[];
   capacidade: number;
+  nomeMochilaEquipada?: string;
   aretz: number | null;
   /**
    * Edita o saldo a partir do que foi digitado (valor, `+250`, `3000-555`).
@@ -176,8 +177,7 @@ export function InventarioHud(props: PropsInventarioHud) {
   };
   const irPara = (v: VistaHud) => { setVista(v); setAncora(null); setMarcados(new Set()); };
 
-  /* Atalhos só com o foco DENTRO do inventário: no VTT, 1–4 e `/`
-     são de outras ferramentas, e um ouvinte global roubaria as teclas. */
+  /* Atalhos das vistas só com o foco dentro do inventário. */
   function aoTeclar(e: React.KeyboardEvent) {
     if (e.key === "Escape") {
       if (menuLote) { setMenuLote(false); e.stopPropagation(); return; }
@@ -187,8 +187,6 @@ export function InventarioHud(props: PropsInventarioHud) {
       return;
     }
     if ((e.target as HTMLElement).tagName === "INPUT") return;
-    if (e.key === "/") { e.preventDefault(); buscaRef.current?.focus(); return; }
-    if ((e.key === "m" || e.key === "M") && props.onAbrirMercado) { setAncora(null); props.onAbrirMercado(); return; }
     const v = VISTAS[Number(e.key) - 1];
     if (v) irPara(v.id);
   }
@@ -204,7 +202,7 @@ export function InventarioHud(props: PropsInventarioHud) {
           {VISTAS.map((v) => (
             <button key={v.id} type="button" role="tab" aria-selected={vista === v.id}
               className="ih-aba" data-ativo={vista === v.id || undefined} onClick={() => irPara(v.id)}>
-              <span className="ih-aba-rot">{v.rotulo}</span>
+              <span className="ih-aba-rot">{v.id === "mochila" ? props.nomeMochilaEquipada ?? v.rotulo : v.rotulo}</span>
               <span className="ih-aba-qtd">{contagem[v.id]}</span>
             </button>
           ))}
@@ -218,7 +216,7 @@ export function InventarioHud(props: PropsInventarioHud) {
               placeholder="Rastrear item…" aria-label="Buscar item no inventário" />
             {busca
               ? <button type="button" className="ih-busca-tecla" onClick={() => setBusca("")}>esc</button>
-              : <span className="ih-busca-tecla">/</span>}
+              : null}
           </label>
           {!props.somenteLeitura && <button type="button" className="ih-selecao-botao" aria-pressed={emSelecao}
             aria-label={emSelecao ? "Encerrar seleção" : "Selecionar vários itens"}
@@ -231,7 +229,6 @@ export function InventarioHud(props: PropsInventarioHud) {
             <button type="button" className="ih-mercado" onClick={() => { setAncora(null); props.onAbrirMercado!(); }}>
               <Glifo d="M3 4h2l2 11h11l2-8H6m3 13a1 1 0 1 0 0-.01M17 20a1 1 0 1 0 0-.01" tam={18} />
               <span className="ih-mercado-rot">Mercado</span>
-              <span className="ih-mercado-tecla">M</span>
             </button>
           )}
         </div>

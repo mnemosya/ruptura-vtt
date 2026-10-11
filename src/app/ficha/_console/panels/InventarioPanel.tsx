@@ -1,4 +1,6 @@
 "use client";
+import { itemDisplayName } from "../../../../lib/character/itemDisplayName";
+import { ehMochilaMk } from "../../../../lib/character/backpacks";
 
 /**
  * Aba INVENTÁRIO — a lista de itens do personagem, com detalhe ao lado.
@@ -96,7 +98,11 @@ const DESTINOS: {
   { id: "tronco", label: "Tronco", slot: "tronco" },
   { id: "membro_superior", label: "Braços", slot: "membro_superior" },
   { id: "membro_inferior", label: "Pernas", slot: "membro_inferior" },
-  { id: "escudo", label: "Escudo", slot: "escudo" },
+  { id: "acessorio_1", label: "Acessório 1", slot: "acessorio_1" },
+  { id: "acessorio_2", label: "Acessório 2", slot: "acessorio_2" },
+  { id: "estrutura_dorsal", label: "Estrutura dorsal", slot: "estrutura_dorsal" },
+  { id: "locomocao", label: "Locomoção", slot: "locomocao" },
+  { id: "mochila_equipada", label: "Mochila equipada", slot: "mochila_equipada" },
   { id: "traje", label: "Traje", slot: "traje" },
   { id: "suporte_municao", label: "Suporte de munição", slot: "suporte_municao" },
   { id: "equipado", label: "Equipado", estado: "equipado" },
@@ -218,7 +224,7 @@ function itemDoHud(api: ConsoleApi, instancia: InventoryItemInstance): ItemHud {
   const local = LOCAL_DO_ESTADO[instancia.estado];
   return {
     id: instancia.id,
-    nome: instancia.itemNome,
+    nome: itemDisplayName(instancia, modelo),
     weaponName: modelo?.nome,
     temaCategoria: modelo ? temaDoModelo(modelo) : undefined,
     categoria,
@@ -392,6 +398,7 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
   const [mercado, setMercado] = useState(false);
   const fecharMercado = useCallback(() => setMercado(false), []);
   const inventario = api.character.inventario ?? [];
+  const mochilaEquipada = inventario.find(i => i.estado === "equipado" && ehMochilaMk(api.catalogo.get(i.itemSlug)));
   const itens = inventario.map((i) => itemDoHud(api, i));
   const porId = new Map(inventario.map((i) => [i.id, i]));
   const aretz = api.character.carteira?.aretz_informal ?? null;
@@ -426,6 +433,7 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
         <div className="rc-inv" data-testid="console-inventario">
           <InventarioHud
             itens={itens}
+            nomeMochilaEquipada={mochilaEquipada ? api.catalogo.get(mochilaEquipada.itemSlug)?.nome : "Sem mochila"}
             capacidade={api.carga.capacidade}
             aretz={aretz}
             somenteLeitura={api.somenteLeitura}

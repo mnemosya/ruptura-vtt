@@ -3,7 +3,7 @@ import { AmmoIcon } from "./AmmoIcon";
 import { ArmorIcon } from "./ArmorIcon";
 import { WeaponIcon } from "./WeaponIcon";
 import { weaponIconForName } from "./weaponIconMapping";
-import { Bike, Bomb, Bot, CircuitBoard, Cpu, Cross, Droplet, Footprints, Hand, Headphones, Package, Pill, Puzzle, Syringe,  ShieldHalf, Shirt, Swords, UserRound, Wrench, type LucideProps } from "lucide-react";
+import { Backpack, Bike, Bomb, Bot, CircuitBoard, Cpu, Cross, Droplet, Footprints, Hand, Headphones, Package, Pill, Puzzle, Syringe,  ShieldHalf, Shirt, Swords, UserRound, Wrench, type LucideProps } from "lucide-react";
 
 /** Identidade visual compartilhada entre mercado, inventário e equipamentos. */
 const ICONS: Record<string, ComponentType<LucideProps>> = {
@@ -19,7 +19,8 @@ const ICONS: Record<string, ComponentType<LucideProps>> = {
   municao: AmmoIcon, explosivo: Bomb, explosivos: Bomb,
   veiculo: Bike, mobilidade: Bike, modulo_veicular: Wrench,
   traje: Shirt, trajes: Shirt, vertina: Syringe, vertinas: Syringe,
-  acesso_rapido: Cross,
+  acesso_rapido: Cross, acessorio_1: Headphones, acessorio_2: Headphones,
+  estrutura_dorsal: Backpack, mochila_equipada: Backpack, locomocao: Bike,
   cabeca: UserRound, tronco: Shirt, membro_superior: Hand, membro_inferior: Footprints,
 };
 const key = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_");

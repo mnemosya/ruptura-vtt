@@ -179,7 +179,7 @@ import { deriveItemUseKind, getItemUsePreview, getItemUsePaCost } from "../../..
 import { registrarRolagemPericiaAction } from "../../mesas/[campaignId]/vtt/_painel/acoes/rolagemPainel";
 import type { TurnWindow } from "../../../lib/table/turnTrack";
 import type { ConsoleApi, ConsolePin, TermoDeRegra } from "../../ficha/_console/types";
-import { resumoDeCarga } from "../../../lib/character/carga";
+import { resumoDeCarga, permiteAlteracaoDeCarga } from "../../../lib/character/carga";
 import type { BodySlotId } from "../../ficha/_console/slots";
 import { GeneralTab } from "./components/GeneralTab";
 import { AttributesTab } from "./components/AttributesTab";
@@ -1993,6 +1993,10 @@ export default function CharacterSheetClient({
     const result = purchaseItem({ character: current, item, quantidade, walletId, precoUnitario, nowIso: new Date().toISOString(), catalog: [...catalogoItens.values()] });
     if (!result.ok) {
       addLogEntry("recurso", result.reason ?? "Compra não realizada.");
+      return;
+    }
+    if (!permiteAlteracaoDeCarga(current, result.character, catalogoItens)) {
+      addLogEntry("recurso", "Compra não realizada: a Mochila ultrapassaria sua capacidade +2. Libere espaço ou equipe um modelo maior.");
       return;
     }
     characterRef.current = result.character;
@@ -4116,7 +4120,7 @@ export default function CharacterSheetClient({
         handleEquipDefensive(instanceId);
         return;
       }
-      if (slot === "arma_primaria" || slot === "arma_secundaria" || slot === "acesso_rapido_1" || slot === "acesso_rapido_2" || slot === "traje" || slot === "suporte_municao") {
+      if (slot === "arma_primaria" || slot === "arma_secundaria" || slot === "acesso_rapido_1" || slot === "acesso_rapido_2" || slot === "traje" || slot === "suporte_municao" || slot === "acessorio_1" || slot === "acessorio_2" || slot === "estrutura_dorsal" || slot === "locomocao" || slot === "mochila_equipada") {
         // A mão/posição escolhida fica gravada — sem isto a ordem de
         // aquisição decidia, e a secundária virava primária.
         const next = setItemEmEncaixe(characterRef.current, instanceId, slot, catalogoItens);

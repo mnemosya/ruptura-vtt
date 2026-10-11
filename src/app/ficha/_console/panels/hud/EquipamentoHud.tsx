@@ -35,7 +35,7 @@ import "./equipamento-motion.css";
 
 export type EncaixeHud =
   | "cabeca" | "tronco" | "membro_superior" | "membro_inferior"
-  | "arma_primaria" | "arma_secundaria" | "acesso_rapido_1" | "acesso_rapido_2" | "traje" | "suporte_municao";
+  | "arma_primaria" | "arma_secundaria" | "acesso_rapido_1" | "acesso_rapido_2" | "traje" | "suporte_municao" | "acessorio_1" | "acessorio_2" | "estrutura_dorsal" | "locomocao" | "mochila_equipada" ;
 
 export interface PecaHud {
   /** Nome do modelo preservado mesmo quando a instância é renomeada. */
@@ -106,6 +106,11 @@ const COR_VERTENTE: Record<string, string> = { cinetica: "#e0455f", energetica: 
 const corDe = (p: PecaHud) => corCategoria(p.temaCategoria ?? p.categoria) ?? COR_VERTENTE[p.vertente] ?? CY;
 
 const ROTULO: Record<EncaixeHud, string> = {
+  acessorio_1: "Acessório 1",
+  acessorio_2: "Acessório 2",
+  estrutura_dorsal: "Estrutura dorsal",
+  locomocao: "Locomoção",
+  mochila_equipada: "Mochila",
   traje: "Traje", suporte_municao: "Suporte de munição",
   cabeca: "Cabeça", tronco: "Tronco", membro_superior: "Braços", membro_inferior: "Pernas",
   arma_primaria: "Primária", arma_secundaria: "Secundária", acesso_rapido_1: "Acesso rápido #1", acesso_rapido_2: "Acesso rápido #2",
@@ -123,16 +128,17 @@ const GAVETA = 300, S = 48;
 /** Distância horizontal dos encaixes à figura: folgada com a gaveta fechada, colada com ela aberta. */
 const FOLGA_FECHADO = 150, FOLGA_ABERTO = 56;
 const FIOS: { e: EncaixeHud; lado: "e" | "d"; y: number; pt: [number, number] }[] = [
-  { e: "cabeca", lado: "e", y: .03, pt: [70, 38] },
-  { e: "tronco", lado: "e", y: .23, pt: [85, 165] },
-  { e: "membro_superior", lado: "e", y: .42, pt: [28, 200] },
-  { e: "arma_primaria", lado: "e", y: .58, pt: [14, 322] },
-  { e: "membro_inferior", lado: "e", y: .76, pt: [58, 440] },
-  { e: "traje", lado: "d", y: .03, pt: [108, 142] },
-  { e: "suporte_municao", lado: "d", y: .76, pt: [126, 278] },
-  { e: "acesso_rapido_1", lado: "d", y: .30, pt: [134, 255] },
-  { e: "acesso_rapido_2", lado: "d", y: .44, pt: [124, 268] },
-  { e: "arma_secundaria", lado: "d", y: .58, pt: [150, 322] },
+  { e: "cabeca", lado: "e", y: 0.035, pt: [70, 38] },
+  { e: "tronco", lado: "e", y: 0.24, pt: [85, 165] },
+  { e: "membro_superior", lado: "e", y: 0.42, pt: [28, 200] },
+  { e: "arma_primaria", lado: "e", y: 0.6, pt: [14, 322] },
+  { e: "membro_inferior", lado: "e", y: 0.78, pt: [58, 440] },
+  { e: "estrutura_dorsal", lado: "d", y: 0.15, pt: [118, 165] },
+  { e: "traje", lado: "d", y: 0.0, pt: [108, 142] },
+  { e: "suporte_municao", lado: "d", y: 0.78, pt: [126, 278] },
+  { e: "acesso_rapido_1", lado: "d", y: 0.32, pt: [134, 255] },
+  { e: "acesso_rapido_2", lado: "d", y: 0.47, pt: [124, 268] },
+  { e: "arma_secundaria", lado: "d", y: 0.62, pt: [150, 322] },
 ];
 const ENCAIXE_DO_PATH: Record<BodyRegiao, EncaixeHud> = {
   cabeca: "cabeca", tronco: "tronco", membro_superior: "membro_superior", membro_inferior: "membro_inferior",
@@ -164,6 +170,10 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
   }, []);
   const FH = Math.max(420, Math.min(900, alturaPalco - 120)), FS = FH / 613, FW = 201 * FS;
   const TOPO = Math.max(16, (alturaPalco - FH) / 2);
+  const TOPO_SLOTS = Math.max(0, TOPO - 20);
+  const topoSlot = (w: (typeof FIOS)[number]) => w.lado === "e"
+    ? Math.max(0, TOPO_SLOTS - 20) + w.y * FH * .85
+    : TOPO_SLOTS + w.y * FH;
   // Um mesmo valor interpola toda a geometria: gaveta, corpo, slots e fios.
   const gavetaAberta = sel !== null;
   const [aberturaGaveta, setAberturaGaveta] = useState(0);
@@ -206,11 +216,11 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
                 onSel={(p) => abrir(ENCAIXE_DO_PATH[p])} onHover={(p) => setHover(p ? ENCAIXE_DO_PATH[p] : null)} />
             </div>
             <svg style={{ position: "absolute", left: 0, top: TOPO, pointerEvents: "none", overflow: "visible" }} width={PALCO} height={FH}>
-              {FIOS.map((w) => {
+              {FIOS.filter(w => w.e !== "suporte_municao").map((w) => {
                 const on = mesmoAlvo(encaixes, sel, w.e) || mesmoAlvo(encaixes, hover, w.e), bx = FX + w.pt[0] * FS, by = w.pt[1] * FS;
                 /* O fio aceso segue a cor do item do encaixe (ciano quando vazio). */
                 const ocupante = encaixes[w.e], cf = on && ocupante ? corDe(ocupante) : CY;
-                const sx = w.lado === "e" ? S : PALCO - S, sy = w.y * FH + S / 2, ex = w.lado === "e" ? sx + 22 : sx - 22;
+                const sx = w.lado === "e" ? S : PALCO - S, sy = topoSlot(w) - TOPO + S / 2, ex = w.lado === "e" ? sx + 22 : sx - 22;
                 return (
                   <g key={w.e} opacity={on ? 1 : .35} style={{ ["--eq-fio-delay" as string]: `${60 + (w.pt[1] / 613) * 1050}ms` }}>
                     <polyline className="hx-eq-fio" pathLength="1" points={`${bx},${by} ${ex},${sy} ${sx},${sy}`} fill="none" stroke={cf} strokeOpacity={on ? .85 : .25} strokeWidth="1" />
@@ -222,7 +232,7 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
             {FIOS.map((w) => {
               const p = encaixes[w.e];
               return (
-                <div key={w.e} className="hx-eq-slot" data-lado={w.lado} style={{ ["--eq-slot-delay" as string]: `${160 + (w.pt[1] / 613) * 1050}ms`, ["--eq-item-cor" as string]: p ? corDe(p) : CY, position: "absolute", top: TOPO + w.y * FH, [w.lado === "e" ? "left" : "right"]: 0, display: "flex", flexDirection: "column", alignItems: w.lado === "e" ? "flex-start" : "flex-end", gap: 4 }}
+                <div key={w.e} className="hx-eq-slot" data-lado={w.lado} style={{ ["--eq-slot-delay" as string]: `${160 + (w.pt[1] / 613) * 1050}ms`, ["--eq-item-cor" as string]: p ? corDe(p) : CY, position: "absolute", top: topoSlot(w), [w.lado === "e" ? "left" : "right"]: 0, display: "flex", flexDirection: "column", alignItems: w.lado === "e" ? "flex-start" : "flex-end", gap: 4 }}
                   onMouseEnter={() => setHover(w.e)} onMouseLeave={() => setHover(null)}>
                   <Encaixe peca={p} encaixe={w.e} lado={w.lado} ativo={sel === w.e} quente={mesmoAlvo(encaixes, hover, w.e)} onClick={() => abrir(sel === w.e ? null : w.e)} />
                   <Tag className="hx-dim" style={{ fontSize: 10, opacity: .7 }}>{ROTULO[w.e]}</Tag>
@@ -230,7 +240,14 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
               );
             })}
           </div>
-          <Tag className="hx-dim hx-eq-instrucao" style={{ position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)", fontSize: 10, opacity: .6, visibility: sel ? "hidden" : "visible", pointerEvents: "none" }}>selecione um encaixe</Tag>
+          <div style={{ position: "absolute", bottom: 38, left: `calc(50% - ${PALCO / 2}px)`, width: PALCO, display: "grid", gridTemplateColumns: `minmax(0, 1fr) ${S}px minmax(0, 1fr)`, alignItems: "end", gap: 12 }}>
+            {([["acessorio_1", "acessorio_2"], ["mochila_equipada"], ["locomocao"]] as EncaixeHud[][]).map((grupo, index) => <div key={index} style={{ display: "flex", flexDirection: index === 0 ? "column" : "row", gap: 20, alignItems: index === 0 ? "flex-start" : "center", justifyContent: index === 2 ? "flex-end" : "center" }}>
+              {grupo.map(e => <div key={e} style={{ width: S, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }} onMouseEnter={() => setHover(e)} onMouseLeave={() => setHover(null)}>
+                <Encaixe peca={encaixes[e]} encaixe={e} lado={index === 2 ? "d" : "e"} ativo={sel === e} quente={hover === e} onClick={() => abrir(sel === e ? null : e)} />
+                <Tag className="hx-dim" style={{ fontSize: 10, whiteSpace: "nowrap" }}>{ROTULO[e]}</Tag>
+              </div>)}
+            </div>)}
+          </div>
         </div>
 
         <aside aria-hidden={!sel} style={{ position: "relative", flexShrink: 0, overflow: "hidden", width: aberturaGaveta * GAVETA, background: "rgba(12,31,43,.35)", backdropFilter: "blur(2px)" }}>
@@ -317,7 +334,7 @@ function Encaixe({ peca, encaixe, ativo, quente, onClick, lado = "e" }: { peca: 
       )}
       {peca && <span style={{ position: "absolute", right: 0, top: 0, width: 0, height: 0, borderLeft: "8px solid transparent", borderTop: `8px solid ${corRar(peca.raridade)}` }} />}
       <span style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", display: "grid" }}>
-        <ItemCategoryIcon category={peca?.categoria ?? (ehArma(encaixe) ? "arma" : encaixe.startsWith("acesso_rapido") ? "acesso_rapido" : encaixe)} weaponName={peca?.weaponName ?? peca?.nome} size={S * .46} color={peca ? cor : CY} strokeWidth={1.5} style={{ opacity: peca ? 1 : .22 }} />
+        <ItemCategoryIcon category={encaixe === "mochila_equipada" ? "mochila_equipada" : peca?.categoria ?? (ehArma(encaixe) ? "arma" : encaixe.startsWith("acesso_rapido") ? "acesso_rapido" : encaixe)} weaponName={peca?.weaponName ?? peca?.nome} size={S * .46} color={peca ? cor : CY} strokeWidth={1.5} style={{ opacity: peca ? 1 : .22 }} />
       </span>
       {selo != null && (
         <span className="hx-display" style={{ position: "absolute", top: "50%", transform: "translateY(-50%)",
@@ -567,7 +584,7 @@ function Gaveta(props: PropsEquipamentoHud & { sel: EncaixeHud; onFechar: () => 
   const cands = props.candidatos(e).sort((a, b) => (a.onde === "abrigo" ? 1 : 0) - (b.onde === "abrigo" ? 1 : 0) || a.nome.localeCompare(b.nome, "pt-BR"));
   const [menu, setMenu] = useState<{ p: PecaHud; x: number; y: number } | null>(null);
   const corpo = (c: ReactNode) => <div className="hx-boot hx-semsb" style={{ minHeight: 0, flex: 1, overflowY: "auto", padding: "0 16px 24px" }}>{c}</div>;
-  const chapeu = ehArmadura(e) ? "proteção" : ehArma(e) ? "mãos" : e === "traje" ? "vestuário" : e === "suporte_municao" ? "munição" : "acesso rápido";
+  const chapeu = ehArmadura(e) ? "proteção" : ehArma(e) ? "mãos" : e === "traje" ? "vestuário" : e === "suporte_municao" ? "munição" : e.startsWith("acessorio") ? "acessórios" : e === "mochila_equipada" ? "armazenamento" : e === "estrutura_dorsal" || e === "locomocao" ? "mobilidade" : "acesso rápido";
 
   /* Sem nenhuma ação (armadura, traje…), a coluna não existe: vazia,
      ela sobrava como um retângulo morto no canto do cartão. */

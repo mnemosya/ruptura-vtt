@@ -226,7 +226,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                   data-ativo={on || undefined} data-vertente={c.vertente} style={estiloGrupo(c.nome, c.vertente)} aria-expanded={temSubs ? on : undefined}>
                   <span className="hx-cat-fio" />
                   <span className="hx-cat-ico"><ItemCategoryIcon category={c.nome} size={18} /></span>
-                  <span style={{ flex: 1, fontSize: 15, fontWeight: 600, lineHeight: 1.2 }}>{c.nome}</span>
+                  <span style={{ flex: 1, fontSize: 15, fontWeight: 600, lineHeight: 1.2, textTransform: "uppercase" }}>{c.nome}</span>
                   <Tag className="hx-dim" style={{ opacity: .7 }}>{c.n}</Tag>
                   {temSubs && (on ? <ChevronDown size={12} aria-hidden="true" style={{ opacity: .6 }} /> : <ChevronRight size={12} aria-hidden="true" style={{ opacity: .6 }} />)}
                 </button>

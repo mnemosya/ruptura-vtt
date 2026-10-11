@@ -1,3 +1,4 @@
+import { ehMochilaMk } from "../../../lib/character/backpacks";
 /**
  * Slots de equipamento do Console — projeção de leitura e regra de
  * compatibilidade, ambas DERIVADAS do conteúdo publicado.
@@ -12,6 +13,7 @@
  * novo é gravado no payload do personagem por este módulo.
  */
 
+import { equipmentPositions } from "../../../lib/character/equipmentPositions";
 import type { InventoryItemInstance, ItemContent } from "../../../lib/character";
 
 export type BodySlotId =
@@ -21,7 +23,11 @@ export type BodySlotId =
   | "membro_inferior"
   | "traje"
   | "suporte_municao"
-  | "escudo"
+  | "acessorio_1"
+  | "acessorio_2"
+  | "estrutura_dorsal"
+  | "locomocao"
+  | "mochila_equipada"
   | "arma_primaria"
   | "arma_secundaria"
   | "acesso_rapido_1"
@@ -32,8 +38,12 @@ export const BODY_SLOT_LABELS: Record<BodySlotId, string> = {
   tronco: "Tronco",
   membro_superior: "Braços",
   membro_inferior: "Pernas",
-  escudo: "Escudo",
   traje: "Traje",
+  acessorio_1: "Acessório 1",
+  acessorio_2: "Acessório 2",
+  estrutura_dorsal: "Estrutura dorsal",
+  locomocao: "Locomoção",
+  mochila_equipada: "Mochila equipada",
   suporte_municao: "Suporte de munição",
   arma_primaria: "Arma primária",
   arma_secundaria: "Arma secundária",
@@ -64,6 +74,9 @@ const CATEGORIAS_ACESSO_RAPIDO = new Set(["farmacia", "explosivo", "vertina"]);
 export function itemCabeNoSlot(item: ItemContent | undefined, slot: BodySlotId): boolean {
   if (!item) return false;
 
+  if (slot === "acessorio_1" || slot === "acessorio_2") return item.categoria === "acessorio";
+  if (slot === "estrutura_dorsal" || slot === "locomocao") return equipmentPositions(item).includes(slot);
+  if (slot === "mochila_equipada") return ehMochilaMk(item);
   if (slot === "traje") return item.categoria === "traje";
   if (slot === "suporte_municao") return !!item.suporteMunicao;
   if (slot === "arma_primaria") return item.categoria === "arma";
@@ -74,7 +87,6 @@ export function itemCabeNoSlot(item: ItemContent | undefined, slot: BodySlotId):
   // slot: aceitar as duas categorias aqui é o que faz "Equipar" a
   // partir desse box mostrar arma OU escudo na mochila.
   if (slot === "arma_secundaria") return item.categoria === "arma" || item.categoria === "escudo";
-  if (slot === "escudo") return item.categoria === "escudo";
   if (slot === "acesso_rapido_1" || slot === "acesso_rapido_2") {
     const spaces=/^\d+/.exec(item.espacosTexto ?? "1");
     return !!spaces && Number(spaces[0])<=1 && (item.categoria === "municao" || CATEGORIAS_ACESSO_RAPIDO.has(item.categoria));
@@ -138,6 +150,7 @@ export function projectBodySlots(
   // Fonte defensiva ATIVA — `equipadoDefensivo` é o que realmente
   // fornece MIT/PD hoje (ver getEquippedDefenseProfile em defense.ts).
   const escudo = inventario.find((i) => i.equipadoDefensivo && i.equipamentoSlot === "escudo") ?? null;
+  if (escudo && !duasMaos) secundaria = escudo;
 
   // Armaduras vestidas ocupam a região declarada pelo próprio modelo.
   const armaduras = inventario.filter((i) => i.estado === "equipado" && catalogo.get(i.itemSlug)?.categoria === "armadura");
@@ -152,7 +165,11 @@ export function projectBodySlots(
     ["tronco", armaduraDaRegiao("tronco")],
     ["membro_superior", armaduraDaRegiao("membro_superior")],
     ["membro_inferior", armaduraDaRegiao("membro_inferior")],
-    ["escudo", escudo],
+    ["acessorio_1", inventario.find(i => i.estado === "equipado" && catalogo.has(i.itemSlug) && equipmentPositions(catalogo.get(i.itemSlug)!, i.encaixeEscolhido).includes("acessorio_1")) ?? null],
+    ["acessorio_2", inventario.find(i => i.estado === "equipado" && catalogo.has(i.itemSlug) && equipmentPositions(catalogo.get(i.itemSlug)!, i.encaixeEscolhido).includes("acessorio_2")) ?? null],
+    ["estrutura_dorsal", inventario.find(i => i.estado === "equipado" && catalogo.has(i.itemSlug) && equipmentPositions(catalogo.get(i.itemSlug)!, i.encaixeEscolhido).includes("estrutura_dorsal")) ?? null],
+    ["locomocao", inventario.find(i => i.estado === "equipado" && catalogo.has(i.itemSlug) && equipmentPositions(catalogo.get(i.itemSlug)!, i.encaixeEscolhido).includes("locomocao")) ?? null],
+    ["mochila_equipada", inventario.find(i => i.estado === "equipado" && catalogo.has(i.itemSlug) && equipmentPositions(catalogo.get(i.itemSlug)!, i.encaixeEscolhido).includes("mochila_equipada")) ?? null],
     ["traje", inventario.find(i => i.estado === "equipado" && catalogo.get(i.itemSlug)?.categoria === "traje") ?? null],
     ["suporte_municao", inventario.find(i => i.estado === "equipado" && catalogo.get(i.itemSlug)?.suporteMunicao) ?? null],
     ["arma_primaria", primaria],

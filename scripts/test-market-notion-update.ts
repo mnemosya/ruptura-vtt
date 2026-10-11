@@ -76,8 +76,8 @@ console.log("✓ Suporte guardado conta sua munição; suporte equipado não ocu
 
 const flightA=buy("Icarus I"),flightB=buy("Icarus II"),gloves=buy("Luvas de Escalada");
 character=setItemLoadoutState(character,flightA.id,"equipado",catalog) as typeof character;
-character=setItemLoadoutState(character,gloves.id,"equipado",catalog) as typeof character;
+character=setItemLoadoutState(character,gloves.id,"acesso_rapido",catalog) as typeof character;
 character=setItemLoadoutState(character,flightB.id,"equipado",catalog) as typeof character;
 assert.equal(character.inventario?.find(i=>i.id===flightA.id)?.estado,"mochila");
-assert.equal(character.inventario?.find(i=>i.id===gloves.id)?.estado,"equipado");
-console.log("✓ Estrutura dorsal exclusiva, independente da posição de Luvas");
+assert.equal(character.inventario?.find(i=>i.id===gloves.id)?.estado,"acesso_rapido");
+console.log("✓ Estrutura dorsal exclusiva, luvas são ferramentas em acesso rápido");

@@ -55,6 +55,7 @@
 .hm-categorias-cab { display: flex; align-items: center; justify-content: space-between; padding: 0 10px 12px; margin-bottom: 8px; border-bottom: 1px solid #24404c; }
 .hm-ferramentas .hx-busca { flex: 1; min-width: 0; }
 .hm-filtro, .hm-recolher { position: relative; display: grid; place-items: center; flex: none; width: 44px; height: 44px; color: var(--hx-dim) !important; }
+.hm-categorias-cab .hm-recolher { justify-items: end; padding: 0 !important; }
 .hm-filtro[hidden] { display: none; }
 .hm-filtro:hover, .hm-recolher:hover { color: var(--hx-amb) !important; background: rgba(255,138,31,.06) !important; }
 .hm-filtro::after, .hm-recolher::after {

@@ -1,3 +1,5 @@
+import { ehMochilaMk } from "./backpacks";
+import { resumoDeCarga, permiteAlteracaoDeCarga } from "./carga";
 import { equipmentPositions, occupiedEquipmentPositions } from "./equipmentPositions";
 /**
  * Inventário, carteira e loja do Mercado Noturno — checkpoint v0.49
@@ -130,7 +132,8 @@ export interface ItemContent {
   ammoKitQuantidade: number | null;
   maos?: 1 | 2 | null;
   classeArmadura?: string | null;
-  posicaoMobilidade?: string | null;
+  posicaoMobilidade?: "estrutura_dorsal" | "locomocao" | null;
+  capacidadeMochila?: number | null;
   compatibilidadeArmadura?: string[];
   suporteMunicao?: { tipo: "aljava" | "cartucheira"; capacidade: number; autoalimentadora: boolean } | null;
   modosAtaque?: { id: string; dado_dano: string; tipo_dano: string; subtipo_dano: string; soma_atributo: string; pericia_teste: string }[];
@@ -235,7 +238,8 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
       return asStringArray(compat?.itens);
     })(),
     ammoKitQuantidade: parseKitQuantidade(estatisticas?.kit),
-    posicaoMobilidade: typeof estatisticas?.posicao_mobilidade === "string" ? estatisticas.posicao_mobilidade : null,
+    posicaoMobilidade: estatisticas?.posicao_mobilidade === "estrutura_dorsal" || estatisticas?.posicao_mobilidade === "locomocao" ? estatisticas.posicao_mobilidade : null,
+    capacidadeMochila: typeof estatisticas?.capacidade_mochila === "number" ? estatisticas.capacidade_mochila : null,
     classeArmadura: typeof estatisticas?.classe_armadura === "string" ? estatisticas.classe_armadura : null,
     compatibilidadeArmadura: asStringArray(estatisticas?.compatibilidade_armadura),
     maos: estatisticas?.maos === 1 || estatisticas?.maos === 2 ? estatisticas.maos : null,
@@ -332,7 +336,7 @@ export interface InstalledRune {
   ativa?: boolean;
 }
 
-export type EncaixeEscolhido = "arma_primaria" | "arma_secundaria" | "acesso_rapido_1" | "acesso_rapido_2" | "traje" | "suporte_municao" | "acessorio_1" | "acessorio_2" | "estrutura_dorsal" | "luvas" | "locomocao";
+export type EncaixeEscolhido = "arma_primaria" | "arma_secundaria" | "acesso_rapido_1" | "acesso_rapido_2" | "traje" | "suporte_municao" | "acessorio_1" | "acessorio_2" | "estrutura_dorsal" | "locomocao" | "mochila_equipada";
 
 export interface InventoryItemInstance {
   id: string;
@@ -876,6 +880,7 @@ export function setItemLoadoutState(character: Character, instanceId: string, es
   const instance = character.inventario?.find(i => i.id === instanceId);
   if (!instance) return character;
   const model = catalogo?.get(instance.itemSlug);
+  if (ehMochilaMk(model) && instance.estado === "equipado" && estado !== "equipado" && catalogo && resumoDeCarga(character, catalogo).ocupados > 0) return character;
   if (model && ((model.categoria === "armadura" && estado === "equipado") || (model.categoria === "escudo" && ["equipado","empunhado"].includes(estado)))) return equipDefensiveItem(character,instanceId,model,catalogo);
   if (model && (estado === "empunhado" || estado === "equipado" || estado === "acesso_rapido")) {
     const chosen: EncaixeEscolhido = estado === "acesso_rapido"
@@ -887,7 +892,8 @@ export function setItemLoadoutState(character: Character, instanceId: string, es
     if (chosen) return setItemEmEncaixe(character, instanceId, chosen, catalogo);
     if (model.categoria === "armadura") return equipDefensiveItem(character, instanceId, model, catalogo);
   }
-  return { ...character, inventario: (character.inventario ?? []).map(i => i.id === instanceId ? { ...i, estado, encaixeEscolhido: undefined, ...(estado === "mochila" || estado === "abrigo" ? { equipadoDefensivo: false } : {}) } : i) };
+  const next = { ...character, inventario: (character.inventario ?? []).map(i => i.id === instanceId ? { ...i, estado, encaixeEscolhido: undefined, ...(estado === "mochila" || estado === "abrigo" ? { equipadoDefensivo: false } : {}) } : i) };
+  return catalogo && !permiteAlteracaoDeCarga(character, next, catalogo) ? character : next;
 }
 
 export function setItemEmEncaixe(character: Character, instanceId: string, encaixe: EncaixeEscolhido, catalogo?: Map<string, ItemContent>): Character {
@@ -895,6 +901,7 @@ export function setItemEmEncaixe(character: Character, instanceId: string, encai
   if (!target) return character;
   const model = catalogo?.get(target.itemSlug);
   const hands = encaixe === "arma_primaria" || encaixe === "arma_secundaria";
+  if (encaixe === "mochila_equipada" && (!ehMochilaMk(model) || target.quantidade !== 1)) return character;
   if (hands && model && model.categoria !== "arma" && model.categoria !== "escudo") return character;
   if (hands && model?.categoria === "arma" && model.maos == null) return character;
   if (encaixe.startsWith("acesso_rapido") && model) {
@@ -904,12 +911,14 @@ export function setItemEmEncaixe(character: Character, instanceId: string, encai
   const estado: ItemLoadoutState = hands ? "empunhado" : encaixe.startsWith("acesso_rapido") ? "acesso_rapido" : "equipado";
   if (model?.categoria === "traje" && catalogo && (character.inventario ?? []).some(i => i.estado === "equipado" && catalogo.get(i.itemSlug)?.categoria === "armadura" && !model.compatibilidadeArmadura?.includes(catalogo.get(i.itemSlug)?.classeArmadura ?? ""))) return character;
   const positions = estado === "acesso_rapido" ? [encaixe] : model ? equipmentPositions(model, encaixe) : [encaixe];
-  return { ...character, inventario: (character.inventario ?? []).map(i => {
+  const next = { ...character, inventario: (character.inventario ?? []).map(i => {
     if (i.id === instanceId) return { ...i, estado, encaixeEscolhido: encaixe };
     const occupied = catalogo ? occupiedEquipmentPositions(i, catalogo.get(i.itemSlug)) : i.estado === estado ? [i.encaixeEscolhido] : [];
     if (occupied.some(p => positions.includes(p as EncaixeEscolhido))) return { ...i, estado: "mochila" as ItemLoadoutState, encaixeEscolhido: undefined, equipadoDefensivo: false };
     return i;
   }) };
+  if (catalogo && !permiteAlteracaoDeCarga(character, next, catalogo)) return character;
+  return next;
 }
 
 export function removeItemFromInventory(character: Character, instanceId: string): Character {
@@ -1096,6 +1105,11 @@ export function purchaseItem(params: {
       valorPago,
       saldoDevido,
     };
+  }
+
+  if (ehMochilaMk(item)) {
+    const novas = Array.from({length: quantidade}, () => ({id: crypto.randomUUID(), itemSlug: item.slug, itemNome: item.nome, categoria: item.categoria, quantidade: 1, estado: "mochila" as const, adquiridoEm: nowIso, precoPago: totalCost / quantidade}));
+    return {character: {...character, carteira: {...carteira, [walletId]: walletAfter}, inventario: [...(character.inventario ?? []), ...novas]}, ok: true, instance: novas[novas.length - 1], totalCost, walletBefore: saldoAtual, walletAfter, valorPago, saldoDevido};
   }
 
   // Munição: derivar modo antes de criar instância.

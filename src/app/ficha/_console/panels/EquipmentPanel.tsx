@@ -1,4 +1,5 @@
 "use client";
+import { itemDisplayName } from "../../../../lib/character/itemDisplayName";
 
 /**
  * Aba EQUIPAMENTOS — o "ripperdoc" (`hud/EquipamentoHud.tsx`) ligado
@@ -32,6 +33,7 @@ export function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
   const ocultavel = descricaoDeOcultavel(modelo);
   const linhas: { rotulo: string; valor: string }[] = [];
   if (alcance) linhas.push({ rotulo: "Alcance", valor: alcance });
+  if (modelo?.capacidadeMochila) linhas.push({rotulo:"Capacidade",valor:`${modelo.capacidadeMochila} espaços`});
   if (modelo?.maos) linhas.push({rotulo:"Mãos",valor:String(modelo.maos)});
   if (inst.aljava) linhas.push({rotulo:"Munição armazenada",valor:`${inst.aljava.stacks.reduce((n,s)=>n+s.quantidade*(s.pesoCapacidade??1),0)}/${inst.aljava.capacidade}`});
   if (ocultavel) linhas.push({ rotulo: "Ocultável", valor: ocultavel });
@@ -39,7 +41,7 @@ export function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
   if (modelo?.preco) linhas.push({ rotulo: "Valor", valor: `₳ ${modelo.preco.toLocaleString("pt-BR")}` });
   return {
     id: inst.id,
-    nome: inst.itemNome,
+    nome: itemDisplayName(inst, modelo),
     weaponName: modelo?.nome,
     suporteMunicao: !!modelo?.suporteMunicao,
     modosAtaque: modelo?.modosAtaque, modoAtaqueEscolhido: inst.modoAtaqueEscolhido,
@@ -83,10 +85,15 @@ export function EquipmentPanel({
   const inventario = api.character.inventario ?? [];
   const porId = new Map(inventario.map((i) => [i.id, i]));
   const peca = (i: InventoryItemInstance | null) => (i ? pecaDe(api, i) : null);
-  const secundaria = por("escudo") ?? por("arma_secundaria");
+  const secundaria = por("arma_secundaria");
 
   const encaixes: Record<EncaixeHud, PecaHud | null> = {
     traje: peca(por("traje")),
+    acessorio_1: peca(por("acessorio_1")),
+    acessorio_2: peca(por("acessorio_2")),
+    estrutura_dorsal: peca(por("estrutura_dorsal")),
+    locomocao: peca(por("locomocao")),
+    mochila_equipada: peca(por("mochila_equipada")),
     suporte_municao: peca(por("suporte_municao")),
     cabeca: peca(por("cabeca")),
     tronco: peca(por("tronco")),

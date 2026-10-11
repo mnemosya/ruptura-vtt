@@ -71,6 +71,11 @@ if (ok.ok) {
   assert.equal(Object.keys(c.pericias).length, rules.pericias.length);
   assert.deepEqual(c.carteira, { aretz_informal: 2600, cdi: 0, cdi_craqueada: 0 });
   assert.equal(c.inventario?.[0].precoPago, 400);
+  const mochila = c.inventario?.find(i => i.itemSlug === "ferramentas_mochila_mk_i");
+  assert.equal(mochila?.quantidade, 1);
+  assert.equal(mochila?.precoPago, 0);
+  assert.equal(mochila?.estado, "equipado");
+  assert.equal(mochila?.encaixeEscolhido, "mochila_equipada");
   assert.deepEqual(c.magia, {
     vertente_primaria: "biotica",
     niveis_vertente: { biotica: 1 },

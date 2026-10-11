@@ -1,0 +1,147 @@
+[
+  {
+    "id": "ferramentas_mochila_mk_i",
+    "nome": "Mochila MK-I",
+    "slug": "ferramentas_mochila_mk_i",
+    "tags": [
+      "loja"
+    ],
+    "preco": 200,
+    "status": "published",
+    "versao": "1.2.0",
+    "raridade": "comum",
+    "categoria": "ferramenta",
+    "uso_manual": true,
+    "preco_texto": "200",
+    "dados_notion": {
+      "pagina": "FERRAMENTAS E UTILIDADES"
+    },
+    "estatisticas": {
+      "espacos_texto": "2 (vazia, quando não equipada)",
+      "capacidade_mochila": 10
+    },
+    "fonte_notion": {
+      "paginaNotionId": "4210a13635528285a61281d46315a915",
+      "paginaEditadaEm": "2026-10-11T07:09:46.548Z"
+    },
+    "categoria_label": "Ferramentas",
+    "descricao_curta": "Mochila tecnomágica de uso cotidiano, equipada com runas simples de Material e Cinética que auxiliam a compactação e a compensação da carga transportada. Todo personagem recebe uma Mochila MK-I na criação.",
+    "descricao_longa": "*Comum*\nMochila tecnomágica de uso cotidiano, equipada com runas simples de Material e Cinética que auxiliam a compactação e a compensação da carga transportada. Todo personagem recebe uma Mochila MK-I na criação.\n**Capacidade:** 10 espaços.\n**Equipamento:** ocupa a posição Mochila de Equipado e não utiliza espaços de armazenamento enquanto equipada. Apenas uma Mochila MK pode permanecer equipada por vez.\n**Armazenamento:** segue as regras de Mochila e Armazenamento Tecnomágico do capítulo Inventário. Não pode ser guardada dentro de outra Mochila MK enquanto contiver itens.\n**Espaços:** 2 (vazia, quando não equipada).\n**Preço:** 200 Ⱥ",
+    "payload_automacao": {
+      "efeitos": []
+    }
+  },
+  {
+    "id": "ferramentas_mochila_mk_ii",
+    "nome": "Mochila MK-II",
+    "slug": "ferramentas_mochila_mk_ii",
+    "tags": [
+      "loja"
+    ],
+    "preco": 600,
+    "status": "published",
+    "versao": "1.2.0",
+    "raridade": "incomum",
+    "categoria": "ferramenta",
+    "uso_manual": true,
+    "preco_texto": "600",
+    "dados_notion": {
+      "pagina": "FERRAMENTAS E UTILIDADES"
+    },
+    "estatisticas": {
+      "espacos_texto": "2 (vazia, quando não equipada)",
+      "capacidade_mochila": 15
+    },
+    "fonte_notion": {
+      "paginaNotionId": "4210a13635528285a61281d46315a915",
+      "paginaEditadaEm": "2026-10-11T07:09:46.548Z"
+    },
+    "categoria_label": "Ferramentas",
+    "descricao_curta": "Mochila tecnomágica com uma matriz rúnica compacta que reduz temporariamente o volume dos objetos armazenados, reorganiza sua acomodação e compensa melhor a carga transportada.",
+    "descricao_longa": "*Incomum*\nMochila tecnomágica com uma matriz rúnica compacta que reduz temporariamente o volume dos objetos armazenados, reorganiza sua acomodação e compensa melhor a carga transportada.\n**Capacidade:** 15 espaços.\n**Equipamento:** ocupa a posição Mochila de Equipado e não utiliza espaços de armazenamento enquanto equipada. Apenas uma Mochila MK pode permanecer equipada por vez.\n**Armazenamento:** segue as regras de Mochila e Armazenamento Tecnomágico do capítulo Inventário. Não pode ser guardada dentro de outra Mochila MK enquanto contiver itens.\n**Espaços:** 2 (vazia, quando não equipada).\n**Preço:** 600 Ⱥ",
+    "payload_automacao": {
+      "efeitos": []
+    }
+  },
+  {
+    "id": "ferramentas_mochila_mk_iii",
+    "nome": "Mochila MK-III",
+    "slug": "ferramentas_mochila_mk_iii",
+    "tags": [
+      "loja"
+    ],
+    "preco": 1500,
+    "status": "published",
+    "versao": "1.2.0",
+    "raridade": "raro",
+    "categoria": "ferramenta",
+    "uso_manual": true,
+    "preco_texto": "1500",
+    "dados_notion": {
+      "pagina": "FERRAMENTAS E UTILIDADES"
+    },
+    "estatisticas": {
+      "espacos_texto": "2 (vazia, quando não equipada)",
+      "capacidade_mochila": 20
+    },
+    "fonte_notion": {
+      "paginaNotionId": "4210a13635528285a61281d46315a915",
+      "paginaEditadaEm": "2026-10-11T07:09:46.548Z"
+    },
+    "categoria_label": "Ferramentas",
+    "descricao_curta": "Mochila tecnomágica com uma malha rúnica avançada que maximiza a compactação e reduz drasticamente o esforço necessário para transportar seu conteúdo.",
+    "descricao_longa": "*Raro*\nMochila tecnomágica com uma malha rúnica avançada que maximiza a compactação e reduz drasticamente o esforço necessário para transportar seu conteúdo.\n**Capacidade:** 20 espaços.\n**Equipamento:** ocupa a posição Mochila de Equipado e não utiliza espaços de armazenamento enquanto equipada. Apenas uma Mochila MK pode permanecer equipada por vez.\n**Armazenamento:** segue as regras de Mochila e Armazenamento Tecnomágico do capítulo Inventário. Não pode ser guardada dentro de outra Mochila MK enquanto contiver itens.\n**Espaços:** 2 (vazia, quando não equipada).\n**Preço:** 1.500 Ⱥ",
+    "payload_automacao": {
+      "efeitos": []
+    }
+  },
+  {
+    "id": "mobilidade_luvas_de_escalada",
+    "nome": "Luvas de Escalada",
+    "slug": "mobilidade_luvas_de_escalada",
+    "tags": [
+      "loja"
+    ],
+    "preco": 120,
+    "status": "published",
+    "versao": "1.2.0",
+    "subtipo": null,
+    "raridade": "comum",
+    "categoria": "ferramenta",
+    "created_at": "2026-10-09",
+    "updated_at": "2026-10-11",
+    "uso_manual": true,
+    "preco_texto": "120",
+    "dados_notion": {
+      "campos": {
+        "Item": "Luvas de Escalada",
+        "Espaços": "1",
+        "Raridade": "Comum",
+        "Preço (Ⱥ)": "120"
+      },
+      "pagina": "FERRAMENTAS E UTILIDADES"
+    },
+    "estatisticas": {
+      "campos_tabela": {
+        "Item": "Luvas de Escalada",
+        "Espaços": "1",
+        "Raridade": "Comum",
+        "Preço (Ⱥ)": "120"
+      },
+      "espacos_texto": "1"
+    },
+    "fonte_notion": {
+      "paginaNotionId": "4210a13635528285a61281d46315a915",
+      "paginaEditadaEm": "2026-10-11T07:09:46.548Z"
+    },
+    "raridade_label": "Comum",
+    "categoria_label": "Ferramentas",
+    "descricao_curta": "Comum",
+    "descricao_longa": "*Comum*\nAs Luvas de Escalada possuem palmas aderentes, reforços nos dedos e pequenas garras retráteis para encontrar apoio em concreto, pedra, estruturas metálicas e outras superfícies irregulares. São usadas em manutenção vertical, resgate e acesso a estruturas onde uma rota convencional não está disponível.\n**Escalada:** você recebe **+1 de vantagem** em testes de **`Mobilidade`** realizados para escalar.\nEnquanto escala uma superfície que ofereça apoios suficientes, você pode usar **Manobrar** normalmente para se deslocar por ela.\nAs luvas não permitem escalar superfícies completamente lisas ou sem pontos de apoio adequados. Durante a escalada, suas mãos ficam ocupadas.\n**Espaços:** 1\n**Preço:** 120 Ⱥ",
+    "payload_automacao": {
+      "efeitos": []
+    },
+    "preco_qualificador": null,
+    "vinculos_sugeridos": null
+  }
+]

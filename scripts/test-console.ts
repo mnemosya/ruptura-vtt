@@ -183,8 +183,8 @@ assert.ok(itemCabeNoSlot(armaduraTronco, "tronco"), "Armadura de tronco cabe no 
 assert.ok(!itemCabeNoSlot(armaduraTronco, "cabeca"), "Armadura de tronco NÃO cabe na cabeça.");
 assert.ok(itemCabeNoSlot(armaduraCabeca, "cabeca"), "Armadura de cabeça cabe na cabeça.");
 assert.ok(itemCabeNoSlot(arma, "arma_primaria"), "Arma cabe em arma primária.");
-assert.ok(!itemCabeNoSlot(arma, "escudo"), "Arma NÃO cabe no slot de escudo.");
-assert.ok(itemCabeNoSlot(escudoItem, "escudo"), "Escudo cabe no slot de escudo.");
+assert.ok(itemCabeNoSlot(arma, "arma_secundaria"), "Arma cabe na secundária.");
+assert.ok(itemCabeNoSlot(escudoItem, "arma_secundaria"), "Escudo ocupa a secundária.");
 assert.ok(itemCabeNoSlot(granada, "acesso_rapido_1"), "Granada cabe no acesso rápido.");
 assert.ok(!itemCabeNoSlot(granada, "tronco"), "Granada NÃO cabe no tronco.");
 assert.ok(!itemCabeNoSlot(undefined, "tronco"), "Item desconhecido nunca passa.");
@@ -212,14 +212,14 @@ const inventario = [
 ];
 const compat = itensCompativeisComSlot(inventario, catalogo, "tronco");
 assert.deepEqual(compat.map((i) => i.id), ["1"], "Só a armadura de tronco guardada na mochila.");
-assert.equal(itensCompativeisComSlot(inventario, catalogo, "escudo").length, 0, "Nada compatível com escudo aqui.");
+assert.equal(itensCompativeisComSlot(inventario, catalogo, "arma_secundaria").length, 1, "Arma guardada é compatível com secundária.");
 console.log("9. Filtro da Mochila por slot — OK");
 
 // -------------------------------------------------------------
 // 10. Projeção: armadura equipada ocupa a região que o modelo declara.
 // -------------------------------------------------------------
 const proj = projectBodySlots(inventario, catalogo);
-assert.equal(proj.slots.length, 9, "São nove slots.");
+assert.equal(proj.slots.length, 15, "São quinze posições canônicas.");
 assert.equal(proj.slots.find((s) => s.id === "cabeca")!.instance?.id, "3", "A armadura de cabeça ocupa a cabeça.");
 assert.equal(proj.slots.find((s) => s.id === "tronco")!.instance, null, "O tronco continua vazio.");
 console.log("10. Projeção usa a região declarada pelo modelo — OK");

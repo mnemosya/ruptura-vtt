@@ -1,3 +1,4 @@
+import { mochilaInicial } from "./backpacks";
 import { computeDerivedStats } from "./derived";
 import type { Character, CharacterRulesPayload } from "./types";
 
@@ -41,6 +42,7 @@ export function createInitialCharacter(
 
   return {
     nome,
+    inventario: [mochilaInicial(crypto.randomUUID(), new Date().toISOString())],
     atributos,
     pericias,
     recursos_atuais: {

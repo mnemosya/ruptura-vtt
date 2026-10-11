@@ -192,7 +192,15 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
   const inventario: Character["inventario"] = Array.isArray(raw.inventario)
     ? raw.inventario
         .filter(isPlainObject)
-        .map((item) => ({ ...item, ...normalizeItemTechnicalState(item) })) as Character["inventario"]
+        .map((item) => {
+          const normalized: Record<string, unknown> = { ...item, ...normalizeItemTechnicalState(item) };
+          if (item.encaixeEscolhido === "luvas") {
+            delete normalized.encaixeEscolhido;
+            normalized.estado = "mochila";
+          }
+          if (item.itemSlug === "mobilidade_luvas_de_escalada") normalized.categoria = "ferramenta";
+          return normalized;
+        }) as Character["inventario"]
     : [];
 
   // magias_aprendidas (checkpoint v0.50.1): mesmo critério — ausência vira [], nunca undefined.

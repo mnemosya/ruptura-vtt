@@ -1,3 +1,4 @@
+import { mochilaInicial } from "../character/backpacks";
 /**
  * Criação de personagem RUPTURA v1.2 no Ranking F.
  *
@@ -309,7 +310,7 @@ export function buildCharacterV2(choices: CreationChoicesV12, ctx: CreationConte
       cdi: 0,
       cdi_craqueada: 0,
     },
-    inventario,
+    inventario: [...inventario, mochilaInicial(novoId(), agora)],
     magias_aprendidas: [],
     // Campo operacional lido hoje pela ficha (CD das magias); espelha `magia.niveis_vertente`.
     niveis_vertente: { ...niveisVertente },

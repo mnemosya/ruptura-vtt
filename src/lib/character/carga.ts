@@ -1,3 +1,4 @@
+import { ehMochilaMk } from "./backpacks";
 /**
  * CARGA — quantos espaços um item ocupa e quantos o personagem tem.
  *
@@ -9,8 +10,7 @@
  *     — ver `espacosDoItem`.
  *
  *   - a capacidade é da MOCHILA, não do personagem: cada modelo tem a
- *     sua e a básica tem 10. Nenhum item de mochila existe publicado
- *     ainda — ver `capacidadeDeEspacos`.
+ *     sua e a MK-I tem 10 — ver `capacidadeDeEspacos`.
  *
  * Nenhuma das duas é decisão de front-end, então elas ficam isoladas e
  * anotadas em vez de diluídas no componente.
@@ -70,33 +70,10 @@ export interface ResumoDeCarga {
  */
 export const ESPACOS_MOCHILA_BASICA = 10;
 
-/**
- * Capacidade de carga, em espaços — a da mochila EQUIPADA.
- *
- * A regra é por mochila, não por atributo: cada modelo declara quantos
- * espaços oferece, e só UMA pode estar equipada por vez. Quem ainda
- * não tem mochila nenhuma carrega o básico, `ESPACOS_MOCHILA_BASICA`.
- *
- * ESTADO ATUAL: nenhum item de mochila existe no conteúdo publicado —
- * o único item de armazenamento é a Aljava (`tipo_armazenamento:
- * "flechas"`, capacidade 15), que guarda flecha, não carga geral. Por
- * isso esta função hoje sempre devolve o básico. Quando a mochila
- * existir como item, o que muda aqui é só de onde vem o número: achar
- * a instância equipada e ler a capacidade declarada no modelo dela.
- *
- * EM ABERTO — COMO SE TROCA DE MOCHILA. A pergunta é onde a mochila
- * que NÃO está em uso fica, já que ela própria não pode ocupar espaço
- * da mochila em uso. O "abrigo" é o candidato natural (é o único
- * estado que não pesa, ver `ESTADOS_QUE_OCUPAM`), mas isso levanta o
- * caso de trocar longe do abrigo — e a regra de o que acontece com o
- * que não couber na mochila menor também não existe. Nada disso está
- * decidido; não invente aqui.
- */
-export function capacidadeDeEspacos(
-  _character: Character,
-  _catalogo: Map<string, ItemContent>,
-): number {
-  return ESPACOS_MOCHILA_BASICA;
+/** A capacidade vem exclusivamente da Mochila MK equipada; sem mochila, zero. */
+export function capacidadeDeEspacos(character: Character, catalogo: Map<string, ItemContent>): number {
+  const mochila = character.inventario?.find(i => i.estado === "equipado" && ehMochilaMk(catalogo.get(i.itemSlug)));
+  return mochila ? catalogo.get(mochila.itemSlug)?.capacidadeMochila ?? 0 : 0;
 }
 
 /** Espaços ocupados por uma instância (quantidade × porte). */
@@ -123,4 +100,10 @@ export function resumoDeCarga(
   }
   const capacidade = capacidadeDeEspacos(character, catalogo);
   return { ocupados, capacidade, excedido: ocupados > capacidade };
+}
+
+/** Não agrava inventários legados acima do limite; permite organizar e reduzir a carga. */
+export function permiteAlteracaoDeCarga(before: Character, after: Character, catalogo: Map<string, ItemContent>): boolean {
+  const a = resumoDeCarga(before, catalogo), b = resumoDeCarga(after, catalogo);
+  return b.ocupados <= b.capacidade + 2 || (b.capacidade >= a.capacidade && b.ocupados <= a.ocupados);
 }
