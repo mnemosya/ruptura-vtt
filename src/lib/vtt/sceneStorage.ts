@@ -1285,7 +1285,7 @@ export async function definirFlagsToken(params: {
   return { ok: true, revision: linha.revision as number };
 }
 
-function linhaParaTokenVtt(linha: Record<string, unknown>): TokenVtt {
+export function linhaParaTokenVtt(linha: Record<string, unknown>): TokenVtt {
   return {
     id: linha.id as string,
     sceneId: linha.scene_id as string,
