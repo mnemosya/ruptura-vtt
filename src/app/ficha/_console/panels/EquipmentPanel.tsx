@@ -35,6 +35,8 @@ export function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
   if (modelo?.maos) linhas.push({rotulo:"Mãos",valor:String(modelo.maos)});
   if (inst.aljava) linhas.push({rotulo:"Munição armazenada",valor:`${inst.aljava.stacks.reduce((n,s)=>n+s.quantidade*(s.pesoCapacidade??1),0)}/${inst.aljava.capacidade}`});
   if (ocultavel) linhas.push({ rotulo: "Ocultável", valor: ocultavel });
+  // Valor do item (o mesmo "₳ 1.500" da coluna Valor da lista do Inventário).
+  if (modelo?.preco) linhas.push({ rotulo: "Valor", valor: `₳ ${modelo.preco.toLocaleString("pt-BR")}` });
   return {
     id: inst.id,
     nome: inst.itemNome,
