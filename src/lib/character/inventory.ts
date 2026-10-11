@@ -79,6 +79,12 @@ export interface ItemContent {
    * campo só LÊ o dado, não decide quanto ele custa.
    */
   classePorte: string | null;
+  /**
+   * `estatisticas.espacos_texto` — o custo em espaços de mochila como o
+   * conteúdo publicado escreve ("3", "1 (kit)", "Carga", "Não aplicável").
+   * Lido cru; quem converte em número é `espacosDoItem` (`carga.ts`).
+   */
+  espacosTexto: string | null;
   raridade?: string;
   preco: number;
   descricao_curta?: string;
@@ -245,6 +251,8 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
     periciaUso: typeof estatisticas?.pericia_teste === "string" ? estatisticas.pericia_teste : null,
     alvoUso: typeof estatisticas?.alvo === "string" ? estatisticas.alvo : null,
     classePorte: typeof estatisticas?.classe_porte === "string" ? estatisticas.classe_porte : null,
+    espacosTexto: typeof estatisticas?.espacos_texto === "string" ? estatisticas.espacos_texto
+      : typeof estatisticas?.espacos_texto === "number" ? String(estatisticas.espacos_texto) : null,
     payloadAutomacao: raw.payload_automacao,
     status: String(raw.status ?? "published"),
   };
