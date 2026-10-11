@@ -45,7 +45,7 @@ export function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
     weaponName: modelo?.nome,
     suporteMunicao: !!modelo?.suporteMunicao,
     modosAtaque: modelo?.modosAtaque, modoAtaqueEscolhido: inst.modoAtaqueEscolhido,
-    temaCategoria: modelo ? temaDoModelo(modelo) : undefined,
+    temaCategoria: modelo ? temaDoModelo(modelo, "equipamentos") : undefined,
     duasMaos: modelo?.maos === 2,
     // "Ocultável" já tem linha própria (Sim/Parcial/Não) — como etiqueta, contradizia o "Não".
     propriedades: api.propriedadesDoItem(inst.id).filter((t) => !/ocult/i.test(`${t.slug} ${t.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "")}`)).map((t) => ({ nome: t.nome, descricao: t.descricao })),

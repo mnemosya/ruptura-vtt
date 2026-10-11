@@ -917,7 +917,9 @@ export function setItemEmEncaixe(character: Character, instanceId: string, encai
     if (occupied.some(p => positions.includes(p as EncaixeEscolhido))) return { ...i, estado: "mochila" as ItemLoadoutState, encaixeEscolhido: undefined, equipadoDefensivo: false };
     return i;
   }) };
-  if (catalogo && !permiteAlteracaoDeCarga(character, next, catalogo)) return character;
+  // Trocar a arma empunhada deve funcionar mesmo se guardar a anterior
+  // aumentar a sobrecarga. O inventário continua contabilizando esse excesso.
+  if (!hands && catalogo && !permiteAlteracaoDeCarga(character, next, catalogo)) return character;
   return next;
 }
 

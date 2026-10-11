@@ -304,14 +304,13 @@ const MUNICAO: Record<string, { sub: string; tipo: string; ordem: number }> = {
 };
 
 /**
- * Nome do TEMA de cor do item — o do grupo do Mercado, exceto armaduras,
- * que mudam de cor conforme a proteção que dão (`estatisticas.tipo_protecao`):
- * física, energética ou híbrida. Ver `itemCategoryColors.ts`.
+ * O inventário usa o tema do grupo do Mercado. Só Equipamentos distingue
+ * armaduras pela proteção física, energética ou híbrida.
  */
-export function temaDoModelo(modelo: ItemContent): string | undefined {
+export function temaDoModelo(modelo: ItemContent, contexto: "inventario" | "equipamentos" = "inventario"): string | undefined {
   const nome = grupoESubDoModelo(modelo).grupo?.nome;
   const tipo = modelo.tipoProtecao?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  if (modelo.categoria === "armadura" && (tipo === "fisica" || tipo === "energetica" || tipo === "hibrida")) return `armaduras ${tipo}`;
+  if (contexto === "equipamentos" && modelo.categoria === "armadura" && (tipo === "fisica" || tipo === "energetica" || tipo === "hibrida")) return `armaduras ${tipo}`;
   return nome;
 }
 

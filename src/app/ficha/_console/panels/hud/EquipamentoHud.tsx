@@ -372,6 +372,8 @@ function Corpo({ encaixes, sel, hover, altura, onSel, onHover }: {
         return (
           <g key={i} data-r style={{ cursor: "pointer" }} onClick={() => onSel(path.regiao)} onMouseEnter={() => onHover(path.regiao)} onMouseLeave={() => onHover(null)}>
             <path d={path.d} fill={path.fill} />
+            <path d={path.d} fill={c} fillOpacity={on && pr ? .24 : 0}
+              pointerEvents="none" style={{ transition: "fill-opacity .2s ease-out" }} />
             {/* Coberta: véu translúcido + listras diagonais finas e juntas
                 (4 px) na cor da armadura, mais fortes quanto mais MIT resta;
                 contorno sólido. A anatomia segue visível. */}
@@ -386,12 +388,12 @@ function Corpo({ encaixes, sel, hover, altura, onSel, onHover }: {
                 <path d={path.d} fill={`url(#${recorteId}-placa-${i})`} />
               </>
             )}
-            {/* Hover: a cor da PRÓPRIA região um pouco mais forte, chapada —
-                sem degradê nem ciano por cima da armadura (virava rosa). */}
-            {on && <path d={path.d} fill={c} fillOpacity={pr ? .14 : .08} />}
+            {/* A luz acompanha a região sem encobrir a textura holográfica. */}
+            <path d={path.d} fill={c} fillOpacity={on ? .08 : 0}
+              pointerEvents="none" style={{ transition: "fill-opacity .2s ease-out" }} />
             <path d={path.d} fill="none" clipPath={`url(#${recorteId}-regiao-${i})`}
-              stroke={c} strokeOpacity={on ? .9 : pr ? .8 : .1} strokeWidth={pr ? (on ? 2.4 : 2) : on ? 1.6 : 1.2}
-              strokeDasharray={pr ? undefined : "3 3"} style={{ transition: "stroke-opacity .2s, stroke-width .2s", mixBlendMode: "screen" }} />
+              stroke={c} strokeOpacity={on ? (pr ? 1 : .9) : pr ? .8 : .1} strokeWidth={pr ? (on ? 2.6 : 2) : on ? 1.6 : 1.2}
+              strokeDasharray={pr ? undefined : "3 3"} style={{ transition: "stroke-opacity .2s, stroke-width .2s, filter .2s", filter: on && pr ? `drop-shadow(0 0 3px ${c})` : "none", mixBlendMode: "screen" }} />
           </g>
         );
       })}

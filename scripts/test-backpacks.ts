@@ -33,6 +33,21 @@ assert.equal(resumoDeCarga(c,catalog).ocupados,4);
 assert.strictEqual(setItemLoadoutState(c,buy.instance!.id,"mochila",catalog),c,"Mochila cheia não pode ser guardada dentro da própria mochila");
 const loaded={...c,inventario:[...c.inventario!,{id:"load",itemSlug:"unknown",itemNome:"Carga legada",categoria:"ferramenta",quantidade:10,estado:"mochila" as const,adquiridoEm:"2026-10-11"}]};
 assert.strictEqual(setItemEmEncaixe(loaded,c.inventario![0].id,"mochila_equipada",catalog),loaded,"Troca por MK-I não pode exceder capacidade +2");
+// A troca de armas guarda a anterior mesmo quando aumenta uma sobrecarga.
+const rifle = {...mk1,slug:"test-rifle",nome:"Rifle",categoria:"arma" as const,maos:2 as const,espacosTexto:"3",capacidadeMochila:null};
+const pistol = {...rifle,slug:"test-pistol",nome:"Pistola",maos:1 as const,espacosTexto:"1"};
+const weapons = new Map([...catalog,[rifle.slug,rifle] as const,[pistol.slug,pistol] as const]);
+for (const hand of ["arma_primaria","arma_secundaria"] as const) {
+ const before={...loaded,inventario:[...loaded.inventario!,{id:"rifle",itemSlug:rifle.slug,itemNome:rifle.nome,categoria:"arma",quantidade:1,estado:"empunhado" as const,encaixeEscolhido:"arma_primaria" as const,adquiridoEm:"2026-10-11"},{id:"pistol",itemSlug:pistol.slug,itemNome:pistol.nome,categoria:"arma",quantidade:1,estado:"mochila" as const,adquiridoEm:"2026-10-11"}]};
+ const after=setItemEmEncaixe(before,"pistol",hand,weapons);
+ assert.equal(after.inventario!.length,before.inventario.length);
+ assert.equal(after.inventario!.find(i=>i.id==="rifle")!.estado,"mochila");
+ assert.equal(after.inventario!.find(i=>i.id==="rifle")!.encaixeEscolhido,undefined);
+ const slots=projectBodySlots(after.inventario!,weapons).slots;
+ assert.equal(slots.find(s=>s.id===hand)!.instance?.id,"pistol");
+ assert.equal(slots.find(s=>s.id===(hand==="arma_primaria"?"arma_secundaria":"arma_primaria"))!.instance,null);
+ assert.equal(resumoDeCarga(after,weapons).ocupados,resumoDeCarga(before,weapons).ocupados+2);
+}
 const gloves=catalog.get("mobilidade_luvas_de_escalada")!;
 assert.equal(gloves.categoria,"ferramenta");assert.equal(gloves.preco,120);assert.equal(espacosDoItem(gloves),1);assert.deepEqual(equipmentPositions(gloves),[]);
 const legacy={...c,inventario:[{id:"glove-original",itemSlug:gloves.slug,itemNome:gloves.nome,categoria:"mobilidade",quantidade:1,estado:"equipado",encaixeEscolhido:"luvas",adquiridoEm:"2026-10-11",notas:"Preservar"}]};
