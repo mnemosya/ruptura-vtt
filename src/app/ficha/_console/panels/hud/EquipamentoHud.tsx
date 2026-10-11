@@ -788,7 +788,7 @@ function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
           </div>
         )}
         {pr && (p.mit || p.pd) && (
-          <div style={{ borderLeft: `2px solid ${c}`, background: "#0a1b26", padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ borderLeft: `2px solid ${c}`, background: "#0a1b26", padding: "10px 0 10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ display: "flex", alignItems: "baseline", gap: 8 }}><Tag className="hx-dim" style={{ fontSize: 10 }}>resistência</Tag><span className="hx-display" style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".14em", color: c }}>{pr.nome}</span></span>
               {p.regioes && p.regioes.length > 0 && <Cobertura p={p} />}
