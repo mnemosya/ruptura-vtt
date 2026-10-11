@@ -70,6 +70,7 @@ export interface PropsMagiasHud {
   onConjurar: (slug: string) => void;
   onConjurarComFusao: (slug: string, fundida: string) => void;
   onRolarDano: (slug: string) => void;
+  onAbrirCatalogo?: () => void;
   /** Mensagem do grimório vazio quando não há magia aprendida nenhuma. */
   vazio?: string;
 }
@@ -78,7 +79,7 @@ export interface PropsMagiasHud {
 const cdDe = (n: number | null | undefined) => (n == null ? null : 6 + n);
 
 /* ── primitivas ── */
-function Glifo({ v, tam = 20, traco = 1.6, cor }: { v: VertDef; tam?: number; traco?: number; cor?: string }) {
+export function Glifo({ v, tam = 20, traco = 1.6, cor }: { v: VertDef; tam?: number; traco?: number; cor?: string }) {
   return (
     <svg viewBox="0 0 24 24" width={tam} height={tam} fill="none" stroke={cor ?? v.c} strokeWidth={traco} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d={v.g} />
@@ -121,7 +122,7 @@ function BarraMana({ mana }: { mana: { atual: number; max: number } }) {
   );
 }
 
-function Faixa({ m, children }: { m: MagiaHud; children?: ReactNode }) {
+export function Faixa({ m, children }: { m: MagiaHud; children?: ReactNode }) {
   const v = VERT(m.vertente), c = v.c;
   return (
     <div style={{ position: "relative", display: "grid", placeItems: "center", height: 170, flexShrink: 0, overflow: "hidden", background: `radial-gradient(circle at 50% 55%, ${c}38, transparent 62%)` }}>
@@ -136,7 +137,7 @@ function Faixa({ m, children }: { m: MagiaHud; children?: ReactNode }) {
   );
 }
 
-function Titulo({ m, nivel }: { m: MagiaHud; nivel: number | null | undefined }) {
+export function Titulo({ m, nivel }: { m: MagiaHud; nivel: number | null | undefined }) {
   const v = VERT(m.vertente), c = v.c, cd = cdDe(nivel);
   const sep = <span style={{ width: 1, height: 12, background: "rgba(0,212,255,.2)" }} />;
   return (
@@ -163,7 +164,7 @@ function Titulo({ m, nivel }: { m: MagiaHud; nivel: number | null | undefined })
   );
 }
 
-function Leitura({ m, mana }: { m: MagiaHud; mana: { atual: number; max: number } }) {
+export function Leitura({ m, mana }: { m: MagiaHud; mana: { atual: number; max: number } }) {
   const custo = m.mana ?? 0, falta = custo > mana.atual, mc = falta ? "#ff5f74" : CY;
   const c = VERT(m.vertente).c;
   const Fato = ({ l, v }: { l: string; v: ReactNode }) => (
@@ -310,9 +311,12 @@ export function MagiasHud(props: PropsMagiasHud) {
 
         {/* grimório */}
         <div style={{ display: "flex", minHeight: 0, flexDirection: "column", padding: "20px 24px 0" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
             <span className="hx-display" style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".22em", opacity: .7 }}>grimório</span>
-            <Busca q={q} setQ={setQ} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", flexWrap: "wrap", gap: 10 }}>
+              <Busca q={q} setQ={setQ} />
+              {props.onAbrirCatalogo && <button type="button" className="hx-btn-acao" onClick={props.onAbrirCatalogo} style={{ padding: "8px 12px", whiteSpace: "nowrap", fontSize: 11, textTransform: "uppercase", letterSpacing: ".12em" }}>Catálogo de magias</button>}
+            </div>
           </div>
           <div className="hx-semsb" style={{ marginTop: 8, minHeight: 0, flex: 1, overflowY: "auto", paddingBottom: 20 }}>
             {Array.from({ length: nivelMax }, (_, i) => i + 1).map((n) => {

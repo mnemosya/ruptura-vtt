@@ -7,6 +7,8 @@ import type { ConsoleApi } from "../types";
 import { TextoComRegras } from "../TextoComRegras";
 import { CabecalhoModulo } from "./CabecalhoModulo";
 import { MagiasHud, type MagiaHud } from "./hud/MagiasHud";
+import { CatalogoMagiasHud } from "./hud/CatalogoMagiasHud";
+import { JanelaMercado } from "./hud/JanelaMercado";
 
 const VERTENTES = [
   ["cinetica", "Cinética"], ["energetica", "Energética"], ["material", "Material"],
@@ -39,9 +41,10 @@ export function MagiasPanel({ api }: { api: ConsoleApi }) {
 
 function MagiasEmJogo({ api }: { api: ConsoleApi }) {
   const m = api.magias;
+  const [catalogoAberto, setCatalogoAberto] = useState(false);
   const aprendidas = m.spells.filter((s) => s.status === "published" && m.magiasAprendidas.some((a) => a.spellSlug === s.slug));
   const nivelDe = (vertente: string) => getVertenteLevel({ niveis_vertente: m.niveisVertente }, vertente);
-  const magias: MagiaHud[] = aprendidas.map((s) => {
+  const paraHud = (s: SpellContent): MagiaHud => {
     const dano = getSpellDamageEffect(s);
     const res = resolveSpellResistance(s, nivelDe(s.vertente));
     return {
@@ -63,7 +66,9 @@ function MagiasEmJogo({ api }: { api: ConsoleApi }) {
       manuais: describeSpellManualEffects(s).map((t, i) => <TextoComRegras key={i} texto={`Manual: ${t}`} glossario={api.glossario} />),
       bloqueada: checkSpellVertenteLevel(s, { niveis_vertente: m.niveisVertente }).aboveLevel,
     };
-  });
+  };
+  const magias = aprendidas.map(paraHud);
+  const catalogo = m.spells.filter(s => s.status === "published").map(paraHud);
   const niveis = Object.fromEntries(VERTENTES.map(([id]) => [id, nivelDe(id)]));
   return <section className="rc-eq-outer" aria-label="Magias">
     <div className="rc-eq-card-outer rc-inv-moldura">
@@ -77,10 +82,16 @@ function MagiasEmJogo({ api }: { api: ConsoleApi }) {
           onConjurar={m.onCast}
           onConjurarComFusao={m.onCastWithFusion}
           onRolarDano={m.onRollDamage}
-          vazio="Nenhuma magia aprendida. As magias chegam pelo avanço de Ranking."
+          onAbrirCatalogo={() => setCatalogoAberto(true)}
+          vazio="Nenhuma magia aprendida. Abra o catálogo para aprender magias."
         />
       </div>
     </div>
+    {catalogoAberto && <JanelaMercado titulo="Catálogo de magias" onFechar={() => setCatalogoAberto(false)}>
+      {fechar => <CatalogoMagiasHud magias={catalogo} aprendidas={new Set(m.magiasAprendidas.map(a => a.spellSlug))}
+        niveis={niveis} mana={{ atual: api.character.recursos_atuais?.mana ?? 0, max: api.derivados.mana_max ?? 0 }}
+        somenteLeitura={api.somenteLeitura} onAprender={m.onLearn} onFechar={fechar} />}
+    </JanelaMercado>}
   </section>;
 }
 
