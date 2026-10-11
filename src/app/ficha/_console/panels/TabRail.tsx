@@ -6,20 +6,15 @@
  * ícone, no hover ou no foco por teclado, com um pequeno atraso (evita
  * flicker ao passar o mouse de raspão).
  *
- * Reorganizado em GRUPOS separados por dividers (spec "modos Painel e
- * Foco" — estrutura no DOM, não margens simuladas):
- *   Painel: [navegação] —divider— [modos de visualização]
- *   Foco:   [personagem] —divider— [navegação] —divider— [modos de visualização]
+ * Grupos separados por divider: [personagem] —divider— [navegação].
+ * O modo Painel saiu — o Console é sempre "Foco" (uma aba por vez,
+ * com Personagem como aba própria), então não há mais grupo de modos.
  *
- * Os botões de modo (Painel/Foco) e a aba Personagem usam a MESMA
- * base (`.rc-tabrail-btn`) das abas de navegação, com modificadores
- * pro estado ativo (`--modo`: só borda esquerda + fundo, sem o brilho
- * cheio das abas; `--personagem`: paleta âmbar própria).
+ * Todas as abas, Personagem inclusive, usam a mesma peça
+ * (`.rc-tabrail-btn`) — um tema só de selecionada.
  */
 
-import { PanelsTopLeft, AppWindow } from "lucide-react";
 import { ABAS, type AbaId } from "../tabs";
-import type { ViewMode } from "../viewMode";
 
 /** Ícone customizado da aba Personagem — pessoa dentro de um quadro,
     sempre `currentColor` (a cor vem do estado do botão via CSS, igual
@@ -74,31 +69,22 @@ function TabBotao({
 export function TabRail({
   aba,
   onChangeAba,
-  viewMode,
-  onChangeViewMode,
 }: {
   aba: AbaId;
   onChangeAba: (id: AbaId) => void;
-  viewMode: ViewMode;
-  onChangeViewMode: (m: ViewMode) => void;
 }) {
   return (
     <nav className="rc-tabrail" role="tablist" aria-label="Seções do console" aria-orientation="vertical">
-      {viewMode === "foco" && (
-        <>
-          <div className="rc-tabrail-group">
-            <TabBotao
-              selecionada={aba === "personagem"}
-              label="Personagem"
-              onClick={() => onChangeAba("personagem")}
-              testId="console-tab-personagem"
-              className="rc-tabrail-btn--personagem"
-              Icon={PersonagemIcon}
-            />
-          </div>
-          <div className="rc-tabrail-divider" aria-hidden="true" />
-        </>
-      )}
+      <div className="rc-tabrail-group">
+        <TabBotao
+          selecionada={aba === "personagem"}
+          label="Personagem"
+          onClick={() => onChangeAba("personagem")}
+          testId="console-tab-personagem"
+          Icon={PersonagemIcon}
+        />
+      </div>
+      <div className="rc-tabrail-divider" aria-hidden="true" />
 
       <div className="rc-tabrail-group">
         {ABAS.map(({ id, label, Icon }) => (
@@ -113,26 +99,6 @@ export function TabRail({
         ))}
       </div>
 
-      <div className="rc-tabrail-divider" aria-hidden="true" />
-
-      <div className="rc-tabrail-group">
-        <TabBotao
-          selecionada={viewMode === "foco"}
-          label="Modo Foco"
-          onClick={() => onChangeViewMode("foco")}
-          testId="console-modo-foco"
-          className="rc-tabrail-btn--modo"
-          Icon={() => <AppWindow size={18} aria-hidden="true" />}
-        />
-        <TabBotao
-          selecionada={viewMode === "painel"}
-          label="Modo Painel"
-          onClick={() => onChangeViewMode("painel")}
-          testId="console-modo-painel"
-          className="rc-tabrail-btn--modo"
-          Icon={() => <PanelsTopLeft size={18} aria-hidden="true" />}
-        />
-      </div>
     </nav>
   );
 }

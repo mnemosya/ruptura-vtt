@@ -75,7 +75,6 @@ import {
 } from "./panels/AuxModals";
 import { itensCompativeisComSlot, projectBodySlots, type BodySlotId } from "./slots";
 import { ABAS, type AbaId } from "./tabs";
-import type { ViewMode } from "./viewMode";
 import { FOCO_MAX_W, FOCO_ALTURA_INICIAL } from "./geometry";
 import { PainelRolagem, type PrefillRolagem } from "./panels/PainelRolagem";
 import { useRolarNaMesa } from "../../mesas/[campaignId]/vtt/_dados3d/ContextoMesaDados";
@@ -104,7 +103,6 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
    * personagem, não numa aba de gestão. Painel continua a um clique no
    * trilho, para quem quer as colunas fixas ao lado da aba ativa.
    */
-  const [viewMode, setViewMode] = useState<ViewMode>("foco");
   const [aux, setAux] = useState<Aux>(null);
   const rolarNaMesa = useRolarNaMesa();
   /**
@@ -146,20 +144,8 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
   };
   const tabpanelRef = useRef<HTMLDivElement>(null);
 
-  /** Última aba de NAVEGAÇÃO (nunca "personagem") — pra restaurar ao
-      voltar pro Painel enquanto "Personagem" estava ativa (spec). */
-  const ultimaAbaConvencionalRef = useRef<Exclude<AbaId, "personagem">>("equipamentos");
-
   function escolherAba(id: AbaId) {
-    if (id !== "personagem") ultimaAbaConvencionalRef.current = id;
     setAba(id);
-  }
-
-  function alternarViewMode(novo: ViewMode) {
-    // Voltar pro Painel com "Personagem" ativa não tem pra onde ir — o
-    // Painel não tem essa aba — então restaura a última convencional.
-    if (novo === "painel" && aba === "personagem") setAba(ultimaAbaConvencionalRef.current);
-    setViewMode(novo);
   }
 
   /**
@@ -479,45 +465,12 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
           </>
         }
         dockContent={<MinimizedDockContent api={api} avatarUrl={avatarUrl} onEditarRecurso={editarRecursoComConfirmacao} />}
-        tablist={<TabRail aba={aba} onChangeAba={escolherAba} viewMode={viewMode} onChangeViewMode={alternarViewMode} />}
-        larguraMaximaFixa={viewMode === "foco" ? FOCO_MAX_W : undefined}
-        alturaFallbackInicial={viewMode === "foco" ? FOCO_ALTURA_INICIAL : undefined}
-        conteudoChave={`${viewMode}:${aba}`}
+        tablist={<TabRail aba={aba} onChangeAba={escolherAba} />}
+        larguraMaximaFixa={FOCO_MAX_W}
+        alturaFallbackInicial={FOCO_ALTURA_INICIAL}
+        conteudoChave={aba}
       >
-        {viewMode === "painel" ? (
-          <div className="rc-grid">
-            <IdentityAside
-              api={api}
-              avatarUrl={avatarUrl}
-              avatarErro={avatarErro}
-              onAvatarChange={onAvatarChange}
-              onAvatarRemover={() => { void removerAvatar(); }}
-              avatarOcupado={avatarEnviando}
-              onRolarAtributo={rolarAtributo}
-              onEscolherSurto={() => setAux({ tipo: "surto" })}
-              onRolarDefesa={() => setAux({ tipo: "defesa" })}
-            />
-
-            <VitalsRow api={api} onEditarRecurso={editarRecursoComConfirmacao} onEstabilizar={api.estabilizarColapso} onTesteDecisivo={rolarTesteDecisivoColapso} />
-
-            {/* Antigo lugar de Equipamentos — agora Perícias, fixo, fora
-                do sistema de abas. Fixados e Condições acompanham. */}
-            <div className="rc-center-lower">
-              <ConditionsPanel api={api} onAdicionar={onAdicionarCondicao} onDetalhes={onDetalhesCondicao} />
-              <SkillsGrid api={api} onRolar={rolarPericia} />
-              <PinsRow api={api} onAbrirPin={onAbrirPin} />
-              {api.erro && (
-                <p className="rc-vazio" role="alert" style={{ color: "#ffc4cf" }}>
-                  {api.erro}
-                </p>
-              )}
-            </div>
-
-            {renderConteudoAba()}
-          </div>
-        ) : (
-          <div className="rc-foco-content">{aba === "personagem" ? renderPersonagem() : renderConteudoAba()}</div>
-        )}
+        <div className="rc-foco-content">{aba === "personagem" ? renderPersonagem() : renderConteudoAba()}</div>
       </ConsoleWindow>
 
       {/* Modais auxiliares NÃO passam pelo portal de ConsoleWindow — sem

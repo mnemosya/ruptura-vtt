@@ -1500,6 +1500,9 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
      ilegíveis dependendo do que passava por trás. Ele é chassi da
      janela, não conteúdo dela. */
   background: #0e1920;
+  /* Chanfro no canto superior direito do fundo do trilho — a borda
+     acompanha a diagonal (`corner-shape`), como nas peças do VTT. */
+  border-top-right-radius: 12px; corner-shape: bevel;
 }
 
 /* ── Trilho do lado ESQUERDO ────────────────────────────────────────
@@ -1521,12 +1524,6 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    esquerda ela apontaria pra fora da tela. */
 .rc-window-wrap[data-trilho="esquerda"] .rc-tabrail-hint {
   right: auto; left: calc(100% + 9px);
-}
-/* O realce da aba de MODO é uma borda só num lado — do lado que
-   encosta na janela, pelo mesmo motivo da borda do trilho. */
-.rc-window-wrap[data-trilho="esquerda"] .rc-tabrail-btn--modo[aria-selected="true"] {
-  border-left: 1px solid rgba(0, 212, 255, 0.15);
-  border-right: 1px solid #00d4ff;
 }
 .rc-tabrail-group { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .rc-tabrail-divider { height: 1px; align-self: stretch; background: #0e3d47; }
@@ -1573,14 +1570,25 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    "é esta", e um branco mais forte que o dos vizinhos exigia comparar
    dois cinzas pra descobrir qual estava selecionada. Mesma regra no
    trilho de ferramentas do VTT (`.rv-ferr-btn`). */
-.rc-tabrail-btn[aria-selected="true"] {
-  color: var(--rc-trilho-ativo); border-color: #00d4ff;
-  /* .14 contra os .09 do hover — a mesma hierarquia por lavagem do
-     `.rv-ferr-btn`. Antes era `#123840`, uma cor sólida que não
-     pertencia à escala e não mantinha relação com o passo do hover. */
-  background: linear-gradient(rgba(0, 212, 255, 0.14), rgba(0, 212, 255, 0.14)), #0c1c26;
-  box-shadow: 0 0 9px rgba(0, 212, 255, 0.25);
+/* = trilho de ferramentas do VTT no tema (`.rv-ferr-btn` em
+   `tema-forja.css`): parado é só o ícone (sem borda nem fundo), o hover
+   é uma lavagem leve, e a SELECIONADA é o bloco ciano cheio e chanfrado,
+   ícone escuro com traço mais grosso. Uma regra só para todas as abas,
+   Personagem inclusive. */
+.rc-tabrail .rc-tabrail-btn {
+  border-color: transparent; background: transparent;
+  border-radius: 2px 10px !important; corner-shape: round bevel !important;
 }
+.rc-tabrail .rc-tabrail-btn:hover { color: #cfeff4; border-color: transparent; background: rgba(0, 212, 255, .07); }
+.rc-tabrail .rc-tabrail-btn:active:not(:disabled) { border-color: transparent; background: rgba(0, 212, 255, .14); }
+.rc-tabrail .rc-tabrail-btn[aria-selected="true"] {
+  color: #06121c; border-color: #00d4ff; background: #00d4ff;
+  box-shadow: 0 0 14px rgba(0, 212, 255, .45);
+}
+.rc-tabrail .rc-tabrail-btn[aria-selected="true"] svg { stroke-width: 2.4; }
+/* O ícone de Personagem é desenhado em 18px (os lucide, em 24): o mesmo
+   2.4 nele vira traço de 3.2 na escala dos outros. 1.8 aqui = 2.4 lá. */
+.rc-tabrail .rc-tabrail-btn[aria-selected="true"] svg[viewBox="0 0 18 18"] path { stroke-width: 1.8; }
 .rc-tabrail-btn:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 2px; }
 .rc-tabrail-hint {
   position: absolute; right: calc(100% + 9px); top: 50%; transform: translateY(-50%);
@@ -1602,45 +1610,6 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 }
 .rc-tabrail-btn:hover .rc-tabrail-hint,
 .rc-tabrail-btn:focus-visible .rc-tabrail-hint { opacity: 1; transition-delay: 0.35s; }
-
-/* Controles de modo (Painel/Foco) — mesma base, estado ativo DISTINTO
-   e mais discreto (só borda esquerda + fundo, sem o brilho cheio das
-   abas de conteúdo — spec "Controles de modo"). Default/hover/focus
-   ficam iguais às outras abas (herdados de `.rc-tabrail-btn`, sem
-   modificador aqui). */
-.rc-tabrail-btn--modo[aria-selected="true"] {
-  border-left: 1px solid #00d4ff;
-  background: linear-gradient(rgba(0, 212, 255, 0.14), rgba(0, 212, 255, 0.14)), #0c1c26;
-  box-shadow: none;
-}
-
-/* Aba Personagem (só existe no modo Foco) — paleta âmbar própria pra
-   se diferenciar das abas de conteúdo (spec "Aba Personagem"). Hover é
-   um passo intermediário ENTRE default e active, não os mesmos tons. */
-.rc-tabrail-btn--personagem {
-  border: 1px solid color-mix(in srgb, var(--rc-am) 35%, var(--rc-surface-3));
-  background: rgba(12, 25, 32, 0.70);
-  color: color-mix(in srgb, var(--rc-am) 70%, var(--rc-surface-3));
-}
-/* Mesma regra dentro da paleta âmbar: a borda do hover é a do ativo. */
-.rc-tabrail-btn--personagem:hover {
-  border-color: color-mix(in srgb, var(--rc-am) 60%, var(--rc-surface-3));
-  /* Abaixo do ativo, que baixou junto: hover é um passo INTERMEDIÁRIO
-     entre parado e selecionado, e empatado com ele deixava de dizer
-     qual aba está aberta. */
-  background: rgba(255, 138, 31, 0.09);
-  color: var(--rc-am);
-}
-/* O FUNDO É DISCRETO. A 32% o âmbar virava um bloco sólido e o ícone
-   se perdia dentro dele — quem carregava a seleção era a mancha, não a
-   aba. Quem diz "é esta" continua sendo a borda mais viva, o brilho e
-   o ícone em âmbar cheio; o fundo só sustenta os três. */
-.rc-tabrail-btn--personagem[aria-selected="true"] {
-  border-color: color-mix(in srgb, var(--rc-am) 60%, var(--rc-surface-3));
-  background: rgba(255, 138, 31, 0.16);
-  box-shadow: 0 0 9px rgba(255, 138, 31, 0.2);
-  color: var(--rc-am);
-}
 
 .rc-tabpanel {
   flex: 1; min-height: 0; overflow: auto;
