@@ -3,6 +3,7 @@ import { WEAPON_ICON_TYPES, weaponIconForName } from "../src/app/_design/weaponI
 import { WEAPON_ICON_DATA } from "../src/app/_design/weaponIconData";
 import { filledCategoryIcon, filledWeaponIconForName } from "../src/app/_design/filledIconMapping";
 import { FILLED_ICON_DATA } from "../src/app/_design/filledIconData";
+import { ammunitionType } from "../src/lib/character/ammunitionType";
 
 for (const icon of Object.values(WEAPON_ICON_TYPES)) {
   assert.ok(WEAPON_ICON_DATA[icon], `SVG ausente: ${icon}`);
@@ -64,4 +65,12 @@ assert.equal(filledCategoryIcon("farmacia", "Antibiótico"), null);
 assert.equal(filledCategoryIcon("vertina"), "potion");
 assert.equal(filledCategoryIcon("Vertinas"), "potion");
 assert.equal(filledCategoryIcon("veneno", "Veneno"), null);
+for (const [nome, subtipo] of [["Flecha simples", "Tipo"], ["Virotes", "Tipo"], ["Arpão", "Flecha"], ["Elétrica", "Flecha"], ["Explosiva", "Flecha"], ["Fixação", "Flecha"], ["Flamejante", "Flecha"], ["Tóxica", "Flecha"]]) {
+  const tipo = ammunitionType({ nome, subtipo });
+  assert.ok(tipo === "Flecha" || tipo === "Virote", nome);
+  assert.equal(filledCategoryIcon("municao", nome, tipo), "arrows", nome);
+}
+assert.equal(filledCategoryIcon("Flechas e virotes"), "arrows");
+assert.equal(ammunitionType({nome:"Pistola",subtipo:"Munição"}), "Munição");
+assert.equal(filledCategoryIcon("municao", "Pistola", "Bala"), "bullets");
 console.log("✓ Ícones filled: tipos distintos, munições e estrutura dorsal independente");

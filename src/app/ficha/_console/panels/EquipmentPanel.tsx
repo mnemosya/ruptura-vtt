@@ -22,7 +22,7 @@ import type { ConsoleApi } from "../types";
 import { TextoComRegras } from "../TextoComRegras";
 import { CabecalhoModulo } from "./CabecalhoModulo";
 import { EquipamentoHud, type EncaixeHud, type PecaHud } from "./hud/EquipamentoHud";
-import { temaDoModelo, VERTENTE_DA_CATEGORIA, descricaoDeOcultavel, descricaoDoAlcance, descricaoDoDano } from "./InventarioPanel";
+import { grupoESubDoModelo, temaDoModelo, VERTENTE_DA_CATEGORIA, descricaoDeOcultavel, descricaoDoAlcance, descricaoDoDano } from "./InventarioPanel";
 
 /** Item do inventário → peça do HUD de equipamento (também alimenta o modal de item do Inventário). */
 export function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
@@ -43,6 +43,7 @@ export function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
     id: inst.id,
     nome: itemDisplayName(inst, modelo),
     weaponName: modelo?.nome,
+    tipo: modelo ? grupoESubDoModelo(modelo).tipo : null,
     suporteMunicao: !!modelo?.suporteMunicao,
     modosAtaque: modelo?.modosAtaque, modoAtaqueEscolhido: inst.modoAtaqueEscolhido,
     temaCategoria: modelo ? temaDoModelo(modelo, "equipamentos") : undefined,

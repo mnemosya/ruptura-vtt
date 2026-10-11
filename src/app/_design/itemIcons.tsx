@@ -28,13 +28,13 @@ const ICONS: Record<string, ComponentType<LucideProps>> = {
 };
 const key = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_");
 
-export function ItemCategoryIcon({ category, group, weaponName, ...props }: LucideProps & { category: string; group?: string; weaponName?: string }) {
+export function ItemCategoryIcon({ category, group, weaponName, itemType, ...props }: LucideProps & { category: string; group?: string; weaponName?: string; itemType?: string | null }) {
   const isWeapon = ["arma", "armas"].includes(key(category)) || group && key(group) === "armas";
   const filledWeapon = isWeapon ? filledWeaponIconForName(weaponName) : null;
   if (filledWeapon) return <FilledIcon icon={filledWeapon} {...props} />;
   const weapon = ["arma", "armas"].includes(key(category)) || group && key(group) === "armas" ? weaponIconForName(weaponName) : null;
   if (weapon) return <WeaponIcon weapon={weapon} {...props} />;
-  const filled = filledCategoryIcon(category, weaponName) ?? (group ? filledCategoryIcon(group, weaponName) : null);
+  const filled = filledCategoryIcon(category, weaponName, itemType) ?? (group ? filledCategoryIcon(group, weaponName, itemType) : null);
   if (filled) return <FilledIcon icon={filled} {...props} />;
   const Icon = ICONS[key(category)] ?? (group ? ICONS[key(group)] : undefined) ?? Package;
   return <Icon aria-hidden="true" focusable="false" {...props} />;

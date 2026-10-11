@@ -1,4 +1,5 @@
 "use client";
+import { ammunitionType } from "../../../../lib/character/ammunitionType";
 import { itemDisplayName } from "../../../../lib/character/itemDisplayName";
 import { ehMochilaMk } from "../../../../lib/character/backpacks";
 
@@ -325,7 +326,8 @@ export function grupoESubDoModelo(modelo: ItemContent): Pick<ProdutoHud, "grupo"
   }
   if (modelo.categoria === "municao") {
     const g = GRUPOS_MERCADO.find((x) => x.prefixo === "municao")!;
-    const m = modelo.subtipo ? MUNICAO[modelo.subtipo] : undefined;
+    const tipo = ammunitionType(modelo);
+    const m = tipo ? MUNICAO[tipo] : undefined;
     return { grupo: { id: g.prefixo, nome: g.nome }, sub: m?.sub ?? null, subOrdem: m?.ordem, tipo: m?.tipo ?? null };
   }
   // Categorias canônicas não dependem dos prefixos históricos dos slugs.
