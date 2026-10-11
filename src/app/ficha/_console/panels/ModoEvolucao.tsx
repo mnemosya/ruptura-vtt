@@ -28,6 +28,8 @@ import { ArrowUpCircle, Check, Crosshair, Sliders, Wand2 } from "lucide-react";
 import { RANKINGS_V12, type RankingV12 } from "../../../../lib/rulesetV12";
 import type { ConsoleApi, ConsoleModo } from "../types";
 import { useVerNoMapa } from "../ConsoleCloseContext";
+// A dica padrão do VTT, por portal (não é recortada pela janela da ficha).
+import { useDicaPortal } from "../../../mesas/[campaignId]/vtt/_painel/ui/DicaPortal";
 
 /**
  * "Ver no mapa" — leva a câmera até o token deste personagem e fecha a
@@ -43,20 +45,25 @@ import { useVerNoMapa } from "../ConsoleCloseContext";
  */
 export function VerNoMapaChip() {
   const verNoMapa = useVerNoMapa();
+  const { alvo, dica } = useDicaPortal("Ver no mapa", { lado: "abaixo" });
   if (!verNoMapa) return null;
   return (
+    <>
     <button
+      {...alvo}
       type="button"
       className="rc-modo-chip"
       onClick={verNoMapa}
-      title="Centralizar o mapa no token deste personagem (fecha a ficha)"
       data-testid="console-ver-no-mapa"
+      aria-label="Ver no mapa"
+      data-icone="true"
     >
       <span className="rc-modo-chip-ico" aria-hidden="true">
-        <Crosshair size={12} strokeWidth={2} />
+        <Crosshair size={15} strokeWidth={2} />
       </span>
-      Ver no mapa
     </button>
+    {dica}
+    </>
   );
 }
 
@@ -114,27 +121,26 @@ export function CompletarCriacaoChip({ onAbrir }: { onAbrir: () => void }) {
 
 export function ModoChip({ modo, onAlternar, v12 = false }: { modo: ConsoleModo; onAlternar: (m: ConsoleModo) => void; v12?: boolean }) {
   const evolucao = modo === "evolucao";
+  const { alvo, dica } = useDicaPortal(evolucao ? "Concluir ajustes" : "Ajustar", { lado: "abaixo" });
   return (
+    <>
     <button
+      {...alvo}
       type="button"
       className="rc-modo-chip"
       data-evolucao={evolucao ? "true" : undefined}
       aria-pressed={evolucao}
+      aria-label={evolucao ? "Concluir" : "Ajustar"}
+      data-icone="true"
       onClick={() => onAlternar(evolucao ? "jogo" : "evolucao")}
-      title={
-        evolucao
-          ? "Concluir os ajustes e gravar (volta para o Modo Jogo)"
-          : v12
-            ? "Entrar no Modo Evolução — corrige atributos e perícias definidos na criação"
-            : "Entrar no Modo Evolução — destrava atributos, perícias e talentos"
-      }
       data-testid="console-modo-chip"
     >
       <span className="rc-modo-chip-ico" aria-hidden="true">
-        {evolucao ? <Check size={12} strokeWidth={2.4} /> : <Sliders size={12} strokeWidth={2} />}
+        {evolucao ? <Check size={15} strokeWidth={2.4} /> : <Sliders size={15} strokeWidth={2} />}
       </span>
-      {evolucao ? "Concluir" : "Ajustar"}
     </button>
+    {dica}
+    </>
   );
 }
 
@@ -222,22 +228,25 @@ export function AvancoChip({ ranking, onEscolher }: { ranking: string; onEscolhe
     return () => { document.removeEventListener("pointerdown", fora); document.removeEventListener("keydown", esc); };
   }, [aberto]);
   const atual = RANKINGS_V12.indexOf(ranking as RankingV12);
+  const { alvo, dica } = useDicaPortal("Evoluir ranking", { lado: "abaixo" });
   return (
     <span className="rc-rank-escolha" ref={ref}>
       <button
+        {...alvo}
         type="button"
         className="rc-modo-chip"
         onClick={() => setAberto((v) => !v)}
         aria-expanded={aberto}
         aria-haspopup="true"
-        title="Evoluir o Ranking (abre a Forja)"
         data-testid="console-avanco-chip"
+        aria-label={`Evoluir ranking (atual: ${ranking})`}
+        data-icone="true"
       >
         <span className="rc-modo-chip-ico" aria-hidden="true">
-          <ArrowUpCircle size={12} strokeWidth={2} />
+          <ArrowUpCircle size={15} strokeWidth={2} />
         </span>
-        Ranking {ranking}
       </button>
+      {!aberto && dica}
       {/* O mesmo seletor da placa da Forja: os Rankings até o atual ficam
           apagados; escolher um acima abre a Forja de evolução até ele. */}
       {aberto && (

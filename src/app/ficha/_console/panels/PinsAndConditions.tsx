@@ -13,6 +13,7 @@ import { X } from "lucide-react";
 import { Plus } from "../../../_design/icons";
 import type { ConsoleApi, ConsolePin } from "../types";
 import { CabecalhoModulo } from "./CabecalhoModulo";
+import { useDicaPortal } from "../../../mesas/[campaignId]/vtt/_painel/ui/DicaPortal";
 
 const LIMITE_PINS = 6;
 
@@ -107,6 +108,7 @@ export function ConditionsControls({
   variant?: "console" | "hud";
 }) {
   const editable = !readOnly && !!onRemove;
+  const dicaAdd = useDicaPortal("Adicionar condição", { lado: "abaixo" });
 
   return (
     <div className="rc-ncond-wrap" data-variant={variant} aria-busy={busy || undefined}>
@@ -139,9 +141,24 @@ export function ConditionsControls({
           </span>
         ))}
         {!readOnly && onAdd && (
-          <button type="button" className="rc-ncond-add" onClick={onAdd} disabled={busy} data-testid="console-add-condicao">
-            <Plus size={12} aria-hidden="true" /> Adicionar
+          <>
+          {/* Botão-ícone, igual aos do cabeçalho (Ver no mapa, Ajustar). */}
+          <button
+            {...dicaAdd.alvo}
+            type="button"
+            className="rc-modo-chip"
+            data-icone="true"
+            aria-label="Adicionar condição"
+            onClick={onAdd}
+            disabled={busy}
+            data-testid="console-add-condicao"
+          >
+            <span className="rc-modo-chip-ico" aria-hidden="true">
+              <Plus size={15} strokeWidth={2} />
+            </span>
           </button>
+          {dicaAdd.dica}
+          </>
         )}
       </section>
     </div>

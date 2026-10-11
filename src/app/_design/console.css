@@ -148,6 +148,31 @@
   white-space: nowrap; cursor: pointer;
   transition: color 0.14s, background 0.14s, border-color 0.14s;
 }
+/* Variante só ícone: quadrada, sem chanfro; o rótulo vira tooltip
+   (`useDicaPortal`, a dica do VTT) e `aria-label`. */
+button.rc-modo-chip[data-icone="true"] { width: 28px; padding: 0; gap: 0; clip-path: none; border-radius: var(--rc-r-sm); }
+button.rc-modo-chip[data-icone="true"]::after { content: none; }
+.rc-modo-chip:disabled { opacity: 0.45; cursor: not-allowed; }
+.rc-modo-chip[data-icone="true"]:hover .rc-modo-chip-ico,
+.rc-modo-chip[data-icone="true"]:focus-visible .rc-modo-chip-ico { color: #22e0ff; filter: drop-shadow(0 0 4px rgba(0, 212, 255, .55)); }
+.rc-modo-chip-ico { transition: color .14s, filter .14s; }
+/* Dica do VTT (`useDicaPortal`) fora da mesa: `vtt.css` só carrega nas
+   rotas do VTT, então a ficha aberta em outro lugar traz aqui a mesma
+   etiqueta, com os valores do chassi como reserva. */
+.rv-dica-portal .rv-dica--portal {
+  position: fixed; z-index: 600;
+  display: flex; align-items: center; gap: 7px; padding: 5px 9px 5px 10px; white-space: nowrap;
+  border-radius: var(--rv-r, 4px);
+  background: var(--rv-panel, #0c1420);
+  box-shadow: inset 0 0 0 1px var(--rv-line-strong, #1c2b45), inset 2px 0 0 var(--rv-cy, #00d4ff), 0 10px 28px rgba(0, 0, 0, .5);
+  backdrop-filter: blur(9px);
+  color: var(--rv-ink, #b8d8e8);
+  font-family: var(--rv-display, var(--font-chakra)), sans-serif;
+  font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 8px));
+}
+.rv-dica-portal .rv-dica--portal[data-lado="abaixo"] { transform: translate(-50%, 8px); }
 .rc-modo-chip:hover { background: var(--rc-btn-bg-hover); border-color: var(--rc-btn-border-hover); color: var(--rc-text-forte); }
 .rc-modo-chip:not([data-evolucao="true"]):active { background: var(--rc-btn-bg-active); border-color: var(--rc-btn-border-active); }
 .rc-modo-chip:focus-visible { outline: 2px solid var(--rc-btn-border-hover); outline-offset: 2px; }
@@ -815,7 +840,6 @@
    compartilhada usada antes da tentativa de remoção. */
 :is(
   button.rc-modo-chip,
-  .rc-ncond-add,
   .rc-nric-card,
   .rc-npr-card,
   .rc-ncol-card,
@@ -845,13 +869,12 @@
   );
 }
 /* Botões baixos (28px): chanfro proporcional à altura. */
-:is(button.rc-modo-chip, .rc-ncond-add) { --rc-card-chanfro: 6px; }
+button.rc-modo-chip { --rc-card-chanfro: 6px; }
 /* Ajustar ligado: o fio do chanfro acompanha a borda âmbar (senão o canto fica ciano). */
 button.rc-modo-chip[data-evolucao="true"] { --rc-card-fio: color-mix(in srgb, var(--rc-am) 55%, transparent); }
 button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 :is(
   button.rc-modo-chip,
-  .rc-ncond-add,
   .rc-nric-card,
   .rc-npr-card,
   .rc-ncol-card,
@@ -2061,25 +2084,6 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 }
 .rc-ncond-x:hover { color: color-mix(in srgb, var(--rc-danger) 75%, #fff); }
 .rc-ncond-x:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 1px; }
-.rc-ncond-add {
-  display: inline-flex; height: 28px; padding: 0 6px; align-items: center; gap: 6px;
-  border-radius: var(--rc-r-sm); border: 1px solid var(--rc-btn-border);
-  background: var(--rc-btn-bg);
-  font-family: var(--font-corpo), sans-serif; font-size: 13px; font-weight: 600; line-height: 18px;
-  color: rgba(234, 247, 255, 0.65); cursor: pointer;
-  transition: background 0.14s, border-color 0.14s, color 0.14s;
-}
-/* Mesmo achatamento do "+" dos pins, aqui sobre `--rc-btn-bg` (#162731,
-   opaco): `rgba(234, 247, 255, 0.65)` vira `#a0afb7`. O rótulo ao lado
-   segue com a cor translúcida herdada — o tom pintado é o mesmo. No
-   hover a cor do botão já é opaca (`--rc-text-forte`), então o ícone
-   volta a herdar. */
-.rc-ncond-add svg { color: #a0afb7; }
-.rc-ncond-add:hover svg { color: inherit; }
-.rc-ncond-add:hover { background: var(--rc-btn-bg-hover); border-color: var(--rc-btn-border-hover); color: var(--rc-text-forte); }
-.rc-ncond-add:active { background: var(--rc-btn-bg-active); border-color: var(--rc-btn-border-active); }
-.rc-ncond-add:focus-visible { outline: 2px solid var(--rc-btn-border-hover); outline-offset: 1px; }
-.rc-ncond-add:disabled { opacity: 0.45; cursor: not-allowed; }
 .rc-ncond-vazio {
   flex: 1 0 0; align-self: stretch; margin: 0; display: flex; align-items: center;
   color: var(--rc-dim);
@@ -3773,9 +3777,9 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 11px; font-weight: 700; color: var(--rc-text-forte);
 }
-/* Valor acima de zero acende na cor do atributo que governa a perícia
-   (clareada: as três cores base somem no fundo escuro em texto). */
-.rc-sensor-rank[data-treinada] { color: color-mix(in srgb, var(--rc-skill-cor) 70%, #fff); }
+/* Valor acima de zero acende na MESMA cor do atributo que governa a
+   perícia (a do vínculo e dos dados, ao lado). */
+.rc-sensor-rank[data-treinada] { color: var(--rc-skill-cor); }
 /* Em Evolução a última célula vira os passos −/+, que precisam de mais
    espaço que um número. */
 .rc-sensor[data-evolucao="true"] {
@@ -4367,15 +4371,26 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   color: #afc0c9; cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
-.rc-acao-defesa-ico { display: grid; place-items: center; color: #5f879a; transition: color 0.15s ease; }
-.rc-acao-defesa-ico :is(svg, img) { transition: filter 0.15s ease, transform 0.15s ease; }
-.rc-acao-defesa-txt { font-family: var(--font-corpo), sans-serif; font-size: 14px; font-weight: 600; line-height: 1; }
-.rc-acao-defesa:hover:not(:disabled) { background: rgba(8, 30, 43, 0.82); color: #d0dce2; }
-.rc-acao-defesa:hover:not(:disabled) .rc-acao-defesa-ico { color: var(--rc-cy); }
-.rc-acao-defesa:hover:not(:disabled) .rc-acao-defesa-ico :is(svg, img) {
-  transform: scale(1.08);
-  filter: drop-shadow(0 0 3px rgba(0, 212, 255, 0.4));
+.rc-acao-defesa-ico { display: grid; place-items: center; color: #5f879a; }
+.rc-acao-defesa-txt { font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 1.6px; }
+.rc-acao-defesa:hover:not(:disabled) { background: linear-gradient(rgba(0, 212, 255, 0.06), rgba(0, 212, 255, 0.06)), rgba(8, 30, 43, 0.9); color: #d0dce2; }
+/* Fio de ativação no meio da borda de baixo — o mesmo do Espaço livre. */
+.rc-acao-defesa { position: relative; }
+.rc-acao-defesa::before {
+  content: "";
+  /* -1px: cai DENTRO da borda de baixo do card, não acima dela. */
+  position: absolute; left: 50%; bottom: -1px;
+  width: 0; height: 1px;
+  transform: translateX(-50%);
+  background: var(--rc-cy);
+  transition: width 0.2s ease;
+  z-index: 1;
 }
+.rc-acao-defesa:hover:not(:disabled)::before { width: 36px; }
+/* A borda de baixo do card (onde o botão encosta) acende junto, como
+   o contorno do Espaço livre. */
+.rc-npr-card { transition: border-color 0.15s ease; }
+.rc-npr-card:has(> .rc-acao-defesa:hover:not(:disabled)) { border-bottom-color: rgba(0, 212, 255, 0.42); }
 .rc-acao-defesa:active:not(:disabled) { background: rgba(9, 34, 51, 0.95); }
 .rc-acao-defesa:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: -2px; }
 .rc-acao-defesa:disabled { opacity: 0.45; cursor: not-allowed; }
