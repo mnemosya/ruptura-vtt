@@ -33,7 +33,22 @@ for (const [name, expected] of [
   assert.equal(filledWeaponIconForName(name), expected);
   assert.ok(FILLED_ICON_DATA[expected].paths.length);
 }
-assert.equal(filledWeaponIconForName("Pistola pesada"), null);
+for (const [name, expected] of [
+  ["Pistola pesada", "pistol"], ["Pistola automática", "pistol"],
+  ["Submetralhadora", "smg"], ["Carabina", "rifle"], ["Rifle de assalto", "assault rifle"],
+  ["AS-127 Wrecker (Rifle antimaterial)", "sniper 2"], ["Rifle de precisão", "sniper 1"],
+  ["Pistola de feixe", "noun_Blaster_4232599"], ["Pistola voltaica", "noun_Blaster_4232589"],
+  ["Crioagulha", "noun_Blaster_4232591"], ["Ofuscador", "noun_Blaster_4232597"],
+  ["Fundidora", "noun_Blaster_4232590"], ["Carabina de feixe", "pistol"],
+  ["Repetidora térmica", "noun_Blaster_4232588"], ["Fuzil voltaico", "noun_Blaster_4232594"],
+  ["Disruptor", "noun_LaserGun_4232600"], ["Ressonador", "noun_LaserGun_4232596"],
+  ["Incinerador", "noun_Blaster_4232601"],
+] as const) {
+  assert.equal(filledWeaponIconForName(name), expected);
+  assert.ok(FILLED_ICON_DATA[expected].paths.length);
+}
+assert.equal(filledWeaponIconForName("Canhão de plasma"), null);
+assert.equal(filledWeaponIconForName("Escopeta pesada"), null);
 assert.equal(filledCategoryIcon("estrutura_dorsal"), null);
 assert.equal(filledCategoryIcon("mochila_equipada"), "backpack");
 for (const model of ["I", "II", "III"]) {

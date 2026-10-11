@@ -9,6 +9,16 @@ const WEAPONS: Record<string, FilledIconName> = {
   shuriken: "shuriken", arco_curto: "bow", arco_longo: "bow", arco_composto: "bow",
   besta_leve: "crossbow", besta_pesada: "crossbow", revolver: "revolver",
   pistola_de_bolso: "pocket gun",
+  pistola_pesada: "pistol", pistola_automatica: "pistol",
+  submetralhadora: "smg", carabina: "rifle", rifle_de_assalto: "assault rifle",
+  rifle_de_precisao: "sniper 1", rifle_antimaterial: "sniper 2",
+  pistola_de_feixe: "noun_Blaster_4232599",
+  pistola_voltaica: "noun_Blaster_4232589",
+  crioagulha: "noun_Blaster_4232591", ofuscador: "noun_Blaster_4232597",
+  fundidora: "noun_Blaster_4232590", carabina_de_feixe: "pistol",
+  repetidora_termica: "noun_Blaster_4232588", fuzil_voltaico: "noun_Blaster_4232594",
+  disruptor: "noun_LaserGun_4232600", ressonador: "noun_LaserGun_4232596",
+  incinerador: "noun_Blaster_4232601",
 };
 
 const CATEGORIES: Record<string, FilledIconName> = {

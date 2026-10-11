@@ -1,6 +1,6 @@
 # Mapeamento de ícones filled — mercado e inventário
 
-Fonte: `icones/filled icons/`. Levantamento em 11/10/2026: 24 SVGs originais, mais `kinetics.svg` adicionado posteriormente. As trocas diretas e as distinções de armas abaixo estão implementadas no componente compartilhado. Estrutura dorsal usa `DorsalStructureIcon`. Flechas, aljava e poções usam regras restritas de categoria e nome canônico. `kinetics.svg` está disponível nos dados, sem associação a uma categoria de mercado/inventário definida.
+Fonte: `icones/filled icons/`, `icones/energy/` e `icones/legacy/`. Atualizado em 11/10/2026. Trocas integradas no componente compartilhado; estrutura dorsal mantém `DorsalStructureIcon`. A fonte da pistola de bolso foi preservada em `legacy` após a substituição da pasta filled.
 
 ## Vínculo atual
 
@@ -46,11 +46,11 @@ As versões especiais continuam herdando o tipo entre parênteses, conforme a re
 | Aljava / suporte de flechas | Sem entrada própria em `ICONS`; fallback por categoria | `quiver.svg` | Nova regra para aljava; não aplicar a todo suporte de munição |
 | Poções / frascos consumíveis | Sem entrada própria para poção | `potion.svg` | Condicional: usar somente para itens identificados como poções/frascos; não substituir toda farmácia, veneno ou vertina |
 
-Todos os 24 arquivos novos têm um destino possível acima. `arrows`, `quiver` e `potion` precisam de identificação semântica adicional; os demais podem ser vinculados às categorias ou tipos já mapeados.
+Os arquivos do pacote original têm um destino possível acima. `arrows`, `quiver` e `potion` precisam de identificação semântica adicional; os demais podem ser vinculados às categorias ou tipos já mapeados.
 
 ## Sem versão filled correspondente neste pacote
 
-Manoplas, tonfa, martelo pesado, bastão, corrente leve, pistolas, submetralhadora, carabina, rifles, escopetas, metralhadora e armas de energia conservam seus desenhos atuais. Dispositivos, drones/robôs, escalpos/módulos, ferramentas, veículos/mobilidade, vertinas e partes anatômicas também não têm substitutos diretos. Estrutura dorsal já usa o desenho próprio `DorsalStructureIcon`, com eixo central e suportes laterais; mochila equipada conserva `Backpack`.
+Manoplas, tonfa, martelo pesado, bastão, corrente leve, escopetas, metralhadora e as armas de energia sem associação abaixo conservam seus desenhos atuais. Dispositivos, drones/robôs, escalpos/módulos, ferramentas, veículos/mobilidade, vertinas e partes anatômicas também não têm substitutos diretos. Estrutura dorsal já usa o desenho próprio `DorsalStructureIcon`, com eixo central e suportes laterais; mochila equipada conserva `Backpack`.
 
 ## Integração implementada e verificação
 
@@ -58,4 +58,34 @@ Manoplas, tonfa, martelo pesado, bastão, corrente leve, pistolas, submetralhado
 2. Atualizar os tipos de arma individualmente, evitando trocar globalmente `knife`, `handaxe`, `spear` ou `pistol`, pois cada chave antiga atende itens que agora precisam de desenhos diferentes.
 3. Atualizar a tabela de categorias em `itemIcons.tsx` para as trocas diretas.
 4. Para flechas, aljava e poção, resolver a identidade visual com metadados canônicos e fornecer os mesmos campos no mercado e no inventário; evitar regras locais em cada tela.
-5. Conferir a mesma mercadoria nas listas e detalhes das duas telas e nos equipamentos, nos tamanhos existentes de 16 a 150 px. Os paths da pasta de origem estão incorporados em `filledIconData.ts` e renderizados por `FilledIcon`, sem contorno adicional. Atualizações nos SVGs precisam regenerar esses dados.
+5. Conferir a mesma mercadoria nas listas e detalhes das duas telas e nos equipamentos, nos tamanhos existentes de 16 a 150 px. Execute `python3 scripts/dev/generate-filled-icons.py` para regenerar os dados. Os paths das pastas de origem estão incorporados em `filledIconData.ts` e renderizados por `FilledIcon`, sem contorno adicional. Atualizações nos SVGs precisam regenerar esses dados.
+
+
+## Complemento: armas convencionais e de energia
+
+| Tipo | SVG integrado |
+| --- | --- |
+| Pistola de bolso | `legacy/pocket gun.svg` |
+| Pistola pesada / automática | `filled icons/pistol.svg` |
+| Submetralhadora | `filled icons/smg.svg` |
+| Carabina | `filled icons/rifle.svg` |
+| Rifle de assalto | `filled icons/assault rifle.svg` |
+| Rifle de precisão | `filled icons/sniper 1.svg` |
+| Rifle antimaterial | `filled icons/sniper 2.svg` |
+| Pistola de feixe | `energy/noun_Blaster_4232599.svg` (nº 12) |
+| Pistola voltaica | `energy/noun_Blaster_4232589.svg` (nº 2) |
+| Crioagulha | `energy/noun_Blaster_4232591.svg` (nº 4) |
+| Ofuscador | `energy/noun_Blaster_4232597.svg` (nº 10) |
+| Fundidora | `energy/noun_Blaster_4232590.svg` (nº 3) |
+| Carabina de feixe | `filled icons/pistol.svg` (nº 8; compartilhado com pistolas balísticas) |
+| Repetidora térmica | `energy/noun_Blaster_4232588.svg` (nº 1) |
+| Fuzil voltaico | `energy/noun_Blaster_4232594.svg` (nº 7) |
+| Disruptor | `energy/noun_LaserGun_4232600.svg` (nº 13) |
+| Ressonador | `energy/noun_LaserGun_4232596.svg` (nº 9) |
+| Incinerador | `energy/noun_Blaster_4232601.svg` (nº 14) |
+
+Os três últimos desenhos enviados por imagem (rifle de feixe concentrado, criojetor e nova pistola voltaica com raio) ainda não estão nas pastas fornecidas. Permanecem os ícones anteriores desses tipos, exceto a pistola voltaica, que usa o nº 2 disponível.
+
+`noun_Motion_8334488.svg` está incorporado sem associação a arma. `kinetics.svg` foi removido da pasta substituída e não tinha associação de item.
+
+Créditos: SVGs de energia de iconcheese / Noun Project, conforme os arquivos de origem. O desenho Motion é de Adrien Coquet / Noun Project. Os SVGs originais preservam os créditos; a arte renderizada usa a geometria da área de ícone.
