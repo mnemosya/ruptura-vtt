@@ -84,6 +84,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
   acaoToken?: {
     nome: string;
     visibilidade: "public" | "gm";
+    penalidadeAlcance?: number;
     /**
      * Ataque CONTESTADO (com alvo): chamado com a rolagem pronta, para
      * abrir o cartão de ataque no chat (`declararAtaqueAction`). As faces
@@ -172,7 +173,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
     const r = api.rolarTeste({
       atributoId: atributoId as keyof CharacterAttributes,
       periciaId: periciaId === SEM_PERICIA ? null : periciaId,
-      modificador: mods + (info?.penalidade ?? 0),
+      modificador: mods + (info?.penalidade ?? 0) + (acaoToken?.penalidadeAlcance ?? 0),
       cd: cdNum != null && Number.isFinite(cdNum) ? cdNum : null,
       dados,
       visibilidade: acaoToken?.visibilidade ?? visibilidade,
@@ -337,7 +338,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
           </div>}
 
           {mesa && !acaoToken && <SeletorVisibilidade valor={visibilidade} onChange={setVisibilidade} ehNarrador={ehNarrador} />}
-          {acaoToken && <p style={{ color: INK_FAINT, fontFamily: MONO, fontSize: 11 }}>{acaoToken.nome} · {acaoToken.visibilidade === "gm" ? "Somente narrador" : "Público"}</p>}
+          {acaoToken && <p style={{ color: INK_FAINT, fontFamily: MONO, fontSize: 11 }}>{acaoToken.nome}{acaoToken.penalidadeAlcance ? ` · Alcance: ${acaoToken.penalidadeAlcance}` : ""} · {acaoToken.visibilidade === "gm" ? "Somente narrador" : "Público"}</p>}
         </Stack>
       </MolduraRolagem>
       </div>

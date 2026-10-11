@@ -1,0 +1,524 @@
+{
+  "_schema": "ruptura.vtt.content.mercado_notion.companion_model.v1.2",
+  "_meta": {
+    "conteudo": "companion_model",
+    "versao_schema": "1.2.0",
+    "total_registros": 10,
+    "fonte": "Notion: capítulo MERCADO NOTURNO / LISTA DE MERCADORIAS",
+    "extraido_em": "2026-10-11T01:26:24.434Z",
+    "hash_sha256_origem": "fe0a1d36fcd0a40543bba2c6cd87fdf9c4a0305508621d8eb8f25b9bc4b97b02",
+    "observacao": "Preço e descrição canônicos. Efeitos mecânicos e instalação são manuais nesta transcrição inicial."
+  },
+  "modelos_companheiros": [
+    {
+      "id": "drones_e_robos_mosca",
+      "slug": "drones_e_robos_mosca",
+      "nome": "Mosca",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 500,
+      "preco_texto": "500",
+      "preco_qualificador": null,
+      "descricao_curta": "Minúsculo, infiltração e vigilância.",
+      "descricao_longa": "*Incomum*\n\nDrone minúsculo, inspirado em insetos voadores. Movimenta-se por dutos e frestas, transmitindo imagens e sons sem ser percebido. Ideal para infiltração, vigilância de ambientes fechados ou espionagem.\n\n- **Espaços:** 1\n\n- **Preço:** Ⱥ 500\n\n**DRONE MOSCA **(CD 5)\n\n[Imagem no Notion]\n\n---\n\n**Alcance:** 500 m\n\n**Mente:** 2\n\n**PD: **3\n\n**Ações:**\n\n- **Deslocar-se** (12 m, caminhada e voo) **`1 PA`**\n\n- **Transmitir **(imagem e som) **`1 PA`**\n\n**CD para ser percebido:** 10\n\nDados da lista de mercadorias:\n- Resumo: Minúsculo, infiltração e vigilância.\n- Alcance: 500 m\n- Raridade: Incomum\n- Espaços: 1\n- Preço (Ⱥ): 500",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "DRONES E ROBÔS",
+        "secao": [
+          "DRONES"
+        ],
+        "tipo_tabela": "Drone",
+        "campos": {
+          "Drone": "Mosca",
+          "Resumo": "Minúsculo, infiltração e vigilância.",
+          "Alcance": "500 m",
+          "Raridade": "Incomum",
+          "Espaços": "1",
+          "Preço (Ⱥ)": "500"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
+        "tabelaBlocoId": "a82e7d4a1b8640ab8acc079d8309f7f3",
+        "linhaBlocoId": "6b619a44c2f64d39be20eef95c9879c6",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "drone",
+      "alcance_controle": "500 m",
+      "atributos_texto": null,
+      "acoes": []
+    },
+    {
+      "id": "drones_e_robos_reconhecimento",
+      "slug": "drones_e_robos_reconhecimento",
+      "nome": "Reconhecimento",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 500,
+      "preco_texto": "500",
+      "preco_qualificador": null,
+      "descricao_curta": "Voo, imagens e sinais à distância.",
+      "descricao_longa": "*Incomum*\n\nEquipamento aéreo leve, opera em altitudes médias e transmite imagens, sinais de calor e áudio em tempo real para o operador. Usado para mapeamento de zonas, monitoramento de alvos à distância e cobertura tática de áreas perigosas.\n\n- **Espaços:** 2\n\n- **Preço:** Ⱥ 500\n\n**DRONE DE RECONHECIMENTO **(CD 5)\n\n---\n\n**Alcance:** 2 km\n\n**Mente:** 2\n\n**PD: **8\n\n**Ações:**\n\n- **Deslocar-se** (16 m, voo) **`1 PA`**\n\n- **Transmitir **(imagem e som) **`1 PA`**\n\nDados da lista de mercadorias:\n- Resumo: Voo, imagens e sinais à distância.\n- Alcance: 2 km\n- Raridade: Incomum\n- Espaços: 2\n- Preço (Ⱥ): 500",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "DRONES E ROBÔS",
+        "secao": [
+          "DRONES"
+        ],
+        "tipo_tabela": "Drone",
+        "campos": {
+          "Drone": "Reconhecimento",
+          "Resumo": "Voo, imagens e sinais à distância.",
+          "Alcance": "2 km",
+          "Raridade": "Incomum",
+          "Espaços": "2",
+          "Preço (Ⱥ)": "500"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
+        "tabelaBlocoId": "a82e7d4a1b8640ab8acc079d8309f7f3",
+        "linhaBlocoId": "9e6efbdd407c4e3b8fc308a7bd9b87d5",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "drone",
+      "alcance_controle": "2 km",
+      "atributos_texto": null,
+      "acoes": []
+    },
+    {
+      "id": "drones_e_robos_reparador",
+      "slug": "drones_e_robos_reparador",
+      "nome": "Reparador",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "preco_texto": "1.000",
+      "preco_qualificador": null,
+      "descricao_curta": "Reparo tecnomágico rápido.",
+      "descricao_longa": "*Incomum*\n\nUnidade compacta com ferramentas tecnomágicas integradas. Executa reparos de emergência em armas, portas, veículos ou equipamentos danificados, acessando locais de difícil alcance para humanos.\n\n- **Espaços:** 2\n\n- **Preço:** Ⱥ 1.000\n\n**DRONE REPARADOR **(CD 6)\n\n---\n\n**Alcance:** 500 m\n\n**Mente:** 2\n\n**PD: **8\n\n**Ações:**\n\n- **Deslocar-se** (16 m, caminhada ou voo) **`1 PA`**\n\n- **Transmitir **(status de reparo ou imagem) **`1 PA`**\n\n- **Reparar** (3x/dia, alvo adjacente) **`2 PA`**\n  - Faça **`Mente + 2`**. Em sucesso, restaura **1d4 PD/MIT** do objeto.\n\nDados da lista de mercadorias:\n- Resumo: Reparo tecnomágico rápido.\n- Alcance: 500 m\n- Raridade: Incomum\n- Espaços: 2\n- Preço (Ⱥ): 1.000",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "DRONES E ROBÔS",
+        "secao": [
+          "DRONES"
+        ],
+        "tipo_tabela": "Drone",
+        "campos": {
+          "Drone": "Reparador",
+          "Resumo": "Reparo tecnomágico rápido.",
+          "Alcance": "500 m",
+          "Raridade": "Incomum",
+          "Espaços": "2",
+          "Preço (Ⱥ)": "1.000"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
+        "tabelaBlocoId": "a82e7d4a1b8640ab8acc079d8309f7f3",
+        "linhaBlocoId": "fcd87bef77a54a54bacab6c2e399a7f5",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "drone",
+      "alcance_controle": "500 m",
+      "atributos_texto": null,
+      "acoes": []
+    },
+    {
+      "id": "drones_e_robos_assalto_leve",
+      "slug": "drones_e_robos_assalto_leve",
+      "nome": "Assalto Leve",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1200,
+      "preco_texto": "1.200",
+      "preco_qualificador": null,
+      "descricao_curta": "Não-letal, contenção tática.",
+      "descricao_longa": "*Incomum*\n\nModelo ágil, equipado com munição não-letal: gás lacrimogêneo ou projéteis de borracha para dispersar, conter ou incapacitar alvos sem causar morte.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 1.200\n\n**DRONE DE ASSALTO LEVE** (CD 7)\n\n---\n\n**Alcance:** 200 m\n\n**Mente:** 2\n\n**PD: **8\n\n**Ações:**\n\n- **Deslocar-se** (16 m, voo) **`1 PA`**\n\n- **Transmitir **(imagem) **`1 PA`**\n\n- **Atacar **(Projétil de borracha: alcance 8 m, propriedade: *Atordoante*) **`2 PA`**\n  - Faça **`Mente + 2`**. O alvo faz teste de **Desviar** ou **Bloquear****.** Em falha, sofre **1d6 de dano contundente **(não letal).\n\n- **Atacar **(Gás lacrimogênio: alcance 8 m, raio de 2 m) **`2 PA`**\n  - Faça **`Mente + 2`**. Criaturas na área fazem teste de **`Corpo + Vigor`****.** Em falha, o alvo fica **`Cego`**** **por 1 rodada.\n\n- **Esquivar ****`Reação`**\n  - Em resposta a um ataque corpo a corpo ou à distância, faça **`Mente + 2`**. Em sucesso, o drone desvia do ataque.\n\nDados da lista de mercadorias:\n- Resumo: Não-letal, contenção tática.\n- Alcance: 200 m\n- Raridade: Incomum\n- Espaços: Carga\n- Preço (Ⱥ): 1.200",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "DRONES E ROBÔS",
+        "secao": [
+          "DRONES"
+        ],
+        "tipo_tabela": "Drone",
+        "campos": {
+          "Drone": "Assalto Leve",
+          "Resumo": "Não-letal, contenção tática.",
+          "Alcance": "200 m",
+          "Raridade": "Incomum",
+          "Espaços": "Carga",
+          "Preço (Ⱥ)": "1.200"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
+        "tabelaBlocoId": "a82e7d4a1b8640ab8acc079d8309f7f3",
+        "linhaBlocoId": "ae882265f9f946d9b5451713281f4ef2",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "drone",
+      "alcance_controle": "200 m",
+      "atributos_texto": null,
+      "acoes": []
+    },
+    {
+      "id": "drones_e_robos_assalto_pesado",
+      "slug": "drones_e_robos_assalto_pesado",
+      "nome": "Assalto Pesado",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1800,
+      "preco_texto": "1.800",
+      "preco_qualificador": null,
+      "descricao_curta": "Letal, combate e apoio.",
+      "descricao_longa": "*Raro*\n\nPlataforma robusta de combate, armada com projéteis letais e microgranadas. Usado em confrontos abertos, apoio tático ou missões de destruição.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 1.800\n\n**DRONE DE ASSALTO PESADO **(CD 8)\n\n---\n\n**Alcance:** 200 m\n\n**Mente:** 3\n\n**PD: **12\n\n**Ações:**\n\n- **Deslocar-se** (16 m, voo) **`1 PA`**\n\n- **Transmitir **(imagem) **`1 PA`**\n\n- **Atacar **(Atirar: alcance 12 m, propriedade: *Sangramento*) **`2 PA`**\n  - Faça **`Mente + 3`**. O alvo faz teste de **Desviar** ou **Bloquear****.** Em falha, sofre 2d8 de dano perfurante.\n\n- **Atacar** (Lançar Granada: alcance 12 m, raio de 2 m) **`2 PA`**\n  - Faça **`Mente + 3`**. Todos na área fazem teste de **Desviar**. Em falha, sofrem **1d6 de dano contundente + 1d4 de dano ígneo**. Em sucesso, metade do dano.\n\n- **Esquivar ****`Reação`**\n  - Em resposta a um ataque corpo a corpo ou à distância, faça **`Mente + 3`**. Em sucesso, o drone desvia do ataque.\n\nDados da lista de mercadorias:\n- Resumo: Letal, combate e apoio.\n- Alcance: 200 m\n- Raridade: Raro\n- Espaços: Carga\n- Preço (Ⱥ): 1.800",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "DRONES E ROBÔS",
+        "secao": [
+          "DRONES"
+        ],
+        "tipo_tabela": "Drone",
+        "campos": {
+          "Drone": "Assalto Pesado",
+          "Resumo": "Letal, combate e apoio.",
+          "Alcance": "200 m",
+          "Raridade": "Raro",
+          "Espaços": "Carga",
+          "Preço (Ⱥ)": "1.800"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
+        "tabelaBlocoId": "a82e7d4a1b8640ab8acc079d8309f7f3",
+        "linhaBlocoId": "f025681829034edfa7d8dae0d7eaa228",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "drone",
+      "alcance_controle": "200 m",
+      "atributos_texto": null,
+      "acoes": []
+    },
+    {
+      "id": "drones_e_robos_carga",
+      "slug": "drones_e_robos_carga",
+      "nome": "Carga",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "preco_texto": "1.000",
+      "preco_qualificador": null,
+      "descricao_curta": "Transporta até 1.000 kg, força bruta.",
+      "descricao_longa": "*Incomum*\n\nModelo robusto, não-humanóide, usado para transporte de materiais pesados, apoio em obras, barricadas ou resgates.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 1.000\n\n**ROBÔ DE CARGA **(CD 4)\n\n---\n\n**Alcance:** 100 m\n\n**Corpo:** 3\n\n**Mente:** 0\n\n**PD:** 10\n\n**Ações (3 PA):**\n\n- **Deslocar-se** (13 m caminhada, transportando até 1.000 kg) **`1 PA`**\n\n- **Transmitir** (imagem ou status) **`1 PA`**\n\n- **Destravar/Forçar** (porta, obstáculo ou veículo adjacente) **`2 PA`**\n  - Faça **`Corpo + 2`** contra uma CD definida pelo narrador.\n\nDados da lista de mercadorias:\n- Resumo: Transporta até 1.000 kg, força bruta.\n- Atributos: Corpo 3, Mente 0\n- Raridade: Incomum\n- Espaços: Carga\n- Preço (Ⱥ): 1.000",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "DRONES E ROBÔS",
+        "secao": [
+          "ROBÔS"
+        ],
+        "tipo_tabela": "Robô",
+        "campos": {
+          "Robô": "Carga",
+          "Resumo": "Transporta até 1.000 kg, força bruta.",
+          "Atributos": "Corpo 3, Mente 0",
+          "Raridade": "Incomum",
+          "Espaços": "Carga",
+          "Preço (Ⱥ)": "1.000"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
+        "tabelaBlocoId": "7e23aa76d90f4c24898eac27970d2641",
+        "linhaBlocoId": "ac6af3cece624490ab5d0eb7af4d2367",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "robo",
+      "alcance_controle": null,
+      "atributos_texto": "Corpo 3, Mente 0",
+      "acoes": []
+    },
+    {
+      "id": "drones_e_robos_patrulha",
+      "slug": "drones_e_robos_patrulha",
+      "nome": "Patrulha",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "preco_texto": "1.000",
+      "preco_qualificador": null,
+      "descricao_curta": "Vasculha, alerta, transmite sinais.",
+      "descricao_longa": "*Incomum*\n\nUnidade humanóide compacta, programada para rondas em áreas urbanas ou industriais, identificação de suspeitos, resposta rápida e emissão de alerta.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 1.000\n\n**ROBÔ DE PATRULHA** (CD 5)\n\n---\n\n**Alcance:** 500 m\n\n**Corpo:** 2\n\n**Mente:** 2\n\n**PD:** 10\n\n**Ações (3 PA):**\n\n- **Deslocar-se** (12 m, caminhada. 24 m, corrida) **`1 PA`**\n\n- **Vasculhar** (detecta criaturas, dispositivos eletrônicos, armadilhas e sinais rúnicos em raio de 10 m; revela posição, número e natureza básica dos alvos detectados) **`1 PA`**\n  - Faça **`Mente + 2`** contra uma CD definida pelo narrador ou teste contestado.\n\n- **Transmitir **(imagem e som) **`1 PA`**\n\n- **Emitir Alerta** (sirene audível a 15 m) **`1 PA`**\n\n- **Esquivar ****`Reação`**\n  - Em resposta a um ataque, faça **`Corpo + 2`**. Em sucesso, desvia do ataque.\n\nDados da lista de mercadorias:\n- Resumo: Vasculha, alerta, transmite sinais.\n- Atributos: Corpo 2, Mente 2\n- Raridade: Incomum\n- Espaços: Carga\n- Preço (Ⱥ): 1.000",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "DRONES E ROBÔS",
+        "secao": [
+          "ROBÔS"
+        ],
+        "tipo_tabela": "Robô",
+        "campos": {
+          "Robô": "Patrulha",
+          "Resumo": "Vasculha, alerta, transmite sinais.",
+          "Atributos": "Corpo 2, Mente 2",
+          "Raridade": "Incomum",
+          "Espaços": "Carga",
+          "Preço (Ⱥ)": "1.000"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
+        "tabelaBlocoId": "7e23aa76d90f4c24898eac27970d2641",
+        "linhaBlocoId": "20404df045ae444293a29d2ca9ab926e",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "robo",
+      "alcance_controle": null,
+      "atributos_texto": "Corpo 2, Mente 2",
+      "acoes": []
+    },
+    {
+      "id": "drones_e_robos_suporte",
+      "slug": "drones_e_robos_suporte",
+      "nome": "Suporte",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "preco_texto": "1.500",
+      "preco_qualificador": null,
+      "descricao_curta": "Repara e faz primeiros socorros.",
+      "descricao_longa": "*Raro*\n\nUnidade multifunção, equipada para primeiros socorros, conserto rápido de equipamentos ou suporte logístico no campo.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 1.500\n\n**ROBÔ DE SUPORTE **(CD 7)\n\n---\n\n**Alcance:** 200 m\n\n**Corpo:** 1\n\n**Mente:** 3\n\n**PD:** 10\n\n**Ações (3 PA):**\n\n- **Deslocar-se** (11 m, caminhada. 22 m, corrida) **`1 PA`**\n\n- **Transmitir **(imagem e som) **`1 PA`**\n\n- **Emitir Alerta** (sirene audível a 15 m) **`1 PA`**\n\n- **Reparar** (2x/dia, alvo adjacente) **`2 PA`**\n  - Faça **`Mente + 3`**. Em sucesso, recupera **1d4 PD/MIT** do objeto.\n\n- **Primeiros Socorros** (alvo adjacente) **`2 PA`**\n  - Faça **`Mente + 3`**. Em sucesso, recupera **1d6 PV** do alvo. Requer 1 Medkit; o robô pode armazenar até 3 Kits.\n  \n  - O robô também pode aplicar um kit de estabilização. Nesse caso, o alvo não recupera vida, mas o marcador de colapso é finalizado.\n\n- **Esquivar ****`Reação`**\n  - Em resposta a um ataque, faça **`Corpo + 3`**. Em sucesso, desvia do ataque.\n\nDados da lista de mercadorias:\n- Resumo: Repara e faz primeiros socorros.\n- Atributos: Corpo 1, Mente 3\n- Raridade: Raro\n- Espaços: Carga\n- Preço (Ⱥ): 1.500",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "DRONES E ROBÔS",
+        "secao": [
+          "ROBÔS"
+        ],
+        "tipo_tabela": "Robô",
+        "campos": {
+          "Robô": "Suporte",
+          "Resumo": "Repara e faz primeiros socorros.",
+          "Atributos": "Corpo 1, Mente 3",
+          "Raridade": "Raro",
+          "Espaços": "Carga",
+          "Preço (Ⱥ)": "1.500"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
+        "tabelaBlocoId": "7e23aa76d90f4c24898eac27970d2641",
+        "linhaBlocoId": "01654d2dd96d486f90419adec7bf8986",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "robo",
+      "alcance_controle": null,
+      "atributos_texto": "Corpo 1, Mente 3",
+      "acoes": []
+    },
+    {
+      "id": "drones_e_robos_combate",
+      "slug": "drones_e_robos_combate",
+      "nome": "Combate",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2000,
+      "preco_texto": "2.000",
+      "preco_qualificador": null,
+      "descricao_curta": "Ataca, imobiliza, defesa pesada.",
+      "descricao_longa": "*Raro*\n\nHumanóide blindado, equipado para repressão em zonas de conflito, contenção violenta ou defesa de instalações críticas.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 2.000\n\n**ROBÔ DE COMBATE **(CD 8)\n\n---\n\n**Alcance:** 200 m\n\n**Corpo:** 3\n\n**Mente:** 1\n\n**PD:** 16\n\n**Ações (3 PA):**\n\n- **Deslocar-se** (13 m, caminhada. 26 m, corrida) **`1 PA`**\n\n- **Transmitir** (imagem e status) **`1 PA`**\n\n- **Atacar** (alcance 8 m. Propriedades: *Sangramento *e* Perfuração*) **`2 PA`**\n  - Faça **`Corpo + 3`**. O alvo faz teste de **Desviar** ou **Bloquear**. Em falha, sofre **2d6 de dano perfurante**.\n\n- **Imobilizar** (alvo adjacente) **`2 PA`**\n  - Faça **`Corpo + 3`**. O alvo faz teste de **Desviar** ou **Resistir**. Em falha, fica **`Agarrado`**.\n\n- **Esquivar ****`Reação`**\n  - Em resposta a um ataque, faça **`Corpo + 3`**. Em sucesso, desvia do ataque.\n\nDados da lista de mercadorias:\n- Resumo: Ataca, imobiliza, defesa pesada.\n- Atributos: Corpo 3, Mente 1\n- Raridade: Raro\n- Espaços: Carga\n- Preço (Ⱥ): 2.000",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "DRONES E ROBÔS",
+        "secao": [
+          "ROBÔS"
+        ],
+        "tipo_tabela": "Robô",
+        "campos": {
+          "Robô": "Combate",
+          "Resumo": "Ataca, imobiliza, defesa pesada.",
+          "Atributos": "Corpo 3, Mente 1",
+          "Raridade": "Raro",
+          "Espaços": "Carga",
+          "Preço (Ⱥ)": "2.000"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
+        "tabelaBlocoId": "7e23aa76d90f4c24898eac27970d2641",
+        "linhaBlocoId": "24daafdbc3484acfabc34a5e89618a86",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "robo",
+      "alcance_controle": null,
+      "atributos_texto": "Corpo 3, Mente 1",
+      "acoes": []
+    },
+    {
+      "id": "drones_e_robos_ceifador",
+      "slug": "drones_e_robos_ceifador",
+      "nome": "Ceifador",
+      "raridade": "muito_raro",
+      "raridade_label": "Muito Raro",
+      "preco": 10000,
+      "preco_texto": "10.000",
+      "preco_qualificador": null,
+      "descricao_curta": "Devasta grupos em combate corpo a corpo.",
+      "descricao_longa": "*Muito raro*\n\nUnidade de guerra especializada em combate próximo. Estrutura humanóide reforçada, equipada com quatro braços-lâmina e uma cauda perfurante, projetada para dizimar múltiplos inimigos de uma vez só. Sua presença nas ruas é sinônimo de massacre iminente.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 10.000\n\n**ROBÔ CEIFADOR **(CD 10)\n\n[Imagem no Notion]\n\n---\n\n**Alcance:** 200 m\n\n**Corpo:** 4\n\n**Mente:** 2\n\n**PD:** 30\n\n**Ações (5 PA):**\n\n- **Deslocar-se** (14 m, caminhada. 28 m, corrida) **`1 PA`**\n\n- **Transmitir** (imagem e status) **`1 PA`**\n\n- **Atacar** (Lâmina: adjacente, propriedade: *Sangramento*) **`2 PA`**\n  - Faça **`Corpo + 4`**. O alvo faz teste de **Desviar**,** ****Aparar** ou **Bloquear**. Em falha, sofre **1d10 de dano cortante**.\n\n- **Atacar** (Cauda: alcance 2 m, propriedade: *Perfurante*) **`2 PA`**\n  - Faça **`Corpo + 4`**. O alvo faz teste de **Desviar**** **ou **Bloquear**. Em falha, sofre **1d6 de dano perfurante** e deve testar **`Vigor`** CD 8. Em falha, fica **`Envenenado`**.\n\n- **Esquivar ****`Reação`**\n  - Em resposta a um ataque, faça **`Corpo + 4`**. Em sucesso, desvia do ataque.\n\n**Frenesi das Lâminas** (**1x por cena**)\n\n- Durante uma rodada, o Ceifador pode realizar até dois ataques de lâmina por ação de **Atacar**.\n\nDados da lista de mercadorias:\n- Resumo: Devasta grupos em combate corpo a corpo.\n- Atributos: Corpo 4, Mente 2\n- Raridade: Muito Raro\n- Espaços: Carga\n- Preço (Ⱥ): 10.000",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "DRONES E ROBÔS",
+        "secao": [
+          "ROBÔS"
+        ],
+        "tipo_tabela": "Robô",
+        "campos": {
+          "Robô": "Ceifador",
+          "Resumo": "Devasta grupos em combate corpo a corpo.",
+          "Atributos": "Corpo 4, Mente 2",
+          "Raridade": "Muito Raro",
+          "Espaços": "Carga",
+          "Preço (Ⱥ)": "10.000"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
+        "tabelaBlocoId": "7e23aa76d90f4c24898eac27970d2641",
+        "linhaBlocoId": "b01b50b5ee5943f18d05611ca3d491ee",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "robo",
+      "alcance_controle": null,
+      "atributos_texto": "Corpo 4, Mente 2",
+      "acoes": []
+    }
+  ]
+}

@@ -19,6 +19,11 @@ export interface CompanionModelSummary {
   slug: string;
   nome: string;
   categoria: "drone" | "robo";
+  preco?: number;
+  raridade?: string;
+  descricaoCurta?: string;
+  descricaoLonga?: string;
+  espacosTexto?: string;
   /** Só existe para robôs — drones não têm PA próprio na fonte (ausente, nunca inventado como 0). */
   paMaximo?: number;
   acoes: CompanionModelAcao[];
@@ -31,6 +36,7 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 export function normalizeCompanionModel(raw: Record<string, unknown>): CompanionModelSummary {
   const slug = String(raw.slug ?? raw.id ?? "");
   const categoria = raw.categoria === "robo" ? "robo" : "drone";
+  const camposNotion = asRecord(asRecord(raw.dados_notion)?.campos);
   const acoesBrutas = Array.isArray(raw.acoes) ? raw.acoes : [];
   const acoes: CompanionModelAcao[] = acoesBrutas
     .map((item) => asRecord(item))
@@ -45,6 +51,11 @@ export function normalizeCompanionModel(raw: Record<string, unknown>): Companion
     slug,
     nome: typeof raw.nome === "string" && raw.nome.trim() !== "" ? raw.nome : slug || "Modelo sem nome",
     categoria,
+    preco: typeof raw.preco === "number" ? raw.preco : undefined,
+    raridade: typeof raw.raridade === "string" ? raw.raridade : undefined,
+    descricaoCurta: typeof raw.descricao_curta === "string" ? raw.descricao_curta : undefined,
+    descricaoLonga: typeof raw.descricao_longa === "string" ? raw.descricao_longa : undefined,
+    espacosTexto: typeof camposNotion?.["Espaços"] === "string" ? camposNotion["Espaços"] : undefined,
     paMaximo: typeof raw.pa_maximo === "number" ? raw.pa_maximo : undefined,
     acoes,
   };

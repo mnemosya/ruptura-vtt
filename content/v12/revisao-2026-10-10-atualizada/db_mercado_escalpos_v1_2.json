@@ -1,0 +1,2081 @@
+{
+  "_schema": "ruptura.vtt.content.mercado_notion.escalpo.v1.2",
+  "_meta": {
+    "conteudo": "escalpo",
+    "versao_schema": "1.2.0",
+    "total_registros": 39,
+    "fonte": "Notion: capítulo MERCADO NOTURNO / LISTA DE MERCADORIAS",
+    "extraido_em": "2026-10-11T02:06:07.663Z",
+    "hash_sha256_origem": "de995012b4fcf1027a5d7dba986fd79e577f27675487528828d42bc730ac41fe",
+    "observacao": "Preço e descrição canônicos. Efeitos mecânicos e instalação são manuais nesta transcrição inicial."
+  },
+  "escalpos": [
+    {
+      "id": "escalpos_ouvidos_de_cacador",
+      "slug": "escalpos_ouvidos_de_cacador",
+      "nome": "Ouvidos de Caçador",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1200,
+      "preco_texto": "Ⱥ 1.200",
+      "preco_qualificador": null,
+      "descricao_curta": "Isolam fontes sonoras e facilitam distinguir ou acompanhar sons específicos.",
+      "descricao_longa": "---\n\n*Incomum*\n\nO usuário pode isolar uma fonte sonora que consiga ouvir, reduzindo ruídos concorrentes a um murmúrio. Recebe +1 de vantagem em testes de **`Percepção`** para distinguir ou acompanhar sons específicos.\n\nPossuem 2 espaços para módulos de Ouvidos de Caçador.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 1.200\n\n**Integridade:** –1\n\n### MÓDULOS DE OUVIDOS DE CAÇADOR\n\n---\n\n#### CARTOGRAFIA ACÚSTICA\n\n#### ESCUTA AMPLIADA\n\n#### RASTREADOR SONORO\n\nDados da lista de mercadorias:\n- Resumo: Isolam fontes sonoras e facilitam distinguir ou acompanhar sons específicos.\n- Raridade: Incomum\n- Espaços: 1\n- Preço: Ⱥ 1.200",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS AUDITIVOS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Ouvidos de Caçador",
+          "Resumo": "Isolam fontes sonoras e facilitam distinguir ou acompanhar sons específicos.",
+          "Raridade": "Incomum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 1.200"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "8c9e2de85ac3414cb6369fc6dc96d2b2",
+        "linhaBlocoId": "6464711d41fe4b309aaefa1e2d2bd99e",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "auditivos",
+      "categoria_label": "auditivos",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_transceptor_coclear",
+      "slug": "escalpos_transceptor_coclear",
+      "nome": "Transceptor Coclear",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "preco_texto": "Ⱥ 1.000",
+      "preco_qualificador": null,
+      "descricao_curta": "Recebe áudio digital e transmite a voz por comandos neurais a até 20 m.",
+      "descricao_longa": "---\n\n*Incomum*\n\nO implante recebe sons digitais diretamente pelo sistema auditivo e transmite a voz do usuário por comandos neurais, sem fala audível. Ele se comunica com dispositivos conectados ao ID sináptico a até 20 m.\n\nPossui 2 espaços para módulos de Transceptor Coclear.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 1.000\n\n**Integridade:** –1\n\n### MÓDULOS DO TRANSCEPTOR COCLEAR\n\n---\n\n#### CANAL CRIPTOGRAFADO\n\n#### GRAVADOR DE ÁUDIO\n\n#### VARREDURA DE FREQUÊNCIA\n\nDados da lista de mercadorias:\n- Resumo: Recebe áudio digital e transmite a voz por comandos neurais a até 20 m.\n- Raridade: Incomum\n- Espaços: 1\n- Preço: Ⱥ 1.000",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS AUDITIVOS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Transceptor Coclear",
+          "Resumo": "Recebe áudio digital e transmite a voz por comandos neurais a até 20 m.",
+          "Raridade": "Incomum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 1.000"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "8c9e2de85ac3414cb6369fc6dc96d2b2",
+        "linhaBlocoId": "0ce4fb2c883f4b2aa80c331a83280866",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "auditivos",
+      "categoria_label": "auditivos",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_bracos_egide",
+      "slug": "escalpos_bracos_egide",
+      "nome": "Braços Égide",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "preco_texto": "Ⱥ 2.500",
+      "preco_qualificador": null,
+      "descricao_curta": "Funcionam como um escudo médio integrado com 8 PD e cobertura parcial enquanto abertos.",
+      "descricao_longa": "---\n\n*Raro*\n\nUm par de braços reforçados abriga placas de metal kravita que podem se expandir sobre os antebraços. As placas possuem **8 PD**, resistência física e podem ser abertas ou recolhidas sem gastar PA durante seu turno.\n\nVocê também pode abrir as placas como parte da declaração de **Bloquear**, antes de realizar o teste.\n\nEnquanto as placas estiverem abertas e possuírem ao menos 1 PD:\n\n- Funcionam como um **escudo médio integrado**, concedendo **cobertura parcial (–1 de desvantagem)**.\n\n- Podem ser utilizadas para **Bloquear** mesmo com as mãos ocupadas.\n\n- Seguem normalmente as regras de PD, Resistência e impactos de escudos.\n\nAs placas permanecem abertas até serem recolhidas. Ao chegar a 0 PD, deixam de conceder cobertura e não podem ser usadas para **Bloquear** até recuperarem PD.\n\nOs Braços Égide recuperam todos os PD perdidos durante um descanso longo.\n\nPossuem 2 espaços para módulos de Braços Égide.\n\n**Espaços:** 3\n\n**Preço:** Ⱥ 2.500\n\n**Integridade:** –2\n\n### MÓDULOS DE BRAÇOS ÉGIDE\n\n---\n\n#### PLACAS REFORÇADAS\n\n#### TRAVAS INERCIAIS\n\nDados da lista de mercadorias:\n- Resumo: Funcionam como um escudo médio integrado com 8 PD e cobertura parcial enquanto abertos.\n- Raridade: Raro\n- Espaços: 3\n- Preço: Ⱥ 2.500",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS DE BRAÇO"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Braços Égide",
+          "Resumo": "Funcionam como um escudo médio integrado com 8 PD e cobertura parcial enquanto abertos.",
+          "Raridade": "Raro",
+          "Espaços": "3",
+          "Preço": "Ⱥ 2.500"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "1ca2b06bafdb46dfbcdebe3978c4a72b",
+        "linhaBlocoId": "b71d499894ff4ef28da73e71c6b2e496",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "de_braco",
+      "categoria_label": "de braco",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_bracos_gorila",
+      "slug": "escalpos_bracos_gorila",
+      "nome": "Braços Gorila",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "preco_texto": "Ⱥ 2.500",
+      "preco_qualificador": null,
+      "descricao_curta": "Ampliam a força física e causam 1d10 de dano em ataques desarmados.",
+      "descricao_longa": "---\n\n*Raro*\n\nUm par de braços largos e pesados, movidos por musculatura sintética e pistões rúnicos. Seus ataques desarmados com os braços causam 1d10 de dano contundente. Você recebe +1 de vantagem em testes para erguer, arrastar, sustentar ou quebrar algo usando os braços.\n\nPossuem 2 espaços para módulos de Braços Gorila.\n\n**Espaços:** 3\n\n**Preço:** Ⱥ 2.500\n\n**Integridade:** –2\n\n### MÓDULOS DE BRAÇOS GORILA\n\n---\n\n#### ATUADORES INDUSTRIAIS\n\n#### JUNTAS DE IMPACTO\n\n#### PISTÕES DE SOBRECARGA\n\nDados da lista de mercadorias:\n- Resumo: Ampliam a força física e causam 1d10 de dano em ataques desarmados.\n- Raridade: Raro\n- Espaços: 3\n- Preço: Ⱥ 2.500",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS DE BRAÇO"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Braços Gorila",
+          "Resumo": "Ampliam a força física e causam 1d10 de dano em ataques desarmados.",
+          "Raridade": "Raro",
+          "Espaços": "3",
+          "Preço": "Ⱥ 2.500"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "1ca2b06bafdb46dfbcdebe3978c4a72b",
+        "linhaBlocoId": "d9cb67ea2b2d4deea31b04d2f8b3e9b1",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "de_braco",
+      "categoria_label": "de braco",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_bracos_lamina",
+      "slug": "escalpos_bracos_lamina",
+      "nome": "Braços-Lâmina",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2000,
+      "preco_texto": "Ⱥ 2.000",
+      "preco_qualificador": null,
+      "descricao_curta": "Possuem lâminas retráteis que causam 1d8 + 1 de dano e podem provocar Sangramento.",
+      "descricao_longa": "---\n\n*Raro*\n\nLâminas de metal kravita permanecem recolhidas nos antebraços e podem ser projetadas ou retraídas sem gastar PA. Funcionam como armas corpo a corpo leves que causam 1d8 + 1 de dano cortante ou perfurante, definido durante a instalação. Em um sucesso crítico, o alvo fica Sangrando.\n\nPossuem 2 espaços para módulos de Braços-Lâmina.\n\n**Espaços:** 3\n\n**Preço:** Ⱥ 2.000\n\n**Integridade:** –2\n\n### MÓDULOS DE BRAÇOS-LÂMINA\n\n---\n\n#### FIO MONOMOLECULAR\n\n#### LÂMINA SEGMENTADA\n\nDados da lista de mercadorias:\n- Resumo: Possuem lâminas retráteis que causam 1d8 + 1 de dano e podem provocar Sangramento.\n- Raridade: Raro\n- Espaços: 3\n- Preço: Ⱥ 2.000",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS DE BRAÇO"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Braços-Lâmina",
+          "Resumo": "Possuem lâminas retráteis que causam 1d8 + 1 de dano e podem provocar Sangramento.",
+          "Raridade": "Raro",
+          "Espaços": "3",
+          "Preço": "Ⱥ 2.000"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "1ca2b06bafdb46dfbcdebe3978c4a72b",
+        "linhaBlocoId": "eadfa45184e847c89a6a90acac651b71",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "de_braco",
+      "categoria_label": "de braco",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_bracos_polimorficos",
+      "slug": "escalpos_bracos_polimorficos",
+      "nome": "Braços Polimórficos",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2000,
+      "preco_texto": "Ⱥ 2.000",
+      "preco_qualificador": null,
+      "descricao_curta": "Reorganizam mãos e antebraços para formar ferramentas manuais simples.",
+      "descricao_longa": "---\n\n*Raro*\n\nAs mãos e os antebraços podem reorganizar sua estrutura para formar ferramentas manuais simples, como chaves, alicates, sondas, lâminas de corte e conectores. Isso não cria armas, munições, componentes consumíveis ou ferramentas especializadas completas.\n\nPossuem 2 espaços para módulos de Braços Polimórficos.\n\n**Espaços:** 3\n\n**Preço:** Ⱥ 2.000\n\n**Integridade:** –2\n\n### MÓDULOS DE BRAÇOS POLIMÓRFICOS\n\n---\n\n#### COMPARTIMENTO INTERNO\n\n#### ESTABILIZADOR DE PRECISÃO\n\n#### INTERFACE PALMAR\n\nDados da lista de mercadorias:\n- Resumo: Reorganizam mãos e antebraços para formar ferramentas manuais simples.\n- Raridade: Raro\n- Espaços: 3\n- Preço: Ⱥ 2.000",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS DE BRAÇO"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Braços Polimórficos",
+          "Resumo": "Reorganizam mãos e antebraços para formar ferramentas manuais simples.",
+          "Raridade": "Raro",
+          "Espaços": "3",
+          "Preço": "Ⱥ 2.000"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "1ca2b06bafdb46dfbcdebe3978c4a72b",
+        "linhaBlocoId": "56ec157301cf4411afc0d82a2394b112",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "de_braco",
+      "categoria_label": "de braco",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_bracos_vetoriais",
+      "slug": "escalpos_bracos_vetoriais",
+      "nome": "Braços Vetoriais",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2200,
+      "preco_texto": "Ⱥ 2.200",
+      "preco_qualificador": null,
+      "descricao_curta": "Disparam cabos que permitem alcançar superfícies e se deslocar até elas.",
+      "descricao_longa": "---\n\n*Raro*\n\nCada antebraço abriga um cabo de metal flexível capaz de se fixar a uma superfície a até 10 m. Por 1 PA, você pode se deslocar em linha reta até um espaço adjacente ao ponto fixado. Os cabos também podem sustentar seu peso.\n\nPossuem 2 espaços para módulos de Braços Vetoriais.\n\n**Espaços:** 3\n\n**Preço:** Ⱥ 2.200\n\n**Integridade:** –2\n\n### MÓDULOS DE BRAÇOS VETORIAIS\n\n---\n\n#### CABO DUPLO\n\n#### GANCHO DE CAPTURA\n\n#### GUINCHO AMPLIADO\n\nDados da lista de mercadorias:\n- Resumo: Disparam cabos que permitem alcançar superfícies e se deslocar até elas.\n- Raridade: Raro\n- Espaços: 3\n- Preço: Ⱥ 2.200",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS DE BRAÇO"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Braços Vetoriais",
+          "Resumo": "Disparam cabos que permitem alcançar superfícies e se deslocar até elas.",
+          "Raridade": "Raro",
+          "Espaços": "3",
+          "Preço": "Ⱥ 2.200"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "1ca2b06bafdb46dfbcdebe3978c4a72b",
+        "linhaBlocoId": "2296909d8680474da810289c1eff92ed",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "de_braco",
+      "categoria_label": "de braco",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_pernas_de_aranha",
+      "slug": "escalpos_pernas_de_aranha",
+      "nome": "Pernas de Aranha",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2200,
+      "preco_texto": "Ⱥ 2.200",
+      "preco_qualificador": null,
+      "descricao_curta": "Permitem caminhar por paredes sem apoios ou testes em superfícies comuns.",
+      "descricao_longa": "---\n\n*Raro*\n\nMembros segmentados e pés aderentes permitem mover-se por paredes usando o deslocamento de Andar, sem necessidade de apoios ou testes em superfícies comuns. Você precisa manter ao menos três pontos de contato com a superfície.\n\nPossuem 2 espaços para módulos de Pernas de Aranha.\n\n**Espaços:** 3\n\n**Preço:** Ⱥ 2.200\n\n**Integridade:** –2\n\n### MÓDULOS DE PERNAS DE ARANHA\n\n---\n\n#### ADERÊNCIA INVERTIDA\n\n#### ÂNCORAS PLANTARES\n\n#### PASSOS DE SEDA\n\nDados da lista de mercadorias:\n- Resumo: Permitem caminhar por paredes sem apoios ou testes em superfícies comuns.\n- Raridade: Raro\n- Espaços: 3\n- Preço: Ⱥ 2.200",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS DE PERNA"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Pernas de Aranha",
+          "Resumo": "Permitem caminhar por paredes sem apoios ou testes em superfícies comuns.",
+          "Raridade": "Raro",
+          "Espaços": "3",
+          "Preço": "Ⱥ 2.200"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "4c58bf4d2e4f4a869279c9376b10dfbb",
+        "linhaBlocoId": "b4b589a67fc048aeb2b6b29d3edb3848",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "de_perna",
+      "categoria_label": "de perna",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_pernas_sismicas",
+      "slug": "escalpos_pernas_sismicas",
+      "nome": "Pernas Sísmicas",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2300,
+      "preco_texto": "Ⱥ 2.300",
+      "preco_qualificador": null,
+      "descricao_curta": "Transformam o impacto de aterrissagens em descargas capazes de derrubar criaturas.",
+      "descricao_longa": "---\n\n*Raro*\n\nPernas pesadas acumulam o impacto de saltos e quedas. Por 2 PA, ao aterrissar de uma altura de pelo menos 2 m, você descarrega essa força contra o solo. Criaturas adjacentes devem Resistir, CD 7; em uma falha, ficam Caídas.\n\nPossuem 2 espaços para módulos de Pernas Sísmicas.\n\n**Espaços:** 3\n\n**Preço:** Ⱥ 2.300\n\n**Integridade:** –2\n\n### MÓDULOS DE PERNAS SÍSMICAS\n\n---\n\n#### AMORTECEDORES DE QUEDA\n\n#### ONDA DE CHOQUE\n\n#### PLACAS DE PROPAGAÇÃO\n\nDados da lista de mercadorias:\n- Resumo: Transformam o impacto de aterrissagens em descargas capazes de derrubar criaturas.\n- Raridade: Raro\n- Espaços: 3\n- Preço: Ⱥ 2.300",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS DE PERNA"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Pernas Sísmicas",
+          "Resumo": "Transformam o impacto de aterrissagens em descargas capazes de derrubar criaturas.",
+          "Raridade": "Raro",
+          "Espaços": "3",
+          "Preço": "Ⱥ 2.300"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "4c58bf4d2e4f4a869279c9376b10dfbb",
+        "linhaBlocoId": "d58aa8019c9b4d33ac7d8fbaac657c1b",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "de_perna",
+      "categoria_label": "de perna",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_pernas_vetoriais",
+      "slug": "escalpos_pernas_vetoriais",
+      "nome": "Pernas Vetoriais",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "preco_texto": "Ⱥ 2.500",
+      "preco_qualificador": null,
+      "descricao_curta": "Aumentam o deslocamento e permitem atravessar vãos ou mudar de direção no ar.",
+      "descricao_longa": "---\n\n*Raro*\n\nTendões sintéticos armazenam a energia de cada passada e a redistribuem através de impulsores rúnicos nas articulações. Seu deslocamento de Andar aumenta em 2 m. Além disso, durante um deslocamento, você pode atravessar vãos e mudar de direção no ar, desde que termine o movimento sobre uma superfície capaz de sustentá-lo.\n\nPossuem 2 espaços para módulos de Pernas Vetoriais.\n\n**Espaços:** 3\n\n**Preço:** Ⱥ 2.500\n\n**Integridade:** –2\n\n### MÓDULOS DE PERNAS VETORIAIS\n\n---\n\n#### QUEDA CONTROLADA\n\n#### SOBRECARGA DE IMPULSO\n\n#### TENDÕES DE SALTO\n\nDados da lista de mercadorias:\n- Resumo: Aumentam o deslocamento e permitem atravessar vãos ou mudar de direção no ar.\n- Raridade: Raro\n- Espaços: 3\n- Preço: Ⱥ 2.500",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS DE PERNA"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Pernas Vetoriais",
+          "Resumo": "Aumentam o deslocamento e permitem atravessar vãos ou mudar de direção no ar.",
+          "Raridade": "Raro",
+          "Espaços": "3",
+          "Preço": "Ⱥ 2.500"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "4c58bf4d2e4f4a869279c9376b10dfbb",
+        "linhaBlocoId": "c180c79dd21640e5904bacf0b0bb8817",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "de_perna",
+      "categoria_label": "de perna",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_armadura_reativa_subdermica_ars",
+      "slug": "escalpos_armadura_reativa_subdermica_ars",
+      "nome": "Armadura Reativa Subdérmica (ARS)",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1500,
+      "preco_texto": "Ⱥ 1.500 por região",
+      "preco_qualificador": "por região",
+      "descricao_curta": "Projeta placas protetoras que concedem MIT à região instalada.",
+      "descricao_longa": "---\n\n*Incomum*\n\nUma malha tecnomágica implantada sob a pele se projeta em placas visíveis quando ativada. Cada instalação protege uma região. Ativar todas as regiões instaladas custa 1 PA, e a MIT perdida é restaurada durante um descanso longo.\n\n> ***Mitigação (MIT):** valor de redução aplicado contra o dano de ataques. Cada vez que um dano é absorvido, a MIT perde 1 ponto.*\n\n| Região | MIT | Preço | **Espaços** | Integridade |\n| --- | --- | --- | --- | --- |\n| Braços | 3 | Ⱥ 1.500 | 1 | –1 |\n| Cabeça | 2 | Ⱥ 1.500 | 1 | –1 |\n| Pernas | 3 | Ⱥ 1.500 | 1 | –1 |\n| Tronco | 4 | Ⱥ 1.500 | 1 | –1 |\n\nDados da lista de mercadorias:\n- Resumo: Projeta placas protetoras que concedem MIT à região instalada.\n- Raridade: Incomum\n- Espaços: 1\n- Preço: Ⱥ 1.500 por região",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS INTERNOS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Armadura Reativa Subdérmica (ARS)",
+          "Resumo": "Projeta placas protetoras que concedem MIT à região instalada.",
+          "Raridade": "Incomum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 1.500 por região"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "f2bd2c5e15fd4ec9abdc892281058bdb",
+        "linhaBlocoId": "78a313af94b94a779c7da2b283e9c3a2",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "internos",
+      "categoria_label": "internos",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_beijo_da_morte",
+      "slug": "escalpos_beijo_da_morte",
+      "nome": "Beijo da Morte",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "preco_texto": "Ⱥ 2.500",
+      "preco_qualificador": null,
+      "descricao_curta": "Armazena uma dose de veneno que pode ser aplicada por contato com a boca.",
+      "descricao_longa": "---\n\n*Raro*\n\nUm reservatório ligado à boca pode recobrir os lábios, dentes ou língua com uma dose de veneno armazenada. O escalpo comporta uma dose por vez e pode aplicá-la ao beijar, morder ou manter contato direto com uma criatura.\n\nAo beijar ou morder um alvo, ele deve realizar um teste de **`Vigor`**,** **CD 7. Em falha, sofre o efeito do veneno aplicado.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 2.500\n\n**Integridade:** –2\n\n| **Veneno** | **Efeito** | **Raridade** | **Espaços** | **Preço (Ⱥ)** |\n| --- | --- | --- | --- | --- |\n| Tóxico | Causa 2d8 de dano tóxico. O alvo fica **`Envenenado`**. | Incomum | 1 (dose) | 100 |\n| Paralisante | O alvo fica **`Atordoado`** por 1d4 + 1 rodadas em falha de teste. Metade em sucesso (arredondado para baixo). | Incomum | 1 (dose) | 100 |\n| Sonífero | Adormece alvo por 1d4 +1 rodadas em falha. Metade em sucesso (arredondado para baixo). | Incomum | 1 (dose) | 100 |\n| Letal | 3d10 de dano físico imediato em falha, metade em sucesso (arredondado para baixo). | Incomum | 1 (dose) | 200 |\n\nDados da lista de mercadorias:\n- Resumo: Armazena uma dose de veneno que pode ser aplicada por contato com a boca.\n- Raridade: Raro\n- Espaços: 1\n- Preço: Ⱥ 2.500",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS INTERNOS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Beijo da Morte",
+          "Resumo": "Armazena uma dose de veneno que pode ser aplicada por contato com a boca.",
+          "Raridade": "Raro",
+          "Espaços": "1",
+          "Preço": "Ⱥ 2.500"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "f2bd2c5e15fd4ec9abdc892281058bdb",
+        "linhaBlocoId": "28ce283760d7452da17b40c33e0da25e",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "internos",
+      "categoria_label": "internos",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_biomonitor",
+      "slug": "escalpos_biomonitor",
+      "nome": "Biomonitor",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "preco_texto": "Ⱥ 2.500",
+      "preco_qualificador": null,
+      "descricao_curta": "Recupera automaticamente 2d6 PV quando o usuário fica com metade ou menos dos PV máximos.",
+      "descricao_longa": "---\n\n*Raro*\n\nO escalpo monitora continuamente os sinais vitais e mantém uma carga de compostos regenerativos pronta para circulação.\n\nNa primeira vez no dia que sofrer dano e ficar com metade ou menos dos seus PV máximos, você recupera imediatamente 2d6 PV. O Biomonitor não pode ser ativado voluntariamente e volta a funcionar no início do dia seguinte.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 2.500\n\n**Integridade:** –2\n\nDados da lista de mercadorias:\n- Resumo: Recupera automaticamente 2d6 PV quando o usuário fica com metade ou menos dos PV máximos.\n- Raridade: Raro\n- Espaços: 1\n- Preço: Ⱥ 2.500",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS INTERNOS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Biomonitor",
+          "Resumo": "Recupera automaticamente 2d6 PV quando o usuário fica com metade ou menos dos PV máximos.",
+          "Raridade": "Raro",
+          "Espaços": "1",
+          "Preço": "Ⱥ 2.500"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "f2bd2c5e15fd4ec9abdc892281058bdb",
+        "linhaBlocoId": "775d8990a8ba45a3b53663aae9382dc5",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "internos",
+      "categoria_label": "internos",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_catalisador_imunologico",
+      "slug": "escalpos_catalisador_imunologico",
+      "nome": "Catalisador Imunológico",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "preco_texto": "Ⱥ 2.500",
+      "preco_qualificador": null,
+      "descricao_curta": "Concede 3d6 PV adicionais durante um descanso longo.",
+      "descricao_longa": "---\n\n*Raro*\n\nRunas implantadas junto à medula aceleram a reposição celular enquanto o corpo permanece em repouso. A recuperação deixa febre baixa, fome intensa e marcas luminosas temporárias sob a pele.\n\nDurante um descanso longo, você recupera 3d6 PV adicionais.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 2.500\n\n**Integridade:** –1\n\nDados da lista de mercadorias:\n- Resumo: Concede 3d6 PV adicionais durante um descanso longo.\n- Raridade: Raro\n- Espaços: 1\n- Preço: Ⱥ 2.500",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS INTERNOS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Catalisador Imunológico",
+          "Resumo": "Concede 3d6 PV adicionais durante um descanso longo.",
+          "Raridade": "Raro",
+          "Espaços": "1",
+          "Preço": "Ⱥ 2.500"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "f2bd2c5e15fd4ec9abdc892281058bdb",
+        "linhaBlocoId": "3cb9dba3045d4fff99b77f2a652e04d9",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "internos",
+      "categoria_label": "internos",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_filtro_hematologico",
+      "slug": "escalpos_filtro_hematologico",
+      "nome": "Filtro Hematológico",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1200,
+      "preco_texto": "Ⱥ 1.200",
+      "preco_qualificador": null,
+      "descricao_curta": "Facilita resistir a venenos, drogas, doenças e agentes infecciosos.",
+      "descricao_longa": "---\n\n*Incomum*\n\nUma malha de microcanais filtra o sangue antes que ele alcance os órgãos vitais, isolando substâncias estranhas para descarte posterior.\n\nVocê recebe +1 de vantagem para **Resistir** a venenos, drogas, doenças e agentes infecciosos.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 1.200\n\n**Integridade:** –1\n\nDados da lista de mercadorias:\n- Resumo: Facilita resistir a venenos, drogas, doenças e agentes infecciosos.\n- Raridade: Incomum\n- Espaços: 1\n- Preço: Ⱥ 1.200",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS INTERNOS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Filtro Hematológico",
+          "Resumo": "Facilita resistir a venenos, drogas, doenças e agentes infecciosos.",
+          "Raridade": "Incomum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 1.200"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "f2bd2c5e15fd4ec9abdc892281058bdb",
+        "linhaBlocoId": "7ac3940b61564304b8fc0abac6810809",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "internos",
+      "categoria_label": "internos",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_reserva_de_mana",
+      "slug": "escalpos_reserva_de_mana",
+      "nome": "Reserva de Mana",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "preco_texto": "Ⱥ 2.500",
+      "preco_qualificador": null,
+      "descricao_curta": "Armazena 5 pontos adicionais de Mana após um descanso longo.",
+      "descricao_longa": "---\n\n*Raro*\n\nUm receptáculo rúnico alojado próximo ao centro do corpo acumula o excedente produzido durante o repouso e o mantém separado do fluxo natural do usuário.\n\nDepois de um descanso longo, o reservatório armazena 5 pontos de Mana. Essa Mana é gasta antes da sua reserva normal e desaparece no próximo descanso longo se não for utilizada.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 2.500\n\n**Integridade:** –2\n\nDados da lista de mercadorias:\n- Resumo: Armazena 5 pontos adicionais de Mana após um descanso longo.\n- Raridade: Raro\n- Espaços: 1\n- Preço: Ⱥ 2.500",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS INTERNOS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Reserva de Mana",
+          "Resumo": "Armazena 5 pontos adicionais de Mana após um descanso longo.",
+          "Raridade": "Raro",
+          "Espaços": "1",
+          "Preço": "Ⱥ 2.500"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "f2bd2c5e15fd4ec9abdc892281058bdb",
+        "linhaBlocoId": "2e30627395d0425fb96a87473339beeb",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "internos",
+      "categoria_label": "internos",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_reserva_pulmonar",
+      "slug": "escalpos_reserva_pulmonar",
+      "nome": "Reserva Pulmonar",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "preco_texto": "Ⱥ 2.500",
+      "preco_qualificador": null,
+      "descricao_curta": "Permite permanecer até 10 minutos sem respirar uma vez por dia.",
+      "descricao_longa": "---\n\n*Raro*\n\nUma câmara compacta armazena oxigênio em estado condensado e o libera diretamente na corrente sanguínea quando a respiração é interrompida.\n\nUma vez por dia, você pode permanecer até 10 minutos sem respirar. O suprimento interno pode ser usado de uma vez ou dividido em períodos menores.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 2.500\n\n**Integridade:** –1\n\nDados da lista de mercadorias:\n- Resumo: Permite permanecer até 10 minutos sem respirar uma vez por dia.\n- Raridade: Raro\n- Espaços: 1\n- Preço: Ⱥ 2.500",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS INTERNOS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Reserva Pulmonar",
+          "Resumo": "Permite permanecer até 10 minutos sem respirar uma vez por dia.",
+          "Raridade": "Raro",
+          "Espaços": "1",
+          "Preço": "Ⱥ 2.500"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "f2bd2c5e15fd4ec9abdc892281058bdb",
+        "linhaBlocoId": "7271d992e0bd48b28543cb26170a1316",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "internos",
+      "categoria_label": "internos",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_olhos_de_cacador",
+      "slug": "escalpos_olhos_de_cacador",
+      "nome": "Olhos de Caçador",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2000,
+      "preco_texto": "Ⱥ 2.000",
+      "preco_qualificador": null,
+      "descricao_curta": "Ampliam o alcance da visão e facilitam perceber detalhes visuais.",
+      "descricao_longa": "---\n\n*Raro*\n\nOculares de foco variável ampliam detalhes e acompanham movimentos mínimos. Você identifica detalhes faciais a até 200 m e indivíduos a até 1 km, além de receber +1 em testes de **`Percepção`** ligados à visão.\n\nPossuem 2 espaços para módulos de Olhos de Caçador.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 2.000\n\n**Integridade:** –1\n\n### MÓDULOS DE OLHOS DE CAÇADOR\n\n---\n\n#### MATRIZ DE CONTRAFLUXO\n\n#### RASTREADOR OCULAR\n\n#### RÉPLICA RETINAL\n\nDados da lista de mercadorias:\n- Resumo: Ampliam o alcance da visão e facilitam perceber detalhes visuais.\n- Raridade: Raro\n- Espaços: 1\n- Preço: Ⱥ 2.000",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS ÓPTICOS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Olhos de Caçador",
+          "Resumo": "Ampliam o alcance da visão e facilitam perceber detalhes visuais.",
+          "Raridade": "Raro",
+          "Espaços": "1",
+          "Preço": "Ⱥ 2.000"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "b88795ba8cdf48648a418438a9094e8b",
+        "linhaBlocoId": "8eb523d1375049f4ab59436932875214",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "opticos",
+      "categoria_label": "opticos",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_olhos_de_vigilia",
+      "slug": "escalpos_olhos_de_vigilia",
+      "nome": "Olhos de Vigília",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1200,
+      "preco_texto": "Ⱥ 1.200",
+      "preco_qualificador": null,
+      "descricao_curta": "Permitem enxergar normalmente na escuridão.",
+      "descricao_longa": "---\n\n*Incomum*\n\nOculares sensíveis a frequências imperceptíveis permitem enxergar normalmente na escuridão.\n\nPossuem 2 espaços para módulos de Olhos de Vigília.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 1.200\n\n**Integridade:** –1\n\n### MÓDULOS DE OLHOS DE VIGÍLIA\n\n---\n\n#### FILTRO ATMOSFÉRICO\n\n#### GRAVADOR ÓPTICO\n\n#### VISÃO TÉRMICA\n\nDados da lista de mercadorias:\n- Resumo: Permitem enxergar normalmente na escuridão.\n- Raridade: Incomum\n- Espaços: 1\n- Preço: Ⱥ 1.200",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS ÓPTICOS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Olhos de Vigília",
+          "Resumo": "Permitem enxergar normalmente na escuridão.",
+          "Raridade": "Incomum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 1.200"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "b88795ba8cdf48648a418438a9094e8b",
+        "linhaBlocoId": "8ecb33470bad47c8a35c49a529f0ef70",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "opticos",
+      "categoria_label": "opticos",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_olhos_projetores",
+      "slug": "escalpos_olhos_projetores",
+      "nome": "Olhos Projetores",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1200,
+      "preco_texto": "Ⱥ 1.200",
+      "preco_qualificador": null,
+      "descricao_curta": "Exibem interfaces na visão e projetam imagens visíveis no ambiente.",
+      "descricao_longa": "---\n\n*Incomum*\n\nOs olhos exibem interfaces digitais diretamente sobre a visão e projetam imagens armazenadas em um dispositivo conectado sobre uma superfície ou no ar a até 1 m. As projeções são visíveis para todos e não reproduzem áudio.\n\nPossuem 2 espaços para módulos de Olhos Projetores.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 1.200\n\n**Integridade:** –1\n\n### MÓDULOS DE OLHOS PROJETORES\n\n---\n\n#### EMISSÃO FOTÔNICA\n\n#### PROJEÇÃO AMPLIADA\n\n#### SOBREPOSIÇÃO ENGANOSA\n\nDados da lista de mercadorias:\n- Resumo: Exibem interfaces na visão e projetam imagens visíveis no ambiente.\n- Raridade: Incomum\n- Espaços: 1\n- Preço: Ⱥ 1.200",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS ÓPTICOS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Olhos Projetores",
+          "Resumo": "Exibem interfaces na visão e projetam imagens visíveis no ambiente.",
+          "Raridade": "Incomum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 1.200"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "b88795ba8cdf48648a418438a9094e8b",
+        "linhaBlocoId": "33d1da8550a74d77a6430981d1564921",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "opticos",
+      "categoria_label": "opticos",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_optica_runica",
+      "slug": "escalpos_optica_runica",
+      "nome": "Óptica Rúnica",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 500,
+      "preco_texto": "Ⱥ 500",
+      "preco_qualificador": null,
+      "descricao_curta": "Projeta informações digitais diretamente sobre a visão do usuário.",
+      "descricao_longa": "---\n\n*Muito Comum*\n\nA Óptica Rúnica é um par de implantes oculares que substitui ou sobrepõe os olhos naturais. Cada globo é recoberto por uma fina malha de inscrições, invisível a olho nu, que permite a fusão entre visão biológica e informação digital.\n\nQualquer dado processado pelo *Processador Sináptico* ou por dispositivos externos conectados ao ID sináptico do usuário pode ser projetado diretamente em sua visão. Mensagens, mapas, interfaces, transmissões e hubs digitais surgem como parte natural da realidade observada.\n\nPossui 1 espaço para módulo de Óptica Rúnica.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 500\n\n**Integridade:** –1\n\n### MÓDULOS DE ÓPTICA RÚNICA\n\n---\n\n#### LEITOR CLANDESTINO DE RPI\n\nDados da lista de mercadorias:\n- Resumo: Projeta informações digitais diretamente sobre a visão do usuário.\n- Raridade: Muito Comum\n- Espaços: 1\n- Preço: Ⱥ 500",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS ÓPTICOS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Óptica Rúnica",
+          "Resumo": "Projeta informações digitais diretamente sobre a visão do usuário.",
+          "Raridade": "Muito Comum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 500"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "b88795ba8cdf48648a418438a9094e8b",
+        "linhaBlocoId": "ad70f795449a4a9f99ca84d1fbf44b6d",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "opticos",
+      "categoria_label": "opticos",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_antecipador",
+      "slug": "escalpos_antecipador",
+      "nome": "Antecipador",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2000,
+      "preco_texto": "Ⱥ 2.000",
+      "preco_qualificador": null,
+      "descricao_curta": "Permite gastar antecipadamente até 2 PA, descontados na próxima restauração.",
+      "descricao_longa": "---\n\n*Raro*\n\nRunas aceleram a transmissão dos impulsos nervosos até que o usuário experimente alguns segundos antes do restante do corpo conseguir acompanhá-lo.\n\nQuando quiser agir, desde que nenhuma outra ação ou efeito esteja sendo resolvido naquele momento, você pode ativar o *Antecipador* e gastar imediatamente até 2 PA. Isso pode ser feito dentro ou fora do seu turno. Os PA utilizados são descontados na próxima vez que seus PA forem restaurados.\n\nVocê não pode ativar o *Antecipador* enquanto ainda possuir PA a serem descontados. Ele não concede PA adicionais, apenas permite utilizá-los antecipadamente.\n\nPossui 1 espaço para módulo de Acelerador Sináptico.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 2.000\n\n**Integridade:** –2\n\n### MÓDULOS DO ACELERADOR SINÁPTICO\n\n---\n\n#### DILATAÇÃO TEMPORAL\n\n#### PAGAMENTO ESCALONADO\n\nDados da lista de mercadorias:\n- Resumo: Permite gastar antecipadamente até 2 PA, descontados na próxima restauração.\n- Raridade: Raro\n- Espaços: 1\n- Preço: Ⱥ 2.000",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS NEURAIS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Antecipador",
+          "Resumo": "Permite gastar antecipadamente até 2 PA, descontados na próxima restauração.",
+          "Raridade": "Raro",
+          "Espaços": "1",
+          "Preço": "Ⱥ 2.000"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "79dbcbd99c6a4de3b31d4730f837cf87",
+        "linhaBlocoId": "d1047fb7305a4a24bd93117dc3423d46",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "neurais",
+      "categoria_label": "neurais",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_buffer_de_dor",
+      "slug": "escalpos_buffer_de_dor",
+      "nome": "Buffer de Dor",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "preco_texto": "Ⱥ 1.000",
+      "preco_qualificador": null,
+      "descricao_curta": "Permite ignorar temporariamente os efeitos de determinadas condições.",
+      "descricao_longa": "---\n\n*Incomum*\n\nUma vez por cena, ao receber Atordoado, Contundido, Queimando ou Sangrando, você pode ignorar os efeitos da condição até o final da cena. A condição não é removida e volta a afetá-lo quando a cena termina, caso ainda esteja presente.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 1.000\n\n**Integridade:** –2\n\nDados da lista de mercadorias:\n- Resumo: Permite ignorar temporariamente os efeitos de determinadas condições.\n- Raridade: Incomum\n- Espaços: 1\n- Preço: Ⱥ 1.000",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS NEURAIS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Buffer de Dor",
+          "Resumo": "Permite ignorar temporariamente os efeitos de determinadas condições.",
+          "Raridade": "Incomum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 1.000"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "79dbcbd99c6a4de3b31d4730f837cf87",
+        "linhaBlocoId": "cd863276316649519d31dbb3144765ac",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "neurais",
+      "categoria_label": "neurais",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_deck_sinaptico_civil",
+      "slug": "escalpos_deck_sinaptico_civil",
+      "nome": "Deck Sináptico Civil",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 500,
+      "preco_texto": "Ⱥ 500",
+      "preco_qualificador": null,
+      "descricao_curta": "Conecta o cérebro às Tramas com 5 RAM, alcance de 5 m e três Comandos.",
+      "descricao_longa": "Dados da lista de mercadorias:\n- Resumo: Conecta o cérebro às Tramas com 5 RAM, alcance de 5 m e três Comandos.\n- Raridade: Incomum\n- Espaços: 1\n- Preço: Ⱥ 500\n\nDados técnicos do verbete:\n- Versão: Civil\n- Alcance: 5 m\n- RAM: 5\n- Comandos: Controlar Sistema, Extrair Dados e Quebrar Bloqueio\n- Raridade: Incomum\n- Preço: Ⱥ 500\n- Espaços: 1\n- Integridade: –1",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS NEURAIS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Deck Sináptico Civil",
+          "Resumo": "Conecta o cérebro às Tramas com 5 RAM, alcance de 5 m e três Comandos.",
+          "Raridade": "Incomum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 500"
+        },
+        "tabela_tecnica": {
+          "Versão": "Civil",
+          "Alcance": "5 m",
+          "RAM": "5",
+          "Comandos": "Controlar Sistema, Extrair Dados e Quebrar Bloqueio",
+          "Raridade": "Incomum",
+          "Preço": "Ⱥ 500",
+          "Espaços": "1",
+          "Integridade": "–1"
+        }
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "79dbcbd99c6a4de3b31d4730f837cf87",
+        "linhaBlocoId": "56b53a66f7ee40548900e3663ba9da99",
+        "tabelaTecnicaFonte": {
+          "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+          "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+          "tabelaBlocoId": "5ed9bdcdde0f4c26a20617f6ee38cef6",
+          "linhaBlocoId": "06b8d6434e114c9a880fa86c8cc6c988"
+        }
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "neurais",
+      "categoria_label": "neurais",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_deck_sinaptico_corporativo",
+      "slug": "escalpos_deck_sinaptico_corporativo",
+      "nome": "Deck Sináptico Corporativo",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "preco_texto": "Ⱥ 1.500",
+      "preco_qualificador": null,
+      "descricao_curta": "Conecta o cérebro às Tramas com 10 RAM, alcance de 10 m e seis Comandos.",
+      "descricao_longa": "Dados da lista de mercadorias:\n- Resumo: Conecta o cérebro às Tramas com 10 RAM, alcance de 10 m e seis Comandos.\n- Raridade: Raro\n- Espaços: 1\n- Preço: Ⱥ 1.500\n\nDados técnicos do verbete:\n- Versão: Corporativo\n- Alcance: 10 m\n- RAM: 10\n- Comandos: Controlar Sistema, Controlar Unidade, Corromper Dados, Extrair Dados, Forjar Credencial e Quebrar Bloqueio\n- Raridade: Raro\n- Preço: Ⱥ 1.500\n- Espaços: 1\n- Integridade: –2",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS NEURAIS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Deck Sináptico Corporativo",
+          "Resumo": "Conecta o cérebro às Tramas com 10 RAM, alcance de 10 m e seis Comandos.",
+          "Raridade": "Raro",
+          "Espaços": "1",
+          "Preço": "Ⱥ 1.500"
+        },
+        "tabela_tecnica": {
+          "Versão": "Corporativo",
+          "Alcance": "10 m",
+          "RAM": "10",
+          "Comandos": "Controlar Sistema, Controlar Unidade, Corromper Dados, Extrair Dados, Forjar Credencial e Quebrar Bloqueio",
+          "Raridade": "Raro",
+          "Preço": "Ⱥ 1.500",
+          "Espaços": "1",
+          "Integridade": "–2"
+        }
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "79dbcbd99c6a4de3b31d4730f837cf87",
+        "linhaBlocoId": "7b84bb458aab4f11986ee8ef3a781fdb",
+        "tabelaTecnicaFonte": {
+          "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+          "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+          "tabelaBlocoId": "5ed9bdcdde0f4c26a20617f6ee38cef6",
+          "linhaBlocoId": "fcb5e60dc2544732a83f6a5216b3226f"
+        }
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "neurais",
+      "categoria_label": "neurais",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_deck_sinaptico_imperial",
+      "slug": "escalpos_deck_sinaptico_imperial",
+      "nome": "Deck Sináptico Imperial",
+      "raridade": "muito_raro",
+      "raridade_label": "Muito Raro",
+      "preco": 5000,
+      "preco_texto": "Ⱥ 5.000",
+      "preco_qualificador": null,
+      "descricao_curta": "Conecta o cérebro às Tramas com 15 RAM, alcance de 20 m e todos os Comandos.",
+      "descricao_longa": "Dados da lista de mercadorias:\n- Resumo: Conecta o cérebro às Tramas com 15 RAM, alcance de 20 m e todos os Comandos.\n- Raridade: Muito Raro\n- Espaços: 1\n- Preço: Ⱥ 5.000\n\nDados técnicos do verbete:\n- Versão: Imperial\n- Alcance: 20 m\n- RAM: 15\n- Comandos: Todos\n- Raridade: Muito Raro\n- Preço: Ⱥ 5.000\n- Espaços: 1\n- Integridade: –3",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS NEURAIS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Deck Sináptico Imperial",
+          "Resumo": "Conecta o cérebro às Tramas com 15 RAM, alcance de 20 m e todos os Comandos.",
+          "Raridade": "Muito Raro",
+          "Espaços": "1",
+          "Preço": "Ⱥ 5.000"
+        },
+        "tabela_tecnica": {
+          "Versão": "Imperial",
+          "Alcance": "20 m",
+          "RAM": "15",
+          "Comandos": "Todos",
+          "Raridade": "Muito Raro",
+          "Preço": "Ⱥ 5.000",
+          "Espaços": "1",
+          "Integridade": "–3"
+        }
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "79dbcbd99c6a4de3b31d4730f837cf87",
+        "linhaBlocoId": "58b57213a89b430abbfc59ef683fd0fc",
+        "tabelaTecnicaFonte": {
+          "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+          "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+          "tabelaBlocoId": "5ed9bdcdde0f4c26a20617f6ee38cef6",
+          "linhaBlocoId": "644e04b734c84e78af7d1d6a3bac1911"
+        }
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "neurais",
+      "categoria_label": "neurais",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_filtro_cognitivo",
+      "slug": "escalpos_filtro_cognitivo",
+      "nome": "Filtro Cognitivo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1200,
+      "preco_texto": "Ⱥ 1.200",
+      "preco_qualificador": null,
+      "descricao_curta": "Facilita resistir à leitura, alteração ou controle de pensamentos e emoções.",
+      "descricao_longa": "---\n\n*Incomum*\n\nVocê recebe +1 de vantagem para Resistir a efeitos que leiam, alterem ou controlem seus pensamentos e emoções.\n\nPossui 1 espaço para módulo de Filtro Cognitivo.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 1.200\n\n**Integridade:** –1\n\n### MÓDULOS DO FILTRO COGNITIVO\n\n---\n\n#### ALARME DE INTRUSÃO\n\n#### PARTIÇÃO MENTAL\n\nDados da lista de mercadorias:\n- Resumo: Facilita resistir à leitura, alteração ou controle de pensamentos e emoções.\n- Raridade: Incomum\n- Espaços: 1\n- Preço: Ⱥ 1.200",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS NEURAIS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Filtro Cognitivo",
+          "Resumo": "Facilita resistir à leitura, alteração ou controle de pensamentos e emoções.",
+          "Raridade": "Incomum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 1.200"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "79dbcbd99c6a4de3b31d4730f837cf87",
+        "linhaBlocoId": "05755819a11e4767ad28ba62684635f6",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "neurais",
+      "categoria_label": "neurais",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_neuroprocessador",
+      "slug": "escalpos_neuroprocessador",
+      "nome": "Neuroprocessador",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 500,
+      "preco_texto": "Ⱥ 500",
+      "preco_qualificador": null,
+      "descricao_curta": "Funciona como uma unidade computacional interna com 500 GB de armazenamento.",
+      "descricao_longa": "---\n\n*Comum*\n\nTransforma o cérebro em uma unidade computacional capaz de acessar a Malha, executar aplicações e operar sistemas conectados sem um computador externo. Uma interface visual ou auditiva ainda é necessária para perceber dados nesses formatos.\n\nO *Neuroprocessador* possui 500 GB de memória interna e 2 espaços para módulos próprios.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 500\n\n**Integridade:** 0\n\n| Conteúdo | Espaço médio |\n| --- | --- |\n| Áudio | 1 GB por hora |\n| Documento comum | desprezível |\n| Holograma estático | 100 MB |\n| Memória mnemônica | 100 GB por hora |\n| Pacote linguístico | 25 GB |\n| Padrão retinal | 10 MB |\n| Vídeo | 20 GB por hora |\n\n### MÓDULOS DO NEUROPROCESSADOR\n\n---\n\n#### ARQUIVO MNEMÔNICO\n\n#### BANCO DE MEMÓRIA\n\n#### TRADUTOR NEURAL\n\nDados da lista de mercadorias:\n- Resumo: Funciona como uma unidade computacional interna com 500 GB de armazenamento.\n- Raridade: Comum\n- Espaços: 1\n- Preço: Ⱥ 500",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS NEURAIS"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Neuroprocessador",
+          "Resumo": "Funciona como uma unidade computacional interna com 500 GB de armazenamento.",
+          "Raridade": "Comum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 500"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "79dbcbd99c6a4de3b31d4730f837cf87",
+        "linhaBlocoId": "798abe8823e24972901052e1e4e82212",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "neurais",
+      "categoria_label": "neurais",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_cabelo_polimorfico",
+      "slug": "escalpos_cabelo_polimorfico",
+      "nome": "Cabelo Polimórfico",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 150,
+      "preco_texto": "Ⱥ 150",
+      "preco_qualificador": null,
+      "descricao_curta": "Permite alterar livremente a aparência e a forma do cabelo.",
+      "descricao_longa": "*Muito Comum*\n\nFios sintéticos implantados no couro cabeludo podem alterar livremente sua aparência e estrutura sob comando. O cabelo pode mudar de cor, comprimento, volume, textura e forma, assumindo desde penteados convencionais até configurações impossíveis para fios naturais.\n\nEstilos podem ser armazenados e trocados em segundos.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 150\n\n**Integridade:** 0\n\nDados da lista de mercadorias:\n- Resumo: Permite alterar livremente a aparência e a forma do cabelo.\n- Raridade: Muito Comum\n- Espaços: 1\n- Preço: Ⱥ 150",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS DE MODA"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Cabelo Polimórfico",
+          "Resumo": "Permite alterar livremente a aparência e a forma do cabelo.",
+          "Raridade": "Muito Comum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 150"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "ce166dd591bc4410a8ee12cd2db835bb",
+        "linhaBlocoId": "eeb82463060f42cca00778e8c3347dff",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "de_moda",
+      "categoria_label": "de moda",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_chifre_quimerico",
+      "slug": "escalpos_chifre_quimerico",
+      "nome": "Chifre Quimérico",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 150,
+      "preco_texto": "Ⱥ 150",
+      "preco_qualificador": null,
+      "descricao_curta": "Implanta chifres ornamentais com formatos e silhuetas variados.",
+      "descricao_longa": "*Comum*\n\nEstruturas ornamentais implantadas no crânio reproduzem chifres animais, formações minerais, geometrias rúnicas e outras silhuetas artificiais. Seu formato é definido durante a instalação e permanece fixo até que o escalpo seja substituído ou modificado por um novo procedimento.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 150\n\n**Integridade:** 0\n\nDados da lista de mercadorias:\n- Resumo: Implanta chifres ornamentais com formatos e silhuetas variados.\n- Raridade: Comum\n- Espaços: 1\n- Preço: Ⱥ 150",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS DE MODA"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Chifre Quimérico",
+          "Resumo": "Implanta chifres ornamentais com formatos e silhuetas variados.",
+          "Raridade": "Comum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 150"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "ce166dd591bc4410a8ee12cd2db835bb",
+        "linhaBlocoId": "362661cce2ab415891b01d7a073987a4",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "de_moda",
+      "categoria_label": "de moda",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_pele_polimorfica",
+      "slug": "escalpos_pele_polimorfica",
+      "nome": "Pele Polimórfica",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 150,
+      "preco_texto": "Ⱥ 150",
+      "preco_qualificador": null,
+      "descricao_curta": "Permite alterar livremente a aparência e a superfície da pele.",
+      "descricao_longa": "*Muito Comum*\n\nA pele é modificada para alterar livremente sua aparência e superfície sob comando. Pode mudar de cor, brilho, padrão, textura e acabamento, além de formar tatuagens, inscrições, relevos, sulcos, fissuras, placas, escamas, linhas de junção e outras modificações superficiais.\n\nAs alterações podem assumir desde aparências naturais até configurações inteiramente artificiais, mas não produzem luz própria nem tornam a pele translúcida ou altamente reflexiva.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 150\n\n**Integridade:** 0\n\nDados da lista de mercadorias:\n- Resumo: Permite alterar livremente a aparência e a superfície da pele.\n- Raridade: Muito Comum\n- Espaços: 1\n- Preço: Ⱥ 150",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS DE MODA"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Pele Polimórfica",
+          "Resumo": "Permite alterar livremente a aparência e a superfície da pele.",
+          "Raridade": "Muito Comum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 150"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "ce166dd591bc4410a8ee12cd2db835bb",
+        "linhaBlocoId": "b516462b05a64a35995079d4e8f0485f",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "de_moda",
+      "categoria_label": "de moda",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_olho_polimorfico",
+      "slug": "escalpos_olho_polimorfico",
+      "nome": "Olho Polimórfico",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 150,
+      "preco_texto": "Ⱥ 150",
+      "preco_qualificador": null,
+      "descricao_curta": "Permite alterar livremente a aparência dos olhos.",
+      "descricao_longa": "*Muito Comum*\n\nOs olhos são modificados para alterar livremente sua aparência sob comando. Íris, pupilas e escleras podem mudar de cor, brilho, padrão e acabamento, assumindo formas naturais ou artificiais, incluindo pupilas incomuns, anéis concêntricos, símbolos, padrões móveis e efeitos luminosos.\n\nAs alterações são estéticas e não modificam a capacidade visual.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 150\n\n**Integridade:** 0\n\nDados da lista de mercadorias:\n- Resumo: Permite alterar livremente a aparência dos olhos.\n- Raridade: Muito Comum\n- Espaços: 1\n- Preço: Ⱥ 150",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS DE MODA"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Olho Polimórfico",
+          "Resumo": "Permite alterar livremente a aparência dos olhos.",
+          "Raridade": "Muito Comum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 150"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "ce166dd591bc4410a8ee12cd2db835bb",
+        "linhaBlocoId": "cb17bbaa61104414901251977e5da661",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "de_moda",
+      "categoria_label": "de moda",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_orelha_quimerica",
+      "slug": "escalpos_orelha_quimerica",
+      "nome": "Orelha Quimérica",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 150,
+      "preco_texto": "Ⱥ 150",
+      "preco_qualificador": null,
+      "descricao_curta": "Remodela as orelhas com proporções e silhuetas incomuns.",
+      "descricao_longa": "*Muito Comum*\n\nA cartilagem é remodelada ou substituída para assumir proporções e silhuetas incomuns. O formato é definido durante o procedimento, permitindo desde alterações discretas até extensões ornamentais impossíveis para um corpo natural.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 150\n\n**Integridade:** 0\n\nDados da lista de mercadorias:\n- Resumo: Remodela as orelhas com proporções e silhuetas incomuns.\n- Raridade: Muito Comum\n- Espaços: 1\n- Preço: Ⱥ 150",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS DE MODA"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Orelha Quimérica",
+          "Resumo": "Remodela as orelhas com proporções e silhuetas incomuns.",
+          "Raridade": "Muito Comum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 150"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "ce166dd591bc4410a8ee12cd2db835bb",
+        "linhaBlocoId": "5765bdfb11294910a6361b64341982a9",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "de_moda",
+      "categoria_label": "de moda",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_pele_de_vidro",
+      "slug": "escalpos_pele_de_vidro",
+      "nome": "Pele de Vidro",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 450,
+      "preco_texto": "Ⱥ 450",
+      "preco_qualificador": null,
+      "descricao_curta": "Concede à pele translucidez e acabamentos altamente reflexivos.",
+      "descricao_longa": "*Comum*\n\nA epiderme recebe uma camada especializada capaz de assumir translucidez e reflexividade anormais, produzindo superfícies semelhantes a vidro polido, cristal, espelho, metal líquido ou outros acabamentos ópticos impossíveis para pele comum.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 450\n\n**Integridade:** 0\n\nDados da lista de mercadorias:\n- Resumo: Concede à pele translucidez e acabamentos altamente reflexivos.\n- Raridade: Comum\n- Espaços: 1\n- Preço: Ⱥ 450",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS DE MODA"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Pele de Vidro",
+          "Resumo": "Concede à pele translucidez e acabamentos altamente reflexivos.",
+          "Raridade": "Comum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 450"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "ce166dd591bc4410a8ee12cd2db835bb",
+        "linhaBlocoId": "e8a8d1ed55874be78529e04da45f0184",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "de_moda",
+      "categoria_label": "de moda",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_perfume_glandular",
+      "slug": "escalpos_perfume_glandular",
+      "nome": "Perfume Glandular",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 300,
+      "preco_texto": "Ⱥ 300",
+      "preco_qualificador": null,
+      "descricao_curta": "Produz fragrâncias programáveis que podem ser armazenadas e combinadas.",
+      "descricao_longa": "*Comum*\n\nUma glândula artificial secreta fragrâncias programáveis. Aromas podem ser armazenados, combinados e substituídos como arquivos digitais.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 300\n\n**Integridade:** 0\n\nDados da lista de mercadorias:\n- Resumo: Produz fragrâncias programáveis que podem ser armazenadas e combinadas.\n- Raridade: Comum\n- Espaços: 1\n- Preço: Ⱥ 300",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS DE MODA"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Perfume Glandular",
+          "Resumo": "Produz fragrâncias programáveis que podem ser armazenadas e combinadas.",
+          "Raridade": "Comum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 300"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "ce166dd591bc4410a8ee12cd2db835bb",
+        "linhaBlocoId": "c69c3d0615134e3580eef571fceeec39",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "de_moda",
+      "categoria_label": "de moda",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_voz_modulavel",
+      "slug": "escalpos_voz_modulavel",
+      "nome": "Voz Modulável",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 400,
+      "preco_texto": "Ⱥ 400",
+      "preco_qualificador": null,
+      "descricao_curta": "Permite alterar o timbre, a ressonância e a intensidade da voz.",
+      "descricao_longa": "*Comum*\n\nUm modulador na laringe permite alterar timbre, ressonância e intensidade da voz. O usuário pode armazenar diferentes vozes, mas não reproduzir perfeitamente outra pessoa sem uma gravação adequada.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 400\n\n**Integridade:** 0\n\nDados da lista de mercadorias:\n- Resumo: Permite alterar o timbre, a ressonância e a intensidade da voz.\n- Raridade: Comum\n- Espaços: 1\n- Preço: Ⱥ 400",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "LISTA DE ESCALPOS",
+          "ESCALPOS DE MODA"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "Voz Modulável",
+          "Resumo": "Permite alterar o timbre, a ressonância e a intensidade da voz.",
+          "Raridade": "Comum",
+          "Espaços": "1",
+          "Preço": "Ⱥ 400"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "ce166dd591bc4410a8ee12cd2db835bb",
+        "linhaBlocoId": "b6e38ad330e84aa591705b91fb0f7b8c",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "de_moda",
+      "categoria_label": "de moda",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_rpi_forjado_nivel_1",
+      "slug": "escalpos_rpi_forjado_nivel_1",
+      "nome": "RPI Forjado (Nível 1)",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 300,
+      "preco_texto": "Ⱥ 300",
+      "preco_qualificador": null,
+      "descricao_curta": "Identidade superficial para verificações básicas.",
+      "descricao_longa": "*Comum*\n\nUma identidade superficial montada com dados reaproveitados, registros básicos e pouca atividade anterior. Permite realizar compras comuns, utilizar transporte público, acessar hospedagens simples e circular por sistemas que empreguem verificações básicas.\n\nProtocolos de Nível 2 ou superior encontram lacunas no histórico, registros incompatíveis ou dados insuficientes.\n\n**Espaços:** Não aplicável\n\n**Preço:** Ⱥ 300\n\nDados da lista de mercadorias:\n- Resumo: Identidade superficial para verificações básicas.\n- Raridade: Comum\n- Espaços: Não aplicável\n- Preço: Ⱥ 300",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "REGISTRO PESSOAL IMPERIAL (RPI)"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "RPI Forjado (Nível 1)",
+          "Resumo": "Identidade superficial para verificações básicas.",
+          "Raridade": "Comum",
+          "Espaços": "Não aplicável",
+          "Preço": "Ⱥ 300"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "2966d645c4144ba3a28a4c054bae42cf",
+        "linhaBlocoId": "4ee1fe28c3e942a494ba670ce4d0175e",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "identidade",
+      "categoria_label": "identidade",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_rpi_forjado_nivel_2",
+      "slug": "escalpos_rpi_forjado_nivel_2",
+      "nome": "RPI Forjado (Nível 2)",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "preco_texto": "Ⱥ 1.000",
+      "preco_qualificador": null,
+      "descricao_curta": "Identidade estabelecida para verificações cruzadas.",
+      "descricao_longa": "*Incomum*\n\nUma identidade estabelecida, sustentada por endereço, histórico financeiro, registros médicos e atividade civil coerente. Permite firmar contratos, receber pagamentos, utilizar serviços regulamentados e atravessar checkpoints regulares.\n\nProtocolos de Nível 3 podem encontrar inconsistências entre instituições, períodos mal documentados ou vínculos fabricados.\n\n**Espaços:** Não aplicável\n\n**Preço:** Ⱥ 1.000\n\nDados da lista de mercadorias:\n- Resumo: Identidade estabelecida para verificações cruzadas.\n- Raridade: Incomum\n- Espaços: Não aplicável\n- Preço: Ⱥ 1.000",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "REGISTRO PESSOAL IMPERIAL (RPI)"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "RPI Forjado (Nível 2)",
+          "Resumo": "Identidade estabelecida para verificações cruzadas.",
+          "Raridade": "Incomum",
+          "Espaços": "Não aplicável",
+          "Preço": "Ⱥ 1.000"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "2966d645c4144ba3a28a4c054bae42cf",
+        "linhaBlocoId": "14aebd38bbbf4eeba2d5b0a8e6889988",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "identidade",
+      "categoria_label": "identidade",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    },
+    {
+      "id": "escalpos_rpi_forjado_nivel_3",
+      "slug": "escalpos_rpi_forjado_nivel_3",
+      "nome": "RPI Forjado (Nível 3)",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 3000,
+      "preco_texto": "Ⱥ 3.000",
+      "preco_qualificador": null,
+      "descricao_curta": "Identidade completa para protocolos profundos.",
+      "descricao_longa": "*Raro*\n\nUma identidade profunda, fabricada com um histórico completo e coerente entre diferentes sistemas imperiais. Resiste a protocolos automatizados de alta segurança e pode sustentar vínculos, ocupações e registros de longa duração.\n\nSua falsidade só pode ser revelada por uma investigação direcionada, baseada em provas, testemunhas ou contradições concretas.\n\n**Espaços:** Não aplicável\n\n**Preço:** Ⱥ 3.000\n\n---\n\nDados da lista de mercadorias:\n- Resumo: Identidade completa para protocolos profundos.\n- Raridade: Raro\n- Espaços: Não aplicável\n- Preço: Ⱥ 3.000",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "ESCALPOS",
+        "secao": [
+          "REGISTRO PESSOAL IMPERIAL (RPI)"
+        ],
+        "tipo_tabela": "Nome",
+        "campos": {
+          "Nome": "RPI Forjado (Nível 3)",
+          "Resumo": "Identidade completa para protocolos profundos.",
+          "Raridade": "Raro",
+          "Espaços": "Não aplicável",
+          "Preço": "Ⱥ 3.000"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
+        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "tabelaBlocoId": "2966d645c4144ba3a28a4c054bae42cf",
+        "linhaBlocoId": "c4798e67eb52493e9252ca820d3192e5",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "categoria": "identidade",
+      "categoria_label": "identidade",
+      "custo_integridade": null,
+      "slot": null,
+      "requisitos": []
+    }
+  ]
+}

@@ -14,6 +14,8 @@ import type { WalletId } from "../../../lib/character/inventory";
 import type { ComponentProps } from "react";
 import type { SpellsTab } from "../../dev/character-sheet/components/SpellsTab";
 import type { TechnicalContentItem } from "../../../lib/content";
+import type { FonteRecarga } from "../../../lib/character/reloadSources";
+import type { CompanionModelSummary } from "../../../lib/character/companionModels";
 import type {
   ActiveCondition,
   Character,
@@ -64,6 +66,12 @@ export interface ConsoleApi {
   regras: CharacterRulesPayload | null;
   /** Catálogo publicado, indexado por slug — para ler dados do modelo do item. */
   catalogo: Map<string, ItemContent>;
+  /** Mercadorias publicadas com registro próprio fora do inventário. */
+  mercadoriasEspeciais: {
+    runas: TechnicalContentItem[];
+    escalpos: TechnicalContentItem[];
+    modelos: CompanionModelSummary[];
+  };
 
   /**
    * Estado da gravação automática, para o Console poder DIZER quando
@@ -161,10 +169,23 @@ export interface ConsoleApi {
   equiparNoSlot: (instanceId: string, slot: BodySlotId) => void;
   desequipar: (instanceId: string) => void;
   /** MIT (armadura) e PD (escudo) atuais da instância. */
+  definirModoAtaque?: (instanceId: string, modo: string) => void;
   definirMit: (instanceId: string, valor: number) => void;
+  /** Munição carregada na arma (0..municao_max) — edição direta, como os recursos. */
+  definirMunicao: (instanceId: string, valor: number) => void;
   definirPd: (instanceId: string, valor: number) => void;
   /** Recarga real (carregador ou aljava compartilhada). */
   recarregar: (instanceId: string) => void;
+  /**
+   * Fontes de recarga da arma (cada pilha compatível, com custo em PA)
+   * e a que está marcada como padrão. `null` = a arma não recarrega por
+   * fontes (célula de energia, aljava) — use `recarregar`.
+   */
+  fontesRecarga: (instanceId: string) => { fontes: FonteRecarga[]; padraoId: string | null; cheia: boolean } | null;
+  /** Recarrega de UMA fonte. Devolve o resumo para o aviso e um `desfazer`. */
+  recarregarDe: (instanceId: string, fonteId: string) => { ok: boolean; mensagem: string; desfazer?: () => void };
+  /** Marca (ou desmarca, com `null`) a fonte padrão da arma. */
+  definirFontePadrao: (instanceId: string, fonte: { local: FonteRecarga["local"]; contentSlug: string } | null) => void;
 
   // ── Inventário (aba Inventário) ───────────────────────────────────
   /**

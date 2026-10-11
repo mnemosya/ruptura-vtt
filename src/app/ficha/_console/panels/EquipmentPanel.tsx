@@ -14,14 +14,14 @@
  * escudo à frente quando os dois existem — a mesma decisão de antes.
  */
 
-import { espacosDoItem } from "../../../../lib/character/carga";
+import { espacosDoItem, espacosDaInstancia } from "../../../../lib/character/carga";
 import type { InventoryItemInstance, ItemContent } from "../../../../lib/character";
 import { itemCabeNoSlot, type BodySlot, type BodySlotId } from "../slots";
 import type { ConsoleApi } from "../types";
 import { TextoComRegras } from "../TextoComRegras";
 import { CabecalhoModulo } from "./CabecalhoModulo";
 import { EquipamentoHud, type EncaixeHud, type PecaHud } from "./hud/EquipamentoHud";
-import { VERTENTE_DA_CATEGORIA, descricaoDeOcultavel, descricaoDoAlcance, descricaoDoDano } from "./InventarioPanel";
+import { temaDoModelo, VERTENTE_DA_CATEGORIA, descricaoDeOcultavel, descricaoDoAlcance, descricaoDoDano } from "./InventarioPanel";
 
 function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
   const modelo = api.catalogo.get(inst.itemSlug);
@@ -31,11 +31,16 @@ function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
   const ocultavel = descricaoDeOcultavel(modelo);
   const linhas: { rotulo: string; valor: string }[] = [];
   if (alcance) linhas.push({ rotulo: "Alcance", valor: alcance });
+  if (modelo?.maos) linhas.push({rotulo:"Mãos",valor:String(modelo.maos)});
+  if (inst.aljava) linhas.push({rotulo:"Munição armazenada",valor:`${inst.aljava.stacks.reduce((n,s)=>n+s.quantidade*(s.pesoCapacidade??1),0)}/${inst.aljava.capacidade}`});
   if (ocultavel) linhas.push({ rotulo: "Ocultável", valor: ocultavel });
   return {
     id: inst.id,
     nome: inst.itemNome,
     weaponName: modelo?.nome,
+    suporteMunicao: !!modelo?.suporteMunicao,
+    modosAtaque: modelo?.modosAtaque, modoAtaqueEscolhido: inst.modoAtaqueEscolhido,
+    temaCategoria: modelo ? temaDoModelo(modelo) : undefined,
     categoria,
     categoriaRotulo: modelo?.categoria_label ?? categoria,
     vertente: VERTENTE_DA_CATEGORIA[categoria] ?? "nenhuma",
@@ -75,6 +80,8 @@ export function EquipmentPanel({
   const secundaria = por("escudo") ?? por("arma_secundaria");
 
   const encaixes: Record<EncaixeHud, PecaHud | null> = {
+    traje: peca(por("traje")),
+    suporte_municao: peca(por("suporte_municao")),
     cabeca: peca(por("cabeca")),
     tronco: peca(por("tronco")),
     membro_superior: peca(por("membro_superior")),
@@ -91,7 +98,7 @@ export function EquipmentPanel({
      trazer para a mochila; equipar direto do abrigo não existe. */
   const candidatos = (e: EncaixeHud): PecaHud[] =>
     inventario
-      .filter((i) => (i.estado === "mochila" || i.estado === "abrigo") && !ocupados.has(i.id) && itemCabeNoSlot(api.catalogo.get(i.itemSlug), e))
+      .filter((i) => (i.estado === "mochila" || i.estado === "abrigo") && !ocupados.has(i.id) && itemCabeNoSlot(api.catalogo.get(i.itemSlug), e) && (!e.startsWith("acesso_rapido") || espacosDaInstancia({...i,estado:"mochila"},api.catalogo.get(i.itemSlug)) <= 1))
       .map((i) => pecaDe(api, i));
 
   return (
@@ -106,8 +113,10 @@ export function EquipmentPanel({
             onEquipar={(id, e) => api.equiparNoSlot(id, e)}
             onTirar={(id) => api.desequipar(id)}
             onTrazer={(id) => api.moverItemPara(id, "mochila")}
+            onModoAtaque={(id, modo) => api.definirModoAtaque?.(id, modo)}
             onDefinirMit={(id, v) => api.definirMit(id, v)}
             onDefinirPd={(id, v) => api.definirPd(id, v)}
+            onDefinirMunicao={(id, v) => api.definirMunicao(id, v)}
             onAtacar={(e) => {
               const inst = e === "arma_primaria" ? por("arma_primaria") : secundaria;
               const modelo = inst ? api.catalogo.get(inst.itemSlug) : undefined;

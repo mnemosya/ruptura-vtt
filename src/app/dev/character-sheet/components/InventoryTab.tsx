@@ -318,7 +318,7 @@ export function InventoryTab({
             const runaEscolhida = runaSelecionada[instance.id] ?? "";
             const runaEscolhidaContent = runaEscolhida ? runaBySlug.get(runaEscolhida) : undefined;
             const compatibilidade = runaEscolhidaContent
-              ? getRuneCompatibility({ categoria: instance.categoria, subtipo: instance.subtipo }, runaEscolhidaContent)
+              ? getRuneCompatibility(itemModelo ?? { categoria: instance.categoria, subtipo: instance.subtipo }, runaEscolhidaContent)
               : null;
             const resolvedProperties = deriveItemProperties({
               instance,

@@ -1,0 +1,3350 @@
+{
+  "somente_revisao": true,
+  "publicacao_automatica": false,
+  "extraidoEm": "2026-10-11T02:06:07.663Z",
+  "identidades_preservadas": [
+    {
+      "tipo": "item",
+      "slug": "acessorios_capa_anti_optica",
+      "nomeAntes": "Capa Anti-Óptica",
+      "nomeAtual": "Capa Anti-Óptica",
+      "slugSugerido": "acessorios_capa_anti_optica",
+      "fonte": "1d9d5ff28ec244f8b7b99fb3a1fbc904",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "acessorios_fivela_de_retorno",
+      "nomeAntes": "Fivela de Retorno",
+      "nomeAtual": "Fivela de Retorno",
+      "slugSugerido": "acessorios_fivela_de_retorno",
+      "fonte": "dde46a4a09ae4662ad9b1721f1368a2f",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "acessorios_foco_runico",
+      "nomeAntes": "Foco Rúnico",
+      "nomeAtual": "Foco Rúnico",
+      "slugSugerido": "acessorios_foco_runico",
+      "fonte": "c17eeedafcef4f40be8300d53254fa58",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "acessorios_mascara_filtrante",
+      "nomeAntes": "Máscara Filtrante",
+      "nomeAtual": "Máscara Filtrante",
+      "slugSugerido": "acessorios_mascara_filtrante",
+      "fonte": "d2b7c72bac6543f5b28d1a8e3d9c443e",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "acessorios_oculos_de_realidade_aumentada",
+      "nomeAntes": "Óculos de Realidade Aumentada",
+      "nomeAtual": "Óculos de Realidade Aumentada",
+      "slugSugerido": "acessorios_oculos_de_realidade_aumentada",
+      "fonte": "22c4b44065cb4d98843fef09de486dfb",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "acessorios_pulseira_vital",
+      "nomeAntes": "Pulseira Vital",
+      "nomeAtual": "Pulseira Vital",
+      "slugSugerido": "acessorios_pulseira_vital",
+      "fonte": "69cd0368fbc44e53ad7866bcd3d4faf2",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_armas_corpo_a_corpo_faca",
+      "nomeAntes": "Faca",
+      "nomeAtual": "Faca",
+      "slugSugerido": "armas_faca",
+      "fonte": "be4119bf66a744da85dfab3b2a8840b3",
+      "criterio": "nome_e_aplicacao_na_mesma_pagina"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_adaga",
+      "nomeAntes": "Adaga",
+      "nomeAtual": "Adaga",
+      "slugSugerido": "armas_adaga",
+      "fonte": "c83308193fde4d32a19e9e8e14809d01",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_fl_1_razor_adaga",
+      "nomeAntes": "FL-1 Razor (Adaga)",
+      "nomeAtual": "FL-1 Razor (Adaga)",
+      "slugSugerido": "armas_fl_1_razor_adaga",
+      "fonte": "a188e7fa2619492e90fbeea5da21732f",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_soco_ingles",
+      "nomeAntes": "Soco-inglês",
+      "nomeAtual": "Soco-inglês",
+      "slugSugerido": "armas_soco_ingles",
+      "fonte": "3e5f47e7643f41b58aae16903c3d3aad",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_tonfa",
+      "nomeAntes": "Tonfa",
+      "nomeAtual": "Tonfa",
+      "slugSugerido": "armas_tonfa",
+      "fonte": "e1f913151d2349de8142b8655a3acf03",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_rv_4_shiv_faca",
+      "nomeAntes": "RV-4 Shiv (Faca)",
+      "nomeAtual": "RV-4 Shiv (Faca)",
+      "slugSugerido": "armas_rv_4_shiv_faca",
+      "fonte": "ceecbdf17bbf421a8eadeee2e0ef490f",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_shuriken",
+      "nomeAntes": "Shuriken",
+      "nomeAtual": "Shuriken",
+      "slugSugerido": "armas_shuriken",
+      "fonte": "f020e8bad8654100a38ecb5589a6cf71",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_rv_12_razorstar_shuriken",
+      "nomeAntes": "RV-12 Razorstar (Shuriken)",
+      "nomeAtual": "RV-12 Razorstar (Shuriken)",
+      "slugSugerido": "armas_rv_12_razorstar_shuriken",
+      "fonte": "d01963dc0d004c1f90b22e645b747f93",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_rapieira",
+      "nomeAntes": "Rapieira",
+      "nomeAtual": "Rapieira",
+      "slugSugerido": "armas_rapieira",
+      "fonte": "2c2d44c8c09c4b3795023391b560f39f",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_armas_corpo_a_corpo_lanca",
+      "nomeAntes": "Lança",
+      "nomeAtual": "Lança",
+      "slugSugerido": "armas_lanca",
+      "fonte": "e8dcf0404f024aa99b0a3f7fc729e255",
+      "criterio": "nome_e_aplicacao_na_mesma_pagina"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_espada_curta",
+      "nomeAntes": "Espada curta",
+      "nomeAtual": "Espada curta",
+      "slugSugerido": "armas_espada_curta",
+      "fonte": "6a6c454f819e45fead3e9ef5047c3ae1",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_armas_corpo_a_corpo_machado_de_mao",
+      "nomeAntes": "Machado de mão",
+      "nomeAtual": "Machado de mão",
+      "slugSugerido": "armas_machado_de_mao",
+      "fonte": "fdcab03c26c440cc8e34a64c1d27e6a1",
+      "criterio": "nome_e_aplicacao_na_mesma_pagina"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_bastao",
+      "nomeAntes": "Bastão",
+      "nomeAtual": "Bastão",
+      "slugSugerido": "armas_bastao",
+      "fonte": "77bb124fcca344f8a4cdd63aa3de88d4",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_corrente_leve",
+      "nomeAntes": "Corrente leve",
+      "nomeAtual": "Corrente leve",
+      "slugSugerido": "armas_corrente_leve",
+      "fonte": "07a7e50ac0a04f64a8d6b1ad9a42465e",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_manoplas",
+      "nomeAntes": "Manoplas",
+      "nomeAtual": "Manoplas",
+      "slugSugerido": "armas_manoplas",
+      "fonte": "71300c392b1b426194925c9b691ab7aa",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_ko_7_overreach_manoplas",
+      "nomeAntes": "KO-7 Overreach (Manoplas)",
+      "nomeAtual": "KO-7 Overreach (Manoplas)",
+      "slugSugerido": "armas_ko_7_overreach_manoplas",
+      "fonte": "55cd651bd5af43fc8f37ef60ad47d967",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_ko_18_jawbreaker_manoplas",
+      "nomeAntes": "KO-18 Jawbreaker (Manoplas)",
+      "nomeAtual": "KO-18 Jawbreaker (Manoplas)",
+      "slugSugerido": "armas_ko_18_jawbreaker_manoplas",
+      "fonte": "2f72c4090238446cb754dcf85b026e09",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_rv_20_grudge_machado_de_mao",
+      "nomeAntes": "RV-20 Grudge (Machado de mão)",
+      "nomeAtual": "RV-20 Grudge (Machado de mão)",
+      "slugSugerido": "armas_rv_20_grudge_machado_de_mao",
+      "fonte": "9c1c7fda8dc64bfa84e245e3007b1b5d",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_espada_longa",
+      "nomeAntes": "Espada longa",
+      "nomeAtual": "Espada longa",
+      "slugSugerido": "armas_espada_longa",
+      "fonte": "a2e18413522c41d6a8351401682fdb5a",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_fl_2_edgelord_espada_longa",
+      "nomeAntes": "FL-2 Edgelord (Espada longa)",
+      "nomeAtual": "FL-2 Edgelord (Espada longa)",
+      "slugSugerido": "armas_fl_2_edgelord_espada_longa",
+      "fonte": "c274388e8ea941789626d343db82865c",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_machado_de_guerra",
+      "nomeAntes": "Machado de guerra",
+      "nomeAtual": "Machado de guerra",
+      "slugSugerido": "armas_machado_de_guerra",
+      "fonte": "88633a46d461438e844c457d9d264aa8",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_fl_5_guillotine_machado_de_guerra",
+      "nomeAntes": "FL-5 Guillotine (Machado de guerra)",
+      "nomeAtual": "FL-5 Guillotine (Machado de guerra)",
+      "slugSugerido": "armas_fl_5_guillotine_machado_de_guerra",
+      "fonte": "d9c75f47f0be45bc9bbc3f13f6d62a39",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_martelo_pesado",
+      "nomeAntes": "Martelo pesado",
+      "nomeAtual": "Martelo pesado",
+      "slugSugerido": "armas_martelo_pesado",
+      "fonte": "0ed17e543cc04bc0abb891c5ca01d6de",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_ko_40_sledge_manoplas",
+      "nomeAntes": "KO-40 Sledge (Manoplas)",
+      "nomeAtual": "KO-40 Sledge (Manoplas)",
+      "slugSugerido": "armas_ko_40_sledge_manoplas",
+      "fonte": "1e2dc29695de4428991386c1e8662262",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_alabarda",
+      "nomeAntes": "Alabarda",
+      "nomeAtual": "Alabarda",
+      "slugSugerido": "armas_alabarda",
+      "fonte": "4146d5541f024e83a8c85cf5ad293bcc",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_arco_curto",
+      "nomeAntes": "Arco curto",
+      "nomeAtual": "Arco curto",
+      "slugSugerido": "armas_arco_curto",
+      "fonte": "ebc61c9de01c4b11ae54b97f33b57db4",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_sk_7_red_falcon_arco_curto",
+      "nomeAntes": "SK-7 Red Falcon (Arco curto)",
+      "nomeAtual": "SK-7 Red Falcon (Arco curto)",
+      "slugSugerido": "armas_sk_7_red_falcon_arco_curto",
+      "fonte": "e89885a8f8ea4f78b47fcc18c7f0d291",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_sk_24_blue_hawk_arco_composto",
+      "nomeAntes": "SK-24 Blue Hawk (Arco composto)",
+      "nomeAtual": "SK-24 Blue Hawk (Arco composto)",
+      "slugSugerido": "armas_sk_24_blue_hawk_arco_composto",
+      "fonte": "c5f8ef2cc0804bff8a9fad80625c6aa5",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_besta_leve",
+      "nomeAntes": "Besta leve",
+      "nomeAtual": "Besta leve",
+      "slugSugerido": "armas_besta_leve",
+      "fonte": "68dbac9e054f4d4ba9d28d55016a69f8",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_arco_longo",
+      "nomeAntes": "Arco longo",
+      "nomeAtual": "Arco longo",
+      "slugSugerido": "armas_arco_longo",
+      "fonte": "b96852942b2947e2b1906069eb7a43a4",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_sk_60_white_vulture_arco_longo",
+      "nomeAntes": "SK-60 White Vulture (Arco longo)",
+      "nomeAtual": "SK-60 White Vulture (Arco longo)",
+      "slugSugerido": "armas_sk_60_white_vulture_arco_longo",
+      "fonte": "f2e7418751194c2594457fa5825d26b3",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_besta_pesada",
+      "nomeAntes": "Besta pesada",
+      "nomeAtual": "Besta pesada",
+      "slugSugerido": "armas_besta_pesada",
+      "fonte": "ba92fd0de382432f955ba13cee4a4152",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_flecha_simples",
+      "nomeAntes": "Flecha simples",
+      "nomeAtual": "Flecha simples",
+      "slugSugerido": "armas_flecha_simples",
+      "fonte": "fca7f3e7b7e84c40a0ea74f697fbc185",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_virotes",
+      "nomeAntes": "Virotes",
+      "nomeAtual": "Virotes",
+      "slugSugerido": "armas_virotes",
+      "fonte": "ded9aed2d40e493cbfa05ebb9efc4659",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_arpao",
+      "nomeAntes": "Arpão",
+      "nomeAtual": "Arpão",
+      "slugSugerido": "armas_arpao",
+      "fonte": "e7ab669342c94dc796e1883a054fe6f5",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_eletrica",
+      "nomeAntes": "Elétrica",
+      "nomeAtual": "Elétrica",
+      "slugSugerido": "armas_eletrica",
+      "fonte": "3d15bd65747b45ec8d2e381bcc52c457",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_explosiva",
+      "nomeAntes": "Explosiva",
+      "nomeAtual": "Explosiva",
+      "slugSugerido": "armas_explosiva",
+      "fonte": "296b6625e6454d219b2da392df38bee9",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_fixacao",
+      "nomeAntes": "Fixação",
+      "nomeAtual": "Fixação",
+      "slugSugerido": "armas_fixacao",
+      "fonte": "03c9331f46fc411dba506a20bae73aca",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_armas_de_arremesso_e_disparo_flamejante",
+      "nomeAntes": "Flamejante",
+      "nomeAtual": "Flamejante",
+      "slugSugerido": "armas_armas_de_disparo_flamejante",
+      "fonte": "f10f394c37eb47a391c30436470d3424",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_armas_de_arremesso_e_disparo_toxica_d8c52d",
+      "nomeAntes": "Tóxica",
+      "nomeAtual": "Tóxica",
+      "slugSugerido": "armas_armas_de_disparo_toxica_d8c52d",
+      "fonte": "d8c52d93c2ff4c0392b2f94e4d7e256c",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_pistola_de_bolso",
+      "nomeAntes": "Pistola de bolso",
+      "nomeAtual": "Pistola de bolso",
+      "slugSugerido": "armas_pistola_de_bolso",
+      "fonte": "708dc740f9f649ab9c25a2096a350f26",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_revolver",
+      "nomeAntes": "Revólver",
+      "nomeAtual": "Revólver",
+      "slugSugerido": "armas_revolver",
+      "fonte": "3f327370473940f4a8b9643db427f4c6",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_pistola_pesada",
+      "nomeAntes": "Pistola pesada",
+      "nomeAtual": "Pistola pesada",
+      "slugSugerido": "armas_pistola_pesada",
+      "fonte": "2561ceaf5fd1413c878fda4a02829921",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_sw_9_ghostline_pistola_pesada",
+      "nomeAntes": "SW-9 Ghostline (Pistola pesada)",
+      "nomeAtual": "SW-9 Ghostline (Pistola pesada)",
+      "slugSugerido": "armas_sw_9_ghostline_pistola_pesada",
+      "fonte": "1112291b4d904a0f91ef3f8caacffcf6",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_as_10_overdrive_pistola_pesada",
+      "nomeAntes": "AS-10 Overdrive (Pistola pesada)",
+      "nomeAtual": "AS-10 Overdrive (Pistola pesada)",
+      "slugSugerido": "armas_as_10_overdrive_pistola_pesada",
+      "fonte": "0fd0c66c7acc428ebf86950e997c2340",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_dl_8_cry_havoc_pistola_automatica",
+      "nomeAntes": "DL-8 Cry Havoc (Pistola automática)",
+      "nomeAtual": "DL-8 Cry Havoc (Pistola automática)",
+      "slugSugerido": "armas_dl_8_cry_havoc_pistola_automatica",
+      "fonte": "55e113a72aee44e1bdaac87c9d0635ab",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_submetralhadora",
+      "nomeAntes": "Submetralhadora",
+      "nomeAtual": "Submetralhadora",
+      "slugSugerido": "armas_submetralhadora",
+      "fonte": "aac704ee733b4d98925ddd50fa8a6da6",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_sw_22_spiral_submetralhadora",
+      "nomeAntes": "SW-22 Spiral (Submetralhadora)",
+      "nomeAtual": "SW-22 Spiral (Submetralhadora)",
+      "slugSugerido": "armas_sw_22_spiral_submetralhadora",
+      "fonte": "79bed0b9093d4a00b98daf4e7f5cadfb",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_dl_21_reaper_submetralhadora",
+      "nomeAntes": "DL-21 Reaper (Submetralhadora)",
+      "nomeAtual": "DL-21 Reaper (Submetralhadora)",
+      "slugSugerido": "armas_dl_21_reaper_submetralhadora",
+      "fonte": "f25e69e476464e55928dc0be449bde8c",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_carabina",
+      "nomeAntes": "Carabina",
+      "nomeAtual": "Carabina",
+      "slugSugerido": "armas_carabina",
+      "fonte": "cb18024da4884bf089c193871bc1524c",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_sw_36_crossfade_carabina",
+      "nomeAntes": "SW-36 Crossfade (Carabina)",
+      "nomeAtual": "SW-36 Crossfade (Carabina)",
+      "slugSugerido": "armas_sw_36_crossfade_carabina",
+      "fonte": "07b7799566a84a2cbfef9927438d873f",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_dl_34_ravage_carabina",
+      "nomeAntes": "DL-34 Ravage (Carabina)",
+      "nomeAtual": "DL-34 Ravage (Carabina)",
+      "slugSugerido": "armas_dl_34_ravage_carabina",
+      "fonte": "2179ac9910a648d09e1ce7f24c07b3ad",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_as_65_runaway_carabina",
+      "nomeAntes": "AS-65 Runaway (Carabina)",
+      "nomeAtual": "AS-65 Runaway (Carabina)",
+      "slugSugerido": "armas_as_65_runaway_carabina",
+      "fonte": "898692aec6ed42bba1ae0f04427bff97",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_escopeta_curta",
+      "nomeAntes": "Escopeta curta",
+      "nomeAtual": "Escopeta curta",
+      "slugSugerido": "armas_escopeta_curta",
+      "fonte": "6d5d325e7e6540e5b718670939dfa168",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_bb_6_claws_escopeta_curta",
+      "nomeAntes": "BB-6 Claws (Escopeta curta)",
+      "nomeAtual": "BB-6 Claws (Escopeta curta)",
+      "slugSugerido": "armas_bb_6_claws_escopeta_curta",
+      "fonte": "442583d5ede04035b86d73684fc9a97e",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_espingarda",
+      "nomeAntes": "Espingarda",
+      "nomeAtual": "Espingarda",
+      "slugSugerido": "armas_espingarda",
+      "fonte": "0408d71655bc4e5e9b85c4c1113b22e7",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_bb_14_sprawl_espingarda",
+      "nomeAntes": "BB-14 Sprawl (Espingarda)",
+      "nomeAtual": "BB-14 Sprawl (Espingarda)",
+      "slugSugerido": "armas_bb_14_sprawl_espingarda",
+      "fonte": "1914c19e18a54e85a6ae79451ec33bd4",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_bb_30_blight_escopeta_pesada",
+      "nomeAntes": "BB-30 Blight (Escopeta pesada)",
+      "nomeAtual": "BB-30 Blight (Escopeta pesada)",
+      "slugSugerido": "armas_bb_30_blight_escopeta_pesada",
+      "fonte": "796c9de0d8e0404e899427bd9c073928",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_rifle_de_assalto",
+      "nomeAntes": "Rifle de assalto",
+      "nomeAtual": "Rifle de assalto",
+      "slugSugerido": "armas_rifle_de_assalto",
+      "fonte": "65c3a0154432412b8c3378708fda7bd6",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_sw_51_deviant_rifle_de_assalto",
+      "nomeAntes": "SW-51 Deviant (Rifle de assalto)",
+      "nomeAtual": "SW-51 Deviant (Rifle de assalto)",
+      "slugSugerido": "armas_sw_51_deviant_rifle_de_assalto",
+      "fonte": "6572e97c710e489cbe8a5d4ae778a392",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_dl_47_butcher_rifle_de_assalto",
+      "nomeAntes": "DL-47 Butcher (Rifle de assalto)",
+      "nomeAtual": "DL-47 Butcher (Rifle de assalto)",
+      "slugSugerido": "armas_dl_47_butcher_rifle_de_assalto",
+      "fonte": "2a9166f309b84711b995b4086caeb60d",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_as_762_redshift_rifle_de_assalto",
+      "nomeAntes": "AS-762 Redshift (Rifle de assalto)",
+      "nomeAtual": "AS-762 Redshift (Rifle de assalto)",
+      "slugSugerido": "armas_as_762_redshift_rifle_de_assalto",
+      "fonte": "8beb95a122c74e709ec24e1dc28408b6",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_rifle_de_precisao",
+      "nomeAntes": "Rifle de precisão",
+      "nomeAtual": "Rifle de precisão",
+      "slugSugerido": "armas_rifle_de_precisao",
+      "fonte": "6ec756a4ce874ad9bbbd461e88493906",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_sw_80_parallax_rifle_de_precisao",
+      "nomeAntes": "SW-80 Parallax (Rifle de precisão)",
+      "nomeAtual": "SW-80 Widowmaker (Rifle de precisão)",
+      "slugSugerido": "armas_sw_80_widowmaker_rifle_de_precisao",
+      "fonte": "5fef05aa6e944c36a96b205af47339c5",
+      "criterio": "codigo_do_modelo_e_tipo_da_arma"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_as_86_terminal_rifle_de_precisao",
+      "nomeAntes": "AS-86 Terminal (Rifle de precisão)",
+      "nomeAtual": "AS-86 Terminal (Rifle de precisão)",
+      "slugSugerido": "armas_as_86_terminal_rifle_de_precisao",
+      "fonte": "c3aae6ec0afc4a11b5941e2f5fd79808",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_as_127_wrecker_rifle_antimaterial",
+      "nomeAntes": "AS-127 Wrecker (Rifle antimaterial)",
+      "nomeAtual": "AS-127 Wrecker (Rifle antimaterial)",
+      "slugSugerido": "armas_as_127_wrecker_rifle_antimaterial",
+      "fonte": "5e4b607df1084244b2003f3e7364ba2a",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_metralhadora",
+      "nomeAntes": "Metralhadora",
+      "nomeAtual": "Metralhadora",
+      "slugSugerido": "armas_metralhadora",
+      "fonte": "70cf58dd49584c31b10f020c4f38d34c",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_dl_66_widowmaker_metralhadora",
+      "nomeAntes": "DL-66 Widowmaker (Metralhadora)",
+      "nomeAtual": "DL-66 Maelstrom (Metralhadora)",
+      "slugSugerido": "armas_dl_66_maelstrom_metralhadora",
+      "fonte": "d4132da802224d6f9467b5bcf11fbb39",
+      "criterio": "codigo_do_modelo_e_tipo_da_arma"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_pistola",
+      "nomeAntes": "Pistola",
+      "nomeAtual": "Pistola",
+      "slugSugerido": "armas_pistola",
+      "fonte": "553646fb77fb4d0e9045f7f996c112d2",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_fuzil",
+      "nomeAntes": "Fuzil",
+      "nomeAtual": "Fuzil",
+      "slugSugerido": "armas_fuzil",
+      "fonte": "ab50af6572bf45d7846f6be95c250da1",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_escopeta",
+      "nomeAntes": "Escopeta",
+      "nomeAtual": "Escopeta",
+      "slugSugerido": "armas_escopeta",
+      "fonte": "e14d00dd6e724640b0e88b287cca5c34",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_precisao",
+      "nomeAntes": "Precisão",
+      "nomeAtual": "Precisão",
+      "slugSugerido": "armas_precisao",
+      "fonte": "b8604e99329b43219de0346a09ccaf69",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_pistola_de_feixe",
+      "nomeAntes": "Pistola de feixe",
+      "nomeAtual": "Pistola de feixe",
+      "slugSugerido": "armas_pistola_de_feixe",
+      "fonte": "800fafa4efd24056b1783266bc1065c9",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_fundidora",
+      "nomeAntes": "Fundidora",
+      "nomeAtual": "Fundidora",
+      "slugSugerido": "armas_fundidora",
+      "fonte": "343c57744ec14b0f821543897821214f",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_pistola_voltaica",
+      "nomeAntes": "Pistola voltaica",
+      "nomeAtual": "Pistola voltaica",
+      "slugSugerido": "armas_pistola_voltaica",
+      "fonte": "45cdd46dcb76498392903792be8e2644",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_crioagulha",
+      "nomeAntes": "Crioagulha",
+      "nomeAtual": "Crioagulha",
+      "slugSugerido": "armas_crioagulha",
+      "fonte": "82fa8ab459b145e9adddb6cba152c3d8",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_ofuscador",
+      "nomeAntes": "Ofuscador",
+      "nomeAtual": "Ofuscador",
+      "slugSugerido": "armas_ofuscador",
+      "fonte": "ce3639ed58f748c2ba41510a84b9d0ab",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_carabina_de_feixe",
+      "nomeAntes": "Carabina de feixe",
+      "nomeAtual": "Carabina de feixe",
+      "slugSugerido": "armas_carabina_de_feixe",
+      "fonte": "f812c97d86184fdfb988ce8dab18ce91",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_repetidora_termica",
+      "nomeAntes": "Repetidora térmica",
+      "nomeAtual": "Repetidora térmica",
+      "slugSugerido": "armas_repetidora_termica",
+      "fonte": "80956e6bb4c94a4ca1a15aa6b89ec80d",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_fuzil_voltaico",
+      "nomeAntes": "Fuzil voltaico",
+      "nomeAtual": "Fuzil voltaico",
+      "slugSugerido": "armas_fuzil_voltaico",
+      "fonte": "ebb43024128e450296f6fbf9f2e7aa31",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_disruptor",
+      "nomeAntes": "Disruptor",
+      "nomeAtual": "Disruptor",
+      "slugSugerido": "armas_disruptor",
+      "fonte": "0aabf7f27b524b72ae172fbaa01bb8b2",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_criojetor",
+      "nomeAntes": "Criojetor",
+      "nomeAtual": "Criojetor",
+      "slugSugerido": "armas_criojetor",
+      "fonte": "cd633586a22e491e97ec00a4caba6204",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_ressonador",
+      "nomeAntes": "Ressonador",
+      "nomeAtual": "Ressonador",
+      "slugSugerido": "armas_ressonador",
+      "fonte": "114e3d738cbf44de8597bc52f32be98a",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_incinerador",
+      "nomeAntes": "Incinerador",
+      "nomeAtual": "Incinerador",
+      "slugSugerido": "armas_incinerador",
+      "fonte": "a5966fa4a03442ee8cc1044d13456553",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_rifle_de_feixe_concentrado",
+      "nomeAntes": "Rifle de feixe concentrado",
+      "nomeAtual": "Rifle de feixe concentrado",
+      "slugSugerido": "armas_rifle_de_feixe_concentrado",
+      "fonte": "9b62f6b53b3640269fd68e97ea7bf3ab",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_canhao_de_plasma",
+      "nomeAntes": "Canhão de plasma",
+      "nomeAtual": "Canhão de plasma",
+      "slugSugerido": "armas_canhao_de_plasma",
+      "fonte": "5a815dd51caf407ca0e94f2dd2185bdb",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_metralhadora_de_arco",
+      "nomeAntes": "Metralhadora de arco",
+      "nomeAtual": "Metralhadora de arco",
+      "slugSugerido": "armas_metralhadora_de_arco",
+      "fonte": "d723167095564855bbcb56f18ba8ff27",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_lanca_crio",
+      "nomeAntes": "Lança-crio",
+      "nomeAtual": "Lança-crio",
+      "slugSugerido": "armas_lanca_crio",
+      "fonte": "fd546a7d20854312b45bbedaa1deee09",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_ressonador_de_cerco",
+      "nomeAntes": "Ressonador de cerco",
+      "nomeAtual": "Ressonador de cerco",
+      "slugSugerido": "armas_ressonador_de_cerco",
+      "fonte": "2734a862e1674676987a4ee7202b42f3",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_compacta",
+      "nomeAntes": "Compacta",
+      "nomeAtual": "Compacta",
+      "slugSugerido": "armas_compacta",
+      "fonte": "7fe8cb89bae644f8aa688eae08e3b713",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_padrao",
+      "nomeAntes": "Padrão",
+      "nomeAtual": "Padrão",
+      "slugSugerido": "armas_padrao",
+      "fonte": "132465e016b6469f96cd9d21659a7db2",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_alta_capacidade",
+      "nomeAntes": "Alta capacidade",
+      "nomeAtual": "Alta capacidade",
+      "slugSugerido": "armas_alta_capacidade",
+      "fonte": "0c9310d9a4054259b28acbb8d4ac8a39",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armas_alta_densidade",
+      "nomeAntes": "Alta densidade",
+      "nomeAtual": "Alta densidade",
+      "slugSugerido": "armas_alta_densidade",
+      "fonte": "5a3d54cd38e6474cbf789d0e23b63e59",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_jaqueta_de_couro_reforcada",
+      "nomeAntes": "Jaqueta de couro reforçada",
+      "nomeAtual": "Jaqueta de couro reforçada",
+      "slugSugerido": "armaduras_e_escudos_jaqueta_de_couro_reforcada",
+      "fonte": "18c3a4f6f2524656b116eed9078f43af",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_jaqueta_isolante",
+      "nomeAntes": "Jaqueta isolante",
+      "nomeAtual": "Jaqueta isolante",
+      "slugSugerido": "armaduras_e_escudos_jaqueta_isolante",
+      "fonte": "490fd8eccad444a89c3910880846e47a",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_traje_urbano_hibrido",
+      "nomeAntes": "Traje urbano híbrido",
+      "nomeAtual": "Traje urbano híbrido",
+      "slugSugerido": "armaduras_e_escudos_traje_urbano_hibrido",
+      "fonte": "77b0e704850342e1bd861ef4f32c6045",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_cotoveleiras",
+      "nomeAntes": "Cotoveleiras",
+      "nomeAtual": "Cotoveleiras",
+      "slugSugerido": "armaduras_e_escudos_cotoveleiras",
+      "fonte": "48fa3890dccb4854b96e3ab614f17c9b",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_calca_acolchoada",
+      "nomeAntes": "Calça acolchoada",
+      "nomeAtual": "Calça acolchoada",
+      "slugSugerido": "armaduras_e_escudos_calca_acolchoada",
+      "fonte": "781a7f29c6834e628986cbc13a96f1f5",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_gorro_reforcado",
+      "nomeAntes": "Gorro reforçado",
+      "nomeAtual": "Gorro reforçado",
+      "slugSugerido": "armaduras_e_escudos_gorro_reforcado",
+      "fonte": "f8d0ee1d3f304c1c98b10241788a96c8",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_capacete_balistico",
+      "nomeAntes": "Capacete balístico",
+      "nomeAtual": "Capacete balístico",
+      "slugSugerido": "armaduras_e_escudos_capacete_balistico",
+      "fonte": "f64a76cde54a485f9a74a0cb30816d49",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_colete_balistico",
+      "nomeAntes": "Colete balístico",
+      "nomeAtual": "Colete balístico",
+      "slugSugerido": "armaduras_e_escudos_colete_balistico",
+      "fonte": "0e228d6915eb4ec1bb99f48cb7b81e52",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_ombreiras_compostas",
+      "nomeAntes": "Ombreiras compostas",
+      "nomeAtual": "Ombreiras compostas",
+      "slugSugerido": "armaduras_e_escudos_ombreiras_compostas",
+      "fonte": "ca40dfba34de4b4bbc325335286544a2",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_perneiras_reforcadas",
+      "nomeAntes": "Perneiras reforçadas",
+      "nomeAtual": "Perneiras reforçadas",
+      "slugSugerido": "armaduras_e_escudos_perneiras_reforcadas",
+      "fonte": "840b709712a74b0786563664c1c33f22",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_jaqueta_termoestatica",
+      "nomeAntes": "Jaqueta termoestática",
+      "nomeAtual": "Jaqueta termoestática",
+      "slugSugerido": "armaduras_e_escudos_jaqueta_termoestatica",
+      "fonte": "d1f504b4a2024978bd64e438eb2877f4",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_colete_hibrido_urbano",
+      "nomeAntes": "Colete híbrido urbano",
+      "nomeAtual": "Colete híbrido urbano",
+      "slugSugerido": "armaduras_e_escudos_colete_hibrido_urbano",
+      "fonte": "56d61e6a9e1344baa7b3fb5f999019e6",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_capacete_integral",
+      "nomeAntes": "Capacete integral",
+      "nomeAtual": "Capacete integral",
+      "slugSugerido": "armaduras_e_escudos_capacete_integral",
+      "fonte": "16c430a6cbee422bb96744a32d5f4885",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_colete_reforcado",
+      "nomeAntes": "Colete reforçado",
+      "nomeAtual": "Colete reforçado",
+      "slugSugerido": "armaduras_e_escudos_colete_reforcado",
+      "fonte": "7ca13ecc88294fc6b1cea486ba6c12a5",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_ombreiras_laminadas",
+      "nomeAntes": "Ombreiras laminadas",
+      "nomeAtual": "Ombreiras laminadas",
+      "slugSugerido": "armaduras_e_escudos_ombreiras_laminadas",
+      "fonte": "49a1efab9b6f42aeaca5f815b8bbb3f0",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_perneiras_blindadas",
+      "nomeAntes": "Perneiras blindadas",
+      "nomeAtual": "Perneiras blindadas",
+      "slugSugerido": "armaduras_e_escudos_perneiras_blindadas",
+      "fonte": "eb3ff23399fe4d58858ee2ab511bed2f",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_peitoral_isolante",
+      "nomeAntes": "Peitoral isolante",
+      "nomeAtual": "Peitoral isolante",
+      "slugSugerido": "armaduras_e_escudos_peitoral_isolante",
+      "fonte": "a967fa460dd548939fab65f7d5c509e5",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_exotraje_pesado",
+      "nomeAntes": "Exotraje pesado",
+      "nomeAtual": "Exotraje pesado",
+      "slugSugerido": "armaduras_e_escudos_exotraje_pesado",
+      "fonte": "4f88a8013455497e903d73a8c870fdcc",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_exotraje_mosaico",
+      "nomeAntes": "Exotraje Mosaico",
+      "nomeAtual": "Exotraje Mosaico",
+      "slugSugerido": "armaduras_e_escudos_exotraje_mosaico",
+      "fonte": "1e051d655d0e46a49987d79bbc6f6602",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_exotraje_ablativo",
+      "nomeAntes": "Exotraje Ablativo",
+      "nomeAtual": "Exotraje Ablativo",
+      "slugSugerido": "armaduras_e_escudos_exotraje_ablativo",
+      "fonte": "9294468992384667b478967e1525f090",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_escudo_compacto",
+      "nomeAntes": "Escudo compacto",
+      "nomeAtual": "Escudo compacto",
+      "slugSugerido": "armaduras_e_escudos_escudo_compacto",
+      "fonte": "a2fe029d8dd148dfb9d6e6a22bc42fb0",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_escudo_tatico_leve",
+      "nomeAntes": "Escudo tático leve",
+      "nomeAtual": "Escudo tático leve",
+      "slugSugerido": "armaduras_e_escudos_escudo_tatico_leve",
+      "fonte": "9ce26df092bc4129a3469df7ef1a8895",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_escudo_balistico",
+      "nomeAntes": "Escudo balístico",
+      "nomeAtual": "Escudo balístico",
+      "slugSugerido": "armaduras_e_escudos_escudo_balistico",
+      "fonte": "bbf727a4b26a41a7a6eae1a202124280",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_escudo_reforcado_hibrido",
+      "nomeAntes": "Escudo reforçado híbrido",
+      "nomeAtual": "Escudo reforçado híbrido",
+      "slugSugerido": "armaduras_e_escudos_escudo_reforcado_hibrido",
+      "fonte": "edd0914c421247be9881666691b5d6f4",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_escudo_torre",
+      "nomeAntes": "Escudo torre",
+      "nomeAtual": "Escudo torre",
+      "slugSugerido": "armaduras_e_escudos_escudo_torre",
+      "fonte": "f3b6567cc9354703ab6ca2854ee161f9",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "armaduras_e_escudos_escudo_torre_hibrido",
+      "nomeAntes": "Escudo torre híbrido",
+      "nomeAtual": "Escudo torre híbrido",
+      "slugSugerido": "armaduras_e_escudos_escudo_torre_hibrido",
+      "fonte": "90a93f8e24b8471da3055c9deae258a9",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "dispositivos_tecnologicos_chip_de_dados",
+      "nomeAntes": "Chip de dados",
+      "nomeAtual": "Chip de dados",
+      "slugSugerido": "dispositivos_chip_de_dados",
+      "fonte": "542b5ce1f1844f118c416b1edef7a2ac",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "dispositivos_tecnologicos_escuta",
+      "nomeAntes": "Escuta",
+      "nomeAtual": "Escuta",
+      "slugSugerido": "dispositivos_escuta",
+      "fonte": "de6d447ed1cf4f12828a302c13e791a2",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "dispositivos_tecnologicos_rastreador",
+      "nomeAntes": "Rastreador",
+      "nomeAtual": "Rastreador",
+      "slugSugerido": "dispositivos_rastreador",
+      "fonte": "022e77a0d91546829ff135c8ed499e12",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "dispositivos_tecnologicos_kit_de_intrusao_digital",
+      "nomeAntes": "Kit de intrusão digital",
+      "nomeAtual": "Kit de intrusão digital",
+      "slugSugerido": "dispositivos_kit_de_intrusao_digital",
+      "fonte": "14a20c8764db4ec49a0ebe54baab6e84",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "dispositivos_tecnologicos_scanner_de_sensores",
+      "nomeAntes": "Scanner de sensores",
+      "nomeAtual": "Scanner de sensores",
+      "slugSugerido": "dispositivos_scanner_de_sensores",
+      "fonte": "1b46c872b1a64574a97490d697454bdf",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "dispositivos_tecnologicos_bloqueador_de_sinal",
+      "nomeAntes": "Bloqueador de sinal",
+      "nomeAtual": "Bloqueador de sinal",
+      "slugSugerido": "dispositivos_bloqueador_de_sinal",
+      "fonte": "3ed98b58b0e243529b28ced836ed3c91",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_cartografia_acustica",
+      "nomeAntes": "Cartografia Acústica",
+      "nomeAtual": "Cartografia Acústica",
+      "slugSugerido": "escalpos_cartografia_acustica",
+      "fonte": "23e81b532c434e459db5fab4f998ce1a",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_escuta_ampliada",
+      "nomeAntes": "Escuta Ampliada",
+      "nomeAtual": "Escuta Ampliada",
+      "slugSugerido": "escalpos_escuta_ampliada",
+      "fonte": "b54dd7c54fba4370ac1668b000b89091",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_rastreador_sonoro",
+      "nomeAntes": "Rastreador Sonoro",
+      "nomeAtual": "Rastreador Sonoro",
+      "slugSugerido": "escalpos_rastreador_sonoro",
+      "fonte": "c45896cbab7f45918541caa4ff48daff",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_canal_criptografado",
+      "nomeAntes": "Canal Criptografado",
+      "nomeAtual": "Canal Criptografado",
+      "slugSugerido": "escalpos_canal_criptografado",
+      "fonte": "364eceb2c02f4d33ba4f6c5a13edfd17",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_gravador_de_audio",
+      "nomeAntes": "Gravador de Áudio",
+      "nomeAtual": "Gravador de Áudio",
+      "slugSugerido": "escalpos_gravador_de_audio",
+      "fonte": "d1d7b293dfb241c5968d1a051cae75ff",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_varredura_de_frequencia",
+      "nomeAntes": "Varredura de Frequência",
+      "nomeAtual": "Varredura de Frequência",
+      "slugSugerido": "escalpos_varredura_de_frequencia",
+      "fonte": "1dd8ffa351334da79ced58be5adb285b",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_placas_reforcadas",
+      "nomeAntes": "Placas Reforçadas",
+      "nomeAtual": "Placas Reforçadas",
+      "slugSugerido": "escalpos_placas_reforcadas",
+      "fonte": "79995e1e9b9a487ebed3eadedb54dcf4",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_travas_inerciais",
+      "nomeAntes": "Travas Inerciais",
+      "nomeAtual": "Travas Inerciais",
+      "slugSugerido": "escalpos_travas_inerciais",
+      "fonte": "df70108bde49412ebf9c46b91c546c61",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_atuadores_industriais",
+      "nomeAntes": "Atuadores Industriais",
+      "nomeAtual": "Atuadores Industriais",
+      "slugSugerido": "escalpos_atuadores_industriais",
+      "fonte": "08e1892f215b400996c12721e34c9c85",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_juntas_de_impacto",
+      "nomeAntes": "Juntas de Impacto",
+      "nomeAtual": "Juntas de Impacto",
+      "slugSugerido": "escalpos_juntas_de_impacto",
+      "fonte": "f78c1b43235349668342372590ce9393",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_pistoes_de_sobrecarga",
+      "nomeAntes": "Pistões de Sobrecarga",
+      "nomeAtual": "Pistões de Sobrecarga",
+      "slugSugerido": "escalpos_pistoes_de_sobrecarga",
+      "fonte": "7419b5c3d4674f54bedef7cf7b424579",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_fio_monomolecular",
+      "nomeAntes": "Fio Monomolecular",
+      "nomeAtual": "Fio Monomolecular",
+      "slugSugerido": "escalpos_fio_monomolecular",
+      "fonte": "ca03a49c641645159ba1abad64e41bd8",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_lamina_segmentada",
+      "nomeAntes": "Lâmina Segmentada",
+      "nomeAtual": "Lâmina Segmentada",
+      "slugSugerido": "escalpos_lamina_segmentada",
+      "fonte": "701c6caeee614e409f324a648eba8c13",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_compartimento_interno",
+      "nomeAntes": "Compartimento Interno",
+      "nomeAtual": "Compartimento Interno",
+      "slugSugerido": "escalpos_compartimento_interno",
+      "fonte": "7cfc19d43bb04303b5af8b165bfdefe0",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_estabilizador_de_precisao",
+      "nomeAntes": "Estabilizador de Precisão",
+      "nomeAtual": "Estabilizador de Precisão",
+      "slugSugerido": "escalpos_estabilizador_de_precisao",
+      "fonte": "74587c75ec5c406dbf139c48a3ee5b93",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_interface_palmar",
+      "nomeAntes": "Interface Palmar",
+      "nomeAtual": "Interface Palmar",
+      "slugSugerido": "escalpos_interface_palmar",
+      "fonte": "80eb8223322647c08bd0d8e2a7cc71e8",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_cabo_duplo",
+      "nomeAntes": "Cabo Duplo",
+      "nomeAtual": "Cabo Duplo",
+      "slugSugerido": "escalpos_cabo_duplo",
+      "fonte": "d74d4d28a335435baf1e1a9b660e375c",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_gancho_de_captura",
+      "nomeAntes": "Gancho de Captura",
+      "nomeAtual": "Gancho de Captura",
+      "slugSugerido": "escalpos_gancho_de_captura",
+      "fonte": "b32ef18a50914ed0846cc386416478bf",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_guincho_ampliado",
+      "nomeAntes": "Guincho Ampliado",
+      "nomeAtual": "Guincho Ampliado",
+      "slugSugerido": "escalpos_guincho_ampliado",
+      "fonte": "cbd515c9027640eabc6c39761dfde0be",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_aderencia_invertida",
+      "nomeAntes": "Aderência Invertida",
+      "nomeAtual": "Aderência Invertida",
+      "slugSugerido": "escalpos_aderencia_invertida",
+      "fonte": "a7e2f735bcec47ef9f592d569e718549",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_ancoras_plantares",
+      "nomeAntes": "Âncoras Plantares",
+      "nomeAtual": "Âncoras Plantares",
+      "slugSugerido": "escalpos_ancoras_plantares",
+      "fonte": "2c6f72fac5b04391b167a6d15acb2693",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_passos_de_seda",
+      "nomeAntes": "Passos de Seda",
+      "nomeAtual": "Passos de Seda",
+      "slugSugerido": "escalpos_passos_de_seda",
+      "fonte": "e7a796f76fa04dce821794e9aa541e84",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_amortecedores_de_queda",
+      "nomeAntes": "Amortecedores de Queda",
+      "nomeAtual": "Amortecedores de Queda",
+      "slugSugerido": "escalpos_amortecedores_de_queda",
+      "fonte": "81cfda41d17546959a238b804cc50520",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_onda_de_choque",
+      "nomeAntes": "Onda de Choque",
+      "nomeAtual": "Onda de Choque",
+      "slugSugerido": "escalpos_onda_de_choque",
+      "fonte": "d44f3eafa82b461aa117bc698560d77f",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_placas_de_propagacao",
+      "nomeAntes": "Placas de Propagação",
+      "nomeAtual": "Placas de Propagação",
+      "slugSugerido": "escalpos_placas_de_propagacao",
+      "fonte": "5bb7224275bc42e29c49f5272a490f53",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_queda_controlada",
+      "nomeAntes": "Queda Controlada",
+      "nomeAtual": "Queda Controlada",
+      "slugSugerido": "escalpos_queda_controlada",
+      "fonte": "9977e8ebf75e4957921deb76cb6f7e2f",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_sobrecarga_de_impulso",
+      "nomeAntes": "Sobrecarga de Impulso",
+      "nomeAtual": "Sobrecarga de Impulso",
+      "slugSugerido": "escalpos_sobrecarga_de_impulso",
+      "fonte": "6f746eb46d9f45d4b904e7c3556453be",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_tendoes_de_salto",
+      "nomeAntes": "Tendões de Salto",
+      "nomeAtual": "Tendões de Salto",
+      "slugSugerido": "escalpos_tendoes_de_salto",
+      "fonte": "5c21387541884bc7b1cd1cf043cc42e3",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_toxico",
+      "nomeAntes": "Tóxico",
+      "nomeAtual": "Tóxico",
+      "slugSugerido": "escalpos_toxico",
+      "fonte": "ac73841e81b74c44acaf1df23708e7df",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_paralisante",
+      "nomeAntes": "Paralisante",
+      "nomeAtual": "Paralisante",
+      "slugSugerido": "escalpos_paralisante",
+      "fonte": "4652b9412c9f4ba1b3c9e81f9d7f3978",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_sonifero",
+      "nomeAntes": "Sonífero",
+      "nomeAtual": "Sonífero",
+      "slugSugerido": "escalpos_sonifero",
+      "fonte": "43d8d0f4f9314ff0a587bdbe25762900",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_letal",
+      "nomeAntes": "Letal",
+      "nomeAtual": "Letal",
+      "slugSugerido": "escalpos_letal",
+      "fonte": "135d33791c0d492397ffc4907caf8c61",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_matriz_de_contrafluxo",
+      "nomeAntes": "Matriz de Contrafluxo",
+      "nomeAtual": "Matriz de Contrafluxo",
+      "slugSugerido": "escalpos_matriz_de_contrafluxo",
+      "fonte": "3371c990b27d473ca07a80587b698000",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_rastreador_ocular",
+      "nomeAntes": "Rastreador Ocular",
+      "nomeAtual": "Rastreador Ocular",
+      "slugSugerido": "escalpos_rastreador_ocular",
+      "fonte": "060bc4273b4142fc817034dcf2e2b284",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_replica_retinal",
+      "nomeAntes": "Réplica Retinal",
+      "nomeAtual": "Réplica Retinal",
+      "slugSugerido": "escalpos_replica_retinal",
+      "fonte": "6cfada4804fe4464a4a74f9f6f0e585d",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_filtro_atmosferico",
+      "nomeAntes": "Filtro Atmosférico",
+      "nomeAtual": "Filtro Atmosférico",
+      "slugSugerido": "escalpos_filtro_atmosferico",
+      "fonte": "0c6b79530a5f41d3a7d0eb8a39e230ec",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_gravador_optico",
+      "nomeAntes": "Gravador Óptico",
+      "nomeAtual": "Gravador Óptico",
+      "slugSugerido": "escalpos_gravador_optico",
+      "fonte": "421271b1340c47bd94ea2a05a4e4ecc4",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_visao_termica",
+      "nomeAntes": "Visão Térmica",
+      "nomeAtual": "Visão Térmica",
+      "slugSugerido": "escalpos_visao_termica",
+      "fonte": "9588263844954292a2393ebd5ce5b257",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_emissao_fotonica",
+      "nomeAntes": "Emissão Fotônica",
+      "nomeAtual": "Emissão Fotônica",
+      "slugSugerido": "escalpos_emissao_fotonica",
+      "fonte": "16e88cc1e420471391fda45ae9fc0362",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_projecao_ampliada",
+      "nomeAntes": "Projeção Ampliada",
+      "nomeAtual": "Projeção Ampliada",
+      "slugSugerido": "escalpos_projecao_ampliada",
+      "fonte": "c194d91ac464440ca847ecc72d8523cf",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_sobreposicao_enganosa",
+      "nomeAntes": "Sobreposição Enganosa",
+      "nomeAtual": "Sobreposição Enganosa",
+      "slugSugerido": "escalpos_sobreposicao_enganosa",
+      "fonte": "feaa753646fb40de902d88171bae7d92",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_leitor_clandestino_de_rpi",
+      "nomeAntes": "Leitor Clandestino de RPI",
+      "nomeAtual": "Leitor Clandestino de RPI",
+      "slugSugerido": "escalpos_leitor_clandestino_de_rpi",
+      "fonte": "2d50383cb3f64943bfc2a94c66ed9e19",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_dilatacao_temporal",
+      "nomeAntes": "Dilatação Temporal",
+      "nomeAtual": "Dilatação Temporal",
+      "slugSugerido": "escalpos_dilatacao_temporal",
+      "fonte": "fed43f532cce4fc69a86e2f37a34bc35",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_pagamento_escalonado",
+      "nomeAntes": "Pagamento Escalonado",
+      "nomeAtual": "Pagamento Escalonado",
+      "slugSugerido": "escalpos_pagamento_escalonado",
+      "fonte": "2440d1a3ecd8472890f62530674fb0b9",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_buffer_de_ram",
+      "nomeAntes": "Buffer de RAM",
+      "nomeAtual": "Buffer de RAM",
+      "slugSugerido": "escalpos_buffer_de_ram",
+      "fonte": "b2a8709a1cea40139f780c9c32a27a4c",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_contramedidas_automaticas",
+      "nomeAntes": "Contramedidas Automáticas",
+      "nomeAtual": "Contramedidas Automáticas",
+      "slugSugerido": "escalpos_contramedidas_automaticas",
+      "fonte": "e49c2ca138d849668891f9cd8f823133",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_veu_de_malha",
+      "nomeAntes": "Véu de Malha",
+      "nomeAtual": "Véu de Malha",
+      "slugSugerido": "escalpos_veu_de_malha",
+      "fonte": "af46d2684e5f49e39ee29362bda78317",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_alarme_de_intrusao",
+      "nomeAntes": "Alarme de Intrusão",
+      "nomeAtual": "Alarme de Intrusão",
+      "slugSugerido": "escalpos_alarme_de_intrusao",
+      "fonte": "546d28466ebc42f899dddbfc24d454b9",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_particao_mental",
+      "nomeAntes": "Partição Mental",
+      "nomeAtual": "Partição Mental",
+      "slugSugerido": "escalpos_particao_mental",
+      "fonte": "c627a2038d094e6eaf597ffd020a5fee",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_arquivo_mnemonico",
+      "nomeAntes": "Arquivo Mnemônico",
+      "nomeAtual": "Arquivo Mnemônico",
+      "slugSugerido": "escalpos_arquivo_mnemonico",
+      "fonte": "07c214d86d9841e093b00c129c7c0178",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_banco_de_memoria",
+      "nomeAntes": "Banco de Memória",
+      "nomeAtual": "Banco de Memória",
+      "slugSugerido": "escalpos_banco_de_memoria",
+      "fonte": "ee85065f6ca94f2bbbdadcb9bc73dfd9",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_tradutor_neural",
+      "nomeAntes": "Tradutor Neural",
+      "nomeAtual": "Tradutor Neural",
+      "slugSugerido": "escalpos_tradutor_neural",
+      "fonte": "336f92354eba499190747fefa2d01ad9",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "escalpos_cdi_craqueada",
+      "nomeAntes": "CDI Craqueada",
+      "nomeAtual": "CDI Craqueada",
+      "slugSugerido": "escalpos_cdi_craqueada",
+      "fonte": "a2ef5a5e4f9b4aa986627785b5de87cf",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "explosivos_granada_de_fumaca",
+      "nomeAntes": "Granada de fumaça",
+      "nomeAtual": "Granada de fumaça",
+      "slugSugerido": "explosivos_granada_de_fumaca",
+      "fonte": "7349b27bab824842884355b7faa0938c",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "explosivos_granada_de_luz",
+      "nomeAntes": "Granada de luz",
+      "nomeAtual": "Granada de luz",
+      "slugSugerido": "explosivos_granada_de_luz",
+      "fonte": "1854afa1a7dd4151817d854abe1a7e4c",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "explosivos_granada_de_choque",
+      "nomeAntes": "Granada de choque",
+      "nomeAtual": "Granada de choque",
+      "slugSugerido": "explosivos_granada_de_choque",
+      "fonte": "0281cfa041804b2fb2725c558761b5c4",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "explosivos_granada_de_acido",
+      "nomeAntes": "Granada de ácido",
+      "nomeAtual": "Granada de ácido",
+      "slugSugerido": "explosivos_granada_de_acido",
+      "fonte": "27ffb44cff674c9d802de36ecf560d17",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "explosivos_granada_criogenica",
+      "nomeAntes": "Granada criogênica",
+      "nomeAtual": "Granada criogênica",
+      "slugSugerido": "explosivos_granada_criogenica",
+      "fonte": "a319b1cdb6064b21a729f124e782020b",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "explosivos_granada_explosiva",
+      "nomeAntes": "Granada explosiva",
+      "nomeAtual": "Granada explosiva",
+      "slugSugerido": "explosivos_granada_explosiva",
+      "fonte": "c9d8c53d8e4c4e138761b62fdc773af5",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "explosivos_granada_pem",
+      "nomeAntes": "Granada PEM",
+      "nomeAtual": "Granada PEM",
+      "slugSugerido": "explosivos_granada_pem",
+      "fonte": "4d6a8096abd3445e9ac950ab8b19605a",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "explosivos_granada_irritante",
+      "nomeAntes": "Granada irritante",
+      "nomeAtual": "Granada irritante",
+      "slugSugerido": "explosivos_granada_irritante",
+      "fonte": "13de55944f9945dfb8cb168772033b00",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "explosivos_carga_explosiva_remota",
+      "nomeAntes": "Carga explosiva remota",
+      "nomeAtual": "Carga explosiva remota",
+      "slugSugerido": "explosivos_carga_explosiva_remota",
+      "fonte": "68122edd8cd14257a98d12449a5db12c",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "explosivos_mina_de_proximidade",
+      "nomeAntes": "Mina de proximidade",
+      "nomeAtual": "Mina de proximidade",
+      "slugSugerido": "explosivos_mina_de_proximidade",
+      "fonte": "1f4d6208332e4ade80b3d8f45438892e",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "farmacia_kit_de_estabilizacao_pv",
+      "nomeAntes": "Kit de estabilização (PV)",
+      "nomeAtual": "Kit de estabilização (PV)",
+      "slugSugerido": "farmacia_kit_de_estabilizacao_pv",
+      "fonte": "390867b071fa48c48533f48eb4f66ce9",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "farmacia_kit_de_estabilizacao_pe",
+      "nomeAntes": "Kit de estabilização (PE)",
+      "nomeAtual": "Kit de estabilização (PE)",
+      "slugSugerido": "farmacia_kit_de_estabilizacao_pe",
+      "fonte": "60ded08f91f74e4dbc71442e4c4c3f36",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "farmacia_ansiolitico",
+      "nomeAntes": "Ansiolítico",
+      "nomeAtual": "Ansiolítico",
+      "slugSugerido": "farmacia_ansiolitico",
+      "fonte": "e72ff808ddf341fa9e692e9e01575ad5",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "farmacia_estimulante_neuromotor",
+      "nomeAntes": "Estimulante neuromotor",
+      "nomeAtual": "Estimulante neuromotor",
+      "slugSugerido": "farmacia_estimulante_neuromotor",
+      "fonte": "faf8c40345ab435aa4317b856e6508a3",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "farmacia_antidoto",
+      "nomeAntes": "Antídoto",
+      "nomeAtual": "Antídoto",
+      "slugSugerido": "farmacia_antidoto",
+      "fonte": "9b665bc5261b4d9297006128ccaaa766",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "farmacia_medkit",
+      "nomeAntes": "Medkit",
+      "nomeAtual": "Medkit",
+      "slugSugerido": "farmacia_medkit",
+      "fonte": "74913ee4beab44949033ae80b4f628bb",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "farmacia_estabilizador_de_humor",
+      "nomeAntes": "Estabilizador de humor",
+      "nomeAtual": "Estabilizador de humor",
+      "slugSugerido": "farmacia_estabilizador_de_humor",
+      "fonte": "e46407e4bb2b4e1599125a516259ff16",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "farmacia_soro_anti_psiquico",
+      "nomeAntes": "Soro anti-psíquico",
+      "nomeAtual": "Soro anti-psíquico",
+      "slugSugerido": "farmacia_soro_anti_psiquico",
+      "fonte": "db7133e016244bd19c031b0e9a7cd3c5",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "farmacia_injetor_de_adrenalina",
+      "nomeAntes": "Injetor de adrenalina",
+      "nomeAtual": "Injetor de adrenalina",
+      "slugSugerido": "farmacia_injetor_de_adrenalina",
+      "fonte": "ae195871c4e24abb9b43635e4f98913c",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "farmacia_injetor_nanocurativo",
+      "nomeAntes": "Injetor nanocurativo",
+      "nomeAtual": "Injetor nanocurativo",
+      "slugSugerido": "farmacia_injetor_nanocurativo",
+      "fonte": "c97e4d0a437841ff92e3d0ee290f69f0",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "ferramentas_e_utilidades_papel_runico",
+      "nomeAntes": "Papel rúnico",
+      "nomeAtual": "Papel rúnico",
+      "slugSugerido": "ferramentas_papel_runico",
+      "fonte": "b34e44a81616479b9c56c09d13910879",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "ferramentas_e_utilidades_bateria_runica",
+      "nomeAntes": "Bateria rúnica",
+      "nomeAtual": "Bateria rúnica",
+      "slugSugerido": "ferramentas_bateria_runica",
+      "fonte": "4accb27d655e499184920762c3b725f6",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "ferramentas_e_utilidades_lanterna_runica",
+      "nomeAntes": "Lanterna rúnica",
+      "nomeAtual": "Lanterna rúnica",
+      "slugSugerido": "ferramentas_lanterna_runica",
+      "fonte": "1f3f13680c30444ab61881fd90b4ff81",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "ferramentas_e_utilidades_spray_adesivo",
+      "nomeAntes": "Spray adesivo",
+      "nomeAtual": "Spray adesivo",
+      "slugSugerido": "ferramentas_spray_adesivo",
+      "fonte": "800957b82f4f4c2bafa8dd09f211b3c6",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "ferramentas_e_utilidades_kit_de_contencao",
+      "nomeAntes": "Kit de contenção",
+      "nomeAtual": "Kit de contenção",
+      "slugSugerido": "ferramentas_kit_de_contencao",
+      "fonte": "1c127c3c28194d6ca67a5e8e4834ef4f",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "ferramentas_e_utilidades_kit_de_lock_picking",
+      "nomeAntes": "Kit de lock picking",
+      "nomeAtual": "Kit de lock picking",
+      "slugSugerido": "ferramentas_kit_de_lock_picking",
+      "fonte": "bc783159e8c340e7a9a9582d42c6bf03",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "ferramentas_e_utilidades_kit_de_reparo",
+      "nomeAntes": "Kit de reparo",
+      "nomeAtual": "Kit de reparo",
+      "slugSugerido": "ferramentas_kit_de_reparo",
+      "fonte": "f741acabd5ce433c9251f2656c9942ce",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "ferramentas_e_utilidades_kit_de_rastreamento",
+      "nomeAntes": "Kit de rastreamento",
+      "nomeAtual": "Kit de rastreamento",
+      "slugSugerido": "ferramentas_kit_de_rastreamento",
+      "fonte": "a7f800f1bb9649ad805408b47cccb04b",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "ferramentas_e_utilidades_detergente_enzimatico",
+      "nomeAntes": "Detergente enzimático",
+      "nomeAtual": "Detergente enzimático",
+      "slugSugerido": "ferramentas_detergente_enzimatico",
+      "fonte": "731c40b2f6a24d61b2d73e7f65c462a3",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "ferramentas_e_utilidades_tinta_runica_invisivel",
+      "nomeAntes": "Tinta rúnica invisível",
+      "nomeAtual": "Tinta rúnica invisível",
+      "slugSugerido": "ferramentas_tinta_runica_invisivel",
+      "fonte": "ebaac47706c74cfabf7c34958d128de9",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "ferramentas_e_utilidades_corda_runica",
+      "nomeAntes": "Corda rúnica",
+      "nomeAtual": "Corda rúnica",
+      "slugSugerido": "ferramentas_corda_runica",
+      "fonte": "375569c2145043caa1ff92fd5c98ec15",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "ferramentas_e_utilidades_kit_de_tirolesa",
+      "nomeAntes": "Kit de Tirolesa",
+      "nomeAtual": "Kit de Tirolesa",
+      "slugSugerido": "ferramentas_kit_de_tirolesa",
+      "fonte": "403abea710574282953f9ef7e962c408",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "ferramentas_e_utilidades_ascensor_motorizado",
+      "nomeAntes": "Ascensor Motorizado",
+      "nomeAtual": "Ascensor Motorizado",
+      "slugSugerido": "ferramentas_ascensor_motorizado",
+      "fonte": "d500cf3de9294bf090293d2c99134f7f",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "ferramentas_e_utilidades_solas_antiderrapantes",
+      "nomeAntes": "Solas Antiderrapantes",
+      "nomeAtual": "Solas Antiderrapantes",
+      "slugSugerido": "ferramentas_solas_antiderrapantes",
+      "fonte": "9089d8148824412f861d3140f13c4b64",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_aerovoile",
+      "nomeAntes": "Aérovoile",
+      "nomeAtual": "Aérovoile",
+      "slugSugerido": "mobilidade_aerovoile",
+      "fonte": "461ff5336e4e48c8a4cff1722b2b61f1",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_bicicleta",
+      "nomeAntes": "Bicicleta",
+      "nomeAtual": "Bicicleta",
+      "slugSugerido": "mobilidade_bicicleta",
+      "fonte": "c8dfb32484d74a0eb326eff5531f2c36",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_cabestan_i",
+      "nomeAntes": "Cabestan I",
+      "nomeAtual": "Cabestan I",
+      "slugSugerido": "mobilidade_cabestan_i",
+      "fonte": "8d0c06c2c1064dccb73d05fe89ce837d",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_cabestan_ii",
+      "nomeAntes": "Cabestan II",
+      "nomeAtual": "Cabestan II",
+      "slugSugerido": "mobilidade_cabestan_ii",
+      "fonte": "7025802c5e764b99b84b0d1db8952f55",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_hoverboard",
+      "nomeAntes": "Hoverboard",
+      "nomeAtual": "Hoverboard",
+      "slugSugerido": "mobilidade_hoverboard",
+      "fonte": "dd9ab57bc5a44bec9444cb4d3a8b053a",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_icarus_i",
+      "nomeAntes": "Icarus I",
+      "nomeAtual": "Icarus I",
+      "slugSugerido": "mobilidade_icarus_i",
+      "fonte": "80cdf32fe55446b2bd0ec372485c10e3",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_icarus_ii",
+      "nomeAntes": "Icarus II",
+      "nomeAtual": "Icarus II",
+      "slugSugerido": "mobilidade_icarus_ii",
+      "fonte": "267822f7974e4fa192bf7c46ede140ce",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_icarus_iii",
+      "nomeAntes": "Icarus III",
+      "nomeAtual": "Icarus III",
+      "slugSugerido": "mobilidade_icarus_iii",
+      "fonte": "669aec2956b64e8285dedf71289229b1",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_luvas_de_escalada",
+      "nomeAntes": "Luvas de Escalada",
+      "nomeAtual": "Luvas de Escalada",
+      "slugSugerido": "mobilidade_luvas_de_escalada",
+      "fonte": "6c34493fb73642dfb1eb50eb8c5628f4",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_magboots",
+      "nomeAntes": "Magboots",
+      "nomeAtual": "Magboots",
+      "slugSugerido": "mobilidade_magboots",
+      "fonte": "4c54162752ae4e0381cb926695202072",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_patinete_eletrico",
+      "nomeAntes": "Patinete Elétrico",
+      "nomeAtual": "Patinete Elétrico",
+      "slugSugerido": "mobilidade_patinete_eletrico",
+      "fonte": "257fd95a5b8c4fc5b5a05ae4c11aa439",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_rollsyns",
+      "nomeAntes": "Rollsyns",
+      "nomeAtual": "Rollsyns",
+      "slugSugerido": "mobilidade_rollsyns",
+      "fonte": "f1eb0b9da61d4778a4b80b95e37a5e17",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_skate",
+      "nomeAntes": "Skate",
+      "nomeAtual": "Skate",
+      "slugSugerido": "mobilidade_skate",
+      "fonte": "53039e271c9343d7a27b12fbf1a70a22",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_boran_t6",
+      "nomeAntes": "BORAN T6",
+      "nomeAtual": "BORAN T6",
+      "slugSugerido": "mobilidade_boran_t6",
+      "fonte": "3f30a136355280bd9419c882e19a779d",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_karden_r5",
+      "nomeAntes": "KARDEN R5",
+      "nomeAtual": "KARDEN R5",
+      "slugSugerido": "mobilidade_karden_r5",
+      "fonte": "19c3688b45ad416da69ec7446acdc23e",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_orison_via",
+      "nomeAntes": "ORISON VIA",
+      "nomeAtual": "ORISON VIA",
+      "slugSugerido": "mobilidade_orison_via",
+      "fonte": "1b8fae7bff9344959d2a2a72c68f04c6",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_veyra_n4",
+      "nomeAntes": "VEYRA N4",
+      "nomeAtual": "VEYRA N4",
+      "slugSugerido": "mobilidade_veyra_n4",
+      "fonte": "973ceb56afae4bfc98907471825590cf",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_veyra_n6",
+      "nomeAntes": "VEYRA N6",
+      "nomeAtual": "VEYRA N6",
+      "slugSugerido": "mobilidade_veyra_n6",
+      "fonte": "9a8c8891dda44cb88aa16791694eb4bd",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_veyra_nx",
+      "nomeAntes": "VEYRA NX",
+      "nomeAtual": "VEYRA NX",
+      "slugSugerido": "mobilidade_veyra_nx",
+      "fonte": "c7d42e2fc6b6483db691dff54dd34422",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_veyra_t7",
+      "nomeAntes": "VEYRA T7",
+      "nomeAtual": "VEYRA T7",
+      "slugSugerido": "mobilidade_veyra_t7",
+      "fonte": "3f30a136355280d8a28af4d3b3f4d01d",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_aera_c2",
+      "nomeAntes": "AERA C2",
+      "nomeAtual": "AERA C2",
+      "slugSugerido": "mobilidade_aera_c2",
+      "fonte": "808d1f39f9e549da8a6bf6d686f448e6",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_velys_atrium",
+      "nomeAntes": "VELYS ATRIUM",
+      "nomeAtual": "VELYS ATRIUM",
+      "slugSugerido": "mobilidade_velys_atrium",
+      "fonte": "9d7a418cd077448e97ad0d2dbc793143",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_soryn_m2",
+      "nomeAntes": "SORYN M2",
+      "nomeAtual": "SORYN M2",
+      "slugSugerido": "mobilidade_soryn_m2",
+      "fonte": "2e2a789cac9a4efca730d5289c7d4e03",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_soryn_vanta",
+      "nomeAntes": "SORYN VANTA",
+      "nomeAtual": "SORYN VANTA",
+      "slugSugerido": "mobilidade_soryn_vanta",
+      "fonte": "0e1e2d108bba4763862d9e52a3b755b6",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_nyxen_lark",
+      "nomeAntes": "NYXEN LARK",
+      "nomeAtual": "NYXEN LARK",
+      "slugSugerido": "mobilidade_nyxen_lark",
+      "fonte": "7a7dceef8095472ea864ccae5528c140",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_nyxen_raze",
+      "nomeAntes": "NYXEN RAZE",
+      "nomeAtual": "NYXEN RAZE",
+      "slugSugerido": "mobilidade_nyxen_raze",
+      "fonte": "038f77f54d9c4d8889486e767e2bc33a",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_velys_iris",
+      "nomeAntes": "VELYS IRIS",
+      "nomeAtual": "VELYS IRIS",
+      "slugSugerido": "mobilidade_velys_iris",
+      "fonte": "90b5ee0cb054485e981534e3af49fda5",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_aera_l8",
+      "nomeAntes": "AERA L8",
+      "nomeAtual": "AERA L8",
+      "slugSugerido": "mobilidade_aera_l8",
+      "fonte": "3f30a136355280bd8e4ac3314b195a63",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_boran_m8",
+      "nomeAntes": "BORAN M8",
+      "nomeAtual": "BORAN M8",
+      "slugSugerido": "mobilidade_boran_m8",
+      "fonte": "bd7d82dc2b1c4e29adf65e37452a4e09",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_boran_m12",
+      "nomeAntes": "BORAN M12",
+      "nomeAtual": "BORAN M12",
+      "slugSugerido": "mobilidade_boran_m12",
+      "fonte": "90966c5a2b9342a6b1d9a98f62e93f34",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_orison_vecta",
+      "nomeAntes": "ORISON VECTA",
+      "nomeAtual": "ORISON VECTA",
+      "slugSugerido": "mobilidade_orison_vecta",
+      "fonte": "3f30a13635528085a794d6c66908cfb6",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_baia_de_unidades",
+      "nomeAntes": "BAIA DE UNIDADES",
+      "nomeAtual": "BAIA DE UNIDADES",
+      "slugSugerido": "mobilidade_baia_de_unidades",
+      "fonte": "eb5cabcd168d40c4880fd849c6349409",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_compartimento_oculto",
+      "nomeAntes": "COMPARTIMENTO OCULTO",
+      "nomeAtual": "COMPARTIMENTO OCULTO",
+      "slugSugerido": "mobilidade_compartimento_oculto",
+      "fonte": "fcc56b17a0d14f14a69e0373e9e32c05",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_modulo_de_transporte",
+      "nomeAntes": "MÓDULO DE TRANSPORTE",
+      "nomeAtual": "MÓDULO DE TRANSPORTE",
+      "slugSugerido": "mobilidade_modulo_de_transporte",
+      "fonte": "2f029bdc2d684f9480bda94adfe79d6f",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_modulo_clinica",
+      "nomeAntes": "MÓDULO-CLÍNICA",
+      "nomeAtual": "MÓDULO-CLÍNICA",
+      "slugSugerido": "mobilidade_modulo_clinica",
+      "fonte": "b8cbf705a97c4cfa9c10400762ac67a4",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_modulo_gerador",
+      "nomeAntes": "MÓDULO-GERADOR",
+      "nomeAtual": "MÓDULO-GERADOR",
+      "slugSugerido": "mobilidade_modulo_gerador",
+      "fonte": "30a22dcbd35044c7a4a7bcd0a37be905",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "mobilidade_modulo_oficina",
+      "nomeAntes": "MÓDULO-OFICINA",
+      "nomeAtual": "MÓDULO-OFICINA",
+      "slugSugerido": "mobilidade_modulo_oficina",
+      "fonte": "30dce4a2fc44409391c28c09075bfac6",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "trajes_daemon_i",
+      "nomeAntes": "Daemon I",
+      "nomeAtual": "Daemon I",
+      "slugSugerido": "trajes_daemon_i",
+      "fonte": "2deb88d389674695abcd6673ea9c5193",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "trajes_daemon_ii",
+      "nomeAntes": "Daemon II",
+      "nomeAtual": "Daemon II",
+      "slugSugerido": "trajes_daemon_ii",
+      "fonte": "e509d8ae4241480896280ff47e22ca00",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "trajes_daemon_iii",
+      "nomeAntes": "Daemon III",
+      "nomeAtual": "Daemon III",
+      "slugSugerido": "trajes_daemon_iii",
+      "fonte": "376d1990a24f43fc9e46a639b7ad6e5b",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "trajes_eclipse",
+      "nomeAntes": "Eclipse",
+      "nomeAtual": "Eclipse",
+      "slugSugerido": "trajes_eclipse",
+      "fonte": "ca7df2d4dabb4ae3a4e5f02479a72fd9",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "trajes_parallax",
+      "nomeAntes": "Parallax",
+      "nomeAtual": "Parallax",
+      "slugSugerido": "trajes_parallax",
+      "fonte": "d8e538c92fc84c199ee062ae3e078c71",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "trajes_trauma_suit",
+      "nomeAntes": "Trauma Suit",
+      "nomeAtual": "Trauma Suit",
+      "slugSugerido": "trajes_trauma_suit",
+      "fonte": "1036de7b55984fe6ac2059e7ab9e87f4",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "vertinas_manta",
+      "nomeAntes": "Manta",
+      "nomeAtual": "Manta",
+      "slugSugerido": "vertinas_manta",
+      "fonte": "238831ccf25840dba18539922c93d377",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "vertinas_beijo_de_bruxa",
+      "nomeAntes": "Beijo de bruxa",
+      "nomeAtual": "Beijo de bruxa",
+      "slugSugerido": "vertinas_beijo_de_bruxa",
+      "fonte": "fd793f7491c1497498d022972b51b332",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "vertinas_lotus",
+      "nomeAntes": "Lótus",
+      "nomeAtual": "Lótus",
+      "slugSugerido": "vertinas_lotus",
+      "fonte": "97496f6f1fcd461491a88b614cac095e",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "vertinas_zenite",
+      "nomeAntes": "Zênite",
+      "nomeAtual": "Zênite",
+      "slugSugerido": "vertinas_zenite",
+      "fonte": "3ff57098489d4082b39895ce4aa030ea",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "vertinas_relicario",
+      "nomeAntes": "Relicário",
+      "nomeAtual": "Relicário",
+      "slugSugerido": "vertinas_relicario",
+      "fonte": "95bc435a71034401968c3d87b7d83574",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "vertinas_raio_negro",
+      "nomeAntes": "Raio negro",
+      "nomeAtual": "Raio negro",
+      "slugSugerido": "vertinas_raio_negro",
+      "fonte": "e53020f613cd4da6bddb9a6d7e21b9a8",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "vertinas_marola",
+      "nomeAntes": "Marola",
+      "nomeAtual": "Marola",
+      "slugSugerido": "vertinas_marola",
+      "fonte": "d2d54aeefcd0477fa37e8e83d3ec0020",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "item",
+      "slug": "vertinas_azulzinha",
+      "nomeAntes": "Azulzinha",
+      "nomeAtual": "Azulzinha",
+      "slugSugerido": "vertinas_azulzinha",
+      "fonte": "c2f2eb73427447219ceb9547ebdf0b45",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_retratil",
+      "nomeAntes": "Retrátil",
+      "nomeAtual": "Retrátil",
+      "slugSugerido": "armas_retratil",
+      "fonte": "47eb39937e8d43b78dec2628d1fb82f6",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_impeto",
+      "nomeAntes": "Ímpeto",
+      "nomeAtual": "Ímpeto",
+      "slugSugerido": "armas_impeto",
+      "fonte": "baed96cb4db14eb4bb3ffeec49805263",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_armas_corpo_a_corpo_silenciadora",
+      "nomeAntes": "Silenciadora",
+      "nomeAtual": "Silenciadora",
+      "slugSugerido": "armas_runas_silenciadora_4a7421",
+      "fonte": "4a742116c46e40dc973425a33063afc5",
+      "criterio": "nome_e_aplicacao_na_mesma_pagina"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_finta",
+      "nomeAntes": "Finta",
+      "nomeAtual": "Finta",
+      "slugSugerido": "armas_finta",
+      "fonte": "398cb0e380214cf49955d2976c848f08",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_clarao",
+      "nomeAntes": "Clarão",
+      "nomeAtual": "Clarão",
+      "slugSugerido": "armas_clarao",
+      "fonte": "fdd73a88f0d645cbaebba70f08bae770",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_armas_corpo_a_corpo_flamejante",
+      "nomeAntes": "Flamejante",
+      "nomeAtual": "Flamejante",
+      "slugSugerido": "armas_runas_flamejante",
+      "fonte": "d9d4234e578242ce9cccccd3f0e8da40",
+      "criterio": "nome_e_aplicacao_na_mesma_pagina"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_eletrizante",
+      "nomeAntes": "Eletrizante",
+      "nomeAtual": "Eletrizante",
+      "slugSugerido": "armas_eletrizante",
+      "fonte": "dedaf4e5c7aa4b8ea034fd41a89f75b3",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_armas_corpo_a_corpo_toxica_137c82",
+      "nomeAntes": "Tóxica",
+      "nomeAtual": "Tóxica",
+      "slugSugerido": "armas_runas_toxica_5cbc28",
+      "fonte": "5cbc2815911c41668e23fb6fa4cd59ea",
+      "criterio": "nome_e_aplicacao_na_mesma_pagina"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_ruina",
+      "nomeAntes": "Ruína",
+      "nomeAtual": "Ruína",
+      "slugSugerido": "armas_ruina",
+      "fonte": "e9cafa4ce9224a86a5dbb7a8eb4bea23",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_voragem",
+      "nomeAntes": "Voragem",
+      "nomeAtual": "Voragem",
+      "slugSugerido": "armas_voragem",
+      "fonte": "272d634cdea746e5a48cf17c8423864e",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_frenesi",
+      "nomeAntes": "Frenesi",
+      "nomeAtual": "Frenesi",
+      "slugSugerido": "armas_frenesi",
+      "fonte": "2f7cc859b74a4a80b1bde6ca95627581",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_batedora",
+      "nomeAntes": "Batedora",
+      "nomeAtual": "Batedora",
+      "slugSugerido": "armas_batedora",
+      "fonte": "68ce3f1b25bb431caa370ac94b9e7878",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_armas_de_arremesso_e_disparo_serpentina",
+      "nomeAntes": "Serpentina",
+      "nomeAtual": "Serpentina",
+      "slugSugerido": "armas_serpentina",
+      "fonte": "46106d76f145428eb455893cb8b6857f",
+      "criterio": "nome_e_aplicacao_na_mesma_pagina"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_sombra",
+      "nomeAntes": "Sombra",
+      "nomeAtual": "Sombra",
+      "slugSugerido": "armas_sombra",
+      "fonte": "653105fd22d04409b8385077a4ce0c2e",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_armas_de_arremesso_e_disparo_ricochete",
+      "nomeAntes": "Ricochete",
+      "nomeAtual": "Ricochete",
+      "slugSugerido": "armas_ricochete",
+      "fonte": "e5d0fe4afba34954acc21f38f9cf30cd",
+      "criterio": "nome_e_aplicacao_na_mesma_pagina"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_camuflagem",
+      "nomeAntes": "Camuflagem",
+      "nomeAtual": "Camuflagem",
+      "slugSugerido": "armas_camuflagem",
+      "fonte": "b11c6a50b3ab46b6a47b9b14f0ddab01",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_armas_de_arremesso_e_disparo_toxica_f5d0f7",
+      "nomeAntes": "Tóxica",
+      "nomeAtual": "Tóxica",
+      "slugSugerido": "armas_runas_toxica_dde666",
+      "fonte": "dde666af12b5408b91f82cdf7f41d623",
+      "criterio": "nome_e_aplicacao_na_mesma_pagina"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_armas_de_fogo_silenciadora",
+      "nomeAntes": "Silenciadora",
+      "nomeAtual": "Silenciadora",
+      "slugSugerido": "armas_runas_silenciadora_02e575",
+      "fonte": "02e57510850a44f78ed9a175df274b04",
+      "criterio": "nome_e_aplicacao_na_mesma_pagina"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_rastreadora",
+      "nomeAntes": "Rastreadora",
+      "nomeAtual": "Rastreadora",
+      "slugSugerido": "armas_rastreadora",
+      "fonte": "aa704edb61194114996a59f8fcf44039",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_pente_fantasma",
+      "nomeAntes": "Pente Fantasma",
+      "nomeAtual": "Pente Fantasma",
+      "slugSugerido": "armas_pente_fantasma",
+      "fonte": "176597f802fb479d8720bf3cca0c0f34",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_atordoante",
+      "nomeAntes": "Atordoante",
+      "nomeAtual": "Atordoante",
+      "slugSugerido": "armas_atordoante",
+      "fonte": "740dd176c7bc4b299378168b75d1d0a3",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_cadencia",
+      "nomeAntes": "Cadência",
+      "nomeAtual": "Cadência",
+      "slugSugerido": "armas_cadencia",
+      "fonte": "5035aca49cf14eaf9bd9d737d8b02a82",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_armas_de_fogo_estabilidade",
+      "nomeAntes": "Estabilidade",
+      "nomeAtual": "Estabilidade",
+      "slugSugerido": "armas_runas_estabilidade_d7217d",
+      "fonte": "d7217dd3106d440aa20b6b84d882f473",
+      "criterio": "nome_e_aplicacao_na_mesma_pagina"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_potencia",
+      "nomeAntes": "Potência",
+      "nomeAtual": "Potência",
+      "slugSugerido": "armas_potencia",
+      "fonte": "f6c3d8c85d1247e1859e3693c6029b88",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_recirculacao",
+      "nomeAntes": "Recirculação",
+      "nomeAtual": "Recirculação",
+      "slugSugerido": "armas_recirculacao",
+      "fonte": "6137dc5a14f14895a8f4878cb755462c",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_contencao",
+      "nomeAntes": "Contenção",
+      "nomeAtual": "Contenção",
+      "slugSugerido": "armas_contencao",
+      "fonte": "d9d80110e0604cdcb10bb1751d9df3d0",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_focalizacao",
+      "nomeAntes": "Focalização",
+      "nomeAtual": "Focalização",
+      "slugSugerido": "armas_focalizacao",
+      "fonte": "0111efa816254a539eaa1358c07016c8",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_armas_de_energia_estabilidade",
+      "nomeAntes": "Estabilidade",
+      "nomeAtual": "Estabilidade",
+      "slugSugerido": "armas_runas_estabilidade_455f31",
+      "fonte": "455f3171b7ab49ac83a66dda9fdd5b85",
+      "criterio": "nome_e_aplicacao_na_mesma_pagina"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_amplificacao",
+      "nomeAntes": "Amplificação",
+      "nomeAtual": "Amplificação",
+      "slugSugerido": "armas_amplificacao",
+      "fonte": "c1d58f9058144cbd8af33f58c6c50390",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_eficiencia",
+      "nomeAntes": "Eficiência",
+      "nomeAtual": "Eficiência",
+      "slugSugerido": "armas_eficiencia",
+      "fonte": "21ccdaeec85647f9b6442ec0e2c01fea",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_saturacao",
+      "nomeAntes": "Saturação",
+      "nomeAtual": "Saturação",
+      "slugSugerido": "armas_saturacao",
+      "fonte": "285686fd802740b8a803d391a130fc0d",
+      "criterio": "slug_existente"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armaduras_e_escudos_armaduras_autorreparo",
+      "nomeAntes": "Autorreparo",
+      "nomeAtual": "Autorreparo",
+      "slugSugerido": "armaduras_e_escudos_armaduras_autorreparo",
+      "fonte": "829b78094ae6451594ee642d92f7aa0b",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armaduras_e_escudos_disfarce",
+      "nomeAntes": "Disfarce",
+      "nomeAtual": "Disfarce",
+      "slugSugerido": "armaduras_e_escudos_disfarce",
+      "fonte": "a0c5fc264d6847dcabcace2ca2db74ed",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armaduras_e_escudos_rebote",
+      "nomeAntes": "Rebote",
+      "nomeAtual": "Rebote",
+      "slugSugerido": "armaduras_e_escudos_rebote",
+      "fonte": "776b7ffbe3314ae8a7a12756107d0dc2",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armaduras_e_escudos_isolante",
+      "nomeAntes": "Isolante",
+      "nomeAtual": "Isolante",
+      "slugSugerido": "armaduras_e_escudos_isolante",
+      "fonte": "ffa8b98f989d4adfaa0bcd17cdb68f49",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armaduras_e_escudos_regeneracao",
+      "nomeAntes": "Regeneração",
+      "nomeAtual": "Regeneração",
+      "slugSugerido": "armaduras_e_escudos_regeneracao",
+      "fonte": "adcd1cbc86e74939bc12097f0b5efcac",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armaduras_e_escudos_armaduras_dissipacao",
+      "nomeAntes": "Dissipação",
+      "nomeAtual": "Dissipação",
+      "slugSugerido": "armaduras_e_escudos_armaduras_dissipacao",
+      "fonte": "ed96ffb9ddb44a91819b7ec9a2975ede",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armaduras_e_escudos_escudos_autorreparo",
+      "nomeAntes": "Autorreparo",
+      "nomeAtual": "Autorreparo",
+      "slugSugerido": "armaduras_e_escudos_escudos_autorreparo",
+      "fonte": "91bbc52fe3ad4142a9a09bb73d1d377b",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armaduras_e_escudos_retratil",
+      "nomeAntes": "Retrátil",
+      "nomeAtual": "Retrátil",
+      "slugSugerido": "armaduras_e_escudos_retratil",
+      "fonte": "b3e09d67a0804bd5a81cdcc8fbf68a17",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armaduras_e_escudos_clarao",
+      "nomeAntes": "Clarão",
+      "nomeAtual": "Clarão",
+      "slugSugerido": "armaduras_e_escudos_clarao",
+      "fonte": "b36b4aad5e41481cbc01e36e90c2437a",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armaduras_e_escudos_blindagem",
+      "nomeAntes": "Blindagem",
+      "nomeAtual": "Blindagem",
+      "slugSugerido": "armaduras_e_escudos_blindagem",
+      "fonte": "4b35243111b841f9af4a466891780cce",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armaduras_e_escudos_escudos_dissipacao",
+      "nomeAntes": "Dissipação",
+      "nomeAtual": "Dissipação",
+      "slugSugerido": "armaduras_e_escudos_escudos_dissipacao",
+      "fonte": "404246c2b2db44afb75c7262beeb929a",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armaduras_e_escudos_interceptacao",
+      "nomeAntes": "Interceptação",
+      "nomeAtual": "Interceptação",
+      "slugSugerido": "armaduras_e_escudos_interceptacao",
+      "fonte": "da8dc38bddc84ef68c8c28b6585bbc0e",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armaduras_e_escudos_guarda",
+      "nomeAntes": "Guarda",
+      "nomeAtual": "Guarda",
+      "slugSugerido": "armaduras_e_escudos_guarda",
+      "fonte": "665098d9dbb646b2a59197b50e2277e5",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "drones_e_robos_autorreparo",
+      "nomeAntes": "Autorreparo",
+      "nomeAtual": "Autorreparo",
+      "slugSugerido": "drones_e_robos_autorreparo",
+      "fonte": "cad05994d6e2472891defbf2852d6e10",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "drones_e_robos_camuflagem",
+      "nomeAntes": "Camuflagem",
+      "nomeAtual": "Camuflagem",
+      "slugSugerido": "drones_e_robos_camuflagem",
+      "fonte": "e9f0eb882bf847459b9576024325456a",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "drones_e_robos_alcance",
+      "nomeAntes": "Alcance",
+      "nomeAtual": "Alcance",
+      "slugSugerido": "drones_e_robos_alcance",
+      "fonte": "a16711d6382042c393b2c8dec259ddee",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "drones_e_robos_interferencia",
+      "nomeAntes": "Interferência",
+      "nomeAtual": "Interferência",
+      "slugSugerido": "drones_e_robos_interferencia",
+      "fonte": "0e46a07f55fe42a6b55d8d25d85d2aa9",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "rune",
+      "slug": "drones_e_robos_energia",
+      "nomeAntes": "Energia",
+      "nomeAtual": "Energia",
+      "slugSugerido": "drones_e_robos_energia",
+      "fonte": "255f1530e9fb4935a9e42e4258425075",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_ouvidos_de_cacador",
+      "nomeAntes": "Ouvidos de Caçador",
+      "nomeAtual": "Ouvidos de Caçador",
+      "slugSugerido": "escalpos_ouvidos_de_cacador",
+      "fonte": "6464711d41fe4b309aaefa1e2d2bd99e",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_transceptor_coclear",
+      "nomeAntes": "Transceptor Coclear",
+      "nomeAtual": "Transceptor Coclear",
+      "slugSugerido": "escalpos_transceptor_coclear",
+      "fonte": "0ce4fb2c883f4b2aa80c331a83280866",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_bracos_egide",
+      "nomeAntes": "Braços Égide",
+      "nomeAtual": "Braços Égide",
+      "slugSugerido": "escalpos_bracos_egide",
+      "fonte": "b71d499894ff4ef28da73e71c6b2e496",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_bracos_gorila",
+      "nomeAntes": "Braços Gorila",
+      "nomeAtual": "Braços Gorila",
+      "slugSugerido": "escalpos_bracos_gorila",
+      "fonte": "d9cb67ea2b2d4deea31b04d2f8b3e9b1",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_bracos_lamina",
+      "nomeAntes": "Braços-Lâmina",
+      "nomeAtual": "Braços-Lâmina",
+      "slugSugerido": "escalpos_bracos_lamina",
+      "fonte": "eadfa45184e847c89a6a90acac651b71",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_bracos_polimorficos",
+      "nomeAntes": "Braços Polimórficos",
+      "nomeAtual": "Braços Polimórficos",
+      "slugSugerido": "escalpos_bracos_polimorficos",
+      "fonte": "56ec157301cf4411afc0d82a2394b112",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_bracos_vetoriais",
+      "nomeAntes": "Braços Vetoriais",
+      "nomeAtual": "Braços Vetoriais",
+      "slugSugerido": "escalpos_bracos_vetoriais",
+      "fonte": "2296909d8680474da810289c1eff92ed",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_pernas_de_aranha",
+      "nomeAntes": "Pernas de Aranha",
+      "nomeAtual": "Pernas de Aranha",
+      "slugSugerido": "escalpos_pernas_de_aranha",
+      "fonte": "b4b589a67fc048aeb2b6b29d3edb3848",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_pernas_sismicas",
+      "nomeAntes": "Pernas Sísmicas",
+      "nomeAtual": "Pernas Sísmicas",
+      "slugSugerido": "escalpos_pernas_sismicas",
+      "fonte": "d58aa8019c9b4d33ac7d8fbaac657c1b",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_pernas_vetoriais",
+      "nomeAntes": "Pernas Vetoriais",
+      "nomeAtual": "Pernas Vetoriais",
+      "slugSugerido": "escalpos_pernas_vetoriais",
+      "fonte": "c180c79dd21640e5904bacf0b0bb8817",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_armadura_reativa_subdermica_ars",
+      "nomeAntes": "Armadura Reativa Subdérmica (ARS)",
+      "nomeAtual": "Armadura Reativa Subdérmica (ARS)",
+      "slugSugerido": "escalpos_armadura_reativa_subdermica_ars",
+      "fonte": "78a313af94b94a779c7da2b283e9c3a2",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_beijo_da_morte",
+      "nomeAntes": "Beijo da Morte",
+      "nomeAtual": "Beijo da Morte",
+      "slugSugerido": "escalpos_beijo_da_morte",
+      "fonte": "28ce283760d7452da17b40c33e0da25e",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_biomonitor",
+      "nomeAntes": "Biomonitor",
+      "nomeAtual": "Biomonitor",
+      "slugSugerido": "escalpos_biomonitor",
+      "fonte": "775d8990a8ba45a3b53663aae9382dc5",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_catalisador_imunologico",
+      "nomeAntes": "Catalisador Imunológico",
+      "nomeAtual": "Catalisador Imunológico",
+      "slugSugerido": "escalpos_catalisador_imunologico",
+      "fonte": "3cb9dba3045d4fff99b77f2a652e04d9",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_filtro_hematologico",
+      "nomeAntes": "Filtro Hematológico",
+      "nomeAtual": "Filtro Hematológico",
+      "slugSugerido": "escalpos_filtro_hematologico",
+      "fonte": "7ac3940b61564304b8fc0abac6810809",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_reserva_de_mana",
+      "nomeAntes": "Reserva de Mana",
+      "nomeAtual": "Reserva de Mana",
+      "slugSugerido": "escalpos_reserva_de_mana",
+      "fonte": "2e30627395d0425fb96a87473339beeb",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_reserva_pulmonar",
+      "nomeAntes": "Reserva Pulmonar",
+      "nomeAtual": "Reserva Pulmonar",
+      "slugSugerido": "escalpos_reserva_pulmonar",
+      "fonte": "7271d992e0bd48b28543cb26170a1316",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_olhos_de_cacador",
+      "nomeAntes": "Olhos de Caçador",
+      "nomeAtual": "Olhos de Caçador",
+      "slugSugerido": "escalpos_olhos_de_cacador",
+      "fonte": "8eb523d1375049f4ab59436932875214",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_olhos_de_vigilia",
+      "nomeAntes": "Olhos de Vigília",
+      "nomeAtual": "Olhos de Vigília",
+      "slugSugerido": "escalpos_olhos_de_vigilia",
+      "fonte": "8ecb33470bad47c8a35c49a529f0ef70",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_olhos_projetores",
+      "nomeAntes": "Olhos Projetores",
+      "nomeAtual": "Olhos Projetores",
+      "slugSugerido": "escalpos_olhos_projetores",
+      "fonte": "33d1da8550a74d77a6430981d1564921",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_optica_runica",
+      "nomeAntes": "Óptica Rúnica",
+      "nomeAtual": "Óptica Rúnica",
+      "slugSugerido": "escalpos_optica_runica",
+      "fonte": "ad70f795449a4a9f99ca84d1fbf44b6d",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_antecipador",
+      "nomeAntes": "Antecipador",
+      "nomeAtual": "Antecipador",
+      "slugSugerido": "escalpos_antecipador",
+      "fonte": "d1047fb7305a4a24bd93117dc3423d46",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_buffer_de_dor",
+      "nomeAntes": "Buffer de Dor",
+      "nomeAtual": "Buffer de Dor",
+      "slugSugerido": "escalpos_buffer_de_dor",
+      "fonte": "cd863276316649519d31dbb3144765ac",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_deck_sinaptico_civil",
+      "nomeAntes": "Deck Sináptico Civil",
+      "nomeAtual": "Deck Sináptico Civil",
+      "slugSugerido": "escalpos_deck_sinaptico_civil",
+      "fonte": "56b53a66f7ee40548900e3663ba9da99",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_deck_sinaptico_corporativo",
+      "nomeAntes": "Deck Sináptico Corporativo",
+      "nomeAtual": "Deck Sináptico Corporativo",
+      "slugSugerido": "escalpos_deck_sinaptico_corporativo",
+      "fonte": "7b84bb458aab4f11986ee8ef3a781fdb",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_deck_sinaptico_imperial",
+      "nomeAntes": "Deck Sináptico Imperial",
+      "nomeAtual": "Deck Sináptico Imperial",
+      "slugSugerido": "escalpos_deck_sinaptico_imperial",
+      "fonte": "58b57213a89b430abbfc59ef683fd0fc",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_filtro_cognitivo",
+      "nomeAntes": "Filtro Cognitivo",
+      "nomeAtual": "Filtro Cognitivo",
+      "slugSugerido": "escalpos_filtro_cognitivo",
+      "fonte": "05755819a11e4767ad28ba62684635f6",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_neuroprocessador",
+      "nomeAntes": "Neuroprocessador",
+      "nomeAtual": "Neuroprocessador",
+      "slugSugerido": "escalpos_neuroprocessador",
+      "fonte": "798abe8823e24972901052e1e4e82212",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_cabelo_polimorfico",
+      "nomeAntes": "Cabelo Polimórfico",
+      "nomeAtual": "Cabelo Polimórfico",
+      "slugSugerido": "escalpos_cabelo_polimorfico",
+      "fonte": "eeb82463060f42cca00778e8c3347dff",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_chifre_quimerico",
+      "nomeAntes": "Chifre Quimérico",
+      "nomeAtual": "Chifre Quimérico",
+      "slugSugerido": "escalpos_chifre_quimerico",
+      "fonte": "362661cce2ab415891b01d7a073987a4",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_pele_polimorfica",
+      "nomeAntes": "Pele Polimórfica",
+      "nomeAtual": "Pele Polimórfica",
+      "slugSugerido": "escalpos_pele_polimorfica",
+      "fonte": "b516462b05a64a35995079d4e8f0485f",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_olho_polimorfico",
+      "nomeAntes": "Olho Polimórfico",
+      "nomeAtual": "Olho Polimórfico",
+      "slugSugerido": "escalpos_olho_polimorfico",
+      "fonte": "cb17bbaa61104414901251977e5da661",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_orelha_quimerica",
+      "nomeAntes": "Orelha Quimérica",
+      "nomeAtual": "Orelha Quimérica",
+      "slugSugerido": "escalpos_orelha_quimerica",
+      "fonte": "5765bdfb11294910a6361b64341982a9",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_pele_de_vidro",
+      "nomeAntes": "Pele de Vidro",
+      "nomeAtual": "Pele de Vidro",
+      "slugSugerido": "escalpos_pele_de_vidro",
+      "fonte": "e8a8d1ed55874be78529e04da45f0184",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_perfume_glandular",
+      "nomeAntes": "Perfume Glandular",
+      "nomeAtual": "Perfume Glandular",
+      "slugSugerido": "escalpos_perfume_glandular",
+      "fonte": "c69c3d0615134e3580eef571fceeec39",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_voz_modulavel",
+      "nomeAntes": "Voz Modulável",
+      "nomeAtual": "Voz Modulável",
+      "slugSugerido": "escalpos_voz_modulavel",
+      "fonte": "b6e38ad330e84aa591705b91fb0f7b8c",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_rpi_forjado_nivel_1",
+      "nomeAntes": "RPI Forjado (Nível 1)",
+      "nomeAtual": "RPI Forjado (Nível 1)",
+      "slugSugerido": "escalpos_rpi_forjado_nivel_1",
+      "fonte": "4ee1fe28c3e942a494ba670ce4d0175e",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_rpi_forjado_nivel_2",
+      "nomeAntes": "RPI Forjado (Nível 2)",
+      "nomeAtual": "RPI Forjado (Nível 2)",
+      "slugSugerido": "escalpos_rpi_forjado_nivel_2",
+      "fonte": "14aebd38bbbf4eeba2d5b0a8e6889988",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "escalpo",
+      "slug": "escalpos_rpi_forjado_nivel_3",
+      "nomeAntes": "RPI Forjado (Nível 3)",
+      "nomeAtual": "RPI Forjado (Nível 3)",
+      "slugSugerido": "escalpos_rpi_forjado_nivel_3",
+      "fonte": "c4798e67eb52493e9252ca820d3192e5",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "companion_model",
+      "slug": "drones_e_robos_mosca",
+      "nomeAntes": "Mosca",
+      "nomeAtual": "Mosca",
+      "slugSugerido": "drones_e_robos_mosca",
+      "fonte": "6b619a44c2f64d39be20eef95c9879c6",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "companion_model",
+      "slug": "drones_e_robos_reconhecimento",
+      "nomeAntes": "Reconhecimento",
+      "nomeAtual": "Reconhecimento",
+      "slugSugerido": "drones_e_robos_reconhecimento",
+      "fonte": "9e6efbdd407c4e3b8fc308a7bd9b87d5",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "companion_model",
+      "slug": "drones_e_robos_reparador",
+      "nomeAntes": "Reparador",
+      "nomeAtual": "Reparador",
+      "slugSugerido": "drones_e_robos_reparador",
+      "fonte": "fcd87bef77a54a54bacab6c2e399a7f5",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "companion_model",
+      "slug": "drones_e_robos_assalto_leve",
+      "nomeAntes": "Assalto Leve",
+      "nomeAtual": "Assalto Leve",
+      "slugSugerido": "drones_e_robos_assalto_leve",
+      "fonte": "ae882265f9f946d9b5451713281f4ef2",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "companion_model",
+      "slug": "drones_e_robos_assalto_pesado",
+      "nomeAntes": "Assalto Pesado",
+      "nomeAtual": "Assalto Pesado",
+      "slugSugerido": "drones_e_robos_assalto_pesado",
+      "fonte": "f025681829034edfa7d8dae0d7eaa228",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "companion_model",
+      "slug": "drones_e_robos_carga",
+      "nomeAntes": "Carga",
+      "nomeAtual": "Carga",
+      "slugSugerido": "drones_e_robos_carga",
+      "fonte": "ac6af3cece624490ab5d0eb7af4d2367",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "companion_model",
+      "slug": "drones_e_robos_patrulha",
+      "nomeAntes": "Patrulha",
+      "nomeAtual": "Patrulha",
+      "slugSugerido": "drones_e_robos_patrulha",
+      "fonte": "20404df045ae444293a29d2ca9ab926e",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "companion_model",
+      "slug": "drones_e_robos_suporte",
+      "nomeAntes": "Suporte",
+      "nomeAtual": "Suporte",
+      "slugSugerido": "drones_e_robos_suporte",
+      "fonte": "01654d2dd96d486f90419adec7bf8986",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "companion_model",
+      "slug": "drones_e_robos_combate",
+      "nomeAntes": "Combate",
+      "nomeAtual": "Combate",
+      "slugSugerido": "drones_e_robos_combate",
+      "fonte": "24daafdbc3484acfabc34a5e89618a86",
+      "criterio": "bloco_notion"
+    },
+    {
+      "tipo": "companion_model",
+      "slug": "drones_e_robos_ceifador",
+      "nomeAntes": "Ceifador",
+      "nomeAtual": "Ceifador",
+      "slugSugerido": "drones_e_robos_ceifador",
+      "fonte": "b01b50b5ee5943f18d05611ca3d491ee",
+      "criterio": "bloco_notion"
+    }
+  ],
+  "novos": [
+    {
+      "tipo": "item",
+      "slug": "armas_facas_de_arremesso",
+      "nome": "Facas de Arremesso"
+    },
+    {
+      "tipo": "item",
+      "slug": "aljava",
+      "nome": "Aljava"
+    },
+    {
+      "tipo": "item",
+      "slug": "ferramentas_aljava_autoalimentadora",
+      "nome": "Aljava Autoalimentadora"
+    },
+    {
+      "tipo": "item",
+      "slug": "ferramentas_cartucheira",
+      "nome": "Cartucheira"
+    }
+  ],
+  "ausentes_na_fonte_atual": [
+    {
+      "tipo": "rune",
+      "slug": "armas_retornavel",
+      "nome": "Retornável"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_armas_de_fogo_serpentina",
+      "nome": "Serpentina"
+    },
+    {
+      "tipo": "rune",
+      "slug": "armas_armas_de_fogo_ricochete",
+      "nome": "Ricochete"
+    }
+  ],
+  "avisos": []
+}

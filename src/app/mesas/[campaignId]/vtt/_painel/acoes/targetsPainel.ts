@@ -1,4 +1,5 @@
 "use server";
+import { distanciaTokens } from "./distanciaTokens";
 import { getScopedTableClient } from "../../../../../../lib/auth/scopedClient";
 import { lerTargets, type ContextoAcaoToken, type TargetVtt } from "../../_dominio/targets";
 import type { ResultadoPainel } from "./comum";
@@ -24,6 +25,7 @@ export async function contextoAcaoTokenAction(actorId:string,targetId:string|nul
     const client=await getScopedTableClient();
     const {data,error}=await client.rpc("read_vtt_action_context",{p_actor_id:actorId,p_target_id:targetId});
     if(error||!data) return {ok:false,erro:error?.message??"Ação indisponível."};
-    return {ok:true,dados:data as ContextoAcaoToken};
+    const context=data as ContextoAcaoToken;
+    return {ok:true,dados:{...context,distanciaMetros:context.alvoTokenId ? await distanciaTokens(context.sceneId,context.actorTokenId,context.alvoTokenId) : null}};
   } catch { return {ok:false,erro:"Não foi possível validar o alvo."}; }
 }

@@ -1,0 +1,110 @@
+[
+  {
+    "content_type": "property",
+    "slug": "congelamento",
+    "payload": {
+      "id": "congelamento",
+      "slug": "congelamento",
+      "nome": "Congelamento",
+      "categoria": "propriedade_arma",
+      "categoria_label": "Propriedade de Arma",
+      "status": "published",
+      "versao": "1.2.0",
+      "tags": [
+        "arma",
+        "ofensiva",
+        "critico"
+      ],
+      "gatilhos": [
+        "sucesso_critico"
+      ],
+      "margem_minima": "sucesso_critico",
+      "descricao_curta": "Em um sucesso crítico, o Andar do alvo é reduzido à metade, arredondado para baixo, até o fim do próximo turno dele.",
+      "descricao_longa": "Em um sucesso crítico, o Andar do alvo é reduzido à metade, arredondado para baixo, até o fim do próximo turno dele.",
+      "aplica_em": [
+        "energia"
+      ],
+      "parametrica": false,
+      "parametros": [],
+      "payload_automacao": {
+        "uso_manual": true,
+        "efeitos": []
+      },
+      "fonte_notion": {
+        "paginaNotionId": "9690a136355283c59bd8813acc4e4935"
+      }
+    }
+  },
+  {
+    "content_type": "property",
+    "slug": "ofuscamento",
+    "payload": {
+      "id": "ofuscamento",
+      "slug": "ofuscamento",
+      "nome": "Ofuscamento",
+      "categoria": "propriedade_arma",
+      "categoria_label": "Propriedade de Arma",
+      "status": "published",
+      "versao": "1.2.0",
+      "tags": [
+        "arma",
+        "ofensiva",
+        "critico"
+      ],
+      "gatilhos": [
+        "sucesso_critico"
+      ],
+      "margem_minima": "sucesso_critico",
+      "descricao_curta": "Em um sucesso crítico, o alvo fica Ofuscado até o fim do próximo turno dele.",
+      "descricao_longa": "Em um sucesso crítico, o alvo fica Ofuscado até o fim do próximo turno dele.",
+      "aplica_em": [
+        "energia"
+      ],
+      "parametrica": false,
+      "parametros": [],
+      "payload_automacao": {
+        "uso_manual": true,
+        "efeitos": []
+      },
+      "fonte_notion": {
+        "paginaNotionId": "9690a136355283c59bd8813acc4e4935"
+      }
+    }
+  },
+  {
+    "content_type": "property",
+    "slug": "disrupcao",
+    "payload": {
+      "id": "disrupcao",
+      "slug": "disrupcao",
+      "nome": "Disrupção",
+      "categoria": "propriedade_arma",
+      "categoria_label": "Propriedade de Arma",
+      "status": "published",
+      "versao": "1.2.0",
+      "tags": [
+        "arma",
+        "ofensiva",
+        "critico"
+      ],
+      "gatilhos": [
+        "sucesso_critico"
+      ],
+      "margem_minima": "sucesso_critico",
+      "descricao_curta": "Em um sucesso crítico, escolha um escalpo, arma de energia, equipamento ou função tecnológica utilizada pelo alvo. O componente escolhido fica inativo até o fim do próximo turno dele. Contra drones, robôs ou veículos, o alvo perde 1 PA no próximo turno em vez disso.",
+      "descricao_longa": "Em um sucesso crítico, escolha um escalpo, arma de energia, equipamento ou função tecnológica utilizada pelo alvo. O componente escolhido fica inativo até o fim do próximo turno dele. Contra drones, robôs ou veículos, o alvo perde 1 PA no próximo turno em vez disso.",
+      "aplica_em": [
+        "energia"
+      ],
+      "parametrica": false,
+      "parametros": [],
+      "payload_automacao": {
+        "uso_manual": true,
+        "efeitos": []
+      },
+      "fonte_notion": {
+        "paginaNotionId": "9690a136355283c59bd8813acc4e4935"
+      }
+    }
+  }
+]

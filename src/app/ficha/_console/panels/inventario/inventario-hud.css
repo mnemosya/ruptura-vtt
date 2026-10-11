@@ -269,7 +269,7 @@
 }
 .ih-mover-op:hover:not(:disabled) { border-color: var(--ih-cy) !important; background: color-mix(in srgb, var(--ih-cy) 10%, transparent) !important; }
 .ih-mover-op:disabled { opacity: .4; }
-.ih-acoes-linha { display: flex; align-items: center; gap: 8px; }
+.ih-acoes-linha { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .ih-passo { display: flex; align-items: center; height: 40px; border: 1px solid color-mix(in srgb, var(--ih-cy) 25%, transparent); }
 .ih-passo button { width: 32px; height: 100%; color: var(--ih-cy) !important; }
 .ih-passo button:disabled { color: color-mix(in srgb, var(--ih-dim) 30%, transparent) !important; }
@@ -290,7 +290,10 @@
 .ih-descartar { border-color: color-mix(in srgb, var(--ih-perigo) 30%, transparent) !important; color: color-mix(in srgb, var(--ih-perigo) 70%, transparent) !important; }
 .ih-descartar:hover { color: var(--ih-perigo) !important; border-color: color-mix(in srgb, var(--ih-perigo) 60%, transparent) !important; }
 .ih-descartar svg { position: relative; }
-.ih-descartar-enche { position: absolute; left: 0; right: 0; bottom: 0; background: color-mix(in srgb, var(--ih-perigo) 30%, transparent); }
+.ih-descartar-confirmacao { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; width: 100%; padding: 8px; border: 1px solid color-mix(in srgb, var(--ih-perigo) 30%, transparent); background: color-mix(in srgb, var(--ih-perigo) 7%, transparent); }
+.ih-descartar-confirmacao > span { flex: 1; color: var(--ih-perigo); }
+.ih-descartar-confirmacao button { padding: 6px 8px; font-size: 12px; }
+.ih-descartar-confirmacao .ih-descartar-confirmar { color: var(--ih-perigo); }
 
 .ih-rodape { flex: none; margin-top: 14px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--ih-cy) 10%, transparent); }
 

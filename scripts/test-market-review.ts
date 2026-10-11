@@ -1,0 +1,30 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { normalizeItemContent, purchaseItem } from "../src/lib/character/inventory";
+import { createInitialCharacter } from "../src/lib/character";
+import { itemCabeNoSlot } from "../src/app/ficha/_console/slots";
+const root="content/v12/revisao-2026-10-10/";
+const candidate=JSON.parse(readFileSync(root+"catalogo-candidato.json","utf8")).registros;
+const diff=JSON.parse(readFileSync(root+"diff-revisao.json","utf8"));
+const before=JSON.parse(readFileSync(root+"publicado-antes.json","utf8"));
+assert.equal(new Set(candidate.map((r:any)=>r.content_type+":"+r.slug)).size,candidate.length);
+for(const identity of diff.identidades_preservadas){
+ assert(before.some((r:any)=>r.content_type===identity.tipo&&r.slug===identity.slug));
+ assert(candidate.some((r:any)=>r.content_type===identity.tipo&&r.slug===identity.slug&&r.payload.nome===identity.nomeAtual));
+}
+assert(!diff.publicacao_automatica);
+const items=candidate.filter((r:any)=>r.content_type==="item").map((r:any)=>normalizeItemContent(r.payload));
+assert.equal(items.find((i:any)=>i.nome==="Besta pesada").danoBase,"2d8");
+assert(items.some((i:any)=>i.subtipo==="ARMAS BRANCAS"));
+assert(items.some((i:any)=>i.subtipo==="ARMAS DE DISPARO"));
+for(const item of items.filter((i:any)=>i.categoria==="armadura"))assert(["cabeca","tronco","membro_superior","membro_inferior"].some((slot:any)=>itemCabeNoSlot(item,slot)),item.nome);
+const traje=items.find((i:any)=>i.nome==="Traje urbano híbrido");
+assert(itemCabeNoSlot(traje,"tronco"));assert(!itemCabeNoSlot(traje,"cabeca"));
+const character={...createInitialCharacter(null,"Revisão"),carteira:{aretz_informal:2000,cdi:0,cdi_craqueada:0}};
+const bought=purchaseItem({character,item:traje,quantidade:1,walletId:"aretz_informal",nowIso:"2026-10-10T23:00:00Z"});
+assert(bought.ok);assert.equal(bought.character.carteira?.aretz_informal,1400);
+assert.equal(bought.character.inventario?.at(-1)?.itemSlug,traje.slug);
+assert(diff.ausentes_na_fonte_atual.some((r:any)=>r.slug==="armas_dardos"));
+assert(before.some((r:any)=>r.slug==="armas_dardos"),"Sem exclusão no ponto de partida");
+assert(diff.avisos.some((r:any)=>r.slug==="armas_facas_de_arremesso"));
+console.log("✓ Revisão: identidades, estrutura nova, dano atualizado, compatibilidade, compra e ausência de exclusão automática");

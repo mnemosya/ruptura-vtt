@@ -1,5 +1,6 @@
 "use client";
 
+import { estiloCategoria } from "../../../../_design/itemCategoryColors";
 import { ItemCategoryIcon } from "../../../../_design/itemIcons";
 
 /**
@@ -20,8 +21,7 @@ import { ItemCategoryIcon } from "../../../../_design/itemIcons";
  * prateleiras do abrigo: Equipado e Abrigo usam a mesma lista, e o
  * corpo continua sendo da aba de Equipamentos.
  *
- * A cor de cada item é a VERTENTE da categoria (`data-vertente`), a
- * mesma paleta canônica do VTT — nenhum hexadecimal de tipo aqui.
+ * A cor de cada item segue a paleta compartilhada das categorias do mercado.
  */
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -34,6 +34,7 @@ type VistaHud = LocalHud | "todos";
 export interface ItemHud {
   /** Nome do modelo preservado mesmo quando a instância é renomeada. */
   weaponName?: string;
+  temaCategoria?: string;
   id: string;
   nome: string;
   /** Slug da categoria (`arma`, `farmacia`…) — escolhe o glifo. */
@@ -315,7 +316,7 @@ function Regua({ itens, capacidade, ocupados, livre, casa, filtrando, quente, se
           return (
             <button key={t.it.id} type="button" className="ih-trecho" data-vertente={t.it.vertente}
               data-aceso={aceso || undefined} data-apagado={(filtrando && !casa(t.it)) || undefined}
-              style={{ flexGrow: t.n }} title={`${t.it.nome} · ${t.n} esp.`}
+              style={{ ...estiloCategoria(t.it.temaCategoria ?? t.it.categoria, t.it.vertente), flexGrow: t.n }} title={`${t.it.nome} · ${t.n} esp.`}
               onMouseEnter={() => setQuente(t.it.id)} onMouseLeave={() => setQuente(null)}
               onClick={(e) => abrir(t.it.id, e.currentTarget)}>
               {Array.from({ length: t.n }, (_, i) => (
@@ -360,7 +361,7 @@ function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, s
         return (
           <button key={it.id} type="button" className="ih-lin" data-vertente={it.vertente}
             data-quente={quente === it.id || undefined} data-sel={sel === it.id || undefined}
-            style={{ animationDelay: `${ix * 25}ms` }}
+            style={{ ...estiloCategoria(it.temaCategoria ?? it.categoria, it.vertente), animationDelay: `${ix * 25}ms` }}
             onMouseEnter={() => setQuente(it.id)} onMouseLeave={() => setQuente(null)}
             onClick={(e) => abrir(it.id, e.currentTarget)}>
             <span className="ih-lin-icone"><ItemCategoryIcon category={it.categoria} weaponName={it.weaponName ?? it.nome} size={20} strokeWidth={1.6} /></span>
@@ -463,7 +464,7 @@ function CartaoItem({ item: it, ancora, palco, podeCrescer, somenteLeitura, dest
   return (
     <div ref={ref} className="ih-cartao" data-vertente={it.vertente} data-lado={pos?.lado}
       data-pronto={pos ? true : undefined} role="dialog" aria-label={it.nome}
-      style={{ left: pos?.x ?? -9999, top: pos?.y ?? 0, width: L }}>
+      style={{ ...estiloCategoria(it.temaCategoria ?? it.categoria, it.vertente), left: pos?.x ?? -9999, top: pos?.y ?? 0, width: L }}>
       <div className="ih-cartao-caixa">
         <div className="ih-cartao-arte">
           <span className="ih-cartao-arte-glifo"><ItemCategoryIcon category={it.categoria} weaponName={it.weaponName ?? it.nome} size={150} strokeWidth={0.9} /></span>
@@ -544,25 +545,20 @@ function CartaoItem({ item: it, ancora, palco, podeCrescer, somenteLeitura, dest
   );
 }
 
-/** Segurar para descartar — o gesto do protótipo. Soltar antes cancela. */
+/** Confirmação explícita para excluir a instância inteira do inventário. */
 function Descartar({ onFeito }: { onFeito: () => void }) {
-  const [p, setP] = useState(0);
-  const raf = useRef(0);
-  const comecar = () => {
-    const t0 = performance.now();
-    const passo = () => {
-      const n = Math.min(1, (performance.now() - t0) / 900);
-      setP(n);
-      if (n >= 1) onFeito(); else raf.current = requestAnimationFrame(passo);
-    };
-    raf.current = requestAnimationFrame(passo);
-  };
-  const parar = () => { cancelAnimationFrame(raf.current); setP(0); };
-  useEffect(() => () => cancelAnimationFrame(raf.current), []);
+  const [confirmando, setConfirmando] = useState(false);
+  if (confirmando) return (
+    <div className="ih-descartar-confirmacao" role="group" aria-label="Excluir item?"
+      onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setConfirmando(false); } }}>
+      <span className="ih-tag">Excluir item?</span>
+      <button type="button" className="ih-descartar-confirmar" autoFocus onClick={onFeito}>Excluir</button>
+      <button type="button" onClick={() => setConfirmando(false)}>Cancelar</button>
+    </div>
+  );
   return (
-    <button type="button" className="ih-quad ih-descartar" onPointerDown={comecar} onPointerUp={parar} onPointerLeave={parar}
-      title="Segure para descartar" aria-label="Segure para descartar">
-      <span className="ih-descartar-enche" style={{ height: `${p * 100}%` }} />
+    <button type="button" className="ih-quad ih-descartar" onClick={() => setConfirmando(true)}
+      title="Excluir item" aria-label="Excluir item">
       <Glifo d={IC.lixo} tam={16} />
     </button>
   );

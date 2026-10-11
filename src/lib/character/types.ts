@@ -849,7 +849,11 @@ export interface Character {
         guardado fora do corpo (não pesa) — ver carga.ts. */
     estado: "equipado" | "empunhado" | "acesso_rapido" | "mochila" | "abrigo";
     /** Encaixe escolhido no Equipamento (mão/posição) — ver `setItemEmEncaixe`. */
-    encaixeEscolhido?: "arma_primaria" | "arma_secundaria" | "acesso_rapido_1" | "acesso_rapido_2";
+    modoAtaqueEscolhido?: string;
+    municaoCarregadaSlug?: string;
+    /** Fonte de recarga padrão da arma (tipo + lugar) — ver `reloadSources.ts`. */
+    fonteRecargaPadrao?: { local: "suporte" | "acesso_rapido" | "mochila"; contentSlug: string };
+    encaixeEscolhido?: import("./inventory").EncaixeEscolhido;
     adquiridoEm: string;
     precoPago?: number;
     /**
@@ -889,8 +893,10 @@ export interface Character {
      * Aljavas; cada instância carrega seu próprio `aljava`.
      */
     aljava?: {
+      tipo?: "aljava" | "cartucheira";
+      autoalimentadora?: boolean;
       capacidade: number;
-      stacks: { contentSlug: string; nome: string; quantidade: number }[];
+      stacks: { contentSlug: string; nome: string; quantidade: number; pesoCapacidade?: number }[];
     };
     /** Em instâncias de ARCO (checkpoint v0.60): id da Aljava usada para atacar. */
     selectedAljavaInstanceId?: string;

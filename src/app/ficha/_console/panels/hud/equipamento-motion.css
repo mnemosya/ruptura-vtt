@@ -5,7 +5,7 @@
   initial-value: 1;
 }
 .hx-eq-motion {
-  animation: eq-leitura 1500ms linear 60ms both;
+  animation: eq-leitura 1050ms linear 60ms both;
 }
 /* Abertura do módulo: leitura do corpo → conexões → encaixes.
    Só apresentação; nenhuma etapa bloqueia os botões ou muda o layout. */
@@ -20,7 +20,7 @@
   clip-path: inset(0 0 calc((1 - var(--hx-eq-progresso)) * 100%) 0);
 }
 .hx-eq-varredura {
-  animation: eq-varredura 1680ms linear 60ms both;
+  animation: eq-varredura 1180ms linear 60ms both;
   opacity: 0;
   transform: translateY(calc(var(--hx-eq-progresso) * 613px - 44px));
 }
@@ -43,7 +43,7 @@
   animation: eq-confirmacao 140ms ease-out calc(var(--eq-slot-delay) + 100ms) backwards;
 }
 .hx-eq-instrucao {
-  animation: eq-modulo 140ms ease-out 1600ms backwards;
+  animation: eq-modulo 140ms ease-out 1120ms backwards;
 }
 [data-testid="console-tab-equipamentos"][aria-selected="true"] > svg {
   animation: eq-tab 200ms ease-out;
@@ -58,7 +58,7 @@
 @keyframes eq-varredura {
   0% { opacity: 0; }
   7.142857% { opacity: 1; }
-  /* A leitura termina em 1500 ms; o fade ocupa só os 180 ms seguintes. */
+  /* A leitura termina em 1050 ms; o fade ocupa só os 130 ms seguintes. */
   89.285714% { opacity: 1; }
   100% { opacity: 0; }
 }

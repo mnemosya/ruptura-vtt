@@ -4882,3 +4882,48 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
    aparece — a vertente/categoria (`--k`) no Mercado e no Inventário;
    fora deles, a cor do texto. */
 .rc-negrito { font-weight: 700; color: var(--k, inherit); }
+
+/* ── Recarga: janela de escolha de fonte + aviso com Desfazer ─────────
+   Ver `panels/JanelaRecarga.tsx`. A janela é uma tabela curta (uma
+   linha por pilha de munição); o aviso é uma linha só, no pé da tela. */
+.rc-rec { display: grid; gap: 14px; min-width: 380px; max-width: 440px; }
+.rc-rec-arma { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.rc-rec-nome { font: 700 16px/1.1 var(--font-chakra), sans-serif; text-transform: uppercase; letter-spacing: .04em; color: #e6f6ff; }
+.rc-rec-tipo { margin-top: 4px; font: 500 11px var(--font-mono), monospace; letter-spacing: 1.6px; text-transform: uppercase; color: #6a7f99; }
+.rc-rec-mun { font: 700 15px var(--font-mono), monospace; color: #ff5f74; white-space: nowrap; }
+.rc-rec-mun span { font-size: 11px; color: #4f6285; }
+.rc-rec-lista { display: grid; gap: 6px; }
+.rc-rec-cab, .rc-rec-op { display: grid; grid-template-columns: 12px minmax(0, 1fr) 36px 40px 26px 26px; align-items: center; gap: 10px; }
+.rc-rec-cab { padding: 0 11px; font: 500 10px var(--font-mono), monospace; letter-spacing: 1.4px; text-transform: uppercase; color: #4f6285; }
+.rc-rec-cab span:nth-child(n+3) { text-align: right; }
+.rc-rec-op { padding: 9px 10px; border: 1px solid #1d4152; cursor: pointer; transition: border-color .14s, background .14s; }
+.rc-rec-op:hover { border-color: color-mix(in srgb, #00d4ff 55%, transparent); }
+.rc-rec-op[data-on] { border-color: #00d4ff; background: rgba(0, 212, 255, .07); }
+.rc-rec-op:focus-visible { outline: 2px solid #00d4ff; outline-offset: 2px; }
+.rc-rec-dot { width: 9px; height: 9px; border: 1px solid #4f6285; transform: rotate(45deg); }
+.rc-rec-op[data-on] .rc-rec-dot { background: #00d4ff; border-color: #00d4ff; }
+.rc-rec-txt { display: grid; gap: 2px; min-width: 0; }
+.rc-rec-op-nome { font: 600 13px var(--font-chakra), sans-serif; color: #e6f6ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-rec-op-local { font: 500 10px var(--font-mono), monospace; letter-spacing: 1.4px; text-transform: uppercase; color: #6a7f99; }
+.rc-rec-num { text-align: right; font: 700 13px var(--font-mono), monospace; color: #d0dce2; }
+.rc-rec-num[data-caro] { color: #ff8a1f; }
+.rc-rec-estrela { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; background: transparent; color: #4f6285; cursor: pointer; transition: color .14s; }
+.rc-rec-estrela:hover { color: #d0dce2; }
+.rc-rec-estrela[data-on] { color: #ffc94a; }
+.rc-rec-estrela[data-on] svg { fill: currentColor; }
+.rc-rec-estrela:focus-visible { outline: 2px solid #00d4ff; outline-offset: 1px; }
+.rc-rec-nota { margin: 0; font-size: 12px; color: #6a7f99; }
+.rc-rec-cta:not(:disabled) { border-color: #00d4ff; background: #00d4ff; color: #06121c; }
+.rc-rec-aviso {
+  position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%); z-index: 700;
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 14px; max-width: min(520px, calc(100vw - 32px));
+  background: #0c1c26; border: 1px solid #1d4152; border-left: 2px solid #ff8a1f; box-shadow: 0 16px 36px rgba(0, 0, 0, .55);
+  color: #ff8a1f; animation: rc-rec-aviso-in .18s ease-out both;
+}
+.rc-rec-aviso[data-ok] { border-left-color: #22d3aa; color: #22d3aa; }
+.rc-rec-aviso-txt { font: 500 12px var(--font-mono), monospace; letter-spacing: .8px; color: #d0dce2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-rec-desfazer { flex: none; height: 26px; padding: 0 10px; border: 1px solid #1d4152; background: transparent; color: #00d4ff; cursor: pointer;
+  font: 700 11px var(--font-mono), monospace; letter-spacing: 1.4px; text-transform: uppercase; }
+.rc-rec-desfazer:hover { border-color: #00d4ff; background: rgba(0, 212, 255, .1); }
+@keyframes rc-rec-aviso-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) { .rc-rec-aviso { animation: none; } }

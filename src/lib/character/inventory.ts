@@ -1,10 +1,11 @@
+import { equipmentPositions, occupiedEquipmentPositions } from "./equipmentPositions";
 /**
  * Inventário, carteira e loja do Mercado Noturno — checkpoint v0.49
  * (PRD 13), modelo de slots de runa no v0.56. Catálogo inteiro de
  * itens vem de `content_documents` (content_type="item", `listItems()`,
- * já existente — 119 itens publicados: armas, armaduras, escudos,
- * explosivos, farmácia, vertinas, ferramentas, dispositivos, veículos,
- * munição). A ficha NUNCA depende de lista hardcoded — cada item no
+ * já existente — 273 itens publicados do Mercado Noturno v1.2,
+ * incluindo módulos de escalpo representados como itens de leitura).
+ * A ficha NUNCA depende de lista hardcoded — cada item no
  * inventário é uma INSTÂNCIA ligada ao slug do modelo publicado, com
  * estado próprio (quantidade, loadout, runas instaladas).
  *
@@ -38,6 +39,7 @@
  * seguinte — aqui só o estado (equipado, MIT/PD atual) é gerenciado.
  */
 
+import { normalizeMarketTechnicalFields } from "./marketTechnicalFields";
 import type {
   Character,
   TechnicalItemPropertyInstance,
@@ -88,6 +90,7 @@ export interface ItemContent {
   raridade?: string;
   preco: number;
   descricao_curta?: string;
+  descricao_longa?: string;
   tags: string[];
   /** Slugs canônicos de `estatisticas.propriedades` do modelo. */
   propertySlugs: string[];
@@ -125,6 +128,12 @@ export interface ItemContent {
   ammoArmasCompativeis: string[];
   /** `estatisticas.kit` parsado como inteiro — quantidade de balas/flechas por kit comprado. `null` se ausente ou não é munição. */
   ammoKitQuantidade: number | null;
+  maos?: 1 | 2 | null;
+  classeArmadura?: string | null;
+  posicaoMobilidade?: string | null;
+  compatibilidadeArmadura?: string[];
+  suporteMunicao?: { tipo: "aljava" | "cartucheira"; capacidade: number; autoalimentadora: boolean } | null;
+  modosAtaque?: { id: string; dado_dano: string; tipo_dano: string; subtipo_dano: string; soma_atributo: string; pericia_teste: string }[];
   /** `estatisticas.inclui_na_compra` — descritivo (ex.: "10 flechas simples") do que vem incluído na compra da arma. `null` se ausente. */
   inclui_na_compra?: string | null;
   /** `estatisticas.dado_dano` (ex.: "1d6") — dano-base da arma, textual. `null` se ausente/não estruturado. */
@@ -187,6 +196,7 @@ function asRecord(v: unknown): Record<string, unknown> | null {
 
 /** Preserva o payload inteiro do registro — não achata nem descarta campos (estatísticas completas ficam disponíveis para checkpoints futuros). */
 export function normalizeItemContent(raw: Record<string, unknown>): ItemContent {
+  raw = normalizeMarketTechnicalFields(raw).raw;
   const estatisticas = asRecord(raw.estatisticas);
   return {
     marketEscalpoSlugs: asRecord(raw.vinculos_sugeridos)?.content_type === "escalpo"
@@ -201,6 +211,7 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
     raridade: typeof raw.raridade === "string" ? raw.raridade.replace(/_/g, " ") : undefined,
     preco: typeof raw.preco === "number" && Number.isFinite(raw.preco) ? raw.preco : 0,
     descricao_curta: typeof raw.descricao_curta === "string" ? raw.descricao_curta : undefined,
+    descricao_longa: typeof raw.descricao_longa === "string" ? raw.descricao_longa : undefined,
     tags: asStringArray(raw.tags),
     propertySlugs: asStringArray(estatisticas?.propriedades),
     ocultavel:
@@ -224,6 +235,12 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
       return asStringArray(compat?.itens);
     })(),
     ammoKitQuantidade: parseKitQuantidade(estatisticas?.kit),
+    posicaoMobilidade: typeof estatisticas?.posicao_mobilidade === "string" ? estatisticas.posicao_mobilidade : null,
+    classeArmadura: typeof estatisticas?.classe_armadura === "string" ? estatisticas.classe_armadura : null,
+    compatibilidadeArmadura: asStringArray(estatisticas?.compatibilidade_armadura),
+    maos: estatisticas?.maos === 1 || estatisticas?.maos === 2 ? estatisticas.maos : null,
+    suporteMunicao: asRecord(estatisticas?.suporte_municao) as ItemContent["suporteMunicao"] ?? null,
+    modosAtaque: Array.isArray(estatisticas?.modos_ataque) ? estatisticas.modos_ataque as NonNullable<ItemContent["modosAtaque"]> : [],
     inclui_na_compra: typeof estatisticas?.inclui_na_compra === "string" ? estatisticas.inclui_na_compra : undefined,
     danoBase: typeof estatisticas?.dado_dano === "string" ? estatisticas.dado_dano : null,
     tipoDano: typeof estatisticas?.tipo_dano === "string" ? estatisticas.tipo_dano : null,
@@ -315,7 +332,7 @@ export interface InstalledRune {
   ativa?: boolean;
 }
 
-export type EncaixeEscolhido = "arma_primaria" | "arma_secundaria" | "acesso_rapido_1" | "acesso_rapido_2";
+export type EncaixeEscolhido = "arma_primaria" | "arma_secundaria" | "acesso_rapido_1" | "acesso_rapido_2" | "traje" | "suporte_municao" | "acessorio_1" | "acessorio_2" | "estrutura_dorsal" | "luvas" | "locomocao";
 
 export interface InventoryItemInstance {
   id: string;
@@ -325,6 +342,10 @@ export interface InventoryItemInstance {
   /** subtipo do modelo no momento da compra — ausente em instâncias antigas (checkpoint anterior ao v0.56). */
   subtipo?: string;
   quantidade: number;
+  modoAtaqueEscolhido?: string;
+  municaoCarregadaSlug?: string;
+  /** Fonte de recarga marcada como padrão nesta arma (tipo + lugar) — ver `reloadSources.ts`. */
+  fonteRecargaPadrao?: { local: "suporte" | "acesso_rapido" | "mochila"; contentSlug: string };
   estado: ItemLoadoutState;
   /**
    * Encaixe escolhido no Equipamento para armas empunhadas e acessos
@@ -851,34 +872,44 @@ export function removeItemTechnicalPropertyBySource(
   return changed ? { ...character, inventario: next } : character;
 }
 
-export function setItemLoadoutState(character: Character, instanceId: string, estado: ItemLoadoutState): Character {
-  const atual = character.inventario ?? [];
-  const next = atual.map((item) => {
-    if (item.id !== instanceId) return item;
-    // Mudou de estado: o encaixe escolhido não vale mais.
-    const { encaixeEscolhido: _descartado, ...resto } = item;
-    return { ...resto, estado };
-  });
-  return { ...character, inventario: next };
+export function setItemLoadoutState(character: Character, instanceId: string, estado: ItemLoadoutState, catalogo?: Map<string, ItemContent>): Character {
+  const instance = character.inventario?.find(i => i.id === instanceId);
+  if (!instance) return character;
+  const model = catalogo?.get(instance.itemSlug);
+  if (model && ((model.categoria === "armadura" && estado === "equipado") || (model.categoria === "escudo" && ["equipado","empunhado"].includes(estado)))) return equipDefensiveItem(character,instanceId,model,catalogo);
+  if (model && (estado === "empunhado" || estado === "equipado" || estado === "acesso_rapido")) {
+    const chosen: EncaixeEscolhido = estado === "acesso_rapido"
+      ? (instance.encaixeEscolhido === "acesso_rapido_1" || instance.encaixeEscolhido === "acesso_rapido_2" ? instance.encaixeEscolhido : (character.inventario ?? []).some(i => i.id !== instanceId && i.estado === "acesso_rapido" && i.encaixeEscolhido === "acesso_rapido_1") ? "acesso_rapido_2" : "acesso_rapido_1")
+      : model.categoria === "arma" || model.categoria === "escudo" ? (instance.encaixeEscolhido === "arma_secundaria" ? "arma_secundaria" : "arma_primaria")
+      : model.suporteMunicao ? "suporte_municao" : model.categoria === "traje" ? "traje"
+      : model.categoria === "acessorio" ? (instance.encaixeEscolhido === "acessorio_1" || instance.encaixeEscolhido === "acessorio_2" ? instance.encaixeEscolhido : (character.inventario ?? []).some(i => i.id !== instanceId && i.estado === "equipado" && i.encaixeEscolhido === "acessorio_1") ? "acessorio_2" : "acessorio_1")
+      : (equipmentPositions(model)[0] as EncaixeEscolhido);
+    if (chosen) return setItemEmEncaixe(character, instanceId, chosen, catalogo);
+    if (model.categoria === "armadura") return equipDefensiveItem(character, instanceId, model, catalogo);
+  }
+  return { ...character, inventario: (character.inventario ?? []).map(i => i.id === instanceId ? { ...i, estado, encaixeEscolhido: undefined, ...(estado === "mochila" || estado === "abrigo" ? { equipadoDefensivo: false } : {}) } : i) };
 }
 
-/**
- * Põe uma arma ou consumível num encaixe ESPECÍFICO do Equipamento
- * (mão primária/secundária, acesso rápido 1/2). Quem já tinha esse
- * encaixe escolhido volta para a mochila — o encaixe é de um item só.
- */
-export function setItemEmEncaixe(character: Character, instanceId: string, encaixe: EncaixeEscolhido): Character {
-  const estado: ItemLoadoutState = encaixe === "arma_primaria" || encaixe === "arma_secundaria" ? "empunhado" : "acesso_rapido";
-  const atual = character.inventario ?? [];
-  const next = atual.map((item) => {
-    if (item.id === instanceId) return { ...item, estado, encaixeEscolhido: encaixe };
-    if (item.estado === estado && item.encaixeEscolhido === encaixe) {
-      const { encaixeEscolhido: _descartado, ...resto } = item;
-      return { ...resto, estado: "mochila" as ItemLoadoutState };
-    }
-    return item;
-  });
-  return { ...character, inventario: next };
+export function setItemEmEncaixe(character: Character, instanceId: string, encaixe: EncaixeEscolhido, catalogo?: Map<string, ItemContent>): Character {
+  const target = character.inventario?.find(i => i.id === instanceId);
+  if (!target) return character;
+  const model = catalogo?.get(target.itemSlug);
+  const hands = encaixe === "arma_primaria" || encaixe === "arma_secundaria";
+  if (hands && model && model.categoria !== "arma" && model.categoria !== "escudo") return character;
+  if (hands && model?.categoria === "arma" && model.maos == null) return character;
+  if (encaixe.startsWith("acesso_rapido") && model) {
+    const spaces = /^\d+/.exec(model.espacosTexto ?? "1");
+    if (!spaces || Number(spaces[0]) * Math.ceil(target.quantidade / (model.ammoKitQuantidade ?? 1)) > 1) return character;
+  }
+  const estado: ItemLoadoutState = hands ? "empunhado" : encaixe.startsWith("acesso_rapido") ? "acesso_rapido" : "equipado";
+  if (model?.categoria === "traje" && catalogo && (character.inventario ?? []).some(i => i.estado === "equipado" && catalogo.get(i.itemSlug)?.categoria === "armadura" && !model.compatibilidadeArmadura?.includes(catalogo.get(i.itemSlug)?.classeArmadura ?? ""))) return character;
+  const positions = estado === "acesso_rapido" ? [encaixe] : model ? equipmentPositions(model, encaixe) : [encaixe];
+  return { ...character, inventario: (character.inventario ?? []).map(i => {
+    if (i.id === instanceId) return { ...i, estado, encaixeEscolhido: encaixe };
+    const occupied = catalogo ? occupiedEquipmentPositions(i, catalogo.get(i.itemSlug)) : i.estado === estado ? [i.encaixeEscolhido] : [];
+    if (occupied.some(p => positions.includes(p as EncaixeEscolhido))) return { ...i, estado: "mochila" as ItemLoadoutState, encaixeEscolhido: undefined, equipadoDefensivo: false };
+    return i;
+  }) };
 }
 
 export function removeItemFromInventory(character: Character, instanceId: string): Character {
@@ -890,7 +921,7 @@ export function removeItemFromInventory(character: Character, instanceId: string
   // Se a instância removida era uma Aljava, limpar a referência em
   // qualquer arco que a tivesse selecionada (evita apontar para uma
   // Aljava inexistente).
-  if (removida?.itemSlug === ALJAVA_ITEM_SLUG) {
+  if (removida?.aljava) {
     return clearBowSelectionsForAljava(nextChar, instanceId);
   }
   return nextChar;
@@ -1017,10 +1048,10 @@ export function purchaseItem(params: {
   // Exemplo: comprar 1 "mun_pistola" (kit: "12 balas") → quantidade: 12 no inventário.
   // Para outros itens: quantidade = kits comprados (sem desempacotar).
   const quantidade =
-    item.categoria === "municao" && item.ammoKitQuantidade != null
+    (item.categoria === "municao" || item.categoria === "arma") && item.ammoKitQuantidade != null
       ? quantidadeKits * item.ammoKitQuantidade
       : quantidadeKits;
-  const totalCost = precoUnitario * quantidade;
+  const totalCost = precoUnitario * quantidadeKits;
 
   const carteira: Wallet = character.carteira ?? { aretz_informal: 0, cdi: 0, cdi_craqueada: 0 };
   const saldoAtual = carteira[walletId];
@@ -1043,9 +1074,11 @@ export function purchaseItem(params: {
   // Aljava: item solo, não empilhável por quantidade (cada unidade
   // comprada é uma Aljava PRÓPRIA e independente — nunca uma instância
   // com quantidade > 1). Um personagem pode ter várias.
-  if (item.slug === ALJAVA_ITEM_SLUG) {
+  if (item.slug === ALJAVA_ITEM_SLUG || item.suporteMunicao) {
     const novasInstancias: InventoryItemInstance[] = Array.from({ length: quantidadeKits }, () => ({
       ...createAljavaInstance(nowIso),
+      itemSlug: item.slug, itemNome: item.nome, categoria: item.categoria,
+      aljava: item.suporteMunicao ? { capacidade: item.suporteMunicao.capacidade, tipo: item.suporteMunicao.tipo, autoalimentadora: item.suporteMunicao.autoalimentadora, stacks: [] } : createAljavaInstance(nowIso).aljava,
       precoPago: precoUnitario,
     }));
     const nextChar: Character = {
@@ -1113,71 +1146,9 @@ export function purchaseItem(params: {
   };
 
   if (isArco) {
-    // Se o personagem não tem NENHUMA Aljava ainda, a compra do
-    // (primeiro) arco cria uma. Se já existe pelo menos uma, NÃO cria
-    // outra automaticamente — o kit vai para a primeira Aljava por
-    // padrão (documentado; usuário pode ter várias e mover flechas
-    // manualmente depois).
-    if (!hasExistingAljava(nextCharacterBase)) {
-      nextCharacterBase = {
-        ...nextCharacterBase,
-        inventario: [...(nextCharacterBase.inventario ?? []), createAljavaInstance(nowIso)],
-      };
-    }
-    const aljavaAlvo = getAljavaInstances(nextCharacterBase)[0];
-
-    // Adicionar kit inicial de flechas à Aljava alvo
-    const kitQtd = parseKitQuantidade(item.inclui_na_compra);
-    const flechaSlug = item.municaoCompativelSlug || "flecha_simples";
-    if (kitQtd && kitQtd > 0 && aljavaAlvo) {
-      const { aljava: novaAljava, excedente } = addFletchasToAljava(
-        aljavaAlvo.aljava,
-        flechaSlug,
-        "Flecha simples",
-        kitQtd
-      );
-
-      // Atualizar Aljava alvo no inventário
-      nextCharacterBase = {
-        ...nextCharacterBase,
-        inventario: (nextCharacterBase.inventario ?? []).map((i) =>
-          i.id === aljavaAlvo.id ? { ...i, aljava: novaAljava } : i
-        ),
-      };
-
-      // Se houver excedente (Aljava alvo cheia), adicionar ao estoque do inventário
-      if (excedente > 0) {
-        const existingAmmo = nextCharacterBase.inventario!.find(
-          (i) => i.itemSlug === flechaSlug && i.itemSlug !== ALJAVA_ITEM_SLUG
-        );
-        if (existingAmmo) {
-          nextCharacterBase = {
-            ...nextCharacterBase,
-            inventario: nextCharacterBase.inventario!.map((i) =>
-              i.id === existingAmmo.id ? { ...i, quantidade: i.quantidade + excedente } : i
-            ),
-          };
-        } else {
-          const ammoInst: InventoryItemInstance = {
-            id: crypto.randomUUID(),
-            itemSlug: flechaSlug,
-            itemNome: "Flecha simples",
-            categoria: "municao",
-            subtipo: "municao",
-            quantidade: excedente,
-            estado: "mochila",
-            adquiridoEm: nowIso,
-            precoPago: 0,
-            propriedadesTecnicas: [],
-            estadosTecnicos: [],
-          };
-          nextCharacterBase = {
-            ...nextCharacterBase,
-            inventario: [...nextCharacterBase.inventario!, ammoInst],
-          };
-        }
-      }
-    }
+    const kit = parseKitQuantidade(item.inclui_na_compra);
+    const ammo = params.catalog?.find(m => m.categoria === "municao" && m.ammoFamilia === item.municaoCompativelSlug);
+    if (kit && ammo) nextCharacterBase = {...nextCharacterBase,inventario:[...(nextCharacterBase.inventario ?? []),{id:crypto.randomUUID(),itemSlug:ammo.slug,itemNome:ammo.nome,categoria:"municao",quantidade:kit,estado:"mochila",adquiridoEm:nowIso}]};
   }
 
   // Arma de fogo/besta (checkpoint v0.61): só carrega de fábrica se o
@@ -1251,7 +1222,7 @@ export type RuneCompatibility = "compatible" | "incompatible" | "unknown";
  * NUNCA vira bloqueio automático (ver `installRuneOnItem`).
  */
 export function getRuneCompatibility(
-  item: { categoria: string; subtipo?: string },
+  item: { categoria: string; subtipo?: string; ammoKitQuantidade?: number | null; propertySlugs?: string[] },
   rune: TechnicalContentItem,
 ): RuneCompatibility {
   const slotsPossiveis = asStringArray(rune.raw.slots_possiveis);
@@ -1261,7 +1232,10 @@ export function getRuneCompatibility(
   const restricaoSubtipo = typeof rune.raw.restricao_subtipo === "string" ? rune.raw.restricao_subtipo : null;
   if (!restricaoSubtipo) return "compatible";
   if (!item.subtipo) return "unknown"; // restrição existe, mas a instância não tem subtipo registrado (item antigo).
-  return restricaoSubtipo === item.subtipo ? "compatible" : "incompatible";
+  const aliases: Record<string,string> = { "ARMAS BRANCAS":"corpo_a_corpo", "ARMAS DE DISPARO":"arremesso_disparo", "ARMAS DE FOGO":"fogo", "ARMAS DE ENERGIA":"energia" };
+  if (restricaoSubtipo === "arremesso_disparo" && item.ammoKitQuantidade && item.propertySlugs?.includes("arremesso")) return "compatible";
+  const subtype = aliases[item.subtipo] ?? item.subtipo;
+  return restricaoSubtipo === subtype ? "compatible" : "incompatible";
 }
 
 /** Runas atualmente instaladas numa instância — nunca undefined. */
@@ -1304,7 +1278,8 @@ export function installRuneOnItem(params: {
     return { character, ok: false, reason: "Item não encontrado no inventário.", compatibility: "unknown" };
   }
 
-  const compatibility = getRuneCompatibility({ categoria: instance.categoria, subtipo: instance.subtipo }, rune);
+  if (rune.status === "archived" || rune.status === "draft") return {character,ok:false,reason:"Runa retirada do catálogo de instalação.",compatibility:"incompatible"};
+  const compatibility = getRuneCompatibility(itemContent ?? { categoria: instance.categoria, subtipo: instance.subtipo }, rune);
   if (compatibility === "incompatible") {
     return { character, ok: false, reason: "Runa incompatível com este item.", compatibility };
   }
@@ -1558,7 +1533,10 @@ export function equipDefensiveItem(
     item.categoria === "armadura" ? "armadura" : item.categoria === "escudo" ? "escudo" : null;
   if (!slot) return character;
 
-  const inventario = character.inventario ?? [];
+  const prepared = slot === "escudo" ? setItemEmEncaixe(character, instanceId, "arma_secundaria", catalogo instanceof Map ? catalogo : catalogo ? new Map(catalogo.map(m => [m.slug, m])) : undefined) : character;
+  const models = catalogo instanceof Map ? catalogo : new Map((catalogo ?? []).map(m => [m.slug,m]));
+  if (slot === "armadura" && [...(character.inventario ?? [])].some(i => i.estado === "equipado" && models.get(i.itemSlug)?.categoria === "traje" && !models.get(i.itemSlug)?.compatibilidadeArmadura?.includes(item.classeArmadura ?? ""))) return character;
+  const inventario = prepared.inventario ?? [];
   if (!inventario.some((i) => i.id === instanceId)) return character;
   const porSlug = catalogo == null ? null : catalogo instanceof Map ? catalogo : new Map(catalogo.map((m) => [m.slug, m]));
   /** A peça vestida `i` sai para dar lugar à nova? */

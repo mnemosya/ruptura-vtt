@@ -25,6 +25,8 @@
  * do que o cliente manda é confiado sem reconferir.
  */
 
+import { distanciaTokens } from "./distanciaTokens";
+import { weaponRangeAt } from "../../../../../../lib/character/weaponRange";
 import { getScopedTableClient } from "../../../../../../lib/auth/scopedClient";
 import { getCurrentUser } from "../../../../../../lib/auth/session";
 import { getCharacterForCampaign, listControlledCharacters } from "../../../../../../lib/character/storage";
@@ -129,7 +131,7 @@ export async function declararAtaqueAction(params: DeclararAtaqueParams): Promis
     const client = await getScopedTableClient();
     const { data: ctx, error: erroCtx } = await client.rpc("read_vtt_action_context", { p_actor_id: params.actorTokenId, p_target_id: params.alvoTokenId });
     if (erroCtx || !ctx) return { ok: false, erro: erroCtx?.message ?? "Alvo indisponível." };
-    const c = ctx as { campaignId: string; actorCharacterId: string; alvoTokenId: string | null; alvoCharacterId: string | null; alvoNome: string | null; logVisibility: "public" | "gm" };
+    const c = ctx as { sceneId: string; campaignId: string; actorCharacterId: string; alvoTokenId: string | null; alvoCharacterId: string | null; alvoNome: string | null; logVisibility: "public" | "gm" };
     if (c.campaignId !== params.campaignId) return { ok: false, erro: "O token não é desta campanha." };
     if (!c.alvoTokenId) return { ok: false, erro: "Marque um alvo para atacar." };
 
@@ -137,7 +139,12 @@ export async function declararAtaqueAction(params: DeclararAtaqueParams): Promis
     if (!registro) return { ok: false, erro: "Você não controla este personagem." };
     const atacante = normalizeCharacter(registro.payload);
 
-    const modificador = Math.trunc(params.modificador);
+    const instRange=atacante.inventario?.find(i=>i.id===params.armaInstanceId);
+    const rangeItem=instRange ? (await listItems()).map(d=>normalizeItemContent(d.payload as P)).find(m=>m.slug===instRange.itemSlug) ?? null : null;
+    const distance=await distanciaTokens(c.sceneId,params.actorTokenId,c.alvoTokenId);
+    const range=distance != null ? weaponRangeAt(rangeItem,distance,instRange?.modoAtaqueEscolhido) : null;
+    if(range && !range.allowed)return {ok:false,erro:`Alvo fora do alcance (${range.maximum} m).`};
+    const modificador = Math.trunc(params.modificador) + (range?.penalty ?? 0);
     if (!Number.isFinite(modificador) || Math.abs(modificador) > MODIFICADOR_MAX) return { ok: false, erro: "Modificador fora da faixa." };
     const atributoValor = Math.trunc(atacante.atributos[params.atributoId as "corpo"] ?? 0);
     const pool = getRupturaPool(atributoValor);
@@ -161,9 +168,10 @@ export async function declararAtaqueAction(params: DeclararAtaqueParams): Promis
       const inst = (atacante.inventario ?? []).find((i) => i.id === params.armaInstanceId);
       if (!inst) return { ok: false, erro: "Arma não encontrada no inventário." };
       const modelo = (await listItems()).map((d) => normalizeItemContent(d.payload as P)).find((m) => m.slug === inst.itemSlug);
-      danoFormula = modelo?.danoBase ?? null;
-      tipoDano = modelo?.tipoDano ?? null;
-      subtipoDano = modelo?.subtipoDano ?? modelo?.subtiposDanoPossiveis?.[0] ?? null;
+      const mode = modelo?.modosAtaque?.find(m => m.id === inst.modoAtaqueEscolhido) ?? modelo?.modosAtaque?.[0];
+      danoFormula = mode?.dado_dano ?? modelo?.danoBase ?? null;
+      tipoDano = mode?.tipo_dano ?? modelo?.tipoDano ?? null;
+      subtipoDano = mode?.subtipo_dano ?? modelo?.subtipoDano ?? modelo?.subtiposDanoPossiveis?.[0] ?? null;
       armaNome = inst.itemNome;
     } else if (params.desarmado) {
       const f = params.desarmado.danoFormula?.trim() ?? null;

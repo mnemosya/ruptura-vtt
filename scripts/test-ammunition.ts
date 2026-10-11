@@ -280,11 +280,12 @@ assert.equal(checkAttackAmmoBlock(charPistolaVazia, [modeloPistola]), "sem_munic
 assert.equal(checkAttackAmmoBlock(charPistolaCheia, [modeloPistola]), null);
 
 // Personagem com 1 única Aljava → arco auto-seleciona (sem selectedAljavaInstanceId)
+// Consumo direto de flechas agora exige um suporte Autoalimentador equipado.
 const charArcoSimples: Character = {
   inventario: [
     { id: "a1", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado" } as any,
-    { id: "aljava-s1", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG, quantidade: 1, estado: "mochila",
-      aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 5 }] } } as any,
+    { id: "aljava-s1", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG, quantidade: 1, estado: "equipado",
+      aljava: { autoalimentadora: true, capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 5 }] } } as any,
   ],
 } as any;
 const consumeArcoSimples = consumeAttackAmmo(charArcoSimples, [modeloArco]);
@@ -303,8 +304,8 @@ console.log("13. consumeAttackAmmo (carregador + aljava compartilhada 1 tipo) �
 const charArco2: Character = {
   inventario: [
     { id: "a2", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado" } as any,
-    { id: "aljava-s2", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG, quantidade: 1, estado: "mochila",
-      aljava: { capacidade: 15, stacks: [
+    { id: "aljava-s2", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG, quantidade: 1, estado: "equipado",
+      aljava: { autoalimentadora: true, capacidade: 15, stacks: [
         { contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 5 },
         { contentSlug: "flecha_flamejante", nome: "Flecha flamejante", quantidade: 3 },
       ] } } as any,
@@ -365,8 +366,8 @@ console.log("15. setFlechaQuantidadeInAljava — clamp multi-stack — OK");
 const charParaGuardar: Character = {
   inventario: [
     { id: "bow-1", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado" } as any,
-    { id: "aljava-shared-1", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG, quantidade: 1, estado: "mochila",
-      aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 12 }] } } as any,
+    { id: "aljava-shared-1", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG, quantidade: 1, estado: "equipado",
+      aljava: { autoalimentadora: true, capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 12 }] } } as any,
     { id: "ammo-1", itemSlug: "flecha_simples", itemNome: "Flecha simples", categoria: "municao", subtipo: "municao", quantidade: 10, estado: "mochila" } as any,
   ],
 } as any;
@@ -387,8 +388,8 @@ console.log("16. storeFletchasInAljava — respeita capacidade — OK");
 const charParaRetirar: Character = {
   inventario: [
     { id: "bow-2", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado" } as any,
-    { id: "aljava-shared-2", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG, quantidade: 1, estado: "mochila",
-      aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 10 }] } } as any,
+    { id: "aljava-shared-2", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG, quantidade: 1, estado: "equipado",
+      aljava: { autoalimentadora: true, capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 10 }] } } as any,
   ],
 } as any;
 const withdrawResult = withdrawFletchasFromAljava(charParaRetirar, "aljava-shared-2", "flecha_simples", 2, "Flecha simples", "2026-01-01T00:00:00.000Z");
@@ -402,8 +403,8 @@ assert.equal(estoqueRetirado?.quantidade, 2, "Nova instância de estoque com qua
 const charComEstoque: Character = {
   inventario: [
     { id: "bow-3", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado" } as any,
-    { id: "aljava-shared-3", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG, quantidade: 1, estado: "mochila",
-      aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 10 }] } } as any,
+    { id: "aljava-shared-3", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG, quantidade: 1, estado: "equipado",
+      aljava: { autoalimentadora: true, capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 10 }] } } as any,
     { id: "ammo-2", itemSlug: "flecha_simples", itemNome: "Flecha simples", categoria: "municao", subtipo: "municao", quantidade: 5, estado: "mochila" } as any,
   ],
 } as any;
@@ -455,13 +456,13 @@ console.log("19. hasExistingAljava detecta pelo menos 1 Aljava — OK");
 // -------------------------------------------------------------
 const aljava1 = {
   id: "aljava-1", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG,
-  quantidade: 1, estado: "mochila",
-  aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 5 }] },
+  quantidade: 1, estado: "equipado",
+  aljava: { autoalimentadora: true, capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 5 }] },
 };
 const aljava2 = {
   id: "aljava-2", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG,
-  quantidade: 1, estado: "mochila",
-  aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_flamejante", nome: "Flecha flamejante", quantidade: 5 }] },
+  quantidade: 1, estado: "equipado",
+  aljava: { autoalimentadora: true, capacidade: 15, stacks: [{ contentSlug: "flecha_flamejante", nome: "Flecha flamejante", quantidade: 5 }] },
 };
 let charDoisArcosDuasAljavas: Character = {
   inventario: [
@@ -493,7 +494,7 @@ console.log("20. Dois arcos com Aljavas distintas — ataque não vaza para a Al
 const charLegado: Character = {
   inventario: [
     { id: "arco-leg-1", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado",
-      aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 8 }] } } as any,
+      aljava: { autoalimentadora: true, capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 8 }] } } as any,
   ],
 } as any;
 const migrated = migrateEmbeddedAljavas(charLegado);
@@ -513,8 +514,8 @@ console.log("21. migrateEmbeddedAljavas — OK");
 const charParaAjuste: Character = {
   inventario: [
     { id: "aljava-aj", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG,
-      quantidade: 1, estado: "mochila",
-      aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 10 }] } } as any,
+      quantidade: 1, estado: "equipado",
+      aljava: { autoalimentadora: true, capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 10 }] } } as any,
   ],
 } as any;
 const charAjustado = setAljavaFlechaQuantidade(charParaAjuste, "aljava-aj", "flecha_simples", 5);

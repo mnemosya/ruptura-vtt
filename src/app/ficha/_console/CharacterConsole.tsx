@@ -77,6 +77,8 @@ import { itensCompativeisComSlot, projectBodySlots, type BodySlotId } from "./sl
 import { ABAS, type AbaId } from "./tabs";
 import { FOCO_MAX_W, FOCO_ALTURA_INICIAL } from "./geometry";
 import { PainelRolagem, type PrefillRolagem } from "./panels/PainelRolagem";
+import { AvisoRecarga, JanelaRecarga } from "./panels/JanelaRecarga";
+import type { FonteRecarga } from "../../../lib/character/reloadSources";
 import { useRolarNaMesa } from "../../mesas/[campaignId]/vtt/_dados3d/ContextoMesaDados";
 import type { ConsoleApi, ConsolePin } from "./types";
 import { parseTerceiroSegmentoThreshold, pisoPeNegativo, type CharacterAttributes, type InventoryItemInstance, type ItemContent } from "../../../lib/character";
@@ -87,7 +89,7 @@ type Aux =
   | { tipo: "surto" }
   | { tipo: "mochila"; slot: BodySlotId }
   | { tipo: "ataque"; instancia: InventoryItemInstance; modelo: ItemContent; slot: BodySlotId }
-  | { tipo: "recarga"; instancia: InventoryItemInstance }
+  | { tipo: "recarga"; instancia: InventoryItemInstance; fontes: FonteRecarga[]; padraoId: string | null; municao: { atual: number; max: number } }
   | { tipo: "condicao" }
   | { tipo: "defesa" }
   | { tipo: "resistir-atributo" }
@@ -104,6 +106,29 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
    * trilho, para quem quer as colunas fixas ao lado da aba ativa.
    */
   const [aux, setAux] = useState<Aux>(null);
+  const [avisoRecarga, setAvisoRecarga] = useState<{ ok: boolean; mensagem: string; desfazer?: () => void; seq: number } | null>(null);
+  const fecharAvisoRecarga = useMemo(() => () => setAvisoRecarga(null), []);
+  /**
+   * Recarga: direta quando não há decisão (uma fonte só, ou a fonte
+   * PADRÃO da arma disponível) — com aviso e Desfazer; a janela de
+   * escolha só abre quando há mais de uma fonte e nenhuma é padrão.
+   * Armas fora desse modelo (célula de energia, aljava) seguem o fluxo
+   * antigo de `recarregar`.
+   */
+  function avisar(r: { ok: boolean; mensagem: string; desfazer?: () => void }) {
+    setAvisoRecarga({ ...r, seq: Date.now() });
+  }
+  function iniciarRecarga(instancia: InventoryItemInstance) {
+    const info = api.fontesRecarga(instancia.id);
+    if (!info) { api.recarregar(instancia.id); return; }
+    if (info.cheia) { avisar({ ok: false, mensagem: "A arma já está cheia." }); return; }
+    if (info.fontes.length === 0) { avisar({ ok: false, mensagem: "Sem munição compatível fora do abrigo." }); return; }
+    const direta = info.fontes.find((f) => f.id === info.padraoId) ?? (info.fontes.length === 1 ? info.fontes[0] : null);
+    if (direta) { avisar(api.recarregarDe(instancia.id, direta.id)); return; }
+    const modelo = api.catalogo.get(instancia.itemSlug);
+    setAux({ tipo: "recarga", instancia, fontes: info.fontes, padraoId: info.padraoId,
+      municao: { atual: instancia.municaoAtual ?? 0, max: modelo?.municaoMax ?? 0 } });
+  }
   const rolarNaMesa = useRolarNaMesa();
   /**
    * O dano psíquico do surto rola nos dados 3D da mesa (cor do PE): as
@@ -382,7 +407,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
                     mensagem: modelo?.descricao_curta ?? "A ação definitiva deste item entra no lugar deste aviso.",
                   })
                 }
-                onRecarregar={(instancia) => setAux({ tipo: "recarga", instancia })}
+                onRecarregar={iniciarRecarga}
               />
             ) : (
               <div className="rc-tab-vazio">
@@ -548,16 +573,20 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
       )}
 
       {aux?.tipo === "recarga" && (
-        <ConfirmModal
-          titulo="Recarregar"
-          mensagem={`Recarregar ${aux.instancia.itemNome} usando a munição do inventário?`}
-          onConfirmar={() => {
-            api.recarregar(aux.instancia.id);
+        <JanelaRecarga
+          arma={aux.instancia.itemNome}
+          municao={aux.municao}
+          fontes={aux.fontes}
+          padraoId={aux.padraoId}
+          onDefinirPadrao={(f) => api.definirFontePadrao(aux.instancia.id, f ? { local: f.local, contentSlug: f.contentSlug } : null)}
+          onRecarregar={(f) => {
+            avisar(api.recarregarDe(aux.instancia.id, f.id));
             setAux(null);
           }}
           onFechar={() => setAux(null)}
         />
       )}
+      {avisoRecarga && <AvisoRecarga aviso={avisoRecarga} onFechar={fecharAvisoRecarga} />}
 
       {aux?.tipo === "retorno-colapso" && (
         <ConfirmModal

@@ -283,3 +283,51 @@
 }
 .hx-eq-previa-nome { font: 600 12px/1.4 var(--hx-display); color: var(--hx-ice); overflow-wrap: anywhere; }
 .hx-eq-previa-stat { font: 10px/1.4 var(--hx-mono); color: var(--k); }
+
+/* ── Cartão equipado: coluna de comando ─────────────────────────────
+   As ações moram numa coluna colada à borda direita do cartão, só
+   ícone (a dica do VTT diz o nome). Atacar/Usar é o bloco ciano cheio
+   — a mesma peça da ferramenta ativa; as outras são secundárias. */
+.hx-comando { display: flex; flex-direction: column; border-left: 1px solid rgba(0, 212, 255, .14); }
+.hx-comando-btn {
+  flex: 1; min-height: 38px; display: grid; place-items: center; padding: 0; cursor: pointer;
+  border: 0; border-top: 1px solid rgba(0, 212, 255, .14); background: transparent; color: #9fb2c8;
+  transition: background .14s, color .14s;
+}
+.hx-comando-btn:first-child { border-top: 0; }
+/* Retos: sem o raio/chanfro que a regra global do chassi dá a botões de ícone. */
+.hx-comando-btn.hx-comando-btn { border-radius: 0 !important; corner-shape: round !important; clip-path: none !important; }
+.hx-comando-btn:hover { background: rgba(0, 212, 255, .09); color: #d3f4ff; }
+.hx-comando-btn:focus-visible { outline: 2px solid #00d4ff; outline-offset: -2px; }
+.hx-comando-btn[data-primario] { flex: 1.4; background: #00d4ff; color: #06121c; }
+.hx-comando-btn[data-primario]:hover { background: #45e0ff; color: #06121c; }
+.hx-comando-btn[data-primario] svg { stroke-width: 2.4; }
+.hx-comando-btn[data-perigo] { color: #6a7f99; }
+.hx-comando-btn[data-perigo]:hover { background: rgba(255, 138, 31, .1); color: #ff8a1f; }
+
+/* ── Munição: barra contínua + valor editável entre − e + ──────────── */
+.hx-mun-barra { position: relative; flex: 1; min-width: 0; height: 6px; background: rgba(0, 212, 255, .07); }
+.hx-mun-barra i { position: absolute; inset: 0 auto 0 0; background: #ff5f74; box-shadow: 0 0 8px -1px #ff5f74; transition: width .15s; }
+.hx-mun-barra b { position: absolute; top: -1px; bottom: -1px; width: 1px; background: #0a1822; }
+.hx-mun-valor {
+  box-sizing: border-box; min-width: 44px; height: 24px; padding: 0 4px; display: inline-flex; align-items: baseline; justify-content: center; gap: 1px;
+  border: 1px solid transparent; background: transparent; cursor: pointer;
+  font-family: var(--font-chakra), sans-serif; font-size: 15px; font-weight: 900; line-height: 22px; color: #ff5f74;
+  transition: border-color .14s, background .14s;
+}
+button.hx-mun-valor:hover { border-color: rgba(0, 212, 255, .35); background: rgba(0, 212, 255, .06); }
+.hx-mun-valor[data-invalido="true"] { border-color: #ff5f74; }
+.hx-mun-max { font-size: 10px; font-weight: 700; color: #6a7f99; }
+.hx-mun-input {
+  box-sizing: border-box; width: 54px; height: 22px; padding: 0 4px; border: 0; outline: none; text-align: center;
+  background: transparent; color: #e6f6ff; font-family: var(--font-mono), monospace; font-size: 13px;
+}
+
+/* Ação de seção ("tirar" no cabeçalho EQUIPADO): texto discreto, acende em âmbar. */
+.hx-secao-acao {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px; border: 0; background: transparent; cursor: pointer;
+  font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #6a7f99;
+  transition: color .14s;
+}
+.hx-secao-acao:hover { color: #ff8a1f; }
+.hx-secao-acao:focus-visible { outline: 2px solid #00d4ff; outline-offset: 2px; }

@@ -15,6 +15,7 @@ export interface PedidoAcaoToken {
 export interface ContextoAcaoToken {
   campaignId: string; sceneId: string; actorCharacterId: string; actorTokenId: string;
   alvoTokenId: string | null; alvoCharacterId: string | null; alvoNome: string | null;
+  distanciaMetros?: number | null;
   logVisibility: "public" | "gm";
 }
 export function lerTargets(bruto: unknown): TargetVtt[] {

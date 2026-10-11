@@ -1,5 +1,5 @@
 export const WEAPON_ICON_TYPES = {
-  faca: "knife", adaga: "knife", soco_ingles: "knuckles", manoplas: "gauntlet", tonfa: "tonfa",
+  faca: "knife", facas_de_arremesso: "knife", adaga: "knife", soco_ingles: "knuckles", manoplas: "gauntlet", tonfa: "tonfa",
   rapieira: "rapier", espada_curta: "sword", espada_longa: "great sword",
   machado_de_mao: "handaxe", machado_de_guerra: "handaxe", martelo_pesado: "hammer",
   bastao: "bat", corrente_leve: "chains", alabarda: "spear",

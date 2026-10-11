@@ -1,0 +1,5009 @@
+{
+  "consulta": "2026-10-10",
+  "paginas_renomeadas": [
+    {
+      "id": "cb40a136355282bc88c38145b82d5de5",
+      "antes": "DISPOSITIVOS TECNOLÓGICOS",
+      "agora": "DISPOSITIVOS"
+    },
+    {
+      "id": "4210a13635528285a61281d46315a915",
+      "antes": "FERRAMENTAS E UTILIDADES",
+      "agora": "FERRAMENTAS"
+    }
+  ],
+  "snapshot_extraidoEm": "2026-10-09T23:25:05.912Z",
+  "contagem_publicada": {
+    "item": 273,
+    "rune": 52,
+    "companion_model": 10,
+    "escalpo": 39
+  },
+  "paginas_notion": [
+    {
+      "titulo": "ACESSÓRIOS",
+      "id": "3f10a1363552818da767c209228ed796",
+      "editadoEm": "2026-10-08T22:19:18.330Z",
+      "truncated": null,
+      "unknown_block_count": null
+    },
+    {
+      "titulo": "ARMAS",
+      "id": "9690a136355283c59bd8813acc4e4935",
+      "editadoEm": "2026-10-10T23:05:27.326Z",
+      "truncated": null,
+      "unknown_block_count": null
+    },
+    {
+      "titulo": "ARMADURAS E ESCUDOS",
+      "id": "3f00a136355280de9992cec6eca3f6b6",
+      "editadoEm": "2026-10-10T22:06:38.868Z",
+      "truncated": null,
+      "unknown_block_count": null
+    },
+    {
+      "titulo": "DISPOSITIVOS",
+      "id": "cb40a136355282bc88c38145b82d5de5",
+      "editadoEm": "2026-10-10T20:42:52.636Z",
+      "truncated": null,
+      "unknown_block_count": null
+    },
+    {
+      "titulo": "DRONES E ROBÔS",
+      "id": "7a00a13635528396b33501c34c719d2a",
+      "editadoEm": "2026-10-08T22:19:48.347Z",
+      "truncated": null,
+      "unknown_block_count": null
+    },
+    {
+      "titulo": "ESCALPOS",
+      "id": "3d50a13635528061bda3c10fbb32cf04",
+      "editadoEm": "2026-10-08T22:20:53.317Z",
+      "truncated": null,
+      "unknown_block_count": null
+    },
+    {
+      "titulo": "EXPLOSIVOS",
+      "id": "76c0a136355283b992130175879922e2",
+      "editadoEm": "2026-10-08T22:19:32.574Z",
+      "truncated": null,
+      "unknown_block_count": null
+    },
+    {
+      "titulo": "FARMÁCIA",
+      "id": "3e60a136355283b78291014a3b05205d",
+      "editadoEm": "2026-10-08T22:19:42.796Z",
+      "truncated": null,
+      "unknown_block_count": null
+    },
+    {
+      "titulo": "FERRAMENTAS",
+      "id": "4210a13635528285a61281d46315a915",
+      "editadoEm": "2026-10-10T22:09:34.202Z",
+      "truncated": null,
+      "unknown_block_count": null
+    },
+    {
+      "titulo": "MOBILIDADE",
+      "id": "ac80a136355282d08fbd01cb30610de4",
+      "editadoEm": "2026-10-10T22:09:01.146Z",
+      "truncated": null,
+      "unknown_block_count": null
+    },
+    {
+      "titulo": "TRAJES",
+      "id": "3f00a136355281a7a6d8d9cc819c7e5e",
+      "editadoEm": "2026-10-08T22:18:58.373Z",
+      "truncated": null,
+      "unknown_block_count": null
+    },
+    {
+      "titulo": "VERTINAS",
+      "id": "2200a136355282d5b49901ab965a0da0",
+      "editadoEm": "2026-10-08T22:19:45.834Z",
+      "truncated": null,
+      "unknown_block_count": null
+    }
+  ],
+  "comparacao_tabelas": {
+    "comparados": 349,
+    "diferencas": [
+      {
+        "slug": "armas_adaga",
+        "nome": "Adaga",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_alabarda",
+        "nome": "Alabarda",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_amplificacao",
+        "nome": "Amplificação",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas de energia"
+      },
+      {
+        "slug": "armas_arco_curto",
+        "nome": "Arco curto",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_arco_longo",
+        "nome": "Arco longo",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_armas_corpo_a_corpo_flamejante",
+        "nome": "Flamejante",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas brancas"
+      },
+      {
+        "slug": "armas_as_10_overdrive_pistola_pesada",
+        "nome": "AS-10 Overdrive (Pistola pesada)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_as_127_wrecker_rifle_antimaterial",
+        "nome": "AS-127 Wrecker (Rifle antimaterial)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_as_127_wrecker_rifle_antimaterial",
+        "nome": "AS-127 Wrecker (Rifle antimaterial)",
+        "pagina": "ARMAS",
+        "campo": "Ocultável?",
+        "publicado": "",
+        "notion": "Não"
+      },
+      {
+        "slug": "armas_as_65_runaway_carabina",
+        "nome": "AS-65 Runaway (Carabina)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_as_65_runaway_carabina",
+        "nome": "AS-65 Runaway (Carabina)",
+        "pagina": "ARMAS",
+        "campo": "Ocultável?",
+        "publicado": "",
+        "notion": "Não"
+      },
+      {
+        "slug": "armas_as_762_redshift_rifle_de_assalto",
+        "nome": "AS-762 Redshift (Rifle de assalto)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_as_762_redshift_rifle_de_assalto",
+        "nome": "AS-762 Redshift (Rifle de assalto)",
+        "pagina": "ARMAS",
+        "campo": "Ocultável?",
+        "publicado": "",
+        "notion": "Não"
+      },
+      {
+        "slug": "armas_as_86_terminal_rifle_de_precisao",
+        "nome": "AS-86 Terminal (Rifle de precisão)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_as_86_terminal_rifle_de_precisao",
+        "nome": "AS-86 Terminal (Rifle de precisão)",
+        "pagina": "ARMAS",
+        "campo": "Ocultável?",
+        "publicado": "",
+        "notion": "Não"
+      },
+      {
+        "slug": "armas_atordoante",
+        "nome": "Atordoante",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas de fogo"
+      },
+      {
+        "slug": "armas_bastao",
+        "nome": "Bastão",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_batedora",
+        "nome": "Batedora",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Projéteis (disparo e arremesso)"
+      },
+      {
+        "slug": "armas_batedora",
+        "nome": "Batedora",
+        "pagina": "ARMAS",
+        "campo": "Preço (Ⱥ)",
+        "publicado": "500",
+        "notion": "800"
+      },
+      {
+        "slug": "armas_batedora",
+        "nome": "Batedora",
+        "pagina": "ARMAS",
+        "campo": "Raridade",
+        "publicado": "Comum",
+        "notion": "Incomum"
+      },
+      {
+        "slug": "armas_bb_14_sprawl_espingarda",
+        "nome": "BB-14 Sprawl (Espingarda)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_bb_14_sprawl_espingarda",
+        "nome": "BB-14 Sprawl (Espingarda)",
+        "pagina": "ARMAS",
+        "campo": "Ocultável?",
+        "publicado": "",
+        "notion": "Não"
+      },
+      {
+        "slug": "armas_bb_30_blight_escopeta_pesada",
+        "nome": "BB-30 Blight (Escopeta pesada)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_bb_30_blight_escopeta_pesada",
+        "nome": "BB-30 Blight (Escopeta pesada)",
+        "pagina": "ARMAS",
+        "campo": "Ocultável?",
+        "publicado": "",
+        "notion": "Não"
+      },
+      {
+        "slug": "armas_bb_6_claws_escopeta_curta",
+        "nome": "BB-6 Claws (Escopeta curta)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_bb_6_claws_escopeta_curta",
+        "nome": "BB-6 Claws (Escopeta curta)",
+        "pagina": "ARMAS",
+        "campo": "Ocultável?",
+        "publicado": "",
+        "notion": "Não"
+      },
+      {
+        "slug": "armas_besta_leve",
+        "nome": "Besta leve",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_besta_leve",
+        "nome": "Besta leve",
+        "pagina": "ARMAS",
+        "campo": "Propriedades",
+        "publicado": "Silencioso, Precisão",
+        "notion": "Perfuração, Silencioso, Precisão"
+      },
+      {
+        "slug": "armas_besta_pesada",
+        "nome": "Besta pesada",
+        "pagina": "ARMAS",
+        "campo": "Dano",
+        "publicado": "1d12 perfurante",
+        "notion": "2d8 perfurante"
+      },
+      {
+        "slug": "armas_besta_pesada",
+        "nome": "Besta pesada",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_cadencia",
+        "nome": "Cadência",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas de fogo"
+      },
+      {
+        "slug": "armas_camuflagem",
+        "nome": "Camuflagem",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Projéteis (disparo e arremesso)"
+      },
+      {
+        "slug": "armas_camuflagem",
+        "nome": "Camuflagem",
+        "pagina": "ARMAS",
+        "campo": "Efeito",
+        "publicado": "Projéteis tornam-se invisíveis e inimigos sofrem –1 ao defender.",
+        "notion": "Projéteis tornam-se invisíveis e inimigos sofrem –2 de desvantagem ao defender."
+      },
+      {
+        "slug": "armas_canhao_de_plasma",
+        "nome": "Canhão de plasma",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_carabina",
+        "nome": "Carabina",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_carabina_de_feixe",
+        "nome": "Carabina de feixe",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_clarao",
+        "nome": "Clarão",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas brancas"
+      },
+      {
+        "slug": "armas_contencao",
+        "nome": "Contenção",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas de energia"
+      },
+      {
+        "slug": "armas_corrente_leve",
+        "nome": "Corrente leve",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_crioagulha",
+        "nome": "Crioagulha",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_criojetor",
+        "nome": "Criojetor",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_disruptor",
+        "nome": "Disruptor",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_dl_21_reaper_submetralhadora",
+        "nome": "DL-21 Reaper (Submetralhadora)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_dl_21_reaper_submetralhadora",
+        "nome": "DL-21 Reaper (Submetralhadora)",
+        "pagina": "ARMAS",
+        "campo": "Ocultável?",
+        "publicado": "",
+        "notion": "Não"
+      },
+      {
+        "slug": "armas_dl_34_ravage_carabina",
+        "nome": "DL-34 Ravage (Carabina)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_dl_34_ravage_carabina",
+        "nome": "DL-34 Ravage (Carabina)",
+        "pagina": "ARMAS",
+        "campo": "Ocultável?",
+        "publicado": "",
+        "notion": "Não"
+      },
+      {
+        "slug": "armas_dl_47_butcher_rifle_de_assalto",
+        "nome": "DL-47 Butcher (Rifle de assalto)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_dl_47_butcher_rifle_de_assalto",
+        "nome": "DL-47 Butcher (Rifle de assalto)",
+        "pagina": "ARMAS",
+        "campo": "Ocultável?",
+        "publicado": "",
+        "notion": "Não"
+      },
+      {
+        "slug": "armas_dl_8_cry_havoc_pistola_automatica",
+        "nome": "DL-8 Cry Havoc (Pistola automática)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_eficiencia",
+        "nome": "Eficiência",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas de energia"
+      },
+      {
+        "slug": "armas_eletrizante",
+        "nome": "Eletrizante",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas brancas"
+      },
+      {
+        "slug": "armas_escopeta_curta",
+        "nome": "Escopeta curta",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_espada_curta",
+        "nome": "Espada curta",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_espada_longa",
+        "nome": "Espada longa",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_espingarda",
+        "nome": "Espingarda",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_finta",
+        "nome": "Finta",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas brancas"
+      },
+      {
+        "slug": "armas_fl_1_razor_adaga",
+        "nome": "FL-1 Razor (Adaga)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_fl_2_edgelord_espada_longa",
+        "nome": "FL-2 Edgelord (Espada longa)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_fl_5_guillotine_machado_de_guerra",
+        "nome": "FL-5 Guillotine (Machado de guerra)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_focalizacao",
+        "nome": "Focalização",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas de energia"
+      },
+      {
+        "slug": "armas_frenesi",
+        "nome": "Frenesi",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas brancas"
+      },
+      {
+        "slug": "armas_fundidora",
+        "nome": "Fundidora",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_fuzil_voltaico",
+        "nome": "Fuzil voltaico",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_impeto",
+        "nome": "Ímpeto",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas brancas"
+      },
+      {
+        "slug": "armas_incinerador",
+        "nome": "Incinerador",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_ko_18_jawbreaker_manoplas",
+        "nome": "KO-18 Jawbreaker (Manoplas)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_ko_40_sledge_manoplas",
+        "nome": "KO-40 Sledge (Manoplas)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_ko_7_overreach_manoplas",
+        "nome": "KO-7 Overreach (Manoplas)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_lanca_crio",
+        "nome": "Lança-crio",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_machado_de_guerra",
+        "nome": "Machado de guerra",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_manoplas",
+        "nome": "Manoplas",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_martelo_pesado",
+        "nome": "Martelo pesado",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_metralhadora",
+        "nome": "Metralhadora",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_metralhadora_de_arco",
+        "nome": "Metralhadora de arco",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_ofuscador",
+        "nome": "Ofuscador",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_pente_fantasma",
+        "nome": "Pente Fantasma",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas de fogo"
+      },
+      {
+        "slug": "armas_pistola_de_bolso",
+        "nome": "Pistola de bolso",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_pistola_de_feixe",
+        "nome": "Pistola de feixe",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_pistola_pesada",
+        "nome": "Pistola pesada",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_pistola_voltaica",
+        "nome": "Pistola voltaica",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_potencia",
+        "nome": "Potência",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas de fogo"
+      },
+      {
+        "slug": "armas_rapieira",
+        "nome": "Rapieira",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_rastreadora",
+        "nome": "Rastreadora",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas de fogo"
+      },
+      {
+        "slug": "armas_recirculacao",
+        "nome": "Recirculação",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas de energia"
+      },
+      {
+        "slug": "armas_repetidora_termica",
+        "nome": "Repetidora térmica",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_ressonador",
+        "nome": "Ressonador",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_ressonador_de_cerco",
+        "nome": "Ressonador de cerco",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_retornavel",
+        "nome": "Retornável",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Projéteis (disparo e arremesso)"
+      },
+      {
+        "slug": "armas_retornavel",
+        "nome": "Retornável",
+        "pagina": "ARMAS",
+        "campo": "Raridade",
+        "publicado": "Comum",
+        "notion": "Incomum"
+      },
+      {
+        "slug": "armas_retratil",
+        "nome": "Retrátil",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas brancas"
+      },
+      {
+        "slug": "armas_revolver",
+        "nome": "Revólver",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_rifle_de_assalto",
+        "nome": "Rifle de assalto",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_rifle_de_feixe_concentrado",
+        "nome": "Rifle de feixe concentrado",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_rifle_de_precisao",
+        "nome": "Rifle de precisão",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_ruina",
+        "nome": "Ruína",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas brancas"
+      },
+      {
+        "slug": "armas_rv_12_razorstar_shuriken",
+        "nome": "RV-12 Razorstar (Shuriken)",
+        "pagina": "ARMAS",
+        "campo": "Espaços",
+        "publicado": "1",
+        "notion": "1 (kit de 3)"
+      },
+      {
+        "slug": "armas_rv_12_razorstar_shuriken",
+        "nome": "RV-12 Razorstar (Shuriken)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_rv_12_razorstar_shuriken",
+        "nome": "RV-12 Razorstar (Shuriken)",
+        "pagina": "ARMAS",
+        "campo": "Preço (Ⱥ)",
+        "publicado": "1.000 pelo conjunto",
+        "notion": "1.000 por kit"
+      },
+      {
+        "slug": "armas_rv_20_grudge_machado_de_mao",
+        "nome": "RV-20 Grudge (Machado de mão)",
+        "pagina": "ARMAS",
+        "campo": "Dano",
+        "publicado": "Corpo + 1d8",
+        "notion": "Corpo + 1d8 cortante"
+      },
+      {
+        "slug": "armas_rv_20_grudge_machado_de_mao",
+        "nome": "RV-20 Grudge (Machado de mão)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_rv_20_grudge_machado_de_mao",
+        "nome": "RV-20 Grudge (Machado de mão)",
+        "pagina": "ARMAS",
+        "campo": "Munição",
+        "publicado": "",
+        "notion": null
+      },
+      {
+        "slug": "armas_rv_20_grudge_machado_de_mao",
+        "nome": "RV-20 Grudge (Machado de mão)",
+        "pagina": "ARMAS",
+        "campo": "Tipo",
+        "publicado": "Cortante",
+        "notion": null
+      },
+      {
+        "slug": "armas_rv_4_shiv_faca",
+        "nome": "RV-4 Shiv (Faca)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_rv_4_shiv_faca",
+        "nome": "RV-4 Shiv (Faca)",
+        "pagina": "ARMAS",
+        "campo": "Propriedades",
+        "publicado": "Arremesso, Silencioso",
+        "notion": "Arremesso, Silencioso, Rajada (2)"
+      },
+      {
+        "slug": "armas_saturacao",
+        "nome": "Saturação",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas de energia"
+      },
+      {
+        "slug": "armas_shuriken",
+        "nome": "Shuriken",
+        "pagina": "ARMAS",
+        "campo": "Dano",
+        "publicado": "1d4 cortante",
+        "notion": "Corpo + 1d4 cortante"
+      },
+      {
+        "slug": "armas_shuriken",
+        "nome": "Shuriken",
+        "pagina": "ARMAS",
+        "campo": "Espaços",
+        "publicado": "1 (6 shurikens)",
+        "notion": "1 (kit de 6)"
+      },
+      {
+        "slug": "armas_shuriken",
+        "nome": "Shuriken",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_shuriken",
+        "nome": "Shuriken",
+        "pagina": "ARMAS",
+        "campo": "Propriedades",
+        "publicado": "Arremesso, Silencioso, Rajada (3),",
+        "notion": "Arremesso, Sangramento, Silencioso, Rajada (3)"
+      },
+      {
+        "slug": "armas_sk_24_blue_hawk_arco_composto",
+        "nome": "SK-24 Blue Hawk (Arco composto)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_sk_60_white_vulture_arco_longo",
+        "nome": "SK-60 White Vulture (Arco longo)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_sk_7_red_falcon_arco_curto",
+        "nome": "SK-7 Red Falcon (Arco curto)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_soco_ingles",
+        "nome": "Soco-inglês",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_sombra",
+        "nome": "Sombra",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Projéteis (disparo e arremesso)"
+      },
+      {
+        "slug": "armas_submetralhadora",
+        "nome": "Submetralhadora",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_sw_22_spiral_submetralhadora",
+        "nome": "SW-22 Spiral (Submetralhadora)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_sw_36_crossfade_carabina",
+        "nome": "SW-36 Crossfade (Carabina)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_sw_51_deviant_rifle_de_assalto",
+        "nome": "SW-51 Deviant (Rifle de assalto)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "2"
+      },
+      {
+        "slug": "armas_sw_9_ghostline_pistola_pesada",
+        "nome": "SW-9 Ghostline (Pistola pesada)",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_tonfa",
+        "nome": "Tonfa",
+        "pagina": "ARMAS",
+        "campo": "Mãos",
+        "publicado": null,
+        "notion": "1"
+      },
+      {
+        "slug": "armas_voragem",
+        "nome": "Voragem",
+        "pagina": "ARMAS",
+        "campo": "Aplicação",
+        "publicado": null,
+        "notion": "Armas brancas"
+      }
+    ],
+    "sem_correspondencia": [
+      {
+        "slug": "armas_dardos",
+        "nome": "Dardos",
+        "pagina": "ARMAS",
+        "candidatos": 0
+      },
+      {
+        "slug": "armas_dl_66_widowmaker_metralhadora",
+        "nome": "DL-66 Widowmaker (Metralhadora)",
+        "pagina": "ARMAS",
+        "candidatos": 0
+      },
+      {
+        "slug": "armas_sw_80_parallax_rifle_de_precisao",
+        "nome": "SW-80 Parallax (Rifle de precisão)",
+        "pagina": "ARMAS",
+        "candidatos": 0
+      },
+      {
+        "slug": "mobilidade_baia_de_unidades",
+        "nome": "BAIA DE UNIDADES",
+        "pagina": "MOBILIDADE",
+        "candidatos": 0
+      },
+      {
+        "slug": "mobilidade_compartimento_oculto",
+        "nome": "COMPARTIMENTO OCULTO",
+        "pagina": "MOBILIDADE",
+        "candidatos": 0
+      },
+      {
+        "slug": "mobilidade_modulo_clinica",
+        "nome": "MÓDULO-CLÍNICA",
+        "pagina": "MOBILIDADE",
+        "candidatos": 0
+      },
+      {
+        "slug": "mobilidade_modulo_de_transporte",
+        "nome": "MÓDULO DE TRANSPORTE",
+        "pagina": "MOBILIDADE",
+        "candidatos": 0
+      },
+      {
+        "slug": "mobilidade_modulo_gerador",
+        "nome": "MÓDULO-GERADOR",
+        "pagina": "MOBILIDADE",
+        "candidatos": 0
+      },
+      {
+        "slug": "mobilidade_modulo_oficina",
+        "nome": "MÓDULO-OFICINA",
+        "pagina": "MOBILIDADE",
+        "candidatos": 0
+      }
+    ],
+    "ambiguos": [
+      {
+        "slug": "armas_armas_corpo_a_corpo_silenciadora",
+        "nome": "Silenciadora",
+        "pagina": "ARMAS",
+        "candidatos": 2
+      },
+      {
+        "slug": "armas_armas_corpo_a_corpo_toxica_137c82",
+        "nome": "Tóxica",
+        "pagina": "ARMAS",
+        "candidatos": 2
+      },
+      {
+        "slug": "armas_armas_de_arremesso_e_disparo_ricochete",
+        "nome": "Ricochete",
+        "pagina": "ARMAS",
+        "candidatos": 2
+      },
+      {
+        "slug": "armas_armas_de_arremesso_e_disparo_serpentina",
+        "nome": "Serpentina",
+        "pagina": "ARMAS",
+        "candidatos": 2
+      },
+      {
+        "slug": "armas_armas_de_arremesso_e_disparo_toxica_f5d0f7",
+        "nome": "Tóxica",
+        "pagina": "ARMAS",
+        "candidatos": 2
+      },
+      {
+        "slug": "armas_armas_de_energia_estabilidade",
+        "nome": "Estabilidade",
+        "pagina": "ARMAS",
+        "candidatos": 2
+      },
+      {
+        "slug": "armas_armas_de_fogo_estabilidade",
+        "nome": "Estabilidade",
+        "pagina": "ARMAS",
+        "candidatos": 2
+      },
+      {
+        "slug": "armas_armas_de_fogo_ricochete",
+        "nome": "Ricochete",
+        "pagina": "ARMAS",
+        "candidatos": 2
+      },
+      {
+        "slug": "armas_armas_de_fogo_serpentina",
+        "nome": "Serpentina",
+        "pagina": "ARMAS",
+        "candidatos": 2
+      },
+      {
+        "slug": "armas_armas_de_fogo_silenciadora",
+        "nome": "Silenciadora",
+        "pagina": "ARMAS",
+        "candidatos": 2
+      },
+      {
+        "slug": "armas_armas_corpo_a_corpo_faca",
+        "nome": "Faca",
+        "pagina": "ARMAS",
+        "candidatos": 1,
+        "motivo": "Múltiplos registros publicados apontam à mesma linha atual; possível consolidação/renomeação."
+      },
+      {
+        "slug": "armas_armas_de_arremesso_e_disparo_faca",
+        "nome": "Faca",
+        "pagina": "ARMAS",
+        "candidatos": 1,
+        "motivo": "Múltiplos registros publicados apontam à mesma linha atual; possível consolidação/renomeação."
+      },
+      {
+        "slug": "armas_armas_corpo_a_corpo_lanca",
+        "nome": "Lança",
+        "pagina": "ARMAS",
+        "candidatos": 1,
+        "motivo": "Múltiplos registros publicados apontam à mesma linha atual; possível consolidação/renomeação."
+      },
+      {
+        "slug": "armas_armas_de_arremesso_e_disparo_lanca",
+        "nome": "Lança",
+        "pagina": "ARMAS",
+        "candidatos": 1,
+        "motivo": "Múltiplos registros publicados apontam à mesma linha atual; possível consolidação/renomeação."
+      },
+      {
+        "slug": "armas_armas_corpo_a_corpo_machado_de_mao",
+        "nome": "Machado de mão",
+        "pagina": "ARMAS",
+        "candidatos": 1,
+        "motivo": "Múltiplos registros publicados apontam à mesma linha atual; possível consolidação/renomeação."
+      },
+      {
+        "slug": "armas_armas_de_arremesso_e_disparo_machado_de_mao",
+        "nome": "Machado de mão",
+        "pagina": "ARMAS",
+        "candidatos": 1,
+        "motivo": "Múltiplos registros publicados apontam à mesma linha atual; possível consolidação/renomeação."
+      }
+    ],
+    "novas_linhas_comerciais": [
+      {
+        "page": "ARMAS",
+        "table": 4,
+        "name": "Facas de Arremesso",
+        "fields": {
+          "Arma": "Facas de Arremesso",
+          "Dano": "Corpo + 1d6 perfurante (arremesso); Corpo + 1d4 perfurante (corpo a corpo)",
+          "Mãos": "1",
+          "Propriedades": "Arremesso, Silencioso, Rajada (2)",
+          "Ocultável?": "Sim",
+          "Raridade": "Comum",
+          "Espaços": "1 (kit de 4)",
+          "Preço (Ⱥ)": "120"
+        }
+      },
+      {
+        "page": "ARMAS",
+        "table": 16,
+        "name": "SW-80 Widowmaker (Rifle de precisão)",
+        "fields": {
+          "Arma": "SW-80 Widowmaker (Rifle de precisão)",
+          "Dano": "2d10 perfurante",
+          "Mãos": "2",
+          "Propriedades": "Sangramento, Perfuração, Precisão",
+          "Munição": "2",
+          "Ocultável?": "Não",
+          "Raridade": "Muito raro",
+          "Espaços": "3",
+          "Preço (Ⱥ)": "5.500"
+        }
+      },
+      {
+        "page": "ARMAS",
+        "table": 16,
+        "name": "DL-66 Maelstrom (Metralhadora)",
+        "fields": {
+          "Arma": "DL-66 Maelstrom (Metralhadora)",
+          "Dano": "1d8 perfurante",
+          "Mãos": "2",
+          "Propriedades": "Sangramento, Rajada (4)",
+          "Munição": "80",
+          "Ocultável?": "Não",
+          "Raridade": "Muito raro",
+          "Espaços": "3",
+          "Preço (Ⱥ)": "4.000"
+        }
+      },
+      {
+        "page": "FERRAMENTAS E UTILIDADES",
+        "table": 0,
+        "name": "Aljava",
+        "fields": {
+          "Item": "Aljava",
+          "Efeito": "Armazena até 20 flechas ou 10 virotes, permitindo combinar os dois tipos.",
+          "Raridade": "Comum",
+          "Espaços": "1",
+          "Preço (Ⱥ)": "70"
+        }
+      },
+      {
+        "page": "FERRAMENTAS E UTILIDADES",
+        "table": 0,
+        "name": "Aljava Autoalimentadora",
+        "fields": {
+          "Item": "Aljava Autoalimentadora",
+          "Efeito": "Armazena até 20 flechas e permite recarregar um arco como parte da ação Atacar.",
+          "Raridade": "Incomum",
+          "Espaços": "1",
+          "Preço (Ⱥ)": "400"
+        }
+      },
+      {
+        "page": "FERRAMENTAS E UTILIDADES",
+        "table": 0,
+        "name": "Cartucheira",
+        "fields": {
+          "Item": "Cartucheira",
+          "Efeito": "Armazena até 40 unidades de capacidade em munições de diferentes calibres.",
+          "Raridade": "Comum",
+          "Espaços": "1",
+          "Preço (Ⱥ)": "120"
+        }
+      }
+    ]
+  },
+  "campos_tecnicos_ausentes": [
+    {
+      "slug": "armaduras_e_escudos_calca_acolchoada",
+      "nome": "Calça acolchoada",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Pernas",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_calca_acolchoada",
+      "nome": "Calça acolchoada",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "2",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_calca_acolchoada",
+      "nome": "Calça acolchoada",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Físico",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_calca_acolchoada",
+      "nome": "Calça acolchoada",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_capacete_balistico",
+      "nome": "Capacete balístico",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Cabeça",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_capacete_balistico",
+      "nome": "Capacete balístico",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "3",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_capacete_balistico",
+      "nome": "Capacete balístico",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Físico",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_capacete_balistico",
+      "nome": "Capacete balístico",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_capacete_integral",
+      "nome": "Capacete integral",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Cabeça",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_capacete_integral",
+      "nome": "Capacete integral",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "7",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_capacete_integral",
+      "nome": "Capacete integral",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Físico",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_capacete_integral",
+      "nome": "Capacete integral",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_colete_balistico",
+      "nome": "Colete balístico",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Tronco",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_colete_balistico",
+      "nome": "Colete balístico",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "4",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_colete_balistico",
+      "nome": "Colete balístico",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Físico",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_colete_balistico",
+      "nome": "Colete balístico",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Parcial",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_colete_hibrido_urbano",
+      "nome": "Colete híbrido urbano",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Tronco",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_colete_hibrido_urbano",
+      "nome": "Colete híbrido urbano",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "3",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_colete_hibrido_urbano",
+      "nome": "Colete híbrido urbano",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Híbrido",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_colete_hibrido_urbano",
+      "nome": "Colete híbrido urbano",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_colete_reforcado",
+      "nome": "Colete reforçado",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Tronco",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_colete_reforcado",
+      "nome": "Colete reforçado",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "8",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_colete_reforcado",
+      "nome": "Colete reforçado",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Físico",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_colete_reforcado",
+      "nome": "Colete reforçado",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_cotoveleiras",
+      "nome": "Cotoveleiras",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Braços",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_cotoveleiras",
+      "nome": "Cotoveleiras",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "2",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_cotoveleiras",
+      "nome": "Cotoveleiras",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Físico",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_cotoveleiras",
+      "nome": "Cotoveleiras",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Parcial",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_balistico",
+      "nome": "Escudo balístico",
+      "categoria": "escudo",
+      "origem": "PD",
+      "valor": "12",
+      "destino": "pd_max",
+      "impacto": "Durabilidade do escudo"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_balistico",
+      "nome": "Escudo balístico",
+      "categoria": "escudo",
+      "origem": "Resistência",
+      "valor": "Físico",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_balistico",
+      "nome": "Escudo balístico",
+      "categoria": "escudo",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_compacto",
+      "nome": "Escudo compacto",
+      "categoria": "escudo",
+      "origem": "PD",
+      "valor": "5",
+      "destino": "pd_max",
+      "impacto": "Durabilidade do escudo"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_compacto",
+      "nome": "Escudo compacto",
+      "categoria": "escudo",
+      "origem": "Resistência",
+      "valor": "Físico",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_compacto",
+      "nome": "Escudo compacto",
+      "categoria": "escudo",
+      "origem": "Ocultável?",
+      "valor": "Parcial",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_reforcado_hibrido",
+      "nome": "Escudo reforçado híbrido",
+      "categoria": "escudo",
+      "origem": "PD",
+      "valor": "8",
+      "destino": "pd_max",
+      "impacto": "Durabilidade do escudo"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_reforcado_hibrido",
+      "nome": "Escudo reforçado híbrido",
+      "categoria": "escudo",
+      "origem": "Resistência",
+      "valor": "Híbrido",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_reforcado_hibrido",
+      "nome": "Escudo reforçado híbrido",
+      "categoria": "escudo",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_tatico_leve",
+      "nome": "Escudo tático leve",
+      "categoria": "escudo",
+      "origem": "PD",
+      "valor": "8",
+      "destino": "pd_max",
+      "impacto": "Durabilidade do escudo"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_tatico_leve",
+      "nome": "Escudo tático leve",
+      "categoria": "escudo",
+      "origem": "Resistência",
+      "valor": "Físico",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_tatico_leve",
+      "nome": "Escudo tático leve",
+      "categoria": "escudo",
+      "origem": "Ocultável?",
+      "valor": "Parcial",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_torre",
+      "nome": "Escudo torre",
+      "categoria": "escudo",
+      "origem": "PD",
+      "valor": "16",
+      "destino": "pd_max",
+      "impacto": "Durabilidade do escudo"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_torre",
+      "nome": "Escudo torre",
+      "categoria": "escudo",
+      "origem": "Resistência",
+      "valor": "Físico",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_torre",
+      "nome": "Escudo torre",
+      "categoria": "escudo",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_torre_hibrido",
+      "nome": "Escudo torre híbrido",
+      "categoria": "escudo",
+      "origem": "PD",
+      "valor": "12",
+      "destino": "pd_max",
+      "impacto": "Durabilidade do escudo"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_torre_hibrido",
+      "nome": "Escudo torre híbrido",
+      "categoria": "escudo",
+      "origem": "Resistência",
+      "valor": "Híbrido",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_escudo_torre_hibrido",
+      "nome": "Escudo torre híbrido",
+      "categoria": "escudo",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_exotraje_ablativo",
+      "nome": "Exotraje Ablativo",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Cabeça, Tronco, Braços e Pernas",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_exotraje_ablativo",
+      "nome": "Exotraje Ablativo",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "9",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_exotraje_ablativo",
+      "nome": "Exotraje Ablativo",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Híbrido",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_exotraje_ablativo",
+      "nome": "Exotraje Ablativo",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_exotraje_mosaico",
+      "nome": "Exotraje Mosaico",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Cabeça, Tronco, Braços e Pernas",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_exotraje_mosaico",
+      "nome": "Exotraje Mosaico",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "6",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_exotraje_mosaico",
+      "nome": "Exotraje Mosaico",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Híbrido",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_exotraje_mosaico",
+      "nome": "Exotraje Mosaico",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_exotraje_pesado",
+      "nome": "Exotraje pesado",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Tronco, Cabeça, Braços e Pernas",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_exotraje_pesado",
+      "nome": "Exotraje pesado",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "10",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_exotraje_pesado",
+      "nome": "Exotraje pesado",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Híbrido",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_exotraje_pesado",
+      "nome": "Exotraje pesado",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_gorro_reforcado",
+      "nome": "Gorro reforçado",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Cabeça",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_gorro_reforcado",
+      "nome": "Gorro reforçado",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "2",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_gorro_reforcado",
+      "nome": "Gorro reforçado",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Físico",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_gorro_reforcado",
+      "nome": "Gorro reforçado",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_jaqueta_de_couro_reforcada",
+      "nome": "Jaqueta de couro reforçada",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Tronco",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_jaqueta_de_couro_reforcada",
+      "nome": "Jaqueta de couro reforçada",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "3",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_jaqueta_de_couro_reforcada",
+      "nome": "Jaqueta de couro reforçada",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Físico",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_jaqueta_de_couro_reforcada",
+      "nome": "Jaqueta de couro reforçada",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_jaqueta_isolante",
+      "nome": "Jaqueta isolante",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Tronco",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_jaqueta_isolante",
+      "nome": "Jaqueta isolante",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "2",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_jaqueta_isolante",
+      "nome": "Jaqueta isolante",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Energético",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_jaqueta_isolante",
+      "nome": "Jaqueta isolante",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_jaqueta_termoestatica",
+      "nome": "Jaqueta termoestática",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Tronco",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_jaqueta_termoestatica",
+      "nome": "Jaqueta termoestática",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "3",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_jaqueta_termoestatica",
+      "nome": "Jaqueta termoestática",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Energético",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_jaqueta_termoestatica",
+      "nome": "Jaqueta termoestática",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Parcial",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_ombreiras_compostas",
+      "nome": "Ombreiras compostas",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Braços",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_ombreiras_compostas",
+      "nome": "Ombreiras compostas",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "3",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_ombreiras_compostas",
+      "nome": "Ombreiras compostas",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Físico",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_ombreiras_compostas",
+      "nome": "Ombreiras compostas",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_ombreiras_laminadas",
+      "nome": "Ombreiras laminadas",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Braços",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_ombreiras_laminadas",
+      "nome": "Ombreiras laminadas",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "7",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_ombreiras_laminadas",
+      "nome": "Ombreiras laminadas",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Físico",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_ombreiras_laminadas",
+      "nome": "Ombreiras laminadas",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_peitoral_isolante",
+      "nome": "Peitoral isolante",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Tronco",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_peitoral_isolante",
+      "nome": "Peitoral isolante",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "7",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_peitoral_isolante",
+      "nome": "Peitoral isolante",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Energético",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_peitoral_isolante",
+      "nome": "Peitoral isolante",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_perneiras_blindadas",
+      "nome": "Perneiras blindadas",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Pernas",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_perneiras_blindadas",
+      "nome": "Perneiras blindadas",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "7",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_perneiras_blindadas",
+      "nome": "Perneiras blindadas",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Físico",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_perneiras_blindadas",
+      "nome": "Perneiras blindadas",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_perneiras_reforcadas",
+      "nome": "Perneiras reforçadas",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Pernas",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_perneiras_reforcadas",
+      "nome": "Perneiras reforçadas",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "3",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_perneiras_reforcadas",
+      "nome": "Perneiras reforçadas",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Físico",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_perneiras_reforcadas",
+      "nome": "Perneiras reforçadas",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Parcial",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armaduras_e_escudos_traje_urbano_hibrido",
+      "nome": "Traje urbano híbrido",
+      "categoria": "armadura",
+      "origem": "Região",
+      "valor": "Tronco",
+      "destino": "regioes",
+      "impacto": "Compatibilidade dos encaixes corporais"
+    },
+    {
+      "slug": "armaduras_e_escudos_traje_urbano_hibrido",
+      "nome": "Traje urbano híbrido",
+      "categoria": "armadura",
+      "origem": "MIT",
+      "valor": "2",
+      "destino": "mit_base",
+      "impacto": "Mitigação e reparo"
+    },
+    {
+      "slug": "armaduras_e_escudos_traje_urbano_hibrido",
+      "nome": "Traje urbano híbrido",
+      "categoria": "armadura",
+      "origem": "Resistência",
+      "valor": "Híbrido",
+      "destino": "tipo_protecao",
+      "impacto": "Tipo de proteção"
+    },
+    {
+      "slug": "armaduras_e_escudos_traje_urbano_hibrido",
+      "nome": "Traje urbano híbrido",
+      "categoria": "armadura",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_adaga",
+      "nome": "Adaga",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d6 cortante/perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_adaga",
+      "nome": "Adaga",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_adaga",
+      "nome": "Adaga",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Sim",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_alabarda",
+      "nome": "Alabarda",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d10 cortante/perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_alabarda",
+      "nome": "Alabarda",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Perfuração, Alcance, Desarme",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_alabarda",
+      "nome": "Alabarda",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_alta_capacidade",
+      "nome": "Alta capacidade",
+      "categoria": "municao",
+      "origem": "Compatibilidade",
+      "valor": "Repetidora térmica e metralhadora de arco",
+      "destino": "compatibilidade",
+      "impacto": "Compatibilidade com armas"
+    },
+    {
+      "slug": "armas_alta_capacidade",
+      "nome": "Alta capacidade",
+      "categoria": "municao",
+      "origem": "Cargas",
+      "valor": "24",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_alta_densidade",
+      "nome": "Alta densidade",
+      "categoria": "municao",
+      "origem": "Compatibilidade",
+      "valor": "Armas pesadas",
+      "destino": "compatibilidade",
+      "impacto": "Compatibilidade com armas"
+    },
+    {
+      "slug": "armas_alta_densidade",
+      "nome": "Alta densidade",
+      "categoria": "municao",
+      "origem": "Cargas",
+      "valor": "6",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_arco_curto",
+      "nome": "Arco curto",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d6",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_arco_curto",
+      "nome": "Arco curto",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Silencioso, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_arco_curto",
+      "nome": "Arco curto",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "1",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_arco_curto",
+      "nome": "Arco curto",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_arco_longo",
+      "nome": "Arco longo",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d10 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_arco_longo",
+      "nome": "Arco longo",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Perfuração, Silencioso, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_arco_longo",
+      "nome": "Arco longo",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "1",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_arco_longo",
+      "nome": "Arco longo",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_armas_corpo_a_corpo_faca",
+      "nome": "Faca",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d6 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_armas_corpo_a_corpo_faca",
+      "nome": "Faca",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Arremesso, Silencioso",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_armas_corpo_a_corpo_faca",
+      "nome": "Faca",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Sim",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_armas_corpo_a_corpo_lanca",
+      "nome": "Lança",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d6 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_armas_corpo_a_corpo_lanca",
+      "nome": "Lança",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Perfuração, Alcance, Arremesso",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_armas_corpo_a_corpo_lanca",
+      "nome": "Lança",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_armas_corpo_a_corpo_machado_de_mao",
+      "nome": "Machado de mão",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d8 cortante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_armas_corpo_a_corpo_machado_de_mao",
+      "nome": "Machado de mão",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Arremesso",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_armas_corpo_a_corpo_machado_de_mao",
+      "nome": "Machado de mão",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_armas_de_arremesso_e_disparo_faca",
+      "nome": "Faca",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d6 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_armas_de_arremesso_e_disparo_faca",
+      "nome": "Faca",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Arremesso, Silencioso",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_armas_de_arremesso_e_disparo_faca",
+      "nome": "Faca",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Sim",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_armas_de_arremesso_e_disparo_flamejante",
+      "nome": "Flamejante",
+      "categoria": "municao",
+      "origem": "Kit",
+      "valor": "5 flechas",
+      "destino": "kit",
+      "impacto": "Quantidade do kit"
+    },
+    {
+      "slug": "armas_armas_de_arremesso_e_disparo_lanca",
+      "nome": "Lança",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d6",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_armas_de_arremesso_e_disparo_lanca",
+      "nome": "Lança",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Perfuração, Alcance, Arremesso",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_armas_de_arremesso_e_disparo_lanca",
+      "nome": "Lança",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_armas_de_arremesso_e_disparo_machado_de_mao",
+      "nome": "Machado de mão",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d8",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_armas_de_arremesso_e_disparo_machado_de_mao",
+      "nome": "Machado de mão",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Arremesso",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_armas_de_arremesso_e_disparo_machado_de_mao",
+      "nome": "Machado de mão",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_armas_de_arremesso_e_disparo_toxica_d8c52d",
+      "nome": "Tóxica",
+      "categoria": "municao",
+      "origem": "Kit",
+      "valor": "5 flechas",
+      "destino": "kit",
+      "impacto": "Quantidade do kit"
+    },
+    {
+      "slug": "armas_arpao",
+      "nome": "Arpão",
+      "categoria": "municao",
+      "origem": "Kit",
+      "valor": "5 flechas",
+      "destino": "kit",
+      "impacto": "Quantidade do kit"
+    },
+    {
+      "slug": "armas_as_10_overdrive_pistola_pesada",
+      "nome": "AS-10 Overdrive (Pistola pesada)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d8 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_as_10_overdrive_pistola_pesada",
+      "nome": "AS-10 Overdrive (Pistola pesada)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Perfuração",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_as_10_overdrive_pistola_pesada",
+      "nome": "AS-10 Overdrive (Pistola pesada)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "8",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_as_127_wrecker_rifle_antimaterial",
+      "nome": "AS-127 Wrecker (Rifle antimaterial)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "3d8 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_as_127_wrecker_rifle_antimaterial",
+      "nome": "AS-127 Wrecker (Rifle antimaterial)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Perfuração, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_as_127_wrecker_rifle_antimaterial",
+      "nome": "AS-127 Wrecker (Rifle antimaterial)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "1",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_as_65_runaway_carabina",
+      "nome": "AS-65 Runaway (Carabina)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d8 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_as_65_runaway_carabina",
+      "nome": "AS-65 Runaway (Carabina)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Perfuração, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_as_65_runaway_carabina",
+      "nome": "AS-65 Runaway (Carabina)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "20",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_as_762_redshift_rifle_de_assalto",
+      "nome": "AS-762 Redshift (Rifle de assalto)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "2d6 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_as_762_redshift_rifle_de_assalto",
+      "nome": "AS-762 Redshift (Rifle de assalto)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Perfuração, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_as_762_redshift_rifle_de_assalto",
+      "nome": "AS-762 Redshift (Rifle de assalto)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "30",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_as_86_terminal_rifle_de_precisao",
+      "nome": "AS-86 Terminal (Rifle de precisão)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "2d10 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_as_86_terminal_rifle_de_precisao",
+      "nome": "AS-86 Terminal (Rifle de precisão)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Perfuração, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_as_86_terminal_rifle_de_precisao",
+      "nome": "AS-86 Terminal (Rifle de precisão)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "2",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_bastao",
+      "nome": "Bastão",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d6 contundente",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_bastao",
+      "nome": "Bastão",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Contusão, Aparar",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_bastao",
+      "nome": "Bastão",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_bb_14_sprawl_espingarda",
+      "nome": "BB-14 Sprawl (Espingarda)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "2d6 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_bb_14_sprawl_espingarda",
+      "nome": "BB-14 Sprawl (Espingarda)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Dispersão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_bb_14_sprawl_espingarda",
+      "nome": "BB-14 Sprawl (Espingarda)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "6",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_bb_30_blight_escopeta_pesada",
+      "nome": "BB-30 Blight (Escopeta pesada)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "2d8 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_bb_30_blight_escopeta_pesada",
+      "nome": "BB-30 Blight (Escopeta pesada)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Atordoamento, Dispersão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_bb_30_blight_escopeta_pesada",
+      "nome": "BB-30 Blight (Escopeta pesada)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "8",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_bb_6_claws_escopeta_curta",
+      "nome": "BB-6 Claws (Escopeta curta)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d10 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_bb_6_claws_escopeta_curta",
+      "nome": "BB-6 Claws (Escopeta curta)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Atordoamento, Dispersão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_bb_6_claws_escopeta_curta",
+      "nome": "BB-6 Claws (Escopeta curta)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "6",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_besta_leve",
+      "nome": "Besta leve",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d8",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_besta_leve",
+      "nome": "Besta leve",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Silencioso, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_besta_leve",
+      "nome": "Besta leve",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "1",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_besta_leve",
+      "nome": "Besta leve",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_besta_pesada",
+      "nome": "Besta pesada",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d12 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_besta_pesada",
+      "nome": "Besta pesada",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Perfuração, Silencioso, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_besta_pesada",
+      "nome": "Besta pesada",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "1",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_besta_pesada",
+      "nome": "Besta pesada",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_canhao_de_plasma",
+      "nome": "Canhão de plasma",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "2d8 ígneo",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_canhao_de_plasma",
+      "nome": "Canhão de plasma",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Empurrão, Queimadura",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_canhao_de_plasma",
+      "nome": "Canhão de plasma",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_canhao_de_plasma",
+      "nome": "Canhão de plasma",
+      "categoria": "arma",
+      "origem": "Cargas",
+      "valor": "6",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_carabina",
+      "nome": "Carabina",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d8",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_carabina",
+      "nome": "Carabina",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Perfuração, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_carabina",
+      "nome": "Carabina",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "20",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_carabina",
+      "nome": "Carabina",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_carabina_de_feixe",
+      "nome": "Carabina de feixe",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d8 ígneo",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_carabina_de_feixe",
+      "nome": "Carabina de feixe",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Perfuração, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_carabina_de_feixe",
+      "nome": "Carabina de feixe",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_carabina_de_feixe",
+      "nome": "Carabina de feixe",
+      "categoria": "arma",
+      "origem": "Cargas",
+      "valor": "12",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_compacta",
+      "nome": "Compacta",
+      "categoria": "municao",
+      "origem": "Compatibilidade",
+      "valor": "Armas leves",
+      "destino": "compatibilidade",
+      "impacto": "Compatibilidade com armas"
+    },
+    {
+      "slug": "armas_compacta",
+      "nome": "Compacta",
+      "categoria": "municao",
+      "origem": "Cargas",
+      "valor": "8",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_corrente_leve",
+      "nome": "Corrente leve",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d6 contundente",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_corrente_leve",
+      "nome": "Corrente leve",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Desarme, Alcance",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_corrente_leve",
+      "nome": "Corrente leve",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_crioagulha",
+      "nome": "Crioagulha",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d4 gélido",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_crioagulha",
+      "nome": "Crioagulha",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Congelamento, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_crioagulha",
+      "nome": "Crioagulha",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Sim",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_crioagulha",
+      "nome": "Crioagulha",
+      "categoria": "arma",
+      "origem": "Cargas",
+      "valor": "8",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_criojetor",
+      "nome": "Criojetor",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d10 gélido",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_criojetor",
+      "nome": "Criojetor",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Congelamento, Dispersão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_criojetor",
+      "nome": "Criojetor",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_criojetor",
+      "nome": "Criojetor",
+      "categoria": "arma",
+      "origem": "Cargas",
+      "valor": "12",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_dardos",
+      "nome": "Dardos",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d4 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_dardos",
+      "nome": "Dardos",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Arremesso, Silencioso, Rajada (2)",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_dardos",
+      "nome": "Dardos",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Sim",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_disruptor",
+      "nome": "Disruptor",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d6 elétrico",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_disruptor",
+      "nome": "Disruptor",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Disrupção, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_disruptor",
+      "nome": "Disruptor",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_disruptor",
+      "nome": "Disruptor",
+      "categoria": "arma",
+      "origem": "Cargas",
+      "valor": "12",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_dl_21_reaper_submetralhadora",
+      "nome": "DL-21 Reaper (Submetralhadora)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d6 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_dl_21_reaper_submetralhadora",
+      "nome": "DL-21 Reaper (Submetralhadora)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Rajada (3)",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_dl_21_reaper_submetralhadora",
+      "nome": "DL-21 Reaper (Submetralhadora)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "30",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_dl_34_ravage_carabina",
+      "nome": "DL-34 Ravage (Carabina)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d8 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_dl_34_ravage_carabina",
+      "nome": "DL-34 Ravage (Carabina)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Perfuração, Precisão, Rajada (2)",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_dl_34_ravage_carabina",
+      "nome": "DL-34 Ravage (Carabina)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "20",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_dl_47_butcher_rifle_de_assalto",
+      "nome": "DL-47 Butcher (Rifle de assalto)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "2d6 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_dl_47_butcher_rifle_de_assalto",
+      "nome": "DL-47 Butcher (Rifle de assalto)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Perfuração, Precisão, Rajada (2)",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_dl_47_butcher_rifle_de_assalto",
+      "nome": "DL-47 Butcher (Rifle de assalto)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "30",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_dl_66_widowmaker_metralhadora",
+      "nome": "DL-66 Widowmaker (Metralhadora)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d8 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_dl_66_widowmaker_metralhadora",
+      "nome": "DL-66 Widowmaker (Metralhadora)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Rajada (4)",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_dl_66_widowmaker_metralhadora",
+      "nome": "DL-66 Widowmaker (Metralhadora)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "80",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_dl_8_cry_havoc_pistola_automatica",
+      "nome": "DL-8 Cry Havoc (Pistola automática)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d6 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_dl_8_cry_havoc_pistola_automatica",
+      "nome": "DL-8 Cry Havoc (Pistola automática)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Rajada (2)",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_dl_8_cry_havoc_pistola_automatica",
+      "nome": "DL-8 Cry Havoc (Pistola automática)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "18",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_eletrica",
+      "nome": "Elétrica",
+      "categoria": "municao",
+      "origem": "Kit",
+      "valor": "5 flechas",
+      "destino": "kit",
+      "impacto": "Quantidade do kit"
+    },
+    {
+      "slug": "armas_escopeta",
+      "nome": "Escopeta",
+      "categoria": "municao",
+      "origem": "Compatibilidade",
+      "valor": "Escopeta curta, Espingarda",
+      "destino": "compatibilidade",
+      "impacto": "Compatibilidade com armas"
+    },
+    {
+      "slug": "armas_escopeta",
+      "nome": "Escopeta",
+      "categoria": "municao",
+      "origem": "Kit",
+      "valor": "6 projéteis",
+      "destino": "kit",
+      "impacto": "Quantidade do kit"
+    },
+    {
+      "slug": "armas_escopeta_curta",
+      "nome": "Escopeta curta",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d10",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_escopeta_curta",
+      "nome": "Escopeta curta",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Atordoamento",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_escopeta_curta",
+      "nome": "Escopeta curta",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "6",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_escopeta_curta",
+      "nome": "Escopeta curta",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_espada_curta",
+      "nome": "Espada curta",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d8 cortante /perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_espada_curta",
+      "nome": "Espada curta",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Aparar",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_espada_curta",
+      "nome": "Espada curta",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_espada_longa",
+      "nome": "Espada longa",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d10 cortante/perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_espada_longa",
+      "nome": "Espada longa",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Aparar",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_espada_longa",
+      "nome": "Espada longa",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_espingarda",
+      "nome": "Espingarda",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "2d6",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_espingarda",
+      "nome": "Espingarda",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_espingarda",
+      "nome": "Espingarda",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "8",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_espingarda",
+      "nome": "Espingarda",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_explosiva",
+      "nome": "Explosiva",
+      "categoria": "municao",
+      "origem": "Kit",
+      "valor": "5 flechas",
+      "destino": "kit",
+      "impacto": "Quantidade do kit"
+    },
+    {
+      "slug": "armas_fixacao",
+      "nome": "Fixação",
+      "categoria": "municao",
+      "origem": "Kit",
+      "valor": "5 flechas",
+      "destino": "kit",
+      "impacto": "Quantidade do kit"
+    },
+    {
+      "slug": "armas_fl_1_razor_adaga",
+      "nome": "FL-1 Razor (Adaga)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d6 cortante ou perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_fl_1_razor_adaga",
+      "nome": "FL-1 Razor (Adaga)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_fl_1_razor_adaga",
+      "nome": "FL-1 Razor (Adaga)",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Sim",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_fl_2_edgelord_espada_longa",
+      "nome": "FL-2 Edgelord (Espada longa)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d10 cortante ou perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_fl_2_edgelord_espada_longa",
+      "nome": "FL-2 Edgelord (Espada longa)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Aparar",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_fl_2_edgelord_espada_longa",
+      "nome": "FL-2 Edgelord (Espada longa)",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_fl_5_guillotine_machado_de_guerra",
+      "nome": "FL-5 Guillotine (Machado de guerra)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d12 cortante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_fl_5_guillotine_machado_de_guerra",
+      "nome": "FL-5 Guillotine (Machado de guerra)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_fl_5_guillotine_machado_de_guerra",
+      "nome": "FL-5 Guillotine (Machado de guerra)",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_flecha_simples",
+      "nome": "Flecha simples",
+      "categoria": "municao",
+      "origem": "Compatibilidade",
+      "valor": "Arcos",
+      "destino": "compatibilidade",
+      "impacto": "Compatibilidade com armas"
+    },
+    {
+      "slug": "armas_flecha_simples",
+      "nome": "Flecha simples",
+      "categoria": "municao",
+      "origem": "Kit",
+      "valor": "10 flechas",
+      "destino": "kit",
+      "impacto": "Quantidade do kit"
+    },
+    {
+      "slug": "armas_fundidora",
+      "nome": "Fundidora",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d8 ígneo",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_fundidora",
+      "nome": "Fundidora",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Queimadura",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_fundidora",
+      "nome": "Fundidora",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Parcial",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_fundidora",
+      "nome": "Fundidora",
+      "categoria": "arma",
+      "origem": "Cargas",
+      "valor": "8",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_fuzil",
+      "nome": "Fuzil",
+      "categoria": "municao",
+      "origem": "Compatibilidade",
+      "valor": "Submetralhadora, Carabina, Rifle de assalto, Metralhadora",
+      "destino": "compatibilidade",
+      "impacto": "Compatibilidade com armas"
+    },
+    {
+      "slug": "armas_fuzil",
+      "nome": "Fuzil",
+      "categoria": "municao",
+      "origem": "Kit",
+      "valor": "30 projéteis",
+      "destino": "kit",
+      "impacto": "Quantidade do kit"
+    },
+    {
+      "slug": "armas_fuzil_voltaico",
+      "nome": "Fuzil voltaico",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d8 elétrico",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_fuzil_voltaico",
+      "nome": "Fuzil voltaico",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Atordoamento",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_fuzil_voltaico",
+      "nome": "Fuzil voltaico",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_fuzil_voltaico",
+      "nome": "Fuzil voltaico",
+      "categoria": "arma",
+      "origem": "Cargas",
+      "valor": "12",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_incinerador",
+      "nome": "Incinerador",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "2d6 ígneo",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_incinerador",
+      "nome": "Incinerador",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Dispersão, Queimadura",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_incinerador",
+      "nome": "Incinerador",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_incinerador",
+      "nome": "Incinerador",
+      "categoria": "arma",
+      "origem": "Cargas",
+      "valor": "6",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_ko_18_jawbreaker_manoplas",
+      "nome": "KO-18 Jawbreaker (Manoplas)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d8 contundente",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_ko_18_jawbreaker_manoplas",
+      "nome": "KO-18 Jawbreaker (Manoplas)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Contusão, Aparar, Atordoamento",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_ko_18_jawbreaker_manoplas",
+      "nome": "KO-18 Jawbreaker (Manoplas)",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_ko_40_sledge_manoplas",
+      "nome": "KO-40 Sledge (Manoplas)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d10 contundente",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_ko_40_sledge_manoplas",
+      "nome": "KO-40 Sledge (Manoplas)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Contusão, Empurrão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_ko_40_sledge_manoplas",
+      "nome": "KO-40 Sledge (Manoplas)",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_ko_7_overreach_manoplas",
+      "nome": "KO-7 Overreach (Manoplas)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d6 contundente",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_ko_7_overreach_manoplas",
+      "nome": "KO-7 Overreach (Manoplas)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Contusão, Aparar",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_ko_7_overreach_manoplas",
+      "nome": "KO-7 Overreach (Manoplas)",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_lanca_crio",
+      "nome": "Lança-crio",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "2d6 gélido",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_lanca_crio",
+      "nome": "Lança-crio",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Congelamento, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_lanca_crio",
+      "nome": "Lança-crio",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_lanca_crio",
+      "nome": "Lança-crio",
+      "categoria": "arma",
+      "origem": "Cargas",
+      "valor": "6",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_machado_de_guerra",
+      "nome": "Machado de guerra",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d12 cortante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_machado_de_guerra",
+      "nome": "Machado de guerra",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_machado_de_guerra",
+      "nome": "Machado de guerra",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_manoplas",
+      "nome": "Manoplas",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d6 contundente",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_manoplas",
+      "nome": "Manoplas",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Contusão, Aparar",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_manoplas",
+      "nome": "Manoplas",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_martelo_pesado",
+      "nome": "Martelo pesado",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d10 contundente",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_martelo_pesado",
+      "nome": "Martelo pesado",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Contusão, Atordoamento, Empurrão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_martelo_pesado",
+      "nome": "Martelo pesado",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_metralhadora",
+      "nome": "Metralhadora",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d8",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_metralhadora",
+      "nome": "Metralhadora",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Rajada (4)",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_metralhadora",
+      "nome": "Metralhadora",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "80",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_metralhadora",
+      "nome": "Metralhadora",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_metralhadora_de_arco",
+      "nome": "Metralhadora de arco",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d8 elétrico",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_metralhadora_de_arco",
+      "nome": "Metralhadora de arco",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Rajada (4)",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_metralhadora_de_arco",
+      "nome": "Metralhadora de arco",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_metralhadora_de_arco",
+      "nome": "Metralhadora de arco",
+      "categoria": "arma",
+      "origem": "Cargas",
+      "valor": "24",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_ofuscador",
+      "nome": "Ofuscador",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d4 ígneo",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_ofuscador",
+      "nome": "Ofuscador",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Ofuscamento, Silencioso",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_ofuscador",
+      "nome": "Ofuscador",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Sim",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_ofuscador",
+      "nome": "Ofuscador",
+      "categoria": "arma",
+      "origem": "Cargas",
+      "valor": "8",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_padrao",
+      "nome": "Padrão",
+      "categoria": "municao",
+      "origem": "Compatibilidade",
+      "valor": "Armas médias",
+      "destino": "compatibilidade",
+      "impacto": "Compatibilidade com armas"
+    },
+    {
+      "slug": "armas_padrao",
+      "nome": "Padrão",
+      "categoria": "municao",
+      "origem": "Cargas",
+      "valor": "12",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_pistola",
+      "nome": "Pistola",
+      "categoria": "municao",
+      "origem": "Compatibilidade",
+      "valor": "Pistola de bolso, Revólver, Pistola pesada",
+      "destino": "compatibilidade",
+      "impacto": "Compatibilidade com armas"
+    },
+    {
+      "slug": "armas_pistola",
+      "nome": "Pistola",
+      "categoria": "municao",
+      "origem": "Kit",
+      "valor": "8 projéteis",
+      "destino": "kit",
+      "impacto": "Quantidade do kit"
+    },
+    {
+      "slug": "armas_pistola_de_bolso",
+      "nome": "Pistola de bolso",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d6",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_pistola_de_bolso",
+      "nome": "Pistola de bolso",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_pistola_de_bolso",
+      "nome": "Pistola de bolso",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "6",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_pistola_de_bolso",
+      "nome": "Pistola de bolso",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Sim",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_pistola_de_feixe",
+      "nome": "Pistola de feixe",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d6 ígneo",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_pistola_de_feixe",
+      "nome": "Pistola de feixe",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_pistola_de_feixe",
+      "nome": "Pistola de feixe",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Sim",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_pistola_de_feixe",
+      "nome": "Pistola de feixe",
+      "categoria": "arma",
+      "origem": "Cargas",
+      "valor": "8",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_pistola_pesada",
+      "nome": "Pistola pesada",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d8",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_pistola_pesada",
+      "nome": "Pistola pesada",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Perfuração",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_pistola_pesada",
+      "nome": "Pistola pesada",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "8",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_pistola_pesada",
+      "nome": "Pistola pesada",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Parcial",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_pistola_voltaica",
+      "nome": "Pistola voltaica",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d6 elétrico",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_pistola_voltaica",
+      "nome": "Pistola voltaica",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Atordoamento",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_pistola_voltaica",
+      "nome": "Pistola voltaica",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Sim",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_pistola_voltaica",
+      "nome": "Pistola voltaica",
+      "categoria": "arma",
+      "origem": "Cargas",
+      "valor": "8",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_precisao",
+      "nome": "Precisão",
+      "categoria": "municao",
+      "origem": "Compatibilidade",
+      "valor": "Rifle de precisão",
+      "destino": "compatibilidade",
+      "impacto": "Compatibilidade com armas"
+    },
+    {
+      "slug": "armas_precisao",
+      "nome": "Precisão",
+      "categoria": "municao",
+      "origem": "Kit",
+      "valor": "5 projéteis",
+      "destino": "kit",
+      "impacto": "Quantidade do kit"
+    },
+    {
+      "slug": "armas_rapieira",
+      "nome": "Rapieira",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d8 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_rapieira",
+      "nome": "Rapieira",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Perfuração, Aparar",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_rapieira",
+      "nome": "Rapieira",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_repetidora_termica",
+      "nome": "Repetidora térmica",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d6 ígneo",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_repetidora_termica",
+      "nome": "Repetidora térmica",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Rajada (3)",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_repetidora_termica",
+      "nome": "Repetidora térmica",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_repetidora_termica",
+      "nome": "Repetidora térmica",
+      "categoria": "arma",
+      "origem": "Cargas",
+      "valor": "24",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_ressonador",
+      "nome": "Ressonador",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d10 contundente",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_ressonador",
+      "nome": "Ressonador",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Contusão, Empurrão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_ressonador",
+      "nome": "Ressonador",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_ressonador",
+      "nome": "Ressonador",
+      "categoria": "arma",
+      "origem": "Cargas",
+      "valor": "12",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_ressonador_de_cerco",
+      "nome": "Ressonador de cerco",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "2d8 contundente",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_ressonador_de_cerco",
+      "nome": "Ressonador de cerco",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Contusão, Empurrão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_ressonador_de_cerco",
+      "nome": "Ressonador de cerco",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_ressonador_de_cerco",
+      "nome": "Ressonador de cerco",
+      "categoria": "arma",
+      "origem": "Cargas",
+      "valor": "6",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_revolver",
+      "nome": "Revólver",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d6",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_revolver",
+      "nome": "Revólver",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Perfuração",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_revolver",
+      "nome": "Revólver",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "6",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_revolver",
+      "nome": "Revólver",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Sim",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_rifle_de_assalto",
+      "nome": "Rifle de assalto",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "2d6",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_rifle_de_assalto",
+      "nome": "Rifle de assalto",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Perfuração, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_rifle_de_assalto",
+      "nome": "Rifle de assalto",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "30",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_rifle_de_assalto",
+      "nome": "Rifle de assalto",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_rifle_de_feixe_concentrado",
+      "nome": "Rifle de feixe concentrado",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "2d8 ígneo",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_rifle_de_feixe_concentrado",
+      "nome": "Rifle de feixe concentrado",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Perfuração, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_rifle_de_feixe_concentrado",
+      "nome": "Rifle de feixe concentrado",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_rifle_de_feixe_concentrado",
+      "nome": "Rifle de feixe concentrado",
+      "categoria": "arma",
+      "origem": "Cargas",
+      "valor": "6",
+      "destino": "cargas_max",
+      "impacto": "Controle de cargas"
+    },
+    {
+      "slug": "armas_rifle_de_precisao",
+      "nome": "Rifle de precisão",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "2d10",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_rifle_de_precisao",
+      "nome": "Rifle de precisão",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Perfuração, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_rifle_de_precisao",
+      "nome": "Rifle de precisão",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "2",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_rifle_de_precisao",
+      "nome": "Rifle de precisão",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_rv_12_razorstar_shuriken",
+      "nome": "RV-12 Razorstar (Shuriken)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d4 cortante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_rv_12_razorstar_shuriken",
+      "nome": "RV-12 Razorstar (Shuriken)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Arremesso, Silencioso, Sangramento, Rajada (3)",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_rv_12_razorstar_shuriken",
+      "nome": "RV-12 Razorstar (Shuriken)",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Sim",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_rv_20_grudge_machado_de_mao",
+      "nome": "RV-20 Grudge (Machado de mão)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d8",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_rv_20_grudge_machado_de_mao",
+      "nome": "RV-20 Grudge (Machado de mão)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Arremesso",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_rv_20_grudge_machado_de_mao",
+      "nome": "RV-20 Grudge (Machado de mão)",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_rv_4_shiv_faca",
+      "nome": "RV-4 Shiv (Faca)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d6 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_rv_4_shiv_faca",
+      "nome": "RV-4 Shiv (Faca)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Arremesso, Silencioso",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_rv_4_shiv_faca",
+      "nome": "RV-4 Shiv (Faca)",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Sim",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_shuriken",
+      "nome": "Shuriken",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d4 cortante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_shuriken",
+      "nome": "Shuriken",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Arremesso, Silencioso, Rajada (3),",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_shuriken",
+      "nome": "Shuriken",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Sim",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_sk_24_blue_hawk_arco_composto",
+      "nome": "SK-24 Blue Hawk (Arco composto)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d8",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_sk_24_blue_hawk_arco_composto",
+      "nome": "SK-24 Blue Hawk (Arco composto)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Perfuração, Silencioso, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_sk_24_blue_hawk_arco_composto",
+      "nome": "SK-24 Blue Hawk (Arco composto)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "1 flecha",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_sk_24_blue_hawk_arco_composto",
+      "nome": "SK-24 Blue Hawk (Arco composto)",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_sk_60_white_vulture_arco_longo",
+      "nome": "SK-60 White Vulture (Arco longo)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d8 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_sk_60_white_vulture_arco_longo",
+      "nome": "SK-60 White Vulture (Arco longo)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Perfuração, Silencioso, Precisão, Rajada (2)",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_sk_60_white_vulture_arco_longo",
+      "nome": "SK-60 White Vulture (Arco longo)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "1 flecha por disparo",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_sk_60_white_vulture_arco_longo",
+      "nome": "SK-60 White Vulture (Arco longo)",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_sk_7_red_falcon_arco_curto",
+      "nome": "SK-7 Red Falcon (Arco curto)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d6",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_sk_7_red_falcon_arco_curto",
+      "nome": "SK-7 Red Falcon (Arco curto)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Silencioso, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_sk_7_red_falcon_arco_curto",
+      "nome": "SK-7 Red Falcon (Arco curto)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "1 flecha",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_sk_7_red_falcon_arco_curto",
+      "nome": "SK-7 Red Falcon (Arco curto)",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_soco_ingles",
+      "nome": "Soco-inglês",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d4 contundente",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_soco_ingles",
+      "nome": "Soco-inglês",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Contusão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_soco_ingles",
+      "nome": "Soco-inglês",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Sim",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_submetralhadora",
+      "nome": "Submetralhadora",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d6",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_submetralhadora",
+      "nome": "Submetralhadora",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Rajada (3)",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_submetralhadora",
+      "nome": "Submetralhadora",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "30",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_submetralhadora",
+      "nome": "Submetralhadora",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_sw_22_spiral_submetralhadora",
+      "nome": "SW-22 Spiral (Submetralhadora)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d6 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_sw_22_spiral_submetralhadora",
+      "nome": "SW-22 Spiral (Submetralhadora)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Rajada (3)",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_sw_22_spiral_submetralhadora",
+      "nome": "SW-22 Spiral (Submetralhadora)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "30",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_sw_22_spiral_submetralhadora",
+      "nome": "SW-22 Spiral (Submetralhadora)",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_sw_36_crossfade_carabina",
+      "nome": "SW-36 Crossfade (Carabina)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d8 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_sw_36_crossfade_carabina",
+      "nome": "SW-36 Crossfade (Carabina)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Perfuração, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_sw_36_crossfade_carabina",
+      "nome": "SW-36 Crossfade (Carabina)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "20",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_sw_36_crossfade_carabina",
+      "nome": "SW-36 Crossfade (Carabina)",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_sw_51_deviant_rifle_de_assalto",
+      "nome": "SW-51 Deviant (Rifle de assalto)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "2d6 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_sw_51_deviant_rifle_de_assalto",
+      "nome": "SW-51 Deviant (Rifle de assalto)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Perfuração, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_sw_51_deviant_rifle_de_assalto",
+      "nome": "SW-51 Deviant (Rifle de assalto)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "30",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_sw_51_deviant_rifle_de_assalto",
+      "nome": "SW-51 Deviant (Rifle de assalto)",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_sw_80_parallax_rifle_de_precisao",
+      "nome": "SW-80 Parallax (Rifle de precisão)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "2d10 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_sw_80_parallax_rifle_de_precisao",
+      "nome": "SW-80 Parallax (Rifle de precisão)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Perfuração, Precisão",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_sw_80_parallax_rifle_de_precisao",
+      "nome": "SW-80 Parallax (Rifle de precisão)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "2",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_sw_80_parallax_rifle_de_precisao",
+      "nome": "SW-80 Parallax (Rifle de precisão)",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Não",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_sw_9_ghostline_pistola_pesada",
+      "nome": "SW-9 Ghostline (Pistola pesada)",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "1d8 perfurante",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_sw_9_ghostline_pistola_pesada",
+      "nome": "SW-9 Ghostline (Pistola pesada)",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Sangramento, Perfuração",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_sw_9_ghostline_pistola_pesada",
+      "nome": "SW-9 Ghostline (Pistola pesada)",
+      "categoria": "arma",
+      "origem": "Munição",
+      "valor": "8",
+      "destino": "municao_max",
+      "impacto": "Munição e recarga"
+    },
+    {
+      "slug": "armas_sw_9_ghostline_pistola_pesada",
+      "nome": "SW-9 Ghostline (Pistola pesada)",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Parcial",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_tonfa",
+      "nome": "Tonfa",
+      "categoria": "arma",
+      "origem": "Dano",
+      "valor": "Corpo + 1d6 contundente",
+      "destino": "dado_dano",
+      "impacto": "Ficha de dano e ataques"
+    },
+    {
+      "slug": "armas_tonfa",
+      "nome": "Tonfa",
+      "categoria": "arma",
+      "origem": "Propriedades",
+      "valor": "Contusão, Aparar",
+      "destino": "propriedades",
+      "impacto": "Propriedades estruturadas"
+    },
+    {
+      "slug": "armas_tonfa",
+      "nome": "Tonfa",
+      "categoria": "arma",
+      "origem": "Ocultável?",
+      "valor": "Parcial",
+      "destino": "ocultavel",
+      "impacto": "Ocultabilidade"
+    },
+    {
+      "slug": "armas_virotes",
+      "nome": "Virotes",
+      "categoria": "municao",
+      "origem": "Compatibilidade",
+      "valor": "Bestas",
+      "destino": "compatibilidade",
+      "impacto": "Compatibilidade com armas"
+    },
+    {
+      "slug": "armas_virotes",
+      "nome": "Virotes",
+      "categoria": "municao",
+      "origem": "Kit",
+      "valor": "5 virotes",
+      "destino": "kit",
+      "impacto": "Quantidade do kit"
+    }
+  ],
+  "resumo_campos": {
+    "regioes": 20,
+    "mit_base": 20,
+    "tipo_protecao": 26,
+    "ocultavel": 94,
+    "pd_max": 6,
+    "dado_dano": 81,
+    "propriedades": 81,
+    "compatibilidade": 10,
+    "cargas_max": 21,
+    "municao_max": 35,
+    "kit": 12
+  },
+  "divergencias_local_publicado": [
+    {
+      "slug": "armas_flecha_simples",
+      "campos": [
+        "subtipo"
+      ]
+    },
+    {
+      "slug": "armas_virotes",
+      "campos": [
+        "subtipo"
+      ]
+    }
+  ]
+}

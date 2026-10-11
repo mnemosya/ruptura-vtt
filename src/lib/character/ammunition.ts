@@ -1,3 +1,4 @@
+import { reloadFromInventory, loadAmmoSupport } from "./ammunitionSupport";
 /**
  * Normalização e helpers puros de munição — checkpoint v0.59 (PRD
  * 13.4.1). Classifica armas e munições a partir do catálogo real
@@ -78,6 +79,7 @@ export interface AljavaStack {
   /** Nome exibível. */
   nome: string;
   quantidade: number;
+  pesoCapacidade?: number;
 }
 
 /**
@@ -85,6 +87,8 @@ export interface AljavaStack {
  * é estrutura criada na compra do arco e guardada na instância da arma.
  */
 export interface Aljava {
+  tipo?: "aljava" | "cartucheira";
+  autoalimentadora?: boolean;
   /** Capacidade total de flechas (padrão: 15, conforme PRD 13.4.1). */
   capacidade: number;
   stacks: AljavaStack[];
@@ -268,7 +272,7 @@ export function setWeaponAmmoAtual(
 // Helpers de aljava
 // ---------------------------------------------------------------------
 
-export const ALJAVA_CAPACIDADE_PADRAO = 15;
+export const ALJAVA_CAPACIDADE_PADRAO = 20;
 export const ALJAVA_FLECHAS_INICIAIS_SLUG = "flecha_simples";
 export const ALJAVA_FLECHAS_INICIAIS_NOME = "Flecha simples";
 export const ALJAVA_FLECHAS_INICIAIS_QUANTIDADE = 10;
@@ -287,7 +291,7 @@ export function getAljavaInstances(
   character: Pick<Character, "inventario">,
 ): (InventoryItemInstance & { aljava: Aljava })[] {
   return (character.inventario ?? [])
-    .filter((i) => i.itemSlug === ALJAVA_ITEM_SLUG)
+    .filter((i) => (i.itemSlug === ALJAVA_ITEM_SLUG || i.aljava?.tipo === "aljava") && i.estado !== "abrigo")
     .map((i) => i as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>)
     .filter((i): i is InventoryItemInstance & { aljava: Aljava } => i.aljava != null);
 }
@@ -401,7 +405,7 @@ export function getAljavaTotalFlechas(aljava: Aljava): number {
 
 /** Quantidade de espaços livres na aljava. */
 export function getAljavaEspacoLivre(aljava: Aljava): number {
-  return Math.max(0, aljava.capacidade - getAljavaTotalFlechas(aljava));
+  return Math.max(0, aljava.capacidade - aljava.stacks.reduce((n,s) => n + s.quantidade * (s.pesoCapacidade ?? 1), 0));
 }
 
 /**
@@ -687,6 +691,7 @@ export function isMagazineWeapon(item: Pick<ItemContent, "categoria" | "subtipo"
 
 export interface ReloadResult {
   character: Character;
+  custoPa?: 1 | 2;
   /** Quantidade realmente carregada nesta recarga. */
   carregada: number;
   /** Razão para não ter carregado nada, ou null se ok. */
@@ -708,61 +713,7 @@ export function reloadMagazineWeapon(
   weaponItem: Pick<ItemContent, "slug" | "subtipo" | "usesAmmunition"> & { municaoMax?: number | null; municaoCompativelSlug?: string | null },
   allAmmoProfiles: AmmoItemProfile[],
 ): ReloadResult {
-  const modoMunicao = deriveModoMunicao(weaponItem.subtipo, weaponItem.municaoMax ?? null, weaponItem.municaoCompativelSlug ?? null);
-  if (modoMunicao !== "carregador" && modoMunicao !== "virote") {
-    return { character, carregada: 0, motivoFalha: "modo_nao_suportado" };
-  }
-
-  const inventario = character.inventario ?? [];
-  const weaponInst = inventario.find((i) => i.id === weaponInstanceId);
-  if (!weaponInst) return { character, carregada: 0, motivoFalha: "sem_estoque" };
-
-  const municaoMax = weaponItem.municaoMax ?? 0;
-  const municaoAtual = (weaponInst as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>).municaoAtual ?? 0;
-  const faltante = Math.max(0, municaoMax - municaoAtual);
-  if (faltante === 0) return { character, carregada: 0, motivoFalha: "ja_cheio" };
-
-  // Encontrar compatíveis no inventário (não é a própria arma)
-  const compativelSlug = weaponItem.municaoCompativelSlug;
-  const ammoInsts = inventario.filter((inst) => {
-    if (inst.id === weaponInstanceId) return false;
-    const profile = allAmmoProfiles.find((p) => p.slug === inst.itemSlug);
-    if (!profile) return false;
-    // Verifica compatibilidade por família (slug compatível da arma == familia da munição)
-    return profile.familia === compativelSlug || profile.armasCompativeis.includes(weaponItem.slug);
-  });
-
-  if (ammoInsts.length === 0) return { character, carregada: 0, motivoFalha: "sem_estoque" };
-
-  // Consome do primeiro disponível (mais simples)
-  let restanteCarregar = faltante;
-  let nextInventario = [...inventario];
-
-  for (const ammoInst of ammoInsts) {
-    if (restanteCarregar <= 0) break;
-    const idx = nextInventario.findIndex((i) => i.id === ammoInst.id);
-    if (idx === -1) continue;
-    const disponivelNeste = nextInventario[idx].quantidade;
-    const consumir = Math.min(restanteCarregar, disponivelNeste);
-    restanteCarregar -= consumir;
-    const novaQtd = disponivelNeste - consumir;
-    if (novaQtd <= 0) {
-      nextInventario.splice(idx, 1);
-    } else {
-      nextInventario[idx] = { ...nextInventario[idx], quantidade: novaQtd };
-    }
-  }
-
-  const carregada = faltante - restanteCarregar;
-  const novaMunicao = municaoAtual + carregada;
-  const withAmmo: Character = {
-    ...character,
-    inventario: nextInventario.map((inst) =>
-      inst.id === weaponInstanceId ? { ...inst, municaoAtual: novaMunicao } : inst,
-    ),
-  };
-
-  return { character: withAmmo, carregada, motivoFalha: null };
+  return reloadFromInventory(character, weaponInstanceId, weaponItem, allAmmoProfiles);
 }
 
 /**
@@ -775,6 +726,12 @@ export function reloadAljava(
   aljavaInstanceId: string,
   allAmmoProfiles: AmmoItemProfile[],
 ): ReloadResult {
+  const support = character.inventario?.find(i => i.id === aljavaInstanceId);
+  if (support?.aljava?.tipo) return loadAmmoSupport(character, aljavaInstanceId, allAmmoProfiles);
+  if (support?.itemSlug === ALJAVA_ITEM_SLUG && support.aljava && support.aljava.autoalimentadora == null) {
+    const normalized={...character,inventario:character.inventario?.map(i=>i.id===support.id?{...i,aljava:{...support.aljava!,tipo:"aljava" as const,capacidade:20,autoalimentadora:false}}:i)};
+    return loadAmmoSupport(normalized,aljavaInstanceId,allAmmoProfiles);
+  }
   const inventario = character.inventario ?? [];
   const targetAljava = findAljavaInstance(character, aljavaInstanceId);
   if (!targetAljava) return { character, carregada: 0, motivoFalha: "sem_estoque" };
@@ -865,7 +822,7 @@ function resolveAljavaParaArco(
   character: Character,
   inst: Pick<InventoryItemInstance, "id"> & Partial<WeaponAmmoInstanceFields>,
 ): (InventoryItemInstance & { aljava: Aljava }) | null {
-  const aljavaInstances = getAljavaInstances(character);
+  const aljavaInstances = getAljavaInstances(character).filter(i => i.estado === "equipado");
   if (inst.selectedAljavaInstanceId) {
     const found = aljavaInstances.find((a) => a.id === inst.selectedAljavaInstanceId);
     if (found) return found;
@@ -913,7 +870,7 @@ export function checkAttackAmmoBlock(
     if (modoMunicao === "aljava") {
       const instTyped = inst as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>;
       const aljavaAlvo = resolveAljavaParaArco(character, instTyped);
-      if (!aljavaAlvo) return "aljava_nao_selecionada";
+      if (!aljavaAlvo?.aljava.autoalimentadora) return (inst.municaoAtual ?? 0) > 0 ? null : "sem_municao";
       if (getAljavaTotalFlechas(aljavaAlvo.aljava) === 0) return "sem_municao";
       const stacksComFlechas = aljavaAlvo.aljava.stacks.filter((s) => s.quantidade > 0);
       if (stacksComFlechas.length === 0) return "sem_municao";
@@ -967,13 +924,17 @@ export function consumeAttackAmmo(
           i.id === inst.id ? { ...i, municaoAtual: atual - 1 } : i,
         ),
       };
-      return { character: novoChar, consumedFromInstanceId: inst.id, consumedFlechaSlug: null, isFlechaEspecial: false, motivoFalha: null };
+      return { character: novoChar, consumedFromInstanceId: inst.id, consumedFlechaSlug: inst.municaoCarregadaSlug ?? null, isFlechaEspecial: false, motivoFalha: null };
     }
 
     if (modoMunicao === "aljava") {
       const instTyped = inst as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>;
       const aljavaAlvo = resolveAljavaParaArco(character, instTyped);
-      if (!aljavaAlvo) return { ...nenhuma, motivoFalha: "aljava_nao_selecionada" };
+      if (!aljavaAlvo?.aljava.autoalimentadora) {
+        const current = inst.municaoAtual ?? 0;
+        if (!current) return {...nenhuma,motivoFalha:"sem_municao"};
+        return {...nenhuma, character:{...character,inventario:inventario.map(i=>i.id===inst.id?{...i,municaoAtual:current-1}:i)},consumedFromInstanceId:inst.id,consumedFlechaSlug:inst.municaoCarregadaSlug ?? null,isFlechaEspecial:!!inst.municaoCarregadaSlug && !inst.municaoCarregadaSlug.endsWith("flecha_simples")};
+      }
       if (getAljavaTotalFlechas(aljavaAlvo.aljava) === 0) return { ...nenhuma, motivoFalha: "sem_municao" };
 
       const stacksComFlechas = aljavaAlvo.aljava.stacks.filter((s) => s.quantidade > 0);

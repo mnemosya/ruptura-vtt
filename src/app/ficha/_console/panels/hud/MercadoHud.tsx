@@ -1,5 +1,6 @@
 "use client";
 
+import { estiloCategoria as estiloGrupo } from "../../../../_design/itemCategoryColors";
 import { ItemCategoryIcon } from "../../../../_design/itemIcons";
 
 /**
@@ -12,8 +13,7 @@ import { ItemCategoryIcon } from "../../../../_design/itemIcons";
  * `comprarItem` é o `InventarioPanel`; a galeria alimenta com dados de
  * exemplo. A compra vai para a mochila — é o que `comprarItem` faz.
  *
- * Cor de categoria: a vertente dela (`data-vertente`), como no
- * Inventário.
+ * Cor de categoria: paleta compartilhada com Inventário e Equipamentos.
  */
 
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
@@ -95,28 +95,7 @@ const separarTipo = (nome: string): { titulo: string; tipo: string | null } => {
   return m ? { titulo: m[1], tipo: m[2] } : { titulo: nome, tipo: null };
 };
 const sem = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-/** Cada grupo do mercado tem uma cor própria, independente da vertente. */
-const CORES_CATEGORIAS: Record<string, string> = {
-  acessorios: "#5ccbb3",
-  armaduras: "#f5a200",
-  "armaduras e escudos": "#f5a200",
-  escudos: "#7894f4",
-  armas: "#e0455f",
-  "dispositivos tecnologicos": "#35c7d8",
-  "drones e robos": "#b2ce62",
-  escalpos: "#c578d9",
-  explosivos: "#f07a1f",
-  farmacia: "#4fb36e",
-  "ferramentas e utilidades": "#ddd27b",
-  municao: "#c3a06c",
-  mobilidade: "#569fdf",
-  trajes: "#c88456",
-  vertinas: "#8b5cf6",
-};
-const estiloGrupo = (nome: string, vertente: string): React.CSSProperties | undefined => {
-  const cor = CORES_CATEGORIAS[sem(nome)] ?? (vertente === "nenhuma" ? "#8eaef0" : undefined);
-  return cor ? { ["--k" as string]: cor } : undefined;
-};
+
 
 export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onFechar }: PropsMercadoHud) {
   const raiz = useRef<HTMLDivElement>(null);
@@ -398,9 +377,14 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
               {feito ? (
                 <div className="hx-display" role="status" style={{ display: "grid", placeItems: "center", height: 44, border: `1px solid ${OK}80`, background: `${OK}1a`, color: OK, fontSize: 13, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".2em" }}>✓ Comprado</div>
               ) : (
-                <button type="button" disabled={custo > saldo || !cabe} onClick={comprar} className="hx-btn-ambar" style={{ width: "100%" }}>
-                  {custo > saldo ? "Saldo insuficiente" : !cabe ? "Sem espaço na mochila" : familiaEscalpo ? `Comprar ${alvo === sel ? (sel.sub === "Identidade" ? "item" : "escalpo") : alvo?.categoria === "veneno" ? "veneno" : "módulo"}` : "Comprar"}
+                <button type="button" disabled={custo > saldo} onClick={comprar} className="hx-btn-ambar" style={{ width: "100%" }}>
+                  {custo > saldo ? "Saldo insuficiente" : familiaEscalpo ? `Comprar ${alvo === sel ? (sel.sub === "Identidade" ? "item" : "escalpo") : alvo?.categoria === "veneno" ? "veneno" : "módulo"}` : "Comprar"}
                 </button>
+              )}
+              {/* Sem espaço NÃO bloqueia: a compra vai para a mochila e a régua
+                  mostra o excesso — é para isso que o estado de excesso existe. */}
+              {!cabe && !feito && custo <= saldo && (
+                <div role="note" style={{ marginTop: 8, display: "flex", justifyContent: "space-between" }}><Tag style={{ color: AMB }}>vai exceder a mochila</Tag><Tag style={{ color: AMB }}>{usados + (alvo?.espacos ?? 0) * n}/{capacidade}</Tag></div>
               )}
               <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between" }}><Tag className="hx-dim" style={{ opacity: .7 }}>saldo após</Tag><Tag className="hx-dim">₳ {fmt(Math.max(0, saldo - custo))}</Tag></div>
             </div>

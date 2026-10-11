@@ -1,4 +1,6 @@
 "use client";
+import { weaponRangeAt } from "../../../lib/character/weaponRange";
+import { ehCelulaDeEnergia, fonteDoPadrao, listarFontesRecarga, recarregarDaFonte } from "../../../lib/character/reloadSources";
 
 /**
  * Página de DEBUG da ficha mínima — não é a interface final do VTT.
@@ -710,7 +712,7 @@ export default function CharacterSheetClient({
       ? (character.inventario ?? []).find((i) => i.id === effectiveSelectedAttackWeaponId) ?? null
       : null;
     const weaponModel = weaponInstance ? itemsIniciais.find((m) => m.slug === weaponInstance.itemSlug) ?? null : null;
-    return resolveAttackDetails(character, attackActionContent, weaponModel);
+    return resolveAttackDetails(character, attackActionContent, weaponModel, weaponInstance?.modoAtaqueEscolhido);
   }, [attackActionContent, character, effectiveSelectedAttackWeaponId, itemsIniciais]);
 
   /**
@@ -1311,9 +1313,9 @@ export default function CharacterSheetClient({
             maxSurtos,
             danoPsiquico: result.surge.danoPsiquico,
             danoDado: dado,
-            sobrecargaAntes,
             peAntes,
             peDepois,
+            sobrecargaAntes,
             sobrecargaDepois: result.surge.indice,
             rupturaPendente: result.rupturePending,
             requiresWillRoll: result.requiresWillRoll,
@@ -2023,7 +2025,7 @@ export default function CharacterSheetClient({
 
   function handleSetItemEstado(instanceId: string, estado: ItemLoadoutState) {
     const current = characterRef.current;
-    const next = setItemLoadoutState(current, instanceId, estado);
+    const next = setItemLoadoutState(current, instanceId, estado, catalogoItens);
     characterRef.current = next;
     setCharacter(next);
   }
@@ -2619,6 +2621,68 @@ export default function CharacterSheetClient({
     setCharacter(next);
   }
 
+  /** Perfis de munição do catálogo (categoria "municao"). */
+  function perfisDeMunicao() {
+    return itemsIniciais
+      .filter((i) => i.categoria === "municao")
+      .map((i) => ({ slug: i.slug, nome: i.nome, familia: i.ammoFamilia, armasCompativeis: i.ammoArmasCompativeis, kitQuantidade: null }));
+  }
+
+  const ROTULO_LOCAL_RECARGA = { suporte: "espaço de munição", acesso_rapido: "acesso rápido", mochila: "mochila" } as const;
+
+  function fontesDeRecarga(instanceId: string) {
+    const current = characterRef.current;
+    const instance = current.inventario?.find((i) => i.id === instanceId);
+    const arma = instance ? itemsIniciais.find((i) => i.slug === instance.itemSlug) : undefined;
+    if (!instance || !arma || !arma.municaoMax || ehCelulaDeEnergia(arma) || instance.aljava) return null;
+    const fontes = listarFontesRecarga(current, instanceId, arma, perfisDeMunicao());
+    return {
+      fontes,
+      padraoId: fonteDoPadrao(fontes, instance.fonteRecargaPadrao)?.id ?? null,
+      cheia: (instance.municaoAtual ?? 0) >= arma.municaoMax,
+    };
+  }
+
+  /** Recarga de UMA fonte (regra do livro), com PA e um `desfazer` que devolve inventário e PA. */
+  function recarregarDaFonteEscolhida(instanceId: string, fonteId: string): { ok: boolean; mensagem: string; desfazer?: () => void } {
+    const antes = characterRef.current;
+    const instance = antes.inventario?.find((i) => i.id === instanceId);
+    const arma = instance ? itemsIniciais.find((i) => i.slug === instance.itemSlug) : undefined;
+    const fonte = arma ? listarFontesRecarga(antes, instanceId, arma, perfisDeMunicao()).find((f) => f.id === fonteId) : undefined;
+    if (!instance || !arma || !fonte) return { ok: false, mensagem: "Fonte de munição indisponível." };
+    const result = recarregarDaFonte(antes, instanceId, arma, fonte);
+    if (result.motivoFalha) return { ok: false, mensagem: result.motivoFalha === "ja_cheio" ? "A arma já está cheia." : "Sem munição nessa fonte." };
+    let next = result.character;
+    const spent = antes.estado_jogo?.pa_gastos ?? 0;
+    if (result.custoPa && selectedCampaignId) {
+      if (spent + result.custoPa > derivados.pa_max) return { ok: false, mensagem: `PA insuficiente para recarregar (${result.custoPa} PA).` };
+      next = { ...next, estado_jogo: { ...next.estado_jogo, pa_gastos: spent + result.custoPa } };
+    }
+    characterRef.current = next;
+    setCharacter(next);
+    const sobra = fonte.quantidade - result.carregada;
+    const mensagem = `+${result.carregada} ${result.carregada === 1 ? "tiro" : "tiros"} · ${ROTULO_LOCAL_RECARGA[fonte.local]} ${fonte.quantidade} → ${sobra}${result.custoPa && selectedCampaignId ? ` · ${result.custoPa} PA` : ""}`;
+    addLogEntry("recurso", `Recarregou ${instance.itemNome}: ${mensagem}.`);
+    return {
+      ok: true,
+      mensagem,
+      desfazer: () => {
+        const atual = characterRef.current;
+        const desfeito = { ...atual, inventario: antes.inventario, estado_jogo: { ...atual.estado_jogo, pa_gastos: spent } };
+        characterRef.current = desfeito;
+        setCharacter(desfeito);
+        addLogEntry("recurso", `Recarga de ${instance.itemNome} desfeita.`);
+      },
+    };
+  }
+
+  function definirFonteRecargaPadrao(instanceId: string, fonte: { local: "suporte" | "acesso_rapido" | "mochila"; contentSlug: string } | null) {
+    const atual = characterRef.current;
+    const next = { ...atual, inventario: atual.inventario?.map((i) => (i.id === instanceId ? { ...i, fonteRecargaPadrao: fonte ?? undefined } : i)) };
+    characterRef.current = next;
+    setCharacter(next);
+  }
+
   function handleReloadWeapon(instanceId: string) {
     const current = characterRef.current;
     const instance = current.inventario?.find((i) => i.id === instanceId);
@@ -2636,29 +2700,28 @@ export default function CharacterSheetClient({
     let result;
     // A própria Aljava (item especial, sem municaoMax no catálogo) chama
     // "Recarregar" diretamente pelo seu card — recarrega A SI MESMA.
-    if (instance.itemSlug === ALJAVA_ITEM_SLUG) {
+    if (instance.itemSlug === ALJAVA_ITEM_SLUG || instance.aljava?.tipo) {
       result = reloadAljava(current, instanceId, allAmmoProfiles);
     } else {
       const weaponItem = itemsIniciais.find((i) => i.slug === instance.itemSlug);
       if (!weaponItem) return;
       const modoMunicao = deriveModoMunicao(weaponItem.subtipo, weaponItem.municaoMax ?? null, weaponItem.municaoCompativelSlug ?? null);
       if (modoMunicao === "aljava") {
-        // Arco sem botão próprio de recarga na UI atual — se chamado,
-        // recarrega a Aljava selecionada deste arco (ou a única, se só
-        // houver uma).
-        const aljavaInstances = getAljavaInstances(current);
-        const aljavaAlvoId =
-          instance.selectedAljavaInstanceId ?? (aljavaInstances.length === 1 ? aljavaInstances[0].id : null);
-        if (!aljavaAlvoId) return;
-        result = reloadAljava(current, aljavaAlvoId, allAmmoProfiles);
+        result = reloadMagazineWeapon(current, instanceId, weaponItem, allAmmoProfiles);
       } else if (modoMunicao === "carregador" || modoMunicao === "virote") {
         result = reloadMagazineWeapon(current, instanceId, weaponItem, allAmmoProfiles);
       } else {
         return;
       }
     }
+    if (result.custoPa && selectedCampaignId) {
+      const spent = current.estado_jogo?.pa_gastos ?? 0;
+      if (spent + result.custoPa > derivados.pa_max) { addLogEntry("recurso", "PA insuficiente para recarregar."); return; }
+      result.character = {...result.character,estado_jogo:{...result.character.estado_jogo,pa_gastos:spent+result.custoPa}};
+    }
     characterRef.current = result.character;
     setCharacter(result.character);
+    addLogEntry("recurso", result.motivoFalha ? "Recarga indisponível: " + result.motivoFalha : `Recarregou ${result.carregada} munições${result.custoPa ? ` · ${result.custoPa} PA` : ""}.`);
   }
 
   /**
@@ -3470,7 +3533,7 @@ export default function CharacterSheetClient({
 
     let attackLogFields: Record<string, unknown> = {};
     if (temEfeitoAtaque) {
-      const resolved = resolveAttackDetails(characterRef.current, actionContent, attackWeaponModel);
+      const resolved = resolveAttackDetails(characterRef.current, actionContent, attackWeaponModel, attackWeaponInstance?.modoAtaqueEscolhido);
 
       let ammoConsumed = false;
       let ammoBefore: number | null = null;
@@ -3782,6 +3845,7 @@ export default function CharacterSheetClient({
     pericia: string;
     nome: string;
     visibilidade: "public" | "gm";
+    penalidadeAlcance?: number;
     onRolado?: (entrada: { atributoId: string; periciaId: string | null; modificador: number; dados: number[] }) => void;
   } | null>(null);
 
@@ -3832,6 +3896,11 @@ export default function CharacterSheetClient({
     derivados,
     regras,
     catalogo: catalogoItens,
+    mercadoriasEspeciais: {
+      runas: runesIniciais,
+      escalpos: escalposIniciais,
+      modelos: companionModelsIniciais,
+    },
 
     // Modo Evolução no Console: a MESMA porta que `ModeToggle` já
     // oferecia na aba Geral, agora alcançável de dentro da janela (e
@@ -4030,10 +4099,10 @@ export default function CharacterSheetClient({
         handleEquipDefensive(instanceId);
         return;
       }
-      if (slot === "arma_primaria" || slot === "arma_secundaria" || slot === "acesso_rapido_1" || slot === "acesso_rapido_2") {
+      if (slot === "arma_primaria" || slot === "arma_secundaria" || slot === "acesso_rapido_1" || slot === "acesso_rapido_2" || slot === "traje" || slot === "suporte_municao") {
         // A mão/posição escolhida fica gravada — sem isto a ordem de
         // aquisição decidia, e a secundária virava primária.
-        const next = setItemEmEncaixe(characterRef.current, instanceId, slot);
+        const next = setItemEmEncaixe(characterRef.current, instanceId, slot, catalogoItens);
         characterRef.current = next;
         setCharacter(next);
         return;
@@ -4045,9 +4114,19 @@ export default function CharacterSheetClient({
       if (instancia?.equipadoDefensivo) handleUnequipDefensive(instanceId);
       else handleSetItemEstado(instanceId, "mochila");
     },
+    definirModoAtaque: (id, modo) => {
+      const instance = characterRef.current.inventario?.find(i => i.id === id);
+      if (!instance || !catalogoItens.get(instance.itemSlug)?.modosAtaque?.some(m => m.id === modo)) return;
+      const next = {...characterRef.current,inventario:characterRef.current.inventario?.map(i=>i.id===id?{...i,modoAtaqueEscolhido:modo}:i)};
+      characterRef.current=next;setCharacter(next);
+    },
     definirMit: handleSetMitAtual,
+    definirMunicao: handleSetMunicaoAtual,
     definirPd: handleSetPdAtual,
     recarregar: handleReloadWeapon,
+    fontesRecarga: fontesDeRecarga,
+    recarregarDe: recarregarDaFonteEscolhida,
+    definirFontePadrao: definirFonteRecargaPadrao,
 
     /* Inventário. Nenhuma regra nova mora aqui: cada uma destas é a
        porta para um fluxo que já existia e já loga/salva. */
@@ -4131,7 +4210,7 @@ export default function CharacterSheetClient({
       const acao = actionConsoleItems.find(a => a.id === attackActionContent.id);
       opcoes = attackWeaponCandidates.map(c => {
         const modelo = itemsIniciais.find(i => i.slug === c.itemSlug) ?? null;
-        const resolucao = resolveAttackDetails(character, attackActionContent, modelo);
+        const resolucao = resolveAttackDetails(character, attackActionContent, modelo, character.inventario?.find(i => i.id === c.instanceId)?.modoAtaqueEscolhido);
         const municao = c.instanceId && modelo?.usesAmmunition ? checkAttackAmmoBlock(character, itemsIniciais, { weaponInstanceId: c.instanceId }) : null;
         return { id: c.instanceId ?? "__desarmado__", nome: c.nome, custo: acao?.custoLabel ?? "Custo indisponível", aviso: acao?.warning, alvo: "obrigatorio", pericia: resolucao.skill,
           fatos: [{ rotulo: "Dano-base", valor: resolucao.danoBase ?? "—" }, { rotulo: "Perícia", valor: regras?.pericias.find(p => p.id === resolucao.skill)?.nome ?? resolucao.skill ?? "—" }],
@@ -4167,12 +4246,16 @@ export default function CharacterSheetClient({
       const antes = characterRef.current;
       if (acaoToken.categoria === "atacar") {
         if (!attackActionContent || !getAttackWeaponCandidates(antes, itemsIniciais).some(c => (c.instanceId ?? "__desarmado__") === opcao.id)) throw new Error("Arma indisponível.");
+        const weaponInst=antes.inventario?.find(i=>i.id===opcao.id);
+        const range=r.dados.distanciaMetros != null ? weaponRangeAt(weaponInst ? catalogoItens.get(weaponInst.itemSlug) ?? null : null,r.dados.distanciaMetros,weaponInst?.modoAtaqueEscolhido) : null;
+        if(range && !range.allowed) throw new Error(`Alvo fora do alcance (${range.maximum} m).`);
         const ok = await handleUseAction(attackActionContent.id, opcao.id === "__desarmado__" ? null : opcao.id, r.dados);
         if (!ok) throw new Error("Ataque bloqueado. Confira PA, condições e munição.");
         const ctx = r.dados;
         const desarmado = opcao.id === "__desarmado__" ? resolveAttackDetails(antes, attackActionContent, null) : null;
         if (opcao.pericia) setRolagemToken({
           pericia: opcao.pericia,
+          penalidadeAlcance: range?.penalty ?? 0,
           nome: `Atacar · ${opcao.nome}${ctx.alvoNome ? ` → ${ctx.alvoNome}` : ""}`,
           visibilidade: ctx.logVisibility,
           // Com alvo, a rolagem abre o ATAQUE CONTESTADO no chat: a

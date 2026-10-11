@@ -66,6 +66,7 @@ export function resolveAttackDetails(
   character: Pick<Character, "atributos">,
   action: CombatActionContent,
   weaponItem: ItemContent | null,
+  modeId?: string,
 ): AttackResolution {
   if (!weaponItem) {
     const desarmado = findModoDesarmado(action);
@@ -88,16 +89,19 @@ export function resolveAttackDetails(
     };
   }
 
+  const mode = weaponItem.modosAtaque?.find(m => m.id === modeId) ?? weaponItem.modosAtaque?.[0];
+  if (mode) return {skill: mode.pericia_teste, attribute:mode.soma_atributo, danoBase:mode.dado_dano,tipoDano:mode.tipo_dano,subtipoDano:mode.subtipo_dano,danoEstruturado:true};
+
   const skill =
     weaponItem.periciaAtaque ??
-    (weaponItem.subtipo === "corpo_a_corpo"
+    ((weaponItem.subtipo === "corpo_a_corpo" || weaponItem.subtipo === "ARMAS BRANCAS")
       ? "luta"
-      : weaponItem.subtipo === "arremesso_disparo"
+      : (weaponItem.subtipo === "arremesso_disparo" || weaponItem.subtipo === "ARMAS DE DISPARO")
         ? "precisao"
-        : weaponItem.subtipo === "fogo"
+        : ["fogo", "energia", "ARMAS DE FOGO", "ARMAS DE ENERGIA"].includes(weaponItem.subtipo ?? "")
           ? "balistica"
           : null);
-  const attribute = weaponItem.atributoAtaque ?? (weaponItem.subtipo === "corpo_a_corpo" ? "corpo" : null);
+  const attribute = weaponItem.atributoAtaque ?? ((weaponItem.subtipo === "corpo_a_corpo" || weaponItem.subtipo === "ARMAS BRANCAS") ? "corpo" : null);
   return {
     skill,
     attribute,

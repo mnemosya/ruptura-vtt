@@ -28,6 +28,7 @@ const PECAS: PecaHud[] = [
   p("granada", "Granada de fumaça", "explosivo", { usavel: true, onde: "abrigo" }),
 ];
 const CABE: Record<EncaixeHud, (x: PecaHud) => boolean> = {
+  traje: (x) => x.categoria === "traje", suporte_municao: (x) => !!x.suporteMunicao,
   cabeca: (x) => !!x.regioes?.includes("cabeca"), tronco: (x) => !!x.regioes?.includes("tronco"),
   membro_superior: (x) => !!x.regioes?.includes("bracos"), membro_inferior: (x) => !!x.regioes?.includes("pernas"),
   arma_primaria: (x) => x.categoria === "arma", arma_secundaria: (x) => x.categoria === "arma" || x.categoria === "escudo",
@@ -37,6 +38,7 @@ const CABE: Record<EncaixeHud, (x: PecaHud) => boolean> = {
 export function EquipamentoHud() {
   const [pecas, setPecas] = useState(PECAS);
   const [slots, setSlots] = useState<Record<EncaixeHud, string | null>>({
+    traje: null, suporte_municao: null,
     cabeca: null, tronco: "colete", membro_superior: "cotov", membro_inferior: null,
     arma_primaria: "adaga", arma_secundaria: "escudo", acesso_rapido_1: "antidoto", acesso_rapido_2: null,
   });

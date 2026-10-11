@@ -105,7 +105,8 @@ export function espacosDaInstancia(
   modelo: ItemContent | undefined,
 ): number {
   if (!ocupaEspaco(instancia.estado)) return 0;
-  return Math.max(1, instancia.quantidade) * espacosDoItem(modelo);
+  const unidadesPorKit = modelo?.ammoKitQuantidade ?? 1;
+  return Math.ceil(Math.max(1, instancia.quantidade) / unidadesPorKit) * espacosDoItem(modelo);
 }
 
 export function resumoDeCarga(
@@ -115,6 +116,10 @@ export function resumoDeCarga(
   let ocupados = 0;
   for (const instancia of character.inventario ?? []) {
     ocupados += espacosDaInstancia(instancia, catalogo.get(instancia.itemSlug));
+    // Suporte guardado ocupa o espaço vazio mais os kits de munição dentro dele.
+    if (instancia.estado === "mochila" && instancia.aljava) for (const stack of instancia.aljava.stacks) {
+      ocupados += espacosDaInstancia({quantidade:stack.quantidade,estado:"mochila"},catalogo.get(stack.contentSlug));
+    }
   }
   const capacidade = capacidadeDeEspacos(character, catalogo);
   return { ocupados, capacidade, excedido: ocupados > capacidade };

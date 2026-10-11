@@ -19,6 +19,8 @@ export type BodySlotId =
   | "tronco"
   | "membro_superior"
   | "membro_inferior"
+  | "traje"
+  | "suporte_municao"
   | "escudo"
   | "arma_primaria"
   | "arma_secundaria"
@@ -31,6 +33,8 @@ export const BODY_SLOT_LABELS: Record<BodySlotId, string> = {
   membro_superior: "Braços",
   membro_inferior: "Pernas",
   escudo: "Escudo",
+  traje: "Traje",
+  suporte_municao: "Suporte de munição",
   arma_primaria: "Arma primária",
   arma_secundaria: "Arma secundária",
   acesso_rapido_1: "Acesso rápido 1",
@@ -60,6 +64,8 @@ const CATEGORIAS_ACESSO_RAPIDO = new Set(["farmacia", "explosivo", "vertina"]);
 export function itemCabeNoSlot(item: ItemContent | undefined, slot: BodySlotId): boolean {
   if (!item) return false;
 
+  if (slot === "traje") return item.categoria === "traje";
+  if (slot === "suporte_municao") return !!item.suporteMunicao;
   if (slot === "arma_primaria") return item.categoria === "arma";
   // Arma secundária representa a mão livre (fora da que empunha a
   // arma primária) — a mesma mão que pode segurar um escudo. Os dois
@@ -70,7 +76,8 @@ export function itemCabeNoSlot(item: ItemContent | undefined, slot: BodySlotId):
   if (slot === "arma_secundaria") return item.categoria === "arma" || item.categoria === "escudo";
   if (slot === "escudo") return item.categoria === "escudo";
   if (slot === "acesso_rapido_1" || slot === "acesso_rapido_2") {
-    return CATEGORIAS_ACESSO_RAPIDO.has(item.categoria);
+    const spaces=/^\d+/.exec(item.espacosTexto ?? "1");
+    return !!spaces && Number(spaces[0])<=1 && (item.categoria === "municao" || CATEGORIAS_ACESSO_RAPIDO.has(item.categoria));
   }
 
   const regiao = SLOT_PARA_REGIAO[slot];
@@ -123,7 +130,9 @@ export function projectBodySlots(
     for (const i of sobra) { const k = out.indexOf(null); if (k < 0) break; out[k] = i; }
     return out;
   }
-  const [primaria, secundaria] = distribuir(empunhados, ["arma_primaria", "arma_secundaria"]);
+  let [primaria, secundaria] = distribuir(empunhados, ["arma_primaria", "arma_secundaria"]);
+  const duasMaos = empunhados.find(i => catalogo.get(i.itemSlug)?.maos === 2);
+  if (duasMaos) primaria = secundaria = duasMaos;
   const [rapido1, rapido2] = distribuir(acessoRapido, ["acesso_rapido_1", "acesso_rapido_2"]);
 
   // Fonte defensiva ATIVA — `equipadoDefensivo` é o que realmente
@@ -144,6 +153,8 @@ export function projectBodySlots(
     ["membro_superior", armaduraDaRegiao("membro_superior")],
     ["membro_inferior", armaduraDaRegiao("membro_inferior")],
     ["escudo", escudo],
+    ["traje", inventario.find(i => i.estado === "equipado" && catalogo.get(i.itemSlug)?.categoria === "traje") ?? null],
+    ["suporte_municao", inventario.find(i => i.estado === "equipado" && catalogo.get(i.itemSlug)?.suporteMunicao) ?? null],
     ["arma_primaria", primaria],
     ["arma_secundaria", secundaria],
     ["acesso_rapido_1", rapido1],

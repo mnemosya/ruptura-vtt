@@ -213,6 +213,7 @@ function itemDoHud(api: ConsoleApi, instancia: InventoryItemInstance): ItemHud {
     id: instancia.id,
     nome: instancia.itemNome,
     weaponName: modelo?.nome,
+    temaCategoria: modelo ? temaDoModelo(modelo) : undefined,
     categoria,
     categoriaRotulo: modelo?.categoria_label ?? categoria,
     vertente: VERTENTE_DA_CATEGORIA[categoria] ?? "nenhuma",
@@ -247,12 +248,12 @@ const GRUPOS_MERCADO: { prefixo: string; nome: string }[] = [
   { prefixo: "armaduras", nome: "Armaduras" },
   { prefixo: "escudos", nome: "Escudos" },
   { prefixo: "armas", nome: "Armas" },
-  { prefixo: "dispositivos_tecnologicos", nome: "Dispositivos tecnológicos" },
+  { prefixo: "dispositivos_tecnologicos", nome: "Dispositivos" },
   { prefixo: "drones_e_robos", nome: "Drones e robôs" },
   { prefixo: "escalpos", nome: "Escalpos" },
   { prefixo: "explosivos", nome: "Explosivos" },
   { prefixo: "farmacia", nome: "Farmácia" },
-  { prefixo: "ferramentas_e_utilidades", nome: "Ferramentas e utilidades" },
+  { prefixo: "ferramentas_e_utilidades", nome: "Ferramentas" },
   { prefixo: "municao", nome: "Munição" },
   { prefixo: "mobilidade", nome: "Mobilidade" },
   { prefixo: "trajes", nome: "Trajes" },
@@ -272,7 +273,7 @@ const ORDEM_PESO = ["leves", "dias", "dios", "pesadas", "pesados"];
 
 /** Ordem das subcategorias na lista lateral; as não listadas vêm depois. */
 const ORDEM_SUB = [
-  "Armas corpo a corpo", "Armas de arremesso e disparo", "Armas de fogo", "Armas de energia",
+  "Armas brancas", "Armas de disparo", "Armas corpo a corpo", "Armas de arremesso e disparo", "Armas de fogo", "Armas de energia",
   "Equipamentos de mobilidade", "Veículos", "Módulos veiculares",
 ];
 
@@ -289,7 +290,19 @@ const MUNICAO: Record<string, { sub: string; tipo: string; ordem: number }> = {
   "Célula": { sub: "Células de energia", tipo: "Célula", ordem: 2 },
 };
 
-function grupoESubDoModelo(modelo: ItemContent): Pick<ProdutoHud, "grupo" | "sub" | "subOrdem" | "tipo"> {
+/**
+ * Nome do TEMA de cor do item — o do grupo do Mercado, exceto armaduras,
+ * que mudam de cor conforme a proteção que dão (`estatisticas.tipo_protecao`):
+ * física, energética ou híbrida. Ver `itemCategoryColors.ts`.
+ */
+export function temaDoModelo(modelo: ItemContent): string | undefined {
+  const nome = grupoESubDoModelo(modelo).grupo?.nome;
+  const tipo = modelo.tipoProtecao?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (modelo.categoria === "armadura" && (tipo === "fisica" || tipo === "energetica" || tipo === "hibrida")) return `armaduras ${tipo}`;
+  return nome;
+}
+
+export function grupoESubDoModelo(modelo: ItemContent): Pick<ProdutoHud, "grupo" | "sub" | "subOrdem" | "tipo"> {
   /* Armaduras e escudos vêm da mesma seção do conteúdo
      (`armaduras_e_escudos_…`), mas são grupos separados no Mercado. O
      subtipo do conteúdo vira a subcategoria ("ARMADURAS LEVES" → "Armaduras leves"). */
@@ -303,7 +316,14 @@ function grupoESubDoModelo(modelo: ItemContent): Pick<ProdutoHud, "grupo" | "sub
     const m = modelo.subtipo ? MUNICAO[modelo.subtipo] : undefined;
     return { grupo: { id: g.prefixo, nome: g.nome }, sub: m?.sub ?? null, subOrdem: m?.ordem, tipo: m?.tipo ?? null };
   }
-  const g = GRUPOS_MERCADO.find((x) => modelo.categoria === "escalpo"
+  // Categorias canônicas não dependem dos prefixos históricos dos slugs.
+  // Aljava mantém a identidade legada `aljava`; suportes novos usam `ferramentas_`.
+  const grupoCategoria = modelo.categoria === "ferramenta" || modelo.categoria === "utilidade"
+    ? "ferramentas_e_utilidades"
+    : modelo.categoria === "dispositivo" ? "dispositivos_tecnologicos" : null;
+  const g = GRUPOS_MERCADO.find((x) => grupoCategoria
+    ? x.prefixo === grupoCategoria
+    : modelo.categoria === "escalpo"
     ? x.prefixo === "escalpos"
     : !["municao", "armaduras", "escudos"].includes(x.prefixo) && modelo.slug.startsWith(`${x.prefixo}_`));
   if (!g) return {};
