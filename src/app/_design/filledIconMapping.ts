@@ -33,6 +33,8 @@ const CATEGORIES: Record<string, FilledIconName> = {
 
 export function filledWeaponIconForName(name?: string): FilledIconName | null {
   if (!name) return null;
+  const model = normalizeIconKey(name.replace(/\s*\([^()]+\)\s*$/, "").trim());
+  if (model === "rv_4_shiv" || model === "shiv") return "throwing knife";
   const type = /\(([^()]+)\)\s*$/.exec(name)?.[1] ?? name;
   return WEAPONS[normalizeIconKey(type.trim())] ?? null;
 }
