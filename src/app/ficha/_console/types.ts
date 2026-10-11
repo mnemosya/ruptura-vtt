@@ -148,6 +148,8 @@ export interface ConsoleApi {
 
   avancarColapso: () => void;
   aplicarTesteDecisivoColapso: (dados: number[]) => void;
+  /** Desfaz o último surto do dia (só o contador; não mexe em Ruptura pendente). */
+  removerSobrecarga: () => void;
   estabilizarColapso: () => void;
 
   /** Move um item entre mochila/equipado/empunhado/acesso rápido. */

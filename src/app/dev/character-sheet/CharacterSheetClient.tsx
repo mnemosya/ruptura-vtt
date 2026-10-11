@@ -1238,6 +1238,18 @@ export default function CharacterSheetClient({
    * (fallbacks idênticos ao PRD). Sem sobrecarga suficiente, bloqueia
    * sem mudar nada. Loga `overload_surge_used` (canônico) na mesa.
    */
+  /** Desfaz o último surto do dia — correção manual do contador. */
+  async function handleRemoveOverloadSurge() {
+    const current = characterRef.current;
+    const antes = current.sobrecarga_usada_dia ?? 0;
+    if (antes <= 0) return;
+    const next = { ...current, sobrecarga_usada_dia: antes - 1 };
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("recurso", `Sobrecarga: ${antes} → ${antes - 1} (surto removido).`);
+    await persistAutomatedActionExecution(next);
+  }
+
   async function handleUseOverloadSurge(tipo: string) {
     const nowIso = new Date().toISOString();
     const sobrecargaAntes = character.sobrecarga_usada_dia ?? 0;
@@ -3981,6 +3993,7 @@ export default function CharacterSheetClient({
     podeUsarSobrecarga: !(character.ruptura_pendente ?? false),
 
     avancarColapso: handleAdvanceCollapseSegmentManual,
+    removerSobrecarga: () => void handleRemoveOverloadSurge(),
     aplicarTesteDecisivoColapso: (dados) => void handleResolveCollapseDecisiveTest(dados),
     estabilizarColapso: handleStabilizeCollapse,
 

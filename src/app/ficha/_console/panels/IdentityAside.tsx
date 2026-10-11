@@ -816,15 +816,20 @@ export function IdentityAside({
                 </span>
               );
             }
+            // O último surto usado é clicável: remove (desfaz) aquele surto.
+            const ultimaUsada = usada && i === sobrecarga - 1;
             return (
               <button
                 key={i}
                 type="button"
                 className="rc-nsob-pip"
-                disabled={usada || !api.podeUsarSobrecarga}
-                onClick={() => guard(onEscolherSurto)}
+                disabled={ultimaUsada ? false : usada || !api.podeUsarSobrecarga}
+                onClick={() => (ultimaUsada ? guard(api.removerSobrecarga) : guard(onEscolherSurto))}
                 data-testid={`console-surto-${i + 1}`}
-                aria-label={`Sobrecarga ${i + 1} de ${MAX_OVERLOAD_SURGES_PER_DAY}${usada ? " (usada)" : ""}`}
+                title={ultimaUsada ? "Remover este surto" : undefined}
+                aria-label={ultimaUsada
+                  ? `Remover sobrecarga ${i + 1} de ${MAX_OVERLOAD_SURGES_PER_DAY}`
+                  : `Sobrecarga ${i + 1} de ${MAX_OVERLOAD_SURGES_PER_DAY}${usada ? " (usada)" : ""}`}
               >
                 <SurgePip position={position} usada={usada} />
               </button>
