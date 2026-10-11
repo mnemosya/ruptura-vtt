@@ -75,10 +75,8 @@ const ROTULO_DO_ESTADO: Record<ItemLoadoutState, string> = {
  * vertina não cabe em arma primária porque a categoria dela não é
  * "arma"). `estado` presente = mudança direta de loadout.
  *
- * Os slots de ARMADURA (cabeça, tronco, braços, pernas) e o de escudo
- * não estão aqui de propósito: quem veste armadura é o paper doll, que
- * mostra o corpo e a sobreposição. Repetir isso numa lista sem corpo
- * seria uma segunda porta pior para a mesma coisa.
+ * Encaixes defensivos, traje e suporte aparecem para os itens compatíveis,
+ * usando o mesmo fluxo da aba de Equipamentos.
  *
  * "Mochila" não estava na lista pedida, mas entrou: sem ela um item
  * mandado ao abrigo não teria como voltar.
@@ -93,6 +91,14 @@ const DESTINOS: {
 }[] = [
   { id: "arma_primaria", label: "Arma primária", slot: "arma_primaria" },
   { id: "arma_secundaria", label: "Arma secundária", slot: "arma_secundaria" },
+  { id: "cabeca", label: "Cabeça", slot: "cabeca" },
+  { id: "tronco", label: "Tronco", slot: "tronco" },
+  { id: "membro_superior", label: "Braços", slot: "membro_superior" },
+  { id: "membro_inferior", label: "Pernas", slot: "membro_inferior" },
+  { id: "escudo", label: "Escudo", slot: "escudo" },
+  { id: "traje", label: "Traje", slot: "traje" },
+  { id: "suporte_municao", label: "Suporte de munição", slot: "suporte_municao" },
+  { id: "equipado", label: "Equipado", estado: "equipado" },
   { id: "acesso_rapido_1", label: "Acesso rápido 1", slot: "acesso_rapido_1" },
   { id: "acesso_rapido_2", label: "Acesso rápido 2", slot: "acesso_rapido_2" },
   { id: "mochila", label: "Mochila", estado: "mochila" },
@@ -383,7 +389,12 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
   const destinosDe = (item: ItemHud): DestinoHud[] => {
     const instancia = porId.get(item.id);
     const modelo = instancia ? api.catalogo.get(instancia.itemSlug) : undefined;
-    return DESTINOS.map((d) => {
+    return DESTINOS.filter((d) => {
+      // Os encaixes específicos aparecem quando aceitam este item.
+      if (d.slot && !["arma_primaria", "arma_secundaria", "acesso_rapido_1", "acesso_rapido_2"].includes(d.slot)) return itemCabeNoSlot(modelo, d.slot);
+      if (d.id === "equipado") return !!modelo && !modelo.suporteMunicao && ["acessorio", "mobilidade", "veiculo"].includes(modelo.categoria);
+      return true;
+    }).map((d) => {
       const cabe = d.slot ? itemCabeNoSlot(modelo, d.slot) : true;
       const jaEsta = d.estado != null && instancia?.estado === d.estado;
       return {
