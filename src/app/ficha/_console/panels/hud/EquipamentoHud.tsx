@@ -102,7 +102,7 @@ const PROT: Record<string, { c: string; s: string; nome: string }> = {
 };
 const prot = (p?: string | null) => (p ? PROT[p.toLowerCase()] ?? null : null);
 /** Cor da vertente por slug — mesma paleta canônica de `[data-vertente]`. */
-const COR_VERTENTE: Record<string, string> = { cinetica: "#e0455f", energetica: "#f07a1f", material: "#f5a200", biotica: "#2f9e56", sinaptica: "#35c7d8", cognitiva: "#8b5cf6", nenhuma: "#7f95b3" };
+const COR_VERTENTE: Record<string, string> = { cinetica: "#e0455f", energetica: "#f07a1f", material: "#f5a200", biotica: "#3ccf6e", sinaptica: "#35c7d8", cognitiva: "#8b5cf6", nenhuma: "#7f95b3" };
 const corDe = (p: PecaHud) => corCategoria(p.temaCategoria ?? p.categoria) ?? COR_VERTENTE[p.vertente] ?? CY;
 
 const ROTULO: Record<EncaixeHud, string> = {

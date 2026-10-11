@@ -306,7 +306,7 @@ function montarPecas(campaignId: string | null): Peca[] { return [
   { chave: "magias-hud", grupo: "Console do personagem", rotulo: "Magias (HUD)", render: () => (
     <Secao
       titulo="Aba Magias — versão HUD (prévia)"
-      sub={<>Anel das seis vertentes, grimório por nível e leitura completa em modal (custo de mana e PA, CD = 6 + nível, fusão). Cores de vertente canônicas. O mesmo componente do Console, com dados de exemplo. Componente: <code>ficha/_console/panels/hud/MagiasHud.tsx</code>.</>}
+      sub={<>Anel das seis vertentes, grimório por nível e leitura completa em modal (custo de mana e PA, CD = 6 + nível). Cores de vertente canônicas. O mesmo componente do Console, com dados de exemplo. Componente: <code>ficha/_console/panels/hud/MagiasHud.tsx</code>.</>}
     >
       <MagiasHud />
     </Secao>

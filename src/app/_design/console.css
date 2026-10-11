@@ -2801,7 +2801,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    magias publicadas ainda os usam (MagiasPanel). Saem quando o
    capítulo de magias for normalizado. */
 .rc-window-wrap { --rv-vertente-cor: #6b7f8c; }
-.rc-window-wrap [data-vertente="biotica"], .rc-window-wrap [data-vertente="somatica"] { --rv-vertente-cor: #2f9e56; }
+.rc-window-wrap [data-vertente="biotica"], .rc-window-wrap [data-vertente="somatica"] { --rv-vertente-cor: #3ccf6e; }
 .rc-window-wrap [data-vertente="cognitiva"], .rc-window-wrap [data-vertente="cognitivo"] { --rv-vertente-cor: #8b5cf6; }
 .rc-window-wrap [data-vertente="material"] { --rv-vertente-cor: #f5a200; }
 .rc-window-wrap [data-vertente="energetica"], .rc-window-wrap [data-vertente="energetico"] { --rv-vertente-cor: #f07a1f; }

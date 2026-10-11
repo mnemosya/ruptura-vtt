@@ -1391,7 +1391,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-token-disco[data-lado="neutro"] { border-style: dashed; }
 
 /* A paleta, uma vez só — vale pro disco, pra pegada e pras fichas. */
-[data-vertente="biotica"] { --rv-vertente-cor: #2f9e56; }
+[data-vertente="biotica"] { --rv-vertente-cor: #3ccf6e; }
 [data-vertente="cognitiva"] { --rv-vertente-cor: #8b5cf6; }
 [data-vertente="material"] { --rv-vertente-cor: #f5a200; }
 [data-vertente="energetica"] { --rv-vertente-cor: #f07a1f; }

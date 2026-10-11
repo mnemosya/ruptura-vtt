@@ -41,7 +41,6 @@ export function SpellsTab({
   onLearn,
   onForget,
   onCast,
-  onCastWithFusion,
   onRollDamage,
   onSetVertenteLevel,
 }: {
@@ -54,15 +53,14 @@ export function SpellsTab({
   onLearn: (slug: string) => void;
   onForget: (learnedId: string) => void;
   onCast: (slug: string) => void;
-  /** Fusão (checkpoint pós-v0.66) — conjura `slug` fundida com `fusedSlug` (+1 Sobrecarga; ambas aprendidas). */
-  onCastWithFusion: (slug: string, fusedSlug: string) => void;
   onRollDamage: (slug: string) => void;
+  /** Rola a cura (efeito `cura`) e registra no log. */
+  onRollHeal: (slug: string) => void;
   /** Define o nível investido numa vertente (checkpoint pós-v0.69) — só editável em Modo Evolução. */
   onSetVertenteLevel: (vertente: string, value: number) => void;
 }) {
   const [expandido, setExpandido] = useState<Record<string, boolean>>({});
   // fusaoSelecionada[slug da principal] = slug da segunda magia a fundir
-  const [fusaoSelecionada, setFusaoSelecionada] = useState<Record<string, string>>({});
 
   const publicadas = spells.filter((s) => s.status === "published");
   const vertentesConhecidas = getKnownVertentes({ magias_aprendidas: magiasAprendidas }, publicadas);
@@ -234,52 +232,6 @@ export function SpellsTab({
                                 {dano.dado ? `Rolar dano (${dano.dado})` : `Dano fixo (${dano.valor})`}
                               </button>
                             )}
-                            {(() => {
-                              // Fusão (checkpoint pós-v0.66) — só entre magias APRENDIDAS; custa sempre 1 Sobrecarga.
-                              const outrasAprendidas = publicadas.filter(
-                                (m) => m.slug !== spell.slug && magiasAprendidas.some((a) => a.spellSlug === m.slug),
-                              );
-                              if (outrasAprendidas.length === 0) return null;
-                              const escolhida = fusaoSelecionada[spell.slug] ?? "";
-                              const fusedSpell = escolhida ? outrasAprendidas.find((m) => m.slug === escolhida) : undefined;
-                              const fusedNivelCheck = fusedSpell ? checkSpellVertenteLevel(fusedSpell, { niveis_vertente: niveisVertente }) : null;
-                              // Fusão bloqueada se a PRINCIPAL ou a FUNDIDA estiver acima do nível da vertente (checkpoint pós-v0.70).
-                              const fusaoBloqueada = nivelCheck.aboveLevel || fusedNivelCheck?.aboveLevel === true;
-                              const fusaoDesabilitada = !escolhida || fusaoBloqueada;
-                              return (
-                                <span style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                                  <select
-                                    data-testid={`magia-fusao-select-${spell.slug}`}
-                                    value={escolhida}
-                                    onChange={(e) => setFusaoSelecionada((prev) => ({ ...prev, [spell.slug]: e.target.value }))}
-                                    style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 11 }}
-                                  >
-                                    <option value="">— fundir com… —</option>
-                                    {outrasAprendidas.map((m) => (
-                                      <option key={m.slug} value={m.slug}>{m.nome} ({m.vertente})</option>
-                                    ))}
-                                  </select>
-                                  <button
-                                    data-testid={`magia-conjurar-fusao-${spell.slug}`}
-                                    disabled={fusaoDesabilitada}
-                                    onClick={() => {
-                                      if (fusaoDesabilitada) return;
-                                      onCastWithFusion(spell.slug, escolhida);
-                                      setFusaoSelecionada((prev) => ({ ...prev, [spell.slug]: "" }));
-                                    }}
-                                    style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", opacity: fusaoDesabilitada ? 0.5 : 1, cursor: fusaoDesabilitada ? "not-allowed" : "pointer" }}
-                                    title={fusaoBloqueada ? "Nível de vertente insuficiente" : "Fusão custa sempre 1 Sobrecarga; efeitos combinados são resolvidos manualmente."}
-                                  >
-                                    Conjurar com Fusão (+1 Sobrecarga)
-                                  </button>
-                                  {fusedNivelCheck?.aboveLevel && (
-                                    <span data-testid={`magia-fusao-nivel-aviso-${spell.slug}`} style={{ color: "#ff6b6b", fontSize: 11 }}>
-                                      Nível de vertente insuficiente para {fusedSpell!.nome}
-                                    </span>
-                                  )}
-                                </span>
-                              );
-                            })()}
                           </>
                         )}
                       </div>

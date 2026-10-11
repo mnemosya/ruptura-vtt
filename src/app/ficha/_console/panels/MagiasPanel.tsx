@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Search } from "lucide-react";
-import { canonicalVertenteId, checkSpellVertenteLevel, describeSpellManualEffects, getSpellAttackProfile, getSpellDamageEffect, getVertenteCd, getVertenteLevel, resolveSpellResistance, type SpellContent } from "../../../../lib/character";
+import { SURTO_DE_ENERGIA, canonicalVertenteId, checkSpellVertenteLevel, describeSpellManualEffects, getSpellAttackProfile, getSpellDamageEffect, getSpellHealEffect, getVertenteCd, getVertenteLevel, resolveSpellResistance, type SpellContent } from "../../../../lib/character";
 import type { ConsoleApi } from "../types";
 import { TextoComRegras } from "../TextoComRegras";
 import { CabecalhoModulo } from "./CabecalhoModulo";
@@ -46,6 +46,7 @@ function MagiasEmJogo({ api }: { api: ConsoleApi }) {
   const nivelDe = (vertente: string) => getVertenteLevel({ niveis_vertente: m.niveisVertente }, vertente);
   const paraHud = (s: SpellContent): MagiaHud => {
     const dano = getSpellDamageEffect(s);
+    const cura = getSpellHealEffect(s);
     const res = resolveSpellResistance(s, nivelDe(s.vertente));
     return {
       slug: s.slug,
@@ -62,6 +63,8 @@ function MagiasEmJogo({ api }: { api: ConsoleApi }) {
       descricao: s.descricao_curta ? <TextoComRegras texto={s.descricao_curta} glossario={api.glossario} /> : null,
       efeito: s.descricao_longa ? <TextoComRegras texto={s.descricao_longa} glossario={api.glossario} /> : null,
       dano: dano ? String(dano.dado ?? dano.valor) : null,
+      cura: cura ? String(cura.dado ?? cura.valor) : null,
+      curaPe: cura?.recurso === "pe",
       resistencia: res ? `${res.acoes.join(" / ")} · ${res.cd != null ? `CD ${res.cd}` : "CD não definida"}${res.condicional ? " (condicional)" : ""}` : null,
       manuais: describeSpellManualEffects(s).map((t, i) => <TextoComRegras key={i} texto={`Manual: ${t}`} glossario={api.glossario} />),
       bloqueada: checkSpellVertenteLevel(s, { niveis_vertente: m.niveisVertente }).aboveLevel,
@@ -70,6 +73,11 @@ function MagiasEmJogo({ api }: { api: ConsoleApi }) {
   const magias = aprendidas.map(paraHud);
   const catalogo = m.spells.filter(s => s.status === "published").map(paraHud);
   const niveis = Object.fromEntries(VERTENTES.map(([id]) => [id, nivelDe(id)]));
+  /* Mana temporária (Surto de Energia) também paga a conjuração — `castSpell` drena ela primeiro. */
+  const recursos = api.character.recursos_atuais;
+  const mana = { atual: (recursos?.mana ?? 0) + (recursos?.mana_temporaria ?? 0), max: api.derivados.mana_max ?? 0 };
+  const vp = (api.character as { magia?: { vertente_primaria?: string } }).magia?.vertente_primaria;
+  const primaria = vp ? canonicalVertenteId(vp) : null;
   return <section className="rc-eq-outer" aria-label="Magias">
     <div className="rc-eq-card-outer rc-inv-moldura">
       <CabecalhoModulo id="ID://MAGIAS" mod="MOD.ARC // 07" />
@@ -77,19 +85,21 @@ function MagiasEmJogo({ api }: { api: ConsoleApi }) {
         <MagiasHud
           magias={magias}
           niveis={niveis}
-          mana={{ atual: api.character.recursos_atuais?.mana ?? 0, max: api.derivados.mana_max ?? 0 }}
+          primaria={primaria}
+          mana={mana}
           somenteLeitura={api.somenteLeitura}
           onConjurar={m.onCast}
-          onConjurarComFusao={m.onCastWithFusion}
           onRolarDano={m.onRollDamage}
+          onRolarCura={m.onRollHeal}
           onAbrirCatalogo={() => setCatalogoAberto(true)}
+          onSurtoDeEnergia={api.podeUsarSobrecarga ? () => api.usarSobrecarga(SURTO_DE_ENERGIA) : undefined}
           vazio="Nenhuma magia aprendida. Abra o catálogo para aprender magias."
         />
       </div>
     </div>
     {catalogoAberto && <JanelaMercado titulo="Catálogo de magias" onFechar={() => setCatalogoAberto(false)}>
       {fechar => <CatalogoMagiasHud magias={catalogo} aprendidas={new Set(m.magiasAprendidas.map(a => a.spellSlug))}
-        niveis={niveis} mana={{ atual: api.character.recursos_atuais?.mana ?? 0, max: api.derivados.mana_max ?? 0 }}
+        niveis={niveis} mana={mana}
         somenteLeitura={api.somenteLeitura} onAprender={m.onLearn} onFechar={fechar} />}
     </JanelaMercado>}
   </section>;
@@ -128,17 +138,16 @@ function MagiasLista({ api }: { api: ConsoleApi }) {
               {!visiveis.length && <p className="rc-inv-vazio">{repertorio.length ? "Nenhuma magia corresponde aos filtros." : "Nenhuma magia aprendida. Aprenda magias no Modo Evolução."}</p>}
             </div></div>
           </div>
-          <div className="rc-inv-detalhe">{spell ? <DetalheMagia key={spell.slug} spell={spell} publicadas={publicadas} api={api} /> : <p className="rc-inv-vazio">Selecione uma magia para ver os detalhes.</p>}</div>
+          <div className="rc-inv-detalhe">{spell ? <DetalheMagia key={spell.slug} spell={spell} api={api} /> : <p className="rc-inv-vazio">Selecione uma magia para ver os detalhes.</p>}</div>
         </div>}
       </div>
     </div>
   </section>;
 }
 
-function DetalheMagia({ spell, publicadas, api }: { spell: SpellContent; publicadas: SpellContent[]; api: ConsoleApi }) {
+function DetalheMagia({ spell, api }: { spell: SpellContent; api: ConsoleApi }) {
   const m = api.magias;
   const evolucao = evolucaoDeMagias(api);
-  const [fusao, setFusao] = useState("");
   const aprendida = m.magiasAprendidas.find(a => a.spellSlug === spell.slug);
   const nivel = getVertenteLevel({ niveis_vertente: m.niveisVertente }, spell.vertente);
   const cd = nivel == null ? null : getVertenteCd(nivel);
@@ -149,9 +158,6 @@ function DetalheMagia({ spell, publicadas, api }: { spell: SpellContent; publica
   const manuais = describeSpellManualEffects(spell);
   const alcance = spell.estatisticas.alcanceTexto ? { text: spell.estatisticas.alcanceTexto } : null;
   const area = spell.estatisticas.areaTexto ? { text: spell.estatisticas.areaTexto } : null;
-  const outras = publicadas.filter(s => s.slug !== spell.slug && m.magiasAprendidas.some(a => a.spellSlug === s.slug));
-  const fundida = outras.find(s => s.slug === fusao);
-  const bloqueiaFusao = bloqueada || !fundida || checkSpellVertenteLevel(fundida, { niveis_vertente: m.niveisVertente }).aboveLevel;
   return <div className="rc-inv-det rc-mag-det" data-vertente={spell.vertente}>
     <div className="rc-mag-conteudo">
       <div className="rc-inv-det-cab"><div className="rc-inv-det-titulo"><h3>{spell.nome}</h3><div className="rc-inv-etiquetas"><span className="rc-inv-etiqueta">Nível {spell.estatisticas.nivel}</span><span className="rc-inv-etiqueta">{rotulo(spell.vertente)}</span>{spell.estatisticas.tipo_magia && <span className="rc-inv-etiqueta">{spell.estatisticas.tipo_magia}</span>}{aprendida && evolucao && <span className="rc-inv-etiqueta">Aprendida</span>}</div></div></div>
@@ -175,12 +181,11 @@ function DetalheMagia({ spell, publicadas, api }: { spell: SpellContent; publica
       {manuais.map((texto, i) => <TextoComRegras key={i} texto={`Manual: ${texto}`} glossario={api.glossario} className="rc-inv-det-desc" />)}
       {bloqueada && <p className="rc-mag-aviso">Nível de vertente insuficiente para conjurar esta magia.</p>}
     </div>
-    {/* Só leitura: conjurar, rolar dano e fundir são ações — o rodapé sai inteiro. */}
+    {/* Só leitura: conjurar e rolar dano são ações — o rodapé sai inteiro. */}
     {!api.somenteLeitura && <div className="rc-inv-det-rodape rc-mag-rodape">
       {evolucao ? <button type="button" className="rc-inv-btn" onClick={() => aprendida ? m.onForget(aprendida.id) : m.onLearn(spell.slug)}>{aprendida ? "Esquecer" : "Aprender"}</button> : <>
         <button type="button" className="rc-inv-btn rc-mag-conjurar" disabled={bloqueada || !aprendida} onClick={() => m.onCast(spell.slug)}>Conjurar</button>
         {dano && <details className="rc-mag-opcoes"><summary>Dano</summary><div className="rc-mag-opcoes-corpo"><button type="button" className="rc-inv-btn" onClick={() => m.onRollDamage(spell.slug)}>{dano.dado ? `Rolar dano (${dano.dado})` : `Dano fixo (${dano.valor})`}</button></div></details>}
-        {outras.length > 0 && <details className="rc-mag-opcoes"><summary>Fusão · +1 Sobrecarga</summary><div className="rc-mag-opcoes-corpo"><select aria-label="Magia para fundir" value={fundida ? fusao : ""} onChange={e => setFusao(e.target.value)}><option value="">Escolher magia…</option>{outras.map(s => <option key={s.slug} value={s.slug}>{s.nome} ({rotulo(s.vertente)})</option>)}</select><button type="button" className="rc-inv-btn" disabled={bloqueiaFusao} onClick={() => { if (!bloqueiaFusao) { m.onCastWithFusion(spell.slug, fusao); setFusao(""); } }}>Conjurar com Fusão</button>{fundida && bloqueiaFusao && <p className="rc-mag-aviso">Nível de vertente insuficiente para esta fusão.</p>}</div></details>}
       </>}
     </div>}
   </div>;

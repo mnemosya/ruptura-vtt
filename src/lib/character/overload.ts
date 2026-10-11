@@ -6,8 +6,8 @@
  * pendente + exige teste de Vontade CD 7 (falha aplica Atordoado por
  * "1 rodada" via o sistema de condições já existente, v0.32/v0.33).
  *
- * Escopo explícito deste checkpoint: SEM tipos de surto com efeito
- * mecânico próprio (são só rótulos, ver `OVERLOAD_SURGE_TYPES`), SEM
+ * Tipos de surto são rótulos (`OVERLOAD_SURGE_TYPES`); o único com
+ * efeito automático é o Surto de Energia (+5 de mana temporária). SEM
  * resolução de Ruptura (Marca/Traço), SEM Colapso. `ruptura_pendente`
  * só é limpo por uma resolução de Ruptura futura — nunca por descanso.
  *
@@ -32,6 +32,9 @@ export const OVERLOAD_SURGE_TYPES = [
 export type OverloadSurgeType = (typeof OVERLOAD_SURGE_TYPES)[number];
 
 export const MAX_OVERLOAD_SURGES_PER_DAY = 3;
+/** Surto de Energia: +5 de mana temporária na hora (some no descanso longo). */
+export const SURTO_DE_ENERGIA = "Surto de Energia";
+export const MANA_DO_SURTO_DE_ENERGIA = 5;
 const WILL_TEST_CD = 7;
 const DEFAULT_SURGE_DAMAGE_DIE = "1d4";
 
@@ -118,8 +121,12 @@ export function useOverloadSurge(
   const surge: OverloadSurgeSummary = { tipo, indice, danoPsiquico, criadoEm: nowIso };
   const terceiro = indice >= maxPerDay;
 
+  const recursos = character.recursos_atuais;
   const nextCharacter: Character = {
     ...character,
+    ...(tipo === SURTO_DE_ENERGIA && recursos
+      ? { recursos_atuais: { ...recursos, mana_temporaria: (recursos.mana_temporaria ?? 0) + MANA_DO_SURTO_DE_ENERGIA } }
+      : {}),
     sobrecarga_usada_dia: indice,
     ultimo_surto: surge,
     ruptura_pendente: terceiro ? true : character.ruptura_pendente,

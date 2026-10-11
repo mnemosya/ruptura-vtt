@@ -63,8 +63,8 @@ export function CatalogoMagiasHud({ magias, aprendidas, niveis, mana, somenteLei
         {alvo ? <>
           <div className="cm-detalhe-voltar"><button type="button" onClick={() => setDetalheAberto(false)}>← Voltar ao catálogo</button></div>
           <div className="cm-detalhe-conteudo" key={alvo.slug}>
-            <Faixa m={alvo} />
-            <Titulo m={alvo} nivel={niveis[alvo.vertente]} />
+            <Faixa m={alvo} nivel={niveis[alvo.vertente]} />
+            <Titulo m={alvo} />
             <div className="cm-leitura"><Leitura m={alvo} mana={mana} /></div>
           </div>
           <div className="cm-rodape">

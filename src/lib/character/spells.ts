@@ -184,6 +184,22 @@ export function getSpellDamageEffect(spell: SpellContent): SpellDamageEffect | n
   };
 }
 
+/** Efeito `cura` estruturado — dado ou valor fixo, em PV (padrão) ou PE. */
+export interface SpellHealEffect {
+  dado?: string;
+  valor?: number;
+  recurso: "pv" | "pe";
+}
+
+export function getSpellHealEffect(spell: SpellContent): SpellHealEffect | null {
+  const efeito = getSpellEffects(spell).find((e) => e.tipo === "cura");
+  if (!efeito) return null;
+  const dado = typeof efeito.dado === "string" ? efeito.dado : undefined;
+  const valor = typeof efeito.valor === "number" ? efeito.valor : undefined;
+  if (!dado && valor == null) return null;
+  return { dado, valor, recurso: efeito.recurso === "pe" ? "pe" : "pv" };
+}
+
 export interface SpellResistanceEffect {
   /**
    * Fórmula BRUTA do conteúdo (`resistencia.cd_formula`) — hoje sempre
@@ -307,6 +323,14 @@ export function resolveSpellResistance(spell: SpellContent, vertenteLevel: numbe
 /** Rola o dado de dano da magia (reaproveita o parser "NdM" de `attack.ts`); dano fixo (`valor`) devolve o próprio valor. */
 export function rollSpellDamage(spell: SpellContent, rng?: () => number): number | null {
   const efeito = getSpellDamageEffect(spell);
+  if (!efeito) return null;
+  if (efeito.dado) return rollDamageFormula(efeito.dado, rng);
+  return efeito.valor ?? null;
+}
+
+/** Rola a cura da magia (dado ou valor fixo). `null` sem efeito de cura. */
+export function rollSpellHeal(spell: SpellContent, rng?: () => number): number | null {
+  const efeito = getSpellHealEffect(spell);
   if (!efeito) return null;
   if (efeito.dado) return rollDamageFormula(efeito.dado, rng);
   return efeito.valor ?? null;
@@ -785,144 +809,5 @@ export function castSpell(params: {
     manaTemporariaBefore: manaTemporariaAntes,
     manaTemporariaAfter: manaTemporariaDepois,
     manaCostUnknown,
-  };
-}
-
-// ---------------------------------------------------------------------
-// Fusão de magias (checkpoint pós-v0.66) — fluxo manual seguro.
-//
-// Regra conhecida: Fusão custa SEMPRE 1 Sobrecarga (uma carga do
-// contador diário `sobrecarga_usada_dia` — mesma reserva dos surtos).
-// A fusão NÃO é um surto: o dano psíquico imediato (`surto.dano_imediato`)
-// é declarado para SURTOS no conteúdo, então não é rolado aqui.
-// Atingir o máximo de Sobrecargas do dia marca Ruptura pendente
-// (regra canônica: "marcar_ruptura_pendente_ao_chegar_a_3_sobrecargas").
-//
-// O que é automatizado: custos estruturados da magia PRINCIPAL
-// (PA/Mana via `castSpell`) + 1 Sobrecarga. A magia FUNDIDA nunca tem
-// custo/efeito somado automaticamente ("não combinar números
-// incompatíveis") — os efeitos dela viram lembretes no cartão.
-// ---------------------------------------------------------------------
-
-export interface CastSpellFusionResult {
-  character: Character;
-  ok: boolean;
-  reason?: string;
-  cast: CastSpellResult | null;
-  sobrecargaBefore: number;
-  sobrecargaAfter: number;
-  sobrecargaMax: number;
-  rupturaPendente: boolean;
-  /** Lembretes específicos da fusão (efeitos da magia fundida, mana não somada, ruptura). */
-  fusionReminders: string[];
-}
-
-/**
- * Conjura `spell` com Fusão de `fusedSpell` — bloqueia sem mudar nada
- * quando não há Sobrecarga disponível (custa 1), quando as magias são a
- * mesma, ou quando os custos de PA/Mana da principal não podem ser
- * pagos (mesma checagem de `castSpell`). O chamador é responsável por
- * garantir que AMBAS as magias estão aprendidas (modelo atual).
- */
-export function castSpellWithFusion(params: {
-  character: Character;
-  spell: SpellContent;
-  fusedSpell: SpellContent;
-  paMax: number;
-  manaMax: number;
-  overloadRules?: OverloadRulesPayload | null;
-  /** Nível de vertente da magia FUNDIDA (checkpoint pós-v0.69) — `null` quando não definido; usado só para o lembrete de CD, nunca para automatizar a fusão. */
-  fusedVertenteLevel?: number | null;
-}): CastSpellFusionResult {
-  const { character, spell, fusedSpell, paMax, manaMax, overloadRules, fusedVertenteLevel = null } = params;
-  const sobrecargaBefore = character.sobrecarga_usada_dia ?? 0;
-  const sobrecargaMax = getOverloadMaxPerDay(overloadRules);
-
-  const blocked = (reason: string): CastSpellFusionResult => ({
-    character,
-    ok: false,
-    reason,
-    cast: null,
-    sobrecargaBefore,
-    sobrecargaAfter: sobrecargaBefore,
-    sobrecargaMax,
-    rupturaPendente: character.ruptura_pendente ?? false,
-    fusionReminders: [],
-  });
-
-  if (spell.slug === fusedSpell.slug) {
-    return blocked("Escolha uma SEGUNDA magia diferente para fundir.");
-  }
-
-  // Nível de vertente (checkpoint pós-v0.70) — valida AMBAS as magias
-  // (principal e fundida) ANTES de checar/gastar Sobrecarga ou PA/Mana.
-  // Mesma regra de compatibilidade de `castSpell`: sem nível definido
-  // para a vertente, não bloqueia por este motivo.
-  const mainLevelCheck = checkSpellVertenteLevel(spell, character);
-  if (mainLevelCheck.aboveLevel) {
-    return blocked(
-      `Nível de vertente insuficiente para conjurar ${spell.nome} — exige nível ${spell.estatisticas.nivel} de ${spell.vertente}, personagem tem nível ${mainLevelCheck.vertenteLevel}.`,
-    );
-  }
-  const fusedLevelCheck = checkSpellVertenteLevel(fusedSpell, character);
-  if (fusedLevelCheck.aboveLevel) {
-    return blocked(
-      `Nível de vertente insuficiente para fundir com ${fusedSpell.nome} — exige nível ${fusedSpell.estatisticas.nivel} de ${fusedSpell.vertente}, personagem tem nível ${fusedLevelCheck.vertenteLevel}.`,
-    );
-  }
-
-  if (sobrecargaBefore >= sobrecargaMax) {
-    return blocked(`Sobrecarga insuficiente para Fusão (custa 1; ${sobrecargaBefore}/${sobrecargaMax} já usadas).`);
-  }
-
-  const cast = castSpell({ character, spell, paMax, manaMax });
-  if (!cast.ok) {
-    return blocked(cast.reason ?? "Conjuração não realizada.");
-  }
-
-  const sobrecargaAfter = sobrecargaBefore + 1;
-  const atingiuMax = sobrecargaAfter >= sobrecargaMax;
-  const nextCharacter: Character = {
-    ...cast.character,
-    sobrecarga_usada_dia: sobrecargaAfter,
-    ruptura_pendente: atingiuMax ? true : cast.character.ruptura_pendente,
-    ruptura_nivel_pendente: atingiuMax ? (cast.character.ruptura_nivel_pendente ?? 1) : cast.character.ruptura_nivel_pendente,
-  };
-
-  const fusionReminders: string[] = [
-    `Fusão com ${fusedSpell.nome}: efeitos combinados são resolvidos MANUALMENTE pelo narrador — números das duas magias nunca são somados automaticamente.`,
-  ];
-  if (fusedSpell.estatisticas.custo_mana != null) {
-    fusionReminders.push(
-      `${fusedSpell.nome} declara custo de Mana ${fusedSpell.estatisticas.custo_mana} — a Fusão não desconta a Mana da magia fundida automaticamente; ajuste se o narrador exigir.`,
-    );
-  }
-  const fusedResistance = resolveSpellResistance(fusedSpell, fusedVertenteLevel);
-  if (fusedResistance) {
-    const cdTexto = fusedResistance.cd != null ? `CD ${fusedResistance.cd}` : "CD depende do nível da vertente (6 + nível), ainda não definido";
-    fusionReminders.push(`${fusedSpell.nome}: resistência ${fusedResistance.acoes.join("/") || "?"} (${cdTexto}) — resolver manualmente.`);
-  }
-  const fusedDamage = getSpellDamageEffect(fusedSpell);
-  if (fusedDamage) {
-    fusionReminders.push(
-      `${fusedSpell.nome}: dano ${fusedDamage.dado ?? fusedDamage.valor} (${fusedDamage.tipo_dano}) — rolar/aplicar manualmente conforme a fusão narrada.`,
-    );
-  }
-  fusionReminders.push(...describeSpellManualEffects(fusedSpell).map((linha) => `${fusedSpell.nome}: ${linha}`));
-  if (atingiuMax) {
-    fusionReminders.push(
-      `Sobrecarga chegou a ${sobrecargaAfter}/${sobrecargaMax} — Ruptura pendente (resolvida no fim da cena). O teste do 3º SURTO não foi rolado: a regra canônica o descreve para surtos, não para Fusão — narrador decide se aplica.`,
-    );
-  }
-
-  return {
-    character: nextCharacter,
-    ok: true,
-    cast,
-    sobrecargaBefore,
-    sobrecargaAfter,
-    sobrecargaMax,
-    rupturaPendente: nextCharacter.ruptura_pendente ?? false,
-    fusionReminders,
   };
 }

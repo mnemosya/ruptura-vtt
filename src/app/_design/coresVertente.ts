@@ -11,7 +11,7 @@
  * lia como Vertente, se lia como "selecionado".
  */
 export const CORES_VERTENTE = {
-  biotica: "#2f9e56",
+  biotica: "#3ccf6e",
   cognitiva: "#8b5cf6",
   material: "#f5a200",
   energetica: "#f07a1f",
