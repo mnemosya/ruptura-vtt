@@ -28,7 +28,8 @@ export function filledWeaponIconForName(name?: string): FilledIconName | null {
 
 export function filledCategoryIcon(category: string, name?: string): FilledIconName | null {
   const categoryKey = normalizeIconKey(category);
-  const nameKey = normalizeIconKey(name ?? "");
+  const nameKey = normalizeIconKey((name ?? "").trim());
+  if (categoryKey === "ferramenta" && /^mochila_mk_(i|ii|iii)$/.test(nameKey)) return "backpack";
   // Só distinguir itens dentro da categoria apropriada, sem confundir armas com munição.
   if (categoryKey === "municao" && /(^|_)(flecha|flechas|virote|virotes)(_|$)/.test(nameKey)) return "arrows";
   if (["acessorio", "ferramenta", "suporte_municao"].includes(categoryKey) && /(^|_)aljava(_|$)/.test(nameKey)) return "quiver";

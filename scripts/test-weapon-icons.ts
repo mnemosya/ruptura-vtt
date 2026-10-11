@@ -35,6 +35,10 @@ for (const [name, expected] of [
 assert.equal(filledWeaponIconForName("Pistola pesada"), null);
 assert.equal(filledCategoryIcon("estrutura_dorsal"), null);
 assert.equal(filledCategoryIcon("mochila_equipada"), "backpack");
+for (const model of ["I", "II", "III"]) {
+  assert.equal(filledCategoryIcon("ferramenta", `Mochila MK-${model}`), "backpack");
+}
+assert.equal(filledCategoryIcon("ferramenta", "Kit de ferramentas"), null);
 assert.equal(filledCategoryIcon("municao", "Flecha simples"), "arrows");
 assert.equal(filledCategoryIcon("municao", "Munição 9 mm"), "bullets");
 assert.equal(filledCategoryIcon("acessorio", "Aljava"), "quiver");
