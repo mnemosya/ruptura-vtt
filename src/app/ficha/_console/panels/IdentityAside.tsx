@@ -130,9 +130,9 @@ const SURGE_INSET: Record<"first" | "middle" | "last", string> = {
 
 function SurgePip({ position, usada }: { position: "first" | "middle" | "last"; usada: boolean }) {
   return (
-    <svg viewBox="0 0 88 12" preserveAspectRatio="none" aria-hidden="true">
-      <path d={SURGE_OUTER[position]} fill={usada ? "#483A1A" : "#20221F"} />
-      <path d={SURGE_INSET[position]} fill="none" stroke="#A97A30" strokeOpacity="0.55" />
+    <svg viewBox="0 0 88 12" preserveAspectRatio="none" aria-hidden="true" data-usada={usada || undefined}>
+      <path d={SURGE_OUTER[position]} />
+      <path d={SURGE_INSET[position]} fill="none" />
     </svg>
   );
 }
