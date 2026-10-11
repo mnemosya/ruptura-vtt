@@ -1,5 +1,7 @@
 "use client";
 
+import { ItemCategoryIcon } from "../../../../_design/itemIcons";
+
 /**
  * EQUIPAMENTO — o "ripperdoc" do protótipo
  * (`inventario equip magia/src/Equipment.tsx`), na linguagem da Forja.
@@ -30,6 +32,8 @@ export type EncaixeHud =
   | "arma_primaria" | "arma_secundaria" | "acesso_rapido_1" | "acesso_rapido_2";
 
 export interface PecaHud {
+  /** Nome do modelo preservado mesmo quando a instância é renomeada. */
+  weaponName?: string;
   /** Id da INSTÂNCIA no inventário. */
   id: string;
   nome: string;
@@ -91,18 +95,6 @@ const ehArmadura = (e: EncaixeHud) => e === "cabeca" || e === "tronco" || e === 
 const ehArma = (e: EncaixeHud): e is "arma_primaria" | "arma_secundaria" => e === "arma_primaria" || e === "arma_secundaria";
 const REGIOES = [{ id: "cabeca", nome: "Cabeça" }, { id: "tronco", nome: "Tronco" }, { id: "bracos", nome: "Braços" }, { id: "pernas", nome: "Pernas" }];
 
-const G_ARMADURA = "M12 2 4 5v7c0 5 3.5 8 8 10 4.5-2 8-5 8-10V5l-8-3Zm0 0v20M4 10h16";
-const G_ESCUDO = "M4 3h16v9c0 5-4 8-8 10-4-2-8-5-8-10V3Zm8 4v10m-4-5h8";
-const G_ARMA = "M3 21 14 10m0 0 3-7 4 4-7 3Zm-9 7 3 3M6 15l3 3";
-const G_RAPIDO = "M9 2h6v7h7v6h-7v7H9v-7H2V9h7V2Z";
-const G_VAZIO: Record<EncaixeHud, string> = {
-  cabeca: "M12 3a5 5 0 0 1 5 5v3a5 5 0 0 1-10 0V8a5 5 0 0 1 5-5Zm-5 17c1-3 3-4 5-4s4 1 5 4",
-  tronco: "M7 4h10l3 4-2 3v9H6v-9L4 8l3-4Zm5 0v16",
-  membro_superior: "M8 3 5 12l2 9m9-18 3 9-2 9M8 3h8",
-  membro_inferior: "M8 3h8l-1 9-1 9h-2l-0-9-0 9h-2l-1-9-1-9Z",
-  arma_primaria: G_ARMA, arma_secundaria: G_ARMA, acesso_rapido_1: G_RAPIDO, acesso_rapido_2: G_RAPIDO,
-};
-const glifoDe = (p: PecaHud) => (p.categoria === "armadura" ? G_ARMADURA : p.categoria === "escudo" ? G_ESCUDO : p.categoria === "arma" ? G_ARMA : G_RAPIDO);
 
 /* ── palco: a NOSSA silhueta (201 × 613) com os encaixes nas laterais ──
    A altura da figura acompanha a altura disponível (medida), e a
@@ -264,7 +256,7 @@ function Encaixe({ peca, encaixe, ativo, quente, onClick }: { peca: PecaHud | nu
       )}
       {peca && <span style={{ position: "absolute", right: 0, top: 0, width: 0, height: 0, borderLeft: "8px solid transparent", borderTop: `8px solid ${corRar(peca.raridade)}` }} />}
       <span style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", display: "grid" }}>
-        <Svg d={peca ? glifoDe(peca) : G_VAZIO[encaixe]} tam={S * .46} cor={peca ? cor : CY} opac={peca ? 1 : .22} />
+        <ItemCategoryIcon category={peca?.categoria ?? (ehArma(encaixe) ? "arma" : encaixe.startsWith("acesso_rapido") ? "acesso_rapido" : encaixe)} weaponName={peca?.weaponName ?? peca?.nome} size={S * .46} color={peca ? cor : CY} strokeWidth={1.5} style={{ opacity: peca ? 1 : .22 }} />
       </span>
       {selo != null && (
         <span className="hx-display" style={{ position: "absolute", right: -6, bottom: -6, display: "grid", placeItems: "center", minWidth: 18, height: 18, padding: "0 2px", background: "var(--hx-abismo)", fontSize: 12, fontWeight: 900, lineHeight: 1, color: cor, boxShadow: `0 0 0 1px ${cor}80` }}>{selo}</span>
@@ -471,7 +463,7 @@ function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
         <span className="hx-hexgrid" style={{ position: "absolute", inset: 0, opacity: .6 }} /><span className="hx-scan" style={{ position: "absolute", inset: 0 }} />
         <span className="hx-spin" style={{ position: "absolute", width: 140, height: 140, borderRadius: "50%", border: `1px dashed ${c}44` }} />
         <span className="hx-spinr" style={{ position: "absolute", width: 100, height: 100, borderRadius: "50%", border: `1px solid ${c}30` }} />
-        <span className="hx-floaty" style={{ position: "relative" }}><Svg d={glifoDe(p)} tam={52} cor={c} traco={1.2} style={{ filter: `drop-shadow(0 0 12px ${c})` }} /></span>
+        <span className="hx-floaty" style={{ position: "relative" }}><ItemCategoryIcon category={p.categoria} weaponName={p.weaponName ?? p.nome} size={52} color={c} strokeWidth={1.2} style={{ filter: `drop-shadow(0 0 12px ${c})` }} /></span>
         <button type="button" onClick={voltar} aria-label="Fechar" className="hx-ch-hex hx-fechar" style={{ position: "absolute", right: 12, top: 12 }}><Svg d="M6 6l12 12M18 6 6 18" tam={14} cor="currentColor" traco={2} /></button>
       </div>
       <div style={{ position: "relative", padding: "18px 16px 14px", borderBottom: "1px solid rgba(0,212,255,.1)", background: `linear-gradient(180deg, ${c}0f, transparent)` }}>

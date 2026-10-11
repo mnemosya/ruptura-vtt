@@ -32,6 +32,7 @@ import { CabecalhoModulo } from "./CabecalhoModulo";
 import { InventarioHud, type DestinoHud, type ItemHud, type LocalHud } from "./inventario/InventarioHud";
 import { MercadoHud, type ProdutoHud } from "./hud/MercadoHud";
 import { JanelaMercado } from "./hud/JanelaMercado";
+import { marketEscalpoParents } from "../../../../lib/character/marketEscalpos";
 
 /**
  * Categoria → VERTENTE. A cor de um item é a vertente dele, e essa
@@ -211,6 +212,7 @@ function itemDoHud(api: ConsoleApi, instancia: InventoryItemInstance): ItemHud {
   return {
     id: instancia.id,
     nome: instancia.itemNome,
+    weaponName: modelo?.nome,
     categoria,
     categoriaRotulo: modelo?.categoria_label ?? categoria,
     vertente: VERTENTE_DA_CATEGORIA[categoria] ?? "nenhuma",
@@ -239,21 +241,21 @@ function itemDoHud(api: ConsoleApi, instancia: InventoryItemInstance): ItemHud {
  * carrega como prefixo (`armas_…`, `armaduras_e_escudos_…`). Um grupo pode
  * juntar várias categorias (Armaduras e escudos = armadura + escudo).
  */
-const GRUPOS_MERCADO: { prefixo: string; nome: string; glifo: string }[] = [
-  { prefixo: "acessorios", nome: "Acessórios", glifo: "M4 14v-2a8 8 0 0 1 16 0v2M4 14h3v6H4v-6Zm13 0h3v6h-3v-6Z" },
-  { prefixo: "armaduras", nome: "Armaduras", glifo: "M12 2 4 5v7c0 5 3.5 8 8 10 4.5-2 8-5 8-10V5l-8-3Zm0 0v20M4 10h16" },
-  { prefixo: "escudos", nome: "Escudos", glifo: "M4 3h16v9c0 5-4 8-8 10-4-2-8-5-8-10V3Zm8 4v10m-4-5h8" },
-  { prefixo: "armas", nome: "Armas", glifo: "M3 21 14 10m0 0 3-7 4 4-7 3Zm-9 7 3 3M6 15l3 3" },
-  { prefixo: "dispositivos_tecnologicos", nome: "Dispositivos tecnológicos", glifo: "M3 8h18v10H3V8Zm4-4h10M7 13h2m3 0h5" },
-  { prefixo: "drones_e_robos", nome: "Drones e robôs", glifo: "M7 8h10v9H7V8Zm3-4h4v4h-4V4Zm-6 8h3m10 0h3M10 12h.01M14 12h.01M9 20h6" },
-  { prefixo: "escalpos", nome: "Escalpos", glifo: "M9 3h6l-1 6h4l-6 12V13H8l1-10Zm-5 18h16" },
-  { prefixo: "explosivos", nome: "Explosivos", glifo: "M11 9a6 6 0 1 0 2 0V6h-2v3Zm5-5 2-2m-1 4h3M15 2v2" },
-  { prefixo: "farmacia", nome: "Farmácia", glifo: "M5 15 15 5a3.5 3.5 0 0 1 5 5L10 20a3.5 3.5 0 0 1-5-5Zm5-5 5 5" },
-  { prefixo: "ferramentas_e_utilidades", nome: "Ferramentas e utilidades", glifo: "M14 5a5 5 0 0 0 5 6l-9 10-4-4 10-9a5 5 0 0 1-2-3Z" },
-  { prefixo: "municao", nome: "Munição", glifo: "M8 21V9l2-6h4l2 6v12H8Zm0-12h8M8 17h8" },
-  { prefixo: "mobilidade", nome: "Mobilidade", glifo: "M5 17a3 3 0 1 0 0-.01M19 17a3 3 0 1 0 0-.01M5 17l4-7h5l3 7m-5-7 2-4h3" },
-  { prefixo: "trajes", nome: "Trajes", glifo: "M8 3 4 6l2 5 2-1v11h8V10l2 1 2-5-4-3c-1 2-2 3-4 3S9 5 8 3Z" },
-  { prefixo: "vertinas", nome: "Vertinas", glifo: "M12 1 19 12 12 23 5 12 12 1Zm0 6-3 5 3 5 3-5-3-5Z" },
+const GRUPOS_MERCADO: { prefixo: string; nome: string }[] = [
+  { prefixo: "acessorios", nome: "Acessórios" },
+  { prefixo: "armaduras", nome: "Armaduras" },
+  { prefixo: "escudos", nome: "Escudos" },
+  { prefixo: "armas", nome: "Armas" },
+  { prefixo: "dispositivos_tecnologicos", nome: "Dispositivos tecnológicos" },
+  { prefixo: "drones_e_robos", nome: "Drones e robôs" },
+  { prefixo: "escalpos", nome: "Escalpos" },
+  { prefixo: "explosivos", nome: "Explosivos" },
+  { prefixo: "farmacia", nome: "Farmácia" },
+  { prefixo: "ferramentas_e_utilidades", nome: "Ferramentas e utilidades" },
+  { prefixo: "municao", nome: "Munição" },
+  { prefixo: "mobilidade", nome: "Mobilidade" },
+  { prefixo: "trajes", nome: "Trajes" },
+  { prefixo: "vertinas", nome: "Vertinas" },
 ];
 
 /** Subcategoria pela categoria, quando o grupo junta mais de uma. */
@@ -293,21 +295,23 @@ function grupoESubDoModelo(modelo: ItemContent): Pick<ProdutoHud, "grupo" | "sub
   if (modelo.categoria === "armadura" || modelo.categoria === "escudo") {
     const g = GRUPOS_MERCADO.find((x) => x.prefixo === (modelo.categoria === "armadura" ? "armaduras" : "escudos"))!;
     const sub = modelo.subtipo ? frase(modelo.subtipo) : null;
-    return { grupo: { id: g.prefixo, nome: g.nome, glifo: g.glifo }, sub, subOrdem: sub ? ORDEM_PESO.findIndex((p) => sub.endsWith(p)) : undefined };
+    return { grupo: { id: g.prefixo, nome: g.nome }, sub, subOrdem: sub ? ORDEM_PESO.findIndex((p) => sub.endsWith(p)) : undefined };
   }
   if (modelo.categoria === "municao") {
     const g = GRUPOS_MERCADO.find((x) => x.prefixo === "municao")!;
     const m = modelo.subtipo ? MUNICAO[modelo.subtipo] : undefined;
-    return { grupo: { id: g.prefixo, nome: g.nome, glifo: g.glifo }, sub: m?.sub ?? null, subOrdem: m?.ordem, tipo: m?.tipo ?? null };
+    return { grupo: { id: g.prefixo, nome: g.nome }, sub: m?.sub ?? null, subOrdem: m?.ordem, tipo: m?.tipo ?? null };
   }
-  const g = GRUPOS_MERCADO.find((x) => !["municao", "armaduras", "escudos"].includes(x.prefixo) && modelo.slug.startsWith(`${x.prefixo}_`));
+  const g = GRUPOS_MERCADO.find((x) => modelo.categoria === "escalpo"
+    ? x.prefixo === "escalpos"
+    : !["municao", "armaduras", "escudos"].includes(x.prefixo) && modelo.slug.startsWith(`${x.prefixo}_`));
   if (!g) return {};
   // Armas se dividem pelo subtipo do conteúdo ("ARMAS DE FOGO" → "Armas de fogo").
-  const sub = modelo.categoria === "arma" && modelo.subtipo
+  const sub = (modelo.categoria === "arma" || modelo.categoria === "escalpo") && modelo.subtipo
     ? frase(modelo.subtipo)
     : g.prefixo === "dispositivos_tecnologicos" ? null : SUB_DA_CATEGORIA[modelo.categoria] ?? null;
   const i = sub ? ORDEM_SUB.indexOf(sub) : -1;
-  return { grupo: { id: g.prefixo, nome: g.nome, glifo: g.glifo }, sub, subOrdem: i >= 0 ? i : undefined };
+  return { grupo: { id: g.prefixo, nome: g.nome }, sub, subOrdem: i >= 0 ? i : undefined };
 }
 
 /** Modelo do catálogo → produto do Mercado. Mesma leitura de conteúdo da ficha do item. */
@@ -340,6 +344,10 @@ function produtoDoModelo(api: ConsoleApi, modelo: ItemContent): ProdutoHud {
     municao: modelo.municaoMax,
     cargas: modelo.cargasMax ?? null,
     ...grupoESubDoModelo(modelo),
+    parentSlugs: marketEscalpoParents(modelo, api.catalogo),
+    ...(modelo.nome.toLocaleLowerCase("pt-BR") === "cdi craqueada" ? {
+      grupo: { id: "escalpos", nome: "Escalpos" }, sub: "Identidade",
+    } : {}),
   };
 }
 

@@ -35,6 +35,7 @@ function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
   return {
     id: inst.id,
     nome: inst.itemNome,
+    weaponName: modelo?.nome,
     categoria,
     categoriaRotulo: modelo?.categoria_label ?? categoria,
     vertente: VERTENTE_DA_CATEGORIA[categoria] ?? "nenhuma",

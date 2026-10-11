@@ -155,6 +155,7 @@ import type {
   CompanionModelSummary,
 } from "../../../lib/character";
 import type { TechnicalContentItem } from "../../../lib/content";
+import { catalogWithMarketEscalpos } from "../../../lib/character/marketEscalpos";
 import { lerPermissaoNaFicha } from "../../../lib/campaign/sessionActions";
 import { resolverPericia, rollPericia, type PreparedRoll } from "../../../lib/dice";
 import { addLog } from "../../../lib/table/storage";
@@ -1951,9 +1952,9 @@ export default function CharacterSheetClient({
    */
   function handleBuyItem(itemSlug: string, quantidade: number, walletId: WalletId, precoUnitario: number) {
     const current = characterRef.current;
-    const item = itemsIniciais.find((i) => i.slug === itemSlug);
+    const item = catalogoItens.get(itemSlug);
     if (!item) return;
-    const result = purchaseItem({ character: current, item, quantidade, walletId, precoUnitario, nowIso: new Date().toISOString(), catalog: itemsIniciais });
+    const result = purchaseItem({ character: current, item, quantidade, walletId, precoUnitario, nowIso: new Date().toISOString(), catalog: [...catalogoItens.values()] });
     if (!result.ok) {
       addLogEntry("recurso", result.reason ?? "Compra não realizada.");
       return;
@@ -3710,7 +3711,7 @@ export default function CharacterSheetClient({
   // exatamente o crash que derrubava /ficha inteira ao abrir um
   // personagem real (nunca aparecia em /dev/character-sheet, que nunca
   // passa por esse bloqueio: lá `mode` é sempre "dev").
-  const catalogoItens = useMemo(() => new Map(itemsIniciais.map((i) => [i.slug, i])), [itemsIniciais]);
+  const catalogoItens = useMemo(() => catalogWithMarketEscalpos(itemsIniciais, escalposIniciais), [itemsIniciais, escalposIniciais]);
 
   /* Espaços ocupados/capacidade. A regra inteira (porte → espaços,
      capacidade total, o que pesa e o que não pesa) vive em

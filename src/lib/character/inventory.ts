@@ -62,6 +62,8 @@ import {
 // ---------------------------------------------------------------------
 
 export interface ItemContent {
+  /** Pais declarados pelo catálogo para apresentação dos complementos. */
+  marketEscalpoSlugs?: string[];
   id: string;
   slug: string;
   nome: string;
@@ -181,6 +183,8 @@ function asRecord(v: unknown): Record<string, unknown> | null {
 export function normalizeItemContent(raw: Record<string, unknown>): ItemContent {
   const estatisticas = asRecord(raw.estatisticas);
   return {
+    marketEscalpoSlugs: asRecord(raw.vinculos_sugeridos)?.content_type === "escalpo"
+      ? asStringArray(asRecord(raw.vinculos_sugeridos)?.slugs) : undefined,
     id: String(raw.id ?? raw.slug ?? ""),
     slug: String(raw.slug ?? raw.id ?? ""),
     nome: String(raw.nome ?? raw.slug ?? "Item"),

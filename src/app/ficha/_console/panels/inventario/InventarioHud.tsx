@@ -1,5 +1,7 @@
 "use client";
 
+import { ItemCategoryIcon } from "../../../../_design/itemIcons";
+
 /**
  * INVENTÁRIO — a versão HUD, adaptada do protótipo do Figma Make
  * (`inventario/src/Inventory.tsx`, na raiz do repo).
@@ -30,6 +32,8 @@ export type LocalHud = "mochila" | "equipado" | "abrigo";
 type VistaHud = LocalHud | "todos";
 
 export interface ItemHud {
+  /** Nome do modelo preservado mesmo quando a instância é renomeada. */
+  weaponName?: string;
   id: string;
   nome: string;
   /** Slug da categoria (`arma`, `farmacia`…) — escolhe o glifo. */
@@ -80,20 +84,7 @@ export interface PropsInventarioHud {
   rodape?: ReactNode;
 }
 
-/* ── glifos por categoria (traços do protótipo) ── */
-const GLIFO: Record<string, string> = {
-  arma: "M3 21 14 10m0 0 3-7 4 4-7 3Zm-9 7 3 3M6 15l3 3",
-  armadura: "M12 2 4 5v7c0 5 3.5 8 8 10 4.5-2 8-5 8-10V5l-8-3Zm0 0v20M4 10h16",
-  escudo: "M4 3h16v9c0 5-4 8-8 10-4-2-8-5-8-10V3Zm8 4v10m-4-5h8",
-  ferramenta: "M14 5a5 5 0 0 0 5 6l-9 10-4-4 10-9a5 5 0 0 1-2-3Z",
-  farmacia: "M9 2h6v7h7v6h-7v7H9v-7H2V9h7V2Z",
-  dispositivo: "M5 3h14v18H5V3Zm3 3h8v6H8V6Zm1 10h2m2 0h2",
-  veiculo: "M3 15l2-6h14l2 6v4H3v-4Zm3 4v2m12-2v2M6 15h2m8 0h2",
-  vertina: "M12 1 19 12 12 23 5 12 12 1Zm0 6-3 5 3 5 3-5-3-5Z",
-  municao: "M6 22V9l2-6 2 6v13m4 0V9l2-6 2 6v13",
-  explosivo: "M12 8a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm3-1 3-4m0 0 2 1m-2-1-1-2",
-};
-const GLIFO_PADRAO = "M4 4h16v16H4V4Zm4 4h8v8H8V8Z";
+
 const IC = {
   fechar: "M6 6l12 12M18 6 6 18",
   busca: "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm9 16-4-4",
@@ -360,7 +351,7 @@ function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, s
             style={{ animationDelay: `${ix * 25}ms` }}
             onMouseEnter={() => setQuente(it.id)} onMouseLeave={() => setQuente(null)}
             onClick={(e) => abrir(it.id, e.currentTarget)}>
-            <span className="ih-lin-icone"><Glifo d={GLIFO[it.categoria] ?? GLIFO_PADRAO} tam={20} /></span>
+            <span className="ih-lin-icone"><ItemCategoryIcon category={it.categoria} weaponName={it.weaponName ?? it.nome} size={20} strokeWidth={1.6} /></span>
             <span className="ih-lin-nome">
               <span className="ih-nome">{it.nome}</span>
               {it.quantidade > 1 && <span className="ih-mono ih-fraco">×{it.quantidade}</span>}
@@ -462,7 +453,7 @@ function CartaoItem({ item: it, ancora, palco, podeCrescer, somenteLeitura, dest
       style={{ left: pos?.x ?? -9999, top: pos?.y ?? 0, width: L }}>
       <div className="ih-cartao-caixa">
         <div className="ih-cartao-arte">
-          <span className="ih-cartao-arte-glifo"><Glifo d={GLIFO[it.categoria] ?? GLIFO_PADRAO} tam={150} traco={0.9} /></span>
+          <span className="ih-cartao-arte-glifo"><ItemCategoryIcon category={it.categoria} weaponName={it.weaponName ?? it.nome} size={150} strokeWidth={0.9} /></span>
           <div className="ih-cartao-sobre">
             <span className="ih-tag ih-cor">{it.categoriaRotulo}</span>
             {it.raridade && <><span className="ih-losango" /><span className="ih-tag ih-fraco">{it.raridade}</span></>}
