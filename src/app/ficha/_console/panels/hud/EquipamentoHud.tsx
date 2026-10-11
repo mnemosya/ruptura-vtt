@@ -782,7 +782,7 @@ function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
       </div>
       <div className="hx-semsb" style={{ minHeight: 0, flex: "0 1 auto", overflowY: "auto", padding: "16px 16px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
         {p.dano && (
-          <div style={{ display: "flex", alignItems: "center", borderLeft: `2px solid ${PERIGO}`, background: "#0a1b26", padding: "10px 12px" }}>
+          <div style={{ display: "flex", alignItems: "center", borderLeft: `2px solid ${PERIGO}`, background: "#0a1b26", padding: "10px 0 10px 12px" }}>
             <Tag className="hx-dim" style={{ fontSize: 10 }}>dano</Tag>
             <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "baseline", gap: 6 }}><span className="hx-display" style={{ fontSize: 30, fontWeight: 900, lineHeight: 1, color: PERIGO }}>{p.dano.dado}</span>{p.dano.tipo && <Tag style={{ fontSize: 10, color: PERIGO, opacity: .7 }}>{p.dano.tipo}</Tag>}</span>
           </div>
