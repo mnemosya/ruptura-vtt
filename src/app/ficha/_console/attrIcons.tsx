@@ -65,7 +65,7 @@ export function CorpoIcon() {
 export function MenteIcon() {
   return (
     <svg viewBox="0 0 14 14" fill="none" aria-hidden="true">
-      <g stroke="#6A49BC" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round">
+      <g stroke="#7E50F1" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round">
         <path d="M7 10.5003V2.91699" />
         <path d="M8.75 7.58333C7.71335 7.2803 7.00065 6.33003 7 5.25C6.99935 6.33003 6.28665 7.2803 5.25 7.58333" />
         <path d="M10.2655 3.79118C10.6334 3.15405 10.5635 2.35485 10.0906 1.79125C9.61771 1.22765 8.8428 1.02001 8.15146 1.27165C7.46011 1.52329 6.99998 2.18046 7.00001 2.91618C7.00005 2.18046 6.53991 1.52329 5.84857 1.27165C5.15722 1.02001 4.38231 1.22765 3.90941 1.79125C3.43652 2.35485 3.36662 3.15405 3.73451 3.79118" />
@@ -101,7 +101,7 @@ export const ATTR_ICONS: Record<keyof CharacterAttributes, () => React.JSX.Eleme
 };
 
 export const ATTR_LABEL_COLOR: Record<keyof CharacterAttributes, string> = {
-  corpo: "#23903C",
-  mente: "#6A49BC",
+  corpo: "#11D43B",
+  mente: "#7E50F1",
   animo: "#00d4ff",
 };

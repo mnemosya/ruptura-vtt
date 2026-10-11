@@ -3532,8 +3532,8 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   width: 22px; height: 1px;
   background: var(--rc-attr-cor);
 }
-.rc-nric-attr[data-attr="corpo"] { --rc-attr-cor: #23903c; }
-.rc-nric-attr[data-attr="mente"] { --rc-attr-cor: #6a49bc; }
+.rc-nric-attr[data-attr="corpo"] { --rc-attr-cor: #11d43b; }
+.rc-nric-attr[data-attr="mente"] { --rc-attr-cor: #7e50f1; }
 .rc-nric-attr[data-attr="animo"] { --rc-attr-cor: #00d4ff; }
 /* A célula inteira é o alvo de rolagem, então ela inteira reage —
    antes o hover morava no polígono. O marcador cresce junto: é o
@@ -3704,8 +3704,8 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-sensor-row:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: -2px; }
 .rc-sensor-row[data-editando] { cursor: default; }
 /* As MESMAS três cores das perícias em card e da matriz de atributos. */
-.rc-sensor-row[data-attr="corpo"] { --rc-skill-cor: #23903c; }
-.rc-sensor-row[data-attr="mente"] { --rc-skill-cor: #6a49bc; }
+.rc-sensor-row[data-attr="corpo"] { --rc-skill-cor: #11d43b; }
+.rc-sensor-row[data-attr="mente"] { --rc-skill-cor: #7e50f1; }
 .rc-sensor-row[data-attr="animo"] { --rc-skill-cor: #00d4ff; }
 
 /* Resumo da perícia no hover/foco (`DicaPericiaBalao`, SkillsGrid).
@@ -3737,8 +3737,8 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   background: color-mix(in srgb, var(--rc-dica-cor) 35%, transparent);
   border: 1px solid var(--rc-dica-cor);
 }
-.rc-pericia-dica-atributos span[data-attr="corpo"] { --rc-dica-cor: #23903c; }
-.rc-pericia-dica-atributos span[data-attr="mente"] { --rc-dica-cor: #6a49bc; }
+.rc-pericia-dica-atributos span[data-attr="corpo"] { --rc-dica-cor: #11d43b; }
+.rc-pericia-dica-atributos span[data-attr="mente"] { --rc-dica-cor: #7e50f1; }
 .rc-pericia-dica-atributos span[data-attr="animo"] { --rc-dica-cor: #00d4ff; }
 /* Secundário: só o contorno — é alternativa, não o padrão da perícia. */
 .rc-pericia-dica-atributos span[data-secundario] { background: transparent; color: var(--rc-dim); }
