@@ -15,6 +15,7 @@ import type { ComponentProps } from "react";
 import type { SpellsTab } from "../../dev/character-sheet/components/SpellsTab";
 import type { TechnicalContentItem } from "../../../lib/content";
 import type { FonteRecarga } from "../../../lib/character/reloadSources";
+import type { Bancada } from "../../../lib/character/supportLoadout";
 import type { CompanionModelSummary } from "../../../lib/character/companionModels";
 import type {
   ActiveCondition,
@@ -184,6 +185,10 @@ export interface ConsoleApi {
   fontesRecarga: (instanceId: string) => { fontes: FonteRecarga[]; padraoId: string | null; cheia: boolean } | null;
   /** Recarrega de UMA fonte. Devolve o resumo para o aviso e um `desfazer`. */
   recarregarDe: (instanceId: string, fonteId: string) => { ok: boolean; mensagem: string; desfazer?: () => void };
+  /** Bancada do espaço de munição (cartucheira/aljava): o que está dentro, o que há fora e a capacidade. */
+  bancadaSuporte: (suporteId: string) => Bancada | null;
+  /** Leva o suporte à composição pedida (slug → quantidade dentro). `false` se não couber. */
+  abastecerSuporte: (suporteId: string, alvo: Record<string, number>) => boolean;
   /** Marca (ou desmarca, com `null`) a fonte padrão da arma. */
   definirFontePadrao: (instanceId: string, fonte: { local: FonteRecarga["local"]; contentSlug: string } | null) => void;
 

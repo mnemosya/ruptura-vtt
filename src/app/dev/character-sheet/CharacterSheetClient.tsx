@@ -1,6 +1,7 @@
 "use client";
 import { weaponRangeAt } from "../../../lib/character/weaponRange";
 import { ehCelulaDeEnergia, fonteDoPadrao, listarFontesRecarga, recarregarDaFonte } from "../../../lib/character/reloadSources";
+import { aplicarBancada, montarBancada } from "../../../lib/character/supportLoadout";
 
 /**
  * Página de DEBUG da ficha mínima — não é a interface final do VTT.
@@ -2676,6 +2677,22 @@ export default function CharacterSheetClient({
     };
   }
 
+  function bancadaDoSuporte(suporteId: string) {
+    return montarBancada(characterRef.current, suporteId, perfisDeMunicao());
+  }
+
+  function abastecerSuporte(suporteId: string, alvo: Record<string, number>): boolean {
+    const atual = characterRef.current;
+    const next = aplicarBancada(atual, suporteId, alvo, perfisDeMunicao());
+    if (!next) return false;
+    characterRef.current = next;
+    setCharacter(next);
+    const nome = atual.inventario?.find((i) => i.id === suporteId)?.itemNome ?? "Espaço de munição";
+    const resumo = (next.inventario?.find((i) => i.id === suporteId)?.aljava?.stacks ?? []).map((s) => `${s.nome} ×${s.quantidade}`).join(", ");
+    addLogEntry("recurso", `${nome} abastecida: ${resumo || "vazia"}.`);
+    return true;
+  }
+
   function definirFonteRecargaPadrao(instanceId: string, fonte: { local: "suporte" | "acesso_rapido" | "mochila"; contentSlug: string } | null) {
     const atual = characterRef.current;
     const next = { ...atual, inventario: atual.inventario?.map((i) => (i.id === instanceId ? { ...i, fonteRecargaPadrao: fonte ?? undefined } : i)) };
@@ -4127,6 +4144,8 @@ export default function CharacterSheetClient({
     fontesRecarga: fontesDeRecarga,
     recarregarDe: recarregarDaFonteEscolhida,
     definirFontePadrao: definirFonteRecargaPadrao,
+    bancadaSuporte: bancadaDoSuporte,
+    abastecerSuporte,
 
     /* Inventário. Nenhuma regra nova mora aqui: cada uma destas é a
        porta para um fluxo que já existia e já loga/salva. */

@@ -78,6 +78,8 @@ import { ABAS, type AbaId } from "./tabs";
 import { FOCO_MAX_W, FOCO_ALTURA_INICIAL } from "./geometry";
 import { PainelRolagem, type PrefillRolagem } from "./panels/PainelRolagem";
 import { AvisoRecarga, JanelaRecarga } from "./panels/JanelaRecarga";
+import { JanelaBancada } from "./panels/JanelaBancada";
+import type { Bancada } from "../../../lib/character/supportLoadout";
 import type { FonteRecarga } from "../../../lib/character/reloadSources";
 import { useRolarNaMesa } from "../../mesas/[campaignId]/vtt/_dados3d/ContextoMesaDados";
 import type { ConsoleApi, ConsolePin } from "./types";
@@ -89,6 +91,7 @@ type Aux =
   | { tipo: "surto" }
   | { tipo: "mochila"; slot: BodySlotId }
   | { tipo: "ataque"; instancia: InventoryItemInstance; modelo: ItemContent; slot: BodySlotId }
+  | { tipo: "bancada"; instancia: InventoryItemInstance; bancada: Bancada }
   | { tipo: "recarga"; instancia: InventoryItemInstance; fontes: FonteRecarga[]; padraoId: string | null; municao: { atual: number; max: number } }
   | { tipo: "condicao" }
   | { tipo: "defesa" }
@@ -119,6 +122,11 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
     setAvisoRecarga({ ...r, seq: Date.now() });
   }
   function iniciarRecarga(instancia: InventoryItemInstance) {
+    // Cartucheira/aljava: "recarregar" é ABASTECER — abre a bancada.
+    if (instancia.aljava) {
+      const bancada = api.bancadaSuporte(instancia.id);
+      if (bancada) { setAux({ tipo: "bancada", instancia, bancada }); return; }
+    }
     const info = api.fontesRecarga(instancia.id);
     if (!info) { api.recarregar(instancia.id); return; }
     if (info.cheia) { avisar({ ok: false, mensagem: "A arma já está cheia." }); return; }
@@ -581,6 +589,18 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
           onDefinirPadrao={(f) => api.definirFontePadrao(aux.instancia.id, f ? { local: f.local, contentSlug: f.contentSlug } : null)}
           onRecarregar={(f) => {
             avisar(api.recarregarDe(aux.instancia.id, f.id));
+            setAux(null);
+          }}
+          onFechar={() => setAux(null)}
+        />
+      )}
+      {aux?.tipo === "bancada" && (
+        <JanelaBancada
+          nome={aux.instancia.itemNome}
+          bancada={aux.bancada}
+          onGuardar={(alvo) => {
+            const ok = api.abastecerSuporte(aux.instancia.id, alvo);
+            avisar({ ok, mensagem: ok ? `${aux.instancia.itemNome} abastecida.` : "Não coube — confira a capacidade." });
             setAux(null);
           }}
           onFechar={() => setAux(null)}
