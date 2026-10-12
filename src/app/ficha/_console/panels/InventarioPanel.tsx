@@ -219,6 +219,8 @@ function itemDoHud(api: ConsoleApi, instancia: InventoryItemInstance): ItemHud {
   const linhas: { rotulo: string; valor: string }[] = [];
   const porte = descricaoDoPorte(modelo);
   if (porte) linhas.push({ rotulo: "Porte", valor: porte });
+  const municao = descricaoDaMunicao(modelo);
+  if (municao) linhas.push({ rotulo: "Munição", valor: municao });
   if (alcance) linhas.push({ rotulo: "Alcance", valor: alcance });
   if (modelo?.maos) linhas.push({ rotulo: "Mãos", valor: String(modelo.maos) });
   if (modelo?.alcanceArremessoMetros != null) linhas.push({ rotulo: "Arremesso", valor: `${modelo.alcanceArremessoMetros} m` });
@@ -365,6 +367,8 @@ function produtoDoModelo(api: ConsoleApi, modelo: ItemContent): ProdutoHud {
   const linhas: { rotulo: string; valor: string }[] = [];
   const porte = descricaoDoPorte(modelo);
   if (porte) linhas.push({ rotulo: "Porte", valor: porte });
+  const municao = descricaoDaMunicao(modelo);
+  if (municao) linhas.push({ rotulo: "Munição", valor: municao });
   if (alcance) linhas.push({ rotulo: "Alcance", valor: alcance });
   if (modelo?.maos) linhas.push({ rotulo: "Mãos", valor: String(modelo.maos) });
   if (modelo.alcanceArremessoMetros != null) linhas.push({ rotulo: "Arremesso", valor: `${modelo.alcanceArremessoMetros} m` });
@@ -553,4 +557,12 @@ export function descricaoDoPorte(modelo: ItemContent | undefined): string | null
   if (porte === "media" || porte === "medio") return "Médio";
   if (porte === "pesada" || porte === "pesado") return "Pesado";
   return null;
+}
+
+/** Preserva a regra editorial de munição (incluindo consumo por disparo). */
+export function descricaoDaMunicao(modelo: ItemContent | undefined): string | null {
+  if (!modelo) return null;
+  const editorial = (modelo.descricao_longa ?? "").split(/^\s*Dados da lista de mercadorias:/im)[0];
+  const linha = editorial.split("\n").map(l => l.replace(/\*\*/g, "").trim()).find(l => /^(?:[-*•]\s+)?Munição:/i.test(l));
+  return linha?.replace(/^(?:[-*•]\s+)?Munição:\s*/i, "").trim() || (modelo.municaoMax != null ? String(modelo.municaoMax) : null);
 }

@@ -368,7 +368,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                 <div>
                   <Stat k="Espaços / item" v={sel.espacos} />
                   {sel.pa != null && <Stat k="Custo" v={`${sel.pa} PA`} />}
-                  {sel.municao != null && <Stat k="Munição" v={sel.municao} />}
+                  {sel.municao != null && !sel.linhas?.some(l => l.rotulo === "Munição") && <Stat k="Munição" v={sel.municao} />}
                   {sel.cargas != null && <Stat k="Cargas" v={sel.cargas} />}
                   {sel.linhas?.map((l) => <Stat key={l.rotulo} k={l.rotulo} v={l.valor} />)}
                 </div>
