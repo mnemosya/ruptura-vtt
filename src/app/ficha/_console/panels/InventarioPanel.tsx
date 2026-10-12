@@ -438,6 +438,7 @@ export function InventarioPanel({ api, onGerenciarSuporte }: { api: ConsoleApi; 
         <div className="rc-inv" data-testid="console-inventario">
           <InventarioHud
             itens={itens}
+            onReordenar={api.somenteLeitura ? undefined : api.reordenarInventario}
             nomeMochilaEquipada={mochilaEquipada ? api.catalogo.get(mochilaEquipada.itemSlug)?.nome : "Sem mochila"}
             mochilas={mochilas.map((i, index) => {
               const nome = api.catalogo.get(i.itemSlug)?.nome ?? i.itemNome;

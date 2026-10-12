@@ -175,6 +175,13 @@
   animation: ih-boot .5s cubic-bezier(.2,.8,.2,1) both;
 }
 .ih-lin--cab { animation: none; padding-bottom: 8px; border-bottom-color: color-mix(in srgb, var(--ih-cy) 20%, transparent); color: var(--ih-dim); }
+.ih-lin[draggable="true"] { cursor: grab; }
+.ih-drag-alca { position: absolute; left: 1px; top: 50%; translate: 0 -50%; display: flex; color: var(--ih-dim); opacity: .4; }
+.ih-lin:hover .ih-drag-alca, .ih-lin:focus-visible .ih-drag-alca { opacity: 1; color: var(--ih-cy); }
+.ih-lin[data-arrastado] { animation: none; opacity: .35; cursor: grabbing; background: color-mix(in srgb, var(--ih-cy) 12%, transparent); }
+.ih-lin[data-insercao] { background: color-mix(in srgb, var(--ih-cy) 9%, transparent); }
+.ih-lin[data-insercao]::after { content: ""; position: absolute; z-index: 2; pointer-events: none; left: 0; right: 0; top: -1px; height: 2px; background: var(--ih-cy); box-shadow: 0 0 9px var(--ih-cy); }
+.ih-lin[data-insercao="depois"]::after { top: auto; bottom: -1px; }
 .ih-lin[data-saida] { pointer-events: none; overflow: hidden; animation: ih-item-mover 240ms ease-in forwards; }
 .ih-lin[data-saida="descartar"] { animation-name: ih-item-descartar; }
 .ih-lista[data-vista="todos"] .ih-lin[data-saida="mover"] { animation-name: ih-item-transferir; }

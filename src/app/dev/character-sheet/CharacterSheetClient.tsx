@@ -1,4 +1,6 @@
 "use client";
+import { reorderInventoryItem } from "../../../lib/character/inventoryOrder";
+
 import { weaponRangeAt } from "../../../lib/character/weaponRange";
 import { ehCelulaDeEnergia, fonteDoPadrao, listarFontesRecarga, recarregarDaFonte } from "../../../lib/character/reloadSources";
 import { aplicarBancada, montarBancada } from "../../../lib/character/supportLoadout";
@@ -4053,6 +4055,11 @@ export default function CharacterSheetClient({
       setCharacter(next);
     },
     descartarItem: handleRemoveItem,
+    reordenarInventario: (id, targetId, side) => {
+      const next = reorderInventoryItem(characterRef.current, id, targetId, side);
+      characterRef.current = next;
+      setCharacter(next);
+    },
     comprarItem: handleBuyItem,
     carga: cargaAtual,
     glossario: glossarioDeRegras,

@@ -168,6 +168,7 @@ export interface ConsoleApi {
 
   /** Move um item entre mochila/equipado/empunhado/acesso rápido. */
   equiparNoSlot: (instanceId: string, slot: BodySlotId) => void;
+  reordenarInventario?: (id: string, targetId: string, side: "antes" | "depois") => void;
   desequipar: (instanceId: string) => void;
   /** MIT (armadura) e PD (escudo) atuais da instância. */
   definirModoAtaque?: (instanceId: string, modo: string) => void;

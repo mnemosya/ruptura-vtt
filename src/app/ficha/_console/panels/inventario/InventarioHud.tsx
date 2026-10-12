@@ -4,7 +4,7 @@ import { estiloCategoria } from "../../../../_design/itemCategoryColors";
 import { FichaItemModal, type PecaHud } from "../hud/EquipamentoHud";
 import { ResourceValueCard } from "../ResourceValueCard";
 import { Select } from "../../../../mesas/[campaignId]/vtt/_dados3d/ResultadoRolagem";
-import { ArrowRight, ArrowRightLeft, Backpack, Check, ChevronUp, Eye, Hand, ListChecks, Package, Search, Shirt, Trash2, Users, Warehouse, X, Zap } from "lucide-react";
+import { ArrowRight, ArrowRightLeft, Backpack, Check, ChevronUp, GripVertical, Eye, Hand, ListChecks, Package, Search, Shirt, Trash2, Users, Warehouse, X, Zap } from "lucide-react";
 import { createPortal } from "react-dom";
 import { ItemCategoryIcon } from "../../../../_design/itemIcons";
 
@@ -95,6 +95,7 @@ export interface PropsInventarioHud {
   onAjustar: (id: string, delta: number) => void;
   onMover: (id: string, destinoId: string) => void;
   onDescartar: (id: string) => void;
+  onReordenar?: (id: string, targetId: string, side: "antes" | "depois") => void;
   /** Ficha completa do item para o modal (o mesmo da aba Equipamentos). Ausente = cartão antigo. */
   fichaDe?: (id: string) => PecaHud | null;
   onGerenciarSuporte?: (id: string) => void;
@@ -298,6 +299,7 @@ export function InventarioHud(props: PropsInventarioHud) {
           <Lista
             itens={vista === "todos" ? itensAnimados : itensAnimados.filter((i) => i.local === vista)}
             saidas={saidas}
+            onReordenar={props.somenteLeitura || emSelecao || Object.keys(saidas).length ? undefined : props.onReordenar}
             vista={vista} capacidade={capacidade} casa={casa} termo={busca} inicio={inicio}
             livre={vista === "mochila" && !termo ? livre : 0}
             quente={quente} setQuente={setQuente} sel={ancora?.id} abrir={abrir}
@@ -478,7 +480,7 @@ function Regua({ itens, capacidade, ocupados, livre, casa, filtrando, quente, se
 }
 
 /* ── lista ── */
-function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, setQuente, sel, abrir, onMenu, marcados, onMarcar, saidas }: {
+function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, setQuente, sel, abrir, onMenu, marcados, onMarcar, saidas, onReordenar }: {
   itens: ItemHud[]; vista: VistaHud; capacidade: number; casa: (i: ItemHud) => boolean; termo: string; livre: number;
   inicio: Map<string, number>;
   quente: string | null; setQuente: (s: string | null) => void; sel?: string;
@@ -486,13 +488,20 @@ function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, s
   onMenu?: (id: string, x: number, y: number) => void;
   marcados?: Set<string>; onMarcar?: (id: string) => void;
   saidas: Record<string, { tipo: "mover" | "descartar"; altura: number }>;
+  onReordenar?: (id: string, targetId: string, side: "antes" | "depois") => void;
 }) {
+  const [arrastado, setArrastado] = useState<string | null>(null);
+  const [alvoDrag, setAlvoDrag] = useState<{ id: string; lado: "antes" | "depois" } | null>(null);
+  const [avisoOrdem, setAvisoOrdem] = useState("");
+  const encerrarDrag = () => { setArrastado(null); setAlvoDrag(null); };
   const naMochila = vista === "mochila";
   const linhas = itens.filter(casa);
   const total = itens.reduce((a, i) => a + (i.preco ?? 0) * i.quantidade, 0);
 
   return (
-    <div className="ih-lista" data-vista={vista}>
+    <div className="ih-lista" data-vista={vista} data-arrastando={!!arrastado || undefined}
+      onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setAlvoDrag(null); }}>
+      <span className="rv-sr-only" aria-live="polite">{avisoOrdem}</span>
       <div className="ih-lin ih-lin--cab">
         <span />
         <span className="ih-tag">item</span>
@@ -504,12 +513,52 @@ function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, s
         const s = inicio.get(it.id) ?? 0;
         return (
           <button key={it.id} type="button" className="ih-lin" data-id={it.id} data-saida={saidas[it.id]?.tipo} data-vertente={it.vertente}
+            draggable={!!onReordenar}
+            aria-keyshortcuts={onReordenar ? "Alt+ArrowUp Alt+ArrowDown" : undefined}
+            title={onReordenar ? "Arrastar para reordenar · Alt + ↑/↓" : undefined}
+            data-arrastado={arrastado === it.id || undefined}
+            data-insercao={alvoDrag?.id === it.id ? alvoDrag.lado : undefined}
+            onDragStart={e => {
+              if (!onReordenar) { e.preventDefault(); return; }
+              setArrastado(it.id); setAlvoDrag(null);
+              e.dataTransfer.effectAllowed = "move";
+              e.dataTransfer.setData("application/x-ruptura-inventory", it.id);
+              e.dataTransfer.setDragImage(e.currentTarget, 24, 20);
+            }}
+            onDragOver={e => {
+              if (!onReordenar || !arrastado) return;
+              if (arrastado === it.id) { setAlvoDrag(null); return; }
+              e.preventDefault(); e.dataTransfer.dropEffect = "move";
+              const rect = e.currentTarget.getBoundingClientRect();
+              const lado = e.clientY < rect.top + rect.height / 2 ? "antes" : "depois";
+              setAlvoDrag(prev => prev?.id === it.id && prev.lado === lado ? prev : { id: it.id, lado });
+            }}
+            onDrop={e => {
+              if (!onReordenar || !arrastado || arrastado === it.id) return;
+              e.preventDefault();
+              if (e.dataTransfer.getData("application/x-ruptura-inventory") !== arrastado) { encerrarDrag(); return; }
+              const rect = e.currentTarget.getBoundingClientRect();
+              const lado = e.clientY < rect.top + rect.height / 2 ? "antes" : "depois";
+              onReordenar(arrastado, it.id, lado);
+              setAvisoOrdem(`Item reposicionado ${lado} de ${it.nome}.`);
+              encerrarDrag();
+            }}
+            onDragEnd={encerrarDrag}
+            onKeyDown={e => {
+              if (!onReordenar || !e.altKey || !["ArrowUp", "ArrowDown"].includes(e.key)) return;
+              e.preventDefault(); e.stopPropagation();
+              const alvo = linhas[ix + (e.key === "ArrowUp" ? -1 : 1)];
+              if (!alvo) return;
+              onReordenar(it.id, alvo.id, e.key === "ArrowUp" ? "antes" : "depois");
+              setAvisoOrdem(`${it.nome} reposicionado.`);
+            }}
             data-quente={quente === it.id || undefined} data-sel={(marcados?.has(it.id) || sel === it.id) || undefined}
             aria-pressed={marcados ? marcados.has(it.id) : undefined}
             style={{ ...estiloCategoria(it.temaCategoria ?? it.categoria, it.vertente), animationDelay: saidas[it.id] ? "0ms" : `${ix * 25}ms`, "--ih-saida-altura": `${saidas[it.id]?.altura ?? 56}px` } as CSSProperties}
             onMouseEnter={() => setQuente(it.id)} onMouseLeave={() => setQuente(null)}
             onClick={(e) => { if (saidas[it.id]) return; marcados ? onMarcar?.(it.id) : abrir(it.id, e.currentTarget); }}
             onContextMenu={onMenu ? (e) => { e.preventDefault(); if (!saidas[it.id]) onMenu(it.id, e.clientX, e.clientY); } : undefined}>
+            {onReordenar && <span className="ih-drag-alca" aria-hidden="true" title="Arrastar para reordenar · Alt + ↑/↓"><GripVertical size={12} /></span>}
             <span className="ih-lin-icone" data-selecao={marcados ? true : undefined}>{marcados ? <span className="ih-marca" data-marcado={marcados.has(it.id) || undefined}><Check size={18} strokeWidth={1.8} /></span> : <ItemCategoryIcon category={it.categoria} weaponName={it.weaponName ?? it.nome} itemType={it.tipo} armorRegions={it.regioes} size={20} strokeWidth={1.6} />}</span>
             <span className="ih-lin-nome">
               <span className="ih-nome">{separarTipo(it.nome).titulo}</span>
