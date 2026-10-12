@@ -9,6 +9,7 @@ const WEAPONS: Record<string, FilledIconName> = {
   shuriken: "shuriken", arco_curto: "bow", arco_longo: "bow", arco_composto: "bow",
   besta_leve: "crossbow", besta_pesada: "crossbow", revolver: "revolver",
   pistola_de_bolso: "pocket gun",
+  bastao: "noun_Bat_3547430",
   pistola_pesada: "pistol", pistola_automatica: "pistol",
   submetralhadora: "smg", carabina: "rifle", rifle_de_assalto: "assault rifle",
   rifle_de_precisao: "sniper 1", rifle_antimaterial: "sniper 2",
@@ -43,6 +44,7 @@ export function filledWeaponIconForName(name?: string): FilledIconName | null {
   if (!name) return null;
   const model = normalizeIconKey(name.replace(/\s*\([^()]+\)\s*$/, "").trim());
   if (model === "rv_4_shiv" || model === "shiv") return "throwing knife";
+  if (model === "fl_5_guillotine") return "noun_greatsword_3547396";
   const type = /\(([^()]+)\)\s*$/.exec(name)?.[1] ?? name;
   return WEAPONS[normalizeIconKey(type.trim())] ?? null;
 }
