@@ -240,8 +240,8 @@ function itemDoHud(api: ConsoleApi, instancia: InventoryItemInstance): ItemHud {
     espacosPorItem: espacosDoItem(modelo),
     ocupa: espacosDaInstancia(instancia, modelo),
     preco: modelo?.preco ?? null,
-    descricao: modelo?.descricao_curta
-      ? <TextoComRegras texto={modelo.descricao_curta} glossario={api.glossario} />
+    descricao: (modelo?.descricao_longa?.trim() || modelo?.descricao_curta)
+      ? <TextoComRegras texto={modelo?.descricao_longa?.trim() || modelo?.descricao_curta || ""} glossario={api.glossario} />
       : null,
     destaque: dano ? { rotulo: "Dano", valor: dano.dado, sufixo: dano.tipo } : null,
     pa: modelo?.custoPaUso ?? null,
@@ -383,7 +383,7 @@ function produtoDoModelo(api: ConsoleApi, modelo: ItemContent): ProdutoHud {
     preco: modelo.preco ?? 0,
     espacos: espacosDoItem(modelo),
     raridade: modelo.raridade ?? null,
-    descricao: modelo.descricao_curta ? <TextoComRegras texto={modelo.descricao_curta} glossario={api.glossario} /> : null,
+    descricao: (modelo.descricao_longa?.trim() || modelo.descricao_curta) ? <TextoComRegras texto={modelo.descricao_longa?.trim() || modelo.descricao_curta || ""} glossario={api.glossario} /> : null,
     destaque: dano ? { rotulo: "Dano", valor: dano.dado, sufixo: dano.tipo } : null,
     propriedades: modelo.propertySlugs.map((s) => nomes.get(s) ?? s),
     linhas,

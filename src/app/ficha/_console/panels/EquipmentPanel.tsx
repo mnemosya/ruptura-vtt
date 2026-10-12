@@ -63,7 +63,7 @@ export function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
     dano: dano ? { dado: dano.dado, tipo: dano.tipo } : null,
     municao: modelo?.municaoMax != null ? [inst.municaoAtual ?? modelo.municaoMax, modelo.municaoMax] : null,
     usavel: modelo != null && (modelo.custoPaUso != null || modelo.cargasMax != null),
-    descricao: modelo?.descricao_curta ? <TextoComRegras texto={modelo.descricao_curta} glossario={api.glossario} /> : null,
+    descricao: (modelo?.descricao_longa?.trim() || modelo?.descricao_curta) ? <TextoComRegras texto={modelo?.descricao_longa?.trim() || modelo?.descricao_curta || ""} glossario={api.glossario} /> : null,
     linhas,
   };
 }
