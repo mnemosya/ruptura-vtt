@@ -2,6 +2,7 @@
 
 import { estiloCategoria as estiloGrupo } from "../../../../_design/itemCategoryColors";
 import { ItemCategoryIcon } from "../../../../_design/itemIcons";
+import { PropriedadeDoItem } from "./EquipamentoHud";
 
 /**
  * MERCADO — a opção "Catálogo" do protótipo
@@ -44,6 +45,7 @@ export interface ProdutoHud {
   descricao?: ReactNode;
   destaque?: { rotulo: string; valor: string; sufixo?: string | null } | null;
   propriedades?: string[];
+  descricoesPropriedades?: Record<string, string | null>;
   linhas?: { rotulo: string; valor: string }[];
   pa?: number | null;
   municao?: number | null;
@@ -345,8 +347,11 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                   {sel.linhas?.map((l) => <Stat key={l.rotulo} k={l.rotulo} v={l.valor} />)}
                 </div>
                 {sel.propriedades && sel.propriedades.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {sel.propriedades.map((x) => <span key={x} className="hx-display" style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--k) 15%, transparent)", color: "var(--k)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em" }}>{x}</span>)}
+                  <div className="hx-props" style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 16, padding: "8px 0", borderBottom: "1px solid rgba(0,212,255,.08)" }}>
+                    <Tag className="hx-dim" style={{ fontSize: 10, flex: "none" }}>propriedades</Tag>
+                    <div className="hx-props-lista" style={{ justifyContent: "flex-end", textAlign: "right" }}>
+                      {sel.propriedades.map(nome => <PropriedadeDoItem key={nome} nome={nome} descricao={sel.descricoesPropriedades?.[nome] ?? null} cor="var(--k)" />)}
+                    </div>
                   </div>
                 )}
                 {familiaEscalpo && <button type="button" className="hm-escalpo-base" aria-pressed={alvo === sel} onClick={() => escolherComplemento(null)}>

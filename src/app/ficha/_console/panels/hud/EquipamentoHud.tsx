@@ -278,21 +278,21 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
  * nome na cor do item e a regra inteira em texto corrido, numa caixa com
  * espinha na cor do item — a regra é frase, não rótulo.
  */
-function Propriedade({ nome, descricao, cor }: { nome: string; descricao: string | null; cor: string }) {
-  const [pos, setPos] = useState<{ x: number; y: number; acima: boolean } | null>(null);
+export function PropriedadeDoItem({ nome, descricao, cor }: { nome: string; descricao: string | null; cor: string }) {
+  const [pos, setPos] = useState<{ x: number; y: number; acima: boolean; cor: string } | null>(null);
   const abrir = (el: HTMLElement) => {
     const r = el.getBoundingClientRect();
     const acima = r.bottom + 90 > window.innerHeight;
-    setPos({ x: Math.min(Math.max(r.left, 8), window.innerWidth - 268), y: acima ? r.top - 8 : r.bottom + 8, acima });
+    setPos({ x: Math.min(Math.max(r.left, 8), window.innerWidth - 268), y: acima ? r.top - 8 : r.bottom + 8, acima, cor: window.getComputedStyle(el).color });
   };
   return (
     <>
-      <span tabIndex={0} className="hx-prop" aria-describedby={pos ? `prop-${nome}` : undefined}
+      <span tabIndex={0} className="hx-prop" style={{ color: cor }} aria-describedby={pos ? `prop-${nome}` : undefined}
         onMouseEnter={(e) => abrir(e.currentTarget)} onMouseLeave={() => setPos(null)}
         onFocus={(e) => abrir(e.currentTarget)} onBlur={() => setPos(null)}>{nome}</span>
       {pos && descricao && typeof document !== "undefined" && createPortal(
         <span id={`prop-${nome}`} role="tooltip" className="hx-prop-dica" data-acima={pos.acima || undefined}
-          style={{ left: pos.x, top: pos.y, ["--k" as string]: cor }}>
+          style={{ left: pos.x, top: pos.y, ["--k" as string]: pos.cor }}>
           <b>{nome}</b>{descricao}
         </span>,
         document.body,
@@ -831,7 +831,7 @@ function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
           <div className="hx-props" style={{ ["--k" as string]: corDe(p), display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 16, padding: "8px 0", borderBottom: "1px solid rgba(0,212,255,.08)", marginTop: p.linhas?.length ? -10 : 0 }}>
             <Tag className="hx-dim" style={{ fontSize: 10, flex: "none" }}>propriedades</Tag>
             <div className="hx-props-lista" style={{ justifyContent: "flex-end", textAlign: "right" }}>
-              {p.propriedades.map((x) => <Propriedade key={x.nome} nome={x.nome} descricao={x.descricao} cor={corDe(p)} />)}
+              {p.propriedades.map((x) => <PropriedadeDoItem key={x.nome} nome={x.nome} descricao={x.descricao} cor={corDe(p)} />)}
             </div>
           </div>
         )}

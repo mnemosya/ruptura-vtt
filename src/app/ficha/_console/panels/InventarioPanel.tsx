@@ -395,6 +395,10 @@ function produtoDoModelo(api: ConsoleApi, modelo: ItemContent): ProdutoHud {
     descricao: descricao ? <TextoComRegras texto={descricao} glossario={api.glossario} /> : null,
     destaque: dano ? { rotulo: "Dano", valor: dano.dado, sufixo: dano.tipo } : null,
     propriedades,
+    descricoesPropriedades: Object.fromEntries(modelo.propertySlugs.map(slug => {
+      const termo = api.glossario.find(t => t.tipo === "propriedade" && t.slug === slug);
+      return [nomes.get(slug) ?? slug, termo?.descricao ?? null];
+    })),
     linhas,
     pa: modelo.custoPaUso ?? null,
     municao: modelo.municaoMax,
