@@ -30,7 +30,7 @@ const CATEGORIES: Record<string, FilledIconName> = {
   explosivo: "explosive", explosivos: "explosive", municao: "bullets",
   pocao: "potion", pocoes: "potion", aljava: "quiver", flecha: "arrows", flechas: "arrows", virotes: "arrows",
   vertina: "potion", vertinas: "potion",
-  farmacia: "drugs",
+  farmacia: "noun_drugs_7809670",
 };
 
 export function filledWeaponIconForName(name?: string): FilledIconName | null {
