@@ -130,6 +130,6 @@ export function normalizeMarketTechnicalFields(raw: Raw): { raw: Raw; warnings: 
   // Suportes comerciais explicitamente definidos no catálogo atual.
   const name = key(String(raw.nome ?? ""));
   if (/^mochila mk-(i|ii|iii)$/.test(name)) set("capacidade_mochila", {"mochila mk-i":10,"mochila mk-ii":15,"mochila mk-iii":20}[name as "mochila mk-i"]);
-  if (["aljava", "aljava autoalimentadora", "cartucheira"].includes(name)) set("suporte_municao", { tipo: name === "cartucheira" ? "cartucheira" : "aljava", capacidade: name === "cartucheira" ? 50 : 20, autoalimentadora: name === "aljava autoalimentadora" });
+  if (["aljava", "aljava autoalimentadora", "cartucheira"].includes(name)) set("suporte_municao", { tipo: name === "cartucheira" ? "cartucheira" : "aljava", capacidade: name === "cartucheira" ? 40 : 20, autoalimentadora: name === "aljava autoalimentadora" });
   return { raw: next, warnings };
 }
