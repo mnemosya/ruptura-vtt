@@ -31,6 +31,7 @@ const CATEGORIES: Record<string, FilledIconName> = {
   pocao: "potion", pocoes: "potion", aljava: "quiver", flecha: "arrows", flechas: "arrows", virotes: "arrows",
   vertina: "potion", vertinas: "potion",
   estrutura_dorsal: "dorsal",
+  mobilidade: "noun_Bike_8339085", equipamentos_de_mobilidade: "noun_Bike_8339085", locomocao: "noun_Bike_8339085",
   drone: "noun_Drone_8335890", drones: "noun_Drone_8335890", drones_e_robos: "noun_Drone_8335890",
   robo: "noun_Robot_8483832", robos: "noun_Robot_8483832",
   farmacia: "noun_drugs_7809670",

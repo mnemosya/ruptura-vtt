@@ -83,6 +83,8 @@ for (const [name, expected] of [["SORYN M2", "bike"], ["SORYN VANTA", "bike"], [
 }
 for (const name of ["Icarus I", "Icarus II", "Icarus III"]) assert.equal(filledCategoryIcon("mobilidade", name), "icarus");
 assert.equal(filledCategoryIcon("mobilidade", "Bicicleta"), "noun_Bike_8339085");
+assert.equal(filledCategoryIcon("Mobilidade"), "noun_Bike_8339085");
+assert.equal(filledCategoryIcon("Equipamentos de mobilidade"), "noun_Bike_8339085");
 assert.equal(filledCategoryIcon("estrutura_dorsal"), "dorsal");
 assert.equal(ammunitionType({nome:"Pistola",subtipo:"Munição"}), "Munição");
 assert.equal(filledCategoryIcon("municao", "Pistola", "Bala"), "bullets");
