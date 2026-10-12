@@ -3,6 +3,7 @@
 import { estiloCategoria } from "../../../../_design/itemCategoryColors";
 import { FichaItemModal, type PecaHud } from "../hud/EquipamentoHud";
 import { ResourceValueCard } from "../ResourceValueCard";
+import { Select } from "../../../../mesas/[campaignId]/vtt/_dados3d/ResultadoRolagem";
 import { ArrowRight, ArrowRightLeft, Backpack, Check, ChevronUp, Eye, Hand, ListChecks, Package, Search, Shirt, Trash2, Users, Warehouse, X, Zap } from "lucide-react";
 import { createPortal } from "react-dom";
 import { ItemCategoryIcon } from "../../../../_design/itemIcons";
@@ -206,13 +207,15 @@ export function InventarioHud(props: PropsInventarioHud) {
           {VISTAS.map((v) => (
             v.id === "mochila" && (props.mochilas?.length ?? 0) > 1 ? (
               <div key={v.id} className="ih-aba" data-ativo={vista === v.id || undefined}>
-                <select className="ih-aba-rot ih-mochila-select" aria-label="Mochila equipada"
-                  value={props.mochilaEquipadaId ?? ""} disabled={props.somenteLeitura || !props.onSelecionarMochila}
-                  onFocus={() => irPara("mochila")}
-                  onChange={(event) => { irPara("mochila"); props.onSelecionarMochila?.(event.target.value); }}>
-                  {!props.mochilaEquipadaId && <option value="" disabled>Sem mochila</option>}
-                  {props.mochilas?.map((mochila) => <option key={mochila.id} value={mochila.id}>{mochila.nome}</option>)}
-                </select>
+                <div onFocusCapture={() => irPara("mochila")}>
+                  <Select label="Mochila equipada" labelOculto className="ih-mochila-select"
+                    value={props.mochilaEquipadaId ?? ""} disabled={props.somenteLeitura || !props.onSelecionarMochila}
+                    options={[
+                      ...(!props.mochilaEquipadaId ? [{ id: "", rotulo: "Sem mochila" }] : []),
+                      ...(props.mochilas ?? []).map(mochila => ({ id: mochila.id, rotulo: mochila.nome })),
+                    ]}
+                    onChange={(id) => { irPara("mochila"); if (id) props.onSelecionarMochila?.(id); }} />
+                </div>
                 <button type="button" role="tab" aria-selected={vista === v.id} aria-label="Ver mochila"
                   className="ih-aba-qtd ih-mochila-abrir" onClick={() => irPara("mochila")}>{contagem[v.id]}</button>
               </div>
