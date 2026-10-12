@@ -27,7 +27,7 @@ const RAR: Record<string, string> = { comum: "#7f95b3", incomum: OK, raro: "#8b5
 const corRaridade = (r?: string | null) => (r ? RAR[r.toLowerCase()] ?? "#7f95b3" : "#7f95b3");
 const fmt = (n: number) => n.toLocaleString("pt-BR");
 
-import { X, Search, PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight, ChevronLeft, SlidersHorizontal } from "lucide-react";
+import { X, Search, PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight, ChevronLeft, SlidersHorizontal, Heart } from "lucide-react";
 
 export interface ProdutoHud {
   /** Complementos aparecem na ficha de seus escalpos base. */
@@ -77,6 +77,8 @@ export interface PropsMercadoHud {
   capacidade: number;
   onComprar: (slug: string, quantidade: number, precoUnitario: number) => void;
   onFechar?: () => void;
+  wishlist?: string[];
+  onAlternarWishlist?: (slug: string) => void;
 }
 
 const Tag = ({ children, style, className = "" }: { children: ReactNode; style?: React.CSSProperties; className?: string }) =>
@@ -100,7 +102,15 @@ const separarTipo = (nome: string): { titulo: string; tipo: string | null } => {
 const sem = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 
-export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onFechar }: PropsMercadoHud) {
+export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onFechar, wishlist = [], onAlternarWishlist }: PropsMercadoHud) {
+  const [wishlistAberta, setWishlistAberta] = useState(false);
+  const [wishlistLocal, setWishlistLocal] = useState<string[]>([]);
+  const desejos = onAlternarWishlist ? wishlist : wishlistLocal;
+  const alternarDesejo = (slug: string) => {
+    if (onAlternarWishlist) onAlternarWishlist(slug);
+    else setWishlistLocal(lista => lista.includes(slug) ? lista.filter(s => s !== slug) : [...lista, slug]);
+  };
+  const coracao = (slug: string, classe: string) => <button type="button" className={`hm-coracao ${classe}`} aria-label={`${desejos.includes(slug) ? "Remover da" : "Adicionar à"} wishlist: ${produtos.find(p => p.slug === slug)?.nome ?? slug}`} aria-pressed={desejos.includes(slug)} data-tooltip={desejos.includes(slug) ? "Remover da wishlist" : "Adicionar à wishlist"} onClick={() => alternarDesejo(slug)}><Heart size={18} fill={desejos.includes(slug) ? "currentColor" : "none"} aria-hidden="true" /></button>;
   const raiz = useRef<HTMLDivElement>(null);
   const botaoCategorias = useRef<HTMLButtonElement>(null);
   const tituloDetalhe = useRef<HTMLHeadingElement>(null);
@@ -173,8 +183,8 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
   const ajusteRef = useRef<HTMLButtonElement>(null);
   const campoPrecoRef = useRef<HTMLInputElement>(null);
   const lista = useMemo(
-    () => bases.filter((p) => (!cat || grupoDe(p) === cat) && (!sub || p.sub === sub) && (sem(p.nome).includes(sem(q)) || produtos.some(c => c.parentSlugs?.includes(p.slug) && sem(c.nome).includes(sem(q))))),
-    [bases, produtos, cat, sub, q],
+    () => (wishlistAberta ? produtos.filter(p => desejos.includes(p.slug)) : bases).filter((p) => (!cat || grupoDe(p) === cat) && (!sub || p.sub === sub) && (sem(p.nome).includes(sem(q)) || produtos.some(c => c.parentSlugs?.includes(p.slug) && sem(c.nome).includes(sem(q))))),
+    [bases, produtos, cat, sub, q, wishlistAberta, desejos],
   );
   const sel = lista.find((p) => p.slug === selSlug) ?? lista[0] ?? null;
   const complementos = produtos.filter(p => sel && p.parentSlugs?.includes(sel.slug));
@@ -185,13 +195,13 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
   /* Com um grupo aberto que tem subcategorias, as seções são as
      subcategorias (na ordem da lista lateral); senão, uma por grupo. */
   const aberto = categorias.find((c) => c.id === cat);
-  const grupos = aberto && aberto.subs.size > 0
+  const grupos = !wishlistAberta && aberto && aberto.subs.size > 0
     ? [...aberto.subs.keys()].filter((s) => !sub || s === sub)
         .map((s) => ({ c: { ...aberto, id: `${aberto.id}/${s}`, nome: s }, xs: lista.filter((p) => p.sub === s).sort(porNome) }))
         .concat([{ c: { ...aberto, id: `${aberto.id}/-`, nome: `Outros ${aberto.nome.toLocaleLowerCase("pt-BR")}` }, xs: sub ? [] : lista.filter((p) => !p.sub).sort(porNome) }])
         .filter((g) => g.xs.length)
-    : categorias.filter((c) => !cat || c.id === cat)
-        .map((c) => ({ c, xs: lista.filter((p) => grupoDe(p) === c.id).sort(porNome) }))
+    : (wishlistAberta ? [{ id: "wishlist", nome: "Wishlist", vertente: "", n: lista.length, subs: new Map<string, number>() }] : categorias.filter((c) => !cat || c.id === cat))
+        .map((c) => ({ c, xs: lista.filter((p) => wishlistAberta || grupoDe(p) === c.id).sort(porNome) }))
         .filter((g) => g.xs.length);
   const abrirGrupo = (id: string | null) => { setCat(id); setSub(null); setSel(null); setComplemento(null); setFeito(false); setN(1); };
 
@@ -225,7 +235,9 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
           <div style={{ textAlign: "right" }}><Tag className="hx-dim">mochila</Tag><div className="hx-display" style={{ fontSize: 18, fontWeight: 700 }}>{usados}<span className="hx-dim">/{capacidade}</span></div></div>
           <div style={{ textAlign: "right" }}><Tag style={{ color: AMB, opacity: .7 }}>aretz</Tag><div className="hx-display" style={{ fontSize: 22, fontWeight: 900 }}><Aretz /> {fmt(saldo)}</div></div>
         </div>
+        <div className="hm-cab-acoes"><button type="button" className="hx-fechar-quad hm-wishlist-acesso" aria-label={wishlistAberta ? "Voltar ao mercado" : `Abrir wishlist (${desejos.length})`} data-tooltip={wishlistAberta ? "Voltar ao mercado" : "Wishlist"} aria-pressed={wishlistAberta} onClick={() => { setWishlistAberta(!wishlistAberta); abrirGrupo(null); setDetalheAberto(false); }}><Heart size={18} fill={wishlistAberta ? "currentColor" : "none"} aria-hidden="true" /></button>
         {onFechar && <button type="button" aria-label="Fechar mercado" className="hx-fechar-quad hm-fechar" onClick={onFechar}><X size={16} aria-hidden="true" /></button>}
+        </div>
       </header>
 
       <div className="hm-corpo">
@@ -291,7 +303,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                     const filhos = produtos.filter(c => c.parentSlugs?.includes(p.slug));
                     const rotulo = filhos.every(c => c.categoria === "veneno") ? "veneno" : "módulo";
                     return (
-                      <button key={p.slug} type="button" onClick={(e) => { ultimoCartao.current = e.currentTarget; setSel(p.slug); escolherComplemento(null); setDetalheAberto(true); }} className="hx-produto" data-ativo={on || undefined} aria-pressed={on}>
+                      <div key={p.slug} className="hm-cartao"><button type="button" onClick={(e) => { ultimoCartao.current = e.currentTarget; setSel(p.slug); escolherComplemento(null); setDetalheAberto(true); }} className="hx-produto" data-ativo={on || undefined} aria-pressed={on}>
                         <span className="hx-produto-arte">
                           <span className="hx-produto-trama" />
                           <ItemCategoryIcon category={p.categoria} group={p.grupo?.nome} weaponName={p.nome} itemType={p.tipo} armorRegions={p.regioes} size={52} color="var(--k)" strokeWidth={1.1} style={{ opacity: .85, filter: "drop-shadow(0 0 10px color-mix(in srgb, var(--k) 50%, transparent))" }} />
@@ -310,13 +322,13 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                             {filhos.length > 0 && <span className="hm-card-complementos">{filhos.length} {rotulo}{filhos.length !== 1 ? "s" : ""}</span>}
                           </span>
                         </span>
-                      </button>
+                      </button>{coracao(p.slug, "hm-coracao-card")}</div>
                     );
                   })}
                 </div>
               </section>
             ))}
-            {!lista.length && <div style={{ padding: "80px 0", textAlign: "center" }}><Tag className="hx-dim">nenhuma mercadoria encontrada</Tag></div>}
+            {!lista.length && <div style={{ padding: "80px 0", textAlign: "center" }}><Tag className="hx-dim">{wishlistAberta ? "Wishlist vazia" : "nenhuma mercadoria encontrada"}</Tag></div>}
           </div>
         </div>
 
@@ -331,6 +343,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
               <div className="hm-produto-cab" style={{ background: `radial-gradient(ellipse at 70% 50%, color-mix(in srgb, var(--k) 35%, ${CASCO}) 0%, ${CASCO} 70%)` }}>
                 <span style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(135deg, color-mix(in srgb, var(--k) 12%, transparent) 0 1px, transparent 1px 7px)" }} />
                 <span className="hm-produto-glifo"><ItemCategoryIcon category={sel.categoria} group={sel.grupo?.nome} weaponName={sel.nome} itemType={sel.tipo} armorRegions={sel.regioes} size={140} color="var(--k)" strokeWidth={.9} style={{ filter: "drop-shadow(0 0 24px var(--k))" }} /></span>
+                {coracao(sel.slug, "hm-coracao-detalhe")}
                 <div className="hm-produto-tags">
                   <Tag style={{ color: "var(--k)" }}>{sel.categoriaRotulo}</Tag>
                   {sel.raridade && <><span style={{ width: 4, height: 4, transform: "rotate(45deg)", background: corRaridade(sel.raridade) }} /><Tag style={{ color: corRaridade(sel.raridade) }}>{sel.raridade}</Tag></>}

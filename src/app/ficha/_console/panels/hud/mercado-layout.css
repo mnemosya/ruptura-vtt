@@ -182,3 +182,16 @@
 .hm-negociacao-acoes > button:not(.hx-btn-ambar) { height: 40px; border-color: transparent; padding: 0 8px; }
 .hm-negociacao-acoes > button:not(.hx-btn-ambar):hover, .hm-preco-aplicado button:hover { color: var(--hx-cy); background: rgba(0,212,255,.1); }
 .hm-negociacao-acoes .hx-btn-ambar { height: 40px; font-size: 11px; }
+
+.hm-cab-acoes { display: flex; gap: 8px; flex: none; }
+.hm-cartao { position: relative; min-width: 0; }
+.hm-cartao .hx-produto { width: 100%; }
+.hm-coracao { display: grid; place-items: center; width: 32px; height: 32px; color: var(--hx-dim) !important; border-radius: 0 !important; transition: color .15s, background .15s; }
+.hm-coracao:hover, .hm-coracao[aria-pressed="true"] { color: var(--hx-amb) !important; }
+.hm-coracao:hover { background: rgba(255,138,31,.1); }
+.hm-coracao-card { position: absolute; right: 6px; bottom: 6px; }
+.hm-cartao .hm-card-espacos { padding-right: 28px; }
+.hm-coracao-detalhe { position: absolute; top: 10px; right: 10px; z-index: 2; }
+.hm-produto-tags { padding-right: 30px; }
+.hm-wishlist-acesso[aria-pressed="true"], .hm-wishlist-acesso:hover { background: var(--hx-cy) !important; color: var(--hx-abismo) !important; }
+@container mercado (width < 720px) { .hm-cab-acoes { grid-column: 2; grid-row: 1; align-self: start; } }

@@ -256,6 +256,7 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     talentos_adquiridos,
     carteira,
     inventario,
+    wishlist: Array.isArray(raw.wishlist) ? [...new Set(raw.wishlist.filter((slug): slug is string => typeof slug === "string" && slug.trim().length > 0))] : [],
     magias_aprendidas,
     escalpos_instalados,
     niveis_vertente,

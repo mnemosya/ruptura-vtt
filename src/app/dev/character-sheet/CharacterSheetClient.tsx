@@ -4061,6 +4061,13 @@ export default function CharacterSheetClient({
       setCharacter(next);
     },
     comprarItem: handleBuyItem,
+    alternarWishlist: (slug) => {
+      const atual = characterRef.current;
+      const lista = atual.wishlist ?? [];
+      const next = { ...atual, wishlist: lista.includes(slug) ? lista.filter(s => s !== slug) : [...lista, slug] };
+      characterRef.current = next;
+      setCharacter(next);
+    },
     carga: cargaAtual,
     glossario: glossarioDeRegras,
     propriedadesCatalogo: propertiesIniciais.map(p => ({

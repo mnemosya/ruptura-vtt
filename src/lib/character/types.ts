@@ -316,6 +316,8 @@ export interface TemporaryEffect {
 }
 
 export interface Character {
+  /** Slugs de produtos desejados no mercado. */
+  wishlist?: string[];
   nome: string;
   atributos: CharacterAttributes;
   pericias: CharacterSkills;

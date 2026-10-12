@@ -491,6 +491,8 @@ export function InventarioPanel({ api, onGerenciarSuporte }: { api: ConsoleApi; 
         <JanelaMercado onFechar={fecharMercado}>
           {(fechar) => <MercadoHud
             produtos={[...api.catalogo.values()].filter((m) => (m.preco ?? 0) > 0).map((m) => produtoDoModelo(api, m))}
+            wishlist={api.character.wishlist ?? []}
+            onAlternarWishlist={api.alternarWishlist}
             saldo={aretz ?? 0}
             usados={api.carga.ocupados}
             capacidade={api.carga.capacidade}
