@@ -34,6 +34,7 @@ ART_BOXES["noun_Lung_4303915"] = [0, 0, 90, 90]
 ART_BOXES["noun_Boot_2249240"] = [0, 0, 32, 32]
 ART_BOXES["noun_Bike_8339085"] = [0, 0, 100, 100]
 ART_BOXES["noun_Tool_8303078"] = [0, 0, 100, 100]
+ART_BOXES.update({"noun_Fitnessbracelet_4542766": [7.65, 1.9, 20.7, 32.2], "noun_buckle_7448241": [9.8, 25, 80.4, 49.9], "noun_equipmentstarnecklace_2360080": [22.5, 24, 467, 464], "noun_equipmentwizardhood_2360098": [66.5, 22, 379, 468]})
 ART_BOXES.update({"noun_Hammer_8067498": [6.3, 7, 86.7, 85.4], "noun_glove_7358230": [16, 4.2, 68, 91.7], "noun_tonfa_7356580": [12.2, 6.2, 75.6, 87.7]})
 ART_BOXES["noun_Bat_3547430"] = [-0.1, -0.1, 42.2, 42.2]
 ART_BOXES["noun_greatsword_3547396"] = [-0.1, -0.1, 43.7, 39.1]

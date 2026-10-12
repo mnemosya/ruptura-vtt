@@ -118,6 +118,10 @@ assert.equal(filledCategoryIcon("farmacia", "Kit de estabilização (PV)"), "nou
 assert.equal(filledCategoryIcon("farmacia", "Ansiolítico"), "noun_drugs_7809670");
 assert.equal(filledCategoryIcon("ferramenta", "Lanterna rúnica"), "noun_Flashlight_8418741");
 assert.equal(filledCategoryIcon("ferramenta", "Papel rúnico"), "noun_Paper_8227159");
+for (const [name, icon] of [["Capa Anti-Óptica", "noun_equipmentwizardhood_2360098"], ["Foco Rúnico", "noun_equipmentstarnecklace_2360080"], ["Pulseira Vital", "noun_Fitnessbracelet_4542766"], ["Fivela de Retorno", "noun_buckle_7448241"]] as const) {
+  assert.equal(filledCategoryIcon("acessorio", name), icon);
+  assert.ok(FILLED_ICON_DATA[icon].paths.length);
+}
 
 assert.equal(filledCategoryIcon("dispositivo", "Chip de dados"), "noun_flashdrive_4483089");
 assert.equal(filledCategoryIcon("ferramenta", "Kit de contenção"), "noun_Handcuffs_699304");
