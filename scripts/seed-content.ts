@@ -24,6 +24,7 @@
  *   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... \
  *   CONTENT_DIR=./content \
  *   npx tsx scripts/seed-content.ts
+ * Para publicar só tipos selecionados: SEED_CONTENT_TYPES=spell (lista separada por vírgulas).
  *
  * CONTENT_DIR deve conter o manifesto e todos os db_*.json.
  *
@@ -184,42 +185,11 @@ const SOURCES: SourceSpec[] = [
     file: "db_propriedades_normalizado_v1.json",
     collectionKey: "propriedades",
   },
-  {
-    manifestId: "equipamentos",
-    contentType: "item",
-    mode: "collection",
-    file: "db_equipamentos_normalizado_v1_2.json",
-    collectionKey: "itens",
-  },
-  {
-    manifestId: "runas",
-    contentType: "rune",
-    mode: "collection",
-    file: "db_runas_normalizado_v1_2.json",
-    collectionKey: "runas",
-  },
-  // Catálogo "Catálogo oficial de drones e robôs consumido pela ficha" —
-  // fora do manifesto do core (sem manifestId), fonte:
-  // docs/fontes/DRONES E ROBÔS....md.
-  {
-    contentType: "companion_model",
-    mode: "collection",
-    file: "db_companion_models_v1.json",
-    collectionKey: "modelos_companheiros",
-  },
-  {
-    contentType: "rune",
-    mode: "collection",
-    file: "db_runas_drones_robos_v1.json",
-    collectionKey: "runas_drones_robos",
-  },
-  {
-    manifestId: "escalpos",
-    contentType: "escalpo",
-    mode: "collection",
-    file: "db_escalpos_normalizado_v1_3.json",
-    collectionKey: "escalpos",
-  },
+  // Catálogos do Notion substituem integralmente os bancos legados.
+  { contentType: "item", mode: "collection", file: "v12/db_mercado_itens_v1_2.json", collectionKey: "itens", version: "1.2.0" },
+  { contentType: "rune", mode: "collection", file: "v12/db_mercado_runas_v1_2.json", collectionKey: "runas", version: "1.2.0" },
+  { contentType: "escalpo", mode: "collection", file: "v12/db_mercado_escalpos_v1_2.json", collectionKey: "escalpos", version: "1.2.0" },
+  { contentType: "companion_model", mode: "collection", file: "v12/db_mercado_companheiros_v1_2.json", collectionKey: "modelos_companheiros", version: "1.2.0" },
   {
     manifestId: "talentos",
     contentType: "talent",
@@ -228,11 +198,11 @@ const SOURCES: SourceSpec[] = [
     collectionKey: "talentos",
   },
   {
-    manifestId: "magias",
     contentType: "spell",
     mode: "collection",
-    file: "db_magias_normalizado_v1_3.json",
+    file: "v12/db_magias_vertentes_v1_2.json",
     collectionKey: "magias",
+    version: "1.2.0",
   },
   // RUPTURA v1.2 — pacotes validados por validateRulesetContentBundleV12
   // antes de qualquer escrita (ver RULESET_V12_BUNDLES). Cada Classe tem
@@ -269,8 +239,11 @@ const SOURCES: SourceSpec[] = [
   },
 ];
 
-/** Arquivos v1.2 com o formato RulesetContentBundleV12. */
-const RULESET_V12_BUNDLES = [...new Set(SOURCES.filter((s) => s.version === "1.2").map((s) => s.file))];
+/** Arquivos com o formato RulesetContentBundleV12 (catálogos do Notion têm contrato próprio). */
+const RULESET_V12_BUNDLES = [...new Set(SOURCES.filter((s) => /^v12\/db_(classe_|trajetoria_)/.test(s.file)).map((s) => s.file))];
+const TIPOS_SELECIONADOS = new Set((process.env.SEED_CONTENT_TYPES ?? "").split(",").map((s) => s.trim()).filter(Boolean));
+const FONTES_SELECIONADAS = TIPOS_SELECIONADOS.size ? SOURCES.filter((s) => TIPOS_SELECIONADOS.has(s.contentType)) : SOURCES;
+if (FONTES_SELECIONADAS.length === 0) throw new Error("SEED_CONTENT_TYPES não selecionou nenhuma fonte conhecida.");
 
 // ---------------------------------------------------------------------
 // Helpers
@@ -351,7 +324,16 @@ function buildRowsForSource(
     );
   }
 
-  return arr.map((el: Record<string, any>, idx: number) => {
+  // Magias v1.2: as escolhas de conjuração (manifestação/forma) vivem em
+  // arquivo próprio e entram aqui — o importador do Notion não as gera.
+  const escolhas: Record<string, unknown> =
+    spec.contentType === "spell" && spec.file.startsWith("v12/")
+      ? readJson<{ magias: Record<string, unknown> }>("v12/escolhas_conjuracao_v1_2.json").magias
+      : {};
+
+  return arr.map((raw: Record<string, any>, idx: number) => {
+    const extra = escolhas[asString(raw.slug) ?? ""];
+    const el = extra ? { ...raw, estatisticas: { ...raw.estatisticas, escolhas_conjuracao: extra } } : raw;
     const slug = asString(el.slug) ?? asString(el.id);
     if (!slug) {
       throw new Error(
@@ -525,7 +507,7 @@ async function writeChangelog(
 // Main
 // ---------------------------------------------------------------------
 function validateRulesetV12Bundles(): void {
-  for (const file of RULESET_V12_BUNDLES) {
+  for (const file of RULESET_V12_BUNDLES.filter((f) => FONTES_SELECIONADAS.some((s) => s.file === f))) {
     const validation = validateRulesetContentBundleV12(readJson(file));
     if (!validation.ok) {
       throw new Error(`Pacote v1.2 inválido (${file}):\n  ${validation.errors.join("\n  ")}`);
@@ -543,7 +525,7 @@ async function main(): Promise<void> {
 
   if (DRY_RUN) {
     const pkg = manifest.package ?? {};
-    const rows = SOURCES.flatMap((spec) => buildRowsForSource(spec, pkg.id, pkg.version));
+    const rows = FONTES_SELECIONADAS.flatMap((spec) => buildRowsForSource(spec, pkg.id, pkg.version));
     const ids = new Set<string>();
     for (const r of rows) {
       if (ids.has(r.id)) throw new Error(`id duplicado: ${r.id}`);
@@ -571,7 +553,7 @@ async function main(): Promise<void> {
 
   // Monta todas as linhas a partir dos arquivos-fonte.
   const allRows: DocumentRow[] = [];
-  for (const spec of SOURCES) {
+  for (const spec of FONTES_SELECIONADAS) {
     const rows = buildRowsForSource(spec, packId, packVersion);
     allRows.push(...rows);
     console.log(`  ${spec.contentType.padEnd(14)} ${spec.file} -> ${rows.length}`);

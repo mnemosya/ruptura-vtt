@@ -21,3 +21,7 @@ build/
 
 # Cache local dos blocos do Notion para a sincronização rápida (scripts/notion/cacheBlocos.ts).
 .cache/
+
+# Protótipos exportados do Figma Make (referência local, não versionar)
+/inventario equip magia/
+/inventario/

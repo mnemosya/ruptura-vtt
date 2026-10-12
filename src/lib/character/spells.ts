@@ -1,7 +1,7 @@
 /**
  * Vertentes e magias — checkpoint v0.50/v0.50.1/v0.50.2 (PRD 11.4),
  * consumo de Mana temporária no v0.53 (achado da auditoria v0.50 sobre
- * `custo_mana`). Catálogo inteiro (132 magias, 6 vertentes,
+ * `custo_mana`). Catálogo inteiro (233 magias, 6 vertentes,
  * especializações) vem de `content_documents` (content_type="spell",
  * `listSpells()`, já existente) — nunca lista manual. Cada magia é
  * aprendida INDIVIDUALMENTE (`Character.magias_aprendidas`, mesmo
@@ -12,12 +12,9 @@
  * aprender magia individual).
  *
  * Escopo deliberadamente pequeno (mesmo critério de v0.47/v0.48/v0.49):
- * "Conjurar" desconta PA (sempre) e Mana (só quando `custo_mana` é um
- * número real no conteúdo — 13 das 132 magias publicadas, todas da
- * vertente Sináptica; as outras 119 ficam `null` por decisão explícita
- * do PRD §11.4/Fase 5 — "custo de mana pode usar placeholder enquanto
- * os valores finais não estiverem fechados" — NUNCA inventamos um
- * número para elas). Drena `mana_temporaria` ANTES da mana normal (PRD
+ * "Conjurar" desconta PA e Mana de custos fixos do catálogo atual;
+ * custos variáveis, Reações e tempos em minutos/horas ficam para
+ * resolução manual, sem gasto automático. Drena `mana_temporaria` ANTES da mana normal (PRD
  * 10.3), registra o resumo no log. Magias com efeito `dano` ganham
  * atalho de rolagem (reaproveita `rollDamageFormula` de `attack.ts`,
  * mesmo parser "NdM"). Magias com `resolucao:"resistencia"` mostram a
