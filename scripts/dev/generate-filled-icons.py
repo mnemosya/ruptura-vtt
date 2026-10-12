@@ -29,6 +29,8 @@ ART_BOXES = {'noun_Audio_8196748': [0, 0, 100, 100],
  'noun_spray_8421659': [0, 0, 100, 100],
  'noun_vr_2226896': [0, 0, 64.0, 64.0]}
 
+ART_BOXES["noun_Scanner_7959164"] = [0, 0, 100, 100]
+
 data = {}
 for folder in ("filled icons", "energy", "legacy"):
     for source in sorted((ROOT / "icones" / folder).glob("*.svg")):

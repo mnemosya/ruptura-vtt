@@ -52,6 +52,7 @@ export function filledCategoryIcon(category: string, name?: string, itemType?: s
   if (categoryKey === "municao" && ["flecha", "virote"].includes(normalizeIconKey(itemType ?? ""))) return "arrows";
   const nameKey = normalizeIconKey((name ?? "").trim());
   const namedItems: Record<string, FilledIconName> = {
+    scanner_de_sensores: "noun_Scanner_7959164",
     escuta: "noun_Audio_8196748", ascensor_motorizado: "noun_Climbing_5026510(ascensor)",
     luvas_de_escalada: "noun_Gloves_8340735", kit_de_contencao: "noun_Handcuffs_699304",
     aerovoile: "noun_HangGlider_8112644", pulseira_vital: "noun_Heart_5999211", biomonitor: "noun_Heart_5999211",

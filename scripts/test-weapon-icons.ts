@@ -118,3 +118,4 @@ assert.equal(filledCategoryIcon("escalpo", "Neuroprocessador", "neurais"), "noun
 assert.equal(filledCategoryIcon("escalpo", "RPI Forjado (Nível 1)", "Identidade"), "noun_id_7920951");
 assert.equal(filledCategoryIcon("escalpo", "Modelo", "Moda"), "noun_beauty_3677917");
 assert.equal(FILLED_ICON_DATA.noun_hacker_5879592.paths[0].fillRule, "evenodd");
+assert.equal(filledCategoryIcon("dispositivo", "Scanner de sensores"), "noun_Scanner_7959164");
