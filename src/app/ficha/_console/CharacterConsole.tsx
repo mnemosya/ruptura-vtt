@@ -397,7 +397,10 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
           {aba !== "equipamentos" && aba !== "mochila" && aba !== "magias" && aba !== "escalpos" && <DecoTop />}
           <div className="rc-tabpanel" role="tabpanel" ref={tabpanelRef}>
             {aba === "mochila" ? (
-              <InventarioPanel api={api} />
+              <InventarioPanel api={api} onGerenciarSuporte={(id) => {
+                const instancia = api.character.inventario?.find((i) => i.id === id);
+                if (instancia?.aljava) iniciarRecarga(instancia);
+              }} />
             ) : aba === "magias" ? (
               <MagiasPanel api={api} />
             ) : aba === "escalpos" ? (

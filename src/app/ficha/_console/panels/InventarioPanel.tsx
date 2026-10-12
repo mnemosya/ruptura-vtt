@@ -395,7 +395,7 @@ function produtoDoModelo(api: ConsoleApi, modelo: ItemContent): ProdutoHud {
   };
 }
 
-export function InventarioPanel({ api }: { api: ConsoleApi }) {
+export function InventarioPanel({ api, onGerenciarSuporte }: { api: ConsoleApi; onGerenciarSuporte?: (id: string) => void }) {
   const [mercado, setMercado] = useState(false);
   const fecharMercado = useCallback(() => setMercado(false), []);
   const inventario = api.character.inventario ?? [];
@@ -454,6 +454,7 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
               else if (d?.estado) api.moverItemPara(id, d.estado);
             }}
             onDescartar={(id) => api.descartarItem(id)}
+            onGerenciarSuporte={api.somenteLeitura ? undefined : onGerenciarSuporte}
             // O modal de item é o MESMO da aba Equipamentos.
             fichaDe={(id) => { const inst = api.character.inventario?.find((i) => i.id === id); return inst ? pecaDe(api, inst) : null; }}
             onAbrirMercado={api.somenteLeitura ? undefined : () => setMercado(true)}

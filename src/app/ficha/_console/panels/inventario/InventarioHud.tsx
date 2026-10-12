@@ -92,6 +92,7 @@ export interface PropsInventarioHud {
   onDescartar: (id: string) => void;
   /** Ficha completa do item para o modal (o mesmo da aba Equipamentos). Ausente = cartão antigo. */
   fichaDe?: (id: string) => PecaHud | null;
+  onGerenciarSuporte?: (id: string) => void;
   /** Abre o Mercado (botão ao lado da carteira e tecla M). Ausente = sem botão. */
   onAbrirMercado?: () => void;
   /** Slot no rodapé da lista — o mercado provisório entra aqui. */
@@ -264,6 +265,7 @@ export function InventarioHud(props: PropsInventarioHud) {
             podeCrescer={selecionado.local !== "mochila" || ocupados + selecionado.espacosPorItem <= capacidade}
             somenteLeitura={!!props.somenteLeitura}
             ficha={props.fichaDe?.(selecionado.id) ?? null}
+            onGerenciarSuporte={props.onGerenciarSuporte ? () => { props.onGerenciarSuporte?.(selecionado.id); setAncora(null); } : undefined}
             destinos={props.destinosDe(selecionado)}
             onFechar={() => setAncora(null)}
             onUsar={() => props.onUsar(selecionado.id)}
@@ -495,7 +497,8 @@ function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, s
 }
 
 /* ── cartão flutuante ── */
-function CartaoItem({ item: it, ancora, palco, podeCrescer, somenteLeitura, destinos, onFechar, onUsar, onAjustar, onMover, onDescartar, ficha }: {
+function CartaoItem({ item: it, ancora, palco, podeCrescer, somenteLeitura, destinos, onFechar, onUsar, onAjustar, onMover, onDescartar, ficha, onGerenciarSuporte }: {
+  onGerenciarSuporte?: () => void;
   item: ItemHud; ancora: Ancora; palco: React.RefObject<HTMLDivElement | null>; ficha?: PecaHud | null;
   podeCrescer: boolean; somenteLeitura: boolean; destinos: DestinoHud[];
   onFechar: () => void; onUsar: () => void; onAjustar: (d: number) => void;
@@ -568,7 +571,7 @@ function CartaoItem({ item: it, ancora, palco, podeCrescer, somenteLeitura, dest
 
   if (ficha) {
     return <FichaItemModal p={ficha} fixo onFechar={onFechar} rodape={somenteLeitura ? undefined : (
-      <RodapeItem item={it} podeCrescer={podeCrescer} destinos={destinos} onUsar={onUsar} onAjustar={onAjustar} onMover={onMover} onDescartar={onDescartar} />
+      <RodapeItem onGerenciarSuporte={ficha.suporteMunicao ? onGerenciarSuporte : undefined} item={it} podeCrescer={podeCrescer} destinos={destinos} onUsar={onUsar} onAjustar={onAjustar} onMover={onMover} onDescartar={onDescartar} />
     )} />;
   }
 
@@ -653,7 +656,8 @@ function Descartar({ onFeito }: { onFeito: () => void }) {
  * e "⋯" com o resto — cada destino com nome e, isolado, Descartar com
  * confirmação.
  */
-function RodapeItem({ item: it, podeCrescer, destinos, onUsar, onAjustar, onMover, onDescartar }: {
+function RodapeItem({ item: it, podeCrescer, destinos, onUsar, onAjustar, onMover, onDescartar, onGerenciarSuporte }: {
+  onGerenciarSuporte?: () => void;
   item: ItemHud; podeCrescer: boolean; destinos: DestinoHud[];
   onUsar: () => void; onAjustar: (d: number) => void; onMover: (destino: string) => void; onDescartar: () => void;
 }) {
@@ -679,6 +683,7 @@ function RodapeItem({ item: it, podeCrescer, destinos, onUsar, onAjustar, onMove
         <small>unid.</small>
       </span>
       <span style={{ flex: 1 }} />
+      {onGerenciarSuporte && <button type="button" className="ih-modal-acoes-usar" onClick={onGerenciarSuporte}>Munição</button>}
       {it.usavel && <button type="button" className="ih-modal-acoes-usar" onClick={onUsar}>Usar</button>}
       <button type="button" className="ih-modal-acoes-mais" data-on={menu || undefined} aria-expanded={menu} aria-haspopup="menu"
         aria-label="Mais ações" onClick={() => setMenu((m) => !m)}>
