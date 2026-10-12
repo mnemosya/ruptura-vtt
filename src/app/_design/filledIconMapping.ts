@@ -74,16 +74,16 @@ export function filledCategoryIcon(category: string, name?: string, itemType?: s
     if (nameKey === "papel_runico") return "noun_Paper_8227159";
   }
   if (categoryKey === "farmacia" && (nameKey === "medkit" || /^kit_de_estabilizacao_/.test(nameKey))) return "noun_medkit_5794368";
-  if (categoryKey === "escalpo") {
+  if (["escalpo", "escalpos"].includes(categoryKey)) {
     const implants: Record<string, FilledIconName> = {
       optica: "noun_bioniccontact_6410565", opticos: "noun_bioniccontact_6410565",
       braco: "noun_bionicrobotarm_7001919", de_braco: "noun_bionicrobotarm_7001919",
       perna: "noun_bionicleg_7356680", de_perna: "noun_bionicleg_7356680",
       audicao: "noun_earlistening_5252153", auditivos: "noun_earlistening_5252153",
       neural: "noun_neural_4128305", neurais: "noun_neural_4128305",
-      moda: "noun_beauty_3677917", identidade: "noun_id_7920951",
+      moda: "noun_beauty_3677917", de_moda: "noun_beauty_3677917", identidade: "noun_id_7920951",
     };
-    const implant = implants[normalizeIconKey(itemType ?? "")];
+    const implant = implants[normalizeIconKey(itemType ?? "").replace(/^escalpos_/, "")];
     if (implant) return implant;
   }
   if (categoryKey === "mobilidade") {
