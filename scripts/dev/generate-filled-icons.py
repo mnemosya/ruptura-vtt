@@ -10,22 +10,28 @@ for folder in ("filled icons", "energy", "legacy"):
     for source in sorted((ROOT / "icones" / folder).glob("*.svg")):
         root = ET.parse(source).getroot()
         view_box = [float(n) for n in root.attrib["viewBox"].split()]
-        if source.stem in ("noun_drugs_7809670", "dorsal"):
+        if source.stem in ("noun_drugs_7809670", "dorsal", "noun_Drone_8335890", "noun_ElectricScooter_8291684", "noun_Hoverboard_7742758", "noun_Robot_8483832", "noun_respiratormask_6792995"):
             # O desenho ocupa 0..100; as margens extras incluem créditos abaixo.
             assert view_box == [-5, -10, 110, 135], source
+            view_box = [0, 0, 100, 100]
+        if source.stem == "noun_RollerSkate_5192593":
+            assert view_box == [0, 0, 64, 80], source
+            view_box = [0, 0, 64, 64]
+        if source.stem == "noun_Skateboard_1293918":
+            assert view_box == [0, 0, 100, 125], source
             view_box = [0, 0, 100, 100]
         if folder == "energy":
             # Noun exports use the extra bottom 22.5 units for credit text.
             assert view_box == [0, 0, 90, 112.5], source
             view_box = [0, 0, 90, 90]
         paths = []
+        parents = {child: parent for parent in root.iter() for child in parent}
         for element in list(root.iter())[1:]:
             tag = element.tag.split("}")[-1]
             attrs = element.attrib
-            assert "transform" not in attrs, source
             if tag in ("g", "text", "title", "desc", "metadata"):
                 if tag == "g":
-                    assert not attrs, source
+                    assert set(attrs) <= {"transform", "fill-rule", "data-name"}, source
                 continue
             if tag == "path":
                 d = attrs["d"]
@@ -44,7 +50,15 @@ for folder in ("filled icons", "energy", "legacy"):
                 d = f"M{x-r} {y}a{r} {r} 0 1 0 {2*r} 0a{r} {r} 0 1 0 {-2*r} 0Z"
             else:
                 raise ValueError(f"Unsupported SVG element {tag}: {source}")
-            paths.append({"d": d, "fillRule": attrs.get("fill-rule", "nonzero")})
+            ancestry = [element]
+            while ancestry[-1] in parents:
+                ancestry.append(parents[ancestry[-1]])
+            transforms = [node.attrib["transform"] for node in reversed(ancestry) if "transform" in node.attrib]
+            fill_rule = next((node.attrib["fill-rule"] for node in ancestry if "fill-rule" in node.attrib), "nonzero")
+            path = {"d": d, "fillRule": fill_rule}
+            if transforms:
+                path["transform"] = " ".join(transforms)
+            paths.append(path)
         assert paths, source
         assert source.stem not in data, source
         data[source.stem] = {"viewBox": view_box, "paths": paths}

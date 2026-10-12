@@ -31,6 +31,8 @@ const CATEGORIES: Record<string, FilledIconName> = {
   pocao: "potion", pocoes: "potion", aljava: "quiver", flecha: "arrows", flechas: "arrows", virotes: "arrows",
   vertina: "potion", vertinas: "potion",
   estrutura_dorsal: "dorsal",
+  drone: "noun_Drone_8335890", drones: "noun_Drone_8335890", drones_e_robos: "noun_Drone_8335890",
+  robo: "noun_Robot_8483832", robos: "noun_Robot_8483832",
   farmacia: "noun_drugs_7809670",
 };
 
@@ -49,6 +51,14 @@ export function filledCategoryIcon(category: string, name?: string, itemType?: s
   if (categoryKey === "municao" && normalizeIconKey(itemType ?? "") === "celula") return "energy cell";
   if (categoryKey === "municao" && ["flecha", "virote"].includes(normalizeIconKey(itemType ?? ""))) return "arrows";
   const nameKey = normalizeIconKey((name ?? "").trim());
+  if (categoryKey === "mobilidade") {
+    const mobility: Record<string, FilledIconName> = {
+      patinete_eletrico: "noun_ElectricScooter_8291684", hoverboard: "noun_Hoverboard_7742758",
+      rollsyns: "noun_RollerSkate_5192593", skate: "noun_Skateboard_1293918",
+    };
+    if (mobility[nameKey]) return mobility[nameKey];
+  }
+  if (categoryKey === "acessorio" && nameKey === "mascara_filtrante") return "noun_respiratormask_6792995";
   if (categoryKey === "mobilidade" && /^icarus_(i|ii|iii)$/.test(nameKey)) return "icarus";
   if (categoryKey === "mobilidade" && normalizeIconKey(itemType ?? "") === "estrutura_dorsal") return "dorsal";
   if (["veiculo", "veiculos"].includes(categoryKey)) {

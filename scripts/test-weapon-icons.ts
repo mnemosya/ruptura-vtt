@@ -91,3 +91,12 @@ console.log("✓ Ícones filled: tipos distintos, munições e estrutura dorsal 
 assert.equal(filledCategoryIcon("mobilidade", "Aérovoile", "Estrutura dorsal"), "dorsal");
 assert.equal(filledCategoryIcon("mobilidade", "Cabestan I", "Estrutura dorsal"), "dorsal");
 assert.equal(filledCategoryIcon("mobilidade", "Icarus III", "Estrutura dorsal"), "icarus");
+for (const [name, icon] of [["Patinete Elétrico", "noun_ElectricScooter_8291684"], ["Hoverboard", "noun_Hoverboard_7742758"], ["Rollsyns", "noun_RollerSkate_5192593"], ["Skate", "noun_Skateboard_1293918"]] as const) {
+  assert.equal(filledCategoryIcon("mobilidade", name), icon);
+  assert.ok(FILLED_ICON_DATA[icon].paths.length);
+}
+assert.equal(filledCategoryIcon("drone", "Mosca"), "noun_Drone_8335890");
+assert.equal(filledCategoryIcon("robô", "Ceifador"), "noun_Robot_8483832");
+assert.equal(filledCategoryIcon("acessorio", "Máscara Filtrante"), "noun_respiratormask_6792995");
+assert.ok(FILLED_ICON_DATA.noun_respiratormask_6792995.paths.every(p => p.fillRule === "evenodd"));
+assert.ok(FILLED_ICON_DATA.noun_Skateboard_1293918.paths.every(p => p.transform === "translate(0,-952.36218)"));
