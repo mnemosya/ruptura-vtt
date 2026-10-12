@@ -149,6 +149,11 @@ export function TextoComRegras({
         const topo = i === 0 ? 0 : "0.6em";
         if (b.tipo === "p") return <p key={k} style={{ margin: `${topo} 0 0` }}>{emLinha(b.linhas.join(" "), glossario, k)}</p>;
         if (b.tipo === "citacao") {
+          // Listas dentro de uma nota mantêm seus blocos e marcadores.
+          // Unir tudo com espaços transforma os exemplos em um único parágrafo.
+          if (b.linhas.some(linha => ITEM.test(linha))) {
+            return <blockquote key={k} style={{ margin: `${topo} 0 0`, paddingLeft: "0.8em", borderLeft: "2px solid currentColor" }}><TextoComRegras texto={b.linhas.join("\n")} glossario={glossario} /></blockquote>;
+          }
           // Citação do Notion = nota em itálico, exportada picotada ("*texto *[*link*](url)* *").
           // O bloco inteiro já é itálico; os "*" soltos que sobram saem (o **negrito** fica).
           // Os "*" do link saem antes (rótulo limpo); o link em si continua e vira atalho do livro.
