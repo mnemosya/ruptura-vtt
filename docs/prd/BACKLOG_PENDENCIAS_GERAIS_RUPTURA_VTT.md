@@ -1321,7 +1321,7 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### LIGHT-01 — Especificar iluminação dinâmica
 
-- **Status:** Bloqueada
+- **Status:** Especificação v1 aprovada para iniciar LIGHT-02; aceite final pendente de hardware alvo, regra exata de visão noturna e medição integrada. Auditoria e protótipos em `LIGHT-01_AUDITORIA_E_ESPECIFICACAO.md`.
 - **Descrição:** detalhar fontes de luz, visão, paredes, permissões, desempenho e diferenças entre narrador/jogador; produzir modelo técnico e protótipo de desempenho antes do produto final.
 - **Área afetada:** regras, mapa, tokens, paredes, renderização, realtime e configurações.
 - **Prioridade sugerida:** P0 de descoberta; implementação posterior
@@ -1331,7 +1331,8 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### LIGHT-02 — Implementar iluminação dinâmica
 
-- **Status:** Bloqueada
+- **Status:** Em implementação, sem liberação ao jogador.
+- **Andamento:** editor, modelo SQL, projeções por jogador, visão noturna provisória, prévia sanitizada do jogador e máscara SVG implementados atrás de `NEXT_PUBLIC_VTT_LIGHT_ENABLED=1`. Replay das 191 migrações e testes negativos de autorização passaram em PostgreSQL descartável. Benchmark do mapa real em Chromium teve p95 de 18,4–33,3 ms na cena grande; orçamento de frame ainda não demonstrado. Faltam validação visual na aplicação, hardware alvo e publicação coordenada de banco e aplicação.
 - **Descrição:** construir editor de paredes/luzes, persistência, sincronização e renderização com base exclusiva na especificação aprovada e no protótipo de desempenho.
 - **Área afetada:** VTT completo, mapa, tokens, ferramentas, banco e renderizador.
 - **Prioridade sugerida:** P1 após desbloqueio

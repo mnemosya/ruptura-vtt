@@ -88,6 +88,8 @@ export interface TokenVtt {
    * olhar é ficção, livre e sem colisão.
    */
   direcao: number;
+  /** Capacidade visual do token controlado; só narrador/controlador recebe a flag. */
+  visaoNoturna: boolean;
   /** Offsets axiais relativos à âncora — só quando a pegada NÃO é o preset da categoria. `null` = usa o preset de `tamanho`. */
   pegadaPersonalizada: { q: number; r: number }[] | null;
   bloqueado: boolean;
@@ -1299,6 +1301,7 @@ export function linhaParaTokenVtt(linha: Record<string, unknown>): TokenVtt {
     tamanho: linha.tamanho as TokenVtt["tamanho"],
     orientacao: linha.orientacao as number,
     direcao: (linha.direcao as number | null) ?? 0,
+    visaoNoturna: linha.visao_noturna === true,
     pegadaPersonalizada: (linha.pegada_personalizada as { q: number; r: number }[] | null) ?? null,
     bloqueado: linha.bloqueado as boolean,
     visivel: linha.visivel as boolean,

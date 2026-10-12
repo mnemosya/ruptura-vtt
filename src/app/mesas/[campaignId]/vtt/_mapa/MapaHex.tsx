@@ -103,6 +103,8 @@ import { type PontoAxial, mundoParaAxial } from "../_dominio/escalaMapa";
 import { type CantoImagem, CamadaImagens } from "./CamadaImagens";
 import { type ImagemCena, alturaEfetivaM, pxPorMetro, retanguloDaImagem } from "../_dominio/imagemCena";
 import { useAnimacaoToken } from "./useAnimacaoToken";
+import { CamadaIluminacao } from "./CamadaIluminacao";
+import type { IluminacaoCena } from "../../../../../lib/vtt/lightStorage";
 import { CORES_VERTENTE } from "../../../../_design/coresVertente";
 
 /** Anel e selo de quem já agiu na janela — neutro, sem a cor do lado. */
@@ -321,7 +323,7 @@ export interface PropsMapaHex {
   /** Ferramenta ativa — controla se o mapa aceita arrastar token / pintar célula. */
   // Espelha `FerramentaId` (`_ferramentas/controlador.ts`) — repetido
   // como literal para o mapa não depender do módulo de ferramentas.
-  ferramenta?: "interagir" | "dados" | "medir" | "marcar" | "desenhar" | "texto" | "terreno" | "objetos" | "imagens" | "areas" | "rodadas";
+  ferramenta?: "interagir" | "dados" | "medir" | "marcar" | "desenhar" | "texto" | "terreno" | "objetos" | "imagens" | "areas" | "rodadas" | "iluminacao";
   anotacoes?: readonly AnotacaoCena[];
   anotacoesSceneId?: string | null;
   anotacaoSelecionadaId?: string | null;
@@ -546,6 +548,11 @@ export interface PropsMapaHex {
    * visíveis e destravadas (comportamento de sempre).
    */
   camadas?: import("../_shell/PainelCamadas").EstadoCamadas;
+  iluminacao?: IluminacaoCena | null;
+  primeiroPontoParede?: Hex | null;
+  paredeLuzSelecionadaId?: string | null;
+  onSelecionarParedeLuz?: (id: string) => void;
+  onMoverPontaParedeLuz?: (parede: IluminacaoCena["paredes"][number], ponta: "a" | "b", pos: Hex) => void;
   /**
    * Quem esconde continua enxergando.
    *
@@ -682,6 +689,11 @@ export function MapaHex({
   onMoverPosicionamento,
   onConfirmarPosicionamento,
   camadas,
+  iluminacao,
+  primeiroPontoParede,
+  paredeLuzSelecionadaId,
+  onSelecionarParedeLuz,
+  onMoverPontaParedeLuz,
   idsSelecionados,
   onRotacaoAlcaSolta,
   onRotacaoAlcaPasso,
@@ -797,7 +809,23 @@ export function MapaHex({
     const { zoom: z, pan: pa } = zoomPanAtualRef.current;
     return { x: (p.x - pa.x) / z, y: (p.y - pa.y) / z };
   }, []);
+  const pontoParede = useCallback((clientX: number, clientY: number): Hex | null => {
+    const mundo = pontoMundo(clientX, clientY);
+    if (!mundo) return null;
+    const axial = mundoParaAxial(mundo.x, mundo.y, TAM);
+    const pos = { q: Number(axial.q.toFixed(3)), r: Number(axial.r.toFixed(3)) };
+    const qMin = -Math.floor(pos.r / 2);
+    // O banco guarda três casas decimais e restringe as pontas à cena.
+    // Perto da borda, encaixar no centro da última célula válida.
+    if (pos.r >= 0 && pos.r < cena.altura && pos.q >= qMin && pos.q < qMin + cena.largura) return pos;
+    const vizinho = pixelParaHex(mundo.x, mundo.y, TAM);
+    const r = Math.max(0, Math.min(cena.altura - 1, vizinho.r));
+    const minimo = -Math.floor(r / 2);
+    return { q: Math.max(minimo, Math.min(minimo + cena.largura - 1, vizinho.q)), r };
+  }, [pontoMundo, cena.altura, cena.largura]);
   const [tracoPreview, setTracoPreview] = useState<PontoAxial[]>([]);
+  const [pontaParedeArrasto, setPontaParedeArrasto] = useState<{ id: string; ponta: "a" | "b"; pos: Hex } | null>(null);
+  const linhaParedePreviewRef = useRef<SVGLineElement | null>(null);
   const [movimentoAnotacao, setMovimentoAnotacao] = useState<{ id: string; dq: number; dr: number } | null>(null);
   const limparGestoAnotacaoRef = useRef<(() => void) | null>(null);
   useEffect(() => () => limparGestoAnotacaoRef.current?.(), []);
@@ -2347,6 +2375,16 @@ export function MapaHex({
       aria-label={`Mapa da cena ${cena.nome}, grade hexagonal de ${cena.largura} por ${cena.altura} metros`}
       onPointerDownCapture={pressionarParaAnotacao}
       onPointerDown={onPointerDownSvg}
+      onPointerMove={primeiroPontoParede && ferramenta === "iluminacao" ? (e) => {
+        const pos = pontoParede(e.clientX, e.clientY);
+        const linha = linhaParedePreviewRef.current;
+        if (!pos || !linha) return;
+        const px = hexParaPixel(pos, TAM);
+        linha.setAttribute("x2", String(px.x));
+        linha.setAttribute("y2", String(px.y));
+        linha.setAttribute("visibility", "visible");
+      } : undefined}
+      onPointerLeave={() => linhaParedePreviewRef.current?.setAttribute("visibility", "hidden")}
       onContextMenu={(e) => { if (onPan || onMenuContextual) e.preventDefault(); }}
       onKeyDown={(e) => {
         if (e.key !== "ContextMenu" && !(e.shiftKey && e.key === "F10")) return;
@@ -2504,7 +2542,7 @@ export function MapaHex({
                 d={dHex}
                 transform={`translate(${p.x} ${p.y})`}
                 className={`rv-celula${realce ? ` rv-celula--realce rv-celula--${tipoRealce ?? "alcance"}` : ""}${noPreview ? " rv-celula--rota" : ""}${noPincel ? " rv-celula--pincel" : ""}`}
-                onClick={onClicarCelula ? () => onClicarCelula(c) : undefined}
+                onClick={onClicarCelula ? (e) => onClicarCelula(ferramenta === "iluminacao" ? pontoParede(e.clientX, e.clientY) ?? c : c) : undefined}
                 onPointerDown={
                   (ferramenta === "terreno" || ferramenta === "objetos") && onPressCelula && !cBloqueada("terrenoFuncional")
                     ? (e) => { if (e.button !== 0) return; setPintando(true); onPressCelula(c); }
@@ -2967,6 +3005,45 @@ export function MapaHex({
           })}
         </g>
 
+        {ferramenta === "iluminacao" && verCamadasOcultas && <g pointerEvents="none" aria-label="Camada de paredes e luzes">
+          {iluminacao?.paredes.map((w) => {
+            const selecionada = paredeLuzSelecionadaId === w.id;
+            const pa = pontaParedeArrasto?.id === w.id && pontaParedeArrasto.ponta === "a" ? pontaParedeArrasto.pos : w.a;
+            const pb = pontaParedeArrasto?.id === w.id && pontaParedeArrasto.ponta === "b" ? pontaParedeArrasto.pos : w.b;
+            const a = hexParaPixel(pa, TAM), b = hexParaPixel(pb, TAM);
+            const cor = w.porta ? "#f4b26b" : w.visivel ? "#68cffa" : "#ad8bea";
+            return <g key={w.id}>
+              <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={cor} strokeWidth={selecionada ? 5 : 3}
+                strokeDasharray={w.porta && w.aberta ? "6 5" : undefined} opacity={selecionada ? 1 : .85} />
+              <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="transparent" strokeWidth={18}
+                pointerEvents="stroke" style={{ cursor: "pointer" }}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onSelecionarParedeLuz?.(w.id); }} />
+              {selecionada && (["a", "b"] as const).map((ponta) => {
+                const p = ponta === "a" ? a : b;
+                return <circle key={ponta} cx={p.x} cy={p.y} r={7} fill="#102337" stroke={cor} strokeWidth={3}
+                  pointerEvents="all" style={{ cursor: "grab" }}
+                  onPointerDown={(e) => { if (e.button !== 0) return; e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); setPontaParedeArrasto({ id: w.id, ponta, pos: ponta === "a" ? w.a : w.b }); }}
+                  onPointerMove={(e) => { if (!e.currentTarget.hasPointerCapture(e.pointerId)) return; const pos = pontoParede(e.clientX, e.clientY); if (pos) setPontaParedeArrasto({ id: w.id, ponta, pos }); }}
+                  onPointerUp={(e) => { e.stopPropagation(); if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId); const destino = pontoParede(e.clientX, e.clientY); setPontaParedeArrasto(null); if (destino && !hexIguais(destino, ponta === "a" ? w.a : w.b) && !hexIguais(destino, ponta === "a" ? w.b : w.a)) onMoverPontaParedeLuz?.(w, ponta, destino); }}
+                  onPointerCancel={() => setPontaParedeArrasto(null)}
+                  onClick={(e) => e.stopPropagation()} />;
+              })}
+            </g>;
+          })}
+          {iluminacao?.fontes.map((f) => {
+            const pos = f.origem ?? cena.tokens.find((t) => t.id === f.tokenId)?.pos;
+            if (!pos) return null;
+            const p = hexParaPixel(pos, TAM);
+            return <circle key={f.id} cx={p.x} cy={p.y} r={7} fill={f.cor} stroke="#07111d" strokeWidth={2} opacity={f.ativa ? 1 : 0.4} />;
+          })}
+          {primeiroPontoParede && (() => { const p = hexParaPixel(primeiroPontoParede, TAM); return <>
+            <line ref={linhaParedePreviewRef} x1={p.x} y1={p.y} x2={p.x} y2={p.y}
+              stroke="#68cffa" strokeWidth={2} strokeDasharray="5 4" visibility="hidden" />
+            <circle cx={p.x} cy={p.y} r={5} fill="#68cffa" />
+          </>; })()}
+        </g>}
+
         {/* ── Tokens ───────────────────────────────────────────── */}
         {/* Terreno e Objetos trabalham no CHÃO: um token em pé numa
             célula não pode impedir de pintar aquela célula nem de
@@ -2978,7 +3055,7 @@ export function MapaHex({
           style={{
             display: cVisivel("tokens") ? undefined : "none",
             opacity: cAtenuacao("tokens"),
-            pointerEvents: ferramenta === "terreno" || ferramenta === "objetos" ? "none" : undefined,
+            pointerEvents: ferramenta === "terreno" || ferramenta === "objetos" || ferramenta === "iluminacao" ? "none" : undefined,
           }}>
           {cena.tokens.map((t) => {
             const est = estadoVisual(t, estadoPorToken, selecionadoId, hoverId, alvoIds);
@@ -3095,6 +3172,12 @@ export function MapaHex({
           })()}
         </g>
 
+        {iluminacao !== undefined && <CamadaIluminacao
+          iluminacao={iluminacao ?? null}
+          visoes={cena.tokens.filter((t) => t.podeControlar && t.visivel).map((t) => ({ pos: t.pos, noturna: t.visaoNoturna === true }))}
+          tokens={cena.tokens.map((t) => ({ id: t.id, pos: t.pos, direcao: t.direcao, visivel: t.visivel }))}
+          tamanho={TAM} limites={{ minX, minY, maxX, maxY }} narrador={verCamadasOcultas === true}
+        />}
         {/* ── Posicionamento de token novo (fluxo de criação em duas
             etapas, `VttClient.tsx`) ───────────────────────────────
             Uma camada CAPTURADORA transparente, do tamanho do mundo,

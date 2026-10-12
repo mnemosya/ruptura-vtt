@@ -17,7 +17,7 @@
  * simples, sem tentar mesclar histórias concorrentes).
  */
 
-export type FerramentaId = "interagir" | "dados" | "medir" | "marcar" | "desenhar" | "texto" | "terreno" | "objetos" | "imagens" | "areas" | "rodadas";
+export type FerramentaId = "interagir" | "dados" | "medir" | "marcar" | "desenhar" | "texto" | "terreno" | "objetos" | "imagens" | "iluminacao" | "areas" | "rodadas";
 
 export const ROTULO_FERRAMENTA: Record<FerramentaId, string> = {
   interagir: "Interagir",
@@ -29,6 +29,7 @@ export const ROTULO_FERRAMENTA: Record<FerramentaId, string> = {
   terreno: "Terreno",
   objetos: "Objetos",
   imagens: "Imagens",
+  iluminacao: "Iluminação",
   areas: "Áreas",
   rodadas: "Rodadas",
 };
@@ -44,6 +45,7 @@ export const ATALHO_FERRAMENTA: Record<FerramentaId, string> = {
   objetos: "O",
   // I estava livre — as ferramentas ocupavam V/L/M/D/T/O/A/R.
   imagens: "I",
+  iluminacao: "U",
   // R estava livre: as outras teclas simples em uso na mesa são
   // V/M/D/T/O/A (ferramentas) e Q/E (girar token em posicionamento).
   // P deixou de ser atalho de ferramenta com a remoção de "Apontar"
@@ -52,7 +54,7 @@ export const ATALHO_FERRAMENTA: Record<FerramentaId, string> = {
   rodadas: "R",
 };
 
-const TECLA_PARA_FERRAMENTA: Record<string, FerramentaId> = { v: "interagir", l: "dados", m: "medir", d: "marcar", f: "desenhar", x: "texto", t: "terreno", o: "objetos", i: "imagens", a: "areas", r: "rodadas" };
+const TECLA_PARA_FERRAMENTA: Record<string, FerramentaId> = { v: "interagir", l: "dados", m: "medir", d: "marcar", f: "desenhar", x: "texto", t: "terreno", o: "objetos", i: "imagens", u: "iluminacao", a: "areas", r: "rodadas" };
 
 /**
  * Ferramentas visíveis pro papel — Terreno é sempre narrador; ÁREAS e
@@ -79,7 +81,7 @@ export function ferramentasParaPapel(ehNarrador: boolean): FerramentaId[] {
   // Imagem de cena é montagem de mesa, mesma categoria de terreno e
   // objetos. O retrato de token, que o jogador pode trocar, NÃO passa
   // por esta ferramenta — ele vive no HUD do token selecionado.
-  return ehNarrador ? [...base, "terreno", "objetos", "imagens"] : base;
+  return ehNarrador ? [...base, "terreno", "objetos", "imagens", "iluminacao"] : base;
 }
 
 /**

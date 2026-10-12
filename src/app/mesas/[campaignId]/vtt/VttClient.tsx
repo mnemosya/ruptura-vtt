@@ -23,7 +23,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MousePointer2, Ruler, PaintBucket, MapPin, Images, Layers, Menu, Hexagon, Swords, Minus, Undo2, Redo2, Loader2, UserPlus, Box, Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2, Dices, ImageUp, ScrollText, ChevronDown, Type, Palette } from "lucide-react";
+import { MousePointer2, Ruler, PaintBucket, MapPin, Images, Layers, Menu, Hexagon, Swords, Minus, Undo2, Redo2, Loader2, UserPlus, Box, Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2, Dices, ImageUp, ScrollText, ChevronDown, Type, Palette, Lightbulb } from "lucide-react";
 import { HexColorInput, HexColorPicker } from "react-colorful";
 import { Plus } from "../../../_design/icons";
 import { MapaHex, TAM, type EstadoVisualToken, type CenaMapa } from "./_mapa/MapaHex";
@@ -105,6 +105,9 @@ import {
 import { PainelAreas, type ItemListaArea } from "./_shell/PainelAreas";
 import { PainelTerreno } from "./_shell/PainelTerreno";
 import { PainelObjetos } from "./_shell/PainelObjetos";
+import { PainelIluminacao, type GestoIluminacao } from "./_shell/PainelIluminacao";
+import { PreviaJogadorMapa } from "./_shell/PreviaJogadorMapa";
+import { useIluminacao } from "./_realtime/useIluminacao";
 import { PainelImagens } from "./_shell/PainelImagens";
 import { BibliotecaImagens } from "./_shell/BibliotecaImagens";
 import { ColocarImagem } from "./_shell/ColocarImagem";
@@ -170,7 +173,7 @@ const COR_MARCA_HEX: Record<string, string> = {
 
 const ICONE_FERRAMENTA: Record<FerramentaId, typeof MousePointer2> = {
   interagir: MousePointer2, dados: Dices, medir: Ruler, marcar: MapPin, terreno: PaintBucket, objetos: Box,
-  imagens: Images, areas: Hexagon, rodadas: Swords,
+  imagens: Images, iluminacao: Lightbulb, areas: Hexagon, rodadas: Swords,
   desenhar: Pencil, texto: Type,
 };
 
@@ -476,6 +479,16 @@ export function VttClient({
 
   // ── Estado persistido (banco) ────────────────────────────────────
   const [estadoCena, setEstadoCena] = useState<EstadoCenaVtt>(null);
+  // A UI só é ativada junto com a migração de autorização. Sem ela, o
+  // produto existente continua legível até a publicação coordenada.
+  const lightEnabled = process.env.NEXT_PUBLIC_VTT_LIGHT_ENABLED === "1";
+  const iluminacao = useIluminacao(campaignId, lightEnabled ? estadoCena?.cena.id ?? null : null);
+  const modoLuzRef = useRef<string | null>(null);
+  modoLuzRef.current = lightEnabled ? iluminacao.estado?.modo ?? null : "claro";
+  const [gestoIluminacao, setGestoIluminacao] = useState<GestoIluminacao>("parede");
+  const [primeiroPontoParede, setPrimeiroPontoParede] = useState<Hex | null>(null);
+  const [paredeLuzSelecionadaId, setParedeLuzSelecionadaId] = useState<string | null>(null);
+  const [previaJogadorAberta, setPreviaJogadorAberta] = useState(false);
   // O cartão é uma sobreposição do modo de interação e de uma cena
   // específica. Trocar qualquer um dos dois invalida tanto o conteúdo
   // quanto a posição usada como âncora, inclusive quando a troca vem
@@ -568,7 +581,7 @@ export function VttClient({
   // pode criar — sem autorização explícita por jogador. Editar/
   // excluir/duplicar continua exigindo narrador OU autoria, decidido
   // sempre no servidor (`pode_editar_vtt_area`).
-  const ferramentasDisponiveis = useMemo(() => ferramentasParaPapel(ehNarrador), [ehNarrador]);
+  const ferramentasDisponiveis = useMemo(() => ferramentasParaPapel(ehNarrador).filter((id) => lightEnabled || id !== "iluminacao"), [ehNarrador, lightEnabled]);
 
   /**
    * O MENU DA MESA. Com a casca da campanha fora desta rota, ele é a
@@ -1912,7 +1925,9 @@ export function VttClient({
       // aconteça com este token nesse ínterim.
       const iniciadoEmOrigem = Date.now();
       const mov = iniciarMovimentoVisual({ tokenId, rotaExpandida: pontos, movementId, iniciadoEmOrigem });
-      if (sceneId) {
+      // O canal de movimento é da campanha inteira. A rota de um token
+      // exclusivo do narrador não pode chegar aos jogadores pelo broadcast.
+      if (sceneId && atual?.visivel === true && modoLuzRef.current === "claro") {
         publicarMovimentoRef.current({
           movementId, campaignId, sceneId, tokenId,
           rota: pontos.map((h) => ({ q: h.q, r: h.r })),
@@ -2006,7 +2021,8 @@ export function VttClient({
 
     for (const m of preparados) {
       const mov = iniciarMovimentoVisual({ tokenId: m.tokenId, rotaExpandida: m.pontos, movementId: m.movementId, iniciadoEmOrigem });
-      if (sceneId) {
+      // No lote, só tokens públicos podem publicar a trajetória.
+      if (sceneId && m.atual?.visivel === true && modoLuzRef.current === "claro") {
         publicarMovimentoRef.current({
           movementId: m.movementId, campaignId, sceneId, tokenId: m.tokenId,
           rota: m.pontos.map((h) => ({ q: h.q, r: h.r })),
@@ -3169,6 +3185,18 @@ export function VttClient({
       },
     });
   }, [campaignId, estadoCena?.cena.id, recarregarTokensAutorizados]);
+
+  // Luz e paredes mudam o conjunto autorizado sem alterar as linhas dos
+  // tokens/objetos. A invalidação de iluminação exige novas projeções.
+  useEffect(() => {
+    const sceneId = estadoCena?.cena.id;
+    if (!sceneId || !iluminacao.estado) return;
+    recarregarTokensAutorizados();
+    void lerObjetosCenaAction({ campaignId, sceneId }).then((r) => {
+      if (!r.ok || !r.dados) return;
+      setEstadoCena((c) => c?.cena.id === sceneId ? { ...c, objetos: r.dados!.objetos } : c);
+    });
+  }, [campaignId, estadoCena?.cena.id, iluminacao.estado, recarregarTokensAutorizados]);
 
   /**
    * Releitura sanitizada de ÁREAS — mesmo mecanismo (e mesmo motivo)
@@ -5376,7 +5404,37 @@ export function VttClient({
 
   const onClicarCelula = useCallback((h: Hex) => {
     if (ferramenta === "marcar") marcarCelula(h);
-  }, [ferramenta, marcarCelula]);
+    if (ferramenta === "iluminacao" && ehNarrador && iluminacao.estado) {
+      if (gestoIluminacao === "fonte") { void iluminacao.criarFonte(h); return; }
+      if (gestoIluminacao === "selecionar") { setParedeLuzSelecionadaId(null); return; }
+      if (!primeiroPontoParede) { setPrimeiroPontoParede(h); return; }
+      if (!hexIguais(primeiroPontoParede, h)) {
+        void iluminacao.criarParede(primeiroPontoParede, h).then(async (parede) => {
+          if (!parede) return;
+          setParedeLuzSelecionadaId(parede.id);
+          if (gestoIluminacao === "porta") await iluminacao.editarParede({ ...parede, porta: true });
+        });
+      }
+      setPrimeiroPontoParede(h);
+    }
+  }, [ferramenta, marcarCelula, ehNarrador, iluminacao, gestoIluminacao, primeiroPontoParede]);
+
+  useEffect(() => {
+    if (ferramenta !== "iluminacao" || !ehNarrador) return;
+    const aoTeclar = (e: KeyboardEvent) => {
+      if (elementoEhEditavel(e.target as HTMLElement | null)) return;
+      if (e.key === "Escape") {
+        setPrimeiroPontoParede(null);
+        setParedeLuzSelecionadaId(null);
+      } else if ((e.key === "Delete" || e.key === "Backspace") && paredeLuzSelecionadaId) {
+        e.preventDefault();
+        void iluminacao.apagarParede(paredeLuzSelecionadaId);
+        setParedeLuzSelecionadaId(null);
+      }
+    };
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, [ferramenta, ehNarrador, paredeLuzSelecionadaId, iluminacao]);
 
   const onClicarMarca = useCallback((id: string) => { apagarMarca(id); }, [apagarMarca]);
 
@@ -6052,7 +6110,7 @@ export function VttClient({
    * não existe — nem ela, nem a divisória dela, senão sobrariam dois
    * traços seguidos anunciando um grupo vazio.
    */
-  const FERRAMENTAS_SO_DO_NARRADOR: readonly FerramentaId[] = ["terreno", "objetos", "imagens"];
+  const FERRAMENTAS_SO_DO_NARRADOR: readonly FerramentaId[] = ["terreno", "objetos", "imagens", "iluminacao"];
   const ferramentasDeTodos = ferramentasDisponiveis.filter((id) => !FERRAMENTAS_SO_DO_NARRADOR.includes(id));
   const ferramentasDoNarrador = ferramentasDisponiveis.filter((id) => FERRAMENTAS_SO_DO_NARRADOR.includes(id));
   const botaoDeFerramenta = (id: FerramentaId) => {
@@ -6292,6 +6350,11 @@ export function VttClient({
             onMoverPosicionamento={moverPosicionamento}
             onConfirmarPosicionamento={confirmarPosicionamento}
             camadas={camadas}
+            iluminacao={lightEnabled ? iluminacao.estado : undefined}
+            primeiroPontoParede={primeiroPontoParede}
+            paredeLuzSelecionadaId={paredeLuzSelecionadaId}
+            onSelecionarParedeLuz={(id) => { setParedeLuzSelecionadaId(id); setGestoIluminacao("selecionar"); setPrimeiroPontoParede(null); }}
+            onMoverPontaParedeLuz={(parede, ponta, pos) => { void iluminacao.editarParede({ ...parede, [ponta]: pos }); }}
           verCamadasOcultas={ehNarrador}
             idsSelecionados={idsSelecionadosLista}
             onRotacaoAlcaSolta={onRotacaoAlcaSolta}
@@ -6492,6 +6555,28 @@ export function VttClient({
             onFechar={() => trocarFerramenta("interagir")}
           />
         )}
+        {ferramenta === "iluminacao" && ehNarrador && (
+          <PainelIluminacao
+            estado={iluminacao.estado} erro={iluminacao.erro} carregando={iluminacao.carregando}
+            gesto={gestoIluminacao} primeiroPonto={primeiroPontoParede}
+            paredeSelecionadaId={paredeLuzSelecionadaId}
+            onSelecionarParede={setParedeLuzSelecionadaId}
+            onCancelarTraco={() => setPrimeiroPontoParede(null)}
+            onGesto={(v) => { setGestoIluminacao(v); setPrimeiroPontoParede(null); }}
+            onModo={iluminacao.definirModo}
+            onParede={iluminacao.editarParede} onApagarParede={async (id) => { await iluminacao.apagarParede(id); setParedeLuzSelecionadaId(null); }}
+            onFonte={iluminacao.editarFonte} onApagarFonte={iluminacao.apagarFonte}
+            tokens={(estadoCena?.tokens ?? []).map((t) => ({ id: t.id, nome: t.nome, visaoNoturna: t.visaoNoturna, revision: t.revision }))}
+            onVisaoNoturna={iluminacao.definirVisaoNoturna}
+            onAbrirPrevia={() => setPreviaJogadorAberta(true)}
+            onFechar={() => trocarFerramenta("interagir")}
+          />
+        )}
+        {previaJogadorAberta && ehNarrador && estadoCena && <PreviaJogadorMapa
+          campaignId={campaignId} sceneId={estadoCena.cena.id} nomeCena={estadoCena.cena.nome}
+          largura={estadoCena.cena.largura} altura={estadoCena.cena.altura}
+          iluminacao={iluminacao.estado} urls={imgs.urls} versaoTokens={estadoCena.tokens}
+          onFechar={() => setPreviaJogadorAberta(false)} />}
         {ferramenta === "imagens" && ehNarrador && (
           <PainelImagens
             imagens={imgs.imagens}
