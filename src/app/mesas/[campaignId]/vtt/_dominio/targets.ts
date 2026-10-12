@@ -11,6 +11,8 @@ export type CategoriaAcaoToken = "atacar" | "conjurar" | "item";
 export interface PedidoAcaoToken {
   tokenId: string;
   categoria: CategoriaAcaoToken;
+  /** Opção já escolhida (a arma do botão Atacar da ficha): o painel abre direto na revisão. */
+  opcaoId?: string;
 }
 export interface ContextoAcaoToken {
   campaignId: string; sceneId: string; actorCharacterId: string; actorTokenId: string;

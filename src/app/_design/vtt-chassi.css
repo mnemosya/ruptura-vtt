@@ -47,6 +47,8 @@
 /* Dica flutuante mandada por portal ao `body` (ver `DicaPortal` em
    `_painel/ui`): sem estar aqui, ela nasce sem nenhum token. */
 .rv-dica-portal,
+/* A rolagem da ficha (Console) é a mesma janela da ferramenta Rolar Dados. */
+.rv-moldura-rolagem,
 .rup-mesa-arena {
   /* ── Fundos ─────────────────────────────────────────────────── */
   --rv-ground: #060a12;
@@ -156,6 +158,9 @@
 :is(.pn-jan, .pn-menu, .rv-gaveta),
 :is(
   .rv-mesa,
+  /* A rolagem da ficha mora no Console (fora da mesa) e tem que ter a
+     mesma geometria da ferramenta Rolar Dados. */
+  .rv-moldura-rolagem,
   .pn-jan,
   .pn-menu,
   .rv-modal-fundo,
@@ -225,7 +230,7 @@
    (ex.: `.rv-dados-tabs button`, 10px nas abas de 50px) continua
    ganhando. Só ajuste aqui um controle GRANDE (>40px) ou MUITO pequeno
    (<20px); os do meio já saem certos. */
-:where(.rv-mesa, .pn-jan, .pn-menu, .rv-modal-fundo, .rv-gaveta, .rup-mesa-arena, .rv-mesa-dados-overlay)
+:where(.rv-mesa, .rv-moldura-rolagem, .pn-jan, .pn-menu, .rv-modal-fundo, .rv-gaveta, .rup-mesa-arena, .rv-mesa-dados-overlay)
   :where(button, input, select, textarea, [role="button"], [role="tab"], [role="menuitem"], [role="menuitemradio"]) {
   --rv-notch: 7px;
 }
@@ -562,3 +567,9 @@ button[aria-label]:has(svg) {
   background: rgba(4, 7, 12, 0.66);
   backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
 }
+
+/* A rolagem da ficha (fora da mesa) usa a mesma fonte da ferramenta
+   Rolar Dados — a da `.rv-mesa` — e os controles herdam dela. */
+.rv-moldura-rolagem { font-family: var(--rv-body); --cy: var(--rv-cy); --jf-acento: #45b8c9; } /* acento da janela Rolar Dados (ESPINHA.dados) */
+.rv-moldura-rolagem :is(button, input, select, textarea) { font: inherit; }
+.rv-moldura-rolagem, .rv-moldura-rolagem * { box-sizing: border-box; }

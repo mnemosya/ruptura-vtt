@@ -2337,6 +2337,15 @@ export function VttClient({
     window.addEventListener("keydown", ouvir);
     return () => window.removeEventListener("keydown", ouvir);
   }, [abrirRadial, selecionadoId, ehNarrador, controlledCharacterIds, tokenPorId, consoleDaMesa, fecharCartaoToken, fecharRadial]);
+  // O botão Atacar da ficha precisa saber qual token é do personagem.
+  useEffect(() => {
+    if (!consoleDaMesa) return;
+    consoleDaMesa.registrarTokenDoPersonagem((characterId) => {
+      const dele = [...tokenPorId.values()].filter((t) => t.characterId === characterId && t.podeControlar);
+      return dele.length === 1 ? dele[0].id : null;
+    });
+    return () => consoleDaMesa.registrarTokenDoPersonagem(null);
+  }, [consoleDaMesa, tokenPorId]);
   const fluxoTokenRef = useRef(fluxoToken);
   useEffect(() => { fluxoTokenRef.current = fluxoToken; }, [fluxoToken]);
   const [confirmandoRemocao, setConfirmandoRemocao] = useState<TokenApresentacao | null>(null);

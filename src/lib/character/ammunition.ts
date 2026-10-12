@@ -273,7 +273,7 @@ export function setWeaponAmmoAtual(
 // ---------------------------------------------------------------------
 
 export const ALJAVA_CAPACIDADE_PADRAO = 20;
-export const ALJAVA_FLECHAS_INICIAIS_SLUG = "flecha_simples";
+export const ALJAVA_FLECHAS_INICIAIS_SLUG = "armas_flecha_simples";
 export const ALJAVA_FLECHAS_INICIAIS_NOME = "Flecha simples";
 export const ALJAVA_FLECHAS_INICIAIS_QUANTIDADE = 10;
 
@@ -963,7 +963,7 @@ export function consumeAttackAmmo(
           i.id === aljavaAlvo.id ? { ...i, aljava: novaAljava } : i,
         ),
       };
-      const isFlechaEspecial = slugAlvo !== ALJAVA_FLECHAS_INICIAIS_SLUG;
+      const isFlechaEspecial = slugAlvo !== ALJAVA_FLECHAS_INICIAIS_SLUG && slugAlvo !== "flecha_simples";
       return { character: novoChar, consumedFromInstanceId: aljavaAlvo.id, consumedFlechaSlug: slugAlvo, isFlechaEspecial, motivoFalha: null };
     }
   }

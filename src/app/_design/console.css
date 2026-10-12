@@ -4896,34 +4896,32 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
 /* ── Recarga: janela de escolha de fonte + aviso com Desfazer ─────────
    Ver `panels/JanelaRecarga.tsx`. A janela é uma tabela curta (uma
    linha por pilha de munição); o aviso é uma linha só, no pé da tela. */
-.rc-rec { display: grid; gap: 14px; min-width: 380px; max-width: 440px; }
+.rc-rec { display: grid; gap: 14px; }
 .rc-rec-arma { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
 .rc-rec-nome { font: 700 16px/1.1 var(--font-chakra), sans-serif; text-transform: uppercase; letter-spacing: .04em; color: #e6f6ff; }
 .rc-rec-tipo { margin-top: 4px; font: 500 11px var(--font-mono), monospace; letter-spacing: 1.6px; text-transform: uppercase; color: #6a7f99; }
 .rc-rec-mun { font: 700 15px var(--font-mono), monospace; color: #ff5f74; white-space: nowrap; }
 .rc-rec-mun span { font-size: 11px; color: #4f6285; }
-.rc-rec-lista { display: grid; gap: 6px; }
-.rc-rec-cab, .rc-rec-op { display: grid; grid-template-columns: 12px minmax(0, 1fr) 36px 40px 26px 26px; align-items: center; gap: 10px; }
-.rc-rec-cab { padding: 0 11px; font: 500 10px var(--font-mono), monospace; letter-spacing: 1.4px; text-transform: uppercase; color: #4f6285; }
-.rc-rec-cab span:nth-child(n+3) { text-align: right; }
-.rc-rec-op { padding: 9px 10px; border: 1px solid #1d4152; cursor: pointer; transition: border-color .14s, background .14s; }
-.rc-rec-op:hover { border-color: color-mix(in srgb, #00d4ff 55%, transparent); }
-.rc-rec-op[data-on] { border-color: #00d4ff; background: rgba(0, 212, 255, .07); }
-.rc-rec-op:focus-visible { outline: 2px solid #00d4ff; outline-offset: 2px; }
-.rc-rec-dot { width: 9px; height: 9px; border: 1px solid #4f6285; transform: rotate(45deg); }
+.rc-rec-lista { display: grid; border: 1px solid #1d4152; }
+.rc-rec-op { position: relative; display: grid; grid-template-columns: 10px minmax(0, 1fr) auto 44px; align-items: center; gap: 12px; padding: 10px 12px 10px 14px; cursor: pointer; transition: background .14s; }
+.rc-rec-op + .rc-rec-op { border-top: 1px solid #13293a; }
+.rc-rec-op::before { content: ""; position: absolute; left: -1px; top: -1px; bottom: -1px; width: 2px; background: #00d4ff; transform: scaleY(0); transition: transform .18s; }
+.rc-rec-op:hover { background: #0f2231; }
+.rc-rec-op[data-on] { background: rgba(0, 212, 255, .07); }
+.rc-rec-op[data-on]::before { transform: scaleY(1); }
+.rc-rec-op:focus-visible { outline: 1px solid #00d4ff; outline-offset: -1px; }
+.rc-rec-dot { width: 8px; height: 8px; border: 1px solid #4f6285; transform: rotate(45deg); }
 .rc-rec-op[data-on] .rc-rec-dot { background: #00d4ff; border-color: #00d4ff; }
-.rc-rec-txt { display: grid; gap: 2px; min-width: 0; }
+.rc-rec-txt { display: grid; gap: 3px; min-width: 0; }
 .rc-rec-op-nome { font: 600 13px var(--font-chakra), sans-serif; color: #e6f6ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rc-rec-op-local { font: 500 10px var(--font-mono), monospace; letter-spacing: 1.4px; text-transform: uppercase; color: #6a7f99; }
-.rc-rec-num { text-align: right; font: 700 13px var(--font-mono), monospace; color: #d0dce2; }
-.rc-rec-num[data-caro] { color: #ff8a1f; }
-.rc-rec-estrela { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; background: transparent; color: #4f6285; cursor: pointer; transition: color .14s; }
-.rc-rec-estrela:hover { color: #d0dce2; }
-.rc-rec-estrela[data-on] { color: #ffc94a; }
-.rc-rec-estrela[data-on] svg { fill: currentColor; }
-.rc-rec-estrela:focus-visible { outline: 2px solid #00d4ff; outline-offset: 1px; }
+.rc-rec-qtd { display: flex; align-items: baseline; gap: 6px; font: 500 12px var(--font-mono), monospace; color: #6a7f99; white-space: nowrap; }
+.rc-rec-qtd span { color: #4f6285; }
+.rc-rec-qtd b { font-weight: 700; font-size: 13px; color: #e6f6ff; }
+.rc-rec-pa { justify-self: end; padding: 2px 6px; border: 1px solid #1d4152; font: 700 11px var(--font-mono), monospace; color: #9fb2c8; white-space: nowrap; }
+.rc-rec-pa[data-caro] { border-color: #4a3317; color: #ff8a1f; }
 .rc-rec-nota { margin: 0; font-size: 12px; color: #6a7f99; }
-.rc-rec-cta:not(:disabled) { border-color: #00d4ff; background: #00d4ff; color: #06121c; }
+.rc-rec-acoes { align-items: center; justify-content: space-between; }
 .rc-rec-aviso {
   position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%); z-index: 700;
   display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 14px; max-width: min(520px, calc(100vw - 32px));
@@ -4954,14 +4952,14 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
 .rc-banc-fechar { align-self: center; display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; background: transparent; color: #4f6285; cursor: pointer; transition: color .18s; }
 .rc-banc-fechar:hover { color: #e6f6ff; }
 .rc-banc { display: grid; gap: 16px; }
-.rc-banc-grade { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px; }
+.rc-banc-grade { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); grid-auto-flow: row dense; gap: 3px; }
 .rc-banc-encaixe { display: block; height: 16px; box-sizing: border-box; border: 1px solid #16303f; background: #0f202b; transition: opacity .22s var(--rc-banc-out); }
 .rc-banc-encaixe[data-novo] { animation: rc-banc-entra .36s var(--rc-banc-dec) both; }
 @keyframes rc-banc-entra { from { transform: scale(.3); opacity: 0; } to { transform: none; opacity: 1; } }
 .rc-banc-encaixe[data-fantasma] { background: transparent; border-style: dashed; }
 .rc-banc-grade[data-foco] .rc-banc-encaixe:not([data-mesmo]):not([data-livre]):not([data-fantasma]) { opacity: .35; }
 .rc-banc-lista { display: grid; gap: 4px; }
-.rc-banc-linha { cursor: pointer; position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 10px 10px 14px; transition: background .22s var(--rc-banc-out); }
+.rc-banc-linha { cursor: pointer; position: relative; display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 10px 10px 14px; transition: background .22s var(--rc-banc-out); }
 .rc-banc-linha::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--k); transform: scaleY(0); transition: transform .28s var(--rc-banc-dec); }
 .rc-banc-linha:hover { background: #13293a; }
 .rc-banc-linha:hover::before { transform: scaleY(1); }

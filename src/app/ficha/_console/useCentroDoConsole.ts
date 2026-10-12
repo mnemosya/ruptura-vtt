@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 
 export type CentroDoConsole = { x: number; y: number };
 
@@ -15,7 +15,9 @@ export type CentroDoConsole = { x: number; y: number };
 export function useCentroDoConsole(): CentroDoConsole | null {
   const [centro, setCentro] = useState<CentroDoConsole | null>(null);
 
-  useEffect(() => {
+  // Layout effect: a primeira medida sai antes da pintura, senão o modal
+  // nasce no centro da tela e salta para o centro do Console.
+  useLayoutEffect(() => {
     const janela = document.querySelector<HTMLElement>(".rc-window");
     if (!janela) return;
     const moldura = janela.closest<HTMLElement>(".rc-window-wrap");
@@ -29,7 +31,8 @@ export function useCentroDoConsole(): CentroDoConsole | null {
       });
     };
 
-    medir();
+    const caixa = janela.getBoundingClientRect();
+    setCentro({ x: caixa.left + caixa.width / 2, y: caixa.top + caixa.height / 2 });
     const tamanho = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(medir);
     tamanho?.observe(janela);
     if (moldura) tamanho?.observe(moldura);

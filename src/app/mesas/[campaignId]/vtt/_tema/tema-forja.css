@@ -19,7 +19,7 @@
    A troca de linguagem, em resumo: o azul-marinho frio vira o petróleo
    da Forja (`--fj-abismo`/`--fj-fundo`), o ciano dessaturado `#45b8c9`
    vira o ciano pleno da marca, e as linhas ganham o tom esverdeado. */
-[data-tema="forja"] :is(.rv-mesa, .pn-jan, .pn-menu, .rv-modal-fundo, .rv-gaveta, .rv-dica-portal, .rup-mesa-arena) {
+[data-tema="forja"] :is(.rv-mesa, .pn-jan, .pn-menu, .rv-modal-fundo, .rv-gaveta, .rv-dica-portal, .rv-moldura-rolagem, .rup-mesa-arena) {
   /* Fundos — --fj-abismo #06121c, --fj-fundo #0c1f2b */
   --rv-ground: #06121c;
   --rv-ground-2: #081925;

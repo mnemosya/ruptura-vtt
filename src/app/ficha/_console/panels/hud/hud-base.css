@@ -348,6 +348,12 @@ button.hx-mun-valor:hover { border-color: rgba(0, 212, 255, .35); background: rg
 .hx-cartao-ver { display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 1px solid transparent; background: transparent; color: #4f6285; cursor: pointer; opacity: 0; transition: opacity .2s, color .18s, border-color .18s; }
 .hx-cartao[data-acao]:hover .hx-cartao-ver, .hx-cartao-ver:focus-visible { opacity: 1; }
 .hx-cartao-ver:hover { color: #e6f6ff; border-color: #2a3b58; }
+/* Munição na arma: faixa entre o cartão e o pé; clicar abre a ficha dela. */
+.hx-cartao-municao { display: flex; align-items: center; gap: 10px; padding: 8px 12px 6px; border-top: 1px solid rgba(0,212,255,.1); color: #d0dce2; cursor: pointer; transition: background .18s, color .18s; }
+.hx-cartao-municao > * { line-height: 1; }
+.hx-cartao-municao .hx-display { flex: 1; min-width: 0; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--hx-texto); }
+.hx-cartao-municao:hover { background: rgba(0,212,255,.06); color: #fff; }
+.hx-cartao-municao:focus-visible { outline: 1px solid #00d4ff; outline-offset: -1px; }
 @media (prefers-reduced-motion: reduce) { .hx-cartao[data-acao], .hx-cartao[data-acao] * { transition-duration: .01ms !important; } }
 /* Espaço do prompt: só a ÚLTIMA linha (a dos números) divide a altura
    com ele — reservar no cartão inteiro espremia o título e soltava a tag. */
@@ -459,3 +465,87 @@ button.hx-mun-valor:hover { border-color: rgba(0, 212, 255, .35); background: rg
 /* Traço escuro sobre o ciano parece mais fino: engrossa no hover. */
 .hx-catalogo svg { transition: stroke-width .15s; }
 .hx-catalogo:hover svg { stroke-width: 2.2; }
+
+/* Janela de AÇÃO DO TOKEN (Atacar / Conjurar / Usar item) no visual do
+   HUD de Equipamentos: casco chanfrado, aba de título, seções com
+   losango e fio, cartões como os da gaveta e o botão ciano cheio. */
+
+.pa-camada { position: fixed; inset: 0; z-index: 520; pointer-events: none; background: transparent !important; }
+/* Só o canto de cima chanfrado: o corte de baixo deixava aparecer um
+   triângulo do que estivesse no mapa por trás. */
+.pa-janela .hx-ch { clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); }
+.pa-janela { position: absolute; width: 400px; max-width: calc(100vw - 32px); pointer-events: auto; box-shadow: 0 30px 80px -20px #000; }
+.pa-casco { display: flex; flex-direction: column; max-height: min(620px, calc(100vh - 120px)); background: var(--hx-casco); color: var(--hx-texto); }
+
+.pa-cab { flex-shrink: 0; padding-top: 14px; cursor: grab; user-select: none; }
+.pa-cab:active { cursor: grabbing; }
+.pa-cab-linha { display: flex; align-items: center; justify-content: space-between; padding: 0 12px 0 16px; }
+.pa-chapeu { font-size: 10px; color: rgba(0, 212, 255, .6); }
+.pa-cab-aba { display: inline-block; margin-top: 4px; padding: 6px 32px 6px 16px; background: linear-gradient(90deg, rgba(0, 212, 255, .3), rgba(0, 212, 255, .05)); }
+.pa-cab-aba span { font-size: 18px; font-weight: 900; text-transform: uppercase; line-height: 1; letter-spacing: .14em; color: var(--hx-ice); }
+
+.pa-rolagem { min-height: 0; flex: 1; overflow-y: auto; padding: 4px 16px 16px; }
+.pa-corpo { display: flex; flex-direction: column; gap: 10px; }
+
+.pa-secao { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.pa-secao-losango { width: 7px; height: 7px; transform: rotate(45deg); background: var(--hx-cy); }
+.pa-secao-rotulo { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .22em; opacity: .8; }
+.pa-secao-fio { height: 1px; flex: 1; background: linear-gradient(90deg, rgba(0, 212, 255, .25), transparent); }
+.pa-dim { font-size: 10px; color: var(--hx-dim); }
+.pa-dim b { font-weight: 700; color: var(--hx-texto); }
+
+/* Botões que não querem o chanfro/raio da regra global do chassi. */
+.pa-janela button { border-radius: 0; clip-path: none; font: inherit; }
+.pa-janela .hx-fechar { clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); }
+
+.pa-lista { display: flex; flex-direction: column; gap: 8px; }
+.pa-opcao { display: block; width: 100%; padding: 1px; border: 0; background: rgba(0, 212, 255, .08); color: inherit; text-align: left; cursor: pointer; position: relative; transition: background .15s, opacity .15s; }
+.pa-opcao::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--hx-cy); transform: scaleY(0); transition: transform .28s cubic-bezier(.05, .7, .1, 1); }
+.pa-opcao:hover:not(:disabled) { background: rgba(0, 212, 255, .25); }
+.pa-opcao:hover:not(:disabled)::after, .pa-opcao:focus-visible::after { transform: scaleY(1); }
+.pa-opcao:hover:not(:disabled) .pa-cartao { background: #0c2129; }
+.pa-opcao:disabled { cursor: not-allowed; opacity: .55; }
+.pa-opcao:focus-visible { outline: 1px solid var(--hx-cy); outline-offset: 1px; }
+
+.pa-escolhida { padding: 1px; background: rgba(0, 212, 255, .35); }
+.pa-cartao { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: var(--hx-casco); transition: background .15s; }
+.pa-cartao-topo { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.pa-cartao-nome { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; line-height: 1.15; color: var(--hx-ice); }
+.pa-custo { flex-shrink: 0; padding: 2px 6px; border: 1px solid rgba(0, 212, 255, .25); font-size: 10px; color: var(--hx-cy); }
+.pa-cartao-stats { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.pa-dano { font-size: 15px; font-weight: 900; color: var(--hx-perigo); }
+.pa-aviso, .pa-bloqueio { font: 500 11px var(--font-mono), monospace; letter-spacing: .04em; line-height: 1.4; }
+.pa-aviso { color: var(--hx-amb); }
+.pa-bloqueio { color: var(--hx-dim); }
+
+.pa-trocar { padding: 0; border: 0; background: transparent; color: var(--hx-cy); cursor: pointer; font: 700 10px var(--font-mono), monospace !important; letter-spacing: 1.6px; text-transform: uppercase; }
+.pa-trocar:hover { color: var(--hx-cy-hi); }
+
+.pa-alvos { display: flex; flex-direction: column; gap: 6px; }
+.pa-alvo { --lado: var(--hx-cy); display: flex; align-items: center; gap: 12px; width: 100%; padding: 0 12px 0 0; border: 1px solid rgba(0, 212, 255, .15); background: transparent; color: var(--hx-texto); cursor: pointer; text-align: left; position: relative; transition: background .15s, border-color .15s; }
+.pa-alvo[data-lado="pn"] { --lado: var(--hx-perigo); }
+.pa-alvo::before { content: ""; position: absolute; left: -1px; top: -1px; bottom: -1px; width: 2px; background: var(--lado); transform: scaleY(0); transition: transform .2s; }
+.pa-alvo:hover { background: rgba(0, 212, 255, .06); }
+.pa-alvo[aria-pressed="true"] { border-color: color-mix(in srgb, var(--lado) 55%, transparent); background: color-mix(in srgb, var(--lado) 10%, transparent); }
+.pa-alvo[aria-pressed="true"]::before { transform: scaleY(1); }
+.pa-alvo-face { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; overflow: hidden; background: rgba(0, 212, 255, .06); font: 700 11px var(--font-mono), monospace; color: var(--hx-dim); }
+.pa-alvo-face img { width: 100%; height: 100%; object-fit: cover; }
+.pa-alvo-nome { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.pa-alvo[aria-pressed="true"] .pa-alvo-nome { color: var(--hx-ice); }
+.pa-alvo-nenhum { padding: 10px 12px; }
+.pa-alvo-vazio { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px dashed rgba(0, 212, 255, .2); }
+.pa-alvo-vazio > span { font-size: 22px; color: var(--hx-cy); }
+.pa-alvo-vazio div { display: flex; flex-direction: column; gap: 4px; }
+.pa-alvo-vazio strong { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--hx-ice); }
+.pa-alvo-vazio kbd { font: inherit; padding: 0 4px; border: 1px solid rgba(0, 212, 255, .25); }
+.pa-alvo-proprio { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border: 1px solid rgba(0, 212, 255, .15); }
+.pa-alvo-proprio .hx-display { font-size: 13px; font-weight: 700; text-transform: uppercase; }
+
+.pa-erro { margin: 0; padding: 8px 10px; border-left: 2px solid var(--hx-perigo); background: rgba(255, 95, 116, .08); font-size: 12px; color: var(--hx-perigo); }
+.pa-vazio { margin: 0; font-size: 12px; color: var(--hx-dim); }
+
+.pa-rodape { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-top: 1px solid rgba(0, 212, 255, .1); }
+.pa-status { font: 500 10px var(--font-mono), monospace; letter-spacing: 1.4px; text-transform: uppercase; color: var(--hx-dim); }
+.pa-confirmar { height: 34px; padding: 0 18px; border: 0; background: var(--hx-cy); color: var(--hx-abismo); cursor: pointer; font: 700 11px var(--font-mono), monospace !important; letter-spacing: 1.6px; text-transform: uppercase; white-space: nowrap; transition: background .18s, box-shadow .22s; }
+.pa-confirmar:hover:not(:disabled) { background: #45e0ff; box-shadow: 0 0 14px rgba(0, 212, 255, .45); }
+.pa-confirmar:disabled { background: #16303f; color: #4f6285; cursor: default; }

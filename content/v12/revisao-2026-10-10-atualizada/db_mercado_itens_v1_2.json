@@ -14224,8 +14224,8 @@
       "preco": 120,
       "preco_texto": "120",
       "preco_qualificador": null,
-      "descricao_curta": "Armazena até 40 unidades de capacidade em munições de diferentes calibres.",
-      "descricao_longa": "*Comum*\n\nSuporte modular de cintura ou torso com compartimentos ajustáveis para armazenar munições de diferentes calibres. Permite selecionar os cartuchos necessários durante um confronto.\n\n**Capacidade:** até 40 unidades de capacidade, distribuídas entre diferentes tipos de munição. Cada projétil de pistola ou fuzil consome 1 unidade de capacidade; cada projétil de escopeta ou precisão consome 2 unidades. Os tipos podem ser misturados livremente, respeitando o limite total.\n\n**Suporte de Munição:** enquanto equipada, ocupa a posição de Suporte de Munição, sem utilizar Acesso Rápido. A munição armazenada não ocupa posições adicionais nem espaços da Mochila.\n\n**Seleção de munição:** permite utilizar qualquer munição compatível armazenada ao realizar **Recarregar** **`1 PA`**.\n\n**Espaços:** 1 (vazia). Quando guardada na Mochila, suas munições também ocupam os espaços normais de armazenamento.\n\n**Preço:** 120 Ⱥ\n\nDados da lista de mercadorias:\n- Efeito: Armazena até 40 unidades de capacidade em munições de diferentes calibres.\n- Raridade: Comum\n- Espaços: 1\n- Preço (Ⱥ): 120",
+      "descricao_curta": "Armazena até 50 unidades de capacidade em munições de diferentes calibres.",
+      "descricao_longa": "*Comum*\n\nSuporte modular de cintura ou torso com compartimentos ajustáveis para armazenar munições de diferentes calibres. Permite selecionar os cartuchos necessários durante um confronto.\n\n**Capacidade:** até 50 unidades de capacidade, distribuídas entre diferentes tipos de munição. Cada projétil de pistola ou fuzil consome 1 unidade de capacidade; cada projétil de escopeta ou precisão consome 2 unidades. Os tipos podem ser misturados livremente, respeitando o limite total.\n\n**Suporte de Munição:** enquanto equipada, ocupa a posição de Suporte de Munição, sem utilizar Acesso Rápido. A munição armazenada não ocupa posições adicionais nem espaços da Mochila.\n\n**Seleção de munição:** permite utilizar qualquer munição compatível armazenada ao realizar **Recarregar** **`1 PA`**.\n\n**Espaços:** 1 (vazia). Quando guardada na Mochila, suas munições também ocupam os espaços normais de armazenamento.\n\n**Preço:** 120 Ⱥ\n\nDados da lista de mercadorias:\n- Efeito: Armazena até 50 unidades de capacidade em munições de diferentes calibres.\n- Raridade: Comum\n- Espaços: 1\n- Preço (Ⱥ): 120",
       "tags": [
         "loja"
       ],
@@ -14235,7 +14235,7 @@
         "tipo_tabela": "Item",
         "campos": {
           "Item": "Cartucheira",
-          "Efeito": "Armazena até 40 unidades de capacidade em munições de diferentes calibres.",
+          "Efeito": "Armazena até 50 unidades de capacidade em munições de diferentes calibres.",
           "Raridade": "Comum",
           "Espaços": "1",
           "Preço (Ⱥ)": "120"
@@ -14264,7 +14264,7 @@
       "estatisticas": {
         "campos_tabela": {
           "Item": "Cartucheira",
-          "Efeito": "Armazena até 40 unidades de capacidade em munições de diferentes calibres.",
+          "Efeito": "Armazena até 50 unidades de capacidade em munições de diferentes calibres.",
           "Raridade": "Comum",
           "Espaços": "1",
           "Preço (Ⱥ)": "120"

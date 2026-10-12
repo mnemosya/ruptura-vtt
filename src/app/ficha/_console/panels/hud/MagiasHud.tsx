@@ -328,7 +328,8 @@ export function Leitura({ m, mana, onRolarDano, onRolarCura, escolhido, onEscolh
     </span>
   );
   return (
-    <div>
+    // `--k`: o negrito do texto (`.rc-negrito`) sai na cor da vertente.
+    <div style={{ ["--k" as string]: c }}>
       <div style={{ display: "flex", alignItems: "stretch", borderLeft: `2px solid ${mc}`, background: CASCO }}>
         <div style={{ flex: 1, padding: "10px 16px 10px 12px" }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>

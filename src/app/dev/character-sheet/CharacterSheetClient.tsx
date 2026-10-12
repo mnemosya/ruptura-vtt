@@ -2644,11 +2644,14 @@ export default function CharacterSheetClient({
     const instance = current.inventario?.find((i) => i.id === instanceId);
     const arma = instance ? itemsIniciais.find((i) => i.slug === instance.itemSlug) : undefined;
     if (!instance || !arma || !arma.municaoMax || ehCelulaDeEnergia(arma) || instance.aljava) return null;
-    const fontes = listarFontesRecarga(current, instanceId, arma, perfisDeMunicao());
+    const cheia = (instance.municaoAtual ?? 0) >= arma.municaoMax;
+    // Cheia, só vale trocar por OUTRA munição (a carregada volta ao estoque).
+    const fontes = listarFontesRecarga(current, instanceId, arma, perfisDeMunicao())
+      .filter((f) => !cheia || (!!instance.municaoCarregadaSlug && f.contentSlug !== instance.municaoCarregadaSlug));
     return {
       fontes,
       padraoId: fonteDoPadrao(fontes, instance.fonteRecargaPadrao)?.id ?? null,
-      cheia: (instance.municaoAtual ?? 0) >= arma.municaoMax,
+      cheia: cheia && fontes.length === 0,
     };
   }
 
@@ -2664,13 +2667,12 @@ export default function CharacterSheetClient({
     let next = result.character;
     const spent = antes.estado_jogo?.pa_gastos ?? 0;
     if (result.custoPa && selectedCampaignId) {
-      if (spent + result.custoPa > derivados.pa_max) return { ok: false, mensagem: `PA insuficiente para recarregar (${result.custoPa} PA).` };
       next = { ...next, estado_jogo: { ...next.estado_jogo, pa_gastos: spent + result.custoPa } };
     }
     characterRef.current = next;
     setCharacter(next);
     const sobra = fonte.quantidade - result.carregada;
-    const mensagem = `+${result.carregada} ${result.carregada === 1 ? "tiro" : "tiros"} · ${ROTULO_LOCAL_RECARGA[fonte.local]} ${fonte.quantidade} → ${sobra}${result.custoPa && selectedCampaignId ? ` · ${result.custoPa} PA` : ""}`;
+    const mensagem = `+${result.carregada} ${nomeDaMunicao(fonte.nome)} → ${instance.itemNome.replace(/\s*\([^)]*\)\s*$/, "")} (${ROTULO_LOCAL_RECARGA[fonte.local]} ${fonte.quantidade} → ${sobra})${result.custoPa && selectedCampaignId ? ` · ${result.custoPa} PA` : ""}`;
     addLogEntry("recurso", `Recarregou ${instance.itemNome}: ${mensagem}.`);
     return {
       ok: true,
@@ -2741,7 +2743,6 @@ export default function CharacterSheetClient({
     }
     if (result.custoPa && selectedCampaignId) {
       const spent = current.estado_jogo?.pa_gastos ?? 0;
-      if (spent + result.custoPa > derivados.pa_max) { addLogEntry("recurso", "PA insuficiente para recarregar."); return; }
       result.character = {...result.character,estado_jogo:{...result.character.estado_jogo,pa_gastos:spent+result.custoPa}};
     }
     characterRef.current = result.character;
@@ -4122,7 +4123,7 @@ export default function CharacterSheetClient({
         return { id: c.instanceId ?? "__desarmado__", nome: c.nome, custo: acao?.custoLabel ?? "Custo indisponível", aviso: acao?.warning, alvo: "obrigatorio", pericia: resolucao.skill,
           fatos: [{ rotulo: "Dano-base", valor: resolucao.danoBase ?? "—" }, { rotulo: "Perícia", valor: regras?.pericias.find(p => p.id === resolucao.skill)?.nome ?? resolucao.skill ?? "—" }],
           detalhe: "Após confirmar, abre a rolagem. Com alvo, o ataque segue no chat: o alvo defende, você escolhe a região pela margem e o narrador aplica o dano.",
-          bloqueio: !acao?.enabled ? acao?.disabledReason ?? "Ação indisponível." : municao ? "Munição indisponível; confira arma e aljava na ficha." : !resolucao.skill ? "Perícia de ataque não definida no catálogo." : null };
+          bloqueio: !acao?.enabled ? acao?.disabledReason ?? "Ação indisponível." : municao === "sem_municao" ? "Arma descarregada. Recarregue antes de atacar." : municao ? "Munição indisponível; confira arma e aljava na ficha." : !resolucao.skill ? "Perícia de ataque não definida no catálogo." : null };
       });
     } else if (acaoToken.categoria === "conjurar") {
       opcoes = spellsIniciais.filter(s => s.status === "published" && isSpellLearned(character, s.slug)).map(s => {
@@ -4590,4 +4591,15 @@ export default function CharacterSheetClient({
       </>)}
     </main>
   );
+}
+
+/**
+ * Nome da munição no log de recarga. O catálogo guarda só o qualificador
+ * ("Pistola", "Flamejante"); flechas, virotes e arpões já se nomeiam.
+ */
+function nomeDaMunicao(nome: string): string {
+  const n = nome.toLocaleLowerCase("pt-BR");
+  if (/^(flecha|virote|arpão)/.test(n)) return n;
+  const calibre = ["pistola", "fuzil", "escopeta", "precisão", "alta capacidade", "alta densidade", "fixação"];
+  return calibre.includes(n) ? `munição de ${n}` : `munição ${n}`;
 }

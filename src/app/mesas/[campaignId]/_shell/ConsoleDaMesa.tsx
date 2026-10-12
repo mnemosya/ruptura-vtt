@@ -40,6 +40,14 @@ interface ApiConsoleDaMesa {
   abrirAcaoToken: (characterId: string, pedido: PedidoAcaoToken) => void;
   definirAlvosNoMapa: (alvos: AlvoAcaoToken[]) => void;
   fecharAcaoToken: () => void;
+  /**
+   * Atacar com UMA arma a partir da ficha: abre o mesmo painel do atalho
+   * Shift+Q, já na arma, esperando o alvo. `false` quando não há mapa
+   * (fora do VTT) ou o personagem não tem um token só nesta cena.
+   */
+  atacarCom: (characterId: string, armaId: string) => boolean;
+  /** O VTT diz qual token é do personagem nesta cena (ou `null`). */
+  registrarTokenDoPersonagem: (achar: ((characterId: string) => string | null) | null) => void;
   /** Aquecimento (hover/foco) — baixa bundle e catálogos antes do clique. */
   aquecer: () => void;
   /** Há uma ficha aberta agora. */
@@ -86,6 +94,14 @@ export function ProvedorConsoleDaMesa({ campaignId, children }: { campaignId: st
     setDe(characterId);
   }, []);
   const [fechadaEm, setFechadaEm] = useState(0);
+  const acharTokenRef = useRef<((characterId: string) => string | null) | null>(null);
+  const registrarTokenDoPersonagem = useCallback((achar: ((characterId: string) => string | null) | null) => { acharTokenRef.current = achar; }, []);
+  const atacarCom = useCallback((characterId: string, armaId: string) => {
+    const tokenId = acharTokenRef.current?.(characterId) ?? null;
+    if (!tokenId) return false;
+    abrirAcaoToken(characterId, { tokenId, categoria: "atacar", opcaoId: armaId });
+    return true;
+  }, [abrirAcaoToken]);
 
   const [abaInicial, setAbaInicial] = useState<string | null>(null);
   const abrir = useCallback((characterId: string, aba?: string) => {
@@ -113,8 +129,8 @@ export function ProvedorConsoleDaMesa({ campaignId, children }: { campaignId: st
   const aquecer = useCallback(() => precarregarConsole(campaignId), [campaignId]);
 
   const api = useMemo(
-    () => ({ abrir, abrirAcaoToken, fecharAcaoToken, definirAlvosNoMapa, aquecer, aberto: de !== null, fechadaEm }),
-    [abrir, abrirAcaoToken, fecharAcaoToken, aquecer, de, fechadaEm],
+    () => ({ abrir, abrirAcaoToken, fecharAcaoToken, definirAlvosNoMapa, atacarCom, registrarTokenDoPersonagem, aquecer, aberto: de !== null, fechadaEm }),
+    [abrir, abrirAcaoToken, fecharAcaoToken, atacarCom, registrarTokenDoPersonagem, aquecer, de, fechadaEm],
   );
 
   /**

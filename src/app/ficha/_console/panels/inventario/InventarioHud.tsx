@@ -719,7 +719,7 @@ function CartaoItem({ item: it, ancora, palco, podeCrescer, somenteLeitura, dest
               <span className="ih-destaque-val">{it.destaque.valor}</span>
               <span className="ih-destaque-txt">
                 <span className="ih-tag ih-fraco">{it.destaque.rotulo}</span>
-                {it.destaque.sufixo && <span>{it.destaque.sufixo}</span>}
+                {it.destaque.sufixo && <span style={{ whiteSpace: "pre-line" }}>{it.destaque.sufixo}</span>}
               </span>
             </div>
           )}
@@ -836,6 +836,7 @@ function rotuloDestino(d: DestinoHud): string {
   if (d.id === "abrigo") return "Guardar no abrigo";
   if (d.id === "mochila") return "Guardar na mochila";
   if (d.id === "bando") return "Mandar para o bando";
+  if (d.id.startsWith("suporte:")) return `Colocar em ${d.rotulo}`;
   if (d.id.startsWith("acesso_rapido")) return `Mover para ${lugar}`;
   if (d.id.startsWith("arma_") || d.id === "escudo") return `Equipar: ${lugar}`;
   if (d.id === "equipado") return "Equipar";
@@ -848,6 +849,7 @@ function iconeDestino(d: DestinoHud) {
   if (d.id === "abrigo") return <Warehouse aria-hidden="true" />;
   if (d.id === "mochila") return <Package aria-hidden="true" />;
   if (d.id === "bando") return <Users aria-hidden="true" />;
+  if (d.id.startsWith("suporte:")) return <ArrowRightLeft aria-hidden="true" />;
   if (d.id.startsWith("acesso_rapido")) return <Zap aria-hidden="true" />;
   if (d.id.startsWith("arma_") || d.id === "escudo") return <Hand aria-hidden="true" />;
   return <Shirt aria-hidden="true" />;

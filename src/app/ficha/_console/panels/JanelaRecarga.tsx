@@ -4,15 +4,13 @@
  * Recarga com ESCOLHA de fonte (opção C) e o aviso da recarga direta
  * (opção B).
  *
- * A janela só abre quando há decisão real — mais de uma fonte e nenhuma
- * marcada como padrão. Cada linha é uma pilha de munição: onde está,
+ * A janela só abre quando há decisão real — mais de uma fonte. Cada linha é uma pilha de munição: onde está,
  * quanto tem, quanto sobra e o custo (1 PA no espaço de munição e no
- * acesso rápido, 2 PA na mochila). A estrela marca a fonte como PADRÃO
- * da arma: da próxima vez, a recarga sai dela direto, sem perguntar.
+ * acesso rápido, 2 PA na mochila).
  */
 
 import { useEffect, useState } from "react";
-import { Star, X, Check } from "lucide-react";
+import { X, Check } from "lucide-react";
 import type { FonteRecarga } from "../../../../lib/character/reloadSources";
 import { AuxJanela } from "./AuxModals";
 
@@ -26,23 +24,20 @@ export function JanelaRecarga({
   arma,
   municao,
   fontes,
-  padraoId,
   onRecarregar,
-  onDefinirPadrao,
   onFechar,
 }: {
   arma: string;
   municao: { atual: number; max: number };
   fontes: FonteRecarga[];
-  padraoId: string | null;
   onRecarregar: (fonte: FonteRecarga) => void;
-  onDefinirPadrao: (fonte: FonteRecarga | null) => void;
   onFechar: () => void;
 }) {
-  const [escolhida, setEscolhida] = useState(padraoId ?? fontes[0]?.id ?? null);
-  const [padrao, setPadrao] = useState(padraoId);
+  const [escolhida, setEscolhida] = useState(fontes[0]?.id ?? null);
   const sel = fontes.find((f) => f.id === escolhida) ?? null;
-  const falta = Math.max(0, municao.max - municao.atual);
+  // Cheia: recarregar TROCA a munição — a carregada volta ao estoque e a arma enche da nova.
+  const troca = municao.atual >= municao.max;
+  const falta = troca ? municao.max : Math.max(0, municao.max - municao.atual);
   const carrega = sel ? Math.min(falta, sel.quantidade) : 0;
   const [titulo, tipo] = (() => {
     const m = /^(.+?)\s*\(([^)]+)\)\s*$/.exec(arma);
@@ -61,12 +56,8 @@ export function JanelaRecarga({
         </div>
 
         <div className="rc-rec-lista" role="radiogroup" aria-label="Fonte de munição">
-          <div className="rc-rec-cab" aria-hidden="true">
-            <span /><span>Munição</span><span>Tem</span><span>Sobra</span><span>PA</span><span />
-          </div>
           {fontes.map((f) => {
             const on = f.id === escolhida;
-            const ehPadrao = f.id === padrao;
             return (
               <div key={f.id} className="rc-rec-op" data-on={on || undefined} role="radio" aria-checked={on} tabIndex={0}
                 onClick={() => setEscolhida(f.id)}
@@ -76,25 +67,19 @@ export function JanelaRecarga({
                   <span className="rc-rec-op-nome">{f.nome}</span>
                   <span className="rc-rec-op-local">{ROTULO_LOCAL[f.local]}</span>
                 </span>
-                <span className="rc-rec-num">{f.quantidade}</span>
-                <span className="rc-rec-num">{f.quantidade - Math.min(falta, f.quantidade)}</span>
-                <span className="rc-rec-num" data-caro={f.custoPa > 1 || undefined}>{f.custoPa}</span>
-                <button type="button" className="rc-rec-estrela" data-on={ehPadrao || undefined}
-                  aria-pressed={ehPadrao} aria-label={ehPadrao ? `Deixar de usar ${f.nome} (${ROTULO_LOCAL[f.local]}) como padrão` : `Usar ${f.nome} (${ROTULO_LOCAL[f.local]}) como padrão`}
-                  title={ehPadrao ? "Padrão desta arma" : "Marcar como padrão"}
-                  onClick={(e) => { e.stopPropagation(); const novo = ehPadrao ? null : f; setPadrao(novo?.id ?? null); onDefinirPadrao(novo); }}>
-                  <Star size={14} strokeWidth={1.8} aria-hidden="true" />
-                </button>
+                <span className="rc-rec-qtd" title="Tem → sobra depois de carregar">
+                  {f.quantidade}<span aria-hidden="true">→</span><b>{f.quantidade - Math.min(falta, f.quantidade)}</b>
+                </span>
+                <span className="rc-rec-pa" data-caro={f.custoPa > 1 || undefined}>{f.custoPa} PA</span>
               </div>
             );
           })}
         </div>
-        {padrao && <p className="rc-rec-nota">A fonte com estrela é usada direto nas próximas recargas desta arma.</p>}
       </div>
-      <div className="rc-aux-acoes">
-        <button type="button" className="rc-ghost" onClick={onFechar}>Cancelar</button>
-        <button type="button" className="rc-ghost rc-rec-cta" disabled={!sel || carrega <= 0} onClick={() => sel && onRecarregar(sel)} data-testid="console-recarregar-confirmar">
-          {sel ? `Carregar ${carrega} · ${sel.custoPa} PA` : "Escolha a munição"}
+      <div className="rc-aux-acoes rc-rec-acoes">
+        <button type="button" className="rc-banc-esvaziar" onClick={onFechar}>Cancelar</button>
+        <button type="button" className="rc-banc-guardar" disabled={!sel || carrega <= 0} onClick={() => sel && onRecarregar(sel)} data-testid="console-recarregar-confirmar">
+          {sel ? `${troca ? "Trocar" : "Carregar"} ${carrega} · ${sel.custoPa} PA` : "Escolha a munição"}
         </button>
       </div>
     </AuxJanela>

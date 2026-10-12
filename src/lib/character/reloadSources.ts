@@ -102,9 +102,18 @@ export function recarregarDaFonte(
   const inventario = character.inventario ?? [];
   const instancia = inventario.find((i) => i.id === armaInstanceId);
   if (!instancia || !arma.municaoMax) return { character, carregada: 0, motivoFalha: "modo_nao_suportado" };
-  const antes = instancia.municaoAtual ?? 0;
-  const falta = arma.municaoMax - antes;
-  if (falta <= 0) return { character, carregada: 0, motivoFalha: "ja_cheio" };
+  let antes = instancia.municaoAtual ?? 0;
+  let falta = arma.municaoMax - antes;
+  // Arma cheia com OUTRA munição: troca. O que estava carregado volta
+  // para o lugar de onde sai a nova (nada se perde) e a arma enche dela.
+  let devolver: { slug: string; quantidade: number } | null = null;
+  if (falta <= 0) {
+    const carregada = instancia.municaoCarregadaSlug;
+    if (!carregada || carregada === fonte.contentSlug || antes <= 0) return { character, carregada: 0, motivoFalha: "ja_cheio" };
+    devolver = { slug: carregada, quantidade: antes };
+    antes = 0;
+    falta = arma.municaoMax;
+  }
 
   let movida = 0;
   const proximo: InventoryItemInstance[] = inventario.map((i) => {
@@ -124,8 +133,29 @@ export function recarregarDaFonte(
   });
   if (movida <= 0) return { character, carregada: 0, motivoFalha: "sem_estoque" };
 
-  const final = proximo
+  const final = (devolver ? devolverMunicao(proximo, fonte, devolver) : proximo)
     .filter((i) => i.quantidade > 0)
     .map((i) => (i.id === armaInstanceId ? { ...i, municaoAtual: antes + movida, municaoCarregadaSlug: fonte.contentSlug } : i));
   return { character: { ...character, inventario: final }, carregada: movida, motivoFalha: null, custoPa: fonte.custoPa };
+}
+
+/** Põe a munição que saiu da arma (na troca) no lugar da fonte: no suporte, ou junto da pilha igual. */
+function devolverMunicao(inventario: InventoryItemInstance[], fonte: FonteRecarga, d: { slug: string; quantidade: number }): InventoryItemInstance[] {
+  const nome = inventario.find((i) => i.itemSlug === d.slug)?.itemNome
+    ?? inventario.flatMap((i) => i.aljava?.stacks ?? []).find((s) => s.contentSlug === d.slug)?.nome
+    ?? d.slug.replace(/^armas_/, "").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+  if (fonte.local === "suporte") {
+    return inventario.map((i) => {
+      if (i.id !== fonte.instanceId || !i.aljava) return i;
+      const tem = i.aljava.stacks.some((s) => s.contentSlug === d.slug);
+      const stacks = tem
+        ? i.aljava.stacks.map((s) => (s.contentSlug === d.slug ? { ...s, quantidade: s.quantidade + d.quantidade } : s))
+        : [...i.aljava.stacks, { contentSlug: d.slug, nome, quantidade: d.quantidade }];
+      return { ...i, aljava: { ...i.aljava, stacks } };
+    });
+  }
+  const estado = fonte.local;
+  const pilha = inventario.find((i) => i.itemSlug === d.slug && i.estado === estado && !i.aljava);
+  if (pilha) return inventario.map((i) => (i.id === pilha.id ? { ...i, quantidade: i.quantidade + d.quantidade } : i));
+  return [...inventario, { id: crypto.randomUUID(), itemSlug: d.slug, itemNome: nome, categoria: "municao", quantidade: d.quantidade, estado } as InventoryItemInstance];
 }

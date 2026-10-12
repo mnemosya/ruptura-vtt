@@ -27,6 +27,7 @@
  * porque o console minimizado precisa mostrar a MESMA imagem.
  */
 
+import { useConsoleDaMesa } from "../../mesas/[campaignId]/_shell/ConsoleDaMesa";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Eye } from "lucide-react";
 import {
@@ -92,7 +93,7 @@ type Aux =
   | { tipo: "mochila"; slot: BodySlotId }
   | { tipo: "ataque"; instancia: InventoryItemInstance; modelo: ItemContent; slot: BodySlotId }
   | { tipo: "bancada"; instancia: InventoryItemInstance; bancada: Bancada }
-  | { tipo: "recarga"; instancia: InventoryItemInstance; fontes: FonteRecarga[]; padraoId: string | null; municao: { atual: number; max: number } }
+  | { tipo: "recarga"; instancia: InventoryItemInstance; fontes: FonteRecarga[]; municao: { atual: number; max: number } }
   | { tipo: "condicao" }
   | { tipo: "defesa" }
   | { tipo: "resistir-atributo" }
@@ -109,16 +110,18 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
    * trilho, para quem quer as colunas fixas ao lado da aba ativa.
    */
   const [aux, setAux] = useState<Aux>(null);
+  const consoleDaMesa = useConsoleDaMesa();
   const [avisoRecarga, setAvisoRecarga] = useState<{ ok: boolean; mensagem: string; desfazer?: () => void; seq: number } | null>(null);
   const fecharAvisoRecarga = useMemo(() => () => setAvisoRecarga(null), []);
   /**
-   * Recarga: direta quando não há decisão (uma fonte só, ou a fonte
-   * PADRÃO da arma disponível) — com aviso e Desfazer; a janela de
-   * escolha só abre quando há mais de uma fonte e nenhuma é padrão.
+   * Recarga: direta quando há uma fonte só; com mais de uma, abre a
+   * janela de escolha.
    * Armas fora desse modelo (célula de energia, aljava) seguem o fluxo
    * antigo de `recarregar`.
    */
   function avisar(r: { ok: boolean; mensagem: string; desfazer?: () => void }) {
+    // Recarga que deu certo não precisa de aviso; só a falha aparece.
+    if (r.ok) return;
     setAvisoRecarga({ ...r, seq: Date.now() });
   }
   function iniciarRecarga(instancia: InventoryItemInstance) {
@@ -131,10 +134,10 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
     if (!info) { api.recarregar(instancia.id); return; }
     if (info.cheia) { avisar({ ok: false, mensagem: "A arma já está cheia." }); return; }
     if (info.fontes.length === 0) { avisar({ ok: false, mensagem: "Sem munição compatível fora do abrigo." }); return; }
-    const direta = info.fontes.find((f) => f.id === info.padraoId) ?? (info.fontes.length === 1 ? info.fontes[0] : null);
+    const direta = info.fontes.length === 1 ? info.fontes[0] : null;
     if (direta) { avisar(api.recarregarDe(instancia.id, direta.id)); return; }
     const modelo = api.catalogo.get(instancia.itemSlug);
-    setAux({ tipo: "recarga", instancia, fontes: info.fontes, padraoId: info.padraoId,
+    setAux({ tipo: "recarga", instancia, fontes: info.fontes,
       municao: { atual: instancia.municaoAtual ?? 0, max: modelo?.municaoMax ?? 0 } });
   }
   const rolarNaMesa = useRolarNaMesa();
@@ -410,7 +413,12 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
                 slots={projecao.slots}
                 api={api}
                 onAbrirVazio={(slot) => setAux({ tipo: "mochila", slot })}
-                onAbrirAtaque={(instancia, modelo, slot) => setAux({ tipo: "ataque", instancia, modelo, slot })}
+                onAbrirAtaque={(instancia, modelo, slot) => {
+                  // Na mesa, Atacar segue o fluxo do atalho (alvo no mapa → rolagem → chat);
+                  // fora dela (ou sem token na cena), a janela da arma.
+                  if (api.mesa && consoleDaMesa?.atacarCom(api.mesa.characterId, instancia.id)) return;
+                  setAux({ tipo: "ataque", instancia, modelo, slot });
+                }}
                 onUsarItem={(instancia, modelo) =>
                   setAux({
                     tipo: "aviso",
@@ -588,8 +596,6 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
           arma={aux.instancia.itemNome}
           municao={aux.municao}
           fontes={aux.fontes}
-          padraoId={aux.padraoId}
-          onDefinirPadrao={(f) => api.definirFontePadrao(aux.instancia.id, f ? { local: f.local, contentSlug: f.contentSlug } : null)}
           onRecarregar={(f) => {
             avisar(api.recarregarDe(aux.instancia.id, f.id));
             setAux(null);

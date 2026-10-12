@@ -40,10 +40,9 @@ import { getRupturaPool } from "../../../../lib/dice";
 import type { TableLogVisibility } from "../../../../lib/table";
 import type { PhysicsDieSpec } from "../../../mesas/[campaignId]/vtt/_dados3d/ArenaDados";
 import { useRolarNaMesa } from "../../../mesas/[campaignId]/vtt/_dados3d/ContextoMesaDados";
-import { Chevron } from "../../../mesas/[campaignId]/vtt/_dados3d/icones";
 import { lerContextoRolagemAction } from "../../../mesas/[campaignId]/vtt/_painel/acoes/rolagemPainel";
 import {
-  ACCENTS, BODY, CampoCD, DISPLAY, DadosRolados, FaixaResultado, GroupLabel, INK, INK_FAINT, MONO,
+  ACCENTS, BODY, CampoCD, DISPLAY, DadosRolados, FaixaResultado, INK, INK_FAINT, MONO,
   MolduraRolagem, RESULTS, RollButton, Select, SeletorVisibilidade, Stack, Stepper,
   type ResultKey,
 } from "../../../mesas/[campaignId]/vtt/_dados3d/ResultadoRolagem";
@@ -98,11 +97,17 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
   // narrador — e quem sabe isso é o servidor, a mesma fonte que a
   // ferramenta do VTT consulta. Sem mesa, nem se pergunta.
   const [ehNarrador, setEhNarrador] = useState(false);
+  const [identidade, setIdentidade] = useState<{ nome: string; avatarUrl: string | null; tipo: "jogador" | "pn" } | null>(null);
   useEffect(() => {
     if (!mesa) return;
     let vivo = true;
     lerContextoRolagemAction(mesa.campaignId, mesa.characterId)
-      .then((r) => { if (vivo && r.ok && r.dados) setEhNarrador(!!r.dados.ehNarrador); })
+      .then((r) => {
+        if (!vivo || !r.ok || !r.dados) return;
+        setEhNarrador(!!r.dados.ehNarrador);
+        const eu = r.dados.personagens?.find((p) => p.id === mesa.characterId);
+        if (eu) setIdentidade({ nome: eu.nome, avatarUrl: eu.avatarUrl ?? null, tipo: eu.tipo === "pn" ? "pn" : "jogador" });
+      })
       .catch(() => { /* sem resposta, segue sem a opção de narrador */ });
     return () => { vivo = false; };
   }, [mesa]);
@@ -118,8 +123,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
   const [periciaId, setPericiaId] = useState<string>(periciaInicial);
   const [mods, setMods] = useState(0);
   const [cdInput, setCdInput] = useState(prefill.tipo === "colapso" ? String(prefill.cd) : "");
-  const [visibilidade, setVisibilidade] = useState<TableLogVisibility>("public");
-  const [adv, setAdv] = useState(false);
+  const [visibilidade, setVisibilidade] = useState<TableLogVisibility>(acaoToken?.visibilidade ?? "public");
   const [carga, setCarga] = useState(0);
   const [rolando, setRolando] = useState(false);
   const [landed, setLanded] = useState(false);
@@ -141,7 +145,8 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
     const definicao = getRupturaPool(api.character.atributos[a.id as keyof CharacterAttributes] ?? 0);
     return {
       id: a.id,
-      rotulo: `${a.nome} · ${definicao.quantidadeDados}d8 · ${definicao.modoSelecao === "lowest" ? "menor" : "maior"}`,
+      rotulo: a.nome,
+      valor: `${definicao.quantidadeDados}d8 ${definicao.modoSelecao === "lowest" ? "↓" : "↑"}`,
     };
   });
   // A perícia é escolhível SEMPRE — inclusive num teste que nasceu de
@@ -150,7 +155,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
   // é o caso normal, não a exceção.
   const opcoesPericia = [
     { id: SEM_PERICIA, rotulo: "Sem perícia" },
-    ...pericias.map((p) => ({ id: p.id, rotulo: `${p.nome} · +${api.character.pericias[p.id] ?? 0}` })),
+    ...pericias.map((p) => ({ id: p.id, rotulo: p.nome, valor: `+${api.character.pericias[p.id] ?? 0}` })),
   ];
 
   const doRoll = useCallback(async (forca: number) => {
@@ -176,7 +181,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
       modificador: mods + (info?.penalidade ?? 0) + (acaoToken?.penalidadeAlcance ?? 0),
       cd: cdNum != null && Number.isFinite(cdNum) ? cdNum : null,
       dados,
-      visibilidade: acaoToken?.visibilidade ?? visibilidade,
+      visibilidade,
       intencao: acaoToken ? { tipo: "ATAQUE", nome: acaoToken.nome } : prefill.tipo === "defesa"
         ? { tipo: "DEFESA", nome: prefill.acao }
         : prefill.tipo === "colapso" ? { tipo: "COLAPSO", nome: "Teste decisivo" } : null,
@@ -199,19 +204,9 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
   }, [api, atributoId, cdInput, mods, nd8, periciaId, prefill, rolando, rolarNaMesa, testeColapso, visibilidade, acaoToken, resultado]);
 
   /* Rolagem de uma AÇÃO DO TOKEN (depois de confirmar o ataque) fecha
-     ao clicar fora: ela é o fim de um fluxo que começou no mapa, e o
-     mapa é onde a pessoa volta. A rolagem aberta de DENTRO da ficha
-     continua só com o X — ali o clique fora é no Console, e tem que
-     funcionar sem fechar nada (ver `CAMADA`). */
+     só pelo X: fechar no clique fora derrubava a rolagem quando a pessoa
+     trocava de aba (chat, Console) no meio do ataque. */
   const janelaRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!acaoToken) return;
-    const aoApontar = (e: PointerEvent) => {
-      if (janelaRef.current && !janelaRef.current.contains(e.target as Node)) onFechar();
-    };
-    window.addEventListener("pointerdown", aoApontar);
-    return () => window.removeEventListener("pointerdown", aoApontar);
-  }, [acaoToken, onFechar]);
 
   // Com o cabeçalho fora, é a linha de modo da janela que diz quando a
   // rolagem é uma DEFESA — e isso não pode sumir: defesa gasta Reação.
@@ -231,7 +226,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
       <div ref={janelaRef} style={{ pointerEvents: "auto" }}>
       <MolduraRolagem
         indice="01"
-        codigo="Rolagem"
+        codigo="Rolar Dados"
         titulo="Rolar Dados"
         modo={modo}
         aoFechar={onFechar}
@@ -239,6 +234,14 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
         testId="console-painel-rolagem"
       >
         <Stack gap={16}>
+          {/* "Rolando como" — o mesmo cartão da ferramenta Rolar Dados (aqui fixo: é a ficha aberta). */}
+          {identidade && <div>
+            <span style={{ fontFamily: DISPLAY, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.16em", color: INK_FAINT }}>Rolando como</span>
+            <div className="rv-ident-cartao rv-ident-gatilho" data-lado={identidade.tipo === "pn" ? "pn" : "pj"} style={{ cursor: "default" }}>
+              <span className="rv-ident-face" aria-hidden="true">{identidade.avatarUrl ? <img src={identidade.avatarUrl} alt="" /> : identidade.nome.slice(0, 3).toUpperCase()}</span>
+              <span className="rv-ident-nome">{identidade.nome}</span>
+            </div>
+          </div>}
           {/* Uma grade só: Atributo · Perícia · Modificadores. A perícia
               leva mais espaço — os nomes dela são mais longos. */}
           {testeColapso ? (
@@ -247,7 +250,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
               <InfoCanonica label="Perícia" valor="Sem perícia" />
               <InfoCanonica label="CD" valor={cdInput} />
             </div>
-          ) : <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.35fr) auto", gap: 12, alignItems: "end" }}>
+          ) : <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.35fr) auto", gap: 8, alignItems: "end" }}>
             <Select label="Atributo" value={atributoId} onChange={setAtributoId} options={opcoesAtributo} disabled={rolando} />
             <Select label="Perícia" value={periciaId} onChange={setPericiaId} options={opcoesPericia} disabled={rolando} />
             <div>
@@ -256,10 +259,10 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
             </div>
           </div>}
 
-          <div style={{ borderRadius: 4, padding: 14, background: "#0c1920", border: "1px solid #162d3a" }}>
+          <div style={{ borderRadius: 2, padding: 14, background: "var(--fj-fundo-3, #0a1220)", border: "1px solid var(--fj-fundo-6, #16233a)" }}>
             <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: INK_FAINT }}>
-                Pool · <span style={{ color: "#00d4ff" }}>{nd8}d8</span> · {pool.modoSelecao === "lowest" ? "menor dado" : "maior dado"}
+                Pool · <span style={{ color: "#35c7d8" }}>{nd8}d8</span> · {pool.modoSelecao === "lowest" ? "menor dado" : "maior dado"}
               </span>
               <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: INK_FAINT }}>
                 {cdInput.trim() === "" ? "sem CD definida" : `cd ${cdInput}`}
@@ -317,6 +320,8 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
             </p>
           )}
 
+          {!testeColapso && <CampoCD value={cdInput} onChange={setCdInput} />}
+
           <RollButton
             label={rolando ? "Rolando…" : testeColapso && resultado ? "Resultado aplicado" : resultado ? "Rolar de novo" : `Rolar ${nd8}d8`}
             disabled={!podeRolar}
@@ -324,21 +329,9 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
             onChargeChange={setCarga}
           />
 
-          {!testeColapso && <div>
-            <button
-              type="button"
-              onClick={() => setAdv((v) => !v)}
-              style={{ display: "flex", width: "100%", alignItems: "center", border: 0, padding: 0, background: "transparent", cursor: "pointer" }}
-            >
-              <GroupLabel right={<Chevron width={13} height={13} style={{ color: INK_FAINT, transform: adv ? "rotate(180deg)" : "none" }} />}>
-                Definir CD
-              </GroupLabel>
-            </button>
-            {adv && <div style={{ paddingTop: 4 }}><CampoCD value={cdInput} onChange={setCdInput} /></div>}
-          </div>}
 
-          {mesa && !acaoToken && <SeletorVisibilidade valor={visibilidade} onChange={setVisibilidade} ehNarrador={ehNarrador} />}
-          {acaoToken && <p style={{ color: INK_FAINT, fontFamily: MONO, fontSize: 11 }}>{acaoToken.nome}{acaoToken.penalidadeAlcance ? ` · Alcance: ${acaoToken.penalidadeAlcance}` : ""} · {acaoToken.visibilidade === "gm" ? "Somente narrador" : "Público"}</p>}
+          {mesa && <SeletorVisibilidade valor={visibilidade} onChange={setVisibilidade} ehNarrador={ehNarrador} />}
+          {acaoToken && <p style={{ color: INK_FAINT, fontFamily: MONO, fontSize: 11 }}>{acaoToken.nome}{acaoToken.penalidadeAlcance ? ` · Alcance: ${acaoToken.penalidadeAlcance}` : ""}</p>}
         </Stack>
       </MolduraRolagem>
       </div>

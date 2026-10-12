@@ -67,6 +67,8 @@ export interface PecaHud {
   regioes?: string[];
   dano?: { dado: string; tipo?: string | null } | null;
   municao?: [number, number] | null;
+  /** Munição na arma agora: o nome, o dano que ela soma ("+1d6 ígneo") e a ficha dela. */
+  municaoCarregada?: { nome: string; dano?: string | null; peca: PecaHud } | null;
   usavel?: boolean;
   descricao?: ReactNode;
   linhas?: { rotulo: string; valor: string }[];
@@ -89,6 +91,8 @@ export interface PropsEquipamentoHud {
   onDefinirMunicao?: (id: string, valor: number) => void;
   onAtacar: (e: "arma_primaria" | "arma_secundaria") => void;
   onRecarregar: (id: string) => void;
+  /** Custo da recarga para o rótulo do botão ("1 PA", "2 PA", "1–2 PA"); `null` = sem custo a mostrar. */
+  custoRecarga?: (id: string) => string | null;
   onUsar: (id: string) => void;
 }
 
@@ -265,6 +269,14 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
           <div className="hx-edge hx-ch hx-pop" role="dialog" aria-label={ver.nome} style={{ width: 420, maxWidth: "calc(100% - 32px)", boxShadow: "0 30px 80px -20px #000" }}>
             <div className="hx-ch" style={{ position: "relative", display: "flex", flexDirection: "column", maxHeight: "min(660px, calc(100vh - 160px))", background: CASCO }}>
               <Ficha p={ver} voltar={() => setVer(null)} />
+              {ver.suporteMunicao && !props.somenteLeitura && (
+                <div style={{ flexShrink: 0, display: "flex", justifyContent: "flex-end", borderTop: "1px solid rgba(0,212,255,.1)", padding: "10px 16px" }}>
+                  <button type="button" onClick={() => { const id = ver.id; setVer(null); props.onRecarregar(id); }}
+                    style={{ height: 34, padding: "0 18px", border: 0, background: CY, color: "#06121c", cursor: "pointer", font: "700 11px var(--font-mono), monospace", letterSpacing: 2, textTransform: "uppercase" }}>
+                    Munição
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -453,7 +465,7 @@ const Vazio = ({ children }: { children: ReactNode }) => (
  * ação; o prompt "↵ vestir" no canto acende no hover. Ver o item fica no
  * olho ao lado do prompt (ou no clique direito).
  */
-function Cartao({ p, acoes, comando, apagado, marca, pe, onVer, ativo, ganho, acao, onMenu }: { p: PecaHud; acoes?: ReactNode; comando?: ReactNode; apagado?: boolean; marca?: string; pe?: ReactNode; onVer: () => void; ativo?: boolean; ganho?: number; acao?: { rotulo: string; onClick: () => void; ambar?: boolean }; onMenu?: (x: number, y: number) => void }) {
+function Cartao({ p, acoes, comando, apagado, marca, pe, onVer, onVerPeca, ativo, ganho, acao, onMenu }: { p: PecaHud; acoes?: ReactNode; comando?: ReactNode; apagado?: boolean; marca?: string; pe?: ReactNode; onVer: () => void; onVerPeca?: (p: PecaHud) => void; ativo?: boolean; ganho?: number; acao?: { rotulo: string; onClick: () => void; ambar?: boolean }; onMenu?: (x: number, y: number) => void }) {
   return (
     <div onClick={acao ? acao.onClick : onVer} onContextMenu={acao ? (ev) => { ev.preventDefault(); if (onMenu) onMenu(ev.clientX, ev.clientY); else onVer(); } : undefined}
       role={acao ? "button" : undefined} tabIndex={acao ? 0 : undefined} aria-label={acao ? `${acao.rotulo} ${p.nome}` : undefined}
@@ -486,14 +498,25 @@ function Cartao({ p, acoes, comando, apagado, marca, pe, onVer, ativo, ganho, ac
               {/* Quanto de MIT a troca ganha — junto do número que ela muda. */}
               {ganho != null && ganho > 0 && <span className="hx-display" style={{ fontSize: 12, fontWeight: 900, color: OK }}>▲{ganho}</span>}
               {p.pd && <span className="hx-display" style={{ fontSize: 12, fontWeight: 700, opacity: .75 }}>PD {p.pd[0]}<span className="hx-dim">/{p.pd[1]}</span></span>}
-              {p.dano && <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6 }}><span className="hx-display" style={{ fontSize: 15, fontWeight: 900, color: PERIGO }}>{p.dano.dado}</span>{p.dano.tipo && <Tag style={{ fontSize: 10, color: PERIGO, opacity: .7 }}>{p.dano.tipo}</Tag>}</span>}
+              {p.dano && <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span className="hx-display" style={{ fontSize: 15, fontWeight: 900, color: PERIGO }}>{p.dano.dado}</span>{p.dano.tipo && <Tag style={{ fontSize: 10, color: PERIGO, opacity: .7, whiteSpace: "pre-line", lineHeight: 1.25 }}>{p.dano.tipo}</Tag>}</span>}
               {!p.protecao && !p.dano && <Tag className="hx-dim" style={{ fontSize: 10 }}>{p.categoriaRotulo}</Tag>}
             </div>}
+            {/* O dano que a munição carregada soma, logo abaixo do dano da arma. */}
+            {p.dano && p.municaoCarregada?.dano && <div className="hx-display" style={{ marginTop: 2, fontSize: 12, fontWeight: 700, color: PERIGO, opacity: .8 }}>{p.municaoCarregada.dano}</div>}
           </div>
           {acoes && <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>{acoes}</div>}
         </div>
         {comando && <div className="hx-comando" onClick={(ev) => ev.stopPropagation()}>{comando}</div>}
         </div>
+        {p.municaoCarregada && onVerPeca && (
+          /* div com role: a regra global de botões do chassi centralizava e chanfrava. */
+          <div role="button" tabIndex={0} className="hx-cartao-municao" aria-label={`Ver ${p.municaoCarregada.nome}`}
+            onClick={(ev) => { ev.stopPropagation(); onVerPeca(p.municaoCarregada!.peca); }}
+            onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ev.stopPropagation(); onVerPeca(p.municaoCarregada!.peca); } }}>
+            <Tag className="hx-dim" style={{ fontSize: 10 }}>na arma</Tag>
+            <span className="hx-display">{p.municaoCarregada.nome}</span>
+          </div>
+        )}
         {pe && <div onClick={(ev) => ev.stopPropagation()} style={{ borderTop: "1px solid rgba(0,212,255,.1)", background: "rgba(6,18,28,.4)", padding: "8px 12px" }}>{pe}</div>}
       </div>
     </div>
@@ -595,7 +618,7 @@ function Gaveta(props: PropsEquipamentoHud & { sel: EncaixeHud; onFechar: () => 
   const comandoDoAtual = (p: PecaHud) => leitura || !temComando(p) ? undefined : (
     <>
       {ehArma(e) && (p.dano || p.modosAtaque?.length) && <Comando primario rotulo="Atacar" icone={<Crosshair size={17} strokeWidth={1.8} />} onClick={() => props.onAtacar(e)} />}
-      {(p.municao || p.suporteMunicao) && <Comando rotulo="Recarregar" icone={<RotateCcw size={17} strokeWidth={1.8} />} onClick={() => props.onRecarregar(p.id)} />}
+      {(p.municao || p.suporteMunicao) && <Comando rotulo={(() => { const c = props.custoRecarga?.(p.id); return c ? `Recarregar · ${c}` : "Recarregar"; })()} icone={<RotateCcw size={17} strokeWidth={1.8} />} onClick={() => props.onRecarregar(p.id)} />}
       {!ehArma(e) && !ehArmadura(e) && p.usavel && <Comando primario rotulo="Usar" icone={<Hand size={17} strokeWidth={1.8} />} onClick={() => props.onUsar(p.id)} />}
     </>
   );
@@ -639,7 +662,7 @@ function Gaveta(props: PropsEquipamentoHud & { sel: EncaixeHud; onFechar: () => 
               remover <X size={11} strokeWidth={2} aria-hidden="true" />
             </button>
           ) : undefined}>
-          {atual ? <Cartao p={atual} ativo onVer={() => onVer(atual)} comando={comandoDoAtual(atual)} pe={temPe(atual) ? peDoAtual(atual) : undefined} />
+          {atual ? <Cartao p={atual} ativo onVer={() => onVer(atual)} onVerPeca={onVer} comando={comandoDoAtual(atual)} pe={temPe(atual) ? peDoAtual(atual) : undefined} />
             : <Vazio>{ehArmadura(e) ? "nada vestido" : "vazio"}</Vazio>}
         </Secao>
         {!leitura && (
@@ -710,7 +733,7 @@ function MenuDoItem({ p, x, y, encaixe, onFechar, onEquipar, onTrazer, onVer, on
         <span className="hx-menu-id">
           <span className="hx-menu-nome">{titulo}</span>
           <span className="hx-menu-meta">
-            {p.dano ? <><b>{p.dano.dado}</b>{p.dano.tipo && <span>{p.dano.tipo}</span>}</>
+            {p.dano ? <><b>{p.dano.dado}</b>{p.dano.tipo && <span>{p.dano.tipo.replace(/\n/g, "")}</span>}</>
               : p.mit ? <span>MIT {p.mit[0]}/{p.mit[1]}</span>
               : p.pd ? <span>PD {p.pd[0]}/{p.pd[1]}</span>
               : <span>{separarTipo(p.nome).tipo ?? p.categoriaRotulo}</span>}
@@ -774,7 +797,8 @@ export function FichaItemModal({ p, onFechar, rodape, fixo = false }: { p: PecaH
 function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
   const c = corDe(p), pr = prot(p.protecao);
   return (
-    <div style={{ position: "relative", display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
+    // `--k`: o negrito do texto (`.rc-negrito`) sai na cor do tema do item.
+    <div style={{ ["--k" as string]: c, position: "relative", display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
       <button type="button" onClick={voltar} aria-label="Fechar" className="hx-ch-hex hx-fechar" style={{ position: "absolute", right: 12, top: 12, zIndex: 3 }}><Svg d="M6 6l12 12M18 6 6 18" tam={14} cor="currentColor" traco={2} /></button>
       <div className="hx-semsb" style={{ minHeight: 0, flex: 1, overflowY: "auto" }}>
       <div style={{ position: "relative", display: "grid", placeItems: "center", height: 160, flexShrink: 0, overflow: "hidden", background: `radial-gradient(circle at 50% 55%, ${c}38, transparent 62%)` }}>
@@ -806,7 +830,7 @@ function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
         {p.dano && (
           <div style={{ display: "flex", alignItems: "center", borderLeft: `2px solid ${PERIGO}`, background: "#0a1b26", padding: "10px 0 10px 12px" }}>
             <Tag className="hx-dim" style={{ fontSize: 10 }}>dano</Tag>
-            <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "baseline", gap: 6 }}><span className="hx-display" style={{ fontSize: 30, fontWeight: 900, lineHeight: 1, color: PERIGO }}>{p.dano.dado}</span>{p.dano.tipo && <Tag style={{ fontSize: 10, color: PERIGO, opacity: .7 }}>{p.dano.tipo}</Tag>}</span>
+            <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6 }}><span className="hx-display" style={{ fontSize: 30, fontWeight: 900, lineHeight: 1, color: PERIGO }}>{p.dano.dado}</span>{p.dano.tipo && <Tag style={{ fontSize: 10, color: PERIGO, opacity: .7, whiteSpace: "pre-line", lineHeight: 1.25 }}>{p.dano.tipo}</Tag>}</span>
           </div>
         )}
         {pr && (p.mit || p.pd) && (

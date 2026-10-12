@@ -28,6 +28,7 @@ import { ehMochilaMk } from "../../../../lib/character/backpacks";
 
 import { useCallback, useState } from "react";
 import { espacosDaInstancia, espacosDoItem } from "../../../../lib/character/carga";
+import { ocupacao } from "../../../../lib/character/supportLoadout";
 import type { InventoryItemInstance, ItemContent, ItemLoadoutState } from "../../../../lib/character";
 import { TextoComRegras } from "../TextoComRegras";
 import { itemCabeNoSlot, type BodySlotId } from "../slots";
@@ -448,7 +449,31 @@ export function InventarioPanel({ api, onGerenciarSuporte }: { api: ConsoleApi; 
           ? `${item.categoriaRotulo} não vai para ${d.label.toLocaleLowerCase("pt-BR")}.`
           : jaEsta ? "O item já está aqui." : null),
       };
+    }).concat(instancia ? destinosDeSuporte(instancia) : []);
+  };
+
+  /* Munição solta pode ir direto para um suporte (cartucheira/aljava)
+     que a aceite — o mesmo caminho da bancada, só que de uma vez. */
+  const destinosDeSuporte = (instancia: InventoryItemInstance): DestinoHud[] => {
+    if (instancia.estado !== "mochila" && instancia.estado !== "acesso_rapido") return [];
+    return inventario.filter((s) => s.aljava && s.id !== instancia.id && s.estado !== "abrigo").flatMap((s) => {
+      const bancada = api.bancadaSuporte(s.id);
+      const linha = bancada?.linhas.find((l) => l.contentSlug === instancia.itemSlug);
+      if (!bancada || !linha) return [];
+      const livre = bancada.capacidade - ocupacao(bancada.linhas, bancada.linhas.map((l) => l.dentro));
+      const nome = api.catalogo.get(s.itemSlug)?.nome ?? s.itemNome;
+      return [{ id: `suporte:${s.id}`, rotulo: nome, motivo: livre < linha.peso ? `${nome} está cheia.` : null }];
     });
+  };
+
+  const moverParaSuporte = (instanceId: string, suporteId: string) => {
+    const instancia = porId.get(instanceId);
+    const bancada = api.bancadaSuporte(suporteId);
+    const linha = bancada?.linhas.find((l) => l.contentSlug === instancia?.itemSlug);
+    if (!instancia || !bancada || !linha) return;
+    const livre = bancada.capacidade - ocupacao(bancada.linhas, bancada.linhas.map((l) => l.dentro));
+    const leva = Math.min(instancia.quantidade, linha.fora, Math.floor(livre / linha.peso));
+    if (leva > 0) api.abastecerSuporte(suporteId, { [linha.contentSlug]: linha.dentro + leva });
   };
 
   return (
@@ -482,6 +507,7 @@ export function InventarioPanel({ api, onGerenciarSuporte }: { api: ConsoleApi; 
             onUsar={(id) => api.usarItem(id)}
             onAjustar={(id, d) => api.ajustarQuantidade(id, d)}
             onMover={(id, destinoId) => {
+              if (destinoId.startsWith("suporte:")) return moverParaSuporte(id, destinoId.slice(8));
               const d = DESTINOS.find((x) => x.id === destinoId);
               if (d?.slot) api.equiparNoSlot(id, d.slot);
               else if (d?.estado) api.moverItemPara(id, d.estado);
@@ -517,12 +543,13 @@ export function InventarioPanel({ api, onGerenciarSuporte }: { api: ConsoleApi; 
 }
 
 /**
- * O dano como o sistema o escreve: "1d6 cortante ou perfurante".
+ * O dano como o sistema o escreve: "1d6 cortante/perfurante".
  *
  * Três casos, nesta ordem. Subtipo FIXO (`subtipo_dano`, ex.: a
  * carabina é perfurante) manda. Senão, os subtipos que o portador
  * ESCOLHE na hora (`subtipos_dano_possiveis`, ex.: a adaga corta ou
- * perfura) entram unidos por "ou". Só quando não há nenhum subtipo é
+ * perfura) entram unidos por "/" — com um ponto de quebra logo depois,
+ * para a linha quebrar em "cortante/" + "perfurante". Só quando não há nenhum subtipo é
  * que o tipo aparece — "físico" e "energético" são a família, e dizer
  * "1d6 físico cortante" seria dizer duas vezes a mesma coisa, sendo a
  * primeira a menos informativa.
@@ -532,7 +559,7 @@ export function descricaoDoDano(modelo: ItemContent | undefined): { dado: string
   const dado = modelo.danoBase;
   if (modelo.subtipoDano) return { dado, tipo: modelo.subtipoDano };
   if (modelo.subtiposDanoPossiveis.length > 0) {
-    return { dado, tipo: modelo.subtiposDanoPossiveis.join(" ou ") };
+    return { dado, tipo: modelo.subtiposDanoPossiveis.join("/\n") };
   }
   return { dado, tipo: modelo.tipoDano };
 }

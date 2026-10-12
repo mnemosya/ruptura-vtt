@@ -907,7 +907,15 @@ export function setItemEmEncaixe(character: Character, instanceId: string, encai
   if (hands && model?.categoria === "arma" && model.maos == null) return character;
   if (encaixe.startsWith("acesso_rapido") && model) {
     const spaces = /^\d+/.exec(model.espacosTexto ?? "1");
-    if (!spaces || Number(spaces[0]) * Math.ceil(target.quantidade / (model.ammoKitQuantidade ?? 1)) > 1) return character;
+    if (!spaces || Number(spaces[0]) > 1) return character;
+    // Uma pilha maior que o encaixe se divide: vai o que cabe (1 unidade,
+    // ou 1 kit de munição) e o resto fica na mochila como outra instância.
+    const cabe = model.ammoKitQuantidade ?? 1;
+    if (target.quantidade > cabe) {
+      const resto = { ...target, id: crypto.randomUUID(), quantidade: target.quantidade - cabe, estado: "mochila" as ItemLoadoutState, encaixeEscolhido: undefined, equipadoDefensivo: false };
+      const dividido = { ...character, inventario: (character.inventario ?? []).flatMap(i => i.id === instanceId ? [{ ...i, quantidade: cabe }, resto] : [i]) };
+      return setItemEmEncaixe(dividido, instanceId, encaixe, catalogo);
+    }
   }
   const estado: ItemLoadoutState = hands ? "empunhado" : encaixe.startsWith("acesso_rapido") ? "acesso_rapido" : "equipado";
   if (model?.categoria === "traje" && catalogo && (character.inventario ?? []).some(i => i.estado === "equipado" && catalogo.get(i.itemSlug)?.categoria === "armadura" && !model.compatibilidadeArmadura?.includes(catalogo.get(i.itemSlug)?.classeArmadura ?? ""))) return character;
@@ -920,7 +928,24 @@ export function setItemEmEncaixe(character: Character, instanceId: string, encai
   }) };
   // Falta de espaço na mochila não barra a troca: guardar o item anterior
   // pode passar do limite, e o inventário só contabiliza o excesso.
-  return next;
+  return juntarPilhasNaMochila(next, character);
+}
+
+/**
+ * Item que volta para a mochila (desalojado de um encaixe) se junta a uma
+ * pilha igual que já esteja lá, em vez de virar uma linha a mais. Só
+ * junta instâncias simples: sem cargas parciais nem conteúdo de suporte.
+ */
+function juntarPilhasNaMochila(next: Character, antes: Character): Character {
+  const estavaNaMochila = new Set((antes.inventario ?? []).filter(i => i.estado === "mochila").map(i => i.id));
+  const simples = (i: InventoryItemInstance) => i.estado === "mochila" && !i.aljava && i.cargasAtual == null;
+  let lista = next.inventario ?? [];
+  for (const voltou of lista.filter(i => simples(i) && !estavaNaMochila.has(i.id))) {
+    const pilha = lista.find(i => i.id !== voltou.id && simples(i) && i.itemSlug === voltou.itemSlug);
+    if (!pilha) continue;
+    lista = lista.filter(i => i.id !== voltou.id).map(i => i.id === pilha.id ? { ...i, quantidade: i.quantidade + voltou.quantidade } : i);
+  }
+  return lista === next.inventario ? next : { ...next, inventario: lista };
 }
 
 export function removeItemFromInventory(character: Character, instanceId: string): Character {

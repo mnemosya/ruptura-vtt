@@ -85,7 +85,7 @@ export function JanelaBancada({
       }
     >
       <div className="rc-banc">
-        <div className="rc-banc-grade" data-foco={hover ? "true" : undefined} role="img" aria-label={`${ocupado} de ${capacidade} ocupados`}>
+        <div className="rc-banc-grade" style={{ gridTemplateColumns: `repeat(${colunasDaGrade(capacidade)}, minmax(0, 1fr))` }} data-foco={hover ? "true" : undefined} role="img" aria-label={`${ocupado} de ${capacidade} ocupados`}>
           {blocos.map((b, i) => (
             <i key={`${b.k}-${i}`} className="rc-banc-encaixe" data-novo={b.novo || undefined} data-mesmo={hover?.k === b.k || undefined}
               style={{ gridColumn: `span ${linhas[b.k].peso}`, background: CORES[b.k % CORES.length], borderColor: CORES[b.k % CORES.length], animationDelay: `${b.atraso}ms` }} />
@@ -171,4 +171,15 @@ function Quantidade({ valor, rotulo, pulso, onDefinir }: { valor: number; rotulo
       {valor}
     </button>
   );
+}
+
+/**
+ * Colunas da grade: o maior número (até 25) que divide a capacidade,
+ * para toda linha chegar ao fim — 50 vira 2 × 25, 40 vira 2 × 20.
+ */
+function colunasDaGrade(capacidade: number): number {
+  for (let linhas = 1; linhas <= capacidade; linhas++) {
+    if (capacidade % linhas === 0 && capacidade / linhas <= 25) return capacidade / linhas;
+  }
+  return Math.ceil(capacidade / Math.ceil(capacidade / 25));
 }

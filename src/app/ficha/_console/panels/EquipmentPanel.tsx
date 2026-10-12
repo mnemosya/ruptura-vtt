@@ -71,6 +71,7 @@ export function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
     regioes: modelo?.regioes ?? [],
     dano: dano ? { dado: dano.dado, tipo: dano.tipo } : null,
     municao: modelo?.municaoMax != null ? [inst.municaoAtual ?? modelo.municaoMax, modelo.municaoMax] : null,
+    municaoCarregada: municaoCarregadaDe(api, inst),
     usavel: modelo != null && (modelo.custoPaUso != null || modelo.cargasMax != null),
     descricao: descricao ? <TextoComRegras texto={descricao} glossario={api.glossario} /> : null,
     linhas,
@@ -121,7 +122,7 @@ export function EquipmentPanel({
      trazer para a mochila; equipar direto do abrigo não existe. */
   const candidatos = (e: EncaixeHud): PecaHud[] =>
     inventario
-      .filter((i) => (i.estado === "mochila" || i.estado === "abrigo") && !ocupados.has(i.id) && itemCabeNoSlot(api.catalogo.get(i.itemSlug), e) && (!e.startsWith("acesso_rapido") || espacosDaInstancia({...i,estado:"mochila"},api.catalogo.get(i.itemSlug)) <= 1))
+      .filter((i) => (i.estado === "mochila" || i.estado === "abrigo") && !ocupados.has(i.id) && itemCabeNoSlot(api.catalogo.get(i.itemSlug), e) && (!e.startsWith("acesso_rapido") || espacosDaInstancia({quantidade:1,estado:"mochila"},api.catalogo.get(i.itemSlug)) <= 1))
       .map((i) => pecaDe(api, i));
 
   return (
@@ -149,9 +150,35 @@ export function EquipmentPanel({
             }}
             onRecarregar={(id) => { const inst = porId.get(id); if (inst) onRecarregar(inst); }}
             onUsar={(id) => api.usarItem(id)}
+            custoRecarga={(id) => {
+              // Regra: suporte/acesso rápido 1 PA, mochila 2 PA. Com uma fonte
+              // só, é o custo dela; senão, a faixa entre as fontes.
+              const info = api.fontesRecarga(id);
+              if (!info || info.fontes.length === 0) return null;
+              const padrao = info.fontes.length === 1 ? info.fontes[0] : null;
+              if (padrao) return `${padrao.custoPa} PA`;
+              const custos = info.fontes.map((f) => f.custoPa);
+              const min = Math.min(...custos), max = Math.max(...custos);
+              return min === max ? `${min} PA` : `${min}–${max} PA`;
+            }}
           />
         </div>
       </div>
     </section>
   );
+}
+
+/**
+ * A flecha que está no arco: nome, o dano que ela soma (lido do efeito
+ * curto, "+1d6 de dano ígneo…" vira "+1d6 ígneo") e a ficha para abrir.
+ */
+function municaoCarregadaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud["municaoCarregada"] {
+  const slug = inst.municaoCarregadaSlug;
+  // Só arco: nas armas de pente a munição não muda o tiro a ponto de pedir a linha.
+  if (!slug || !(inst.municaoAtual ?? 0) || api.catalogo.get(inst.itemSlug)?.municaoCompativelSlug !== "flecha_simples") return null;
+  const modelo = api.catalogo.get(slug);
+  if (!modelo) return null;
+  const extra = /^\+\s*(\d+d\d+(?:\s*[+-]\s*\d+)?)\s+de dano\s+([\p{L}]+)/iu.exec(modelo.descricao_curta ?? "");
+  const peca = pecaDe(api, { id: `${inst.id}:municao`, itemSlug: slug, itemNome: modelo.nome, categoria: modelo.categoria, quantidade: 1, estado: "equipado" } as InventoryItemInstance);
+  return { nome: modelo.nome, dano: extra ? `+${extra[1].replace(/\s+/g, "")} ${extra[2].toLocaleLowerCase("pt-BR")}` : null, peca };
 }

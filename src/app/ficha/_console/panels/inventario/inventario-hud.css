@@ -144,6 +144,8 @@
 .ih-regua-cab > .ih-tag { color: var(--ih-dim); }
 .ih-regua-num { font-family: var(--ih-display); font-size: 40px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
 .ih-regua-num[data-excedido] { color: var(--ih-amb); text-shadow: 0 0 12px color-mix(in srgb, var(--ih-amb) 67%, transparent); }
+/* O brilho é só do número ocupado: no "/20" ele vazava como uma mancha. */
+.ih-regua-num[data-excedido] .ih-regua-cap { text-shadow: none; }
 .ih-regua-cap { font-size: 20px; color: var(--ih-dim); }
 .ih-regua-estado { margin-left: auto; color: color-mix(in srgb, var(--ih-cy) 70%, transparent) !important; }
 .ih-regua-estado[data-alerta] { color: var(--ih-amb) !important; }
@@ -178,7 +180,7 @@
 .ih-lin[draggable="true"] { cursor: grab; }
 .ih-lista { padding-left: 16px; }
 .ih-drag-alca { position: absolute; left: -16px; top: 50%; translate: 0 -50%; display: flex; color: var(--ih-dim); opacity: .4; }
-.ih-lin:hover .ih-drag-alca, .ih-lin:focus-visible .ih-drag-alca { opacity: 1; color: var(--ih-cy); }
+.ih-lin:hover .ih-drag-alca, .ih-lin:focus-visible .ih-drag-alca { opacity: 1; color: var(--k, var(--ih-cy)); }
 .ih-lin[data-arrastado] { animation: none; opacity: .35; cursor: grabbing; background: color-mix(in srgb, var(--ih-cy) 12%, transparent); }
 .ih-lin[data-insercao] { background: color-mix(in srgb, var(--ih-cy) 9%, transparent); }
 .ih-lin[data-insercao]::after { content: ""; position: absolute; z-index: 2; pointer-events: none; left: 0; right: 0; top: -1px; height: 2px; background: var(--ih-cy); box-shadow: 0 0 9px var(--ih-cy); }
