@@ -182,7 +182,7 @@ import { deriveItemUseKind, getItemUsePreview, getItemUsePaCost } from "../../..
 import { registrarRolagemPericiaAction } from "../../mesas/[campaignId]/vtt/_painel/acoes/rolagemPainel";
 import type { TurnWindow } from "../../../lib/table/turnTrack";
 import type { ConsoleApi, ConsolePin, TermoDeRegra } from "../../ficha/_console/types";
-import { resumoDeCarga, permiteAlteracaoDeCarga } from "../../../lib/character/carga";
+import { resumoDeCarga } from "../../../lib/character/carga";
 import type { BodySlotId } from "../../ficha/_console/slots";
 import { GeneralTab } from "./components/GeneralTab";
 import { AttributesTab } from "./components/AttributesTab";
@@ -1999,10 +1999,6 @@ export default function CharacterSheetClient({
     const result = purchaseItem({ character: current, item, quantidade, walletId, precoUnitario, nowIso: new Date().toISOString(), catalog: [...catalogoItens.values()] });
     if (!result.ok) {
       addLogEntry("recurso", result.reason ?? "Compra não realizada.");
-      return;
-    }
-    if (!permiteAlteracaoDeCarga(current, result.character, catalogoItens)) {
-      addLogEntry("recurso", "Compra não realizada: a Mochila ultrapassaria sua capacidade +2. Libere espaço ou equipe um modelo maior.");
       return;
     }
     characterRef.current = result.character;

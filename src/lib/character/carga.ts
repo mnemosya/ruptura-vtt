@@ -101,9 +101,3 @@ export function resumoDeCarga(
   const capacidade = capacidadeDeEspacos(character, catalogo);
   return { ocupados, capacidade, excedido: ocupados > capacidade };
 }
-
-/** Não agrava inventários legados acima do limite; permite organizar e reduzir a carga. */
-export function permiteAlteracaoDeCarga(before: Character, after: Character, catalogo: Map<string, ItemContent>): boolean {
-  const a = resumoDeCarga(before, catalogo), b = resumoDeCarga(after, catalogo);
-  return b.ocupados <= b.capacidade + 2 || (b.capacidade >= a.capacidade && b.ocupados <= a.ocupados);
-}

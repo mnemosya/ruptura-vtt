@@ -32,7 +32,11 @@ assert.equal(c.inventario!.filter(i=>i.estado==="equipado").length,1);
 assert.equal(resumoDeCarga(c,catalog).ocupados,4);
 assert.strictEqual(setItemLoadoutState(c,buy.instance!.id,"mochila",catalog),c,"Mochila cheia não pode ser guardada dentro da própria mochila");
 const loaded={...c,inventario:[...c.inventario!,{id:"load",itemSlug:"unknown",itemNome:"Carga legada",categoria:"ferramenta",quantidade:10,estado:"mochila" as const,adquiridoEm:"2026-10-11"}]};
-assert.strictEqual(setItemEmEncaixe(loaded,c.inventario![0].id,"mochila_equipada",catalog),loaded,"Troca por MK-I não pode exceder capacidade +2");
+// Falta de espaço não barra: trocar para a MK-I passa e o excesso só fica contabilizado.
+const trocada=setItemEmEncaixe(loaded,c.inventario![0].id,"mochila_equipada",catalog);
+assert.notStrictEqual(trocada,loaded,"Troca por MK-I não é barrada pela capacidade");
+assert.equal(capacidadeDeEspacos(trocada,catalog),10);
+assert(resumoDeCarga(trocada,catalog).excedido,"O excesso continua contabilizado");
 // A troca de armas guarda a anterior mesmo quando aumenta uma sobrecarga.
 const rifle = {...mk1,slug:"test-rifle",nome:"Rifle",categoria:"arma" as const,maos:2 as const,espacosTexto:"3",capacidadeMochila:null};
 const pistol = {...rifle,slug:"test-pistol",nome:"Pistola",maos:1 as const,espacosTexto:"1"};

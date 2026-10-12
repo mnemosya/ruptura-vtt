@@ -1,5 +1,5 @@
 import { ehMochilaMk } from "./backpacks";
-import { resumoDeCarga, permiteAlteracaoDeCarga } from "./carga";
+import { resumoDeCarga } from "./carga";
 import { equipmentPositions, occupiedEquipmentPositions } from "./equipmentPositions";
 /**
  * Inventário, carteira e loja do Mercado Noturno — checkpoint v0.49
@@ -893,7 +893,8 @@ export function setItemLoadoutState(character: Character, instanceId: string, es
     if (model.categoria === "armadura") return equipDefensiveItem(character, instanceId, model, catalogo);
   }
   const next = { ...character, inventario: (character.inventario ?? []).map(i => i.id === instanceId ? { ...i, estado, encaixeEscolhido: undefined, ...(estado === "mochila" || estado === "abrigo" ? { equipadoDefensivo: false } : {}) } : i) };
-  return catalogo && !permiteAlteracaoDeCarga(character, next, catalogo) ? character : next;
+  // Falta de espaço na mochila não barra nada: o excesso fica contabilizado (régua do inventário).
+  return next;
 }
 
 export function setItemEmEncaixe(character: Character, instanceId: string, encaixe: EncaixeEscolhido, catalogo?: Map<string, ItemContent>): Character {
@@ -917,10 +918,8 @@ export function setItemEmEncaixe(character: Character, instanceId: string, encai
     if (occupied.some(p => positions.includes(p as EncaixeEscolhido))) return { ...i, estado: "mochila" as ItemLoadoutState, encaixeEscolhido: undefined, equipadoDefensivo: false };
     return i;
   }) };
-  // Trocar a arma empunhada ou o suporte de munição (cartucheira ↔ aljava)
-  // deve funcionar mesmo se guardar o anterior aumentar a sobrecarga.
-  // O inventário continua contabilizando esse excesso.
-  if (!hands && encaixe !== "suporte_municao" && catalogo && !permiteAlteracaoDeCarga(character, next, catalogo)) return character;
+  // Falta de espaço na mochila não barra a troca: guardar o item anterior
+  // pode passar do limite, e o inventário só contabiliza o excesso.
   return next;
 }
 
