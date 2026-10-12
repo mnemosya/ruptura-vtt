@@ -51,7 +51,7 @@ for (const [name, expected] of [
 }
 assert.equal(filledWeaponIconForName("Canhão de plasma"), null);
 assert.equal(filledWeaponIconForName("Escopeta pesada"), null);
-assert.equal(filledCategoryIcon("estrutura_dorsal"), null);
+assert.equal(filledCategoryIcon("estrutura_dorsal"), "dorsal");
 assert.equal(filledCategoryIcon("mochila_equipada"), "backpack");
 for (const model of ["I", "II", "III"]) {
   assert.equal(filledCategoryIcon("ferramenta", `Mochila MK-${model}`), "backpack");
@@ -83,7 +83,11 @@ for (const [name, expected] of [["SORYN M2", "bike"], ["SORYN VANTA", "bike"], [
 }
 for (const name of ["Icarus I", "Icarus II", "Icarus III"]) assert.equal(filledCategoryIcon("mobilidade", name), "icarus");
 assert.equal(filledCategoryIcon("mobilidade", "Bicicleta"), null);
-assert.equal(filledCategoryIcon("estrutura_dorsal"), null);
+assert.equal(filledCategoryIcon("estrutura_dorsal"), "dorsal");
 assert.equal(ammunitionType({nome:"Pistola",subtipo:"Munição"}), "Munição");
 assert.equal(filledCategoryIcon("municao", "Pistola", "Bala"), "bullets");
 console.log("✓ Ícones filled: tipos distintos, munições e estrutura dorsal independente");
+
+assert.equal(filledCategoryIcon("mobilidade", "Aérovoile", "Estrutura dorsal"), "dorsal");
+assert.equal(filledCategoryIcon("mobilidade", "Cabestan I", "Estrutura dorsal"), "dorsal");
+assert.equal(filledCategoryIcon("mobilidade", "Icarus III", "Estrutura dorsal"), "icarus");

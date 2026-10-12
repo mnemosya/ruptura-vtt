@@ -10,7 +10,7 @@ for folder in ("filled icons", "energy", "legacy"):
     for source in sorted((ROOT / "icones" / folder).glob("*.svg")):
         root = ET.parse(source).getroot()
         view_box = [float(n) for n in root.attrib["viewBox"].split()]
-        if source.stem == "noun_drugs_7809670":
+        if source.stem in ("noun_drugs_7809670", "dorsal"):
             # O desenho ocupa 0..100; as margens extras incluem créditos abaixo.
             assert view_box == [-5, -10, 110, 135], source
             view_box = [0, 0, 100, 100]

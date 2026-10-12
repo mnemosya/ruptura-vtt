@@ -346,7 +346,8 @@ export function grupoESubDoModelo(modelo: ItemContent): Pick<ProdutoHud, "grupo"
     ? frase(modelo.subtipo)
     : g.prefixo === "dispositivos_tecnologicos" ? null : SUB_DA_CATEGORIA[modelo.categoria] ?? null;
   const i = sub ? ORDEM_SUB.indexOf(sub) : -1;
-  return { grupo: { id: g.prefixo, nome: g.nome }, sub, subOrdem: i >= 0 ? i : undefined };
+  return { grupo: { id: g.prefixo, nome: g.nome }, sub, subOrdem: i >= 0 ? i : undefined,
+    tipo: modelo.categoria === "mobilidade" && modelo.posicaoMobilidade === "estrutura_dorsal" ? "Estrutura dorsal" : undefined };
 }
 
 /** Modelo do catálogo → produto do Mercado. Mesma leitura de conteúdo da ficha do item. */

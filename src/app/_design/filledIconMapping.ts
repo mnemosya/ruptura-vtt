@@ -30,6 +30,7 @@ const CATEGORIES: Record<string, FilledIconName> = {
   explosivo: "explosive", explosivos: "explosive", municao: "bullets",
   pocao: "potion", pocoes: "potion", aljava: "quiver", flecha: "arrows", flechas: "arrows", virotes: "arrows",
   vertina: "potion", vertinas: "potion",
+  estrutura_dorsal: "dorsal",
   farmacia: "noun_drugs_7809670",
 };
 
@@ -49,6 +50,7 @@ export function filledCategoryIcon(category: string, name?: string, itemType?: s
   if (categoryKey === "municao" && ["flecha", "virote"].includes(normalizeIconKey(itemType ?? ""))) return "arrows";
   const nameKey = normalizeIconKey((name ?? "").trim());
   if (categoryKey === "mobilidade" && /^icarus_(i|ii|iii)$/.test(nameKey)) return "icarus";
+  if (categoryKey === "mobilidade" && normalizeIconKey(itemType ?? "") === "estrutura_dorsal") return "dorsal";
   if (["veiculo", "veiculos"].includes(categoryKey)) {
     if (["nyxen_lark", "nyxen_raze", "velys_iris"].includes(nameKey)) return "flying bike";
     if (["soryn_m2", "soryn_vanta"].includes(nameKey)) return "bike";
