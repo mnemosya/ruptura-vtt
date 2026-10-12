@@ -88,7 +88,7 @@ assert.equal(ammunitionType({nome:"Pistola",subtipo:"Munição"}), "Munição");
 assert.equal(filledCategoryIcon("municao", "Pistola", "Bala"), "bullets");
 console.log("✓ Ícones filled: tipos distintos, munições e estrutura dorsal independente");
 
-assert.equal(filledCategoryIcon("mobilidade", "Aérovoile", "Estrutura dorsal"), "dorsal");
+assert.equal(filledCategoryIcon("mobilidade", "Aérovoile", "Estrutura dorsal"), "noun_HangGlider_8112644");
 assert.equal(filledCategoryIcon("mobilidade", "Cabestan I", "Estrutura dorsal"), "dorsal");
 assert.equal(filledCategoryIcon("mobilidade", "Icarus III", "Estrutura dorsal"), "icarus");
 for (const [name, icon] of [["Patinete Elétrico", "noun_ElectricScooter_8291684"], ["Hoverboard", "noun_Hoverboard_7742758"], ["Rollsyns", "noun_RollerSkate_5192593"], ["Skate", "noun_Skateboard_1293918"]] as const) {
@@ -109,3 +109,12 @@ assert.equal(filledCategoryIcon("farmacia", "Kit de estabilização (PV)"), "nou
 assert.equal(filledCategoryIcon("farmacia", "Ansiolítico"), "noun_drugs_7809670");
 assert.equal(filledCategoryIcon("ferramenta", "Lanterna rúnica"), "noun_Flashlight_8418741");
 assert.equal(filledCategoryIcon("ferramenta", "Papel rúnico"), "noun_Paper_8227159");
+
+assert.equal(filledCategoryIcon("dispositivo", "Chip de dados"), "noun_flashdrive_4483089");
+assert.equal(filledCategoryIcon("ferramenta", "Kit de contenção"), "noun_Handcuffs_699304");
+assert.equal(filledCategoryIcon("acessorio", "Óculos de Realidade Aumentada"), "noun_vr_2226896");
+assert.equal(filledCategoryIcon("escalpo", "Biomonitor", "Interno"), "noun_Heart_5999211");
+assert.equal(filledCategoryIcon("escalpo", "Neuroprocessador", "neurais"), "noun_neural_4128305");
+assert.equal(filledCategoryIcon("escalpo", "RPI Forjado (Nível 1)", "Identidade"), "noun_id_7920951");
+assert.equal(filledCategoryIcon("escalpo", "Modelo", "Moda"), "noun_beauty_3677917");
+assert.equal(FILLED_ICON_DATA.noun_hacker_5879592.paths[0].fillRule, "evenodd");

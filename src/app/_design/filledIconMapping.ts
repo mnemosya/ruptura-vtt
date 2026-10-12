@@ -51,6 +51,19 @@ export function filledCategoryIcon(category: string, name?: string, itemType?: s
   if (categoryKey === "municao" && normalizeIconKey(itemType ?? "") === "celula") return "energy cell";
   if (categoryKey === "municao" && ["flecha", "virote"].includes(normalizeIconKey(itemType ?? ""))) return "arrows";
   const nameKey = normalizeIconKey((name ?? "").trim());
+  const namedItems: Record<string, FilledIconName> = {
+    escuta: "noun_Audio_8196748", ascensor_motorizado: "noun_Climbing_5026510(ascensor)",
+    luvas_de_escalada: "noun_Gloves_8340735", kit_de_contencao: "noun_Handcuffs_699304",
+    aerovoile: "noun_HangGlider_8112644", pulseira_vital: "noun_Heart_5999211", biomonitor: "noun_Heart_5999211",
+    kit_de_lock_picking: "noun_Lockpick_6989497", kit_de_tirolesa: "noun_Zipline_268825",
+    bloqueador_de_sinal: "noun_block_5432800", cdi_craqueada: "noun_digitalwallet_8310695",
+    chip_de_dados: "noun_flashdrive_4483089", rastreador: "noun_globaltracking_6583453",
+    kit_de_rastreamento: "noun_globaltracking_6583453", kit_de_intrusao_digital: "noun_hacker_5879592",
+    tinta_runica_invisivel: "noun_paint_6045428", solas_antiderrapantes: "noun_runningshoe_8228716(antiderrapantes)",
+    corda_runica: "noun_skippingrope_1553123", spray_adesivo: "noun_spray_8421659",
+    oculos_de_realidade_aumentada: "noun_vr_2226896",
+  };
+  if (["acessorio", "ferramenta", "utilidade", "dispositivo", "mobilidade", "escalpo"].includes(categoryKey) && namedItems[nameKey]) return namedItems[nameKey];
   if (["ferramenta", "utilidade"].includes(categoryKey)) {
     if (nameKey === "lanterna_runica") return "noun_Flashlight_8418741";
     if (nameKey === "papel_runico") return "noun_Paper_8227159";
@@ -62,6 +75,8 @@ export function filledCategoryIcon(category: string, name?: string, itemType?: s
       braco: "noun_bionicrobotarm_7001919", de_braco: "noun_bionicrobotarm_7001919",
       perna: "noun_bionicleg_7356680", de_perna: "noun_bionicleg_7356680",
       audicao: "noun_earlistening_5252153", auditivos: "noun_earlistening_5252153",
+      neural: "noun_neural_4128305", neurais: "noun_neural_4128305",
+      moda: "noun_beauty_3677917", identidade: "noun_id_7920951",
     };
     const implant = implants[normalizeIconKey(itemType ?? "")];
     if (implant) return implant;

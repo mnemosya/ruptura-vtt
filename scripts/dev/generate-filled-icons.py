@@ -5,6 +5,30 @@ import re
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
+
+# Art-only boxes for exports with attribution margins.
+ART_BOXES = {'noun_Audio_8196748': [0, 0, 100, 100],
+ 'noun_Climbing_5026510(ascensor)': [0, 0, 32.0, 32.0],
+ 'noun_Gloves_8340735': [0, 0, 100, 100],
+ 'noun_Handcuffs_699304': [0, 0, 60.0, 60.0],
+ 'noun_HangGlider_8112644': [0, 0, 100.0, 100.0],
+ 'noun_Heart_5999211': [0, 0, 60.0, 60.0],
+ 'noun_Lockpick_6989497': [0, 0, 100, 100],
+ 'noun_Zipline_268825': [0, 0, 100.0, 100.0],
+ 'noun_beauty_3677917': [0, 0, 60.0, 60.0],
+ 'noun_block_5432800': [0, 0, 24, 24],
+ 'noun_digitalwallet_8310695': [0, 0, 100, 100],
+ 'noun_flashdrive_4483089': [0, 0, 100.0, 100.0],
+ 'noun_globaltracking_6583453': [0, 0, 64.0, 64.0],
+ 'noun_hacker_5879592': [0, 0, 100, 100],
+ 'noun_id_7920951': [0, 0, 100.0, 100.0],
+ 'noun_neural_4128305': [0, 0, 24.0, 24.0],
+ 'noun_paint_6045428': [0, 0, 8.4666, 8.4666],
+ 'noun_runningshoe_8228716(antiderrapantes)': [0, 0, 100, 100],
+ 'noun_skippingrope_1553123': [0, 0, 100, 100],
+ 'noun_spray_8421659': [0, 0, 100, 100],
+ 'noun_vr_2226896': [0, 0, 64.0, 64.0]}
+
 data = {}
 for folder in ("filled icons", "energy", "legacy"):
     for source in sorted((ROOT / "icones" / folder).glob("*.svg")):
@@ -27,14 +51,22 @@ for folder in ("filled icons", "energy", "legacy"):
             # Noun exports use the extra bottom 22.5 units for credit text.
             assert view_box == [0, 0, 90, 112.5], source
             view_box = [0, 0, 90, 90]
+        view_box = ART_BOXES.get(source.stem, view_box)
+        css_rules = {}
+        for style in root.iter():
+            if style.tag.split("}")[-1] == "style":
+                for cls, body in re.findall(r"\.([\w-]+)\s*\{([^}]+)\}", style.text or ""):
+                    rule = re.search(r"fill-rule\s*:\s*(evenodd|nonzero)", body)
+                    if rule:
+                        css_rules[cls] = rule.group(1)
         paths = []
         parents = {child: parent for parent in root.iter() for child in parent}
         for element in list(root.iter())[1:]:
             tag = element.tag.split("}")[-1]
             attrs = element.attrib
-            if tag in ("g", "text", "title", "desc", "metadata"):
+            if tag in ("g", "text", "title", "desc", "metadata", "defs", "style", "switch", "foreignObject"):
                 if tag == "g":
-                    assert set(attrs) <= {"transform", "fill-rule", "data-name"}, source
+                    assert all(k in {"transform", "fill-rule", "data-name", "fill", "stroke", "stroke-width"} or k.startswith("{") for k in attrs), source
                 continue
             if tag == "path":
                 d = attrs["d"]
@@ -58,6 +90,7 @@ for folder in ("filled icons", "energy", "legacy"):
                 ancestry.append(parents[ancestry[-1]])
             transforms = [node.attrib["transform"] for node in reversed(ancestry) if "transform" in node.attrib]
             fill_rule = next((node.attrib["fill-rule"] for node in ancestry if "fill-rule" in node.attrib), "nonzero")
+            fill_rule = css_rules.get(attrs.get("class"), fill_rule)
             path = {"d": d, "fillRule": fill_rule}
             if transforms:
                 path["transform"] = " ".join(transforms)
