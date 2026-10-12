@@ -53,7 +53,7 @@ export function SpellsTab({
   onLearn: (slug: string) => void;
   onForget: (learnedId: string) => void;
   /** `custoManaEscolhido`: custo escolhido no Console (nível da tabela, valor no intervalo). */
-  onCast: (slug: string, custoManaEscolhido?: number) => void;
+  onCast: (slug: string, custoManaEscolhido?: number, escolhas?: Record<string, string>) => void;
   onRollDamage: (slug: string) => void;
   /** Rola a cura (efeito `cura`) e registra no log. */
   onRollHeal: (slug: string) => void;

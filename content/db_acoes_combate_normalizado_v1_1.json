@@ -863,8 +863,8 @@
         "defensiva",
         "postura"
       ],
-      "descricao_curta": "+1 em defensivas; –1 em ofensivas e magias de Ataque.",
-      "descricao_longa": "+1 em defensivas; –1 em ofensivas e magias de Ataque.",
+      "descricao_curta": "+1 em ações defensivas, –1 em ofensivas e magias de Ataque.",
+      "descricao_longa": "+1 em ações defensivas, –1 em ofensivas e magias de Ataque.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1535,8 +1535,8 @@
         "defensiva",
         "reacao"
       ],
-      "descricao_curta": "Usa arma com Aparar para anular golpe corpo a corpo.",
-      "descricao_longa": "Usa arma com Aparar para anular golpe corpo a corpo.",
+      "descricao_curta": "Anula um golpe corpo a corpo com arma de Aparar. Teste de Luta.",
+      "descricao_longa": "Anula um golpe corpo a corpo com arma de Aparar. Teste de Luta.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1609,8 +1609,8 @@
         "reacao",
         "escudo"
       ],
-      "descricao_curta": "Usa escudo ou proteção empunhada para absorver ataque.",
-      "descricao_longa": "Usa escudo ou proteção empunhada para absorver ataque.",
+      "descricao_curta": "Absorve um ataque com escudo, contra si ou um aliado adjacente. Teste de Reflexos.",
+      "descricao_longa": "Absorve um ataque com escudo, contra si ou um aliado adjacente. Teste de Reflexos.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1685,8 +1685,8 @@
         "reacao",
         "movimento"
       ],
-      "descricao_curta": "Evita impacto com Reflexos.",
-      "descricao_longa": "Evita impacto com Reflexos.",
+      "descricao_curta": "Evita um ataque. Teste de Reflexos.",
+      "descricao_longa": "Evita um ataque. Teste de Reflexos.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1740,8 +1740,8 @@
         "reacao",
         "resistencia"
       ],
-      "descricao_curta": "Resiste a deslocamento, derrubada, arrasto ou imobilização.",
-      "descricao_longa": "Resiste a deslocamento, derrubada, arrasto ou imobilização.",
+      "descricao_curta": "Impede deslocamento, derrubada, arrasto ou imobilização. Teste de Vigor ou Mobilidade.",
+      "descricao_longa": "Impede deslocamento, derrubada, arrasto ou imobilização. Teste de Vigor ou Mobilidade.",
       "payload_automacao": {
         "efeitos": [
           {

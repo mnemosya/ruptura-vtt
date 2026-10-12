@@ -1,0 +1,629 @@
+{
+  "_sobre": "Escolhas feitas pelo conjurador ao conjurar (manifestação, forma, efeito). Aplicado em content_documents (spell) como estatisticas.escolhas_conjuracao. Fonte: texto das magias v1.2 no Notion. `efeitos` lista só o que dá para rolar na conjuração: dano (soma_vertente = soma o nível na vertente) e rolagem.",
+  "magias": {
+    "biotica_biorreator": [
+      {
+        "id": "funcao",
+        "rotulo": "função",
+        "opcoes": [
+          {
+            "id": "filtrar",
+            "nome": "Filtrar",
+            "resumo": "Limpa até 15 m³ de água ou ar por hora."
+          },
+          {
+            "id": "reciclar",
+            "nome": "Reciclar",
+            "resumo": "Converte resíduos em alimento para 1d6 pessoas.",
+            "efeitos": [
+              {
+                "tipo": "rolagem",
+                "dado": "1d6",
+                "rotulo": "pessoas alimentadas por um dia"
+              }
+            ]
+          },
+          {
+            "id": "decompor",
+            "nome": "Decompor",
+            "resumo": "Reduz até dois cadáveres a matéria orgânica.",
+            "efeitos": [
+              {
+                "tipo": "rolagem",
+                "dado": "1d6",
+                "rotulo": "minutos de processamento"
+              }
+            ]
+          }
+        ],
+        "artigo": "a"
+      }
+    ],
+    "biotica_germinar": [
+      {
+        "id": "efeito",
+        "rotulo": "efeito",
+        "opcoes": [
+          {
+            "id": "cobrir",
+            "nome": "Cobrir",
+            "resumo": "Terreno difícil em até 4 m de raio."
+          },
+          {
+            "id": "bloquear",
+            "nome": "Bloquear",
+            "resumo": "Fecha passagem de até 2 m com estrutura de 10 PD."
+          },
+          {
+            "id": "escalar",
+            "nome": "Escalar",
+            "resumo": "Superfície escalável sem teste."
+          }
+        ],
+        "artigo": "o"
+      }
+    ],
+    "biotica_plasticidade": [
+      {
+        "id": "adaptacao",
+        "rotulo": "adaptação",
+        "opcoes": [
+          {
+            "id": "pulmao_anfibio",
+            "nome": "Pulmão Anfíbio",
+            "resumo": "Respira debaixo d’água."
+          },
+          {
+            "id": "visao_infratermica",
+            "nome": "Visão Infratérmica",
+            "resumo": "Enxerga no escuro e na fumaça leve até 20 m."
+          },
+          {
+            "id": "pele_escamada",
+            "nome": "Pele Escamada",
+            "resumo": "Reduz em 2 o primeiro dano físico da rodada."
+          },
+          {
+            "id": "sangue_depurador",
+            "nome": "Sangue Depurador",
+            "resumo": "Imune a Envenenado; doenças param de progredir."
+          }
+        ],
+        "artigo": "a"
+      }
+    ],
+    "biotica_corpo_feral": [
+      {
+        "id": "matriz",
+        "rotulo": "matriz",
+        "opcoes": [
+          {
+            "id": "canidea",
+            "nome": "Canídea",
+            "resumo": "Faro, rastreamento, perseguição e presas."
+          },
+          {
+            "id": "felina",
+            "nome": "Felina",
+            "resumo": "Visão na penumbra, mobilidade e garras."
+          },
+          {
+            "id": "ofidica",
+            "nome": "Ofídica",
+            "resumo": "Termorrecepção, contorção, constrição e presas peçonhentas."
+          }
+        ],
+        "artigo": "a"
+      }
+    ],
+    "biotica_neogenese": [
+      {
+        "id": "efeito",
+        "rotulo": "efeito",
+        "opcoes": [
+          {
+            "id": "reconstituir",
+            "nome": "Reconstituir",
+            "resumo": "Regenera membro, olho, orelha ou órgão em 10 min."
+          },
+          {
+            "id": "apendice_vivo",
+            "nome": "Apêndice Vivo",
+            "resumo": "Membro extra por 1 hora."
+          }
+        ],
+        "artigo": "o"
+      }
+    ],
+    "biotica_ninho": [
+      {
+        "id": "tamanho",
+        "rotulo": "tamanho",
+        "opcoes": [
+          {
+            "id": "pequenos",
+            "nome": "Pequenos"
+          },
+          {
+            "id": "medios",
+            "nome": "Médios"
+          }
+        ],
+        "artigo": "o"
+      },
+      {
+        "id": "forma",
+        "rotulo": "forma",
+        "opcoes": [
+          {
+            "id": "cacadores",
+            "nome": "Caçadores",
+            "resumo": "Atacam com 2d8 + 3; 2d6 de dano em acerto."
+          },
+          {
+            "id": "vigias",
+            "nome": "Vigias",
+            "resumo": "Detectam criaturas a até 15 m."
+          },
+          {
+            "id": "carregadores",
+            "nome": "Carregadores",
+            "resumo": "Transportam criaturas ou carga."
+          }
+        ],
+        "artigo": "a"
+      }
+    ],
+    "biotica_anamnese": [
+      {
+        "id": "efeito",
+        "rotulo": "efeito em criatura viva",
+        "opcoes": [
+          {
+            "id": "remover_envenenado",
+            "nome": "Remover Envenenado"
+          },
+          {
+            "id": "repetir_resistir",
+            "nome": "Repetir Resistir",
+            "resumo": "Contra doença, infecção ou parasita, com +1d8."
+          }
+        ],
+        "artigo": "o"
+      }
+    ],
+    "cinetica_contravetor": [
+      {
+        "id": "efeito",
+        "rotulo": "efeito",
+        "opcoes": [
+          {
+            "id": "queda",
+            "nome": "Amortecer queda",
+            "resumo": "Reduz a altura da queda em até 15 m."
+          },
+          {
+            "id": "deslocamento",
+            "nome": "Frear deslocamento",
+            "resumo": "Reduz deslocamento involuntário em até 5 m."
+          }
+        ],
+        "artigo": "o"
+      }
+    ],
+    "cognitiva_modular_emocao": [
+      {
+        "id": "intensidade",
+        "rotulo": "intensidade",
+        "opcoes": [
+          {
+            "id": "amplificar",
+            "nome": "Amplificar",
+            "resumo": "Agir contra a emoção custa +1 PA."
+          },
+          {
+            "id": "reduzir",
+            "nome": "Reduzir",
+            "resumo": "A emoção deixa de ser dominante."
+          }
+        ],
+        "artigo": "a"
+      }
+    ],
+    "cognitiva_manada": [
+      {
+        "id": "modo",
+        "rotulo": "modo",
+        "opcoes": [
+          {
+            "id": "medo",
+            "nome": "Medo",
+            "resumo": "Alvos não se aproximam da fonte."
+          },
+          {
+            "id": "atracao",
+            "nome": "Atração",
+            "resumo": "Alvos se aproximam da fonte."
+          }
+        ],
+        "artigo": "o"
+      }
+    ],
+    "cognitiva_emprestimo": [
+      {
+        "id": "efeito",
+        "rotulo": "o que emprestar",
+        "opcoes": [
+          {
+            "id": "pericia",
+            "nome": "Perícia"
+          },
+          {
+            "id": "magia",
+            "nome": "Magia",
+            "resumo": "Nível 3 ou inferior, uma conjuração."
+          },
+          {
+            "id": "caracteristica",
+            "nome": "Característica de Classe",
+            "resumo": "Um uso."
+          }
+        ],
+        "artigo": ""
+      }
+    ],
+    "energetica_rajada_elemental": [
+      {
+        "id": "manifestacao",
+        "rotulo": "manifestação",
+        "opcoes": [
+          {
+            "id": "ignea",
+            "nome": "Ígnea",
+            "resumo": "2d6 + Energética ígneo; Queimando no crítico.",
+            "efeitos": [
+              {
+                "tipo": "dano",
+                "dado": "2d6",
+                "soma_vertente": true,
+                "tipo_dano": "igneo"
+              }
+            ]
+          },
+          {
+            "id": "gelida",
+            "nome": "Gélida",
+            "resumo": "1d10 + Energética gélido; prende ao chão (Agarrado).",
+            "efeitos": [
+              {
+                "tipo": "dano",
+                "dado": "1d10",
+                "soma_vertente": true,
+                "tipo_dano": "gelido"
+              }
+            ]
+          },
+          {
+            "id": "eletrica",
+            "nome": "Elétrica",
+            "resumo": "1d10 + Energética elétrico; +1d6 em alvo molhado ou com metal.",
+            "efeitos": [
+              {
+                "tipo": "dano",
+                "dado": "1d10",
+                "soma_vertente": true,
+                "tipo_dano": "eletrico"
+              }
+            ]
+          }
+        ],
+        "artigo": "a"
+      }
+    ],
+    "energetica_evocacao": [
+      {
+        "id": "manifestacao",
+        "rotulo": "manifestação",
+        "opcoes": [
+          {
+            "id": "fogo",
+            "nome": "Fogo"
+          },
+          {
+            "id": "gelo",
+            "nome": "Gelo"
+          },
+          {
+            "id": "eletricidade",
+            "nome": "Eletricidade"
+          },
+          {
+            "id": "luz",
+            "nome": "Luz"
+          },
+          {
+            "id": "som",
+            "nome": "Som"
+          }
+        ],
+        "artigo": "a"
+      }
+    ],
+    "energetica_revestimento": [
+      {
+        "id": "revestimento",
+        "rotulo": "revestimento",
+        "opcoes": [
+          {
+            "id": "igneo",
+            "nome": "Ígneo",
+            "resumo": "Arma causa +1d4 + Energética ígneo."
+          },
+          {
+            "id": "gelido",
+            "nome": "Gélido",
+            "resumo": "Camada de gelo; terreno difícil; Lenta."
+          },
+          {
+            "id": "eletrico",
+            "nome": "Elétrico",
+            "resumo": "Arma causa +1d4 + Energética elétrico."
+          },
+          {
+            "id": "luminoso",
+            "nome": "Luminoso",
+            "resumo": "Emite luz; golpe pode Ofuscar."
+          },
+          {
+            "id": "sonoro",
+            "nome": "Sonoro",
+            "resumo": "Amplifica ou abafa os sons do alvo."
+          }
+        ],
+        "artigo": "o"
+      }
+    ],
+    "energetica_condensacao": [
+      {
+        "id": "efeito",
+        "rotulo": "efeito",
+        "opcoes": [
+          {
+            "id": "coletar",
+            "nome": "Coletar",
+            "resumo": "Até 10 litros de água."
+          },
+          {
+            "id": "secar",
+            "nome": "Secar",
+            "resumo": "Remove a umidade da área."
+          },
+          {
+            "id": "revelar",
+            "nome": "Revelar",
+            "resumo": "Destaca marcas, pegadas e correntes de ar."
+          }
+        ],
+        "artigo": "o"
+      }
+    ],
+    "energetica_desvio_espectral": [
+      {
+        "id": "faixa",
+        "rotulo": "faixa",
+        "opcoes": [
+          {
+            "id": "luz",
+            "nome": "Luz"
+          },
+          {
+            "id": "som",
+            "nome": "Som"
+          },
+          {
+            "id": "sinais",
+            "nome": "Sinais eletromagnéticos"
+          }
+        ],
+        "artigo": "a"
+      }
+    ],
+    "energetica_ressonancia": [
+      {
+        "id": "manifestacao",
+        "rotulo": "manifestação",
+        "opcoes": [
+          {
+            "id": "silencio",
+            "nome": "Silêncio",
+            "resumo": "Nenhum som se propaga na área."
+          },
+          {
+            "id": "estrondo",
+            "nome": "Estrondo",
+            "resumo": "Vigor ou fica Surda."
+          }
+        ],
+        "artigo": "a"
+      }
+    ],
+    "energetica_campo_de_saturacao": [
+      {
+        "id": "saturacao",
+        "rotulo": "saturação",
+        "opcoes": [
+          {
+            "id": "baixa",
+            "nome": "Baixa",
+            "resumo": "Criaturas na área ficam Insaturadas."
+          },
+          {
+            "id": "alta",
+            "nome": "Alta",
+            "resumo": "Criaturas na área ficam Saturadas."
+          }
+        ],
+        "artigo": "a"
+      }
+    ],
+    "material_alterar_propriedades": [
+      {
+        "id": "propriedade",
+        "rotulo": "propriedade",
+        "opcoes": [
+          {
+            "id": "escorregadia",
+            "nome": "Escorregadia"
+          },
+          {
+            "id": "aspera",
+            "nome": "Áspera"
+          },
+          {
+            "id": "pegajosa",
+            "nome": "Pegajosa"
+          },
+          {
+            "id": "condutiva",
+            "nome": "Condutiva"
+          },
+          {
+            "id": "isolante",
+            "nome": "Isolante"
+          },
+          {
+            "id": "opaca",
+            "nome": "Opaca"
+          },
+          {
+            "id": "translucida",
+            "nome": "Translúcida"
+          },
+          {
+            "id": "espelhada",
+            "nome": "Espelhada"
+          }
+        ],
+        "artigo": "a"
+      }
+    ],
+    "material_armadilha": [
+      {
+        "id": "efeito",
+        "rotulo": "efeito",
+        "opcoes": [
+          {
+            "id": "garra",
+            "nome": "Garra",
+            "resumo": "Esquivar ou fica Agarrada (4 PD)."
+          },
+          {
+            "id": "colapso",
+            "nome": "Colapso",
+            "resumo": "Terreno difícil; Mobilidade ou fica Caída."
+          }
+        ],
+        "artigo": "o"
+      }
+    ],
+    "material_lastro": [
+      {
+        "id": "efeito",
+        "rotulo": "efeito",
+        "opcoes": [
+          {
+            "id": "leve",
+            "nome": "Leve",
+            "resumo": "Um décimo do peso."
+          },
+          {
+            "id": "pesado",
+            "nome": "Pesado",
+            "resumo": "Dez vezes o peso."
+          }
+        ],
+        "artigo": "o"
+      }
+    ],
+    "material_arsenal": [
+      {
+        "id": "forma",
+        "rotulo": "forma",
+        "opcoes": [
+          {
+            "id": "lamina",
+            "nome": "Lâmina",
+            "resumo": "Corpo + 1d8 cortante ou perfurante · 6 PD"
+          },
+          {
+            "id": "lanca",
+            "nome": "Lança",
+            "resumo": "Corpo + 1d6 perfurante · 5 PD"
+          },
+          {
+            "id": "bastao",
+            "nome": "Bastão",
+            "resumo": "Corpo + 1d6 contundente · 6 PD"
+          },
+          {
+            "id": "martelo",
+            "nome": "Martelo",
+            "resumo": "Corpo + 1d10 contundente · 8 PD"
+          },
+          {
+            "id": "manoplas",
+            "nome": "Manoplas",
+            "resumo": "Corpo + 1d6 contundente · 6 PD"
+          },
+          {
+            "id": "corrente",
+            "nome": "Corrente",
+            "resumo": "Corpo + 1d6 contundente · 5 PD"
+          },
+          {
+            "id": "escudo",
+            "nome": "Escudo",
+            "resumo": "8 PD"
+          },
+          {
+            "id": "municao",
+            "nome": "Munição",
+            "resumo": "6 unidades de um tipo."
+          }
+        ],
+        "artigo": "a"
+      }
+    ],
+    "material_reconstruir": [
+      {
+        "id": "efeito",
+        "rotulo": "efeito",
+        "opcoes": [
+          {
+            "id": "pd",
+            "nome": "Restaurar PD",
+            "resumo": "O alvo recupera até 30 PD."
+          },
+          {
+            "id": "mit",
+            "nome": "Restaurar MIT",
+            "resumo": "Uma armadura recupera 3d6 MIT.",
+            "efeitos": [
+              {
+                "tipo": "rolagem",
+                "dado": "3d6",
+                "rotulo": "MIT recuperada"
+              }
+            ]
+          },
+          {
+            "id": "reincorporar",
+            "nome": "Reincorporar",
+            "resumo": "Partes separadas a até 15 m voltam ao lugar."
+          }
+        ],
+        "artigo": "o"
+      }
+    ]
+  }
+}

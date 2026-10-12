@@ -300,6 +300,8 @@ export interface ConsolePin {
  */
 export interface TermoDeRegra {
   tipo: "acao" | "condicao" | "propriedade";
+  /** Rótulo do tooltip quando o `tipo` genérico não basta (ex.: "reação" para Esquivar). */
+  rotulo?: string;
   slug: string;
   nome: string;
   descricao: string | null;

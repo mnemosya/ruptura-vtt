@@ -117,6 +117,8 @@ import {
   rollSpellDamage,
   getSpellDamageEffect,
   getSpellHealEffect,
+  aplicarEscolhasDeConjuracao,
+  rollDamageFormula,
   rollSpellHeal,
   prepareSpellCastResolution,
   rollSpellAttack,
@@ -321,6 +323,9 @@ function parseRecursoAtual(rawValue: number, piso = 0): number {
   if (!Number.isFinite(rawValue)) return piso;
   return Math.max(piso, Math.trunc(rawValue));
 }
+
+/** Rótulo do tooltip de uma ação de combate, pelo `tipo` do conteúdo. */
+const ROTULO_DA_ACAO: Record<string, string> = { acao: "ação", reacao: "reação", acao_reacao: "ação ou reação", acao_livre: "ação livre" };
 
 export default function CharacterSheetClient({
   acaoToken,
@@ -2827,10 +2832,13 @@ export default function CharacterSheetClient({
    * da mente; o narrador resolve pelas ferramentas de /dev/table. Sem
    * PA/Mana suficiente, não muda nada e só avisa. Exige magia aprendida.
    */
-  async function handleCastSpell(slug: string, contexto?: ContextoAcaoToken, custoManaEscolhido?: number) {
+  async function handleCastSpell(slug: string, contexto?: ContextoAcaoToken, custoManaEscolhido?: number, escolhas?: Record<string, string>) {
     const current = characterRef.current;
-    const spell = spellsIniciais.find((s) => s.slug === slug);
-    if (!spell) return;
+    const spellBase = spellsIniciais.find((s) => s.slug === slug);
+    if (!spellBase) return;
+    // Manifestação/forma escolhida: troca o dano pelo da opção (fluxo normal rola e registra).
+    const escolhaAplicada = aplicarEscolhasDeConjuracao(spellBase, escolhas, getVertenteLevel(current, spellBase.vertente));
+    const spell = escolhaAplicada.spell;
     if (!isSpellLearned(current, slug)) {
       addLogEntry("recurso", `${spell.nome} ainda não foi aprendida.`);
       return;
@@ -2856,6 +2864,8 @@ export default function CharacterSheetClient({
       : `Mana ${result.manaBefore} → ${result.manaAfter}${temporariaConsumida > 0 ? ` (${temporariaConsumida} da Mana temporária)` : ""}`;
     const partes: string[] = [`PA ${result.paBefore} → ${result.paAfter}`, manaTexto];
     if (spell.estatisticas.conjuracaoTexto && spell.estatisticas.custo_pa === 0) partes.unshift(`conjuração: ${spell.estatisticas.conjuracaoTexto.toLowerCase()}`);
+    partes.unshift(...escolhaAplicada.rotulos);
+    for (const r of escolhaAplicada.rolagens) partes.push(`${r.rotulo}: ${rollDamageFormula(r.formula)} (${r.formula})`);
     if (resolution.damage) {
       partes.push(
         `dano ${resolution.damage.fixo ? "fixo" : "rolado"} ${resolution.damage.result} (${resolution.damage.formula}/${resolution.damage.tipoDano}${resolution.damage.subtipoDano ? `/${resolution.damage.subtipoDano}` : ""})`,
@@ -3686,6 +3696,8 @@ export default function CharacterSheetClient({
     () => [
       ...combatActionsIniciais.map((a) => ({
         tipo: "acao" as const,
+        // Esquivar, Bloquear etc. são reações: o rótulo segue o `tipo` da ação, não "ação" para tudo.
+        rotulo: ROTULO_DA_ACAO[a.tipo],
         slug: a.slug,
         nome: a.nome,
         descricao: a.descricao_curta ?? a.descricao_longa ?? null,
@@ -3748,7 +3760,7 @@ export default function CharacterSheetClient({
       sheetMode,
       onLearn: handleLearnSpell,
       onForget: handleForgetSpell,
-      onCast: (slug, custoManaEscolhido) => void handleCastSpell(slug, undefined, custoManaEscolhido),
+      onCast: (slug, custoManaEscolhido, escolhas) => void handleCastSpell(slug, undefined, custoManaEscolhido, escolhas),
       onRollDamage: handleRollSpellDamage,
       onRollHeal: handleRollSpellHeal,
       onSetVertenteLevel: handleSetVertenteLevel,

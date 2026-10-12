@@ -33,6 +33,13 @@ const MAGIAS: MagiaHud[] = [
   m("esferas", "Esferas de impacto", "cinetica", 2, "ataque", 3, 2, "20 m", "Instantânea", "Você condensa o ar em esferas densas.", "Gaste de **3 a 6** de mana; cada ponto acima de 3 cria uma esfera a mais.", { escolha: { tipo: "valor", min: 3, max: 6 } }),
   m("salto", "Salto vetorial", "cinetica", 2, "movimento", 2, 1, "Pessoal", "Instantânea", "Você redireciona o próprio momento num único impulso.", "Salta até **9 m** em qualquer direção sem teste."),
   m("choque", "Arco voltaico", "energetica", 1, "ataque", 2, 2, "12 m", "Instantânea", "Um arco elétrico salta entre seus dedos até o alvo.", "Causa **2d6 energético**; salta para um segundo alvo a 3 m.", { dano: "2d6", preRequisito: "Eletrônica 2" }),
+  m("rajada", "Rajada elemental", "energetica", 2, "ataque", 3, 2, "20 m", "Instantânea", "Você condensa energia bruta num disparo.", "Trate a conjuração como **Atacar** (à distância), usando Energética no lugar de Corpo.", {
+    escolhasConjuracao: [{ id: "manifestacao", rotulo: "manifestação", opcoes: [
+      { id: "ignea", nome: "Ígnea", resumo: "2d6 + Energética ígneo; Queimando no crítico." },
+      { id: "gelida", nome: "Gélida", resumo: "1d10 + Energética gélido; prende ao chão (Agarrado)." },
+      { id: "eletrica", nome: "Elétrica", resumo: "1d10 + Energética elétrico; +1d6 em alvo molhado ou com metal." },
+    ] }],
+  }),
   m("sobrecarga", "Sobrecarga de rede", "energetica", 3, "controle", 5, 2, "18 m", "1 minuto", "Você satura um dispositivo com pulso eletromagnético.", "Desativa **drones e implantes** num raio de 4 m.", { bloqueada: false }),
   m("molde", "Moldar metal", "material", 2, "controle", 3, 2, "Toque", "Concentração", "A estrutura cristalina cede sob seu toque.", "Dobra, abre ou sela até **1 m²** de metal."),
   m("barreira", "Barreira de entulho", "material", 4, "suporte", 4, 2, "9 m", "1 minuto", "Destroços próximos se erguem e travam no lugar.", "Cria **cobertura total** de 3 m de largura.", { bloqueada: true }),

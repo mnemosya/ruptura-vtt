@@ -61,6 +61,8 @@ export interface MagiaHud {
   efeitoDepois?: ReactNode;
   /** Custo escolhido ao conjurar: linha da tabela de níveis ou valor de mana. */
   escolha?: EscolhaHud | null;
+  /** Manifestação/forma/efeito escolhidos ao conjurar (Rajada Elemental: Ígnea/Gélida/Elétrica). */
+  escolhasConjuracao?: { id: string; rotulo: string; opcoes: { id: string; nome: string; resumo?: string }[] }[];
   /** "1d6" ou valor fixo — presente = a magia tem dano para rolar. */
   dano?: string | null;
   /** "1d6" ou valor fixo — presente = a magia cura (PV, ou PE quando `curaPe`). */
@@ -105,7 +107,7 @@ export interface PropsMagiasHud {
   mana: { atual: number; max: number };
   somenteLeitura?: boolean;
   /** `custoMana`: presente quando a magia tem `escolha` — o custo escolhido. */
-  onConjurar: (slug: string, custoMana?: number) => void;
+  onConjurar: (slug: string, custoMana?: number, escolhas?: Record<string, string>) => void;
   onRolarDano: (slug: string) => void;
   onRolarCura?: (slug: string) => void;
   onAbrirCatalogo?: () => void;
@@ -274,7 +276,34 @@ function TabelaDeNiveis({ e, cor, escolhido, onEscolher }: { e: Extract<EscolhaH
   );
 }
 
-export function Leitura({ m, mana, onRolarDano, onRolarCura, escolhido, onEscolher }: { m: MagiaHud; mana: { atual: number; max: number }; onRolarDano?: () => void; onRolarCura?: () => void; escolhido?: number; onEscolher?: (chave: number) => void }) {
+/** Opções de manifestação/forma: cartões selecionáveis (role="radio" — fora da regra global que chanfra <button>). */
+function EscolhasDeConjuracao({ m, cor, valores, onEscolher }: { m: MagiaHud; cor: string; valores?: Record<string, string>; onEscolher?: (id: string, opcao: string) => void }) {
+  return <>
+    {m.escolhasConjuracao?.map((e) => (
+      <div key={e.id} style={{ marginTop: 14 }}>
+        <Tag className="hx-dim" style={{ display: "block", fontSize: 10, marginBottom: 6 }}>{e.rotulo}{onEscolher && <span style={{ opacity: .6 }}> · opcional</span>}</Tag>
+        {/* grade compacta só com nomes curtos e sem resumo; senão, lista (nomes longos quebravam a grade) */}
+        <div role={onEscolher ? "radiogroup" : undefined} aria-label={e.rotulo} style={{ display: "grid", gridTemplateColumns: e.opcoes.length > 2 && e.opcoes.every((o) => !o.resumo && o.nome.length <= 12) ? "repeat(auto-fill, minmax(120px, 1fr))" : "1fr", gap: 4 }}>
+          {e.opcoes.map((o) => {
+            const on = valores?.[e.id] === o.id;
+            return (
+              <div key={o.id} role={onEscolher ? "radio" : undefined} aria-checked={onEscolher ? on : undefined} tabIndex={onEscolher ? 0 : undefined}
+                className={onEscolher ? "hx-linha-nivel" : undefined}
+                onClick={() => onEscolher?.(e.id, o.id)}
+                onKeyDown={(ev) => { if (onEscolher && (ev.key === " " || ev.key === "Enter")) { ev.preventDefault(); onEscolher(e.id, o.id); } }}
+                style={{ padding: "8px 10px", border: `1px solid ${on ? cor : "rgba(0,212,255,.14)"}`, background: on ? cor + "1f" : "transparent", boxShadow: on ? `inset 2px 0 0 ${cor}` : undefined }}>
+                <span className="hx-display" style={{ display: "block", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: on ? cor : "var(--hx-ice)" }}>{o.nome}</span>
+                {o.resumo && <span style={{ display: "block", marginTop: 3, fontSize: 13, lineHeight: 1.4, color: "var(--hx-texto)", opacity: .8 }}>{o.resumo}</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    ))}
+  </>;
+}
+
+export function Leitura({ m, mana, onRolarDano, onRolarCura, escolhido, onEscolher, escolhas, onEscolherOpcao }: { m: MagiaHud; mana: { atual: number; max: number }; onRolarDano?: () => void; onRolarCura?: () => void; escolhido?: number; onEscolher?: (chave: number) => void; escolhas?: Record<string, string>; onEscolherOpcao?: (id: string, opcao: string) => void }) {
   const custo = m.mana ?? 0, falta = custo > mana.atual, mc = falta ? "#ff5f74" : CY;
   const acao = acaoDaMagia(m);
   const c = VERT(m.vertente).c;
@@ -331,6 +360,7 @@ export function Leitura({ m, mana, onRolarDano, onRolarCura, escolhido, onEscolh
           {m.efeitoDepois && <div style={{ marginTop: 12 }}>{m.efeitoDepois}</div>}
         </div>
       )}
+      {!!m.escolhasConjuracao?.length && <EscolhasDeConjuracao m={m} cor={c} valores={escolhas} onEscolher={onEscolherOpcao} />}
       {m.resistencia && <p style={{ marginTop: 12, fontSize: 13, lineHeight: 1.5, color: "var(--hx-texto)", opacity: .8 }}>Resistência: {m.resistencia}. Resolvida pelo alvo após conjurar.</p>}
       {m.manuais?.map((t, i) => <div key={i} style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5, color: "var(--hx-texto)", opacity: .8 }}>{t}</div>)}
     </div>
@@ -367,9 +397,15 @@ export function MagiasHud(props: PropsMagiasHud) {
   const [vid, setVid] = useState<string>(inicial);
   const [aberta, setAberta] = useState<string | null>(null);
   const [escolhido, setEscolhido] = useState<number | null>(null);
+  const [opcoesEscolhidas, setOpcoesEscolhidas] = useState<Record<string, string>>({});
+  /* escolha opcional: clicar de novo na mesma opção desmarca */
+  const alternarOpcao = (id: string, o: string) => setOpcoesEscolhidas((v) => {
+    const { [id]: atual, ...resto } = v;
+    return atual === o ? resto : { ...resto, [id]: o };
+  });
   const [q, setQ] = useState("");
   useEffect(() => { setQ(""); }, [vid]);
-  useEffect(() => { setEscolhido(null); }, [aberta]);
+  useEffect(() => { setEscolhido(null); setOpcoesEscolhidas({}); }, [aberta]);
   useEffect(() => {
     if (!aberta) return;
     const fechar = (e: KeyboardEvent) => { if (e.key === "Escape") setAberta(null); };
@@ -388,6 +424,7 @@ export function MagiasHud(props: PropsMagiasHud) {
   const custoEfetivo = opcao ? opcao.mana : magiaAberta?.mana ?? null;
   const magiaComCusto = magiaAberta && opcao ? { ...magiaAberta, mana: custoEfetivo } : magiaAberta;
   const semMana = !!magiaAberta && custoEfetivo != null && custoEfetivo > mana.atual;
+  const nomesEscolhidos = (magiaAberta?.escolhasConjuracao ?? []).map((e) => e.opcoes.find((o) => o.id === opcoesEscolhidas[e.id])?.nome).filter(Boolean);
   const conjuravel = (m: MagiaHud) => !m.bloqueada && (m.mana == null || m.mana <= mana.atual) && (!m.escolha || opcao != null);
   const R = 120, C = 170;
 
@@ -539,6 +576,7 @@ export function MagiasHud(props: PropsMagiasHud) {
                 <Faixa m={magiaAberta} nivel={niveis[magiaAberta.vertente]} />
                 <Titulo m={magiaAberta} primaria={magiaAberta.vertente === props.primaria} />
                 <div style={{ padding: 16 }}><Leitura m={magiaComCusto!} mana={mana} escolhido={opcao?.chave} onEscolher={props.somenteLeitura ? undefined : setEscolhido}
+                  escolhas={opcoesEscolhidas} onEscolherOpcao={props.somenteLeitura ? undefined : alternarOpcao}
                   onRolarDano={props.somenteLeitura ? undefined : () => props.onRolarDano(magiaAberta.slug)}
                   onRolarCura={props.somenteLeitura || !props.onRolarCura ? undefined : () => props.onRolarCura?.(magiaAberta.slug)} /></div>
               </div>
@@ -582,8 +620,8 @@ export function MagiasHud(props: PropsMagiasHud) {
                     )}
                     <button type="button" disabled={!conjuravel(magiaComCusto!)} className="hx-btn-conjurar"
                       style={{ flex: 1, padding: "12px 0", fontFamily: "var(--hx-display)", fontSize: 14, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".3em" }}
-                      onClick={() => { props.onConjurar(magiaAberta.slug, opcao ? opcao.mana : undefined); setAberta(null); }}>
-                      {opcao ? `conjurar · ${opcao.mana} mana` : "conjurar"}
+                      onClick={() => { props.onConjurar(magiaAberta.slug, opcao ? opcao.mana : undefined, nomesEscolhidos.length ? opcoesEscolhidas : undefined); setAberta(null); }}>
+                      {["conjurar", ...nomesEscolhidos, ...(opcao ? [`${opcao.mana} mana`] : [])].join(" · ")}
                     </button>
                   </div>
                 </div>

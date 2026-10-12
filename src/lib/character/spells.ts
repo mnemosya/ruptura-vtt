@@ -52,6 +52,8 @@ export interface SpellStatistics {
   conjuracaoManual?: boolean;
   custoManaTexto?: string | null;
   conjuracaoTexto?: string | null;
+  /** `estatisticas.escolhas_conjuracao` — manifestação/forma/efeito escolhidos ao conjurar. Vazio = nenhuma. */
+  escolhasConjuracao?: EscolhaDeConjuracao[];
   /** `estatisticas.escolha_mana` cru (intervalo, investimento livre, tabela) — lido por `getSpellCostChoice`. */
   escolhaMana?: Record<string, unknown> | null;
   /** `estatisticas.pre_requisito` (ex.: "Medicina 5") — só exibido; `null` quando ausente. */
@@ -132,6 +134,7 @@ export function normalizeSpellContent(raw: Record<string, unknown>): SpellConten
       custoManaTexto: typeof asRecord(estatisticasRaw.custo_mana_regra)?.texto === "string" ? String(asRecord(estatisticasRaw.custo_mana_regra)?.texto) : null,
       conjuracaoTexto: typeof asRecord(estatisticasRaw.conjuracao)?.texto === "string" ? String(asRecord(estatisticasRaw.conjuracao)?.texto) : null,
       escolhaMana: asRecord(estatisticasRaw.escolha_mana),
+      escolhasConjuracao: normalizarEscolhasConjuracao(estatisticasRaw.escolhas_conjuracao),
       preRequisito: typeof estatisticasRaw.pre_requisito === "string" && estatisticasRaw.pre_requisito.trim() ? estatisticasRaw.pre_requisito.trim() : null,
       resolucao: typeof estatisticasRaw.resolucao === "string" ? estatisticasRaw.resolucao : "",
       periciaTeste: typeof estatisticasRaw.pericia_teste === "string" ? estatisticasRaw.pericia_teste : null,
@@ -339,6 +342,84 @@ export function rollSpellDamage(spell: SpellContent, rng?: () => number): number
   if (!efeito) return null;
   if (efeito.dado) return rollDamageFormula(efeito.dado, rng);
   return efeito.valor ?? null;
+}
+
+// ---------------------------------------------------------------------
+// Escolhas de conjuração (manifestação, forma, efeito).
+//
+// Estruturadas no conteúdo em `estatisticas.escolhas_conjuracao`
+// (fonte: content/v12/escolhas_conjuracao_v1_2.json). Uma magia pode ter
+// mais de uma (Ninho: tamanho + forma). Cada opção pode trazer efeitos
+// roláveis — dano (somando o nível na vertente quando o texto diz
+// "+ Energética") e rolagens avulsas ("1d6 pessoas", "3d6 MIT").
+// ---------------------------------------------------------------------
+
+export type EfeitoDeOpcao =
+  | { tipo: "dano"; dado: string; tipo_dano: string; soma_vertente?: boolean }
+  | { tipo: "rolagem"; dado: string; rotulo: string };
+
+export interface OpcaoDeConjuracao {
+  id: string;
+  nome: string;
+  resumo?: string;
+  efeitos: EfeitoDeOpcao[];
+}
+
+export interface EscolhaDeConjuracao {
+  id: string;
+  rotulo: string;
+  /** "o"/"a" para "escolha a manifestação"; vazio quando o rótulo já é uma frase ("o que emprestar"). */
+  artigo: string;
+  opcoes: OpcaoDeConjuracao[];
+}
+
+function normalizarEscolhasConjuracao(raw: unknown): EscolhaDeConjuracao[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((e) => {
+    const er = asRecord(e);
+    if (!er || typeof er.id !== "string" || !Array.isArray(er.opcoes)) return [];
+    const opcoes = er.opcoes.flatMap((o) => {
+      const or = asRecord(o);
+      if (!or || typeof or.id !== "string" || typeof or.nome !== "string") return [];
+      const efeitos = (Array.isArray(or.efeitos) ? or.efeitos : []).flatMap((x): EfeitoDeOpcao[] => {
+        const xr = asRecord(x);
+        if (xr?.tipo === "dano" && typeof xr.dado === "string" && typeof xr.tipo_dano === "string") return [{ tipo: "dano", dado: xr.dado, tipo_dano: xr.tipo_dano, soma_vertente: xr.soma_vertente === true }];
+        if (xr?.tipo === "rolagem" && typeof xr.dado === "string" && typeof xr.rotulo === "string") return [{ tipo: "rolagem", dado: xr.dado, rotulo: xr.rotulo }];
+        return [];
+      });
+      return [{ id: or.id, nome: or.nome, resumo: typeof or.resumo === "string" ? or.resumo : undefined, efeitos }];
+    });
+    return opcoes.length ? [{ id: er.id, rotulo: typeof er.rotulo === "string" ? er.rotulo : er.id, artigo: typeof er.artigo === "string" ? er.artigo : "", opcoes }] : [];
+  });
+}
+
+/**
+ * Aplica as opções escolhidas: devolve a magia com o dano da opção no
+ * lugar do efeito de dano (o fluxo normal de conjuração rola e registra),
+ * as rolagens avulsas e o texto "manifestação: Gélida" para o log.
+ * Escolhas ausentes/ inválidas são ignoradas.
+ */
+export function aplicarEscolhasDeConjuracao(
+  spell: SpellContent,
+  escolhidas: Record<string, string> | undefined,
+  vertenteLevel: number | null,
+): { spell: SpellContent; rotulos: string[]; rolagens: { rotulo: string; formula: string }[] } {
+  const rotulos: string[] = [];
+  const rolagens: { rotulo: string; formula: string }[] = [];
+  const danos: Record<string, unknown>[] = [];
+  for (const e of spell.estatisticas.escolhasConjuracao ?? []) {
+    const opcao = e.opcoes.find((o) => o.id === escolhidas?.[e.id]);
+    if (!opcao) continue;
+    rotulos.push(`${e.rotulo}: ${opcao.nome}`);
+    for (const ef of opcao.efeitos) {
+      if (ef.tipo === "rolagem") rolagens.push({ rotulo: ef.rotulo, formula: ef.dado });
+      else danos.push({ tipo: "dano", dado: ef.soma_vertente && vertenteLevel ? `${ef.dado}+${vertenteLevel}` : ef.dado, tipo_dano: ef.tipo_dano });
+    }
+  }
+  if (!danos.length) return { spell, rotulos, rolagens };
+  const automacao = asRecord(spell.payload_automacao) ?? {};
+  const efeitos = (Array.isArray(automacao.efeitos) ? automacao.efeitos : []).filter((x) => asRecord(x)?.tipo !== "dano");
+  return { spell: { ...spell, payload_automacao: { ...automacao, efeitos: [...danos, ...efeitos] } }, rotulos, rolagens };
 }
 
 // ---------------------------------------------------------------------

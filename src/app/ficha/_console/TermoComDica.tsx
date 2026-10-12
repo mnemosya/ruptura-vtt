@@ -77,7 +77,7 @@ export function TermoComDica({
         >
           <span className="rc-termo-dica-cab">
             {termo.nome}
-            <em>{ROTULO_DO_TIPO[termo.tipo]}</em>
+            <em>{termo.rotulo ?? ROTULO_DO_TIPO[termo.tipo]}</em>
           </span>
           {termo.descricao ? (
             <span className="rc-termo-dica-txt">{termo.descricao}</span>
