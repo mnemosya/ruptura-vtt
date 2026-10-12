@@ -634,10 +634,10 @@ export const FILLED_ICON_DATA = {
   },
   "noun_Bat_3547430": {
     "viewBox": [
-      -11.015,
-      -11.015,
-      64,
-      64
+      -0.1,
+      -0.1,
+      42.2,
+      42.2
     ],
     "paths": [
       {
@@ -1463,10 +1463,10 @@ export const FILLED_ICON_DATA = {
   },
   "noun_greatsword_3547396": {
     "viewBox": [
-      -10.256,
-      -12.569,
-      64,
-      64
+      -0.1,
+      -0.1,
+      43.7,
+      39.1
     ],
     "paths": [
       {

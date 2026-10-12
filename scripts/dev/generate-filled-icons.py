@@ -34,8 +34,8 @@ ART_BOXES["noun_Lung_4303915"] = [0, 0, 90, 90]
 ART_BOXES["noun_Boot_2249240"] = [0, 0, 32, 32]
 ART_BOXES["noun_Bike_8339085"] = [0, 0, 100, 100]
 ART_BOXES["noun_Tool_8303078"] = [0, 0, 100, 100]
-ART_BOXES["noun_Bat_3547430"] = [-11.015, -11.015, 64, 64]
-ART_BOXES["noun_greatsword_3547396"] = [-10.256, -12.569, 64, 64]
+ART_BOXES["noun_Bat_3547430"] = [-0.1, -0.1, 42.2, 42.2]
+ART_BOXES["noun_greatsword_3547396"] = [-0.1, -0.1, 43.7, 39.1]
 ART_BOXES.update({"helmet": [0, 0, 512, 512], "noun_equipmentglovearmor_2360083": [0, 0, 512, 512], "noun_equipmentlegarmor_2360077": [0, 0, 512, 512]})
 ART_BOXES.update({
     "noun_armadurasubdermica_7991712": [0, 0, 100, 100],
