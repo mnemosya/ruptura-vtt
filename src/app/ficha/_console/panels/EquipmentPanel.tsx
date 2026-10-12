@@ -1,4 +1,5 @@
 "use client";
+import { itemDescription } from "../../../../lib/character/itemDescription";
 import { itemDisplayName } from "../../../../lib/character/itemDisplayName";
 
 /**
@@ -39,6 +40,10 @@ export function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
   if (ocultavel) linhas.push({ rotulo: "Ocultável", valor: ocultavel });
   // Valor do item (o mesmo "₳ 1.500" da coluna Valor da lista do Inventário).
   if (modelo?.preco) linhas.push({ rotulo: "Valor", valor: `₳ ${modelo.preco.toLocaleString("pt-BR")}` });
+  const propriedades = api.propriedadesDoItem(inst.id).filter(t => !/ocult/i.test(`${t.slug} ${t.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "")}`)).map(t => ({ nome: t.nome, descricao: t.descricao }));
+  const descricao = itemDescription(modelo, [...linhas.map(l => l.rotulo), ...(dano ? ["Dano"] : []),
+    ...(propriedades.length ? ["Propriedades"] : []), ...(modelo?.mitMax != null ? ["MIT", "Proteção"] : []),
+    ...(modelo?.pdMax != null ? ["PD", "Proteção"] : []), ...(modelo?.regioes && modelo.regioes.length > 1 ? ["Cobertura"] : [])]);
   return {
     id: inst.id,
     nome: itemDisplayName(inst, modelo),
@@ -49,7 +54,7 @@ export function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
     temaCategoria: modelo ? temaDoModelo(modelo, "equipamentos") : undefined,
     duasMaos: modelo?.maos === 2,
     // "Ocultável" já tem linha própria (Sim/Parcial/Não) — como etiqueta, contradizia o "Não".
-    propriedades: api.propriedadesDoItem(inst.id).filter((t) => !/ocult/i.test(`${t.slug} ${t.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "")}`)).map((t) => ({ nome: t.nome, descricao: t.descricao })),
+    propriedades,
     categoria,
     categoriaRotulo: modelo?.categoria_label ?? categoria,
     vertente: VERTENTE_DA_CATEGORIA[categoria] ?? "nenhuma",
@@ -63,7 +68,7 @@ export function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
     dano: dano ? { dado: dano.dado, tipo: dano.tipo } : null,
     municao: modelo?.municaoMax != null ? [inst.municaoAtual ?? modelo.municaoMax, modelo.municaoMax] : null,
     usavel: modelo != null && (modelo.custoPaUso != null || modelo.cargasMax != null),
-    descricao: (modelo?.descricao_longa?.trim() || modelo?.descricao_curta) ? <TextoComRegras texto={modelo?.descricao_longa?.trim() || modelo?.descricao_curta || ""} glossario={api.glossario} /> : null,
+    descricao: descricao ? <TextoComRegras texto={descricao} glossario={api.glossario} /> : null,
     linhas,
   };
 }

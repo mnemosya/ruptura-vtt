@@ -1,4 +1,5 @@
 "use client";
+import { itemDescription } from "../../../../lib/character/itemDescription";
 import { ammunitionType } from "../../../../lib/character/ammunitionType";
 import { itemDisplayName } from "../../../../lib/character/itemDisplayName";
 import { ehMochilaMk } from "../../../../lib/character/backpacks";
@@ -217,11 +218,16 @@ function itemDoHud(api: ConsoleApi, instancia: InventoryItemInstance): ItemHud {
 
   const linhas: { rotulo: string; valor: string }[] = [];
   if (alcance) linhas.push({ rotulo: "Alcance", valor: alcance });
+  if (modelo?.maos) linhas.push({ rotulo: "Mãos", valor: String(modelo.maos) });
   if (modelo?.alcanceArremessoMetros != null) linhas.push({ rotulo: "Arremesso", valor: `${modelo.alcanceArremessoMetros} m` });
   if (modelo?.areaMetros != null) linhas.push({ rotulo: "Alvo", valor: `${modelo.areaMetros} m de raio` });
   if (modelo?.custoPaUsoTexto) linhas.push({ rotulo: "Duração", valor: modelo.custoPaUsoTexto });
   if (ocultavel) linhas.push({ rotulo: "Ocultável", valor: ocultavel });
 
+  const propriedades = api.propriedadesDoItem(instancia.id).map(t => t.nome);
+  const descricao = itemDescription(modelo, [...linhas.map(l => l.rotulo), ...(dano ? ["Dano"] : []),
+    ...(propriedades.length ? ["Propriedades"] : []), ...(modelo?.custoPaUso != null ? ["Custo"] : []),
+    ...(modelo?.municaoMax != null ? ["Munição"] : []), ...(modelo?.cargasMax != null ? ["Cargas"] : [])]);
   const local = LOCAL_DO_ESTADO[instancia.estado];
   return {
     id: instancia.id,
@@ -240,15 +246,13 @@ function itemDoHud(api: ConsoleApi, instancia: InventoryItemInstance): ItemHud {
     espacosPorItem: espacosDoItem(modelo),
     ocupa: espacosDaInstancia(instancia, modelo),
     preco: modelo?.preco ?? null,
-    descricao: (modelo?.descricao_longa?.trim() || modelo?.descricao_curta)
-      ? <TextoComRegras texto={modelo?.descricao_longa?.trim() || modelo?.descricao_curta || ""} glossario={api.glossario} />
-      : null,
+    descricao: descricao ? <TextoComRegras texto={descricao} glossario={api.glossario} /> : null,
     destaque: dano ? { rotulo: "Dano", valor: dano.dado, sufixo: dano.tipo } : null,
     pa: modelo?.custoPaUso ?? null,
     cargas: modelo?.cargasMax != null ? [instancia.cargasAtual ?? modelo.cargasMax, modelo.cargasMax] : null,
     municao: modelo?.municaoMax != null ? [instancia.municaoAtual ?? modelo.municaoMax, modelo.municaoMax] : null,
     linhas,
-    propriedades: api.propriedadesDoItem(instancia.id).map((t) => t.nome),
+    propriedades,
     usavel: modelo != null && (modelo.custoPaUso != null || modelo.cargasMax != null),
   };
 }
@@ -358,6 +362,7 @@ function produtoDoModelo(api: ConsoleApi, modelo: ItemContent): ProdutoHud {
   const ocultavel = descricaoDeOcultavel(modelo);
   const linhas: { rotulo: string; valor: string }[] = [];
   if (alcance) linhas.push({ rotulo: "Alcance", valor: alcance });
+  if (modelo?.maos) linhas.push({ rotulo: "Mãos", valor: String(modelo.maos) });
   if (modelo.alcanceArremessoMetros != null) linhas.push({ rotulo: "Arremesso", valor: `${modelo.alcanceArremessoMetros} m` });
   if (modelo.areaMetros != null) linhas.push({ rotulo: "Área", valor: `${modelo.areaMetros} m de raio` });
   // Armadura/escudo: CONTRA O QUÊ protege (física/energética/híbrida) e ONDE (regiões).
@@ -373,6 +378,10 @@ function produtoDoModelo(api: ConsoleApi, modelo: ItemContent): ProdutoHud {
   if (modelo.pdMax != null) linhas.push({ rotulo: "PD", valor: String(modelo.pdMax) });
   if (ocultavel) linhas.push({ rotulo: "Ocultável", valor: ocultavel });
   const nomes = new Map(api.glossario.filter((t) => t.tipo === "propriedade").map((t) => [t.slug, t.nome]));
+  const propriedades = modelo.propertySlugs.map(s => nomes.get(s) ?? s);
+  const descricao = itemDescription(modelo, [...linhas.map(l => l.rotulo), ...(dano ? ["Dano"] : []),
+    ...(propriedades.length ? ["Propriedades"] : []), ...(modelo.custoPaUso != null ? ["Custo"] : []),
+    ...(modelo.municaoMax != null ? ["Munição"] : []), ...(modelo.cargasMax != null ? ["Cargas"] : [])]);
   return {
     slug: modelo.slug,
     nome: modelo.nome,
@@ -383,9 +392,9 @@ function produtoDoModelo(api: ConsoleApi, modelo: ItemContent): ProdutoHud {
     preco: modelo.preco ?? 0,
     espacos: espacosDoItem(modelo),
     raridade: modelo.raridade ?? null,
-    descricao: (modelo.descricao_longa?.trim() || modelo.descricao_curta) ? <TextoComRegras texto={modelo.descricao_longa?.trim() || modelo.descricao_curta || ""} glossario={api.glossario} /> : null,
+    descricao: descricao ? <TextoComRegras texto={descricao} glossario={api.glossario} /> : null,
     destaque: dano ? { rotulo: "Dano", valor: dano.dado, sufixo: dano.tipo } : null,
-    propriedades: modelo.propertySlugs.map((s) => nomes.get(s) ?? s),
+    propriedades,
     linhas,
     pa: modelo.custoPaUso ?? null,
     municao: modelo.municaoMax,
