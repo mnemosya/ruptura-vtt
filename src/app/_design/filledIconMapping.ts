@@ -51,6 +51,21 @@ export function filledCategoryIcon(category: string, name?: string, itemType?: s
   if (categoryKey === "municao" && normalizeIconKey(itemType ?? "") === "celula") return "energy cell";
   if (categoryKey === "municao" && ["flecha", "virote"].includes(normalizeIconKey(itemType ?? ""))) return "arrows";
   const nameKey = normalizeIconKey((name ?? "").trim());
+  if (["ferramenta", "utilidade"].includes(categoryKey)) {
+    if (nameKey === "lanterna_runica") return "noun_Flashlight_8418741";
+    if (nameKey === "papel_runico") return "noun_Paper_8227159";
+  }
+  if (categoryKey === "farmacia" && (nameKey === "medkit" || /^kit_de_estabilizacao_/.test(nameKey))) return "noun_medkit_5794368";
+  if (categoryKey === "escalpo") {
+    const implants: Record<string, FilledIconName> = {
+      optica: "noun_bioniccontact_6410565", opticos: "noun_bioniccontact_6410565",
+      braco: "noun_bionicrobotarm_7001919", de_braco: "noun_bionicrobotarm_7001919",
+      perna: "noun_bionicleg_7356680", de_perna: "noun_bionicleg_7356680",
+      audicao: "noun_earlistening_5252153", auditivos: "noun_earlistening_5252153",
+    };
+    const implant = implants[normalizeIconKey(itemType ?? "")];
+    if (implant) return implant;
+  }
   if (categoryKey === "mobilidade") {
     const mobility: Record<string, FilledIconName> = {
       patinete_eletrico: "noun_ElectricScooter_8291684", hoverboard: "noun_Hoverboard_7742758",

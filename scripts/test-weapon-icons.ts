@@ -100,3 +100,12 @@ assert.equal(filledCategoryIcon("robô", "Ceifador"), "noun_Robot_8483832");
 assert.equal(filledCategoryIcon("acessorio", "Máscara Filtrante"), "noun_respiratormask_6792995");
 assert.ok(FILLED_ICON_DATA.noun_respiratormask_6792995.paths.every(p => p.fillRule === "evenodd"));
 assert.ok(FILLED_ICON_DATA.noun_Skateboard_1293918.paths.every(p => p.transform === "translate(0,-952.36218)"));
+for (const [type, icon] of [["Óptica", "noun_bioniccontact_6410565"], ["opticos", "noun_bioniccontact_6410565"], ["de braco", "noun_bionicrobotarm_7001919"], ["Perna", "noun_bionicleg_7356680"], ["auditivos", "noun_earlistening_5252153"]] as const) {
+  assert.equal(filledCategoryIcon("escalpo", "Modelo", type), icon);
+  assert.ok(FILLED_ICON_DATA[icon].paths.length);
+}
+assert.equal(filledCategoryIcon("farmacia", "Medkit"), "noun_medkit_5794368");
+assert.equal(filledCategoryIcon("farmacia", "Kit de estabilização (PV)"), "noun_medkit_5794368");
+assert.equal(filledCategoryIcon("farmacia", "Ansiolítico"), "noun_drugs_7809670");
+assert.equal(filledCategoryIcon("ferramenta", "Lanterna rúnica"), "noun_Flashlight_8418741");
+assert.equal(filledCategoryIcon("ferramenta", "Papel rúnico"), "noun_Paper_8227159");

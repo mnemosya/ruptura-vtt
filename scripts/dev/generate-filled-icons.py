@@ -10,16 +10,19 @@ for folder in ("filled icons", "energy", "legacy"):
     for source in sorted((ROOT / "icones" / folder).glob("*.svg")):
         root = ET.parse(source).getroot()
         view_box = [float(n) for n in root.attrib["viewBox"].split()]
-        if source.stem in ("noun_drugs_7809670", "dorsal", "noun_Drone_8335890", "noun_ElectricScooter_8291684", "noun_Hoverboard_7742758", "noun_Robot_8483832", "noun_respiratormask_6792995"):
+        if source.stem in ("noun_drugs_7809670", "dorsal", "noun_Drone_8335890", "noun_ElectricScooter_8291684", "noun_Hoverboard_7742758", "noun_Robot_8483832", "noun_respiratormask_6792995", "noun_bionicleg_7356680", "noun_bionicrobotarm_7001919", "noun_Flashlight_8418741", "noun_Paper_8227159"):
             # O desenho ocupa 0..100; as margens extras incluem créditos abaixo.
             assert view_box == [-5, -10, 110, 135], source
             view_box = [0, 0, 100, 100]
         if source.stem == "noun_RollerSkate_5192593":
             assert view_box == [0, 0, 64, 80], source
             view_box = [0, 0, 64, 64]
-        if source.stem == "noun_Skateboard_1293918":
+        if source.stem in ("noun_Skateboard_1293918", "noun_earlistening_5252153", "noun_medkit_5794368"):
             assert view_box == [0, 0, 100, 125], source
             view_box = [0, 0, 100, 100]
+        if source.stem == "noun_bioniccontact_6410565":
+            assert view_box == [0, 0, 24, 30], source
+            view_box = [0, 0, 24, 24]
         if folder == "energy":
             # Noun exports use the extra bottom 22.5 units for credit text.
             assert view_box == [0, 0, 90, 112.5], source
