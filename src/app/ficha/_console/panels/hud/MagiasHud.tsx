@@ -17,6 +17,7 @@
  */
 
 import { useEffect, useState, type ReactNode } from "react";
+import { Search } from "lucide-react";
 import { oxanium } from "../../../../_design/oxanium";
 import { IconeVertente } from "../../../../_design/IconeVertente";
 import "./hud-base.css";
@@ -354,7 +355,8 @@ export function Leitura({ m, mana, onRolarDano, onRolarCura, escolhido, onEscolh
       </div>
       {m.descricao && <div style={{ marginTop: 12, fontSize: 14, lineHeight: 1.6, color: "var(--hx-texto)", opacity: .8 }}>{m.descricao}</div>}
       {(m.efeito || m.efeitoDepois || m.escolha?.tipo === "nivel") && (
-        <div style={{ marginTop: 12, paddingLeft: 12, borderLeft: `2px solid ${c}`, fontSize: 14, lineHeight: 1.6, color: "var(--hx-texto)" }}>
+        /* --rv-vertente-cor: o texto da regra (fórmulas, links do livro) pinta na cor da vertente */
+        <div style={{ marginTop: 12, paddingLeft: 12, borderLeft: `2px solid ${c}`, fontSize: 14, lineHeight: 1.6, color: "var(--hx-texto)", ["--rv-vertente-cor" as string]: c }}>
           {m.efeito}
           {m.escolha?.tipo === "nivel" && <TabelaDeNiveis e={m.escolha} cor={c} escolhido={escolhido} onEscolher={onEscolher} />}
           {m.efeitoDepois && <div style={{ marginTop: 12 }}>{m.efeitoDepois}</div>}
@@ -367,11 +369,15 @@ export function Leitura({ m, mana, onRolarDano, onRolarCura, escolhido, onEscolh
   );
 }
 
+/** Busca no mesmo desenho da do inventário (`.ih-busca`): caixa com borda, ícone e "esc" para limpar. */
 function Busca({ q, setQ }: { q: string; setQ: (s: string) => void }) {
   return (
-    <label style={{ display: "flex", alignItems: "center", gap: 8, width: 200, padding: "4px", borderBottom: "1px solid rgba(0,212,255,.2)" }}>
-      <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2} className="hx-dim"><circle cx="11" cy="11" r="6" /><path d="m20 20-4-4" /></svg>
-      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="buscar magia" aria-label="Buscar magia" style={{ width: "100%", background: "transparent", border: 0, outline: "none", fontSize: 14 }} />
+    <label className="hx-busca">
+      <Search size={15} strokeWidth={1.6} aria-hidden="true" />
+      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar magia…" aria-label="Buscar magia"
+        /* Esc limpa a busca (é o que a dica "esc" promete) sem fechar o Console */
+        onKeyDown={(e) => { if (e.key === "Escape" && q) { e.preventDefault(); e.stopPropagation(); setQ(""); } }} />
+      {q && <button type="button" className="hx-busca-tecla" onClick={() => setQ("")}>esc</button>}
     </label>
   );
 }
@@ -415,7 +421,8 @@ export function MagiasHud(props: PropsMagiasHud) {
 
   const v = VERT(vid), c = v.c, nv = niveis[vid];
   const daVertente = magias.filter((m) => m.vertente === vid);
-  const lista = daVertente.filter((m) => sem(m.nome).includes(sem(q))).sort((a, b) => a.nivel - b.nivel || a.nome.localeCompare(b.nome, "pt-BR"));
+  /* com busca, procura no grimório inteiro (todas as vertentes); sem busca, só a vertente do anel */
+  const lista = (q ? magias : daVertente).filter((m) => sem(m.nome).includes(sem(q))).sort((a, b) => a.nivel - b.nivel || a.nome.localeCompare(b.nome, "pt-BR"));
   const nivelMax = Math.max(5, ...lista.map((m) => m.nivel));
   const magiaAberta = magias.find((m) => m.slug === aberta) ?? null;
   /* custo escolhido (nível da tabela / valor); começa na opção mais barata liberada */
@@ -496,12 +503,15 @@ export function MagiasHud(props: PropsMagiasHud) {
 
         {/* grimório */}
         <div style={{ display: "flex", minHeight: 0, flexDirection: "column", padding: "20px 24px 0" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
-            <span className="hx-display" style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".22em", opacity: .7 }}>grimório</span>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", flexWrap: "wrap", gap: 10 }}>
-              <Busca q={q} setQ={setQ} />
-              {props.onAbrirCatalogo && <button type="button" className="hx-btn-acao" onClick={props.onAbrirCatalogo} style={{ padding: "8px 12px", whiteSpace: "nowrap", fontSize: 11, textTransform: "uppercase", letterSpacing: ".12em" }}>Catálogo de magias</button>}
-            </div>
+          {/* mesma barra do inventário: busca ocupando a largura + botão com contorno ao lado */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <Busca q={q} setQ={setQ} />
+            {props.onAbrirCatalogo && (
+              <button type="button" className="hx-catalogo" onClick={props.onAbrirCatalogo}>
+                <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5Zm0 14a2 2 0 0 1 2-2h13" /></svg>
+                <span className="hx-catalogo-rot">Catálogo</span>
+              </button>
+            )}
           </div>
           <div className="hx-semsb" style={{ marginTop: 8, minHeight: 0, flex: 1, overflowY: "auto", paddingBottom: 20 }}>
             {Array.from({ length: nivelMax }, (_, i) => i + 1).map((n) => {
@@ -516,7 +526,10 @@ export function MagiasHud(props: PropsMagiasHud) {
                           <span className="hx-ch" style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 16px", background: CASCO, textAlign: "left" }}>
                             <span style={{ width: 3, alignSelf: "stretch", background: corTipo(m.tipo) }} />
                             <span style={{ minWidth: 0, flex: 1 }}>
-                              <span className="hx-display" style={{ display: "block", fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em" }}>{m.nome}</span>
+                              <span className="hx-display" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em" }}>
+                                {/* busca global mistura vertentes: o glifo diz de qual é cada uma */}
+                                {q && <Glifo v={VERT(m.vertente)} tam={13} />}{m.nome}
+                              </span>
                               <span className="hx-mono hx-dim" style={{ display: "block", marginTop: 4, fontSize: 10, textTransform: "uppercase", letterSpacing: ".14em" }}>
                                 <span style={{ color: corTipo(m.tipo) }}>{m.tipo || "—"}</span>
                               </span>
@@ -545,7 +558,7 @@ export function MagiasHud(props: PropsMagiasHud) {
                   {q ? "nada encontrado" : !magias.length ? "grimório vazio" : !nv ? "vertente adormecida" : "grimório vazio"}
                 </div>
                 <p style={{ marginTop: 8, maxWidth: 280, fontSize: 14, lineHeight: 1.35, color: "var(--hx-texto)", opacity: .7 }}>
-                  {q ? <>Nenhuma magia de <span style={{ color: c }}>{v.nome}</span> corresponde a “{q}”.</>
+                  {q ? <>Nenhuma magia do grimório corresponde a “{q}”.</>
                     : !magias.length ? (props.vazio ?? "Nenhuma magia aprendida.")
                       : !nv ? <>Você ainda não tem nível em <span style={{ color: c }}>{v.nome}</span>. Ganhe o primeiro ponto para aprender magias de nível 1.</>
                       : <>Nenhuma magia de <span style={{ color: c }}>{v.nome}</span> aprendida ainda.</>}
@@ -613,7 +626,7 @@ export function MagiasHud(props: PropsMagiasHud) {
                       <span style={{ display: "flex", alignItems: "center", background: "rgba(0,212,255,.06)" }}>
                         {([-1, 1] as const).map((passo) => {
                           const i = opcoes.findIndex((o) => o.chave === opcao.chave) + passo, alvo = opcoes[i];
-                          const seta = <button key={passo} type="button" aria-label={passo < 0 ? "Nível anterior" : "Próximo nível"} disabled={!alvo} onClick={() => alvo && setEscolhido(alvo.chave)} className="hx-seta-custo" style={{ padding: "0 8px", alignSelf: "stretch", opacity: alvo ? 1 : .25 }}><svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden="true"><path d={passo < 0 ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"} /></svg></button>;
+                          const seta = <button key={passo} type="button" aria-label={passo < 0 ? "Diminuir" : "Aumentar"} disabled={!alvo} onClick={() => alvo && setEscolhido(alvo.chave)} className="hx-seta-custo" style={{ padding: "0 8px", alignSelf: "stretch", opacity: alvo ? 1 : .25 }}><svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden="true"><path d={passo < 0 ? "M6 12h12" : "M12 6v12M6 12h12"} /></svg></button>;
                           return passo < 0 ? [seta, <Tag key="r" style={{ fontSize: 11, color: "var(--hx-ice)", whiteSpace: "nowrap" }}>{opcao.rotulo}</Tag>] : seta;
                         })}
                       </span>

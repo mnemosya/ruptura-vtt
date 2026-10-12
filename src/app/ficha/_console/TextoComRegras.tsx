@@ -27,7 +27,12 @@
  * rótulo — os links apontam para páginas internas do Notion).
  */
 
-import { Fragment, useMemo, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { BookOpen } from "lucide-react";
+import dynamic from "next/dynamic";
+
+/* O livro só carrega quando um link é aberto: fica fora do pacote (e do SSR) da ficha. */
+const LivroCodex = dynamic(() => import("../../mesas/[campaignId]/vtt/_compendio/LivroCodex").then((m) => m.LivroCodex), { ssr: false });
 import { TermoComDica } from "./TermoComDica";
 import { separarTermos } from "./termosDeRegra";
 import type { TermoDeRegra } from "./types";
@@ -82,23 +87,46 @@ function emBlocos(texto: string): Bloco[] {
   return blocos.filter((b) => (b.tipo === "p" ? b.linhas.length > 0 : true));
 }
 
+/** ID da página do Notion num link (`app.notion.com/p/<id>`, `notion.so/...-<id>`) — é o mesmo ID dos capítulos do Compêndio. */
+const paginaDoNotion = (url: string) => /notion\.(?:com|so)\/(?:[^?#]*?[-/])?([0-9a-f]{32})(?:[?#]|$)/i.exec(url)?.[1] ?? null;
+
+/** Link para um capítulo do livro: abre o Compêndio ali mesmo, por cima da ficha. */
+function LinkDoLivro({ pageId, children }: { pageId: string; children: ReactNode }) {
+  const [aberto, setAberto] = useState(false);
+  // O livro (z 486) abre por cima de janelas do Console como o catálogo (z 600): sobe enquanto estiver aberto por aqui.
+  useEffect(() => {
+    if (!aberto) return;
+    document.body.classList.add("rc-livro-por-cima");
+    return () => document.body.classList.remove("rc-livro-por-cima");
+  }, [aberto]);
+  return <>
+    {/* <a> e não <button>: fica fora da regra global que chanfra botões do chassi */}
+    <a href="#" className="rc-link-livro" onClick={(e) => { e.preventDefault(); setAberto(true); }}>
+      <BookOpen size={14} strokeWidth={1.8} aria-hidden="true" />{children}
+    </a>
+    {aberto && <LivroCodex campaignId={null} inicial={{ pageId }} onClose={() => setAberto(false)} />}
+  </>;
+}
+
 /** Texto corrido: negrito, itálico, `termo`, [link](url) — e os termos do glossário grifados em tudo. */
 function emLinha(texto: string, glossario: TermoDeRegra[], chave: string): ReactNode[] {
-  const semLinks = texto.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1");
+  // Link para página do Notion vira atalho do livro; outros links ficam só com o rótulo.
+  const semLinks = texto.replace(/\[([^\]]+)\]\(([^)]*)\)/g, (todo, rotulo: string, url: string) => (paginaDoNotion(url) ? todo : rotulo));
   const comTermos = (t: string, k: string) =>
     separarTermos(t, glossario).map((p, i) =>
       p.termo ? <TermoComDica key={`${k}-${i}-${p.termo.slug}`} termo={p.termo}>{p.texto}</TermoComDica> : <Fragment key={`${k}-${i}`}>{p.texto}</Fragment>,
     );
   // Ordem importa: negrito antes de itálico (o `*` do itálico casaria dentro de `**`).
-  const PADRAO = /\*\*(.+?)\*\*|`([^`]+)`|\*([^*\s][^*]*?)\*/g;
+  const PADRAO = /\[([^\]]+)\]\(([^)]*)\)|\*\*(.+?)\*\*|`([^`]+)`|\*([^*\s][^*]*?)\*/g;
   const saida: ReactNode[] = [];
   let resto = 0, n = 0;
   for (const m of semLinks.matchAll(PADRAO)) {
     if (m.index! > resto) saida.push(...comTermos(semLinks.slice(resto, m.index), `${chave}t${n}`));
     const k = `${chave}m${n++}`;
-    if (m[1] != null) saida.push(<strong key={k} className="rc-negrito">{emLinha(m[1], glossario, k)}</strong>);
-    else if (m[2] != null) saida.push(<strong key={k} className="rc-negrito">{comTermos(m[2], k)}</strong>);
-    else saida.push(<em key={k}>{comTermos(m[3], k)}</em>);
+    if (m[1] != null) saida.push(<LinkDoLivro key={k} pageId={paginaDoNotion(m[2])!}>{m[1].replace(/\*/g, "")}</LinkDoLivro>);
+    else if (m[3] != null) saida.push(<strong key={k} className="rc-negrito">{emLinha(m[3], glossario, k)}</strong>);
+    else if (m[4] != null) saida.push(<strong key={k} className="rc-negrito">{comTermos(m[4], k)}</strong>);
+    else saida.push(<em key={k}>{comTermos(m[5], k)}</em>);
     resto = m.index! + m[0].length;
   }
   if (resto < semLinks.length) saida.push(...comTermos(semLinks.slice(resto), `${chave}t${n}`));
@@ -121,7 +149,25 @@ export function TextoComRegras({
         const topo = i === 0 ? 0 : "0.6em";
         if (b.tipo === "p") return <p key={k} style={{ margin: `${topo} 0 0` }}>{emLinha(b.linhas.join(" "), glossario, k)}</p>;
         if (b.tipo === "citacao") {
-          return <blockquote key={k} style={{ margin: `${topo} 0 0`, paddingLeft: "0.8em", borderLeft: "2px solid currentColor", opacity: 0.75 }}>{emLinha(b.linhas.join(" "), glossario, k)}</blockquote>;
+          // Citação do Notion = nota em itálico, exportada picotada ("*texto *[*link*](url)* *").
+          // O bloco inteiro já é itálico; os "*" soltos que sobram saem (o **negrito** fica).
+          // Os "*" do link saem antes (rótulo limpo); o link em si continua e vira atalho do livro.
+          const links: string[] = [];
+          const texto = b.linhas.join(" ")
+            .replace(/\[\*?([^\]]*?)\*?\]\(([^)]*)\)/g, (_t, rot: string, url: string) => `\u0000${links.push(`[${rot.replace(/\*/g, "")}](${url})`) - 1}\u0000`)
+            .replace(/(?<!\*)\*(?!\*)/g, "").replace(/\s+/g, " ").trim()
+            .replace(/\u0000(\d+)\u0000/g, (_t, i: string) => links[Number(i)]);
+          return <blockquote key={k} style={{ margin: `${topo} 0 0`, paddingLeft: "0.8em", borderLeft: "2px solid currentColor", opacity: 0.75, fontStyle: "italic" }}>{emLinha(texto, glossario, k)}</blockquote>;
+        }
+        if (b.tipo === "tabela" && b.linhas.length === 1 && b.linhas[0].length === 2) {
+          // Tabela só com cabeçalho de duas células ("RAM:" | "5 + (Mana × 2)") é uma fórmula: vira destaque.
+          const [rotulo, valor] = b.linhas[0];
+          return (
+            <div key={k} className="rc-formula" style={{ margin: `${topo} 0 0`, display: "flex", alignItems: "baseline", gap: "0.8em", flexWrap: "wrap", padding: "0.6em 0.9em", borderLeft: "2px solid var(--rv-vertente-cor, currentColor)", background: "color-mix(in srgb, currentColor 6%, transparent)" }}>
+              <span style={{ fontSize: "0.8em", fontWeight: 800, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--rv-vertente-cor, currentColor)" }}>{emLinha(rotulo.replace(/\*\*/g, ""), glossario, `${k}r`)}</span>
+              <span style={{ fontSize: "1.15em", fontWeight: 700 }}>{emLinha(valor.replace(/\*\*/g, ""), glossario, `${k}v`)}</span>
+            </div>
+          );
         }
         if (b.tipo === "tabela") {
           const [cab, ...corpo] = b.linhas;

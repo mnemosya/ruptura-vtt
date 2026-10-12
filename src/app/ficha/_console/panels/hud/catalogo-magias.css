@@ -7,7 +7,6 @@
 .cm-fechar{flex:none}
 .cm-corpo{display:grid;grid-template-columns:220px minmax(0,1fr) clamp(340px,30%,440px);min-height:0;flex:1}
 .cm-vertentes{min-height:0;overflow-y:auto;padding:16px 10px;border-right:1px solid rgba(0,212,255,.12)}
-.cm-nav-titulo{margin:0 10px 12px;padding-bottom:12px;border-bottom:1px solid rgba(0,212,255,.15);font-size:10px;text-transform:uppercase;letter-spacing:.18em;color:var(--hx-dim,#819dac)}
 .cm-vertente{position:relative;display:flex;align-items:center;gap:10px;width:100%;min-height:45px;margin-bottom:4px;padding:8px 10px;border:1px solid transparent;background:transparent;color:var(--hx-texto,#cfeff4);text-align:left;text-transform:uppercase;font-size:13px;font-weight:700;transition:background-color .15s,border-color .15s}
 .cm-vertente svg{flex:none;color:var(--cm-item-cor)}
 .cm-vertente span:nth-of-type(2){flex:1;min-width:0}
@@ -16,9 +15,14 @@
 .cm-fio{position:absolute;left:-1px;top:25%;height:50%;width:2px;background:var(--cm-item-cor);opacity:0}
 .cm-vertente[aria-pressed="true"] .cm-fio{opacity:1}
 .cm-catalogo{display:flex;flex-direction:column;min-height:0;min-width:0}
-.cm-busca{display:flex;align-items:center;gap:10px;padding:14px 22px;border-bottom:1px solid rgba(0,212,255,.12);color:var(--hx-dim,#819dac)}
-.cm-busca input{min-width:0;width:100%;padding:5px 0;color:var(--hx-texto,#cfeff4);background:transparent;border:0;border-bottom:1px solid rgba(0,212,255,.28);font:inherit;font-size:14px;outline:none}
-.cm-busca input:focus-visible{border-bottom-color:var(--hx-cy,#00d4ff)}
+/* Busca no desenho da do inventário/grimório: caixa com borda; o placeholder tinha a cor padrão do navegador. */
+.cm-busca-faixa{padding:14px 22px;border-bottom:1px solid rgba(0,212,255,.12)}
+.cm-busca{display:flex;align-items:center;gap:10px;height:38px;padding:0 14px;box-sizing:border-box;border:1px solid color-mix(in srgb,var(--hx-cy,#00d4ff) 25%,transparent);color:var(--hx-dim,#819dac);transition:border-color .15s,background .15s,color .15s}
+.cm-busca:hover{border-color:color-mix(in srgb,var(--hx-cy,#00d4ff) 50%,transparent)}
+.cm-busca:focus-within{border-color:var(--hx-cy,#00d4ff);color:var(--hx-cy,#00d4ff);background:color-mix(in srgb,var(--hx-cy,#00d4ff) 6%,transparent)}
+.cm-busca input{flex:1;min-width:0;background:transparent;border:0;outline:none;color:var(--hx-ice,#cfeff4);font-family:var(--hx-corpo,system-ui);font-size:15px}
+.cm-busca input::placeholder{color:color-mix(in srgb,var(--hx-dim,#819dac) 60%,transparent)}
+.cm-busca input::-webkit-search-cancel-button{display:none}
 .cm-lista{min-height:0;overflow-y:auto;padding:6px 20px 24px;scrollbar-width:thin}
 .cm-secao{display:flex;align-items:center;gap:9px;margin:22px 0 12px;color:var(--cm-cor);text-transform:uppercase}
 .cm-secao .hx-display{font-size:12px;font-weight:900;letter-spacing:.13em}
@@ -44,6 +48,6 @@
 .cm-aprender:disabled{opacity:.65;cursor:default}
 .cm-aviso,.cm-estado{margin:9px 0 0;color:var(--hx-dim,#819dac);font-size:12px;line-height:1.4}
 .cm-vazio{padding:28px 8px;color:var(--hx-dim,#819dac);font-size:14px}
-@media(max-width:1099px){.cm-corpo{grid-template-columns:minmax(0,1fr) 350px}.cm-vertentes{grid-column:1/-1;display:flex;gap:4px;overflow-x:auto;overflow-y:hidden;padding:8px 12px;border-right:0;border-bottom:1px solid rgba(0,212,255,.12)}.cm-nav-titulo{display:none}.cm-vertente{width:auto;flex:none;margin:0;padding:8px 12px}.cm-vertente small{display:none}.cm-grade{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:1099px){.cm-corpo{grid-template-columns:minmax(0,1fr) 350px}.cm-vertentes{grid-column:1/-1;display:flex;gap:4px;overflow-x:auto;overflow-y:hidden;padding:8px 12px;border-right:0;border-bottom:1px solid rgba(0,212,255,.12)}.cm-vertente{width:auto;flex:none;margin:0;padding:8px 12px}.cm-vertente small{display:none}.cm-grade{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:719px){.cm-corpo{grid-template-columns:1fr}.cm-vertentes{grid-column:1}.cm-catalogo{display:flex}.cm-detalhe{display:none;border-left:0}.cm-janela[data-detalhe] .cm-vertentes,.cm-janela[data-detalhe] .cm-catalogo{display:none}.cm-janela[data-detalhe] .cm-detalhe{display:flex}.cm-detalhe-voltar{display:block;border-bottom:1px solid rgba(0,212,255,.12)}.cm-detalhe-voltar button{width:100%;padding:12px 16px;border:0;background:transparent;color:var(--hx-cy,#00d4ff);text-align:left}.cm-grade{grid-template-columns:repeat(2,minmax(0,1fr))}.cm-cabecalho{padding:16px}.cm-cabecalho h2{font-size:20px}}
 @media(max-width:400px){.cm-grade{grid-template-columns:repeat(2,minmax(0,1fr))}.cm-lista{padding:6px 12px 20px}.cm-carta-info{padding:9px}}

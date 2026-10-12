@@ -3,7 +3,7 @@
 import { estiloCategoria } from "../../../../_design/itemCategoryColors";
 import { FichaItemModal, type PecaHud } from "../hud/EquipamentoHud";
 import { ResourceValueCard } from "../ResourceValueCard";
-import { ArrowRight, ArrowRightLeft, Backpack, Check, ChevronUp, Eye, Hand, ListChecks, Package, Shirt, Trash2, Users, Warehouse, X, Zap } from "lucide-react";
+import { ArrowRight, ArrowRightLeft, Backpack, Check, ChevronUp, Eye, Hand, ListChecks, Package, Search, Shirt, Trash2, Users, Warehouse, X, Zap } from "lucide-react";
 import { createPortal } from "react-dom";
 import { ItemCategoryIcon } from "../../../../_design/itemIcons";
 
@@ -103,7 +103,6 @@ export interface PropsInventarioHud {
 
 const IC = {
   fechar: "M6 6l12 12M18 6 6 18",
-  busca: "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm9 16-4-4",
   mover: "M5 12h14m-4-4 4 4-4 4",
   lixo: "M5 7h14M9 7V4h6v3m-8 0 1 14h8l1-14",
 };
@@ -213,7 +212,7 @@ export function InventarioHud(props: PropsInventarioHud) {
         </div>
         <div className="ih-ferramentas">
           <label className="ih-busca">
-            <Glifo d={IC.busca} tam={15} />
+            <Search size={15} strokeWidth={1.6} aria-hidden="true" />
             <input ref={buscaRef} value={busca} onChange={(e) => { setBusca(e.target.value); setMarcados(new Set()); }}
               placeholder="Rastrear item…" aria-label="Buscar item no inventário" />
             {busca

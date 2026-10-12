@@ -4991,3 +4991,19 @@ button.rc-banc-valor:hover { background: #0f202b; }
 @media (prefers-reduced-motion: reduce) {
   .rc-aux:has(.rc-banc), .rc-aux:has(.rc-banc) * { animation: none !important; transition-duration: .01ms !important; }
 }
+
+/* Livro aberto por um link de regra (TextoComRegras): por cima das janelas do Console (catálogo = 600). */
+body.rc-livro-por-cima .fj-shell { z-index: 700; }
+
+/* Link de regra para um capítulo do livro (TextoComRegras). Cor da vertente quando o texto está numa magia. */
+.rc-link-livro {
+  display: inline-flex; align-items: center; gap: 4px; padding: 0 3px; margin: 0 -3px;
+  color: var(--rv-vertente-cor, #00d4ff); font-style: normal; font-weight: 600; white-space: nowrap;
+  text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 3px;
+  transition: background .15s, color .15s, text-decoration-color .15s;
+}
+.rc-link-livro:hover, .rc-link-livro:focus-visible {
+  color: #eaffff; text-decoration-color: var(--rv-vertente-cor, #00d4ff);
+  background: color-mix(in srgb, var(--rv-vertente-cor, #00d4ff) 22%, transparent);
+}
+.rc-link-livro:focus-visible { outline: 1px solid var(--rv-vertente-cor, #00d4ff); outline-offset: 1px; }

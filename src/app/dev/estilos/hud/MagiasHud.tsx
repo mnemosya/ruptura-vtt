@@ -59,7 +59,8 @@ export function MagiasHud() {
             onConjurar={(s, c) => setMana((v) => Math.max(0, v - (c ?? custo(s))))}
             onSurtoDeEnergia={() => setMana((v) => v + 5)}
             onRolarDano={() => {}}
-            onRolarCura={() => {}} />
+            onRolarCura={() => {}}
+            onAbrirCatalogo={() => {}} />
         </div>
       </div>
     </div>

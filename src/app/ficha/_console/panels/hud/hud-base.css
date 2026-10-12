@@ -437,3 +437,25 @@ button.hx-mun-valor:hover { border-color: rgba(0, 212, 255, .35); background: rg
 .hx-seta-custo.hx-seta-custo { border-radius: 0 !important; corner-shape: round !important; clip-path: none !important; }
 .hx-seta-custo { color: var(--hx-cy) !important; background: transparent !important; font-size: 16px; }
 .hx-seta-custo:not(:disabled):hover { background: rgba(0, 212, 255, .14) !important; }
+
+/* Barra do grimório no desenho da do inventário (.ih-busca / .ih-mercado). */
+.hx-busca {
+  display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; height: 38px; padding: 0 14px; box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--hx-cy) 25%, transparent); color: var(--hx-dim);
+  transition: border-color .15s, background .15s, color .15s;
+}
+.hx-busca:hover { border-color: color-mix(in srgb, var(--hx-cy) 50%, transparent); }
+.hx-busca:focus-within { border-color: var(--hx-cy); color: var(--hx-cy); background: color-mix(in srgb, var(--hx-cy) 6%, transparent); }
+.hx-busca input { flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: var(--hx-ice); font-family: var(--hx-corpo); font-size: 15px; }
+.hx-busca input::placeholder { color: color-mix(in srgb, var(--hx-dim) 60%, transparent); }
+.hx-busca-tecla { font-family: var(--hx-mono); font-size: 10px; color: var(--hx-dim) !important; background: transparent !important; }
+.hx-catalogo {
+  display: flex !important; align-items: center; gap: 10px; height: 38px; padding: 0 14px !important; flex: none;
+  border: 1px solid color-mix(in srgb, var(--hx-cy) 40%, transparent) !important; color: var(--hx-cy) !important;
+  background: transparent !important; transition: all .15s;
+}
+.hx-catalogo:hover { border-color: var(--hx-cy) !important; background: var(--hx-cy) !important; color: var(--hx-abismo) !important; }
+.hx-catalogo-rot { font-family: var(--hx-display); font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: .2em; }
+/* Traço escuro sobre o ciano parece mais fino: engrossa no hover. */
+.hx-catalogo svg { transition: stroke-width .15s; }
+.hx-catalogo:hover svg { stroke-width: 2.2; }

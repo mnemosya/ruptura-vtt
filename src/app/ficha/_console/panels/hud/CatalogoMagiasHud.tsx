@@ -27,36 +27,41 @@ export function CatalogoMagiasHud({ magias, aprendidas, niveis, mana, somenteLei
   const [busca, setBusca] = useState("");
   const [selecionada, setSelecionada] = useState<string | null>(null);
   const [detalheAberto, setDetalheAberto] = useState(false);
-  const definicao = VERTENTES_HUD.find(v => v.id === vertente) ?? primeira;
-  const visiveis = magias.filter(m => m.vertente === vertente && normalizar(m.nome).includes(normalizar(busca)))
+  /* "" = todas as vertentes; a busca fica no recorte selecionado. */
+  const todas = vertente === "";
+  const definicao = VERTENTES_HUD.find(v => v.id === vertente) ?? null;
+  const vertDe = (m: MagiaHud) => VERTENTES_HUD.find(v => v.id === m.vertente) ?? VERTENTES_HUD[0];
+  const visiveis = magias.filter(m => (todas || m.vertente === vertente) && normalizar(m.nome).includes(normalizar(busca)))
     .sort((a, b) => a.nivel - b.nivel || a.nome.localeCompare(b.nome, "pt-BR"));
   const alvo = visiveis.find(m => m.slug === selecionada) ?? visiveis[0] ?? null;
   const aprendida = !!alvo && aprendidas.has(alvo.slug);
   const escolher = (slug: string) => { setSelecionada(slug); setDetalheAberto(true); };
 
-  return <div className={`hx cm-janela ${oxanium.variable}`} data-detalhe={detalheAberto || undefined} style={{ ["--cm-cor" as string]: definicao.c }}>
+  return <div className={`hx cm-janela ${oxanium.variable}`} data-detalhe={detalheAberto || undefined} style={{ ["--cm-cor" as string]: !todas && definicao ? definicao.c : "#00d4ff" }}>
     <header className="cm-cabecalho">
       <div><span className="hx-mono cm-sobretitulo">// Arquivo de magias</span><h2 className="hx-display">Catálogo de magias<span>.</span></h2></div>
       <button type="button" className="hx-fechar-quad cm-fechar" onClick={onFechar} aria-label="Fechar catálogo de magias"><X size={16} aria-hidden="true" /></button>
     </header>
     <div className="cm-corpo">
       <nav className="cm-vertentes" aria-label="Vertentes de magia">
-        <div className="cm-nav-titulo hx-mono">Vertentes</div>
+        <button type="button" className="cm-vertente" style={{ ["--cm-item-cor" as string]: "#00d4ff" }} aria-pressed={vertente === ""} onClick={() => { setVertente(""); setSelecionada(null); setDetalheAberto(false); }}>
+          <span className="cm-fio" /><svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinejoin="round" aria-hidden="true"><path d="M12 3 20 7.5v9L12 21l-8-4.5v-9L12 3Z" /></svg><span>Todas</span><small>{magias.length}</small>
+        </button>
         {VERTENTES_HUD.map(v => <button key={v.id} type="button" className="cm-vertente" style={{ ["--cm-item-cor" as string]: v.c }} aria-pressed={vertente === v.id} onClick={() => { setVertente(v.id); setSelecionada(null); setDetalheAberto(false); }}>
           <span className="cm-fio" /><Glifo v={v} tam={18} /><span>{v.nome}</span><small>{magias.filter(m => m.vertente === v.id).length}</small>
         </button>)}
       </nav>
       <div className="cm-catalogo">
-        <label className="cm-busca"><Search size={16} aria-hidden="true" /><input type="search" value={busca} onChange={e => { setBusca(e.target.value); setDetalheAberto(false); }} placeholder="Buscar magia…" aria-label="Buscar magia" /></label>
+        <div className="cm-busca-faixa"><label className="cm-busca"><Search size={15} strokeWidth={1.6} aria-hidden="true" /><input type="search" value={busca} onChange={e => { setBusca(e.target.value); setDetalheAberto(false); }} placeholder={todas ? "Buscar em todas as magias…" : `Buscar em ${definicao?.nome ?? "magias"}…`} aria-label="Buscar magia" /></label></div>
         <div className="cm-lista">
           {[...new Set(visiveis.map(m => m.nivel))].map(nivel => <section key={nivel}>
-            <div className="cm-secao"><Glifo v={definicao} tam={16} /><span className="hx-display">{definicao.nome} · Nível {nivel}</span><small>{visiveis.filter(m => m.nivel === nivel).length}</small><span className="cm-traco" /></div>
-            <div className="cm-grade">{visiveis.filter(m => m.nivel === nivel).map(m => <button key={m.slug} type="button" className="cm-carta" aria-pressed={alvo?.slug === m.slug} onClick={() => escolher(m.slug)}>
-              <span className="cm-carta-arte"><Glifo v={definicao} tam={30} /></span>
-              <span className="cm-carta-info"><strong className="hx-display">{m.nome}</strong><span className="cm-carta-meta">{m.tipo || definicao.nome} <span>{aprendidas.has(m.slug) ? <><Check size={12} aria-hidden="true" /> Aprendida</> : `${m.mana ?? "—"} mana · ${acaoDaMagia(m).valor}${acaoDaMagia(m).unidade ? ` ${acaoDaMagia(m).unidade}` : ""}`}</span></span></span>
+            <div className="cm-secao">{!todas && definicao && <Glifo v={definicao} tam={16} />}<span className="hx-display">{!todas && definicao ? `${definicao.nome} · ` : ""}Nível {nivel}</span><small>{visiveis.filter(m => m.nivel === nivel).length}</small><span className="cm-traco" /></div>
+            <div className="cm-grade">{visiveis.filter(m => m.nivel === nivel).map(m => <button key={m.slug} type="button" className="cm-carta" style={{ ["--cm-cor" as string]: vertDe(m).c }} aria-pressed={alvo?.slug === m.slug} onClick={() => escolher(m.slug)}>
+              <span className="cm-carta-arte"><Glifo v={vertDe(m)} tam={30} /></span>
+              <span className="cm-carta-info"><strong className="hx-display">{m.nome}</strong><span className="cm-carta-meta">{m.tipo || vertDe(m).nome} <span>{aprendidas.has(m.slug) ? <><Check size={12} aria-hidden="true" /> Aprendida</> : `${m.mana ?? "—"} mana · ${acaoDaMagia(m).valor}${acaoDaMagia(m).unidade ? ` ${acaoDaMagia(m).unidade}` : ""}`}</span></span></span>
             </button>)}</div>
           </section>)}
-          {!visiveis.length && <p className="cm-vazio">{magias.length ? "Nenhuma magia corresponde à busca nesta vertente." : "Catálogo sem magias publicadas."}</p>}
+          {!visiveis.length && <p className="cm-vazio">{magias.length ? busca ? `Nenhuma magia ${todas ? "" : `de ${definicao?.nome} `}corresponde à busca.` : "Nenhuma magia nesta vertente." : "Catálogo sem magias publicadas."}</p>}
         </div>
       </div>
       <aside className="cm-detalhe" aria-label="Detalhes da magia">
