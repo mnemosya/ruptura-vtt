@@ -77,6 +77,13 @@ assert.equal(filledCategoryIcon("municao", "Alta densidade", "Célula"), "energy
 assert.equal(filledCategoryIcon("Células de energia"), "energy cell");
 assert.equal(filledCategoryIcon("ferramenta", "Bateria rúnica"), "runic battery");
 assert.equal(filledCategoryIcon("ferramenta", "Cartucheira"), "cartucheira");
+for (const [name, expected] of [["SORYN M2", "bike"], ["SORYN VANTA", "bike"], ["NYXEN LARK", "flying bike"], ["NYXEN RAZE", "flying bike"], ["VELYS IRIS", "flying bike"], ["AERA C2", "flying car"], ["VELYS ATRIUM", "flying car"], ["AERA L8", "flying car"], ["VEYRA N4", "car"]] as const) {
+  assert.equal(filledCategoryIcon("veiculo", name), expected);
+  assert.ok(FILLED_ICON_DATA[expected].paths.length);
+}
+for (const name of ["Icarus I", "Icarus II", "Icarus III"]) assert.equal(filledCategoryIcon("mobilidade", name), "icarus");
+assert.equal(filledCategoryIcon("mobilidade", "Bicicleta"), null);
+assert.equal(filledCategoryIcon("estrutura_dorsal"), null);
 assert.equal(ammunitionType({nome:"Pistola",subtipo:"Munição"}), "Munição");
 assert.equal(filledCategoryIcon("municao", "Pistola", "Bala"), "bullets");
 console.log("✓ Ícones filled: tipos distintos, munições e estrutura dorsal independente");

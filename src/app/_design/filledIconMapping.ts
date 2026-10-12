@@ -48,6 +48,13 @@ export function filledCategoryIcon(category: string, name?: string, itemType?: s
   if (categoryKey === "municao" && normalizeIconKey(itemType ?? "") === "celula") return "energy cell";
   if (categoryKey === "municao" && ["flecha", "virote"].includes(normalizeIconKey(itemType ?? ""))) return "arrows";
   const nameKey = normalizeIconKey((name ?? "").trim());
+  if (categoryKey === "mobilidade" && /^icarus_(i|ii|iii)$/.test(nameKey)) return "icarus";
+  if (["veiculo", "veiculos"].includes(categoryKey)) {
+    if (["nyxen_lark", "nyxen_raze", "velys_iris"].includes(nameKey)) return "flying bike";
+    if (["soryn_m2", "soryn_vanta"].includes(nameKey)) return "bike";
+    if (["aera_c2", "velys_atrium", "aera_l8"].includes(nameKey)) return "flying car";
+    return "car";
+  }
   if (["ferramenta", "utilidade", "ferramentas_e_utilidades"].includes(categoryKey) && nameKey === "bateria_runica") return "runic battery";
   if (["acessorio", "ferramenta", "suporte_municao", "utilidade"].includes(categoryKey) && /(^|_)cartucheira(_|$)/.test(nameKey)) return "cartucheira";
   if (categoryKey === "ferramenta" && /^mochila_mk_(i|ii|iii)$/.test(nameKey)) return "backpack";
