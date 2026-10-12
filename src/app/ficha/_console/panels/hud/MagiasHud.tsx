@@ -48,6 +48,8 @@ export interface MagiaHud {
   alcance?: string | null;
   area?: string | null;
   duracao?: string | null;
+  /** Conjuração que não é em PA: "10 MINUTOS", "1 HORA", "REAÇÃO", "TEMPO VARIÁVEL". `null` = custa `pa`. */
+  conjuracao?: string | null;
   /** Ex.: "Medicina 5". */
   preRequisito?: string | null;
   reacao?: boolean;
@@ -70,6 +72,17 @@ export interface MagiaHud {
   manuais?: ReactNode[];
   /** Nível de vertente insuficiente para conjurar. */
   bloqueada: boolean;
+}
+
+/**
+ * O que a magia custa para conjurar: PA, ou tempo/reação quando não usa PA.
+ * "10 MINUTOS" → 10 min; "1 HORA" → 1 h; "REAÇÃO" e outros → o texto.
+ */
+export function acaoDaMagia(m: Pick<MagiaHud, "pa" | "conjuracao">): { valor: string; unidade: string; pa: number | null } {
+  if (!m.conjuracao) return { valor: String(m.pa), unidade: "PA", pa: m.pa };
+  const tempo = /^(\d+)\s*(minutos?|horas?)$/i.exec(m.conjuracao.trim());
+  if (tempo) return { valor: tempo[1], unidade: /^h/i.test(tempo[2]) ? "h" : "min", pa: null };
+  return { valor: m.conjuracao.trim().toLowerCase(), unidade: "", pa: null };
 }
 
 export type EscolhaHud =
@@ -263,6 +276,7 @@ function TabelaDeNiveis({ e, cor, escolhido, onEscolher }: { e: Extract<EscolhaH
 
 export function Leitura({ m, mana, onRolarDano, onRolarCura, escolhido, onEscolher }: { m: MagiaHud; mana: { atual: number; max: number }; onRolarDano?: () => void; onRolarCura?: () => void; escolhido?: number; onEscolher?: (chave: number) => void }) {
   const custo = m.mana ?? 0, falta = custo > mana.atual, mc = falta ? "#ff5f74" : CY;
+  const acao = acaoDaMagia(m);
   const c = VERT(m.vertente).c;
   const Fato = ({ l, v }: { l: string; v: ReactNode }) => (
     <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, padding: "6px 0", borderBottom: "1px solid rgba(0,212,255,.08)" }}>
@@ -291,11 +305,12 @@ export function Leitura({ m, mana, onRolarDano, onRolarCura, escolhido, onEscolh
         </div>
         <div style={{ margin: 8, width: 1, transform: "skewX(-20deg)", background: "rgba(0,212,255,.2)" }} />
         <div style={{ flex: 1, padding: "10px 0 10px 16px" }}>
-          <Tag className="hx-dim" style={{ fontSize: 10, display: "block" }}>ação</Tag>
+          <Tag className="hx-dim" style={{ fontSize: 10, display: "block" }}>{acao.pa == null ? "conjuração" : "ação"}</Tag>
           <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 10 }}>
-            <span className="hx-display hx-amb" style={{ fontSize: 24, fontWeight: 900, lineHeight: 1 }}>{m.pa}</span>
-            <span className="hx-mono hx-dim" style={{ fontSize: 10 }}>PA</span>
-            <span style={{ marginLeft: "auto" }}><Dia n={m.pa} on={m.pa} c={AMB} /></span>
+            {/* texto (reação, tempo variável) sai menor que número, para caber no bloco */}
+            <span className="hx-display hx-amb" style={{ fontSize: /^\d/.test(acao.valor) ? 24 : 15, fontWeight: 900, lineHeight: 1, textTransform: "uppercase" }}>{acao.valor}</span>
+            {acao.unidade && <span className="hx-mono hx-dim" style={{ fontSize: 10 }}>{acao.unidade}</span>}
+            {acao.pa != null && <span style={{ marginLeft: "auto" }}><Dia n={acao.pa} on={acao.pa} c={AMB} /></span>}
           </div>
         </div>
       </div>
@@ -470,7 +485,9 @@ export function MagiasHud(props: PropsMagiasHud) {
                               </span>
                             </span>
                             <span style={{ textAlign: "right" }}><span className="hx-display hx-cy" style={{ fontSize: 18, fontWeight: 900, lineHeight: 1 }}>{m.mana ?? "—"}</span><Tag className="hx-dim" style={{ display: "block", fontSize: 10 }}>mana</Tag></span>
-                            <span style={{ textAlign: "right" }}><span className="hx-display hx-amb" style={{ fontSize: 18, fontWeight: 900, lineHeight: 1 }}>{m.pa}</span><Tag className="hx-dim" style={{ display: "block", fontSize: 10 }}>pa</Tag></span>
+                            {(() => { const a = acaoDaMagia(m); return (
+                              <span style={{ textAlign: "right" }}><span className="hx-display hx-amb" style={{ fontSize: /^\d/.test(a.valor) ? 18 : 11, fontWeight: 900, lineHeight: 1, textTransform: "uppercase" }}>{a.valor}</span><Tag className="hx-dim" style={{ display: "block", fontSize: 10 }}>{a.unidade || "ação"}</Tag></span>
+                            ); })()}
                           </span>
                         </button>
                       </div>
@@ -531,7 +548,7 @@ export function MagiasHud(props: PropsMagiasHud) {
                   {magiaAberta.bloqueada && (
                     <div style={{ padding: "10px 12px", border: "1px solid #ff5f7455", background: "#ff5f7412" }}>
                       <Tag style={{ display: "block", fontSize: 11, letterSpacing: ".16em", color: "#ff5f74" }}>nível de vertente insuficiente</Tag>
-                      <p style={{ marginTop: 6, fontSize: 13, lineHeight: 1.5, color: "var(--hx-texto)", opacity: .8 }}>
+                      <p style={{ margin: "6px 0 0", fontSize: 13, lineHeight: 1.5, color: "var(--hx-texto)", opacity: .8 }}>
                         Magia de nível {magiaAberta.nivel}; seu nível em {VERT(magiaAberta.vertente).nome} é {niveis[magiaAberta.vertente] ?? "—"}.
                       </p>
                     </div>
@@ -540,7 +557,7 @@ export function MagiasHud(props: PropsMagiasHud) {
                   {semMana && !magiaAberta.bloqueada && custoEfetivo != null && (
                     <div style={{ padding: 12, border: `1px solid ${AMB}55`, background: AMB + "12" }}>
                       <Tag className="hx-amb" style={{ display: "block", fontSize: 11, letterSpacing: ".16em" }}>falta {custoEfetivo - mana.atual} de mana</Tag>
-                      <p style={{ marginTop: 6, fontSize: 13, lineHeight: 1.5, color: "var(--hx-texto)", opacity: .8 }}>
+                      <p style={{ margin: "6px 0 0", fontSize: 13, lineHeight: 1.5, color: "var(--hx-texto)", opacity: .8 }}>
                         {props.onSurtoDeEnergia
                           ? "Libere um Surto de Energia: +5 de mana temporária, ao custo de 1 Sobrecarga e 1d4 de dano psíquico."
                           : "Sem Surtos disponíveis até o próximo descanso longo."}

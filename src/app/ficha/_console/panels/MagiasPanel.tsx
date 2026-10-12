@@ -86,6 +86,8 @@ function MagiasEmJogo({ api }: { api: ConsoleApi }) {
       area: s.estatisticas.areaTexto ?? null,
       duracao: s.estatisticas.duracaoTexto ?? null,
       preRequisito: s.estatisticas.preRequisito ?? null,
+      /* sem custo em PA e com conjuração em texto (tempo, reação): mostra isso no lugar do "0 PA" */
+      conjuracao: s.estatisticas.custo_pa === 0 && s.estatisticas.conjuracaoTexto && !/\bPA$/i.test(s.estatisticas.conjuracaoTexto) ? s.estatisticas.conjuracaoTexto : null,
       reacao: !!s.estatisticas.usa_reacao,
       descricao: s.descricao_curta ? <TextoComRegras texto={s.descricao_curta} glossario={api.glossario} /> : null,
       ...efeitoComEscolha(s),

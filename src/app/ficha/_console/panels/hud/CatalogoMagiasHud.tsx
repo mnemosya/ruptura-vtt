@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Search, X, Check } from "lucide-react";
 import { oxanium } from "../../../../_design/oxanium";
-import { Faixa, Glifo, Leitura, Titulo, VERTENTES_HUD, type MagiaHud } from "./MagiasHud";
+import { Faixa, Glifo, Leitura, Titulo, VERTENTES_HUD, acaoDaMagia, type MagiaHud } from "./MagiasHud";
 import "./catalogo-magias.css";
 
 const normalizar = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -53,7 +53,7 @@ export function CatalogoMagiasHud({ magias, aprendidas, niveis, mana, somenteLei
             <div className="cm-secao"><Glifo v={definicao} tam={16} /><span className="hx-display">{definicao.nome} · Nível {nivel}</span><small>{visiveis.filter(m => m.nivel === nivel).length}</small><span className="cm-traco" /></div>
             <div className="cm-grade">{visiveis.filter(m => m.nivel === nivel).map(m => <button key={m.slug} type="button" className="cm-carta" aria-pressed={alvo?.slug === m.slug} onClick={() => escolher(m.slug)}>
               <span className="cm-carta-arte"><Glifo v={definicao} tam={30} /></span>
-              <span className="cm-carta-info"><strong className="hx-display">{m.nome}</strong><span className="cm-carta-meta">{m.tipo || definicao.nome} <span>{aprendidas.has(m.slug) ? <><Check size={12} aria-hidden="true" /> Aprendida</> : `${m.mana ?? "—"} mana · ${m.pa} PA`}</span></span></span>
+              <span className="cm-carta-info"><strong className="hx-display">{m.nome}</strong><span className="cm-carta-meta">{m.tipo || definicao.nome} <span>{aprendidas.has(m.slug) ? <><Check size={12} aria-hidden="true" /> Aprendida</> : `${m.mana ?? "—"} mana · ${acaoDaMagia(m).valor}${acaoDaMagia(m).unidade ? ` ${acaoDaMagia(m).unidade}` : ""}`}</span></span></span>
             </button>)}</div>
           </section>)}
           {!visiveis.length && <p className="cm-vazio">{magias.length ? "Nenhuma magia corresponde à busca nesta vertente." : "Catálogo sem magias publicadas."}</p>}

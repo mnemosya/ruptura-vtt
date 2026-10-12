@@ -18,6 +18,7 @@ const MAGIAS: MagiaHud[] = [
   m("socorros", "Primeiros socorros", "biotica", 1, "suporte", 2, 2, "Toque", "Instantânea", "Você acelera a coagulação e fecha tecidos superficiais.", "Estabiliza um alvo **morrendo** e cura **1d6** PV.", { cura: "1d6", preRequisito: "Medicina 2" }),
   m("adrenalina", "Adrenalina", "biotica", 2, "suporte", 3, 1, "Pessoal", "3 turnos", "Uma descarga glandular controlada empurra o corpo além do limite.", "Ganha **+1 PA** por turno; ao fim, sofre **1 nível de exaustão**."),
   m("pele", "Pele rígida", "biotica", 2, "suporte", 3, 2, "Toque", "10 minutos", "Queratina se compacta sob a pele formando placas finas.", "O alvo recebe **+1 MIT Físico** em todas as regiões."),
+  m("carne", "A carne lembra", "biotica", 2, "suporte", 15, 0, "Toque (1 cadáver)", "Instantâneo", "Você desperta os processos adormecidos de um cadáver.", "A criatura retorna à vida com **1 PV**.", { conjuracao: "10 MINUTOS", preRequisito: "Medicina 5" }),
   m("empurrao", "Empurrão", "cinetica", 1, "controle", 1, 1, "6 m", "Instantânea", "Uma onda de força bruta parte da palma da sua mão.", "Empurra o alvo **3 m**. Se colidir, sofre **1d6** de impacto.", { dano: "1d6" }),
   m("telecinese", "Telecinese", "cinetica", 2, "controle", 2, 2, "Variável", "Concentração", "Você agarra um corpo com força invisível, deslocando-o pelo espaço sem contato físico.", "Ao conjurar, escolha qualquer nível entre 1 e seu nível atual em Cinética.", {
     efeitoDepois: rico("Escolha uma criatura ou objeto dentro do alcance cuja massa não ultrapasse a **carga máxima**."),
