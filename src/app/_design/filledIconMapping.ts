@@ -10,6 +10,7 @@ const WEAPONS: Record<string, FilledIconName> = {
   besta_leve: "crossbow", besta_pesada: "crossbow", revolver: "revolver",
   pistola_de_bolso: "pocket gun",
   bastao: "noun_Bat_3547430",
+  manoplas: "noun_glove_7358230", martelo_pesado: "noun_Hammer_8067498", tonfa: "noun_tonfa_7356580",
   pistola_pesada: "pistol", pistola_automatica: "pistol",
   submetralhadora: "smg", carabina: "rifle", rifle_de_assalto: "assault rifle",
   rifle_de_precisao: "sniper 1", rifle_antimaterial: "sniper 2",
