@@ -774,15 +774,16 @@ export function FichaItemModal({ p, onFechar, rodape, fixo = false }: { p: PecaH
 function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
   const c = corDe(p), pr = prot(p.protecao);
   return (
-    <>
+    <div style={{ position: "relative", display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
+      <button type="button" onClick={voltar} aria-label="Fechar" className="hx-ch-hex hx-fechar" style={{ position: "absolute", right: 12, top: 12, zIndex: 3 }}><Svg d="M6 6l12 12M18 6 6 18" tam={14} cor="currentColor" traco={2} /></button>
+      <div className="hx-semsb" style={{ minHeight: 0, flex: 1, overflowY: "auto" }}>
       <div style={{ position: "relative", display: "grid", placeItems: "center", height: 160, flexShrink: 0, overflow: "hidden", background: `radial-gradient(circle at 50% 55%, ${c}38, transparent 62%)` }}>
         <span className="hx-hexgrid" style={{ position: "absolute", inset: 0, opacity: .6 }} /><span className="hx-scan" style={{ position: "absolute", inset: 0 }} />
         <span className="hx-spin" style={{ position: "absolute", width: 140, height: 140, borderRadius: "50%", border: `1px dashed ${c}44` }} />
         <span className="hx-spinr" style={{ position: "absolute", width: 100, height: 100, borderRadius: "50%", border: `1px solid ${c}30` }} />
         <span className="hx-floaty" style={{ position: "relative" }}><ItemCategoryIcon category={p.categoria} weaponName={p.weaponName ?? p.nome} itemType={p.tipo} armorRegions={p.regioes} size={52} color={c} strokeWidth={1.2} style={{ filter: `drop-shadow(0 0 12px ${c})` }} /></span>
-        <button type="button" onClick={voltar} aria-label="Fechar" className="hx-ch-hex hx-fechar" style={{ position: "absolute", right: 12, top: 12 }}><Svg d="M6 6l12 12M18 6 6 18" tam={14} cor="currentColor" traco={2} /></button>
       </div>
-      <div style={{ position: "relative", padding: "18px 16px 14px", borderBottom: "1px solid rgba(0,212,255,.1)", background: `linear-gradient(180deg, ${c}0f, transparent)` }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 2, padding: "18px 52px 14px 16px", borderBottom: "1px solid rgba(0,212,255,.1)", background: `linear-gradient(180deg, ${c}0f, transparent), ${CASCO}` }}>
         <span style={{ position: "absolute", left: 0, right: 0, top: 0, height: 2, background: `linear-gradient(90deg, ${c}, ${c}00 70%)` }} />
         <div className="hx-display" style={{ fontSize: 22, fontWeight: 900, textTransform: "uppercase", lineHeight: 1, letterSpacing: ".06em" }}>{separarTipo(p.nome).titulo}</div>
         {separarTipo(p.nome).tipo && <Tag className="hx-dim" style={{ display: "block", marginTop: 6, fontSize: 10, opacity: .75 }}>{separarTipo(p.nome).tipo}</Tag>}
@@ -800,7 +801,7 @@ function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
           </span>
         </div>
       </div>
-      <div className="hx-semsb" style={{ minHeight: 0, flex: "0 1 auto", overflowY: "auto", padding: "16px 16px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ padding: "16px 16px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
         {p.dano && (
           <div style={{ display: "flex", alignItems: "center", borderLeft: `2px solid ${PERIGO}`, background: "#0a1b26", padding: "10px 0 10px 12px" }}>
             <Tag className="hx-dim" style={{ fontSize: 10 }}>dano</Tag>
@@ -835,6 +836,7 @@ function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
         )}
         {p.descricao && <div style={{ fontSize: 14, fontWeight: 400, lineHeight: 1.6, color: "var(--hx-texto)", opacity: .85 }}>{p.descricao}</div>}
       </div>
-    </>
+      </div>
+    </div>
   );
 }

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createInitialCharacter } from "../src/lib/character/createCharacter";
 import { reorderInventoryItem } from "../src/lib/character/inventoryOrder";
 
-const initial = createInitialCharacter();
+const initial = createInitialCharacter(null);
 const character = { ...initial, inventario: ["a", "hidden", "b", "c"].map((id, index) => ({
   id, itemSlug: "faca", itemNome: id, categoria: "arma", quantidade: index + 1,
   estado: id === "hidden" ? "abrigo" as const : "mochila" as const, adquiridoEm: "2026-10-12T00:00:00Z",
