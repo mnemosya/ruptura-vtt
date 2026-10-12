@@ -32,6 +32,7 @@ const CATEGORIES: Record<string, FilledIconName> = {
   vertina: "potion", vertinas: "potion",
   estrutura_dorsal: "dorsal",
   mobilidade: "noun_Bike_8339085", equipamentos_de_mobilidade: "noun_Bike_8339085", locomocao: "noun_Bike_8339085",
+  ferramenta: "noun_Tool_8303078", ferramentas: "noun_Tool_8303078", ferramentas_e_utilidades: "noun_Tool_8303078", utilidade: "noun_Tool_8303078",
   drone: "noun_Drone_8335890", drones: "noun_Drone_8335890", drones_e_robos: "noun_Drone_8335890",
   robo: "noun_Robot_8483832", robos: "noun_Robot_8483832",
   farmacia: "noun_drugs_7809670",
@@ -53,6 +54,7 @@ export function filledCategoryIcon(category: string, name?: string, itemType?: s
   if (categoryKey === "municao" && ["flecha", "virote"].includes(normalizeIconKey(itemType ?? ""))) return "arrows";
   const nameKey = normalizeIconKey((name ?? "").trim());
   const namedItems: Record<string, FilledIconName> = {
+    kit_de_reparo: "noun_Tool_8303078",
     armadura_reativa_subdermica_ars_: "noun_armadurasubdermica_7991712",
     beijo_da_morte: "noun_kiss_6493561", catalisador_imunologico: "noun_immunity_3883965",
     reserva_de_mana: "noun_mana_8219198",

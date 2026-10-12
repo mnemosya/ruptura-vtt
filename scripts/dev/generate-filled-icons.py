@@ -33,6 +33,7 @@ ART_BOXES["noun_Scanner_7959164"] = [0, 0, 100, 100]
 ART_BOXES["noun_Lung_4303915"] = [0, 0, 90, 90]
 ART_BOXES["noun_Boot_2249240"] = [0, 0, 32, 32]
 ART_BOXES["noun_Bike_8339085"] = [0, 0, 100, 100]
+ART_BOXES["noun_Tool_8303078"] = [0, 0, 100, 100]
 ART_BOXES.update({
     "noun_armadurasubdermica_7991712": [0, 0, 100, 100],
     "noun_elixir_8401397": [0, 0, 100, 100],

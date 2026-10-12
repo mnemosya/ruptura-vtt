@@ -56,7 +56,9 @@ assert.equal(filledCategoryIcon("mochila_equipada"), "backpack");
 for (const model of ["I", "II", "III"]) {
   assert.equal(filledCategoryIcon("ferramenta", `Mochila MK-${model}`), "backpack");
 }
-assert.equal(filledCategoryIcon("ferramenta", "Kit de ferramentas"), null);
+assert.equal(filledCategoryIcon("ferramenta", "Kit de ferramentas"), "noun_Tool_8303078");
+assert.equal(filledCategoryIcon("Ferramentas e utilidades"), "noun_Tool_8303078");
+assert.equal(filledCategoryIcon("ferramenta", "Kit de reparo"), "noun_Tool_8303078");
 assert.equal(filledCategoryIcon("municao", "Flecha simples"), "arrows");
 assert.equal(filledCategoryIcon("municao", "Munição 9 mm"), "bullets");
 assert.equal(filledCategoryIcon("acessorio", "Aljava"), "quiver");
