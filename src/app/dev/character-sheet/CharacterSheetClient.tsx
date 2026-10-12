@@ -4063,6 +4063,10 @@ export default function CharacterSheetClient({
     comprarItem: handleBuyItem,
     carga: cargaAtual,
     glossario: glossarioDeRegras,
+    propriedadesCatalogo: propertiesIniciais.map(p => ({
+      tipo: "propriedade" as const, slug: p.slug, nome: p.nome,
+      descricao: p.descricaoCurta?.trim() || p.descricaoLonga?.trim() || null,
+    })),
     /* As propriedades saem inteiras de `deriveItemProperties` — modelo,
        runas instaladas e técnicas juntas, já resolvidas. Aqui só vira
        termo com dica; o Console não interpreta propriedade. */

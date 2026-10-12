@@ -216,6 +216,7 @@ export interface ConsoleApi {
    * `deriveItemProperties`; o Console não interpreta propriedade.
    */
   propriedadesDoItem: (instanceId: string) => TermoDeRegra[];
+  propriedadesCatalogo?: TermoDeRegra[];
   /**
    * Termos de regra citáveis dentro de um texto — ações de combate e
    * condições publicadas. É o que alimenta o tooltip de "Resistir" ou

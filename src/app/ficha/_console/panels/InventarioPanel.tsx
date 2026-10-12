@@ -377,7 +377,8 @@ function produtoDoModelo(api: ConsoleApi, modelo: ItemContent): ProdutoHud {
   if (modelo.mitMax != null) linhas.push({ rotulo: "MIT", valor: String(modelo.mitMax) });
   if (modelo.pdMax != null) linhas.push({ rotulo: "PD", valor: String(modelo.pdMax) });
   if (ocultavel) linhas.push({ rotulo: "Ocultável", valor: ocultavel });
-  const nomes = new Map(api.glossario.filter((t) => t.tipo === "propriedade").map((t) => [t.slug, t.nome]));
+  const termos = new Map((api.propriedadesCatalogo ?? api.glossario.filter(t => t.tipo === "propriedade")).map(t => [t.slug, t]));
+  const nomes = new Map([...termos].map(([slug, termo]) => [slug, termo.nome]));
   const propriedades = modelo.propertySlugs.map(s => nomes.get(s) ?? s);
   const descricao = itemDescription(modelo, [...linhas.map(l => l.rotulo), ...(dano ? ["Dano"] : []),
     ...(propriedades.length ? ["Propriedades"] : []), ...(modelo.custoPaUso != null ? ["Custo"] : []),
@@ -396,7 +397,7 @@ function produtoDoModelo(api: ConsoleApi, modelo: ItemContent): ProdutoHud {
     destaque: dano ? { rotulo: "Dano", valor: dano.dado, sufixo: dano.tipo } : null,
     propriedades,
     descricoesPropriedades: Object.fromEntries(modelo.propertySlugs.map(slug => {
-      const termo = api.glossario.find(t => t.tipo === "propriedade" && t.slug === slug);
+      const termo = termos.get(slug);
       return [nomes.get(slug) ?? slug, termo?.descricao ?? null];
     })),
     linhas,
