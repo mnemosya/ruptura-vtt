@@ -335,7 +335,7 @@ function Encaixe({ peca, encaixe, ativo, quente, onClick, lado = "e" }: { peca: 
       )}
       {peca && <span style={{ position: "absolute", right: 0, top: 0, width: 0, height: 0, borderLeft: "8px solid transparent", borderTop: `8px solid ${corRar(peca.raridade)}` }} />}
       <span style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", display: "grid" }}>
-        <ItemCategoryIcon category={ehArmadura(encaixe) ? encaixe : encaixe === "mochila_equipada" ? "mochila_equipada" : peca?.categoria ?? (ehArma(encaixe) ? "arma" : encaixe.startsWith("acesso_rapido") ? "acesso_rapido" : encaixe)} weaponName={peca?.weaponName ?? peca?.nome} itemType={peca?.tipo} size={S * .46} color={peca ? cor : CY} strokeWidth={1.5} style={{ opacity: peca ? 1 : .22 }} />
+        <ItemCategoryIcon category={ehArmadura(encaixe) ? encaixe : encaixe === "mochila_equipada" ? "mochila_equipada" : peca?.categoria ?? (encaixe === "arma_secundaria" ? "escudo" : ehArma(encaixe) ? "arma" : encaixe.startsWith("acesso_rapido") ? "acesso_rapido" : encaixe)} weaponName={peca?.weaponName ?? peca?.nome} itemType={peca?.tipo} size={S * .46} color={peca ? cor : CY} strokeWidth={1.5} style={{ opacity: peca ? 1 : .22 }} />
       </span>
       {selo != null && (
         <span className="hx-display" style={{ position: "absolute", top: "50%", transform: "translateY(-50%)",
