@@ -176,7 +176,8 @@
 }
 .ih-lin--cab { animation: none; padding-bottom: 8px; border-bottom-color: color-mix(in srgb, var(--ih-cy) 20%, transparent); color: var(--ih-dim); }
 .ih-lin[draggable="true"] { cursor: grab; }
-.ih-drag-alca { position: absolute; left: 1px; top: 50%; translate: 0 -50%; display: flex; color: var(--ih-dim); opacity: .4; }
+.ih-lista { padding-left: 16px; }
+.ih-drag-alca { position: absolute; left: -16px; top: 50%; translate: 0 -50%; display: flex; color: var(--ih-dim); opacity: .4; }
 .ih-lin:hover .ih-drag-alca, .ih-lin:focus-visible .ih-drag-alca { opacity: 1; color: var(--ih-cy); }
 .ih-lin[data-arrastado] { animation: none; opacity: .35; cursor: grabbing; background: color-mix(in srgb, var(--ih-cy) 12%, transparent); }
 .ih-lin[data-insercao] { background: color-mix(in srgb, var(--ih-cy) 9%, transparent); }
