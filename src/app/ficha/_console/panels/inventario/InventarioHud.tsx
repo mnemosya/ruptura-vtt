@@ -140,13 +140,20 @@ export function InventarioHud(props: PropsInventarioHud) {
   const [busca, setBusca] = useState("");
   const [emSelecao, setEmSelecao] = useState(false);
   const [menuLote, setMenuLote] = useState(false);
+  const [descarteLote, setDescarteLote] = useState<string[] | null>(null);
   const [marcados, setMarcados] = useState<Set<string>>(new Set());
+  useEffect(() => { setDescarteLote(null); }, [marcados, busca, vista, emSelecao]);
   const visiveis = itens.filter(i => (vista === "todos" || i.local === vista) && (!busca.trim() || `${i.nome} ${i.categoriaRotulo}`.toLocaleLowerCase("pt-BR").includes(busca.trim().toLocaleLowerCase("pt-BR"))));
   const escolhidos = visiveis.filter(i => marcados.has(i.id));
   const alternar = (id: string) => setMarcados(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
   const moverSelecionados = (destino: "mochila" | "abrigo") => {
     escolhidos.filter(i => i.local !== destino).forEach(i => props.onMover(i.id, destino));
     setMarcados(new Set()); setEmSelecao(false); setMenuLote(false);
+  };
+  const descartarSelecionados = () => {
+    if (props.somenteLeitura || !descarteLote) return;
+    descarteLote.forEach(id => props.onDescartar(id));
+    setDescarteLote(null); setMarcados(new Set()); setEmSelecao(false); setMenuLote(false);
   };
   const [quente, setQuente] = useState<string | null>(null);
   const [ancora, setAncora] = useState<Ancora | null>(null);
@@ -185,6 +192,7 @@ export function InventarioHud(props: PropsInventarioHud) {
   /* Atalhos das vistas só com o foco dentro do inventário. */
   function aoTeclar(e: React.KeyboardEvent) {
     if (e.key === "Escape") {
+      if (descarteLote) { setDescarteLote(null); e.stopPropagation(); return; }
       if (menuLote) { setMenuLote(false); e.stopPropagation(); return; }
       if (emSelecao) { setEmSelecao(false); setMarcados(new Set()); e.stopPropagation(); return; }
       if (ancora) setAncora(null);
@@ -301,7 +309,7 @@ export function InventarioHud(props: PropsInventarioHud) {
       </div>
 
       {emSelecao && !props.somenteLeitura && <div className="ih-lote-ancora">
-        <div className="ih-lote" role="toolbar" aria-label="Mover itens selecionados"
+        <div className="ih-lote" role="toolbar" aria-label="Ações dos itens selecionados"
           onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setMenuLote(false); }}>
           <span className="ih-lote-contagem" aria-live="polite"><strong>{escolhidos.length}</strong><span>{escolhidos.length === 1 ? "selecionado" : "selecionados"}</span></span>
           <button type="button" className="ih-lote-todos" disabled={!visiveis.length}
@@ -322,6 +330,18 @@ export function InventarioHud(props: PropsInventarioHud) {
               <button type="button" disabled={!escolhidos.some(i => i.local !== "abrigo")} onClick={() => moverSelecionados("abrigo")}><Warehouse size={17} strokeWidth={1.6} />Abrigo<ArrowRight size={14} /></button>
             </div>}
           </div>
+          {descarteLote ? (
+            <div className="ih-lote-confirmacao" role="group" aria-label="Confirmar descarte dos itens selecionados">
+              <span>Descartar {descarteLote.length} {descarteLote.length === 1 ? "item" : "itens"}?</span>
+              <button type="button" className="ih-lote-descartar" onClick={descartarSelecionados}>Confirmar</button>
+              <button type="button" onClick={() => setDescarteLote(null)}>Cancelar</button>
+            </div>
+          ) : (
+            <button type="button" className="ih-lote-descartar" disabled={!escolhidos.length}
+              onClick={() => { setMenuLote(false); setDescarteLote(escolhidos.map(i => i.id)); }}>
+              <Trash2 size={16} strokeWidth={1.7} /><span>Descartar</span>
+            </button>
+          )}
           <button type="button" className="ih-lote-fechar" title="Encerrar seleção" aria-label="Encerrar seleção" onClick={() => { setEmSelecao(false); setMarcados(new Set()); setMenuLote(false); }}><X size={16} strokeWidth={1.7} /></button>
         </div>
       </div>}

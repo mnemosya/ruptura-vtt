@@ -422,6 +422,11 @@ button.ih-modal-acoes-valor:hover { background: rgba(0, 212, 255, .06); }
 .ih .ih-lote > .ih-lote-todos[aria-pressed="true"] { border-color: color-mix(in srgb, var(--ih-cy) 65%, transparent); color: var(--ih-cy); }
 .ih .ih-lote .ih-lote-mover { padding: 0 12px; }
 .ih .ih-lote > .ih-lote-fechar { width: 36px; padding: 0; }
+.ih .ih-lote .ih-lote-descartar { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border: 1px solid color-mix(in srgb, var(--ih-perigo) 40%, transparent); color: var(--ih-perigo); background: transparent; font: 700 12px var(--ih-display); text-transform: uppercase; }
+.ih .ih-lote .ih-lote-descartar:hover:not(:disabled) { background: color-mix(in srgb, var(--ih-perigo) 10%, transparent); }
+.ih-lote-confirmacao { display: flex; align-items: center; gap: 8px; color: var(--ih-perigo); font: 12px var(--ih-mono); }
+.ih-lote-confirmacao > button { min-height: 36px; padding: 0 8px; }
+.ih:has(.ih-lote-confirmacao) .ih-lote { flex-wrap: wrap; justify-content: center; }
 .ih .ih-lote button > svg { display: block; flex-shrink: 0; margin: 0; translate: none; }
 .ih .ih-lote-contagem { min-height: 36px; }
 @media (max-width: 480px) { .ih .ih-lote { gap: 8px; padding: 8px; } }
