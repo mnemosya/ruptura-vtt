@@ -781,6 +781,15 @@ function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
         <span className="hx-hexgrid" style={{ position: "absolute", inset: 0, opacity: .6 }} /><span className="hx-scan" style={{ position: "absolute", inset: 0 }} />
         <span className="hx-spin" style={{ position: "absolute", width: 140, height: 140, borderRadius: "50%", border: `1px dashed ${c}44` }} />
         <span className="hx-spinr" style={{ position: "absolute", width: 100, height: 100, borderRadius: "50%", border: `1px solid ${c}30` }} />
+          <span style={{ position: "absolute", left: 12, top: 12, display: "flex", background: CASCO + "cc" }}>
+            <span style={{ display: "flex", alignItems: "center", padding: "4px 8px", background: "rgba(0,212,255,.07)" }}><Tag className="hx-dim" style={{ fontSize: 10 }}>{p.onde}</Tag></span>
+            {/* Espaços como os blocos do inventário: um quadradinho por espaço. */}
+            <span title={`Ocupa ${p.espacos} ${p.espacos === 1 ? "espaço" : "espaços"}`} aria-label={`Ocupa ${p.espacos} espaços`}
+              style={{ display: "flex", alignItems: "center", gap: 2, padding: "4px 8px", background: c + "24" }}>
+              <span className="hx-display" style={{ fontSize: 15, fontWeight: 900, lineHeight: 1, marginRight: 6 }}>{p.espacos}</span>
+              {Array.from({ length: Math.max(p.espacos, 0) }, (_, i) => <span key={i} style={{ width: 14, height: 12, background: c }} />)}
+            </span>
+          </span>
         <span className="hx-floaty" style={{ position: "relative" }}><ItemCategoryIcon category={p.categoria} weaponName={p.weaponName ?? p.nome} itemType={p.tipo} armorRegions={p.regioes} size={52} color={c} strokeWidth={1.2} style={{ filter: `drop-shadow(0 0 12px ${c})` }} /></span>
       </div>
       <div style={{ position: "sticky", top: 0, zIndex: 2, padding: "18px 52px 14px 16px", borderBottom: "1px solid rgba(0,212,255,.1)", background: `linear-gradient(180deg, ${c}0f, transparent), ${CASCO}` }}>
@@ -790,15 +799,7 @@ function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
         <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
           <Tag style={{ fontSize: 10, letterSpacing: ".16em", color: c }}>{p.categoriaRotulo}</Tag>
           {p.raridade && <><span style={{ width: 1, height: 12, background: "rgba(0,212,255,.2)" }} /><Tag style={{ fontSize: 10, letterSpacing: ".16em", color: corRar(p.raridade) }}>{p.raridade}</Tag></>}
-          <span style={{ marginLeft: "auto", display: "flex" }}>
-            <span style={{ display: "flex", alignItems: "center", padding: "4px 8px", background: "rgba(0,212,255,.07)" }}><Tag className="hx-dim" style={{ fontSize: 10 }}>{p.onde}</Tag></span>
-            {/* Espaços como os blocos do inventário: um quadradinho por espaço. */}
-            <span title={`Ocupa ${p.espacos} ${p.espacos === 1 ? "espaço" : "espaços"}`} aria-label={`Ocupa ${p.espacos} espaços`}
-              style={{ display: "flex", alignItems: "center", gap: 2, padding: "4px 8px", background: c + "24" }}>
-              <span className="hx-display" style={{ fontSize: 15, fontWeight: 900, lineHeight: 1, marginRight: 6 }}>{p.espacos}</span>
-              {Array.from({ length: Math.max(p.espacos, 0) }, (_, i) => <span key={i} style={{ width: 14, height: 12, background: c }} />)}
-            </span>
-          </span>
+
         </div>
       </div>
       <div style={{ padding: "16px 16px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
