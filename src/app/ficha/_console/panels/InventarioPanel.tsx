@@ -217,6 +217,8 @@ function itemDoHud(api: ConsoleApi, instancia: InventoryItemInstance): ItemHud {
   const ocultavel = descricaoDeOcultavel(modelo);
 
   const linhas: { rotulo: string; valor: string }[] = [];
+  const porte = descricaoDoPorte(modelo);
+  if (porte) linhas.push({ rotulo: "Porte", valor: porte });
   if (alcance) linhas.push({ rotulo: "Alcance", valor: alcance });
   if (modelo?.maos) linhas.push({ rotulo: "Mãos", valor: String(modelo.maos) });
   if (modelo?.alcanceArremessoMetros != null) linhas.push({ rotulo: "Arremesso", valor: `${modelo.alcanceArremessoMetros} m` });
@@ -361,6 +363,8 @@ function produtoDoModelo(api: ConsoleApi, modelo: ItemContent): ProdutoHud {
   const alcance = descricaoDoAlcance(modelo);
   const ocultavel = descricaoDeOcultavel(modelo);
   const linhas: { rotulo: string; valor: string }[] = [];
+  const porte = descricaoDoPorte(modelo);
+  if (porte) linhas.push({ rotulo: "Porte", valor: porte });
   if (alcance) linhas.push({ rotulo: "Alcance", valor: alcance });
   if (modelo?.maos) linhas.push({ rotulo: "Mãos", valor: String(modelo.maos) });
   if (modelo.alcanceArremessoMetros != null) linhas.push({ rotulo: "Arremesso", valor: `${modelo.alcanceArremessoMetros} m` });
@@ -540,4 +544,13 @@ export function descricaoDoAlcance(modelo: ItemContent | undefined): string | nu
     return a.maxM != null ? `${a.eficazM} m (máx ${a.maxM} m)` : `${a.eficazM} m`;
   }
   return a.tipo;
+}
+
+/** Classificação publicada do item, compartilhada entre catálogo e equipamento. */
+export function descricaoDoPorte(modelo: ItemContent | undefined): string | null {
+  const porte = modelo?.classePorte?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  if (porte === "leve") return "Leve";
+  if (porte === "media" || porte === "medio") return "Médio";
+  if (porte === "pesada" || porte === "pesado") return "Pesado";
+  return null;
 }

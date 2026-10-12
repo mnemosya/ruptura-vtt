@@ -23,7 +23,7 @@ import type { ConsoleApi } from "../types";
 import { TextoComRegras } from "../TextoComRegras";
 import { CabecalhoModulo } from "./CabecalhoModulo";
 import { EquipamentoHud, type EncaixeHud, type PecaHud } from "./hud/EquipamentoHud";
-import { grupoESubDoModelo, temaDoModelo, VERTENTE_DA_CATEGORIA, descricaoDeOcultavel, descricaoDoAlcance, descricaoDoDano } from "./InventarioPanel";
+import { grupoESubDoModelo, temaDoModelo, VERTENTE_DA_CATEGORIA, descricaoDeOcultavel, descricaoDoPorte, descricaoDoAlcance, descricaoDoDano } from "./InventarioPanel";
 
 /** Item do inventário → peça do HUD de equipamento (também alimenta o modal de item do Inventário). */
 export function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
@@ -33,6 +33,8 @@ export function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
   const alcance = descricaoDoAlcance(modelo);
   const ocultavel = descricaoDeOcultavel(modelo);
   const linhas: { rotulo: string; valor: string }[] = [];
+  const porte = descricaoDoPorte(modelo);
+  if (porte) linhas.push({ rotulo: "Porte", valor: porte });
   if (alcance) linhas.push({ rotulo: "Alcance", valor: alcance });
   if (modelo?.capacidadeMochila) linhas.push({rotulo:"Capacidade",valor:`${modelo.capacidadeMochila} espaços`});
   if (modelo?.maos) linhas.push({rotulo:"Mãos",valor:String(modelo.maos)});
