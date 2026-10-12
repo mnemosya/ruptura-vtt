@@ -403,6 +403,7 @@ export function InventarioPanel({ api, onGerenciarSuporte }: { api: ConsoleApi; 
   const fecharMercado = useCallback(() => setMercado(false), []);
   const inventario = api.character.inventario ?? [];
   const mochilaEquipada = inventario.find(i => i.estado === "equipado" && ehMochilaMk(api.catalogo.get(i.itemSlug)));
+  const mochilas = inventario.filter(i => i.quantidade === 1 && ehMochilaMk(api.catalogo.get(i.itemSlug)));
   const itens = inventario.map((i) => itemDoHud(api, i));
   const porId = new Map(inventario.map((i) => [i.id, i]));
   const aretz = api.character.carteira?.aretz_informal ?? null;
@@ -438,6 +439,12 @@ export function InventarioPanel({ api, onGerenciarSuporte }: { api: ConsoleApi; 
           <InventarioHud
             itens={itens}
             nomeMochilaEquipada={mochilaEquipada ? api.catalogo.get(mochilaEquipada.itemSlug)?.nome : "Sem mochila"}
+            mochilas={mochilas.map((i, index) => {
+              const nome = api.catalogo.get(i.itemSlug)?.nome ?? i.itemNome;
+              return { id: i.id, nome: mochilas.filter(m => m.itemSlug === i.itemSlug).length > 1 ? `${nome} · ${index + 1}` : nome };
+            })}
+            mochilaEquipadaId={mochilaEquipada?.id}
+            onSelecionarMochila={api.somenteLeitura ? undefined : (id) => api.equiparNoSlot(id, "mochila_equipada")}
             capacidade={api.carga.capacidade}
             aretz={aretz}
             somenteLeitura={api.somenteLeitura}

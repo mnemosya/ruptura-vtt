@@ -79,6 +79,9 @@ export interface PropsInventarioHud {
   itens: ItemHud[];
   capacidade: number;
   nomeMochilaEquipada?: string;
+  mochilas?: { id: string; nome: string }[];
+  mochilaEquipadaId?: string;
+  onSelecionarMochila?: (id: string) => void;
   aretz: number | null;
   /**
    * Edita o saldo a partir do que foi digitado (valor, `+250`, `3000-555`).
@@ -201,11 +204,25 @@ export function InventarioHud(props: PropsInventarioHud) {
         <div className="ih-topo-linha">
         <nav className="ih-abas" role="tablist" aria-label="Onde o item está">
           {VISTAS.map((v) => (
+            v.id === "mochila" && (props.mochilas?.length ?? 0) > 1 ? (
+              <div key={v.id} className="ih-aba" data-ativo={vista === v.id || undefined}>
+                <select className="ih-aba-rot ih-mochila-select" aria-label="Mochila equipada"
+                  value={props.mochilaEquipadaId ?? ""} disabled={props.somenteLeitura || !props.onSelecionarMochila}
+                  onFocus={() => irPara("mochila")}
+                  onChange={(event) => { irPara("mochila"); props.onSelecionarMochila?.(event.target.value); }}>
+                  {!props.mochilaEquipadaId && <option value="" disabled>Sem mochila</option>}
+                  {props.mochilas?.map((mochila) => <option key={mochila.id} value={mochila.id}>{mochila.nome}</option>)}
+                </select>
+                <button type="button" role="tab" aria-selected={vista === v.id} aria-label="Ver mochila"
+                  className="ih-aba-qtd ih-mochila-abrir" onClick={() => irPara("mochila")}>{contagem[v.id]}</button>
+              </div>
+            ) : (
             <button key={v.id} type="button" role="tab" aria-selected={vista === v.id}
               className="ih-aba" data-ativo={vista === v.id || undefined} onClick={() => irPara(v.id)}>
               <span className="ih-aba-rot">{v.id === "mochila" ? props.nomeMochilaEquipada ?? v.rotulo : v.rotulo}</span>
               <span className="ih-aba-qtd">{contagem[v.id]}</span>
             </button>
+            )
           ))}
         </nav>
           <Carteira valor={props.aretz} onDefinir={props.somenteLeitura ? undefined : props.onDefinirAretz} />
