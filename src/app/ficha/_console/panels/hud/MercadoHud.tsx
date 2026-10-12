@@ -262,7 +262,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
             {grupos.map(({ c, xs }) => (
               <section key={c.id} data-vertente={c.vertente} style={estiloGrupo(xs[0].grupo?.nome ?? xs[0].categoriaRotulo, c.vertente)}>
                 <div className="hm-secao-titulo" style={{ color: "var(--k)" }}>
-                  <ItemCategoryIcon category={c.nome === "Flechas e virotes" ? c.nome : xs[0].grupo?.nome ?? xs[0].categoriaRotulo} size={16} />
+                  <ItemCategoryIcon category={["Flechas e virotes", "Células de energia"].includes(c.nome) ? c.nome : xs[0].grupo?.nome ?? xs[0].categoriaRotulo} size={16} />
                   <span className="hx-display" style={{ fontSize: 14, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".18em" }}>{c.nome}</span>
                   <Tag className="hx-dim" style={{ opacity: .6 }}>{xs.length}</Tag>
                   <span style={{ height: 1, flex: 1, background: "linear-gradient(90deg, color-mix(in srgb, var(--k) 27%, transparent), transparent)" }} />

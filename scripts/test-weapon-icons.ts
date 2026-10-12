@@ -71,6 +71,10 @@ for (const [nome, subtipo] of [["Flecha simples", "Tipo"], ["Virotes", "Tipo"], 
   assert.equal(filledCategoryIcon("municao", nome, tipo), "arrows", nome);
 }
 assert.equal(filledCategoryIcon("Flechas e virotes"), "arrows");
+assert.equal(filledCategoryIcon("municao", "Alta densidade", "Célula"), "energy cell");
+assert.equal(filledCategoryIcon("Células de energia"), "energy cell");
+assert.equal(filledCategoryIcon("ferramenta", "Bateria rúnica"), "runic battery");
+assert.equal(filledCategoryIcon("ferramenta", "Cartucheira"), "cartucheira");
 assert.equal(ammunitionType({nome:"Pistola",subtipo:"Munição"}), "Munição");
 assert.equal(filledCategoryIcon("municao", "Pistola", "Bala"), "bullets");
 console.log("✓ Ícones filled: tipos distintos, munições e estrutura dorsal independente");
