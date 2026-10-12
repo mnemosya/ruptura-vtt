@@ -175,6 +175,19 @@
   animation: ih-boot .5s cubic-bezier(.2,.8,.2,1) both;
 }
 .ih-lin--cab { animation: none; padding-bottom: 8px; border-bottom-color: color-mix(in srgb, var(--ih-cy) 20%, transparent); color: var(--ih-dim); }
+.ih-lin[data-saida] { pointer-events: none; overflow: hidden; animation: ih-item-mover 240ms ease-in forwards; }
+.ih-lin[data-saida="descartar"] { animation-name: ih-item-descartar; }
+.ih-lista[data-vista="todos"] .ih-lin[data-saida="mover"] { animation-name: ih-item-transferir; }
+@keyframes ih-item-mover {
+  from { opacity: 1; translate: 0; max-height: var(--ih-saida-altura); }
+  to { opacity: 0; translate: 28px; max-height: 0; min-height: 0; padding-block: 0; border-block-width: 0; }
+}
+@keyframes ih-item-descartar {
+  from { opacity: 1; scale: 1; max-height: var(--ih-saida-altura); }
+  to { opacity: 0; scale: .96; max-height: 0; min-height: 0; padding-block: 0; border-block-width: 0; }
+}
+@keyframes ih-item-transferir { 50% { opacity: .35; translate: 8px; } }
+@media (prefers-reduced-motion: reduce) { .ih-lin[data-saida] { animation: none; } }
 .ih-lin::before {
   content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 2px; background: var(--k);
   opacity: 0; transition: opacity .15s;

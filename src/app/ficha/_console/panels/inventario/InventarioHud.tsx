@@ -29,7 +29,7 @@ import { ItemCategoryIcon } from "../../../../_design/itemIcons";
  * A cor de cada item segue a paleta compartilhada das categorias do mercado.
  */
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { oxanium } from "../../../../_design/oxanium";
 import "./inventario-hud.css";
 
@@ -145,14 +145,38 @@ export function InventarioHud(props: PropsInventarioHud) {
   useEffect(() => { setDescarteLote(null); }, [marcados, busca, vista, emSelecao]);
   const visiveis = itens.filter(i => (vista === "todos" || i.local === vista) && (!busca.trim() || `${i.nome} ${i.categoriaRotulo}`.toLocaleLowerCase("pt-BR").includes(busca.trim().toLocaleLowerCase("pt-BR"))));
   const escolhidos = visiveis.filter(i => marcados.has(i.id));
+  const [saidas, setSaidas] = useState<Record<string, { item: ItemHud; indice: number; tipo: "mover" | "descartar"; altura: number }>>({});
+  const timersSaida = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  useEffect(() => () => { timersSaida.current.forEach(clearTimeout); }, []);
+  const animarAcao = (id: string, tipo: "mover" | "descartar", acao: () => void) => {
+    if (props.somenteLeitura || timersSaida.current.has(id)) return;
+    const indice = itens.findIndex(item => item.id === id);
+    if (indice >= 0 && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const item = itens[indice];
+      const linha = palco.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(id)}"]`);
+      const altura = linha?.getBoundingClientRect().height ?? 56;
+      setSaidas(prev => ({ ...prev, [id]: { item, indice, tipo, altura } }));
+      timersSaida.current.set(id, setTimeout(() => {
+        timersSaida.current.delete(id);
+        setSaidas(prev => { const next = { ...prev }; delete next[id]; return next; });
+      }, 240));
+    }
+    // A alteração é imediata; só a linha visual permanece durante a saída.
+    acao();
+  };
+  const moverItem = (id: string, destino: string) => animarAcao(id, "mover", () => props.onMover(id, destino));
+  const descartarItem = (id: string) => animarAcao(id, "descartar", () => props.onDescartar(id));
+  const itensAnimados = itens.filter(item => !saidas[item.id]);
+  Object.values(saidas).sort((a, b) => a.indice - b.indice).forEach(saida => itensAnimados.splice(Math.min(saida.indice, itensAnimados.length), 0, saida.item));
+
   const alternar = (id: string) => setMarcados(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
   const moverSelecionados = (destino: "mochila" | "abrigo") => {
-    escolhidos.filter(i => i.local !== destino).forEach(i => props.onMover(i.id, destino));
+    escolhidos.filter(i => i.local !== destino).forEach(i => moverItem(i.id, destino));
     setMarcados(new Set()); setEmSelecao(false); setMenuLote(false);
   };
   const descartarSelecionados = () => {
     if (props.somenteLeitura || !descarteLote) return;
-    descarteLote.forEach(id => props.onDescartar(id));
+    descarteLote.forEach(descartarItem);
     setDescarteLote(null); setMarcados(new Set()); setEmSelecao(false); setMenuLote(false);
   };
   const [quente, setQuente] = useState<string | null>(null);
@@ -272,7 +296,8 @@ export function InventarioHud(props: PropsInventarioHud) {
       <div ref={palco} className="ih-palco" onClick={(e) => { if (e.target === e.currentTarget) setAncora(null); }}>
         <div key={vista} className="ih-boot">
           <Lista
-            itens={vista === "todos" ? itens : itens.filter((i) => i.local === vista)}
+            itens={vista === "todos" ? itensAnimados : itensAnimados.filter((i) => i.local === vista)}
+            saidas={saidas}
             vista={vista} capacidade={capacidade} casa={casa} termo={busca} inicio={inicio}
             livre={vista === "mochila" && !termo ? livre : 0}
             quente={quente} setQuente={setQuente} sel={ancora?.id} abrir={abrir}
@@ -289,8 +314,8 @@ export function InventarioHud(props: PropsInventarioHud) {
               onFechar={() => setMenuDe(null)}
               onVer={(el) => abrir(it.id, el)}
               onUsar={() => props.onUsar(it.id)}
-              onMover={(d) => props.onMover(it.id, d)}
-              onDescartar={() => props.onDescartar(it.id)} />
+              onMover={(d) => moverItem(it.id, d)}
+              onDescartar={() => descartarItem(it.id)} />
           );
         })()}
         {selecionado && ancora && (
@@ -303,8 +328,8 @@ export function InventarioHud(props: PropsInventarioHud) {
             onFechar={() => setAncora(null)}
             onUsar={() => props.onUsar(selecionado.id)}
             onAjustar={(d) => props.onAjustar(selecionado.id, d)}
-            onMover={(d) => { props.onMover(selecionado.id, d); setAncora(null); }}
-            onDescartar={() => { props.onDescartar(selecionado.id); setAncora(null); }} />
+            onMover={(d) => { moverItem(selecionado.id, d); setAncora(null); }}
+            onDescartar={() => { descartarItem(selecionado.id); setAncora(null); }} />
         )}
       </div>
 
@@ -453,13 +478,14 @@ function Regua({ itens, capacidade, ocupados, livre, casa, filtrando, quente, se
 }
 
 /* ── lista ── */
-function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, setQuente, sel, abrir, onMenu, marcados, onMarcar }: {
+function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, setQuente, sel, abrir, onMenu, marcados, onMarcar, saidas }: {
   itens: ItemHud[]; vista: VistaHud; capacidade: number; casa: (i: ItemHud) => boolean; termo: string; livre: number;
   inicio: Map<string, number>;
   quente: string | null; setQuente: (s: string | null) => void; sel?: string;
   abrir: (id: string, el: HTMLElement) => void;
   onMenu?: (id: string, x: number, y: number) => void;
   marcados?: Set<string>; onMarcar?: (id: string) => void;
+  saidas: Record<string, { tipo: "mover" | "descartar"; altura: number }>;
 }) {
   const naMochila = vista === "mochila";
   const linhas = itens.filter(casa);
@@ -477,13 +503,13 @@ function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, s
       {linhas.map((it, ix) => {
         const s = inicio.get(it.id) ?? 0;
         return (
-          <button key={it.id} type="button" className="ih-lin" data-id={it.id} data-vertente={it.vertente}
+          <button key={it.id} type="button" className="ih-lin" data-id={it.id} data-saida={saidas[it.id]?.tipo} data-vertente={it.vertente}
             data-quente={quente === it.id || undefined} data-sel={(marcados?.has(it.id) || sel === it.id) || undefined}
             aria-pressed={marcados ? marcados.has(it.id) : undefined}
-            style={{ ...estiloCategoria(it.temaCategoria ?? it.categoria, it.vertente), animationDelay: `${ix * 25}ms` }}
+            style={{ ...estiloCategoria(it.temaCategoria ?? it.categoria, it.vertente), animationDelay: saidas[it.id] ? "0ms" : `${ix * 25}ms`, "--ih-saida-altura": `${saidas[it.id]?.altura ?? 56}px` } as CSSProperties}
             onMouseEnter={() => setQuente(it.id)} onMouseLeave={() => setQuente(null)}
-            onClick={(e) => marcados ? onMarcar?.(it.id) : abrir(it.id, e.currentTarget)}
-            onContextMenu={onMenu ? (e) => { e.preventDefault(); onMenu(it.id, e.clientX, e.clientY); } : undefined}>
+            onClick={(e) => { if (saidas[it.id]) return; marcados ? onMarcar?.(it.id) : abrir(it.id, e.currentTarget); }}
+            onContextMenu={onMenu ? (e) => { e.preventDefault(); if (!saidas[it.id]) onMenu(it.id, e.clientX, e.clientY); } : undefined}>
             <span className="ih-lin-icone" data-selecao={marcados ? true : undefined}>{marcados ? <span className="ih-marca" data-marcado={marcados.has(it.id) || undefined}><Check size={18} strokeWidth={1.8} /></span> : <ItemCategoryIcon category={it.categoria} weaponName={it.weaponName ?? it.nome} itemType={it.tipo} armorRegions={it.regioes} size={20} strokeWidth={1.6} />}</span>
             <span className="ih-lin-nome">
               <span className="ih-nome">{separarTipo(it.nome).titulo}</span>
