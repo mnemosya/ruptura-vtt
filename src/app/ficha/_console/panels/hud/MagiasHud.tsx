@@ -48,11 +48,17 @@ export interface MagiaHud {
   alcance?: string | null;
   area?: string | null;
   duracao?: string | null;
+  /** Ex.: "Medicina 5". */
+  preRequisito?: string | null;
   reacao?: boolean;
   /** Texto de sabor (nó: o painel passa com glossário). */
   descricao?: ReactNode;
-  /** O que a magia faz (nó). */
+  /** O que a magia faz (nó). Com tabela de níveis, é o texto ANTES dela. */
   efeito?: ReactNode;
+  /** Texto depois da tabela de níveis (quando há `escolha` por nível). */
+  efeitoDepois?: ReactNode;
+  /** Custo escolhido ao conjurar: linha da tabela de níveis ou valor de mana. */
+  escolha?: EscolhaHud | null;
   /** "1d6" ou valor fixo — presente = a magia tem dano para rolar. */
   dano?: string | null;
   /** "1d6" ou valor fixo — presente = a magia cura (PV, ou PE quando `curaPe`). */
@@ -66,6 +72,17 @@ export interface MagiaHud {
   bloqueada: boolean;
 }
 
+export type EscolhaHud =
+  | { tipo: "nivel"; colunas: string[]; linhas: { nivel: number; celulas: string[]; mana: number; bloqueada: boolean }[] }
+  | { tipo: "valor"; min: number; max: number | null };
+
+/** Opções de custo em ordem (nível → mana da linha; valor → o próprio valor). Só as liberadas. */
+function opcoesDeCusto(e: EscolhaHud, manaAtual: number): { chave: number; mana: number; rotulo: string }[] {
+  if (e.tipo === "nivel") return e.linhas.filter((l) => !l.bloqueada).map((l) => ({ chave: l.nivel, mana: l.mana, rotulo: `nv ${l.nivel}` }));
+  const max = e.max ?? Math.max(e.min, manaAtual);
+  return Array.from({ length: Math.max(0, max - e.min + 1) }, (_, i) => ({ chave: e.min + i, mana: e.min + i, rotulo: `${e.min + i} mana` }));
+}
+
 export interface PropsMagiasHud {
   magias: MagiaHud[];
   /** Nível investido por vertente (canônica). `null`/ausente = desconhecido. */
@@ -74,7 +91,8 @@ export interface PropsMagiasHud {
   primaria?: string | null;
   mana: { atual: number; max: number };
   somenteLeitura?: boolean;
-  onConjurar: (slug: string) => void;
+  /** `custoMana`: presente quando a magia tem `escolha` — o custo escolhido. */
+  onConjurar: (slug: string, custoMana?: number) => void;
   onRolarDano: (slug: string) => void;
   onRolarCura?: (slug: string) => void;
   onAbrirCatalogo?: () => void;
@@ -159,7 +177,8 @@ export function Titulo({ m, primaria }: { m: MagiaHud; primaria?: boolean }) {
   const v = VERT(m.vertente), c = v.c;
   const sep = <span style={{ width: 1, height: 12, background: "rgba(0,212,255,.2)" }} />;
   return (
-    <div style={{ position: "relative", padding: "20px 16px 14px", borderBottom: "1px solid rgba(0,212,255,.1)", background: `linear-gradient(180deg, ${c}0f, transparent)` }}>
+    /* sticky: gruda no topo da área que rola (modal e catálogo); fundo sólido para cobrir o texto que passa por baixo */
+    <div style={{ position: "sticky", top: 0, zIndex: 2, padding: "20px 52px 14px 16px", borderBottom: "1px solid rgba(0,212,255,.1)", background: `linear-gradient(180deg, ${c}0f, transparent), ${CASCO}` }}>
       <span style={{ position: "absolute", left: 0, right: 0, top: 0, height: 2, background: `linear-gradient(90deg, ${c}, ${c}00 70%)` }} />
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         {/* selo do nível da magia — mesmo hexágono (e proporção) do anel */}
@@ -202,7 +221,47 @@ function LinhaRolagem({ rotulo, valor, cor, onRolar }: { rotulo: string; valor: 
 
 const COR_DANO = "#ff5f74", COR_CURA = "#22d3aa";
 
-export function Leitura({ m, mana, onRolarDano, onRolarCura }: { m: MagiaHud; mana: { atual: number; max: number }; onRolarDano?: () => void; onRolarCura?: () => void }) {
+/** Tabela de níveis da magia como seletor: cada linha é uma opção de conjuração com o custo dela. */
+function TabelaDeNiveis({ e, cor, escolhido, onEscolher }: { e: Extract<EscolhaHud, { tipo: "nivel" }>; cor: string; escolhido?: number; onEscolher?: (nivel: number) => void }) {
+  const grade = `28px repeat(${e.colunas.length}, minmax(0, 1fr)) 48px`;
+  const celula: React.CSSProperties = { minWidth: 0, overflowWrap: "break-word" };
+  return (
+    <div style={{ marginTop: 12 }}>
+      {onEscolher && <Tag className="hx-dim" style={{ display: "block", fontSize: 10, marginBottom: 6 }}>escolha o nível</Tag>}
+      <div role={onEscolher ? "radiogroup" : undefined} aria-label="Nível da conjuração">
+        <div style={{ display: "grid", gridTemplateColumns: grade, gap: 8, padding: "6px 8px", borderBottom: "1px solid rgba(0,212,255,.15)" }}>
+          <span />{e.colunas.map((c) => <Tag key={c} className="hx-dim" style={{ minWidth: 0, fontSize: 10, letterSpacing: ".06em", lineHeight: 1.3 }}>{c}</Tag>)}<Tag className="hx-dim" style={{ fontSize: 10, textAlign: "right" }}>mana</Tag>
+        </div>
+        {e.linhas.map((l) => {
+          const on = escolhido === l.nivel;
+          const conteudo = <>
+            <span className="hx-display" style={{ fontWeight: 900, color: on ? cor : "var(--hx-dim)" }}>{l.nivel}</span>
+            {l.celulas.map((c, i) => <span key={i} style={celula}>{c}</span>)}
+            <span className="hx-display hx-cy" style={{ fontWeight: 900, textAlign: "right" }}>{l.mana}</span>
+          </>;
+          const estilo: React.CSSProperties = { display: "grid", gridTemplateColumns: grade, gap: 8, alignItems: "center", width: "100%", padding: "7px 8px", fontSize: 13, textAlign: "left", color: "var(--hx-texto)", borderBottom: "1px solid rgba(0,212,255,.08)", background: on ? cor + "1f" : "transparent", boxShadow: on ? `inset 2px 0 0 ${cor}` : undefined, opacity: l.bloqueada ? .3 : 1 };
+          return onEscolher
+            /* div com role="radio" (não <button>): fica fora da regra global de botões do chassi, que chanfra tudo */
+            ? <div key={l.nivel} role="radio" aria-checked={on} aria-disabled={l.bloqueada || undefined} tabIndex={l.bloqueada ? -1 : on ? 0 : -1}
+                title={l.bloqueada ? `Exige nível ${l.nivel} na vertente` : undefined} className="hx-linha-nivel" style={estilo}
+                onClick={() => !l.bloqueada && onEscolher(l.nivel)}
+                onKeyDown={(ev) => {
+                  if ((ev.key === " " || ev.key === "Enter") && !l.bloqueada) { ev.preventDefault(); onEscolher(l.nivel); }
+                  if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+                    ev.preventDefault();
+                    const livres = e.linhas.filter((x) => !x.bloqueada), i = livres.findIndex((x) => x.nivel === (escolhido ?? l.nivel));
+                    const alvo = livres[i + (ev.key === "ArrowDown" ? 1 : -1)];
+                    if (alvo) { onEscolher(alvo.nivel); (ev.currentTarget.parentElement?.querySelector(`[data-nivel="${alvo.nivel}"]`) as HTMLElement | null)?.focus(); }
+                  }
+                }} data-nivel={l.nivel}>{conteudo}</div>
+            : <div key={l.nivel} style={estilo}>{conteudo}</div>;
+        })}
+      </div>
+    </div>
+  );
+}
+
+export function Leitura({ m, mana, onRolarDano, onRolarCura, escolhido, onEscolher }: { m: MagiaHud; mana: { atual: number; max: number }; onRolarDano?: () => void; onRolarCura?: () => void; escolhido?: number; onEscolher?: (chave: number) => void }) {
   const custo = m.mana ?? 0, falta = custo > mana.atual, mc = falta ? "#ff5f74" : CY;
   const c = VERT(m.vertente).c;
   const Fato = ({ l, v }: { l: string; v: ReactNode }) => (
@@ -244,15 +303,21 @@ export function Leitura({ m, mana, onRolarDano, onRolarCura }: { m: MagiaHud; ma
         {m.alcance && <Fato l="alcance" v={m.alcance} />}
         {m.area && <Fato l="área" v={m.area} />}
         {m.duracao && <Fato l="duração" v={m.duracao} />}
+        {m.preRequisito && <Fato l="pré-requisito" v={<span className="hx-mono hx-amb" style={{ fontSize: 12, letterSpacing: ".06em" }}>{m.preRequisito}</span>} />}
         {m.reacao && <Fato l="reação" v="Sim" />}
         {m.dano && <LinhaRolagem rotulo="dano" valor={m.dano} cor={COR_DANO} onRolar={onRolarDano} />}
         {m.cura && <LinhaRolagem rotulo={m.curaPe ? "cura de PE" : "cura"} valor={m.cura} cor={COR_CURA} onRolar={onRolarCura} />}
       </div>
       {m.descricao && <div style={{ marginTop: 12, fontSize: 14, lineHeight: 1.6, color: "var(--hx-texto)", opacity: .8 }}>{m.descricao}</div>}
-      {m.efeito && <div style={{ marginTop: 12, paddingLeft: 12, borderLeft: `2px solid ${c}`, fontSize: 14, lineHeight: 1.6, color: "var(--hx-texto)" }}>{m.efeito}</div>}
+      {(m.efeito || m.efeitoDepois || m.escolha?.tipo === "nivel") && (
+        <div style={{ marginTop: 12, paddingLeft: 12, borderLeft: `2px solid ${c}`, fontSize: 14, lineHeight: 1.6, color: "var(--hx-texto)" }}>
+          {m.efeito}
+          {m.escolha?.tipo === "nivel" && <TabelaDeNiveis e={m.escolha} cor={c} escolhido={escolhido} onEscolher={onEscolher} />}
+          {m.efeitoDepois && <div style={{ marginTop: 12 }}>{m.efeitoDepois}</div>}
+        </div>
+      )}
       {m.resistencia && <p style={{ marginTop: 12, fontSize: 13, lineHeight: 1.5, color: "var(--hx-texto)", opacity: .8 }}>Resistência: {m.resistencia}. Resolvida pelo alvo após conjurar.</p>}
       {m.manuais?.map((t, i) => <div key={i} style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5, color: "var(--hx-texto)", opacity: .8 }}>{t}</div>)}
-      {m.bloqueada && <p style={{ marginTop: 12, fontSize: 13, color: "#ff5f74" }}>Nível de vertente insuficiente para conjurar esta magia.</p>}
     </div>
   );
 }
@@ -286,8 +351,10 @@ export function MagiasHud(props: PropsMagiasHud) {
     || magias.filter((m) => m.vertente === b.id).length - magias.filter((m) => m.vertente === a.id).length)[0].id;
   const [vid, setVid] = useState<string>(inicial);
   const [aberta, setAberta] = useState<string | null>(null);
+  const [escolhido, setEscolhido] = useState<number | null>(null);
   const [q, setQ] = useState("");
   useEffect(() => { setQ(""); }, [vid]);
+  useEffect(() => { setEscolhido(null); }, [aberta]);
   useEffect(() => {
     if (!aberta) return;
     const fechar = (e: KeyboardEvent) => { if (e.key === "Escape") setAberta(null); };
@@ -300,8 +367,13 @@ export function MagiasHud(props: PropsMagiasHud) {
   const lista = daVertente.filter((m) => sem(m.nome).includes(sem(q))).sort((a, b) => a.nivel - b.nivel || a.nome.localeCompare(b.nome, "pt-BR"));
   const nivelMax = Math.max(5, ...lista.map((m) => m.nivel));
   const magiaAberta = magias.find((m) => m.slug === aberta) ?? null;
-  const semMana = !!magiaAberta && magiaAberta.mana != null && magiaAberta.mana > mana.atual;
-  const conjuravel = (m: MagiaHud) => !m.bloqueada && (m.mana == null || m.mana <= mana.atual);
+  /* custo escolhido (nível da tabela / valor); começa na opção mais barata liberada */
+  const opcoes = magiaAberta?.escolha ? opcoesDeCusto(magiaAberta.escolha, mana.atual) : [];
+  const opcao = opcoes.find((o) => o.chave === escolhido) ?? opcoes[0] ?? null;
+  const custoEfetivo = opcao ? opcao.mana : magiaAberta?.mana ?? null;
+  const magiaComCusto = magiaAberta && opcao ? { ...magiaAberta, mana: custoEfetivo } : magiaAberta;
+  const semMana = !!magiaAberta && custoEfetivo != null && custoEfetivo > mana.atual;
+  const conjuravel = (m: MagiaHud) => !m.bloqueada && (m.mana == null || m.mana <= mana.atual) && (!m.escolha || opcao != null);
   const R = 120, C = 170;
 
   return (
@@ -441,21 +513,33 @@ export function MagiasHud(props: PropsMagiasHud) {
           style={{ position: "absolute", inset: 0, zIndex: 20, display: "grid", placeItems: "center", background: "rgba(6,18,28,.75)", backdropFilter: "blur(2px)" }}>
           <div className="hx-edge hx-ch hx-pop" role="dialog" aria-label={magiaAberta.nome} style={{ width: 420, maxWidth: "calc(100% - 32px)", boxShadow: "0 30px 80px -20px #000" }}>
             <div className="hx-ch" style={{ position: "relative", display: "flex", flexDirection: "column", maxHeight: "min(660px, calc(100vh - 160px))", background: CASCO }}>
-              <Faixa m={magiaAberta} nivel={niveis[magiaAberta.vertente]}>
-                <button type="button" onClick={() => setAberta(null)} aria-label="Fechar" className="hx-ch-hex hx-fechar" style={{ position: "absolute", right: 12, top: 12 }}>
-                  <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2}><path d="M6 6l12 12M18 6 6 18" /></svg>
-                </button>
-              </Faixa>
-              <Titulo m={magiaAberta} primaria={magiaAberta.vertente === props.primaria} />
-              <div className="hx-semsb" style={{ minHeight: 0, flex: 1, overflowY: "auto", padding: 16 }}><Leitura m={magiaAberta} mana={mana}
-                onRolarDano={props.somenteLeitura ? undefined : () => props.onRolarDano(magiaAberta.slug)}
-                onRolarCura={props.somenteLeitura || !props.onRolarCura ? undefined : () => props.onRolarCura?.(magiaAberta.slug)} /></div>
+              {/* fechar fica fora da rolagem: sempre no canto, mesmo com a faixa rolada para fora */}
+              <button type="button" onClick={() => setAberta(null)} aria-label="Fechar" className="hx-ch-hex hx-fechar" style={{ position: "absolute", right: 12, top: 12, zIndex: 3 }}>
+                <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2}><path d="M6 6l12 12M18 6 6 18" /></svg>
+              </button>
+              {/* faixa, título e leitura rolam juntos; o título gruda no topo e a faixa sai de cena */}
+              <div className="hx-semsb" style={{ minHeight: 0, flex: 1, overflowY: "auto" }}>
+                <Faixa m={magiaAberta} nivel={niveis[magiaAberta.vertente]} />
+                <Titulo m={magiaAberta} primaria={magiaAberta.vertente === props.primaria} />
+                <div style={{ padding: 16 }}><Leitura m={magiaComCusto!} mana={mana} escolhido={opcao?.chave} onEscolher={props.somenteLeitura ? undefined : setEscolhido}
+                  onRolarDano={props.somenteLeitura ? undefined : () => props.onRolarDano(magiaAberta.slug)}
+                  onRolarCura={props.somenteLeitura || !props.onRolarCura ? undefined : () => props.onRolarCura?.(magiaAberta.slug)} /></div>
+              </div>
               {!props.somenteLeitura && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "0 16px 16px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 16px 16px", borderTop: "1px solid rgba(0,212,255,.08)" }}>
+                  {/* nível de vertente abaixo do da magia: diz o porquê do conjurar apagado (vem antes da mana — sem nível, surto não resolve) */}
+                  {magiaAberta.bloqueada && (
+                    <div style={{ padding: "10px 12px", border: "1px solid #ff5f7455", background: "#ff5f7412" }}>
+                      <Tag style={{ display: "block", fontSize: 11, letterSpacing: ".16em", color: "#ff5f74" }}>nível de vertente insuficiente</Tag>
+                      <p style={{ marginTop: 6, fontSize: 13, lineHeight: 1.5, color: "var(--hx-texto)", opacity: .8 }}>
+                        Magia de nível {magiaAberta.nivel}; seu nível em {VERT(magiaAberta.vertente).nome} é {niveis[magiaAberta.vertente] ?? "—"}.
+                      </p>
+                    </div>
+                  )}
                   {/* sem mana: aviso com o que falta e, se der, o Surto de Energia com o preço à vista */}
-                  {semMana && magiaAberta.mana != null && (
+                  {semMana && !magiaAberta.bloqueada && custoEfetivo != null && (
                     <div style={{ padding: 12, border: `1px solid ${AMB}55`, background: AMB + "12" }}>
-                      <Tag className="hx-amb" style={{ display: "block", fontSize: 11, letterSpacing: ".16em" }}>falta {magiaAberta.mana - mana.atual} de mana</Tag>
+                      <Tag className="hx-amb" style={{ display: "block", fontSize: 11, letterSpacing: ".16em" }}>falta {custoEfetivo - mana.atual} de mana</Tag>
                       <p style={{ marginTop: 6, fontSize: 13, lineHeight: 1.5, color: "var(--hx-texto)", opacity: .8 }}>
                         {props.onSurtoDeEnergia
                           ? "Libere um Surto de Energia: +5 de mana temporária, ao custo de 1 Sobrecarga e 1d4 de dano psíquico."
@@ -470,10 +554,19 @@ export function MagiasHud(props: PropsMagiasHud) {
                     </div>
                   )}
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button type="button" disabled={!conjuravel(magiaAberta)} className="hx-btn-conjurar"
+                    {opcao && (
+                      <span style={{ display: "flex", alignItems: "center", background: "rgba(0,212,255,.06)" }}>
+                        {([-1, 1] as const).map((passo) => {
+                          const i = opcoes.findIndex((o) => o.chave === opcao.chave) + passo, alvo = opcoes[i];
+                          const seta = <button key={passo} type="button" aria-label={passo < 0 ? "Nível anterior" : "Próximo nível"} disabled={!alvo} onClick={() => alvo && setEscolhido(alvo.chave)} className="hx-seta-custo" style={{ padding: "0 8px", alignSelf: "stretch", opacity: alvo ? 1 : .25 }}><svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden="true"><path d={passo < 0 ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"} /></svg></button>;
+                          return passo < 0 ? [seta, <Tag key="r" style={{ fontSize: 11, color: "var(--hx-ice)", whiteSpace: "nowrap" }}>{opcao.rotulo}</Tag>] : seta;
+                        })}
+                      </span>
+                    )}
+                    <button type="button" disabled={!conjuravel(magiaComCusto!)} className="hx-btn-conjurar"
                       style={{ flex: 1, padding: "12px 0", fontFamily: "var(--hx-display)", fontSize: 14, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".3em" }}
-                      onClick={() => { props.onConjurar(magiaAberta.slug); setAberta(null); }}>
-                      conjurar
+                      onClick={() => { props.onConjurar(magiaAberta.slug, opcao ? opcao.mana : undefined); setAberta(null); }}>
+                      {opcao ? `conjurar · ${opcao.mana} mana` : "conjurar"}
                     </button>
                   </div>
                 </div>

@@ -2827,7 +2827,7 @@ export default function CharacterSheetClient({
    * da mente; o narrador resolve pelas ferramentas de /dev/table. Sem
    * PA/Mana suficiente, não muda nada e só avisa. Exige magia aprendida.
    */
-  async function handleCastSpell(slug: string, contexto?: ContextoAcaoToken) {
+  async function handleCastSpell(slug: string, contexto?: ContextoAcaoToken, custoManaEscolhido?: number) {
     const current = characterRef.current;
     const spell = spellsIniciais.find((s) => s.slug === slug);
     if (!spell) return;
@@ -2835,7 +2835,7 @@ export default function CharacterSheetClient({
       addLogEntry("recurso", `${spell.nome} ainda não foi aprendida.`);
       return;
     }
-    const result = castSpell({ character: current, spell, paMax: derivados.pa_max, manaMax: derivados.mana_max });
+    const result = castSpell({ character: current, spell, paMax: derivados.pa_max, manaMax: derivados.mana_max, custoManaEscolhido });
     if (!result.ok) {
       addLogEntry("recurso", result.reason ?? "Conjuração não realizada.");
       return;
@@ -2850,10 +2850,12 @@ export default function CharacterSheetClient({
     const vertenteLevel = getVertenteLevel(current, spell.vertente);
     const resolution = prepareSpellCastResolution(spell, undefined, vertenteLevel);
     const temporariaConsumida = (result.manaTemporariaBefore ?? 0) - (result.manaTemporariaAfter ?? 0);
+    // Custo variável (escolha de nível, tempo etc.): registra a conjuração e deixa o gasto para a mesa.
     const manaTexto = result.manaCostUnknown
-      ? "custo de Mana ainda não definido (placeholder)"
+      ? `Mana não descontada (custo ${spell.estatisticas.custoManaTexto ?? "variável"} — desconte à mão)`
       : `Mana ${result.manaBefore} → ${result.manaAfter}${temporariaConsumida > 0 ? ` (${temporariaConsumida} da Mana temporária)` : ""}`;
     const partes: string[] = [`PA ${result.paBefore} → ${result.paAfter}`, manaTexto];
+    if (spell.estatisticas.conjuracaoTexto && spell.estatisticas.custo_pa === 0) partes.unshift(`conjuração: ${spell.estatisticas.conjuracaoTexto.toLowerCase()}`);
     if (resolution.damage) {
       partes.push(
         `dano ${resolution.damage.fixo ? "fixo" : "rolado"} ${resolution.damage.result} (${resolution.damage.formula}/${resolution.damage.tipoDano}${resolution.damage.subtipoDano ? `/${resolution.damage.subtipoDano}` : ""})`,
@@ -3746,7 +3748,7 @@ export default function CharacterSheetClient({
       sheetMode,
       onLearn: handleLearnSpell,
       onForget: handleForgetSpell,
-      onCast: handleCastSpell,
+      onCast: (slug, custoManaEscolhido) => void handleCastSpell(slug, undefined, custoManaEscolhido),
       onRollDamage: handleRollSpellDamage,
       onRollHeal: handleRollSpellHeal,
       onSetVertenteLevel: handleSetVertenteLevel,
@@ -4452,7 +4454,7 @@ export default function CharacterSheetClient({
           sheetMode={sheetMode}
           onLearn={handleLearnSpell}
           onForget={handleForgetSpell}
-          onCast={handleCastSpell}
+          onCast={(slug) => void handleCastSpell(slug)}
           onRollDamage={handleRollSpellDamage}
           onRollHeal={handleRollSpellHeal}
           onSetVertenteLevel={handleSetVertenteLevel}

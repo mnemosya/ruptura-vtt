@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Search } from "lucide-react";
-import { SURTO_DE_ENERGIA, canonicalVertenteId, checkSpellVertenteLevel, describeSpellManualEffects, getSpellAttackProfile, getSpellDamageEffect, getSpellHealEffect, getVertenteCd, getVertenteLevel, resolveSpellResistance, type SpellContent } from "../../../../lib/character";
+import { SURTO_DE_ENERGIA, canonicalVertenteId, checkSpellVertenteLevel, describeSpellManualEffects, getSpellAttackProfile, getSpellCostChoice, getSpellDamageEffect, getSpellHealEffect, separarTabelaDeNiveis, getVertenteCd, getVertenteLevel, resolveSpellResistance, type SpellContent } from "../../../../lib/character";
 import type { ConsoleApi } from "../types";
 import { TextoComRegras } from "../TextoComRegras";
 import { CabecalhoModulo } from "./CabecalhoModulo";
@@ -15,6 +15,17 @@ const VERTENTES = [
   ["biotica", "Biótica"], ["sinaptica", "Sináptica"], ["cognitiva", "Cognitiva"],
 ] as const;
 const rotulo = (id: string) => VERTENTES.find(([slug]) => slug === canonicalVertenteId(id))?.[1] ?? id;
+/**
+ * A `descricao_longa` do catálogo v1.2 começa repetindo a `descricao_curta`
+ * inteira (o importador do Notion grava o 1º parágrafo nas duas). Aqui o
+ * efeito mostra só o que vem depois; sem nada além, não há efeito à parte.
+ */
+function efeitoSemRepetir(s: SpellContent): string | null {
+  const longa = s.descricao_longa?.trim() ?? "", curta = s.descricao_curta?.trim() ?? "";
+  if (!longa) return null;
+  if (!curta || !longa.startsWith(curta)) return longa;
+  return longa.slice(curta.length).trim() || null;
+}
 const normalizar = (texto: string) => texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 /** Só apresentação: custos, testes e persistência continuam nas ações da ficha. */
@@ -47,6 +58,21 @@ function MagiasEmJogo({ api }: { api: ConsoleApi }) {
   const paraHud = (s: SpellContent): MagiaHud => {
     const dano = getSpellDamageEffect(s);
     const cura = getSpellHealEffect(s);
+    /* Tabela de níveis vira o seletor do HUD; o texto em volta segue como efeito antes/depois dela. */
+    const efeitoComEscolha = (spell: SpellContent): Pick<MagiaHud, "efeito" | "efeitoDepois" | "escolha"> => {
+      const texto = efeitoSemRepetir(spell);
+      const no = (t: string) => (t ? <TextoComRegras texto={t} glossario={api.glossario} /> : null);
+      const escolha = getSpellCostChoice(spell);
+      if (escolha?.tipo === "valor") return { efeito: no(texto ?? ""), escolha };
+      const separada = escolha && texto ? separarTabelaDeNiveis(texto) : null;
+      if (escolha?.tipo !== "nivel" || !separada) return { efeito: no(texto ?? "") };
+      const teto = nivelDe(spell.vertente);
+      return {
+        efeito: no(separada.antes),
+        efeitoDepois: no(separada.depois),
+        escolha: { tipo: "nivel", colunas: escolha.tabela.colunas, linhas: escolha.tabela.linhas.map((l) => ({ nivel: l.nivel, celulas: l.celulas, mana: l.mana ?? 0, bloqueada: teto != null && l.nivel > teto })) },
+      };
+    };
     const res = resolveSpellResistance(s, nivelDe(s.vertente));
     return {
       slug: s.slug,
@@ -59,9 +85,10 @@ function MagiasEmJogo({ api }: { api: ConsoleApi }) {
       alcance: s.estatisticas.alcanceTexto ?? null,
       area: s.estatisticas.areaTexto ?? null,
       duracao: s.estatisticas.duracaoTexto ?? null,
+      preRequisito: s.estatisticas.preRequisito ?? null,
       reacao: !!s.estatisticas.usa_reacao,
       descricao: s.descricao_curta ? <TextoComRegras texto={s.descricao_curta} glossario={api.glossario} /> : null,
-      efeito: s.descricao_longa ? <TextoComRegras texto={s.descricao_longa} glossario={api.glossario} /> : null,
+      ...efeitoComEscolha(s),
       dano: dano ? String(dano.dado ?? dano.valor) : null,
       cura: cura ? String(cura.dado ?? cura.valor) : null,
       curaPe: cura?.recurso === "pe",
@@ -171,12 +198,13 @@ function DetalheMagia({ spell, api }: { spell: SpellContent; api: ConsoleApi }) 
           {alcance && <div className="rc-inv-linha"><dt>Alcance</dt><dd>{alcance.text}</dd></div>}
           {area && <div className="rc-inv-linha"><dt>Área</dt><dd>{area.text}</dd></div>}
           {spell.estatisticas.duracaoTexto && <div className="rc-inv-linha"><dt>Duração</dt><dd>{spell.estatisticas.duracaoTexto}</dd></div>}
+          {spell.estatisticas.preRequisito && <div className="rc-inv-linha"><dt>Pré-requisito</dt><dd>{spell.estatisticas.preRequisito}</dd></div>}
           <div className="rc-inv-linha"><dt>Nível da vertente</dt><dd>{evolucao ? <input aria-label={`Nível de ${rotulo(spell.vertente)}`} type="number" min={0} value={nivel ?? ""} placeholder="—" onChange={e => m.onSetVertenteLevel(canonicalVertenteId(spell.vertente), Math.max(0, Math.trunc(Number(e.target.value) || 0)))} /> : nivel ?? "Não definido"}</dd></div>
           <div className="rc-inv-linha"><dt>CD da vertente</dt><dd>{cd ?? "Nível não definido"}</dd></div>
           {spell.estatisticas.usa_reacao && <div className="rc-inv-linha"><dt>Reação</dt><dd>Sim</dd></div>}
         </dl>
       </div>
-      {spell.descricao_longa && <div className="rc-inv-efeito"><TextoComRegras texto={spell.descricao_longa} glossario={api.glossario} className="rc-inv-efeito-corpo rc-inv-det-desc" /></div>}
+      {efeitoSemRepetir(spell) && <div className="rc-inv-efeito"><TextoComRegras texto={efeitoSemRepetir(spell)!} glossario={api.glossario} className="rc-inv-efeito-corpo rc-inv-det-desc" /></div>}
       {resistencia && <p className="rc-inv-det-desc">Resistência: {resistencia.acoes.join(" / ")} · {resistencia.cd != null ? `CD ${resistencia.cd}` : "CD não definida"}{resistencia.condicional ? " (condicional)" : ""}. Resolvida pelo alvo após conjurar.</p>}
       {manuais.map((texto, i) => <TextoComRegras key={i} texto={`Manual: ${texto}`} glossario={api.glossario} className="rc-inv-det-desc" />)}
       {bloqueada && <p className="rc-mag-aviso">Nível de vertente insuficiente para conjurar esta magia.</p>}

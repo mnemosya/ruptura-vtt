@@ -48,6 +48,14 @@ export interface SpellStatistics {
   usa_reacao: boolean;
   /** `null` no DB atual para várias magias — PRD autoriza placeholder; nunca inventamos um valor. */
   custo_mana: number | null;
+  /** Fonte nova do Notion: exige escolha de custo ou tempo fora do fluxo de PA. */
+  conjuracaoManual?: boolean;
+  custoManaTexto?: string | null;
+  conjuracaoTexto?: string | null;
+  /** `estatisticas.escolha_mana` cru (intervalo, investimento livre, tabela) — lido por `getSpellCostChoice`. */
+  escolhaMana?: Record<string, unknown> | null;
+  /** `estatisticas.pre_requisito` (ex.: "Medicina 5") — só exibido; `null` quando ausente. */
+  preRequisito?: string | null;
   resolucao: string;
   /** `estatisticas.pericia_teste` (ex.: "precisao" em magias de ataque) — perícia do teste de acerto. `null` quando ausente. */
   periciaTeste: string | null;
@@ -120,6 +128,11 @@ export function normalizeSpellContent(raw: Record<string, unknown>): SpellConten
         return typeof duracao?.texto === "string" ? duracao.texto : null;
       })(),
       custo_mana: typeof estatisticasRaw.custo_mana === "number" ? estatisticasRaw.custo_mana : null,
+      conjuracaoManual: estatisticasRaw.conjuracao_manual === true,
+      custoManaTexto: typeof asRecord(estatisticasRaw.custo_mana_regra)?.texto === "string" ? String(asRecord(estatisticasRaw.custo_mana_regra)?.texto) : null,
+      conjuracaoTexto: typeof asRecord(estatisticasRaw.conjuracao)?.texto === "string" ? String(asRecord(estatisticasRaw.conjuracao)?.texto) : null,
+      escolhaMana: asRecord(estatisticasRaw.escolha_mana),
+      preRequisito: typeof estatisticasRaw.pre_requisito === "string" && estatisticasRaw.pre_requisito.trim() ? estatisticasRaw.pre_requisito.trim() : null,
       resolucao: typeof estatisticasRaw.resolucao === "string" ? estatisticasRaw.resolucao : "",
       periciaTeste: typeof estatisticasRaw.pericia_teste === "string" ? estatisticasRaw.pericia_teste : null,
       atributoAtaque: typeof estatisticasRaw.atributo_ataque === "string" ? estatisticasRaw.atributo_ataque : null,
@@ -328,6 +341,80 @@ export function rollSpellDamage(spell: SpellContent, rng?: () => number): number
   return efeito.valor ?? null;
 }
 
+// ---------------------------------------------------------------------
+// Custo escolhido ao conjurar.
+//
+// Algumas magias escalam por nível ("escolha qualquer nível entre 1 e
+// seu nível atual … para cada nível acima do 1º, aumente o custo em N
+// Mana") e trazem a tabela do nível na descrição. O importador v1.2 só
+// estruturou uma delas (`escolha_mana.opcoes`); nas outras o custo veio
+// como "fixo" com o valor do nível 1. A fonte de verdade é a TABELA da
+// descrição: a coluna "Mana" quando existe, senão base + N por nível
+// pela frase da regra. Outras escolhem um valor (`escolha_mana`
+// intervalo) ou investem livremente.
+// ---------------------------------------------------------------------
+
+export interface TabelaDeNiveis {
+  /** Cabeçalhos, sem a coluna "Nível" e sem a coluna "Mana". */
+  colunas: string[];
+  linhas: { nivel: number; celulas: string[]; mana: number | null }[];
+}
+
+export type EscolhaDeCusto =
+  | { tipo: "nivel"; tabela: TabelaDeNiveis }
+  | { tipo: "valor"; min: number; max: number | null };
+
+const semMarcacao = (s: string) => s.replace(/\*\*|`/g, "").trim();
+const semAcento = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+/**
+ * Acha a tabela de níveis (1ª coluna "Nível", linhas 1, 2, 3…) no texto e
+ * devolve o texto antes e depois dela. `null` quando não há.
+ */
+export function separarTabelaDeNiveis(texto: string): { antes: string; tabela: TabelaDeNiveis; depois: string } | null {
+  const linhas = texto.split("\n");
+  const inicio = linhas.findIndex((l, i) => /^\s*\|/.test(l) && semAcento(semMarcacao(l.split("|")[1] ?? "")) === "nivel" && /^\s*\|\s*:?-{2,}/.test(linhas[i + 1] ?? ""));
+  if (inicio < 0) return null;
+  let fim = inicio + 2;
+  while (fim < linhas.length && /^\s*\|/.test(linhas[fim])) fim++;
+  const celulas = (l: string) => l.trim().replace(/^\||\|$/g, "").split("|").map(semMarcacao);
+  const cab = celulas(linhas[inicio]);
+  const iMana = cab.findIndex((c) => semAcento(c) === "mana");
+  const corpo = linhas.slice(inicio + 2, fim).map(celulas).filter((c) => /^\d+$/.test(c[0]));
+  if (!corpo.length) return null;
+  const tirar = (c: string[]) => c.filter((_, i) => i !== 0 && i !== iMana);
+  return {
+    antes: linhas.slice(0, inicio).join("\n").trim(),
+    depois: linhas.slice(fim).join("\n").trim(),
+    tabela: {
+      colunas: tirar(cab),
+      linhas: corpo.map((c) => ({ nivel: Number(c[0]), celulas: tirar(c), mana: iMana >= 0 && /^\d+$/.test(c[iMana] ?? "") ? Number(c[iMana]) : null })),
+    },
+  };
+}
+
+/** Escolha de custo da magia, ou `null` quando o custo é fixo de verdade. */
+export function getSpellCostChoice(spell: SpellContent): EscolhaDeCusto | null {
+  const texto = spell.descricao_longa ?? "";
+  const separada = separarTabelaDeNiveis(texto);
+  const escalaPorNivel = /escolha qualquer n[ií]vel entre 1 e seu n[ií]vel/i.test(texto);
+  if (separada && escalaPorNivel) {
+    const passo = Number(/para cada n[ií]vel acima do 1[ºo°]?,? aumente o custo em (\d+) mana/i.exec(texto)?.[1] ?? NaN);
+    const base = spell.estatisticas.custo_mana;
+    const linhas = separada.tabela.linhas.map((l) => ({
+      ...l,
+      mana: l.mana ?? (base != null && Number.isFinite(passo) ? base + passo * (l.nivel - 1) : null),
+    }));
+    if (linhas.every((l) => l.mana != null)) return { tipo: "nivel", tabela: { ...separada.tabela, linhas } };
+  }
+  const escolha = spell.estatisticas.escolhaMana;
+  if (escolha?.tipo === "valor_no_intervalo" && typeof escolha.min === "number" && typeof escolha.max === "number") {
+    return { tipo: "valor", min: escolha.min, max: escolha.max };
+  }
+  if (escolha?.tipo === "investimento_livre") return { tipo: "valor", min: 1, max: null };
+  return null;
+}
+
 /** Rola a cura da magia (dado ou valor fixo). `null` sem efeito de cura. */
 export function rollSpellHeal(spell: SpellContent, rng?: () => number): number | null {
   const efeito = getSpellHealEffect(spell);
@@ -505,6 +592,8 @@ export function describeSpellManualEffects(spell: SpellContent): string[] {
       case "dano":
       case "efeito_com_resistencia":
         break; // tratados pelo fluxo de dano/resistência.
+      case "narrativo":
+        break; // o próprio texto da magia já é a regra; o importador só grava um aviso genérico aqui.
       case "aplicar_condicao":
         linhas.push(
           `Aplica a condição "${typeof efeito.condicao === "string" ? efeito.condicao : "?"}" no alvo${typeof efeito.duracao === "string" ? ` (${efeito.duracao.replace(/_/g, " ")})` : ""} — aplicação manual pelo narrador.`,
@@ -746,8 +835,10 @@ export function castSpell(params: {
   spell: SpellContent;
   paMax: number;
   manaMax: number;
+  /** Custo escolhido ao conjurar (nível da tabela, valor no intervalo) — ver `getSpellCostChoice`. Substitui `custo_mana`. */
+  custoManaEscolhido?: number | null;
 }): CastSpellResult {
-  const { character, spell, paMax, manaMax } = params;
+  const { character, spell, paMax, manaMax, custoManaEscolhido } = params;
   const paGastosAntes = character.estado_jogo?.pa_gastos ?? 0;
   const paBefore = Math.max(0, paMax - paGastosAntes);
 
@@ -767,10 +858,11 @@ export function castSpell(params: {
 
   const avisoPa = custoPa > paBefore ? `PA insuficiente (atual: ${paBefore}, necessário: ${custoPa}).` : undefined;
 
-  const manaCostUnknown = spell.estatisticas.custo_mana == null;
+  const escolhido = typeof custoManaEscolhido === "number" && custoManaEscolhido >= 0 ? custoManaEscolhido : null;
+  const manaCostUnknown = escolhido == null && spell.estatisticas.custo_mana == null;
   const manaAntes = character.recursos_atuais?.mana ?? manaMax;
   const manaTemporariaAntes = character.recursos_atuais?.mana_temporaria ?? 0;
-  const custoMana = spell.estatisticas.custo_mana ?? 0;
+  const custoMana = escolhido ?? spell.estatisticas.custo_mana ?? 0;
 
   if (!manaCostUnknown && custoMana > manaAntes + manaTemporariaAntes) {
     return {

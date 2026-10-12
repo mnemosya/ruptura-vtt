@@ -591,7 +591,7 @@ function CartaoItem({ item: it, ancora, palco, podeCrescer, somenteLeitura, dest
         </div>
 
         <div className="ih-cartao-corpo">
-          {it.descricao && <p className="ih-cartao-desc">{it.descricao}</p>}
+          {it.descricao && <div className="ih-cartao-desc">{it.descricao}</div>}
           {it.destaque && (
             <div className="ih-destaque">
               <span className="ih-destaque-val">{it.destaque.valor}</span>
