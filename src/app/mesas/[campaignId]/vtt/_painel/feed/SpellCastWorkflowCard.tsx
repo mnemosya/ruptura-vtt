@@ -19,7 +19,12 @@
  * que existem. Nada é inventado — nem fórmula, nem CD, nem alvo.
  */
 
-import { Sparkles, Wand2 } from "lucide-react";
+import { useState } from "react";
+import { createPortal } from "react-dom";
+import { BookOpen, Sparkles, Wand2 } from "lucide-react";
+import { Faixa, Leitura, Titulo, type MagiaHud } from "../../../../../ficha/_console/panels/hud/MagiasHud";
+import { TextoComRegras } from "../../../../../ficha/_console/TextoComRegras";
+import { oxanium } from "../../../../../_design/oxanium";
 import { CartaoBase } from "../ui/CartaoBase";
 import { BotaoTecnico, Chip, Chips, Modulo, Modulos, PainelTecnico } from "../ui/primitivas";
 import type { AcentoCartao, CartaoMagia, EstadoMagia } from "./contratos";
@@ -61,7 +66,13 @@ export function SpellCastWorkflowCard({
   visibilidade?: React.ReactNode;
 }) {
   const temDescricao = !!cartao.descricao;
-  return (
+  const [vendo, setVendo] = useState(false);
+  const podeVer = !!(cartao.descricao || cartao.snapshot.efeito);
+  const verMagia = podeVer ? (
+    <BotaoTecnico acento="mana" icone={<BookOpen />} onClick={() => setVendo(true)} testId="painel-feed-magia-ver">Ver magia</BotaoTecnico>
+  ) : null;
+  return (<>
+    {vendo && <VerMagia cartao={cartao} onFechar={() => setVendo(false)} />}
     <CartaoBase
       tipo="Magia conjurada"
       nome={cartao.nome}
@@ -85,7 +96,7 @@ export function SpellCastWorkflowCard({
       onAlternarExpandido={temDescricao ? onAlternar : undefined}
       rotuloDetalhes="Descrição"
       detalhes={temDescricao ? <PainelTecnico><p className="pn-texto">{cartao.descricao}</p></PainelTecnico> : undefined}
-      acoes={
+      acoes={<>{
         cartao.estado === "manual" ? (
           <BotaoTecnico
             primario
@@ -108,7 +119,7 @@ export function SpellCastWorkflowCard({
             Aguardando ataque
           </BotaoTecnico>
         ) : undefined
-      }
+      }{verMagia}</>}
       testId="painel-feed-magia"
       atributos={{ "data-kind": "magia", "data-workflow": cartao.workflowId, "data-estado": cartao.estado }}
     >
@@ -140,5 +151,41 @@ export function SpellCastWorkflowCard({
         <p className="pn-texto">{cartao.motivoManual}</p>
       )}
     </CartaoBase>
+  </>);
+}
+
+/**
+ * "Ver magia": o mesmo modal da aba Magias do Console, montado a partir do
+ * snapshot gravado na conjuração (não relê o catálogo). Só leitura.
+ */
+function VerMagia({ cartao, onFechar }: { cartao: CartaoMagia; onFechar: () => void }) {
+  const s = cartao.snapshot;
+  const m: MagiaHud = {
+    slug: s.slug ?? cartao.workflowId, nome: cartao.nome, vertente: s.vertenteId ?? "cinetica", nivel: cartao.nivel ?? 1,
+    tipo: s.tipo ?? "", mana: s.mana, pa: s.pa, alcance: s.alcance, area: s.area, duracao: s.duracao,
+    preRequisito: s.preRequisito, conjuracao: s.conjuracao,
+    descricao: cartao.descricao ? <TextoComRegras texto={cartao.descricao} glossario={[]} /> : null,
+    efeito: s.efeito ? <TextoComRegras texto={s.efeito} glossario={[]} /> : null,
+    bloqueada: false,
+  };
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div className={`hx ${oxanium.variable}`} onClick={(e) => { if (e.target === e.currentTarget) onFechar(); }}
+      onKeyDown={(e) => { if (e.key === "Escape") onFechar(); }}
+      style={{ position: "fixed", inset: 0, zIndex: 900, display: "grid", placeItems: "center", background: "rgba(6,18,28,.75)", backdropFilter: "blur(2px)" }}>
+      <div className="hx-edge hx-ch hx-pop" role="dialog" aria-label={cartao.nome} style={{ width: 420, maxWidth: "calc(100% - 32px)", boxShadow: "0 30px 80px -20px #000" }}>
+        <div className="hx-ch" style={{ position: "relative", display: "flex", flexDirection: "column", maxHeight: "min(660px, calc(100vh - 80px))", background: "#081925" }}>
+          <button type="button" onClick={onFechar} aria-label="Fechar" autoFocus className="hx-ch-hex hx-fechar" style={{ position: "absolute", right: 12, top: 12, zIndex: 3 }}>
+            <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2}><path d="M6 6l12 12M18 6 6 18" /></svg>
+          </button>
+          <div className="hx-semsb" style={{ minHeight: 0, flex: 1, overflowY: "auto" }}>
+            <Faixa m={m} nivel={null} semPersonagem />
+            <Titulo m={m} />
+            <div style={{ padding: 16 }}><Leitura m={m} mana={{ atual: Number.MAX_SAFE_INTEGER, max: 0 }} /></div>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }

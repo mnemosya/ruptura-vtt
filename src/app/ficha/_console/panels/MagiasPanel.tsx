@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 import { SURTO_DE_ENERGIA, canonicalVertenteId, checkSpellVertenteLevel, describeSpellManualEffects, getSpellAttackProfile, getSpellCostChoice, getSpellDamageEffect, getSpellHealEffect, separarTabelaDeNiveis, getVertenteCd, getVertenteLevel, resolveSpellResistance, type SpellContent } from "../../../../lib/character";
 import type { ConsoleApi } from "../types";
 import { TextoComRegras } from "../TextoComRegras";
+import { enviarMagiaAoChatAction } from "../../../mesas/[campaignId]/vtt/_acoes/magiaChatActions";
 import { CabecalhoModulo } from "./CabecalhoModulo";
 import { MagiasHud, type MagiaHud } from "./hud/MagiasHud";
 import { CatalogoMagiasHud } from "./hud/CatalogoMagiasHud";
@@ -122,6 +123,9 @@ function MagiasEmJogo({ api }: { api: ConsoleApi }) {
           onRolarDano={m.onRollDamage}
           onRolarCura={m.onRollHeal}
           onAbrirCatalogo={() => setCatalogoAberto(true)}
+          onAjustarNivel={m.sheetMode === "evolucao" && !api.somenteLeitura ? m.onSetVertenteLevel : undefined}
+          onEnviarAoChat={api.mesa ? (slug) => enviarMagiaAoChatAction(api.mesa!.campaignId, slug, api.mesa!.characterId) : undefined}
+          onEsquecer={m.sheetMode === "evolucao" && !api.somenteLeitura ? (slug) => { const a = m.magiasAprendidas.find((x) => x.spellSlug === slug); if (a) m.onForget(a.id); } : undefined}
           onSurtoDeEnergia={api.podeUsarSobrecarga ? () => api.usarSobrecarga(SURTO_DE_ENERGIA) : undefined}
           vazio="Nenhuma magia aprendida. Abra o catálogo para aprender magias."
         />

@@ -322,6 +322,19 @@ export const GRUPOS_CARDS: Grupo[] = [
         ],
       },
       {
+        chave: "ficha",
+        titulo: "Conjurada pela ficha — com descrição e Ver magia",
+        nota: "Formato que a ficha grava: snapshot da magia (descrição, efeito, alcance, duração) e as escolhas feitas.",
+        entradas: [
+          log("spell_cast", {
+            spellSlug: "biotica_febre", spellNome: "FEBRE", characterNome: "Natsu", vertente: "biotica", nivel: 1, tipoMagia: "Ataque",
+            paCost: 2, manaPaga: 2, alcance: "15 m", duracao: "Instantâneo", escolhas: [],
+            descricao: "Você acelera o metabolismo do alvo até que o próprio corpo se torne uma fornalha.",
+            efeito: "- O alvo testa **Vigor** contra sua CD de Biótica.\n\n- Em falha, sofre **1d6 de dano tóxico** e fica **`Exausto`** até o fim do próximo turno.",
+          }),
+        ],
+      },
+      {
         chave: "manual",
         titulo: "Resolução manual",
         nota: "Sem estrutura suficiente para automatizar, o card ASSUME a resolução manual em vez de inventar regra.",

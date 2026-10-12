@@ -19,11 +19,8 @@ type Props = {
 };
 
 export function CatalogoMagiasHud({ magias, aprendidas, niveis, mana, somenteLeitura, onAprender, onFechar }: Props) {
-  const primeira = [...VERTENTES_HUD].filter(v => magias.some(m => m.vertente === v.id))
-    .sort((a, b) => (niveis[b.id] ?? -1) - (niveis[a.id] ?? -1)
-      || magias.filter(m => m.vertente === b.id && aprendidas.has(m.slug)).length
-        - magias.filter(m => m.vertente === a.id && aprendidas.has(m.slug)).length)[0] ?? VERTENTES_HUD[0];
-  const [vertente, setVertente] = useState<string>(primeira.id);
+  /* abre em "Todas" ("" = todas as vertentes) */
+  const [vertente, setVertente] = useState<string>("");
   const [busca, setBusca] = useState("");
   const [selecionada, setSelecionada] = useState<string | null>(null);
   const [detalheAberto, setDetalheAberto] = useState(false);

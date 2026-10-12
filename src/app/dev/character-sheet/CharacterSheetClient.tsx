@@ -2781,10 +2781,13 @@ export default function CharacterSheetClient({
   function handleSetVertenteLevel(vertente: string, value: number) {
     const current = characterRef.current;
     const nivel = Math.max(0, Math.trunc(Number.isFinite(value) ? value : 0));
+    // v1.2 guarda o nível também em `magia.niveis_vertente` (fonte do domínio); os dois andam juntos.
+    const magia = (current as { magia?: { niveis_vertente?: Record<string, number> } }).magia;
     const next: Character = {
       ...current,
       niveis_vertente: { ...(current.niveis_vertente ?? {}), [vertente]: nivel },
-    };
+      ...(magia ? { magia: { ...magia, niveis_vertente: { ...(magia.niveis_vertente ?? {}), [vertente]: nivel } } } : {}),
+    } as Character;
     characterRef.current = next;
     setCharacter(next);
     addLogEntry("condicao", `Nível de ${vertente} definido: ${nivel} (CD da vertente: ${getVertenteCd(nivel)}).`);
@@ -2912,6 +2915,20 @@ export default function CharacterSheetClient({
             vertente: spell.vertente,
             nivel: spell.estatisticas.nivel,
             tipoMagia: spell.estatisticas.tipo_magia,
+            // Snapshot do texto e das estatísticas: o card do chat mostra a descrição e abre a magia
+            // ("Ver magia") sem reler o catálogo — editar a magia depois não reescreve o que foi conjurado.
+            descricao: spellBase.descricao_curta ?? null,
+            efeito: (() => {
+              const longa = spellBase.descricao_longa?.trim() ?? "", curta = spellBase.descricao_curta?.trim() ?? "";
+              return (curta && longa.startsWith(curta) ? longa.slice(curta.length).trim() : longa) || null;
+            })(),
+            alcance: spell.estatisticas.alcanceTexto ?? null,
+            area: spell.estatisticas.areaTexto ?? null,
+            duracao: spell.estatisticas.duracaoTexto ?? null,
+            preRequisito: spell.estatisticas.preRequisito ?? null,
+            conjuracaoTexto: spell.estatisticas.custo_pa === 0 ? spell.estatisticas.conjuracaoTexto ?? null : null,
+            escolhas: escolhaAplicada.rotulos,
+            manaPaga: result.manaCostUnknown ? null : (custoManaEscolhido ?? spell.estatisticas.custo_mana ?? null),
             resolucao: resolution.resolucao,
             usaReacao: spell.estatisticas.usa_reacao,
             paCost: spell.estatisticas.custo_pa,

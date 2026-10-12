@@ -263,6 +263,12 @@ export interface CartaoMagia extends CartaoComum {
   /** Estatísticas do snapshot (alcance, área, resistência, dano). */
   estatisticas: { rotulo: string; valor: string }[];
   descricao: string | null;
+  /** Snapshot para "Ver magia" (texto da regra e estatísticas como estavam ao conjurar). */
+  snapshot: {
+    slug: string | null; vertenteId: string | null; tipo: string | null; mana: number | null; pa: number;
+    alcance: string | null; area: string | null; duracao: string | null; preRequisito: string | null;
+    conjuracao: string | null; efeito: string | null;
+  };
   /** `true` quando a magia é de ataque e o fluxo continua noutro card. */
   exigeAtaque: boolean;
   /** Motivo, quando o estado é "manual" (sem estrutura suficiente para automatizar). */
@@ -768,12 +774,20 @@ function projetarAtaque(entry: TableLogEntry): CartaoFeed {
   };
 }
 
+const ROTULO_VERTENTE: Record<string, string> = {
+  cinetica: "Cinética", energetica: "Energética", material: "Material",
+  biotica: "Biótica", sinaptica: "Sináptica", cognitiva: "Cognitiva",
+};
+
 function projetarMagia(entry: TableLogEntry): CartaoFeed {
   const p = entry.payload as P;
   const custos: ModuloCartao[] = [];
-  const pa = num(p, "paGasto", "custoPa");
-  if (pa != null) custos.push({ rotulo: "PA", valor: String(pa) });
-  const mana = num(p, "manaGasta", "custoMana");
+  // A ficha grava paCost/manaCost/manaPaga; outros produtores usam paGasto/custoPa.
+  const pa = num(p, "paGasto", "custoPa", "paCost");
+  const conjuracao = txt(p, "conjuracaoTexto");
+  if (conjuracao) custos.push({ rotulo: "Conjuração", valor: conjuracao.toLowerCase() });
+  else if (pa != null) custos.push({ rotulo: "PA", valor: String(pa) });
+  const mana = num(p, "manaGasta", "manaPaga", "custoMana", "manaCost");
   if (mana != null) custos.push({ rotulo: "Mana", valor: String(mana), acento: "mana" });
 
   const est: { rotulo: string; valor: string }[] = [];
@@ -783,6 +797,8 @@ function projetarMagia(entry: TableLogEntry): CartaoFeed {
   if (area) est.push({ rotulo: "Área", valor: area });
   const resistencia = txt(p, "resistencia", "resistenciaRotulo");
   if (resistencia) est.push({ rotulo: "Resistência", valor: resistencia });
+  const duracao = txt(p, "duracao");
+  if (duracao) est.push({ rotulo: "Duração", valor: duracao });
   const danoTxt = txt(p, "danoFormula", "dano");
   if (danoTxt) est.push({ rotulo: "Dano", valor: danoTxt });
 
@@ -796,12 +812,18 @@ function projetarMagia(entry: TableLogEntry): CartaoFeed {
     estado: motivoManual ? "manual" : exigeAtaque ? "aguardando_ataque" : "conjurada",
     nome: txt(p, "spellNome", "magiaNome", "nome") ?? "Magia",
     conjurador: txt(p, "characterNome", "conjuradorNome") ?? "—",
-    vertente: txt(p, "vertente"),
+    vertente: (() => { const v = txt(p, "vertente"); return v ? ROTULO_VERTENTE[v] ?? v : null; })(),
     nivel: num(p, "nivel"),
-    tags: lista(p, "tags"),
+    // Escolhas feitas ao conjurar ("manifestação: Gélida") viram etiquetas.
+    tags: [...lista(p, "escolhas"), ...lista(p, "tags")],
     custos,
     estatisticas: est,
     descricao: txt(p, "descricao", "efeito"),
+    snapshot: {
+      slug: txt(p, "spellSlug"), vertenteId: txt(p, "vertente"), tipo: txt(p, "tipoMagia"),
+      mana: mana, pa: pa ?? 0, alcance, area, duracao, preRequisito: txt(p, "preRequisito"),
+      conjuracao, efeito: txt(p, "efeito"),
+    },
     exigeAtaque,
     motivoManual,
   };
