@@ -119,3 +119,8 @@ assert.equal(filledCategoryIcon("escalpo", "RPI Forjado (Nível 1)", "Identidade
 assert.equal(filledCategoryIcon("escalpo", "Modelo", "Moda"), "noun_beauty_3677917");
 assert.equal(FILLED_ICON_DATA.noun_hacker_5879592.paths[0].fillRule, "evenodd");
 assert.equal(filledCategoryIcon("dispositivo", "Scanner de sensores"), "noun_Scanner_7959164");
+assert.equal(filledCategoryIcon("escalpo", "Armadura Reativa Subdérmica (ARS)", "Interno"), "noun_armadurasubdermica_7991712");
+assert.equal(filledCategoryIcon("escalpo", "Beijo da Morte", "internos"), "noun_kiss_6493561");
+assert.equal(filledCategoryIcon("escalpo", "Catalisador Imunológico", "internos"), "noun_immunity_3883965");
+assert.equal(filledCategoryIcon("escalpo", "Reserva de Mana", "internos"), "noun_mana_8219198");
+assert.equal(filledCategoryIcon("escalpo", "Filtro Hematológico", "internos"), "noun_elixir_8401397");

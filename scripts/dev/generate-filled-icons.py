@@ -30,6 +30,13 @@ ART_BOXES = {'noun_Audio_8196748': [0, 0, 100, 100],
  'noun_vr_2226896': [0, 0, 64.0, 64.0]}
 
 ART_BOXES["noun_Scanner_7959164"] = [0, 0, 100, 100]
+ART_BOXES.update({
+    "noun_armadurasubdermica_7991712": [0, 0, 100, 100],
+    "noun_elixir_8401397": [0, 0, 100, 100],
+    "noun_immunity_3883965": [0, 0, 100, 100],
+    "noun_kiss_6493561": [0, 0, 32, 32],
+    "noun_mana_8219198": [0, 0, 100, 100],
+})
 
 data = {}
 for folder in ("filled icons", "energy", "legacy"):

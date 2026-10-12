@@ -52,6 +52,10 @@ export function filledCategoryIcon(category: string, name?: string, itemType?: s
   if (categoryKey === "municao" && ["flecha", "virote"].includes(normalizeIconKey(itemType ?? ""))) return "arrows";
   const nameKey = normalizeIconKey((name ?? "").trim());
   const namedItems: Record<string, FilledIconName> = {
+    armadura_reativa_subdermica_ars_: "noun_armadurasubdermica_7991712",
+    beijo_da_morte: "noun_kiss_6493561", catalisador_imunologico: "noun_immunity_3883965",
+    reserva_de_mana: "noun_mana_8219198",
+    filtro_hematologico: "noun_elixir_8401397",
     scanner_de_sensores: "noun_Scanner_7959164",
     escuta: "noun_Audio_8196748", ascensor_motorizado: "noun_Climbing_5026510(ascensor)",
     luvas_de_escalada: "noun_Gloves_8340735", kit_de_contencao: "noun_Handcuffs_699304",
