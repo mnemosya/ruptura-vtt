@@ -303,7 +303,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                     const filhos = produtos.filter(c => c.parentSlugs?.includes(p.slug));
                     const rotulo = filhos.every(c => c.categoria === "veneno") ? "veneno" : "módulo";
                     return (
-                      <div key={p.slug} className="hm-cartao"><button type="button" onClick={(e) => { ultimoCartao.current = e.currentTarget; setSel(p.slug); escolherComplemento(null); setDetalheAberto(true); }} className="hx-produto" data-ativo={on || undefined} aria-pressed={on}>
+                      <div key={p.slug} className="hm-cartao" data-complementos={filhos.length > 0 || undefined}><button type="button" onClick={(e) => { ultimoCartao.current = e.currentTarget; setSel(p.slug); escolherComplemento(null); setDetalheAberto(true); }} className="hx-produto" data-ativo={on || undefined} aria-pressed={on}>
                         <span className="hx-produto-arte">
                           <span className="hx-produto-trama" />
                           <span className="hm-card-espacos-arte"><Espacos n={p.espacos} /></span>
@@ -318,9 +318,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                         <span className="hm-card-info">
                           <span className="hx-display hm-card-nome">{separarTipo(p.nome).titulo}</span>
                           <span className="hm-card-preco hx-display" style={{ color: pobre ? "var(--hx-dim)" : undefined, textDecoration: pobre ? "line-through" : undefined }}><Aretz /> {fmt(p.preco)}</span>
-                          <span className="hm-card-espacos">
-                            {filhos.length > 0 && <span className="hm-card-complementos">{filhos.length} {rotulo}{filhos.length !== 1 ? "s" : ""}</span>}
-                          </span>
+                          {filhos.length > 0 && <span className="hm-card-espacos"><span className="hm-card-complementos">{filhos.length} {rotulo}{filhos.length !== 1 ? "s" : ""}</span></span>}
                         </span>
                       </button>{coracao(p.slug, "hm-coracao-card")}</div>
                     );

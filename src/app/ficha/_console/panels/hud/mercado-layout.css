@@ -189,7 +189,10 @@
 .hm-coracao { display: grid; place-items: center; width: 32px; height: 32px; color: var(--hx-dim) !important; border-radius: 0 !important; transition: color .15s, background .15s; }
 .hm-coracao:hover, .hm-coracao[aria-pressed="true"] { color: var(--hx-amb) !important; }
 .hm-coracao:hover { background: rgba(255,138,31,.1); }
-.hm-coracao-card { position: absolute; right: 6px; bottom: 6px; }
+.hm-coracao-card { position: absolute; right: 6px; bottom: 10px; }
+.hm-cartao .hm-card-preco { display: flex; align-items: center; gap: 3px; min-height: 32px; padding-right: 28px; }
+.hm-cartao[data-complementos] .hm-coracao-card { bottom: 28px; }
+.hm-cartao[data-complementos] .hm-card-espacos { height: 12px; }
 .hm-cartao .hm-card-espacos { padding-right: 28px; }
 .hm-coracao-detalhe { position: absolute; top: 10px; right: 10px; z-index: 2; }
 .hm-produto-tags { padding-right: 30px; }
