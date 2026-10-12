@@ -303,7 +303,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                     const filhos = produtos.filter(c => c.parentSlugs?.includes(p.slug));
                     const rotulo = filhos.every(c => c.categoria === "veneno") ? "veneno" : "módulo";
                     return (
-                      <div key={p.slug} className="hm-cartao" data-vertente={p.vertente} style={wishlistAberta ? estiloGrupo(p.grupo?.nome ?? p.categoriaRotulo, p.vertente) : undefined} data-complementos={filhos.length > 0 || undefined}><button type="button" onClick={(e) => { ultimoCartao.current = e.currentTarget; setSel(p.slug); escolherComplemento(null); setDetalheAberto(true); }} className="hx-produto" data-ativo={on || undefined} aria-pressed={on}>
+                      <div key={p.slug} className="hm-cartao" data-vertente={wishlistAberta ? p.vertente : undefined} style={wishlistAberta ? estiloGrupo(p.grupo?.nome ?? p.categoriaRotulo, p.vertente) : undefined} data-complementos={filhos.length > 0 || undefined}><button type="button" onClick={(e) => { ultimoCartao.current = e.currentTarget; setSel(p.slug); escolherComplemento(null); setDetalheAberto(true); }} className="hx-produto" data-ativo={on || undefined} aria-pressed={on}>
                         <span className="hx-produto-arte">
                           <span className="hx-produto-trama" />
                           <span className="hm-card-espacos-arte"><Espacos n={p.espacos} /></span>
