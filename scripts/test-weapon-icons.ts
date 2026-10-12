@@ -87,6 +87,7 @@ for (const name of ["Icarus I", "Icarus II", "Icarus III"]) assert.equal(filledC
 assert.equal(filledCategoryIcon("mobilidade", "Bicicleta"), "noun_Bike_8339085");
 assert.equal(filledCategoryIcon("Mobilidade"), "noun_Bike_8339085");
 assert.equal(filledCategoryIcon("Equipamentos de mobilidade"), "noun_Bike_8339085");
+assert.equal(filledCategoryIcon("Locomoção"), "noun_Skateboard_1293918");
 assert.equal(filledCategoryIcon("estrutura_dorsal"), "dorsal");
 assert.equal(ammunitionType({nome:"Pistola",subtipo:"Munição"}), "Munição");
 assert.equal(filledCategoryIcon("municao", "Pistola", "Bala"), "bullets");
