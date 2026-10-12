@@ -57,6 +57,7 @@ export function filledCategoryIcon(category: string, name?: string, itemType?: s
     reserva_de_mana: "noun_mana_8219198",
     filtro_hematologico: "noun_elixir_8401397",
     reserva_pulmonar: "noun_Lung_4303915",
+    magboots: "noun_Boot_2249240",
     scanner_de_sensores: "noun_Scanner_7959164",
     escuta: "noun_Audio_8196748", ascensor_motorizado: "noun_Climbing_5026510(ascensor)",
     luvas_de_escalada: "noun_Gloves_8340735", kit_de_contencao: "noun_Handcuffs_699304",
