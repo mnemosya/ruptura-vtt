@@ -32,7 +32,7 @@ const CATEGORIES: Record<string, FilledIconName> = {
   vertina: "potion", vertinas: "potion",
   estrutura_dorsal: "dorsal",
   cabeca: "helmet", tronco: "armor", membro_superior: "noun_equipmentglovearmor_2360083", membro_inferior: "noun_equipmentlegarmor_2360077",
-  mobilidade: "noun_Bike_8339085", equipamentos_de_mobilidade: "noun_Bike_8339085", locomocao: "noun_Skateboard_1293918",
+  mobilidade: "noun_Bike_8339085", equipamentos_de_mobilidade: "noun_Bike_8339085", locomocao: "noun_ElectricScooter_8291684",
   ferramenta: "noun_Tool_8303078", ferramentas: "noun_Tool_8303078", ferramentas_e_utilidades: "noun_Tool_8303078", utilidade: "noun_Tool_8303078",
   drone: "noun_Drone_8335890", drones: "noun_Drone_8335890", drones_e_robos: "noun_Drone_8335890",
   robo: "noun_Robot_8483832", robos: "noun_Robot_8483832",
