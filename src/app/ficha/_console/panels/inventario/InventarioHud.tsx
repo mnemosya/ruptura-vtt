@@ -207,7 +207,8 @@ export function InventarioHud(props: PropsInventarioHud) {
           {VISTAS.map((v) => (
             v.id === "mochila" && (props.mochilas?.length ?? 0) > 1 ? (
               <div key={v.id} className="ih-aba" data-ativo={vista === v.id || undefined}>
-                <div onFocusCapture={() => irPara("mochila")}>
+                <div>
+                  {vista === "mochila" ? (
                   <Select label="Mochila equipada" labelOculto className="ih-mochila-select"
                     value={props.mochilaEquipadaId ?? ""} disabled={props.somenteLeitura || !props.onSelecionarMochila}
                     options={[
@@ -215,6 +216,10 @@ export function InventarioHud(props: PropsInventarioHud) {
                       ...(props.mochilas ?? []).map(mochila => ({ id: mochila.id, rotulo: mochila.nome })),
                     ]}
                     onChange={(id) => { irPara("mochila"); if (id) props.onSelecionarMochila?.(id); }} />
+                  ) : (
+                    <button type="button" role="tab" aria-selected={false} className="ih-aba-rot ih-mochila-abrir"
+                      onClick={() => irPara("mochila")}>{props.nomeMochilaEquipada ?? "Mochila"}</button>
+                  )}
                 </div>
                 <button type="button" role="tab" aria-selected={vista === v.id} aria-label="Ver mochila"
                   className="ih-aba-qtd ih-mochila-abrir" onClick={() => irPara("mochila")}>{contagem[v.id]}</button>
