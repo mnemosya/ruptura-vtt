@@ -34,6 +34,7 @@ export interface ProdutoHud {
   slug: string;
   nome: string;
   categoria: string;
+  regioes?: string[];
   categoriaRotulo: string;
   /** Vertente da categoria — escolhe a cor (`--rv-vertente-cor`). */
   vertente: string;
@@ -276,7 +277,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                       <button key={p.slug} type="button" onClick={(e) => { ultimoCartao.current = e.currentTarget; setSel(p.slug); escolherComplemento(null); setDetalheAberto(true); }} className="hx-produto" data-ativo={on || undefined} aria-pressed={on}>
                         <span className="hx-produto-arte">
                           <span className="hx-produto-trama" />
-                          <ItemCategoryIcon category={p.categoria} group={p.grupo?.nome} weaponName={p.nome} itemType={p.tipo} size={52} color="var(--k)" strokeWidth={1.1} style={{ opacity: .85, filter: "drop-shadow(0 0 10px color-mix(in srgb, var(--k) 50%, transparent))" }} />
+                          <ItemCategoryIcon category={p.categoria} group={p.grupo?.nome} weaponName={p.nome} itemType={p.tipo} armorRegions={p.regioes} size={52} color="var(--k)" strokeWidth={1.1} style={{ opacity: .85, filter: "drop-shadow(0 0 10px color-mix(in srgb, var(--k) 50%, transparent))" }} />
                           <span style={{ position: "absolute", right: 0, top: 0, width: 0, height: 0, borderLeft: "14px solid transparent", borderTop: `14px solid ${corRaridade(p.raridade)}` }} />
                           {/* O tipo vai no pé da arte, logo acima do nome: no rodapé ele quebrava o cartão. */}
                           {(p.tipo ?? separarTipo(p.nome).tipo) && (
@@ -312,7 +313,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                   subtítulo. */}
               <div className="hm-produto-cab" style={{ background: `radial-gradient(ellipse at 70% 50%, color-mix(in srgb, var(--k) 35%, ${CASCO}) 0%, ${CASCO} 70%)` }}>
                 <span style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(135deg, color-mix(in srgb, var(--k) 12%, transparent) 0 1px, transparent 1px 7px)" }} />
-                <span className="hm-produto-glifo"><ItemCategoryIcon category={sel.categoria} group={sel.grupo?.nome} weaponName={sel.nome} itemType={sel.tipo} size={140} color="var(--k)" strokeWidth={.9} style={{ filter: "drop-shadow(0 0 24px var(--k))" }} /></span>
+                <span className="hm-produto-glifo"><ItemCategoryIcon category={sel.categoria} group={sel.grupo?.nome} weaponName={sel.nome} itemType={sel.tipo} armorRegions={sel.regioes} size={140} color="var(--k)" strokeWidth={.9} style={{ filter: "drop-shadow(0 0 24px var(--k))" }} /></span>
                 <div className="hm-produto-tags">
                   <Tag style={{ color: "var(--k)" }}>{sel.categoriaRotulo}</Tag>
                   {sel.raridade && <><span style={{ width: 4, height: 4, transform: "rotate(45deg)", background: corRaridade(sel.raridade) }} /><Tag style={{ color: corRaridade(sel.raridade) }}>{sel.raridade}</Tag></>}
@@ -356,7 +357,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
               {complementos.length > 0 && <section className="hm-complementos" aria-label="Complementos do escalpo">
                 <div className="hm-complementos-cab"><Tag className="hx-dim">{complementos.every(p => p.categoria === "veneno") ? "Venenos compatíveis" : "Módulos compatíveis"}</Tag><Tag>{complementos.length}</Tag></div>
                 <div className="hm-complementos-lista">{complementos.map(p => <button key={p.slug} type="button" className="hm-complemento" aria-pressed={alvo?.slug === p.slug} onClick={() => escolherComplemento(p.slug)}>
-                  <ItemCategoryIcon category={p.categoria} group={p.grupo?.nome} weaponName={p.nome} itemType={p.tipo} size={16} />
+                  <ItemCategoryIcon category={p.categoria} group={p.grupo?.nome} weaponName={p.nome} itemType={p.tipo} armorRegions={p.regioes} size={16} />
                   <span className="hm-complemento-texto"><strong>{p.nome}</strong>{alvo?.slug === p.slug && <span className="hm-complemento-descricao">{p.descricao}<span>{p.espacos} espaço{p.espacos !== 1 ? "s" : ""} / item</span></span>}</span><span className="hm-complemento-preco">₳ {fmt(p.preco)}</span>
                 </button>)}</div>
               </section>}

@@ -133,3 +133,8 @@ assert.equal(filledCategoryIcon("escalpo", "Reserva de Mana", "internos"), "noun
 assert.equal(filledCategoryIcon("escalpo", "Filtro Hematológico", "internos"), "noun_elixir_8401397");
 assert.equal(filledCategoryIcon("escalpo", "Reserva Pulmonar", "internos"), "noun_Lung_4303915");
 assert.equal(filledCategoryIcon("mobilidade", "Magboots"), "noun_Boot_2249240");
+for (const [region, icon] of [["cabeca", "helmet"], ["tronco", "armor"], ["bracos", "noun_equipmentglovearmor_2360083"], ["pernas", "noun_equipmentlegarmor_2360077"]] as const) {
+  assert.equal(filledCategoryIcon("armadura", "Peça", undefined, [region]), icon);
+}
+assert.equal(filledCategoryIcon("armadura", "Corpo inteiro", undefined, ["cabeca", "tronco", "bracos", "pernas"]), "armor");
+assert.equal(filledCategoryIcon("escudo", "Escudo", undefined, ["bracos"]), "shield");

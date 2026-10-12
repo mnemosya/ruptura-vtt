@@ -31,6 +31,7 @@ const CATEGORIES: Record<string, FilledIconName> = {
   pocao: "potion", pocoes: "potion", aljava: "quiver", flecha: "arrows", flechas: "arrows", virotes: "arrows",
   vertina: "potion", vertinas: "potion",
   estrutura_dorsal: "dorsal",
+  cabeca: "helmet", tronco: "armor", membro_superior: "noun_equipmentglovearmor_2360083", membro_inferior: "noun_equipmentlegarmor_2360077",
   mobilidade: "noun_Bike_8339085", equipamentos_de_mobilidade: "noun_Bike_8339085", locomocao: "noun_Bike_8339085",
   ferramenta: "noun_Tool_8303078", ferramentas: "noun_Tool_8303078", ferramentas_e_utilidades: "noun_Tool_8303078", utilidade: "noun_Tool_8303078",
   drone: "noun_Drone_8335890", drones: "noun_Drone_8335890", drones_e_robos: "noun_Drone_8335890",
@@ -46,8 +47,13 @@ export function filledWeaponIconForName(name?: string): FilledIconName | null {
   return WEAPONS[normalizeIconKey(type.trim())] ?? null;
 }
 
-export function filledCategoryIcon(category: string, name?: string, itemType?: string | null): FilledIconName | null {
+export function filledCategoryIcon(category: string, name?: string, itemType?: string | null, armorRegions?: string[]): FilledIconName | null {
   const categoryKey = normalizeIconKey(category);
+  if (categoryKey === "armadura" && armorRegions?.length === 1) {
+    const regions: Record<string, FilledIconName> = { cabeca: "helmet", tronco: "armor", bracos: "noun_equipmentglovearmor_2360083", pernas: "noun_equipmentlegarmor_2360077" };
+    const icon = regions[normalizeIconKey(armorRegions[0])];
+    if (icon) return icon;
+  }
   if (categoryKey === "flechas_e_virotes") return "arrows";
   if (categoryKey === "celulas_de_energia") return "energy cell";
   if (categoryKey === "municao" && normalizeIconKey(itemType ?? "") === "celula") return "energy cell";

@@ -43,6 +43,7 @@ export interface ItemHud {
   nome: string;
   /** Slug da categoria (`arma`, `farmacia`…) — escolhe o glifo. */
   categoria: string;
+  regioes?: string[];
   categoriaRotulo: string;
   /** Vertente da categoria — escolhe a cor. */
   vertente: string;
@@ -437,7 +438,7 @@ function Lista({ itens, vista, capacidade, casa, termo, livre, inicio, quente, s
             onMouseEnter={() => setQuente(it.id)} onMouseLeave={() => setQuente(null)}
             onClick={(e) => marcados ? onMarcar?.(it.id) : abrir(it.id, e.currentTarget)}
             onContextMenu={onMenu ? (e) => { e.preventDefault(); onMenu(it.id, e.clientX, e.clientY); } : undefined}>
-            <span className="ih-lin-icone" data-selecao={marcados ? true : undefined}>{marcados ? <span className="ih-marca" data-marcado={marcados.has(it.id) || undefined}><Check size={18} strokeWidth={1.8} /></span> : <ItemCategoryIcon category={it.categoria} weaponName={it.weaponName ?? it.nome} itemType={it.tipo} size={20} strokeWidth={1.6} />}</span>
+            <span className="ih-lin-icone" data-selecao={marcados ? true : undefined}>{marcados ? <span className="ih-marca" data-marcado={marcados.has(it.id) || undefined}><Check size={18} strokeWidth={1.8} /></span> : <ItemCategoryIcon category={it.categoria} weaponName={it.weaponName ?? it.nome} itemType={it.tipo} armorRegions={it.regioes} size={20} strokeWidth={1.6} />}</span>
             <span className="ih-lin-nome">
               <span className="ih-nome">{separarTipo(it.nome).titulo}</span>
               {/* Arma de família ("SW-80 Parallax (Rifle de precisão)") não repete o tipo
@@ -581,7 +582,7 @@ function CartaoItem({ item: it, ancora, palco, podeCrescer, somenteLeitura, dest
       style={{ ...estiloCategoria(it.temaCategoria ?? it.categoria, it.vertente), left: pos?.x ?? -9999, top: pos?.y ?? 0, width: L }}>
       <div className="ih-cartao-caixa">
         <div className="ih-cartao-arte">
-          <span className="ih-cartao-arte-glifo"><ItemCategoryIcon category={it.categoria} weaponName={it.weaponName ?? it.nome} itemType={it.tipo} size={150} strokeWidth={0.9} /></span>
+          <span className="ih-cartao-arte-glifo"><ItemCategoryIcon category={it.categoria} weaponName={it.weaponName ?? it.nome} itemType={it.tipo} armorRegions={it.regioes} size={150} strokeWidth={0.9} /></span>
           <div className="ih-cartao-sobre">
             <span className="ih-tag ih-cor">{it.categoriaRotulo}</span>
             {it.raridade && <><span className="ih-losango" /><span className="ih-tag ih-fraco">{it.raridade}</span></>}
@@ -763,7 +764,7 @@ function MenuDoItemInventario({ item: it, x, y, destinos, onFechar, onVer, onUsa
       style={{ ...estiloCategoria(it.temaCategoria ?? it.categoria, it.vertente), left: pos.left, top: pos.top }}
       onContextMenu={(ev) => ev.preventDefault()}>
       <div className="hx-menu-cab">
-        <span className="hx-menu-icone" aria-hidden="true"><ItemCategoryIcon category={it.categoria} weaponName={it.weaponName ?? it.nome} itemType={it.tipo} size={18} strokeWidth={1.6} /></span>
+        <span className="hx-menu-icone" aria-hidden="true"><ItemCategoryIcon category={it.categoria} weaponName={it.weaponName ?? it.nome} itemType={it.tipo} armorRegions={it.regioes} size={18} strokeWidth={1.6} /></span>
         <span className="hx-menu-id">
           <span className="hx-menu-nome">{separarTipo(it.nome).titulo}</span>
           <span className="hx-menu-meta"><span>{it.categoriaRotulo}</span>{it.quantidade > 1 && <span>×{it.quantidade}</span>}</span>

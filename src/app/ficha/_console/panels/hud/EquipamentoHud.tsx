@@ -335,7 +335,7 @@ function Encaixe({ peca, encaixe, ativo, quente, onClick, lado = "e" }: { peca: 
       )}
       {peca && <span style={{ position: "absolute", right: 0, top: 0, width: 0, height: 0, borderLeft: "8px solid transparent", borderTop: `8px solid ${corRar(peca.raridade)}` }} />}
       <span style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", display: "grid" }}>
-        <ItemCategoryIcon category={encaixe === "mochila_equipada" ? "mochila_equipada" : peca?.categoria ?? (ehArma(encaixe) ? "arma" : encaixe.startsWith("acesso_rapido") ? "acesso_rapido" : encaixe)} weaponName={peca?.weaponName ?? peca?.nome} itemType={peca?.tipo} size={S * .46} color={peca ? cor : CY} strokeWidth={1.5} style={{ opacity: peca ? 1 : .22 }} />
+        <ItemCategoryIcon category={ehArmadura(encaixe) ? encaixe : encaixe === "mochila_equipada" ? "mochila_equipada" : peca?.categoria ?? (ehArma(encaixe) ? "arma" : encaixe.startsWith("acesso_rapido") ? "acesso_rapido" : encaixe)} weaponName={peca?.weaponName ?? peca?.nome} itemType={peca?.tipo} size={S * .46} color={peca ? cor : CY} strokeWidth={1.5} style={{ opacity: peca ? 1 : .22 }} />
       </span>
       {selo != null && (
         <span className="hx-display" style={{ position: "absolute", top: "50%", transform: "translateY(-50%)",
@@ -705,7 +705,7 @@ function MenuDoItem({ p, x, y, encaixe, onFechar, onEquipar, onTrazer, onVer, on
       onContextMenu={(ev) => ev.preventDefault()}>
       <div className="hx-menu-cab">
         <span className="hx-menu-icone" aria-hidden="true">
-          <ItemCategoryIcon category={p.categoria} weaponName={p.weaponName ?? p.nome} itemType={p.tipo} size={18} color={corDe(p)} strokeWidth={1.6} />
+          <ItemCategoryIcon category={p.categoria} weaponName={p.weaponName ?? p.nome} itemType={p.tipo} armorRegions={p.regioes} size={18} color={corDe(p)} strokeWidth={1.6} />
         </span>
         <span className="hx-menu-id">
           <span className="hx-menu-nome">{titulo}</span>
@@ -779,7 +779,7 @@ function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
         <span className="hx-hexgrid" style={{ position: "absolute", inset: 0, opacity: .6 }} /><span className="hx-scan" style={{ position: "absolute", inset: 0 }} />
         <span className="hx-spin" style={{ position: "absolute", width: 140, height: 140, borderRadius: "50%", border: `1px dashed ${c}44` }} />
         <span className="hx-spinr" style={{ position: "absolute", width: 100, height: 100, borderRadius: "50%", border: `1px solid ${c}30` }} />
-        <span className="hx-floaty" style={{ position: "relative" }}><ItemCategoryIcon category={p.categoria} weaponName={p.weaponName ?? p.nome} itemType={p.tipo} size={52} color={c} strokeWidth={1.2} style={{ filter: `drop-shadow(0 0 12px ${c})` }} /></span>
+        <span className="hx-floaty" style={{ position: "relative" }}><ItemCategoryIcon category={p.categoria} weaponName={p.weaponName ?? p.nome} itemType={p.tipo} armorRegions={p.regioes} size={52} color={c} strokeWidth={1.2} style={{ filter: `drop-shadow(0 0 12px ${c})` }} /></span>
         <button type="button" onClick={voltar} aria-label="Fechar" className="hx-ch-hex hx-fechar" style={{ position: "absolute", right: 12, top: 12 }}><Svg d="M6 6l12 12M18 6 6 18" tam={14} cor="currentColor" traco={2} /></button>
       </div>
       <div style={{ position: "relative", padding: "18px 16px 14px", borderBottom: "1px solid rgba(0,212,255,.1)", background: `linear-gradient(180deg, ${c}0f, transparent)` }}>
