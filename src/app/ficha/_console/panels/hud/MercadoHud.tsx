@@ -27,7 +27,7 @@ const RAR: Record<string, string> = { comum: "#7f95b3", incomum: OK, raro: "#8b5
 const corRaridade = (r?: string | null) => (r ? RAR[r.toLowerCase()] ?? "#7f95b3" : "#7f95b3");
 const fmt = (n: number) => n.toLocaleString("pt-BR");
 
-import { X, Search, PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
+import { X, Search, PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight, ChevronLeft, SlidersHorizontal } from "lucide-react";
 
 export interface ProdutoHud {
   /** Complementos aparecem na ficha de seus escalpos base. */
@@ -75,7 +75,7 @@ export interface PropsMercadoHud {
   /** Espaços ocupados agora e capacidade — avisa antes de estourar a mochila. */
   usados: number;
   capacidade: number;
-  onComprar: (slug: string, quantidade: number) => void;
+  onComprar: (slug: string, quantidade: number, precoUnitario: number) => void;
   onFechar?: () => void;
 }
 
@@ -166,6 +166,12 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
   const [complementoSlug, setComplemento] = useState<string | null>(null);
   const [n, setN] = useState(1);
   const [feito, setFeito] = useState(false);
+  const [negociacao, setNegociacao] = useState(false);
+  const [modoPreco, setModoPreco] = useState<"preco" | "desconto">("preco");
+  const [rascunhoPreco, setRascunhoPreco] = useState("");
+  const [precoCombinado, setPrecoCombinado] = useState<{ slug: string; valor: number } | null>(null);
+  const ajusteRef = useRef<HTMLButtonElement>(null);
+  const campoPrecoRef = useRef<HTMLInputElement>(null);
   const lista = useMemo(
     () => bases.filter((p) => (!cat || grupoDe(p) === cat) && (!sub || p.sub === sub) && (sem(p.nome).includes(sem(q)) || produtos.some(c => c.parentSlugs?.includes(p.slug) && sem(c.nome).includes(sem(q))))),
     [bases, produtos, cat, sub, q],
@@ -189,11 +195,20 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
         .filter((g) => g.xs.length);
   const abrirGrupo = (id: string | null) => { setCat(id); setSub(null); setSel(null); setComplemento(null); setFeito(false); setN(1); };
 
-  const custo = alvo ? alvo.preco * n : 0;
+  const precoUnitario = alvo ? (precoCombinado?.slug === alvo.slug ? precoCombinado.valor : alvo.preco) : 0;
+  const valorRascunho = Number(rascunhoPreco.replace(",", "."));
+  const rascunhoValido = rascunhoPreco.trim() !== "" && Number.isFinite(valorRascunho) && valorRascunho >= 0 && (modoPreco !== "desconto" || valorRascunho <= 100);
+  const precoPrevisto = rascunhoValido ? Math.round(modoPreco === "desconto" ? (alvo?.preco ?? 0) * (1 - valorRascunho / 100) : valorRascunho) : null;
+  useEffect(() => { setNegociacao(false); setPrecoCombinado(null); }, [alvo?.slug]);
+  useEffect(() => { if (negociacao) campoPrecoRef.current?.focus(); }, [negociacao, modoPreco]);
+  const fecharNegociacao = () => { setNegociacao(false); requestAnimationFrame(() => ajusteRef.current?.focus()); };
+  const custo = precoUnitario * n;
   const cabe = !!alvo && usados + alvo.espacos * n <= capacidade;
   const comprar = () => {
     if (!alvo) return;
-    onComprar(alvo.slug, n);
+    if (custo > saldo) return;
+    onComprar(alvo.slug, n, precoUnitario);
+    setPrecoCombinado(null);
     setFeito(true); setTimeout(() => setFeito(false), 1200); setN(1);
   };
 
@@ -368,6 +383,14 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
               </section>}
             </div>
             <div className="hm-compra">
+              {negociacao && alvo && <section className="hm-negociacao" aria-label="Negociar preço" onKeyDown={e => { if (e.key === "Escape") { e.stopPropagation(); fecharNegociacao(); } }}>
+                <div className="hm-negociacao-cab"><span className="hx-display">Ajustar preço</span><button type="button" aria-label="Fechar ajuste de preço" onClick={fecharNegociacao}><X size={16} /></button></div>
+                <div className="hm-negociacao-modos">{(["preco", "desconto"] as const).map(modo => <button key={modo} type="button" aria-pressed={modoPreco === modo} onClick={() => { setModoPreco(modo); setRascunhoPreco(modo === "preco" ? String(precoUnitario) : String(Math.max(0, Math.round((1 - precoUnitario / alvo.preco) * 10000) / 100))); }}>{modo === "preco" ? "Definir preço" : "Desconto em %"}</button>)}</div>
+                <label className="hm-negociacao-campo"><Tag className="hx-dim">{modoPreco === "preco" ? "Preço por unidade (₳)" : "Desconto (%)"}</Tag><input ref={campoPrecoRef} type="number" min="0" max={modoPreco === "desconto" ? 100 : undefined} step="any" value={rascunhoPreco} onChange={e => setRascunhoPreco(e.target.value)} /></label>
+                {!rascunhoValido && <span role="alert" className="hm-negociacao-erro">{modoPreco === "desconto" ? "Informe um desconto de 0 a 100%." : "Informe um preço igual ou maior que zero."}</span>}
+                <div className="hm-negociacao-resumo" aria-live="polite"><Stat k="Preço original" v={`₳ ${fmt(alvo.preco)}`} /><Stat k="Preço combinado" v={precoPrevisto === null ? "—" : `₳ ${fmt(precoPrevisto)}`} /><Stat k={`Total · ${n} unidade${n === 1 ? "" : "s"}`} v={precoPrevisto === null ? "—" : `₳ ${fmt(precoPrevisto * n)}`} /></div>
+                <div className="hm-negociacao-acoes"><button type="button" onClick={fecharNegociacao}>Cancelar</button><button className="hx-btn-ambar" type="button" disabled={precoPrevisto === null} onClick={() => { if (precoPrevisto !== null) setPrecoCombinado({ slug: alvo.slug, valor: precoPrevisto }); fecharNegociacao(); }}>Aplicar à compra</button></div>
+              </section>}
               {familiaEscalpo && alvo && <div className="hm-compra-alvo"><Tag className="hx-dim">{alvo === sel ? (sel.sub === "Identidade" ? "Identidade" : "Escalpo base") : alvo.categoria === "veneno" ? "Dose de veneno" : "Módulo"}</Tag><strong>{alvo.nome}</strong></div>}
               <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
                 <div className="hx-passo">
@@ -380,13 +403,14 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                   <div className="hx-display" style={{ fontSize: 22, fontWeight: 900, color: custo > saldo ? PERIGO : undefined }}><Aretz /> {fmt(custo)}</div>
                 </div>
               </div>
-              {feito ? (
+              <div className="hm-compra-botoes">{feito ? (
                 <div className="hx-display" role="status" style={{ display: "grid", placeItems: "center", height: 44, border: `1px solid ${OK}80`, background: `${OK}1a`, color: OK, fontSize: 13, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".2em" }}>✓ Comprado</div>
               ) : (
                 <button type="button" disabled={custo > saldo} onClick={comprar} className="hx-btn-ambar" style={{ width: "100%" }}>
                   {custo > saldo ? "Saldo insuficiente" : familiaEscalpo ? `Comprar ${alvo === sel ? (sel.sub === "Identidade" ? "item" : "escalpo") : alvo?.categoria === "veneno" ? "veneno" : "módulo"}` : "Comprar"}
                 </button>
-              )}
+              )}<button ref={ajusteRef} type="button" className="hm-ajustar-preco" aria-label="Ajustar preço" data-tooltip="Ajustar preço" aria-expanded={negociacao} disabled={feito} onClick={() => { if (negociacao) fecharNegociacao(); else { setModoPreco("preco"); setRascunhoPreco(String(precoUnitario)); setNegociacao(true); } }}><SlidersHorizontal size={18} aria-hidden="true" /></button></div>
+              {alvo && precoUnitario !== alvo.preco && <div className="hm-preco-aplicado"><Tag className="hx-amb">Preço ajustado · ₳ {fmt(precoUnitario)} / un.</Tag><button type="button" onClick={() => setPrecoCombinado(null)}>Restaurar</button></div>}
               {/* Sem espaço NÃO bloqueia: a compra vai para a mochila e a régua
                   mostra o excesso — é para isso que o estado de excesso existe. */}
               {!cabe && !feito && custo <= saldo && (

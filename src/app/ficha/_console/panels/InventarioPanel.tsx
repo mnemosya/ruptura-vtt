@@ -494,9 +494,9 @@ export function InventarioPanel({ api, onGerenciarSuporte }: { api: ConsoleApi; 
             saldo={aretz ?? 0}
             usados={api.carga.ocupados}
             capacidade={api.carga.capacidade}
-            onComprar={(slug, n) => {
+            onComprar={(slug, n, precoUnitario) => {
               const modelo = api.catalogo.get(slug);
-              if (modelo) api.comprarItem(slug, n, "aretz_informal", modelo.preco ?? 0);
+              if (modelo) api.comprarItem(slug, n, "aretz_informal", precoUnitario);
             }}
             onFechar={fechar}
           />}

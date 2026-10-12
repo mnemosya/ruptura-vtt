@@ -141,3 +141,44 @@
 .hm-complemento-preco { font-size: 12px; font-weight: 600; white-space: nowrap; }
 .hm-compra-alvo { display: grid; gap: 5px; margin-bottom: 15px; }
 .hm-compra-alvo strong { font-size: 13px; line-height: 1.4; color: var(--hx-texto); }
+
+/* Negociação local à compra: painel sobre a ficha, sem alterar o catálogo. */
+.hm-compra { position: relative; }
+.hm-compra-botoes { display: flex; gap: 8px; }
+.hm-compra-botoes > :first-child { flex: 1; min-width: 0; }
+.hm-ajustar-preco { flex: none; width: 44px; height: 44px; display: grid; place-items: center; color: var(--hx-cy); background: var(--hx-casco); border: 1px solid rgba(0,212,255,.3); }
+.hm-negociacao { position: absolute; bottom: 100%; left: 8px; right: 8px; z-index: 10; padding: 16px; max-height: min(420px, 60vh); overflow-y: auto; background: var(--hx-casco); border: 1px solid rgba(255,138,31,.5); box-shadow: 0 8px 30px #0008; }
+.hm-negociacao-cab, .hm-negociacao-acoes, .hm-preco-aplicado { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.hm-negociacao button:not(.hx-btn-ambar), .hm-preco-aplicado button { color: var(--hx-texto); background: transparent; border: 1px solid rgba(0,212,255,.2); padding: 8px; }
+.hm-negociacao-cab button { display: grid; place-items: center; }
+.hm-negociacao-modos { display: flex; gap: 6px; margin: 14px 0; }
+.hm-negociacao-modos button { flex: 1; }
+.hm-negociacao-modos button[aria-pressed="true"] { color: var(--hx-cy); border-color: var(--hx-cy); background: rgba(0,212,255,.08); }
+.hm-negociacao-campo { display: grid; gap: 8px; }
+.hm-negociacao-campo input { width: 100%; min-width: 0; box-sizing: border-box; padding: 10px; font: inherit; color: var(--hx-ice); background: var(--hx-abismo); border: 1px solid rgba(0,212,255,.3); }
+.hm-negociacao-erro { display: block; color: #ff5f74; margin-top: 8px; font-size: 12px; }
+.hm-negociacao-resumo { margin: 8px 0 14px; }
+.hm-negociacao-acoes .hx-btn-ambar { flex: 1; padding-inline: 8px; letter-spacing: .08em; }
+.hm-preco-aplicado { margin-top: 8px; flex-wrap: wrap; }
+.hm-preco-aplicado button { padding: 3px 6px; font-size: 11px; }
+
+.hm-mercado .hm-ajustar-preco,
+.hm-mercado .hm-negociacao button,
+.hm-mercado .hm-negociacao input,
+.hm-mercado .hm-preco-aplicado button { border-radius: 0 !important; corner-shape: round !important; }
+.hm-mercado .hm-ajustar-preco { transition: background .15s, color .15s, border-color .15s; }
+.hm-mercado .hm-ajustar-preco:hover:not(:disabled),
+.hm-mercado .hm-ajustar-preco[aria-expanded="true"] { background: var(--hx-cy); color: var(--hx-abismo); border-color: var(--hx-cy); }
+.hm-mercado .hm-negociacao { padding: 14px 16px; border-color: rgba(0,212,255,.3); box-shadow: 0 12px 32px #000b; }
+.hm-negociacao-cab > .hx-display { font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--hx-ice); }
+.hm-negociacao-cab button { width: 28px; height: 28px; padding: 0 !important; border: 0 !important; color: var(--hx-dim) !important; }
+.hm-negociacao-cab button:hover { color: var(--hx-cy) !important; background: rgba(0,212,255,.1) !important; }
+.hm-negociacao-modos { gap: 0; margin: 12px 0 16px; border-bottom: 1px solid rgba(0,212,255,.16); }
+.hm-negociacao-modos button { padding: 10px 4px !important; border: 0 !important; border-bottom: 2px solid transparent !important; background: transparent !important; font-family: var(--hx-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: var(--hx-dim) !important; transition: color .15s, background .15s; }
+.hm-negociacao-modos button[aria-pressed="true"] { color: var(--hx-cy) !important; border-bottom-color: var(--hx-cy) !important; background: rgba(0,212,255,.05) !important; }
+.hm-negociacao-modos button:hover { color: var(--hx-ice) !important; background: rgba(0,212,255,.1) !important; }
+.hm-negociacao-campo input { font-family: var(--hx-display); font-weight: 700; font-size: 24px; padding: 8px 12px; height: 46px; }
+.hm-negociacao-acoes > button:not(.hx-btn-ambar), .hm-preco-aplicado button { font-family: var(--hx-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--hx-dim); }
+.hm-negociacao-acoes > button:not(.hx-btn-ambar) { height: 40px; border-color: transparent; padding: 0 8px; }
+.hm-negociacao-acoes > button:not(.hx-btn-ambar):hover, .hm-preco-aplicado button:hover { color: var(--hx-cy); background: rgba(0,212,255,.1); }
+.hm-negociacao-acoes .hx-btn-ambar { height: 40px; font-size: 11px; }
