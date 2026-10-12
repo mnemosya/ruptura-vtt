@@ -292,7 +292,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
             {grupos.map(({ c, xs }) => (
               <section key={c.id} data-vertente={c.vertente} style={estiloGrupo(xs[0].grupo?.nome ?? xs[0].categoriaRotulo, c.vertente)}>
                 <div className="hm-secao-titulo" style={{ color: "var(--k)" }}>
-                  <ItemCategoryIcon category={["Flechas e virotes", "Células de energia"].includes(c.nome) ? c.nome : xs[0].grupo?.nome ?? xs[0].categoriaRotulo} itemType={c.nome} size={16} />
+                  {wishlistAberta ? <Heart size={16} aria-hidden="true" /> : <ItemCategoryIcon category={["Flechas e virotes", "Células de energia"].includes(c.nome) ? c.nome : xs[0].grupo?.nome ?? xs[0].categoriaRotulo} itemType={c.nome} size={16} />}
                   <span className="hx-display" style={{ fontSize: 14, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".18em" }}>{c.nome}</span>
                   <Tag className="hx-dim" style={{ opacity: .6 }}>{xs.length}</Tag>
                   <span style={{ height: 1, flex: 1, background: "linear-gradient(90deg, color-mix(in srgb, var(--k) 27%, transparent), transparent)" }} />
@@ -306,6 +306,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                       <div key={p.slug} className="hm-cartao"><button type="button" onClick={(e) => { ultimoCartao.current = e.currentTarget; setSel(p.slug); escolherComplemento(null); setDetalheAberto(true); }} className="hx-produto" data-ativo={on || undefined} aria-pressed={on}>
                         <span className="hx-produto-arte">
                           <span className="hx-produto-trama" />
+                          <span className="hm-card-espacos-arte"><Espacos n={p.espacos} /></span>
                           <ItemCategoryIcon category={p.categoria} group={p.grupo?.nome} weaponName={p.nome} itemType={p.tipo} armorRegions={p.regioes} size={52} color="var(--k)" strokeWidth={1.1} style={{ opacity: .85, filter: "drop-shadow(0 0 10px color-mix(in srgb, var(--k) 50%, transparent))" }} />
                           <span style={{ position: "absolute", right: 0, top: 0, width: 0, height: 0, borderLeft: "14px solid transparent", borderTop: `14px solid ${corRaridade(p.raridade)}` }} />
                           {/* O tipo vai no pé da arte, logo acima do nome: no rodapé ele quebrava o cartão. */}
@@ -318,7 +319,6 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                           <span className="hx-display hm-card-nome">{separarTipo(p.nome).titulo}</span>
                           <span className="hm-card-preco hx-display" style={{ color: pobre ? "var(--hx-dim)" : undefined, textDecoration: pobre ? "line-through" : undefined }}><Aretz /> {fmt(p.preco)}</span>
                           <span className="hm-card-espacos">
-                            <Espacos n={p.espacos} />
                             {filhos.length > 0 && <span className="hm-card-complementos">{filhos.length} {rotulo}{filhos.length !== 1 ? "s" : ""}</span>}
                           </span>
                         </span>
@@ -423,7 +423,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                   {custo > saldo ? "Saldo insuficiente" : familiaEscalpo ? `Comprar ${alvo === sel ? (sel.sub === "Identidade" ? "item" : "escalpo") : alvo?.categoria === "veneno" ? "veneno" : "módulo"}` : "Comprar"}
                 </button>
               )}<button ref={ajusteRef} type="button" className="hm-ajustar-preco" aria-label="Ajustar preço" data-tooltip="Ajustar preço" aria-expanded={negociacao} disabled={feito} onClick={() => { if (negociacao) fecharNegociacao(); else { setModoPreco("preco"); setRascunhoPreco(String(precoUnitario)); setNegociacao(true); } }}><SlidersHorizontal size={18} aria-hidden="true" /></button></div>
-              {alvo && precoUnitario !== alvo.preco && <div className="hm-preco-aplicado"><Tag className="hx-amb">Preço ajustado · ₳ {fmt(precoUnitario)} / un.</Tag><button type="button" onClick={() => setPrecoCombinado(null)}>Restaurar</button></div>}
+              {alvo && precoUnitario !== alvo.preco && <div className="hm-preco-aplicado"><Tag className="hx-amb">Preço ajustado</Tag><button type="button" onClick={() => setPrecoCombinado(null)}>Restaurar</button></div>}
               {/* Sem espaço NÃO bloqueia: a compra vai para a mochila e a régua
                   mostra o excesso — é para isso que o estado de excesso existe. */}
               {!cabe && !feito && custo <= saldo && (
