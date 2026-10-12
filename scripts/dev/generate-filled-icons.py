@@ -30,6 +30,7 @@ ART_BOXES = {'noun_Audio_8196748': [0, 0, 100, 100],
  'noun_vr_2226896': [0, 0, 64.0, 64.0]}
 
 ART_BOXES["noun_Scanner_7959164"] = [0, 0, 100, 100]
+ART_BOXES["noun_Lung_4303915"] = [0, 0, 90, 90]
 ART_BOXES.update({
     "noun_armadurasubdermica_7991712": [0, 0, 100, 100],
     "noun_elixir_8401397": [0, 0, 100, 100],

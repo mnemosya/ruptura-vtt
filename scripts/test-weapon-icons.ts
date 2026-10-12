@@ -127,3 +127,4 @@ assert.equal(filledCategoryIcon("escalpo", "Beijo da Morte", "internos"), "noun_
 assert.equal(filledCategoryIcon("escalpo", "Catalisador Imunológico", "internos"), "noun_immunity_3883965");
 assert.equal(filledCategoryIcon("escalpo", "Reserva de Mana", "internos"), "noun_mana_8219198");
 assert.equal(filledCategoryIcon("escalpo", "Filtro Hematológico", "internos"), "noun_elixir_8401397");
+assert.equal(filledCategoryIcon("escalpo", "Reserva Pulmonar", "internos"), "noun_Lung_4303915");
