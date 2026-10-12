@@ -3238,7 +3238,11 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   color: var(--rc-text);
   font-family: var(--font-corpo), sans-serif;
 }
-.rc-termo-dica[data-tipo="acao"] { border-color: rgba(0, 212, 255, .4); }
+.rc-termo-dica[data-tipo="acao"] {
+  z-index: 760; width: 260px; max-width: calc(100vw - 16px); padding: 9px 12px;
+  gap: 3px; border: 0; border-radius: 0; background: #0c1c26;
+  box-shadow: inset 0 0 0 1px #1c3645, inset 2px 0 0 var(--rc-cy, #00d4ff), 0 14px 30px rgba(0, 0, 0, .55);
+}
 .rc-termo-dica[data-tipo="condicao"] { border-color: rgba(255, 95, 116, .4); }
 .rc-termo-dica-cab {
   display: flex; align-items: baseline; gap: 6px;
@@ -3250,6 +3254,12 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 }
 .rc-termo-dica-txt { font-size: 12px; line-height: 1.4; color: rgba(214, 234, 245, 0.75); }
 .rc-termo-dica-txt--vazio { font-style: italic; color: var(--rc-dim); }
+.rc-termo-dica[data-tipo="acao"] .rc-termo-dica-cab {
+  color: var(--rc-cy, #00d4ff); font: 700 10px/1.45 var(--font-mono), monospace;
+  letter-spacing: 1.6px; text-transform: uppercase;
+}
+.rc-termo-dica[data-tipo="acao"] .rc-termo-dica-cab em { margin-left: auto; font-size: 9px; letter-spacing: .7px; }
+.rc-termo-dica[data-tipo="acao"] .rc-termo-dica-txt { font-size: 13px; line-height: 1.45; color: #b9c9dc; }
 
 @media (prefers-reduced-motion: reduce) {
   .rc-inv-card, .rc-inv-aba, .rc-inv-btn, .rc-inv-medidor-un, .rc-inv-passo { transition: none; }
