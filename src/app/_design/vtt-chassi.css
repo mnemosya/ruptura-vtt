@@ -573,3 +573,11 @@ button[aria-label]:has(svg) {
 .rv-moldura-rolagem { font-family: var(--rv-body); --cy: var(--rv-cy); --jf-acento: #45b8c9; } /* acento da janela Rolar Dados (ESPINHA.dados) */
 .rv-moldura-rolagem :is(button, input, select, textarea) { font: inherit; }
 .rv-moldura-rolagem, .rv-moldura-rolagem * { box-sizing: border-box; }
+
+/* Painel lateral da mesa (aberto): sem chanfro — só a aba selecionada
+   mantém o corte. Recolhido, ele é um trilho igual ao das ferramentas. O `:not(#_)` só soma especificidade para vencer a regra geral
+   de geometria do chassi (que é !important). */
+.rv-painel:not([data-aberto="false"]) *:not([role="tab"][aria-selected="true"]):not(#_) {
+  corner-shape: round !important;
+  border-radius: 4px !important;
+}

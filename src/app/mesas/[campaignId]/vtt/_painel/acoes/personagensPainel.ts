@@ -67,6 +67,8 @@ export interface EntradaDiretorio {
   /** Pasta onde vive. `null` = raiz. Sempre `null` para o jogador. */
   pastaId: string | null;
   posicao: number;
+  /** Criação do personagem — desempata a ordem manual (sem ordem definida, vale quem veio antes). */
+  criadoEm?: string;
   arquivado: boolean;
   /**
    * Quantas contas controlam este personagem nesta campanha. Só o
@@ -268,7 +270,8 @@ export async function lerDiretorioPersonagensAction(
               nome: c.name,
               tipo: tipoDoRegistro(c),
               pastaId: null,
-              posicao: i,
+              posicao: 0,
+              criadoEm: c.created_at,
               arquivado: false,
               controladores: null,
               podeEditar: idsEditaveis.has(c.id),
@@ -327,6 +330,7 @@ export async function lerDiretorioPersonagensAction(
             tipo: tipoDoRegistro(c),
             pastaId: colocacao?.pastaId ?? null,
             posicao: colocacao?.posicao ?? 0,
+            criadoEm: c.created_at,
             arquivado: !!c.archived_at,
             controladores: controladoresPorPersonagem.get(c.id) ?? 0,
             avatarUrl: (c.avatar_image_id && avatares.get(c.avatar_image_id)) || null,

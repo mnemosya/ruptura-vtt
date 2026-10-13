@@ -178,9 +178,14 @@
      são a mesma peça. */
   width: 36px; height: 36px; border-radius: var(--rv-r-peca);
   color: var(--rv-ink-dim, #7f95b3);
-  border: 1px solid rgba(var(--rv-marca-rgb, 0, 212, 255), .15);
-  background: var(--rv-peca, #0c1526);
-  transition: color .14s, background .14s, border-color .14s;
+  /* Sem borda e vazada: o fundo é o do painel. A borda segue existindo
+     (transparente) para a selecionada não mudar de tamanho. */
+  border: 1px solid transparent;
+  background: transparent;
+  /* Todos os estados mudam só `background-color` (gradiente não anima):
+     a seleção desliza em vez de saltar. Chanfro e brilho vão juntos. */
+  transition: color .24s ease, background-color .24s ease, border-color .24s ease,
+    box-shadow .3s ease, border-radius .24s ease, corner-shape .24s ease;
 }
 /* Deitadas, elas esticam: a altura sobe pra 38 e a largura se divide
    (a divisão vem do `vtt.css`, que já faz `flex: 1 1 0` no aberto). */
@@ -196,18 +201,18 @@
    lugar do `#0c1526` deixaria os hexágonos aparecerem por dentro da
    aba. A lavagem vai por cima; a peça continua opaca. */
 .rv-aba.rv-aba:hover {
-  color: #d3f4ff; border-color: var(--rv-cy-borda, #108bac);
-  background: linear-gradient(rgba(var(--rv-marca-rgb, 0, 212, 255), .09), rgba(var(--rv-marca-rgb, 0, 212, 255), .09)), var(--rv-peca, #0c1526);
+  color: #d3f4ff;
+  background: color-mix(in srgb, rgb(var(--rv-marca-rgb, 0, 212, 255)) 9%, transparent);
 }
 .rv-aba.rv-aba[aria-selected="true"] {
   color: var(--pn-cy);
   border-color: var(--rv-cy-borda, #108bac);
-  background: linear-gradient(rgba(var(--rv-marca-rgb, 0, 212, 255), .14), rgba(var(--rv-marca-rgb, 0, 212, 255), .14)), var(--rv-peca, #0c1526);
+  background: color-mix(in srgb, rgb(var(--rv-marca-rgb, 0, 212, 255)) 14%, var(--rv-peca, #0c1526));
   box-shadow: 0 0 9px rgba(var(--rv-marca-rgb, 0, 212, 255), .25);
 }
 .rv-aba.rv-aba[aria-selected="true"]:hover {
   color: var(--pn-cy);
-  background: linear-gradient(rgba(var(--rv-marca-rgb, 0, 212, 255), .14), rgba(var(--rv-marca-rgb, 0, 212, 255), .14)), var(--rv-peca, #0c1526);
+  background: color-mix(in srgb, rgb(var(--rv-marca-rgb, 0, 212, 255)) 14%, var(--rv-peca, #0c1526));
 }
 /* A barra grossa de seleção (2px colada na borda da faixa) saiu: com o
    fio em volta da aba ela virava um segundo anúncio do mesmo estado. */
@@ -1216,7 +1221,7 @@
      se clica ou se digita é PEÇA, e peça tem a mesma superfície.
      `--pn-inset` era o tom de campo rebaixado, de quando o painel era
      uma coluna e o campo um sulco dentro dela. */
-  background: var(--rv-peca, #0c1526); color: var(--pn-dim); transition: border-color .14s;
+  background: transparent; color: var(--pn-dim); transition: border-color .14s;
 }
 .rv-pn-busca:focus-within { border-color: var(--pn-cy); }
 .rv-pn-busca-input {
@@ -1248,7 +1253,7 @@
    linha e o `stretch` do select copiava os 41px em vez dos 29px do
    campo. Zerada, os dois esticam para a mesma altura — a do campo, que
    é o mais alto — e ela continua acompanhando se o campo mudar. */
-.rv-pn-linha-busca { flex: none; display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; padding: 8px 8px 0; }
+.rv-pn-linha-busca { flex: none; display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; padding: 8px 8px 0; margin-bottom: 8px; }
 /* QUEBRA EM VEZ DE ESPREMER. Na janela larga de Personagens a coluna da
    lista tem 200px — lá a busca e a ordenação lado a lado sobravam 98px
    pro campo, com o texto cortado no meio. A base de 150px é o ponto em
@@ -1257,7 +1262,7 @@
 .rv-pn-linha-busca .rv-pn-busca { flex: 1 1 150px; min-width: 0; margin: 0; }
 .rv-pn-linha-busca .rv-pn-ordem { flex: 0 0 96px; align-self: stretch; }
 /* Mesma superfície da busca ao lado — peça, não sulco. */
-.rv-pn-linha-busca .rv-pn-ordem .rv-seletor-gatilho { height: 100%; margin-top: 0; padding: 0 8px 0 14px; background: var(--rv-peca, #0c1526); }
+.rv-pn-linha-busca .rv-pn-ordem .rv-seletor-gatilho { height: 100%; margin-top: 0; padding: 0 8px 0 14px; background: transparent; }
 .rv-pn-linha-busca .rv-pn-ordem .rv-seletor-valor { font-size: 12px; font-weight: 600; }
 /* MESMA ALTURA da busca. O select vem do bloco de filtros, que é mais
    baixo (22px contra 29px); lado a lado na mesma faixa, a diferença
@@ -2338,13 +2343,12 @@
   font-size: 13px; padding: 6px 8px;
 }
 
-/* A BUSCA usa JetBrains Mono como os demais campos técnicos do VTT.
-   12px compensa a altura-de-x maior da fonte sem aumentar a altura da
-   peça nem fazer o placeholder pesar mais que os controles vizinhos. */
+/* A BUSCA usa a fonte de texto do painel (a mesma dos botões e da lista),
+   não a mono dos campos técnicos. */
 .rv-pn-busca .rv-pn-busca-input,
 .rv-pn-busca .rv-pn-busca-input::placeholder {
-  font-family: var(--font-mono), monospace;
-  font-size: 12px;
+  font-family: var(--rv-body);
+  font-size: 12.5px;
   font-weight: 400;
 }
 
@@ -2430,3 +2434,21 @@ textarea.rv-pn-input.rv-pn-input {
 .pn-ataque-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .pn-ataque-grade .pn-ataque-regiao { min-width: 0; width: 100%; }
 .pn-ataque-regiao--sub { font-size: 11px; padding: 5px 8px; }
+
+/* Menu do "+ Personagem": abre para cima, colado no botão — o canto de
+   baixo à esquerda fica reto (sem chanfro), só o de cima à direita corta. */
+.rv-seletor-lista.rv-pn-menu-novo {
+  border-radius: 4px 10px 4px 4px !important;
+  corner-shape: round bevel round round !important;
+}
+
+/* Busca de personagens: só a borda de baixo, sem caixa nem cantos. */
+.rv-painel .rv-pn-linha-busca .rv-pn-busca.rv-pn-busca:not(#_) {
+  border-width: 0 0 1px;
+  border-radius: 0 !important;
+  padding-inline: 4px;
+}
+
+/* Respiro lateral da aba Personagens: lista e busca no mesmo recuo. */
+.rv-pn-scroll--pers.rv-pn-scroll--pers { padding-inline: 14px; }
+.rv-painel .rv-pn-linha-busca { padding-inline: 14px; }

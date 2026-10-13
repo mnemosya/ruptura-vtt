@@ -27,7 +27,10 @@ function compararAlfabetico(a: EntradaDiretorio, b: EntradaDiretorio): number {
 }
 
 function compararManual(a: EntradaDiretorio, b: EntradaDiretorio): number {
-  return a.posicao !== b.posicao ? a.posicao - b.posicao : compararAlfabetico(a, b);
+  if (a.posicao !== b.posicao) return a.posicao - b.posicao;
+  // Sem ordem manual entre eles: ordem de criação.
+  if (a.criadoEm && b.criadoEm && a.criadoEm !== b.criadoEm) return a.criadoEm < b.criadoEm ? -1 : 1;
+  return compararAlfabetico(a, b);
 }
 
 /**

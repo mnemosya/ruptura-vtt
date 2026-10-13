@@ -40,7 +40,6 @@ import {
   ArchiveRestore,
   ChevronDown,
   Copy,
-  ExternalLink,
   FolderPlus,
   FolderOpen,
   Folder,
@@ -92,7 +91,6 @@ import {
 } from "./acoes/personagensPainel";
 import { useRolagemVelada } from "../_shell/useRolagemVelada";
 import { useJanelasDaMesa } from "../_shell/JanelasDaMesa";
-import { Select } from "../_dados3d/ResultadoRolagem";
 import { comecarLeitura, dadosDoEstado, falharLeitura, type EstadoAba } from "./tipos";
 import { DialogoConfirmar, DialogoTexto } from "./ui/Dialogo";
 import { MIME_ITEM_BANDO, desserializarItemBando, type ItemTransferivel } from "./bandoModelo";
@@ -190,7 +188,8 @@ export function PersonagensTab({
 }) {
   const [estado, setEstado] = useState<EstadoAba<DiretorioPersonagens>>({ fase: "ocioso" });
   const [consulta, setConsulta] = useState("");
-  const [ordenacao, setOrdenacao] = useState<Ordenacao>("alfabetica");
+  // A ordem é sempre a manual (arrastar); sem ela, a de criação.
+  const [ordenacao, setOrdenacao] = useState<Ordenacao>("manual");
   const [incluirArquivados, setIncluirArquivados] = useState(false);
   /**
    * PV e PE ficam ESCONDIDOS por padrão.
@@ -990,95 +989,8 @@ export function PersonagensTab({
               placeholder="Buscar personagem…"
               testId="painel-personagens-busca"
             />
-            <Select
-              label="Ordenação"
-              labelOculto
-              className="rv-pn-ordem"
-              value={ordenacao}
-              onChange={(valor) => setOrdenacao(valor as Ordenacao)}
-              options={[
-                { id: "alfabetica", rotulo: "A–Z" },
-                { id: "manual", rotulo: "Manual" },
-              ]}
-              testId="painel-personagens-ordem"
-            />
           </div>
 
-          {/* LINHA 2 — o que se FAZ com a lista: criar à esquerda, o
-              switch de recursos no canto oposto. Criar estava no
-              rodapé, longe de onde o olho já está; "Arquivados" fez o
-              caminho inverso, porque é filtro de exceção. */}
-          <div className="rv-pn-filtros">
-            {podeAdministrar && (
-              <span className="rv-pn-filtros-acoes">
-                <BotaoNovoPersonagem
-                  desabilitado={ocupado}
-                  testId="painel-personagens-criar"
-                  onAssistente={() => janelas.abrir("novo-personagem")}
-                  onEmBranco={() =>
-                    setPedido({
-                      titulo: "Novo personagem",
-                      rotulo: "Nome",
-                      marcacao: { rotulo: "É um PN (personagem do narrador)" },
-                      // Criado, o personagem é SELECIONADO: quem acabou de
-                      // dar um nome a alguém quer ver esse alguém, não a
-                      // lista inteira de volta com um item a mais no meio.
-                      onConfirmar: (nome, ehPn) => {
-                        void executar(() =>
-                          criarPersonagemPainelAction(campaignId, nome, ehPn ? "pn" : "jogador"),
-                        ).then((dados) => { if (dados?.id) setPreviaId(dados.id); });
-                      },
-                    })
-                  }
-                />
-                <BotaoAba
-                  desabilitado={ocupado}
-                  testId="painel-personagens-nova-pasta"
-                  onClick={() =>
-                    setPedido({
-                      titulo: "Nova pasta",
-                      rotulo: "Nome da pasta",
-                      onConfirmar: (nome) => executar(() => criarPastaAction(campaignId, nome, null)),
-                    })
-                  }
-                >
-                  <FolderPlus size={13} /> Pasta
-                </BotaoAba>
-              </span>
-            )}
-            {/* O jogador cria do mesmo jeito que o narrador — só o nome —,
-                e o personagem já nasce sob o controle dele. Sem pastas e
-                sem a opção de PN: isso é organização da mesa. */}
-            {!ehNarrador && (
-              <span className="rv-pn-filtros-acoes">
-                <BotaoNovoPersonagem
-                  desabilitado={ocupado}
-                  testId="painel-personagens-criar-jogador"
-                  onAssistente={() => janelas.abrir("novo-personagem")}
-                  onEmBranco={() =>
-                    setPedido({
-                      titulo: "Novo personagem",
-                      rotulo: "Nome",
-                      onConfirmar: (nome) => {
-                        void executar(() => criarMeuPersonagemAction(campaignId, nome))
-                          .then((dados) => { if (dados?.id) setPreviaId(dados.id); });
-                      },
-                    })
-                  }
-                />
-              </span>
-            )}
-            <label className="rv-fp-switch rv-pn-switch">
-            <input
-              type="checkbox"
-              checked={mostrarRecursos}
-              onChange={(e) => setMostrarRecursos(e.target.checked)}
-              data-testid="painel-personagens-recursos"
-            />
-            <span className="rv-fp-switch-tr" aria-hidden="true" />
-              <span className="rv-fp-switch-txt">Recursos</span>
-            </label>
-          </div>
 
           {podeAdministrar && (
             <PedidosEntrada campaignId={campaignId} visivel={visivel} onAceito={() => void carregar(incluirArquivados)} />
@@ -1116,32 +1028,82 @@ export function PersonagensTab({
             {arvore && renderizarNo(arvore, 0)}
           </div>
 
-          {/* O RODAPÉ é do narrador. Pro jogador sobrava uma faixa com
-              um botão só ("Atualizar"), que agora não existe: a lista
-              recarrega sozinha a cada ação e a cada abertura, então o
-              botão só dava a entender que ela poderia estar velha.
-              "Abrir Personagens" continua, porque leva pra outra tela. */}
-          {podeAdministrar && (
-            <RodapeAcoes>
-              {onAbrirJanela && (
-                <BotaoAba onClick={onAbrirJanela} testId="painel-personagens-abrir">
-                  <ExternalLink size={13} /> Abrir Personagens
-                </BotaoAba>
+          {/* RODAPÉ — o que se FAZ com a lista: criar (personagem, e pasta
+              para quem organiza a mesa) e o switch de recursos. Vale para
+              narrador e jogador; "Abrir Personagens" e "Arquivados" saíram. */}
+          <RodapeAcoes>
+            <div className="rv-pn-filtros">
+              {podeAdministrar && (
+                <span className="rv-pn-filtros-acoes">
+                  <BotaoNovoPersonagem
+                    desabilitado={ocupado}
+                    testId="painel-personagens-criar"
+                    onAssistente={() => janelas.abrir("novo-personagem")}
+                    onEmBranco={() =>
+                      setPedido({
+                        titulo: "Novo personagem",
+                        rotulo: "Nome",
+                        marcacao: { rotulo: "É um PN (personagem do narrador)" },
+                        // Criado, o personagem é SELECIONADO: quem acabou de
+                        // dar um nome a alguém quer ver esse alguém, não a
+                        // lista inteira de volta com um item a mais no meio.
+                        onConfirmar: (nome, ehPn) => {
+                          void executar(() =>
+                            criarPersonagemPainelAction(campaignId, nome, ehPn ? "pn" : "jogador"),
+                          ).then((dados) => { if (dados?.id) setPreviaId(dados.id); });
+                        },
+                      })
+                    }
+                  />
+                  <BotaoAba
+                    desabilitado={ocupado}
+                    testId="painel-personagens-nova-pasta"
+                    onClick={() =>
+                      setPedido({
+                        titulo: "Nova pasta",
+                        rotulo: "Nome da pasta",
+                        onConfirmar: (nome) => executar(() => criarPastaAction(campaignId, nome, null)),
+                      })
+                    }
+                  >
+                    <FolderPlus size={13} /> Pasta
+                  </BotaoAba>
+                </span>
               )}
-              <label className="rv-pn-check">
-                <input
-                  type="checkbox"
-                  checked={incluirArquivados}
-                  onChange={(e) => {
-                    setIncluirArquivados(e.target.checked);
-                    carregar(e.target.checked);
-                  }}
-                  data-testid="painel-personagens-arquivados"
-                />
-                Arquivados
+              {/* O jogador cria do mesmo jeito que o narrador — só o nome —,
+                  e o personagem já nasce sob o controle dele. Sem pastas e
+                  sem a opção de PN: isso é organização da mesa. */}
+              {!ehNarrador && (
+                <span className="rv-pn-filtros-acoes">
+                  <BotaoNovoPersonagem
+                    desabilitado={ocupado}
+                    testId="painel-personagens-criar-jogador"
+                    onAssistente={() => janelas.abrir("novo-personagem")}
+                    onEmBranco={() =>
+                      setPedido({
+                        titulo: "Novo personagem",
+                        rotulo: "Nome",
+                        onConfirmar: (nome) => {
+                          void executar(() => criarMeuPersonagemAction(campaignId, nome))
+                            .then((dados) => { if (dados?.id) setPreviaId(dados.id); });
+                        },
+                      })
+                    }
+                  />
+                </span>
+              )}
+              <label className="rv-fp-switch rv-pn-switch">
+              <input
+                type="checkbox"
+                checked={mostrarRecursos}
+                onChange={(e) => setMostrarRecursos(e.target.checked)}
+                data-testid="painel-personagens-recursos"
+              />
+              <span className="rv-fp-switch-tr" aria-hidden="true" />
+                <span className="rv-fp-switch-txt">Recursos</span>
               </label>
-            </RodapeAcoes>
-          )}
+            </div>
+          </RodapeAcoes>
         </div>
 
         {/* Só aparece na janela larga (ver `painel.css`) — na coluna
@@ -1299,7 +1261,8 @@ function BotaoNovoPersonagem({
 }) {
   const ancora = useRef<HTMLSpanElement>(null);
   const lista = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ left: number; top: number; width: number } | null>(null);
+  // `bottom`: o botão mora no RODAPÉ do painel, então o menu abre para cima.
+  const [pos, setPos] = useState<{ left: number; bottom: number; width: number } | null>(null);
   const fechar = useCallback(() => setPos(null), []);
   const opcoes = [
     { id: "assistente", rotulo: "Com assistente", descricao: "Passo a passo da criação.", icone: <Wand2 size={12} />, acao: onAssistente },
@@ -1326,7 +1289,7 @@ function BotaoNovoPersonagem({
   }, [pos, fechar]);
   const abrir = () => {
     const r = ancora.current?.getBoundingClientRect();
-    if (r) setPos({ left: r.left, top: r.bottom + 6, width: r.width });
+    if (r) setPos({ left: r.left, bottom: window.innerHeight - r.top + 6, width: r.width });
   };
   return (
     <>
@@ -1336,8 +1299,8 @@ function BotaoNovoPersonagem({
         </BotaoAba>
       </span>
       {pos && typeof document !== "undefined" && createPortal(
-        <div ref={lista} className="rv-seletor-lista" role="menu" aria-label="Novo personagem"
-          style={{ left: pos.left, top: pos.top, minWidth: pos.width }} data-testid={testId ? `${testId}-menu` : undefined}>
+        <div ref={lista} className="rv-seletor-lista rv-pn-menu-novo" role="menu" aria-label="Novo personagem"
+          style={{ left: pos.left, bottom: pos.bottom, top: "auto", minWidth: pos.width }} data-testid={testId ? `${testId}-menu` : undefined}>
           {opcoes.map((o) => (
             <button key={o.id} type="button" role="menuitem" className="rv-seletor-opcao" data-com-descricao="true"
               onClick={() => { fechar(); o.acao(); }}>
