@@ -2452,3 +2452,23 @@ textarea.rv-pn-input.rv-pn-input {
 /* Respiro lateral da aba Personagens: lista e busca no mesmo recuo. */
 .rv-pn-scroll--pers.rv-pn-scroll--pers { padding-inline: 14px; }
 .rv-painel .rv-pn-linha-busca { padding-inline: 14px; }
+
+/* Esqueleto da lista de personagens (carregando). */
+.rv-pn-esqueleto { display: flex; flex-direction: column; gap: 8px; }
+.rv-pn-esqueleto-cartao {
+  position: relative; overflow: hidden; display: flex; align-items: center; gap: 16px;
+  height: 54px; border: 1px solid #12293a; background: #0a1b26;
+}
+.rv-pn-esqueleto-cartao:nth-child(2) { opacity: .7; }
+.rv-pn-esqueleto-cartao:nth-child(3) { opacity: .45; }
+.rv-pn-esqueleto-face { align-self: stretch; width: 54px; flex: none; border-right: 1px solid #12293a; background: #0d2230; }
+.rv-pn-esqueleto-linha { height: 9px; background: #11283a; }
+.rv-pn-esqueleto-cartao::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(0, 212, 255, .10), transparent);
+  animation: rv-pn-esqueleto-brilho 1.4s infinite;
+}
+@keyframes rv-pn-esqueleto-brilho { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .rv-pn-esqueleto-cartao::after { animation: none; } }
+/* Forma "linha" (compêndio): só o texto, faixas mais baixas. */
+.rv-pn-esqueleto[data-forma="linha"] .rv-pn-esqueleto-cartao { height: 34px; padding-left: 14px; }

@@ -420,7 +420,12 @@ export function LoginForm({
               <span className="rv-div-line" />
             </div>
 
-            <div className="rv-segmented" role="tablist" aria-label="Modo de autenticação">
+            <div className="rv-segmented" role="tablist" aria-label="Modo de autenticação" data-modo={isLogin ? "login" : "register"}>
+              {/* Destaque único que DESLIZA entre as abas (ciano → âmbar). */}
+              <span className="rv-seg-indicador" aria-hidden="true">
+                <span className="rv-seg-indicador-cor rv-seg-indicador-cor--cyan" />
+                <span className="rv-seg-indicador-cor rv-seg-indicador-cor--amber" />
+              </span>
               <button
                 role="tab"
                 type="button"

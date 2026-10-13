@@ -23,7 +23,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ExternalLink, PackageOpen, RefreshCw, Send, Trash2 } from "lucide-react";
 import { BotaoAba, BuscaDiretorio, CabecalhoGrupo, LinhaDiretorio, RodapeAcoes } from "./Diretorio";
-import { EstadoCarregando, EstadoErro, EstadoVazio } from "./Estados";
+import { EsqueletoLista, EstadoErro, EstadoVazio } from "./Estados";
 import { SecaoDossie } from "./ui/primitivas";
 import {
   MIME_ITEM_BANDO,
@@ -179,7 +179,7 @@ export function BandoTab({
           />
 
           <div {...veuDaLista.atributos} className="rv-pn-scroll" data-testid="painel-bando-scroll">
-            {estado.fase === "carregando" && <EstadoCarregando testId="painel-bando-carregando" />}
+            {estado.fase === "carregando" && <EsqueletoLista rotulo="Carregando o bando" testId="painel-bando-carregando" />}
             {estado.fase === "erro" && (
               <EstadoErro mensagem={estado.mensagem} onTentarDeNovo={carregar} testId="painel-bando-erro" />
             )}

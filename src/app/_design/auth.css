@@ -519,6 +519,8 @@
     linear-gradient(45deg, transparent 50%, var(--control-outline) 50% calc(50% + 1px), transparent calc(50% + 1px)) bottom left / var(--control-notch) var(--control-notch) no-repeat;
 }
 .rv-segmented { --control-notch: 12px; --control-outline: rgba(0, 212, 255, 0.1); }
+/* Abas Entrar / Criar conta: corte um pouco maior que o padrão (8px). */
+.rv-seg-btn { --control-notch: 12px; }
 .rv-input-wrap { --control-outline: rgba(14, 107, 127, 0.6); }
 .rv-input-wrap:focus-within { --control-outline: #54acbe; border-color: var(--control-outline); }
 .rv-input-wrap--err { --control-outline: rgba(255, 60, 80, 0.5); }
@@ -571,3 +573,33 @@
 /* Input e botão de envio: cantos retos, sem chanfro. */
 .rv-input-wrap, .rv-submit, .auth-submit-btn { clip-path: none; }
 .rv-input-wrap::after, .rv-submit::after, .auth-submit-btn::after { content: none; }
+
+/* ---------- Segmented: destaque que desliza ----------
+   As abas ficam vazadas; quem marca a escolhida é UMA peça que corre de
+   uma para a outra (transform), trocando ciano por âmbar no caminho
+   (as duas cores sobrepostas, cruzando opacidade — gradiente não anima). */
+.rv-segmented .rv-seg-btn { z-index: 1; background: transparent !important; box-shadow: none !important; border-color: transparent !important; --control-outline: transparent; }
+.rv-seg-btn--active-cyan, .rv-seg-btn--active-amber { transition: color 0.3s ease 0.08s; }
+.rv-seg-indicador {
+  position: absolute; z-index: 0; top: 5px; bottom: 5px; left: 5px;
+  width: calc((100% - 14px) / 2);
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.rv-segmented[data-modo="register"] .rv-seg-indicador { transform: translateX(calc(100% + 4px)); }
+.rv-seg-indicador-cor { position: absolute; inset: 0; transition: opacity 0.35s ease; --n: 12px; }
+/* Fio das DIAGONAIS (o inset shadow só contorna os lados retos): mesma
+   técnica de `.rv-seg-btn::after`, duas faixas de 1px nos cantos cortados. */
+.rv-seg-indicador-cor::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(45deg, transparent calc(50% - 1px), var(--fio) calc(50% - 1px) 50%, transparent 50%) top right / var(--n) var(--n) no-repeat,
+    linear-gradient(45deg, transparent 50%, var(--fio) 50% calc(50% + 1px), transparent calc(50% + 1px)) bottom left / var(--n) var(--n) no-repeat;
+}
+.rv-seg-indicador-cor--cyan { --fio: #3a94ac; background: linear-gradient(93deg, #123640, #1f5464); box-shadow: inset 0 0 0 1px #3a94ac; }
+.rv-seg-indicador-cor--amber { --fio: #a97a30; background: linear-gradient(93deg, #40290f, #654119); box-shadow: inset 0 0 0 1px #a97a30; opacity: 0; }
+.rv-segmented[data-modo="register"] .rv-seg-indicador-cor--cyan { opacity: 0; }
+.rv-segmented[data-modo="register"] .rv-seg-indicador-cor--amber { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .rv-seg-indicador, .rv-seg-indicador-cor { transition: none; }
+}

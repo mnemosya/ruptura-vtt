@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BookOpen, CloudDownload, Loader2, RefreshCw } from "lucide-react";
 import { BotaoAba, BuscaDiretorio, CabecalhoGrupo, LinhaDiretorio, RodapeAcoes } from "./Diretorio";
-import { EstadoCarregando, EstadoErro, EstadoVazio } from "./Estados";
+import { EsqueletoLista, EstadoErro, EstadoVazio } from "./Estados";
 import { listarCapitulosAction, podeSincronizarAction, regrasARevisarAction, sincronizarAgoraAction } from "../_compendio/acoes";
 import { agruparPorSecao, buscarNoLivro, rotuloCapitulo, type DestinoLivro, type LinhaCapitulo } from "../_compendio/modelo";
 
@@ -97,7 +97,7 @@ export function CompendioTab({
         </details>
       )}
       <div className="rv-pn-scroll">
-        {(estado.fase === "ocioso" || estado.fase === "carregando") && <EstadoCarregando rotulo="Carregando o livro…" />}
+        {(estado.fase === "ocioso" || estado.fase === "carregando") && <EsqueletoLista forma="linha" rotulo="Carregando o livro" />}
         {estado.fase === "erro" && <EstadoErro mensagem={estado.mensagem} />}
         {estado.fase === "pronto" && linhas.length === 0 && <EstadoVazio>O livro ainda não foi sincronizado.</EstadoVazio>}
 

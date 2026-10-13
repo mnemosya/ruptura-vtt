@@ -54,7 +54,7 @@ import {
 } from "lucide-react";
 import { MenuContextual, type ItemMenuContextual } from "../_shell/MenuContextual";
 import { BotaoAba, BuscaDiretorio, CabecalhoGrupo, LinhaDiretorio, RodapeAcoes } from "./Diretorio";
-import { EstadoCarregando, EstadoErro, EstadoVazio } from "./Estados";
+import { EsqueletoLista, EstadoCarregando, EstadoErro, EstadoVazio } from "./Estados";
 import { BotaoTecnico, SecaoDossie } from "./ui/primitivas";
 import { PedidosEntrada } from "./PedidosEntrada";
 import { COR_RECURSO, ROTULO_RECURSO } from "../../../../ficha/_console/coresRecurso";
@@ -1008,7 +1008,7 @@ export function PersonagensTab({
             data-recursos={mostrarRecursos ? "true" : undefined}
             data-testid="painel-personagens-scroll"
           >
-            {estado.fase === "carregando" && <EstadoCarregando testId="painel-personagens-carregando" />}
+            {estado.fase === "carregando" && <EsqueletoLista rotulo="Carregando personagens" testId="painel-personagens-carregando" />}
             {estado.fase === "erro" && (
               <EstadoErro
                 mensagem={estado.mensagem}

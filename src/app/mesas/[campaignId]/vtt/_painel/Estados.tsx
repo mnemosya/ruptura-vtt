@@ -28,6 +28,26 @@ export function EstadoCarregando({ rotulo = "Carregando…", testId }: { rotulo?
   );
 }
 
+/**
+ * Carregando uma LISTA do painel: peças vazias no formato do que vai
+ * chegar, com um brilho passando — no lugar do bloco "Carregando…".
+ * `cartao`: rosto + uma linha (personagens, bando). `linha`: só texto
+ * (capítulos do compêndio).
+ */
+export function EsqueletoLista({ forma = "cartao", rotulo = "Carregando", testId }: { forma?: "cartao" | "linha"; rotulo?: string; testId?: string }) {
+  const larguras = forma === "cartao" ? [46, 58, 38] : [62, 44, 70, 52, 36];
+  return (
+    <div className="rv-pn-esqueleto" data-forma={forma} role="status" aria-label={rotulo} data-testid={testId}>
+      {larguras.map((largura, i) => (
+        <div key={i} className="rv-pn-esqueleto-cartao" aria-hidden="true">
+          {forma === "cartao" && <span className="rv-pn-esqueleto-face" />}
+          <span className="rv-pn-esqueleto-linha" style={{ width: `${largura}%` }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function EstadoVazio({ children, testId }: { children: ReactNode; testId?: string }) {
   return (
     <p className="rv-pn-estado rv-pn-estado--vazio" data-testid={testId}>
