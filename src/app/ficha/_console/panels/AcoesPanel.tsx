@@ -201,7 +201,9 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
     <section className="rc-eq-outer" aria-label="Ações">
       <div className="rc-eq-card-outer rc-inv-moldura">
         <CabecalhoModulo id="ID://AÇÕES" mod="MOD.TÁTICO // 06" />
-        <div className={`rc-inv hx ha ${oxanium.variable}`} data-testid="console-acoes" style={{ ["--ha-k" as string]: COR_CENA[cena] }}>
+        <div className={`rc-inv hx hx-grade ha ${oxanium.variable}`} data-testid="console-acoes" style={{ ["--ha-k" as string]: COR_CENA[cena] }}>
+          {/* Mesmo fundo de Magias: abismo + grade + varredura. */}
+          <div className="hx-scan" style={{ position: "absolute", inset: 0, opacity: .6, pointerEvents: "none" }} aria-hidden="true" />
           <div className="ha-cenas" role="tablist" aria-label="Cena">
             {(["combate", "investigacao", "trama"] as CenaAcao[]).map((c) => (
               <button key={c} type="button" role="tab" aria-selected={c === cena} className="ha-cena" style={{ ["--ha-k" as string]: COR_CENA[c] }} onClick={() => escolherCena(c)}>

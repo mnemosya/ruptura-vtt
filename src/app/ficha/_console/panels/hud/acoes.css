@@ -2,7 +2,8 @@
    Uma cor por cena (--ha-k): Combate âmbar, Investigação ciano, Trama violeta.
    A cor só marca o que é da cena (aba, ícone, custo); o fundo é o mesmo. */
 
-.ha { position: relative; display: flex !important; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; background: transparent; container-type: inline-size; }
+.ha { position: relative; display: flex !important; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; background: var(--hx-abismo); container-type: inline-size; }
+.ha-cenas, .ha-recursos, .ha-ferr, .ha-lista { position: relative; }
 .ha button:focus-visible, .ha input:focus-visible { outline: 2px solid var(--hx-cy); outline-offset: -2px; }
 
 /* cenas */
