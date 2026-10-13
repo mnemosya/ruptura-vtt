@@ -587,15 +587,14 @@ function DiceTabs({ tab, onChange }: { tab: "test" | "free"; onChange: (t: "test
           <button key={t.k} type="button" role="tab" aria-selected={on} onClick={() => onChange(t.k)}
             style={{
               display: "flex", flex: 1, flexDirection: "column", alignItems: "center", gap: 5, borderRadius: 0, padding: "8px 8px", cursor: "pointer",
-              // Selecionada sólida (ciano cheio, texto escuro), como o botão Rolar.
-              color: on ? "#08111c" : "#6f83a3", background: on ? ACCENTS.cyan.hex : "transparent",
-              border: `1px solid ${on ? ACCENTS.cyan.hex : "transparent"}`,
+              color: on ? ACCENTS.cyan.hex : "#6f83a3", background: on ? ACCENTS.cyan.soft : "transparent",
+              border: `1px solid ${on ? ACCENTS.cyan.hex + "88" : "transparent"}`,
             }}>
             {/* 11px, não 10: com o piso de 10 a dica subiu de 7,5 pra
                 10 e empatou com o rótulo. Um passo acima devolve a
                 hierarquia sem furar o piso. */}
             <span style={{ fontFamily: DISPLAY, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em" }}>{t.label}</span>
-            <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: on ? "rgba(8,17,28,.7)" : INK_FAINT }}>{t.hint}</span>
+            <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: INK_FAINT }}>{t.hint}</span>
           </button>
         );
       })}

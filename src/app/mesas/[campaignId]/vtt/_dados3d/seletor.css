@@ -184,9 +184,8 @@
   color: #9de8f2;
   box-shadow: inset 0 -1px 0 color-mix(in srgb, #00d4ff 45%, transparent);
 }
-/* Selecionado sólido, como o botão Rolar: ciano cheio e texto escuro. */
 .rv-dados-visib button[aria-pressed="true"] {
-  border-color: #00d4ff;
-  background: #00d4ff;
-  color: #08111c;
+  border-color: color-mix(in srgb, #00d4ff 55%, transparent);
+  background: color-mix(in srgb, #00d4ff 9%, transparent);
+  color: #00d4ff;
 }
