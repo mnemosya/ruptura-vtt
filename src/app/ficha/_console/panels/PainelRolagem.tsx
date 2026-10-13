@@ -262,7 +262,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
           <div style={{ borderRadius: 2, padding: 14, background: "var(--fj-fundo-3, #0a1220)", border: "1px solid var(--fj-fundo-6, #16233a)" }}>
             <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: INK_FAINT }}>
-                Pool · <span style={{ color: "#35c7d8" }}>{nd8}d8</span> · {pool.modoSelecao === "lowest" ? "menor dado" : "maior dado"}
+                Pool · <span style={{ color: "#00d4ff" }}>{nd8}d8</span> · {pool.modoSelecao === "lowest" ? "menor dado" : "maior dado"}
               </span>
               <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: INK_FAINT }}>
                 {cdInput.trim() === "" ? "sem CD definida" : `cd ${cdInput}`}

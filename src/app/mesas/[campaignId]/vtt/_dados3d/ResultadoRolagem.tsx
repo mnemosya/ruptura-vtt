@@ -40,7 +40,7 @@ export const INK_FAINT = "#4f6285";
 export type Accent = { key: string; hex: string; soft: string };
 
 export const ACCENTS: Record<string, Accent> = {
-  cyan: { key: "cyan", hex: "#45b8c9", soft: "rgba(69,184,201,0.09)" },
+  cyan: { key: "cyan", hex: "#00d4ff", soft: "rgba(0,212,255,0.09)" },
   amber: { key: "amber", hex: "#ff8a1f", soft: "rgba(255,138,31,0.09)" },
   danger: { key: "danger", hex: "#d15068", soft: "rgba(209,80,104,0.09)" },
   magenta: { key: "magenta", hex: "#c25a8c", soft: "rgba(194,90,140,0.09)" },
@@ -173,7 +173,7 @@ export function Leitura({ label, children }: { label: string; children: ReactNod
  * de `ACCENTS.cyan`: aquele é a cor de uma FAIXA de margem, esta é a do
  * chassi.
  */
-const DADO_SEM_RESULTADO: Accent = { key: "dado", hex: "#35c7d8", soft: "rgba(53,199,216,0.14)" };
+const DADO_SEM_RESULTADO: Accent = { key: "dado", hex: "#00d4ff", soft: "rgba(0,212,255,0.14)" };
 
 export function DadosRolados({ dados, maiorDado, size = 46, landed = false, dim = false, acento }: {
   dados: number[];

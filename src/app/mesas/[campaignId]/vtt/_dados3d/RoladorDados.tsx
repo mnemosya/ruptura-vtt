@@ -367,7 +367,7 @@ function useTest(campaignId: string | null, ficha: FichaRolagem | null, visibili
     // A física primeiro: as faces do teste são as que os corpos
     // mostrarem quando pararem — nunca sorteadas antes.
     const pedido: PhysicsDieSpec[] = Array.from({ length: pool.quantidadeDados }, (_, i) => ({ id: `teste-${i}`, sides: 8 }));
-    const fisicos = await rolarNaMesa(pedido, "#35c7d8", forca);
+    const fisicos = await rolarNaMesa(pedido, "#00d4ff", forca);
     const dados = fisicos.map((d) => d.value);
 
     const cd = cdInput.trim() === "" ? null : Number.parseInt(cdInput, 10);
@@ -528,7 +528,7 @@ function RupturaTest({ s }: { s: ReturnType<typeof useTest> }) {
       <div style={{ borderRadius: 2, padding: 14, background: "var(--fj-fundo-3, #0a1220)", border: "1px solid var(--fj-fundo-6, #16233a)" }}>
         <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: INK_FAINT }}>
-            Pool · <span style={{ color: "#35c7d8" }}>{nd8}d8</span> · {rotuloSelecao}
+            Pool · <span style={{ color: "#00d4ff" }}>{nd8}d8</span> · {rotuloSelecao}
           </span>
           <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: INK_FAINT }}>
             {s.cdInput.trim() === "" ? "sem CD definida" : `cd ${s.cdInput}`}
@@ -839,7 +839,7 @@ export function BandejaDados({ campaignId = null, personagemSugerido = null }: {
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} data-testid="painel-bandeja-dados"
         {...aoPassarMouse({ background: "rgba(255,255,255,.015)" })}
         style={{ display: "flex", width: "100%", alignItems: "center", gap: 10, padding: "10px 14px", border: 0, background: "transparent", cursor: "pointer", transition: "background .14s" }}>
-        <Dice width={15} height={15} style={{ color: "#35c7d8", flexShrink: 0 }} />
+        <Dice width={15} height={15} style={{ color: "#00d4ff", flexShrink: 0 }} />
         <span style={{ fontFamily: DISPLAY, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", color: INK }}>Bandeja de Dados</span>
         <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: INK_FAINT }}>livre · d4 a d100</span>
         <Chevron width={13} height={13} style={{ marginLeft: "auto", color: INK_FAINT, transform: open ? "rotate(180deg)" : "none" }} />

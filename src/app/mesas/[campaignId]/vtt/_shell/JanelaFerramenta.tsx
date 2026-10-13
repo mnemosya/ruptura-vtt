@@ -117,9 +117,9 @@ export interface JanelaFerramentaProps {
  * da espinha envelhecia sozinho a cada vez que o título mudava.
  */
 const ESPINHA: Partial<Record<JanelaId, { indice: string; acento: string }>> = {
-  interagir: { indice: "00", acento: "#45b8c9" },
-  dados:     { indice: "01", acento: "#45b8c9" },
-  medir:     { indice: "02", acento: "#45b8c9" },
+  interagir: { indice: "00", acento: "#00d4ff" },
+  dados:     { indice: "01", acento: "#00d4ff" },
+  medir:     { indice: "02", acento: "#00d4ff" },
   marcar:    { indice: "03", acento: "#c25a8c" },
   desenhar:  { indice: "11", acento: "#00d4ff" },
   texto:     { indice: "12", acento: "#7f9bd1" },
@@ -142,7 +142,7 @@ export function JanelaFerramenta({
 }: JanelaFerramentaProps) {
   const ctx = useContext(JanelasContexto);
   const espinha = ESPINHA[id];
-  const cor = acento ?? espinha?.acento ?? "#45b8c9";
+  const cor = acento ?? espinha?.acento ?? "#00d4ff";
   const asideRef = useRef<HTMLElement | null>(null);
   const arrastoRef = useRef<{ dx: number; dy: number } | null>(null);
   const [posicao, setPosicao] = useState<PosicaoJanela | null>(null);
