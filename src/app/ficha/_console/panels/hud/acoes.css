@@ -134,3 +134,36 @@
   .ha-gaveta, .ha-veu, .ha-toast, .ha-ao-vivo::before { animation: none; }
   .ha-card, .ha-pip--losango, .ha-barra i { transition: none; }
 }
+
+/* alternador lista / grade */
+.ha-ferr { display: flex; gap: 8px; align-items: center; }
+.ha-busca { flex: 1; }
+.ha-visao { display: flex; flex: none; border: 1px solid #00d4ff22; }
+.ha-visao button { display: grid; place-items: center; width: 34px; height: 32px; color: var(--hx-dim); transition: color .15s, background .15s; }
+.ha-visao button + button { border-left: 1px solid #00d4ff22; }
+.ha-visao button:hover { color: var(--hx-ice); }
+.ha-visao button[aria-pressed=true] { color: var(--hx-cy); background: #00d4ff14; }
+
+/* visão em grade: cartão vertical só com ícone, nome e custo */
+.ha-lista[data-visao=grade] .ha-grade { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 8px; }
+/* na grade, aviso e estrela vão para os cantos: no nome, quebravam a linha e desalinhavam os cartões */
+.ha-lista[data-visao=grade] .ha-aviso { position: absolute; top: 8px; right: 8px; }
+.ha-lista[data-visao=grade] .ha-estrela { position: absolute; top: 9px; left: 9px; }
+.ha-lista[data-visao=grade] .ha-etq { position: absolute; top: 8px; left: 8px; }
+.ha-lista[data-visao=grade] .ha-card { flex-direction: column; justify-content: flex-start; gap: 8px; min-height: 122px; height: 100%; padding: 14px 8px 10px; text-align: center; }
+.ha-lista[data-visao=grade] .ha-card::before { position: absolute; left: 0; top: 0; right: 0; width: auto; height: 2px; }
+.ha-lista[data-visao=grade] .ha-ic { width: 40px; height: 40px; margin: 0; }
+.ha-lista[data-visao=grade] .ha-ic svg { width: 20px; height: 20px; }
+.ha-lista[data-visao=grade] .ha-txt { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
+.ha-lista[data-visao=grade] .ha-nome { justify-content: center; flex-wrap: wrap; gap: 4px; font-size: 12.5px; line-height: 1.25; letter-spacing: .04em; }
+.ha-lista[data-visao=grade] .ha-sub, .ha-lista[data-visao=grade] .ha-linha { display: none; }
+.ha-lista[data-visao=grade] .ha-custo { gap: 8px; justify-content: center; }
+.ha-lista[data-visao=grade] .ha-custo > span { display: flex; align-items: baseline; gap: 4px; }
+.ha-lista[data-visao=grade] .ha-custo b { font-size: 14px; }
+.ha-lista[data-visao=grade] .ha-custo small { margin: 0; }
+.ha-lista[data-visao=grade] .ha-arma { justify-content: center; }
+.ha-lista[data-visao=grade] .ha-arma .ha-nome { font-size: 11.5px; }
+/* atalhos: na lista, sem ícone (a barra lateral basta); na grade, todo cartão tem ícone */
+.ha-lista:not([data-visao=grade]) .ha-card:not([data-com-icone]) .ha-ic { display: none; }
+.ha-lista[data-visao=grade] .ha-card::before { display: block !important; }
+.ha-lista[data-visao=grade] .ha-aviso:hover::after { left: auto; right: -6px; }

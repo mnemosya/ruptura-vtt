@@ -83,8 +83,12 @@ export interface CatalogoAcoesV12 {
 }
 
 export interface AvisoAcao {
-  /** `cena` = vale para a cena inteira (ex.: sem acesso à Trama); a UI mostra num banner, não em cada cartão. */
-  alcance: "acao" | "cena";
+  /**
+   * `acao` = aparece no cartão e na gaveta.
+   * `recurso` = falta PA/Reação/RAM: só na gaveta (no cartão, com 0 PA, marcaria quase tudo).
+   * `cena` = vale para a cena inteira (ex.: sem acesso à Trama); banner, não cartão.
+   */
+  alcance: "acao" | "recurso" | "cena";
   texto: string;
 }
 
@@ -237,13 +241,13 @@ function avisosDaAcao(acao: AcaoV12, character: Character, ctx: ContextoAbaAcoes
 
   const custo = acao.custo;
   if (custo.pa && custo.pa > rec.pa.restantes) {
-    avisos.push({ alcance: "acao", texto: `Você tem ${rec.pa.restantes} PA nesta rodada` });
+    avisos.push({ alcance: "recurso", texto: `Você tem ${rec.pa.restantes} PA nesta rodada` });
   }
   if (custo.reacao && rec.reacoes.restantes < custo.reacao) {
-    avisos.push({ alcance: "acao", texto: "Sem Reação nesta rodada: a defesa sofre –1 de desvantagem cumulativa" });
+    avisos.push({ alcance: "recurso", texto: "Sem Reação nesta rodada: a defesa sofre –1 de desvantagem cumulativa" });
   }
   if (rec.trama && custo.ram && custo.ram > rec.trama.ram) {
-    avisos.push({ alcance: "acao", texto: `Você tem ${rec.trama.ram} RAM` });
+    avisos.push({ alcance: "recurso", texto: `Você tem ${rec.trama.ram} RAM` });
   }
   return avisos;
 }

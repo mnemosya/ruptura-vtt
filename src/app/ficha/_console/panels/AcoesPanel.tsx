@@ -14,7 +14,7 @@
 import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import {
   Archive, ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, AudioWaveform, Ban, Bot, Bug, ChevronsRight, CircleSlash, Copy,
-  Crosshair, Dices, Download, Eraser, Eye, EyeOff, FileX, Fingerprint, Flame, Footprints, GitBranch, Grab, Hammer, Hand,
+  Crosshair, Dices, LayoutGrid, List, Download, Eraser, Eye, EyeOff, FileX, Fingerprint, Flame, Footprints, GitBranch, Grab, Hammer, Hand,
   HandHelping, IdCard, KeyRound, Link, Lock, LockOpen, Mountain, MoveRight, Network, Package, Plug, Power, Radar, RefreshCcw,
   Route, ScanEye, ScanSearch, Search, Settings, Shield, ShieldHalf, Shuffle, Star, Sword, Swords, Target, Timer, TriangleAlert,
   Unlink, Unplug, Wind, X, Zap, type LucideProps,
@@ -36,6 +36,8 @@ const NOME_CENA: Record<CenaAcao, string> = { combate: "Combate", investigacao: 
 const COR_CENA: Record<CenaAcao, string> = { combate: "#ff8a1f", investigacao: "#00d4ff", trama: "#c578d9" };
 const CHAVE_FIXADAS = "ruptura:acoes:fixadas";
 const CHAVE_CENA = "ruptura:acoes:cena";
+const CHAVE_VISAO = "ruptura:acoes:visao";
+type Visao = "lista" | "grade";
 
 type Icone = ComponentType<LucideProps>;
 const ICONES: Record<string, Icone> = {
@@ -101,6 +103,7 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
   /** Última cena usada (navegador): só vale quando nada indica a cena ao vivo. */
   const [ultimaCena, setUltimaCena] = useState<CenaAcao | undefined>(undefined);
   const [busca, setBusca] = useState("");
+  const [visao, setVisao] = useState<Visao>("lista");
   const [fechados, setFechados] = useState<Set<string>>(new Set());
   const [aberta, setAberta] = useState<ItemAbaAcao | null>(null);
   const [toast, setToast] = useState<{ texto: string; desfazer?: () => void } | null>(null);
@@ -110,6 +113,7 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
     setFixadas(lerLocal<string[]>(CHAVE_FIXADAS, ["combate:agarrar", "combate:esquivar"]));
     const salva = lerLocal<CenaAcao | null>(CHAVE_CENA, null);
     if (salva) setUltimaCena(salva);
+    setVisao(lerLocal<Visao>(CHAVE_VISAO, "lista"));
   }, []);
   useEffect(() => {
     if (!toast) return;
@@ -224,9 +228,14 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
               <input ref={buscaRef} value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar ação nas três cenas…" aria-label="Buscar ação" />
               {busca ? <button type="button" aria-label="Limpar busca" onClick={() => setBusca("")}><X size={13} /></button> : <span className="ha-tecla" aria-hidden="true">/</span>}
             </label>
+            <div className="ha-visao" role="group" aria-label="Visualização">
+              {([["lista", List, "Lista"], ["grade", LayoutGrid, "Grade"]] as const).map(([v, Ic, rotulo]) => (
+                <button key={v} type="button" aria-pressed={visao === v} aria-label={rotulo} title={rotulo} onClick={() => { setVisao(v); gravarLocal(CHAVE_VISAO, v); }}><Ic size={15} /></button>
+              ))}
+            </div>
           </div>
 
-          <div className="ha-lista hx-semsb">
+          <div className="ha-lista hx-semsb" data-visao={visao}>
             {resultados ? (
               resultados.length ? (
                 (["combate", "investigacao", "trama"] as CenaAcao[]).map((c) => {
@@ -242,6 +251,7 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
                   <div className="ha-grade">
                     {aba.ataques.map((a) => (
                       <button key={a.instanceId ?? "desarmado"} type="button" className="ha-card ha-arma" disabled={leitura} onClick={() => onAtacar(a.instanceId)}>
+                        <span className="ha-ic" aria-hidden="true"><Sword size={17} strokeWidth={1.6} /></span>
                         <span className="ha-txt">
                           <span className="ha-nome">Atacar · {a.nome}</span>
                           <span className="ha-linha"><span>{a.forma}</span>{a.pericia && <em>{a.pericia}</em>}{a.dano && <span>Dano <em>{a.dano}</em></span>}</span>
@@ -345,7 +355,7 @@ function Cartao({ item, onAbrir, onFixar, semIcone }: { item: ItemAbaAcao; onAbr
     <div className="ha-card-wrap" style={{ ["--ha-k" as string]: COR_CENA[item.acao.cena] }}>
       <button type="button" className="ha-card" data-ativa={item.ativa || undefined} data-com-icone={!semIcone || undefined} onClick={onAbrir}
         onContextMenu={onFixar ? (e) => { e.preventDefault(); onFixar(); } : undefined}>
-        {!semIcone && <span className="ha-ic" aria-hidden="true"><Ic size={17} strokeWidth={1.6} /></span>}
+        <span className="ha-ic" aria-hidden="true"><Ic size={17} strokeWidth={1.6} /></span>
         <span className="ha-txt">
           <span className="ha-nome">
             {item.acao.nome}

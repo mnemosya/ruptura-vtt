@@ -59,6 +59,7 @@ assert.deepEqual(avisos(abaKael, "combate", "classe_rerrolar"), []);
 const semPa = montarAbaAcoes(catalogo, base({ estado_jogo: { pa_gastos: 2 } }), { paMax: 3, reacoesPorRodada: 1 });
 assert.deepEqual(avisos(semPa, "combate", "agarrar"), ["Você tem 1 PA nesta rodada"]);
 assert.deepEqual(avisos(semPa, "combate", "fintar"), []);
+assert.equal(item(semPa, "combate", "agarrar").avisos[0].alcance, "recurso", "falta de PA só aparece na gaveta, não no cartão");
 const semReacao = montarAbaAcoes(catalogo, base({ estado_jogo: { reacoes_usadas: 1 } }), { paMax: 3, reacoesPorRodada: 1 });
 assert.match(avisos(semReacao, "combate", "esquivar")[0], /–1 de desvantagem/);
 
