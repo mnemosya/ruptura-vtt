@@ -262,3 +262,10 @@
 .rv-aba svg { transition: stroke-width .24s ease; }
 /* Nome escondido dos jogadores: só o narrador vê o chip, e com o aviso. */
 :root[data-tema="forja"] .rv-contexto-cena__oculto { flex: none; color: var(--rv-am); }
+
+/* Painel lateral ABERTO no mesmo vidro das janelas da forja (Rolar
+   Dados, trilho de ferramentas) — antes era um quase-preto à parte. */
+:root[data-tema="forja"] .rv-painel[data-aberto="true"] {
+  background: linear-gradient(160deg, #0c1f2b, #06121c);
+  border-color: #1a3a4b;
+}

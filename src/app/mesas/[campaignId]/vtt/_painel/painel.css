@@ -2443,7 +2443,7 @@ textarea.rv-pn-input.rv-pn-input {
 }
 
 /* Busca de personagens: só a borda de baixo, sem caixa nem cantos. */
-.rv-painel .rv-pn-linha-busca .rv-pn-busca.rv-pn-busca:not(#_) {
+.rv-painel:not([data-aberto="false"]) .rv-pn-linha-busca :is(.rv-pn-busca.rv-pn-busca, .rv-pn-busca-input):not(#_):not(#_) {
   border-width: 0 0 1px;
   border-radius: 0 !important;
   padding-inline: 4px;
