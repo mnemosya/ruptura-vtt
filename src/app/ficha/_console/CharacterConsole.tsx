@@ -53,6 +53,7 @@ import { EquipmentPanel } from "./panels/EquipmentPanel";
 import { InventarioPanel } from "./panels/InventarioPanel";
 import { MagiasPanel } from "./panels/MagiasPanel";
 import { EscalposPanel } from "./panels/EscalposPanel";
+import { AcoesPanel } from "./panels/AcoesPanel";
 import { SkillsGrid } from "./panels/SkillsGrid";
 import { TabRail } from "./panels/TabRail";
 import { MinimizedDockContent } from "./panels/MinimizedDockContent";
@@ -397,7 +398,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
               é o primeiro filho, então `top: 0` daqui cai exatamente na
               borda de cima dele. A aba de Equipamentos tem a sua
               própria, no `.rc-eq-card-outer`. */}
-          {aba !== "equipamentos" && aba !== "mochila" && aba !== "magias" && aba !== "escalpos" && <DecoTop />}
+          {aba !== "equipamentos" && aba !== "mochila" && aba !== "magias" && aba !== "escalpos" && aba !== "acoes" && <DecoTop />}
           <div className="rc-tabpanel" role="tabpanel" ref={tabpanelRef}>
             {aba === "mochila" ? (
               <InventarioPanel api={api} onGerenciarSuporte={(id) => {
@@ -408,6 +409,20 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
               <MagiasPanel api={api} />
             ) : aba === "escalpos" ? (
               <EscalposPanel api={api} />
+            ) : aba === "acoes" ? (
+              <AcoesPanel
+                api={api}
+                onRolar={(prefill) => { if (!api.somenteLeitura) setAux({ tipo: "rolagem", prefill }); }}
+                onAtacar={(instanceId) => {
+                  if (api.somenteLeitura) return;
+                  // Mesmo caminho do Atacar de Equipamentos: na mesa, alvo no mapa; fora, a janela da arma.
+                  if (instanceId && api.mesa && consoleDaMesa?.atacarCom(api.mesa.characterId, instanceId)) return;
+                  const slot = projecao.slots.find((s) => s.instance && s.instance.id === instanceId);
+                  const modelo = slot?.instance ? api.catalogo.get(slot.instance.itemSlug) : undefined;
+                  if (slot?.instance && modelo) setAux({ tipo: "ataque", instancia: slot.instance, modelo, slot: slot.id });
+                  else setAux({ tipo: "aviso", titulo: "Atacar", mensagem: "Empunhe uma arma em Equipamentos para atacar com ela, ou role Luta para um ataque desarmado." });
+                }}
+              />
             ) : aba === "equipamentos" ? (
               <EquipmentPanel
                 slots={projecao.slots}
@@ -542,7 +557,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
         // REABRIR preenchida com a nova, não continuar mostrando a
         // anterior (o estado interno nasce do `prefill`).
         <PainelRolagem
-          key={aux.prefill.tipo === "pericia" || aux.prefill.tipo === "defesa" ? `${aux.prefill.tipo}:${aux.prefill.periciaId}` : `${aux.prefill.tipo}:${aux.prefill.atributoId}`}
+          key={aux.prefill.tipo === "pericia" || aux.prefill.tipo === "defesa" || aux.prefill.tipo === "acao" ? `${aux.prefill.tipo}:${aux.prefill.periciaId}` : `${aux.prefill.tipo}:${aux.prefill.atributoId}`}
           api={api}
           prefill={aux.prefill}
           onFechar={() => setAux(null)}

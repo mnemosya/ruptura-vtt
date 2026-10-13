@@ -74,7 +74,9 @@ export type PrefillRolagem =
    * "teste de Luta" igual a qualquer outro: o feed perde exatamente a
    * informação pela qual a pessoa clicou.
    */
-  | { tipo: "defesa"; periciaId: string; acao: string };
+  | { tipo: "defesa"; periciaId: string; acao: string }
+  /** Ação da aba Ações (Agarrar, Investigar, Sondar…): o feed mostra o nome da ação, não só a perícia. */
+  | { tipo: "acao"; periciaId: string; acao: string };
 
 export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
   api: ConsoleApi;
@@ -184,6 +186,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
       visibilidade,
       intencao: acaoToken ? { tipo: "ATAQUE", nome: acaoToken.nome } : prefill.tipo === "defesa"
         ? { tipo: "DEFESA", nome: prefill.acao }
+        : prefill.tipo === "acao" ? { tipo: "AÇÃO", nome: prefill.acao }
         : prefill.tipo === "colapso" ? { tipo: "COLAPSO", nome: "Teste decisivo" } : null,
       // Ataque contestado: os dados vão para o cartão do ataque, não
       // para um cartão de rolagem à parte.
