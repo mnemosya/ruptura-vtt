@@ -581,3 +581,16 @@ button[aria-label]:has(svg) {
   corner-shape: round !important;
   border-radius: 4px !important;
 }
+
+/* Botão Rolar: só o chanfro, sem o arredondado dos outros cantos. */
+.rv-botao-rolar:not(#_) { border-radius: 0 var(--rv-notch, 12px) !important; }
+
+/* Dentro das janelas de ferramenta (e da rolagem da ficha): controles SEM
+   chanfro — seletores, campos, steppers, blocos de opção, segmentados e
+   botões internos. A moldura da janela mantém o corte, e o botão Rolar
+   (ação principal) também. `:not(#_)` só vence a regra geral do chassi. */
+:is(.rv-fp, .rv-moldura-rolagem)
+  :is(button, input, select, textarea, [role="button"], [role="radio"], [role="tab"], [role="option"], .rv-numero-controle):not(.rv-botao-rolar):not(.rv-fp-fechar):not(#_):not(#_) {
+  corner-shape: round !important;
+  border-radius: 4px !important;
+}

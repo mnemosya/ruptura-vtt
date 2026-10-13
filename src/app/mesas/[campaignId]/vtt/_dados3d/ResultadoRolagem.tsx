@@ -669,9 +669,33 @@ export function lerpHex(a: string, b: string, t: number): string {
   return `#${canal(ar + (br - ar) * t)}${canal(ag + (bg - ag) * t)}${canal(ab + (bb - ab) * t)}`;
 }
 export function corDaCarga(c: number): string {
-  if (c < 0.5) return lerpHex(ACCENTS.cyan.hex, ACCENTS.amber.hex, c * 2);
-  return lerpHex(ACCENTS.amber.hex, ACCENTS.danger.hex, (c - 0.5) * 2);
+  // Azul esverdeado → dourado → âmbar → vermelho, interpolado em OKLab
+  // (espaço perceptual): em RGB o meio virava um verde-oliva apagado; em
+  // HSL, um verde-limão berrante. Aqui a transição sai contínua.
+  const paradas = ["#14b8a6", "#e9c46a", ACCENTS.amber.hex, ACCENTS.danger.hex];
+  const t = Math.min(1, Math.max(0, c)) * (paradas.length - 1);
+  const i = Math.min(paradas.length - 2, Math.floor(t));
+  return lerpOklab(paradas[i], paradas[i + 1], t - i);
 }
+const linear = (c: number) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+const srgb = (c: number) => Math.round(Math.max(0, Math.min(1, c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055)) * 255);
+function paraOklab(hex: string): [number, number, number] {
+  const n = parseInt(hex.slice(1), 16);
+  const r = linear((n >> 16) & 255), g = linear((n >> 8) & 255), b = linear(n & 255);
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s, 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s];
+}
+/** Mistura em OKLab e devolve hex (quem usa soma transparência como sufixo: `${cor}55`). */
+function lerpOklab(a: string, b: string, t: number): string {
+  const A = paraOklab(a), B = paraOklab(b);
+  const [L, x, y] = A.map((v, i) => v + (B[i] - v) * t);
+  const l = (L + 0.3963377774 * x + 0.2158037573 * y) ** 3, m = (L - 0.1055613458 * x - 0.0638541728 * y) ** 3, s = (L - 0.0894841775 * x - 1.2914855480 * y) ** 3;
+  return "#" + [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s]
+    .map((v) => srgb(v).toString(16).padStart(2, "0")).join("");
+}
+
 export function reduzirMovimentoAtivo(): boolean {
   return typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
 }
@@ -897,11 +921,12 @@ export function CampoCD({ value, onChange }: { value: string; onChange: (v: stri
  * estudo) é o que deixa quem chama fazer o POOL de dados tremer junto
  * — ver `TestPool`/`FreePool`.
  */
-export function RollButton({ label, solid = false, disabled = false, onRoll, onChargeChange }: {
+export function RollButton({ label, solid = true, disabled = false, onRoll, onChargeChange }: {
   label: string; solid?: boolean; disabled?: boolean; onRoll: (forca: number) => void; onChargeChange?: (c: number) => void;
 }) {
   const [carga, setCarga] = useState(0);
   const [carregando, setCarregando] = useState(false);
+  const [sobre, setSobre] = useState(false);
   const [batendo, setBatendo] = useState(false);
   const [aneis, setAneis] = useState<{ id: number }[]>([]);
   /**
@@ -1040,9 +1065,13 @@ export function RollButton({ label, solid = false, disabled = false, onRoll, onC
   const skin: CSSProperties = disabled
     ? { color: "#4a5a78", background: "transparent", border: "1px solid var(--fj-fundo-7, #1c2b45)" }
     : carregando
-      ? { color: corCarga, background: fundoOcioso, border: `1px solid ${corCarga}` }
+      ? solid
+        // Sólido apertado: o fundo vira a cor da carga (azul esverdeado → âmbar → vermelho).
+        ? { color: "#08111c", background: corCarga, border: `1px solid ${corCarga}` }
+        : { color: corCarga, background: fundoOcioso, border: `1px solid ${corCarga}` }
       : solid
-        ? { color: "#08111c", background: fundoOcioso, border: `1px solid ${ACCENTS.cyan.hex}` }
+        // Hover: branco gelo do VTT (`--fj-gelo`).
+        ? { color: "#08111c", background: sobre ? "#cfeff4" : fundoOcioso, border: `1px solid ${sobre ? "#cfeff4" : ACCENTS.cyan.hex}` }
         : { color: ACCENTS.cyan.hex, background: fundoOcioso, border: `1px solid ${ACCENTS.cyan.hex}88` };
   const rotulo = carregando ? "Solte para lançar!" : label;
   return (
@@ -1075,7 +1104,7 @@ export function RollButton({ label, solid = false, disabled = false, onRoll, onC
         onPointerDown={aoPressionar} onPointerUp={aoSoltarPonteiro}
         onPointerCancel={aoCancelarPonteiro} onLostPointerCapture={aoCancelarPonteiro}
         onKeyDown={aoTeclarBaixo} onKeyUp={aoTeclarCima}
-        className={noMaximo ? "rup-charge-shake" : undefined}
+        className={noMaximo ? "rv-botao-rolar rup-charge-shake" : "rv-botao-rolar"}
         style={{
           position: "relative", overflow: "hidden",
           display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: 8,
@@ -1085,9 +1114,11 @@ export function RollButton({ label, solid = false, disabled = false, onRoll, onC
           transition: batendo ? "none" : "transform .09s ease-out, color .12s, background .15s, border-color .12s",
           boxShadow: brilho > 0 ? `0 0 ${brilho}px ${corCarga}55, 0 0 ${brilho * 2}px ${corCarga}18` : undefined,
           touchAction: "none", userSelect: "none", ...skin,
+          // Chanfro maior que o padrão dos controles (7px): é o botão principal.
+          ["--rv-notch" as string]: "12px",
         }}
-        onMouseEnter={(e) => { if (!solid && !disabled && !carregando) e.currentTarget.style.borderColor = ACCENTS.cyan.hex; }}
-        onMouseLeave={(e) => { if (!solid && !disabled && !carregando) e.currentTarget.style.borderColor = ACCENTS.cyan.hex + "88"; }}>
+        onMouseEnter={(e) => { setSobre(true); if (!solid && !disabled && !carregando) e.currentTarget.style.borderColor = ACCENTS.cyan.hex; }}
+        onMouseLeave={(e) => { setSobre(false); if (!solid && !disabled && !carregando) e.currentTarget.style.borderColor = ACCENTS.cyan.hex + "88"; }}>
         {carregando && (
           // Só acessível — o valor sai por `aria-valuenow`, não por um
           // preenchimento visível. Cor/borda/brilho/anéis/tremor já
