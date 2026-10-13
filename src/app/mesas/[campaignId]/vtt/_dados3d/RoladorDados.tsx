@@ -67,7 +67,7 @@ function ModeToggle({ value, onChange }: { value: CountMode; onChange: (m: Count
     { k: "low", label: "Menor" },
   ];
   return (
-    <div className="rv-dados-modo" style={{ display: "inline-flex", borderRadius: 2, border: "1px solid var(--fj-fundo-7, #1c2b45)" }}>
+    <div className="rv-dados-modo" style={{ display: "inline-flex", borderRadius: 0, border: "1px solid var(--fj-fundo-7, #1c2b45)" }}>
       {opts.map((o) => {
         const on = o.k === value;
         return (
@@ -477,7 +477,7 @@ function ResultBanner({ r }: { r: Roll }) {
 /** Aviso curto quando o teste não tem ficha pra rolar. */
 function SemFicha({ motivo }: { motivo: string }) {
   return (
-    <div style={{ borderRadius: 2, border: "1px solid var(--fj-fundo-7, #1c2b45)", background: "var(--fj-fundo-3, #0a1220)", padding: "14px 12px", textAlign: "center" }}>
+    <div style={{ borderRadius: 0, border: "1px solid var(--fj-fundo-7, #1c2b45)", background: "var(--fj-fundo-3, #0a1220)", padding: "14px 12px", textAlign: "center" }}>
       <div style={{ fontFamily: DISPLAY, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", color: INK_DIM }}>Sem personagem</div>
       <p style={{ margin: "8px 0 0", fontFamily: BODY, fontSize: 12, lineHeight: 1.5, color: INK_FAINT }}>{motivo}</p>
     </div>
@@ -525,7 +525,7 @@ function RupturaTest({ s }: { s: ReturnType<typeof useTest> }) {
         </div>
       </div>
 
-      <div style={{ borderRadius: 2, padding: 14, background: "var(--fj-fundo-3, #0a1220)", border: "1px solid var(--fj-fundo-6, #16233a)" }}>
+      <div style={{ borderRadius: 0, padding: 14, background: "var(--fj-fundo-3, #0a1220)", border: "1px solid var(--fj-fundo-6, #16233a)" }}>
         <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: INK_FAINT }}>
             Pool · <span style={{ color: "#00d4ff" }}>{nd8}d8</span> · {rotuloSelecao}
@@ -562,7 +562,7 @@ function RupturaTest({ s }: { s: ReturnType<typeof useTest> }) {
 function ErroRolagem({ texto }: { texto: string }) {
   return (
     <p role="alert" style={{
-      margin: 0, borderRadius: 2, border: `1px solid ${ACCENTS.danger.hex}55`, background: ACCENTS.danger.soft,
+      margin: 0, borderRadius: 0, border: `1px solid ${ACCENTS.danger.hex}55`, background: ACCENTS.danger.soft,
       padding: "8px 10px", fontFamily: BODY, fontSize: 11.5, lineHeight: 1.45, color: "#ffd7dc",
     }}>
       {texto}
@@ -580,21 +580,22 @@ function DiceTabs({ tab, onChange }: { tab: "test" | "free"; onChange: (t: "test
     { k: "free", label: "Livre", hint: "d4 a d100" },
   ];
   return (
-    <div className="rv-dados-tabs" role="tablist" aria-label="Tipo de rolagem" style={{ display: "flex", gap: 4, borderRadius: 2, padding: 4, background: "var(--fj-fundo-3, #0a1220)", border: "1px solid var(--fj-fundo-6, #16233a)" }}>
+    <div className="rv-dados-tabs" role="tablist" aria-label="Tipo de rolagem" style={{ display: "flex", gap: 4, borderRadius: 0, padding: 4, background: "var(--fj-fundo-3, #0a1220)", border: "1px solid var(--fj-fundo-6, #16233a)" }}>
       {tabs.map((t) => {
         const on = t.k === tab;
         return (
           <button key={t.k} type="button" role="tab" aria-selected={on} onClick={() => onChange(t.k)}
             style={{
-              display: "flex", flex: 1, flexDirection: "column", alignItems: "center", gap: 5, borderRadius: 2, padding: "8px 8px", cursor: "pointer",
-              color: on ? ACCENTS.cyan.hex : "#6f83a3", background: on ? ACCENTS.cyan.soft : "transparent",
-              border: `1px solid ${on ? ACCENTS.cyan.hex + "88" : "transparent"}`,
+              display: "flex", flex: 1, flexDirection: "column", alignItems: "center", gap: 5, borderRadius: 0, padding: "8px 8px", cursor: "pointer",
+              // Selecionada sólida (ciano cheio, texto escuro), como o botão Rolar.
+              color: on ? "#08111c" : "#6f83a3", background: on ? ACCENTS.cyan.hex : "transparent",
+              border: `1px solid ${on ? ACCENTS.cyan.hex : "transparent"}`,
             }}>
             {/* 11px, não 10: com o piso de 10 a dica subiu de 7,5 pra
                 10 e empatou com o rótulo. Um passo acima devolve a
                 hierarquia sem furar o piso. */}
             <span style={{ fontFamily: DISPLAY, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em" }}>{t.label}</span>
-            <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: INK_FAINT }}>{t.hint}</span>
+            <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: on ? "rgba(8,17,28,.7)" : INK_FAINT }}>{t.hint}</span>
           </button>
         );
       })}

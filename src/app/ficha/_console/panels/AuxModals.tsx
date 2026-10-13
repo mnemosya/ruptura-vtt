@@ -326,7 +326,7 @@ export function RollResultModal({
           </div>
         </div>
 
-        <div style={{ borderRadius: 4, padding: 14, background: "#0c1920", border: "1px solid #162d3a" }}>
+        <div style={{ borderRadius: 0, padding: 14, background: "#0c1920", border: "1px solid #162d3a" }}>
           <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: INK_FAINT }}>
               Pool · <span style={{ color: "#00d4ff" }}>{nd8}d8</span> · {rotuloSelecao}

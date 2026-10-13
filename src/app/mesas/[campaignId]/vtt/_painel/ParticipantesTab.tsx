@@ -144,7 +144,7 @@ export function ParticipantesTab({
       <div className="rv-pn-dossie" data-detalhe={selecionado ? "true" : undefined}>
         <div className="rv-pn-dossie-lista">
           {temPresenca && linhas.length > 0 && (
-            <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "8px 10px", marginBottom: 8, borderRadius: 2, background: "#0c1420", border: "1px solid #16233a" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "8px 10px", marginBottom: 8, borderRadius: 0, background: "#0c1420", border: "1px solid #16233a" }}>
               {(
                 [
                   ["online", "Online", "var(--rv-ok)"],

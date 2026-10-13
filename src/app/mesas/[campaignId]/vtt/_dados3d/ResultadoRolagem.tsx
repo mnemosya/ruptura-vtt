@@ -149,7 +149,7 @@ export function Leitura({ label, children }: { label: string; children: ReactNod
     <div style={{ display: "block", minWidth: 0 }}>
       <span style={{ fontFamily: DISPLAY, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.16em", color: INK_FAINT }}>{label}</span>
       <div style={{
-        marginTop: 4, borderRadius: 2, border: "1px solid var(--fj-fundo-7, #1c2b45)", background: "transparent",
+        marginTop: 4, borderRadius: 0, border: "1px solid var(--fj-fundo-7, #1c2b45)", background: "transparent",
         padding: "9px 10px", fontFamily: BODY, fontSize: 12, color: INK,
         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
       }}>
@@ -397,7 +397,7 @@ function FaixaChassi({ acento, icone, titulo, parcelas, nota, total, testIdTotal
   testIdTotal?: string;
 }) {
   return (
-    <div style={{ position: "relative", overflow: "hidden", borderRadius: 2, border: `1px solid ${acento.hex}55` }}>
+    <div style={{ position: "relative", overflow: "hidden", borderRadius: 0, border: `1px solid ${acento.hex}55` }}>
       <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: 28, background: `repeating-linear-gradient(-45deg, ${acento.hex}44 0 2px, transparent 2px 6px)` }} />
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px 10px 40px", background: acento.soft }}>
         {icone}
@@ -580,7 +580,7 @@ export function MolduraRolagem({ indice, codigo, titulo, modo, acento = ACCENTS.
         position: "relative", width: `min(${largura}px, calc(100vw - 32px))`,
         maxHeight: "min(660px, calc(100dvh - 32px))",
         display: "flex", flexDirection: "column", overflow: "hidden",
-        paddingLeft: 36, borderRadius: "4px 10px 4px 10px",
+        paddingLeft: 36, borderRadius: "0 10px 0 10px",
         background: "linear-gradient(160deg, var(--fj-fundo-4, #0b1424), var(--fj-fundo-2, #080e19))",
         border: "1px solid var(--fj-fundo-6, #182338)",
         boxShadow: "0 30px 70px rgba(0, 0, 0, 0.55)",
@@ -628,7 +628,7 @@ export function MolduraRolagem({ indice, codigo, titulo, modo, acento = ACCENTS.
           type="button" aria-label={rotuloFechar} onClick={aoFechar}
           style={{
             flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "center",
-            width: 24, height: 24, border: "1px solid var(--fj-fundo-7, #1c2b45)", borderRadius: 2,
+            width: 24, height: 24, border: "1px solid var(--fj-fundo-7, #1c2b45)", borderRadius: 0,
             background: "transparent", color: INK_FAINT, cursor: "pointer",
           }}
         >
@@ -863,7 +863,7 @@ export function CampoCD({ value, onChange }: { value: string; onChange: (v: stri
     onChange(String(Math.min(99, Math.max(1, base + delta))));
   };
   return (
-    <div className="rv-cd-caixa" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 48, padding: "8px 10px", border: "1px solid var(--fj-fundo-6, #16233a)", borderRadius: 2, background: "var(--fj-fundo-3, #0a1220)" }}>
+    <div className="rv-cd-caixa" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 48, padding: "8px 10px", border: "1px solid var(--fj-fundo-6, #16233a)", borderRadius: 0, background: "var(--fj-fundo-3, #0a1220)" }}>
       <label htmlFor={id} style={{ display: "flex", minWidth: 0, flexDirection: "column", gap: 3, cursor: "text" }}>
         <span style={{ fontFamily: DISPLAY, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", color: ACCENTS.cyan.hex }}>
           Definir CD
@@ -880,7 +880,7 @@ export function CampoCD({ value, onChange }: { value: string; onChange: (v: stri
           title="Remover CD"
           disabled={vazia}
           onClick={() => onChange("")}
-          style={{ display: "grid", width: 30, height: 30, padding: 0, placeItems: "center", border: 0, borderRadius: 2 }}
+          style={{ display: "grid", width: 30, height: 30, padding: 0, placeItems: "center", border: 0, borderRadius: 0 }}
         >
           <X width={13} height={13} strokeWidth={1.8} />
         </button>
@@ -1078,7 +1078,7 @@ export function RollButton({ label, solid = true, disabled = false, onRoll, onCh
     <div style={{ position: "relative" }}>
       {/* flash ao soltar */}
       {estourando && (
-        <div className="rup-burst-flash" aria-hidden="true" style={{ position: "absolute", inset: 0, borderRadius: 2, background: corDaCarga(cargaRef.current), zIndex: 20, pointerEvents: "none" }} />
+        <div className="rup-burst-flash" aria-hidden="true" style={{ position: "absolute", inset: 0, borderRadius: 0, background: corDaCarga(cargaRef.current), zIndex: 20, pointerEvents: "none" }} />
       )}
       {/* Anéis de batimento — desenhados no `body`, sobre a caixa do
           botão, para não serem cortados pelo container que rola. */}
@@ -1090,7 +1090,7 @@ export function RollButton({ label, solid = true, disabled = false, onRoll, onCh
         }}>
           {aneis.map((anel) => (
             <div key={anel.id} style={{
-              position: "absolute", inset: 0, borderRadius: 2, pointerEvents: "none",
+              position: "absolute", inset: 0, borderRadius: 0, pointerEvents: "none",
               border: `1px solid ${corCarga}`,
               animation: `rup-charge-ring ${Math.max(0.38, 0.75 - carga * 0.37)}s ease-out forwards`,
             }} />
@@ -1108,7 +1108,7 @@ export function RollButton({ label, solid = true, disabled = false, onRoll, onCh
         style={{
           position: "relative", overflow: "hidden",
           display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: 8,
-          borderRadius: 2, padding: "10px 0", cursor: disabled ? "not-allowed" : "pointer",
+          borderRadius: 0, padding: "10px 0", cursor: disabled ? "not-allowed" : "pointer",
           fontFamily: DISPLAY, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.22em",
           transform: batendo && !noMaximo ? "scale(1.032)" : "scale(1)",
           transition: batendo ? "none" : "transform .09s ease-out, color .12s, background .15s, border-color .12s",
@@ -1155,7 +1155,7 @@ export function SeletorVisibilidade({ valor, onChange, ehNarrador }: {
         return (
           <button key={o.v} type="button" onClick={() => onChange(o.v)} aria-pressed={on} title={o.dica}
             style={{
-              flex: 1, borderRadius: 2, padding: "5px 6px", cursor: "pointer",
+              flex: 1, borderRadius: 0, padding: "5px 6px", cursor: "pointer",
               fontFamily: DISPLAY, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em",
             }}>
             {o.label}

@@ -55,7 +55,7 @@ function InfoCanonica({ label, valor }: { label: string; valor: string }) {
   return (
     <div>
       <span style={{ display: "block", fontFamily: DISPLAY, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.16em", color: INK_FAINT }}>{label}</span>
-      <div style={{ marginTop: 4, minHeight: 32, display: "flex", alignItems: "center", padding: "6px 9px", borderRadius: 4, border: "1px solid #244050", background: "#10202a", color: INK, fontFamily: MONO, fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+      <div style={{ marginTop: 4, minHeight: 32, display: "flex", alignItems: "center", padding: "6px 9px", borderRadius: 0, border: "1px solid #244050", background: "#10202a", color: INK, fontFamily: MONO, fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase" }}>
         {valor}
       </div>
     </div>
@@ -259,7 +259,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
             </div>
           </div>}
 
-          <div style={{ borderRadius: 2, padding: 14, background: "var(--fj-fundo-3, #0a1220)", border: "1px solid var(--fj-fundo-6, #16233a)" }}>
+          <div style={{ borderRadius: 0, padding: 14, background: "var(--fj-fundo-3, #0a1220)", border: "1px solid var(--fj-fundo-6, #16233a)" }}>
             <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: INK_FAINT }}>
                 Pool · <span style={{ color: "#00d4ff" }}>{nd8}d8</span> · {pool.modoSelecao === "lowest" ? "menor dado" : "maior dado"}
@@ -312,7 +312,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
 
           {defesa && !defesa.usouReacao && (
             <p role="status" style={{
-              margin: 0, borderRadius: 4, border: `1px solid ${ACCENTS.amber.hex}55`, background: ACCENTS.amber.soft,
+              margin: 0, borderRadius: 0, border: `1px solid ${ACCENTS.amber.hex}55`, background: ACCENTS.amber.soft,
               padding: "8px 10px", fontFamily: BODY, fontSize: 11.5, lineHeight: 1.45, color: "#e5c187",
             }}>
               Sem Reação disponível — {defesa.defesasSemReacao}ª defesa sem Reação nesta rodada, penalidade cumulativa

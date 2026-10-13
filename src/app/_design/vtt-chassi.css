@@ -113,16 +113,16 @@
   --rv-mono: var(--font-mono), ui-monospace, monospace;
 
   /* ── Geometria ──────────────────────────────────────────────── */
-  --rv-r-sm: 1px;
-  --rv-r: 4px;
-  --rv-r-lg: 3px;
+  --rv-r-sm: 0;
+  --rv-r: 0;
+  --rv-r-lg: 0;
   /* As "peças" flutuantes do VTT — trilhos, palco, painel — e tudo que
      acompanha o canto delas. Um degrau acima do raio dos controles. */
-  --rv-r-peca: 4px;
+  --rv-r-peca: 0;
   /* O raio do CARTÃO — superfície grande com imagem sangrando até a
      borda, onde 4px ainda lê como canto reto. */
-  --rv-r-md: 6px;
-  --rv-r-xl: 8px;
+  --rv-r-md: 0;
+  --rv-r-xl: 0;
   --rv-r-pill: 999px;
   --rv-notch: 10px;
   --rv-notch-sm: 6px;
@@ -213,7 +213,7 @@
 )):not(button[aria-label]:has(svg)) {
   /* ordem: superior esquerdo, superior direito, inferior direito,
      inferior esquerdo — exatamente `rup-clip`. */
-  border-radius: 4px var(--rv-notch, 10px) 4px var(--rv-notch, 10px) !important;
+  border-radius: 0 var(--rv-notch, 10px) 0 var(--rv-notch, 10px) !important;
   corner-shape: round bevel round bevel;
 }
 
@@ -305,7 +305,7 @@ button[aria-label]:has(svg) {
   .rup-mesa-arena,
   .rv-mesa-dados-overlay
 ) .rup-clip-sm {
-  border-radius: 2px var(--rv-notch-sm, 6px) 2px var(--rv-notch-sm, 6px) !important;
+  border-radius: 0 var(--rv-notch-sm, 6px) 2px var(--rv-notch-sm, 6px) !important;
 }
 
 /* =====================================================================
@@ -375,11 +375,11 @@ button[aria-label]:has(svg) {
 [data-fim]::after { opacity: 0; }
 
 .rup-clip {
-  border-radius: 4px 0 4px 0;
+  border-radius: 0 0 0 0;
   clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
 }
 .rup-clip-sm {
-  border-radius: 2px 0 2px 0;
+  border-radius: 0 0 0 0;
   clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
 }
 
@@ -579,7 +579,7 @@ button[aria-label]:has(svg) {
    de geometria do chassi (que é !important). */
 .rv-painel:not([data-aberto="false"]) *:not([role="tab"][aria-selected="true"]):not(#_) {
   corner-shape: round !important;
-  border-radius: 4px !important;
+  border-radius: 0 !important;
 }
 
 /* Botão Rolar: só o chanfro, sem o arredondado dos outros cantos. */
@@ -590,7 +590,7 @@ button[aria-label]:has(svg) {
    botões internos. A moldura da janela mantém o corte, e o botão Rolar
    (ação principal) também. `:not(#_)` só vence a regra geral do chassi. */
 :is(.rv-fp, .rv-moldura-rolagem)
-  :is(button, input, select, textarea, [role="button"], [role="radio"], [role="tab"], [role="option"], .rv-numero-controle):not(.rv-botao-rolar):not(.rv-fp-fechar):not(#_):not(#_) {
+  :is(button, input, select, textarea, [role="button"], [role="radio"], [role="option"], .rv-numero-controle):not(.rv-botao-rolar):not([role="tab"]):not(.rv-dados-tabs button):not(.rv-fp-fechar):not(#_):not(#_) {
   corner-shape: round !important;
-  border-radius: 4px !important;
+  border-radius: 0 !important;
 }

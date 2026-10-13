@@ -152,7 +152,7 @@ export function BandoTab({
     <div className="rv-pn-aba">
       {!fixtureVisual && abas}
       {dados && (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", marginBottom: 10, borderRadius: 2, background: "linear-gradient(160deg,#0b1424,#080e19)", border: "1px solid color-mix(in srgb, var(--rv-am) 27%, #18263f)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", marginBottom: 10, borderRadius: 0, background: "linear-gradient(160deg,#0b1424,#080e19)", border: "1px solid color-mix(in srgb, var(--rv-am) 27%, #18263f)" }}>
           <div className="rv-fg-emblema" style={{ height: 44, width: 44, fontSize: 14 }}>BND</div>
           <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
             <div className="rv-fg-stattile" style={{ "--fg-a": "var(--rv-am)", padding: "6px 10px" } as React.CSSProperties}>
