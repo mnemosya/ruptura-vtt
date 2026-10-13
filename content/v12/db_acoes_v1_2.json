@@ -506,7 +506,7 @@
       },
       "requisitos": [
         {
-          "tipo": "empunhando_protecao",
+          "tipo": "protecao_empunhada",
           "aviso": "Você não empunha escudo ou proteção"
         }
       ],

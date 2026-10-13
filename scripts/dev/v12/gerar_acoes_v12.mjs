@@ -159,7 +159,7 @@ const COMBATE = [
   { slug: "aparar", titulo: "Aparar", grupo: "defensiva", tipo: "reacao", custo: reacao, funcao: "Desviar um golpe corpo a corpo com a arma.", teste: { pericias: ["luta"] },
     requisitos: [{ tipo: "arma_com_propriedade", propriedade: "aparar", aviso: "Sua arma empunhada não tem a propriedade Aparar" }] },
   { slug: "bloquear", titulo: "Bloquear", grupo: "defensiva", tipo: "reacao", custo: reacao, funcao: "Interpor escudo ou proteção no ataque.", teste: { pericias: ["reflexos"] },
-    requisitos: [{ tipo: "empunhando_protecao", aviso: "Você não empunha escudo ou proteção" }] },
+    requisitos: [{ tipo: "protecao_empunhada", aviso: "Você não empunha escudo ou proteção" }] },
   { slug: "esquivar", titulo: "Esquivar", grupo: "defensiva", tipo: "reacao", custo: reacao, funcao: "Sair da trajetória do perigo.", teste: { pericias: ["reflexos"] } },
   { slug: "resistir", titulo: "Resistir", grupo: "defensiva", tipo: "reacao", custo: reacao, funcao: "Não ser deslocado, derrubado ou imobilizado.", teste: { pericias: ["vigor", "mobilidade"] } },
 

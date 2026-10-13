@@ -18,6 +18,7 @@
     "test:content-read": "tsx scripts/test-content-read.ts",
     "test:action-console": "tsx scripts/test-action-console.ts",
     "test:acoes-v12": "tsx scripts/test-acoes-v12.ts",
+    "test:aba-acoes": "tsx scripts/test-aba-acoes.ts",
     "test:reactions": "tsx scripts/test-reactions.ts",
     "test:ruleset-v12": "tsx scripts/test-ruleset-v12-contracts.ts",
     "test:ruleset-v12-ancora": "tsx scripts/test-ruleset-v12-ancora.ts",
