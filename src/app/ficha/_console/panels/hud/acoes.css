@@ -167,3 +167,7 @@
 .ha-lista:not([data-visao=grade]) .ha-card:not([data-com-icone]) .ha-ic { display: none; }
 .ha-lista[data-visao=grade] .ha-card::before { display: block !important; }
 .ha-lista[data-visao=grade] .ha-aviso:hover::after { left: auto; right: -6px; }
+/* grade: o cartão ocupa a altura da linha e o nome fica no centro vertical entre o ícone e o custo */
+.ha-lista[data-visao=grade] .ha-card-wrap { display: flex; }
+.ha-lista[data-visao=grade] .ha-card { flex: 1; height: auto; min-height: 136px; justify-content: space-between; }
+.ha-lista[data-visao=grade] .ha-txt { min-height: 34px; }
