@@ -1,0 +1,1612 @@
+{
+  "_meta": {
+    "ruleset_version": "1.2",
+    "conteudo": "acoes",
+    "status": "draft",
+    "gerado_por": "scripts/dev/v12/gerar_acoes_v12.mjs",
+    "fontes": [
+      "Notion — RUPTURA (1.2) / 22. CENAS DE COMBATE (editado em 12/10/2026)",
+      "Notion — RUPTURA (1.2) / 21. CENAS DE INVESTIGAÇÃO, via content/v12/db_investigacao_v1_2.json",
+      "Notion — RUPTURA (1.2) / 24. TECENDO A MALHA (editado em 11/10/2026)"
+    ],
+    "total_registros": 57,
+    "observacoes": [
+      "Catálogo da aba Ações do Console. Não substitui db_acoes_combate_normalizado_v1_1.json, que ainda alimenta actionConsole.ts.",
+      "Requisitos geram avisos, nunca bloqueios: o VTT nem sempre está 100% registrado.",
+      "Custo com pa_max (ex.: 1/2 PA no livro) significa 1 OU 2 PA conforme a opção escolhida, nunca meio PA.",
+      "Atacar e Deslocar-se são uma ação só; as formas ficam em `opcoes`.",
+      "Na Trama, comandos somam +1 Rastro sempre; falhas somam Detecção (limitada 0, padrão +1, crítica +3)."
+    ]
+  },
+  "grupos": {
+    "combate": [
+      {
+        "slug": "movimento",
+        "nome": "Movimento"
+      },
+      {
+        "slug": "ofensiva",
+        "nome": "Ofensivas"
+      },
+      {
+        "slug": "defensiva",
+        "nome": "Defensivas"
+      },
+      {
+        "slug": "diversa",
+        "nome": "Diversas"
+      },
+      {
+        "slug": "postura",
+        "nome": "Posturas"
+      },
+      {
+        "slug": "livre",
+        "nome": "Livres"
+      }
+    ],
+    "investigacao": [
+      {
+        "slug": "investigacao",
+        "nome": "Ações de investigação"
+      }
+    ],
+    "trama": [
+      {
+        "slug": "protocolo_trilha",
+        "nome": "Protocolos de Trilha"
+      },
+      {
+        "slug": "protocolo_ofensiva",
+        "nome": "Protocolos de Ofensiva"
+      },
+      {
+        "slug": "comando",
+        "nome": "Comandos"
+      }
+    ]
+  },
+  "acoes": [
+    {
+      "slug": "deslocar",
+      "nome": "Deslocar-se",
+      "cena": "combate",
+      "grupo": "movimento",
+      "tipo": "acao",
+      "custo": {
+        "pa": 1,
+        "repeticao_incremento": 1
+      },
+      "funcao": "Andar, correr, manobrar ou saltar.",
+      "teste": null,
+      "requisitos": [],
+      "descricao": "> **DESLOCAMENTO EM PARTES**\n> O deslocamento de uma mesma ação pode ser dividido ao longo do turno. Você não precisa usar toda a distância de uma vez: pode se mover parte do trajeto, realizar outra ação e depois continuar se movendo, desde que ainda tenha deslocamento restante daquela ação. Por exemplo, um personagem pode correr 5 metros, atacar e então correr mais 10 metros, desde que a soma total não ultrapasse a distância permitida pela ação de **Correr**.\nVocê pode gastar 1 PA para se mover, escolhendo uma entre cinco formas distintas: andar, correr, manobrar, saltar (horizontal) ou saltar (vertical). Essa ação pode ser repetida mais de uma vez no mesmo turno, mas cada repetição aumenta o custo em +1 PA.\n1. **ANDAR**\nPode avançar até **10 + `Corpo`** metros no turno, sem necessidade de teste.\n2. **CORRER**\nAvança até o dobro da distância de **Andar**, mas pode exigir um teste de **`Mobilidade`, **conforme a situação. Personagens com **`Corpo` **3+ não precisam de teste.\n- **Falha:** o personagem se move apenas 10 metros e o narrador pode aplicar outra consequência apropriada, como ficar **`Caído`**.\n3. **MANOBRAR**\nRepresenta deslocamentos mais complexos, como atravessar terreno difícil, deslizar por superfícies ou se reposicionar de forma criativa no combate.\nCobre até **10 + `Corpo`** metros e sempre exige teste de **`Mobilidade`**.\n- **Sucesso: **realiza o deslocamento ignorando terreno difícil e pode obter efeito tático narrativo, caso faça sentido (+1 de vantagem no próximo ataque ou –1 de desvantagem para um inimigo imediato).\n- **Falha: **o personagem se move apenas metade do movimento (arredondado para baixo) e o narrador aplica consequência apropriada, como ficar **`Caído`**, **`Lento`** ou alguma complicação leve.\n4. **SALTAR (HORIZONTAL)**\nO salto pode ser feito de duas maneiras:\n- **Com impulso:** avança 2 metros em linha reta como parte da própria ação de Saltar (horizontal) e, em seguida, salta até o valor da tabela.\n- **Sem impulso:** partindo parado, o alcance máximo é reduzido à metade.\n\n| Valor de **`Corpo`** | Distância (com impulso) | Distância (sem impulso) |\n| --- | --- | --- |\n| 1 | 1 m | 50 cm |\n| 2 | 1,5 m | 75 cm |\n| 3 | 2 m | 1 m |\n| 4 | 2,5 m | 1,25 m |\n| 5 | 3 m | 1,5 m |\n\nA partir de **`Corpo`** 3, é possível tentar saltos um pouco além do limite, mas é necessário um teste de **`Mobilidade`**. Em sucesso, a distância aumenta em 1 metro. Em falha, cobre apenas metade da distância original (arredondada para baixo) e termina **`Caído`**.\n5. **SALTAR (VERTICAL)**\nO personagem flexiona as pernas e salta para cima, alcançando o valor da tabela abaixo sem necessidade de teste.\n\n| Valor de Corpo | Distância vertical |\n| --- | --- |\n| 1 | 30 cm |\n| 2 | 40 cm |\n| 3 | 60 cm |\n| 4 | 1 m |\n| 5 | 1,5 m |\n\nA partir de **Corpo** 3, é possível tentar saltos um pouco além do limite, mas é necessário um teste de **`Mobilidade`**. Em sucesso, a distância aumenta em 20 cm. Em falha, cobre apenas metade da distância original (arredondada para baixo) e termina **`Caído`**.",
+      "opcoes": [
+        {
+          "slug": "andar",
+          "nome": "Andar",
+          "funcao": "Até 10 + Corpo metros, sem teste.",
+          "custo": {
+            "pa": 1,
+            "repeticao_incremento": 1
+          }
+        },
+        {
+          "slug": "correr",
+          "nome": "Correr",
+          "funcao": "O dobro de Andar; pode exigir Mobilidade (Corpo 3+ dispensa).",
+          "teste": {
+            "pericias": [
+              "mobilidade"
+            ],
+            "condicional": true
+          },
+          "custo": {
+            "pa": 1,
+            "repeticao_incremento": 1
+          }
+        },
+        {
+          "slug": "manobrar",
+          "nome": "Manobrar",
+          "funcao": "Até 10 + Corpo metros por terreno difícil; sempre testa Mobilidade.",
+          "teste": {
+            "pericias": [
+              "mobilidade"
+            ]
+          },
+          "custo": {
+            "pa": 1,
+            "repeticao_incremento": 1
+          }
+        },
+        {
+          "slug": "saltar_horizontal",
+          "nome": "Saltar (horizontal)",
+          "funcao": "Distância pela tabela de Corpo; com ou sem impulso.",
+          "custo": {
+            "pa": 1,
+            "repeticao_incremento": 1
+          }
+        },
+        {
+          "slug": "saltar_vertical",
+          "nome": "Saltar (vertical)",
+          "funcao": "Altura pela tabela de Corpo, sem teste.",
+          "custo": {
+            "pa": 1,
+            "repeticao_incremento": 1
+          }
+        }
+      ]
+    },
+    {
+      "slug": "levantar",
+      "nome": "Levantar",
+      "cena": "combate",
+      "grupo": "movimento",
+      "tipo": "acao",
+      "custo": {
+        "pa": 1
+      },
+      "funcao": "Sair da condição Caído.",
+      "teste": null,
+      "requisitos": [
+        {
+          "tipo": "condicao_em_si",
+          "condicao": "caido",
+          "aviso": "Você não está Caído"
+        }
+      ],
+      "descricao": "O personagem pode tentar se erguer do chão após ter sido derrubado, empurrado ou abaixado voluntariamente. Levantar remove a condição **`Caído`** e permite que o personagem volte a se mover e agir normalmente.\nSe houver obstáculos, inimigos pressionando ou terreno instável, o narrador pode exigir um teste de **`Mobilidade`** ou **`Vigor`** para que a ação seja bem-sucedida."
+    },
+    {
+      "slug": "escapar",
+      "nome": "Escapar",
+      "cena": "combate",
+      "grupo": "movimento",
+      "tipo": "acao",
+      "custo": {
+        "pa": 2
+      },
+      "funcao": "Livrar-se de uma restrição de movimento.",
+      "teste": {
+        "pericias": [
+          "luta",
+          "vigor"
+        ],
+        "contra": "Resistir do oponente ou CD"
+      },
+      "requisitos": [
+        {
+          "tipo": "condicao_em_si",
+          "condicao": [
+            "agarrado",
+            "imobilizado"
+          ],
+          "aviso": "Você não está Agarrado nem Imobilizado"
+        }
+      ],
+      "descricao": "O personagem pode tentar se libertar de qualquer restrição de movimento, seja causada por uma criatura, armadilha, magia, equipamento ou obstáculo.\n- Se a restrição for mantida por uma criatura, realiza-se um teste contestado de **`Luta`** ou **`Vigor`** contra a ação defensiva **Resistir** do oponente.\n- Já para efeitos inanimados, armadilhas ou obstáculos, faz-se um teste simples de **`Luta`** ou **`Vigor`** contra a CD definida pelo narrador.\nNo sucesso, o personagem se solta imediatamente, removendo todas as condições associadas a estar **`Agarrado` `Imobilizado`** ou similares. Se a restrição envolvia uma criatura, ela também perde a condição **`Agarrando`**."
+    },
+    {
+      "slug": "esconder_se",
+      "nome": "Esconder-se",
+      "cena": "combate",
+      "grupo": "movimento",
+      "tipo": "acao",
+      "custo": {
+        "pa": 1
+      },
+      "funcao": "Sumir da atenção dos inimigos.",
+      "teste": {
+        "pericias": [
+          "furtividade"
+        ],
+        "contra": "Percepção de cada inimigo"
+      },
+      "requisitos": [],
+      "descricao": "O personagem tenta sair da atenção dos inimigos e ocultar sua posição. Para realizar esta ação, ele precisa estar fora da linha de visão dos observadores, possuir cobertura suficiente ou contar com alguma condição que dificulte sua localização, como escuridão, fumaça, vegetação ou uma distração.\nFaça um teste de **`Furtividade`** contestado pela **`Percepção`** de cada inimigo capaz de localizar o personagem. Contra inimigos que não estejam procurando ativamente por ele, o narrador pode usar uma CD em vez de realizar o teste contestado.\nEm caso de sucesso, o personagem fica **`Oculto`** para aquele inimigo. Enquanto estiver **`Oculto`**, sua posição exata não é conhecida e ataques realizados contra ele sem que seja localizado são resolvidos como ataques contra um alvo que não pode ser visto.\nO personagem deixa de estar **`Oculto`** para um inimigo quando:\n- Entra na linha de visão dele sem possuir ocultação suficiente.\n- Realiza uma ação ofensiva contra ele.\n- Produz um sinal evidente que revele sua posição.\n- É localizado por uma ação de **Usar Perícia** com **`Percepção`**.\nSair de um esconderijo não revela automaticamente o personagem caso ele continue protegido por cobertura, escuridão ou outro meio de ocultação."
+    },
+    {
+      "slug": "interagir",
+      "nome": "Interagir",
+      "cena": "combate",
+      "grupo": "movimento",
+      "tipo": "acao",
+      "custo": {
+        "pa": 1
+      },
+      "funcao": "Usar um objeto, dispositivo ou elemento da cena.",
+      "teste": null,
+      "requisitos": [],
+      "descricao": "Interagir cobre ações simples com objetos, dispositivos ou elementos da cena. Isso inclui puxar uma alavanca, apertar um botão, abrir uma porta, virar uma mesa para criar cobertura, aplicar um consumível ou ativar um escalpo.\nAlguns itens apresentam um custo próprio de PA. Nesse caso, utilize o custo indicado em sua descrição no lugar de **Interagir**.\nQuando um item não apresentar um custo próprio para ser utilizado, seu uso é considerado uma ação de **Interagir `1 PA`**.\nO narrador determina se a interação exige um teste. Por exemplo, operar um console de segurança pode exigir **`Tecnomagia`**. Forçar um mecanismo emperrado pode exigir **`Vigor`**."
+    },
+    {
+      "slug": "sacar_guardar_trocar",
+      "nome": "Sacar, guardar ou trocar",
+      "cena": "combate",
+      "grupo": "movimento",
+      "tipo": "acao",
+      "custo": {
+        "pa": 1,
+        "pa_max": 2
+      },
+      "funcao": "Mudar o que está nas mãos; o custo depende de onde está o item.",
+      "teste": null,
+      "requisitos": [],
+      "descricao": "> A **Arma Primária** e a **Arma Secundária** são consideradas prontas para uso quando o combate começa. O personagem não precisa gastar PA para sacá-las, desde que possua as mãos necessárias para empunhar elas.\nPara sacar, guardar ou trocar outro equipamento durante o combate, o custo depende de onde ele está armazenado. Trocar um Suporte de Munição Equipado segue essas regras conforme a localização do suporte substituto; essa troca não faz parte de Recarregar. Vestir Armaduras e Trajes ou instalar Escalpos segue os procedimentos próprios desses equipamentos.\nQuando sacar um item, o personagem pode utilizá-lo imediatamente como parte da mesma ação se esse uso custar **1 PA**. Isso inclui itens utilizados com **Interagir** e itens cuja descrição estabeleça um custo próprio de **1 PA**.\nSe o uso do item custar **2 PA ou mais**, ele precisa ser realizado separadamente depois que o item for sacado.\nUtilizar o item durante esta ação não permite guardá-lo novamente. Depois do uso, ele permanece empunhado, salvo se tiver sido consumido ou sua descrição determinar outro destino.\n- **ACESSO RÁPIDO `1 PA`**\nO equipamento está em um coldre, bainha, correia, bolso utilitário, pochete ou outro suporte preparado para acesso imediato.\nO personagem pode gastar **1 PA** para realizar uma destas opções:\n- Sacar um item do Acesso Rápido.\n- Guardar um item em um espaço livre de Acesso Rápido.\n- Trocar um item empunhado por outro que esteja no Acesso Rápido.\n- Sacar e utilizar imediatamente um item cujo uso custe 1 PA.\n- **MOCHILA `2 PA`**\nO equipamento está guardado na Mochila ou em outro compartimento fechado e menos acessível.\nO personagem pode gastar **2 PA** para realizar uma destas opções:\n- Retirar um item da Mochila.\n- Guardar um item na Mochila.\n- Trocar um item empunhado por outro que esteja na Mochila.\n- Transferir um item entre a Mochila e um espaço livre de Acesso Rápido.\n- Retirar e utilizar imediatamente um item cujo uso custe 1 PA.\nA Mochila precisa possuir capacidade para receber o item, respeitando os limites e as regras de sobrecarga apresentados em  .",
+      "opcoes": [
+        {
+          "slug": "acesso_rapido",
+          "nome": "Acesso rápido",
+          "custo": {
+            "pa": 1
+          },
+          "funcao": "Coldre, bainha, bolso utilitário ou outro suporte de acesso imediato."
+        },
+        {
+          "slug": "mochila",
+          "nome": "Mochila",
+          "custo": {
+            "pa": 2
+          },
+          "funcao": "Mochila ou outro compartimento fechado."
+        }
+      ]
+    },
+    {
+      "slug": "recarregar",
+      "nome": "Recarregar",
+      "cena": "combate",
+      "grupo": "movimento",
+      "tipo": "acao",
+      "custo": {
+        "pa": 1,
+        "pa_max": 2
+      },
+      "funcao": "Repor a munição da arma; o custo depende de onde está a munição.",
+      "teste": null,
+      "requisitos": [],
+      "descricao": "Recarregar é a ação de preparar novamente uma arma para disparo, restaurando sua capacidade de munição. Você pode transferir qualquer quantidade de munição compatível para a arma, até sua capacidade máxima, desde que possua munição suficiente.\nO custo depende da localização da munição:\n- **Suporte de Munição ou Acesso Rápido:** custo de **`1 PA`**. Utilize a munição disponível diretamente, sem precisar sacar os projéteis separadamente.\n- **Mochila:** custo de **`2 PA`**. Retire a munição necessária e recarregue a arma como parte da mesma ação.\nO custo já inclui o acesso à munição. Se utilizar munição de mais de uma localização durante a mesma recarga, aplique o maior custo entre elas. Munições podem vir de conjuntos diferentes, respeitando a quantidade disponível e a capacidade da arma.\nPara armas de energia, **Recarregar** substitui a célula instalada por outra compatível, sem recuperar as cargas da célula removida. A célula retirada pode ocupar a localização deixada livre pela célula de reserva utilizada ou ser descartada no espaço do personagem, sem custo adicional. Guardá-la em outra localização exige os custos normais de acesso ao Inventário.\nEquipamentos com regras próprias de recarregamento, como a Aljava Autoalimentadora, seguem os efeitos indicados em suas descrições.",
+      "opcoes": [
+        {
+          "slug": "suporte_ou_acesso_rapido",
+          "nome": "Suporte de munição ou acesso rápido",
+          "custo": {
+            "pa": 1
+          },
+          "funcao": "Usa a munição disponível diretamente."
+        },
+        {
+          "slug": "mochila",
+          "nome": "Mochila",
+          "custo": {
+            "pa": 2
+          },
+          "funcao": "Retira a munição da Mochila na mesma ação."
+        }
+      ]
+    },
+    {
+      "slug": "atacar",
+      "nome": "Atacar",
+      "cena": "combate",
+      "grupo": "ofensiva",
+      "tipo": "acao",
+      "custo": {
+        "pa": 2
+      },
+      "funcao": "Ferir um inimigo ou danificar um objeto.",
+      "teste": {
+        "contra": "Esquivar, Aparar ou Bloquear do alvo"
+      },
+      "requisitos": [],
+      "descricao": "Atacar é a manobra básica para ferir um inimigo ou danificar um objeto.\nEm criaturas, resolva por um teste contestado, em que o defensor pode escolher entre **Esquivar**, **Aparar** ou **Bloquear** o ataque desferido, além de decidir se vai gastar uma Reação para se defender plenamente. Caso o defensor não tenha mais ou opte por não gastar uma Reação, o teste dele acumula –1 de desvantagem a cada defesa sem Reação na mesma rodada.\nSe o resultado do atacante for **igual ou maior** que o do defensor, o ataque acerta. A margem entre os resultados define a parte do corpo atingida (tronco, braços, pernas ou cabeça), o modificador de dano e pode habilitar efeitos secundários descritos na arma ou no método utilizado (*Veja mais em REGIÃO DO CORPO)*.\nContra objetos inanimados, trata-se de teste simples. O narrador define a CD para acertar e a quantidade de PD do alvo. A cada acerto, reduza os PD até o objeto ceder, romper ou ficar inutilizável.\n> O valor do atributo **`Corpo`** é somado ao dano total de todos os ataques corpo a corpo e de armas de disparo e arremesso.\n> Ataques desarmados causam o valor de **`Corpo`** de dano contundente.\n\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Regiões | Mod. de dano |\n| --- | --- | --- |\n| 0 a +1 (sucesso limitado) | Tronco | –1 no dano |\n| +2 a +4 (sucesso padrão) | Tronco, braços, pernas | — |\n| +5 ou mais (sucesso crítico) | Cabeça, tronco, braços, pernas | +1 dado de dano |",
+      "opcoes": [
+        {
+          "slug": "corpo_a_corpo",
+          "nome": "Corpo a corpo",
+          "custo": {
+            "pa": 2
+          },
+          "funcao": "Alvo a até 1 m, desarmado ou com arma branca.",
+          "teste": {
+            "pericias": [
+              "luta"
+            ]
+          },
+          "descricao": "Combates corpo a corpo acontecem quando dois personagens estão próximos o bastante para se atingir diretamente, geralmente até 1 metro. Nessa situação, o atacante pode usar o próprio corpo ou qualquer arma branca.\nPara executar o ataque, faça um teste de **`Luta`**. Essa mesma perícia cobre tanto golpes desarmados (socos, chutes, cotoveladas) quanto o uso de armas brancas como facas, bastões ou espadas.\nLinha de visão raramente é obstáculo em combate corpo a corpo, no entanto, se o atacante não enxerga o alvo mas sabe que ele está à sua frente, aplique –2 de desvantagem ao teste de ataque.\n> *Ataques corpo a corpo podem ser evitados por três formas de defesa: Esquivar, Aparar ou Bloquear.*"
+        },
+        {
+          "slug": "distancia",
+          "nome": "À distância",
+          "custo": {
+            "pa": 2
+          },
+          "funcao": "Arremesso e disparo usam Precisão; armas de fogo, Balística.",
+          "teste": {
+            "pericias": [
+              "precisao",
+              "balistica"
+            ]
+          },
+          "descricao": "> **Terreno elevado:** quando há diferença de 3 ou mais metros entre atacante e alvo (em altura), ataques à distância feitos de cima recebem +1 de vantagem.\nPara executar o ataque, faça um teste de **`Precisão`** para armas arremessáveis e de disparo, ou **`Balística`** para armas de fogo. Para que o alvo seja válido, é necessário que o atacante tenha linha de visão e linha de efeito, ou seja, o inimigo deve estar visível e não pode haver barreiras bloqueando a trajetória do disparo. Se o ataque for realizado sem enxergar o alvo, trata-se de um teste simples, com CD definida pelo narrador.\n> *Ataques à distância podem ser evitados por duas formas de defesa: Esquivar ou Bloquear.*"
+        },
+        {
+          "slug": "secundario",
+          "nome": "Secundário",
+          "custo": {
+            "pa": 1
+          },
+          "funcao": "Uma vez por rodada, depois de Atacar com arma leve.",
+          "requisitos": [
+            {
+              "tipo": "arma_secundaria_leve",
+              "aviso": "Você não empunha uma segunda arma leve"
+            }
+          ],
+          "descricao": "Uma vez por rodada, depois de realizar **Atacar** com uma arma leve, você pode atacar com outra arma leve empunhada como arma secundária.\nResolva um novo ataque contra o mesmo alvo, sem somar **`Corpo`** ao dano. O teste sofre **–1 de desvantagem** em ataques corpo a corpo e **–2 de desvantagem** em ataques à distância."
+        }
+      ]
+    },
+    {
+      "slug": "agarrar",
+      "nome": "Agarrar",
+      "cena": "combate",
+      "grupo": "ofensiva",
+      "tipo": "acao",
+      "custo": {
+        "pa": 2
+      },
+      "funcao": "Prender um alvo adjacente.",
+      "teste": {
+        "pericias": [
+          "luta"
+        ],
+        "contra": "Resistir ou Esquivar do alvo"
+      },
+      "requisitos": [],
+      "descricao": "Agarrar é uma manobra de controle em combate corpo a corpo. O atacante precisa estar adjacente ao alvo (1 m) e ter pelo menos uma mão livre para iniciar a ação. É sempre um teste contestado: o atacante rola **`Luta`** e o alvo reage com a ação defensiva **Resistir** ou **Esquivar**.\nEm caso de sucesso, o atacante também passa a sofrer as limitações da própria manobra. Ele recebe a condição **`Agarrando`**, recebendo –1 de desvantagem em ações ofensivas e defensivas e tendo o deslocamento reduzido à metade enquanto mantiver o controle. Soltar o alvo é simples e pode ser feito através da ação livre **Gestos Rápidos** a qualquer momento da rodada.\n> **EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| 0 a +1 (sucesso limitado) | Alvo fica **`Agarrado`**. Não se desloca, tem –1 de desvantagem ofensiva e defensiva e ganha +1 de vantagem para tentar **Escapar** deste agarrão. |\n| +2 a +4 (sucesso padrão) | Igual ao sucesso limitado porém sem o bônus de +1 para tentar **Escapar**. |\n| +5 ou mais (sucesso crítico) | Alvo fica **`Imobilizado`**. Não se desloca nem realiza ações físicas. Pode tentar **Escapar** com –2 de desvantagem. Um alvo **`Imobilizado`** pode ser alvo da ação **Estrangular**. |"
+    },
+    {
+      "slug": "estrangular",
+      "nome": "Estrangular",
+      "cena": "combate",
+      "grupo": "ofensiva",
+      "tipo": "acao",
+      "custo": {
+        "pa": 2
+      },
+      "funcao": "Incapacitar um alvo Imobilizado ou Atordoado.",
+      "teste": {
+        "pericias": [
+          "luta"
+        ],
+        "contra": "Vigor do alvo"
+      },
+      "requisitos": [],
+      "descricao": "Estrangular é uma manobra de incapacitação usada contra um alvo adjacente (a 1 m) que esteja **`Imobilizado` **ou **`Atordoado`**. Trate como teste contestado entre **`Luta` **do atacante e **`Vigor`** do alvo. Se o atacante vencer, o estrangulamento é estabelecido e os efeitos variam conforme a margem do resultado. Se o atacante falhar, o alvo tem direito a um teste imediato de **Escapar** sem custo de PA; se for bem-sucedido, ele se livra da condição de **`Agarrado`**.\n> **EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| 0 a +1 (sucesso limitado) | Alvo fica **`Inconsciente`** por rodadas iguais à metade da margem arredondada para cima. |\n| +2 a +4 (sucesso padrão) | Alvo sofre 1 de dano físico e fica **`Inconsciente`** por rodadas iguais à margem. |\n| +5 ou mais (sucesso crítico) | Alvo sofre 1d4 de dano físico e fica **`Inconsciente`** por rodadas iguais ao dobro da margem. |"
+    },
+    {
+      "slug": "derrubar",
+      "nome": "Derrubar",
+      "cena": "combate",
+      "grupo": "ofensiva",
+      "tipo": "acao",
+      "custo": {
+        "pa": 2
+      },
+      "funcao": "Deixar um alvo adjacente Caído.",
+      "teste": {
+        "pericias": [
+          "luta"
+        ],
+        "contra": "Resistir ou Esquivar do alvo"
+      },
+      "requisitos": [],
+      "descricao": "Derrubar é uma manobra de controle em combate corpo a corpo, usada para tirar o alvo do eixo com varridas, rasteiras ou quedas de ombro. O atacante deve estar adjacente (1 m) ao alvo e resolve por teste contestado: **`Luta`** do atacante contra a ação defensiva **Resistir** ou **Esquivar** do alvo.\nEm caso de sucesso, o alvo fica **`Caído`**. Essa condição não causa dano por padrão, mas abre espaço para punições do ambiente: quedas em desníveis, quinas, fogo, ácido, destroços ou tráfego podem gerar dano a critério do narrador, conforme a ficção.\nUm personagem **`Caído`** sofre –1 de desvantagem em ações ofensivas e defensivas e tem o deslocamento reduzido à metade até usar **Levantar `1 PA`** para sair da condição."
+    },
+    {
+      "slug": "empurrar",
+      "nome": "Empurrar",
+      "cena": "combate",
+      "grupo": "ofensiva",
+      "tipo": "acao",
+      "custo": {
+        "pa": 2
+      },
+      "funcao": "Deslocar o oponente à força.",
+      "teste": {
+        "pericias": [
+          "luta"
+        ],
+        "contra": "Resistir ou Esquivar do alvo"
+      },
+      "requisitos": [],
+      "descricao": "Empurrar é uma manobra de controle para deslocar o oponente à força, tirando-o de cobertura, de zona segura ou abrindo caminho para o grupo. O atacante deve estar adjacente (1 m) e resolve por teste contestado: **`Luta`** do atacante contra a ação defensiva **Resistir** ou **Esquivar** do alvo. A ação não causa dano por padrão, mas colisões, quedas e perigos do cenário podem causar dano a critério do narrador.\n> **EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| 0 a +1 (sucesso limitado) | Empurra distância em metros igual à metade da margem arredondada para baixo, na direção escolhida pelo atacante. |\n| +2 a +4 (sucesso padrão) | Empurra distância em metros igual à margem, na direção escolhida pelo atacante. |\n| +5 ou mais (sucesso crítico) | Além de empurrar a margem em metros na direção escolhida pelo atacante, o alvo termina **`Caído`**. |"
+    },
+    {
+      "slug": "desarmar",
+      "nome": "Desarmar",
+      "cena": "combate",
+      "grupo": "ofensiva",
+      "tipo": "acao",
+      "custo": {
+        "pa": 2
+      },
+      "funcao": "Tirar a arma da mão do oponente.",
+      "teste": {
+        "pericias": [
+          "luta"
+        ],
+        "contra": "Resistir ou Esquivar do alvo"
+      },
+      "requisitos": [],
+      "descricao": "Desarmar é uma manobra corpo a corpo para remover a arma do oponente sem causar dano. O atacante deve estar adjacente e realiza teste contestado: **`Luta`** contra a ação defensiva **Resistir** ou **Esquivar** do alvo.\nSe o alvo empunhar duas armas, o atacante escolhe qual vai tentar derrubar. Se não houver espaço livre no ponto de queda, a arma para no último ponto disponível antes do obstáculo.\nJogadores podem usar a ação **Interagir `1 PA`** para apanhar a arma.\n> **EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| 0 a +1 (sucesso limitado) | Arma cai aos pés do alvo no mesmo hex. |\n| +2 a +4 (sucesso padrão) | Arma cai aos pés do alvo ou é arremessada a distância igual à metade da margem (arredondada para cima), na direção escolhida pelo atacante. |\n| +5 ou mais (sucesso crítico) | Arma cai aos pés do alvo ou é arremessada a distância igual à margem, na direção escolhida pelo atacante. |"
+    },
+    {
+      "slug": "fintar",
+      "nome": "Fintar",
+      "cena": "combate",
+      "grupo": "ofensiva",
+      "tipo": "acao",
+      "custo": {
+        "pa": 1
+      },
+      "funcao": "Abrir a guarda para o próximo golpe.",
+      "teste": {
+        "pericias": [
+          "luta",
+          "influencia"
+        ],
+        "contra": "Percepção ou Lógica do alvo"
+      },
+      "requisitos": [],
+      "descricao": "O personagem tenta enganar o inimigo com um movimento falso de ataque, criando uma abertura para o golpear em seguida.\nO teste é contestado: o personagem rola **`Luta`** ou **`Influência`** contra **`Percepção`** ou **`Lógica`** do alvo. Se o resultado do fintador for igual ou maior, o próximo ataque corpo a corpo que ele fizer contra esse alvo ainda no mesmo turno recebe +1 de vantagem e +1 de dano, caso acerte.\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| +5 ou mais (sucesso crítico) | O alvo é forçado a gastar 1 PA na Reação defensiva contra seu próximo ataque. Se não tiver PA, a Reação falha e ele defende com desvantagem acumulada. |"
+    },
+    {
+      "slug": "aparar",
+      "nome": "Aparar",
+      "cena": "combate",
+      "grupo": "defensiva",
+      "tipo": "reacao",
+      "custo": {
+        "reacao": 1
+      },
+      "funcao": "Desviar um golpe corpo a corpo com a arma.",
+      "teste": {
+        "pericias": [
+          "luta"
+        ]
+      },
+      "requisitos": [
+        {
+          "tipo": "arma_com_propriedade",
+          "propriedade": "aparar",
+          "aviso": "Sua arma empunhada não tem a propriedade Aparar"
+        }
+      ],
+      "descricao": "Aparar é usar uma arma com a propriedade *Aparar* para interceptar e desviar um golpe corpo a corpo antes que ele cause dano.\nEm resposta a um ataque corpo a corpo, teste **`Luta`**. Se superar o valor do atacante, o golpe é bloqueado e nenhum efeito ou dano é aplicado.\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| +5 ou mais (sucesso crítico) | O atacante fica exposto por 1 turno com –1 de desvantagem em ações defensivas contra você. Seu próximo ataque dentro desse período causa +1d4 de dano do mesmo tipo da arma. |"
+    },
+    {
+      "slug": "bloquear",
+      "nome": "Bloquear",
+      "cena": "combate",
+      "grupo": "defensiva",
+      "tipo": "reacao",
+      "custo": {
+        "reacao": 1
+      },
+      "funcao": "Interpor escudo ou proteção no ataque.",
+      "teste": {
+        "pericias": [
+          "reflexos"
+        ]
+      },
+      "requisitos": [
+        {
+          "tipo": "empunhando_protecao",
+          "aviso": "Você não empunha escudo ou proteção"
+        }
+      ],
+      "descricao": "**Bloquear** é interpor um escudo ou outra proteção física empunhada na trajetória de um ataque. Diferente da cobertura concedida passivamente por um escudo, esta ação representa uma interceptação deliberada de um golpe que atingiria o alvo.\nPode ser usada em resposta a um ataque contra você ou contra uma criatura adjacente que esteja no seu campo de visão, desde que a proteção possa fisicamente ser colocada entre o ataque e o alvo.\nFaça um teste de `Reflexos` contra o resultado do atacante. Se superar o valor, o ataque é interceptado:\n- O alvo original não sofre o dano nem os efeitos do ataque.\n- O dano é aplicado aos PD da proteção utilizada.\n- Se o dano exceder os PD restantes, o excesso é aplicado ao personagem que realizou **Bloquear**, seguindo normalmente suas proteções e resistências.\n- Se estiver utilizando um escudo, aplique também as regras de **Resistência** daquele escudo.\nQuando **Bloquear** for usado para proteger outra criatura, ela aguarda a resolução da tentativa de interceptação. Se o bloqueio tiver sucesso, ela não precisa realizar sua própria defesa. Se o bloqueio falhar, o ataque continua normalmente contra o alvo original, que pode realizar uma ação defensiva contra o mesmo resultado do atacante.\nUma tentativa malsucedida de **Bloquear** não impõe penalidade à defesa posterior do alvo.\n\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| +5 ou mais (sucesso crítico) | Reduza em **1d4** o dano aplicado aos PD da proteção. |"
+    },
+    {
+      "slug": "esquivar",
+      "nome": "Esquivar",
+      "cena": "combate",
+      "grupo": "defensiva",
+      "tipo": "reacao",
+      "custo": {
+        "reacao": 1
+      },
+      "funcao": "Sair da trajetória do perigo.",
+      "teste": {
+        "pericias": [
+          "reflexos"
+        ]
+      },
+      "requisitos": [],
+      "descricao": "Esquivar é recuar, rolar ou mudar de posição no instante exato em que um perigo se manifesta. O personagem evita o impacto usando pura agilidade e leitura do ambiente, seja contra ataques, magias, armadilhas, explosões ou qualquer efeito que permita evasão física.\nEm resposta a ataques corpo a corpo, ataques à distância, magias de área, efeitos de movimento forçado ou perigos físicos que possam ser evitados com reflexo, teste **`Reflexos`** contra o valor do ataque ou CD do efeito. Se superar o valor, o personagem evita totalmente o impacto e quaisquer efeitos associados.\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| +5 ou mais (sucesso crítico) | O personagem pode reposicionar-se 1 metro imediatamente. |"
+    },
+    {
+      "slug": "resistir",
+      "nome": "Resistir",
+      "cena": "combate",
+      "grupo": "defensiva",
+      "tipo": "reacao",
+      "custo": {
+        "reacao": 1
+      },
+      "funcao": "Não ser deslocado, derrubado ou imobilizado.",
+      "teste": {
+        "pericias": [
+          "vigor",
+          "mobilidade"
+        ]
+      },
+      "requisitos": [],
+      "descricao": "Resistir é travar o corpo ou se adaptar no instante em que uma força externa tenta te deslocar, derrubar, arrastar ou imobilizar. O personagem pode optar por firmeza muscular ou agilidade, enfrentando a força com robustez ou maleabilidade.\nUse **`Vigor`** quando a resistência se baseia em suportar impacto ou pressão física, e **`Mobilidade`** quando a saída é evitar o efeito com agilidade. O narrador indica qual das duas opções se aplica em cada situação.\nSe superar o valor, ignora totalmente o movimento ou a condição que seria imposta.\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| +5 ou mais (sucesso crítico) | Ganha +1 de vantagem no próximo teste de ações de **`Corpo`** até o fim do próximo turno. |"
+    },
+    {
+      "slug": "mirar",
+      "nome": "Mirar",
+      "cena": "combate",
+      "grupo": "diversa",
+      "tipo": "acao",
+      "custo": {
+        "pa": 1
+      },
+      "funcao": "+1 no próximo ataque à distância (até +2).",
+      "teste": {
+        "pericias": [
+          "percepcao"
+        ],
+        "contra": "CD do narrador"
+      },
+      "requisitos": [],
+      "descricao": "Mirar é dedicar tempo e foco para alinhar melhor um ataque à distância, estudando a posição do alvo e buscando a abertura certa.\nO personagem usa **`Percepção`** em um teste simples contra uma CD definida pelo narrador, que deve considerar fatores como distância, iluminação, cobertura e movimentação do alvo.\nSe bem-sucedido, o personagem recebe **+1 de vantagem** no próximo ataque à distância realizado contra o mesmo alvo até o fim da rodada. Esse bônus pode acumular até **+2 de vantagem**, desde que o personagem utilize a ação de **Mirar** de maneira consecutiva sem realizar ataques entre elas.\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| +5 ou mais (sucesso crítico) | O bônus passa a ser +2 de vantagem. |"
+    },
+    {
+      "slug": "acessar_trama",
+      "nome": "Acessar Trama",
+      "cena": "combate",
+      "grupo": "diversa",
+      "tipo": "acao",
+      "custo": {
+        "pa": 1
+      },
+      "funcao": "Conectar a um ponto de acesso no alcance.",
+      "teste": null,
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        }
+      ],
+      "descricao": "O personagem estabelece um vínculo inicial com um ponto de acesso exposto no alcance. Essa ação representa a execução do protocolo **Conectar** para usuários de Deck Sináptico, e consome o custo indicado (PA e RAM) normalmente.\n*Veja mais detalhes no capítulo .*"
+    },
+    {
+      "slug": "preparar_turno",
+      "nome": "Preparar turno",
+      "cena": "combate",
+      "grupo": "diversa",
+      "tipo": "reacao",
+      "custo": {
+        "reacao": 1,
+        "pa_preparado": true
+      },
+      "funcao": "Guardar ações para um gatilho fora da ordem.",
+      "teste": null,
+      "requisitos": [],
+      "descricao": "O personagem pode antecipar o uso de seu próximo turno, preparando uma sequência de ações que será executada fora da ordem normal da rodada.\nEssa ação ignora a regra de alternância, permitindo que o personagem atue imediatamente após um aliado, mesmo que ainda existam inimigos na sequência de turnos.\nAo declarar a preparação, o jogador gasta PA igual ao custo total das ações que pretende realizar. Essa preparação fica vinculada a um gatilho objetivo e único definido no momento da declaração e exige o uso de uma **`Reação`** no momento da oportunidade. Se o turno preparado não for usado até o fim da rodada, a oportunidade é perdida e os PA já gastos não são recuperados.\n**OBSERVAÇÕES**\n\n- O gatilho precisa ser único e claro; o narrador pode recusar condições vagas ou múltiplas.\n- Pelo menos uma Reação precisa estar disponível no momento da ativação.\n- Se envolver magia, a mana só é consumida se a sequência for de fato executada."
+    },
+    {
+      "slug": "usar_pericia",
+      "nome": "Usar perícia",
+      "cena": "combate",
+      "grupo": "diversa",
+      "tipo": "acao",
+      "custo": {
+        "pa": 1
+      },
+      "funcao": "Criar vantagem, impor desvantagem ou ler a cena.",
+      "teste": {
+        "pericias": "qualquer"
+      },
+      "requisitos": [],
+      "descricao": "O personagem pode aplicar uma perícia em meio ao combate para criar vantagem, impor desvantagem ou influenciar a cena de forma significativa. O narrador avalia a proposta e determina o efeito plausível conforme o contexto.\nExemplos comuns incluem impor **–1 de desvantagem** na próxima ação de um inimigo através de **`Intimidação`**, identificar uma vulnerabilidade estrutural com **`Engenharia`** ou antecipar o comportamento de uma criatura utilizando **`Psicologia`**.\nUsar uma perícia também pode servir para ler o campo de batalha, avaliar uma estrutura ou tecnologia, controlar o estado físico ou até regular o próprio ânimo diante da pressão do combate."
+    },
+    {
+      "slug": "postura_defensiva",
+      "nome": "Postura defensiva",
+      "cena": "combate",
+      "grupo": "postura",
+      "tipo": "acao",
+      "custo": {
+        "pa": 1
+      },
+      "funcao": "+1 em defensivas, –1 em ofensivas.",
+      "teste": null,
+      "requisitos": [],
+      "descricao": "O personagem assume uma posição totalmente voltada para a proteção. Enquanto mantiver essa postura, recebe +1 de vantagem em todas ações defensivas, mas sofre –1 de desvantagem ao realizar qualquer ação ofensiva ou conjuração de magia de **`Ataque`**.\n> *O personagem pode encerrar a postura gastando `1 PA` em seu turno.*",
+      "estado": "postura"
+    },
+    {
+      "slug": "postura_ofensiva",
+      "nome": "Postura ofensiva",
+      "cena": "combate",
+      "grupo": "postura",
+      "tipo": "acao",
+      "custo": {
+        "pa": 1
+      },
+      "funcao": "+1 em ofensivas, –1 em defensivas.",
+      "teste": null,
+      "requisitos": [],
+      "descricao": "O personagem assume uma posição totalmente voltada para o ataque. Enquanto mantiver essa postura, recebe +1 de vantagem em todas ações ofensivas ou conjurações de magias de **`Ataque`**, mas sofre –1 de desvantagem ao realizar qualquer ação defensiva.\n> *O personagem pode encerrar a postura gastando `1 PA` em seu turno.*",
+      "estado": "postura"
+    },
+    {
+      "slug": "falar",
+      "nome": "Falar",
+      "cena": "combate",
+      "grupo": "livre",
+      "tipo": "livre",
+      "custo": {
+        "livre": true
+      },
+      "funcao": "Gritar ordens, provocar, alertar aliados.",
+      "teste": null,
+      "requisitos": [],
+      "descricao": "Personagens podem se expressar livremente durante a rodada. Isso inclui gritar ordens, soltar xingamentos, provocar inimigos, alertar aliados ou até trocar algumas frases rápidas, sempre respeitando a lógica de 10 segundos por rodada.\nSe a fala tiver peso suficiente para alterar o rumo do combate (ex.: convencer alguém a recuar, fazer um discurso de comando, enganar um inimigo com uma mentira elaborada), o narrador pode exigir que seja tratada como uma ação de **Usar Perícia `1 PA`**. Fora disso, a fala é livre, e não gasta PA nem Reação."
+    },
+    {
+      "slug": "gestos_rapidos",
+      "nome": "Gestos rápidos",
+      "cena": "combate",
+      "grupo": "livre",
+      "tipo": "livre",
+      "custo": {
+        "livre": true
+      },
+      "funcao": "Apontar, sinalizar, soltar um alvo agarrado.",
+      "teste": null,
+      "requisitos": [],
+      "descricao": "Movimentos simples que transmitem informação ou intenção sem exigir esforço relevante. Exemplos incluem:\n- Apontar uma direção ou alvo\n- Abrir ou fechar a mão\n- Inclinar ou balançar a cabeça\n- Fazer sinais manuais breves (como um joinha ou um código pré-combinado)\n- Soltar um alvo que você esteja agarrando.\nSe o movimento tiver peso suficiente para alterar o rumo do combate, o narrador pode exigir que seja tratado com uma ação de **Interagir `1 PA`**."
+    },
+    {
+      "slug": "acessar",
+      "nome": "Acessar",
+      "cena": "investigacao",
+      "grupo": "investigacao",
+      "tipo": "acao",
+      "custo": {
+        "pa": 1
+      },
+      "funcao": "Realizar tentativas em um Desafio de Acesso.",
+      "teste": null,
+      "requisitos": [],
+      "regra": "desafio_de_acesso",
+      "descricao": "Realiza tentativas contra uma fechadura ou proteção digital usando a ferramenta exigida. A perícia relevante determina quantas combinações podem ser apresentadas; cada tentativa recebe sua Leitura antes da seguinte. Se a proteção não for superada até o fim da ação, consome-se 1 ponto de Tolerância, independentemente do número de tentativas."
+    },
+    {
+      "slug": "arrombar",
+      "nome": "Arrombar",
+      "cena": "investigacao",
+      "grupo": "investigacao",
+      "tipo": "acao",
+      "custo": {
+        "pa": 2
+      },
+      "funcao": "Forçar fisicamente uma barreira ou mecanismo.",
+      "teste": null,
+      "requisitos": [],
+      "regra": "arrombamento",
+      "descricao": "Força porta, grade, tampa, fechadura ou outra barreira física com um método e uma ferramenta ou capacidade capaz de afetá-la. Obstáculos simples usam um teste apropriado; barreiras que exigem esforço continuado usam um Marcador de Progresso. O método deixa os sinais coerentes com sua execução."
+    },
+    {
+      "slug": "auxiliar",
+      "nome": "Auxiliar",
+      "cena": "investigacao",
+      "grupo": "investigacao",
+      "tipo": "acao",
+      "custo": {
+        "pa": 1
+      },
+      "funcao": "Contribuir para a próxima ação de um aliado.",
+      "teste": null,
+      "requisitos": [],
+      "descricao": "Descreve como contribui para a próxima Ação de Investigação de um aliado: +1 de vantagem quando favorece o teste, +2 se especialmente favorável. Vários Auxílios podem se somar se forem contribuições distintas e efetivas. Em Desafio de Acesso, concede uma tentativa adicional naquela Ação de Acessar; não repõe Tolerância nem substitui a ferramenta."
+    },
+    {
+      "slug": "correlacionar",
+      "nome": "Correlacionar",
+      "cena": "investigacao",
+      "grupo": "investigacao",
+      "tipo": "acao",
+      "custo": {
+        "pa": 1
+      },
+      "funcao": "Cruzar Evidências e estabelecer conexões.",
+      "teste": {
+        "pericias": [
+          "logica"
+        ]
+      },
+      "requisitos": [],
+      "descricao": "Escolhe duas ou mais Evidências e explica a relação a examinar. Conclusão direta: o narrador confirma sem teste. Dedução incerta sob pressão: teste de Lógica. Evidências insuficientes indicam a lacuna, sem inventar resposta. Não se repete sobre a mesma relação sem nova Evidência ou mudança relevante."
+    },
+    {
+      "slug": "investigar",
+      "nome": "Investigar",
+      "cena": "investigacao",
+      "grupo": "investigacao",
+      "tipo": "acao",
+      "custo": {
+        "pa": 1
+      },
+      "funcao": "Examinar ou manipular um Ponto de Interesse.",
+      "teste": {
+        "pericias": "qualquer"
+      },
+      "requisitos": [],
+      "descricao": "Escolhe um Ponto de Interesse e uma abordagem: Examinar (observar, interpretar, consultar, avaliar, analisar) ou Manipular (mover, abrir, iluminar, conectar, desligar, desmontar). Informação revelada diretamente não exige teste; risco ou incerteza relevante exigem o teste apropriado. Não reduz o tempo de procedimentos laboratoriais complexos."
+    },
+    {
+      "slug": "preservar",
+      "nome": "Preservar",
+      "cena": "investigacao",
+      "grupo": "investigacao",
+      "tipo": "acao",
+      "custo": {
+        "pa": 1
+      },
+      "funcao": "Coletar, copiar ou estabilizar uma Evidência.",
+      "teste": null,
+      "requisitos": [],
+      "descricao": "Automático quando simples e seguro; teste apropriado se a Evidência for frágil, perigosa ou difícil de extrair. A Evidência preservada pode ser transportada e investigada depois. Não contorna criptografia, permissões ou as regras de extração de dados da Trama."
+    },
+    {
+      "slug": "utilizar_recurso",
+      "nome": "Utilizar recurso",
+      "cena": "investigacao",
+      "grupo": "investigacao",
+      "tipo": "acao",
+      "custo": {
+        "proprio": true
+      },
+      "funcao": "Empregar uma característica, magia, escalpo ou equipamento.",
+      "teste": null,
+      "requisitos": [],
+      "descricao": "Usa o recurso conforme sua descrição, com requisitos, custos, alcance e duração. Se resolve o problema diretamente, aplica-se; se apenas cria condições, o narrador define o que se torna acessível."
+    },
+    {
+      "slug": "vasculhar",
+      "nome": "Vasculhar",
+      "cena": "investigacao",
+      "grupo": "investigacao",
+      "tipo": "acao",
+      "custo": {
+        "pa": 2
+      },
+      "funcao": "Procurar um elemento ainda não localizado.",
+      "teste": {
+        "pericias": [
+          "percepcao"
+        ]
+      },
+      "requisitos": [],
+      "descricao": "Delimita uma área examinável na rodada e procura algo não localizado. Teste de Percepção quando houver incerteza e consequência. Sucesso localiza um elemento encontrável pelo método; crítico revela também um detalhe útil. Vasculhar localiza; Investigar examina o que foi localizado."
+    },
+    {
+      "slug": "conectar",
+      "nome": "Conectar",
+      "cena": "trama",
+      "grupo": "protocolo_trilha",
+      "tipo": "protocolo",
+      "custo": {
+        "pa": 1,
+        "ram": 0
+      },
+      "funcao": "Vincular-se a um ponto de acesso.",
+      "teste": {
+        "pericias": [
+          "tecnomagia"
+        ],
+        "contra": "CD da Trama"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        }
+      ],
+      "rastro": 0,
+      "tipo_trama": "Acesso",
+      "alvo": "Ponto de acesso no alcance",
+      "alcance": "Correspondente ao Deck Sináptico",
+      "duracao": "Instantâneo",
+      "descricao": "Estabelece o vínculo inicial com a trama, projetando seu avatar no espaço e nível correspondentes ao ponto de acesso utilizado. Para quem vê de fora, é o momento em que o corpo do operador se torna imóvel enquanto sua presença se desloca para o interior da malha."
+    },
+    {
+      "slug": "avancar",
+      "nome": "Avançar",
+      "cena": "trama",
+      "grupo": "protocolo_trilha",
+      "tipo": "protocolo",
+      "custo": {
+        "pa": 1,
+        "ram": 0
+      },
+      "funcao": "Mover o avatar até 10 espaços.",
+      "teste": null,
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        }
+      ],
+      "rastro": 0,
+      "tipo_trama": "Movimento",
+      "alvo": "–",
+      "alcance": "–",
+      "duracao": "–",
+      "descricao": "Desloca seu avatar até 10 espaços pela trilha, subindo ou descendo níveis quando a rota permite. É a movimentação básica, o equivalente a atravessar corredores entre salas ou ruas entre quarteirões. Não pode ser usada se um Bloqueio estiver à frente."
+    },
+    {
+      "slug": "sondar",
+      "nome": "Sondar",
+      "cena": "trama",
+      "grupo": "protocolo_trilha",
+      "tipo": "protocolo",
+      "custo": {
+        "pa": 1,
+        "ram": 1
+      },
+      "funcao": "Revelar o que há adiante na trilha.",
+      "teste": {
+        "pericias": [
+          "percepcao"
+        ],
+        "contra": "CD da Trama"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        }
+      ],
+      "rastro": 0,
+      "tipo_trama": "Varredura",
+      "alvo": "Trama",
+      "alcance": "Níveis igual à margem de sucesso (mín. 1)",
+      "duracao": "1 hora",
+      "descricao": "Lança um pulso de varredura que revela elementos adiante na trilha (Bloqueios, Nós, Sentinelas e Admins) numa quantidade de níveis igual à margem de sucesso (mín. 1). Funciona como um radar, permitindo antecipar ameaças e encontrar oportunidades sem precisar avançar às cegas."
+    },
+    {
+      "slug": "examinar",
+      "nome": "Examinar",
+      "cena": "trama",
+      "grupo": "protocolo_trilha",
+      "tipo": "protocolo",
+      "custo": {
+        "pa": 1,
+        "ram": 1
+      },
+      "funcao": "Decifrar defesas de um Nó ou Bloqueio.",
+      "teste": {
+        "pericias": [
+          "logica"
+        ],
+        "contra": "CD do alvo"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        }
+      ],
+      "rastro": 0,
+      "tipo_trama": "Varredura",
+      "alvo": "Nó ou Bloqueio",
+      "alcance": "Adjacente ou revelado por Sondar",
+      "duracao": "Instantâneo",
+      "descricao": "Inspeciona o alvo com atenção, decifrando defesas ocultas, armadilhas ativas e Conexões invisíveis. Essa leitura expõe quais outros elementos seriam afetados se o alvo fosse controlado, desbloqueado ou destruído.\nTambém reduz em 1 RAM o custo do próximo comando ou protocolo usado contra ele e concede +1 no próximo teste contra esse alvo. Só pode ser realizado uma vez por alvo e é pré-requisito para executar o protocolo **Forçar Rota**."
+    },
+    {
+      "slug": "monitorar",
+      "nome": "Monitorar",
+      "cena": "trama",
+      "grupo": "protocolo_trilha",
+      "tipo": "protocolo",
+      "custo": {
+        "pa": 1,
+        "ram": 1
+      },
+      "funcao": "Vigiar um elemento e reagir a ele.",
+      "teste": {
+        "pericias": [
+          "percepcao"
+        ],
+        "contra": "CD do alvo (Nó/Bloqueio) ou vs teste contestado Tecnomagia do alvo (Sentinela/Admin)"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        }
+      ],
+      "rastro": 0,
+      "tipo_trama": "Varredura",
+      "alvo": "Nó, Bloqueio, Sentinela ou Admin",
+      "alcance": "Adjacente ou revelado por Sondar",
+      "duracao": "Mente x 2 rodadas",
+      "descricao": "Estabelece vigilância contínua sobre o alvo, registrando qualquer interação, deslocamento ou ação direcionada contra você. Durante o período ativo, no caso de Nó ou Bloqueio, cada alerta permite gastar uma Reação para tentar o comando **Travar Acesso** imediatamente, desde que possua PA e RAM disponíveis."
+    },
+    {
+      "slug": "forcar_rota",
+      "nome": "Forçar rota",
+      "cena": "trama",
+      "grupo": "protocolo_trilha",
+      "tipo": "protocolo",
+      "custo": {
+        "pa": 2,
+        "ram": 3
+      },
+      "funcao": "Saltar direto até um Nó analisado.",
+      "teste": {
+        "pericias": [
+          "tecnomagia"
+        ],
+        "contra": "CD da Trama"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        }
+      ],
+      "rastro": 0,
+      "tipo_trama": "Movimento",
+      "alvo": "Nó analisado por Examinar",
+      "alcance": "–",
+      "duracao": "Instantâneo",
+      "descricao": "Rasga a arquitetura da trama para saltar até um Nó analisado, ignorando toda a trilha até lá, Bloqueios e defesas intermediárias. É um atalho bruto, explorando vulnerabilidades antes que sejam corrigidas, mas que inevitavelmente deixa cicatrizes digitais. Um fracasso não só denuncia sua posição e presença automaticamente como convida a defesa mais próxima a reagir na hora.\n- Em caso de falha, aciona automaticamente **Detecção** e a Sentinela/Admin mais próxima realiza ataque imediato contra você (se houver)."
+    },
+    {
+      "slug": "criar_ruido",
+      "nome": "Criar ruído",
+      "cena": "trama",
+      "grupo": "protocolo_trilha",
+      "tipo": "protocolo",
+      "custo": {
+        "pa": 2,
+        "ram": 2
+      },
+      "funcao": "Reduzir a Detecção com interferência.",
+      "teste": {
+        "pericias": [
+          "tecnomagia"
+        ],
+        "contra": "CD da Trama"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        }
+      ],
+      "rastro": 0,
+      "tipo_trama": "Controle",
+      "alvo": "Trama",
+      "alcance": "1 nível, acima ou abaixo",
+      "duracao": "Instantâneo",
+      "descricao": "Introduz padrões falsos e interferências no fluxo da trama, diluindo sua assinatura e reduzindo **Detecção** em valor igual à margem de sucesso (mín. 1).\nPode interromper perseguições de Sentinelas ou atrasar a aproximação de Admins apenas se não estiverem no mesmo nível que você. Serve para ganhar tempo e criar zonas de confusão antes que a ameaça alcance seu espaço.\n- **Sentinela:** perde o rastro e encerra a perseguição.\n- **Admin:** fica atrasado um número de rodadas igual à margem de sucesso (mín. 1) antes de alcançar seu nível atual."
+    },
+    {
+      "slug": "desligar",
+      "nome": "Desligar",
+      "cena": "trama",
+      "grupo": "protocolo_trilha",
+      "tipo": "protocolo",
+      "custo": {
+        "pa": 2,
+        "ram": 0
+      },
+      "funcao": "Sair da Sessão de forma controlada.",
+      "teste": {
+        "pericias": [
+          "tecnomagia"
+        ],
+        "contra": "CD da Trama"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        }
+      ],
+      "rastro": 0,
+      "tipo_trama": "Acesso",
+      "alvo": "–",
+      "alcance": "–",
+      "duracao": "Instantâneo",
+      "descricao": "Sai da trama de forma controlada, preservando seu progresso e mantendo quaisquer comandos ainda ativos por enquanto durarem. É a maneira mais segura de encerrar uma Sessão, usada quando o objetivo foi cumprido ou a infiltração se tornou arriscada demais para continuar."
+    },
+    {
+      "slug": "desplugar",
+      "nome": "Desplugar",
+      "cena": "trama",
+      "grupo": "protocolo_trilha",
+      "tipo": "protocolo",
+      "custo": {
+        "livre": true,
+        "ram": 0
+      },
+      "funcao": "Saída abrupta: aciona Detecção e causa 1d8.",
+      "teste": null,
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        }
+      ],
+      "rastro": 0,
+      "tipo_trama": "Acesso",
+      "alvo": "–",
+      "alcance": "–",
+      "duracao": "Instantâneo",
+      "descricao": "Desconecta-se da trama de forma abrupta, acionando imediatamente a **Detecção**, encerrando comandos ativos e sofrendo **1d8** de dano psíquico.\nÉ a corda de emergência: evita que a infiltração termine com a captura ou morte do operador, mas cobra caro no corpo e na segurança da operação."
+    },
+    {
+      "slug": "despistar",
+      "nome": "Despistar",
+      "cena": "trama",
+      "grupo": "protocolo_ofensiva",
+      "tipo": "protocolo",
+      "custo": {
+        "pa": 2,
+        "ram": 2
+      },
+      "funcao": "Confundir o rastreamento do perseguidor.",
+      "teste": {
+        "pericias": [
+          "tecnomagia"
+        ],
+        "contra": "Tecnomagia do alvo"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        }
+      ],
+      "rastro": 0,
+      "tipo_trama": "Controle",
+      "alvo": "Sentinela ou Admin",
+      "alcance": "Nível",
+      "duracao": "Instantâneo",
+      "descricao": "Lança padrões inconsistentes e leituras falsas diretamente contra o perseguidor, confundindo seu rastreamento e forçando-o a seguir pistas erradas. É uma manobra de curto alcance, usada quando o inimigo já está no mesmo nível que você.\n- **Sentinela: **pode tentar localizar você a cada rodada com um novo teste contestado. Se falhar duas vezes consecutivas, perde o rastro e encerra a perseguição. Qualquer aumento de **Detecção** causado por você concede uma tentativa imediata de localização. Se passar, entra no seu nível atual imediatamente.\n- **Admin: **fica atrasado um número de rodadas igual à margem de resultado antes de alcançar seu nível (mín. 1). Qualquer aumento de **Detecção** causado por você durante o atraso concede ao Admin uma tentativa imediata de localização com um novo teste contestado. Se passar, entra no seu nível atual imediatamente."
+    },
+    {
+      "slug": "ofuscar",
+      "nome": "Ofuscar",
+      "cena": "trama",
+      "grupo": "protocolo_ofensiva",
+      "tipo": "protocolo",
+      "custo": {
+        "pa": 2,
+        "ram": 2
+      },
+      "funcao": "Cegar os sentidos de Sentinela ou Admin.",
+      "teste": {
+        "pericias": [
+          "tecnomagia"
+        ],
+        "contra": "Tecnomagia do alvo"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        }
+      ],
+      "rastro": 0,
+      "tipo_trama": "Controle",
+      "alvo": "Sentinela ou Admin",
+      "alcance": "Nível",
+      "duracao": "1 rodada completa",
+      "descricao": "Rompe temporariamente os canais de percepção do alvo, criando uma zona de invisibilidade funcional dentro da trama. É usado para ganhar tempo, redirecionar atenção e abrir espaço para movimentos estratégicos.\n- O alvo não pode direcionar ataques ou efeitos contra qualquer participante na Sessão.\n- Protocolos e comandos contra ele recebem +2.\n- Todos os participantes da Sessão recebem +2 no próximo teste de **Despistar** contra ele."
+    },
+    {
+      "slug": "expor_nucleo",
+      "nome": "Expor núcleo",
+      "cena": "trama",
+      "grupo": "protocolo_ofensiva",
+      "tipo": "protocolo",
+      "custo": {
+        "pa": 1,
+        "ram": 2
+      },
+      "funcao": "Revelar onde a defesa inimiga falha.",
+      "teste": {
+        "pericias": [
+          "logica"
+        ],
+        "contra": "Tecnomagia do alvo"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        }
+      ],
+      "rastro": 0,
+      "tipo_trama": "Controle",
+      "alvo": "Sentinela ou Admin",
+      "alcance": "Nível",
+      "duracao": "Margem de sucesso (mín. 1)",
+      "descricao": "Examina o padrão de defesa do inimigo e identifica o momento exato em que sua cobertura falha. É um estudo rápido que revela onde atingir para causar maior impacto antes que ele volte ao ritmo normal.\n- Recebe +1 de vantagem no próximo protocolo de ofensiva contra esse alvo.\n- Seu próximo **Pulso Sináptico** contra ele recebe +1d6 de dano sináptico."
+    },
+    {
+      "slug": "pulso_sinaptico",
+      "nome": "Pulso sináptico",
+      "cena": "trama",
+      "grupo": "protocolo_ofensiva",
+      "tipo": "protocolo",
+      "custo": {
+        "pa": 2,
+        "ram": 2
+      },
+      "funcao": "1d6 + Mente de dano psíquico.",
+      "teste": {
+        "pericias": [
+          "tecnomagia"
+        ],
+        "contra": "Tecnomagia do alvo"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        }
+      ],
+      "rastro": 0,
+      "tipo_trama": "Ataque",
+      "alvo": "Sentinela ou Admin",
+      "alcance": "Nível",
+      "duracao": "Instantâneo",
+      "descricao": "Dispara uma descarga concentrada de energia sináptica contra o alvo, causando **1d6 + Mente** de dano psíquico. É um ataque direto e intenso, projetado para causar colapso imediato de sinapses ou circuitos tecnomágicos, removendo o inimigo da disputa pela força.\n- Em sucesso crítico, o dano aumenta para **2d6 + Mente**."
+    },
+    {
+      "slug": "controlar_sistema",
+      "nome": "Controlar sistema",
+      "cena": "trama",
+      "grupo": "comando",
+      "tipo": "comando",
+      "custo": {
+        "pa": 2,
+        "ram": 2
+      },
+      "funcao": "Operar portões, câmeras e elevadores.",
+      "teste": {
+        "pericias": [
+          "tecnomagia"
+        ],
+        "contra": "CD do Nó"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        },
+        {
+          "tipo": "comando_conhecido",
+          "aviso": "Este comando não está no seu deck nem na sua Sináptica"
+        }
+      ],
+      "rastro": 1,
+      "tipo_trama": "Controle",
+      "alvo": "Nó de Sistema Integrado",
+      "alcance": "Adjacente",
+      "duracao": "1 minuto",
+      "descricao": "Envia um pacote de comandos falsos que o sistema reconhece como legítimos, assumindo controle temporário de suas funções. Permite operar portões, alarmes, painéis, máquinas, câmeras e sistemas embarcados em veículos.\nSe houver Conexões reveladas por **Examinar**, a mesma ordem pode abranger módulos conectados do mesmo circuito dentro do escopo do Nó.\nMagias de Sináptica podem ser realizadas através da lente das câmeras, respeitando seus limites a partir delas.\nEnquanto durar o controle, ordens não custam RAM, mas exigem PA:\n- **Observar/controlar câmeras: `1 PA`**\n- **Abrir/fechar portas, grades ou travas: `1 PA`**\n- **Ligar/desligar sensores, alarmes ou detectores: `1 PA`**\n- **Manipular máquinas simples (esteiras, válvulas, elevadores, sprinklers): `1 PA`**\n- **Operar sistemas auxiliares de veículos: `1 PA` Sistemas auxiliares de veículos.** Permite operar funções como travas eletrônicas, iluminação, climatização, alarmes, navegação, rastreamento e interfaces de bordo, desde que estejam conectadas ao Nó.\n**Limite de controle.** Controlar Sistema não permite dirigir um veículo, assumir seus mecanismos de condução ou executar funções que pertençam a outro Nó. Para controlar remotamente sua movimentação, é necessário acessar um Nó de Unidade Autônoma e utilizar **Controlar Unidade**."
+    },
+    {
+      "slug": "controlar_unidade",
+      "nome": "Controlar unidade",
+      "cena": "trama",
+      "grupo": "comando",
+      "tipo": "comando",
+      "custo": {
+        "pa": 2,
+        "ram": 2
+      },
+      "funcao": "Assumir um drone, robô ou veículo.",
+      "teste": {
+        "pericias": [
+          "robotica"
+        ],
+        "contra": "CD do Nó"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        },
+        {
+          "tipo": "comando_conhecido",
+          "aviso": "Este comando não está no seu deck nem na sua Sináptica"
+        }
+      ],
+      "rastro": 1,
+      "tipo_trama": "Controle",
+      "alvo": "Nó de Unidade Autônoma (drone, robô, torre automatizada ou veículo compatível)",
+      "alcance": "Nível",
+      "duracao": "1 minuto",
+      "descricao": "Estabelece um vínculo temporário com uma unidade, enviando instruções como se fosse seu operador autorizado ou assumindo controle manual de suas funções.\nEnquanto durar o controle, ordens não custam RAM, mas exigem PA:\n- **Transmitir dados (usar sensores/visão da unidade): `1 PA`**\n- **Mover (até o deslocamento normal da unidade): `1 PA`**\n- **Executar ação simples (manipular objeto, carregar, empurrar): `1 PA`**\n- **Atacar (com armas ou funções integradas): `2 PA`**\n- **Alterar rotina (nova rota, prioridade de alvo, redefinir patrulha): `2 PA`**\n- **Desligar/hibernar a unidade: `1 PA` Controle veicular.** Quando o alvo for um veículo compatível, o tecelão poderá executar as funções de condução disponibilizadas pelo seu sistema. Isso inclui iniciar ou interromper deslocamentos, alterar rotas e assumir direção remota quando o veículo possuir essa capacidade.\nVeículos autônomos podem continuar seguindo uma rota estabelecida sem exigir novas ordens a cada rodada, desde que as condições permaneçam dentro de sua programação. Situações excepcionais exigem intervenção direta e respeitam os limites de condução do modelo.\n**Disputa de controle.** Quando um tecelão assume o controle de um veículo que está sendo conduzido, seus comandos passam a prevalecer sobre os controles eletrônicos do condutor. O condutor pode tentar recuperar o controle por meio da ação abaixo.\n**Retomar Controle `1 PA`**\nFaça um teste de **`Tecnomagia`** contra o resultado de **`Robótica`** obtido pelo tecelão ao executar **Controlar Unidade**.\n- **Sucesso:** o controle temporário do tecelão termina, e o veículo volta a aceitar os comandos do condutor.\n- **Falha:** o tecelão mantém o controle do veículo.\nCada condutor pode realizar apenas uma tentativa por rodada. Controles mecânicos independentes da interface invadida continuam funcionando normalmente, desde que possam ser utilizados. Eles não permitem recuperar funções eletrônicas comprometidas.\n**Limites físicos.** O controle não aumenta a velocidade máxima, não concede capacidades de manobra inexistentes e não permite operar mecanismos isolados do sistema invadido.\n**Vínculo original.** Controlar Unidade não substitui o **Vínculo de Controle** persistente da máquina nem suas autorizações. Quando o efeito termina, a autorização anterior continua válida e o operador legítimo pode retomar o controle se ainda possuir conexão com a unidade."
+    },
+    {
+      "slug": "quebrar_bloqueio",
+      "nome": "Quebrar bloqueio",
+      "cena": "trama",
+      "grupo": "comando",
+      "tipo": "comando",
+      "custo": {
+        "pa": 2,
+        "ram": 1
+      },
+      "funcao": "Forçar passagem por um Bloqueio.",
+      "teste": {
+        "pericias": [
+          "tecnomagia"
+        ],
+        "contra": "CD do Bloqueio"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        },
+        {
+          "tipo": "comando_conhecido",
+          "aviso": "Este comando não está no seu deck nem na sua Sináptica"
+        }
+      ],
+      "rastro": 1,
+      "tipo_trama": "Ataque",
+      "alvo": "Bloqueio",
+      "alcance": "Adjacente",
+      "duracao": "Instantâneo",
+      "descricao": "Dispara uma sequência de comandos para forçar a passagem por um bloqueio digital, quebrando camadas de firewall, decifrando criptografias ou neutralizando armadilhas sinápticas que bloqueiam a passagem. Se a senha ou chave for conhecida, a travessia é automática.\nSe Conexões forem reveladas por** Examinar** e indicarem bloqueios dependentes, quebrar este bloqueio libera também os dependentes na cadeia."
+    },
+    {
+      "slug": "travar_acesso",
+      "nome": "Travar acesso",
+      "cena": "trama",
+      "grupo": "comando",
+      "tipo": "comando",
+      "custo": {
+        "pa": 2,
+        "ram": 1
+      },
+      "funcao": "Erguer uma barreira sobre Nó ou Bloqueio.",
+      "teste": {
+        "pericias": [
+          "tecnomagia"
+        ],
+        "contra": "CD do alvo"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        },
+        {
+          "tipo": "comando_conhecido",
+          "aviso": "Este comando não está no seu deck nem na sua Sináptica"
+        }
+      ],
+      "rastro": 1,
+      "tipo_trama": "Controle",
+      "alvo": "Nó ou Bloqueio",
+      "alcance": "Adjacente",
+      "duracao": "1 minuto",
+      "descricao": "Ergue uma barreira digital sobre um Nó ou Bloqueio. Enquanto durar, quem tentar usar ou atravessar o alvo deve vencer **`Tecnomagia`** contra o seu resultado neste teste. Se falhar, não passa no turno. Se passar, atravessa e a trava se quebra.\nSe o alvo tiver Conexões, o travamento pode impedir a operação de outros sistemas dependentes."
+    },
+    {
+      "slug": "extrair_dados",
+      "nome": "Extrair dados",
+      "cena": "trama",
+      "grupo": "comando",
+      "tipo": "comando",
+      "custo": {
+        "pa": 2,
+        "ram": 2
+      },
+      "funcao": "Copiar dados de um Nó de Dados.",
+      "teste": {
+        "pericias": [
+          "tecnomagia"
+        ],
+        "contra": "CD do Nó"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        },
+        {
+          "tipo": "comando_conhecido",
+          "aviso": "Este comando não está no seu deck nem na sua Sináptica"
+        }
+      ],
+      "rastro": 1,
+      "tipo_trama": "Controle",
+      "alvo": "Nó de Dados",
+      "alcance": "Adjacente",
+      "duracao": "Instantâneo",
+      "descricao": "Transfere cópias de dados armazenados em um Nó de Dados para seu inventário digital seguro. Pode incluir imagens de câmeras, logs de sensores ou arquivos críticos."
+    },
+    {
+      "slug": "corromper_dados",
+      "nome": "Corromper dados",
+      "cena": "trama",
+      "grupo": "comando",
+      "tipo": "comando",
+      "custo": {
+        "pa": 2,
+        "ram": 2
+      },
+      "funcao": "Destruir arquivos de um Nó de Dados.",
+      "teste": {
+        "pericias": [
+          "tecnomagia"
+        ],
+        "contra": "CD do Nó"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        },
+        {
+          "tipo": "comando_conhecido",
+          "aviso": "Este comando não está no seu deck nem na sua Sináptica"
+        }
+      ],
+      "rastro": 1,
+      "tipo_trama": "Ataque",
+      "alvo": "Nó de Dados",
+      "alcance": "Adjacente",
+      "duracao": "Até que seja recuperado",
+      "descricao": "Insere pacotes de dados malformados que destroem permanentemente arquivos ou rotinas de um Nó, tornando-os inutilizáveis até manutenção. A CD para recuperar é igual ao seu resultado neste teste."
+    },
+    {
+      "slug": "instalar_virus",
+      "nome": "Instalar vírus",
+      "cena": "trama",
+      "grupo": "comando",
+      "tipo": "comando",
+      "custo": {
+        "pa": 2,
+        "ram": 2
+      },
+      "funcao": "Deixar uma sabotagem com gatilho.",
+      "teste": {
+        "pericias": [
+          "tecnomagia"
+        ],
+        "contra": "CD do Nó"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        },
+        {
+          "tipo": "comando_conhecido",
+          "aviso": "Este comando não está no seu deck nem na sua Sináptica"
+        }
+      ],
+      "rastro": 1,
+      "tipo_trama": "Controle",
+      "alvo": "Nó",
+      "alcance": "Adjacente",
+      "duracao": "Até acionar o gatilho definido ou ser desativado",
+      "descricao": "Configura um gatilho de sabotagem: desligar Nó, disparar alerta falso ou abrir Bloqueio quando a condição ocorrer ou após determinado tempo, conforme definido na instalação."
+    },
+    {
+      "slug": "forjar_credencial",
+      "nome": "Forjar credencial",
+      "cena": "trama",
+      "grupo": "comando",
+      "tipo": "comando",
+      "custo": {
+        "pa": 2,
+        "ram": 2
+      },
+      "funcao": "Criar uma identidade falsa no sistema.",
+      "teste": {
+        "pericias": [
+          "tecnomagia"
+        ],
+        "contra": "CD do Nó"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        },
+        {
+          "tipo": "comando_conhecido",
+          "aviso": "Este comando não está no seu deck nem na sua Sináptica"
+        }
+      ],
+      "rastro": 1,
+      "tipo_trama": "Controle",
+      "alvo": "Nó de Acesso",
+      "alcance": "Adjacente",
+      "duracao": "Até reinicialização do sistema ou remoção manual",
+      "descricao": "Você cria identidades operacionais falsas reconhecidas pelo sistema físico conectado ao Nó. Essas credenciais funcionam como crachás digitais válidos, permitindo que você e aliados passem por portas, catracas, estações de transporte ou usem terminais restritos sem disparar alarmes.\nO número de credenciais emitidas é igual a **1d4 + Mente**. Cada uma pode ser atribuída a uma pessoa e dura até o sistema ser reiniciado ou até ser revogada manualmente."
+    },
+    {
+      "slug": "modificar_assinatura",
+      "nome": "Modificar assinatura",
+      "cena": "trama",
+      "grupo": "comando",
+      "tipo": "comando",
+      "custo": {
+        "pa": 2,
+        "ram": 2
+      },
+      "funcao": "Atribuir suas ações a outro ID.",
+      "teste": {
+        "pericias": [
+          "tecnomagia"
+        ],
+        "contra": "CD do Nó"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        },
+        {
+          "tipo": "comando_conhecido",
+          "aviso": "Este comando não está no seu deck nem na sua Sináptica"
+        }
+      ],
+      "rastro": 1,
+      "tipo_trama": "Contramedida",
+      "alvo": "Nó de Registros",
+      "alcance": "Adjacente",
+      "duracao": "Instantâneo",
+      "descricao": "Reescreve metadados para atribuir ações feitas na trama a outro ID sináptico. É necessário possuir um ID sináptico válido antes da Sessão.\nEm caso de falha, o Nó de Registros é comprometido e esse e o comando **Apagar Rastros** ficam indisponíveis nesta trama."
+    },
+    {
+      "slug": "apagar_rastros",
+      "nome": "Apagar rastros",
+      "cena": "trama",
+      "grupo": "comando",
+      "tipo": "comando",
+      "custo": {
+        "pa": 2,
+        "ram": 2
+      },
+      "funcao": "Remover evidências do seu percurso.",
+      "teste": {
+        "pericias": [
+          "tecnomagia"
+        ],
+        "contra": "CD do Nó"
+      },
+      "requisitos": [
+        {
+          "tipo": "acesso_trama",
+          "aviso": "Você não tem Deck Sináptico nem Sináptica"
+        },
+        {
+          "tipo": "sessao_ativa",
+          "aviso": "Você não está numa Sessão"
+        },
+        {
+          "tipo": "comando_conhecido",
+          "aviso": "Este comando não está no seu deck nem na sua Sináptica"
+        }
+      ],
+      "rastro": 1,
+      "tipo_trama": "Contramedida",
+      "alvo": "Nó de Registros",
+      "alcance": "Adjacente",
+      "duracao": "Instantâneo",
+      "descricao": "Remove evidências operacionais do seu percurso na Trama. Apaga logs, desfaz correlações de eventos, limpa caches locais e reescreve metadados mínimos para quebrar encadeamentos. Em sucesso, o **Rastro** é removido por completo; em falha, remove apenas metade do **Rastro** atual (arredondado para baixo).\nNão pode ser usado se a **Detecção** já estiver acionada ou se você tiver falhado no comando **Modificar Assinatura** nesta mesma trama."
+    }
+  ]
+}
