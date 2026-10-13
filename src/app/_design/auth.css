@@ -149,7 +149,7 @@
 .rv-panel-wrap {
   min-width: 0;
   position: relative; z-index: 5; width: min(472px, 100%); padding: 3px;
-  border: 1px solid rgba(0, 212, 255, 0.1); border-radius: 2px;
+  border: 1px solid rgba(0, 212, 255, 0.1); border-radius: 0;
   animation: rv-panel-enter 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
 }
 @keyframes rv-panel-enter {
@@ -167,7 +167,7 @@
 .rv-panel {
   min-width: 0;
   position: relative; background: rgba(13, 21, 28, 0.82); border: 1px solid rgba(0, 212, 255, 0.25);
-  border-radius: 2px; padding: 34px 48px 32px; display: flex; flex-direction: column; gap: 26px; align-items: center;
+  border-radius: 0; padding: 34px 48px 32px; display: flex; flex-direction: column; gap: 26px; align-items: center;
   overflow: hidden; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   /* Teto de altura: com conteúdo extra (cadastro + cartão do convite)
      o painel passava da viewport e desmontava o layout. Acima do teto,
@@ -224,7 +224,7 @@
 .rv-brand { width: 100%; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
 .rv-badge { display: flex; align-items: center; gap: 8px; }
 .rv-badge-dot {
-  width: 6px; height: 6px; border-radius: 3px; background: rgba(0, 212, 255, 0.6);
+  width: 6px; height: 6px; border-radius: 50%; background: rgba(0, 212, 255, 0.6);
   box-shadow: 0 0 6px rgba(0, 212, 255, 0.6); animation: rv-blink 2s ease-in-out infinite; flex-shrink: 0;
 }
 @keyframes rv-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
@@ -232,7 +232,7 @@
   font-family: var(--font-mono), monospace; font-size: 9px; color: #54acbe; letter-spacing: 0.22em;
   display: flex; align-items: center; gap: 8px;
 }
-.rv-badge-sep { width: 3px; height: 3px; border-radius: 2px; background: #54acbe; flex-shrink: 0; }
+.rv-badge-sep { width: 3px; height: 3px; border-radius: 50%; background: #54acbe; flex-shrink: 0; }
 .rv-title {
   font-family: var(--font-orbitron), sans-serif; font-size: clamp(38px, 11vw, 52px); font-weight: 900;
   letter-spacing: 0.18em; line-height: 1; margin: 0; text-transform: uppercase;
@@ -259,13 +259,13 @@
 /* ---------- Segmented ---------- */
 .rv-segmented {
   display: flex; width: 100%; background: rgba(2, 10, 20, 0.2); border: 1px solid rgba(0, 212, 255, 0.1);
-  border-radius: 2px; padding: 5px; gap: 4px; position: relative;
+  border-radius: 0; padding: 5px; gap: 4px; position: relative;
 }
 .rv-seg-btn {
   flex: 1; font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.22em;
   color: rgba(195, 245, 255, 0.6); background: transparent; border: 1px solid transparent; padding: 11px 17px;
   transition: color 0.2s, background 0.2s, border-color 0.2s, box-shadow 0.2s; text-align: center; position: relative;
-  display: flex; align-items: center; justify-content: center; border-radius: 1px; text-transform: uppercase;
+  display: flex; align-items: center; justify-content: center; border-radius: 0; text-transform: uppercase;
 }
 .rv-seg-cyan:not(.rv-seg-btn--active-cyan):hover { color: rgba(195, 245, 255, 0.85); background: rgba(0, 212, 255, 0.05); }
 .rv-seg-amber:not(.rv-seg-btn--active-amber):hover { color: rgba(255, 236, 199, 0.85); background: rgba(230, 165, 46, 0.06); }
@@ -293,7 +293,7 @@
 .rv-label { font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: 0.15em; color: #54acbe; text-transform: uppercase; }
 .rv-input-wrap {
   position: relative; display: flex; align-items: center; background: #15212c;
-  border: 1px solid rgba(14, 107, 127, 0.6); border-radius: 1px;
+  border: 1px solid rgba(14, 107, 127, 0.6); border-radius: 0;
   transition:
     border-color var(--mo-dur-micro) var(--mo-ease-standard),
     box-shadow var(--mo-dur-micro) var(--mo-ease-standard),
@@ -361,7 +361,7 @@
 /* ---------- Submit ---------- */
 .rv-submit {
   position: relative; display: flex; align-items: center; justify-content: center; gap: 10px;
-  padding: 13px 17px; width: 100%; border-radius: 1px; overflow: hidden;
+  padding: 13px 17px; width: 100%; border-radius: 0; overflow: hidden;
   font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase;
   transition:
     background var(--mo-dur-micro) var(--mo-ease-standard),
@@ -431,7 +431,7 @@
 
 .rv-cmd-tag {
   position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-  display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 3px;
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 0;
   font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; line-height: 1;
   color: rgba(84, 172, 190, 0.8); background: rgba(0, 212, 255, 0.08); border: 1px solid rgba(84, 172, 190, 0.1);
   transition:
@@ -478,7 +478,7 @@
    ---------- */
 .auth-submit-btn {
   display: flex; align-items: center; justify-content: center;
-  width: 100%; padding: 13px 17px; border-radius: 2px;
+  width: 100%; padding: 13px 17px; border-radius: 0;
   font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 600;
   letter-spacing: 0.22em; text-transform: uppercase;
   transition: filter 0.18s ease, transform 0.08s ease, box-shadow 0.18s ease;
@@ -505,7 +505,7 @@
   --control-notch: 8px;
   --control-outline: transparent;
   position: relative;
-  border-radius: 4px;
+  border-radius: 0;
   clip-path: polygon(0 0, calc(100% - var(--control-notch)) 0,
     100% var(--control-notch), 100% 100%, var(--control-notch) 100%,
     0 calc(100% - var(--control-notch)));
@@ -551,7 +551,7 @@
 .rv-join-campanha {
   display: flex; flex-direction: column; gap: 6px; padding: 14px 16px;
   background: rgba(0, 212, 255, 0.04); border: 1px solid rgba(0, 212, 255, 0.2);
-  border-radius: 2px 8px 2px 8px; corner-shape: round bevel round bevel;
+  border-radius: 0 8px 0 8px; corner-shape: round bevel round bevel;
 }
 .rv-join-campanha-nome {
   font-family: var(--font-corpo), sans-serif; font-size: 20px; font-weight: 700; color: #eaf7ff;
