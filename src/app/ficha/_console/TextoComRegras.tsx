@@ -185,7 +185,7 @@ export function TextoComRegras({
         }
         const Lista = b.ordenada ? "ol" : "ul";
         return (
-          <Lista key={k} style={{ margin: `${topo} 0 0`, paddingLeft: "1.2em", listStyle: b.ordenada ? "decimal" : "disc" }}>
+          <Lista key={k} className="rc-lista-texto" style={{ margin: `${topo} 0 0`, paddingLeft: "1.2em", listStyle: b.ordenada ? "decimal" : "disc" }}>
             {b.itens.map((it, j) => <li key={j} style={{ marginTop: j ? "0.35em" : 0, marginLeft: `${it.nivel * 1.2}em` }}>{emLinha(it.texto, glossario, `${k}i${j}`)}</li>)}
           </Lista>
         );

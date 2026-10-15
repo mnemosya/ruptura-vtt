@@ -5,7 +5,7 @@
     "versao_schema": "1.2.0",
     "total_registros": 39,
     "fonte": "Notion: capítulo MERCADO NOTURNO / LISTA DE MERCADORIAS",
-    "extraido_em": "2026-10-09T23:25:05.912Z",
+    "extraido_em": "2026-10-12T23:58:26.126Z",
     "hash_sha256_origem": "ee5cfbb9169196dd58a53634caef89b8ccf26720a4c55a8968c3557b1e4da7ec",
     "observacao": "Preço e descrição canônicos. Efeitos mecânicos e instalação são manuais nesta transcrição inicial."
   },
@@ -64,18 +64,22 @@
     },
     {
       "id": "escalpos_transceptor_coclear",
-      "slug": "escalpos_transceptor_coclear",
       "nome": "Transceptor Coclear",
-      "raridade": "incomum",
-      "raridade_label": "Incomum",
-      "preco": 1000,
-      "preco_texto": "Ⱥ 1.000",
-      "preco_qualificador": null,
-      "descricao_curta": "Recebe áudio digital e transmite a voz por comandos neurais a até 20 m.",
-      "descricao_longa": "---\n\n*Incomum*\n\nO implante recebe sons digitais diretamente pelo sistema auditivo e transmite a voz do usuário por comandos neurais, sem fala audível. Ele se comunica com dispositivos conectados ao ID sináptico a até 20 m.\n\nPossui 2 espaços para módulos de Transceptor Coclear.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 1.000\n\n**Integridade:** –1\n\n### MÓDULOS DO TRANSCEPTOR COCLEAR\n\n---\n\n#### CANAL CRIPTOGRAFADO\n\n#### GRAVADOR DE ÁUDIO\n\n#### VARREDURA DE FREQUÊNCIA\n\nDados da lista de mercadorias:\n- Resumo: Recebe áudio digital e transmite a voz por comandos neurais a até 20 m.\n- Raridade: Incomum\n- Espaços: 1\n- Preço: Ⱥ 1.000",
+      "slot": null,
+      "slug": "escalpos_transceptor_coclear",
       "tags": [
         "loja"
       ],
+      "preco": 1000,
+      "status": "published",
+      "versao": "1.2.0",
+      "raridade": "incomum",
+      "categoria": "auditivos",
+      "created_at": "2026-10-09",
+      "requisitos": [],
+      "updated_at": "2026-10-11",
+      "uso_manual": true,
+      "preco_texto": "Ⱥ 1.000",
       "dados_notion": {
         "pagina": "ESCALPOS",
         "secao": [
@@ -92,27 +96,24 @@
         },
         "tabela_tecnica": null
       },
+      "estatisticas": {},
       "fonte_notion": {
         "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
-        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "paginaEditadaEm": "2026-10-12T19:03:00.000Z",
         "tabelaBlocoId": "8c9e2de85ac3414cb6369fc6dc96d2b2",
         "linhaBlocoId": "0ce4fb2c883f4b2aa80c331a83280866",
         "tabelaTecnicaFonte": null
       },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
+      "raridade_label": "Incomum",
+      "categoria_label": "auditivos",
+      "descricao_curta": "Recebe áudio digital e transmite a voz por comandos neurais a até 20 m.",
+      "descricao_longa": "---\n\n*Incomum*\n\nO implante reproduz áudio digital diretamente no sistema auditivo, permitindo ouvir músicas, vídeos, chamadas, notificações e outros conteúdos de dispositivos conectados, sem utilizar fones de ouvido ou produzir sons externos.\n\nTambém permite transmitir a voz por comandos neurais, sem precisar falar. A conexão com dispositivos vinculados ao ID sináptico funciona a até 20 m.\n\nPossui 2 espaços para módulos de Transceptor Coclear.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 1.000\n\n**Integridade:** –1\n\n### MÓDULOS DO TRANSCEPTOR COCLEAR\n\n---\n\n#### CANAL CRIPTOGRAFADO\n\n#### GRAVADOR DE ÁUDIO\n\n#### VARREDURA DE FREQUÊNCIA\n\nDados da lista de mercadorias:\n- Resumo: Recebe áudio digital e transmite a voz por comandos neurais a até 20 m.\n- Raridade: Incomum\n- Espaços: 1\n- Preço: Ⱥ 1.000",
+      "custo_integridade": null,
       "payload_automacao": {
         "efeitos": []
       },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "auditivos",
-      "categoria_label": "auditivos",
-      "custo_integridade": null,
-      "slot": null,
-      "requisitos": []
+      "preco_qualificador": null,
+      "vinculos_sugeridos": null
     },
     {
       "id": "escalpos_bracos_egide",
@@ -1052,18 +1053,22 @@
     },
     {
       "id": "escalpos_optica_runica",
-      "slug": "escalpos_optica_runica",
       "nome": "Óptica Rúnica",
-      "raridade": "muito_comum",
-      "raridade_label": "Muito Comum",
-      "preco": 500,
-      "preco_texto": "Ⱥ 500",
-      "preco_qualificador": null,
-      "descricao_curta": "Projeta informações digitais diretamente sobre a visão do usuário.",
-      "descricao_longa": "---\n\n*Muito Comum*\n\nA Óptica Rúnica é um par de implantes oculares que substitui ou sobrepõe os olhos naturais. Cada globo é recoberto por uma fina malha de inscrições, invisível a olho nu, que permite a fusão entre visão biológica e informação digital.\n\nQualquer dado processado pelo *Processador Sináptico* ou por dispositivos externos conectados ao ID sináptico do usuário pode ser projetado diretamente em sua visão. Mensagens, mapas, interfaces, transmissões e hubs digitais surgem como parte natural da realidade observada.\n\nPossui 1 espaço para módulo de Óptica Rúnica.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 500\n\n**Integridade:** –1\n\n### MÓDULOS DE ÓPTICA RÚNICA\n\n---\n\n#### LEITOR CLANDESTINO DE RPI\n\nDados da lista de mercadorias:\n- Resumo: Projeta informações digitais diretamente sobre a visão do usuário.\n- Raridade: Muito Comum\n- Espaços: 1\n- Preço: Ⱥ 500",
+      "slot": null,
+      "slug": "escalpos_optica_runica",
       "tags": [
         "loja"
       ],
+      "preco": 800,
+      "status": "published",
+      "versao": "1.2.0",
+      "raridade": "muito_comum",
+      "categoria": "opticos",
+      "created_at": "2026-10-09",
+      "requisitos": [],
+      "updated_at": "2026-10-11",
+      "uso_manual": true,
+      "preco_texto": "Ⱥ 800",
       "dados_notion": {
         "pagina": "ESCALPOS",
         "secao": [
@@ -1076,31 +1081,28 @@
           "Resumo": "Projeta informações digitais diretamente sobre a visão do usuário.",
           "Raridade": "Muito Comum",
           "Espaços": "1",
-          "Preço": "Ⱥ 500"
+          "Preço": "Ⱥ 800"
         },
         "tabela_tecnica": null
       },
+      "estatisticas": {},
       "fonte_notion": {
         "paginaNotionId": "3d50a13635528061bda3c10fbb32cf04",
-        "paginaEditadaEm": "2026-10-08T22:20:00.000Z",
+        "paginaEditadaEm": "2026-10-12T19:03:00.000Z",
         "tabelaBlocoId": "b88795ba8cdf48648a418438a9094e8b",
         "linhaBlocoId": "ad70f795449a4a9f99ca84d1fbf44b6d",
         "tabelaTecnicaFonte": null
       },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
+      "raridade_label": "Muito Comum",
+      "categoria_label": "opticos",
+      "descricao_curta": "Projeta informações digitais diretamente sobre a visão do usuário.",
+      "descricao_longa": "---\n\n*Muito Comum*\n\nA Óptica Rúnica é um par de implantes oculares que substitui ou sobrepõe os olhos naturais. Cada globo é recoberto por uma fina malha de inscrições, invisível a olho nu, que permite a fusão entre visão biológica e informação digital.\n\nQualquer dado processado pelo *Processador Sináptico* ou por dispositivos externos conectados ao ID sináptico do usuário pode ser projetado diretamente em sua visão. Mensagens, mapas, interfaces, transmissões e hubs digitais surgem como parte natural da realidade observada.\n\nPossui 1 espaço para módulo de Óptica Rúnica.\n\n**Espaços:** 1\n\n**Preço:** Ⱥ 800\n\n**Integridade:** –1\n\n### MÓDULOS DE ÓPTICA RÚNICA\n\n---\n\n#### LEITOR CLANDESTINO DE RPI\n\nDados da lista de mercadorias:\n- Resumo: Projeta informações digitais diretamente sobre a visão do usuário.\n- Raridade: Muito Comum\n- Espaços: 1\n- Preço: Ⱥ 800",
+      "custo_integridade": null,
       "payload_automacao": {
         "efeitos": []
       },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "opticos",
-      "categoria_label": "opticos",
-      "custo_integridade": null,
-      "slot": null,
-      "requisitos": []
+      "preco_qualificador": null,
+      "vinculos_sugeridos": null
     },
     {
       "id": "escalpos_antecipador",

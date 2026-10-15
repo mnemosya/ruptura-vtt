@@ -21,6 +21,7 @@ import { createPortal } from "react-dom";
 import { ArrowRight, Dices, Eye, HeartPulse, MessageSquare, Search, Trash2, Zap } from "lucide-react";
 import { oxanium } from "../../../../_design/oxanium";
 import { IconeVertente } from "../../../../_design/IconeVertente";
+import { CartaoListaHud } from "./CartaoListaHud";
 import "./hud-base.css";
 
 export const VERTENTES_HUD = [
@@ -300,7 +301,7 @@ function EscolhasDeConjuracao({ m, cor, valores, onEscolher }: { m: MagiaHud; co
                 className={onEscolher ? "hx-linha-nivel" : undefined}
                 onClick={() => onEscolher?.(e.id, o.id)}
                 onKeyDown={(ev) => { if (onEscolher && (ev.key === " " || ev.key === "Enter")) { ev.preventDefault(); onEscolher(e.id, o.id); } }}
-                style={{ padding: "8px 10px", border: `1px solid ${on ? cor : "rgba(0,212,255,.14)"}`, background: on ? cor + "1f" : "transparent", boxShadow: on ? `inset 2px 0 0 ${cor}` : undefined }}>
+                style={{ display: "flex", flexDirection: "column", alignItems: "stretch", textAlign: "left", minWidth: 0, boxSizing: "border-box", padding: "8px 10px", border: `1px solid ${on ? cor : "rgba(0,212,255,.14)"}`, background: on ? cor + "1f" : "transparent", boxShadow: on ? `inset 2px 0 0 ${cor}` : undefined }}>
                 <span className="hx-display" style={{ display: "block", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: on ? cor : "var(--hx-ice)" }}>{o.nome}</span>
                 {o.resumo && <span style={{ display: "block", marginTop: 3, fontSize: 13, lineHeight: 1.4, color: "var(--hx-texto)", opacity: .8 }}>{o.resumo}</span>}
               </div>
@@ -609,24 +610,16 @@ export function MagiasHud(props: PropsMagiasHud) {
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {linha.map((m, i) => (
                       <div key={vid + m.slug} className="hx-rise" style={{ animationDelay: `${i * 45 + (n - 1) * 70}ms` }}>
-                        <button type="button" onClick={() => setAberta(m.slug)} onContextMenu={(e) => { e.preventDefault(); setMenu({ slug: m.slug, x: e.clientX, y: e.clientY }); }} className="hx-ch hx-cartao-magia" style={{ display: "block", width: "100%", padding: 1, opacity: conjuravel(m) ? 1 : .5 }}>
-                          <span className="hx-ch" style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 16px", background: CASCO, textAlign: "left" }}>
-                            <span style={{ width: 3, alignSelf: "stretch", background: corTipo(m.tipo) }} />
-                            <span style={{ minWidth: 0, flex: 1 }}>
-                              <span className="hx-display" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em" }}>
-                                {/* busca global mistura vertentes: o glifo diz de qual é cada uma */}
-                                {q && <Glifo v={VERT(m.vertente)} tam={13} />}{m.nome}
-                              </span>
-                              <span className="hx-mono hx-dim" style={{ display: "block", marginTop: 4, fontSize: 10, textTransform: "uppercase", letterSpacing: ".14em" }}>
-                                <span style={{ color: corTipo(m.tipo) }}>{m.tipo || "—"}</span>
-                              </span>
-                            </span>
-                            <span style={{ textAlign: "right" }}><span className="hx-display hx-cy" style={{ fontSize: 18, fontWeight: 900, lineHeight: 1 }}>{m.mana ?? "—"}</span><Tag className="hx-dim" style={{ display: "block", fontSize: 10 }}>mana</Tag></span>
-                            {(() => { const a = acaoDaMagia(m); return (
-                              <span style={{ textAlign: "right" }}><span className="hx-display hx-amb" style={{ fontSize: /^\d/.test(a.valor) ? 18 : 11, fontWeight: 900, lineHeight: 1, textTransform: "uppercase" }}>{a.valor}</span><Tag className="hx-dim" style={{ display: "block", fontSize: 10 }}>{a.unidade || "ação"}</Tag></span>
-                            ); })()}
-                          </span>
-                        </button>
+                        <CartaoListaHud
+                          nome={<>{q && <Glifo v={VERT(m.vertente)} tam={13} />}{m.nome}</>}
+                          subtitulo={m.tipo || "—"} cor={corTipo(m.tipo)} opacidade={conjuravel(m) ? 1 : .5}
+                          onClick={() => setAberta(m.slug)}
+                          onContextMenu={(e) => { e.preventDefault(); setMenu({ slug: m.slug, x: e.clientX, y: e.clientY }); }}
+                          metricas={[
+                            { valor: m.mana ?? "—", unidade: "mana", cor: CY },
+                            { valor: acaoDaMagia(m).valor, unidade: acaoDaMagia(m).unidade || "ação", cor: AMB, tamanho: /^\d/.test(acaoDaMagia(m).valor) ? 18 : 11 },
+                          ]}
+                        />
                       </div>
                     ))}
                   </div>

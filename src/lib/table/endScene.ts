@@ -123,7 +123,9 @@ export async function resolveCampaignEndSceneForCharacters(params: {
       nextCharacter = sceneExpiry.character;
       // (Talentos, Último Fôlego, drones e robôs saíram com o motor de
       // Talentos na migração v1.2; só os efeitos temporários expiram aqui.)
-      const outroEstadoMudou = sceneExpiry.expired.length > 0;
+      const possuiGestaoClasse = !!nextCharacter.metadados?.classe_v12;
+      if (possuiGestaoClasse) nextCharacter = { ...nextCharacter, current_scene: scene + 1 };
+      const outroEstadoMudou = sceneExpiry.expired.length > 0 || possuiGestaoClasse;
       if (outroEstadoMudou && !result.resolved) {
         await updateCharacter(record.id, nextCharacter);
       }

@@ -15,9 +15,9 @@
  * genéricos como as demais.
  */
 
-import { LayoutGrid, Wand2, Backpack, BrainCircuit, IdCard, Zap, type LucideIcon } from "lucide-react";
+import { LayoutGrid, Wand2, Backpack, BrainCircuit, IdCard, Zap, Shield, type LucideIcon } from "lucide-react";
 
-export type AbaId = "personagem" | "equipamentos" | "mochila" | "magias" | "escalpos" | "caracteristicas" | "acoes";
+export type AbaId = "personagem" | "equipamentos" | "mochila" | "magias" | "escalpos" | "caracteristicas" | "classe" | "acoes";
 
 export interface ConsoleTabDef {
   id: AbaId;
@@ -35,5 +35,6 @@ export const ABAS: ConsoleTabDef[] = [
   { id: "magias", label: "Magias", Icon: Wand2 },
   { id: "escalpos", label: "Escalpos", Icon: BrainCircuit },
   { id: "caracteristicas", label: "Identidade", Icon: IdCard },
+  { id: "classe", label: "Classe", Icon: Shield },
   { id: "acoes", label: "Ações", Icon: Zap },
 ];

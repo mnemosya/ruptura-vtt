@@ -24,6 +24,8 @@
  */
 
 import { Fragment, useEffect, useRef, useState } from "react";
+import { readIdentityDossier } from "../../../../lib/character/identity";
+import { progression, readClassPlay } from "../../../../lib/character/classManagement";
 import { ImageUp, Trash2 } from "lucide-react";
 import { MAX_OVERLOAD_SURGES_PER_DAY, type CharacterAttributes, type PendingRuptureChoice } from "../../../../lib/character";
 import { useClickGuard } from "../useClickGuard";
@@ -548,11 +550,15 @@ export function IdentityAside({
 
   const integridade = character.recursos_atuais?.integridade ?? derivados.integridade_max;
   const paDisponivel = Math.max(0, derivados.pa_max - (character.estado_jogo?.pa_gastos ?? 0));
+  const paTotal = derivados.pa_max + (progression(character)?.classe_id === "cacador" ? readClassPlay(character).resource : 0);
   const reacoesDisponiveis = Math.max(0, derivados.reacoes_por_rodada - (character.estado_jogo?.reacoes_usadas ?? 0));
   const sobrecarga = character.sobrecarga_usada_dia ?? 0;
   // Ranking da progressão v1.2 (F…S+).
   const ranking = (character as { progressao?: { ranking?: string } }).progressao?.ranking ?? null;
 
+  const registroIdentidade = readIdentityDossier(api.character.metadados?.identidade);
+  if (["integro", "sinalizado", "comprometido"].includes(registroIdentidade.situacao_rpi ?? "")) situacaoRpi = registroIdentidade.situacao_rpi as SituacaoRpi;
+  if (["1", "2", "3"].includes(registroIdentidade.nivel_rpi ?? "")) nivelRpi = Number(registroIdentidade.nivel_rpi) as NivelRpi;
   const [confirmandoRemocao, setConfirmandoRemocao] = useState(false);
   /* Trocar de personagem com a pergunta aberta a deixaria pendurada
      sobre o avatar do próximo. */
@@ -698,7 +704,7 @@ export function IdentityAside({
             padrão: é contexto para quem joga e narra, não dado de mesa. */}
         {(() => {
           const t = (character as { trajetoria?: { conceito?: string; aparencia?: string; relato_refratario?: string } }).trajetoria;
-          const partes: [string, string | undefined][] = [["Ideia geral", t?.conceito], ["Aparência", t?.aparencia], ["Como se tornou refratário", t?.relato_refratario]];
+          const partes: [string, string | undefined][] = [["Ideia geral", registroIdentidade.conceito ?? t?.conceito], ["Aparência", registroIdentidade.aparencia ?? t?.aparencia], ["Como se tornou refratário", registroIdentidade.historia ?? t?.relato_refratario]];
           const preenchidas = partes.filter(([, v]) => v && v.trim());
           if (!preenchidas.length) return null;
           return (
@@ -841,7 +847,7 @@ export function IdentityAside({
 
       <div className="rc-npr-card">
         <CabecalhoModulo id="ID://AÇÕES" mod="MOD.ACTION // 04" />
-        <PointResourceControls rotulo="PA" disponivel={paDisponivel} max={derivados.pa_max} onAlternar={api.ajustarPa} leitura={leitura} />
+        <PointResourceControls rotulo="PA" disponivel={paDisponivel} max={paTotal} onAlternar={api.ajustarPa} leitura={leitura} />
         <PointResourceControls
           rotulo="Reações"
           disponivel={reacoesDisponiveis}

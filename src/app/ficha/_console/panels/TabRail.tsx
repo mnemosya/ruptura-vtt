@@ -69,9 +69,11 @@ function TabBotao({
 export function TabRail({
   aba,
   onChangeAba,
+  temClasse = false,
 }: {
   aba: AbaId;
   onChangeAba: (id: AbaId) => void;
+  temClasse?: boolean;
 }) {
   return (
     <nav className="rc-tabrail" role="tablist" aria-label="Seções do console" aria-orientation="vertical">
@@ -87,7 +89,7 @@ export function TabRail({
       <div className="rc-tabrail-divider" aria-hidden="true" />
 
       <div className="rc-tabrail-group">
-        {ABAS.map(({ id, label, Icon }) => (
+        {ABAS.filter(({ id }) => id !== "classe" || temClasse).map(({ id, label, Icon }) => (
           <TabBotao
             key={id}
             selecionada={aba === id}

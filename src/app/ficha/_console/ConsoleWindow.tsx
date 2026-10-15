@@ -164,6 +164,8 @@ export function ConsoleWindow({
     }
 
     function onKeyDown(e: KeyboardEvent) {
+      // O dossiê de escalpos acima da ficha gerencia seu próprio foco e Escape.
+      if (document.querySelector(".hs-dialog")) return;
       // Ancorada, a janela divide o teclado com a tela de baixo: só
       // responde quando o foco está DENTRO dela. Sem isto, o Escape de
       // quem está mexendo no mapa fecharia a ficha pelas costas.

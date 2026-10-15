@@ -1,4 +1,5 @@
 "use client";
+import { applyClassCommand, guardDefenseBonus, resetRoundPaWithClass } from "../../../lib/character/classManagement";
 import { reorderInventoryItem } from "../../../lib/character/inventoryOrder";
 
 import { weaponRangeAt } from "../../../lib/character/weaponRange";
@@ -1843,7 +1844,7 @@ export default function CharacterSheetClient({
     });
 
     let nextCharacter = resolved.character;
-    nextCharacter = { ...nextCharacter, estado_jogo: { ...nextCharacter.estado_jogo, pa_gastos: 0 } };
+    nextCharacter = resetRoundPaWithClass(nextCharacter);
     nextCharacter = resetRoundReactionState(nextCharacter);
 
     const paReduction = applyRoundScopedPaReductions({
@@ -3802,6 +3803,21 @@ export default function CharacterSheetClient({
     editarAtributo: updateAtributo,
     editarPericia: updatePericia,
     editarNome: (nome) => setCharacter((prev) => ({ ...prev, nome })),
+    classe: {
+      alvos: [...alliesAtivos.map(a => ({ id: a.id, nome: a.nome, aliado: true, pv: a.character.recursos_atuais?.pv, pe: a.character.recursos_atuais?.pe, condicoes: (a.character.condicoes_ativas ?? []).filter(c => c.ativa).map(c => c.nome) })), ...alvosNoMapa.filter(a => !alliesAtivos.some(b => b.id === a.characterId)).map(a => ({ id: a.characterId ?? a.tokenId, nome: a.nome, aliado: a.lado === "aliado" }))],
+      executar: (comando) => {
+        if (somenteLeitura) return;
+        const result = applyClassCommand(characterRef.current, comando, derivados.pa_max, derivados.pv_max);
+        if (result.error) { addLogEntry("recurso", result.error); return; }
+        characterRef.current = result.character;
+        setCharacter(result.character);
+        if (comando.type === "use") addLogEntry("recurso", `Classe — uso de ${comando.id}: custos e disponibilidade atualizados.`);
+      },
+    },
+    editarIdentidade: (dados) => {
+      if (somenteLeitura) return;
+      setCharacter(prev => ({ ...prev, metadados: { ...prev.metadados, schema_version: prev.metadados?.schema_version ?? 1, identidade: dados } }));
+    },
 
     rolarAtributo: (id) => {
       const def = regras?.atributos.find((a) => a.id === id);
@@ -3932,6 +3948,8 @@ export default function CharacterSheetClient({
       const atributoId: keyof CharacterAttributes =
         candidato === "corpo" || candidato === "mente" || candidato === "animo" ? candidato : "corpo";
       const atributoDef = regras?.atributos.find((a) => a.id === atributoId);
+      const bonusClasse = periciaId === 'reflexos' ? guardDefenseBonus(current) : 0;
+      const modificadorDefesa = (mutation.meta.reactionPenalty ?? 0) + bonusClasse;
       const r = rollPericia({
         atributoId,
         atributoNome: atributoDef?.nome ?? atributoId,
@@ -3939,7 +3957,7 @@ export default function CharacterSheetClient({
         periciaId,
         periciaNome: def?.nome,
         periciaValor: character.pericias[periciaId] ?? 0,
-        modificador: mutation.meta.reactionPenalty ?? 0,
+        modificador: modificadorDefesa,
       });
       const reacaoLog = mutation.meta.defenseWithoutReaction
         ? `Defesa sem Reação: ${mutation.meta.defensesWithoutReactionBefore ?? 0} → ${mutation.meta.defensesWithoutReaction ?? 0}; penalidade ${mutation.meta.reactionPenalty ?? 0}.`
@@ -3953,7 +3971,7 @@ export default function CharacterSheetClient({
       // A penalidade de Reação entra como modificador da rolagem, então
       // vai junto pra mesa — senão o total publicado não bateria com o
       // que a pessoa viu na ficha.
-      void publicarRolagemNaMesa(atributoId, periciaId, r.dados, mutation.meta.reactionPenalty ?? 0);
+      void publicarRolagemNaMesa(atributoId, periciaId, r.dados, modificadorDefesa);
       return {
         resultado: r,
         usouReacao: mutation.meta.usedReaction === true,

@@ -40,6 +40,8 @@ function campos(blocos: Bloco[], referencia: string) {
   const encontrados: Record<string, string> = {};
   const corpo: Bloco[] = [];
   for (const bloco of blocos) {
+    // Cabeçalhos da próxima seção podem ficar aninhados no último verbete no Notion.
+    if (/^heading_/.test(bloco.tipo) && /^MAGIAS DE N[IÍ]VEL\s+[1-5]$/i.test(bloco.texto?.trim() ?? "")) continue;
     const match = bloco.tipo === "paragraph" ? bloco.texto?.match(/^([^:]+):\s*(.*)$/s) : null;
     if (match && esperados.includes(match[1])) {
       if (encontrados[match[1]] !== undefined) excecoes.push(`${referencia}: campo ${match[1]} duplicado`);

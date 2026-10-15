@@ -3220,12 +3220,13 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    discreto. Assim acompanha a quebra de linha, o tamanho da fonte e a
    seleção — coisas que uma caixa posicionada em absoluto não faz. */
 .rc-termo {
-  font-weight: 600; cursor: help;
+  font-weight: 600; cursor: pointer;
   text-decoration: underline dotted; text-underline-offset: 2px;
 }
 .rc-termo[data-tipo="acao"] { color: var(--rc-cy); text-decoration-color: rgba(0, 212, 255, 0.45); }
 .rc-termo[data-tipo="condicao"] { color: var(--rc-danger); text-decoration-color: rgba(255, 95, 116, 0.45); }
 .rc-termo:hover, .rc-termo:focus-visible { text-decoration-style: solid; outline: none; }
+.rc-termo-erro { display: block; color: var(--rc-danger); font-size: 11px; line-height: 1.4; }
 
 .rc-termo-dica {
   position: fixed; z-index: 620; transform: translate(-50%, calc(-100% - 8px));
@@ -3238,12 +3239,14 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   color: var(--rc-text);
   font-family: var(--font-corpo), sans-serif;
 }
-.rc-termo-dica[data-tipo="acao"] {
+.rc-termo-dica[data-tipo="acao"],
+.rc-termo-dica[data-tipo="condicao"] {
+  --rc-termo-dica-cor: var(--rc-cy, #00d4ff);
   z-index: 760; width: 260px; max-width: calc(100vw - 16px); padding: 9px 12px;
   gap: 3px; border: 0; border-radius: 0; background: #0c1c26;
-  box-shadow: inset 0 0 0 1px #1c3645, inset 2px 0 0 var(--rc-cy, #00d4ff), 0 14px 30px rgba(0, 0, 0, .55);
+  box-shadow: inset 0 0 0 1px #1c3645, inset 2px 0 0 var(--rc-termo-dica-cor), 0 14px 30px rgba(0, 0, 0, .55);
 }
-.rc-termo-dica[data-tipo="condicao"] { border-color: rgba(255, 95, 116, .4); }
+.rc-termo-dica[data-tipo="condicao"] { --rc-termo-dica-cor: var(--rc-danger, #ff5f74); }
 .rc-termo-dica-cab {
   display: flex; align-items: baseline; gap: 6px;
   color: var(--rc-text); font: 600 13px/16px var(--font-corpo), sans-serif;
@@ -3254,12 +3257,15 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 }
 .rc-termo-dica-txt { font-size: 12px; line-height: 1.4; color: rgba(214, 234, 245, 0.75); }
 .rc-termo-dica-txt--vazio { font-style: italic; color: var(--rc-dim); }
-.rc-termo-dica[data-tipo="acao"] .rc-termo-dica-cab {
-  color: var(--rc-cy, #00d4ff); font: 700 10px/1.45 var(--font-mono), monospace;
+.rc-termo-dica[data-tipo="acao"] .rc-termo-dica-cab,
+.rc-termo-dica[data-tipo="condicao"] .rc-termo-dica-cab {
+  color: var(--rc-termo-dica-cor); font: 700 10px/1.45 var(--font-mono), monospace;
   letter-spacing: 1.6px; text-transform: uppercase;
 }
-.rc-termo-dica[data-tipo="acao"] .rc-termo-dica-cab em { margin-left: auto; font-size: 9px; letter-spacing: .7px; }
-.rc-termo-dica[data-tipo="acao"] .rc-termo-dica-txt { font-size: 13px; line-height: 1.45; color: #b9c9dc; }
+.rc-termo-dica[data-tipo="acao"] .rc-termo-dica-cab em,
+.rc-termo-dica[data-tipo="condicao"] .rc-termo-dica-cab em { margin-left: auto; font-size: 9px; letter-spacing: .7px; }
+.rc-termo-dica[data-tipo="acao"] .rc-termo-dica-txt,
+.rc-termo-dica[data-tipo="condicao"] .rc-termo-dica-txt { font-size: 13px; line-height: 1.45; color: #b9c9dc; }
 
 @media (prefers-reduced-motion: reduce) {
   .rc-inv-card, .rc-inv-aba, .rc-inv-btn, .rc-inv-medidor-un, .rc-inv-passo { transition: none; }
@@ -4892,6 +4898,7 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
    aparece — a vertente/categoria (`--k`) no Mercado e no Inventário;
    fora deles, a cor do texto. */
 .rc-negrito { font-weight: 700; color: var(--k, inherit); }
+.rc-lista-texto > li::marker { color: var(--k, inherit); }
 
 /* ── Recarga: janela de escolha de fonte + aviso com Desfazer ─────────
    Ver `panels/JanelaRecarga.tsx`. A janela é uma tabela curta (uma

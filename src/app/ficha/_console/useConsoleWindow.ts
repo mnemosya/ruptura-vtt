@@ -24,6 +24,7 @@ import {
   CHROME_HORIZONTAL,
   MIN_H,
   MIN_W,
+  TABLIST_W,
   type Geometry,
 } from "./geometry";
 
@@ -156,9 +157,12 @@ export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
       const vp = viewport();
       setGeo((atual) => {
         if (!atual) return atual;
-        return mode === "maximized"
-          ? geometriaMaximizada(vp, alturaMaximaEfetiva, larguraMaximaEfetiva)
-          : limitarPosicao(atual, vp);
+        if (mode === "maximized") return geometriaMaximizada(vp, alturaMaximaEfetiva, larguraMaximaEfetiva);
+        // Uma viewport menor também precisa reduzir a janela: só ajustar x/y
+        // deixava o trilho e os controles do lado direito fora da tela.
+        const w = Math.min(atual.w, Math.max(MIN_W, vp.w - 32 - TABLIST_W));
+        const h = Math.min(atual.h, Math.max(MIN_H, vp.h - 32));
+        return limitarPosicao({ ...atual, w, h }, vp);
       });
     }
     window.addEventListener("resize", onResize);

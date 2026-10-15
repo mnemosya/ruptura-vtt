@@ -624,6 +624,48 @@
         ],
         "artigo": "o"
       }
+    ],
+    "sinaptica_sonda": [
+      {
+        "id": "efeito",
+        "rotulo": "efeito",
+        "artigo": "o",
+        "opcoes": [
+          {
+            "id": "varredura",
+            "nome": "Varredura",
+            "resumo": "Detecta assinaturas sinápticas em uma esfera de 15 m: posição aproximada, categoria, atividade e fluxos detectáveis.",
+            "efeitos": []
+          },
+          {
+            "id": "leitura",
+            "nome": "Leitura",
+            "resumo": "Examina uma runa ou dispositivo a até 10 m: função atual, última operação identificável e estado geral.",
+            "efeitos": []
+          }
+        ]
+      }
+    ],
+    "sinaptica_indice": [
+      {
+        "id": "efeito",
+        "rotulo": "efeito",
+        "artigo": "o",
+        "opcoes": [
+          {
+            "id": "buscar",
+            "nome": "Buscar",
+            "resumo": "Pesquisa dados acessíveis usando uma referência concreta e apresenta as correspondências diretas.",
+            "efeitos": []
+          },
+          {
+            "id": "armazenar",
+            "nome": "Armazenar",
+            "resumo": "Preserva por 1 hora um arquivo, registros ou até 10 minutos de fluxo. Apenas um armazenamento ativo.",
+            "efeitos": []
+          }
+        ]
+      }
     ]
   }
 }

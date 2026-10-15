@@ -262,6 +262,11 @@ export interface ConsoleApi {
    * destravar a ficha.
    */
   editarNome: (nome: string) => void;
+  classe?: {
+    alvos: { id: string; nome: string; aliado: boolean; pv?: number; pe?: number; condicoes?: string[] }[];
+    executar: (comando: import("../../../lib/character/classManagement").ClassCommand) => void;
+  };
+  editarIdentidade?: (dados: import("../../../lib/character/identity").IdentityDossier) => void;
 
   /** Pins (referência tipada, nunca cópia da entidade). */
   pins: ConsolePin[];

@@ -38,6 +38,9 @@ export type EncaixeHud =
   | "arma_primaria" | "arma_secundaria" | "acesso_rapido_1" | "acesso_rapido_2" | "traje" | "suporte_municao" | "acessorio_1" | "acessorio_2" | "estrutura_dorsal" | "locomocao" | "mochila_equipada" ;
 
 export interface PecaHud {
+  /** Identificação própria para fichas que compartilham esta apresentação (ex.: implante instalado). */
+  identificacao?: ReactNode;
+  icone?: ReactNode;
   /** Nome do modelo preservado mesmo quando a instância é renomeada. */
   weaponName?: string;
   suporteMunicao?: boolean;
@@ -268,7 +271,7 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
           style={{ position: "absolute", inset: 0, zIndex: 20, display: "grid", placeItems: "center", background: "rgba(6,18,28,.75)", backdropFilter: "blur(2px)" }}>
           <div className="hx-edge hx-ch hx-pop" role="dialog" aria-label={ver.nome} style={{ width: 420, maxWidth: "calc(100% - 32px)", boxShadow: "0 30px 80px -20px #000" }}>
             <div className="hx-ch" style={{ position: "relative", display: "flex", flexDirection: "column", maxHeight: "min(660px, calc(100vh - 160px))", background: CASCO }}>
-              <Ficha p={ver} voltar={() => setVer(null)} />
+              <FichaItemConteudo p={ver} voltar={() => setVer(null)} />
               {ver.suporteMunicao && !props.somenteLeitura && (
                 <div style={{ flexShrink: 0, display: "flex", justifyContent: "flex-end", borderTop: "1px solid rgba(0,212,255,.1)", padding: "10px 16px" }}>
                   <button type="button" onClick={() => { const id = ver.id; setVer(null); props.onRecarregar(id); }}
@@ -784,7 +787,7 @@ export function FichaItemModal({ p, onFechar, rodape, fixo = false }: { p: PecaH
       <div style={noCentro ? { ...noCentro, width: 420, maxWidth: "calc(100% - 32px)" } : { display: "contents" }}>
       <div className="hx-edge hx-ch hx-pop" role="dialog" aria-label={p.nome} style={{ width: 420, maxWidth: noCentro ? "100%" : "calc(100% - 32px)", boxShadow: "0 30px 80px -20px #000" }}>
         <div className="hx-ch" style={{ position: "relative", display: "flex", flexDirection: "column", maxHeight: "min(660px, calc(100vh - 160px))", background: CASCO }}>
-          <Ficha p={p} voltar={onFechar} />
+          <FichaItemConteudo p={p} voltar={onFechar} />
           {rodape && <div style={{ flexShrink: 0, borderTop: "1px solid rgba(0,212,255,.1)", padding: "10px 16px" }}>{rodape}</div>}
         </div>
       </div>
@@ -794,18 +797,18 @@ export function FichaItemModal({ p, onFechar, rodape, fixo = false }: { p: PecaH
   return fixo && typeof document !== "undefined" ? createPortal(<div className="rc-cursor-scope">{modal}</div>, document.body) : modal;
 }
 
-function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
+export function FichaItemConteudo({ p, voltar }: { p: PecaHud; voltar?: () => void }) {
   const c = corDe(p), pr = prot(p.protecao);
   return (
     // `--k`: o negrito do texto (`.rc-negrito`) sai na cor do tema do item.
     <div style={{ ["--k" as string]: c, position: "relative", display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
-      <button type="button" onClick={voltar} aria-label="Fechar" className="hx-ch-hex hx-fechar" style={{ position: "absolute", right: 12, top: 12, zIndex: 3 }}><Svg d="M6 6l12 12M18 6 6 18" tam={14} cor="currentColor" traco={2} /></button>
+      {voltar && <button type="button" onClick={voltar} aria-label="Fechar" className="hx-ch-hex hx-fechar" style={{ position: "absolute", right: 12, top: 12, zIndex: 3 }}><Svg d="M6 6l12 12M18 6 6 18" tam={14} cor="currentColor" traco={2} /></button>}
       <div className="hx-semsb" style={{ minHeight: 0, flex: 1, overflowY: "auto" }}>
       <div style={{ position: "relative", display: "grid", placeItems: "center", height: 160, flexShrink: 0, overflow: "hidden", background: `radial-gradient(circle at 50% 55%, ${c}38, transparent 62%)` }}>
         <span className="hx-hexgrid" style={{ position: "absolute", inset: 0, opacity: .6 }} /><span className="hx-scan" style={{ position: "absolute", inset: 0 }} />
         <span className="hx-spin" style={{ position: "absolute", width: 140, height: 140, borderRadius: "50%", border: `1px dashed ${c}44` }} />
         <span className="hx-spinr" style={{ position: "absolute", width: 100, height: 100, borderRadius: "50%", border: `1px solid ${c}30` }} />
-          <span style={{ position: "absolute", left: 12, top: 12, display: "flex", background: CASCO + "cc" }}>
+          <span style={{ position: "absolute", left: 12, top: 12, display: "flex", background: CASCO + "cc" }}>{p.identificacao ?? <>
             <span style={{ display: "flex", alignItems: "center", padding: "4px 8px", background: "rgba(0,212,255,.07)" }}><Tag className="hx-dim" style={{ fontSize: 10 }}>{p.onde}</Tag></span>
             {/* Espaços como os blocos do inventário: um quadradinho por espaço. */}
             <span title={`Ocupa ${p.espacos} ${p.espacos === 1 ? "espaço" : "espaços"}`} aria-label={`Ocupa ${p.espacos} espaços`}
@@ -813,8 +816,8 @@ function Ficha({ p, voltar }: { p: PecaHud; voltar: () => void }) {
               <span className="hx-display" style={{ fontSize: 15, fontWeight: 900, lineHeight: 1, marginRight: 6 }}>{p.espacos}</span>
               {Array.from({ length: Math.max(p.espacos, 0) }, (_, i) => <span key={i} style={{ width: 14, height: 12, background: c }} />)}
             </span>
-          </span>
-        <span className="hx-floaty" style={{ position: "relative" }}><ItemCategoryIcon category={p.categoria} weaponName={p.weaponName ?? p.nome} itemType={p.tipo} armorRegions={p.regioes} size={52} color={c} strokeWidth={1.2} style={{ filter: `drop-shadow(0 0 12px ${c})` }} /></span>
+          </>}</span>
+        <span className="hx-floaty" style={{ position: "relative" }}>{p.icone ?? <ItemCategoryIcon category={p.categoria} weaponName={p.weaponName ?? p.nome} itemType={p.tipo} armorRegions={p.regioes} size={52} color={c} strokeWidth={1.2} style={{ filter: `drop-shadow(0 0 12px ${c})` }} />}</span>
       </div>
       <div style={{ position: "sticky", top: 0, zIndex: 2, padding: "18px 52px 14px 16px", borderBottom: "1px solid rgba(0,212,255,.1)", background: `linear-gradient(180deg, ${c}0f, transparent), ${CASCO}` }}>
         <span style={{ position: "absolute", left: 0, right: 0, top: 0, height: 2, background: `linear-gradient(90deg, ${c}, ${c}00 70%)` }} />

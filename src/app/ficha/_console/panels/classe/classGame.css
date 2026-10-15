@@ -1,0 +1,120 @@
+/* Class-specific game interfaces, sharing the Console and Forja visual language. */
+.hc-panel[data-game]{--game-line:color-mix(in srgb,var(--hc-accent) 32%,#193340);--game-glow:color-mix(in srgb,var(--hc-accent) 17%,transparent)}
+.hc-panel[data-game] .hc-body{padding:0 22px 26px}
+.hc-panel[data-game] .hc-hero{position:relative;isolation:isolate;min-height:186px;margin:0 -22px;padding:32px 25px 22px;align-items:flex-end;border-bottom:1px solid var(--game-line);overflow:hidden;background:#091822}
+.hc-game-art{position:absolute;z-index:-1;inset:0;background-position:right 38%;background-size:cover;opacity:.74;mask-image:linear-gradient(90deg,transparent 8%,#000 85%)}
+.hc-panel[data-game] .hc-hero:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,#06141e 0%,#06141e55 52%,transparent),linear-gradient(90deg,#06141e 0%,transparent 75%)}
+.hc-panel[data-game] .hc-emblem{width:44px;height:53px;background:var(--game-glow);clip-path:polygon(0 0,100% 0,100% 78%,50% 100%,0 78%);border:0;box-shadow:inset 0 2px var(--hc-accent)}
+.hc-panel[data-game] .hc-emblem svg{width:27px}
+.hc-panel[data-game] .hc-heading h2{font-family:var(--font-oxanium),var(--hx-display),sans-serif;font-size:clamp(25px,5.8cqw,43px);letter-spacing:.025em;text-shadow:0 3px 15px #000}
+.hc-panel[data-game] .hc-heading .hc-kicker{font-size:9px;letter-spacing:.18em;color:#acc2ca}
+.hc-panel[data-game] .hc-heading p{font-size:10px;line-height:1.5}
+.hc-panel[data-game] .hc-rank{border:1px solid var(--game-line);padding:8px;min-width:50px;background:#081923bb}
+.hc-panel[data-game] .hc-rank strong{font-family:var(--font-oxanium),sans-serif}
+.hc-panel[data-game] .hc-operation{border:0;background:none;padding:0;margin-top:24px}
+.hc-panel[data-game] .hc-op-head{margin-bottom:18px;align-items:end}
+.hc-panel[data-game] .hc-op-head h3{font-family:var(--font-oxanium),var(--hx-display),sans-serif;font-size:20px;letter-spacing:.025em}
+.hc-panel[data-game] .hc-op-head .hc-kicker{font-size:9px}
+.hc-panel[data-game] .hc-op-meta{padding:7px 9px;background:var(--game-glow);border-left:2px solid var(--hc-accent);font-size:10px}
+.hc-panel[data-game] button{transition:background .16s,border-color .16s,transform .16s,box-shadow .16s}
+.hc-panel[data-game] button:focus-visible{outline-offset:3px}
+.hc-panel[data-game] .hc-section{padding:20px 0}
+.hc-panel[data-game] .hc-features summary{padding:13px 7px;background:linear-gradient(90deg,var(--game-glow),transparent 65%)}
+.hc-panel[data-game] .hc-feature-rank{display:grid;place-items:center;width:25px;height:29px;border:1px solid var(--game-line)}
+/* Anchor: a living connection diagram and an intervention station. */
+.hc-panel[data-game=ancora] .hc-anchor-layout{grid-template-columns:minmax(0,1.15fr) minmax(210px,.85fr);gap:22px}
+.hc-panel[data-game=ancora] .hc-anchor-roster{padding:0;border:0;background:none}
+.hc-link-sigil{position:relative;height:105px;background:radial-gradient(ellipse at center,#32c97820,transparent 65%)}
+.hc-link-sigil>svg:first-child{width:100%;height:100%;stroke:#46ca98;stroke-width:1;fill:none;opacity:.7}
+.hc-link-sigil>svg:last-child{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#a0f3ce;filter:drop-shadow(0 0 8px #32c978)}
+.hc-panel[data-game=ancora] .hc-focus-card{min-height:64px;background:linear-gradient(90deg,#102f30,#0a1d26);border:1px solid #2d514d;padding:10px}
+.hc-panel[data-game=ancora] .hc-focus-card[aria-pressed=true]{background:linear-gradient(90deg,#184f40,#0c292c);border-color:#4bcb97;box-shadow:inset 3px 0 #72e4b2,0 0 18px #32c9780c}
+.hc-panel[data-game=ancora] .hc-focus-avatar{height:40px;width:40px;color:#a0e2ca;background:#163f3d}
+.hc-panel[data-game=ancora] .hc-focus-text small{font-size:9px;line-height:1.6}
+.hc-panel[data-game=ancora] .hc-anchor-interventions{position:relative;padding:20px 16px;border:1px solid #35765c;background:radial-gradient(ellipse at 50% 20%,#32c97820,transparent 70%),#0a2028;box-shadow:inset 0 3px #57d9a3}
+.hc-panel[data-game=ancora] .hc-intervention-count{justify-content:center;margin:25px 0 10px;gap:8px}
+.hc-panel[data-game=ancora] .hc-intervention-count>strong{font:600 76px/1 var(--font-oxanium),sans-serif;text-shadow:0 0 26px #32c97844}
+.hc-panel[data-game=ancora] .hc-intervention-pips{justify-content:center;margin-bottom:25px}
+.hc-panel[data-game=ancora] .hc-intervention-actions{grid-template-columns:1fr}
+.hc-panel[data-game=ancora] .hc-intervention-actions button{padding:12px;border-color:#38755e;background:linear-gradient(100deg,#1c523c,#13352e)}
+.hc-panel[data-game=ancora] .hc-intervention-actions button:hover:not(:disabled){border-color:#9aefc3;background:#286448}
+.hc-panel[data-game=ancora] .hc-intervention-actions span{font-size:12px}.hc-panel[data-game=ancora] .hc-intervention-actions small{font-size:11px}
+/* Combatant: tactile dice sockets, rather than four statistic tiles. */
+.hc-panel[data-game=combatente] .hc-die-bank{gap:12px;padding:20px 12px;background:radial-gradient(ellipse at center,#a32e4628,transparent 70%),repeating-linear-gradient(90deg,#f16d7905 0 1px,transparent 1px 24px);border-block:1px solid #633b4a}
+.hc-panel[data-game=combatente] .hc-manouver-die{min-height:190px;gap:5px;border:0;border-bottom:2px solid #f16d79;background:linear-gradient(0deg,#7e344338,transparent 60%);isolation:isolate}
+.hc-panel[data-game=combatente] .hc-manouver-die:before{content:"";position:absolute;z-index:-1;width:80%;height:70%;top:8%;border:1px solid #f16d7938;transform:skewY(-8deg);background:linear-gradient(150deg,#f16d790b,transparent)}
+.hc-panel[data-game=combatente] .hc-manouver-die:after{content:"";position:absolute;width:70%;height:14px;top:57%;border:1px solid #f16d793b;border-radius:50%;box-shadow:0 0 14px #f16d7920}
+.hc-panel[data-game=combatente] .hc-poly-die{width:70px;height:77px;stroke-width:1;fill:#ef71871c;filter:drop-shadow(0 0 9px #ed59777a);margin:0 0 13px;transition:transform .2s}
+.hc-panel[data-game=combatente] .hc-manouver-die:hover:not(:disabled) .hc-poly-die{transform:translateY(-5px) rotate(-5deg)}
+.hc-panel[data-game=combatente] .hc-manouver-die strong{font:600 21px var(--font-oxanium),sans-serif}
+.hc-panel[data-game=combatente] .hc-manouver-die small{font-size:9px;letter-spacing:.15em}
+.hc-panel[data-game=combatente] .hc-manouver-die[data-ready=false]{border-color:#39505d;background:#0a1821}
+.hc-panel[data-game=combatente] .hc-manouver-die[data-ready=false] .hc-poly-die{filter:none;fill:none}
+.hc-panel[data-game=combatente] .hc-manouver-die[data-ready=false]:before,.hc-panel[data-game=combatente] .hc-manouver-die[data-ready=false]:after{opacity:.2}
+.hc-equipped-maneuvers{display:grid;gap:6px;margin-top:14px}.hc-equipped-maneuvers details{border:1px solid #603c4c;background:#211e2b}.hc-equipped-maneuvers summary{display:flex;align-items:center;gap:10px;padding:12px;cursor:pointer;font:700 11px var(--hx-display,sans-serif);color:#f5c2cd;list-style:none}.hc-equipped-maneuvers summary svg{margin-left:auto}.hc-equipped-maneuvers summary span{color:#fa8296;font-size:22px}.hc-equipped-maneuvers p{padding:0 14px 14px;margin:0;white-space:pre-line}
+/* Technician: each unit occupies a diagnostic bay with its own schematic. */
+.hc-panel[data-game=tecnico] .hc-unit-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.hc-panel[data-game=tecnico] .hc-unit-grid article{position:relative;display:grid;grid-template-columns:1fr 1fr;padding:16px;gap:10px;border:1px solid #756043;background:linear-gradient(135deg,#302b2050,#0b1c26 70%);box-shadow:inset 3px 0 #a17e48}
+.hc-panel[data-game=tecnico] .hc-unit-grid article[data-installed=true]{border-color:#c28c45;box-shadow:inset 3px 0 #f3bd6f,0 0 20px #f3a34208}
+.hc-panel[data-game=tecnico] .hc-unit-top{grid-column:1/-1;border-bottom:1px solid #66543a;padding-bottom:12px;font-size:10px}
+.hc-unit-schematic{display:grid;place-items:center;min-height:150px;background:radial-gradient(ellipse,#f3a34212,transparent 70%)}
+.hc-unit-schematic svg{width:100%;max-width:260px;fill:none;stroke:#a48656;stroke-width:1}
+.hc-unit-schematic .hc-unit-shell{fill:#222e30;stroke:#e9c78c;stroke-width:1.5}
+.hc-unit-schematic .hc-unit-core{fill:#9c7948;stroke:#ffdd94}
+[data-installed=true] .hc-unit-schematic svg{stroke:#e5b76e;filter:drop-shadow(0 0 5px #f3a34233)}
+[data-installed=true] .hc-unit-schematic .hc-unit-core{fill:#ffe2a6;filter:drop-shadow(0 0 6px #ffc76f)}
+.hc-panel[data-game=tecnico] .hc-unit-center{flex-direction:column;justify-content:center;text-align:center;gap:8px}
+.hc-panel[data-game=tecnico] .hc-unit-ring{width:76px;height:76px}.hc-panel[data-game=tecnico] .hc-unit-ring strong{font:600 30px var(--font-oxanium),sans-serif}
+.hc-panel[data-game=tecnico] .hc-unit-pd{grid-column:1/-1;font-size:10px;padding:12px 0}.hc-panel[data-game=tecnico] .hc-unit-pd button{width:34px;height:32px}
+.hc-panel[data-game=tecnico] .hc-unit-install{grid-column:1/-1;margin:0;padding:13px;font-size:11px;background:linear-gradient(100deg,#8c642b,#493a23);color:#ffe8bc;border-color:#bb9459}
+.hc-panel[data-game=tecnico] .hc-unit-install:hover:not(:disabled){background:#a07332;color:white}
+@container(max-width:570px){.hc-panel[data-game] .hc-body{padding:0 15px 20px}.hc-panel[data-game] .hc-hero{margin:0 -15px;padding:25px 16px 18px;min-height:155px;gap:10px}.hc-panel[data-game] .hc-emblem{display:none}.hc-panel[data-game] .hc-heading .hc-kicker{font-size:8px}.hc-panel[data-game=ancora] .hc-anchor-layout{grid-template-columns:1fr}.hc-panel[data-game=ancora] .hc-anchor-interventions{display:grid;grid-template-columns:1fr 1fr;gap:8px 15px}.hc-panel[data-game=ancora] .hc-intervention-count{grid-row:2/4;margin:0}.hc-panel[data-game=ancora] .hc-intervention-pips{display:none}.hc-panel[data-game=ancora] .hc-intervention-actions{grid-column:2;grid-row:2/4}.hc-panel[data-game=ancora] .hc-target-select{grid-column:1/-1}.hc-panel[data-game=combatente] .hc-die-bank{padding:12px 0;gap:4px}.hc-panel[data-game=combatente] .hc-poly-die{width:45px;height:55px}.hc-panel[data-game=combatente] .hc-manouver-die{min-height:155px}.hc-panel[data-game] .hc-op-meta{font-size:9px}.hc-panel[data-game=tecnico] .hc-unit-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.hc-panel[data-game] button,.hc-panel[data-game] .hc-poly-die{transition:none!important}}
+
+/* Hunter: calibrated reserve dial, with the live action economy on a separate rail. */
+.hc-panel[data-game=cacador] .hc-hunter-console{border:1px solid #736344;background:radial-gradient(ellipse at 24% 45%,#dfbd6f12,transparent 65%),#0b1b24;grid-template-columns:minmax(0,1.15fr) minmax(190px,.85fr)}
+.hc-panel[data-game=cacador] .hc-hunter-primary{padding:22px 18px;text-align:center}
+.hc-panel[data-game=cacador] .hc-hunter-primary>.hc-panel-label{justify-content:center;color:#dbca9d;font-size:10px}
+.hc-panel[data-game=cacador] .hc-hunter-adjust{justify-content:center;gap:10px;margin:12px 0}
+.hc-reserve-dial{position:relative;width:170px;height:170px;display:grid;place-items:center;flex-shrink:1}
+.hc-reserve-dial svg{position:absolute;inset:0;width:100%;height:100%;fill:none;stroke:#8a784c;stroke-width:1}
+.hc-reserve-dial path[data-ready]{stroke:#4c4939;stroke-width:4}.hc-reserve-dial path[data-ready=true]{stroke:#ffdf8a;filter:drop-shadow(0 0 4px #dfbd6f)}
+.hc-panel[data-game=cacador] .hc-hunter-adjust strong{font:600 58px/1 var(--font-oxanium),sans-serif;min-width:0;text-shadow:0 0 20px #dfbd6f30}
+.hc-panel[data-game=cacador] .hc-hunter-adjust strong small{display:block;font:12px var(--hx-mono,monospace);margin-top:8px;letter-spacing:.1em}
+.hc-panel[data-game=cacador] .hc-hunter-adjust button{flex:none;width:34px;height:38px;background:#3e3521;border-color:#a18a50}
+.hc-panel[data-game=cacador] .hc-hunter-hud{background:linear-gradient(100deg,#dfbd6f0b,transparent);padding:24px 20px;gap:22px;border-left-color:#736344}
+.hc-panel[data-game=cacador] .hc-hunter-hud>div{display:block;padding-bottom:15px}.hc-panel[data-game=cacador] .hc-hunter-hud span{display:block;font-size:10px;line-height:1.6}.hc-panel[data-game=cacador] .hc-hunter-hud strong{display:block;font:600 38px var(--font-oxanium),sans-serif;margin-top:4px}.hc-panel[data-game=cacador] .hc-hunter-hud small{font-size:14px}.hc-panel[data-game=cacador] .hc-hunter-hud p{font-size:11px;line-height:1.6}
+
+/* Face: kept results are jewels in a hand; the active test has its own work surface. */
+.hc-panel[data-game=face] .hc-face-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.hc-panel[data-game=face] .hc-face-reserve{padding:17px 14px;border:1px solid #80558e;background:radial-gradient(ellipse at 50% 35%,#c578d91c,transparent 70%),#141b2c;box-shadow:inset 0 2px #c578d9}
+.hc-panel[data-game=face] .hc-face-test{padding:17px 14px;border:1px solid #4b3c62;background:linear-gradient(135deg,#241d34,#0d1b28);align-self:start}
+.hc-panel[data-game=face] .hc-face-slots{grid-template-columns:repeat(auto-fit,minmax(76px,1fr));gap:8px;margin:19px 0}
+.hc-panel[data-game=face] .hc-face-slots button{position:relative;isolation:isolate;height:148px;padding:10px 8px;border:1px solid #9868ad;background:linear-gradient(0deg,#562d673e,transparent);color:#efc5ff;box-shadow:0 5px 16px #0003}
+.hc-confidence-gem{position:absolute;z-index:-1;width:82%;height:96px;top:20px;left:9%;stroke:#dca2ec;fill:#d694ec0d;stroke-width:1;filter:drop-shadow(0 0 6px #c578d942)}
+.hc-panel[data-game=face] .hc-face-slots strong{font:600 39px var(--font-oxanium),sans-serif;text-shadow:0 0 12px #e3b1f04a}
+.hc-panel[data-game=face] .hc-face-slots small{font-size:9px}.hc-panel[data-game=face] .hc-face-slots span{font-size:9px}
+.hc-panel[data-game=face] .hc-face-slots button[data-filled=false]{background:#101c2a;border:1px dashed #625374;color:#9c85b3;box-shadow:none}.hc-panel[data-game=face] .hc-face-slots button[data-filled=false] .hc-confidence-gem{stroke:#77618a;fill:none;filter:none;opacity:.6}
+.hc-panel[data-game=face] .hc-face-slots button:hover:not(:disabled){border-color:#e7b9f6;background:#3d284d;transform:translateY(-3px)}
+.hc-panel[data-game=face] .hc-face-start{flex-direction:column;gap:10px;margin-top:22px}.hc-panel[data-game=face] .hc-face-start select{width:100%;padding:11px;text-transform:capitalize}.hc-panel[data-game=face] .hc-face-start button,.hc-panel[data-game=face] .hc-face-resolve{padding:13px;font-size:11px;width:100%;background:linear-gradient(100deg,#d9a4ef,#b979d2)}
+.hc-panel[data-game=face] .hc-face-rolled{grid-template-columns:1fr}.hc-panel[data-game=face] .hc-rolled-die{display:grid;grid-template-columns:30px 20px 1fr;align-items:center;gap:4px;background:#2a2238}.hc-panel[data-game=face] .hc-rolled-die>div{margin:0;justify-content:end;flex-wrap:wrap}.hc-panel[data-game=face] .hc-rolled-die button{padding:7px;font-size:9px}.hc-panel[data-game=face] .hc-die-editor{margin:12px 0;padding:10px;gap:8px}.hc-panel[data-game=face] .hc-die-editor input{font-size:18px}.hc-panel[data-game=face] .hc-die-editor label{font-size:9px}
+
+/* Infiltrator: a circuit bank with clear occupied sockets and a concise action rail. */
+.hc-panel[data-game=infiltrador] .hc-infiltrator-layout{gap:0;border:1px solid #316775;background:linear-gradient(120deg,#11313c,#071a25);grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr)}
+.hc-panel[data-game=infiltrador] .hc-breach-bank{position:relative;isolation:isolate;border:0;border-right:1px solid #316775;background:radial-gradient(ellipse at center,#42b9c718,transparent 70%);padding:22px 18px}
+.hc-breach-circuit{margin-top:15px;height:40px}.hc-breach-circuit svg{width:100%;height:100%;fill:none;stroke:#367c87;stroke-width:1}
+.hc-panel[data-game=infiltrador] .hc-breach-slots{position:relative;justify-content:center;gap:9px;margin:0 0 15px;padding:8px 0 17px;border-bottom:1px solid #28535e}
+.hc-panel[data-game=infiltrador] .hc-breach-hex{width:62px;height:67px;filter:drop-shadow(0 5px 6px #0004)}
+.hc-panel[data-game=infiltrador] .hc-breach-hex polygon{fill:#102d3a;stroke:#3b6876;stroke-width:1.4}.hc-panel[data-game=infiltrador] .hc-breach-hex[data-ready=true] polygon{fill:#166475;stroke:#7ae9ef}.hc-panel[data-game=infiltrador] .hc-breach-hex[data-ready=true]{filter:drop-shadow(0 0 8px #42b9c73b)}
+.hc-panel[data-game=infiltrador] .hc-breach-bank>strong{display:block;text-align:center;font:600 44px var(--font-oxanium),sans-serif}.hc-panel[data-game=infiltrador] .hc-breach-bank>strong small{font-size:15px}
+.hc-panel[data-game=infiltrador] .hc-breach-play{padding:22px 18px}.hc-panel[data-game=infiltrador] .hc-breach-play>div{display:grid;gap:9px}.hc-panel[data-game=infiltrador] .hc-breach-play button{padding:12px;font-size:11px;justify-content:center;background:linear-gradient(100deg,#1a6674,#11404e)}.hc-panel[data-game=infiltrador] .hc-breach-play button+button{background:#102b38}.hc-panel[data-game=infiltrador] .hc-breach-play>small{font-size:10px;line-height:1.5}
+
+/* Vanguard: shield crest, stacked momentum cells and a forward movement cue. */
+.hc-panel[data-game=vanguarda] .hc-vanguard-layout{gap:20px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.hc-panel[data-game=vanguarda] .hc-momentum{position:relative;isolation:isolate;display:grid;grid-template-columns:1fr 1fr;padding:18px;border:1px solid #467da0;background:radial-gradient(ellipse at center,#3274aa30,transparent 75%),#0b2132;box-shadow:inset 0 3px #6ba9e7}
+.hc-panel[data-game=vanguarda] .hc-momentum>.hc-panel-label{grid-column:1/-1;font-size:10px}
+.hc-momentum-crest{grid-column:1;grid-row:2;width:100%;height:170px;fill:none;stroke:#699ec5;stroke-width:1;margin-top:10px}.hc-momentum-crest path:nth-child(2){stroke:#325975}.hc-momentum-crest path:nth-child(3){fill:#6ba9e721;stroke:#a3d6ff;filter:drop-shadow(0 0 6px #6ba9e766)}
+.hc-panel[data-game=vanguarda] .hc-momentum-track{grid-column:2;grid-row:2;flex-direction:column;justify-content:center;margin:20px 0 20px 8px;gap:6px}.hc-panel[data-game=vanguarda] .hc-momentum-track span{min-height:23px;max-height:43px;background:#1d394c;color:#50728d;clip-path:polygon(0 0,85% 0,100% 50%,85% 100%,0 100%,15% 50%)}.hc-panel[data-game=vanguarda] .hc-momentum-track span svg{width:16px}.hc-panel[data-game=vanguarda] .hc-momentum-track span[data-ready=true]{background:linear-gradient(90deg,#356a98,#7bc5ff);color:#08273b}
+.hc-panel[data-game=vanguarda] .hc-momentum-count{grid-column:1/-1;justify-content:center;border-top:1px solid #315771;padding-top:12px}.hc-panel[data-game=vanguarda] .hc-momentum-count strong{font:600 43px var(--font-oxanium),sans-serif}
+.hc-panel[data-game=vanguarda] .hc-vanguard-play{display:flex;flex-direction:column;justify-content:center}.hc-panel[data-game=vanguarda] .hc-vanguard-play>strong{position:relative;border-left:2px solid #79b8e8;padding:10px 14px;background:linear-gradient(90deg,#2b578536,transparent);font:600 39px var(--font-oxanium),sans-serif}.hc-panel[data-game=vanguarda] .hc-vanguard-play>strong:after{content:'»';position:absolute;right:12px;top:4px;color:#679cc069;font-size:49px}.hc-panel[data-game=vanguarda] .hc-vanguard-play>strong small{max-width:170px;line-height:1.6;font-size:12px}.hc-panel[data-game=vanguarda] .hc-vanguard-play>div{display:grid;grid-template-columns:1fr;gap:9px}.hc-panel[data-game=vanguarda] .hc-vanguard-play button{padding:12px;font-size:11px}.hc-panel[data-game=vanguarda] .hc-vanguard-play button:first-child{background:linear-gradient(100deg,#438fc8,#24567c);color:#e0f2ff}
+@container(max-width:570px){.hc-panel[data-game=cacador] .hc-hunter-console,.hc-panel[data-game=face] .hc-face-layout,.hc-panel[data-game=infiltrador] .hc-infiltrator-layout,.hc-panel[data-game=vanguarda] .hc-vanguard-layout{grid-template-columns:1fr}.hc-panel[data-game=cacador] .hc-hunter-hud{border-left:0;border-top:1px solid #736344;display:grid;grid-template-columns:1fr 1fr;padding:15px;gap:12px}.hc-panel[data-game=cacador] .hc-hunter-hud p{grid-column:1/-1}.hc-panel[data-game=cacador] .hc-hunter-hud>div{margin:0;padding-bottom:8px}.hc-panel[data-game=face] .hc-face-slots{grid-template-columns:repeat(auto-fit,minmax(76px,1fr))}.hc-panel[data-game=infiltrador] .hc-breach-bank{border-right:0;border-bottom:1px solid #316775}.hc-panel[data-game=vanguarda] .hc-momentum-crest{height:140px}.hc-panel[data-game=vanguarda] .hc-vanguard-play>div{grid-template-columns:1fr 1fr}}

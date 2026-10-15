@@ -52,6 +52,8 @@ import { VitalsRow } from "./panels/VitalsRow";
 import { EquipmentPanel } from "./panels/EquipmentPanel";
 import { InventarioPanel } from "./panels/InventarioPanel";
 import { MagiasPanel } from "./panels/MagiasPanel";
+import { IdentityPanel } from "./panels/IdentityPanel";
+import { ClassPanel } from "./panels/ClassPanel";
 import { EscalposPanel } from "./panels/EscalposPanel";
 import { AcoesPanel } from "./panels/AcoesPanel";
 import { SkillsGrid } from "./panels/SkillsGrid";
@@ -166,6 +168,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
   })();
   /** Criado só com o nome ("+ Personagem"): ainda falta passar pelo assistente v1.2. */
   const criacaoPendente = (api.character as unknown as { criacao_pendente?: boolean }).criacao_pendente === true;
+  const temClasse = !!(api.character as { progressao?: { classe_id?: string } }).progressao?.classe_id;
   const janelas = useJanelasDaMesa();
   const fecharConsole = useConsoleCloseOverride();
   /**
@@ -180,6 +183,10 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
     } else setAux({ tipo: "avanco", alvo });
   };
   const tabpanelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (aba === "classe" && !temClasse) setAba("caracteristicas");
+  }, [aba, temClasse]);
 
   function escolherAba(id: AbaId) {
     setAba(id);
@@ -398,7 +405,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
               é o primeiro filho, então `top: 0` daqui cai exatamente na
               borda de cima dele. A aba de Equipamentos tem a sua
               própria, no `.rc-eq-card-outer`. */}
-          {aba !== "equipamentos" && aba !== "mochila" && aba !== "magias" && aba !== "escalpos" && aba !== "acoes" && <DecoTop />}
+          {aba !== "equipamentos" && aba !== "mochila" && aba !== "magias" && aba !== "escalpos" && aba !== "caracteristicas" && aba !== "classe" && aba !== "acoes" && <DecoTop />}
           <div className="rc-tabpanel" role="tabpanel" ref={tabpanelRef}>
             {aba === "mochila" ? (
               <InventarioPanel api={api} onGerenciarSuporte={(id) => {
@@ -423,6 +430,10 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
                   else setAux({ tipo: "aviso", titulo: "Atacar", mensagem: "Empunhe uma arma em Equipamentos para atacar com ela, ou role Luta para um ataque desarmado." });
                 }}
               />
+            ) : aba === "caracteristicas" ? (
+              <IdentityPanel api={api} avatarUrl={avatarUrl} onCompletar={criacaoPendente && api.mesa ? () => api.mesa && janelas.abrirCompletar({ characterId: api.mesa.characterId, nome: api.character.nome }) : undefined} onEvoluir={!criacaoPendente && api.mesa ? evoluir : undefined} />
+            ) : aba === "classe" ? (
+              <ClassPanel api={api} />
             ) : aba === "equipamentos" ? (
               <EquipmentPanel
                 slots={projecao.slots}
@@ -524,7 +535,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
           </>
         }
         dockContent={<MinimizedDockContent api={api} avatarUrl={avatarUrl} onEditarRecurso={editarRecursoComConfirmacao} />}
-        tablist={<TabRail aba={aba} onChangeAba={escolherAba} />}
+        tablist={<TabRail aba={aba} onChangeAba={escolherAba} temClasse={temClasse} />}
         larguraMaximaFixa={FOCO_MAX_W}
         alturaFallbackInicial={FOCO_ALTURA_INICIAL}
         conteudoChave={aba}

@@ -3,9 +3,9 @@
   "_meta": {
     "conteudo": "item",
     "versao_schema": "1.2.0",
-    "total_registros": 273,
+    "total_registros": 277,
     "fonte": "Notion: capítulo MERCADO NOTURNO / LISTA DE MERCADORIAS",
-    "extraido_em": "2026-10-09T23:25:05.912Z",
+    "extraido_em": "2026-10-12T23:58:26.089Z",
     "hash_sha256_origem": "ee5cfbb9169196dd58a53634caef89b8ccf26720a4c55a8968c3557b1e4da7ec",
     "observacao": "Preço e descrição canônicos. Efeitos mecânicos e instalação são manuais nesta transcrição inicial."
   },
@@ -1442,28 +1442,33 @@
     },
     {
       "id": "armas_fl_5_guillotine_machado_de_guerra",
+      "nome": "FL-5 Guillotine (Montante)",
       "slug": "armas_fl_5_guillotine_machado_de_guerra",
-      "nome": "FL-5 Guillotine (Machado de guerra)",
-      "raridade": "raro",
-      "raridade_label": "Raro",
-      "preco": 2200,
-      "preco_texto": "2.200",
-      "preco_qualificador": null,
-      "descricao_curta": "A **FL-5 Guillotine** é a lâmina pesada da família **Flatline**. Seu núcleo vibratório ocupa boa parte da estrutura da arma e produz oscilações intensas, reajustadas depois do contato para explorar a resistência específica das proteções usadas pelo alvo.",
-      "descricao_longa": "*Raro*\n\nA **FL-5 Guillotine** é a lâmina pesada da família **Flatline**. Seu núcleo vibratório ocupa boa parte da estrutura da arma e produz oscilações intensas, reajustadas depois do contato para explorar a resistência específica das proteções usadas pelo alvo.\n\nQuando encontra a frequência adequada, a lâmina força placas, juntas e fibras protetoras a vibrarem sob impactos sucessivos, abrindo falhas cada vez maiores na região atingida.\n\n**Colapso harmônico:** ao acertar uma criatura, a Guillotine fica sintonizada com ela. Depois disso, quando acertar novamente a criatura sintonizada e a armadura da região atingida absorver o dano, essa armadura perde 3 MIT em vez de 1.\n\nA Guillotine perde a Sintonia ao acertar outra criatura ou se o portador passar até o fim de seu próximo turno sem atacar a criatura sintonizada. Trocar de portador não encerra a Sintonia.\n\n**Dano:** Corpo + 1d12 cortante\n\n**Propriedades:** Sangramento\n\n**Ocultável:** não\n\n**Espaços:** 3\n\n**Preço:** 2.200 Ⱥ\n\nDados da lista de mercadorias:\n- Dano: Corpo + 1d12 cortante\n- Propriedades: Sangramento\n- Ocultável?: Não\n- Raridade: Raro\n- Espaços: 3\n- Preço (Ⱥ): 2.200",
       "tags": [
         "loja"
       ],
+      "preco": 2200,
+      "status": "published",
+      "versao": "1.2.0",
+      "subtipo": "ARMAS BRANCAS",
+      "raridade": "raro",
+      "categoria": "arma",
+      "ocultavel": "nao",
+      "created_at": "2026-10-09",
+      "updated_at": "2026-10-11",
+      "uso_manual": true,
+      "preco_texto": "2.200",
       "dados_notion": {
         "pagina": "ARMAS",
         "secao": [
-          "ARMAS CORPO A CORPO",
+          "ARMAS BRANCAS",
           "ARMAS PESADAS"
         ],
         "tipo_tabela": "Arma",
         "campos": {
-          "Arma": "FL-5 Guillotine (Machado de guerra)",
+          "Arma": "FL-5 Guillotine (Montante)",
           "Dano": "Corpo + 1d12 cortante",
+          "Mãos": "2",
           "Propriedades": "Sangramento",
           "Ocultável?": "Não",
           "Raridade": "Raro",
@@ -1472,37 +1477,49 @@
         },
         "tabela_tecnica": null
       },
-      "fonte_notion": {
-        "paginaNotionId": "9690a136355283c59bd8813acc4e4935",
-        "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
-        "tabelaBlocoId": "9792d98050f54f0c852a47c7a46b5e71",
-        "linhaBlocoId": "8afe66e15fcd4406aef998bf614b417c",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "arma",
-      "categoria_label": "Arma",
-      "subtipo": "ARMAS CORPO A CORPO",
       "estatisticas": {
+        "maos": 2,
+        "alcance": {
+          "tipo": "adjacente",
+          "estendido_m": 1
+        },
+        "dado_dano": "1d12",
+        "tipo_dano": "fisico",
+        "propriedades": [
+          "sangramento"
+        ],
+        "subtipo_dano": "cortante",
         "campos_tabela": {
-          "Arma": "FL-5 Guillotine (Machado de guerra)",
+          "Arma": "FL-5 Guillotine (Montante)",
           "Dano": "Corpo + 1d12 cortante",
+          "Mãos": "2",
           "Propriedades": "Sangramento",
           "Ocultável?": "Não",
           "Raridade": "Raro",
           "Espaços": "3",
           "Preço (Ⱥ)": "2.200"
         },
-        "espacos_texto": "3"
-      }
+        "espacos_texto": "3",
+        "pericia_teste": "luta",
+        "soma_atributo": "corpo",
+        "slots_runa_max": 3
+      },
+      "fonte_notion": {
+        "paginaNotionId": "9690a136355283c59bd8813acc4e4935",
+        "paginaEditadaEm": "2026-10-12T19:56:00.000Z",
+        "tabelaBlocoId": "d094e33b86c948bca40d243719a34539",
+        "linhaBlocoId": "d9c75f47f0be45bc9bbc3f13f6d62a39",
+        "tabelaTecnicaFonte": null
+      },
+      "raridade_label": "Raro",
+      "categoria_label": "Arma",
+      "descricao_curta": "A **FL-5 Guillotine** é a lâmina pesada da família **Flatline**. Seu núcleo vibratório ocupa boa parte da estrutura da arma e produz oscilações intensas, reajustadas depois do contato para explorar a resistência específica das proteções usadas pelo alvo.",
+      "descricao_longa": "*Raro*\n\nA **FL-5 Guillotine** é a lâmina pesada da família **Flatline**. Seu núcleo vibratório ocupa boa parte da estrutura da arma e produz oscilações intensas, reajustadas depois do contato para explorar a resistência específica das proteções usadas pelo alvo.\n\nQuando encontra a frequência adequada, a lâmina força placas, juntas e fibras protetoras a vibrarem sob impactos sucessivos, abrindo falhas cada vez maiores na região atingida.\n\n**Colapso harmônico:** ao acertar uma criatura, a Guillotine fica sintonizada com ela. Depois disso, quando acertar novamente a criatura sintonizada e a armadura da região atingida absorver o dano, essa armadura perde 3 MIT em vez de 1.\n\nA Guillotine perde a Sintonia ao acertar outra criatura ou se o portador passar até o fim de seu próximo turno sem atacar a criatura sintonizada. Trocar de portador não encerra a Sintonia.\n\n**Dano:** Corpo + 1d12 cortante\n\n**Mãos:** 2\n\n**Propriedades:** Sangramento\n\n**Ocultável:** não\n\n**Espaços:** 3\n\n**Preço:** 2.200 Ⱥ\n\nDados da lista de mercadorias:\n- Dano: Corpo + 1d12 cortante\n- Mãos: 2\n- Propriedades: Sangramento\n- Ocultável?: Não\n- Raridade: Raro\n- Espaços: 3\n- Preço (Ⱥ): 2.200",
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "preco_qualificador": null,
+      "vinculos_sugeridos": null
     },
     {
       "id": "armas_martelo_pesado",
@@ -14639,31 +14656,39 @@
       "uso_manual": true,
       "preco_texto": "120",
       "dados_notion": {
+        "pagina": "FERRAMENTAS",
+        "secao": [],
+        "tipo_tabela": "Item",
         "campos": {
           "Item": "Luvas de Escalada",
-          "Espaços": "1",
+          "Efeito": "Concede +1 de vantagem em testes de Mobilidade para escalar e permite usar Manobrar em superfícies com apoios suficientes.",
           "Raridade": "Comum",
+          "Espaços": "1",
           "Preço (Ⱥ)": "120"
         },
-        "pagina": "FERRAMENTAS E UTILIDADES"
+        "tabela_tecnica": null
       },
       "estatisticas": {
         "campos_tabela": {
           "Item": "Luvas de Escalada",
-          "Espaços": "1",
+          "Efeito": "Concede +1 de vantagem em testes de Mobilidade para escalar e permite usar Manobrar em superfícies com apoios suficientes.",
           "Raridade": "Comum",
+          "Espaços": "1",
           "Preço (Ⱥ)": "120"
         },
         "espacos_texto": "1"
       },
       "fonte_notion": {
         "paginaNotionId": "4210a13635528285a61281d46315a915",
-        "paginaEditadaEm": "2026-10-11T07:09:46.548Z"
+        "paginaEditadaEm": "2026-10-12T23:43:00.000Z",
+        "tabelaBlocoId": "61d5a3c4b51b45f697f24ae90fb32558",
+        "linhaBlocoId": "6828186186744397a6344750f221206e",
+        "tabelaTecnicaFonte": null
       },
       "raridade_label": "Comum",
-      "categoria_label": "Ferramentas",
-      "descricao_curta": "Comum",
-      "descricao_longa": "*Comum*\nAs Luvas de Escalada possuem palmas aderentes, reforços nos dedos e pequenas garras retráteis para encontrar apoio em concreto, pedra, estruturas metálicas e outras superfícies irregulares. São usadas em manutenção vertical, resgate e acesso a estruturas onde uma rota convencional não está disponível.\n**Escalada:** você recebe **+1 de vantagem** em testes de **`Mobilidade`** realizados para escalar.\nEnquanto escala uma superfície que ofereça apoios suficientes, você pode usar **Manobrar** normalmente para se deslocar por ela.\nAs luvas não permitem escalar superfícies completamente lisas ou sem pontos de apoio adequados. Durante a escalada, suas mãos ficam ocupadas.\n**Espaços:** 1\n**Preço:** 120 Ⱥ",
+      "categoria_label": "Ferramenta",
+      "descricao_curta": "Concede +1 de vantagem em testes de Mobilidade para escalar e permite usar Manobrar em superfícies com apoios suficientes.",
+      "descricao_longa": "*Comum*\n\nAs Luvas de Escalada possuem palmas aderentes, reforços nos dedos e pequenas garras retráteis para encontrar apoio em concreto, pedra, estruturas metálicas e outras superfícies irregulares. São usadas em manutenção vertical, resgate e acesso a estruturas onde uma rota convencional não está disponível.\n\n**Escalada:** você recebe **+1 de vantagem** em testes de **`Mobilidade`** realizados para escalar.\n\nEnquanto escala uma superfície que ofereça apoios suficientes, você pode usar **Manobrar** normalmente para se deslocar por ela.\n\nAs luvas não permitem escalar superfícies completamente lisas ou sem pontos de apoio adequados. Durante a escalada, suas mãos ficam ocupadas.\n\n**Espaços:** 1\n\n**Preço:** 120 Ⱥ\n\nDados da lista de mercadorias:\n- Efeito: Concede +1 de vantagem em testes de Mobilidade para escalar e permite usar Manobrar em superfícies com apoios suficientes.\n- Raridade: Comum\n- Espaços: 1\n- Preço (Ⱥ): 120",
       "payload_automacao": {
         "efeitos": []
       },
@@ -17081,22 +17106,44 @@
       "uso_manual": true,
       "preco_texto": "200",
       "dados_notion": {
-        "pagina": "FERRAMENTAS E UTILIDADES"
+        "pagina": "FERRAMENTAS",
+        "secao": [],
+        "tipo_tabela": "Item",
+        "campos": {
+          "Item": "Mochila MK-I",
+          "Efeito": "Mochila tecnomágica com capacidade para 10 espaços.",
+          "Raridade": "Comum",
+          "Espaços": "2 (vazia)",
+          "Preço (Ⱥ)": "200"
+        },
+        "tabela_tecnica": null
       },
       "estatisticas": {
-        "espacos_texto": "2 (vazia, quando não equipada)",
-        "capacidade_mochila": 10
+        "espacos_texto": "2 (vazia)",
+        "capacidade_mochila": 10,
+        "campos_tabela": {
+          "Item": "Mochila MK-I",
+          "Efeito": "Mochila tecnomágica com capacidade para 10 espaços.",
+          "Raridade": "Comum",
+          "Espaços": "2 (vazia)",
+          "Preço (Ⱥ)": "200"
+        }
       },
       "fonte_notion": {
         "paginaNotionId": "4210a13635528285a61281d46315a915",
-        "paginaEditadaEm": "2026-10-11T07:09:46.548Z"
+        "paginaEditadaEm": "2026-10-12T23:43:00.000Z",
+        "tabelaBlocoId": "61d5a3c4b51b45f697f24ae90fb32558",
+        "linhaBlocoId": "045e1c28986348e2a9f1fc551571e253",
+        "tabelaTecnicaFonte": null
       },
-      "categoria_label": "Ferramentas",
-      "descricao_curta": "Mochila tecnomágica de uso cotidiano, equipada com runas simples de Material e Cinética que auxiliam a compactação e a compensação da carga transportada. Todo personagem recebe uma Mochila MK-I na criação.",
-      "descricao_longa": "*Comum*\nMochila tecnomágica de uso cotidiano, equipada com runas simples de Material e Cinética que auxiliam a compactação e a compensação da carga transportada. Todo personagem recebe uma Mochila MK-I na criação.\n**Capacidade:** 10 espaços.\n**Equipamento:** ocupa a posição Mochila de Equipado e não utiliza espaços de armazenamento enquanto equipada. Apenas uma Mochila MK pode permanecer equipada por vez.\n**Armazenamento:** segue as regras de Mochila e Armazenamento Tecnomágico do capítulo Inventário. Não pode ser guardada dentro de outra Mochila MK enquanto contiver itens.\n**Espaços:** 2 (vazia, quando não equipada).\n**Preço:** 200 Ⱥ",
+      "categoria_label": "Ferramenta",
+      "descricao_curta": "Mochila tecnomágica com capacidade para 10 espaços.",
+      "descricao_longa": "*Comum*\n\nMochila tecnomágica de uso cotidiano, equipada com runas simples de Material e Cinética que auxiliam a compactação e a compensação da carga transportada. Todo personagem recebe uma Mochila MK-I na criação.\n\n**Capacidade:** 10 espaços.\n\n**Equipamento:** ocupa a posição Mochila de Equipado e não utiliza espaços de armazenamento enquanto equipada. Apenas uma Mochila MK pode permanecer equipada por vez.\n\n**Armazenamento:** segue as regras de Mochila e Armazenamento Tecnomágico do capítulo Inventário. Não pode ser guardada dentro de outra Mochila MK enquanto contiver itens.\n\n**Espaços:** 2 (vazia, quando não equipada).\n\n**Preço:** 200 Ⱥ\n\nDados da lista de mercadorias:\n- Efeito: Mochila tecnomágica com capacidade para 10 espaços.\n- Raridade: Comum\n- Espaços: 2 (vazia)\n- Preço (Ⱥ): 200",
       "payload_automacao": {
         "efeitos": []
-      }
+      },
+      "preco_qualificador": null,
+      "raridade_label": "Comum"
     },
     {
       "id": "ferramentas_mochila_mk_ii",
@@ -17113,22 +17160,44 @@
       "uso_manual": true,
       "preco_texto": "600",
       "dados_notion": {
-        "pagina": "FERRAMENTAS E UTILIDADES"
+        "pagina": "FERRAMENTAS",
+        "secao": [],
+        "tipo_tabela": "Item",
+        "campos": {
+          "Item": "Mochila MK-II",
+          "Efeito": "Mochila tecnomágica com capacidade para 15 espaços.",
+          "Raridade": "Incomum",
+          "Espaços": "2 (vazia)",
+          "Preço (Ⱥ)": "600"
+        },
+        "tabela_tecnica": null
       },
       "estatisticas": {
-        "espacos_texto": "2 (vazia, quando não equipada)",
-        "capacidade_mochila": 15
+        "espacos_texto": "2 (vazia)",
+        "capacidade_mochila": 15,
+        "campos_tabela": {
+          "Item": "Mochila MK-II",
+          "Efeito": "Mochila tecnomágica com capacidade para 15 espaços.",
+          "Raridade": "Incomum",
+          "Espaços": "2 (vazia)",
+          "Preço (Ⱥ)": "600"
+        }
       },
       "fonte_notion": {
         "paginaNotionId": "4210a13635528285a61281d46315a915",
-        "paginaEditadaEm": "2026-10-11T07:09:46.548Z"
+        "paginaEditadaEm": "2026-10-12T23:43:00.000Z",
+        "tabelaBlocoId": "61d5a3c4b51b45f697f24ae90fb32558",
+        "linhaBlocoId": "c799e862dc584fb286355ea197a34f2d",
+        "tabelaTecnicaFonte": null
       },
-      "categoria_label": "Ferramentas",
-      "descricao_curta": "Mochila tecnomágica com uma matriz rúnica compacta que reduz temporariamente o volume dos objetos armazenados, reorganiza sua acomodação e compensa melhor a carga transportada.",
-      "descricao_longa": "*Incomum*\nMochila tecnomágica com uma matriz rúnica compacta que reduz temporariamente o volume dos objetos armazenados, reorganiza sua acomodação e compensa melhor a carga transportada.\n**Capacidade:** 15 espaços.\n**Equipamento:** ocupa a posição Mochila de Equipado e não utiliza espaços de armazenamento enquanto equipada. Apenas uma Mochila MK pode permanecer equipada por vez.\n**Armazenamento:** segue as regras de Mochila e Armazenamento Tecnomágico do capítulo Inventário. Não pode ser guardada dentro de outra Mochila MK enquanto contiver itens.\n**Espaços:** 2 (vazia, quando não equipada).\n**Preço:** 600 Ⱥ",
+      "categoria_label": "Ferramenta",
+      "descricao_curta": "Mochila tecnomágica com capacidade para 15 espaços.",
+      "descricao_longa": "*Incomum*\n\nMochila tecnomágica com uma matriz rúnica compacta que reduz temporariamente o volume dos objetos armazenados, reorganiza sua acomodação e compensa melhor a carga transportada.\n\n**Capacidade:** 15 espaços.\n\n**Equipamento:** ocupa a posição Mochila de Equipado e não utiliza espaços de armazenamento enquanto equipada. Apenas uma Mochila MK pode permanecer equipada por vez.\n\n**Armazenamento:** segue as regras de Mochila e Armazenamento Tecnomágico do capítulo Inventário. Não pode ser guardada dentro de outra Mochila MK enquanto contiver itens.\n\n**Espaços:** 2 (vazia, quando não equipada).\n\n**Preço:** 600 Ⱥ\n\nDados da lista de mercadorias:\n- Efeito: Mochila tecnomágica com capacidade para 15 espaços.\n- Raridade: Incomum\n- Espaços: 2 (vazia)\n- Preço (Ⱥ): 600",
       "payload_automacao": {
         "efeitos": []
-      }
+      },
+      "preco_qualificador": null,
+      "raridade_label": "Incomum"
     },
     {
       "id": "ferramentas_mochila_mk_iii",
@@ -17143,24 +17212,108 @@
       "raridade": "raro",
       "categoria": "ferramenta",
       "uso_manual": true,
-      "preco_texto": "1500",
+      "preco_texto": "1.500",
       "dados_notion": {
-        "pagina": "FERRAMENTAS E UTILIDADES"
+        "pagina": "FERRAMENTAS",
+        "secao": [],
+        "tipo_tabela": "Item",
+        "campos": {
+          "Item": "Mochila MK-III",
+          "Efeito": "Mochila tecnomágica com capacidade para 20 espaços.",
+          "Raridade": "Raro",
+          "Espaços": "2 (vazia)",
+          "Preço (Ⱥ)": "1.500"
+        },
+        "tabela_tecnica": null
       },
       "estatisticas": {
-        "espacos_texto": "2 (vazia, quando não equipada)",
-        "capacidade_mochila": 20
+        "espacos_texto": "2 (vazia)",
+        "capacidade_mochila": 20,
+        "campos_tabela": {
+          "Item": "Mochila MK-III",
+          "Efeito": "Mochila tecnomágica com capacidade para 20 espaços.",
+          "Raridade": "Raro",
+          "Espaços": "2 (vazia)",
+          "Preço (Ⱥ)": "1.500"
+        }
       },
       "fonte_notion": {
         "paginaNotionId": "4210a13635528285a61281d46315a915",
-        "paginaEditadaEm": "2026-10-11T07:09:46.548Z"
+        "paginaEditadaEm": "2026-10-12T23:43:00.000Z",
+        "tabelaBlocoId": "61d5a3c4b51b45f697f24ae90fb32558",
+        "linhaBlocoId": "fba914c6d7ae4f11858c97efb11c86ed",
+        "tabelaTecnicaFonte": null
       },
-      "categoria_label": "Ferramentas",
-      "descricao_curta": "Mochila tecnomágica com uma malha rúnica avançada que maximiza a compactação e reduz drasticamente o esforço necessário para transportar seu conteúdo.",
-      "descricao_longa": "*Raro*\nMochila tecnomágica com uma malha rúnica avançada que maximiza a compactação e reduz drasticamente o esforço necessário para transportar seu conteúdo.\n**Capacidade:** 20 espaços.\n**Equipamento:** ocupa a posição Mochila de Equipado e não utiliza espaços de armazenamento enquanto equipada. Apenas uma Mochila MK pode permanecer equipada por vez.\n**Armazenamento:** segue as regras de Mochila e Armazenamento Tecnomágico do capítulo Inventário. Não pode ser guardada dentro de outra Mochila MK enquanto contiver itens.\n**Espaços:** 2 (vazia, quando não equipada).\n**Preço:** 1.500 Ⱥ",
+      "categoria_label": "Ferramenta",
+      "descricao_curta": "Mochila tecnomágica com capacidade para 20 espaços.",
+      "descricao_longa": "*Raro*\n\nMochila tecnomágica com uma malha rúnica avançada que maximiza a compactação e reduz drasticamente o esforço necessário para transportar seu conteúdo.\n\n**Capacidade:** 20 espaços.\n\n**Equipamento:** ocupa a posição Mochila de Equipado e não utiliza espaços de armazenamento enquanto equipada. Apenas uma Mochila MK pode permanecer equipada por vez.\n\n**Armazenamento:** segue as regras de Mochila e Armazenamento Tecnomágico do capítulo Inventário. Não pode ser guardada dentro de outra Mochila MK enquanto contiver itens.\n\n**Espaços:** 2 (vazia, quando não equipada).\n\n**Preço:** 1.500 Ⱥ\n\nDados da lista de mercadorias:\n- Efeito: Mochila tecnomágica com capacidade para 20 espaços.\n- Raridade: Raro\n- Espaços: 2 (vazia)\n- Preço (Ⱥ): 1.500",
       "payload_automacao": {
         "efeitos": []
-      }
+      },
+      "preco_qualificador": null,
+      "raridade_label": "Raro"
+    },
+    {
+      "id": "ferramentas_aljava_autoalimentadora",
+      "nome": "Aljava Autoalimentadora",
+      "slug": "ferramentas_aljava_autoalimentadora",
+      "tags": [
+        "loja"
+      ],
+      "preco": 1000,
+      "status": "published",
+      "versao": "1.2.0",
+      "subtipo": null,
+      "raridade": "incomum",
+      "categoria": "ferramenta",
+      "created_at": "2026-10-11",
+      "updated_at": "2026-10-11",
+      "uso_manual": true,
+      "preco_texto": "1.000",
+      "dados_notion": {
+        "pagina": "FERRAMENTAS",
+        "secao": [],
+        "tipo_tabela": "Item",
+        "campos": {
+          "Item": "Aljava Autoalimentadora",
+          "Efeito": "Armazena até 20 flechas e permite recarregar um arco como parte da ação Atacar.",
+          "Raridade": "Incomum",
+          "Espaços": "1",
+          "Preço (Ⱥ)": "1.000"
+        },
+        "tabela_tecnica": null
+      },
+      "estatisticas": {
+        "campos_tabela": {
+          "Item": "Aljava Autoalimentadora",
+          "Efeito": "Armazena até 20 flechas e permite recarregar um arco como parte da ação Atacar.",
+          "Raridade": "Incomum",
+          "Espaços": "1",
+          "Preço (Ⱥ)": "1.000"
+        },
+        "espacos_texto": "1",
+        "suporte_municao": {
+          "tipo": "aljava",
+          "capacidade": 20,
+          "autoalimentadora": true
+        }
+      },
+      "fonte_notion": {
+        "paginaNotionId": "4210a13635528285a61281d46315a915",
+        "paginaEditadaEm": "2026-10-12T23:43:00.000Z",
+        "tabelaBlocoId": "61d5a3c4b51b45f697f24ae90fb32558",
+        "linhaBlocoId": "31bddc1438d64d00831b183285328dbb",
+        "tabelaTecnicaFonte": null
+      },
+      "raridade_label": "Incomum",
+      "categoria_label": "Ferramenta",
+      "descricao_curta": "Armazena até 20 flechas e permite recarregar um arco como parte da ação Atacar.",
+      "descricao_longa": "*Incomum*\n\nAljava rígida equipada com um mecanismo de alimentação por molas e trilhos internos. Conforme uma flecha é retirada, a próxima avança automaticamente até a abertura, permanecendo posicionada para um saque imediato. O sistema reduz os movimentos necessários para preparar cada disparo e permite alternar entre diferentes tipos de flechas.\n\n**Capacidade:** comporta até 20 flechas de qualquer tipo. Não comporta virotes.\n\n**Suporte de Munição:** enquanto equipada, ocupa a posição de Suporte de Munição, sem utilizar Acesso Rápido. Suas flechas não ocupam posições adicionais nem espaços da Mochila.\n\n**Alimentação automática:** ao realizar **Atacar** com um arco, você pode recarregá-lo como parte da mesma ação, sem gastar PA adicionais. Você pode escolher qualquer flecha disponível na aljava para o disparo.\n\nO mecanismo não reduz o custo de Atacar nem os custos adicionais de habilidades especiais.\n\n**Espaços:** 1 (vazia). Quando guardada na Mochila, suas flechas também ocupam os espaços normais de armazenamento.\n\n**Preço:** 1.000 Ⱥ\n\nDados da lista de mercadorias:\n- Efeito: Armazena até 20 flechas e permite recarregar um arco como parte da ação Atacar.\n- Raridade: Incomum\n- Espaços: 1\n- Preço (Ⱥ): 1.000",
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "preco_qualificador": null,
+      "vinculos_sugeridos": null
     }
   ]
 }

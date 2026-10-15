@@ -1,0 +1,854 @@
+{
+  "coordenador": {
+    "classe": "ancora",
+    "nome": "Coordenador",
+    "titulo": "Plano de equipe",
+    "layout": "equipe",
+    "entidade": "Aliado",
+    "campos": [
+      "Perícia do briefing",
+      "Orientação pendente",
+      "Ordem de atuação"
+    ],
+    "estados": [
+      "Preparado",
+      "Em foco",
+      "Já atuou"
+    ],
+    "cor": "#00d4ff",
+    "nucleo": "Focos · Intervenções",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Focos +1. Briefing Operacional: plano, participantes, perícia escolhida por cada um e rerrolagem consumida individualmente. Preparação de 5 minutos; benefício 1/cena por participante; novo briefing substitui anterior. Orientações Coordenadas: selecionar outro Foco, registrar deslocamento de 2 m/interação/sacar-guardar e eventual +1 vantagem no próximo teste, até fim do próximo turno dele."
+      },
+      {
+        "rank": "C",
+        "text": "Focos +1 adicional. Coordenação Paralela: uso gratuito adicional de Ajustar/Conter 1/rodada, distinto do contador normal. Imposição de Ritmo: Foco que ainda não agiu, turno antecipado, permissão de 3+ PA nos Turnos Rápidos. Não concede segundo turno nem recupera PA."
+      },
+      {
+        "rank": "A",
+        "text": "Focos +1 adicional. Operação Sincronizada: 1/cena; lista ordenada de Focos que ainda não agiram. Cada turno é marcado como realizado; efeitos de início/fim de turno continuam ocorrendo."
+      }
+    ],
+    "plural": "Aliados"
+  },
+  "terapeuta": {
+    "classe": "ancora",
+    "nome": "Terapeuta",
+    "titulo": "Acompanhamento terapêutico",
+    "layout": "pacientes",
+    "entidade": "Paciente",
+    "campos": [
+      "Origem da perda",
+      "Última sessão",
+      "Próxima sessão",
+      "Sucessos (0–3)"
+    ],
+    "estados": [
+      "Em tratamento",
+      "Aguardando intervalo",
+      "Ciclo concluído"
+    ],
+    "cor": "#00d4ff",
+    "nucleo": "Focos · Intervenções",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Acompanhamento Terapêutico: paciente, evento específico que causou a perda de Integridade, perda atribuída à origem, sucessos acumulados 0–3, última sessão e próxima data elegível. Sessão ≥1 h; paciente testa Vontade CD 7 com +2 vantagem; falha mantém progresso. Intervalo mínimo de 6 dias por paciente, mesmo trocando de terapeuta. Recupera até 1 Integridade no total; não permite autotratamento nem recuperar quem chegou a 0."
+      },
+      {
+        "rank": "E",
+        "text": "Aterramento: 2 PA, 1d6+2 PE; uso registrado por criatura por cena. Expertise Cognitiva: referência contextual de +1 vantagem em Psicologia; não precisa de contador."
+      },
+      {
+        "rank": "C",
+        "text": "Intervenção Cognitiva: Recuperar o Eixo usa Aterramento e seus custos/limites; Romper a Influência exige registrar beneficiário + aplicação específica do efeito, pois só pode ser recebido uma vez contra ela; Suspender a Crise guarda condição suspensa e expira no fim do próximo turno do Foco, sem pausar sua duração original."
+      },
+      {
+        "rank": "A",
+        "text": "Retomar a Si: 1/cena, associado a Intervenção Cognitiva e efeito encerrado. Acompanhamento Aprofundado: teto vitalício terapêutico sobe para 2 pontos; cada ponto precisa de novo ciclo de 3 sucessos. Histórico pertence ao paciente, não à ficha de um único terapeuta."
+      }
+    ],
+    "plural": "Pacientes"
+  },
+  "vitalista": {
+    "classe": "ancora",
+    "nome": "Vitalista",
+    "titulo": "Triagem de campo",
+    "layout": "triagem",
+    "entidade": "Paciente",
+    "campos": [
+      "Prioridade",
+      "Atendimento realizado",
+      "Rodada da morte",
+      "Prazo de reanimação"
+    ],
+    "estados": [
+      "A avaliar",
+      "Em atendimento",
+      "Estabilizado"
+    ],
+    "cor": "#00d4ff",
+    "nucleo": "Focos · Intervenções",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Atendimento: referência à ação real (item, magia, fórmula ou característica) e seus custos. Primeiros Socorros: 2 PA, 1d4 PV, 1 recuperação por criatura/cena. Prática de Cura: +1d6 PV por Atendimento elegível, excluindo Primeiros Socorros; uso de itens médicos automaticamente bem-sucedido e Medkit a 50%, sem acumular desconto."
+      },
+      {
+        "rank": "E",
+        "text": "Primeira Resposta / Prontidão de Campo: evento no Foco, deslocamento de até metade de Andar em direção a ele e item médico sacado. Consome a Intervenção, não PA para mover."
+      },
+      {
+        "rank": "C",
+        "text": "Triagem de Combate: estado dos aliados por faixas de PV, Colapso e condições de dano. Troca imediata de Foco por agravamento, separada de Atenção Dividida. Protocolo de Urgência: 1/rodada; Atendimento após Primeira Resposta, inclusive fora do turno, pagando recursos. Com alvo ≤metade de PV: escolher Reabilitar, Reposicionar ou Tratar Condição."
+      },
+      {
+        "rank": "A",
+        "text": "Janela de Reanimação: movimento da Primeira Resposta passa a Andar completo. Por Foco morto de Colapso físico: rodada da morte, 3 rodadas seguintes restantes, corpo elegível e Atendimento concluído. Cura ≥1 PV ou estabilização revertem a morte com estados finais diferentes."
+      }
+    ],
+    "plural": "Pacientes"
+  },
+  "assassino": {
+    "classe": "cacador",
+    "nome": "Assassino",
+    "titulo": "Presas e oportunidades",
+    "layout": "alvos",
+    "entidade": "Presa",
+    "campos": [
+      "Condição de oportunidade",
+      "Sangramento causado",
+      "Última posição"
+    ],
+    "estados": [
+      "Observando",
+      "Oportunidade aberta",
+      "Encerrado"
+    ],
+    "cor": "#e3b75a",
+    "nucleo": "Reserva tática · Preparos",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Ataque Furtivo: alvo não ciente da presença; +2 vantagem total com Ponto Cego; dano extra 1/rodada, +1d4 em E, +2d4 em C, +3d4 em A. Rota de Fuga: sucesso padrão/crítico contra alvo desavisado ou Isolado dá metade de Andar; Esconder-se gratuito após deslocamento, 1/rodada. Isolado significa nenhum aliado consciente do alvo a 8 m."
+      },
+      {
+        "rank": "C",
+        "text": "Ferida Aberta: distinguir aplicação inicial/agravamento de Sangrando e sucesso padrão/crítico com arma de Sangramento. Caça Persistente: identificar quais sangramentos foram causados pelo Assassino; revela faixa ≤metade PV, dá +1 rastreio e libera Rota de Fuga contra essas presas."
+      },
+      {
+        "rank": "A",
+        "text": "Executar: uso 1/cena, declarado antes do ataque e perdido se errar. Exibir elegibilidade: ≤metade PV, não ciente, Imobilizado/Atordoado ou Sangrando pelo usuário + Isolado. Ao acertar: crítico, ignora MIT regional; dado extra se já seria crítico natural."
+      }
+    ],
+    "plural": "Presas"
+  },
+  "atirador_de_elite": {
+    "classe": "cacador",
+    "nome": "Atirador de Elite",
+    "titulo": "Linha de tiro",
+    "layout": "mira",
+    "entidade": "Alvo",
+    "campos": [
+      "Resultado de Mirar",
+      "Linha de visão e cobertura",
+      "Janela de abate"
+    ],
+    "estados": [
+      "Observando",
+      "Na mira",
+      "Linha perdida"
+    ],
+    "cor": "#e3b75a",
+    "nucleo": "Reserva tática · Preparos",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Um Tiro, Um Acerto: guardar resultado de Mirar e bônus (+1 na falha, +2 no sucesso, +3 no crítico). Alvo na Mira: identidade do alvo, percepção e deslocamento voluntário acumulado; termina ao atacar, mirar outro, perder percepção, mover >2 m ou terminar a cena."
+      },
+      {
+        "rank": "C",
+        "text": "À Espreita: falha limitada do disparo beneficiado vira sucesso limitado; sucesso limitado sem –1 dano. Janela de Abate: 1/rodada; gatilho da presa mover ≥2 m, atacar outro ou acabar ação sem cobertura; disparo custa 1 PA da reserva + Reação. Acerto consome a mira; falha dessa ação específica a preserva."
+      },
+      {
+        "rank": "A",
+        "text": "Tiro Terminal: exige Mirar com crítico e acertar; trata ataque como crítico e ignora cobertura. Dado extra se o próprio ataque já seria crítico. Não há novo contador de uso descrito."
+      }
+    ],
+    "plural": "Alvos"
+  },
+  "domador": {
+    "classe": "cacador",
+    "nome": "Domador",
+    "titulo": "Companheiro de caça",
+    "layout": "companheiro",
+    "entidade": "Companheiro",
+    "campos": [
+      "Modelo",
+      "Ficha vinculada",
+      "Comando atual",
+      "Coordenação pendente"
+    ],
+    "estados": [
+      "Acompanhando",
+      "Sob comando",
+      "Em recuperação"
+    ],
+    "cor": "#e3b75a",
+    "nucleo": "Reserva tática · Preparos",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Companheiro de Caça: uma criatura vinculada, modelo/espécie/aparência, atributos, perícias, PV, condições, Colapso, deslocamento, Reação, PA e Instinto. Comandar custa 1 PA do Domador (pode vir da reserva): companheiro recebe 2 PA; sem comando recebe 1 PA restrito. Turno imediatamente após Domador, sem nova posição na alternância. Ataque natural: 1 PA e máximo 1/turno. Morte é permanente; substituição exige novo vínculo narrativo."
+      },
+      {
+        "rank": "C",
+        "text": "Caçada Coordenada: 1/rodada, fonte/beneficiário/alvo e +1 vantagem na primeira ação pertinente até fim da rodada. Aplicar evolução própria do modelo."
+      },
+      {
+        "rank": "A",
+        "text": "Ataque Conjunto: 1/cena; outro participante gasta sua Reação para mover e atacar mesmo alvo. Se ambos acertarem: ambos críticos, segundo +1 dado e alvo sem Reações até início do próximo turno dele. Ataque do companheiro é exceção ao limite de ataque natural."
+      }
+    ],
+    "plural": "Companheiros"
+  },
+  "perito": {
+    "classe": "cacador",
+    "nome": "Perito",
+    "titulo": "Dossiê de investigação",
+    "layout": "dossie",
+    "entidade": "Dossiê",
+    "campos": [
+      "Método",
+      "Motivação",
+      "Origem",
+      "Destino",
+      "Padrão",
+      "Inconsistência"
+    ],
+    "estados": [
+      "Em investigação",
+      "Perfil traçado",
+      "Caso encerrado"
+    ],
+    "cor": "#e3b75a",
+    "nucleo": "Reserva tática · Preparos",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Dossiê: um objeto investigado e até 3 Deduções; conclusão, categoria (Método/Motivação/Origem/Destino/Padrão/Inconsistência) e fonte/Evidências. Uma fonte não pode conceder repetidamente Deduções. Novo Dossiê remove as anteriores. 1 Dedução: +1 investigação pertinente; 2: proteção contra surpresa fundamentada, incluindo aliados orientados; 3: 1 PA de reserva ao iniciar cena pertinente ou obter terceira Dedução, 1/cena."
+      },
+      {
+        "rank": "C",
+        "text": "Montar o Perfil: 1/rodada, 1 PA de reserva; criatura e ação observada (incluindo arma/magia/equipamento específico). Vigora até fim do próximo turno do Perito; consumir ao punir repetição ou beneficiar defesa/movimento de aliado. Primeira utilização por criatura/cena ligada ao Dossiê pode gerar Dedução de Padrão."
+      },
+      {
+        "rank": "A",
+        "text": "Caso Encerrado: exige 3 Deduções; 1/cena. Alvo sustentado pelo Dossiê e aliados até Mente, mínimo1, a10 m. Por beneficiário: primeira ação pertinente/rodada com +2 vantagem e conversão de sucesso limitado→padrão uma única vez durante o efeito."
+      }
+    ],
+    "plural": "Dossiês"
+  },
+  "acrobata": {
+    "classe": "combatente",
+    "nome": "Acrobata",
+    "titulo": "Percurso de combate",
+    "layout": "percurso",
+    "entidade": "Percurso",
+    "campos": [
+      "Ponto de partida",
+      "Apoios e passagens",
+      "Posição transitória",
+      "Destino seguro"
+    ],
+    "estados": [
+      "Planejado",
+      "Em movimento",
+      "Concluído"
+    ],
+    "cor": "#ff697d",
+    "nucleo": "Dados de manobra · Repertório",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Percurso Livre: Manobrar +5 m e sem teste, percurso restante, posição transitória para alcance/visão/cobertura/altura, posição final válida. +1 vantagem ofensiva de posição transitória 1/rodada. Aterrissagem: queda reduzida por Andar; pouso alternativo a2 m se dano evitado."
+      },
+      {
+        "rank": "C",
+        "text": "Impulso Contínuo: 1/rodada, gastar dado para –1 PA (mínimo1) e somar resultado ao movimento restante. Não ocupa a manobra da ação."
+      },
+      {
+        "rank": "A",
+        "text": "Sem Tocar o Chão: 1/cena, até fim do turno; Manobrar sem PA, +4 m após cada ofensiva, primeiro ataque transitório contra cada criatura com vantagem, Impulso liberado por ação. Termina também por Imobilizado/falta de apoio; validar pouso ou queda."
+      }
+    ],
+    "plural": "Percursos"
+  },
+  "brutalista": {
+    "classe": "combatente",
+    "nome": "Brutalista",
+    "titulo": "Sequência de impacto",
+    "layout": "impacto",
+    "entidade": "Ataque preparado",
+    "campos": [
+      "Arma",
+      "Dados originais",
+      "Explosões e rerrolagens"
+    ],
+    "estados": [
+      "Preparado",
+      "Resolvido"
+    ],
+    "cor": "#ff697d",
+    "nucleo": "Dados de manobra · Repertório",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Mão Pesada: Postura Ofensiva gratuita 1/cena e rerrolagem de um dado original 1/rodada, mantendo maior. Dano Explosivo: 1/rodada, dado original no máximo gera um dado extra; sem cadeia de explosões em E. Guardar procedência dos dados."
+      },
+      {
+        "rank": "C",
+        "text": "Forçar o Limite: 1/rodada; dado de Manobra aumenta um dado original até máximo e pode provocar segunda explosão no mesmo ataque. Não ocupa manobra do ataque."
+      },
+      {
+        "rank": "A",
+        "text": "Tudo ou Nada: declarar 1/cena antes do ataque, com –1 vantagem. Um dado original no máximo, explosão e possível segunda por Forçar o Limite; dados de explosão rolados duas vezes, maior resultado. Erro consome uso."
+      }
+    ],
+    "plural": "Ataques preparados"
+  },
+  "dissecador": {
+    "classe": "combatente",
+    "nome": "Dissecador",
+    "titulo": "Análise de pontos fracos",
+    "layout": "anatomia",
+    "entidade": "Inimigo",
+    "campos": [
+      "Região marcada",
+      "Região comprometida",
+      "Efeito",
+      "Expira no turno de"
+    ],
+    "estados": [
+      "Analisado",
+      "Comprometido",
+      "Encerrado"
+    ],
+    "cor": "#ff697d",
+    "nucleo": "Dados de manobra · Repertório",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Técnica Analítica: opção de Mente para acerto, Corpo preservado no dano corpo a corpo. Ponto Fraco: marcar 1/rodada, uma região por criatura, até fim da cena; nova região substitui antiga. Benefícios no acerto/localização e remoção de –1 dano por sucesso limitado."
+      },
+      {
+        "rank": "C",
+        "text": "Comprometer: 1/rodada, dado de Manobra para dano e região comprometida até fim do próximo turno do alvo. Braços: penalidade de ataques/manobras; pernas: movimento pela metade e sem movimento gratuito; tronco: bloqueio de cura/redução de dano; cabeça: penalidade ofensiva e sem Reações ofensivas. Não ocupa manobra do ataque."
+      },
+      {
+        "rank": "A",
+        "text": "Golpe Decisivo: 1/cena em acerto no Ponto Fraco; crítico para dano/propriedades, ignora MIT regional e comprometimento até fim da cena sem dado. Pode receber manobra."
+      }
+    ],
+    "plural": "Inimigos"
+  },
+  "mago_de_batalha": {
+    "classe": "combatente",
+    "nome": "Mago de Batalha",
+    "titulo": "Modulação de combate",
+    "layout": "magia",
+    "entidade": "Conjuração preparada",
+    "campos": [
+      "Magia",
+      "Modulação",
+      "Alvos excluídos",
+      "Área ou alcance"
+    ],
+    "estados": [
+      "Preparada",
+      "Conjurada"
+    ],
+    "cor": "#ff697d",
+    "nucleo": "Dados de manobra · Repertório",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Treinado em Magia Bélica: compatibilidade da manobra com magia de Ataque; adicional limitado a uma criatura atingida. Modulação de Combate: 1/rodada, um dado, escolher Concentrar (dano em um alvo), Expandir (metade do dado em metros), Projetar (dado em alcance) ou Conter (metade em criaturas protegidas), arredondando metade para baixo. Não ocupa manobra segundo a regra de E."
+      },
+      {
+        "rank": "C",
+        "text": "Modulação Composta: duas diferentes com mesmo dado. Concentrar em alvo único rola duas vezes/maior; Expandir divide metros em duas dimensões; Conter permite seleção após defesas."
+      },
+      {
+        "rank": "A",
+        "text": "Bombardeio Perfeito: 1/cena; todas as Modulações, dado rolado sem gasto; segunda área ou segundo alvo. Resolver cada criatura só uma vez, mesmo se áreas sobrepostas."
+      }
+    ],
+    "plural": "Conjurações preparadas"
+  },
+  "icone": {
+    "classe": "face",
+    "nome": "Ícone",
+    "titulo": "Persona e influência",
+    "layout": "publico",
+    "entidade": "Público",
+    "campos": [
+      "Persona e meio",
+      "Expectativas",
+      "Pedido ou mobilização",
+      "Alcance e prazo"
+    ],
+    "estados": [
+      "Cultivando",
+      "Mobilizado",
+      "Encerrado"
+    ],
+    "cor": "#c578d9",
+    "nucleo": "Dados guardados · Manobras sociais",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Persona Pública: imagem, meios de circulação, ambiente inicial e expectativas. Cativar: público temporário da cena conforme margem, sem transformar hostis em apoiadores. Mobilizar: pedido, público alcançado, custos/riscos e resposta; pedido testado 1/cena. Pedidos simples não precisam de teste."
+      },
+      {
+        "rank": "C",
+        "text": "Mobilização: até2/cena; segundo pedido bloqueado enquanto primeiro em execução. Acompanhar resultado coletivo, progresso narrativo, concessões e capacidade real do Público."
+      },
+      {
+        "rank": "A",
+        "text": "Movimento: território/circuito de atuação, convocação 1/operação, objetivo coletivo, meio de transmissão, tempo para chegar/produzir efeito, custos e consequências persistentes."
+      }
+    ],
+    "plural": "Públicos"
+  },
+  "mercador": {
+    "classe": "face",
+    "nome": "Mercador",
+    "titulo": "Mesa de negociações",
+    "layout": "comercio",
+    "entidade": "Negociação",
+    "campos": [
+      "Compra ou venda",
+      "Item e quantidade",
+      "Valor negociado",
+      "Credor e termos",
+      "Vencimento"
+    ],
+    "estados": [
+      "Em negociação",
+      "Acordado",
+      "Quitado"
+    ],
+    "cor": "#c578d9",
+    "nucleo": "Dados guardados · Manobras sociais",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Intermediação: compra/venda, itens/lote/serviço/informação, valor justo, preparação1–3 h, Reserva de Negociação com resultados d8 (quantidade até Mente, mínimo1). É separada da Confiança, persiste pela preparação e é descartada após teste. Compra concluída:1/operação. Tentativa de venda:1/dia. Valor justo vendido atéȺ2.000/operação; recebimento75/100/125% conforme sucesso. Falha mantém bens e só permite nova tentativa a partir do dia seguinte."
+      },
+      {
+        "rank": "E",
+        "text": "Garimpo de Rua: referência do Mercado Noturno/contato/código e avaliação de bens; desconto20% em uma compra por operação, não acumulável."
+      },
+      {
+        "rank": "C",
+        "text": "Crédito de Campo: atéȺ1.500 não pagos,1/operação, bloqueado enquanto existir dívida desta característica. Credor, valor, termos, prazo, quitação ou consignação/devolução. Estoque de Oportunidade:1/operação, compra declarada e paga, raridade≤Incomum, espaço/transporte válidos. Margem Favorável: tetoȺ4.000; recebimentos100/125/150%."
+      },
+      {
+        "rank": "A",
+        "text": "Mercado Particular:1/operação, preparação≥1 h, até3 negociações; conclusão nas próximas6 h; vendas125% contam no teto. Operação em Escala: tetoȺ8.000, créditoȺ3.000, Estoque2/operação; desconto pode beneficiar aliado pelo Mercado Particular."
+      }
+    ],
+    "plural": "Negociações"
+  },
+  "rato_de_rua": {
+    "classe": "face",
+    "nome": "Rato de Rua",
+    "titulo": "Rede de rua",
+    "layout": "rede",
+    "entidade": "Contato ou abrigo",
+    "campos": [
+      "Local e acesso",
+      "Rumor ou ajuda",
+      "Contrapartida",
+      "Rota de saída"
+    ],
+    "estados": [
+      "Disponível",
+      "Acionado",
+      "Comprometido"
+    ],
+    "cor": "#c578d9",
+    "nucleo": "Dados guardados · Manobras sociais",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Ouvidos no Chão:1/cena,10 min, até2 perguntas com rumores/nomes/locais obtidos; +1 no primeiro teste de interação que seguir informação na mesma cena. Porta Entreaberta:1/cena,10 min, ajuda procurada, contato e termos."
+      },
+      {
+        "rank": "C",
+        "text": "Casa Segura:1/operação,≥1 h, local, responsável, condições, custo, proteção de localização –1/–2 e eventos que a comprometem. Gato de Telhado: bônus de navegação/perseguição/fuga urbana para grupo orientado; rota alternativa1/cena, obstáculos e riscos restantes."
+      },
+      {
+        "rank": "A",
+        "text": "Saída dos Fundos:1/operação, saída fisicamente possível, participantes capazes de acompanhar, consequência escolhida pelo narrador e perseguição encerrada até nova pista concreta."
+      }
+    ],
+    "plural": "Contatos e abrigos"
+  },
+  "batedor": {
+    "classe": "infiltrador",
+    "nome": "Batedor",
+    "titulo": "Reconhecimento de rota",
+    "layout": "rota",
+    "entidade": "Obstáculo",
+    "campos": [
+      "Passagem reconhecida",
+      "Aliados orientados",
+      "Benefícios consumidos",
+      "Condição de encerramento"
+    ],
+    "estados": [
+      "Reconhecendo",
+      "Rota aberta",
+      "Encerrado"
+    ],
+    "cor": "#51cbb5",
+    "nucleo": "Brechas · Benefícios pendentes",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Reconhecer o Caminho: até2 perguntas quando usa Procurar Brecha; respostas do narrador. Sigam Meus Passos: obstáculo/caminho, aliados orientados a10 m, primeiro teste beneficiado de cada aliado (+2) ou tentativa adicional de Acessar, até fim do próximo turno do Batedor. Benefício apenas uma vez por aliado por obstáculo/caminho."
+      },
+      {
+        "rank": "C",
+        "text": "Caminho Seguro: movimento3 m após sucesso de aliado; encobrir falha custa1 Brecha por ocorrência, sem apagar consequências físicas/Tolerância/partes não informacionais da Contramedida."
+      },
+      {
+        "rank": "A",
+        "text": "Todos Pelo Mesmo Caminho:1/cena; passagem preparada, aliados e uso individual, validade até fim da cena ou mudança significativa das condições. Passagem não elimina tarefas técnicas individuais ou oposição nova."
+      }
+    ],
+    "plural": "Obstáculos"
+  },
+  "sorrateiro": {
+    "classe": "infiltrador",
+    "nome": "Sorrateiro",
+    "titulo": "Operação discreta",
+    "layout": "furtividade",
+    "entidade": "Distração ou infiltração",
+    "campos": [
+      "Observadores",
+      "Posição falsa",
+      "Objeto ou acesso",
+      "Consequência pendente"
+    ],
+    "estados": [
+      "Preparada",
+      "Em curso",
+      "Descoberta"
+    ],
+    "cor": "#51cbb5",
+    "nucleo": "Brechas · Benefícios pendentes",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Sumir de Vista: Esconder-se gratuito1/rodada após movimento ou sucesso de Mãos Leves, se houver posição válida. Mãos Leves: redução1 PA até0,1/rodada, compartilhada entre manipulação discreta e fechadura mecânica. Retirada de objeto em movimento: oposição e consequência conforme margem. Sem Alarde: exceção que permite Brecha em ataque à distância com arma Silenciosa."
+      },
+      {
+        "rank": "C",
+        "text": "Posição Falsa:1/rodada,1 Brecha, ponto até6 m, criaturas afetadas e3 m de movimento. Até fim do próximo turno: penalidade de localização, benefício único em teste/ataque compatível e percepção atrasada da alteração no objeto. Termina individualmente se criatura perceber posição real."
+      },
+      {
+        "rank": "A",
+        "text": "Entre Um Piscar e Outro:1/cena,2 Brechas; sequência de movimento +até2 ações sem PA. Apenas um ataque possível, último e por Sem Alarde, com Brecha adicional. Guardar ações restantes, posições, observadores e validade de alteração não percebida até fim do próximo turno."
+      }
+    ],
+    "plural": "Distrações e infiltrações"
+  },
+  "artifice": {
+    "classe": "tecnico",
+    "nome": "Artífice",
+    "titulo": "Bancada de projetos",
+    "layout": "oficina",
+    "entidade": "Projeto",
+    "campos": [
+      "Equipamento",
+      "Planta e método",
+      "Progresso / meta",
+      "Materiais comprometidos",
+      "Modificações"
+    ],
+    "estados": [
+      "Planejado",
+      "Em fabricação",
+      "Concluído"
+    ],
+    "cor": "#ff951c",
+    "nucleo": "Unidades · Protocolos",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Oficina:2 modificações simultâneas; uma temporária por equipamento; ferramentas e10 min para instalar/trocar/remover. Vínculo exato item↔modificação. Prática de Reparo:+1d6 MIT/PD por uso elegível e aplicação sem teste. Projetos: biblioteca inicial de2 projetos≤Incomum; possuir projeto não concede item. Fabricação com materiais50%, testes/tempo/progresso; desmontagem8 h destrói item, gera projeto e materiais para primeira fabricação."
+      },
+      {
+        "rank": "C",
+        "text": "Oficina3; alteração rápida de modificação/runa1/cena por1 PA. Equipamento Híbrido: apenas1 existente, dois projetos da mesma categoria, custos somados, maior CD e progressos somados; configuração ativa, alternância1/rodada por1 PA e compatibilidade das modificações/runas. Gatilho Rúnico: ativar/desativar gratuitamente1/rodada em equipamento Integrado elegível; eventos e respostas de protocolo."
+      },
+      {
+        "rank": "A",
+        "text": "Oficina4. Modificação Permanente:+300 progresso e materiais+25% do preço; não ocupa limite temporário. Equipamentos permanentes existentes até Mente, mínimo1. Pode coexistir com modificação normal. Em híbrido, exige compatibilidade com ambas configurações."
+      }
+    ],
+    "plural": "Projetos"
+  },
+  "maquinista": {
+    "classe": "tecnico",
+    "nome": "Maquinista",
+    "titulo": "Central de máquinas",
+    "layout": "frota",
+    "entidade": "Máquina",
+    "campos": [
+      "Modelo",
+      "Ficha vinculada",
+      "Modo de controle",
+      "Protocolo",
+      "Unidade pareada"
+    ],
+    "estados": [
+      "Disponível",
+      "Em operação",
+      "Em reparo"
+    ],
+    "cor": "#ff951c",
+    "nucleo": "Unidades · Protocolos",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Modos de Operação: máquina vinculada a Unidade, direto/autônomo, programação, PA próprios, atributos usados, sensores, PD e ficha real. Trocar modo1 PA; entrar em direto perde PA remanescentes da máquina. Autônoma comandada por1 PA recebe PA da ficha; sem comando recebe1 PA restrito; age após jogador. Domínio Técnico: converter falha limitada de Robótica pertinente. Reconstrução: componentes recuperados,8 h, materiais25%, CD e resultado; falha preserva materiais."
+      },
+      {
+        "rank": "C",
+        "text": "Resposta Mecânica: ação de máquina como Resposta, só autônoma e pagando PA dela. Intervenção Direta:1/rodada;1 PA para repetir falha autônoma com atributos do jogador, novo resultado obrigatório."
+      },
+      {
+        "rank": "A",
+        "text": "Enxame: pareamento1/dia, até4 drones idênticos ou2 robôs; composição, alcance20 m/sinal e comando pareado/independente. Uma Unidade pode acoplar grupo do mesmo modelo. Overclock:1/cena, +2 PA em cada máquina pareada autônoma, até fim da rodada."
+      }
+    ],
+    "plural": "Máquinas"
+  },
+  "tecelao": {
+    "classe": "tecnico",
+    "nome": "Tecelão",
+    "titulo": "Topologia da Trama",
+    "layout": "trama",
+    "entidade": "Unidade",
+    "campos": [
+      "Nó ou sistema",
+      "Posição na Trama",
+      "Comando persistente",
+      "Vínculo e encerramento"
+    ],
+    "estados": [
+      "Conectada",
+      "Executando",
+      "Desconectada"
+    ],
+    "cor": "#ff951c",
+    "nucleo": "Unidades · Protocolos",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Unidades na Trama: Trama, Nó/Ponto de Acesso/Bloqueio, posição, PD e defesa por Tecnomagia; alcance convertido1 m→1 espaço. Olho de Botão: primeira conexão na cena, revelar próximos2 níveis sem PA/RAM. Processamento Paralelo: PA adicional restrito a Protocolo/Comando no primeiro turno de cada rodada, condicionado a conexão+Unidade ativa."
+      },
+      {
+        "rank": "C",
+        "text": "Controle Distribuído: um Comando sustentado por Unidade, alvo/conexão e ordens possíveis; pode permanecer após desconexão do jogador; termina por recolhimento/inativação/perda de conexão ao alvo. Bypass:1/cena, sucesso limitado0, custos normais; exclui Apagar Rastros/Modificar Assinatura."
+      },
+      {
+        "rank": "A",
+        "text": "Migração de Processo:1/rodada,1 PA, destino é Unidade. Processos Espelhados:1/rodada, segunda Unidade e alvo diferente/compatível; segunda ação sem PA, mas com RAM e resolução próprias."
+      }
+    ],
+    "plural": "Unidades"
+  },
+  "biomecanico": {
+    "classe": "tecnico",
+    "nome": "Biomecânico",
+    "titulo": "Calibração de implantes",
+    "layout": "implantes",
+    "entidade": "Paciente",
+    "campos": [
+      "Implante",
+      "Procedimento",
+      "Calibração ativa",
+      "Desgaste suprimido",
+      "Manutenção prevista"
+    ],
+    "estados": [
+      "Em avaliação",
+      "Calibrado",
+      "Inativo"
+    ],
+    "cor": "#ff951c",
+    "nucleo": "Unidades · Protocolos",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Procedimento Biomecânico: paciente, escalpo, instalação/extração1 h, ferramentas; após extração, teste VontadeCD7+1 para recuperar Integridade daquela instalação. Reparo10 min remove1 Desgaste ou efeito técnico persistente. Forçar Limites:1/cena, escalpo/usuário/Unidade, melhoria escolhida, antes da ativação, sem PA adicional. Opções: bônus+1; alcance/movimento/dano+2;2 MIT/PD temporários; ativação sem PA;1 uso adicional."
+      },
+      {
+        "rank": "C",
+        "text": "Recalibração de Campo: Unidade na criatura alcança todos os seus escalpos; Manutenção recupera1d6 MIT por escalpo1/cena. Segunda Calibração: Estabilização em escalpo potencializado recupera uso de Forçar Limites,1/cena conforme texto. Circuito Biomecânico: gatilhos por escalpo e Resposta em outro do mesmo paciente. Compensação de Desgaste: suprime efeito de1 ponto até fim da cena, sem removê-lo;1 benefício por escalpo/cena."
+      },
+      {
+        "rank": "A",
+        "text": "Zona Vermelha:1/cena junto a Forçar Limites, melhoria ampliada. Bônus1d4 guardado; alcance/movimento+6 m ou dano+1d8; proteção1d8 temporária; ativação gratuita+melhoria normal;2 usos extras. Guardar resultados/consumo e maior bônus aplicável, sem somar incompatíveis. Ao fim da cena, escalpo fica Inativo até procedimento10 min."
+      }
+    ],
+    "plural": "Pacientes"
+  },
+  "berserker": {
+    "classe": "vanguarda",
+    "nome": "Berserker",
+    "titulo": "Estado de fúria",
+    "layout": "furia",
+    "entidade": "Surto de combate",
+    "campos": [
+      "Gatilho",
+      "Efeitos suspensos",
+      "Encerramento",
+      "Consequências ao encerrar"
+    ],
+    "estados": [
+      "Preparado",
+      "Em fúria",
+      "Encerrado"
+    ],
+    "cor": "#69a9ff",
+    "nucleo": "Ímpeto · Presença",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Dor é Combustível: perda de PV por hostil gera1 Ímpeto1/rodada independente do ganho normal; movimento2 m em direção à fonte. Fúria: entra ao cair a≤metade PV ou gastando2 Ímpetos após Dor é Combustível; dura até fim da cena, mesmo se curar. Dobro do bônus de Corpo no dano corpo a corpo, +1 Vigor."
+      },
+      {
+        "rank": "C",
+        "text": "Contra-Ataque:1/rodada,2 Ímpetos+Reação depois de perder PV, alcance e fonte; +1 vantagem em Fúria. Negar a Dor:1/cena em Fúria,2 Ímpetos, metade da perda de PV de ataque hostil, arredondada para cima."
+      },
+      {
+        "rank": "A",
+        "text": "Limite Rompido:1/cena em Fúria, até fim do próximo turno; Ímpeto até máximo, redução1 PA até mínimo1, triplo do bônus Corpo, consciência a0 PV e condições físicas novas suspensas. Ao terminar, restaurar condições ainda válidas e entrar em Colapso se continuar a0 PV."
+      }
+    ],
+    "plural": "Surtos de combate"
+  },
+  "carcereiro": {
+    "classe": "vanguarda",
+    "nome": "Carcereiro",
+    "titulo": "Zona de contenção",
+    "layout": "contencao",
+    "entidade": "Adversário",
+    "campos": [
+      "Manobra aplicada",
+      "Restrição de movimento",
+      "Penalidade",
+      "Validade"
+    ],
+    "estados": [
+      "Contido",
+      "Em deslocamento",
+      "Liberto"
+    ],
+    "cor": "#69a9ff",
+    "nucleo": "Ímpeto · Presença",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Sem Saída:1/rodada,Reação+1 Ímpeto; inimigo adjacente tenta afastar-se. Escolher Agarrar/Derrubar/Empurrar antes do movimento; sucesso interrompe e perde metros restantes; crítico bloqueia ações de movimento até início do próximo turno dele."
+      },
+      {
+        "rank": "C",
+        "text": "Cela Móvel:2 Ímpetos após ataque ou Sem Saída bem-sucedido em adjacente; alvo, deslocamento2:1 e penalidade na próxima defesa; termina no início do próximo turno do usuário."
+      },
+      {
+        "rank": "A",
+        "text": "Sentença:1/cena,1 PA+2 Ímpetos; até Corpo alvos a2 m, mínimo1; manobra diferente por alvo, sem PA/Reações extras, resultados separados; sucessos aplicam Cela Móvel."
+      }
+    ],
+    "plural": "Adversários"
+  },
+  "colosso": {
+    "classe": "vanguarda",
+    "nome": "Colosso",
+    "titulo": "Centro da batalha",
+    "layout": "territorio",
+    "entidade": "Posição de combate",
+    "campos": [
+      "Células ocupadas",
+      "Passagem a abrir",
+      "Obstáculos",
+      "Efeito e validade"
+    ],
+    "estados": [
+      "Posicionado",
+      "Avançando",
+      "Encerrado"
+    ],
+    "cor": "#69a9ff",
+    "nucleo": "Ímpeto · Presença",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Corpo Colossal: tamanho Grande e alcance a partir de qualquer célula ocupada. Absorver Impacto:1/rodada,1 Ímpeto para reduzir perda de PV por Corpo, mínimo0."
+      },
+      {
+        "rank": "C",
+        "text": "Passo Firme: com≥1 Ímpeto, movimento forçado reduzido2 m. Abrir Caminho: ao mover com Ímpeto, ignora terreno difícil e pode atravessar hostil de tamanho≤seu; Empurrar/Derrubar gratuito1/rodada, resultado decide continuidade; posição final livre."
+      },
+      {
+        "rank": "A",
+        "text": "Centro da Batalha:1/cena no início do turno, até início do próximo; absorção em toda perda sem Ímpeto, imunidade a mover involuntariamente/Caído, segundo alvo em ataque corpo a corpo1/turno."
+      }
+    ],
+    "plural": "Posições de combate"
+  },
+  "guardiao": {
+    "classe": "vanguarda",
+    "nome": "Guardião",
+    "titulo": "Linha de proteção",
+    "layout": "escudos",
+    "entidade": "Proteção",
+    "campos": [
+      "Escudo vinculado",
+      "Aliados protegidos",
+      "Cobertura concedida",
+      "Validade"
+    ],
+    "estados": [
+      "Em guarda",
+      "Abrigo ativo",
+      "Encerrado"
+    ],
+    "cor": "#69a9ff",
+    "nucleo": "Ímpeto · Presença",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Arsenal Defensivo: escudos primário/secundário com PD independentes; escolher qual Bloquear; bônus se ambos possuem≥1 PD. Ataque com escudo1d6+Corpo. Posição de Guarda: Postura Defensiva gratuita1/cena. Ímpeto Protetor:1/rodada ao Bloquear com sucesso, separado do ganho básico. Interceptar:1/rodada,1 Ímpeto, aliado a2 m, deslocamento até2 m; defesa real com ou sem Reação e penalidade cumulativa normal."
+      },
+      {
+        "rank": "C",
+        "text": "Abrigo Móvel: após Bloquear,1 Ímpeto; escudo de origem, grau de cobertura, aliados adjacentes elegíveis; até início do próximo turno, exigindo escudo empunhado e PD≥1. Movimento com Ímpeto pode permitir2 m para um protegido, terminando a≤2 m."
+      },
+      {
+        "rank": "A",
+        "text": "Ninguém Fica Para Trás:1/cena no início do turno, até início do próximo; Interceptar4 m, sem custo de Ímpeto e sem limite/rodada. Não torna bloqueios gratuitos em Reações nem apaga penalidades defensivas."
+      }
+    ],
+    "plural": "Proteções"
+  }
+}

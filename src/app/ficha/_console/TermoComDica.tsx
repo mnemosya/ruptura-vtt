@@ -11,9 +11,29 @@
  * daria dois tooltips que divergem no primeiro ajuste.
  */
 
-import { useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import dynamic from "next/dynamic";
+import { listarCapitulosAction } from "../../mesas/[campaignId]/vtt/_compendio/acoes";
+import { indiceDeTermos, resolverTermo, type DestinoLivro } from "../../mesas/[campaignId]/vtt/_compendio/modelo";
 import type { TermoDeRegra } from "./types";
+
+const LivroCodex = dynamic(() => import("../../mesas/[campaignId]/vtt/_compendio/LivroCodex").then((m) => m.LivroCodex), { ssr: false });
+
+let indiceDoCodex: Promise<Map<string, DestinoLivro>> | null = null;
+
+function carregarIndiceDoCodex() {
+  if (!indiceDoCodex) {
+    indiceDoCodex = listarCapitulosAction(null).then((r) => {
+      if (!r.ok || !r.dados) throw new Error(r.erro ?? "Não foi possível carregar o Códex.");
+      return indiceDeTermos(r.dados);
+    }).catch((erro) => {
+      indiceDoCodex = null;
+      throw erro;
+    });
+  }
+  return indiceDoCodex;
+}
 
 export function TermoComDica({
   termo,
@@ -30,6 +50,27 @@ export function TermoComDica({
     vertenteCor: string;
   } | null>(null);
   const timerRef = useRef<number | null>(null);
+  const [destino, setDestino] = useState<DestinoLivro | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!destino) return;
+    document.body.classList.add("rc-livro-por-cima");
+    return () => document.body.classList.remove("rc-livro-por-cima");
+  }, [destino]);
+
+  const abrirNoCodex = async () => {
+    setEm(null);
+    setErro(null);
+    try {
+      const indice = await carregarIndiceDoCodex();
+      const encontrado = resolverTermo(termo.nome, indice);
+      if (!encontrado) throw new Error(`O verbete ${termo.nome} não foi encontrado no Códex.`);
+      setDestino(encontrado);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Não foi possível abrir o Códex.");
+    }
+  };
 
   const abrir = (el: HTMLElement) => {
     const r = el.getBoundingClientRect();
@@ -51,6 +92,14 @@ export function TermoComDica({
         data-tipo={termo.tipo}
         tabIndex={0}
         role="button"
+        aria-label={`Abrir ${termo.nome} no Códex`}
+        onClick={(e) => { e.stopPropagation(); void abrirNoCodex(); }}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          e.preventDefault();
+          e.stopPropagation();
+          void abrirNoCodex();
+        }}
         onMouseEnter={(e) => abrir(e.currentTarget)}
         onMouseLeave={() => {
           /* Um respiro antes de sumir: sem isso, atravessar o termo com
@@ -62,6 +111,7 @@ export function TermoComDica({
       >
         {children}
       </span>
+      {erro && <span role="alert" className="rc-termo-erro">{erro}</span>}
       {em && typeof document !== "undefined" && createPortal(
         <span
           role="tooltip"
@@ -91,6 +141,7 @@ export function TermoComDica({
         </span>,
         document.body,
       )}
+      {destino && <LivroCodex campaignId={null} inicial={destino} onClose={() => setDestino(null)} />}
     </>
   );
 }

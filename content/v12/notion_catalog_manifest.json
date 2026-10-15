@@ -11,27 +11,52 @@
     {
       "id": "magias",
       "source": "17. MAGIA E VERTENTES / cada Vertente / LISTA DE MAGIAS",
-      "database": { "file": "v12/db_magias_vertentes_v1_2.json", "counts": { "magias": 233 } }
+      "database": {
+        "file": "v12/db_magias_vertentes_v1_2.json",
+        "counts": {
+          "magias": 229
+        }
+      }
     },
     {
       "id": "mercado_itens",
       "source": "25. MERCADO NOTURNO / LISTA DE MERCADORIAS",
-      "database": { "file": "v12/db_mercado_itens_v1_2.json", "counts": { "itens": 273 } }
+      "database": {
+        "file": "v12/db_mercado_itens_v1_2.json",
+        "counts": {
+          "itens": 273
+        }
+      }
     },
     {
       "id": "mercado_runas",
       "source": "25. MERCADO NOTURNO / LISTA DE MERCADORIAS",
-      "database": { "file": "v12/db_mercado_runas_v1_2.json", "counts": { "runas": 52 } }
+      "database": {
+        "file": "v12/db_mercado_runas_v1_2.json",
+        "counts": {
+          "runas": 52
+        }
+      }
     },
     {
       "id": "mercado_escalpos",
       "source": "25. MERCADO NOTURNO / LISTA DE MERCADORIAS",
-      "database": { "file": "v12/db_mercado_escalpos_v1_2.json", "counts": { "escalpos": 39 } }
+      "database": {
+        "file": "v12/db_mercado_escalpos_v1_2.json",
+        "counts": {
+          "escalpos": 39
+        }
+      }
     },
     {
       "id": "mercado_companheiros",
       "source": "25. MERCADO NOTURNO / LISTA DE MERCADORIAS",
-      "database": { "file": "v12/db_mercado_companheiros_v1_2.json", "counts": { "modelos_companheiros": 10 } }
+      "database": {
+        "file": "v12/db_mercado_companheiros_v1_2.json",
+        "counts": {
+          "modelos_companheiros": 10
+        }
+      }
     }
   ]
 }

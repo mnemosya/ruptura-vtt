@@ -34,9 +34,11 @@ assert.ok(result.character);
 assert.equal(result.character.carteira?.aretz_informal, item.preco);
 assert.deepEqual(result.character.escalpos_instalados, character.escalpos_instalados);
 const saved = normalizeCharacter(result.character);
-assert.equal(saved.inventario?.[0].itemSlug, source.slug);
-assert.equal(saved.inventario?.[0].estado, "mochila");
-assert.equal(saved.inventario?.[0].quantidade, 2);
+// A ficha já nasce com uma mochila; a compra não precisa ser o primeiro item.
+const purchased = saved.inventario?.find(i => i.itemSlug === source.slug);
+assert.ok(purchased);
+assert.equal(purchased.estado, "mochila");
+assert.equal(purchased.quantidade, 2);
 assert.equal(purchaseItem({ character, item, quantidade: 4, walletId: "aretz_informal", nowIso: "2026-10-10T12:00:00Z" }).character, character);
 console.log(`✓ Mercado: ${saleable.length} escalpos reais, compra, saldo e persistência sem instalação automática`);
 
@@ -51,6 +53,6 @@ assert.deepEqual(marketEscalpoParents(normalizeItemContent({ slug: "escalpos_tox
 assert.deepEqual(marketEscalpoParents(normalizeItemContent({ slug: "farmacia_toxico", categoria: "veneno" }), familyCatalog), [], "Não atribuir outros venenos a Beijo da Morte.");
 const modulePurchase = purchaseItem({ character, item: module, quantidade: 1, walletId: "aretz_informal", nowIso: "2026-10-10T12:00:00Z" });
 assert.equal(modulePurchase.ok, true);
-assert.equal(modulePurchase.character.inventario?.[0].itemSlug, module.slug);
+assert.ok(modulePurchase.character.inventario?.some(i => i.itemSlug === module.slug));
 assert.equal(modulePurchase.character.carteira?.aretz_informal, character.carteira.aretz_informal - 800);
 console.log("✓ Vínculos, pais ausentes, venenos e compra do complemento sem comprar a base");

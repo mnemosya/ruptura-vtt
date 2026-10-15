@@ -22,6 +22,7 @@
  */
 
 import type { Character, CharacterResources, DerivedStats, TemporaryEffect } from "./types";
+import { resetClassLongRest } from "./classManagement";
 import { resetOverloadForLongRest } from "./overload";
 import { expireRestTemporaryEffects } from "./temporaryEffects";
 
@@ -130,7 +131,7 @@ export function applyLongRest(character: Character, derived: DerivedStats, nowIs
   // Efeitos temporários "até o próximo descanso longo" expiram aqui (checkpoint pós-v0.71).
   const restExpiry = expireRestTemporaryEffects(resetOverloadForLongRest(character), nowIso);
   const nextCharacter: Character = {
-    ...restExpiry.character,
+    ...resetClassLongRest(restExpiry.character),
     recursos_atuais,
     metadados: { ...character.metadados, schema_version: character.metadados?.schema_version ?? 1, atualizado_em: nowIso },
   };

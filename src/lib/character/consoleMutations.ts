@@ -10,6 +10,7 @@ import { applyAutoHealRemoval } from "./autoHeal";
 import { applyGmCondition } from "./gmActions";
 import { detectCollapseOnResourceChange, resolveCollapseAdditionalDamage } from "./collapse";
 import { spendReactionForDefense, type ReactionRules } from "./reactions";
+import { progression, readClassPlay } from "./classManagement";
 import type {
   ActiveCondition,
   Character,
@@ -148,7 +149,8 @@ export function applyConsoleMutation(
   if (mutation.type === "resource") return applyResourceMutation(character, mutation, context);
 
   if (mutation.type === "pa") {
-    const spent = nonNegativeInteger((character.estado_jogo?.pa_gastos ?? 0) + mutation.delta);
+    const credit = progression(character)?.classe_id === "cacador" ? readClassPlay(character).resource : 0;
+    const spent = Math.max(-credit, Math.trunc((character.estado_jogo?.pa_gastos ?? 0) + mutation.delta));
     return {
       character: { ...character, estado_jogo: { ...character.estado_jogo, pa_gastos: spent } },
       meta: {},

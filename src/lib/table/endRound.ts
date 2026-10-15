@@ -34,6 +34,7 @@ import {
   type ConditionContent,
 } from "../character";
 import { listCharactersForNarratorCampaign, updateCharacter } from "../character/storage";
+import { resetRoundPaWithClass } from "../character/classManagement";
 import { getCharacterRules, listConditions } from "../content";
 import { getCampaign, canAdvanceCampaign, endRound as advanceCampaignRound, addLog } from "./storage";
 import { encerrarTrilhaDaCampanha } from "../vtt/sceneStorage";
@@ -168,7 +169,9 @@ export async function resolveCampaignEndRoundForCharacters(params: {
       });
 
       // B/C. Renova PA e Reações; zera penalidade de defesa sem Reação.
-      let nextCharacter: Character = { ...resolved.character, estado_jogo: { ...resolved.character.estado_jogo, pa_gastos: 0 } };
+      // Um PA conservado pela Reserva Tática entra como crédito no saldo
+      // da rodada nova. Todos os fluxos existentes cobram PA desse saldo.
+      let nextCharacter: Character = resetRoundPaWithClass(resolved.character);
       nextCharacter = resetRoundReactionState(nextCharacter);
 
       // D. Redução de PA por condição, já na rodada nova.
