@@ -217,7 +217,12 @@ export function indiceDeTermos(linhas: LinhaCapitulo[]): Map<string, DestinoLivr
     }
     for (const v of c.verbetes) {
       const chave = normalizar(v.titulo);
-      if (!mapa.has(chave)) mapa.set(chave, { pageId: c.pageId, ancora: v.ancora });
+      const destino = { pageId: c.pageId, ancora: v.ancora };
+      if (!mapa.has(chave)) mapa.set(chave, destino);
+      // No livro, ações são intituladas "ESCAPAR 2 PA" ou "RESISTIR 1 REAÇÃO";
+      // no texto corrido e no catálogo, o termo é apenas o nome da ação.
+      const semCusto = chave.replace(/\s+(?:\d+(?:\s*[–-]\s*\d+)?\s*(?:pa|reacao|reacoes)|livre)$/, "");
+      if (semCusto !== chave && !mapa.has(semCusto)) mapa.set(semCusto, destino);
     }
   }
   return mapa;

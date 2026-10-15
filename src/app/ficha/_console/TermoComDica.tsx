@@ -51,13 +51,15 @@ export function TermoComDica({
   } | null>(null);
   const timerRef = useRef<number | null>(null);
   const [destino, setDestino] = useState<DestinoLivro | null>(null);
+  const [buscaCodex, setBuscaCodex] = useState("");
+  const [codexAberto, setCodexAberto] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!destino) return;
+    if (!codexAberto) return;
     document.body.classList.add("rc-livro-por-cima");
     return () => document.body.classList.remove("rc-livro-por-cima");
-  }, [destino]);
+  }, [codexAberto]);
 
   const abrirNoCodex = async () => {
     setEm(null);
@@ -65,8 +67,11 @@ export function TermoComDica({
     try {
       const indice = await carregarIndiceDoCodex();
       const encontrado = resolverTermo(termo.nome, indice);
-      if (!encontrado) throw new Error(`O verbete ${termo.nome} não foi encontrado no Códex.`);
       setDestino(encontrado);
+      // Nem todo termo publicado é um verbete individual. Nesses casos,
+      // abre a busca do livro já preenchida, incluindo o texto dos capítulos.
+      setBuscaCodex(encontrado ? "" : termo.nome);
+      setCodexAberto(true);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Não foi possível abrir o Códex.");
     }
@@ -141,7 +146,7 @@ export function TermoComDica({
         </span>,
         document.body,
       )}
-      {destino && <LivroCodex campaignId={null} inicial={destino} onClose={() => setDestino(null)} />}
+      {codexAberto && <LivroCodex campaignId={null} inicial={destino} buscaInicial={buscaCodex} onClose={() => setCodexAberto(false)} />}
     </>
   );
 }

@@ -648,6 +648,11 @@ const LIVRO: LinhaCapitulo[] = [
   );
 }
 {
+  const acoes: LinhaCapitulo[] = [{ pageId: "combate", numero: 22, titulo: "CENAS DE COMBATE", secao: "Regras", ordem: 1, verbetes: [{ titulo: "ESCAPAR 2 PA", ancora: "escapar-2-pa" }, { titulo: "RESISTIR 1 REAÇÃO", ancora: "resistir-1-reacao" }] }];
+  const indice = indiceDeTermos(acoes);
+  ok("K4b (ação sem custo abre seu verbete no Códex)", resolverTermo("Escapar", indice)?.ancora === "escapar-2-pa" && resolverTermo("Resistir", indice)?.ancora === "resistir-1-reacao" && resolverTermo("Es", indice) === null, "ok");
+}
+{
   const comNeta: LinhaCapitulo[] = [...LIVRO, { pageId: "s1", numero: null, titulo: "ARMAS", secao: "x", ordem: 2.001, verbetes: [], paiPageId: "p21" }, { pageId: "s2", numero: null, titulo: "PISTOLAS", secao: "x", ordem: 2.002, verbetes: [], paiPageId: "s1" }];
   ok("K5b (subpágina de subpágina: vizinhos e índice do capítulo raiz)", vizinhos(comNeta, "s2").proximo?.pageId === "p22" && agruparPorSecao(comNeta).every((g) => g.capitulos.every((c) => !c.paiPageId)), "ok");
   const v = vizinhos(LIVRO, "p21");

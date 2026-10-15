@@ -52,19 +52,19 @@ function gravarUltimoLido(pageId: string) {
   }
 }
 
-export function LivroCodex({ campaignId, inicial, onClose }: { campaignId: string | null; inicial?: DestinoLivro | null; onClose: () => void }) {
+export function LivroCodex({ campaignId, inicial, buscaInicial = "", onClose }: { campaignId: string | null; inicial?: DestinoLivro | null; buscaInicial?: string; onClose: () => void }) {
   const [montado, setMontado] = useState(false);
   useEffect(() => setMontado(true), []);
   if (!montado) return null;
   return createPortal(
     <Shell rotulo="Compêndio de RUPTURA" onClose={onClose}>
-      <Livro campaignId={campaignId} inicial={inicial ?? null} onClose={onClose} />
+      <Livro campaignId={campaignId} inicial={inicial ?? null} buscaInicial={buscaInicial} onClose={onClose} />
     </Shell>,
     document.body,
   );
 }
 
-function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; inicial: DestinoLivro | null; onClose?: () => void }) {
+function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: string | null; inicial: DestinoLivro | null; buscaInicial: string; onClose?: () => void }) {
   const [linhas, setLinhas] = useState<LinhaCapitulo[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [atual, setAtual] = useState<DestinoLivro | null>(inicial);
@@ -72,7 +72,7 @@ function Livro({ campaignId, inicial, onClose }: { campaignId: string | null; in
   const [ultimoLido, setUltimoLido] = useState<string | null>(null);
   const [capitulos, setCapitulos] = useState<Map<string, CapituloCompendio>>(new Map());
   const [carregando, setCarregando] = useState(false);
-  const [busca, setBusca] = useState("");
+  const [busca, setBusca] = useState(buscaInicial);
   const [textos, setTextos] = useState<Map<string, string> | undefined>(undefined);
   const pedindoTextos = useRef(false);
   const [abertos, setAbertos] = useState<Set<string>>(new Set());
