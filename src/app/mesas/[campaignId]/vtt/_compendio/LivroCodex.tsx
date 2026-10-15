@@ -23,6 +23,7 @@ import {
   agruparPorSecao,
   capituloRaiz,
   buscarNoLivro,
+  caminhoParaAncora,
   indiceDeTermos,
   indiceDoCapitulo,
   rotuloCapitulo,
@@ -218,16 +219,37 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
   // O foco entra no livro ao abrir: teclado (rolagem, Esc, Tab) passa a valer aqui, não no painel.
   useEffect(() => { scroller.current?.focus({ preventScroll: true }); }, [scroller]);
 
-  // Ao trocar de página: abre a âncora pedida ou volta ao topo, inclusive na capa.
+  const ancoraPendente = useRef<string | null>(null);
+  const caminhoDaAncora = useMemo(
+    () => capitulo && atual?.ancora ? caminhoParaAncora(capitulo.blocos, atual.ancora) : null,
+    [capitulo, atual?.ancora],
+  );
+
+  // Os verbetes podem estar aninhados: a seção de Escapar, por exemplo,
+  // só entra no DOM depois de abrir Ações de combate e Ações de movimento.
   useEffect(() => {
     if (capitulo && atual?.ancora) {
-      const ancora = atual.ancora;
-      setAbertos((s) => (s.has(ancora) ? s : new Set(s).add(ancora)));
-      requestAnimationFrame(() => scroller.current?.querySelector(`[id="${CSS.escape(ancora)}"]`)?.scrollIntoView({ block: "start" }));
+      ancoraPendente.current = atual.ancora;
+      if (caminhoDaAncora?.length) setAbertos((s) => {
+        if (caminhoDaAncora.every((ancora) => s.has(ancora))) return s;
+        return new Set([...s, ...caminhoDaAncora]);
+      });
     } else {
+      ancoraPendente.current = null;
       scroller.current?.scrollTo({ top: 0 });
     }
-  }, [capitulo, atual, scroller]);
+  }, [capitulo, atual, caminhoDaAncora, scroller]);
+
+  // Espera o React renderizar os pais expandidos antes de rolar até a ação.
+  useEffect(() => {
+    const ancora = atual?.ancora;
+    if (!capitulo || !ancora || ancoraPendente.current !== ancora) return;
+    if (caminhoDaAncora && !caminhoDaAncora.every((item) => abertos.has(item))) return;
+    const alvo = scroller.current?.querySelector(`[id="${CSS.escape(ancora)}"]`);
+    if (!alvo) return;
+    ancoraPendente.current = null;
+    alvo.scrollIntoView({ block: "start" });
+  }, [capitulo, atual, abertos, caminhoDaAncora, scroller]);
 
   const atualRef = useRef(atual);
   atualRef.current = atual;

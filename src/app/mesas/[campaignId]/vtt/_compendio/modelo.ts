@@ -221,7 +221,7 @@ export function indiceDeTermos(linhas: LinhaCapitulo[]): Map<string, DestinoLivr
       if (!mapa.has(chave)) mapa.set(chave, destino);
       // No livro, ações são intituladas "ESCAPAR 2 PA" ou "RESISTIR 1 REAÇÃO";
       // no texto corrido e no catálogo, o termo é apenas o nome da ação.
-      const semCusto = chave.replace(/\s+(?:\d+(?:\s*[–-]\s*\d+)?\s*(?:pa|reacao|reacoes)|livre)$/, "");
+      const semCusto = chave.replace(/\s+(?:(?:\d+(?:\s*[/–-]\s*\d+)?\s*)?(?:pa|reacao|reacoes)|livre)$/, "");
       if (semCusto !== chave && !mapa.has(semCusto)) mapa.set(semCusto, destino);
     }
   }
@@ -235,6 +235,25 @@ export function indiceDeTermos(linhas: LinhaCapitulo[]): Map<string, DestinoLivr
 export function resolverTermo(termo: string, indice: Map<string, DestinoLivro>): DestinoLivro | null {
   const chave = normalizar(termo);
   return indice.get(chave) ?? indice.get(chave.replace(/\s+\d+$/, "")) ?? null;
+}
+
+/** Verbetes pais que precisam estar abertos para uma âncora existir no DOM. */
+export function caminhoParaAncora(blocos: BlocoCompendio[], ancora: string): string[] | null {
+  const procurar = (lista: BlocoCompendio[], pais: string[]): string[] | null => {
+    for (const bloco of lista) {
+      if ((bloco.tipo === "verbete" || bloco.tipo === "titulo") && bloco.ancora === ancora) {
+        return bloco.tipo === "verbete" ? [...pais, ancora] : pais;
+      }
+      const proximosPais = bloco.tipo === "verbete" ? [...pais, bloco.ancora] : pais;
+      const filhos = bloco.tipo === "lista"
+        ? bloco.itens.flatMap((item) => item.filhos)
+        : "filhos" in bloco ? bloco.filhos : [];
+      const encontrado = procurar(filhos, proximosPais);
+      if (encontrado) return encontrado;
+    }
+    return null;
+  };
+  return procurar(blocos, []);
 }
 
 /** Âncora usada nos títulos do capítulo (mesma regra do conversor). */

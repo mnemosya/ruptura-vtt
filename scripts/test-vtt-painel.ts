@@ -69,6 +69,7 @@ import {
 import {
   agruparPorSecao,
   buscarNoLivro,
+  caminhoParaAncora,
   indiceDeTermos,
   resolverTermo,
   indiceDoCapitulo,
@@ -82,6 +83,7 @@ import { formatTableLogEntry } from "../src/lib/table/logPresentation";
 import type { TableLogEntry } from "../src/lib/table";
 import type { EntradaDiretorio, PastaDiretorio } from "../src/app/mesas/[campaignId]/vtt/_painel/acoes/personagensPainel";
 import type { ItemBandoPainel } from "../src/app/mesas/[campaignId]/vtt/_painel/acoes/bandoPainel";
+import type { BlocoCompendio } from "../src/lib/compendio/tipos";
 
 let passou = 0;
 let falhou = 0;
@@ -648,9 +650,17 @@ const LIVRO: LinhaCapitulo[] = [
   );
 }
 {
-  const acoes: LinhaCapitulo[] = [{ pageId: "combate", numero: 22, titulo: "CENAS DE COMBATE", secao: "Regras", ordem: 1, verbetes: [{ titulo: "ESCAPAR 2 PA", ancora: "escapar-2-pa" }, { titulo: "RESISTIR 1 REAÇÃO", ancora: "resistir-1-reacao" }] }];
+  const acoes: LinhaCapitulo[] = [{ pageId: "combate", numero: 22, titulo: "CENAS DE COMBATE", secao: "Regras", ordem: 1, verbetes: [{ titulo: "ESCAPAR 2 PA", ancora: "escapar-2-pa" }, { titulo: "RESISTIR Reação", ancora: "resistir-reacao" }, { titulo: "RECARREGAR 1/2 PA", ancora: "recarregar-1-2-pa" }] }];
   const indice = indiceDeTermos(acoes);
-  ok("K4b (ação sem custo abre seu verbete no Códex)", resolverTermo("Escapar", indice)?.ancora === "escapar-2-pa" && resolverTermo("Resistir", indice)?.ancora === "resistir-1-reacao" && resolverTermo("Es", indice) === null, "ok");
+  ok("K4b (ação sem custo abre seu verbete no Códex)", resolverTermo("Escapar", indice)?.ancora === "escapar-2-pa" && resolverTermo("Resistir", indice)?.ancora === "resistir-reacao" && resolverTermo("Recarregar", indice)?.ancora === "recarregar-1-2-pa" && resolverTermo("Es", indice) === null, "ok");
+}
+{
+  const verbete = (ancora: string, filhos: BlocoCompendio[] = []): BlocoCompendio => ({ tipo: "verbete", titulo: [{ texto: ancora }], ancora, filhos });
+  const blocos = [verbete("acoes-de-combate", [verbete("acoes-de-movimento", [verbete("escapar-2-pa")])])];
+  ok("K4c (abre todos os verbetes pais antes de rolar até Escapar)",
+    caminhoParaAncora(blocos, "escapar-2-pa")?.join("/") === "acoes-de-combate/acoes-de-movimento/escapar-2-pa" &&
+      caminhoParaAncora(blocos, "inexistente") === null,
+    "ok");
 }
 {
   const comNeta: LinhaCapitulo[] = [...LIVRO, { pageId: "s1", numero: null, titulo: "ARMAS", secao: "x", ordem: 2.001, verbetes: [], paiPageId: "p21" }, { pageId: "s2", numero: null, titulo: "PISTOLAS", secao: "x", ordem: 2.002, verbetes: [], paiPageId: "s1" }];
