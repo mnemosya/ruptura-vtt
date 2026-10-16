@@ -17,7 +17,7 @@
  * simples, sem tentar mesclar histórias concorrentes).
  */
 
-export type FerramentaId = "interagir" | "dados" | "medir" | "marcar" | "desenhar" | "texto" | "terreno" | "objetos" | "imagens" | "areas" | "rodadas";
+export type FerramentaId = "interagir" | "dados" | "medir" | "marcar" | "desenhar" | "texto" | "terreno" | "objetos" | "imagens" | "areas" | "rodadas" | "marcadores";
 
 export const ROTULO_FERRAMENTA: Record<FerramentaId, string> = {
   interagir: "Interagir",
@@ -31,6 +31,7 @@ export const ROTULO_FERRAMENTA: Record<FerramentaId, string> = {
   imagens: "Imagens",
   areas: "Áreas",
   rodadas: "Rodadas",
+  marcadores: "Marcadores",
 };
 
 export const ATALHO_FERRAMENTA: Record<FerramentaId, string> = {
@@ -50,9 +51,11 @@ export const ATALHO_FERRAMENTA: Record<FerramentaId, string> = {
   // (virou gesto de segurar o botão esquerdo — ver `_mapa/MapaHex.tsx`).
   areas: "A",
   rodadas: "R",
+  // K estava livre (M já é Medir, D é Marcar).
+  marcadores: "K",
 };
 
-const TECLA_PARA_FERRAMENTA: Record<string, FerramentaId> = { v: "interagir", l: "dados", m: "medir", d: "marcar", f: "desenhar", x: "texto", t: "terreno", o: "objetos", i: "imagens", a: "areas", r: "rodadas" };
+const TECLA_PARA_FERRAMENTA: Record<string, FerramentaId> = { v: "interagir", l: "dados", m: "medir", d: "marcar", f: "desenhar", x: "texto", t: "terreno", o: "objetos", i: "imagens", a: "areas", r: "rodadas", k: "marcadores" };
 
 /**
  * Ferramentas visíveis pro papel — Terreno é sempre narrador; ÁREAS e
@@ -79,7 +82,10 @@ export function ferramentasParaPapel(ehNarrador: boolean): FerramentaId[] {
   // Imagem de cena é montagem de mesa, mesma categoria de terreno e
   // objetos. O retrato de token, que o jogador pode trocar, NÃO passa
   // por esta ferramenta — ele vive no HUD do token selecionado.
-  return ehNarrador ? [...base, "terreno", "objetos", "imagens"] : base;
+  // Marcadores: o jogador VÊ a faixa no mapa, mas criar e avançar é do
+  // narrador (RLS de `vtt_markers`) — a ferramenta não tem o que oferecer
+  // a quem não pode escrever.
+  return ehNarrador ? [...base, "terreno", "objetos", "imagens", "marcadores"] : base;
 }
 
 /**

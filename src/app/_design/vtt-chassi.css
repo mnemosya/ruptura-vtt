@@ -209,7 +209,16 @@
   /* O campo INTERNO da busca: a moldura é da caixa em volta
      (`.rv-pn-busca`). Chanfrado, o corte do canto inferior esquerdo
      recortava o pé do cursor de digitação, que parecia "subir". */
-  .rv-pn-busca-input
+  .rv-pn-busca-input,
+  /* Marcadores (`vtt.css`): o anel é redondo, e os controles da
+     criação têm a geometria própria do desenho — só "Criar" é
+     chanfrado, com corte proporcional à altura dele. */
+  .rv-mk-anel,
+  .rv-mk-tipo,
+  .rv-mk-chip,
+  .rv-mk-passo,
+  .rv-mk-input,
+  .rv-mk-criar
 )):not(button[aria-label]:has(svg)) {
   /* ordem: superior esquerdo, superior direito, inferior direito,
      inferior esquerdo — exatamente `rup-clip`. */

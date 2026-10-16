@@ -321,7 +321,7 @@ export interface PropsMapaHex {
   /** Ferramenta ativa — controla se o mapa aceita arrastar token / pintar célula. */
   // Espelha `FerramentaId` (`_ferramentas/controlador.ts`) — repetido
   // como literal para o mapa não depender do módulo de ferramentas.
-  ferramenta?: "interagir" | "dados" | "medir" | "marcar" | "desenhar" | "texto" | "terreno" | "objetos" | "imagens" | "areas" | "rodadas";
+  ferramenta?: "interagir" | "dados" | "medir" | "marcar" | "desenhar" | "texto" | "terreno" | "objetos" | "imagens" | "areas" | "rodadas" | "marcadores";
   anotacoes?: readonly AnotacaoCena[];
   anotacoesSceneId?: string | null;
   anotacaoSelecionadaId?: string | null;
