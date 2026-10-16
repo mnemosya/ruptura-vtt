@@ -6739,9 +6739,11 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
    ===================================================================== */
 .rv-mk-faixa,
 .rv-mk-pop {
-  --mk-vazio: var(--rv-line-max);
   --mk-cor: var(--rv-cy);
 }
+/* Vazio tingido pelo próprio tipo: com o fio neutro (`--rv-line-max`,
+   petróleo no Forja) uma Pressão zerada lia como ciano. */
+.rv-mk-item { --mk-vazio: color-mix(in srgb, var(--mk-cor) 22%, var(--rv-line)); }
 :is(.rv-mk-item, .rv-mk-pop, .rv-mk-tipo)[data-tipo="pressao"] { --mk-cor: var(--rv-am); }
 .rv-mk-tipo[data-tipo="progresso"] { --mk-cor: var(--rv-cy); }
 
@@ -6750,14 +6752,18 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
 @keyframes rv-mk-fade { from { opacity: 0; } }
 
 /* ── Faixa ─────────────────────────────────────────────────────────── */
+/* Centro do PALCO, o mesmo eixo de `.rv-rodadas` (left 50% + translate). */
 .rv-mk-faixa {
-  position: absolute; left: 0; right: var(--rv-painel-aberto-ocupa, 0px); top: 20px; z-index: 11;
+  position: absolute; left: 50%; top: 20px; z-index: 11;
   display: flex; justify-content: center; align-items: flex-start; gap: 8px;
   pointer-events: none;
-  transition: top 280ms cubic-bezier(.2, 0, 0, 1);
+  transform: translate(-50%, 0);
+  transition: top 280ms cubic-bezier(.2, 0, 0, 1), transform 280ms cubic-bezier(.2, 0, 0, 1);
 }
-/* HUD de rodadas no topo: a faixa desce para a base. */
-.rv-mk-faixa[data-combate] { top: calc(100% - 132px); }
+/* HUD de rodadas no topo: a faixa desce para a base. Ancorada pela
+   própria altura (translate −100%), a folga embaixo é sempre 20px,
+   com ou sem nome nos marcadores. */
+.rv-mk-faixa[data-combate] { top: 100%; transform: translate(-50%, calc(-100% - 20px)); }
 
 .rv-mk-item {
   position: relative; width: 128px; pointer-events: auto;
