@@ -6840,6 +6840,36 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
 .rv-mk-dica-nome { font: 600 13px var(--rv-body); color: var(--rv-ink); }
 .rv-mk-dica-ajuda { margin-top: 3px; font: 9.5px var(--rv-mono); letter-spacing: .08em; color: var(--rv-ink-faint); }
 
+/* Remover: canto superior direito do anel, só no hover. */
+.rv-mk-remover {
+  position: absolute; top: -2px; left: calc(50% + 24px); z-index: 2;
+  width: 20px; height: 20px; padding: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50% !important; border: 1px solid var(--rv-line-strong);
+  background: var(--rv-panel); color: var(--rv-ink-dim);
+  opacity: 0; pointer-events: none;
+  transition: opacity 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out, background 120ms ease-out;
+}
+.rv-mk-item:hover .rv-mk-remover, .rv-mk-remover:focus-visible { opacity: 1; pointer-events: auto; }
+.rv-mk-remover:hover { color: var(--txt-forte); border-color: var(--rv-dg); background: color-mix(in srgb, var(--rv-dg) 18%, var(--rv-panel)); }
+.rv-mk-remover:active { transform: scale(.94); }
+
+/* Aviso de remoção com desfazer: entra na faixa, ao lado dos marcadores. */
+.rv-mk-aviso {
+  pointer-events: auto; align-self: center;
+  display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 12px;
+  background: var(--rv-panel); border: 1px solid var(--rv-line-strong);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, .45);
+  font: 500 12px var(--rv-body); color: var(--rv-ink);
+  animation: rv-mk-entra 160ms cubic-bezier(.2, 0, 0, 1) backwards;
+}
+.rv-mk-aviso-desfazer {
+  padding: 4px 8px; cursor: pointer; border: 1px solid var(--rv-line); background: transparent;
+  font: 600 11px var(--rv-display); letter-spacing: .12em; text-transform: uppercase; color: var(--rv-cy);
+  transition: background 120ms ease-out, border-color 120ms ease-out;
+}
+.rv-mk-aviso-desfazer:hover { background: var(--rv-cy-soft); border-color: var(--rv-cy); }
+
 /* ── Criação ───────────────────────────────────────────────────────── */
 .rv-mk-pop {
   position: absolute; left: 50%; top: 150px; z-index: 17; width: 400px; max-width: calc(100% - 24px);

@@ -79,3 +79,38 @@ export async function definirPreenchidos(params: { campaignId: string; id: strin
   if (error || !data) return { ok: false, erro: "Não foi possível alterar o marcador." };
   return { ok: true, dados: linhaParaMarcador(data) };
 }
+
+export async function removerMarcador(params: { campaignId: string; id: string }): Promise<Resultado<MarcadorDb>> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from("vtt_markers")
+    .delete()
+    .eq("id", params.id)
+    .eq("campaign_id", params.campaignId)
+    .select(COLUNAS)
+    .maybeSingle();
+  if (error || !data) return { ok: false, erro: "Não foi possível remover o marcador." };
+  return { ok: true, dados: linhaParaMarcador(data) };
+}
+
+/**
+ * Desfazer da remoção: devolve a MESMA linha (mesmo id e `created_at`),
+ * então o marcador volta para o lugar de onde saiu na faixa.
+ */
+export async function restaurarMarcador(params: { campaignId: string; marcador: MarcadorDb }): Promise<Resultado<MarcadorDb>> {
+  const usuario = await getCurrentUser();
+  if (!usuario) return { ok: false, erro: "Sessão expirada — faça login novamente." };
+
+  const m = params.marcador;
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from("vtt_markers")
+    .insert({
+      id: m.id, campaign_id: params.campaignId, tipo: m.tipo, nome: m.nome, total: m.total,
+      preenchidos: m.preenchidos, created_at: m.criadoEm, created_by: usuario.id,
+    })
+    .select(COLUNAS)
+    .single();
+  if (error || !data) return { ok: false, erro: "Não foi possível desfazer a remoção." };
+  return { ok: true, dados: linhaParaMarcador(data) };
+}

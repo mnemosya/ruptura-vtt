@@ -26,13 +26,17 @@ export function IconeTipoMarcador({ tipo, tamanho }: { tipo: TipoMarcador; taman
   );
 }
 
-export function FaixaMarcadores({ marcadores, ehNarrador, emCombate, onAjustar }: {
+export function FaixaMarcadores({ marcadores, ehNarrador, emCombate, onAjustar, onRemover, removido, onDesfazerRemocao }: {
   marcadores: MarcadorVtt[];
   ehNarrador: boolean;
   emCombate: boolean;
   onAjustar: (id: string, delta: number) => void;
+  onRemover: (id: string) => void;
+  /** Último marcador removido, enquanto o "Desfazer" está na tela. */
+  removido: MarcadorVtt | null;
+  onDesfazerRemocao: () => void;
 }) {
-  if (marcadores.length === 0) return null;
+  if (marcadores.length === 0 && !removido) return null;
   return (
     <div className="rv-mk-faixa" data-combate={emCombate || undefined} aria-label="Marcadores">
       {marcadores.map((m) => {
@@ -58,6 +62,14 @@ export function FaixaMarcadores({ marcadores, ehNarrador, emCombate, onAjustar }
               <span className="rv-mk-anel-segmentos" style={{ "--mk-anel": gradienteAnel(m.total, m.preenchidos) } as CSSProperties} />
               <span className="rv-mk-anel-miolo"><IconeTipoMarcador tipo={m.tipo} tamanho={20} /></span>
             </button>
+            {/* Remover: só o narrador, aparece no hover. Sem confirmação —
+                o "Desfazer" logo abaixo cobre o clique errado. */}
+            {ehNarrador && (
+              <button type="button" className="rv-mk-remover" aria-label={`Remover ${m.nome ?? ROTULO_TIPO[m.tipo]}`}
+                onClick={(e) => { e.stopPropagation(); onRemover(m.id); }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+              </button>
+            )}
             {m.nome && <span className="rv-mk-nome">{m.nome}</span>}
             {completo && <span className="rv-mk-selo"><span className="rv-mk-caps">{SELO_CONCLUSAO[m.tipo]}</span></span>}
             <span className="rv-mk-dica" role="tooltip">
@@ -71,6 +83,12 @@ export function FaixaMarcadores({ marcadores, ehNarrador, emCombate, onAjustar }
           </div>
         );
       })}
+      {removido && ehNarrador && (
+        <div className="rv-mk-aviso" role="status">
+          <span>Marcador removido</span>
+          <button type="button" className="rv-mk-aviso-desfazer" onClick={onDesfazerRemocao}>Desfazer</button>
+        </div>
+      )}
     </div>
   );
 }

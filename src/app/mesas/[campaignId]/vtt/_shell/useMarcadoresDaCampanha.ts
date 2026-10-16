@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBrowserSupabaseClient } from "../../../../../lib/supabase/browserClient";
 import { ajustarPreenchidos, type MarcadorVtt, type TipoMarcador } from "../_dominio/marcadores";
-import { criarMarcadorAction, definirPreenchidosAction, lerMarcadoresAction } from "../_acoes/marcadoresActions";
+import {
+  criarMarcadorAction, definirPreenchidosAction, lerMarcadoresAction, removerMarcadorAction, restaurarMarcadorAction,
+} from "../_acoes/marcadoresActions";
+
+/** Quanto tempo o "Desfazer" da remoção fica na tela. */
+const JANELA_DESFAZER_MS = 5000;
 
 /**
  * Marcadores da campanha: leitura, aviso por broadcast (migration
@@ -22,6 +27,9 @@ export function useMarcadoresDaCampanha(campaignId: string) {
   marcadoresRef.current = marcadores;
   const leituraRef = useRef(0);
   const versaoRef = useRef(new Map<string, number>());
+  const [removido, setRemovido] = useState<MarcadorVtt | null>(null);
+  const timerDesfazerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (timerDesfazerRef.current) clearTimeout(timerDesfazerRef.current); }, []);
 
   const reler = useCallback(async () => {
     const sequencia = ++leituraRef.current;
@@ -86,5 +94,40 @@ export function useMarcadoresDaCampanha(campaignId: string) {
       });
   }, [campaignId, reler]);
 
-  return { marcadores, erro, criar, ajustar };
+  /**
+   * Remove na hora (otimista) e abre a janela de "Desfazer". Se o
+   * servidor recusar, o marcador volta e o aviso some.
+   */
+  const remover = useCallback((id: string) => {
+    const alvo = marcadoresRef.current.find((m) => m.id === id);
+    if (!alvo) return;
+    ++leituraRef.current;
+    versaoRef.current.delete(id);
+    setMarcadores((ms) => ms.filter((m) => m.id !== id));
+    setRemovido(alvo);
+    if (timerDesfazerRef.current) clearTimeout(timerDesfazerRef.current);
+    timerDesfazerRef.current = setTimeout(() => setRemovido((r) => (r?.id === id ? null : r)), JANELA_DESFAZER_MS);
+    void removerMarcadorAction({ campaignId, id })
+      .then((r) => {
+        if (r.ok) { setErro(null); return; }
+        setErro(r.erro);
+        setRemovido((x) => (x?.id === id ? null : x));
+        void reler();
+      })
+      .catch(() => { setErro("Falha de rede ao remover marcador."); setRemovido((x) => (x?.id === id ? null : x)); void reler(); });
+  }, [campaignId, reler]);
+
+  const desfazerRemocao = useCallback(() => {
+    const alvo = removido;
+    if (!alvo) return;
+    if (timerDesfazerRef.current) clearTimeout(timerDesfazerRef.current);
+    setRemovido(null);
+    ++leituraRef.current;
+    setMarcadores((ms) => [...ms.filter((m) => m.id !== alvo.id), alvo].sort((a, b) => a.criadoEm.localeCompare(b.criadoEm)));
+    void restaurarMarcadorAction({ campaignId, marcador: alvo })
+      .then((r) => { if (r.ok) setErro(null); else { setErro(r.erro); void reler(); } })
+      .catch(() => { setErro("Falha de rede ao desfazer."); void reler(); });
+  }, [campaignId, removido, reler]);
+
+  return { marcadores, erro, criar, ajustar, remover, removido, desfazerRemocao };
 }

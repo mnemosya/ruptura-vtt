@@ -9,7 +9,7 @@
 
 import "server-only";
 import { resolveCampaignAccess } from "../../../../../lib/campaign/access";
-import { criarMarcador, definirPreenchidos, listarMarcadores, type MarcadorDb } from "../../../../../lib/vtt/marcadoresStorage";
+import { criarMarcador, definirPreenchidos, listarMarcadores, removerMarcador, restaurarMarcador, type MarcadorDb } from "../../../../../lib/vtt/marcadoresStorage";
 import { limitarTotal, normalizarNome, type TipoMarcador } from "../_dominio/marcadores";
 
 type ResultadoAcao<T> = { ok: true; dados: T } | { ok: false; erro: string };
@@ -53,4 +53,22 @@ export async function definirPreenchidosAction(params: {
   // O teto (`<= total`) é do banco: o cliente não sabe o total com certeza
   // se outra aba mudou o marcador, e a constraint recusa o excedente.
   return definirPreenchidos({ campaignId: params.campaignId, id: params.id, preenchidos: Math.max(0, Math.round(params.preenchidos)) });
+}
+
+export async function removerMarcadorAction(params: { campaignId: string; id: string }): Promise<ResultadoAcao<MarcadorDb>> {
+  const erro = await exigirAcesso(params.campaignId);
+  if (erro) return { ok: false, erro };
+  return removerMarcador(params);
+}
+
+export async function restaurarMarcadorAction(params: { campaignId: string; marcador: MarcadorDb }): Promise<ResultadoAcao<MarcadorDb>> {
+  const erro = await exigirAcesso(params.campaignId);
+  if (erro) return { ok: false, erro };
+  const m = params.marcador;
+  if (m.tipo !== "progresso" && m.tipo !== "pressao") return { ok: false, erro: "Tipo de marcador inválido." };
+  const total = limitarTotal(m.total);
+  return restaurarMarcador({
+    campaignId: params.campaignId,
+    marcador: { ...m, nome: m.nome === null ? null : normalizarNome(m.nome), total, preenchidos: Math.max(0, Math.min(total, Math.round(m.preenchidos))) },
+  });
 }

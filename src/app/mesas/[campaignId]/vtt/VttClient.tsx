@@ -6738,6 +6738,9 @@ export function VttClient({
           ehNarrador={ehNarrador}
           emCombate={trilha !== null && !trilhaOculta}
           onAjustar={marcadores.ajustar}
+          onRemover={marcadores.remover}
+          removido={marcadores.removido}
+          onDesfazerRemocao={marcadores.desfazerRemocao}
         />
         {ferramenta === "marcadores" && ehNarrador && (
           <PainelMarcadores
