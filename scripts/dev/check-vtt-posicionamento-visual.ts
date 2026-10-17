@@ -126,7 +126,7 @@ async function abrirCriarConfigurando(page: Page, indiceCelula = 40) {
   await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
 }
 async function continuarParaPosicionar(page: Page) {
-  await page.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Continuar para posicionar" }).click();
+  await page.locator('.rv-gerenciador-token [data-testid="token-confirmar"]', { hasText: "Posicionar no mapa" }).click();
   // A faixa "Escolha uma posição" saiu — quem diz que o posicionamento
   // começou é a CAMADA do fantasma no mapa, que é o que a pessoa vê.
   // A CAMADA SÓ EXISTE COM ÂNCORA, e a âncora nasce do ponteiro sobre
@@ -198,31 +198,28 @@ async function main() {
   {
     await escolherTamanhoDoToken(page, "grande");
     await page.screenshot({ path: path.join(DIR_SHOTS, "02-formulario-grande.png") });
-    // A caixa do GRUPO segmentado ocupa o lugar que o `<select>` ocupava.
-    const tamanhoBox = await page.locator('.rv-segmentado[aria-label="Tamanho"]').boundingBox();
-    // `.rv-pegada-preview` não existe mais: a prévia virou o RETRATO
-    // da peça, `.rv-token-pegada`, com a contagem de hexes ao lado.
-    const previewBox = await page.locator(".rv-gerenciador-token .rv-token-pegada").boundingBox();
+    // O tamanho é um TRILHO (`.jf-trilho`); a legenda logo abaixo
+    // (`.jf-trilho-leg`) mostra metros e a contagem de hexes.
+    const tamanhoBox = await page.locator('.rv-gerenciador-token .jf-trilho[aria-label="Tamanho"]').boundingBox();
+    const previewBox = await page.locator(".rv-gerenciador-token .jf-trilho-leg span").boundingBox();
     const semSobreposicao = !sobrepoe(tamanhoBox!, previewBox!);
-    const dicaOrientacao = await page.locator(".rv-gerenciador-token .rv-field-ajuda", { hasText: "orientação da pegada é escolhida no mapa" }).count();
+    const dicaOrientacao = await page.locator(".rv-gerenciador-token .jf-nota", { hasText: "orientação da pegada é escolhida no mapa" }).count();
     registrar("2 (formulário Grande: campo Tamanho e preview lado a lado, dica de orientação futura presente)", semSobreposicao && dicaOrientacao > 0, `semSobreposicao=${semSobreposicao}, dica=${dicaOrientacao > 0}`);
   }
 
   // ── 3: "Mais opções" aberto ──────────────────────────────────────
   {
-    await page.locator("summary", { hasText: "Retrato, vida e estado" }).click();
+    await page.locator(".rv-gerenciador-token .jf-sec-cab", { hasText: "Retrato e vida" }).click();
     await page.waitForTimeout(150);
     await page.screenshot({ path: path.join(DIR_SHOTS, "03-mais-opcoes-aberto.png") });
-    // Os três viraram `<fieldset><legend>`, não `<label>`: são GRUPOS de
-    // controles, não um campo só. E "Pontos de Vida" virou "Recursos",
-    // que é o que o grupo passou a conter (PV, PE e Mana). O critério é
-    // sobre o que a seção MOSTRA quando abre — segue valendo, com os
-    // nomes de hoje.
-    const vertenteVisivel = await page.locator('.rv-gerenciador-token legend:has-text("Vertente")').isVisible();
-    const imagemVisivel = await page.locator('.rv-gerenciador-token legend:has-text("Imagem do token")').isVisible();
-    const pvVisivel = await page.locator('.rv-gerenciador-token legend:has-text("Recursos")').isVisible();
-    const condicoesVisivel = await page.locator('.rv-gerenciador-token legend:has-text("Condições")').first().isVisible();
-    registrar("3 ('Retrato, vida e estado' aberta: Vertente/Imagem/Recursos/Condições visíveis)", vertenteVisivel && imagemVisivel && pvVisivel && condicoesVisivel, `vertente=${vertenteVisivel}, imagem=${imagemVisivel}, pv=${pvVisivel}, condicoes=${condicoesVisivel}`);
+    // A seção (botão `.jf-sec-cab` "Retrato e vida") não tem mais
+    // `<legend>`: cada bloco é um grupo da pele `jf-*`. O critério é
+    // sobre o que a seção MOSTRA quando abre.
+    const vertenteVisivel = await page.locator('.rv-gerenciador-token [role="radiogroup"][aria-label="Vertente"]').isVisible();
+    const imagemVisivel = await page.locator(".rv-gerenciador-token .rv-tok-img").isVisible();
+    const pvVisivel = await page.locator(".rv-gerenciador-token .jf-dims").isVisible();
+    const condicoesVisivel = await page.locator(".rv-gerenciador-token .rv-tok-condicoes").first().isVisible();
+    registrar("3 ('Retrato e vida' aberta: Vertente/Imagem/Recursos/Condições visíveis)", vertenteVisivel && imagemVisivel && pvVisivel && condicoesVisivel, `vertente=${vertenteVisivel}, imagem=${imagemVisivel}, pv=${pvVisivel}, condicoes=${condicoesVisivel}`);
     page.once("dialog", (d) => d.accept());
     await page.keyboard.press("Escape");
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
@@ -233,11 +230,11 @@ async function main() {
     await page.setViewportSize({ width: 380, height: 700 });
     await abrirCriarConfigurando(page, 55);
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Visual Estreito");
-    await page.locator("summary", { hasText: "Retrato, vida e estado" }).click();
+    await page.locator(".rv-gerenciador-token .jf-sec-cab", { hasText: "Retrato e vida" }).click();
     await page.screenshot({ path: path.join(DIR_SHOTS, "04-viewport-estreita.png") });
-    const rodapeBox = await page.locator(".rv-modal-rodape").boundingBox();
+    const rodapeBox = await page.locator(".rv-gerenciador-token .rv-tok-acao").boundingBox();
     const rodapeDentro = rodapeBox!.x >= 0 && rodapeBox!.x + rodapeBox!.width <= 380;
-    const botoes = await page.locator(".rv-modal-rodape .rv-btn").all();
+    const botoes = await page.locator(".rv-gerenciador-token .rv-tok-acao button").all();
     const boxesBotoes = await Promise.all(botoes.map((b) => b.boundingBox()));
     let botoesSemSobreposicao = true;
     for (let i = 0; i < boxesBotoes.length; i++) for (let j = i + 1; j < boxesBotoes.length; j++) {

@@ -163,10 +163,10 @@ async function main() {
     await narradorPage.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2, { button: "right" });
     await narradorPage.locator(".rv-menu-item", { hasText: "Adicionar token" }).click();
     await narradorPage.locator(".rv-gerenciador-token input[type=text]").first().fill("Sentinela Sync");
-    // Fluxo em duas etapas: "Continuar para posicionar" só fecha o
+    // Fluxo em duas etapas: "Posicionar no mapa" só fecha o
     // formulário e abre o fantasma no mapa — a criação de verdade só
     // acontece no clique da célula, abaixo.
-    await narradorPage.locator('.rv-gerenciador-token .rv-btn--pri', { hasText: "Continuar para posicionar" }).click();
+    await narradorPage.locator('.rv-gerenciador-token [data-testid="token-confirmar"]', { hasText: "Posicionar no mapa" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 });
     await narradorPage.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2, { steps: 3 });
     await narradorPage.waitForTimeout(150);
@@ -209,7 +209,7 @@ async function main() {
     await nomeInput.fill("");
     await nomeInput.fill("Sentinela Editada");
     await escolherTamanhoDoToken(narradorPage, "grande"); // muda tamanho JUNTO com o nome, na mesma confirmação
-    await narradorPage.locator('.rv-gerenciador-token .rv-btn--pri', { hasText: "Salvar" }).click();
+    await narradorPage.locator('.rv-gerenciador-token [data-testid="token-confirmar"]', { hasText: "Salvar" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 5000 });
     const { data: linha } = await admin.from("vtt_tokens").select("nome, tamanho, revision").eq("id", tokenId).single();
     registrar(
@@ -232,7 +232,7 @@ async function main() {
     await narradorPage.locator(".rv-menu-item", { hasText: "Editar" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
     await escolherTamanhoDoToken(narradorPage, "medio");
-    await narradorPage.locator('.rv-gerenciador-token .rv-btn--pri', { hasText: "Salvar" }).click();
+    await narradorPage.locator('.rv-gerenciador-token [data-testid="token-confirmar"]', { hasText: "Salvar" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 5000 });
     const { data: depoisDeVoltar } = await admin.from("vtt_tokens").select("tamanho, revision").eq("id", tokenId).single();
     registrar(
@@ -279,8 +279,12 @@ async function main() {
     // pode mexer nisto?"). O texto antigo não existe mais em lugar
     // nenhum, e `selectOption` ficava 30s esperando um `select` que
     // nunca ia ser encontrado.
-    await narradorPage.locator(".rv-gerenciador-token label", { hasText: "Ficha vinculada" }).locator("select").selectOption({ label: "PJ do teste de sync" });
-    await narradorPage.locator('.rv-gerenciador-token .rv-btn--pri', { hasText: "Salvar" }).click();
+    // Hoje a seção "Controle" é um `.jf-sec-cab` recolhido e o select
+    // leva aria-label="Ficha vinculada" (o rótulo visível é só "Ficha").
+    const secControle = narradorPage.locator(".rv-gerenciador-token .jf-sec-cab", { hasText: "Controle" });
+    if (await secControle.getAttribute("aria-expanded") === "false") await secControle.click();
+    await narradorPage.locator('.rv-gerenciador-token select[aria-label="Ficha vinculada"]').selectOption({ label: "PJ do teste de sync" });
+    await narradorPage.locator('.rv-gerenciador-token [data-testid="token-confirmar"]', { hasText: "Salvar" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 5000 });
     const { data: vinculado } = await admin.from("vtt_tokens").select("character_id").eq("id", tokenId).single();
     registrar("6a (vincular personagem pela UI persiste no banco)", vinculado?.character_id === characterId, `character_id=${vinculado?.character_id}`);
@@ -390,7 +394,7 @@ async function main() {
     await narradorPage.locator(".rv-menu-item", { hasText: "Editar" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
     await escolherTamanhoDoToken(narradorPage, "medio");
-    await narradorPage.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Salvar" }).click();
+    await narradorPage.locator('.rv-gerenciador-token [data-testid="token-confirmar"]', { hasText: "Salvar" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 5000 });
 
     const { data: linha } = await admin.from("vtt_tokens").select("tamanho, pegada_personalizada").eq("id", tokenPegadaId).single();
@@ -418,7 +422,7 @@ async function main() {
     await narradorPage.locator(".rv-menu-item", { hasText: "Adicionar token" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
     // Nome/sigla ficam vazios de propósito — não preenche nada.
-    await narradorPage.locator('.rv-gerenciador-token .rv-btn--pri', { hasText: "Continuar para posicionar" }).click();
+    await narradorPage.locator('.rv-gerenciador-token [data-testid="token-confirmar"]', { hasText: "Posicionar no mapa" }).click();
     await narradorPage.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2, { steps: 3 });
     await narradorPage.waitForTimeout(150);
     await narradorPage.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);

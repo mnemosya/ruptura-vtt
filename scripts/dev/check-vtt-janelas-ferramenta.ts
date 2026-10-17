@@ -95,30 +95,19 @@ async function capturarRodadasAtivo(page: Page) {
   await page.keyboard.press("r");
   const janela = page.locator('section[aria-label="Ferramenta Rodadas"]');
   await janela.waitFor({ timeout: 4000 });
-  await janela.locator(".rv-rodadas-iniciar").click();
-  // `.rv-fp-placas` existe nos DOIS estados — esperar por ela pegava a
-  // janela ainda em "Iniciando…". A nota da janela aberta só existe com
-  // combate em vigor.
-  await janela.locator(".rv-rodadas-regra").waitFor({ timeout: 10000 });
+  await janela.locator('[data-testid="rodadas-iniciar"]').click();
+  // A vitrine da rodada (`rodadas-janela`) só existe com combate em
+  // vigor — esperar por ela evita capturar a janela em "Iniciando…".
+  await janela.locator('[data-testid="rodadas-janela"]').waitFor({ timeout: 10000 });
   // O cursor fica em cima do botão que acabou de ser clicado e o anel
   // de carga dele aparece na captura como se fosse parte da janela.
   await page.mouse.move(20, 20);
   await page.waitForTimeout(600);
   await janela.screenshot({ path: "scripts/dev/.artefatos-visuais/janela-rodadas-ativo.png" });
 
-  // As ações da linha são ÍCONE: a captura da janela em repouso não
-  // mostra o que elas dizem. Esta segunda passada pega a dica aberta —
-  // e como ela é `position: fixed` (o corpo da janela rola), o recorte
-  // tem que ser da PÁGINA, não do elemento.
-  await janela.locator(".rv-rodadas-linha").first().locator(".rv-rodadas-mini").first().hover();
-  await page.locator(".rv-rodadas-dica").waitFor({ timeout: 3000 });
-  const caixa = await janela.boundingBox();
-  if (caixa) {
-    await page.screenshot({
-      path: "scripts/dev/.artefatos-visuais/janela-rodadas-ativo-dica.png",
-      clip: { x: caixa.x, y: caixa.y, width: caixa.width, height: caixa.height },
-    });
-  }
+  // A antiga captura da dica flutuante das ações de ícone saiu: os
+  // tooltips foram substituídos pela linha de ajuda (`jf-desc`) e pelo
+  // aria-label de cada botão.
   console.log("ok - rodadas (combate ativo)");
 }
 

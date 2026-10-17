@@ -181,7 +181,7 @@ async function abrirCriarConfigurando(page: Page, indiceCelula = 40) {
   await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
 }
 
-/** Preenche o mínimo pra "Continuar para posicionar" ficar habilitado (nome não-vazio → sigla nasce sugerida). */
+/** Preenche o mínimo pra "Posicionar no mapa" ficar habilitado (nome não-vazio → sigla nasce sugerida). */
 async function preencherNomeMinimo(page: Page, nome: string) {
   await page.locator(".rv-gerenciador-token input[type=text]").first().fill(nome);
 }
@@ -369,8 +369,9 @@ async function main() {
 
   // --- 7: "Mais opções" começa fechada (modo criar) ---
   {
-    const aberto = await page.locator(".rv-gerenciador-token details.rv-mais-opcoes").getAttribute("open");
-    registrar('7 ("Retrato, vida e estado" começa fechada)', aberto === null, `open=${aberto}`);
+    // A seção virou um botão `.jf-sec-cab` com aria-expanded.
+    const aberto = await page.locator(".rv-gerenciador-token .jf-sec-cab", { hasText: "Retrato e vida" }).getAttribute("aria-expanded");
+    registrar('7 ("Retrato e vida" começa fechada)', aberto === "false", `aria-expanded=${aberto}`);
   }
 
   // --- 8: tamanho mostra quantidade correta de hexes ---
@@ -381,13 +382,13 @@ async function main() {
     // segmentado (`role="radiogroup"`, um `role="radio"` por categoria),
     // então `selectOption` não tem o que operar — o id não existe mais
     // em lugar nenhum do app. E a contagem de hexes saiu do texto de
-    // ajuda do campo: hoje ela faz parte do RETRATO da peça
-    // (`.rv-token-pegada`), ao lado da prévia desenhada.
+    // ajuda do campo: hoje ela fica na legenda do trilho de tamanho
+    // (`.jf-trilho-leg span`), logo abaixo dele.
     //
     // O que o critério afirma continua valendo — escolher um tamanho
     // mostra quantos hexes ele ocupa —, e é por isso que ele foi
     // reescrito em vez de removido.
-    const hexesNaPrevia = () => page.locator(".rv-token-pegada span").first().textContent();
+    const hexesNaPrevia = () => page.locator(".rv-gerenciador-token .jf-trilho-leg span").first().textContent();
     await escolherTamanhoDoToken(page, "medio");
     const medio = await hexesNaPrevia();
     await escolherTamanhoDoToken(page, "grande");
@@ -473,8 +474,8 @@ async function main() {
   {
     await abrirCriarConfigurando(page, 195);
     const nomeVazio = await page.locator(".rv-gerenciador-token input[type=text]").first().inputValue();
-    const podeContinuar = !(await page.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Continuar para posicionar" }).isDisabled());
-    registrar("nome-ui-1 (nome/sigla vazios não bloqueiam 'Continuar para posicionar')", nomeVazio === "" && podeContinuar, `nome="${nomeVazio}", podeContinuar=${podeContinuar}`);
+    const podeContinuar = !(await page.locator('.rv-gerenciador-token [data-testid="token-confirmar"]', { hasText: "Posicionar no mapa" }).isDisabled());
+    registrar("nome-ui-1 (nome/sigla vazios não bloqueiam 'Posicionar no mapa')", nomeVazio === "" && podeContinuar, `nome="${nomeVazio}", podeContinuar=${podeContinuar}`);
 
     await continuarParaPosicionar(page);
     await moverParaCelula(page, 195); // sem isto o fantasma nem existe ainda (âncora só nasce no primeiro hover) — o count()===0 provaria a coisa errada
@@ -663,7 +664,7 @@ async function main() {
     // Na volta a camada já tem âncora sem hover nenhum — é esse o ponto
     // de `ancoraPreservada` em `VttClient` —, então basta confirmar e
     // ler antes de mexer no mouse.
-    await page.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Continuar para posicionar" }).click();
+    await page.locator('.rv-gerenciador-token [data-testid="token-confirmar"]', { hasText: "Posicionar no mapa" }).click();
     await page.locator(".rv-gerenciador-token").waitFor({ state: "detached", timeout: 8000 });
     await page.waitForSelector(".rv-camada-posicionamento-token", { timeout: 8000 });
     const ancoraDepoisDeVoltar = await page.locator(".rv-camada-posicionamento-token").getAttribute("data-ancora");
@@ -758,7 +759,7 @@ async function main() {
     tokenEditarId = data ? (data as { id: string }).id : null;
 
     // personagem vinculado (itens 13/14 do pedido original, cobertos aqui — a etapa de configuração é a mesma pros dois modos)
-    const ajuda = await page.locator('.rv-gerenciador-token label:has-text("Ficha vinculada") .rv-field-ajuda').textContent().catch(() => null);
+    const ajuda = await page.locator('.rv-gerenciador-token select[aria-label="Ficha vinculada"]').count().catch(() => null);
     void ajuda; // modal já fechou (criação concluída) — checagem real do vínculo abaixo, reabrindo em modo editar
 
     // --- 26: edição preserva posição/orientação ---
@@ -766,7 +767,10 @@ async function main() {
     await page.locator(".rv-menu-item", { hasText: "Editar" }).click();
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
 
-    const opcoesPersonagem = await page.locator('.rv-gerenciador-token label:has-text("Ficha vinculada") select option').allTextContents();
+    // O select de ficha mora na seção "Controle" (recolhida de saída).
+    const secControle = page.locator(".rv-gerenciador-token .jf-sec-cab", { hasText: "Controle" });
+    if (await secControle.getAttribute("aria-expanded") === "false") await secControle.click();
+    const opcoesPersonagem = await page.locator('.rv-gerenciador-token select[aria-label="Ficha vinculada"] option').allTextContents();
     registrar(
       "personagem vinculado (só lista da MESMA campanha, nunca de outra)",
       opcoesPersonagem.some((o) => o.includes("PJ da campanha certa")) && !opcoesPersonagem.some((o) => o.includes("PJ de outra campanha")),
@@ -774,7 +778,7 @@ async function main() {
     );
 
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Editável Renomeado");
-    await page.locator(".rv-btn--pri", { hasText: "Salvar alterações" }).click();
+    await page.locator('.rv-gerenciador-token [data-testid="token-confirmar"]', { hasText: "Salvar alterações" }).click();
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 5000 });
     const { data: depoisDeEditar } = await admin.from("vtt_tokens").select("q, r, orientacao, nome").eq("id", tokenEditarId).single();
     registrar(
@@ -798,7 +802,7 @@ async function main() {
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Editável Undo Redo");
     await escolherTamanhoDoToken(page, "grande");
-    await page.locator(".rv-btn--pri", { hasText: "Salvar alterações" }).click();
+    await page.locator('.rv-gerenciador-token [data-testid="token-confirmar"]', { hasText: "Salvar alterações" }).click();
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 5000 });
     const { data: depoisDeEditar2 } = await admin.from("vtt_tokens").select("nome, tamanho, revision").eq("id", tokenEditarId!).single();
     registrar(
@@ -871,7 +875,7 @@ async function main() {
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
     await escolherTamanhoDoToken(page, "grande");
     const avisoResize = await page.locator(".rv-gerenciador-token .rv-form-aviso", { hasText: "não cabe na posição atual" }).count();
-    const botaoDesabilitado = await page.locator(".rv-btn--pri", { hasText: "Salvar alterações" }).isDisabled();
+    const botaoDesabilitado = await page.locator('.rv-gerenciador-token [data-testid="token-confirmar"]', { hasText: "Salvar alterações" }).isDisabled();
     registrar("27 (redimensionar sem couber é recusado, com a mensagem certa)", avisoResize > 0 && botaoDesabilitado, `aviso=${avisoResize > 0}, desabilitado=${botaoDesabilitado}`);
     const { data: naoMudou } = await admin.from("vtt_tokens").select("tamanho").eq("id", tokenEditarId!).single();
     registrar("27b (tamanho não muda no banco enquanto a recusa persistir)", naoMudou!.tamanho === "medio", `tamanho="${naoMudou!.tamanho}"`);
@@ -891,14 +895,10 @@ async function main() {
     await page.locator(`.rv-token[data-token-id="${tokenEditarId}"]`).click({ button: "right" });
     await page.locator(".rv-menu-item", { hasText: "Editar" }).click();
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
-    await page.locator("summary", { hasText: "Retrato, vida e estado" }).click();
-    // "Imagem do token" virou LEGENDA de um `fieldset` (o campo passou
-    // a ter dois caminhos, arquivo OU endereço, e um fieldset é o que
-    // agrupa os dois). O `label` que sobrou é o do endereço — "Ou um
-    // endereço" —, e é nele que mora o `input` de texto. O seletor
-    // antigo casava com nada e o `fill` esperava 30s antes de derrubar
-    // a suíte.
-    const imagemInput = page.locator('.rv-gerenciador-token label:has-text("Ou um endereço") input');
+    await page.locator(".rv-gerenciador-token .jf-sec-cab", { hasText: "Retrato e vida" }).click();
+    // A imagem tem dois caminhos (arquivo OU endereço); o endereço é um
+    // `input` solto com aria-label="Endereço da imagem".
+    const imagemInput = page.locator('.rv-gerenciador-token input[aria-label="Endereço da imagem"]');
     await imagemInput.fill("javascript:alert(1)");
     const avisoPerigosa = await page.locator(".rv-gerenciador-token .rv-form-aviso", { hasText: "http" }).count();
     await imagemInput.fill("não é uma url");
@@ -918,7 +918,7 @@ async function main() {
     await pvAtual.fill("50");
     await pvMax.fill("10");
     const avisoPv = await page.locator(".rv-gerenciador-token .rv-form-aviso", { hasText: "PV atual não pode ser maior" }).count();
-    const botaoDesabilitado = await page.locator(".rv-btn--pri", { hasText: "Salvar alterações" }).isDisabled();
+    const botaoDesabilitado = await page.locator('.rv-gerenciador-token [data-testid="token-confirmar"]', { hasText: "Salvar alterações" }).isDisabled();
     registrar("29 (PV atual maior que máximo é recusado)", avisoPv > 0 && botaoDesabilitado, `aviso=${avisoPv > 0}, desabilitado=${botaoDesabilitado}`);
     await pvAtual.fill("");
     await pvMax.fill("");
@@ -970,7 +970,7 @@ async function main() {
   {
     await page.setViewportSize({ width: 380, height: 620 });
     await abrirCriarConfigurando(page, 55);
-    const rodapeVisivel = await page.locator(".rv-modal-rodape").isVisible();
+    const rodapeVisivel = await page.locator(".rv-gerenciador-token .rv-tok-acao").isVisible();
     const corpoTemScroll = await page.evaluate(() => {
       const corpo = document.querySelector(".rv-modal-corpo");
       return corpo ? corpo.scrollHeight > corpo.clientHeight : false;

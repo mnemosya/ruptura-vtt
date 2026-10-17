@@ -257,50 +257,24 @@ async function main() {
     registrar("0g (clicar no X fecha em vez de arrastar)",
       await painel(narrador.page).count() === 0, "painel fechado");
 
-    // ── 0h: a explicação do modo é DICA, não conteúdo do card ──────
-    //
-    // O card mostra só o nome — em qualquer estado, inclusive
-    // selecionado. A regra aparece por cima ao passar o mouse. Duas
-    // coisas se provam juntas: a dica de fato APARECE (dentro de um
-    // `<button>` o Chromium não pintava o filho que ultrapassava a
-    // caixa — daí o invólucro) e o card NÃO cresce ao mostrá-la, senão
-    // o par de modos dança debaixo do cursor.
-    await abrirPainel(narrador.page);
-    {
-      const caixa = narrador.page.locator(".rv-rodadas-modo-caixa").first();
-      const cartao = caixa.locator(".rv-rodadas-modo");
-      const dica = caixa.locator(".rv-rodadas-modo-dica");
-      const alturaRepouso = (await cartao.boundingBox())!.height;
-      const opacidadeRepouso = await dica.evaluate((el) => getComputedStyle(el).opacity);
-      const textoNoCartao = ((await cartao.textContent()) ?? "").trim();
-      await cartao.hover();
-      await esperarAte(async () => (await dica.evaluate((el) => getComputedStyle(el).opacity)) === "1", 2000);
-      const caixaDica = await dica.boundingBox();
-      const alturaHover = (await cartao.boundingBox())!.height;
-      const vp = narrador.page.viewportSize()!;
-      const dentroDaTela = !!caixaDica && caixaDica.x >= 0 && caixaDica.y >= 0
-        && caixaDica.x + caixaDica.width <= vp.width && caixaDica.y + caixaDica.height <= vp.height;
-      const naoCresceu = Math.abs(alturaHover - alturaRepouso) < 1;
-      const soONome = textoNoCartao.length > 0 && !textoNoCartao.includes("Rodada");
-      registrar("0h (a regra do modo é dica flutuante: some em repouso, aparece no hover, dentro da tela, sem mexer no card)",
-        opacidadeRepouso === "0" && dentroDaTela && naoCresceu && soONome,
-        `opacidadeRepouso=${opacidadeRepouso}, dentroDaTela=${dentroDaTela}, altura ${alturaRepouso.toFixed(1)}→${alturaHover.toFixed(1)}, cartão="${textoNoCartao}"`);
-      await narrador.page.mouse.move(4, 4);
-    }
-    await narrador.page.locator('.rv-fp--rodadas .rv-fp-fechar').click();
-    await narrador.page.waitForTimeout(300);
+    // ── 0h: removido ────────────────────────────────────────────────
+    // A dica flutuante do modo (e os tooltips de botões de ícone) foi
+    // substituída pela linha de ajuda (`jf-desc`) e pelo aria-label.
 
     // ── 1: iniciar combate normal com elenco escolhido ─────────────
     await abrirPainel(narrador.page);
     // Deixa o "Reforço" de fora — ele entra no critério 3.
-    const itens = narrador.page.locator(".rv-rodadas-item");
+    // Clicar na linha põe/tira; o estado fica no aria-checked do losango.
+    const itens = narrador.page.locator('[data-testid^="rodadas-quem-"]');
     const totalItens = await itens.count();
     for (let i = 0; i < totalItens; i++) {
       const texto = await itens.nth(i).textContent();
-      if (texto?.includes("Reforço")) await itens.nth(i).locator("input").uncheck();
+      if (texto?.includes("Reforço") && await itens.nth(i).locator('[role="checkbox"]').getAttribute("aria-checked") === "true") {
+        await itens.nth(i).click();
+      }
     }
-    const resumoAntes = await narrador.page.locator(".rv-rodadas-resumo").textContent();
-    await narrador.page.locator(".rv-rodadas-iniciar").click();
+    const resumoAntes = await narrador.page.locator('[data-testid="rodadas-conta-total"]').textContent();
+    await narrador.page.locator('[data-testid="rodadas-iniciar"]').click();
     const iniciou = await esperarAte(async () => (await linhaDoBanco()) !== null, 10000);
     const linha1 = await linhaDoBanco();
     const participantes1 = (linha1?.estado.participantes as { id: string }[] | undefined) ?? [];
@@ -356,12 +330,11 @@ async function main() {
     const painelJogador = painel(jogador.page);
     registrar("6 (jogador abre o painel e vê o estado, sem controles administrativos)",
       await painelJogador.count() === 1
-        && await painelJogador.locator(".rv-rodadas-encerrar").count() === 0
-        && await painelJogador.locator(".rv-rodadas-mini").count() === 0
-        // O estado do combate agora são as PLACAS do topo (rodada e o
-        // que resta de cada lado), não mais a lista de definições.
-        && (await painelJogador.locator(".rv-fp-placas").textContent())?.includes("Rodada") === true,
-      `encerrar=${await painelJogador.locator(".rv-rodadas-encerrar").count()} mini=${await painelJogador.locator(".rv-rodadas-mini").count()}`);
+        && await painelJogador.locator('[data-testid="rodadas-encerrar"]').count() === 0
+        && await painelJogador.locator('[data-testid^="rodadas-mais-"]').count() === 0
+        // O estado do combate agora é a VITRINE do topo (rodada e janela).
+        && (await painelJogador.locator('[data-testid="rodadas-vitrine"]').textContent())?.includes("Rodada") === true,
+      `encerrar=${await painelJogador.locator('[data-testid="rodadas-encerrar"]').count()} mais=${await painelJogador.locator('[data-testid^="rodadas-mais-"]').count()}`);
 
     // A prova que importa: o SERVIDOR recusa, não só a UI esconde.
     ignorarErrosDeProposito = true;
@@ -383,51 +356,26 @@ async function main() {
     registrar("6c (jogador continua podendo JOGAR: declarar janela segue habilitado)",
       jogadorPodeJogar, `declarar habilitado=${jogadorPodeJogar}`);
 
-    // ── 3z: botão de ícone diz o próprio nome ──────────────────────
-    //
-    // As ações da linha (incapaz, passar, remover) são ÍCONE, sem
-    // rótulo escrito. Isso só é aceitável se o nome estiver a um
-    // hover/foco de distância — e ele tem que passar por cima da borda
-    // do corpo da janela, que ROLA e recortaria uma caixa comum.
+    // ── 3z: removido ────────────────────────────────────────────────
+    // Os tooltips dos botões de ícone foram substituídos pela linha de
+    // ajuda (`jf-desc`) e pelo aria-label de cada botão.
     await abrirPainel(narrador.page);
-    {
-      const P = painel(narrador.page);
-      const icones = P.locator(".rv-rodadas-linha").first().locator(".rv-rodadas-mini");
-      const semRotuloEscrito = ((await icones.first().textContent()) ?? "").trim() === "";
-      const rotulo = await icones.first().getAttribute("aria-label");
-      const dica = narrador.page.locator(".rv-rodadas-dica");
-      const antes = await dica.count();
-      await icones.first().hover();
-      const apareceu = await esperarAte(async () => await dica.count() === 1, 2000);
-      const textoDica = apareceu ? ((await dica.textContent()) ?? "").trim() : "";
-      const cx = await dica.boundingBox().catch(() => null);
-      const vp = narrador.page.viewportSize()!;
-      const naTela = !!cx && cx.x >= 0 && cx.y >= 0 && cx.x + cx.width <= vp.width && cx.y + cx.height <= vp.height;
-      await narrador.page.mouse.move(4, 4);
-      const sumiu = await esperarAte(async () => await dica.count() === 0, 2000);
-      registrar("3z (ação de ícone mostra o próprio nome ao passar o mouse, dentro da tela, e some ao sair)",
-        semRotuloEscrito && antes === 0 && apareceu && textoDica === rotulo && naTela && sumiu,
-        `semRotuloEscrito=${semRotuloEscrito}, dica="${textoDica}", aria-label="${rotulo}", naTela=${naTela}, sumiu=${sumiu}`);
-
-      // Teclado alcança a mesma dica — senão o nome existe só pro mouse.
-      await icones.nth(1).focus();
-      const dicaPorFoco = await esperarAte(async () => await dica.count() === 1, 2000);
-      registrar("3z-teclado (a mesma dica aparece ao focar o botão pelo teclado)",
-        dicaPorFoco && ((await dica.textContent()) ?? "").trim() === await icones.nth(1).getAttribute("aria-label"),
-        `apareceu=${dicaPorFoco}, texto="${((await dica.textContent()) ?? "").trim()}"`);
-      await icones.nth(1).blur();
-    }
 
     // ── 3: adicionar e remover participante ────────────────────────
-    const adicionar = narrador.page.locator('.rv-rodadas-mini[aria-label^="Adicionar Reforço"]');
+    // "Fora do combate" começa recolhida.
+    const fora = narrador.page.locator('.jfc-fora .jf-sec-cab');
+    if (await fora.getAttribute("aria-expanded") === "false") await fora.click();
+    const adicionar = narrador.page.locator('[data-testid^="rodadas-adicionar-"][aria-label^="Adicionar Reforço"]');
     registrar("3 (token fora da trilha aparece como candidato a entrar)", await adicionar.count() === 1,
-      `candidatos=${await narrador.page.locator('.rv-rodadas-mini[aria-label^="Adicionar"]').count()}`);
+      `candidatos=${await narrador.page.locator('[data-testid^="rodadas-adicionar-"]').count()}`);
     await adicionar.click();
     const entrou = await esperarAte(async () => ((await linhaDoBanco())?.estado.participantes as unknown[])?.length === 5);
     registrar("3b (adicionar quem entrou depois grava no elenco)",
       entrou, `participantes=${((await linhaDoBanco())?.estado.participantes as unknown[])?.length}`);
 
-    await narrador.page.locator('.rv-rodadas-mini--perigo[aria-label^="Remover Reforço"]').click();
+    // Remover agora fica atrás do "Mais ações" da linha.
+    await narrador.page.locator('[data-testid^="rodadas-mais-"][aria-label="Mais ações de Reforço"]').click();
+    await narrador.page.locator('[data-testid^="rodadas-remover-"][aria-label^="Remover Reforço"]').click();
     const saiu = await esperarAte(async () => ((await linhaDoBanco())?.estado.participantes as unknown[])?.length === 4);
     registrar("3c (remover participante tira do elenco sem confirmação — ninguém estava agindo)",
       saiu, `participantes=${((await linhaDoBanco())?.estado.participantes as unknown[])?.length}`);
@@ -480,7 +428,7 @@ async function main() {
 
     // ── 5: ocultar só pra mim ──────────────────────────────────────
     await abrirPainel(narrador.page);
-    await narrador.page.locator('.rv-rodadas-rodape button[aria-pressed]').click();
+    await narrador.page.locator('[data-testid="rodadas-olho"]').click();
     await narrador.page.waitForTimeout(500);
     const escondeuLocal = await narrador.page.locator(".rv-faccao").count() === 0;
     const outroSegueVendo = await jogador.page.locator(".rv-faccao").count() === 2;
@@ -495,7 +443,7 @@ async function main() {
     await narrador.page.waitForTimeout(1500);
     const seguiuOculta = await narrador.page.locator(".rv-faccao").count() === 0;
     await abrirPainel(narrador.page);
-    await narrador.page.locator('.rv-rodadas-rodape button[aria-pressed]').click();
+    await narrador.page.locator('[data-testid="rodadas-olho"]').click();
     const voltou = await esperarAte(async () => await narrador.page.locator(".rv-faccao").count() === 2);
     registrar("5b (a escolha de ocultar persiste no reload e se desfaz pelo mesmo painel)",
       seguiuOculta && voltou,
@@ -503,7 +451,7 @@ async function main() {
 
     // ── 7: encerrar durante uma ativação pede confirmação ──────────
     await abrirPainel(narrador.page);
-    await narrador.page.locator(".rv-rodadas-encerrar").click();
+    await narrador.page.locator('[data-testid="rodadas-encerrar"]').click();
     const dialogo = narrador.page.locator('[role="alertdialog"]');
     const textoDialogo = (await dialogo.textContent()) ?? "";
     const linhaAgora = await linhaDoBanco();
@@ -572,7 +520,7 @@ async function main() {
 
     // ── 2: emboscada — precisa reiniciar, então encerra antes ──────
     const tokensAntesDeEncerrar = await admin.from("vtt_tokens").select("id, q, r, nome, revision").eq("campaign_id", campaignId!);
-    await narrador.page.locator(".rv-rodadas-encerrar").click();
+    await narrador.page.locator('[data-testid="rodadas-encerrar"]').click();
     await narrador.page.locator('[role="alertdialog"] .rv-btn--perigo').click();
     const encerrou = await esperarAte(async () => (await linhaDoBanco()) === null, 10000);
     registrar("8a (encerrar apaga a trilha e some com os trilhos de quem encerrou)",
@@ -605,17 +553,17 @@ async function main() {
 
     // ── 2: emboscada ───────────────────────────────────────────────
     await abrirPainel(narrador.page);
-    await narrador.page.locator('.rv-rodadas-modo[aria-checked="false"]').first().click();
+    await narrador.page.locator('[data-testid="rodadas-modo-emboscada"]').click();
     await narrador.page.waitForTimeout(300);
-    const bloqueadoSemLado = !(await narrador.page.locator(".rv-rodadas-iniciar").isEnabled());
-    const avisoSemLado = await narrador.page.locator(".rv-rodadas-aviso").textContent();
+    const bloqueadoSemLado = !(await narrador.page.locator('[data-testid="rodadas-iniciar"]').isEnabled());
+    const avisoSemLado = await narrador.page.locator('[data-testid="rodadas-aviso"]').textContent();
     registrar("2 (emboscada exige escolher o lado que surpreendeu antes de iniciar)",
       bloqueadoSemLado && /lado/i.test(avisoSemLado ?? ""),
       `iniciarDesabilitado=${bloqueadoSemLado} aviso="${avisoSemLado?.trim()}"`);
 
-    await narrador.page.locator('.rv-rodadas-lado[data-lado="pn"]').click();
+    await narrador.page.locator('[data-testid="rodadas-surpresa-pn"]').click();
     await narrador.page.waitForTimeout(200);
-    await narrador.page.locator(".rv-rodadas-iniciar").click();
+    await narrador.page.locator('[data-testid="rodadas-iniciar"]').click();
     const iniciouEmboscada = await esperarAte(async () => (await linhaDoBanco())?.estado.modo === "emboscada", 10000);
     const linhaEmb = await linhaDoBanco();
     registrar("2b (emboscada inicia com o lado surpresa gravado)",
@@ -628,7 +576,7 @@ async function main() {
 
     // Limpa a trilha da emboscada pra deixar a cena como encontrou.
     await abrirPainel(narrador.page);
-    await narrador.page.locator(".rv-rodadas-encerrar").click();
+    await narrador.page.locator('[data-testid="rodadas-encerrar"]').click();
     await narrador.page.locator('[role="alertdialog"] .rv-btn--perigo').click();
     await esperarAte(async () => (await linhaDoBanco()) === null, 10000);
 

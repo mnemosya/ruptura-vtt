@@ -183,7 +183,7 @@ async function main(): Promise<void> {
     // sem ele, um avanço que não chega seria indistinguível de um
     // combate que nunca começou.
     await abrirPainelRodadas(sessaoN.page);
-    await sessaoN.page.locator(".rv-rodadas-iniciar").click();
+    await sessaoN.page.locator('[data-testid="rodadas-iniciar"]').click();
     const msInicio = await esperarAte(async () => (await sessaoJ!.page.locator(".rv-rodadas").count()) > 0);
     registrar("2 (combate iniciado pelo narrador aparece para o jogador, sem reload)",
       msInicio !== null, msInicio !== null ? `${msInicio}ms` : "não chegou em 10s");
