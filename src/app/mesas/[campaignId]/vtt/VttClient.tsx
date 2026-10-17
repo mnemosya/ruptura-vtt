@@ -28,7 +28,7 @@ import { HexColorInput, HexColorPicker } from "react-colorful";
 import { Plus } from "../../../_design/icons";
 import { MapaHex, TAM, type EstadoVisualToken, type CenaMapa } from "./_mapa/MapaHex";
 import { useTargets } from "./_realtime/useTargets";
-import { Crosshair, FilePlus } from "lucide-react";
+import { ChartPie, Crosshair, FilePlus } from "lucide-react";
 import { AcoesRapidasToken } from "./_shell/AcoesRapidasToken";
 import type { CategoriaAcaoToken } from "./_dominio/targets";
 import { type AlcaArea, type AreaDesenhavel, type EstadoVisualArea, type GuiaGesto } from "./_mapa/CamadaAreas";
@@ -89,6 +89,9 @@ import {
 import { type PontoAxial, axialParaMundo } from "./_dominio/escalaMapa";
 import { CORES_ANOTACAO, corAnotacaoValida, hexDaAnotacao, limitarTraco, type AnotacaoCena, type CorAnotacao, type CorPredefinida } from "./_dominio/anotacoes";
 import { useAnotacoesDaCena } from "./_shell/useAnotacoesDaCena";
+import { useMarcadoresDaCampanha } from "./_shell/useMarcadoresDaCampanha";
+import { FaixaMarcadores } from "./_shell/FaixaMarcadores";
+import { PainelMarcadores } from "./_shell/PainelMarcadores";
 import { JanelaFerramenta } from "./_shell/JanelaFerramenta";
 import { TempoDaCampanha } from "./_shell/TempoDaCampanha";
 import type { ImagemCena } from "./_dominio/imagemCena";
@@ -171,7 +174,7 @@ const COR_MARCA_HEX: Record<string, string> = {
 const ICONE_FERRAMENTA: Record<FerramentaId, typeof MousePointer2> = {
   interagir: MousePointer2, dados: Dices, medir: Ruler, marcar: MapPin, terreno: PaintBucket, objetos: Box,
   imagens: Images, areas: Hexagon, rodadas: Swords,
-  desenhar: Pencil, texto: Type,
+  desenhar: Pencil, texto: Type, marcadores: ChartPie,
 };
 
 
@@ -4357,6 +4360,7 @@ export function VttClient({
 
   // Desenhos e textos compartilham a camada, mas nunca o estado dos sinais de Marcar.
   const anotacoesCena = useAnotacoesDaCena(campaignId, estadoCena?.cena.id ?? null);
+  const marcadores = useMarcadoresDaCampanha(campaignId);
   const [anotacaoSelecionadaId, setAnotacaoSelecionadaId] = useState<string | null>(null);
   const [pontoTextoPendente, setPontoTextoPendente] = useState<PontoAxial | null>(null);
   const [textoRascunho, setTextoRascunho] = useState("");
@@ -6061,7 +6065,7 @@ export function VttClient({
    * não existe — nem ela, nem a divisória dela, senão sobrariam dois
    * traços seguidos anunciando um grupo vazio.
    */
-  const FERRAMENTAS_SO_DO_NARRADOR: readonly FerramentaId[] = ["terreno", "objetos", "imagens"];
+  const FERRAMENTAS_SO_DO_NARRADOR: readonly FerramentaId[] = ["terreno", "objetos", "imagens", "marcadores"];
   const ferramentasDeTodos = ferramentasDisponiveis.filter((id) => !FERRAMENTAS_SO_DO_NARRADOR.includes(id));
   const ferramentasDoNarrador = ferramentasDisponiveis.filter((id) => FERRAMENTAS_SO_DO_NARRADOR.includes(id));
   const botaoDeFerramenta = (id: FerramentaId) => {
@@ -6727,6 +6731,27 @@ export function VttClient({
             laterais (ver `_turnos/TrilhaFaccoes.tsx`). Só existe com
             combate aberto; `trilhaOculta` é escolha LOCAL de quem está
             vendo e não encerra nada. ── */}
+        {/* Marcadores da campanha: a faixa desce para a base quando o
+            HUD de rodadas ocupa o topo. */}
+        <FaixaMarcadores
+          marcadores={marcadores.marcadores}
+          ehNarrador={ehNarrador}
+          emCombate={trilha !== null && !trilhaOculta}
+          onAjustar={marcadores.ajustar}
+          onRemover={marcadores.remover}
+          removido={marcadores.removido}
+          onDesfazerRemocao={marcadores.desfazerRemocao}
+        />
+        {ferramenta === "marcadores" && ehNarrador && (
+          <PainelMarcadores
+            campaignId={campaignId}
+            usuarioId={usuarioId}
+            emCombate={trilha !== null && !trilhaOculta}
+            onCriar={marcadores.criar}
+            onFechar={() => trocarFerramenta("interagir")}
+          />
+        )}
+
         {trilha && !trilhaOculta && (
           <TrilhaFaccoes
             trilha={trilha} ehNarrador={ehNarrador} tokenPorId={tokenPorId} selecionadoId={selecionadoId}

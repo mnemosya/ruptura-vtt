@@ -387,7 +387,24 @@ export interface CartaoPendencia extends CartaoComum {
   resultado: string | null;
 }
 
+/**
+ * Mudança num marcador da campanha (`_dominio/marcadores.ts`). Cliques
+ * seguidos no mesmo marcador viram UMA entrada (`antes` → `depois`): o
+ * cliente agrupa e o servidor confere o valor real antes de gravar.
+ */
+export interface CartaoMarcador extends CartaoComum {
+  kind: "marcador";
+  evento: "avancou" | "recuou" | "concluido";
+  tipoMarcador: "progresso" | "pressao";
+  /** `null` = marcador sem nome. */
+  nome: string | null;
+  total: number;
+  antes: number;
+  depois: number;
+}
+
 export type CartaoFeed =
+  | CartaoMarcador
   | CartaoMensagem
   | CartaoRolagem
   | CartaoReferencia
@@ -988,6 +1005,29 @@ function projetarDivisor(entry: TableLogEntry): CartaoFeed {
   };
 }
 
+function projetarMarcador(entry: TableLogEntry): CartaoFeed | null {
+  const p = entry.payload as P;
+  const total = num(p, "total");
+  const antes = num(p, "antes");
+  const depois = num(p, "depois");
+  if (total == null || antes == null || depois == null || antes === depois) return null;
+  const tipo = txt(p, "tipo") === "pressao" ? "pressao" : "progresso";
+  const ev = txt(p, "evento");
+  const base = comum(entry);
+  return {
+    ...base,
+    // Só o narrador altera marcador: entradas sem autoria gravada são dele.
+    autoria: base.autoria.tipo === "sistema" ? { ...base.autoria, nome: "Narrador", tipo: "narrador" } : base.autoria,
+    kind: "marcador",
+    evento: ev === "concluido" ? "concluido" : ev === "recuou" ? "recuou" : depois > antes ? "avancou" : "recuou",
+    tipoMarcador: tipo,
+    nome: txt(p, "nome"),
+    total,
+    antes: Math.max(0, Math.min(total, antes)),
+    depois: Math.max(0, Math.min(total, depois)),
+  };
+}
+
 function projetarPendencia(entry: TableLogEntry): CartaoFeed {
   const p = entry.payload as P;
   const t = entry.type;
@@ -1076,6 +1116,8 @@ export const PROJETORES: Record<string, Projetor> = {
   round_ended: projetarDivisor,
   scene_ended: projetarDivisor,
   combate_vtt: projetarDivisor,
+
+  marcador_vtt: projetarMarcador,
 
   condition_end_round_check_created: projetarPendencia,
   integrity_zero_pending: projetarPendencia,
@@ -1232,6 +1274,8 @@ const ACENTO_DA_FAIXA: Record<ResultKey, AcentoCartao> = {
 
 export function acentoDoCartao(cartao: CartaoFeed): AcentoCartao {
   switch (cartao.kind) {
+    case "marcador":
+      return cartao.tipoMarcador === "pressao" ? "am" : "cy";
     case "mensagem":
       return cartao.estilo === "narracao" ? "am" : "neutro";
     case "rolagem":

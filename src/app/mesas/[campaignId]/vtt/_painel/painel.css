@@ -2472,3 +2472,59 @@ textarea.rv-pn-input.rv-pn-input {
 @media (prefers-reduced-motion: reduce) { .rv-pn-esqueleto-cartao::after { animation: none; } }
 /* Forma "linha" (compêndio): só o texto, faixas mais baixas. */
 .rv-pn-esqueleto[data-forma="linha"] .rv-pn-esqueleto-cartao { height: 34px; padding-left: 14px; }
+
+/* =====================================================================
+   CARD DE MARCADOR (`feed/MarcadorCard.tsx`) — avançou, recuou,
+   concluiu. A cor vem do acento do card (`--pn-a`): ciano Progresso,
+   âmbar Pressão. Mesma anatomia dos outros cards do chat.
+   ===================================================================== */
+.rv-pn-chat .pn-cartao[data-kind="marcador"] { --pn-mk-vazio: color-mix(in srgb, var(--pn-a) 16%, var(--rv-line)); }
+.rv-pn-chat .pn-cartao[data-kind="marcador"][data-concluido] {
+  border-color: color-mix(in srgb, var(--pn-a) 50%, var(--rv-line-2));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--pn-a) 14%, transparent);
+  animation: pn-mk-concluiu 900ms ease-out 1;
+}
+@keyframes pn-mk-concluiu {
+  from { box-shadow: 0 0 0 1px var(--pn-a), 0 0 32px color-mix(in srgb, var(--pn-a) 40%, transparent); }
+}
+
+.rv-pn-chat .pn-mk { display: flex; align-items: center; gap: 12px; }
+
+/* Anel em SVG: um arco por segmento. */
+.rv-pn-chat .pn-mk-anel { position: relative; flex: none; width: 44px; height: 44px; }
+.rv-pn-chat .pn-mk-anel svg { display: block; }
+.rv-pn-chat .pn-mk-arco { stroke: var(--pn-mk-vazio); }
+.rv-pn-chat .pn-mk-arco:is([data-estado="cheio"], [data-estado="novo"]) { stroke: var(--pn-a); }
+.rv-pn-chat .pn-mk-arco[data-estado="saiu"] { stroke: color-mix(in srgb, var(--pn-a) 30%, var(--rv-line)); }
+.rv-pn-chat .pn-cartao[data-concluido] .pn-mk-anel svg { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--pn-a) 60%, transparent)); }
+.rv-pn-chat .pn-mk-anel-ico {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: var(--pn-a);
+}
+
+.rv-pn-chat .pn-mk-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 9px; }
+.rv-pn-chat .pn-mk-linha { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.rv-pn-chat .pn-mk-acao {
+  font: 600 11px var(--rv-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--pn-a);
+}
+.rv-pn-chat .pn-mk-acao[data-sentido="menos"] { color: var(--rv-ink-dim); }
+.rv-pn-chat .pn-mk-selo {
+  padding: 4px 7px 3px; line-height: 1;
+  font: 700 10px var(--rv-mono); letter-spacing: .18em; text-transform: uppercase;
+  color: var(--rv-ground); background: var(--pn-a);
+}
+.rv-pn-chat .pn-mk-conta { display: inline-flex; align-items: baseline; font-family: var(--rv-mono); white-space: nowrap; line-height: 1; }
+.rv-pn-chat .pn-mk-conta-depois { font: 700 17px var(--rv-display); color: var(--txt-forte, var(--rv-ink)); }
+.rv-pn-chat .pn-mk-conta-total { margin-left: 2px; font-size: 11px; color: var(--rv-ink-faint); }
+
+/* Trilha: cheio = já estava, novo = entrou agora (aceso), saiu =
+   recuou agora (contorno), vazio = falta. */
+.rv-pn-chat .pn-mk-trilha { display: flex; gap: 3px; }
+.rv-pn-chat .pn-mk-seg { flex: 1; height: 4px; background: var(--pn-mk-vazio); }
+.rv-pn-chat .pn-mk-seg[data-estado="cheio"] { background: color-mix(in srgb, var(--pn-a) 50%, transparent); }
+.rv-pn-chat .pn-mk-seg[data-estado="novo"] { background: var(--pn-a); box-shadow: 0 0 6px color-mix(in srgb, var(--pn-a) 70%, transparent); }
+.rv-pn-chat .pn-mk-seg[data-estado="saiu"] { background: transparent; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pn-a) 45%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .rv-pn-chat .pn-cartao[data-kind="marcador"] { animation: none !important; }
+}
