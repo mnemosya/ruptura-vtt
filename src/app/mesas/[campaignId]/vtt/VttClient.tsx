@@ -37,7 +37,7 @@ import { type ObjetoCena } from "./_dados/cenaDemo";
 import {
   type EstadoTrilha, type Janela, type Lado, type ModoCena,
   assumirTurno, avancarParaLentos, cancelarTurno, concluirTurno, declarar, elegibilidade,
-  encerrarParticipacao, proximaRodada,
+  encerrarParticipacao, proximaRodada, retirarDeclaracao,
 } from "./_turnos/modelo";
 import {
   adicionarParticipantes, definirIncapaz, estadoInicialTrilha, removerParticipante,
@@ -106,6 +106,7 @@ import {
   tokenOrigemDaAura,
 } from "./_ferramentas/areasEstado";
 import { PainelAreas, type ItemListaArea } from "./_shell/PainelAreas";
+import { PainelAnotacoes } from "./_shell/PainelAnotacoes";
 import { PainelTerreno } from "./_shell/PainelTerreno";
 import { PainelObjetos } from "./_shell/PainelObjetos";
 import { PainelImagens } from "./_shell/PainelImagens";
@@ -5812,10 +5813,12 @@ export function VttClient({
     });
   }, [campaignId, estadoCena, objetoSelecionadoId, salvandoEdicaoObjeto, executarComando]);
 
-  const criarObjetoPendente = useCallback(() => {
+  const criarObjetoPendente = useCallback((ajuste?: { categoria: CategoriaObjeto | null; pd: number | null }) => {
     if (!estadoCena || celulasObjetoPendente.length === 0 || criandoObjeto) return;
     const sceneId = estadoCena.cena.id;
-    const v = valoresIniciaisDoPreset(presetObjeto);
+    // O PD ajustado na janela sobrescreve o do preset (o objeto nasce inteiro: pd = pdMax).
+    const base = valoresIniciaisDoPreset(presetObjeto);
+    const v = ajuste ? { ...base, categoria: ajuste.categoria, pd: ajuste.pd, pdMax: ajuste.pd } : base;
     setCriandoObjeto(true);
     criarObjetoAction({
       campaignId, sceneId, nome: v.nome, preset: presetObjeto,
@@ -6341,94 +6344,57 @@ export function VttClient({
         </div>
 
         {(ferramenta === "desenhar" || ferramenta === "texto") && (
-          <JanelaFerramenta id={ferramenta} icone={ferramenta === "desenhar" ? <Pencil size={16} /> : <Type size={16} />}
-            titulo={ferramenta === "desenhar" ? "Desenhar" : "Texto"} modo="Desenhos e textos"
-            rotulo={ferramenta === "desenhar" ? "Ferramenta Desenhar" : "Ferramenta Texto"}
-            rotuloFechar="Fechar ferramenta" aoFechar={() => trocarFerramenta("interagir")}
-            className={`rv-janela-anotacoes${ferramenta === "desenhar" ? " rv-janela-desenhar" : ""}`}>
-          <div className="rv-fp-corpo rv-anotacoes-painel">
-            <p>{camadas.anotacoes.bloqueada ? "A camada está bloqueada." : !camadas.anotacoes.visivel ? "A camada está oculta." :
-              ferramenta === "desenhar" ? "Arraste no mapa para desenhar. Clique em um traço para selecionar." : "Clique no mapa para inserir texto. Arraste um texto para mover."}</p>
-            <div className="rv-anotacoes-cores" role="group" aria-label="Cor da anotação">
-              {(Object.keys(CORES_ANOTACAO) as CorPredefinida[]).map((cor) => <button key={cor} type="button" title={cor} aria-label={`Cor ${cor}`}
-                aria-pressed={(anotacaoSelecionada?.cor ?? corAnotacao) === cor} disabled={camadas.anotacoes.bloqueada || !camadas.anotacoes.visivel}
-                style={{ background: CORES_ANOTACAO[cor] }} onClick={() => {
-                  setSeletorCorAberto(false);
-                  setCorAnotacao(cor);
-                  if (anotacaoSelecionada && (ehNarrador || anotacaoSelecionada.autorId === usuarioId)) void atualizarAnotacaoComHistorico(anotacaoSelecionada, { cor });
-                }} />)}
-              <button type="button" className="rv-anotacoes-cor-custom" title="Escolher outra cor" aria-label="Escolher outra cor"
-                aria-expanded={seletorCorAberto} aria-pressed={(anotacaoSelecionada?.cor ?? corAnotacao).startsWith("#")}
-                disabled={camadas.anotacoes.bloqueada || !camadas.anotacoes.visivel}
-                style={{ ["--cor-escolhida" as string]: hexDaAnotacao(anotacaoSelecionada?.cor ?? corAnotacao) }}
-                onClick={() => {
-                  setCorRascunho(hexDaAnotacao(anotacaoSelecionada?.cor ?? corAnotacao));
-                  setSeletorCorAberto((aberto) => !aberto);
-                }}><Palette size={16} /></button>
-            </div>
-            {seletorCorAberto && <div className="rv-anotacoes-seletor" role="group" aria-label="Cor personalizada">
-              <HexColorPicker color={corRascunho} onChange={setCorRascunho} aria-label="Selecionar cor" />
-              <div className="rv-anotacoes-seletor-rodape">
-                <span className="rv-anotacoes-amostra" style={{ background: corRascunho }} aria-hidden="true" />
-                <HexColorInput color={corRascunho} onChange={setCorRascunho} prefixed aria-label="Cor hexadecimal" />
-                <button type="button" disabled={!corRascunho.startsWith("#") || !corAnotacaoValida(corRascunho)} onClick={() => {
-                  const cor = corRascunho.toLowerCase() as CorAnotacao;
-                  setCorAnotacao(cor);
-                  setSeletorCorAberto(false);
-                  if (anotacaoSelecionada && (ehNarrador || anotacaoSelecionada.autorId === usuarioId)) void atualizarAnotacaoComHistorico(anotacaoSelecionada, { cor });
-                }}>Aplicar</button>
-              </div>
-            </div>}
-            {ferramenta === "desenhar" && <label><span className="rv-anotacoes-titulo-controle">Espessura</span>
-              <select value={anotacaoSelecionada?.tipo === "desenho" ? anotacaoSelecionada.espessura : espessuraAnotacao}
-                disabled={camadas.anotacoes.bloqueada || (anotacaoSelecionada !== null && !ehNarrador && anotacaoSelecionada.autorId !== usuarioId)}
-                onChange={(e) => { const n = Number(e.target.value); setEspessuraAnotacao(n); if (anotacaoSelecionada?.tipo === "desenho") void atualizarAnotacaoComHistorico(anotacaoSelecionada, { espessura: n }); }}>
-                {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </label>}
-            {ferramenta === "texto" && <label><span className="rv-anotacoes-titulo-controle">Tamanho</span>
-              <select value={anotacaoSelecionada?.tipo === "texto" ? anotacaoSelecionada.tamanho : tamanhoTexto}
-                disabled={camadas.anotacoes.bloqueada || (anotacaoSelecionada !== null && !ehNarrador && anotacaoSelecionada.autorId !== usuarioId)}
-                onChange={(e) => { const n = Number(e.target.value); setTamanhoTexto(n); if (anotacaoSelecionada?.tipo === "texto") void atualizarAnotacaoComHistorico(anotacaoSelecionada, { tamanho: n }); }}>
-                {[12, 16, 20, 24, 28, 32].map((n) => <option key={n} value={n}>{n} px</option>)}
-              </select>
-            </label>}
-            <div className="rv-fp-grupo rv-anotacoes-visibilidade">
-              <span className="rv-fp-rotulo" id="rv-anotacoes-visibilidade">Visibilidade</span>
-              <div className="rv-fp-seg" role="group" aria-labelledby="rv-anotacoes-visibilidade">
-                {([true, false] as const).map((privada) => {
-                  const Icone = privada ? EyeOff : Eye;
-                  return <button key={String(privada)} type="button" className="rv-fp-seg-btn"
-                    aria-pressed={(anotacaoSelecionada?.privada ?? anotacaoPrivada) === privada}
-                    disabled={camadas.anotacoes.bloqueada || !camadas.anotacoes.visivel
-                      || (anotacaoSelecionada !== null && anotacaoSelecionada.autorId !== usuarioId)}
-                    onClick={() => {
-                      setAnotacaoPrivada(privada);
-                      if (anotacaoSelecionada && anotacaoSelecionada.privada !== privada)
-                        void atualizarAnotacaoComHistorico(anotacaoSelecionada, { privada });
-                    }}>
-                    <Icone size={15} />
-                    <span className="rv-fp-seg-nome">{privada ? "Só pra você" : "Pra mesa"}</span>
-                    <span className="rv-fp-seg-sub">{privada ? "nem o narrador vê" : "todos veem"}</span>
-                  </button>;
-                })}
-              </div>
-            </div>
-            {ferramenta === "texto" && (pontoTextoPendente || anotacaoSelecionada?.tipo === "texto") && <>
-              <textarea ref={textoAnotacaoRef} value={textoRascunho} maxLength={500} rows={3} placeholder="Digite o texto no mapa" aria-label="Texto no mapa"
-                disabled={camadas.anotacoes.bloqueada || (!pontoTextoPendente && anotacaoSelecionada !== null && !ehNarrador && anotacaoSelecionada.autorId !== usuarioId)}
-                onChange={(e) => setTextoRascunho(e.target.value)} onKeyDown={(e) => {
-                  if (e.key === "Escape") { e.preventDefault(); setPontoTextoPendente(null); setAnotacaoSelecionadaId(null); e.currentTarget.blur(); }
-                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); salvarTexto(); }
-                }} />
-              <button type="button" onClick={salvarTexto} disabled={!textoRascunho.trim() || camadas.anotacoes.bloqueada || (!pontoTextoPendente && anotacaoSelecionada !== null && !ehNarrador && anotacaoSelecionada.autorId !== usuarioId)}>Salvar texto <kbd>Ctrl+Enter</kbd></button>
-            </>}
-            {anotacaoSelecionada && <button type="button" className="rv-anotacoes-remover"
-              disabled={camadas.anotacoes.bloqueada || (!ehNarrador && anotacaoSelecionada.autorId !== usuarioId)}
-              onClick={() => { void removerAnotacaoComHistorico(anotacaoSelecionada); }}><Trash2 size={14} /> Remover seleção</button>}
-            {anotacoesCena.erro && <p role="alert">{anotacoesCena.erro}</p>}
-          </div>
-          </JanelaFerramenta>
+          // Apresentação em `_shell/PainelAnotacoes`; estado e regras de
+          // permissão continuam aqui, resolvidos antes de descer.
+          <PainelAnotacoes modo={ferramenta} aoFechar={() => trocarFerramenta("interagir")}
+            bloqueada={camadas.anotacoes.bloqueada} oculta={!camadas.anotacoes.visivel}
+            temSelecao={anotacaoSelecionada !== null}
+            podeEditarSelecao={anotacaoSelecionada === null || ehNarrador || anotacaoSelecionada.autorId === usuarioId}
+            podeMudarPrivacidade={anotacaoSelecionada === null || anotacaoSelecionada.autorId === usuarioId}
+            cor={anotacaoSelecionada?.cor ?? corAnotacao}
+            onEscolherCor={(cor) => {
+              setSeletorCorAberto(false);
+              setCorAnotacao(cor);
+              if (anotacaoSelecionada && (ehNarrador || anotacaoSelecionada.autorId === usuarioId)) void atualizarAnotacaoComHistorico(anotacaoSelecionada, { cor });
+            }}
+            seletorCorAberto={seletorCorAberto}
+            onAlternarSeletorCor={() => {
+              setCorRascunho(hexDaAnotacao(anotacaoSelecionada?.cor ?? corAnotacao));
+              setSeletorCorAberto((aberto) => !aberto);
+            }}
+            corRascunho={corRascunho} onCorRascunho={setCorRascunho}
+            onAplicarCorRascunho={() => {
+              if (!corRascunho.startsWith("#") || !corAnotacaoValida(corRascunho)) return;
+              const cor = corRascunho.toLowerCase() as CorAnotacao;
+              setCorAnotacao(cor);
+              setSeletorCorAberto(false);
+              if (anotacaoSelecionada && (ehNarrador || anotacaoSelecionada.autorId === usuarioId)) void atualizarAnotacaoComHistorico(anotacaoSelecionada, { cor });
+            }}
+            medida={ferramenta === "desenhar"
+              ? (anotacaoSelecionada?.tipo === "desenho" ? anotacaoSelecionada.espessura : espessuraAnotacao)
+              : (anotacaoSelecionada?.tipo === "texto" ? anotacaoSelecionada.tamanho : tamanhoTexto)}
+            onMedida={(n) => {
+              if (ferramenta === "desenhar") {
+                setEspessuraAnotacao(n);
+                if (anotacaoSelecionada?.tipo === "desenho") void atualizarAnotacaoComHistorico(anotacaoSelecionada, { espessura: n });
+              } else {
+                setTamanhoTexto(n);
+                if (anotacaoSelecionada?.tipo === "texto") void atualizarAnotacaoComHistorico(anotacaoSelecionada, { tamanho: n });
+              }
+            }}
+            privada={anotacaoSelecionada?.privada ?? anotacaoPrivada}
+            onPrivada={(privada) => {
+              setAnotacaoPrivada(privada);
+              if (anotacaoSelecionada && anotacaoSelecionada.privada !== privada)
+                void atualizarAnotacaoComHistorico(anotacaoSelecionada, { privada });
+            }}
+            editandoTexto={ferramenta === "texto" && (pontoTextoPendente !== null || anotacaoSelecionada?.tipo === "texto")}
+            podeEditarTexto={!camadas.anotacoes.bloqueada && (pontoTextoPendente !== null || anotacaoSelecionada === null || ehNarrador || anotacaoSelecionada.autorId === usuarioId)}
+            textoRascunho={textoRascunho} onTextoRascunho={setTextoRascunho} textoRef={textoAnotacaoRef}
+            onSalvarTexto={salvarTexto}
+            onCancelarTexto={() => { setPontoTextoPendente(null); setAnotacaoSelecionadaId(null); }}
+            onRemover={() => { if (anotacaoSelecionada) void removerAnotacaoComHistorico(anotacaoSelecionada); }}
+            erro={anotacoesCena.erro} />
         )}
 
         {/* A cena, na peça do relógio, logo acima dele — ver "Pilha de
@@ -6789,6 +6755,9 @@ export function VttClient({
             onAlternarIncapaz={(id, incapaz) => mutarTrilha((t) => definirIncapaz(t, id, incapaz ? "Marcado como incapaz pelo narrador" : null))}
             onEncerrarParticipacao={(id) => mutarTrilha((t) => encerrarParticipacao(t, id))}
             onAlternarOculta={alternarTrilhaOculta}
+            onLocalizar={focarToken}
+            podeComandar={podeMoverToken}
+            onDeclarar={(id, janela) => mutarTrilha((t) => (janela ? declarar(t, id, janela) : retirarDeclaracao(t, id)))}
             onFechar={() => trocarFerramenta("interagir")}
           />
         )}
