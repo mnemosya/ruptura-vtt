@@ -163,6 +163,13 @@ import type { CharacterRulesPayload, ReactionRules } from "../../../../lib/chara
 import "../../../_design/console.css";
 import "./vtt.css";
 import "./_tema/tema-forja.css";
+import "./_tema/janelas-f.css";
+import "./_tema/janela-dados.css";
+import "./_tema/janela-medir-marcar.css";
+import "./_tema/janela-anotacoes-areas.css";
+import "./_tema/janela-mapa.css";
+import "./_tema/janela-objetos-token.css";
+import "./_tema/janela-combate.css";
 import { useTemaVtt } from "./_tema/useTemaVtt";
 
 type EstadoCenaVtt = Awaited<ReturnType<typeof lerCenaAtiva>>["dados"];

@@ -14,12 +14,16 @@
  *
  * O que esta janela padroniza:
  *
- *  · CASCA: o desenho do ROLADOR DE DADOS, agora para todas —
- *    espinha vertical à esquerda (índice + código rotacionado +
- *    ponto de estado no acento), brackets nos quatro cantos,
- *    título em display caixa alta e linha de modo em mono com pip
- *    do acento. O cabeçalho fica fixo e só o corpo rola, então
- *    estado e ações nunca somem de vista.
+ *  · CASCA: a linha F do redesign das janelas — sem espinha
+ *    lateral: título em display caixa alta com a TECLA de atalho
+ *    ao lado (`ATALHO_FERRAMENTA`), e o estado ("o que estou
+ *    fazendo agora") em mono com um losango no acento, na mesma
+ *    linha. O cabeçalho fica fixo e só o corpo rola, então estado e
+ *    ações nunca somem de vista.
+ *  · LARGURA: duas, por papel. Ferramenta que se usa enquanto se
+ *    age no mapa (rolar, medir, marcar, desenhar…) tem 420px; janela
+ *    de GESTÃO, que lista coisas (combate, camadas, imagens, token,
+ *    áreas), tem 500px — `largura="gestao"`.
  *  · POSIÇÃO INICIAL: encostada na barra de ferramentas, com folga
  *    lateral e superior iguais para todas (`GAP_LATERAL`,
  *    `MARGEM_TOPO`). Se a trilha de turnos estiver aberta, a âncora
@@ -44,6 +48,7 @@ import {
   type ReactNode, type RefObject,
 } from "react";
 import { X } from "lucide-react";
+import { ATALHO_FERRAMENTA, type FerramentaId } from "../_ferramentas/controlador";
 import {
   type JanelaId, type PosicaoJanela,
   ancoraPadraoJanela, carregarPosicaoJanela, limitarPosicaoJanela, salvarPosicaoJanela,
@@ -70,10 +75,14 @@ export function ProvedorJanelasFerramenta({ campaignId, usuarioId, children }: C
 export interface JanelaFerramentaProps {
   /** Qual janela — é a chave da posição lembrada. */
   id: JanelaId;
-  /** Índice da espinha ("01"…). Cai no da tabela quando não vem. */
+  /** @deprecated A espinha saiu na linha F; mantido só por compatibilidade. */
   indice?: string;
-  /** Cor do acento (cantos, índice, código, ponto e pip do modo). */
+  /** Cor do acento (losango do estado, foco, escolhas acesas). */
   acento?: string;
+  /** "ferramenta" (420px, padrão) ou "gestao" (500px — janelas que listam coisas). */
+  largura?: "ferramenta" | "gestao";
+  /** Tecla mostrada ao lado do título. Cai no atalho da ferramenta; `null` esconde. */
+  tecla?: string | null;
   icone: ReactNode;
   titulo: string;
   /** Linha de estado sob o título ("o que estou fazendo agora"). */
@@ -104,7 +113,7 @@ export interface JanelaFerramentaProps {
 }
 
 /**
- * Identidade de espinha por ferramenta — índice e acento.
+ * Identidade por ferramenta — índice (legado) e acento.
  *
  * Fica aqui, e não em cada painel, porque a numeração só faz sentido
  * como CONJUNTO: é ela que dá a leitura de "que peça do maquinário
@@ -135,14 +144,20 @@ const ESPINHA: Partial<Record<JanelaId, { indice: string; acento: string }>> = {
   tempo:    { indice: "13", acento: "#5bbdcc" },
 };
 
+/** Tecla de atalho de uma janela, quando ela é uma ferramenta com atalho. */
+function teclaDaJanela(id: JanelaId): string | null {
+  return (ATALHO_FERRAMENTA as Partial<Record<string, string>>)[id as FerramentaId] ?? null;
+}
+
 export function JanelaFerramenta({
-  id, indice, acento, icone, titulo, modo, modoAtributos, rotulo, rotuloFechar, aoFechar,
+  id, acento, largura = "ferramenta", tecla, icone, titulo, modo, modoAtributos, rotulo, rotuloFechar, aoFechar,
   recolhido, aoAlternarRecolhido, rotuloRecolher, acoesCabecalho,
   className, ancoraAcimaDe, testId, testIdCabecalho, testIdRecolher, testIdFechar, atributos, children,
 }: JanelaFerramentaProps) {
   const ctx = useContext(JanelasContexto);
   const espinha = ESPINHA[id];
   const cor = acento ?? espinha?.acento ?? "#00d4ff";
+  const teclaVisivel = tecla === undefined ? teclaDaJanela(id) : tecla;
   const asideRef = useRef<HTMLElement | null>(null);
   const arrastoRef = useRef<{ dx: number; dy: number } | null>(null);
   const [posicao, setPosicao] = useState<PosicaoJanela | null>(null);
@@ -253,7 +268,7 @@ export function JanelaFerramenta({
   return (
     <section
       ref={asideRef}
-      className={`rv-flutuante rv-fp${recolhido ? " rv-fp--recolhida" : ""}${ancoraAcimaDe ? " rv-fp--ancorada" : ""}${className ? ` ${className}` : ""}`}
+      className={`rv-flutuante rv-fp rv-fp--f${largura === "gestao" ? " rv-fp--gestao" : ""}${recolhido ? " rv-fp--recolhida" : ""}${ancoraAcimaDe ? " rv-fp--ancorada" : ""}${className ? ` ${className}` : ""}`}
       role="group"
       aria-label={rotulo}
       data-testid={testId}
@@ -266,12 +281,6 @@ export function JanelaFerramenta({
         ["--jf-acento" as string]: cor,
       }}
     >
-      <span className="rv-fp-espinha" aria-hidden="true">
-        <span className="rv-fp-espinha-indice">{indice ?? espinha?.indice ?? "--"}</span>
-        <span className="rv-fp-espinha-codigo">{titulo}</span>
-        <span className="rv-fp-espinha-ponto" />
-      </span>
-
       <header
         className="rv-fp-cab"
         data-testid={testIdCabecalho}
@@ -284,6 +293,7 @@ export function JanelaFerramenta({
         <span className="rv-fp-cab-icone" aria-hidden="true">{icone}</span>
         <span className="rv-fp-cab-txt">
           <span className="rv-fp-titulo">{titulo}</span>
+          {teclaVisivel && <kbd className="rv-fp-tecla" aria-label={`Atalho: ${teclaVisivel}`}>{teclaVisivel}</kbd>}
           {modo !== undefined && <span className="rv-fp-modo" {...modoAtributos}>{modo}</span>}
         </span>
         {acoesCabecalho}
