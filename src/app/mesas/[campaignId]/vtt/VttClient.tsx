@@ -6734,6 +6734,8 @@ export function VttClient({
         {/* Marcadores da campanha: a faixa desce para a base quando o
             HUD de rodadas ocupa o topo. */}
         <FaixaMarcadores
+          campaignId={campaignId}
+          usuarioId={usuarioId}
           marcadores={marcadores.marcadores}
           ehNarrador={ehNarrador}
           emCombate={trilha !== null && !trilhaOculta}
@@ -6744,6 +6746,8 @@ export function VttClient({
         />
         {ferramenta === "marcadores" && ehNarrador && (
           <PainelMarcadores
+            campaignId={campaignId}
+            usuarioId={usuarioId}
             emCombate={trilha !== null && !trilhaOculta}
             onCriar={marcadores.criar}
             onFechar={() => trocarFerramenta("interagir")}

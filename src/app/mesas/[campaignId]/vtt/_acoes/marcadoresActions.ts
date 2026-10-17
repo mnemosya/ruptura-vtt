@@ -9,7 +9,8 @@
 
 import "server-only";
 import { resolveCampaignAccess } from "../../../../../lib/campaign/access";
-import { criarMarcador, definirPreenchidos, listarMarcadores, removerMarcador, restaurarMarcador, type MarcadorDb } from "../../../../../lib/vtt/marcadoresStorage";
+import { addLog } from "../../../../../lib/table/storage";
+import { criarMarcador, definirPreenchidos, lerMarcador, listarMarcadores, removerMarcador, restaurarMarcador, type MarcadorDb } from "../../../../../lib/vtt/marcadoresStorage";
 import { limitarTotal, normalizarNome, type TipoMarcador } from "../_dominio/marcadores";
 
 type ResultadoAcao<T> = { ok: true; dados: T } | { ok: false; erro: string };
@@ -71,4 +72,40 @@ export async function restaurarMarcadorAction(params: { campaignId: string; marc
     campaignId: params.campaignId,
     marcador: { ...m, nome: m.nome === null ? null : normalizarNome(m.nome), total, preenchidos: Math.max(0, Math.min(total, Math.round(m.preenchidos))) },
   });
+}
+
+/**
+ * Card do chat para uma SEQUÊNCIA de mudanças num marcador. O cliente
+ * agrupa cliques seguidos e manda só o valor de antes; o depois, o
+ * total, o nome e o tipo vêm do banco — o card nunca mostra um número
+ * que o marcador não tem. Só o narrador registra (é quem muda marcador).
+ */
+export async function registrarMudancaMarcadorAction(params: {
+  campaignId: string;
+  id: string;
+  antes: number;
+}): Promise<ResultadoAcao<null>> {
+  const acesso = await resolveCampaignAccess(params.campaignId);
+  if (acesso.kind !== "ok") return { ok: false, erro: "Você não tem acesso a esta campanha." };
+  if (acesso.role !== "narrator") return { ok: false, erro: "Só o narrador altera marcadores." };
+
+  const r = await lerMarcador({ campaignId: params.campaignId, id: params.id });
+  if (!r.ok) return r;
+  const m = r.dados;
+  if (!m) return { ok: true, dados: null };
+  const antes = Math.max(0, Math.min(m.total, Math.round(params.antes)));
+  if (antes === m.preenchidos) return { ok: true, dados: null };
+
+  const evento = m.preenchidos >= m.total ? "concluido" : m.preenchidos > antes ? "avancou" : "recuou";
+  try {
+    await addLog({
+      campaignId: params.campaignId,
+      type: "marcador_vtt",
+      visibility: "public",
+      payload: { evento, marcadorId: m.id, tipo: m.tipo, nome: m.nome, total: m.total, antes, depois: m.preenchidos, source: "vtt_marcadores" },
+    });
+  } catch {
+    return { ok: false, erro: "Não foi possível registrar no chat." };
+  }
+  return { ok: true, dados: null };
 }

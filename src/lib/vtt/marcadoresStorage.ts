@@ -114,3 +114,15 @@ export async function restaurarMarcador(params: { campaignId: string; marcador: 
   if (error || !data) return { ok: false, erro: "Não foi possível desfazer a remoção." };
   return { ok: true, dados: linhaParaMarcador(data) };
 }
+
+export async function lerMarcador(params: { campaignId: string; id: string }): Promise<Resultado<MarcadorDb | null>> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from("vtt_markers")
+    .select(COLUNAS)
+    .eq("id", params.id)
+    .eq("campaign_id", params.campaignId)
+    .maybeSingle();
+  if (error) return { ok: false, erro: "Não foi possível ler o marcador." };
+  return { ok: true, dados: data ? linhaParaMarcador(data) : null };
+}

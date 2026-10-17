@@ -2472,3 +2472,74 @@ textarea.rv-pn-input.rv-pn-input {
 @media (prefers-reduced-motion: reduce) { .rv-pn-esqueleto-cartao::after { animation: none; } }
 /* Forma "linha" (compêndio): só o texto, faixas mais baixas. */
 .rv-pn-esqueleto[data-forma="linha"] .rv-pn-esqueleto-cartao { height: 34px; padding-left: 14px; }
+
+/* =====================================================================
+   CARD DE MARCADOR (`feed/MarcadorCard.tsx`) — avançou, recuou,
+   concluiu. A cor vem do acento do card (`--pn-a`): ciano Progresso,
+   âmbar Pressão.
+   ===================================================================== */
+.rv-pn-chat .pn-cartao[data-kind="marcador"] { --pn-mk-vazio: color-mix(in srgb, var(--pn-a) 18%, var(--rv-line)); }
+.rv-pn-chat .pn-cartao[data-kind="marcador"][data-concluido] {
+  border-color: color-mix(in srgb, var(--pn-a) 55%, var(--rv-line-2));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--pn-a) 18%, transparent), 0 0 22px color-mix(in srgb, var(--pn-a) 16%, transparent);
+  animation: pn-mk-concluiu 900ms ease-out 1;
+}
+@keyframes pn-mk-concluiu {
+  from { box-shadow: 0 0 0 1px var(--pn-a), 0 0 36px color-mix(in srgb, var(--pn-a) 45%, transparent); }
+}
+.rv-pn-chat .pn-mk-sem-nome { color: var(--rv-ink-faint); }
+
+.rv-pn-chat .pn-mk-selo {
+  display: inline-flex; align-items: center; padding: 3px 7px; line-height: 1;
+  font: 600 10px var(--rv-mono); letter-spacing: .12em; text-transform: uppercase;
+  color: var(--pn-a); background: color-mix(in srgb, var(--pn-a) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--pn-a) 40%, transparent);
+}
+.rv-pn-chat .pn-mk-selo[data-concluido] { color: var(--rv-ground); background: var(--pn-a); border-color: var(--pn-a); letter-spacing: .2em; }
+
+.rv-pn-chat .pn-mk { display: flex; align-items: center; gap: 12px; }
+.rv-pn-chat .pn-mk-anel { position: relative; width: 44px; height: 44px; flex: none; }
+.rv-pn-chat .pn-mk-anel-seg {
+  position: absolute; inset: 0; border-radius: 50%; background: var(--mk-anel);
+  -webkit-mask: radial-gradient(circle, transparent 60%, #000 61%);
+  mask: radial-gradient(circle, transparent 60%, #000 61%);
+}
+.rv-pn-chat .pn-cartao[data-concluido] .pn-mk-anel-seg { filter: drop-shadow(0 0 6px var(--pn-a)); }
+.rv-pn-chat .pn-mk-anel-miolo {
+  position: absolute; inset: 9px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--rv-ground); border: 1px solid var(--rv-line-2); color: var(--pn-a);
+}
+
+.rv-pn-chat .pn-mk-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.rv-pn-chat .pn-mk-linha { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.rv-pn-chat .pn-mk-verbo { font: 500 12px var(--rv-body); color: var(--rv-ink-dim); }
+.rv-pn-chat .pn-mk-conta { display: inline-flex; align-items: baseline; gap: 4px; font-family: var(--rv-mono); white-space: nowrap; }
+.rv-pn-chat .pn-mk-conta-antes { font-size: 12px; color: var(--rv-ink-faint); }
+.rv-pn-chat .pn-mk-conta-seta { font-size: 11px; color: var(--rv-ink-faint); }
+.rv-pn-chat .pn-mk-conta-depois { font: 700 18px var(--rv-display); color: var(--txt-forte, var(--rv-ink)); }
+.rv-pn-chat .pn-mk-conta-total { font-size: 12px; color: var(--rv-ink-dim); }
+
+/* Trilha antes → depois: cheio = já estava, novo = entrou agora
+   (aceso), saiu = recuou (tracejado), vazio = falta. */
+.rv-pn-chat .pn-mk-trilha { display: flex; gap: 3px; }
+.rv-pn-chat .pn-mk-seg {
+  flex: 1; height: 6px;
+  clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%);
+  background: var(--pn-mk-vazio);
+}
+.rv-pn-chat .pn-mk-seg[data-estado="cheio"] { background: color-mix(in srgb, var(--pn-a) 55%, transparent); }
+.rv-pn-chat .pn-mk-seg[data-estado="novo"] {
+  background: var(--pn-a);
+  box-shadow: 0 0 8px var(--pn-a);
+  animation: pn-mk-seg-entra 420ms ease-out backwards;
+}
+.rv-pn-chat .pn-mk-seg[data-estado="saiu"] {
+  clip-path: none; background: transparent;
+  outline: 1px dashed color-mix(in srgb, var(--pn-a) 55%, transparent); outline-offset: -1px;
+}
+@keyframes pn-mk-seg-entra { from { filter: brightness(2); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .rv-pn-chat .pn-cartao[data-kind="marcador"], .rv-pn-chat .pn-mk-seg { animation: none !important; }
+}

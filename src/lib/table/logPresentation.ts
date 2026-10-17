@@ -96,6 +96,7 @@ export const ENTRY_KIND_LABELS: Record<string, string> = {
   attack_damage_applied: "Dano Aplicado",
   collapse_outcome: "Colapso — Desfecho",
   combate_vtt: "Combate",
+  marcador_vtt: "Marcador",
 };
 
 export function entryKindLabel(type: string): string {

@@ -17,6 +17,7 @@ import { AttackWorkflowCard } from "./AttackWorkflowCard";
 import { SpellCastWorkflowCard } from "./SpellCastWorkflowCard";
 import { CombatDivider, EffectApplicationCard, PendingCheckCard, TurnResolutionCard } from "./CombatCards";
 import { CollapseCard, OverloadCard, RestCard, RuptureCard } from "./EstadoCards";
+import { MarcadorCard } from "./MarcadorCard";
 import { ehContinuacao, rotuloVisibilidade, type CartaoFeed } from "./contratos";
 
 function horaCurta(iso: string): string {
@@ -137,5 +138,7 @@ export function EntradaFeed({
       return <CombatDivider cartao={cartao} />;
     case "pendencia":
       return <PendingCheckCard cartao={cartao} hora={hora} visibilidade={vis} />;
+    case "marcador":
+      return <MarcadorCard cartao={cartao} hora={hora} visibilidade={vis} />;
   }
 }

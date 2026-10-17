@@ -9,6 +9,8 @@ import {
   SEGMENTOS_MAX, SEGMENTOS_MIN,
 } from "../src/app/mesas/[campaignId]/vtt/_dominio/marcadores";
 import { ferramentasParaPapel, interpretarAtalho } from "../src/app/mesas/[campaignId]/vtt/_ferramentas/controlador";
+import { projetarEntrada, tipoNoFeed } from "../src/app/mesas/[campaignId]/vtt/_painel/feed/contratos";
+import type { TableLogEntry } from "../src/lib/table";
 
 let passou = 0;
 let falhou = 0;
@@ -42,6 +44,17 @@ const k = interpretarAtalho({ key: "k", ctrlKey: false, metaKey: false, shiftKey
 ok("14 (K abre Marcadores)", k?.tipo === "ferramenta" && k.id === "marcadores", JSON.stringify(k));
 const m = interpretarAtalho({ key: "m", ctrlKey: false, metaKey: false, shiftKey: false, alvoEhEditavel: false }, ferramentasParaPapel(true));
 ok("15 (M continua sendo Medir)", m?.tipo === "ferramenta" && m.id === "medir", JSON.stringify(m));
+
+// ── Card no chat ──────────────────────────────────────────────────
+function log(payload: Record<string, unknown>): TableLogEntry {
+  return { id: "l1", campaign_id: "c", type: "marcador_vtt", visibility: "public", payload, created_at: "2026-10-17T00:00:00Z" } as unknown as TableLogEntry;
+}
+ok("16 (marcador_vtt está na allowlist do feed)", tipoNoFeed("marcador_vtt"), "sim");
+const av = projetarEntrada(log({ evento: "avancou", tipo: "progresso", nome: "Abrir a Passagem", total: 6, antes: 2, depois: 4 }));
+ok("17 (avanço vira card de marcador)", av?.kind === "marcador" && av.evento === "avancou" && av.antes === 2 && av.depois === 4, JSON.stringify(av && { kind: av.kind }));
+const fim = projetarEntrada(log({ evento: "concluido", tipo: "pressao", nome: null, total: 4, antes: 3, depois: 4 }));
+ok("18 (conclusão de pressão sem nome)", fim?.kind === "marcador" && fim.evento === "concluido" && fim.tipoMarcador === "pressao" && fim.nome === null, "ok");
+ok("19 (sem mudança não vira card)", projetarEntrada(log({ evento: "avancou", tipo: "progresso", total: 4, antes: 2, depois: 2 })) === null, "null");
 
 console.log(`\n${passou} ok, ${falhou} falha(s).`);
 if (falhou > 0) process.exit(1);

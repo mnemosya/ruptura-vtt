@@ -8,15 +8,22 @@
  * −/+) e um nome opcional. Sem nome, o marcador fica sem nome.
  *
  * Enter cria, Esc fecha. Quem grava é o `VttClient`.
+ *
+ * Arrastável pelo cabeçalho, com a mesma memória LOCAL das janelas de
+ * ferramenta (`janelasPreferencias.ts`, id "marcadores"): até ser
+ * arrastado abre centrado sob a faixa; depois, onde a pessoa deixou.
  */
 
-import { useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { carregarPosicaoJanela, limitarPosicaoJanela, salvarPosicaoJanela, type PosicaoJanela } from "../_ferramentas/janelasPreferencias";
 import {
   gradienteAnel, limitarTotal, NOME_MAX, SEGMENTOS_REFERENCIA, type TipoMarcador,
 } from "../_dominio/marcadores";
 import { IconeTipoMarcador } from "./FaixaMarcadores";
 
-export function PainelMarcadores({ emCombate, onCriar, onFechar }: {
+export function PainelMarcadores({ campaignId, usuarioId, emCombate, onCriar, onFechar }: {
+  campaignId: string;
+  usuarioId: string | null;
   emCombate: boolean;
   onCriar: (dados: { tipo: TipoMarcador; nome: string; total: number }) => Promise<{ ok: boolean }>;
   onFechar: () => void;
@@ -25,6 +32,34 @@ export function PainelMarcadores({ emCombate, onCriar, onFechar }: {
   const [total, setTotal] = useState(4);
   const [nome, setNome] = useState("");
   const [enviando, setEnviando] = useState(false);
+
+  const popRef = useRef<HTMLDivElement | null>(null);
+  const [posicao, setPosicao] = useState<PosicaoJanela | null>(null);
+  const arrastoRef = useRef<{ dx: number; dy: number } | null>(null);
+  useEffect(() => {
+    const lembrada = carregarPosicaoJanela(usuarioId, campaignId, "marcadores");
+    if (lembrada.manual) setPosicao(limitarPosicaoJanela(lembrada, popRef.current));
+  }, [campaignId, usuarioId]);
+
+  const aoPressionarCab = (e: PointerEvent<HTMLDivElement>) => {
+    const pop = popRef.current;
+    const pai = pop?.offsetParent as HTMLElement | null;
+    if (e.button !== 0 || !pop || !pai) return;
+    const caixa = pop.getBoundingClientRect();
+    const caixaPai = pai.getBoundingClientRect();
+    const atual = posicao ?? { x: caixa.left - caixaPai.left, y: caixa.top - caixaPai.top, manual: true };
+    arrastoRef.current = { dx: e.clientX - atual.x, dy: e.clientY - atual.y };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const aoMoverCab = (e: PointerEvent<HTMLDivElement>) => {
+    if (!arrastoRef.current) return;
+    setPosicao(limitarPosicaoJanela({ x: e.clientX - arrastoRef.current.dx, y: e.clientY - arrastoRef.current.dy, manual: true }, popRef.current));
+  };
+  const aoSoltarCab = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    if (arrastoRef.current && posicao) salvarPosicaoJanela(usuarioId, campaignId, "marcadores", posicao);
+    arrastoRef.current = null;
+  };
 
   const criar = async () => {
     if (enviando) return;
@@ -41,9 +76,12 @@ export function PainelMarcadores({ emCombate, onCriar, onFechar }: {
   };
 
   return (
-    <div className="rv-mk-pop" data-tipo={tipo} data-combate={emCombate || undefined}
+    <div ref={popRef} className="rv-mk-pop" data-tipo={tipo} data-combate={emCombate || undefined}
+      data-solto={posicao ? "true" : undefined}
+      style={posicao ? { left: posicao.x, top: posicao.y } : undefined}
       role="dialog" aria-label="Novo marcador" onKeyDown={teclado}>
-      <div className="rv-mk-pop-cab">
+      <div className="rv-mk-pop-cab" onPointerDown={aoPressionarCab} onPointerMove={aoMoverCab}
+        onPointerUp={aoSoltarCab} onPointerCancel={aoSoltarCab}>
         <span className="rv-mk-pop-titulo">NOVO MARCADOR</span>
         <span className="rv-mk-pop-atalhos">ENTER CRIA · ESC FECHA</span>
       </div>

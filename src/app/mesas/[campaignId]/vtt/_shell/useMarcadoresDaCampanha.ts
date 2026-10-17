@@ -4,11 +4,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getBrowserSupabaseClient } from "../../../../../lib/supabase/browserClient";
 import { ajustarPreenchidos, type MarcadorVtt, type TipoMarcador } from "../_dominio/marcadores";
 import {
-  criarMarcadorAction, definirPreenchidosAction, lerMarcadoresAction, removerMarcadorAction, restaurarMarcadorAction,
+  criarMarcadorAction, definirPreenchidosAction, lerMarcadoresAction, registrarMudancaMarcadorAction, removerMarcadorAction, restaurarMarcadorAction,
 } from "../_acoes/marcadoresActions";
 
 /** Quanto tempo o "Desfazer" da remoção fica na tela. */
 const JANELA_DESFAZER_MS = 5000;
+/**
+ * Pausa sem cliques que fecha uma sequência e manda UM card ao chat.
+ * Três cliques seguidos viram "+3", não três cards.
+ */
+const PAUSA_CARD_MS = 1200;
 
 /**
  * Marcadores da campanha: leitura, aviso por broadcast (migration
@@ -30,6 +35,12 @@ export function useMarcadoresDaCampanha(campaignId: string) {
   const [removido, setRemovido] = useState<MarcadorVtt | null>(null);
   const timerDesfazerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timerDesfazerRef.current) clearTimeout(timerDesfazerRef.current); }, []);
+  /** id → valor ANTES da sequência de cliques em andamento + timer que a fecha. */
+  const sequenciasRef = useRef(new Map<string, { antes: number; timer: ReturnType<typeof setTimeout> }>());
+  useEffect(() => {
+    const seqs = sequenciasRef.current;
+    return () => { for (const s of seqs.values()) clearTimeout(s.timer); };
+  }, []);
 
   const reler = useCallback(async () => {
     const sequencia = ++leituraRef.current;
@@ -81,6 +92,16 @@ export function useMarcadoresDaCampanha(campaignId: string) {
     versaoRef.current.set(id, versao);
     ++leituraRef.current;
     setMarcadores((ms) => ms.map((m) => (m.id === id ? { ...m, preenchidos: alvo } : m)));
+    const seq = sequenciasRef.current.get(id);
+    if (seq) clearTimeout(seq.timer);
+    const antes = seq ? seq.antes : atual.preenchidos;
+    sequenciasRef.current.set(id, {
+      antes,
+      timer: setTimeout(() => {
+        sequenciasRef.current.delete(id);
+        void registrarMudancaMarcadorAction({ campaignId, id, antes }).catch(() => {});
+      }, PAUSA_CARD_MS),
+    });
     void definirPreenchidosAction({ campaignId, id, preenchidos: alvo })
       .then((r) => {
         if (versaoRef.current.get(id) !== versao) return;
