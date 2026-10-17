@@ -1013,8 +1013,11 @@ function projetarMarcador(entry: TableLogEntry): CartaoFeed | null {
   if (total == null || antes == null || depois == null || antes === depois) return null;
   const tipo = txt(p, "tipo") === "pressao" ? "pressao" : "progresso";
   const ev = txt(p, "evento");
+  const base = comum(entry);
   return {
-    ...comum(entry),
+    ...base,
+    // Só o narrador altera marcador: entradas sem autoria gravada são dele.
+    autoria: base.autoria.tipo === "sistema" ? { ...base.autoria, nome: "Narrador", tipo: "narrador" } : base.autoria,
     kind: "marcador",
     evento: ev === "concluido" ? "concluido" : ev === "recuou" ? "recuou" : depois > antes ? "avancou" : "recuou",
     tipoMarcador: tipo,

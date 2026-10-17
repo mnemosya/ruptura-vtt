@@ -102,7 +102,7 @@ export async function registrarMudancaMarcadorAction(params: {
       campaignId: params.campaignId,
       type: "marcador_vtt",
       visibility: "public",
-      payload: { evento, marcadorId: m.id, tipo: m.tipo, nome: m.nome, total: m.total, antes, depois: m.preenchidos, source: "vtt_marcadores" },
+      payload: { evento, autorNome: "Narrador", autorTipo: "narrador", marcadorId: m.id, tipo: m.tipo, nome: m.nome, total: m.total, antes, depois: m.preenchidos, source: "vtt_marcadores" },
     });
   } catch {
     return { ok: false, erro: "Não foi possível registrar no chat." };

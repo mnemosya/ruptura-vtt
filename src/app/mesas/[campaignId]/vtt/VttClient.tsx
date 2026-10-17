@@ -6734,8 +6734,6 @@ export function VttClient({
         {/* Marcadores da campanha: a faixa desce para a base quando o
             HUD de rodadas ocupa o topo. */}
         <FaixaMarcadores
-          campaignId={campaignId}
-          usuarioId={usuarioId}
           marcadores={marcadores.marcadores}
           ehNarrador={ehNarrador}
           emCombate={trilha !== null && !trilhaOculta}
