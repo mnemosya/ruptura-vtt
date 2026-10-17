@@ -1,1 +1,109 @@
 /* Linha F — CSS próprio desta janela. As peças compartilhadas estão em `janelas-f.css`. */
+
+/* ═══ OBJETOS — o "Seletor" (protótipo I-Objetos-B) ═══════════════════ */
+.rv-obj-vitrine { padding: 18px 14px 16px; }
+.rv-obj-sel { display: flex; align-items: center; justify-content: space-between; }
+.rv-obj-seta {
+  width: 34px; height: 34px; padding: 0; border: 0; background: transparent; color: #4f7086;
+  display: grid; place-items: center; cursor: pointer;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.rv-obj-seta:hover:not(:disabled) { background: #112a39; color: #eaf6ff; }
+.rv-obj-peca { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.rv-obj-peca svg { color: var(--jf-acento); filter: drop-shadow(0 0 10px color-mix(in srgb, var(--jf-acento) 45%, transparent)); }
+.rv-obj-peca b { font: 700 16px var(--rv-display), sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #eaf6ff; }
+.rv-obj-peca .jf-leg { margin-top: -4px; }
+.rv-obj-medidores { display: flex; flex-direction: column; gap: 10px; margin: 18px 6px 0; padding-top: 14px; border-top: 1px solid #122a38; }
+.rv-obj-med { display: grid; grid-template-columns: 96px auto 1fr; align-items: center; gap: 12px; min-height: 24px; }
+.rv-obj-med .jf-l { font: 600 9.5px var(--rv-display), sans-serif; letter-spacing: .2em; text-transform: uppercase; color: #4f7086; }
+.rv-obj-segs { display: flex; gap: 3px; }
+.rv-obj-segs i { width: 22px; height: 5px; background: #16313f; }
+.rv-obj-segs i.is-on { background: var(--jf-t); box-shadow: 0 0 6px color-mix(in srgb, var(--jf-t) 50%, transparent); }
+.rv-obj-v { text-align: right; font: 600 9.5px var(--font-mono), monospace; letter-spacing: .06em; text-transform: uppercase; color: #b8d8e8; }
+.rv-obj-v.is-vazio { color: #4f7086; }
+.rv-obj-v b { font: 700 13px var(--rv-display), sans-serif; color: #eaf6ff; margin-right: 3px; }
+.rv-obj-pdctl { display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
+.rv-obj-pdctl .rv-obj-v { min-width: 92px; text-align: center; }
+.rv-obj-pdctl button {
+  width: 24px; height: 24px; padding: 0; border: 0; background: transparent; color: #7f95b3;
+  display: grid; place-items: center; cursor: pointer; transition: background 120ms ease-out, color 120ms ease-out;
+}
+.rv-obj-pdctl button:hover:not(:disabled) { background: #112a39; color: #eaf6ff; }
+.rv-obj-pdctl button:disabled { opacity: .35; cursor: default; }
+.rv-obj-icones { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 2px; }
+.rv-obj-ic {
+  height: 34px; padding: 0; border: 0; background: transparent; color: #4f7086;
+  display: grid; place-items: center; cursor: pointer; transition: background 120ms ease-out, color 120ms ease-out;
+}
+.rv-obj-ic:hover:not(:disabled) { background: #0f2735; color: #eaf6ff; }
+.rv-obj-ic[aria-pressed="true"] { color: var(--jf-acento); box-shadow: inset 0 -2px 0 var(--jf-acento); background: color-mix(in srgb, var(--jf-acento) 8%, transparent); }
+.rv-obj-ic:disabled { cursor: default; }
+.rv-obj-status { margin: -8px 0 0; font: 9.5px var(--font-mono), monospace; letter-spacing: .1em; text-transform: uppercase; color: #4f7086; }
+.rv-obj-status strong { color: #eaf6ff; }
+.rv-fp--f .rv-fp-rodape:has(.rv-obj-acao) { display: flex; flex-direction: column; gap: 14px; padding: 0 20px 20px; border-top: 0; }
+.rv-obj-limpar { align-self: center; margin: -6px 0 0; }
+
+/* Chanfro do botão principal nas duas janelas (o chassi tira dos controles). */
+:is(.rv-obj-acao, .rv-tok-acao) .jf-prim {
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+
+/* ═══ TOKEN — a peça é o formulário (protótipo H-Token) ═══════════════ */
+.rv-fp--f.rv-tok-janela { padding-left: 0; }
+.rv-tok-janela .rv-janela-token-corpo { gap: 24px; overflow-y: auto; }
+.rv-tok-vitrine { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 24px 20px 18px; }
+.rv-tok-disco {
+  order: -1; position: relative; width: 84px; height: 84px; border-radius: 50%; box-sizing: border-box;
+  display: grid; place-items: center; overflow: visible;
+  border: 2px solid var(--jf-l); background: color-mix(in srgb, var(--jf-l) 12%, #070d17);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--jf-l) 30%, transparent);
+  transition: border-color 160ms ease-out, box-shadow 160ms ease-out;
+}
+.rv-tok-disco[data-lado="neutro"] { border-style: dashed; }
+.rv-tok-disco::after { content: ""; position: absolute; inset: -7px; border-radius: 50%; border: 1px dashed transparent; transition: border-color 120ms ease-out; }
+.rv-tok-disco:hover::after { border-color: #2a4a5c; }
+.rv-tok-disco:focus-within::after { border-color: var(--jf-acento); }
+.rv-tok-disco img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+/* Com retrato, a sigla só aparece ao editar — o retrato é o que o mapa mostra. */
+.rv-tok-disco img ~ input { opacity: 0; }
+.rv-tok-disco:focus-within img ~ input { opacity: 1; background: rgba(4, 10, 18, .7); }
+.rv-tok-disco input:not(#_) {
+  position: relative; width: 70px; padding: 0; border: 0; background: transparent; outline: none; text-align: center;
+  font: 700 20px var(--rv-display), sans-serif; letter-spacing: .04em; text-transform: uppercase; color: var(--jf-l);
+}
+.rv-tok-disco input::placeholder { color: color-mix(in srgb, var(--jf-l) 55%, transparent); }
+.rv-tok-nome:not(#_) {
+  width: 100%; margin-top: 6px; padding: 4px 0 6px; border: 0; border-bottom: 1px solid transparent;
+  background: transparent; outline: none; text-align: center;
+  font: 700 18px var(--rv-display), sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #eaf6ff;
+  transition: border-color 120ms ease-out;
+}
+.rv-tok-nome::placeholder { color: #4f7086; }
+.rv-tok-nome:hover { border-bottom-color: #1a3a4b; }
+.rv-tok-nome:focus { border-bottom-color: var(--jf-acento); }
+.rv-tok-pv { display: flex; align-items: center; gap: 8px; font: 600 9.5px var(--font-mono), monospace; color: #b8d8e8; }
+.rv-tok-pv > span { width: 96px; height: 3px; background: #1a3a4b; }
+.rv-tok-pv i { display: block; height: 100%; background: #22d3aa; }
+.rv-tok-janela .jf-parada[aria-checked="true"] { color: var(--jf-t, var(--jf-acento)); background: color-mix(in srgb, var(--jf-acento) 8%, transparent); }
+.rv-tok-janela .jf-parada[aria-checked="true"]::after { background: var(--jf-acento); box-shadow: 0 0 8px var(--jf-acento); }
+.rv-tok-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.rv-tok-secs { display: flex; flex-direction: column; gap: 6px; }
+.rv-tok-select:not(#_) { appearance: none; border: 0; background: transparent; color: #eaf6ff; font: 13px var(--rv-body), sans-serif; outline: none; cursor: pointer; }
+.rv-tok-select option { background: #071621; }
+.rv-tok-criar-ficha { margin-left: 0; align-self: flex-start; }
+.rv-tok-img { display: flex; align-items: center; gap: 6px; }
+.rv-tok-img-btn {
+  flex: 1; display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 12px;
+  border: 1px dashed #22526a !important; background: transparent; color: #7f95b3; cursor: pointer;
+  font: 600 12px var(--rv-body), sans-serif; transition: border-color 120ms ease-out, color 120ms ease-out;
+}
+.rv-tok-img-btn:hover { border-color: var(--jf-acento) !important; color: #eaf6ff; }
+.rv-tok-img-btn img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+.rv-tok-img-btn small { margin-left: auto; font: 9.5px var(--font-mono), monospace; letter-spacing: .08em; text-transform: uppercase; color: #4f7086; }
+.rv-tok-janela .jf-dims[data-desabilitada] { opacity: .45; }
+.rv-tok-ajuda { margin: 0; text-align: left; }
+.rv-tok-janela .jf-cor[aria-checked="true"] > span { box-shadow: 0 0 0 2px var(--fj-fundo-2, #071621), 0 0 0 3.5px var(--jf-k); }
+.rv-tok-janela .jf-linha .jf-cores { margin-left: auto; }
+.rv-tok-condicoes .jf-tile--chave { height: 36px; font-size: 11.5px; }
+.rv-tok-condicoes .jf-rot .jf-quieto { margin: -8px -10px -8px auto; height: 26px; }
+.rv-tok-acao + .jf-nota { margin-top: -14px; }

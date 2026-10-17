@@ -38,7 +38,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ImageUp, X } from "lucide-react";
+import { ChevronDown, Eye, ImageUp, Lock, X } from "lucide-react";
 import { type Hex, TAMANHOS, type TamanhoCriatura, hexParaPixel, hexPath } from "../_mapa/hex";
 import { type CondicaoSlug, CONDICOES } from "../_dados/cenaDemo";
 import { type MapaTerreno, dentroDoMapa, pegadaBloqueada } from "../_dominio/movimento";
@@ -114,6 +114,34 @@ const LADOS: readonly (readonly [LadoToken, string, string])[] = [
   ["pn", "PN", "Personagem do narrador"],
   ["neutro", "Neutro", "Neutro"],
 ];
+/** Cor de cada lado — a mesma do disco no mapa (`--rv-lado-cor` em `vtt.css`). */
+const COR_LADO: Record<LadoToken, string> = { pj: "#45b8c9", pn: "#e0455f", neutro: "#8ea0bd" };
+
+/** Quantos hexes a pegada come — sempre do domínio (`pegadaEfetiva`). */
+function nHexes(tamanho: TamanhoCriatura): number {
+  return pegadaEfetiva({ categoria: tamanho, orientacao: 0, pegadaPersonalizada: null }).length;
+}
+
+/**
+ * A PEGADA REAL em miniatura, pra cada parada do trilho de tamanho:
+ * offsets de `pegadaEfetiva` (orientação 0 — a real é escolhida no
+ * mapa), centralizados. O raio encolhe só no Pequeno, pra ler "menor".
+ */
+function PegadaMini({ tamanho }: { tamanho: TamanhoCriatura }) {
+  const pegada = pegadaEfetiva({ categoria: tamanho, orientacao: 0, pegadaPersonalizada: null });
+  const raio = tamanho === "pequeno" ? 3.6 : pegada.length > 7 ? 4.2 : 5;
+  const pts = pegada.map((c) => hexParaPixel(c, raio));
+  const cx = (Math.min(...pts.map((p) => p.x)) + Math.max(...pts.map((p) => p.x))) / 2;
+  const cy = (Math.min(...pts.map((p) => p.y)) + Math.max(...pts.map((p) => p.y))) / 2;
+  return (
+    <svg width={52} height={46} viewBox="0 0 52 46" aria-hidden="true">
+      {pts.map((p, i) => (
+        <path key={i} className="jf-hx" d={hexPath(raio - 0.6)} transform={`translate(${26 + p.x - cx} ${23 + p.y - cy})`} />
+      ))}
+    </svg>
+  );
+}
+
 const CONDICOES_LISTA = Object.keys(CONDICOES) as CondicaoSlug[];
 /**
  * Responde SÓ "a pegada muda de FORMA ao girar" (grande/colossal — as
@@ -395,6 +423,9 @@ export function GerenciadorToken({
   const [erro, setErro] = useState<string | null>(null);
   const [siglaEditadaManualmente, setSiglaEditadaManualmente] = useState(siglaJaEditada(modo, valoresIniciais));
   const [maisOpcoesAberto, setMaisOpcoesAberto] = useState(false);
+  const [ctlAberto, setCtlAberto] = useState(false);
+  const [foco, setFoco] = useState<string | null>(null);
+  const [espiaTam, setEspiaTam] = useState<TamanhoCriatura | null>(null);
   const [erroImagem, setErroImagem] = useState<string | null>(null);
   const [imagemCarregando, setImagemCarregando] = useState(false);
   const [imagemFalhou, setImagemFalhou] = useState(false);
@@ -603,13 +634,6 @@ export function GerenciadorToken({
   /** Token com ficha não guarda recurso próprio — quem manda é a ficha. */
   const temFicha = valores.characterId !== null;
 
-  const pegadaAbstrata = useMemo(() => pegadaEfetiva({ categoria: valores.tamanho, orientacao: 0, pegadaPersonalizada: null }), [valores.tamanho]);
-  const raioPreview = 22;
-  const previewPontos = pegadaAbstrata.map((c) => hexParaPixel(c, raioPreview));
-  const minX = Math.min(...previewPontos.map((p) => p.x)) - raioPreview * 1.3;
-  const maxX = Math.max(...previewPontos.map((p) => p.x)) + raioPreview * 1.3;
-  const minY = Math.min(...previewPontos.map((p) => p.y)) - raioPreview * 1.3;
-  const maxY = Math.max(...previewPontos.map((p) => p.y)) + raioPreview * 1.3;
   // Todo token pode ser orientado durante o posicionamento — mesmo
   // pegada simétrica, que só muda pra qual direção o token aponta,
   // nunca as células ocupadas (`tamanhoTemOrientacaoVariavel` responde
@@ -623,6 +647,14 @@ export function GerenciadorToken({
     ...p,
     rotulo: (contagemNomes.get(p.nome) ?? 0) > 1 ? `${p.nome} (${p.id.slice(0, 4)})` : p.nome,
   }));
+
+  const corLado = COR_LADO[valores.lado];
+  const tamMostrado = espiaTam ?? valores.tamanho;
+  /** Liga a frase de ajuda (`jf-desc`) ao que está sob o mouse/foco. */
+  const focar = (txt: string) => ({
+    onMouseEnter: () => setFoco(txt), onMouseLeave: () => setFoco(null),
+    onFocus: () => setFoco(txt), onBlur: () => setFoco(null),
+  });
 
   const tituloId = "rv-gerenciador-titulo";
   const descricaoId = "rv-gerenciador-descricao";
@@ -652,26 +684,21 @@ export function GerenciadorToken({
     )}
     <div
       ref={painelRef}
-      className="rv-janela-token rv-gerenciador-token rv-fp"
-      style={{ left: pos.x, top: pos.y }}
+      // Linha F (`rv-fp--f rv-fp--gestao`, 500px) aplicada à MESMA casca
+      // fixa de sempre: esta janela vive fora do palco e nasce no centro
+      // da tela, de propósito (ver `usePosicaoJanelaFlutuante`), então
+      // não usa `JanelaFerramenta` — só a aparência dela.
+      className="rv-janela-token rv-gerenciador-token rv-fp rv-fp--f rv-fp--gestao rv-tok-janela"
+      style={{ left: pos.x, top: pos.y, ["--jf-acento" as string]: "#00d4ff", ["--jf-l" as string]: corLado, ["--jf-hero" as string]: corLado }}
       aria-labelledby={tituloId} aria-describedby={descricaoId}
     >
-      {/* Mesma casca das janelas de ferramenta: brackets nos quatro
-          cantos e espinha vertical com índice e código. Esta janela era
-          a única que ainda usava a moldura de modal antiga. */}
-      <span className="rv-fp-espinha" aria-hidden="true">
-        <span className="rv-fp-espinha-indice">08</span>
-        <span className="rv-fp-espinha-codigo">Token</span>
-        <span className="rv-fp-espinha-ponto" />
-      </span>
-
       <header className="rv-fp-cab rv-janela-token-cab" onPointerDown={iniciarArrasto}>
         <span className="rv-fp-cab-txt">
           <span className="rv-fp-titulo" id={tituloId}>
-            {modo === "criar" ? "Adicionar token" : `Editar ${valoresIniciais.nome || "token"}`}
+            {modo === "criar" ? "Novo token" : `Editar ${valoresIniciais.nome || "token"}`}
           </span>
           <span className="rv-fp-modo" id={descricaoId}>
-            {modo === "criar" ? "Configuração · posição no próximo passo" : "Edição · altere e salve"}
+            {modo === "criar" ? "Passo 1 de 2 · posição no próximo" : "Edição · altere e salve"}
           </span>
         </span>
         <button type="button" className="rv-fp-fechar" aria-label="Fechar" onClick={pedirFechar}>
@@ -679,357 +706,285 @@ export function GerenciadorToken({
         </button>
       </header>
 
-      <div className="rv-modal-corpo rv-janela-token-corpo" onKeyDown={(e) => { if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA" && (e.target as HTMLElement).tagName !== "BUTTON") { e.preventDefault(); confirmar(); } }}>
+      <div className="rv-modal-corpo rv-janela-token-corpo jf-corpo" onKeyDown={(e) => { if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA" && (e.target as HTMLElement).tagName !== "BUTTON") { e.preventDefault(); confirmar(); } }}>
 
-        {/* ══ O TOKEN, COMO ELE VAI FICAR ══════════════════════════════
-            A peça que faltava. Criar token é criar uma COISA VISUAL —
-            um disco no mapa com cor de lado, retrato ou sigla, barra de
-            vida — e o formulário mostrava só a forma abstrata da pegada
-            num quadrado de 100px. Quem estava preparando uma cena
-            escolhia às cegas e só via o resultado depois de posicionar.
-
-            A prévia fica GRUDADA no topo enquanto o resto rola: ela é o
-            que muda a cada campo, e um preview que sai de vista é um
-            preview que não serve. */}
-        <div className="rv-token-previa" aria-hidden="true">
-          <div className="rv-token-disco" data-lado={valores.lado}>
-            {valores.retratoUrl && validacaoImagem.ok && !imagemFalhou
+        {/* ══ VITRINE: A PEÇA É O FORMULÁRIO ═════════════════════════
+            O próprio token, grande: digita-se a sigla DENTRO do disco e o
+            nome logo abaixo. O nome vem primeiro no DOM (e no Tab, como
+            sempre foi: nome → sigla); `order` só sobe o disco na tela. */}
+        <div className="jf-hero rv-tok-vitrine">
+          <input
+            ref={primeiroCampoRef} type="text" className="rv-tok-nome" value={valores.nome} placeholder="Sem nome"
+            maxLength={60} aria-label="Nome do token"
+            onChange={(e) => setValores((v) => ({ ...v, nome: e.target.value }))}
+          />
+          <label className="rv-tok-disco" data-lado={valores.lado} data-vertente={valores.vertente} title="Sigla">
+            {valores.retratoArquivo
               // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={valores.retratoUrl} alt="" onError={() => setImagemFalhou(true)} />
-              : <span className="rv-token-disco-sigla">{valores.sigla || sugerirSigla(valores.nome) || "?"}</span>}
-          </div>
-          <div className="rv-token-previa-txt">
-            <strong className="rv-token-previa-nome">{valores.nome.trim() || "Sem nome"}</strong>
-            <span className="rv-token-previa-meta">
-              {LADOS.find(([v]) => v === valores.lado)?.[2]} · {TAMANHOS[valores.tamanho].rotulo} · {TAMANHOS[valores.tamanho].metros}
-            </span>
-            {valores.pvMax !== null && (
-              <span className="rv-token-previa-pv">
-                <span className="rv-token-previa-pv-trilha">
-                  <span style={{ width: `${Math.min(100, Math.round(((valores.pvAtual ?? valores.pvMax) / Math.max(1, valores.pvMax)) * 100))}%` }} />
-                </span>
-                {valores.pvAtual ?? valores.pvMax}/{valores.pvMax}
-              </span>
-            )}
-          </div>
-          {/* A PEGADA vive aqui, ao lado do disco, e não perdida num
-              campo: ela é parte do retrato da peça — quantos hexes ela
-              come no mapa —, não uma ilustração do campo "tamanho". */}
-          <div className="rv-token-pegada" data-vertente={valores.vertente}>
-            {/* `currentColor`, e não um ciano cravado: a cor vem da
-                VERTENTE, como no mapa — lá o anel do disco é
-                `COR_VERTENTE`. Escolher "Biótica" e ver a pegada azul
-                era a prévia contradizendo o campo logo abaixo dela. */}
-            <svg viewBox={`${minX} ${minY} ${maxX - minX} ${maxY - minY}`} width={58} height={58}>
-              {previewPontos.map((p, i) => {
-                const ehAncora = pegadaAbstrata[i].q === 0 && pegadaAbstrata[i].r === 0;
-                return (
-                  <path key={i} d={hexPath(raioPreview - 1.5)} transform={`translate(${p.x} ${p.y})`}
-                    fill="currentColor" fillOpacity={0.16} stroke="currentColor" strokeWidth={ehAncora ? 3 : 1.3} />
-                );
-              })}
-            </svg>
-            <span>{pegadaAbstrata.length} hex{pegadaAbstrata.length === 1 ? "" : "es"}</span>
-          </div>
-        </div>
-
-        {/* ══ IDENTIDADE ═══════════════════════════════════════════════
-            Nome e sigla numa linha só. A sigla se escreve sozinha a
-            partir do nome — é campo de EXCEÇÃO, e por isso estreito e
-            sem instrução: o que ela faz aparece na prévia ao lado. */}
-        <div className="rv-form-linha">
-          <label className="rv-field rv-field--nome">
-            <span>Nome</span>
-            <input ref={primeiroCampoRef} type="text" value={valores.nome} placeholder="Ex.: Sentinela da Doca"
-              onChange={(e) => setValores((v) => ({ ...v, nome: e.target.value }))} />
-          </label>
-          <label className="rv-field rv-field--estreito">
-            <span>Sigla</span>
+              ? <img src={valores.retratoArquivo.previewUrl} alt="" />
+              : valores.retratoUrl && validacaoImagem.ok && !imagemFalhou
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={valores.retratoUrl} alt="" onError={() => setImagemFalhou(true)} />
+                : null}
             <input
-              type="text" maxLength={3} value={valores.sigla} placeholder={sugerirSigla(valores.nome) || "SEN"}
+              type="text" maxLength={3} value={valores.sigla} placeholder={sugerirSigla(valores.nome) || "?"}
+              aria-label="Sigla"
+              onFocus={() => setFoco("A sigla aparece no disco quando não há retrato")} onBlur={() => setFoco(null)}
               onChange={(e) => { setSiglaEditadaManualmente(true); setValores((v) => ({ ...v, sigla: e.target.value.toUpperCase().trimStart() })); }}
             />
           </label>
+          <span className="jf-leg">
+            {LADOS.find(([v]) => v === valores.lado)?.[2]} · {TAMANHOS[valores.tamanho].rotulo} · {TAMANHOS[valores.tamanho].metros}
+          </span>
+          {valores.pvMax !== null && valores.pvMax > 0 && (
+            <span className="rv-tok-pv">
+              <span><i style={{ width: `${Math.min(100, Math.round(((valores.pvAtual ?? valores.pvMax) / Math.max(1, valores.pvMax)) * 100))}%` }} /></span>
+              {valores.pvAtual ?? valores.pvMax}/{valores.pvMax}
+            </span>
+          )}
         </div>
 
-        {/* LADO em três fichas coloridas, uma linha. Era um segmentado
-            de rótulos em duas linhas ("Personagem do narrador (PN)")
-            que comia duas alturas de campo pra dizer três palavras — e
-            a cor, que é o que de fato distingue os três no mapa, não
-            aparecia em lugar nenhum. */}
-        <fieldset className="rv-field rv-fp-grupo">
-          <legend className="rv-fp-rotulo">Lado</legend>
-          <div className="rv-segmentado rv-token-lados" role="radiogroup" aria-label="Lado">
+        <div className="jf-grupo">
+          <span className="jf-rot">Lado</span>
+          <div className="jf-tiles" style={{ ["--jf-n" as string]: 3 }} role="radiogroup" aria-label="Lado">
             {LADOS.map(([valor, curto, longo]) => (
               <button key={valor} type="button" role="radio" aria-checked={valores.lado === valor}
-                className="rv-segmentado-item rv-token-lado" data-lado={valor} title={longo}
+                className="jf-tile rv-token-lado" data-lado={valor} title={longo}
+                style={{ ["--jf-l" as string]: COR_LADO[valor], ["--jf-t" as string]: COR_LADO[valor] }}
+                {...focar(longo)}
                 onClick={() => setValores((v) => ({ ...v, lado: valor }))}>
-                <span className="rv-token-lado-marca" aria-hidden="true" />
+                <span className="jf-ponto" aria-hidden="true" />
                 {curto}
               </button>
             ))}
           </div>
-        </fieldset>
+        </div>
 
-        {/* TAMANHO em fichas, não num `select`: são cinco opções fixas,
-            é o campo que mais mexe na prévia, e escolher entre cinco
-            coisas visíveis é um clique — dentro de um select são três
-            (abrir, procurar, escolher). */}
-        <fieldset className="rv-field rv-fp-grupo">
-          <legend className="rv-fp-rotulo">Tamanho</legend>
-          <div className="rv-segmentado" role="radiogroup" aria-label="Tamanho">
+        <div className="jf-grupo">
+          <span className="jf-rot">Tamanho</span>
+          <div className="jf-trilho" style={{ ["--jf-n" as string]: 5 }} role="radiogroup" aria-label="Tamanho" onMouseLeave={() => setEspiaTam(null)}>
             {CATEGORIAS.map((c) => (
               <button key={c} type="button" role="radio" aria-checked={valores.tamanho === c}
-                className="rv-segmentado-item rv-token-tamanho" title={`${TAMANHOS[c].rotulo} — ${TAMANHOS[c].metros}`}
+                className="jf-parada" title={`${TAMANHOS[c].rotulo} — ${TAMANHOS[c].metros}`}
+                onMouseEnter={() => setEspiaTam(c)} onFocus={() => setEspiaTam(c)} onBlur={() => setEspiaTam(null)}
                 onClick={() => setValores((v) => ({ ...v, tamanho: c }))}>
-                <strong>{TAMANHOS[c].rotulo}</strong>
-                <span>{TAMANHOS[c].metros}</span>
+                <PegadaMini tamanho={c} />
+                <span className="rv-tok-sr">{TAMANHOS[c].rotulo}</span>
               </button>
             ))}
           </div>
-          {podeGirar && (
-            <small className="rv-field-ajuda">A orientação da pegada é escolhida no mapa, no próximo passo.</small>
-          )}
+          <div className="jf-trilho-leg">
+            <b>{TAMANHOS[tamMostrado].rotulo}</b>
+            <span>{TAMANHOS[tamMostrado].metros} · {nHexes(tamMostrado)} hex{nHexes(tamMostrado) === 1 ? "" : "es"}</span>
+          </div>
           {!cabeAposRedimensionar && (
             <p className="rv-form-aviso" role="alert">O novo tamanho não cabe na posição atual. Mova ou rotacione o token no mapa antes de alterar o tamanho.</p>
           )}
-        </fieldset>
+        </div>
 
-        {/* CONTROLE — quem manda no token. A ficha e as duas travas são
-            a MESMA pergunta ("quem pode mexer nisto?"), e estavam em
-            dois grupos distantes: a ficha dentro de "Ficha & escala",
-            as travas em "Comportamento", com um bloco de tamanho no
-            meio. */}
-        <div className="rv-fp-grupo">
-          <span className="rv-fp-rotulo">Controle</span>
-          <label className="rv-field">
-            <span>Ficha vinculada</span>
-            <select value={valores.characterId ?? ""} onChange={(e) => setValores((v) => ({ ...v, characterId: e.target.value || null }))}>
-              <option value="">Nenhuma — somente o narrador controla</option>
-              {personagensRotulados.map((p) => <option key={p.id} value={p.id}>{p.rotulo}</option>)}
-            </select>
-          </label>
-          {modo === "editar" && onCriarFicha && !valoresIniciais.characterId && !valores.characterId && (
-            <button type="button" className="rv-btn rv-btn--ghost" data-testid="token-criar-ficha" disabled={criandoFicha}
-              onClick={async () => {
-                setCriandoFicha(true);
-                setErro(null);
-                try {
-                  const r = await onCriarFicha();
-                  if (r.ok) setValores((v) => ({ ...v, characterId: r.characterId }));
-                  else setErro(r.erro);
-                } finally {
-                  setCriandoFicha(false);
-                }
-              }}>
-              {criandoFicha ? "Criando ficha…" : "Criar ficha (PN) com o nome e o retrato deste token"}
+        <p className="jf-desc">{foco ?? "Clique no disco pra mudar a sigla"}</p>
+
+        <div className="rv-tok-secs">
+          {/* CONTROLE — quem manda no token: ficha e as duas travas são a
+              mesma pergunta ("quem pode mexer nisto?"). */}
+          <div>
+            <button type="button" className="jf-sec-cab" aria-expanded={ctlAberto} onClick={() => setCtlAberto((v) => !v)}>
+              <span className="jf-l">Controle</span>
+              <span className="jf-sec-res">
+                {(valores.characterId ? personagensRotulados.find((x) => x.id === valores.characterId)?.rotulo ?? "Ficha" : "Narrador")}
+                {" · "}{valores.visivel ? "visível" : "oculto"}{valores.bloqueado ? " · travado" : ""}
+              </span>
+              <ChevronDown size={14} aria-hidden="true" />
             </button>
-          )}
-          {/* Os dois interruptores lado a lado, no lugar dos cartões de
-              duas linhas: são duas chaves de liga/desliga, não duas
-              decisões que precisem de parágrafo. O que cada uma faz
-              cabe no rótulo. */}
-          <div className="rv-token-chaves">
-            <label className="rv-fp-switch rv-token-chave">
-              <input type="checkbox" checked={valores.visivel} onChange={(e) => setValores((v) => ({ ...v, visivel: e.target.checked }))} />
-              <span className="rv-fp-switch-tr" aria-hidden="true" />
-              <span className="rv-fp-switch-txt">Visível para jogadores</span>
-            </label>
-            <label className="rv-fp-switch rv-token-chave">
-              <input type="checkbox" checked={valores.bloqueado} onChange={(e) => setValores((v) => ({ ...v, bloqueado: e.target.checked }))} />
-              <span className="rv-fp-switch-tr" aria-hidden="true" />
-              <span className="rv-fp-switch-txt">Posição travada</span>
-            </label>
+            {ctlAberto && (
+              <div className="jf-sec-corpo">
+                <label className="jf-linha" {...focar("Vincule uma ficha pra um jogador controlar o token")}>
+                  <span className="jf-l">Ficha</span>
+                  <select className="jf-v rv-tok-select" value={valores.characterId ?? ""} aria-label="Ficha vinculada"
+                    onChange={(e) => setValores((v) => ({ ...v, characterId: e.target.value || null }))}>
+                    <option value="">Nenhuma — somente o narrador controla</option>
+                    {personagensRotulados.map((x) => <option key={x.id} value={x.id}>{x.rotulo}</option>)}
+                  </select>
+                  <ChevronDown size={14} aria-hidden="true" />
+                </label>
+                {modo === "editar" && onCriarFicha && !valoresIniciais.characterId && !valores.characterId && (
+                  <button type="button" className="jf-quieto rv-tok-criar-ficha" data-testid="token-criar-ficha" disabled={criandoFicha}
+                    onClick={async () => {
+                      setCriandoFicha(true);
+                      setErro(null);
+                      try {
+                        const r = await onCriarFicha();
+                        if (r.ok) setValores((v) => ({ ...v, characterId: r.characterId }));
+                        else setErro(r.erro);
+                      } finally {
+                        setCriandoFicha(false);
+                      }
+                    }}>
+                    {criandoFicha ? "Criando ficha…" : "Criar ficha (PN) com o nome e o retrato deste token"}
+                  </button>
+                )}
+                <div className="jf-tiles">
+                  <button type="button" className="jf-tile jf-tile--chave" aria-pressed={valores.visivel}
+                    {...focar("Os jogadores veem o token no mapa")}
+                    onClick={() => setValores((v) => ({ ...v, visivel: !v.visivel }))}>
+                    <Eye size={16} aria-hidden="true" /> Visível para jogadores
+                  </button>
+                  <button type="button" className="jf-tile jf-tile--chave" aria-pressed={valores.bloqueado}
+                    {...focar("Ninguém arrasta o token sem destravar")}
+                    onClick={() => setValores((v) => ({ ...v, bloqueado: !v.bloqueado }))}>
+                    <Lock size={16} aria-hidden="true" /> Posição travada
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* RETRATO E VIDA — imagem, recursos, vertente e condições:
+              existem, mas não é por eles que se cria um token no meio da
+              sessão. Abertos de saída na edição quando já têm conteúdo. */}
+          <div>
+            <button type="button" className="jf-sec-cab" aria-expanded={maisOpcoesAberto} onClick={() => setMaisOpcoesAberto((v) => !v)}>
+              <span className="jf-l">Retrato e vida</span>
+              <span className="jf-sec-res">
+                {valores.retratoArquivo || valores.retratoUrl ? "Com retrato" : "Sem retrato"}
+                {" · "}{temFicha ? "vida da ficha" : valores.pvMax !== null ? `PV ${valores.pvMax}` : "sem PV"}
+                {valores.condicoes.length > 0 ? ` · ${valores.condicoes.length} cond.` : ""}
+              </span>
+              <ChevronDown size={14} aria-hidden="true" />
+            </button>
+            {maisOpcoesAberto && (
+              <div className="jf-sec-corpo">
+                {/* IMAGEM — arquivo OU endereço, nunca os dois (regra do
+                    banco: gravar um limpa o outro). */}
+                <div className="rv-tok-img">
+                  <button
+                    type="button" className="rv-tok-img-btn"
+                    onClick={() => campoArquivoRef.current?.click()}
+                    aria-label={valores.retratoArquivo ? "Trocar a imagem escolhida" : "Escolher uma imagem do computador"}
+                  >
+                    {valores.retratoArquivo
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={valores.retratoArquivo.previewUrl} alt="" />
+                      : <ImageUp size={18} aria-hidden />}
+                    <span>{valores.retratoArquivo ? "Trocar retrato" : "Escolher retrato"}</span>
+                    <small>
+                      {valores.retratoArquivo ? "Enviada quando o token for criado" : "PNG, JPEG ou WebP · até 2 MB"}
+                    </small>
+                  </button>
+                  {valores.retratoArquivo && (
+                    <button
+                      type="button" className="jf-mini is-perigo" aria-label="Remover imagem" title="Remover"
+                      onClick={() => setValores((v) => {
+                        if (v.retratoArquivo) URL.revokeObjectURL(v.retratoArquivo.previewUrl);
+                        return { ...v, retratoArquivo: null };
+                      })}
+                    ><X size={14} /></button>
+                  )}
+                  <input
+                    ref={campoArquivoRef} type="file" accept="image/png,image/jpeg,image/webp" hidden
+                    onChange={(e) => {
+                      const arquivo = e.target.files?.[0];
+                      e.target.value = ""; // permite reescolher o MESMO arquivo
+                      if (arquivo) { setErroArquivo(null); setArquivoParaRecortar(arquivo); }
+                    }}
+                  />
+                </div>
+                {erroArquivo && <p className="rv-form-aviso" role="alert">{erroArquivo}</p>}
+                {!valores.retratoArquivo && (
+                  <>
+                    <input
+                      type="text" className="jf-campo" value={valores.retratoUrl ?? ""} placeholder="Ou cole um endereço https://…"
+                      aria-label="Endereço da imagem"
+                      onChange={(e) => { setImagemFalhou(false); setValores((v) => ({ ...v, retratoUrl: e.target.value || null })); }}
+                    />
+                    {!validacaoImagem.ok && <p className="rv-form-aviso" role="alert">{validacaoImagem.erro}</p>}
+                    {imagemFalhou && <p className="rv-form-aviso" role="alert">Não foi possível carregar esta imagem.</p>}
+                  </>
+                )}
+
+                {/* Recursos próprios só pra token SEM ficha: com ficha, os
+                    números vêm da ficha canônica. */}
+                <div className="jf-dims" style={{ ["--jf-n" as string]: 3 }} data-desabilitada={temFicha || undefined}>
+                  {RECURSOS_DO_TOKEN.map(({ chaveAtual, chaveMax, rotulo }) => (
+                    <label className="jf-dim" key={rotulo}>
+                      <span className="jf-l">{rotulo}</span>
+                      <span className="jf-dim-v">
+                        <input
+                          type="number" min={0} inputMode="numeric" placeholder="—" value={valores[chaveAtual] ?? ""}
+                          aria-label={`${rotulo} atual`} title={`${rotulo} atual`} disabled={temFicha}
+                          onChange={(e) => setValores((v) => ({ ...v, [chaveAtual]: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))}
+                        />
+                        /
+                        <input
+                          type="number" min={0} inputMode="numeric" placeholder="máx" value={valores[chaveMax] ?? ""}
+                          aria-label={`${rotulo} máximo`} title={`${rotulo} máximo`} disabled={temFicha}
+                          onChange={(e) => setValores((v) => ({ ...v, [chaveMax]: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))}
+                        />
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                {temFicha && <p className="jf-nota rv-tok-ajuda">Os recursos vêm da ficha vinculada — é lá que eles mudam.</p>}
+                {recursoInvalido && (
+                  <p className="rv-form-aviso" role="alert">{recursoInvalido.rotulo} atual não pode ser maior que o máximo.</p>
+                )}
+                {RECURSOS_DO_TOKEN.some(({ chaveAtual, chaveMax }) => valores[chaveAtual] !== null && valores[chaveMax] === null) && (
+                  <p className="jf-nota rv-tok-ajuda">Sem o máximo, o recurso não vira barra no token.</p>
+                )}
+
+                {/* VERTENTE em losangos com a cor que o token leva pro mapa. */}
+                <div className="jf-linha" {...focar("A vertente pinta o anel do token no mapa")}>
+                  <span className="jf-l">Vertente</span>
+                  <span className="jf-v">{VERTENTES.find(([v]) => v === valores.vertente)?.[1]}</span>
+                  <span className="jf-cores" role="radiogroup" aria-label="Vertente">
+                    {VERTENTES.map(([valor, rotulo]) => (
+                      <button key={valor} type="button" role="radio" aria-checked={valores.vertente === valor}
+                        className="jf-cor rv-token-vertente" data-vertente={valor} aria-label={rotulo} title={rotulo}
+                        style={{ ["--jf-k" as string]: "var(--rv-vertente-cor)" }}
+                        onClick={() => setValores((v) => ({ ...v, vertente: valor }))}>
+                        <span aria-hidden="true" />
+                      </button>
+                    ))}
+                  </span>
+                </div>
+
+                <div className="jf-grupo rv-tok-condicoes">
+                  <span className="jf-rot">
+                    Condições{valores.condicoes.length > 0 ? ` · ${valores.condicoes.length}` : ""}
+                    {valores.condicoes.length > 0 && (
+                      <button type="button" className="jf-quieto rv-limpar-condicoes" onClick={() => setValores((v) => ({ ...v, condicoes: [] }))}>Limpar</button>
+                    )}
+                  </span>
+                  {/* ORDEM FIXA: uma lista de marcar tem que ficar parada. */}
+                  <div className="jf-tiles" style={{ ["--jf-n" as string]: 3 }}>
+                    {CONDICOES_LISTA.map((c) => (
+                      <button key={c} type="button" className="jf-tile jf-tile--chave rv-condicao-item" title={CONDICOES[c].rotulo}
+                        aria-pressed={valores.condicoes.includes(c)}
+                        onClick={() => setValores((v) => ({
+                          ...v,
+                          condicoes: v.condicoes.includes(c) ? v.condicoes.filter((x) => x !== c) : [...v.condicoes, c],
+                        }))}>
+                        <span aria-hidden="true">{CONDICOES[c].glifo}</span> {CONDICOES[c].rotulo}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* ══ O RESTO ══════════════════════════════════════════════════
-            Vertente, imagem, PV e condições: existem, mas não é por
-            elas que se cria um token no meio de uma sessão. Ficam a um
-            clique — e abertas de saída quando já têm conteúdo (modo
-            editar). */}
-        <details className="rv-mais-opcoes rv-fp-grupo" open={maisOpcoesAberto} onToggle={(e) => setMaisOpcoesAberto((e.target as HTMLDetailsElement).open)}>
-          {/* O CHEVRON diz que o bloco abre e fecha. Sem ele, "Retrato,
-              vida e estado" era só mais um título de seção como os três
-              de cima — e os três de cima não abrem nada. */}
-          <summary className="rv-fp-rotulo">
-            Retrato, vida e estado
-            <ChevronDown size={13} className="rv-mais-opcoes-chevron" aria-hidden="true" />
-          </summary>
-
-          {/* IMAGEM — arquivo OU endereço, nunca os dois. É a mesma
-              regra do editor de retrato (`EditorRetratoToken`), e ela
-              vem do banco: gravar um limpa o outro. Guardar os dois com
-              precedência silenciosa faria ninguém saber qual está
-              valendo. */}
-          <fieldset className="rv-field">
-            <legend>Imagem do token</legend>
-            <div className="rv-token-imagem">
-              <button
-                type="button" className="rv-token-imagem__disco"
-                onClick={() => campoArquivoRef.current?.click()}
-                aria-label={valores.retratoArquivo ? "Trocar a imagem escolhida" : "Escolher uma imagem do computador"}
-              >
-                {valores.retratoArquivo
-                  // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={valores.retratoArquivo.previewUrl} alt="" />
-                  : <ImageUp size={18} aria-hidden />}
-              </button>
-              <div className="rv-token-imagem__lado">
-                <span className="rv-field-ajuda">
-                  {valores.retratoArquivo
-                    ? "Enviada quando o token for criado."
-                    : "PNG, JPEG ou WebP · até 2 MB. Sem imagem, o token usa a sigla."}
-                </span>
-                {valores.retratoArquivo && (
-                  <button
-                    type="button" className="rv-btn rv-btn--ghost"
-                    onClick={() => setValores((v) => {
-                      if (v.retratoArquivo) URL.revokeObjectURL(v.retratoArquivo.previewUrl);
-                      return { ...v, retratoArquivo: null };
-                    })}
-                  >Remover</button>
-                )}
-                <input
-                  ref={campoArquivoRef} type="file" accept="image/png,image/jpeg,image/webp" hidden
-                  onChange={(e) => {
-                    const arquivo = e.target.files?.[0];
-                    e.target.value = ""; // permite reescolher o MESMO arquivo
-                    if (arquivo) { setErroArquivo(null); setArquivoParaRecortar(arquivo); }
-                  }}
-                />
-              </div>
-            </div>
-            {erroArquivo && <p className="rv-form-aviso" role="alert">{erroArquivo}</p>}
-            {/* O ENDEREÇO some quando há arquivo: um retrato tem uma
-                origem só, e deixar o campo ali sugeriria que os dois
-                convivem. */}
-            {!valores.retratoArquivo && (
-              <label className="rv-field">
-                <span>Ou um endereço</span>
-                <input
-                  type="text" value={valores.retratoUrl ?? ""} placeholder="https://…"
-                  onChange={(e) => { setImagemFalhou(false); setValores((v) => ({ ...v, retratoUrl: e.target.value || null })); }}
-                />
-                {!validacaoImagem.ok && <p className="rv-form-aviso" role="alert">{validacaoImagem.erro}</p>}
-                {imagemFalhou && <p className="rv-form-aviso" role="alert">Não foi possível carregar esta imagem.</p>}
-              </label>
-            )}
-          </fieldset>
-
-          <fieldset className="rv-field">
-            <legend>Recursos</legend>
-            {/* PV, e não "Pontos de Vida": a ficha e o painel escrevem
-                PV em toda parte, e o nome por extenso só aparecia aqui.
-                Os campos são estreitos porque são números de até três
-                dígitos — a largura de antes cabia um CEP. */}
-            {/* OS TRÊS RECURSOS NUMA LINHA SÓ — cada um com o par
-                atual/máximo lado a lado. Empilhados, os seis campos
-                ocupavam a altura de um formulário inteiro pra guardar
-                seis números de três dígitos.
-
-                Só existem pra token SEM ficha: com ficha vinculada os
-                números vêm da ficha canônica, e dois lugares guardando
-                o mesmo PV é a receita de eles discordarem. */}
-            <div className="rv-token-recursos-linha" data-desabilitada={temFicha || undefined}>
-              {RECURSOS_DO_TOKEN.map(({ chaveAtual, chaveMax, rotulo }) => (
-                <div className="rv-token-rec" key={rotulo}>
-                  <span className="rv-token-rec__rot" data-recurso={chaveAtual.slice(0, -5)}>{rotulo}</span>
-                  <span className="rv-token-rec__par">
-                    <input
-                      type="number" min={0} value={valores[chaveAtual] ?? ""}
-                      aria-label={`${rotulo} atual`} title={`${rotulo} atual`} disabled={temFicha}
-                      onChange={(e) => setValores((v) => ({ ...v, [chaveAtual]: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))}
-                    />
-                    <span className="rv-token-rec__barra" aria-hidden="true">/</span>
-                    <input
-                      type="number" min={0} value={valores[chaveMax] ?? ""}
-                      aria-label={`${rotulo} máximo`} title={`${rotulo} máximo`} disabled={temFicha}
-                      onChange={(e) => setValores((v) => ({ ...v, [chaveMax]: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))}
-                    />
-                  </span>
-                </div>
-              ))}
-            </div>
-            {temFicha && (
-              <small className="rv-field-ajuda">
-                Os recursos vêm da ficha vinculada — é lá que eles mudam.
-              </small>
-            )}
-            {recursoInvalido && (
-              <p className="rv-form-aviso" role="alert">
-                {recursoInvalido.rotulo} atual não pode ser maior que o máximo.
-              </p>
-            )}
-            {/* O MÁXIMO É QUE LIGA A BARRA — o servidor só projeta o
-                recurso quando os dois números existem (0133). Sem ele,
-                o atual fica guardado e invisível, e é melhor dizer isso
-                do que deixar a barra simplesmente não aparecer. */}
-            {RECURSOS_DO_TOKEN.some(({ chaveAtual, chaveMax }) => valores[chaveAtual] !== null && valores[chaveMax] === null) && (
-              <p className="rv-field-ajuda">Sem o máximo, o recurso não vira barra no token.</p>
-            )}
-          </fieldset>
-
-          {/* VERTENTE em fichas com a cor: é a cor que o token leva pro
-              mapa, e num `select` ela não aparecia — escolhia-se um
-              nome e descobria-se a cor depois. */}
-          <fieldset className="rv-field">
-            <legend>Vertente</legend>
-            <div className="rv-segmentado rv-token-vertentes" role="radiogroup" aria-label="Vertente">
-              {VERTENTES.map(([valor, rotulo]) => (
-                <button key={valor} type="button" role="radio" aria-checked={valores.vertente === valor}
-                  className="rv-segmentado-item rv-token-vertente" data-vertente={valor}
-                  onClick={() => setValores((v) => ({ ...v, vertente: valor }))}>
-                  <span className="rv-token-lado-marca" aria-hidden="true" />
-                  {rotulo}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-
-          <fieldset className="rv-field">
-            <legend>
-              Condições {valores.condicoes.length > 0 && <span className="rv-camadas-tag">{valores.condicoes.length}</span>}
-            </legend>
-            {valores.condicoes.length > 0 && (
-              <button type="button" className="rv-btn rv-btn--ghost rv-limpar-condicoes" onClick={() => setValores((v) => ({ ...v, condicoes: [] }))}>Limpar</button>
-            )}
-            {/* O MESMO INTERRUPTOR das janelas de ferramenta
-                (`.rv-fp-switch`): o checkbox era a única caixa de
-                marcar que sobrava no VTT, e ela vinha do navegador. */}
-            <div className="rv-condicoes-grade">
-              {/* ORDEM FIXA. Antes as marcadas subiam pro topo, e cada
-                  clique reembaralhava a grade debaixo do cursor — o
-                  item que se acabou de ligar saía do lugar e o próximo
-                  que se ia clicar mudava de posição. Uma lista de
-                  marcar tem que ficar parada. */}
-              {CONDICOES_LISTA.map((c) => (
-                <label key={c} className="rv-fp-switch rv-condicao-item" title={CONDICOES[c].rotulo}>
-                  <input
-                    type="checkbox"
-                    checked={valores.condicoes.includes(c)}
-                    onChange={(e) => setValores((v) => ({
-                      ...v,
-                      condicoes: e.target.checked ? [...v.condicoes, c] : v.condicoes.filter((x) => x !== c),
-                    }))}
-                  />
-                  <span className="rv-fp-switch-tr" aria-hidden="true" />
-                  <span className="rv-fp-switch-txt">{CONDICOES[c].glifo} {CONDICOES[c].rotulo}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        </details>
-
         {erro && <p className="rv-form-aviso" role="alert">{erro}</p>}
-      </div>
 
-      <footer className="rv-modal-rodape">
-        <button type="button" className="rv-btn rv-btn--ghost" onClick={pedirFechar} disabled={enviando}>Cancelar</button>
-        <button type="button" className="rv-btn rv-btn--pri" onClick={confirmar} disabled={!podeConfirmar || enviando}>
-          {enviando ? "Salvando…" : modo === "criar" ? "Continuar para posicionar" : "Salvar alterações"}
-        </button>
-      </footer>
+        <div className="jf-acao rv-tok-acao">
+          <button type="button" className="jf-cancelar" data-testid="token-cancelar" onClick={pedirFechar} disabled={enviando}>Cancelar</button>
+          <button type="button" className="jf-prim" data-testid="token-confirmar" onClick={confirmar} disabled={!podeConfirmar || enviando}>
+            <span>{enviando ? "Salvando…" : modo === "criar" ? "Posicionar no mapa" : "Salvar alterações"}</span>
+            {modo === "criar" && !enviando && <kbd className="jf-kbd">↵</kbd>}
+          </button>
+        </div>
+        {podeGirar && <p className="jf-nota">A orientação da pegada é escolhida no mapa</p>}
+      </div>
     </div>
     </>
   );
