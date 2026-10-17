@@ -24,11 +24,18 @@
  * enquanto está ativa, e clicar na célula marca. Um botão que não muda
  * nada ensinaria que o produto tem controle morto.
  *
+ * Linha F: a VITRINE mostra a célula como ela vai ficar no mapa (o hex
+ * na cor, com o glifo do sinal) e a ficha ao lado lê nome, rótulo e
+ * prazo — decide-se OLHANDO, não lendo. Duração e visibilidade, que
+ * são escolhas de segunda ordem, encolhem para controles compactos na
+ * mesma linha do rótulo.
+ *
  * PURAMENTE APRESENTACIONAL, como as outras: recebe estado, devolve
  * intenção. Quem grava é `VttClient`.
  */
 
-import { Eraser, Loader2, MapPin, MousePointerClick, Users } from "lucide-react";
+import { useState } from "react";
+import { Clock, Eraser, Eye, EyeOff, Loader2, MapPin } from "lucide-react";
 import { SINAIS_MARCA, type SinalMarcaUi } from "../_dominio/sinaisDeMarca";
 import { JanelaFerramenta } from "./JanelaFerramenta";
 
@@ -50,6 +57,17 @@ export type CorMarcaUi = (typeof CORES_MARCA)[number]["valor"];
 export { SINAIS_MARCA, type SinalMarcaUi };
 
 /**
+ * Frase de ajuda de cada sinal. Fica aqui, e não na tabela do domínio,
+ * porque é texto DESTA janela — o mapa não mostra descrição nenhuma.
+ */
+const DESC_SINAL: Record<SinalMarcaUi, string> = {
+  alvo: "Aponta a prioridade da cena",
+  perigo: "Avisa de uma ameaça na célula",
+  rota: "Indica um caminho a seguir",
+  nota: "Deixa uma informação no lugar",
+};
+
+/**
  * As durações que o servidor sabe EXPIRAR.
  *
  * O estudo oferecia "Até o fim da cena"; aqui é "Este combate", porque
@@ -58,9 +76,9 @@ export { SINAIS_MARCA, type SinalMarcaUi };
  * prazo que nunca vence.
  */
 export const DURACOES_MARCA = [
-  { valor: "persistente", rotulo: "Persistente" },
-  { valor: "rodada", rotulo: "Esta rodada" },
-  { valor: "combate", rotulo: "Este combate" },
+  { valor: "persistente", rotulo: "Persistente", desc: "Fica até alguém apagar" },
+  { valor: "rodada", rotulo: "Esta rodada", desc: "Some quando a rodada vira" },
+  { valor: "combate", rotulo: "Este combate", desc: "Some quando o combate termina" },
 ] as const;
 
 export type DuracaoMarcaUi = (typeof DURACOES_MARCA)[number]["valor"];
@@ -87,155 +105,207 @@ export interface PropsPainelMarcar {
   ehNarrador: boolean;
 }
 
+/* Cluster da vitrine: seis vizinhos apagados em volta da célula marcada.
+   Mesma geometria do protótipo (hex de raio 22, pontudo em cima). */
+const HEX_PONTOS = "0,-22 19.05,-11 19.05,11 0,22 -19.05,11 -19.05,-11";
+const VIZINHOS: [number, number][] = [
+  [50.95, 22], [89.05, 22], [31.9, 55], [108.1, 55], [50.95, 88], [89.05, 88],
+];
+
 export function PainelMarcar(p: PropsPainelMarcar) {
   const corAtiva = CORES_MARCA.find((c) => c.valor === p.cor) ?? CORES_MARCA[0];
   const sinalAtivo = SINAIS_MARCA.find((s) => s.valor === p.sinal) ?? SINAIS_MARCA[0];
+  const duracaoAtiva = DURACOES_MARCA.find((d) => d.valor === p.duracao) ?? DURACOES_MARCA[0];
+  const rotulo = p.texto.trim();
+
+  // Descrição do que está sob o mouse/foco; `null` mostra a do sinal.
+  const [foco, setFoco] = useState<string | null>(null);
+  const focar = (txt: string) => ({
+    onMouseEnter: () => setFoco(txt), onMouseLeave: () => setFoco(null),
+    onFocus: () => setFoco(txt), onBlur: () => setFoco(null),
+  });
+
+  // "Esta rodada" só existe com combate rolando: sem rodada não há o
+  // que virar, e o prazo nunca venceria. O ciclo pula a opção em vez
+  // de mostrá-la morta.
+  const duracaoDisponivel = (v: DuracaoMarcaUi) => v !== "rodada" || p.emCombate;
+  const descDuracao = (d: (typeof DURACOES_MARCA)[number]) =>
+    p.emCombate ? d.desc : `${d.desc} · “Esta rodada” só em combate`;
+  const proximaDuracao = () => {
+    const i = DURACOES_MARCA.findIndex((d) => d.valor === p.duracao);
+    for (let passo = 1; passo <= DURACOES_MARCA.length; passo++) {
+      const d = DURACOES_MARCA[(i + passo) % DURACOES_MARCA.length];
+      if (duracaoDisponivel(d.valor)) return d;
+    }
+    return duracaoAtiva;
+  };
+
+  const descVisibilidade = p.privada
+    ? (p.ehNarrador ? "Só você vê o sinal e o rótulo" : "Só você vê — nem o narrador")
+    : "Jogadores veem o sinal e o rótulo";
 
   return (
     <JanelaFerramenta
       id="marcar"
-      indice="03"
       icone={<MapPin size={16} />}
       titulo="Marcar"
       modo={`${sinalAtivo.rotulo} · ${corAtiva.rotulo}${p.privada ? " · só pra você" : ""}`}
       modoAtributos={{ "data-sinal": p.sinal }}
-      acoesCabecalho={
-        p.naCena > 0
-          ? <span className="rv-fp-meta" data-testid="marcar-contagem">{p.naCena} na cena</span>
-          : undefined
-      }
       rotulo="Ferramenta Marcar"
       rotuloFechar="Fechar ferramenta Marcar"
-      className="rv-fp--marcar"
       aoFechar={p.onFechar}
     >
-      <div className="rv-fp-corpo">
-        <div className="rv-fp-grupo">
-          <span className="rv-fp-rotulo" id="rv-fp-rot-sinal">Tipo de sinal</span>
-          <div className="rv-fp-seg rv-fp-seg--4" role="group" aria-labelledby="rv-fp-rot-sinal">
+      <div className="jf-corpo jmar-corpo" style={{ ["--jmar-k" as string]: corAtiva.hex }}>
+        {/* VITRINE — a célula como vai ficar no mapa, e a ficha que a lê. */}
+        <div className="jf-hero jmar-hero" style={{ ["--jf-hero" as string]: corAtiva.hex }}>
+          <svg width="132" height="104" viewBox="0 0 140 110" fill="none" aria-hidden="true" className="jmar-arte">
+            {VIZINHOS.map(([x, y], i) => (
+              <polygon key={i} points={HEX_PONTOS} transform={`translate(${x} ${y})`} className="jmar-hx" />
+            ))}
+            <polygon
+              points={HEX_PONTOS} transform="translate(70 55)"
+              className="jmar-hx-on" data-privada={p.privada || undefined}
+            />
+            {/* O glifo é o MESMO componente que o mapa desenha
+                (`GLIFO_DO_SINAL` lê a mesma tabela) — svg aninhado. */}
+            <sinalAtivo.Icone x={59} y={44} width={22} height={22} strokeWidth={2} className="jmar-glifo" />
+          </svg>
+          <div className="jmar-ficha" aria-live="polite">
+            <span className="jmar-nome">{sinalAtivo.rotulo}</span>
+            <span className={`jmar-rot${rotulo ? "" : " is-vazio"}`}>
+              {rotulo ? `“${rotulo}”` : "Sem rótulo"}
+            </span>
+            <span className="jmar-meta">
+              {duracaoAtiva.rotulo} · {p.privada ? "Só você vê" : "Todos veem"}
+            </span>
+          </div>
+        </div>
+
+        <div className="jf-grupo">
+          <span className="jf-rot" id="jmar-rot-sinal">Sinal</span>
+          <div className="jf-tiles" style={{ ["--jf-n" as string]: 4 }} role="group" aria-labelledby="jmar-rot-sinal">
             {SINAIS_MARCA.map((s) => (
               <button
                 key={s.valor}
-                type="button" className="rv-fp-seg-btn"
-                style={{ ["--jf-acento" as string]: corAtiva.hex }}
+                type="button" className="jf-tile jf-tile--alto jmar-sinal"
                 aria-pressed={p.sinal === s.valor}
                 data-testid={`marcar-sinal-${s.valor}`}
                 onClick={() => p.onSinal(s.valor)}
+                {...focar(DESC_SINAL[s.valor])}
               >
-                <s.Icone size={19} />
-                <span className="rv-fp-seg-nome">{s.rotulo}</span>
-                <span className="rv-fp-seg-sub">{s.sub}</span>
+                <s.Icone size={20} strokeWidth={1.8} aria-hidden="true" />
+                <span>{s.rotulo}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Prévia — a mesma peça do estudo: o losango com o ícone na
-            cor escolhida, pra decidir a cor OLHANDO, não lendo. */}
-        <div
-          className="rv-fp-previa"
-          data-privada={p.privada || undefined}
-          style={{ ["--marca" as string]: corAtiva.hex }}
-        >
-          <span className="rv-fp-previa-marca">
-            <sinalAtivo.Icone size={18} />
-          </span>
-          <span className="rv-fp-previa-txt">
-            <span className="rv-fp-previa-nome">Pré-visualização</span>
-            <span className="rv-fp-previa-sub">
-              {p.texto.trim()
-                ? `“${p.texto.trim()}” sobre a célula escolhida.`
-                : "Silhueta que aparecerá sobre a célula escolhida."}
-            </span>
-          </span>
-        </div>
+        <p className="jf-desc">{foco ?? DESC_SINAL[sinalAtivo.valor]}</p>
 
-        <div className="rv-fp-grupo">
-          <span className="rv-fp-rotulo" id="rv-fp-rot-cor-marca">Cor</span>
-          <div className="rv-fp-cores" role="group" aria-labelledby="rv-fp-rot-cor-marca">
+        <div className="jf-linha jmar-linha-cor">
+          <span className="jf-l" id="jmar-rot-cor">Cor</span>
+          <span className="jf-cores" role="group" aria-labelledby="jmar-rot-cor">
             {CORES_MARCA.map((c) => (
               <button
                 key={c.valor}
                 type="button"
-                className="rv-fp-cor"
-                style={{ ["--marca" as string]: c.hex }}
+                className="jf-cor"
+                style={{ ["--jf-k" as string]: c.hex }}
                 aria-pressed={p.cor === c.valor}
                 aria-label={c.rotulo}
                 title={c.rotulo}
                 data-testid={`marcar-cor-${c.valor}`}
                 onClick={() => p.onCor(c.valor)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="rv-fp-grupo">
-          <span className="rv-fp-rotulo">Rótulo &amp; duração</span>
-          <div className="rv-fp-campos-lado">
-            <label className="rv-fp-campo">
-              <span>Rótulo opcional</span>
-              <input
-                type="text" value={p.texto} maxLength={80}
-                placeholder="Ex.: rota de fuga"
-                data-testid="marcar-campo-texto"
-                onChange={(e) => p.onTexto(e.target.value)}
-              />
-            </label>
-            <label className="rv-fp-campo">
-              <span>Duração</span>
-              <select
-                value={p.duracao}
-                data-testid="marcar-campo-duracao"
-                onChange={(e) => p.onDuracao(e.target.value as DuracaoMarcaUi)}
+                {...focar(c.rotulo)}
               >
-                {DURACOES_MARCA.map((d) => (
-                  // "Esta rodada" só existe com combate rolando: sem
-                  // rodada não há o que virar, e o prazo nunca venceria.
-                  <option key={d.valor} value={d.valor} disabled={d.valor === "rodada" && !p.emCombate}>
-                    {d.rotulo}{d.valor === "rodada" && !p.emCombate ? " — sem combate" : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+                <span />
+              </button>
+            ))}
+          </span>
         </div>
 
-        <label className="rv-fp-check" data-testid="marcar-privada">
-          <input type="checkbox" checked={!p.privada} onChange={(e) => p.onPrivada(!e.target.checked)} />
-          <span className="rv-fp-check-txt">
-            <span className="rv-fp-check-nome">Visível para todos</span>
-            <span className="rv-fp-check-sub">
-              {p.privada
-                ? (p.ehNarrador ? "só você vê o sinal e o rótulo" : "nem o narrador vê esta marcação")
-                : "jogadores veem o sinal e o rótulo"}
-            </span>
-          </span>
-          <Users size={14} className="rv-fp-check-ic" />
-        </label>
-
-        <p className="rv-fp-instrucao">
-          <MousePointerClick size={13} />
-          <span>Clique numa célula pra marcar. Clique de novo na sua marcação pra apagar.</span>
-        </p>
-      </div>
-
-      {p.naCena > 0 && (
-        <div className="rv-fp-rodape">
-          <span className="rv-fp-rotulo">
-            {p.naCena} {p.naCena === 1 ? "marcação" : "marcações"} na cena
-          </span>
+        <div className="jmar-extra">
+          <input
+            type="text" className="jf-campo" value={p.texto} maxLength={80}
+            placeholder="Rótulo (opcional)"
+            aria-label="Rótulo"
+            data-testid="marcar-campo-texto"
+            onChange={(e) => p.onTexto(e.target.value)}
+          />
+          {/* Duração cicla num clique (com pips de posição) em vez de um
+              `select`: são três prazos, e o nome do atual cabe no botão. */}
           <button
-            type="button" className="rv-btn rv-fp-primaria"
-            onClick={p.onLimpar}
-            disabled={p.limpando || p.quePodeLimpar === 0}
-            data-testid="marcar-limpar"
-            title={p.quePodeLimpar === 0 ? "Todas as marcações são de outros participantes." : undefined}
+            type="button" className="jmar-dur"
+            aria-label={`Duração: ${duracaoAtiva.rotulo}. Trocar`}
+            data-testid="marcar-campo-duracao"
+            data-duracao={p.duracao}
+            onClick={() => {
+              const d = proximaDuracao();
+              p.onDuracao(d.valor);
+              setFoco(descDuracao(d));
+            }}
+            {...focar(descDuracao(duracaoAtiva))}
           >
-            {p.limpando ? <Loader2 size={14} className="rv-spin" /> : <Eraser size={14} />}
-            {p.quePodeLimpar === p.naCena ? "Limpar marcações" : `Limpar as minhas (${p.quePodeLimpar})`}
+            <Clock size={14} aria-hidden="true" />
+            <span className="jmar-dur-t">{duracaoAtiva.rotulo}</span>
+            <span className="jmar-pips" aria-hidden="true">
+              {DURACOES_MARCA.map((d) => (
+                <i
+                  key={d.valor}
+                  className={`${d.valor === p.duracao ? "is-on" : ""}${duracaoDisponivel(d.valor) ? "" : " is-fora"}`}
+                />
+              ))}
+            </span>
+          </button>
+          <button
+            type="button" className="jmar-olho"
+            aria-label="Visível para todos"
+            aria-pressed={!p.privada}
+            data-testid="marcar-privada"
+            onClick={() => {
+              p.onPrivada(!p.privada);
+              setFoco(!p.privada
+                ? (p.ehNarrador ? "Só você vê o sinal e o rótulo" : "Só você vê — nem o narrador")
+                : "Jogadores veem o sinal e o rótulo");
+            }}
+            {...focar(descVisibilidade)}
+          >
+            {p.privada ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}
           </button>
         </div>
-      )}
+
+        {/* Limpar só aparece quando há o que limpar. A contagem mora
+            aqui (antes ficava também no cabeçalho, repetida). */}
+        {p.naCena > 0 && (
+          <div className="jmm-limpar">
+            <span className="jf-leg" data-testid="marcar-contagem">
+              {p.naCena} {p.naCena === 1 ? "marcação" : "marcações"} na cena
+            </span>
+            <button
+              type="button" className="jf-quieto is-perigo"
+              onClick={p.onLimpar}
+              disabled={p.limpando || p.quePodeLimpar === 0}
+              data-testid="marcar-limpar"
+              title={p.quePodeLimpar === 0 ? "Todas as marcações são de outros participantes." : undefined}
+            >
+              {p.limpando ? <Loader2 size={13} className="rv-spin" aria-hidden="true" /> : <Eraser size={13} aria-hidden="true" />}
+              {p.quePodeLimpar === p.naCena ? "Limpar marcações" : `Limpar as minhas (${p.quePodeLimpar})`}
+            </button>
+          </div>
+        )}
+
+        {/* Gestos reais de `marcarCelula`: clique cria; clique numa
+            célula com marca SUA (ou qualquer, se narrador) apaga. Esc
+            não fecha esta janela no código atual — quem fecha é trocar
+            de ferramenta, e `V` é o atalho de Interagir. */}
+        <div className="jf-atalhos">
+          <span><kbd className="jf-kbd">Clique</kbd>marca</span>
+          <span title={p.ehNarrador ? undefined : "Só as suas marcações"}>
+            <kbd className="jf-kbd">Clique</kbd>de novo apaga
+          </span>
+          <span><kbd className="jf-kbd">V</kbd>fecha</span>
+        </div>
+      </div>
     </JanelaFerramenta>
   );
 }
