@@ -10,6 +10,10 @@
  * `VttClient.tsx` (`pintarComPincel`/`pintarComBalde`/
  * `finalizarPincelTerreno`), que é quem tem o histórico e as RPCs.
  *
+ * LINHA F: vitrine com o favo do que UM clique pinta (ou a região do
+ * balde), tipo em três ladrilhos com a cor que o tipo tem no mapa,
+ * método, trilho de tamanho e a frase de ajuda com a instrução real.
+ *
  * HIERARQUIA (o que a faixa horizontal antiga não tinha):
  *   1. TIPO   — o que vai ser pintado, com o efeito mecânico à vista.
  *   2. MÉTODO — pincel ou balde.
@@ -18,8 +22,9 @@
  *      contextual de converter o gesto em objeto, separada por borda.
  */
 
+import { useEffect, useState } from "react";
 import { JanelaFerramenta } from "./JanelaFerramenta";
-import { Ban, Brush, Check, Ellipsis, MousePointerClick, PaintBucket, Package, ShieldBan } from "lucide-react";
+import { Ban, Brush, Ellipsis, PaintBucket, Package, ShieldBan } from "lucide-react";
 import { type TipoTerreno } from "../_dominio/movimento";
 
 export type ModoPincelTerreno = "pincel" | "balde";
@@ -29,7 +34,7 @@ export interface PropsPainelTerreno {
   onModoTerreno: (t: TipoTerreno | null) => void;
   modoPincel: ModoPincelTerreno;
   onModoPincel: (m: ModoPincelTerreno) => void;
-  /** 0 | 1 | 2 → 1, 7 ou 19 células (raio de `hexNoRaio`). */
+  /** 0..4 → 1, 7, 19, 37 ou 61 células (raio de `hexNoRaio`). */
   raioPincel: number;
   onRaioPincel: (r: number) => void;
   /** Células alteradas no gesto em andamento; `null` quando não há gesto. */
@@ -40,72 +45,59 @@ export interface PropsPainelTerreno {
   onFechar: () => void;
 }
 
+const TIPOS: { valor: TipoTerreno | null; chave: string; nome: string; efeito: string; cor: string; Icone: typeof Ellipsis }[] = [
+  // Cada tipo com a MESMA cor que tem no mapa (âmbar da hachura de
+  // `rv-dificil-real`, vermelho de `rv-bloqueado-real`).
+  { valor: "dificil", chave: "dificil", nome: "Difícil", efeito: "Cada passo custa ×2", cor: "#f5a200", Icone: Ellipsis },
+  { valor: "bloqueado", chave: "bloqueado", nome: "Bloqueado", efeito: "Impede a passagem", cor: "#e0455f", Icone: ShieldBan },
+  { valor: null, chave: "apagar", nome: "Apagar", efeito: "Remove o terreno pintado", cor: "#7f95b3", Icone: Ban },
+];
+
 /**
- * Favo do tamanho do pincel — desenha o disco REAL daquele raio
- * (1/7/19/37/61 células), não um ícone genérico.
- *
- * O disco sempre PREENCHE o ícone: o passo entre células é calculado
- * pra caber na caixa, então raios maiores viram um favo mais fino em
- * vez de um desenho que estoura a caixa. A magnitude quem carrega é o
- * número ao lado ("37 células"); o favo carrega a FORMA.
+ * Números hexagonais centrados (1, 7, 19, 37, 61): cada raio a mais
+ * fecha um anel INTEIRO em volta — não existe tamanho intermediário
+ * que caia numa forma simétrica.
  */
-function Favo({ raio }: { raio: number }) {
-  const CAIXA = 22;
-  const centro = CAIXA / 2;
-  // Largura do disco = (2·raio+1) colunas; altura = 2 + 3·raio "meios".
-  const passo = Math.min(
-    (CAIXA - 2) / (Math.sqrt(3) * (2 * raio + 1)),
-    (CAIXA - 2) / (2 + 3 * raio),
-  );
-  const celulas: { x: number; y: number }[] = [];
-  for (let dq = -raio; dq <= raio; dq++) {
-    for (let dr = -raio; dr <= raio; dr++) {
-      const ds = -dq - dr;
-      if (Math.max(Math.abs(dq), Math.abs(dr), Math.abs(ds)) > raio) continue;
-      celulas.push({
-        x: centro + passo * Math.sqrt(3) * (dq + dr / 2),
-        y: centro + passo * 1.5 * dr,
-      });
-    }
+const CELULAS = [1, 7, 19, 37, 61];
+
+function dist(q: number, r: number) { return (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2; }
+function hexD(cx: number, cy: number, r: number) {
+  const p: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 180) * (60 * i - 90);
+    p.push(`${(cx + r * Math.cos(a)).toFixed(2)} ${(cy + r * Math.sin(a)).toFixed(2)}`);
   }
-  const r = passo * 0.92;
-  return (
-    <svg className="rv-fp-favo" width="22" height="22" viewBox={`0 0 ${CAIXA} ${CAIXA}`} aria-hidden="true">
-      {celulas.map((c, i) => {
-        const pts = Array.from({ length: 6 }, (_, k) => {
-          const ang = (Math.PI / 180) * (60 * k - 30);
-          return `${(c.x + r * Math.cos(ang)).toFixed(2)},${(c.y + r * Math.sin(ang)).toFixed(2)}`;
-        }).join(" ");
-        return <polygon key={i} points={pts} className="on" />;
-      })}
-    </svg>
-  );
+  return `M${p.join("L")}Z`;
+}
+/** Disco REAL daquele raio, encaixado na parada do trilho. */
+function discoD(k: number) {
+  const r = Math.min(7, 44 / (Math.sqrt(3) * (2 * k + 1)));
+  let out = "";
+  for (let q = -k; q <= k; q++) for (let s = -k; s <= k; s++) {
+    if (dist(q, s) <= k) out += hexD(26 + r * Math.sqrt(3) * (q + s / 2), 23 + r * 1.5 * s, r - 0.5);
+  }
+  return out;
+}
+/** Campo da vitrine: raio 4 = cabe o maior pincel inteiro. */
+const CAMPO: [number, number][] = [];
+for (let q = -4; q <= 4; q++) for (let r = -4; r <= 4; r++) if (dist(q, r) <= 4) CAMPO.push([q, r]);
+/**
+ * Região ILUSTRATIVA do balde — o balde depende do que já está pintado
+ * no mapa, então a vitrine mostra uma mancha irregular (forma de
+ * "segue a região"), não uma contagem que o painel não tem como saber.
+ */
+const BALDE = new Set(["1,-2", "2,-2", "0,-1", "1,-1", "2,-1", "-1,0", "0,0", "1,0", "2,0", "-1,1", "0,1", "1,1", "-2,2", "-1,2", "3,-3"]);
+
+/** Tecla modificadora por plataforma — lida depois de montar (o servidor não sabe). */
+function useTeclaMod() {
+  const [mod, setMod] = useState("Ctrl");
+  useEffect(() => {
+    if (/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "")) setMod("⌘");
+  }, []);
+  return mod;
 }
 
-const TIPOS: {
-  valor: TipoTerreno | null;
-  nome: string;
-  efeito: string;
-  Icone: typeof Ellipsis;
-  modificador?: string;
-}[] = [
-  { valor: "dificil", nome: "Difícil", efeito: "Cada passo custa ×2", Icone: Ellipsis },
-  { valor: "bloqueado", nome: "Bloqueado", efeito: "Impede a passagem", Icone: ShieldBan },
-  { valor: null, nome: "Apagar", efeito: "Remove o terreno pintado", Icone: Ban, modificador: "rv-fp-opcao--apagar" },
-];
-
-/**
- * Tamanhos do pincel — números hexagonais centrados (1, 7, 19, 37,
- * 61): cada raio a mais fecha um anel INTEIRO em volta, então não
- * existe tamanho intermediário que caia numa forma simétrica.
- */
-const TAMANHOS: { raio: number; nome: string; sub: string }[] = [
-  { raio: 0, nome: "1", sub: "célula" },
-  { raio: 1, nome: "7", sub: "células" },
-  { raio: 2, nome: "19", sub: "células" },
-  { raio: 3, nome: "37", sub: "células" },
-  { raio: 4, nome: "61", sub: "células" },
-];
+const celulasTxt = (n: number) => `${n} ${n === 1 ? "célula" : "células"}`;
 
 export function PainelTerreno({
   modoTerreno, onModoTerreno,
@@ -114,15 +106,35 @@ export function PainelTerreno({
   contagemGesto, celulasUltimoGesto,
   onConverterEmObjeto, onFechar,
 }: PropsPainelTerreno) {
+  const mod = useTeclaMod();
+  const [foco, setFoco] = useState<string | null>(null);
+  const [espia, setEspia] = useState<number | null>(null);
   const tipoAtivo = TIPOS.find((t) => t.valor === modoTerreno) ?? TIPOS[0];
   const apagando = modoTerreno === null;
-  // Modo em uma frase — o cabeçalho responde "o que estou fazendo agora?"
-  // sem obrigar a reler os três grupos de controle abaixo.
-  const modoTexto = apagando
-    ? modoPincel === "balde" ? "Apagar · balde" : `Apagar · pincel ${TAMANHOS[raioPincel]?.nome ?? "1"}`
-    : modoPincel === "balde"
-      ? `${tipoAtivo.nome} · balde`
-      : `${tipoAtivo.nome} · pincel ${TAMANHOS[raioPincel]?.nome ?? "1"}`;
+  const pincel = modoPincel === "pincel";
+  const raio = espia ?? raioPincel;
+  // Modo em uma frase — o cabeçalho responde "o que estou fazendo agora?".
+  const modoTexto = `${tipoAtivo.nome} · ${pincel ? `pincel ${CELULAS[raioPincel] ?? 1}` : "balde"}`;
+  const instrucao = pincel
+    ? apagando
+      ? `Clique ou arraste sobre o mapa pra apagar. Todo o gesto vira um único ${mod}+Z.`
+      : `Clique ou arraste sobre o mapa pra pintar. Todo o gesto vira um único ${mod}+Z.`
+    : apagando
+      ? "Clique numa célula pra apagar toda a região contígua do mesmo tipo."
+      : "Clique numa célula pra preencher toda a região contígua do mesmo tipo.";
+
+  // Legenda da vitrine: o gesto REAL ganha de tudo (em andamento, depois
+  // o último concluído); fora disso, o que um clique faria.
+  const legenda = contagemGesto !== null
+    ? `${celulasTxt(contagemGesto)} ${contagemGesto === 1 ? "alterada" : "alteradas"}`
+    : celulasUltimoGesto > 0 && espia === null
+      ? `Último gesto · ${celulasTxt(celulasUltimoGesto)}`
+      : pincel ? `Um clique pinta ${celulasTxt(CELULAS[raio] ?? 1)}` : "O balde segue a região até a borda";
+  const vivo = contagemGesto !== null || (celulasUltimoGesto > 0 && espia === null);
+  const sobre = (txt: string) => ({
+    onMouseEnter: () => setFoco(txt), onMouseLeave: () => setFoco(null),
+    onFocus: () => setFoco(txt), onBlur: () => setFoco(null),
+  });
 
   return (
     <JanelaFerramenta
@@ -134,118 +146,98 @@ export function PainelTerreno({
       rotuloFechar="Fechar ferramenta Terreno"
       aoFechar={onFechar}
     >
-
-      <div className="rv-fp-corpo">
-        <div className="rv-fp-grupo">
-          <span className="rv-fp-rotulo" id="rv-fp-rot-tipo">Tipo</span>
-          <div className="rv-fp-opcoes" role="group" aria-labelledby="rv-fp-rot-tipo">
-            {TIPOS.map((t) => {
-              const ativo = t.valor === modoTerreno;
+      <div className="jf-corpo jf-terreno" style={{ ["--jf-t" as string]: tipoAtivo.cor, ["--jf-hero" as string]: tipoAtivo.cor }}>
+        <div className="jf-hero jf-ter-hero">
+          <svg width="168" height="140" viewBox="-74 -62 148 124" aria-hidden="true">
+            {CAMPO.map(([q, r]) => {
+              const pinta = pincel ? dist(q, r) <= raio : BALDE.has(`${q},${r}`);
               return (
-                <button
-                  key={t.nome}
-                  type="button"
-                  className={`rv-fp-opcao${t.modificador ? ` ${t.modificador}` : ""}`}
-                  // Gancho de cor: cada tipo se pinta com a MESMA cor que
-                  // tem no mapa (difícil = âmbar da hachura, bloqueado =
-                  // vermelho), em vez do acento genérico da janela.
-                  data-tipo={t.valor ?? "apagar"}
-                  aria-pressed={ativo}
-                  onClick={() => onModoTerreno(t.valor)}
-                >
-                  <span className="rv-fp-opcao-ic"><t.Icone size={16} /></span>
-                  <span className="rv-fp-opcao-txt">
-                    <span className="rv-fp-opcao-nome">{t.nome}</span>
-                    <span className="rv-fp-opcao-efeito">{t.efeito}</span>
-                  </span>
-                  <span className="rv-fp-opcao-marca"><Check size={14} /></span>
-                </button>
+                <path
+                  key={`${q},${r}`}
+                  d={hexD(8 * Math.sqrt(3) * (q + r / 2), 12 * r, 7.4)}
+                  className={`jf-cel${pinta ? " is-pinta" : ""}${pinta && apagando ? " is-apaga" : ""}${q === 0 && r === 0 ? " is-centro" : ""}`}
+                />
               );
             })}
-          </div>
+          </svg>
+          {/* `role="status"` — a contagem muda durante o gesto e precisa
+              chegar a leitor de tela sem roubar foco do mapa. */}
+          <span className={`jf-leg${vivo ? " is-vivo" : ""}`} role="status" aria-live="polite">{legenda}</span>
         </div>
 
-        <div className="rv-fp-grupo">
-          <span className="rv-fp-rotulo" id="rv-fp-rot-metodo">Método</span>
-          <div className="rv-fp-seg" role="group" aria-labelledby="rv-fp-rot-metodo">
+        <div className="jf-tiles" style={{ ["--jf-n" as string]: 3 }} role="group" aria-label="Tipo">
+          {TIPOS.map((t) => (
             <button
-              type="button" className="rv-fp-seg-btn" aria-pressed={modoPincel === "pincel"}
-              onClick={() => onModoPincel("pincel")}
+              key={t.chave}
+              type="button"
+              // `rv-fp-opcao` + `data-tipo` ficam como gancho dos roteiros
+              // de verificação (`scripts/dev/check-*`).
+              className="jf-tile rv-fp-opcao"
+              data-tipo={t.chave}
+              style={{ ["--jf-t" as string]: t.cor }}
+              aria-pressed={t.valor === modoTerreno}
+              onClick={() => onModoTerreno(t.valor)}
+              {...sobre(t.efeito)}
             >
-              <Brush size={15} />
-              <span className="rv-fp-seg-nome">Pincel</span>
-              <span className="rv-fp-seg-sub">clique ou arraste</span>
+              <t.Icone size={16} />{t.nome}
             </button>
-            <button
-              type="button" className="rv-fp-seg-btn" aria-pressed={modoPincel === "balde"}
-              onClick={() => onModoPincel("balde")}
-            >
-              <PaintBucket size={15} />
-              <span className="rv-fp-seg-nome">Balde</span>
-              <span className="rv-fp-seg-sub">região contígua</span>
+          ))}
+        </div>
+
+        <div className="jf-grupo">
+          <span className="jf-rot" id="rv-fp-rot-metodo">Método</span>
+          <div className="jf-tiles" role="group" aria-labelledby="rv-fp-rot-metodo">
+            <button type="button" className="jf-tile" aria-pressed={pincel} onClick={() => onModoPincel("pincel")} {...sobre("Clique ou arraste")}>
+              <Brush size={16} />Pincel
+            </button>
+            <button type="button" className="jf-tile" aria-pressed={!pincel} onClick={() => onModoPincel("balde")} {...sobre("Preenche a região contígua do mesmo tipo")}>
+              <PaintBucket size={16} />Balde
             </button>
           </div>
         </div>
 
         {/* Divulgação progressiva: tamanho só existe pro pincel. */}
-        {modoPincel === "pincel" && (
-          <div className="rv-fp-grupo">
-            <span className="rv-fp-rotulo" id="rv-fp-rot-tam">Tamanho do pincel</span>
-            <div className="rv-fp-tamanhos" role="group" aria-labelledby="rv-fp-rot-tam">
-              {TAMANHOS.map((t) => (
+        {pincel && (
+          <div className="jf-grupo">
+            <span className="jf-rot" id="rv-fp-rot-tam">Tamanho do pincel</span>
+            <div className="jf-trilho" style={{ ["--jf-n" as string]: 5 }} role="group" aria-labelledby="rv-fp-rot-tam">
+              {CELULAS.map((n, k) => (
                 <button
-                  key={t.raio}
-                  type="button" className="rv-fp-seg-btn" aria-pressed={raioPincel === t.raio}
-                  aria-label={`Pincel de ${t.nome} ${t.sub}`}
-                  onClick={() => onRaioPincel(t.raio)}
+                  key={k}
+                  type="button" className="jf-parada" aria-pressed={raioPincel === k}
+                  aria-label={`Pincel de ${celulasTxt(n)}`}
+                  onClick={() => onRaioPincel(k)}
+                  onMouseEnter={() => setEspia(k)} onMouseLeave={() => setEspia(null)}
+                  onFocus={() => setEspia(k)} onBlur={() => setEspia(null)}
                 >
-                  <Favo raio={t.raio} />
-                  <span className="rv-fp-seg-nome">{t.nome}</span>
-                  <span className="rv-fp-seg-sub">{t.sub}</span>
+                  <svg width="52" height="46" viewBox="0 0 52 46" aria-hidden="true"><path className="jf-hx" d={discoD(k)} /></svg>
                 </button>
               ))}
+            </div>
+            <div className="jf-trilho-leg">
+              <b>{celulasTxt(CELULAS[raio] ?? 1)}</b>
+              <span>{raio === 0 ? "só a célula clicada" : `raio ${raio} em volta`}</span>
             </div>
           </div>
         )}
 
-        <p className="rv-fp-instrucao">
-          <MousePointerClick size={13} />
-          <span>
-            {modoPincel === "balde"
-              ? apagando
-                ? "Clique numa célula pra apagar toda a região contígua do mesmo tipo."
-                : "Clique numa célula pra preencher toda a região contígua do mesmo tipo."
-              : apagando
-                ? "Clique ou arraste sobre o mapa pra apagar. Todo o gesto vira um único Ctrl+Z."
-                : "Clique ou arraste sobre o mapa pra pintar. Todo o gesto vira um único Ctrl+Z."}
-          </span>
-        </p>
+        <p className="jf-desc">{foco ?? instrucao}</p>
 
-        {/* `role="status"` — a contagem muda durante o gesto e precisa
-            chegar a leitor de tela sem roubar foco do mapa. */}
-        <p
-          className={`rv-fp-status${contagemGesto === null ? " rv-fp-status--neutro" : ""}`}
-          role="status" aria-live="polite"
-        >
-          {contagemGesto !== null
-            ? <><strong>{contagemGesto}</strong>&nbsp;célula{contagemGesto === 1 ? "" : "s"} alterada{contagemGesto === 1 ? "" : "s"}</>
-            : "Nenhum gesto em andamento"}
-        </p>
+        {/* Ação CONTEXTUAL do último gesto — só existe depois de pintar. */}
+        {celulasUltimoGesto > 0 && (
+          <div className="jf-acao jf-ter-acao">
+            <button type="button" className="jf-prim" onClick={onConverterEmObjeto}>
+              <Package size={15} />
+              Converter {celulasTxt(celulasUltimoGesto)} em objeto
+            </button>
+          </div>
+        )}
 
-      </div>
-
-      {/* Ação CONTEXTUAL do último gesto — no rodapé fixo, separada dos
-          controles de modo: ela não é "mais um botão de configuração",
-          é uma oferta pontual que aparece depois de pintar. */}
-      {celulasUltimoGesto > 0 && (
-        <div className="rv-fp-rodape">
-          <span className="rv-fp-rotulo">Último gesto</span>
-          <button type="button" className="rv-btn rv-fp-primaria" onClick={onConverterEmObjeto}>
-            <Package size={14} />
-            Converter {celulasUltimoGesto} célula{celulasUltimoGesto === 1 ? "" : "s"} em objeto
-          </button>
+        <div className="jf-atalhos">
+          <span><kbd className="jf-kbd">{mod}</kbd><kbd className="jf-kbd">Z</kbd>desfaz o gesto inteiro</span>
+          <span><kbd className="jf-kbd">Esc</kbd>fecha</span>
         </div>
-      )}
+      </div>
     </JanelaFerramenta>
   );
 }

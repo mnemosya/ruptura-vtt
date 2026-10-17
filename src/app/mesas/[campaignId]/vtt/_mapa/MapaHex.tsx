@@ -16,7 +16,8 @@
  * alvo de hover/clique e portadora de estado (terreno, área, alcance).
  */
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ORDEM_CENA_PADRAO, type CamadaCenaId } from "../_ferramentas/camadasPreferencias";
 import { GLIFO_DO_SINAL, SINAIS_MARCA } from "../_dominio/sinaisDeMarca";
 import {
   type Hex,
@@ -556,6 +557,12 @@ export interface PropsMapaHex {
    * escondida aparece atenuada em vez de sumir.
    */
   verCamadasOcultas?: boolean;
+  /**
+   * Ordem do "Conteúdo da cena", TOPO → FUNDO (preferência local de
+   * quem vê — `_ferramentas/camadasPreferencias.ts`). `undefined` = a
+   * pilha de sempre.
+   */
+  ordemCamadas?: readonly CamadaCenaId[];
 
   /**
    * IMAGENS da cena — fundo e tiles (migration 0100). Decoração pura:
@@ -700,6 +707,7 @@ export function MapaHex({
   onAreaAlcaCancelar,
   areasInteracao,
   verCamadasOcultas,
+  ordemCamadas,
   ancoraPonteiroRef,
   conversorPontoRef,
   imagensCena,
@@ -2336,6 +2344,69 @@ export function MapaHex({
     alcaAtivaRef.current = null;
   }, [areasInteracao?.ativa]);
 
+  /**
+   * PILHA DA CENA reordenável. SVG não tem z-index: quem fica por cima
+   * é quem vem DEPOIS no DOM — então a ordem escolhida no painel vira
+   * a ordem em que as cinco partes são emitidas.
+   *
+   * A grade é a âncora fixa: cada imagem diz se fica Sob ou Sobre ela
+   * (`camada`), e isso continua valendo. Por isso a pilha é emitida
+   * DUAS vezes — uma abaixo da grade (só as imagens `abaixo_grade`) e
+   * outra acima (terreno, imagens `acima_grade`, objetos, tokens) —
+   * sempre na mesma ordem relativa.
+   *
+   * As SOBREPOSIÇÕES (áreas, marcações, desenhos, pings, caixa de
+   * seleção e prévia de rota) não se reordenam: ficam logo abaixo da
+   * mais baixa entre Objetos e Tokens (a regra de sempre: sinal sobre o
+   * chão, por baixo das peças), mas nunca abaixo do Mapa — um mapa
+   * opaco não pode engolir as marcações da mesa. Com a ordem padrão
+   * a pilha é a antiga com UMA diferença deliberada: imagem "Sobre a
+   * grade" agora fica abaixo da hachura de terreno (antes a cobria) —
+   * a lista diz Terreno acima de Imagens, e terreno é regra, não
+   * decoração. Quem quiser o telhado por cima sobe Imagens na lista.
+   */
+  const pilhaCena: readonly CamadaCenaId[] = [...(ordemCamadas ?? ORDEM_CENA_PADRAO)].reverse(); // fundo → topo
+  const posSobreposicoes = Math.max(
+    Math.min(pilhaCena.indexOf("objetos"), pilhaCena.indexOf("tokens")),
+    pilhaCena.indexOf("imagemFundo") + 1,
+  );
+  const empilhar = (partes: Partial<Record<CamadaCenaId | "sobreposicoes", ReactNode>>) => {
+    const out: ReactNode[] = [];
+    pilhaCena.forEach((id, i) => {
+      if (i === posSobreposicoes && partes.sobreposicoes) out.push(<Fragment key="sobreposicoes">{partes.sobreposicoes}</Fragment>);
+      out.push(<Fragment key={id}>{partes[id]}</Fragment>);
+    });
+    if (posSobreposicoes >= pilhaCena.length && partes.sobreposicoes) out.push(<Fragment key="sobreposicoes">{partes.sobreposicoes}</Fragment>);
+    return out;
+  };
+  /**
+   * Imagens de UM papel numa das duas passadas. Fundo e peças viraram
+   * grupos separados pra poderem ocupar lugares diferentes da pilha;
+   * dentro de cada um a ordem por `z` continua a do `CamadaImagens`.
+   *
+   * `cOculta`, não `cVisivel`: para o narrador `cVisivel` já devolve
+   * `true` de propósito (o mapa separa "desenhar" de "atenuar"). A
+   * camada de imagens faz as duas coisas junto — precisa do estado CRU
+   * pra decidir entre sumir (jogador) e virar fantasma (narrador).
+   */
+  const imagensDaCamada = (camada: "abaixo_grade" | "acima_grade", papel: "fundo" | "tile") => (
+    <CamadaImagens
+      imagens={imagensDesenhaveis.filter((img) => img.papel === papel)} camada={camada} tamanhoCelula={TAM}
+      urls={urlsImagens ?? {}}
+      visivelFundo={!cOculta("imagemFundo")}
+      visivelTiles={!cOculta("tiles")}
+      ehNarrador={verCamadasOcultas === true}
+      ferramentaAtiva={ferramenta === "imagens"}
+      bloqueadaFundo={cBloqueada("imagemFundo")}
+      bloqueadaTiles={cBloqueada("tiles")}
+      selecionadaId={imagemSelecionadaId ?? null}
+      onSelecionar={onSelecionarImagem}
+      onPressionarCorpo={(id, e) => pressionarImagem(id, null, e)}
+      onPressionarCanto={(id, canto, e) => pressionarImagem(id, canto, e)}
+      onPressionarGiro={(id, e) => pressionarImagem(id, "girar", e)}
+    />
+  );
+
   return (
     <>
     <svg
@@ -2451,27 +2522,8 @@ export function MapaHex({
             piso porque o piso é o "cinza vazio" que ela substitui, e
             ANTES da grade porque a grade precisa continuar legível por
             cima de qualquer mapa. ─────────────────────────────────── */}
-        <CamadaImagens
-          imagens={imagensDesenhaveis} camada="abaixo_grade" tamanhoCelula={TAM}
-          urls={urlsImagens ?? {}}
-          // `cOculta`, não `cVisivel`: para o narrador `cVisivel` já
-          // devolve `true` de propósito (o mapa separa "desenhar" de
-          // "atenuar", e quem atenua é `cAtenuacao`). A camada de
-          // imagens faz as duas coisas junto — precisa do estado CRU
-          // pra decidir entre sumir (jogador) e virar fantasma
-          // (narrador).
-          visivelFundo={!cOculta("imagemFundo")}
-          visivelTiles={!cOculta("tiles")}
-          ehNarrador={verCamadasOcultas === true}
-          ferramentaAtiva={ferramenta === "imagens"}
-          bloqueadaFundo={cBloqueada("imagemFundo")}
-          bloqueadaTiles={cBloqueada("tiles")}
-          selecionadaId={imagemSelecionadaId ?? null}
-          onSelecionar={onSelecionarImagem}
-          onPressionarCorpo={(id, e) => pressionarImagem(id, null, e)}
-          onPressionarCanto={(id, canto, e) => pressionarImagem(id, canto, e)}
-          onPressionarGiro={(id, e) => pressionarImagem(id, "girar", e)}
-        />
+        {/* Fundo e peças na ordem escolhida no painel de Camadas. */}
+        {empilhar({ imagemFundo: imagensDaCamada("abaixo_grade", "fundo"), tiles: imagensDaCamada("abaixo_grade", "tile") })}
 
         {/* ── Grade ── visibilidade é só opacidade (nunca `display:none`
             nem tira o `<path>` da árvore): Medir/pintura de terreno
@@ -2593,6 +2645,9 @@ export function MapaHex({
           );
         })()}
 
+        {/* ── PILHA DA CENA (acima da grade) ── ver `empilhar`. */}
+        {empilhar({
+          terrenoFuncional: (<>
         {/* ── Terreno REAL (persistido) — o que as ferramentas de
             movimento/medição de fato respeitam. Camada própria, visual
             distinto do terreno decorativo de `cena.terrenos` (acima,
@@ -2632,32 +2687,14 @@ export function MapaHex({
           </g>
         )}
 
-        {/* ── IMAGENS (acima da grade) ── o recorte que precisa tapar a
+          </>),
+          /* ── IMAGENS (acima da grade) ── o recorte que precisa tapar a
             grade: tapete, telhado, mancha. Continua ABAIXO de áreas,
             marcações, objetos e tokens — decoração nunca esconde quem
-            está em cena nem um sinal deixado pela mesa. ───────────── */}
-        <CamadaImagens
-          imagens={imagensDesenhaveis} camada="acima_grade" tamanhoCelula={TAM}
-          urls={urlsImagens ?? {}}
-          // `cOculta`, não `cVisivel`: para o narrador `cVisivel` já
-          // devolve `true` de propósito (o mapa separa "desenhar" de
-          // "atenuar", e quem atenua é `cAtenuacao`). A camada de
-          // imagens faz as duas coisas junto — precisa do estado CRU
-          // pra decidir entre sumir (jogador) e virar fantasma
-          // (narrador).
-          visivelFundo={!cOculta("imagemFundo")}
-          visivelTiles={!cOculta("tiles")}
-          ehNarrador={verCamadasOcultas === true}
-          ferramentaAtiva={ferramenta === "imagens"}
-          bloqueadaFundo={cBloqueada("imagemFundo")}
-          bloqueadaTiles={cBloqueada("tiles")}
-          selecionadaId={imagemSelecionadaId ?? null}
-          onSelecionar={onSelecionarImagem}
-          onPressionarCorpo={(id, e) => pressionarImagem(id, null, e)}
-          onPressionarCanto={(id, canto, e) => pressionarImagem(id, canto, e)}
-          onPressionarGiro={(id, e) => pressionarImagem(id, "girar", e)}
-        />
-
+            está em cena nem um sinal deixado pela mesa. ───────────── */
+          imagemFundo: imagensDaCamada("acima_grade", "fundo"),
+          tiles: imagensDaCamada("acima_grade", "tile"),
+          sobreposicoes: (<>
         {/* ── ÁREAS DE EFEITO (visual) ─────────────────────────────
             Abaixo de marcas, objetos e tokens de propósito: a área é
             informação de fundo, e nada dela pode cobrir retrato,
@@ -2878,6 +2915,8 @@ export function MapaHex({
           </g>
         )}
 
+          </>),
+          objetos: (<>
         {/* ── Coberturas / objetos ─────────────────────────────── */}
         {/* Terreno pinta o CHÃO, que existe por baixo do objeto — um
             muro em cima da célula não pode impedir de marcá-la como
@@ -2967,6 +3006,8 @@ export function MapaHex({
           })}
         </g>
 
+          </>),
+          tokens: (<>
         {/* ── Tokens ───────────────────────────────────────────── */}
         {/* Terreno e Objetos trabalham no CHÃO: um token em pé numa
             célula não pode impedir de pintar aquela célula nem de
@@ -3094,6 +3135,9 @@ export function MapaHex({
             );
           })()}
         </g>
+
+          </>),
+        })}
 
         {/* ── Posicionamento de token novo (fluxo de criação em duas
             etapas, `VttClient.tsx`) ───────────────────────────────

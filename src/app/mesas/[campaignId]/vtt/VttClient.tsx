@@ -107,6 +107,7 @@ import {
 } from "./_ferramentas/areasEstado";
 import { PainelAreas, type ItemListaArea } from "./_shell/PainelAreas";
 import { PainelAnotacoes } from "./_shell/PainelAnotacoes";
+import { useOrdemCamadas } from "./_ferramentas/camadasPreferencias";
 import { PainelTerreno } from "./_shell/PainelTerreno";
 import { PainelObjetos } from "./_shell/PainelObjetos";
 import { PainelImagens } from "./_shell/PainelImagens";
@@ -4245,6 +4246,8 @@ export function VttClient({
   const botaoCamadasRef = useRef<HTMLButtonElement>(null);
   const [painelCamadasAberto, setPainelCamadasAberto] = useState(false);
   const [camadas, setCamadas] = useState<EstadoCamadas>(CAMADAS_PADRAO);
+  // Ordem de empilhamento do conteúdo da cena: preferência local de cada pessoa.
+  const [ordemCamadas, definirOrdemCamadas] = useOrdemCamadas(usuarioId, campaignId);
   const [erroCamadas, setErroCamadas] = useState<string | null>(null);
   // Fonte de verdade SÍNCRONA pro valor "atual" — nunca o `camadas`
   // capturado no CLOSURE de um `useCallback`. Duas alternâncias na
@@ -6315,6 +6318,7 @@ export function VttClient({
             onMoverPosicionamento={moverPosicionamento}
             onConfirmarPosicionamento={confirmarPosicionamento}
             camadas={camadas}
+            ordemCamadas={ordemCamadas}
           verCamadasOcultas={ehNarrador}
             idsSelecionados={idsSelecionadosLista}
             onRotacaoAlcaSolta={onRotacaoAlcaSolta}
@@ -6879,6 +6883,7 @@ export function VttClient({
             janela por cima da barra de ferramentas. */}
         <PainelCamadas
           aberto={painelCamadasAberto && ehNarrador} camadas={camadas}
+          ordem={ordemCamadas} onReordenar={definirOrdemCamadas}
           onAlternarVisivel={alternarVisivelCamada} onAlternarBloqueio={alternarBloqueioCamada}
           erro={erroCamadas}
           onRestaurarPadrao={restaurarCamadasPadrao} onFechar={() => setPainelCamadasAberto(false)}
