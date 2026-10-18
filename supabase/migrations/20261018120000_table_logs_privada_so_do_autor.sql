@@ -15,11 +15,9 @@
 
 begin;
 
-drop policy if exists table_logs_owner_select on public.table_logs;
-
-create policy table_logs_owner_select on public.table_logs
-  for select
-  to authenticated
+-- `alter policy` (e não drop/create): troca só a condição, sem janela
+-- em que o dono fique sem policy de leitura.
+alter policy table_logs_owner_select on public.table_logs
   using (
     campaign_id in (select id from public.campaigns where owner_id = (select auth.uid()))
     and (
