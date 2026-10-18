@@ -1,0 +1,155 @@
+/* Linha F — CSS próprio desta janela. As peças compartilhadas estão em `janelas-f.css`.
+   Frente: DESENHAR / TEXTO (`PainelAnotacoes`) e ÁREAS (`PainelAreas`). */
+
+/* ══ DESENHAR / TEXTO ══════════════════════════════════════════════ */
+/* A largura antiga (400px, `vtt.css`) perde para a da linha F. */
+.rv-fp.rv-fp--f.rv-janela-anotacoes { width: 420px; }
+.rv-fp--f .rv-fp-corpo.rv-anot-corpo { display: flex; gap: 18px; color: var(--fj-texto, #b8d8e8); }
+.rv-anot-corpo p { margin: 0; }
+
+/* Vitrine: traço ou amostra na cor (`--jf-k`) e medida escolhidas. */
+.rv-anot-hero { height: 150px; box-sizing: border-box; display: grid; place-items: center; }
+.rv-anot-palco { max-width: 100%; height: auto; }
+.rv-anot-traco {
+  stroke: var(--jf-k); fill: none; stroke-linecap: round; stroke-linejoin: round;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--jf-k) 40%, transparent));
+  transition: stroke-width 120ms ease-out, stroke 120ms ease-out;
+}
+.rv-anot-caixa { fill: none; stroke: var(--jf-acento); stroke-width: 1; stroke-dasharray: 3 3; }
+.rv-anot-alca { fill: #05101a; stroke: var(--jf-acento); stroke-width: 1.2; }
+.rv-anot-amostra {
+  padding: 4px 10px; font: 600 16px var(--rv-body), sans-serif; line-height: 1.1;
+  color: var(--jf-k); text-shadow: 0 0 10px color-mix(in srgb, var(--jf-k) 35%, transparent);
+  transition: font-size 120ms ease-out;
+}
+.rv-anot-corpo .rv-anot-editor {
+  width: 100%; height: 100%; box-sizing: border-box; padding: 6px 8px;
+  border: 0; border-bottom: 1px solid var(--jf-acento); background: transparent;
+  resize: none; outline: none; text-align: center;
+  font-family: var(--rv-body), sans-serif; font-weight: 600; line-height: 1.15; color: var(--jf-k);
+}
+.rv-anot-editor::placeholder { color: #2a4a5c; }
+.rv-anot-editor:disabled { opacity: .5; }
+
+.rv-anot-linha { justify-content: space-between; padding-right: 6px; }
+.rv-anot-l { display: flex; align-items: baseline; gap: 8px; }
+.rv-anot-l b { font: 700 13px var(--rv-display), sans-serif; letter-spacing: .04em; text-transform: none; color: #eaf6ff; }
+.rv-anot-corpo .jf-cor:disabled, .rv-anot-corpo button:disabled { opacity: .45; cursor: not-allowed; }
+
+.rv-anot-custom {
+  width: 32px; height: 32px; margin-left: 4px; padding: 0; border: 0; border-left: 1px solid #122a38;
+  background: transparent; color: #4f7086; display: grid; place-items: center; cursor: pointer;
+  box-shadow: inset 0 -2px 0 var(--cor-escolhida);
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.rv-anot-custom:hover:not(:disabled), .rv-anot-custom[aria-expanded="true"] { background: #112a39; color: #eaf6ff; }
+
+/* Régua de seis passos (barras que engrossam / "A" que cresce). */
+.rv-anot-passos { display: flex; gap: 2px; }
+.rv-anot-passo {
+  width: 32px; height: 32px; padding: 0; border: 0; background: transparent; color: #4f7086;
+  display: grid; place-items: center; cursor: pointer;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.rv-anot-passo:hover:not(:disabled) { background: #112a39; color: #eaf6ff; }
+.rv-anot-passo[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--jf-acento) 14%, #05101a); color: var(--jf-acento);
+  box-shadow: inset 0 -2px 0 var(--jf-acento);
+}
+.rv-anot-passo i { display: block; width: 14px; background: currentColor; }
+.rv-anot-passo em { font: 600 normal 1em/1 var(--rv-body), sans-serif; }
+.rv-anot-tile { justify-content: flex-start; padding: 0 12px; }
+
+/* Ação contextual. O chanfro do principal mora no invólucro: o chassi
+   tira o `border-radius` de todo botão dentro de `.rv-fp`. */
+.rv-anot-prim-casca, .rv-area-prim-casca {
+  flex: 1; display: flex;
+  clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 0 100%);
+}
+.rv-anot-prim-casca .jf-prim, .rv-area-prim-casca .jf-prim { min-height: 44px; }
+.rv-anot-remover {
+  height: 44px; display: flex; align-items: center; justify-content: center; gap: 9px; padding: 0 14px;
+  border: 0; background: rgba(5, 16, 26, .55); color: #7f95b3; cursor: pointer;
+  font: 700 10.5px var(--rv-display), sans-serif; letter-spacing: .16em; text-transform: uppercase;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.rv-anot-remover.is-largo { flex: 1; }
+.rv-anot-remover:hover:not(:disabled) { background: color-mix(in srgb, #ff5f74 14%, #05101a); color: #ff8a98; }
+.rv-anot-erro, .rv-area-erro-f { margin: 0; font-size: 12px; color: #ff8a98; }
+
+/* ══ ÁREAS ═════════════════════════════════════════════════════════ */
+.rv-fp--f .rv-fp-corpo.rv-area-f { gap: 18px; padding: 2px 24px 22px; counter-reset: none; }
+.rv-area-f p { margin: 0; }
+
+/* Vitrine: ficha do formato. */
+.rv-area-ficha { display: flex; gap: 16px; align-items: flex-start; min-height: 118px; box-sizing: border-box; padding: 16px 16px 14px; }
+.rv-area-ficha::before {
+  background: radial-gradient(ellipse at 18% 40%, color-mix(in srgb, var(--jf-acento) 16%, transparent), transparent 60%), var(--fj-fundo-1, #05101a);
+}
+.rv-area-selo {
+  flex: none; width: 64px; height: 64px; display: grid; place-items: center; color: var(--jf-acento);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--jf-acento) 45%, transparent));
+}
+.rv-area-ficha-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.rv-area-ficha-topo { display: flex; align-items: center; gap: 8px; }
+.rv-area-ficha-nome { font: 700 18px var(--rv-display), sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #eaf6ff; }
+.rv-area-tag {
+  font: 700 9px var(--font-mono), monospace; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--jf-acento); padding: 2px 5px; border: 1px solid color-mix(in srgb, var(--jf-acento) 40%, transparent);
+}
+.rv-area-ficha-desc {
+  font: 12px/1.45 var(--rv-body), sans-serif; color: #7f95b3;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* Dimensões. */
+.rv-area-dim[data-desabilitado] input { color: #7f95b3; cursor: not-allowed; }
+.rv-area-dim input::-webkit-inner-spin-button, .rv-area-dim input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.rv-area-dim input { -moz-appearance: textfield; }
+.rv-area-dim--fixo .jf-dim-v b { font: 700 18px var(--rv-display), sans-serif; color: #b8d8e8; }
+.rv-area-f .rv-area-campo-apoio { flex: none; margin: 0; font: 11px/1.3 var(--rv-body), sans-serif; color: #4f7086; }
+.rv-area-resumos { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; }
+.rv-area-resumos span + span::before { content: "· "; color: #2a4a5c; }
+.rv-area-select { width: 100%; cursor: pointer; }
+
+/* Seções recolhíveis. */
+.rv-area-sec { display: flex; flex-direction: column; }
+.rv-area-sec + .rv-area-sec, .rv-area-fase-acoes + .rv-area-sec { margin-top: -6px; }
+.rv-area-sec-res { display: flex; align-items: center; gap: 10px; }
+.rv-area-sec-res i { width: 8px; height: 8px; transform: rotate(45deg); background: var(--jf-k); }
+.rv-area-faixa input[type="range"] {
+  background:
+    linear-gradient(var(--jf-k), var(--jf-k)) 0 50% / var(--jf-p, 50%) 2px no-repeat,
+    linear-gradient(#1a3a4b, #1a3a4b) 0 50% / 100% 2px no-repeat;
+}
+
+/* Ações por fase. */
+.rv-area-fase-acoes { display: flex; flex-direction: column; gap: 8px; }
+.rv-area-f .jf-cancelar { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; }
+.rv-area-motivo { margin: 0; text-align: left; color: #f5a200; }
+
+/* Lista da cena: ações aparecem no hover/foco. Os ganchos de teste
+   antigos (`.rv-area-item-nome`, `.rv-area-item-acoes`) continuam na
+   marcação — aqui eles são neutralizados para valer o desenho F. */
+.rv-area-lista-f { padding-top: 6px; }
+.rv-area-item-f { gap: 10px; min-height: 44px; padding: 0 4px 0 8px; }
+.rv-area-item-f[data-selecionada="true"] { background: color-mix(in srgb, var(--jf-acento) 10%, transparent); box-shadow: inset 2px 0 0 var(--jf-acento); }
+.rv-area-f .rv-area-item-nome {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 6px 0;
+  border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; font: inherit;
+}
+.rv-area-item-glifo { flex: none; display: grid; place-items: center; }
+.rv-area-f .rv-area-item-acoes { gap: 0; opacity: 0; }
+.rv-area-f .jf-item:hover .rv-area-item-acoes, .rv-area-f .jf-item:focus-within .rv-area-item-acoes { opacity: 1; }
+.rv-area-f .rv-area-item-acoes button { width: 28px; height: 28px; background: transparent; color: #7f95b3; }
+.rv-area-f .rv-area-item-acoes button:hover { background: #163447; color: #eaf6ff; }
+.rv-area-f .rv-area-item-acoes button.is-perigo:hover { background: color-mix(in srgb, #ff5f74 16%, #05101a); color: #ff8a98; }
+.rv-area-autoria-f {
+  margin-left: 8px; padding: 1px 5px; font: 700 9px var(--font-mono), monospace; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--jf-acento); border: 1px solid color-mix(in srgb, var(--jf-acento) 40%, transparent);
+}
+.rv-area-vazio-f { margin: 6px 0; text-align: left; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rv-anot-traco, .rv-anot-amostra { transition: none; }
+}

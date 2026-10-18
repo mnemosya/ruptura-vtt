@@ -1,0 +1,356 @@
+/* =====================================================================
+   JANELAS DE FERRAMENTA — LINHA F
+
+   O redesign das janelas (canvas "Janelas de ferramenta — redesign"):
+   uma linguagem só para todas, carregada DEPOIS de `vtt.css` e de
+   `tema-forja.css` para vencer a moldura antiga sem reescrevê-la.
+
+   Princípios que estas classes codificam:
+     · zonas por CONTRASTE DE VALOR, não por borda — só o que está
+       escolhido ganha borda e brilho no acento (`--jf-acento`);
+     · uma VITRINE por janela (`.jf-hero`), a zona afundada que mostra
+       o que vai acontecer no mapa;
+     · uma FRASE DE AJUDA (`.jf-desc`) que mostra a descrição do que
+       está sob o mouse — no lugar de subtítulo em cada opção;
+     · rótulos de grupo pequenos (`.jf-rot`) e teclas reais (`kbd`).
+
+   Prefixo `jf-` (janela F) para não colidir com nada do `rv-`/`rc-`.
+   Os painéis montam o conteúdo com estas peças; o que for próprio de
+   uma janela mora no CSS dela (`janela-*.css`).
+   ===================================================================== */
+
+/* ── Moldura ───────────────────────────────────────────────────────── */
+.rv-fp.rv-fp--f {
+  padding-left: 0;
+  width: 420px;
+  background: linear-gradient(175deg, var(--fj-fundo-4, #0b1c29), var(--fj-fundo-2, #071621) 60%);
+  border-color: var(--rv-line-strong, #1a3a4b);
+  color: var(--fj-texto, #b8d8e8);
+  font-family: var(--rv-body), sans-serif;
+}
+.rv-fp.rv-fp--f.rv-fp--gestao { width: 500px; }
+.rv-fp--f .rv-fp-canto { display: none; }
+
+.rv-fp--f .rv-fp-cab {
+  gap: 10px;
+  padding: 16px 16px 14px 20px;
+  border-bottom: 0;
+}
+.rv-fp--f .rv-fp-cab-txt {
+  flex-direction: row; align-items: center; gap: 10px; flex-wrap: nowrap;
+}
+.rv-fp--f .rv-fp-titulo {
+  flex: none;
+  font: 700 15px var(--rv-display), sans-serif;
+  letter-spacing: .14em; text-transform: uppercase; line-height: 1;
+  color: #eaf6ff;
+}
+/* Estado da janela — mono, apagado, com um losango no acento. */
+.rv-fp--f .rv-fp-modo {
+  margin: 0; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 9.5px var(--font-mono), monospace; letter-spacing: .14em; text-transform: uppercase;
+  color: #4f7086;
+}
+.rv-fp--f .rv-fp-modo::before {
+  width: 5px; height: 5px; border-radius: 0; transform: rotate(45deg);
+  background: var(--jf-acento);
+}
+.rv-fp--f .rv-fp-fechar {
+  width: 28px; height: 28px; border: 0; background: transparent; color: #4f7086;
+}
+.rv-fp--f .rv-fp-fechar:hover { color: #eaf6ff; background: #112a39; }
+
+/* Corpo — respiro maior, o mesmo em todas. */
+.rv-fp--f .rv-fp-corpo,
+.rv-fp--f .jf-corpo {
+  display: flex; flex-direction: column; gap: 18px;
+  padding: 2px 20px 20px;
+}
+.rv-fp--f.rv-fp--gestao .rv-fp-corpo,
+.rv-fp--f.rv-fp--gestao .jf-corpo { padding: 2px 24px 22px; }
+
+/* ── Tecla (`kbd`) — a mesma em título, rodapé e botão ─────────────── */
+.rv-fp-tecla,
+.jf-kbd {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: none; min-width: 20px; height: 24px; padding: 0 6px; box-sizing: border-box;
+  font: 600 10px var(--font-mono), monospace; letter-spacing: 0; text-transform: none;
+  color: #7f95b3; background: var(--fj-fundo-1, #050f17);
+  border: 1px solid #1a3a4b; border-bottom: 3px solid #1a3a4b;
+}
+
+/* ── Texto ─────────────────────────────────────────────────────────── */
+/* Rótulo de grupo: pequeno, caixa alta, apagado. Com `<span>` à direita
+   (contagem, "Todos · Nenhum"), os dois vão às pontas. */
+.jf-rot {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font: 600 9.5px var(--rv-display), sans-serif; letter-spacing: .2em; text-transform: uppercase;
+  color: #4f7086;
+}
+.jf-grupo { display: flex; flex-direction: column; gap: 8px; }
+
+/* Frase de ajuda: descreve o que está sob o mouse (ou o que está
+   escolhido). Altura mínima fixa — trocar o texto não pula o layout. */
+.jf-desc {
+  display: flex; align-items: center; gap: 8px; min-height: 16px; margin: -6px 0 0;
+  font: 12px var(--rv-body), sans-serif; color: #7f95b3;
+}
+.jf-desc::before { content: ""; flex: none; width: 12px; height: 1px; background: var(--jf-acento); }
+
+.jf-leg {
+  font: 9.5px var(--font-mono), monospace; letter-spacing: .12em; text-transform: uppercase;
+  color: #4f7086;
+}
+.jf-nota { margin: -8px 0 0; text-align: center; font: 11px var(--rv-body), sans-serif; color: #4f7086; }
+
+/* ── Vitrine ───────────────────────────────────────────────────────── */
+/* A zona afundada da janela — o "destaque" que mostra o que vai
+   acontecer. O chanfro mora num `::before` para que listas abertas
+   dentro dela possam sair da caixa sem ser recortadas. */
+.jf-hero {
+  position: relative; isolation: isolate;
+  padding: 14px 16px 16px;
+}
+.jf-hero::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background:
+    radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--jf-hero, var(--jf-acento)) 12%, transparent), transparent 65%),
+    var(--fj-fundo-1, #05101a);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+}
+
+/* ── Blocos de escolha ─────────────────────────────────────────────── */
+/* Sem borda quando não escolhido (zona por contraste); escolhido ganha
+   borda, tinta e brilho interno no acento (`--jf-t` sobrepõe). */
+.jf-tiles { display: grid; grid-template-columns: repeat(var(--jf-n, 2), minmax(0, 1fr)); gap: 6px; }
+.jf-tile {
+  position: relative; min-width: 0; height: 44px;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  padding: 0 10px; box-sizing: border-box;
+  border: 1px solid transparent; background: rgba(5, 16, 26, .55);
+  color: #7f95b3;
+  font: 700 10.5px var(--rv-display), sans-serif; letter-spacing: .14em; text-transform: uppercase;
+  cursor: pointer;
+  transition: background 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out;
+}
+.jf-tile svg { flex: none; color: #4f7086; transition: color 120ms ease-out; }
+.jf-tile:hover:not(:disabled) { background: #0f2735; color: #eaf6ff; }
+.jf-tile:is([aria-pressed="true"], [aria-checked="true"], [aria-selected="true"], .is-on) {
+  border-color: var(--jf-t, var(--jf-acento));
+  background: color-mix(in srgb, var(--jf-t, var(--jf-acento)) 10%, var(--fj-fundo-1, #05101a));
+  box-shadow: inset 0 0 14px color-mix(in srgb, var(--jf-t, var(--jf-acento)) 12%, transparent);
+  color: #eaf6ff;
+}
+.jf-tile:is([aria-pressed="true"], [aria-checked="true"], [aria-selected="true"], .is-on) svg { color: var(--jf-t, var(--jf-acento)); }
+.jf-tile:disabled { opacity: .45; cursor: default; }
+.jf-tile:focus-visible { outline: 1px solid var(--jf-acento); outline-offset: 2px; }
+/* Variantes: alto (ícone sobre nome) e chave (liga/desliga, texto normal). */
+.jf-tile--alto { height: 58px; flex-direction: column; gap: 8px; padding: 0 4px; font-size: 9.5px; letter-spacing: .12em; }
+.jf-tile--chave { justify-content: flex-start; padding: 0 12px; font: 600 12px var(--rv-body), sans-serif; letter-spacing: 0; text-transform: none; }
+.jf-ponto { flex: none; width: 7px; height: 7px; transform: rotate(45deg); background: var(--jf-l, var(--jf-acento)); }
+
+/* ── Linhas (rótulo + controle) e ajustes (− valor +) ──────────────── */
+.jf-linha {
+  display: flex; align-items: center; gap: 14px; min-height: 40px;
+  padding: 0 8px 0 12px; box-sizing: border-box;
+  border: 0; background: rgba(5, 16, 26, .55); color: var(--fj-texto, #b8d8e8);
+  text-align: left;
+  transition: background 120ms ease-out;
+}
+button.jf-linha { cursor: pointer; width: 100%; }
+.jf-linha:hover { background: #0f2735; }
+.jf-linha .jf-l,
+.jf-ajuste .jf-l {
+  flex: none;
+  font: 600 9.5px var(--rv-display), sans-serif; letter-spacing: .2em; text-transform: uppercase;
+  color: #4f7086;
+}
+.jf-linha .jf-v { flex: 1; min-width: 0; font: 13px var(--rv-body), sans-serif; color: #eaf6ff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.jf-ajustes { display: grid; grid-template-columns: repeat(var(--jf-n, 2), minmax(0, 1fr)); gap: 6px; }
+.jf-ajuste {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 6px 8px 12px; background: rgba(5, 16, 26, .55);
+}
+.jf-ajuste-ctl { display: flex; align-items: center; }
+.jf-ajuste-ctl button {
+  width: 26px; height: 26px; padding: 0; border: 0; background: transparent; color: #7f95b3;
+  display: grid; place-items: center; cursor: pointer;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.jf-ajuste-ctl button:hover:not(:disabled) { background: #112a39; color: #eaf6ff; }
+.jf-ajuste-ctl button:disabled { opacity: .35; cursor: default; }
+.jf-ajuste-v { min-width: 34px; text-align: center; font: 700 15px var(--rv-display), sans-serif; color: #eaf6ff; }
+.jf-ajuste-v.is-vazio { color: #4f7086; }
+
+/* ── Campo de texto sem caixa ──────────────────────────────────────── */
+.jf-campo {
+  min-width: 0; height: 40px; box-sizing: border-box; padding: 0 12px;
+  border: 0; border-bottom: 1px solid transparent; background: rgba(5, 16, 26, .55);
+  color: #eaf6ff; font: 13px var(--rv-body), sans-serif; outline: none;
+  transition: background 120ms ease-out, border-color 120ms ease-out;
+}
+.jf-campo::placeholder { color: #4f7086; }
+.jf-campo:hover { background: #0f2735; }
+.jf-campo:focus { background: var(--fj-fundo-1, #05101a); border-bottom-color: var(--jf-acento); }
+
+/* ── Valores grandes editáveis (dimensões, PV) ─────────────────────── */
+.jf-dims { display: grid; grid-template-columns: repeat(var(--jf-n, 2), minmax(0, 1fr)); gap: 6px; }
+.jf-dim {
+  display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 9px;
+  background: rgba(5, 16, 26, .55); transition: background 120ms ease-out;
+}
+.jf-dim:hover { background: #0f2735; }
+.jf-dim:focus-within { background: var(--fj-fundo-1, #05101a); box-shadow: inset 0 -1px 0 var(--jf-acento); }
+.jf-dim .jf-l { font: 600 9.5px var(--rv-display), sans-serif; letter-spacing: .2em; text-transform: uppercase; color: #4f7086; white-space: nowrap; }
+.jf-dim-v { display: flex; align-items: baseline; gap: 4px; font: 700 18px var(--rv-display), sans-serif; color: #4f7086; }
+.jf-dim input {
+  width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; outline: none;
+  font: 700 18px var(--rv-display), sans-serif; color: #eaf6ff;
+}
+.jf-dim input::placeholder { color: #2a4a5c; }
+.jf-dim small { font: 700 11px var(--rv-display), sans-serif; color: #4f7086; }
+
+/* ── Faixa de valor (slider) ───────────────────────────────────────── */
+.jf-faixa { display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; background: rgba(5, 16, 26, .55); }
+.jf-faixa .jf-l { flex: none; width: 76px; font: 600 9.5px var(--rv-display), sans-serif; letter-spacing: .2em; text-transform: uppercase; color: #4f7086; }
+.jf-faixa input[type="range"] {
+  flex: 1; height: 18px; margin: 0; -webkit-appearance: none; appearance: none; cursor: pointer;
+  background:
+    linear-gradient(var(--jf-acento), var(--jf-acento)) 0 50% / var(--jf-p, 50%) 2px no-repeat,
+    linear-gradient(#1a3a4b, #1a3a4b) 0 50% / 100% 2px no-repeat;
+}
+.jf-faixa input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 11px; height: 11px; transform: rotate(45deg); background: #eaf6ff; box-shadow: 0 0 0 2px var(--fj-fundo-1, #05101a); }
+.jf-faixa input[type="range"]::-moz-range-thumb { width: 9px; height: 9px; border: 0; border-radius: 0; transform: rotate(45deg); background: #eaf6ff; }
+.jf-faixa b { flex: none; min-width: 48px; text-align: right; font: 700 13px var(--rv-display), sans-serif; color: #eaf6ff; }
+.jf-faixa:has(input:disabled) { opacity: .45; }
+
+/* ── Cores (losangos) ──────────────────────────────────────────────── */
+.jf-cores { display: flex; align-items: center; }
+.jf-cor {
+  width: 32px; height: 32px; padding: 0; border: 0; background: transparent;
+  display: grid; place-items: center; cursor: pointer; transition: background 120ms ease-out;
+}
+.jf-cor:hover { background: #112a39; }
+.jf-cor > span { width: 11px; height: 11px; transform: rotate(45deg); background: var(--jf-k); }
+.jf-cor[aria-pressed="true"] > span { box-shadow: 0 0 0 2px var(--fj-fundo-2, #071621), 0 0 0 3.5px var(--jf-k); }
+
+/* ── Seção recolhível (linha com resumo) ───────────────────────────── */
+.jf-sec-cab {
+  width: 100%; display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px;
+  border: 0; background: rgba(5, 16, 26, .55); color: #7f95b3; cursor: pointer;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.jf-sec-cab:hover { background: #0f2735; color: #eaf6ff; }
+.jf-sec-cab .jf-l { font: 600 9.5px var(--rv-display), sans-serif; letter-spacing: .2em; text-transform: uppercase; color: inherit; }
+.jf-sec-res { margin-left: auto; font: 9.5px var(--font-mono), monospace; letter-spacing: .08em; text-transform: uppercase; color: #4f7086; }
+.jf-sec-cab svg { flex: none; transition: transform 160ms ease-out; }
+.jf-sec-cab[aria-expanded="true"] svg { transform: rotate(180deg); }
+.jf-sec-corpo { display: flex; flex-direction: column; gap: 6px; padding: 6px 0 4px; }
+
+/* ── Trilho de tamanho (paradas que crescem) ───────────────────────── */
+.jf-trilho { position: relative; display: grid; grid-template-columns: repeat(var(--jf-n, 5), minmax(0, 1fr)); padding-bottom: 12px; }
+.jf-trilho::after { content: ""; position: absolute; left: 10%; right: 10%; bottom: 4px; height: 1px; background: #1a3a4b; }
+.jf-parada {
+  position: relative; height: 58px; display: grid; place-items: center; padding: 0;
+  border: 0; background: transparent; color: #4f7086; cursor: pointer;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.jf-parada::after {
+  content: ""; position: absolute; left: 50%; bottom: -11px; z-index: 1;
+  width: 7px; height: 7px; transform: translate(-50%, 0) rotate(45deg);
+  background: var(--fj-fundo-2, #071621); box-shadow: inset 0 0 0 1px #2a4a5c;
+  transition: background 120ms ease-out, box-shadow 120ms ease-out;
+}
+.jf-parada:hover { background: #0f2735; color: #b8d8e8; }
+.jf-parada[aria-pressed="true"] { color: var(--jf-t, var(--jf-acento)); background: color-mix(in srgb, var(--jf-t, var(--jf-acento)) 8%, transparent); }
+.jf-parada[aria-pressed="true"]::after { background: var(--jf-t, var(--jf-acento)); box-shadow: 0 0 8px var(--jf-t, var(--jf-acento)); }
+.jf-parada .jf-hx { fill: color-mix(in srgb, currentColor 16%, transparent); stroke: currentColor; stroke-width: 1.2; }
+.jf-trilho-leg { display: flex; align-items: baseline; gap: 10px; margin-top: 2px; }
+.jf-trilho-leg b { font: 700 13px var(--rv-display), sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #eaf6ff; }
+.jf-trilho-leg span { font: 9.5px var(--font-mono), monospace; letter-spacing: .1em; text-transform: uppercase; color: #7f95b3; }
+
+/* ── Linhas de lista (personagens, camadas, imagens) ───────────────── */
+.jf-lista { display: flex; flex-direction: column; }
+.jf-item {
+  position: relative; display: flex; align-items: center; gap: 14px; min-height: 48px;
+  padding: 0 4px; box-sizing: border-box; border-bottom: 1px solid #0e2230;
+  transition: background 120ms ease-out, opacity 160ms ease-out;
+}
+.jf-item:hover { background: rgba(15, 39, 53, .75); }
+.jf-item.is-fora { opacity: .45; }
+.jf-item.is-fora:hover { opacity: .85; }
+.jf-item-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.jf-item-nome { font: 600 13px var(--rv-body), sans-serif; color: #eaf6ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jf-item-sub { font: 9px var(--font-mono), monospace; letter-spacing: .08em; text-transform: uppercase; color: #4f7086; }
+.jf-acts { flex: none; display: flex; opacity: .35; transition: opacity 120ms ease-out; }
+.jf-item:hover .jf-acts, .jf-item:focus-within .jf-acts { opacity: 1; }
+/* Mini-token: disco na cor do lado (`--jf-l`). */
+.jf-disco {
+  flex: none; width: 28px; height: 28px; border-radius: 50%; box-sizing: border-box; overflow: hidden;
+  display: grid; place-items: center;
+  border: 1.5px solid var(--jf-l, #8ea0bd); background: color-mix(in srgb, var(--jf-l, #8ea0bd) 10%, #070d17);
+  color: var(--jf-l, #8ea0bd); font: 700 8.5px var(--font-mono), monospace;
+}
+.jf-disco img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ── Botões pequenos ───────────────────────────────────────────────── */
+.jf-mini {
+  width: 30px; height: 30px; padding: 0; border: 0; background: transparent; color: #4f7086;
+  display: grid; place-items: center; cursor: pointer;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.jf-mini:hover:not(:disabled) { background: #163447; color: #eaf6ff; }
+.jf-mini:is([aria-pressed="true"], .is-on) { color: var(--jf-acento); }
+.jf-mini.is-perigo:hover:not(:disabled) { background: color-mix(in srgb, #ff5f74 16%, var(--fj-fundo-1, #05101a)); color: #ff8a98; }
+.jf-mini:disabled { opacity: .3; cursor: default; }
+.jf-quieto {
+  display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; margin-left: -10px;
+  border: 0; background: transparent; color: #4f7086; cursor: pointer;
+  font: 700 10px var(--rv-display), sans-serif; letter-spacing: .18em; text-transform: uppercase;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.jf-quieto:hover { background: #112a39; color: #eaf6ff; }
+.jf-quieto.is-perigo:hover { background: color-mix(in srgb, #ff5f74 12%, var(--fj-fundo-1, #05101a)); color: #ff8a98; }
+
+/* ── Rodapé de atalhos ─────────────────────────────────────────────── */
+.jf-atalhos { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 14px; border-top: 1px solid #122a38; }
+.jf-atalhos > span { display: flex; align-items: center; gap: 7px; font: 9.5px var(--font-mono), monospace; letter-spacing: .08em; text-transform: uppercase; color: #4f7086; }
+
+/* ── Ação principal ────────────────────────────────────────────────── */
+.jf-acao { display: flex; gap: 6px; }
+.jf-prim {
+  flex: 1; min-height: 50px; border: 0; background: var(--jf-acento); color: #041018;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  font: 800 12px var(--rv-display), sans-serif; letter-spacing: .2em; text-transform: uppercase;
+  cursor: pointer; transition: filter 120ms ease-out, opacity 120ms ease-out;
+}
+.jf-prim:hover:not(:disabled) { filter: brightness(1.12); }
+.jf-prim:disabled { cursor: not-allowed; background: transparent; color: #4a5a78; box-shadow: inset 0 0 0 1px #1c2b45; }
+.jf-prim .jf-kbd { background: rgba(4, 16, 24, .16); border-color: rgba(4, 16, 24, .35); color: #041018; }
+.jf-cancelar {
+  min-height: 50px; padding: 0 16px; border: 0; background: transparent; color: #4f7086;
+  font: 700 10.5px var(--rv-display), sans-serif; letter-spacing: .18em; text-transform: uppercase;
+  cursor: pointer; transition: background 120ms ease-out, color 120ms ease-out;
+}
+.jf-cancelar:hover { background: #112a39; color: #eaf6ff; }
+
+/* ── Abas de texto ─────────────────────────────────────────────────── */
+.jf-abas { display: flex; gap: 20px; border-bottom: 1px solid #122a38; }
+.jf-aba {
+  position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 0 0 10px;
+  border: 0; background: transparent; color: #4f7086; cursor: pointer; white-space: nowrap;
+  font: 700 10.5px var(--rv-display), sans-serif; letter-spacing: .14em; text-transform: uppercase;
+  transition: color 120ms ease-out;
+}
+.jf-aba:hover { color: #b8d8e8; }
+.jf-aba:is([aria-pressed="true"], [aria-selected="true"]) { color: #eaf6ff; }
+.jf-aba:is([aria-pressed="true"], [aria-selected="true"])::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+  background: var(--jf-t, var(--jf-acento)); box-shadow: 0 0 8px var(--jf-t, var(--jf-acento));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rv-fp--f *, .rv-fp--f *::before, .rv-fp--f *::after { transition: none !important; }
+}

@@ -29,10 +29,11 @@
  */
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Eye, Lock, Minus, Plus, Users } from "lucide-react";
 import { createPortal } from "react-dom";
 import { PolyDie } from "./PolyDie";
 import {
-  ACCENTS, BODY, CampoCD, DISPLAY, aoPassarMouse, DadosRolados, FaixaResultado, FaixaSoma, GroupLabel, INK, INK_DIM, INK_FAINT, MONO,
+  ACCENTS, BODY, CampoCD, DISPLAY, aoPassarMouse, DadosLivres, DadosRolados, FaixaResultado, FaixaSoma, GroupLabel, INK, INK_DIM, INK_FAINT, MONO,
   RESULTS, RollButton, Select, SeletorVisibilidade, Stack, Stepper, VISIBILIDADES,
   type Accent, type ResultKey,
 } from "./ResultadoRolagem";
@@ -87,11 +88,17 @@ function ModeToggle({ value, onChange }: { value: CountMode; onChange: (m: Count
 
 /* ---- conjunto livre ---------------------------------------------- */
 
-function FreePool({
-  size = 46, solidRoll = false, initial = { 8: 1 } as Record<number, number>, defaultMode = "sum" as CountMode,
+/**
+ * Estado + rolagem do conjunto livre, separado do desenho: a bandeja do
+ * chat (`FreePool`) e a janela da linha F (`RoladorDadosF`) mostram o
+ * mesmo conjunto de jeitos diferentes, e a regra (d100 = dois d10,
+ * registro no log) não pode ter duas cópias.
+ */
+function useLivre({
+  initial = { 8: 1 } as Record<number, number>, defaultMode = "sum" as CountMode,
   campaignId = null, characterId = null, visibilidade = "public" as TableLogVisibility,
 }: {
-  size?: number; solidRoll?: boolean; initial?: Record<number, number>; defaultMode?: CountMode;
+  initial?: Record<number, number>; defaultMode?: CountMode;
   campaignId?: string | null; characterId?: string | null; visibilidade?: TableLogVisibility;
 }) {
   const [counts, setCounts] = useState<Record<number, number>>(initial);
@@ -185,6 +192,23 @@ function FreePool({
   const bestIdx = results && mode !== "sum" ? valores.indexOf(diceBase) : -1;
   const finalSum = diceBase + mods;
 
+  return {
+    counts, mods, setMods, cdInput, setCdInput, mode, setMode, results, rolling, landed, liveCharge, setLiveCharge,
+    erro, total, pool, add, dec, clear, roll, cdNumero, diceBase, bestIdx, finalSum, podeRolar: !!rolarNaMesa,
+  };
+}
+
+function FreePool({
+  size = 46, solidRoll = false, initial = { 8: 1 } as Record<number, number>, defaultMode = "sum" as CountMode,
+  campaignId = null, characterId = null, visibilidade = "public" as TableLogVisibility,
+}: {
+  size?: number; solidRoll?: boolean; initial?: Record<number, number>; defaultMode?: CountMode;
+  campaignId?: string | null; characterId?: string | null; visibilidade?: TableLogVisibility;
+}) {
+  const {
+    counts, mods, setMods, cdInput, setCdInput, mode, setMode, results, rolling, landed, liveCharge, setLiveCharge,
+    erro, total, pool, add, dec, clear, roll, cdNumero, diceBase, bestIdx, finalSum, podeRolar,
+  } = useLivre({ initial, defaultMode, campaignId, characterId, visibilidade });
   const dieSize = size - 4;
 
   return (
@@ -291,7 +315,7 @@ function FreePool({
           d8, não de uma soma qualquer de dados. */}
       <CampoCD value={cdInput} onChange={setCdInput} />
 
-      <RollButton label={total === 0 ? "Escolha dados" : rolling ? "Rolando…" : `Rolar ${total} dado${total !== 1 ? "s" : ""}`} disabled={total === 0 || rolling || !rolarNaMesa} solid={solidRoll} onRoll={roll} onChargeChange={setLiveCharge} />
+      <RollButton label={total === 0 ? "Escolha dados" : rolling ? "Rolando…" : `Rolar ${total} dado${total !== 1 ? "s" : ""}`} disabled={total === 0 || rolling || !podeRolar} solid={solidRoll} onRoll={roll} onChargeChange={setLiveCharge} />
     </Stack>
   );
 }
@@ -444,7 +468,7 @@ function TestPool({
               <PolyDie sides={8} dim size={size} />
             </span>
           ) : (
-            <div key={i} style={{
+            <div key={i} className="rv-dados-treme" style={{
               animation: `rup-charge-shake ${(0.15 - carga * 0.08).toFixed(3)}s ${i * 0.018}s linear infinite`,
               opacity: 0.55 + carga * 0.45,
               ["--shake-x" as string]: `${(0.5 + carga * 3.5).toFixed(1)}px`,
@@ -744,12 +768,11 @@ function SeletorIdentidade({ identidades, valor, onEscolher, desabilitado, onFal
  * personagem do token selecionado, só uma SUGESTÃO — quem decide se a
  * conta pode rolar por ele é o servidor, que revalida a cada rolagem.
  */
-export function RoladorDados({ size = 46, campaignId = null, personagemSugerido = null }: {
-  size?: number;
-  campaignId?: string | null;
-  personagemSugerido?: PersonagemSugerido | null;
-}) {
-  const [tab, setTab] = useState<"test" | "free">("test");
+/**
+ * Quem rola + com que ficha + quem vê — o estado de topo do rolador,
+ * igual nas duas peles (`classica` e `f`).
+ */
+function useRolador(campaignId: string | null, personagemSugerido: PersonagemSugerido | null) {
   const [visibilidade, setVisibilidade] = useState<TableLogVisibility>("public");
   const [escolhido, setEscolhido] = useState<string | null>(null);
   const characterId = escolhido ?? personagemSugerido?.id ?? null;
@@ -776,13 +799,42 @@ export function RoladorDados({ size = 46, campaignId = null, personagemSugerido 
   // continuava `null`, a ficha nunca era buscada, e o painel mostrava
   // "Sem personagem" por baixo de um dropdown que parecia ter alguém
   // selecionado. Aqui a escolha visual vira a escolha de verdade,
-  // pra qualquer quantidade de identidades — é exatamente o que o
-  // dropdown já estava mostrando como "selecionado". Selecionar um
-  // token no mapa continua tendo prioridade (o efeito acima zera
-  // `escolhido` quando a sugestão da mesa muda).
+  // pra qualquer quantidade de identidades. Selecionar um token no
+  // mapa continua tendo prioridade (o efeito acima zera `escolhido`).
   useEffect(() => {
     if (!characterId && identidades.length > 0) setEscolhido(identidades[0].id);
   }, [characterId, identidades]);
+
+  return { visibilidade, setVisibilidade, setEscolhido, characterId, ctx, carregando, erro, s, identidades, renovarAvatarComFalha };
+}
+
+/**
+ * Rolador completo — é o corpo do painel flutuante “Rolar Dados”.
+ *
+ * `campaignId`/`personagemSugerido` vêm da mesa: o segundo é o
+ * personagem do token selecionado, só uma SUGESTÃO — quem decide se a
+ * conta pode rolar por ele é o servidor, que revalida a cada rolagem.
+ *
+ * `variante="f"` é a pele da linha F (janela do VTT, `janela-dados.css`).
+ * A clássica fica como padrão porque o harness `/dev/dados` e a galeria
+ * de estilos montam o rolador SOLTO, fora da `.rv-fp--f`, onde as
+ * folhas da linha F não são carregadas.
+ */
+export function RoladorDados({ size = 46, campaignId = null, personagemSugerido = null, variante = "classica" }: {
+  size?: number;
+  campaignId?: string | null;
+  personagemSugerido?: PersonagemSugerido | null;
+  variante?: "classica" | "f";
+}) {
+  if (variante === "f") return <RoladorDadosF campaignId={campaignId} personagemSugerido={personagemSugerido} />;
+  return <RoladorClassico size={size} campaignId={campaignId} personagemSugerido={personagemSugerido} />;
+}
+
+function RoladorClassico({ size, campaignId, personagemSugerido }: {
+  size: number; campaignId: string | null; personagemSugerido: PersonagemSugerido | null;
+}) {
+  const [tab, setTab] = useState<"test" | "free">("test");
+  const { visibilidade, setVisibilidade, setEscolhido, characterId, ctx, carregando, erro, s, identidades, renovarAvatarComFalha } = useRolador(campaignId, personagemSugerido);
   return (
     <Stack gap={16}>
       <DiceTabs tab={tab} onChange={setTab} />
@@ -850,6 +902,407 @@ export function BandejaDados({ campaignId = null, personagemSugerido = null }: {
           {campaignId && <SeletorVisibilidade valor={visibilidade} onChange={setVisibilidade} ehNarrador={!!ctx?.ehNarrador} />}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ================================================================== */
+/*  LINHA F — a janela "Rolar Dados" do redesign                       */
+/*                                                                     */
+/*  Mesmas regras, mesmos hooks (`useTest`, `useLivre`, `useRolador`)  */
+/*  e mesmas peças de resultado (`DadosRolados`/`DadosLivres`,          */
+/*  `FaixaResultado`/`FaixaSoma`) da pele clássica — muda só o         */
+/*  desenho. Estilo em `_tema/janela-dados.css`, escopado em           */
+/*  `.rv-fp--f`, porque é ali que `janelas-f.css` dá as peças `jf-`.   */
+/* ================================================================== */
+
+/** Acento da janela Rolar Dados (`ESPINHA.dados`) — o PolyDie quer hex, não `var()`. */
+const ACENTO_F = "#00d4ff";
+const ACENTO_F_SOFT = "rgba(0,212,255,0.14)";
+
+type OpcaoLista = { id: string; rotulo: string; valor?: string; lado?: "pj" | "pn"; frente?: ReactNode };
+
+/**
+ * Seletor em "token" (sublinhado tracejado) com LISTA PRÓPRIA — não o
+ * `<select>` do navegador. A lista mora dentro da vitrine (posição
+ * absoluta), e não por portal: o chanfro da `jf-hero` está num
+ * `::before` justamente pra ela poder sair da caixa, e assim ela
+ * acompanha a janela quando arrasta ou rola. Abre pra cima quando
+ * pedido e couber no corpo da janela; senão abre pra baixo.
+ * Fecha com clique fora, Esc ou escolha; ↑/↓ andam pela lista.
+ */
+function SeletorToken({ titulo, valor, opcoes, onEscolher, desabilitado = false, preferirCima = false, direita = false, frente, tag, classe, testId }: {
+  titulo: string; valor: string; opcoes: OpcaoLista[]; onEscolher: (id: string) => void;
+  desabilitado?: boolean; preferirCima?: boolean; direita?: boolean;
+  /** Avatar (ou outro adorno) antes do nome, no gatilho. */
+  frente?: ReactNode;
+  /** Etiqueta mono no gatilho (pool do atributo, bônus da perícia). */
+  tag?: string;
+  classe?: string;
+  testId?: string;
+}) {
+  const gatilho = useRef<HTMLButtonElement>(null);
+  const lista = useRef<HTMLDivElement>(null);
+  const [aberta, setAberta] = useState<null | { cima: boolean }>(null);
+  const atual = opcoes.find((o) => o.id === valor) ?? opcoes[0];
+  const fechar = useCallback((devolverFoco = false) => { setAberta(null); if (devolverFoco) gatilho.current?.focus(); }, []);
+  const alternar = () => {
+    if (aberta) { fechar(); return; }
+    const r = gatilho.current?.getBoundingClientRect();
+    const caixa = gatilho.current?.closest(".rup-scroll")?.getBoundingClientRect();
+    const altura = Math.min(opcoes.length * 36 + 34, 220);
+    const topo = caixa?.top ?? 0;
+    const fundo = caixa?.bottom ?? (typeof window !== "undefined" ? window.innerHeight : 0);
+    const cabeCima = !!r && r.top - topo >= altura + 8;
+    const cabeBaixo = !r || fundo - r.bottom >= altura + 8;
+    setAberta({ cima: preferirCima ? cabeCima || !cabeBaixo : !cabeBaixo && cabeCima });
+  };
+  useEffect(() => {
+    if (!aberta) return;
+    requestAnimationFrame(() => lista.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]')?.focus({ preventScroll: true }));
+    const fora = (e: PointerEvent) => {
+      const alvo = e.target as Node;
+      if (!lista.current?.contains(alvo) && !gatilho.current?.contains(alvo)) fechar();
+    };
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); fechar(true); return; }
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      e.preventDefault();
+      const itens = Array.from(lista.current?.querySelectorAll<HTMLButtonElement>("button") ?? []);
+      const i = itens.indexOf(document.activeElement as HTMLButtonElement);
+      itens[e.key === "ArrowDown" ? Math.min(itens.length - 1, i + 1) : Math.max(0, i - 1)]?.focus();
+    };
+    window.addEventListener("pointerdown", fora);
+    window.addEventListener("keydown", tecla, true);
+    return () => { window.removeEventListener("pointerdown", fora); window.removeEventListener("keydown", tecla, true); };
+  }, [aberta, fechar]);
+  // Rolagem começou com a lista aberta: fecha, o gatilho ficou desabilitado.
+  useEffect(() => { if (desabilitado) setAberta(null); }, [desabilitado]);
+  if (!atual) return null;
+  return (
+    <span className="rv-rf-sel">
+      <button
+        ref={gatilho}
+        type="button"
+        className={`rv-rf-token${classe ? ` ${classe}` : ""}`}
+        aria-haspopup="listbox"
+        aria-expanded={aberta !== null}
+        disabled={desabilitado}
+        onClick={alternar}
+        data-testid={testId}
+      >
+        <span className="rv-sr-only">{titulo}: </span>
+        {frente}
+        <span className="rv-rf-token-nome">{atual.rotulo}</span>
+        {tag && <span className="rv-rf-tag">{tag}</span>}
+        <Chevron width={14} height={14} strokeWidth={2} />
+      </button>
+      {aberta && (
+        <div ref={lista} role="listbox" aria-label={titulo}
+          className={`rv-rf-pop${aberta.cima ? " is-cima" : ""}${direita ? " is-direita" : ""}`}>
+          <span className="rv-rf-pop-rot" aria-hidden="true">{titulo}</span>
+          {opcoes.map((o) => (
+            <button key={o.id} type="button" role="option" aria-selected={o.id === atual.id}
+              className="rv-rf-opt" data-lado={o.lado}
+              onClick={() => { onEscolher(o.id); fechar(true); }}>
+              {o.frente}
+              <span className="rv-rf-opt-nome">{o.rotulo}</span>
+              {o.valor && <span className="rv-rf-opt-v">{o.valor}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </span>
+  );
+}
+
+/** Rosto redondo com anel na cor do lado — o `avatarUrl` real; sem ele (ou se falhar), a sigla. */
+function AvatarIdentidade({ p, onFalha }: { p: Identidade; onFalha?: (p: Identidade) => void }) {
+  const [falhou, setFalhou] = useState(false);
+  useEffect(() => { setFalhou(false); }, [p.avatarUrl]);
+  return (
+    <span className="rv-rf-av" data-lado={p.tipo === "pn" ? "pn" : "pj"} aria-hidden="true">
+      {p.avatarUrl && !falhou
+        ? <img src={p.avatarUrl} alt="" onError={() => { setFalhou(true); onFalha?.(p); }} />
+        : p.nome.slice(0, 3).toUpperCase()}
+    </span>
+  );
+}
+
+/** Modificador: − valor + — o valor continua digitável, como no `Stepper`. */
+function AjusteMod({ valor, onChange }: { valor: number; onChange: (n: number) => void }) {
+  const fmt = valor > 0 ? `+${valor}` : `${valor}`;
+  const [editando, setEditando] = useState(false);
+  const [rascunho, setRascunho] = useState(fmt);
+  useEffect(() => { if (!editando) setRascunho(fmt); }, [editando, fmt]);
+  return (
+    <div className="jf-ajuste">
+      <span className="jf-l">Mod.</span>
+      <span className="jf-ajuste-ctl">
+        <button type="button" aria-label="Diminuir modificador" onClick={() => onChange(valor - 1)}><Minus size={11} strokeWidth={2.8} /></button>
+        <input
+          className="jf-ajuste-v rv-rf-num" type="text" inputMode="numeric" aria-label="Modificador"
+          value={editando ? rascunho : fmt}
+          onFocus={(e) => { setEditando(true); setRascunho(fmt); e.currentTarget.select(); }}
+          onChange={(e) => {
+            const proximo = e.target.value.replace(/[^0-9+-]/g, "");
+            if (!/^[+-]?\d*$/.test(proximo)) return;
+            setRascunho(proximo);
+            if (/^[+-]?\d+$/.test(proximo)) onChange(Number(proximo));
+          }}
+          onBlur={() => setEditando(false)}
+          onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+        />
+        <button type="button" aria-label="Aumentar modificador" onClick={() => onChange(valor + 1)}><Plus size={11} strokeWidth={2.8} /></button>
+      </span>
+    </div>
+  );
+}
+
+/**
+ * CD: − valor + com vazio = "—" (sem CD). O "Remover CD" da caixa
+ * antiga virou o próprio −: abaixo de 1 a CD some — e apagar o campo
+ * também tira. Mesmos limites do `CampoCD` (1–99).
+ */
+function AjusteCD({ valor, onChange }: { valor: string; onChange: (v: string) => void }) {
+  const vazia = valor.trim() === "";
+  const atual = Number.parseInt(valor, 10);
+  return (
+    <div className="jf-ajuste">
+      <span className="jf-l">CD</span>
+      <span className="jf-ajuste-ctl">
+        <button type="button" aria-label={!vazia && atual <= 1 ? "Remover CD" : "Diminuir CD"} disabled={vazia}
+          onClick={() => onChange(!Number.isFinite(atual) || atual <= 1 ? "" : String(Math.min(99, atual - 1)))}>
+          <Minus size={11} strokeWidth={2.8} />
+        </button>
+        <input
+          className={`jf-ajuste-v rv-rf-num${vazia ? " is-vazio" : ""}`} type="text" inputMode="numeric" pattern="[0-9]*"
+          placeholder="—" aria-label="Classe de dificuldade" value={valor}
+          onChange={(e) => {
+            const digitos = e.target.value.replace(/\D/g, "").slice(0, 2);
+            onChange(digitos === "" ? "" : String(Math.min(99, Math.max(1, Number(digitos)))));
+          }}
+        />
+        <button type="button" aria-label="Aumentar CD"
+          onClick={() => onChange(String(Math.min(99, Math.max(1, (Number.isFinite(atual) ? atual : 0) + 1))))}>
+          <Plus size={11} strokeWidth={2.8} />
+        </button>
+      </span>
+    </div>
+  );
+}
+
+const ICONE_VISIB: Record<TableLogVisibility, ReactNode> = {
+  public: <Users size={15} strokeWidth={1.8} />,
+  private: <Lock size={15} strokeWidth={1.8} />,
+  gm: <Eye size={15} strokeWidth={1.8} />,
+};
+
+/** "Quem vê" em blocos — a visibilidade real; `gm` só aparece pro narrador (o servidor revalida). */
+function QuemVe({ valor, onChange, ehNarrador }: { valor: TableLogVisibility; onChange: (v: TableLogVisibility) => void; ehNarrador: boolean }) {
+  const opcoes = VISIBILIDADES.filter((o) => o.v !== "gm" || ehNarrador);
+  return (
+    <div className="jf-grupo">
+      <span className="jf-rot">Quem vê</span>
+      <div className="jf-tiles rv-rf-visib" role="group" aria-label="Quem vê esta rolagem" style={{ ["--jf-n" as string]: opcoes.length }}>
+        {opcoes.map((o) => (
+          <button key={o.v} type="button" className="jf-tile" aria-pressed={o.v === valor} title={o.dica} onClick={() => onChange(o.v)}>
+            {ICONE_VISIB[o.v]}<span>{o.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Tremor da carga — mesma curva do `TestPool`/`FreePool`. */
+function estiloTremor(carga: number, i: number): CSSProperties {
+  return {
+    animation: `rup-charge-shake ${(0.15 - carga * 0.08).toFixed(3)}s ${i * 0.022}s linear infinite`,
+    opacity: 0.55 + carga * 0.45,
+    ["--shake-x" as string]: `${(0.5 + carga * 3.5).toFixed(1)}px`,
+    ["--shake-r" as string]: `${(0.2 + carga * 1.4).toFixed(2)}deg`,
+  };
+}
+
+function HeroTeste({ s }: { s: ReturnType<typeof useTest> }) {
+  const { ficha, atributo } = s;
+  if (!ficha) {
+    return (
+      <div className="rv-rf-semficha">
+        <b>Sem personagem</b>
+        <p>Selecione no mapa um token ligado a um personagem que você controla — o teste usa os atributos e perícias da ficha dele.</p>
+      </div>
+    );
+  }
+  const opcoesAtributo = ficha.atributos.map((a) => {
+    const d = getRupturaPool(a.valor);
+    return { id: a.id, rotulo: a.nome, valor: `${d.quantidadeDados}d8 ${d.modoSelecao === "lowest" ? "↓" : "↑"}` };
+  });
+  const opcoesPericia: OpcaoLista[] = [
+    { id: SEM_PERICIA, rotulo: "Sem perícia" },
+    ...ficha.pericias.map((p) => ({ id: p.id, rotulo: p.nome, valor: `+${p.valor}` })),
+  ];
+  const pool = getRupturaPool(atributo?.valor ?? 0);
+  const tagAtributo = `${pool.quantidadeDados}d8 ${pool.modoSelecao === "lowest" ? "↓" : "↑"}`;
+  return (
+    <>
+      <div className="rv-rf-dados">
+        <TestPool r={s.roll} count={pool.quantidadeDados} rolling={s.rolling} landed={s.landed} carga={s.carga} />
+      </div>
+      <div className="rv-rf-frase">
+        <SeletorToken titulo="Atributo" valor={s.atributoId} opcoes={opcoesAtributo} onEscolher={s.setAtributoId}
+          desabilitado={s.rolling} preferirCima tag={tagAtributo} />
+        <span className="rv-rf-mais" aria-hidden="true">+</span>
+        <SeletorToken titulo="Perícia" valor={s.periciaId} opcoes={opcoesPericia} onEscolher={s.setPericiaId}
+          desabilitado={s.rolling} preferirCima direita tag={s.pericia ? `+${s.pericia.valor}` : undefined} />
+      </div>
+      {atributo?.valor === 0 && <p className="rv-rf-aviso">Atributo 0: role 2d8 e use o menor resultado.</p>}
+      {s.roll && !s.rolling && <div className="rup-reveal rv-rf-faixa"><FaixaResultado r={s.roll} /></div>}
+    </>
+  );
+}
+
+function HeroLivre({ l }: { l: ReturnType<typeof useLivre> }) {
+  const tremendo = l.liveCharge > 0 && !l.rolling;
+  const passou = l.cdNumero == null ? null : l.finalSum >= l.cdNumero;
+  return (
+    <>
+      <div className="rv-rf-paleta">
+        {LOOSE.map((f) => {
+          const n = l.counts[f] || 0;
+          return (
+            <button key={f} type="button" className={`rv-rf-face${n > 0 ? " is-on" : ""}`}
+              onClick={() => l.add(f)} onContextMenu={(e) => { e.preventDefault(); l.dec(f); }}
+              title={`d${f} — clique adiciona · direito remove`} aria-label={`Adicionar d${f}`}>
+              <PolyDie sides={f} semValor active={n > 0} accent={ACENTO_F} soft={ACENTO_F_SOFT} size={38} />
+              <span className="rv-rf-face-nome">d{f}</span>
+              {n > 0 && <i>{n}</i>}
+            </button>
+          );
+        })}
+      </div>
+      <div className="rv-rf-pool">
+        {l.total === 0 ? (
+          <span className="rv-rf-vazio-pool">Clique nos dados pra montar a rolagem</span>
+        ) : (
+          <>
+            {l.results && !l.rolling ? (
+              /* Parado com resultado: a fileira compartilhada (a mesma do
+                 card do Chat), com o que valeu no acento da faixa. */
+              <DadosLivres
+                termos={l.results.map((d) => ({ faces: d.sides, valor: d.value }))}
+                maior={l.mode === "sum" ? null : l.diceBase}
+                size={34}
+                landed={l.landed}
+                acento={passou == null ? undefined : passou ? ACCENTS.cyan : ACCENTS.danger}
+              />
+            ) : (
+              <span className="rv-rf-pool-itens">
+                {l.pool.map((f, i) => (
+                  <button key={i} type="button" className="rv-rf-pool-dado" onClick={() => l.dec(f)} disabled={l.rolling}
+                    aria-label={`Tirar um d${f}`} title="clique para remover">
+                    {l.rolling ? (
+                      <span className="rv-dados-rolando" style={{ animationDelay: `${(i % 6) * 0.06}s` }}>
+                        <PolyDie sides={f} accent={ACENTO_F} soft={ACENTO_F_SOFT} size={30} semValor />
+                      </span>
+                    ) : (
+                      <span className={tremendo ? "rv-dados-treme" : undefined} style={{ display: "block", ...(tremendo ? estiloTremor(l.liveCharge, i) : null) }}>
+                        <PolyDie sides={f} active accent={ACENTO_F} soft={ACENTO_F_SOFT} size={30} semValor />
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </span>
+            )}
+            <button type="button" className="rv-rf-limpar" onClick={l.clear} disabled={l.rolling}>Limpar</button>
+          </>
+        )}
+      </div>
+      {l.rolling && <span className="rv-dados-status rv-rf-status">rolando na mesa…</span>}
+      {l.results && !l.rolling && (
+        <div className="rup-reveal rv-rf-faixa">
+          <FaixaSoma base={l.diceBase} modificador={l.mods} total={l.finalSum} cd={l.cdNumero} modo={l.mode} testId="resultado-dados" />
+        </div>
+      )}
+    </>
+  );
+}
+
+function RoladorDadosF({ campaignId, personagemSugerido }: { campaignId: string | null; personagemSugerido: PersonagemSugerido | null }) {
+  const [tab, setTab] = useState<"test" | "free">("test");
+  const { visibilidade, setVisibilidade, setEscolhido, characterId, ctx, carregando, erro, s, identidades, renovarAvatarComFalha } = useRolador(campaignId, personagemSugerido);
+  const l = useLivre({ campaignId, characterId, visibilidade });
+  const rolando = s.rolling || l.rolling;
+  const teste = tab === "test";
+
+  const nd8 = getRupturaPool(s.atributo?.valor ?? 0).quantidadeDados;
+  const partes = LOOSE.filter((f) => l.counts[f]).map((f) => `${l.counts[f]}d${f}`);
+  // Até três grupos a fórmula cabe no botão; acima disso ela empurraria
+  // o rótulo pra fora, e a contagem diz o mesmo sem quebrar.
+  const formula = partes.length <= 3 ? partes.join(" + ") : `${l.total} dados`;
+  const semDados = !teste && l.total === 0;
+  const rotulo = teste
+    ? (s.rolling ? "Rolando…" : s.roll ? "Rolar de novo" : `Rolar ${nd8}d8`)
+    : (semDados ? "Escolha dados" : l.rolling ? "Rolando…" : l.results ? "Rolar de novo" : `Rolar ${formula}`);
+  const desabilitado = teste ? s.rolling || !s.podeRolar : semDados || l.rolling || !l.podeRolar;
+  const carga = teste ? s.carga : l.liveCharge;
+  const dica = VISIBILIDADES.find((v) => v.v === visibilidade)?.dica;
+  const nota = semDados
+    ? "Clique nos dados acima pra montar a rolagem"
+    : carga > 0
+      ? `Força ${Math.round(carga * 100)}%${carga >= 0.995 ? " · máxima" : ""}`
+      : `Segure pra carregar força${campaignId && dica ? ` · ${dica}` : ""}`;
+  const erroRolagem = teste ? s.erro : l.erro;
+
+  const opcoesIdent: OpcaoLista[] = identidades.map((p) => ({
+    id: p.id, rotulo: p.nome, lado: p.tipo === "pn" ? "pn" : "pj", valor: p.tipo === "pn" ? "PN" : "PJ",
+    frente: <AvatarIdentidade p={p} onFalha={renovarAvatarComFalha} />,
+  }));
+  const identAtual = identidades.find((p) => p.id === characterId) ?? identidades[0];
+
+  return (
+    <div className="rv-rf">
+      <div className="jf-abas rv-rf-abas" role="tablist" aria-label="Tipo de rolagem">
+        {([["test", "Atributo & Perícia"], ["free", "Livre"]] as const).map(([k, nome]) => (
+          <button key={k} type="button" role="tab" aria-selected={tab === k} className="jf-aba" onClick={() => setTab(k)}>{nome}</button>
+        ))}
+      </div>
+
+      <div className="jf-hero rv-rf-hero">
+        {campaignId && identAtual && (
+          <SeletorToken titulo="Rolando como" valor={identAtual.id} opcoes={opcoesIdent} onEscolher={setEscolhido}
+            desabilitado={rolando} classe="rv-rf-ident" testId="rolador-identidade"
+            frente={<AvatarIdentidade p={identAtual} onFalha={renovarAvatarComFalha} />} />
+        )}
+        {carregando && !ctx && <span className="jf-leg rv-rf-carregando">carregando ficha…</span>}
+        {teste ? <HeroTeste s={s} /> : <HeroLivre l={l} />}
+      </div>
+
+      {erro && <ErroRolagem texto={erro} />}
+      {erroRolagem && <ErroRolagem texto={erroRolagem} />}
+
+      {!teste && (
+        <div className="jf-grupo">
+          <span className="jf-rot">Combinar</span>
+          <div className="jf-tiles rv-rf-comb" role="group" aria-label="Como combinar os dados" style={{ ["--jf-n" as string]: 3 }}>
+            {([["sum", "Somar"], ["high", "Maior"], ["low", "Menor"]] as const).map(([k, nome]) => (
+              <button key={k} type="button" className="jf-tile" aria-pressed={l.mode === k} onClick={() => l.setMode(k)}>{nome}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="jf-ajustes rv-rf-ajustes">
+        <AjusteMod valor={teste ? s.mods : l.mods} onChange={teste ? s.setMods : l.setMods} />
+        <AjusteCD valor={teste ? s.cdInput : l.cdInput} onChange={teste ? s.setCdInput : l.setCdInput} />
+      </div>
+
+      {campaignId && <QuemVe valor={visibilidade} onChange={setVisibilidade} ehNarrador={!!ctx?.ehNarrador} />}
+
+      <RollButton variante="f" label={rotulo} disabled={desabilitado}
+        onRoll={teste ? s.doRoll : l.roll} onChargeChange={teste ? s.setCarga : l.setLiveCharge} />
+      <p className="jf-nota">{nota}</p>
     </div>
   );
 }

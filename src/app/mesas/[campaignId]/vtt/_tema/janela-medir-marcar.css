@@ -1,0 +1,153 @@
+/* Linha F — CSS próprio desta janela. As peças compartilhadas estão em `janelas-f.css`.
+   Medir (`jmed-`) e Marcar (`jmar-`) moram juntas porque dividem a
+   mesma postura (ferramenta de agir no mapa, sem botão principal: o
+   gesto acontece no mapa) e a mesma linha de "limpar" (`jmm-`). */
+
+/* Respiro maior entre zonas, como no protótipo (24px). */
+.rv-fp--f .jmed-corpo,
+.rv-fp--f .jmar-corpo { gap: 24px; }
+
+/* ── MEDIR · vitrine ───────────────────────────────────────────────── */
+.jmed-hero {
+  min-height: 132px; box-sizing: border-box;
+  padding: 18px 18px 16px;
+  display: flex; flex-direction: column; justify-content: center;
+}
+
+.jmed-vazio { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.jmed-vazio-arte { margin-bottom: 4px; }
+.jmed-vazio-hx polygon { stroke: #1a3a4b; stroke-width: 1; }
+.jmed-vazio-linha { stroke: var(--jf-acento); stroke-width: 1.4; stroke-dasharray: 3 4; opacity: .8; }
+.jmed-vazio-origem { fill: var(--jf-acento); }
+.jmed-vazio-ponta { fill: var(--fj-fundo-1, #05101a); stroke: var(--jf-acento); stroke-width: 1.2; }
+.jmed-vazio-1 { font: 500 13px var(--rv-body), sans-serif; color: var(--fj-texto, #b8d8e8); }
+.jmed-vazio-2 {
+  font: 9.5px var(--font-mono), monospace; letter-spacing: .14em; text-transform: uppercase;
+  color: #4f7086;
+}
+
+.jmed-leit { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.jmed-dist {
+  font: 800 52px/.8 var(--rv-display), sans-serif; color: #eaf6ff;
+  text-shadow: 0 0 22px color-mix(in srgb, var(--jf-acento) 35%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+.jmed-dist small {
+  margin-left: 5px; font: 700 16px var(--rv-display), sans-serif; color: #7f95b3; text-shadow: none;
+}
+.jmed-stats { display: flex; gap: 22px; padding-bottom: 2px; }
+.jmed-stat { --jmed-t: #7f95b3; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.jmed-stat[data-acento="custo"] { --jmed-t: #ff8a1f; }
+.jmed-stat-l {
+  display: flex; align-items: center; gap: 6px;
+  font: 600 9.5px var(--rv-display), sans-serif; letter-spacing: .2em; text-transform: uppercase;
+  color: #4f7086;
+}
+.jmed-stat-l i { width: 6px; height: 6px; background: var(--jmed-t); }
+.jmed-stat b { font: 700 20px/.8 var(--rv-display), sans-serif; color: #eaf6ff; font-variant-numeric: tabular-nums; }
+
+/* Faixa de trechos: nós em losango, segmentos proporcionais, a ponta
+   viva oca. A metragem fica SOBRE o segmento (por isso o respiro). */
+.jmed-trechos { display: flex; align-items: center; margin-top: 22px; }
+.jmed-no { flex: none; width: 7px; height: 7px; transform: rotate(45deg); background: var(--jf-acento); }
+.jmed-no.is-oco { background: var(--fj-fundo-1, #05101a); box-shadow: inset 0 0 0 1px var(--jf-acento); }
+.jmed-seg {
+  position: relative; flex: 1 1 0; min-width: 0; height: 1px; margin: 0 4px;
+  background: color-mix(in srgb, var(--jf-acento) 55%, transparent);
+}
+.jmed-seg > span {
+  position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%);
+  font: 600 9.5px var(--font-mono), monospace; color: #7f95b3; white-space: nowrap;
+}
+
+.jmed-avisos { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 14px; }
+.jmed-aviso {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 9.5px var(--font-mono), monospace; letter-spacing: .08em; text-transform: uppercase;
+  color: #e0a53a;
+}
+.jmed-aviso[data-grave="true"] { color: #ff5f74; }
+.jmed-aviso[data-neutro="true"] { color: #4f7086; }
+
+/* ── Linha "N na cena · Limpar" (Medir e Marcar) ───────────────────── */
+.jmm-limpar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: -10px 0 -6px; }
+.jmm-limpar .jf-quieto { margin: 0 -10px 0 0; }
+.jmm-limpar .jf-quieto:disabled { opacity: .4; cursor: default; }
+.jmm-limpar .jf-quieto:disabled:hover { background: transparent; color: #4f7086; }
+
+/* Teclas com ícone (Backspace/Enter) — o glifo herda a cor da tecla. */
+.jf-atalhos .jf-kbd svg { display: block; }
+
+/* ── MARCAR · vitrine ──────────────────────────────────────────────── */
+.jmar-hero { display: flex; align-items: center; gap: 18px; padding: 14px 18px 14px 10px; }
+/* O brilho sai de trás da célula (à esquerda), não do centro. */
+.jmar-hero::before {
+  background:
+    radial-gradient(ellipse at 25% 50%, color-mix(in srgb, var(--jmar-k) 12%, transparent), transparent 60%),
+    var(--fj-fundo-1, #05101a);
+  transition: background 160ms ease-out;
+}
+.jmar-arte { flex: none; }
+.jmar-hx { fill: rgba(17, 42, 57, .28); stroke: #1a3a4b; stroke-width: 1; }
+.jmar-hx-on {
+  fill: color-mix(in srgb, var(--jmar-k) 14%, transparent);
+  stroke: var(--jmar-k); stroke-width: 1.4;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--jmar-k) 45%, transparent));
+  transition: fill 160ms ease-out, stroke 160ms ease-out;
+}
+/* Privada: contorno tracejado — a marca existe, mas só pra você. */
+.jmar-hx-on[data-privada] { stroke-dasharray: 4 3; }
+.jmar-glifo { color: var(--jmar-k); stroke: var(--jmar-k); }
+
+.jmar-ficha { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.jmar-nome {
+  font: 700 18px var(--rv-display), sans-serif; letter-spacing: .12em; text-transform: uppercase;
+  line-height: 1; color: #eaf6ff;
+}
+.jmar-rot {
+  font: 500 13px var(--rv-body), sans-serif; color: var(--fj-texto, #b8d8e8);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.jmar-rot.is-vazio { color: #4f7086; }
+.jmar-meta {
+  font: 9.5px var(--font-mono), monospace; letter-spacing: .14em; text-transform: uppercase;
+  color: #4f7086;
+}
+
+/* Sinais: tiles altos de 64px, como no protótipo (o `--alto` é 58). */
+.jf-tile--alto.jmar-sinal { height: 64px; gap: 9px; font-size: 10px; letter-spacing: .14em; }
+
+/* Linha da cor: rótulo à esquerda, losangos encostados à direita. */
+.jmar-linha-cor { justify-content: space-between; padding-right: 6px; }
+.jmar-linha-cor:hover { background: rgba(5, 16, 26, .55); }
+
+/* ── MARCAR · rótulo, duração e visibilidade na mesma linha ────────── */
+.jmar-extra { display: grid; grid-template-columns: minmax(0, 1fr) 132px 40px; gap: 6px; }
+.jmar-dur {
+  height: 40px; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 0 10px;
+  border: 0; background: rgba(5, 16, 26, .55); color: var(--fj-texto, #b8d8e8);
+  font: 700 10px var(--rv-display), sans-serif; letter-spacing: .12em; text-transform: uppercase;
+  text-align: left; cursor: pointer;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.jmar-dur:hover { background: #0f2735; color: #eaf6ff; }
+.jmar-dur svg { flex: none; color: #4f7086; }
+.jmar-dur-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jmar-pips { display: flex; flex-direction: column; gap: 3px; }
+.jmar-pips i { width: 3px; height: 3px; background: #22526a; }
+.jmar-pips i.is-on { background: var(--jf-acento); }
+.jmar-pips i.is-fora { opacity: .35; }
+.jmar-olho {
+  height: 40px; padding: 0; border: 0; background: rgba(5, 16, 26, .55); color: #4f7086;
+  display: grid; place-items: center; cursor: pointer;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.jmar-olho:hover { background: #0f2735; color: #eaf6ff; }
+.jmar-olho[aria-pressed="true"] { color: var(--jf-acento); }
+.jmar-dur:focus-visible,
+.jmar-olho:focus-visible,
+.jf-cor:focus-visible { outline: 1px solid var(--jf-acento); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .jmar-hero::before, .jmar-hx-on { transition: none; }
+}

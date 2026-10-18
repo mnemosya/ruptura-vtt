@@ -1,0 +1,151 @@
+/* Linha F — CSS próprio desta janela. As peças compartilhadas estão em `janelas-f.css`. */
+
+/* Tudo escopado em `.rv-fp--f`: o rolador também é montado SOLTO (harness
+   `/dev/dados`, galeria de estilos) na pele clássica, e o Console da
+   ficha usa as mesmas peças de resultado — nada daqui pode vazar pra lá. */
+
+.rv-fp--f .rv-rf { display: flex; flex-direction: column; gap: 22px; }
+
+/* ── Abas de modo: duas colunas, traço aceso no ativo ── */
+.rv-fp--f .rv-rf-abas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; margin-top: -4px; }
+.rv-fp--f .rv-rf-abas .jf-aba { justify-content: center; padding-bottom: 12px; }
+.rv-fp--f .rv-rf-abas .jf-aba:focus-visible { outline: 1px solid var(--jf-acento); outline-offset: 2px; }
+
+/* ── Vitrine ── z-index: as listas abertas descem por cima dos blocos
+   seguintes (`jf-tile` é posicionado e ganharia na ordem de pintura). */
+.rv-fp--f .rv-rf-hero { z-index: 2; display: flex; flex-direction: column; padding: 12px 16px 18px; }
+.rv-fp--f .rv-rf-carregando { margin-top: 10px; }
+
+/* ── Token com lista própria ── */
+.rv-fp--f .rv-rf-sel { position: relative; display: inline-flex; min-width: 0; max-width: 100%; }
+.rv-fp--f .rv-rf-token {
+  display: inline-flex; align-items: center; gap: 7px; min-width: 0; max-width: 100%;
+  padding: 3px 4px 8px 8px; border: 0; border-bottom: 1px dashed #2a6178; background: transparent;
+  color: #eaf6ff; font: 600 13px var(--rv-body), sans-serif; cursor: pointer;
+  transition: border-color 120ms ease-out;
+}
+.rv-fp--f .rv-rf-token:hover:not(:disabled),
+.rv-fp--f .rv-rf-token[aria-expanded="true"] { border-bottom-color: var(--jf-acento); }
+.rv-fp--f .rv-rf-token:focus-visible { outline: 1px solid var(--jf-acento); outline-offset: 2px; }
+.rv-fp--f .rv-rf-token:disabled { opacity: .5; cursor: default; }
+.rv-fp--f .rv-rf-token > svg { flex: none; color: #4f7086; transition: transform 160ms ease-out; }
+.rv-fp--f .rv-rf-token[aria-expanded="true"] > svg { transform: rotate(180deg); }
+.rv-fp--f .rv-rf-token-nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rv-fp--f .rv-rf-tag {
+  flex: none; padding: 1px 4px; font: 700 9.5px var(--font-mono), monospace; color: var(--jf-acento);
+  border: 1px solid color-mix(in srgb, var(--jf-acento) 40%, transparent);
+}
+.rv-fp--f .rv-rf-ident { gap: 9px; font-size: 12px; }
+.rv-fp--f .rv-rf-hero > .rv-rf-sel { align-self: flex-start; }
+
+.rv-fp--f .rv-rf-pop {
+  position: absolute; z-index: 5; left: 0; top: calc(100% + 6px);
+  min-width: 212px; max-height: 220px; overflow: auto; box-sizing: border-box;
+  padding: 4px; display: flex; flex-direction: column; gap: 2px;
+  background: #071621; border: 1px solid #1a3a4b; box-shadow: 0 14px 32px rgba(0, 0, 0, .65);
+  animation: rv-rf-pop .14s ease-out;
+}
+.rv-fp--f .rv-rf-pop.is-cima { top: auto; bottom: calc(100% + 8px); }
+.rv-fp--f .rv-rf-pop.is-direita { left: auto; right: 0; }
+@keyframes rv-rf-pop { from { opacity: 0; transform: translateY(-3px); } }
+.rv-fp--f .rv-rf-pop-rot { padding: 6px 10px 4px; font: 600 9px var(--rv-display), sans-serif; letter-spacing: .2em; text-transform: uppercase; color: #4f7086; }
+.rv-fp--f .rv-rf-opt {
+  flex: none; display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px;
+  border: 0; background: transparent; color: #b8d8e8; text-align: left; white-space: nowrap;
+  font: 600 12.5px var(--rv-body), sans-serif; cursor: pointer;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.rv-fp--f .rv-rf-opt:hover,
+.rv-fp--f .rv-rf-opt:focus-visible { outline: none; background: #0f2735; color: #eaf6ff; }
+.rv-fp--f .rv-rf-opt[aria-selected="true"] {
+  background: color-mix(in srgb, var(--jf-acento) 10%, transparent);
+  box-shadow: inset 2px 0 0 var(--jf-acento); color: #eaf6ff;
+}
+.rv-fp--f .rv-rf-opt-nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.rv-fp--f .rv-rf-opt-v { margin-left: auto; padding-left: 12px; font: 600 9.5px var(--font-mono), monospace; color: #7f95b3; }
+.rv-fp--f .rv-rf-opt[aria-selected="true"] .rv-rf-opt-v { color: var(--jf-acento); }
+.rv-fp--f .rv-rf-opt[data-lado="pj"] .rv-rf-opt-v { color: #45b8c9; }
+.rv-fp--f .rv-rf-opt[data-lado="pn"] .rv-rf-opt-v { color: #d15068; }
+
+/* Rosto redondo, anel na cor do lado (as mesmas do cartão de identidade). */
+.rv-fp--f .rv-rf-av {
+  --l: #45b8c9;
+  flex: none; width: 24px; height: 24px; border-radius: 50%; box-sizing: border-box; overflow: hidden;
+  display: grid; place-items: center;
+  border: 1.5px solid var(--l); background: color-mix(in srgb, var(--l) 14%, #070d17);
+  color: var(--l); font: 700 8px var(--font-mono), monospace;
+}
+.rv-fp--f .rv-rf-av[data-lado="pn"] { --l: #d15068; }
+.rv-fp--f .rv-rf-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ── Modo Atributo ── */
+.rv-fp--f .rv-rf-dados { display: flex; justify-content: center; align-items: center; min-height: 46px; margin: 22px 0 20px; }
+.rv-fp--f .rv-rf-dados div { justify-content: center; }
+.rv-fp--f .rv-rf-frase { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 20px; }
+.rv-fp--f .rv-rf-mais { font: 600 14px var(--rv-display), sans-serif; color: #4f7086; }
+.rv-fp--f .rv-rf-aviso { margin: 12px 0 0; text-align: center; font: 11.5px var(--rv-body), sans-serif; color: #4f7086; }
+.rv-fp--f .rv-rf-semficha { padding: 16px 8px 4px; text-align: center; }
+.rv-fp--f .rv-rf-semficha b { font: 700 10px var(--rv-display), sans-serif; letter-spacing: .16em; text-transform: uppercase; color: #7f95b3; }
+.rv-fp--f .rv-rf-semficha p { margin: 8px 0 0; font: 12px/1.5 var(--rv-body), sans-serif; color: #4f7086; }
+.rv-fp--f .rv-rf-faixa { margin-top: 14px; }
+
+/* ── Modo Livre ── */
+.rv-fp--f .rv-rf-paleta { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; margin: 14px 0 8px; }
+.rv-fp--f .rv-rf-face {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 8px 0 7px; border: 0; background: transparent; cursor: pointer;
+  transition: background 120ms ease-out;
+}
+.rv-fp--f .rv-rf-face:hover { background: #0f2735; }
+.rv-fp--f .rv-rf-face:not(.is-on):hover svg g { stroke: #7f95b3; }
+.rv-fp--f .rv-rf-face:focus-visible { outline: 1px solid var(--jf-acento); outline-offset: 1px; }
+.rv-fp--f .rv-rf-face-nome { font: 700 10px var(--font-mono), monospace; color: #7f95b3; }
+.rv-fp--f .rv-rf-face.is-on .rv-rf-face-nome { color: var(--jf-acento); }
+.rv-fp--f .rv-rf-face i {
+  position: absolute; top: 2px; right: 4px; min-width: 16px; height: 16px; padding: 0 3px; box-sizing: border-box;
+  display: grid; place-items: center; font: 700 9px var(--font-mono), monospace; font-style: normal;
+  color: #041018; background: var(--jf-acento);
+}
+.rv-fp--f .rv-rf-pool {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  min-height: 38px; padding-top: 10px; border-top: 1px solid #122a38;
+}
+.rv-fp--f .rv-rf-pool-itens { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.rv-fp--f .rv-rf-pool-dado { padding: 2px; border: 0; background: transparent; cursor: pointer; transition: background 120ms ease-out; }
+.rv-fp--f .rv-rf-pool-dado:hover:not(:disabled) { background: color-mix(in srgb, #ff5f74 14%, transparent); }
+.rv-fp--f .rv-rf-pool-dado:disabled { cursor: default; }
+.rv-fp--f .rv-rf-limpar {
+  flex: none; padding: 2px 6px; border: 0; background: transparent; cursor: pointer;
+  font: 9.5px var(--font-mono), monospace; letter-spacing: .12em; text-transform: uppercase; color: #4f7086;
+  transition: color 120ms ease-out;
+}
+.rv-fp--f .rv-rf-limpar:hover:not(:disabled) { color: #ff8a98; }
+.rv-fp--f .rv-rf-limpar:disabled { opacity: .45; cursor: default; }
+.rv-fp--f .rv-rf-vazio-pool { font: 9.5px var(--font-mono), monospace; letter-spacing: .1em; text-transform: uppercase; color: #4f7086; }
+.rv-fp--f .rv-rf-status { margin-top: 8px; }
+
+/* ── Ajustes e blocos ── */
+.rv-fp--f .rv-rf-ajustes { gap: 16px; }
+.rv-fp--f .rv-rf-num {
+  width: 40px; min-width: 0; padding: 0; border: 0; background: transparent; outline: none;
+  text-align: center; font: 700 15px var(--rv-display), sans-serif; color: #eaf6ff;
+}
+.rv-fp--f .rv-rf-num::placeholder { color: #4f7086; opacity: 1; }
+.rv-fp--f .rv-rf-num:focus { box-shadow: inset 0 -1px 0 var(--jf-acento); }
+.rv-fp--f .rv-rf-visib .jf-tile,
+.rv-fp--f .rv-rf-comb .jf-tile { height: 40px; }
+
+/* ── Botão de rolar: largura inteira, chanfro no wrapper ── */
+.rv-fp--f .rv-rolar-f {
+  margin-top: -4px;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+.rv-fp--f .rv-rolar-f .jf-prim { min-height: 50px; font-size: 13px; letter-spacing: .22em; }
+.rv-fp--f .rv-rolar-f .jf-prim.is-carga { color: #08111c; }
+.rv-fp--f .rv-rolar-f .jf-prim:focus-visible { outline: 1px solid #eaf6ff; outline-offset: -3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rv-fp--f .rv-dados-treme,
+  .rv-fp--f .rv-dados-rolando,
+  .rv-fp--f .rv-rf-pop { animation: none !important; }
+}

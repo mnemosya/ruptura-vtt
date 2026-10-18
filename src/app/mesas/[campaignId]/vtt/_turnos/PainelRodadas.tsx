@@ -1,56 +1,47 @@
 "use client";
 
 /**
- * Painel da ferramenta "Rodadas" — iniciar, administrar e encerrar o
- * combate da cena.
+ * Janela de COMBATE (ferramenta "Rodadas") — linha F.
  *
- * MESMA CASCA das ferramentas Terreno/Objetos/Medir (`.rv-fp`,
- * ancorado à barra de ferramentas, rolagem interna): é a linguagem já
- * estabelecida pra "painel de ferramenta", e inventar uma superfície
- * nova aqui faria a ferramenta parecer outra coisa.
+ * Dois estados, uma janela:
+ *   · PREPARO (sem trilha): quem entra, modo, e "Iniciar rodadas".
+ *   · ATIVO (com trilha): a rodada, a janela em resolução, e QUEM está
+ *     no combate — com a declaração de cada um e um jeito de achá-lo no
+ *     mapa.
  *
- * DIVISÃO DE RESPONSABILIDADE com `TrilhaFaccoes.tsx`:
+ * O que esta janela deliberadamente NÃO faz: destacar "quem está agindo
+ * agora". No Ruptura o que orienta a mesa é a rodada e a janela
+ * (Rápidos/Lentos); a ativação aberta já é da trilha (`TrilhaFaccoes`),
+ * que continua sendo onde se assume, conclui e avança janela/rodada.
+ * Repetir isso aqui criaria dois lugares dizendo a mesma coisa.
  *
- *   · Este painel é ADMINISTRAÇÃO — existe fora do combate (pra montar
- *     e começar) e é aberto sob demanda. Elenco, modo, participação.
- *   · A trilha é OPERAÇÃO — existe durante o combate, sempre visível,
- *     e é onde se declara janela, assume turno, conclui e avança
- *     janela/rodada.
- *
- * Por isso o painel NÃO repete os controles de avançar janela/rodada:
- * duplicá-los criaria dois lugares dizendo a mesma coisa, com a chance
- * real de discordarem na tela por um instante.
- *
- * Nada aqui decide regra de combate. O estado inicial vem de
- * `serializacao.estadoInicialTrilha`, as edições de elenco das
- * transições de administração do mesmo módulo, e toda pergunta sobre
- * elegibilidade continua sendo de `modelo.ts`.
+ * Nada aqui decide regra de combate. Declarar passa pelo `declarar` do
+ * modelo (via `onDeclarar`), as edições de elenco pelas transições de
+ * administração, e o travamento da declaração espelha o do modelo.
  */
 
-import { useMemo, useRef, useState } from "react";
-import { Ban, Eye, EyeOff, Loader2, SkipForward, Swords, UserMinus, UserPlus } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ChevronDown, Eye, EyeOff, Loader2, Swords, UserPlus } from "lucide-react";
 import { JanelaFerramenta } from "../_shell/JanelaFerramenta";
 import {
-  type EstadoTrilha, type Lado, type ModoCena, type Participante,
-  PISO_PA, ROTULO_JANELA_CURTO, ROTULO_LADO, TETO_PA,
+  type EstadoTrilha, type Janela, type Lado, type ModoCena, type Participante,
+  PISO_PA, ROTULO_JANELA_CURTO, ROTULO_LADO, TETO_PA, paRestante,
 } from "./modelo";
 import type { TokenApresentacao } from "../_dominio/tokenApresentacao";
 
 /**
- * Modos que a trilha realmente usa.
- *
- * `ModoCena` tem quatro valores, mas só dois fazem sentido como
- * ESCOLHA de início: "combate" e "emboscada" são os que o modelo
- * consome (`elegibilidade`/`ladoDaVez` só se ramificam em emboscada).
- * "tregua" suspende a contagem de turnos e "exploracao" é a ausência
- * de combate — nos dois casos, o certo é NÃO ter trilha aberta, então
- * oferecê-los como forma de iniciar rodadas seria oferecer um botão
- * que se contradiz.
+ * Modos que a trilha realmente usa. "tregua" suspende a contagem e
+ * "exploracao" é a ausência de combate — oferecê-los como forma de
+ * INICIAR rodadas seria um botão que se contradiz.
  */
 const MODOS_INICIAIS: { id: ModoCena; rotulo: string; dica: string }[] = [
   { id: "combate", rotulo: "Combate padrão", dica: "Rodada normal: as jogadas alternam entre os dois lados." },
   { id: "emboscada", rotulo: "Emboscada", dica: "Rodada surpresa: o lado que emboscou age inteiro, só com turnos rápidos." },
 ];
+
+/** Ciclo da declaração na linha: nenhuma → rápido → lento → nenhuma. */
+const CICLO: (Janela | null)[] = [null, "rapidos", "lentos"];
+const DECL_TXT: Record<Janela, string> = { rapidos: "Rápido", lentos: "Lento" };
 
 export interface PainelRodadasProps {
   ehNarrador: boolean;
@@ -71,27 +62,63 @@ export interface PainelRodadasProps {
   onEncerrarParticipacao: (id: string) => void;
   onAlternarOculta: () => void;
   onFechar: () => void;
+  /** Acha o token no mapa (seleciona e centraliza). Sem ele, a mira some. */
+  onLocalizar?: (tokenId: string) => void;
+  /**
+   * Declara a janela do participante; `null` tira a declaração. Sem
+   * ele, a declaração aparece só para leitura.
+   */
+  onDeclarar?: (participanteId: string, janela: Janela | null) => void;
+  /** Quem pode declarar por este participante. Padrão: só o narrador. */
+  podeComandar?: (participanteId: string) => boolean;
 }
 
+/** Handlers da frase de ajuda (`jf-desc`): mouse E teclado. */
+function ajudaCom(set: (t: string | null) => void) {
+  return (texto: string, aoSair: string | null = null) => ({
+    onMouseEnter: () => set(texto),
+    onMouseLeave: () => set(aoSair),
+    onFocus: () => set(texto),
+    onBlur: () => set(aoSair),
+  });
+}
+
+const Mira = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="6.5" /><path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+  </svg>
+);
+const Mais = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" />
+  </svg>
+);
+
+function Disco({ token, lado }: { token: TokenApresentacao | undefined; lado: Lado }) {
+  return (
+    <span className="jf-disco" data-lado={lado} aria-hidden="true">
+      {token?.retrato ? <img src={token.retrato} alt="" /> : (token?.sigla ?? "??")}
+    </span>
+  );
+}
 
 export function PainelRodadas(props: PainelRodadasProps) {
   return (
     <JanelaFerramenta
       id="rodadas"
-      indice="05"
+      largura="gestao"
       icone={<Swords size={16} />}
-      titulo={props.trilha ? "Combate ativo" : "Rodadas"}
-      modo={props.trilha
-        ? `Rodada ${props.trilha.rodada} · Janela ${ROTULO_JANELA_CURTO[props.trilha.janela]}`
-        : "Configuração · nenhum combate ativo"}
+      titulo="Combate"
+      modo={props.trilha ? "Ativo" : props.ehNarrador ? "Preparando" : "Sem combate"}
       rotulo="Ferramenta Rodadas"
       rotuloFechar="Fechar painel de Rodadas"
       aoFechar={props.onFechar}
-      className={props.trilha ? "rv-fp--rodadas rv-fp--rodadas-ativo" : "rv-fp--rodadas"}
+      className="rv-fp--rodadas"
+      atributos={{ "data-fase": props.trilha ? "ativo" : "preparo" }}
       testId="painel-rodadas"
     >
-      <div className="rv-fp-corpo">
-        {props.erro && <p className="rv-rodadas-erro" role="alert">{props.erro}</p>}
+      <div className="rv-fp-corpo jfc-corpo">
+        {props.erro && <p className="jfc-erro" role="alert">{props.erro}</p>}
         {props.trilha
           ? <Administracao {...props} trilha={props.trilha} />
           : <Configuracao {...props} />}
@@ -100,325 +127,373 @@ export function PainelRodadas(props: PainelRodadasProps) {
   );
 }
 
-/* ══════════════════ ANTES DE COMEÇAR ══════════════════ */
+/* ══════════════════ PREPARO ══════════════════ */
 
-function Configuracao({ ehNarrador, tokens, ocupado, onIniciar }: PainelRodadasProps) {
-  // Começa com TODO MUNDO marcado: montar um combate com o elenco
-  // inteiro da cena é o caso comum, e desmarcar dois é menos trabalho
-  // que marcar oito.
+function Configuracao({ ehNarrador, tokens, ocupado, onIniciar, onLocalizar }: PainelRodadasProps) {
+  // Começa com TODO MUNDO dentro: montar o combate com o elenco inteiro
+  // é o caso comum, e tirar dois é menos trabalho que pôr oito.
   const [escolhidos, setEscolhidos] = useState<Set<string>>(() => new Set(tokens.map((t) => t.id)));
   const [modo, setModo] = useState<ModoCena>("combate");
   const [ladoSurpresa, setLadoSurpresa] = useState<Lado | null>(null);
+  const [foco, setFoco] = useState<string | null>(null);
+  const ajuda = ajudaCom(setFoco);
 
-  const porLado = useMemo(() => agruparPorLado(tokens), [tokens]);
-  const contagem = {
-    pj: porLado.pj.filter((t) => escolhidos.has(t.id)).length,
-    pn: porLado.pn.filter((t) => escolhidos.has(t.id)).length,
-  };
-  const total = contagem.pj + contagem.pn;
+  const dentro = tokens.filter((t) => escolhidos.has(t.id));
+  const pj = dentro.filter((t) => t.lado === "pj");
+  const pn = dentro.filter((t) => t.lado !== "pj"); // neutro conta como narrador, como em `participanteDeToken`
+  const total = dentro.length;
 
   const alternar = (id: string) => setEscolhidos((s) => {
-    const proximo = new Set(s);
-    if (proximo.has(id)) proximo.delete(id); else proximo.add(id);
-    return proximo;
+    const n = new Set(s);
+    if (n.has(id)) n.delete(id); else n.add(id);
+    return n;
   });
 
-  const faltaLadoSurpresa = modo === "emboscada" && ladoSurpresa === null;
-  const impedimento = tokens.length === 0
-    ? "Esta cena ainda não tem tokens. Adicione personagens ao mapa para montar o combate."
-    : total === 0 ? "Escolha pelo menos um participante."
-    : faltaLadoSurpresa ? "Escolha qual lado surpreendeu."
-    : null;
-
   if (!ehNarrador) {
+    return <p className="jfc-msg">Não há rodadas em andamento nesta cena. Só o narrador inicia o combate.</p>;
+  }
+  if (tokens.length === 0) {
     return (
-      <p className="rv-rodadas-vazio">
-        Não há rodadas em andamento nesta cena. Só o narrador inicia o combate.
+      <p className="jfc-msg">
+        Esta cena ainda não tem nenhum token. Adicione personagens ao mapa (ferramenta de token, na barra
+        lateral) e volte aqui para montar o combate.
       </p>
     );
   }
 
+  const impedimento = total === 0 ? "Escolha pelo menos um participante."
+    : modo === "emboscada" && ladoSurpresa === null ? "Escolha qual lado surpreendeu."
+    : null;
+  const dicaModo = MODOS_INICIAIS.find((m) => m.id === modo)!.dica;
+
   return (
     <>
-      {tokens.length === 0 ? (
-        <p className="rv-rodadas-vazio">
-          Esta cena ainda não tem nenhum token. Adicione personagens ao mapa (ferramenta de token, na barra
-          lateral) e volte aqui para montar o combate.
-        </p>
-      ) : (
-        <>
-          {/* Readout do estudo: os três números que decidem se o combate
-              está montado direito, antes de qualquer lista. */}
-          <div className="rv-fp-placas">
-            <div className="rv-fp-placa">
-              <span className="rv-fp-placa-rot">Participantes</span>
-              <span className="rv-fp-placa-val" data-testid="rodadas-conta-total">{total}</span>
-            </div>
-            <div className="rv-fp-placa" data-acento="cy">
-              <span className="rv-fp-placa-rot">{ROTULO_LADO.pj}</span>
-              <span className="rv-fp-placa-val">{contagem.pj}</span>
-            </div>
-            <div className="rv-fp-placa" data-acento="dg">
-              <span className="rv-fp-placa-rot">{ROTULO_LADO.pn}</span>
-              <span className="rv-fp-placa-val">{contagem.pn}</span>
-            </div>
-          </div>
+      {/* Vitrine: os dois lados que vão se enfrentar. */}
+      <div className="jf-hero jfc-placar" data-testid="rodadas-placar">
+        <LadoPlacar lado="pj" n={pj.length} />
+        <span className="jfc-vs" aria-hidden="true">VS</span>
+        <LadoPlacar lado="pn" n={pn.length} dir />
+      </div>
 
-          <div className="rv-fp-grupo">
-            {/* Título curto: as três placas acima já dão a contagem, e
-                repeti-la aqui roubava a largura de "Todos/Nenhum". */}
-            <span className="rv-fp-rotulo" id="rv-rodadas-rot-part">
-              Participantes
-              <span className="rv-rodadas-massa">
-                <button type="button" className="rv-rodadas-massa-btn"
-                  onClick={() => setEscolhidos(new Set(tokens.map((t) => t.id)))}>Todos</button>
-                <button type="button" className="rv-rodadas-massa-btn"
-                  onClick={() => setEscolhidos(new Set())}>Nenhum</button>
-              </span>
-            </span>
-            {/* Lista PLANA, com o lado como etiqueta na própria linha —
-                o estudo não separa em dois blocos, e dois `fieldset`
-                empilhados gastavam altura repetindo um rótulo que cabe
-                na linha. */}
-            <div className="rv-rodadas-lista" role="group" aria-labelledby="rv-rodadas-rot-part">
-              {tokens.map((t) => (
-                <label key={t.id} className="rv-rodadas-item" data-lado={t.lado}>
-                  <input type="checkbox" checked={escolhidos.has(t.id)} onChange={() => alternar(t.id)} />
-                  <span className="rv-rodadas-sigla" data-vertente={t.vertente}>{t.sigla}</span>
-                  <span className="rv-rodadas-item-txt">
-                    <span className="rv-rodadas-nome">{t.nome}</span>
-                    <span className="rv-rodadas-item-sub">
-                      {t.lado === "pj" ? "Personagem jogador" : "Personagem do narrador"}
-                      {!t.visivel && " · oculto"}
-                    </span>
+      <div className="jf-grupo">
+        <span className="jf-rot">
+          <span id="jfc-rot-quem">Quem entra <span className="jfc-conta"><b data-testid="rodadas-conta-total">{total}</b> de {tokens.length}</span></span>
+          <span className="jfc-rot-acoes">
+            <button type="button" onClick={() => setEscolhidos(new Set(tokens.map((t) => t.id)))}>Todos</button>
+            <span aria-hidden="true">·</span>
+            <button type="button" onClick={() => setEscolhidos(new Set())}>Nenhum</button>
+          </span>
+        </span>
+        <div className="jf-lista" role="group" aria-labelledby="jfc-rot-quem">
+          {tokens.map((t) => {
+            const den = escolhidos.has(t.id);
+            const lado: Lado = t.lado === "pj" ? "pj" : "pn";
+            const texto = den ? `Tirar ${t.nome} do combate` : `Colocar ${t.nome} no combate`;
+            return (
+              // A linha inteira põe/tira (mouse); o losango é o controle
+              // de teclado e leitor de tela — botão dentro de botão não pode.
+              <div key={t.id} className={`jf-item jfc-part${den ? "" : " is-fora"}`} data-lado={lado}
+                data-testid={`rodadas-quem-${t.id}`} onClick={() => alternar(t.id)} {...ajuda(texto)}>
+                <button type="button" className="jfc-marca" role="checkbox" aria-checked={den} aria-label={texto}
+                  onClick={(e) => { e.stopPropagation(); alternar(t.id); }}><i /></button>
+                <Disco token={t} lado={lado} />
+                <span className="jf-item-txt">
+                  <span className="jf-item-nome">{t.nome}</span>
+                  {!t.visivel && <span className="jf-item-sub">oculto dos jogadores</span>}
+                </span>
+                <span className="jfc-ladov">{lado === "pj" ? "PJ" : "PN"}</span>
+                {onLocalizar && (
+                  <span className="jf-acts">
+                    <button type="button" className="jf-mini" aria-label={`Achar ${t.nome} no mapa`}
+                      data-testid={`rodadas-localizar-${t.id}`}
+                      onClick={(e) => { e.stopPropagation(); onLocalizar(t.id); }}
+                      {...ajuda(`Achar ${t.nome} no mapa`, texto)}><Mira /></button>
                   </span>
-                  <span className="rv-rodadas-item-lado" data-lado={t.lado}>{t.lado === "pj" ? "PJ" : "PN"}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="rv-fp-grupo">
-            <span className="rv-fp-rotulo" id="rv-rodadas-rot-modo">Modo</span>
-            <div className="rv-rodadas-modos" role="radiogroup" aria-labelledby="rv-rodadas-rot-modo">
-              {/* A dica vive FORA do `<button>`: o Chromium não pinta
-                  filho posicionado que ultrapasse a caixa de um botão,
-                  então dentro dele a dica ficava recortada. O invólucro
-                  é quem ancora. `aria-describedby` mantém a explicação
-                  ligada ao controle pra quem usa leitor de tela. */}
-              {MODOS_INICIAIS.map((m) => (
-                <div key={m.id} className="rv-rodadas-modo-caixa">
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={modo === m.id}
-                    aria-describedby={`rv-modo-dica-${m.id}`}
-                    className="rv-rodadas-modo"
-                    onClick={() => { setModo(m.id); if (m.id !== "emboscada") setLadoSurpresa(null); }}
-                  >
-                    <strong>{m.rotulo}</strong>
-                  </button>
-                  <span className="rv-rodadas-modo-dica" id={`rv-modo-dica-${m.id}`} role="tooltip">{m.dica}</span>
-                </div>
-              ))}
-            </div>
-
-            {modo === "emboscada" && (
-              <div className="rv-rodadas-surpresa" role="radiogroup" aria-label="Lado que surpreendeu">
-                <span className="rv-rodadas-rotulo">Quem emboscou</span>
-                {(["pj", "pn"] as Lado[]).map((lado) => (
-                  <button key={lado} type="button" role="radio" aria-checked={ladoSurpresa === lado}
-                    className="rv-rodadas-lado" data-lado={lado} onClick={() => setLadoSurpresa(lado)}>
-                    {ROTULO_LADO[lado]}
-                  </button>
-                ))}
+                )}
               </div>
-            )}
-          </div>
+            );
+          })}
+        </div>
+      </div>
 
-          {impedimento && <p className="rv-rodadas-aviso" role="status">{impedimento}</p>}
-
-          <footer className="rv-fp-rodape rv-rodadas-rodape">
-            {/* Compacto: o rodapé confirma o que vai começar, não repete
-                as placas. Por extenso ele não cabia ao lado do botão. */}
-            <p className="rv-rodadas-resumo">
-              <strong>{total}</strong> no combate · {contagem.pj} PJ · {contagem.pn} PN
-            </p>
-            <button
-              type="button"
-              className="rv-fp-primaria rv-rodadas-iniciar"
-              disabled={impedimento !== null || ocupado}
-              title={impedimento ?? undefined}
-              onClick={() => onIniciar({ tokenIds: [...escolhidos], modo, ladoSurpresa })}
-            >
-              {ocupado ? <><Loader2 size={13} className="rv-girando" /> Iniciando…</> : "Iniciar rodadas"}
+      <div className="jf-grupo">
+        <span className="jf-rot" id="jfc-rot-modo">Modo</span>
+        <div className="jf-tiles" role="radiogroup" aria-labelledby="jfc-rot-modo">
+          {MODOS_INICIAIS.map((m) => (
+            <button key={m.id} type="button" role="radio" aria-checked={modo === m.id} className="jf-tile"
+              data-testid={`rodadas-modo-${m.id}`}
+              onClick={() => { setModo(m.id); if (m.id !== "emboscada") setLadoSurpresa(null); }}
+              {...ajuda(m.dica)}>
+              {m.rotulo}
             </button>
-          </footer>
-        </>
-      )}
+          ))}
+        </div>
+        {modo === "emboscada" && (
+          <>
+            <span className="jf-rot jfc-rot-surpresa" id="jfc-rot-surpresa">Quem emboscou</span>
+            <div className="jf-tiles jfc-surpresa" role="radiogroup" aria-labelledby="jfc-rot-surpresa">
+              {(["pj", "pn"] as Lado[]).map((lado) => (
+                <button key={lado} type="button" role="radio" aria-checked={ladoSurpresa === lado}
+                  className="jf-tile" data-lado={lado} data-testid={`rodadas-surpresa-${lado}`}
+                  onClick={() => setLadoSurpresa(lado)}>
+                  <span className="jf-ponto" aria-hidden="true" />{ROTULO_LADO[lado]}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      <p className="jf-desc">{foco ?? dicaModo}</p>
+
+      <div className="jfc-prim-caixa">
+        <button type="button" className="jf-prim" data-testid="rodadas-iniciar"
+          disabled={impedimento !== null || ocupado}
+          onClick={() => onIniciar({ tokenIds: dentro.map((t) => t.id), modo, ladoSurpresa })}>
+          {ocupado ? <><Loader2 size={13} className="rv-girando" /> Iniciando…</> : "Iniciar rodadas"}
+        </button>
+      </div>
+      {impedimento && <p className="jf-nota" role="status" data-testid="rodadas-aviso">{impedimento}</p>}
     </>
   );
 }
 
-/* ══════════════════ COM COMBATE ABERTO ══════════════════ */
+function LadoPlacar({ lado, n, dir }: { lado: Lado; n: number; dir?: boolean }) {
+  // Fileira curta: passa de 8, vira "+N" — a vitrine é um placar, não a lista.
+  const MAX = 8;
+  return (
+    <div className={`jfc-lado${dir ? " jfc-lado--dir" : ""}`} data-lado={lado}>
+      <span className="jf-rot">{ROTULO_LADO[lado]}</span>
+      <b>{n}</b>
+      <span className="jfc-discos" aria-hidden="true">
+        {Array.from({ length: Math.min(n, MAX) }, (_, i) => <i key={i} />)}
+        {n > MAX && <small>+{n - MAX}</small>}
+      </span>
+    </div>
+  );
+}
+
+/* ══════════════════ COMBATE ATIVO ══════════════════ */
+
+type Filtro = Janela | "sem" | null;
 
 function Administracao({
   trilha, tokens, ehNarrador, oculta, ocupado,
   onEncerrar, onAdicionar, onRemover, onAlternarIncapaz, onEncerrarParticipacao, onAlternarOculta,
+  onLocalizar, onDeclarar, podeComandar,
 }: PainelRodadasProps & { trilha: EstadoTrilha }) {
   const [confirmando, setConfirmando] = useState<null | { tipo: "encerrar" } | { tipo: "remover"; id: string }>(null);
+  const [filtro, setFiltro] = useState<Filtro>(null);
+  const [aberto, setAberto] = useState<string | null>(null);
+  const [foraAberto, setForaAberto] = useState(false);
+  const [foco, setFoco] = useState<string | null>(null);
+  const ajuda = ajudaCom(setFoco);
 
+  const tokenPorId = useMemo(() => new Map(tokens.map((t) => [t.id, t])), [tokens]);
   const idsNaTrilha = new Set(trilha.participantes.map((p) => p.id));
   const forasteiros = tokens.filter((t) => !idsNaTrilha.has(t.id));
   const agindo = trilha.participantes.find((p) => p.id === trilha.agindoId) ?? null;
-  const tokenPorId = new Map(tokens.map((t) => [t.id, t]));
+  const rapidos = trilha.janela === "rapidos";
 
-  /**
-   * "Restante" = ainda ESTÁ NA RODADA: não passou a vez e não está
-   * incapaz. Deliberadamente NÃO é `elegiveisAgora`, que é a
-   * elegibilidade fina da janela (PA restante, teto, alternância):
-   * token sem ficha ligada tem 0 PA, então por aquela conta o combate
-   * nasceria com "0 restantes de cada lado" — um número que não
-   * descreve nada do que está na tela. Quem pode agir AGORA, com todas
-   * as regras de PA, é a trilha que diz, ao lado de cada personagem.
-   */
-  const naRodada = (p: Participante) => !p.encerrou && !p.incapaz;
-  const restantes = (lado: Lado) => trilha.participantes.filter((p) => p.lado === lado && naRodada(p)).length;
+  const conta = (d: Janela | null) => trilha.participantes.filter((p) => p.declaracao === d).length;
+  const FILTROS: { id: Exclude<Filtro, null>; nome: string; n: number; dica: string }[] = [
+    { id: "rapidos", nome: "Rápidos", n: conta("rapidos"), dica: "Mostrar só quem declarou rápidos" },
+    { id: "lentos", nome: "Lentos", n: conta("lentos"), dica: "Mostrar só quem declarou lentos" },
+    { id: "sem", nome: "Sem declaração", n: conta(null), dica: "Mostrar só quem não declarou" },
+  ];
+  const visiveis = trilha.participantes.filter((p) =>
+    filtro === null || (filtro === "sem" ? p.declaracao === null : p.declaracao === filtro));
+
+  const regra = (rapidos
+    ? `até ${TETO_PA.rapidos} PA · agem antes dos lentos`
+    : `${PISO_PA.lentos} PA ou mais · agem depois`)
+    + (trilha.modo === "emboscada" && trilha.ladoSurpresa ? ` · emboscada de ${trilha.ladoSurpresa === "pj" ? "PJ" : "PN"}` : "");
+
+  const remover = (p: Participante) => {
+    setAberto(null);
+    // Tirar quem está com o turno aberto derruba a ativação — isso
+    // precisa ser dito, não descoberto depois.
+    if (trilha.agindoId === p.id) setConfirmando({ tipo: "remover", id: p.id });
+    else onRemover(p.id);
+  };
 
   return (
     <>
-      {/* Readout: a rodada e o que resta de cada lado. */}
-      <div className="rv-fp-placas">
-        <div className="rv-fp-placa" data-acento="am">
-          <span className="rv-fp-placa-rot">Rodada</span>
-          <span className="rv-fp-placa-val" data-testid="rodadas-rodada">{trilha.rodada}</span>
+      {/* Vitrine: a rodada e a janela em resolução, na cor dela. */}
+      <div className="jf-hero jfc-hero" data-janela={trilha.janela} data-testid="rodadas-vitrine">
+        <div className="jfc-topo">
+          <div className="jfc-rod"><span className="jf-rot">Rodada</span><b data-testid="rodadas-rodada">{trilha.rodada}</b></div>
+          <div className="jfc-jan">
+            <span className="jf-rot">Em resolução</span>
+            <b data-testid="rodadas-janela">{ROTULO_JANELA_CURTO[trilha.janela]}</b>
+            <span className="jfc-regra">{regra}</span>
+          </div>
         </div>
-        <div className="rv-fp-placa" data-acento="cy">
-          <span className="rv-fp-placa-rot">PJ restantes</span>
-          <span className="rv-fp-placa-val">{restantes("pj")}</span>
-        </div>
-        <div className="rv-fp-placa" data-acento="dg">
-          <span className="rv-fp-placa-rot">PN restantes</span>
-          <span className="rv-fp-placa-val">{restantes("pn")}</span>
+        <div className="jfc-fases" aria-hidden="true">
+          <span className="jfc-fase" data-janela="rapidos" data-estado={rapidos ? "agora" : "feita"}>Rápidos</span>
+          <span className="jfc-fase" data-janela="lentos" data-estado={rapidos ? "" : "agora"}>Lentos</span>
         </div>
       </div>
 
-      {/* A janela aberta é a REGRA em vigor: o nome sozinho não diz o
-          que ela permite, e o custo é a única coisa que muda o que
-          pode ser declarado agora. Os dois juntos, numa nota só. */}
-      <div className="rv-rodadas-regra" data-janela={trilha.janela}>
-        <span className="rv-rodadas-regra-nome">Janela {ROTULO_JANELA_CURTO[trilha.janela]}</span>
-        <span className="rv-rodadas-regra-valor">
-          {trilha.janela === "rapidos"
-            ? `Custo de ação ≤ ${TETO_PA.rapidos} PA`
-            : `Custo de ação ≥ ${PISO_PA.lentos} PA`}
-          {trilha.modo === "emboscada" && trilha.ladoSurpresa
-            ? ` · emboscada de ${trilha.ladoSurpresa === "pj" ? "PJ" : "PN"}`
-            : ""}
-        </span>
+      {/* Abas SEM "Todos": clicar na ativa de novo volta a mostrar todos. */}
+      <div className="jf-abas jfc-filtros" role="group" aria-label="Filtrar por declaração">
+        {FILTROS.map((f) => {
+          const on = filtro === f.id;
+          return (
+            <button key={f.id} type="button" className="jf-aba jfc-filtro" data-filtro={f.id} aria-pressed={on}
+              data-testid={`rodadas-filtro-${f.id}`}
+              onClick={() => setFiltro(on ? null : f.id)}
+              {...ajuda(on ? "Clique de novo pra ver todos" : f.dica)}>
+              {f.nome}<b>{f.n}</b>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="rv-rodadas-secao">
-        <h3>Participantes</h3>
-        <ul className="rv-rodadas-lista">
-          {trilha.participantes.map((p) => {
-            const token = tokenPorId.get(p.id);
-            const sumido = !token;
-            // A linha diz o ESTADO só quando ele não é o esperado.
-            // "Pode agir"/"aguardando" é o caso comum e escrevê-lo em
-            // toda linha vira ruído — o que precisa saltar é o turno
-            // aberto, o incapaz, quem já passou e o token que sumiu.
-            const excecao = sumido ? "token removido do mapa"
-              : trilha.agindoId === p.id ? "em ação"
-              : p.incapaz ? p.incapaz.motivo
-              : p.encerrou ? "encerrou a participação"
-              : null;
-            return (
-              <li key={p.id} className="rv-rodadas-linha" data-lado={p.lado}
-                data-agindo={trilha.agindoId === p.id} data-fora={sumido || !naRodada(p)}>
-                <span className="rv-rodadas-sigla" data-lado={p.lado}>{token?.sigla ?? "??"}</span>
-                <span className="rv-rodadas-item-txt">
-                  <span className="rv-rodadas-nome">{p.nome}</span>
-                  {excecao && <span className="rv-rodadas-item-sub">{excecao}</span>}
+      <div className="jf-lista jfc-lista">
+        {visiveis.length === 0 && (
+          <div className="jfc-vazio-l">
+            {trilha.participantes.length === 0 ? "Ninguém no combate"
+              : filtro === "sem" ? "Todos declararam" : "Ninguém declarou essa janela"}
+          </div>
+        )}
+        {visiveis.map((p) => {
+          const token = tokenPorId.get(p.id);
+          const sumido = !token;
+          const restante = paRestante(p);
+          const sub = sumido ? "token removido do mapa"
+            : p.incapaz ? "incapaz"
+            : p.encerrou ? "passou a rodada"
+            : p.agiuEm.length > 0 ? (p.fragmentouEm ? "fragmentou" : "já agiu")
+            : null;
+          const podeLocalizar = !!onLocalizar && !sumido;
+          const textoLinha = `${p.nome} · ${restante} de ${p.paTotal} PA${podeLocalizar ? " · clique pra achar no mapa" : ""}`;
+
+          // Espelha o travamento de `declarar` no modelo: quem já resolveu
+          // a rodada (sem fragmentação pendente) tem declaração consumada.
+          const travada = (p.agiuEm.length > 0 && p.fragmentouEm === null) || !!p.incapaz || p.encerrou || trilha.agindoId === p.id;
+          const comanda = !!onDeclarar && (podeComandar ? podeComandar(p.id) : ehNarrador);
+          const podeDeclarar = comanda && !travada && !ocupado;
+          const prox = CICLO[(CICLO.indexOf(p.declaracao) + 1) % CICLO.length];
+          const dicaDecl = !comanda ? `Declaração de ${p.nome}: ${p.declaracao ? DECL_TXT[p.declaracao].toLowerCase() : "nenhuma"}`
+            : travada ? "Declaração travada: já resolveu a rodada"
+            : `Clique pra trocar: ${prox ? `declarar ${DECL_TXT[prox].toLowerCase()}` : "tirar a declaração"}`;
+          const estaAberto = aberto === p.id;
+
+          return (
+            <div key={p.id} className="jfc-bloco">
+              <div className={`jf-item jfc-part${sumido || p.incapaz || p.encerrou ? " is-fora" : ""}`}
+                data-lado={p.lado} data-testid={`rodadas-linha-${p.id}`}
+                onClick={() => { if (podeLocalizar) onLocalizar!(p.id); }}
+                {...ajuda(textoLinha)}>
+                <Disco token={token} lado={p.lado} />
+                <span className="jf-item-txt">
+                  <span className="jf-item-nome">{p.nome}</span>
+                  {sub && <span className="jf-item-sub">{sub}</span>}
                 </span>
-                {ehNarrador && (
-                  <span className="rv-rodadas-acoes">
-                    {/* Ícone, não palavra: são três ações por linha e
-                        por linha há muitas. O nome vive no `title` e no
-                        `aria-label` — nunca só na forma do desenho. */}
-                    <BotaoIcone className="rv-rodadas-mini" icone={<Ban size={13} />} pressionado={!!p.incapaz}
-                      desabilitado={ocupado}
-                      rotulo={p.incapaz ? `Reverter "incapaz" de ${p.nome}` : `Marcar ${p.nome} como incapaz de agir`}
-                      onClick={() => onAlternarIncapaz(p.id, !p.incapaz)} />
-                    <BotaoIcone className="rv-rodadas-mini" icone={<SkipForward size={13} />}
-                      desabilitado={ocupado || p.encerrou}
-                      rotulo={`Encerrar a participação de ${p.nome} nesta rodada`}
-                      onClick={() => onEncerrarParticipacao(p.id)} />
-                    <BotaoIcone className="rv-rodadas-mini rv-rodadas-mini--perigo" icone={<UserMinus size={13} />}
-                      desabilitado={ocupado}
-                      rotulo={`Remover ${p.nome} das rodadas`}
-                      onClick={() => {
-                        // Tirar quem está agindo derruba a ativação
-                        // aberta — isso precisa ser dito, não
-                        // descoberto depois.
-                        if (trilha.agindoId === p.id) setConfirmando({ tipo: "remover", id: p.id });
-                        else onRemover(p.id);
-                      }} />
-                  </span>
-                )}
-                <span className="rv-rodadas-item-lado" data-lado={p.lado}>{p.lado === "pj" ? "PJ" : "PN"}</span>
-              </li>
-            );
-          })}
-        </ul>
+                <button type="button" className="jfc-decl" data-janela={p.declaracao ?? "nenhuma"}
+                  data-testid={`rodadas-declarar-${p.id}`}
+                  disabled={!podeDeclarar}
+                  aria-label={`Declaração de ${p.nome}: ${p.declaracao ? DECL_TXT[p.declaracao] : "nenhuma"}${podeDeclarar ? ". Trocar" : ""}`}
+                  onClick={(e) => { e.stopPropagation(); if (podeDeclarar) onDeclarar!(p.id, prox); }}
+                  {...ajuda(dicaDecl, textoLinha)}>
+                  <span>{p.declaracao ? DECL_TXT[p.declaracao] : podeDeclarar ? "Declarar" : ""}</span>
+                </button>
+                <PaLosangos total={p.paTotal} restante={restante} />
+                <span className="jf-acts">
+                  {onLocalizar && (
+                    <button type="button" className="jf-mini" aria-label={`Achar ${p.nome} no mapa`} disabled={sumido}
+                      data-testid={`rodadas-localizar-${p.id}`}
+                      onClick={(e) => { e.stopPropagation(); onLocalizar(p.id); }}
+                      {...ajuda(`Achar ${p.nome} no mapa`, textoLinha)}><Mira /></button>
+                  )}
+                  {ehNarrador && (
+                    <button type="button" className="jf-mini" aria-label={`Mais ações de ${p.nome}`} aria-expanded={estaAberto}
+                      aria-controls={`jfc-extra-${p.id}`} data-testid={`rodadas-mais-${p.id}`}
+                      onClick={(e) => { e.stopPropagation(); setAberto(estaAberto ? null : p.id); }}
+                      {...ajuda("Ações do narrador: incapaz, passar a rodada, remover", textoLinha)}><Mais /></button>
+                  )}
+                </span>
+              </div>
+              {ehNarrador && estaAberto && (
+                <div className="jfc-extra" id={`jfc-extra-${p.id}`} role="group" aria-label={`Ações de ${p.nome}`}>
+                  <button type="button" aria-pressed={!!p.incapaz} disabled={ocupado} data-testid={`rodadas-incapaz-${p.id}`}
+                    aria-label={p.incapaz ? `Reverter "incapaz" de ${p.nome}` : `Marcar ${p.nome} como incapaz de agir`}
+                    onClick={() => { setAberto(null); onAlternarIncapaz(p.id, !p.incapaz); }}>
+                    {p.incapaz ? "Não está incapaz" : "Incapaz"}
+                  </button>
+                  <button type="button" disabled={ocupado || p.encerrou} data-testid={`rodadas-passar-${p.id}`}
+                    aria-label={`Encerrar a participação de ${p.nome} nesta rodada`}
+                    onClick={() => { setAberto(null); onEncerrarParticipacao(p.id); }}>
+                    {p.encerrou ? "Já passou a rodada" : "Passar a rodada"}
+                  </button>
+                  <button type="button" className="is-perigo" disabled={ocupado} data-testid={`rodadas-remover-${p.id}`}
+                    aria-label={`Remover ${p.nome} das rodadas`} onClick={() => remover(p)}>
+                    Remover
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {ehNarrador && forasteiros.length > 0 && (
-        <div className="rv-rodadas-secao">
-          <h3>
-            Fora da trilha
-            <span className="rv-rodadas-massa">
-              <button type="button" className="rv-rodadas-massa-btn" disabled={ocupado}
+        <div className="jfc-fora">
+          <button type="button" className="jf-sec-cab" aria-expanded={foraAberto} aria-controls="jfc-fora-corpo"
+            onClick={() => setForaAberto((v) => !v)}>
+            <span className="jf-l">Fora do combate</span>
+            <span className="jf-sec-res">{forasteiros.length}</span>
+            <ChevronDown size={14} aria-hidden="true" />
+          </button>
+          {foraAberto && (
+            <div className="jf-sec-corpo" id="jfc-fora-corpo">
+              <div className="jf-lista">
+                {forasteiros.map((t) => {
+                  const lado: Lado = t.lado === "pj" ? "pj" : "pn";
+                  return (
+                    <div key={t.id} className="jf-item jfc-part" data-lado={lado}
+                      onClick={() => onLocalizar?.(t.id)}
+                      {...ajuda(onLocalizar ? `${t.nome} · clique pra achar no mapa` : t.nome)}>
+                      <Disco token={t} lado={lado} />
+                      <span className="jf-item-txt">
+                        <span className="jf-item-nome">{t.nome}</span>
+                        {!t.visivel && <span className="jf-item-sub">oculto dos jogadores</span>}
+                      </span>
+                      <span className="jfc-ladov">{lado === "pj" ? "PJ" : "PN"}</span>
+                      <span className="jf-acts">
+                        <button type="button" className="jf-mini" aria-label={`Adicionar ${t.nome} às rodadas`} disabled={ocupado}
+                          data-testid={`rodadas-adicionar-${t.id}`}
+                          onClick={(e) => { e.stopPropagation(); onAdicionar([t.id]); }}><UserPlus size={14} /></button>
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <button type="button" className="jf-quieto jfc-add-todos" disabled={ocupado}
                 onClick={() => onAdicionar(forasteiros.map((t) => t.id))}>Adicionar todos</button>
-            </span>
-          </h3>
-          <ul className="rv-rodadas-lista">
-            {forasteiros.map((t) => {
-              const lado: Lado = t.lado === "pj" ? "pj" : "pn";
-              return (
-                <li key={t.id} className="rv-rodadas-linha" data-lado={lado} data-fora="true">
-                  <span className="rv-rodadas-sigla" data-lado={lado}>{t.sigla}</span>
-                  <span className="rv-rodadas-item-txt"><span className="rv-rodadas-nome">{t.nome}</span></span>
-                  <span className="rv-rodadas-acoes">
-                    <BotaoIcone className="rv-rodadas-mini" icone={<UserPlus size={13} />} desabilitado={ocupado}
-                      rotulo={`Adicionar ${t.nome} às rodadas`}
-                      onClick={() => onAdicionar([t.id])} />
-                  </span>
-                  <span className="rv-rodadas-item-lado" data-lado={lado}>{lado === "pj" ? "PJ" : "PN"}</span>
-                </li>
-              );
-            })}
-          </ul>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Rodapé: encerrar à esquerda, deliberadamente QUIETO — é a ação
-          que atinge a mesa inteira, e ela não deve atrair o clique. À
-          direita, ocultar a trilha, que é local e só afeta esta tela. */}
-      <footer className="rv-fp-rodape rv-rodadas-rodape rv-rodadas-rodape--ativo">
+      <p className="jf-desc">{foco ?? (rapidos ? "Quem não declarou ainda pode agir nos rápidos" : "Rápidos resolvidos · agora agem os lentos")}</p>
+
+      {/* Rodapé: encerrar QUIETO à esquerda (atinge a mesa inteira, não
+          deve atrair o clique); à direita, ocultar a trilha só pra mim. */}
+      <footer className="jfc-rodape">
         {ehNarrador ? (
-          <button type="button" className="rv-rodadas-encerrar" disabled={ocupado}
+          <button type="button" className="jf-quieto is-perigo" disabled={ocupado} data-testid="rodadas-encerrar"
             onClick={() => setConfirmando({ tipo: "encerrar" })}>
             Encerrar combate
           </button>
-        ) : <span className="rv-rodadas-encerrar-vazio" />}
-        {/* Fora do grupo `.rv-rodadas-mini`: aquilo é ação de
-            ADMINISTRAÇÃO sobre um participante (só narrador). Ocultar
-            é preferência de tela, de qualquer pessoa da mesa. */}
-        <BotaoIcone className="rv-rodadas-olho" pressionado={oculta}
-          icone={oculta ? <EyeOff size={13} /> : <Eye size={13} />}
-          rotulo={oculta ? "Mostrar a trilha para mim" : "Ocultar a trilha só para mim"}
-          onClick={onAlternarOculta} />
+        ) : <span />}
+        <button type="button" className="jf-mini" aria-pressed={oculta} data-testid="rodadas-olho"
+          aria-label={oculta ? "Mostrar a trilha para mim" : "Ocultar a trilha só para mim"}
+          onClick={onAlternarOculta}
+          {...ajuda(oculta ? "Mostrar a trilha pra você" : "Ocultar a trilha só pra você — o combate segue pra mesa")}>
+          {oculta ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
       </footer>
 
       {confirmando?.tipo === "encerrar" && (
@@ -458,67 +533,18 @@ function Administracao({
 }
 
 /**
- * Botão de ÍCONE com dica.
- *
- * Sem rótulo escrito, o nome da ação tem que estar a um hover (ou a um
- * foco de teclado) de distância — e o `title` nativo não serve: demora
- * ~1,5s, ignora o teclado e não segue o desenho da janela.
- *
- * A dica é `position: fixed` com coordenadas medidas no próprio botão
- * porque o corpo da janela ROLA: qualquer caixa absoluta que passasse
- * da borda seria recortada pelo `overflow-y` do corpo. Acima do botão
- * por padrão, e abaixo quando não há espaço em cima.
- *
- * `aria-label` continua sendo a fonte pra leitor de tela — a dica é
- * `aria-hidden`, senão o nome seria anunciado duas vezes.
+ * PA restantes em losangos (acesos = o que sobra). Token sem ficha tem
+ * 0 PA — aí um traço, não uma fileira vazia que pareceria "gastou tudo".
+ * Acima de 6, número: losangos demais viram ruído.
  */
-function BotaoIcone({
-  rotulo, icone, className, pressionado, desabilitado, onClick,
-}: {
-  rotulo: string; icone: React.ReactNode; className: string;
-  pressionado?: boolean; desabilitado?: boolean; onClick: () => void;
-}) {
-  const [dica, setDica] = useState<{ x: number; y: number; acima: boolean } | null>(null);
-  const ref = useRef<HTMLButtonElement>(null);
-
-  const mostrar = () => {
-    const r = ref.current?.getBoundingClientRect();
-    if (!r) return;
-    const acima = r.top > 44;
-    setDica({ x: r.left + r.width / 2, y: acima ? r.top - 6 : r.bottom + 6, acima });
-  };
-
+function PaLosangos({ total, restante }: { total: number; restante: number }) {
+  const rotulo = `${restante} de ${total} PA restantes`;
+  if (total <= 0) return <span className="jfc-pa is-vazio" role="img" aria-label="Sem PA na ficha">—</span>;
+  if (total > 6) return <span className="jfc-pa is-num" role="img" aria-label={rotulo}>{restante}/{total}</span>;
   return (
-    <>
-      <button
-        ref={ref}
-        type="button"
-        className={className}
-        aria-label={rotulo}
-        aria-pressed={pressionado}
-        disabled={desabilitado}
-        onPointerEnter={mostrar}
-        onFocus={mostrar}
-        onPointerLeave={() => setDica(null)}
-        onBlur={() => setDica(null)}
-        onClick={() => { setDica(null); onClick(); }}
-      >
-        {icone}
-      </button>
-      {dica && (
-        <span
-          className="rv-rodadas-dica"
-          role="tooltip"
-          aria-hidden="true"
-          style={{
-            left: dica.x, top: dica.y,
-            transform: `translate(-50%, ${dica.acima ? "-100%" : "0"})`,
-          }}
-        >
-          {rotulo}
-        </span>
-      )}
-    </>
+    <span className="jfc-pa" role="img" aria-label={rotulo}>
+      {Array.from({ length: total }, (_, i) => <i key={i} className={i < restante ? "is-on" : undefined} />)}
+    </span>
   );
 }
 
@@ -551,12 +577,4 @@ function Confirmacao({
       </div>
     </div>
   );
-}
-
-/** Token "neutro" conta como lado do narrador — a mesma tradução que `participanteDeToken` faz. */
-function agruparPorLado(tokens: readonly TokenApresentacao[]): Record<Lado, TokenApresentacao[]> {
-  return {
-    pj: tokens.filter((t) => t.lado === "pj"),
-    pn: tokens.filter((t) => t.lado !== "pj"),
-  };
 }

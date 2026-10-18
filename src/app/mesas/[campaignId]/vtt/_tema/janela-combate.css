@@ -1,0 +1,144 @@
+/* Linha F — CSS próprio desta janela. As peças compartilhadas estão em `janelas-f.css`.
+
+   Janela de COMBATE (ferramenta Rodadas). Prefixo `jfc-`. As cores das
+   janelas (Rápidos ciano, Lentos âmbar) e dos lados (PJ/PN) moram aqui
+   como variáveis e são escolhidas por `data-janela`/`data-lado` — o TSX
+   não carrega cor nenhuma. */
+
+.rv-fp--rodadas {
+  --jfc-rapidos: #00d4ff;
+  --jfc-lentos: #f5a200;
+  --jfc-pj: #45b8c9;
+  --jfc-pn: #e0455f;
+}
+.rv-fp--rodadas [data-janela="rapidos"] { --jfc-w: var(--jfc-rapidos); }
+.rv-fp--rodadas [data-janela="lentos"] { --jfc-w: var(--jfc-lentos); }
+.rv-fp--rodadas [data-lado="pj"] { --jf-l: var(--jfc-pj); }
+.rv-fp--rodadas [data-lado="pn"] { --jf-l: var(--jfc-pn); }
+
+.rv-fp--rodadas .jfc-corpo { gap: 24px; }
+.rv-fp--rodadas button:focus-visible { outline: 1px solid var(--jf-acento); outline-offset: 2px; }
+.jfc-erro { margin: 0; font: 12px var(--rv-body), sans-serif; color: #ff8a98; }
+.jfc-msg { margin: 0; font: 12px/1.5 var(--rv-body), sans-serif; color: #7f95b3; }
+
+/* ── Vitrine do combate: rodada | janela em resolução ──────────────── */
+.jfc-hero { display: flex; flex-direction: column; gap: 14px; padding: 16px 18px 14px; }
+.jfc-hero::before {
+  background:
+    radial-gradient(ellipse at 75% 30%, color-mix(in srgb, var(--jfc-w) 14%, transparent), transparent 60%),
+    var(--fj-fundo-1, #05101a);
+  transition: background 160ms ease-out;
+}
+.jfc-topo { display: flex; align-items: center; }
+.jfc-rod { display: flex; flex-direction: column; gap: 10px; padding-right: 20px; margin-right: 20px; border-right: 1px solid #122a38; }
+.jfc-rod b { font: 800 42px/.8 var(--rv-display), sans-serif; color: #eaf6ff; }
+.jfc-jan { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.jfc-jan b {
+  font: 800 24px/.85 var(--rv-display), sans-serif; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--jfc-w); text-shadow: 0 0 16px color-mix(in srgb, var(--jfc-w) 45%, transparent);
+}
+.jfc-regra { font: 9.5px var(--font-mono), monospace; letter-spacing: .04em; color: #b8d8e8; }
+.jfc-fases { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+.jfc-fase {
+  display: flex; flex-direction: column; gap: 6px;
+  font: 600 8.5px var(--font-mono), monospace; letter-spacing: .1em; text-transform: uppercase; color: #4f7086;
+}
+.jfc-fase::before { content: ""; height: 3px; background: #16313f; transition: background 160ms ease-out; }
+.jfc-fase[data-estado="agora"] { color: var(--jfc-w); }
+.jfc-fase[data-estado="agora"]::before { background: var(--jfc-w); box-shadow: 0 0 8px var(--jfc-w); }
+.jfc-fase[data-estado="feita"]::before { background: color-mix(in srgb, var(--jfc-w) 35%, #16313f); }
+
+/* ── Filtros: abas de texto em 3 colunas, sem "Todos" ──────────────── */
+.jfc-filtros { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: -2px; }
+.jfc-filtro { justify-content: flex-start; font-size: 10px; letter-spacing: .1em; }
+.jfc-filtro[data-filtro="rapidos"] { --jf-t: var(--jfc-rapidos); }
+.jfc-filtro[data-filtro="lentos"] { --jf-t: var(--jfc-lentos); }
+.jfc-filtro[data-filtro="sem"] { --jf-t: #7f95b3; }
+.jfc-filtro::before { content: ""; flex: none; width: 5px; height: 5px; transform: rotate(45deg); background: var(--jf-t); opacity: .7; }
+.jfc-filtro[aria-pressed="true"]::before { opacity: 1; box-shadow: 0 0 6px var(--jf-t); }
+.jfc-filtro b { font: 600 9.5px var(--font-mono), monospace; color: #4f7086; transition: color 120ms ease-out; }
+.jfc-filtro[aria-pressed="true"] b { color: var(--jf-t); }
+
+/* ── Lista ─────────────────────────────────────────────────────────── */
+.jfc-lista { margin-top: -8px; }
+.jfc-part { gap: 18px; cursor: pointer; }
+.jfc-vazio-l {
+  height: 48px; display: grid; place-items: center; border-bottom: 1px solid #0e2230;
+  font: 9.5px var(--font-mono), monospace; letter-spacing: .1em; text-transform: uppercase; color: #2f4f62;
+}
+
+/* Declaração: coluna própria, alinhada à esquerda. */
+.jfc-decl {
+  flex: none; width: 88px; height: 26px; margin-left: 6px; padding: 0 6px;
+  display: flex; align-items: center; justify-content: flex-start; gap: 7px;
+  border: 0; background: transparent; color: var(--jfc-w); cursor: pointer;
+  font: 700 9.5px var(--font-mono), monospace; letter-spacing: .1em; text-transform: uppercase;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.jfc-decl::before {
+  content: ""; flex: none; width: 6px; height: 6px; transform: rotate(45deg);
+  background: var(--jfc-w); box-shadow: 0 0 6px color-mix(in srgb, var(--jfc-w) 70%, transparent);
+}
+.jfc-decl:hover:not(:disabled) { background: #163447; }
+.jfc-decl:disabled { cursor: default; }
+.jfc-decl[data-janela="nenhuma"] { color: #4f7086; }
+.jfc-decl[data-janela="nenhuma"]::before { background: transparent; box-shadow: inset 0 0 0 1px #2f4f62; }
+.jfc-decl[data-janela="nenhuma"] span { opacity: 0; transition: opacity 120ms ease-out; }
+.jfc-part:hover .jfc-decl[data-janela="nenhuma"] span,
+.jfc-decl[data-janela="nenhuma"]:focus-visible span { opacity: 1; }
+.jfc-decl[data-janela="nenhuma"]:hover:not(:disabled) { color: #eaf6ff; }
+
+/* PA restantes. */
+.jfc-pa { flex: none; min-width: 30px; display: flex; justify-content: flex-end; gap: 3px; }
+.jfc-pa i { width: 5px; height: 5px; transform: rotate(45deg); background: #16313f; }
+.jfc-pa i.is-on { background: #b8d8e8; }
+.jfc-pa.is-vazio, .jfc-pa.is-num { font: 9.5px var(--font-mono), monospace; color: #4f7086; }
+.jfc-pa.is-num { color: #b8d8e8; }
+
+/* Ações do narrador ("⋯"). */
+.jfc-extra { display: flex; gap: 4px; padding: 6px 0 8px 50px; border-bottom: 1px solid #0e2230; }
+.jfc-extra button {
+  height: 28px; padding: 0 10px; border: 0; background: rgba(17, 42, 57, .6); color: #b8d8e8; cursor: pointer;
+  font: 600 9.5px var(--font-mono), monospace; letter-spacing: .08em; text-transform: uppercase;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.jfc-extra button:hover:not(:disabled) { background: #163447; color: #eaf6ff; }
+.jfc-extra button[aria-pressed="true"] { color: var(--jf-acento); }
+.jfc-extra button.is-perigo:hover:not(:disabled) { background: color-mix(in srgb, #ff5f74 16%, #05101a); color: #ff8a98; }
+.jfc-extra button:disabled { opacity: .4; cursor: default; }
+
+.jfc-fora { display: flex; flex-direction: column; margin-top: -8px; }
+.jfc-add-todos { align-self: flex-end; margin: 4px -10px 0 0; }
+
+.jfc-rodape { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid #122a38; }
+.jfc-rodape .jf-quieto:disabled { opacity: .4; cursor: default; }
+
+/* ── Preparo ───────────────────────────────────────────────────────── */
+.jfc-placar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 18px 20px 16px; }
+.jfc-lado { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.jfc-lado--dir { align-items: flex-end; text-align: right; }
+.jfc-lado b { font: 800 40px/.8 var(--rv-display), sans-serif; color: var(--jf-l); text-shadow: 0 0 18px color-mix(in srgb, var(--jf-l) 40%, transparent); }
+.jfc-discos { display: flex; align-items: center; gap: 4px; min-height: 16px; }
+.jfc-discos i { width: 16px; height: 16px; border-radius: 50%; box-sizing: border-box; border: 1.5px solid var(--jf-l); background: color-mix(in srgb, var(--jf-l) 14%, #070d17); }
+.jfc-discos small { font: 9.5px var(--font-mono), monospace; color: #7f95b3; }
+.jfc-vs { padding: 0 18px; font: 800 12px var(--rv-display), sans-serif; letter-spacing: .2em; color: #2f4f62; }
+
+.jfc-conta { margin-left: 6px; font: 9.5px var(--font-mono), monospace; letter-spacing: .08em; color: #4f7086; }
+.jfc-conta b { color: #b8d8e8; font-weight: 600; }
+.jfc-rot-acoes { display: flex; align-items: center; gap: 2px; color: #2f4f62; }
+.jfc-rot-acoes button {
+  padding: 2px 6px; border: 0; background: transparent; color: #4f7086; cursor: pointer;
+  font: 600 9.5px var(--rv-display), sans-serif; letter-spacing: .2em; text-transform: uppercase;
+  transition: color 120ms ease-out, background 120ms ease-out;
+}
+.jfc-rot-acoes button:hover { color: #eaf6ff; background: #112a39; }
+
+.jfc-marca { flex: none; width: 18px; height: 18px; padding: 0; border: 0; background: transparent; display: grid; place-items: center; cursor: pointer; }
+.jfc-marca i { width: 10px; height: 10px; transform: rotate(45deg); box-shadow: inset 0 0 0 1px #2f4f62; transition: background 120ms ease-out, box-shadow 120ms ease-out; }
+.jfc-marca[aria-checked="true"] i { background: var(--jf-acento); box-shadow: 0 0 8px color-mix(in srgb, var(--jf-acento) 60%, transparent); }
+.jfc-ladov { flex: none; width: 26px; text-align: center; font: 700 9.5px var(--font-mono), monospace; color: var(--jf-l); }
+
+.jfc-rot-surpresa { margin-top: 8px; }
+.jfc-surpresa .jf-tile { --jf-t: var(--jf-l); }
+
+.jfc-prim-caixa { display: flex; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); }

@@ -308,6 +308,18 @@ export function declarar(estado: EstadoTrilha, id: string, janela: Janela): Esta
   };
 }
 
+/** Desfaz a declaração (volta a "ainda não declarou"), com a mesma trava de `declarar`. */
+export function retirarDeclaracao(estado: EstadoTrilha, id: string): EstadoTrilha {
+  return {
+    ...estado,
+    participantes: estado.participantes.map((p) => {
+      if (p.id !== id) return p;
+      if (p.agiuEm.length > 0 && p.fragmentouEm === null) return p;
+      return { ...p, declaracao: null };
+    }),
+  };
+}
+
 /** Participantes que declararam determinada janela. */
 export function declaradosEm(estado: EstadoTrilha, janela: Janela): Participante[] {
   return estado.participantes.filter((p) => p.declaracao === janela);

@@ -714,7 +714,7 @@ export function reduzirMovimentoAtivo(): boolean {
 
 export const VISIBILIDADES: { v: TableLogVisibility; label: string; dica: string }[] = [
   { v: "public", label: "Mesa", dica: "todo mundo vê" },
-  { v: "private", label: "Privada", dica: "só você e o narrador" },
+  { v: "private", label: "Privada", dica: "só você" },
   { v: "gm", label: "Narrador", dica: "só o narrador" },
 ];
 
@@ -921,8 +921,17 @@ export function CampoCD({ value, onChange }: { value: string; onChange: (v: stri
  * estudo) é o que deixa quem chama fazer o POOL de dados tremer junto
  * — ver `TestPool`/`FreePool`.
  */
-export function RollButton({ label, solid = true, disabled = false, onRoll, onChargeChange }: {
+export function RollButton({ label, solid = true, disabled = false, onRoll, onChargeChange, variante = "classica" }: {
   label: string; solid?: boolean; disabled?: boolean; onRoll: (forca: number) => void; onChargeChange?: (c: number) => void;
+  /**
+   * "f" = pele da linha F (janela Rolar Dados do VTT): `jf-prim` em
+   * largura inteira, chanfro no wrapper (`.rv-rolar-f`, em
+   * `janela-dados.css`). SÓ a pele muda — carga, anéis, tremor,
+   * teclado e disparo são exatamente os mesmos, porque o Console e o
+   * card de ataque continuam no visual clássico e uma segunda cópia
+   * deste botão divergiria no primeiro ajuste de comportamento.
+   */
+  variante?: "classica" | "f";
 }) {
   const [carga, setCarga] = useState(0);
   const [carregando, setCarregando] = useState(false);
@@ -1074,8 +1083,35 @@ export function RollButton({ label, solid = true, disabled = false, onRoll, onCh
         ? { color: "#08111c", background: sobre ? "#cfeff4" : fundoOcioso, border: `1px solid ${sobre ? "#cfeff4" : ACCENTS.cyan.hex}` }
         : { color: ACCENTS.cyan.hex, background: fundoOcioso, border: `1px solid ${ACCENTS.cyan.hex}88` };
   const rotulo = carregando ? "Solte para lançar!" : label;
+  const ehF = variante === "f";
+  // Pele F: o idle/hover/desabilitado vêm da folha (`jf-prim`); inline
+  // só o que é dinâmico — a cor e o brilho da carga.
+  const estiloBotao: CSSProperties = ehF
+    ? {
+        position: "relative", overflow: "hidden", width: "100%",
+        transform: batendo && !noMaximo ? "scale(1.032)" : "scale(1)",
+        transition: batendo ? "none" : "transform .09s ease-out, color .12s, background .15s, filter .12s",
+        boxShadow: brilho > 0 ? `0 0 ${brilho}px ${corCarga}55, 0 0 ${brilho * 2}px ${corCarga}18` : undefined,
+        touchAction: "none", userSelect: "none",
+        ...(carregando && !disabled ? { background: corCarga, color: "#08111c" } : null),
+      }
+    : {
+        position: "relative", overflow: "hidden",
+        display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: 8,
+        borderRadius: 0, padding: "10px 0", cursor: disabled ? "not-allowed" : "pointer",
+        fontFamily: DISPLAY, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.22em",
+        transform: batendo && !noMaximo ? "scale(1.032)" : "scale(1)",
+        transition: batendo ? "none" : "transform .09s ease-out, color .12s, background .15s, border-color .12s",
+        boxShadow: brilho > 0 ? `0 0 ${brilho}px ${corCarga}55, 0 0 ${brilho * 2}px ${corCarga}18` : undefined,
+        touchAction: "none", userSelect: "none", ...skin,
+        // Chanfro maior que o padrão dos controles (7px): é o botão principal.
+        ["--rv-notch" as string]: "12px",
+      };
+  const classeBotao = ehF
+    ? `jf-prim${carregando ? " is-carga" : ""}${noMaximo ? " rup-charge-shake" : ""}`
+    : noMaximo ? "rv-botao-rolar rup-charge-shake" : "rv-botao-rolar";
   return (
-    <div style={{ position: "relative" }}>
+    <div className={ehF ? "rv-rolar-f" : undefined} style={{ position: "relative" }}>
       {/* flash ao soltar */}
       {estourando && (
         <div className="rup-burst-flash" aria-hidden="true" style={{ position: "absolute", inset: 0, borderRadius: 0, background: corDaCarga(cargaRef.current), zIndex: 20, pointerEvents: "none" }} />
@@ -1104,19 +1140,8 @@ export function RollButton({ label, solid = true, disabled = false, onRoll, onCh
         onPointerDown={aoPressionar} onPointerUp={aoSoltarPonteiro}
         onPointerCancel={aoCancelarPonteiro} onLostPointerCapture={aoCancelarPonteiro}
         onKeyDown={aoTeclarBaixo} onKeyUp={aoTeclarCima}
-        className={noMaximo ? "rv-botao-rolar rup-charge-shake" : "rv-botao-rolar"}
-        style={{
-          position: "relative", overflow: "hidden",
-          display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: 8,
-          borderRadius: 0, padding: "10px 0", cursor: disabled ? "not-allowed" : "pointer",
-          fontFamily: DISPLAY, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.22em",
-          transform: batendo && !noMaximo ? "scale(1.032)" : "scale(1)",
-          transition: batendo ? "none" : "transform .09s ease-out, color .12s, background .15s, border-color .12s",
-          boxShadow: brilho > 0 ? `0 0 ${brilho}px ${corCarga}55, 0 0 ${brilho * 2}px ${corCarga}18` : undefined,
-          touchAction: "none", userSelect: "none", ...skin,
-          // Chanfro maior que o padrão dos controles (7px): é o botão principal.
-          ["--rv-notch" as string]: "12px",
-        }}
+        className={classeBotao}
+        style={estiloBotao}
         onMouseEnter={(e) => { setSobre(true); if (!solid && !disabled && !carregando) e.currentTarget.style.borderColor = ACCENTS.cyan.hex; }}
         onMouseLeave={(e) => { setSobre(false); if (!solid && !disabled && !carregando) e.currentTarget.style.borderColor = ACCENTS.cyan.hex + "88"; }}>
         {carregando && (
@@ -1130,7 +1155,7 @@ export function RollButton({ label, solid = true, disabled = false, onRoll, onCh
           />
         )}
         <span className={noMaximo ? "rup-max-pulse" : undefined} style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
-          <Dice width={16} height={16} />
+          {!ehF && <Dice width={16} height={16} />}
           {rotulo}
         </span>
       </button>

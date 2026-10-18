@@ -20,12 +20,12 @@
  */
 
 import { JanelaFerramenta } from "./JanelaFerramenta";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Ban, Blocks, Box, BrickWall, Car, Check, Construction, Container, DoorClosed,
-  Fence, Loader2, Lock, LockOpen, MousePointerClick, Move, Pencil,
-  RectangleVertical, Shapes, Table, Trash2, TriangleAlert, } from "lucide-react";
-import { PRESETS_OBJETO } from "../_dominio/presetsObjeto";
+  ChevronLeft, ChevronRight, Fence, Loader2, Lock, LockOpen, Minus, MousePointerClick, Move, Pencil,
+  Plus, RectangleVertical, Shapes, Table, Trash2, TriangleAlert, } from "lucide-react";
+import { FAIXA_PD_POR_CATEGORIA, PRESETS_OBJETO } from "../_dominio/presetsObjeto";
 import {
   type CategoriaObjeto, type GrauCoberturaObjeto, type ObjetoVtt, type PresetObjeto,
 } from "../../../../../lib/vtt/sceneStorage";
@@ -43,12 +43,35 @@ export interface RascunhoEdicaoObjeto {
   travado: boolean;
 }
 
+/** PD ajustado na vitrine de criação — `pd: null` = nasce sem PD. */
+export interface AjustePdObjeto {
+  categoria: CategoriaObjeto | null;
+  pd: number | null;
+}
+
+/**
+ * Categoria que SEGUE o número, pelas faixas oficiais
+ * (`FAIXA_PD_POR_CATEGORIA`): até o teto de frágil é frágil, até o de
+ * média é média, o resto é resistente. Derivar em vez de pedir as duas
+ * coisas é o que impede o ajuste de criar PD fora da própria categoria.
+ */
+export function categoriaDoPd(pd: number | null): CategoriaObjeto | null {
+  if (pd === null) return null;
+  if (pd <= (FAIXA_PD_POR_CATEGORIA.fragil.max ?? 5)) return "fragil";
+  if (pd <= (FAIXA_PD_POR_CATEGORIA.media.max ?? 15)) return "media";
+  return "resistente";
+}
+
 export interface PropsPainelObjetos {
   presetObjeto: PresetObjeto;
   onPresetObjeto: (p: PresetObjeto) => void;
   celulasPendentes: number;
   criando: boolean;
-  onCriar: () => void;
+  /**
+   * Cria o objeto. `ajuste` leva o PD escolhido na vitrine ANTES de
+   * criar (e a categoria que segue dele); ausente = valores do preset.
+   */
+  onCriar: (ajuste?: AjustePdObjeto) => void;
   onCancelarSelecao: () => void;
 
   objetoSelecionado: ObjetoVtt | null;
@@ -100,6 +123,20 @@ const META_PRESET: Record<PresetObjeto, { Icone: typeof Box; curto: string }> = 
   grade: { Icone: Fence, curto: "Grade" },
   personalizado: { Icone: Shapes, curto: "Livre" },
 };
+
+const CHAVES_PRESET = Object.keys(PRESETS_OBJETO) as PresetObjeto[];
+const NIVEL_GRAU: Record<GrauCoberturaObjeto, number> = { parcial: 1, maior: 2, total: 3 };
+const NIVEL_CAT: Record<CategoriaObjeto, number> = { fragil: 1, media: 2, resistente: 3 };
+const ROTULO_GRAU_CURTO: Record<GrauCoberturaObjeto, string> = { parcial: "Parcial", maior: "Maior", total: "Total" };
+
+/** Medidor de 1–3 barras. Nunca só cor: o valor vem escrito ao lado. */
+function Segs({ n }: { n: number }) {
+  return (
+    <span className="rv-obj-segs" aria-hidden="true">
+      {[1, 2, 3].map((i) => <i key={i} className={n >= i ? "is-on" : undefined} />)}
+    </span>
+  );
+}
 
 const ROTULO_GRAU: Record<GrauCoberturaObjeto, string> = {
   parcial: "Cobertura parcial",
@@ -160,6 +197,11 @@ export function PainelObjetos(p: PropsPainelObjetos) {
   // não precisa existir no fluxo de dados da cena.
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
   useEffect(() => { setConfirmandoExclusao(false); }, [obj?.id]);
+  // Prévia por hover na faixa de ícones: mostra a ficha SEM escolher.
+  const [espia, setEspia] = useState<PresetObjeto | null>(null);
+  // PD ajustado POR PRESET antes de criar. Só guarda o que difere do
+  // padrão — voltar ao número do preset apaga a entrada.
+  const [pdAjustado, setPdAjustado] = useState<Partial<Record<PresetObjeto, number | null>>>({});
 
   const estado: "movendo" | "editando" | "selecionado" | "criando" =
     objetoMovendo ? "movendo" : obj && rascunho ? "editando" : obj ? "selecionado" : "criando";
@@ -183,18 +225,57 @@ export function PainelObjetos(p: PropsPainelObjetos) {
     return rascunho.pdMax < min || rascunho.pdMax > max;
   })();
 
+  // ── Vitrine de criação ──
+  const idxSel = CHAVES_PRESET.indexOf(p.presetObjeto);
+  const espiando = espia !== null && espia !== p.presetObjeto;
+  const presetMostrado = espiando ? espia! : p.presetObjeto;
+  const defMostrado = PRESETS_OBJETO[presetMostrado];
+  const MetaMostrada = META_PRESET[presetMostrado];
+  const pdDe = (k: PresetObjeto) => (k in pdAjustado ? pdAjustado[k]! : PRESETS_OBJETO[k].pd) ?? null;
+  const pdMostrado = pdDe(presetMostrado);
+  // Sem ajuste, a categoria é a do preset (fonte das regras); com
+  // ajuste, ela segue o número pelas faixas oficiais.
+  const catDe = (k: PresetObjeto) => (k in pdAjustado ? categoriaDoPd(pdDe(k)) : PRESETS_OBJETO[k].categoria);
+  const catMostrada = catDe(presetMostrado);
+  const ajustarPd = (v: number | null) => setPdAjustado((o) => {
+    const n = { ...o };
+    if (v === PRESETS_OBJETO[presetMostrado].pd) delete n[presetMostrado]; else n[presetMostrado] = v;
+    return n;
+  });
+  const criar = useCallback(() => {
+    if (p.celulasPendentes === 0 || p.criando) return;
+    const k = p.presetObjeto;
+    p.onCriar(k in pdAjustado ? { pd: pdDe(k), categoria: catDe(k) } : undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.celulasPendentes, p.criando, p.presetObjeto, p.onCriar, pdAjustado]);
+
+  // ↵ cria — só quando o foco não está num campo nem num botão (ali o
+  // Enter já tem dono). É o fluxo de marcar células no mapa e confirmar.
+  useEffect(() => {
+    if (estado !== "criando") return;
+    function aoTeclar(e: KeyboardEvent) {
+      if (e.key !== "Enter" || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      const alvo = e.target as HTMLElement | null;
+      if (alvo && (alvo.closest("input, textarea, select, button, a, [contenteditable='true']"))) return;
+      e.preventDefault();
+      criar();
+    }
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, [estado, criar]);
+
   return (
     <JanelaFerramenta
       id="objetos"
       icone={<Box size={16} />}
       titulo="Objetos"
-      modo={modoTexto}
+      modo={estado === "criando" && p.celulasPendentes > 0 ? `${p.celulasPendentes} célula${p.celulasPendentes === 1 ? "" : "s"}` : modoTexto}
       rotulo="Ferramenta Objetos"
       rotuloFechar="Fechar ferramenta Objetos"
       aoFechar={p.onFechar}
     >
 
-      <div className="rv-fp-corpo">
+      <div className="rv-fp-corpo jf-corpo rv-obj-corpo">
         {/* ── MOVENDO ────────────────────────────────────────────── */}
         {estado === "movendo" && objetoMovendo && (
           <>
@@ -232,8 +313,8 @@ export function PainelObjetos(p: PropsPainelObjetos) {
                 />
               </label>
 
-              <div className="rv-fp-grupo">
-                <span className="rv-fp-rotulo">Movimento</span>
+              <div className="rv-fp-grupo jf-grupo">
+                <span className="rv-fp-rotulo jf-rot">Movimento</span>
                 <Switch
                   checked={rascunho.bloqueiaMovimento} disabled={p.salvandoEdicao}
                   onChange={(v) => p.onRascunho((r) => ({ ...r, bloqueiaMovimento: v }))}
@@ -246,8 +327,8 @@ export function PainelObjetos(p: PropsPainelObjetos) {
                 />
               </div>
 
-              <div className="rv-fp-grupo">
-                <span className="rv-fp-rotulo">Cobertura</span>
+              <div className="rv-fp-grupo jf-grupo">
+                <span className="rv-fp-rotulo jf-rot">Cobertura</span>
                 <label className="rv-fp-campo">
                   <span>Grau</span>
                   <select
@@ -262,8 +343,8 @@ export function PainelObjetos(p: PropsPainelObjetos) {
                 </label>
               </div>
 
-              <div className="rv-fp-grupo">
-                <span className="rv-fp-rotulo">Durabilidade</span>
+              <div className="rv-fp-grupo jf-grupo">
+                <span className="rv-fp-rotulo jf-rot">Durabilidade</span>
                 <label className="rv-fp-campo">
                   <span>Categoria</span>
                   <select
@@ -310,8 +391,8 @@ export function PainelObjetos(p: PropsPainelObjetos) {
                 )}
               </div>
 
-              <div className="rv-fp-grupo">
-                <span className="rv-fp-rotulo">Visibilidade</span>
+              <div className="rv-fp-grupo jf-grupo">
+                <span className="rv-fp-rotulo jf-rot">Visibilidade</span>
                 <Switch
                   checked={rascunho.visivel} disabled={p.salvandoEdicao}
                   onChange={(v) => p.onRascunho((r) => ({ ...r, visivel: v }))}
@@ -343,8 +424,8 @@ export function PainelObjetos(p: PropsPainelObjetos) {
             </div>
 
             {obj.categoria !== null && obj.pd !== null && (
-              <div className="rv-fp-grupo">
-                <span className="rv-fp-rotulo" id="rv-fp-rot-pd">Dano e reparo</span>
+              <div className="rv-fp-grupo jf-grupo">
+                <span className="rv-fp-rotulo jf-rot" id="rv-fp-rot-pd">Dano e reparo</span>
                 <div className="rv-fp-dano" role="group" aria-labelledby="rv-fp-rot-pd">
                   <input
                     type="number" min={0} value={p.deltaPd} disabled={p.aplicandoDano}
@@ -373,8 +454,8 @@ export function PainelObjetos(p: PropsPainelObjetos) {
               </div>
             )}
 
-            <div className="rv-fp-grupo">
-              <span className="rv-fp-rotulo" id="rv-fp-rot-acoes">Ações</span>
+            <div className="rv-fp-grupo jf-grupo">
+              <span className="rv-fp-rotulo jf-rot" id="rv-fp-rot-acoes">Ações</span>
               <div className="rv-fp-grade-acoes" role="group" aria-labelledby="rv-fp-rot-acoes">
                 <button type="button" className="rv-btn" disabled={p.salvandoEdicao} onClick={p.onIniciarMover}>
                   <Move size={14} /> Mover
@@ -425,69 +506,95 @@ export function PainelObjetos(p: PropsPainelObjetos) {
               )}
             </div>
 
-            <button type="button" className="rv-fp-discreta" onClick={p.onDesmarcar}>Desmarcar</button>
+            <button type="button" className="rv-fp-discreta jf-quieto" onClick={p.onDesmarcar}>Desmarcar</button>
           </>
         )}
 
-        {/* ── CRIANDO ────────────────────────────────────────────── */}
+        {/* ── CRIANDO — o "Seletor" ──────────────────────────────────
+            Um preset por vez na vitrine (◀ ▶ como seletor de console),
+            medidores de regra em barras de 1–3, e a faixa dos 10 ícones
+            pra pular direto. Passar o mouse num ícone só ESPIA. */}
         {estado === "criando" && (
           <>
-            <div className="rv-fp-grupo">
-              <span className="rv-fp-rotulo" id="rv-fp-rot-preset">Preset</span>
-              <div className="rv-fp-presets" role="group" aria-labelledby="rv-fp-rot-preset">
-                {(Object.keys(PRESETS_OBJETO) as PresetObjeto[]).map((k) => {
-                  const meta = META_PRESET[k];
-                  return (
-                    <button
-                      key={k}
-                      type="button" className="rv-fp-preset"
-                      aria-pressed={p.presetObjeto === k}
-                      disabled={p.criando}
-                      // O nome curto da grade pode abreviar ("Caixa"), então
-                      // o rótulo acessível carrega o nome COMPLETO do preset.
-                      aria-label={PRESETS_OBJETO[k].rotulo}
-                      onClick={() => p.onPresetObjeto(k)}
-                    >
-                      <span className="rv-fp-preset-ic"><meta.Icone size={16} /></span>
-                      <span className="rv-fp-preset-nome">{meta.curto}</span>
-                    </button>
-                  );
-                })}
+            <div className="jf-hero rv-obj-vitrine" aria-live="polite">
+              <div className="rv-obj-sel">
+                <button type="button" className="rv-obj-seta" aria-label="Preset anterior" disabled={p.criando}
+                  onClick={() => p.onPresetObjeto(CHAVES_PRESET[(idxSel - 1 + CHAVES_PRESET.length) % CHAVES_PRESET.length])}>
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="rv-obj-peca">
+                  <MetaMostrada.Icone size={56} strokeWidth={1.2} aria-hidden="true" />
+                  <b>{defMostrado.rotulo}</b>
+                  <span className="jf-leg">{espiando ? "Prévia · clique pra escolher" : `${idxSel + 1} / ${CHAVES_PRESET.length}`}</span>
+                </span>
+                <button type="button" className="rv-obj-seta" aria-label="Próximo preset" disabled={p.criando}
+                  onClick={() => p.onPresetObjeto(CHAVES_PRESET[(idxSel + 1) % CHAVES_PRESET.length])}>
+                  <ChevronRight size={16} />
+                </button>
               </div>
-              <div className="rv-fp-obj">
-                <span className="rv-fp-obj-nome">{PRESETS_OBJETO[p.presetObjeto].rotulo}</span>
-                <div className="rv-fp-obj-props">
-                  {PRESETS_OBJETO[p.presetObjeto].bloqueiaMovimento
-                    ? <span className="rv-fp-tag rv-fp-tag--dg">Bloqueia</span>
-                    : <span className="rv-fp-tag">Atravessável</span>}
-                  {PRESETS_OBJETO[p.presetObjeto].terrenoProjetado === "dificil" && (
-                    <span className="rv-fp-tag rv-fp-tag--am">Terreno difícil</span>
-                  )}
-                  {PRESETS_OBJETO[p.presetObjeto].grauCobertura && (
-                    <span className="rv-fp-tag rv-fp-tag--cy">{ROTULO_GRAU[PRESETS_OBJETO[p.presetObjeto].grauCobertura!]}</span>
-                  )}
-                  {PRESETS_OBJETO[p.presetObjeto].pd !== null && (
-                    <span className="rv-fp-tag">{PRESETS_OBJETO[p.presetObjeto].pd} PD</span>
-                  )}
+              <div className="rv-obj-medidores">
+                <div className="rv-obj-med" style={{ ["--jf-t" as string]: defMostrado.bloqueiaMovimento ? "#ff5f74" : "#f5a200" }}>
+                  <span className="jf-l">Movimento</span>
+                  <Segs n={defMostrado.bloqueiaMovimento ? 3 : defMostrado.terrenoProjetado === "dificil" ? 1 : 0} />
+                  <span className="rv-obj-v">{defMostrado.bloqueiaMovimento ? "Bloqueia" : defMostrado.terrenoProjetado === "dificil" ? "Custa ×2" : "Livre"}</span>
                 </div>
-                <span className="rv-fp-switch-sub">{PRESETS_OBJETO[p.presetObjeto].nota}</span>
+                <div className="rv-obj-med" style={{ ["--jf-t" as string]: "#00d4ff" }}>
+                  <span className="jf-l">Cobertura</span>
+                  <Segs n={defMostrado.grauCobertura ? NIVEL_GRAU[defMostrado.grauCobertura] : 0} />
+                  <span className={`rv-obj-v${defMostrado.grauCobertura ? "" : " is-vazio"}`}>
+                    {defMostrado.grauCobertura ? ROTULO_GRAU_CURTO[defMostrado.grauCobertura] : "Depois"}
+                  </span>
+                </div>
+                <div className="rv-obj-med" style={{ ["--jf-t" as string]: "#8ea0bd" }}>
+                  <span className="jf-l">Durabilidade</span>
+                  <Segs n={catMostrada ? NIVEL_CAT[catMostrada] : 0} />
+                  <span className="rv-obj-pdctl">
+                    <button type="button" aria-label="Diminuir PD" disabled={p.criando || pdMostrado === null}
+                      onClick={() => ajustarPd(pdMostrado === null || pdMostrado <= 1 ? null : pdMostrado - 1)}>
+                      <Minus size={10} strokeWidth={3} />
+                    </button>
+                    <span className={`rv-obj-v${catMostrada ? "" : " is-vazio"}`} data-testid="objeto-pd-ajuste">
+                      {pdMostrado !== null && <b>{pdMostrado}</b>}
+                      {catMostrada ? `PD · ${ROTULO_CATEGORIA[catMostrada].rotulo}` : "Sem PD"}
+                    </span>
+                    <button type="button" aria-label="Aumentar PD" disabled={p.criando || (pdMostrado ?? 0) >= 99}
+                      onClick={() => ajustarPd(pdMostrado === null ? 1 : Math.min(99, pdMostrado + 1))}>
+                      <Plus size={10} strokeWidth={3} />
+                    </button>
+                  </span>
+                </div>
               </div>
             </div>
 
-            <p className="rv-fp-instrucao">
-              <MousePointerClick size={13} />
-              <span>Clique ou arraste as células no mapa. Clicar de novo tira a célula da seleção; clicar num objeto existente seleciona ele.</span>
-            </p>
+            <div className="rv-obj-icones" role="group" aria-label="Preset" onMouseLeave={() => setEspia(null)}>
+              {CHAVES_PRESET.map((k) => {
+                const meta = META_PRESET[k];
+                return (
+                  <button
+                    key={k}
+                    type="button" className="rv-obj-ic"
+                    aria-pressed={p.presetObjeto === k}
+                    disabled={p.criando}
+                    // O nome curto pode abreviar ("Caixa"), então o rótulo
+                    // acessível carrega o nome COMPLETO do preset.
+                    aria-label={PRESETS_OBJETO[k].rotulo} title={PRESETS_OBJETO[k].rotulo}
+                    onMouseEnter={() => setEspia(k)} onFocus={() => setEspia(k)} onBlur={() => setEspia(null)}
+                    onClick={() => { setEspia(null); p.onPresetObjeto(k); }}
+                  >
+                    <meta.Icone size={17} strokeWidth={1.7} />
+                  </button>
+                );
+              })}
+            </div>
 
-            <p
-              className={`rv-fp-status${p.celulasPendentes === 0 ? " rv-fp-status--neutro" : ""}`}
-              role="status" aria-live="polite"
-            >
+            {/* A nota do preset — o porquê dos padrões — continua aqui. */}
+            <p className="jf-desc">{defMostrado.nota}</p>
+
+            <p className="rv-obj-status" role="status" aria-live="polite">
               {p.celulasPendentes > 0
                 ? <><strong>{p.celulasPendentes}</strong>&nbsp;célula{p.celulasPendentes === 1 ? "" : "s"} selecionada{p.celulasPendentes === 1 ? "" : "s"}{p.celulasPendentes >= 64 ? " — limite atingido" : ""}</>
                 : "Nenhuma célula selecionada"}
             </p>
-
           </>
         )}
       </div>
@@ -529,19 +636,24 @@ export function PainelObjetos(p: PropsPainelObjetos) {
           )}
           {estado === "criando" && (
             <>
-              <button
-                type="button" className="rv-btn rv-btn--pri rv-fp-primaria"
-                disabled={p.celulasPendentes === 0 || p.criando}
-                onClick={p.onCriar}
-              >
-                {p.criando ? <Loader2 size={14} className="rv-spin" /> : <Box size={14} />}
-                Criar objeto
-              </button>
+              <div className="jf-acao rv-obj-acao">
+                <button
+                  type="button" className="jf-prim"
+                  disabled={p.celulasPendentes === 0 || p.criando}
+                  onClick={criar}
+                >
+                  {p.criando && <Loader2 size={14} className="rv-spin" />}
+                  <span>{p.celulasPendentes > 0 ? `Criar ${META_PRESET[p.presetObjeto].curto.toLowerCase()}` : "Marque as células no mapa"}</span>
+                  {p.celulasPendentes > 0 && !p.criando && <kbd className="jf-kbd">↵</kbd>}
+                </button>
+              </div>
+              <p className="jf-nota">
+                {p.celulasPendentes > 0 ? "Clicar de novo numa célula tira ela da seleção" : "Clicar num objeto do mapa seleciona ele"}
+              </p>
               {/* Secundária, não primária: descartar a seleção é o oposto
-                  da ação da janela. Dois botões com o mesmo peso faziam
-                  a pessoa escolher entre iguais. */}
+                  da ação da janela. */}
               {p.celulasPendentes > 0 && (
-                <button type="button" className="rv-fp-secundaria rv-fp-secundaria--perigo" disabled={p.criando} onClick={p.onCancelarSelecao}>
+                <button type="button" className="jf-quieto is-perigo rv-obj-limpar" disabled={p.criando} onClick={p.onCancelarSelecao}>
                   <Ban size={14} /> Limpar seleção
                 </button>
               )}

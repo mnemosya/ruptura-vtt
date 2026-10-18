@@ -253,14 +253,14 @@ async function main() {
     await abrirEmModoEditar();
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Rascunho Sujo");
     page.once("dialog", (d) => d.dismiss());
-    await page.locator(".rv-gerenciador-token .rv-btn--ghost", { hasText: "Cancelar" }).click();
+    await page.locator('.rv-gerenciador-token [data-testid="token-cancelar"]').click();
     await page.waitForTimeout(200);
     const permaneceuAberto = (await page.locator(".rv-gerenciador-token").count()) === 1;
     const nomeIntacto = await page.locator(".rv-gerenciador-token input[type=text]").first().inputValue();
     registrar("B1 (cancelar o confirm de descarte mantém o modal aberto, com os dados intactos)", permaneceuAberto && nomeIntacto === "Rascunho Sujo", `aberto=${permaneceuAberto}, nome="${nomeIntacto}"`);
 
     page.once("dialog", (d) => d.accept());
-    await page.locator(".rv-gerenciador-token .rv-btn--ghost", { hasText: "Cancelar" }).click();
+    await page.locator('.rv-gerenciador-token [data-testid="token-cancelar"]').click();
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
     await confirmarMapaFuncional(page, "B2 (aceitar o descarte fecha de verdade, mapa funcional)");
   }
@@ -291,7 +291,7 @@ async function main() {
     page.on("dialog", aoDialogo);
     await abrirPorBotaoBarra();
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Nem vou criar");
-    await page.locator(".rv-gerenciador-token .rv-btn--ghost", { hasText: "Cancelar" }).click();
+    await page.locator('.rv-gerenciador-token [data-testid="token-cancelar"]').click();
     const fechou = await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 })
       .then(() => true).catch(() => false);
     registrar("B3 (criar + Cancelar com o formulário sujo fecha direto, sem perguntar)",
@@ -364,7 +364,7 @@ async function main() {
   // provável de brigar por espaço/foco com a janela. ---
   {
     await abrirComOPainelAberto();
-    await page.locator(".rv-gerenciador-token .rv-btn--ghost", { hasText: "Cancelar" }).click();
+    await page.locator('.rv-gerenciador-token [data-testid="token-cancelar"]').click();
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
     await confirmarMapaFuncional(page, "F (com o painel lateral aberto, fechar por Cancelar, mapa funcional)");
     // fecha o painel de novo, deixa a UI limpa pros próximos cenários
@@ -402,7 +402,7 @@ async function main() {
   // --- H: erro de validação (PV inválido) e depois fechar ---
   {
     await abrirPorBotaoBarra();
-    await page.locator("summary", { hasText: "Retrato, vida e estado" }).click();
+    await page.locator(".rv-gerenciador-token .jf-sec-cab", { hasText: "Retrato e vida" }).click();
     // "Pontos de Vida" virou "Recursos" (PV, PE e Mana na mesma linha),
     // e por posição os campos agora são seis. `aria-label` é o que
     // sobrevive a esse tipo de rearranjo — e é o mesmo rótulo que um
@@ -418,7 +418,7 @@ async function main() {
     // diálogo de verdade, que aí tem dois donos ("Cannot accept dialog
     // which is already handled"). Foi assim que a suíte passou a
     // estourar depois que os blocos B e C ganharam diálogos reais.
-    await page.locator(".rv-gerenciador-token .rv-btn--ghost", { hasText: "Cancelar" }).click();
+    await page.locator('.rv-gerenciador-token [data-testid="token-cancelar"]').click();
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
     await confirmarMapaFuncional(page, "H (erro de validação, depois fechar, mapa funcional)");
   }
@@ -468,7 +468,7 @@ async function main() {
     await page.locator('.rv-gerenciador-token .rv-fp-fechar[aria-label="Fechar"]').click();
     // sem esperar o detached — abre de novo imediatamente por outro gatilho.
     await abrirPorMenuContextual();
-    await page.locator(".rv-gerenciador-token .rv-btn--ghost", { hasText: "Cancelar" }).click();
+    await page.locator('.rv-gerenciador-token [data-testid="token-cancelar"]').click();
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
     await confirmarMapaFuncional(page, "L (fechar e reabrir por outro gatilho sem esperar, sem estado preso)");
   }
@@ -551,7 +551,7 @@ async function main() {
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Editável Rede Alterado");
 
     const pararDeAbortar = await abortarProximaServerAction();
-    await page.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Salvar alterações" }).click();
+    await page.locator('.rv-gerenciador-token [data-testid="token-confirmar"]', { hasText: "Salvar alterações" }).click();
     await page.waitForTimeout(800);
     const abortou = await pararDeAbortar();
 
@@ -559,13 +559,13 @@ async function main() {
     const modalAindaAberto = (await page.locator(".rv-gerenciador-token").count()) === 1;
     registrar("O1 (falha de rede ao editar: mostra erro, formulário continua aberto e usável)", abortou && erroVisivel > 0 && modalAindaAberto, `abortou=${abortou}, erroVisivel=${erroVisivel > 0}, aberto=${modalAindaAberto}`);
 
-    const cancelarHabilitado = !(await page.locator(".rv-gerenciador-token .rv-btn--ghost", { hasText: "Cancelar" }).isDisabled());
-    const salvarHabilitado = !(await page.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Salvar alterações" }).isDisabled());
+    const cancelarHabilitado = !(await page.locator('.rv-gerenciador-token [data-testid="token-cancelar"]').isDisabled());
+    const salvarHabilitado = !(await page.locator('.rv-gerenciador-token [data-testid="token-confirmar"]', { hasText: "Salvar alterações" }).isDisabled());
     registrar("O2 (depois da falha de rede, Cancelar e Salvar voltam a ficar habilitados — nunca presos em 'Salvando…')", cancelarHabilitado && salvarHabilitado, `cancelar=${cancelarHabilitado}, salvar=${salvarHabilitado}`);
 
     const aceitarDialogo = (d: import("playwright").Dialog) => { d.accept().catch(() => {}); };
     page.on("dialog", aceitarDialogo);
-    await page.locator(".rv-gerenciador-token .rv-btn--ghost", { hasText: "Cancelar" }).click();
+    await page.locator('.rv-gerenciador-token [data-testid="token-cancelar"]').click();
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
     page.off("dialog", aceitarDialogo);
     await confirmarMapaFuncional(page, "O3 (mapa funcional depois de toda a sequência de falha de rede na edição)");
@@ -620,13 +620,16 @@ async function main() {
 
     await abrirPorBotaoBarra();
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Config Sem Rede");
-    await page.locator("summary", { hasText: "Retrato, vida e estado" }).click();
+    await page.locator(".rv-gerenciador-token .jf-sec-cab", { hasText: "Retrato e vida" }).click();
     await page.waitForTimeout(400);
-    await page.locator('.rv-gerenciador-token select[value], .rv-gerenciador-token select').first().selectOption({ index: 1 }).catch(() => {});
+    // O select de ficha mora na seção "Controle" (recolhida de saída).
+    await page.locator(".rv-gerenciador-token .jf-sec-cab", { hasText: "Controle" }).click().catch(() => {});
+    await page.locator('.rv-gerenciador-token select[aria-label="Ficha vinculada"]').selectOption({ index: 1 }).catch(() => {});
     await page.waitForTimeout(400);
-    await page.locator('.rv-gerenciador-token input[type=checkbox]').first().click().catch(() => {});
+    // Visível/travado/condições viraram botões aria-pressed (não checkbox).
+    await page.locator('.rv-gerenciador-token button[aria-pressed]').first().click().catch(() => {});
     await page.waitForTimeout(400);
-    await page.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Continuar para posicionar" }).click();
+    await page.locator('.rv-gerenciador-token [data-testid="token-confirmar"]', { hasText: "Posicionar no mapa" }).click();
     await page.locator(".rv-gerenciador-token").waitFor({ state: "detached", timeout: 8000 }).catch(() => {});
     // A camada de posicionamento só nasce com ÂNCORA, e a âncora vem do
     // ponteiro sobre uma célula — esperar por ela sem mover o mouse é
@@ -701,7 +704,7 @@ async function main() {
   {
     await abrirPorBotaoBarra();
     // Alcança o ÚLTIMO controle focável da janela (o botão primário do rodapé) e dá mais um Tab.
-    await page.locator(".rv-gerenciador-token .rv-btn--pri").focus();
+    await page.locator('.rv-gerenciador-token [data-testid="token-confirmar"]').focus();
     await page.keyboard.press("Tab");
     // A janela pode ter mais controles DEPOIS do botão primário do
     // rodapé — a ordem do DOM não é obrigada a terminar nele, e um Tab
@@ -709,7 +712,7 @@ async function main() {
     // momento; um foco preso volta pro começo da janela e fica
     // circulando, então um teto de Tabs acima do número de controles
     // basta pra distinguir os dois casos.
-    const controles = await page.locator('.rv-gerenciador-token button, .rv-gerenciador-token input, .rv-gerenciador-token select, .rv-gerenciador-token textarea, .rv-gerenciador-token summary').count();
+    const controles = await page.locator('.rv-gerenciador-token button, .rv-gerenciador-token input, .rv-gerenciador-token select, .rv-gerenciador-token textarea').count();
     let focoSaiu = await page.evaluate(() => {
       const ativo = document.activeElement;
       const janela = document.querySelector(".rv-gerenciador-token");
@@ -734,7 +737,7 @@ async function main() {
   // --- T: scroll dentro do corpo funciona; pan do mapa (botão direito) continua fora da janela ---
   {
     await abrirPorBotaoBarra();
-    await page.locator("summary", { hasText: "Retrato, vida e estado" }).click();
+    await page.locator(".rv-gerenciador-token .jf-sec-cab", { hasText: "Retrato e vida" }).click();
     const corpo = page.locator(".rv-janela-token-corpo");
     const scrollAntes = await corpo.evaluate((el) => el.scrollTop);
     const box = (await corpo.boundingBox())!;

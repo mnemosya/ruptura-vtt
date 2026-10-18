@@ -3,10 +3,11 @@
 /**
  * PAINEL FLUTUANTE “ROLAR DADOS”.
  *
- * A moldura — espinha vertical com índice + código, cantos em bracket e
- * cabeçalho com estado — é a de `JanelaFerramenta`, compartilhada com
- * todas as outras ferramentas. Aqui sobra só o CORPO: o rolador do
- * design, sem adaptação.
+ * A moldura é a de `JanelaFerramenta` (linha F), compartilhada com
+ * todas as outras ferramentas. Aqui sobra só o CORPO: o rolador na
+ * pele F (`variante="f"`, estilo em `_tema/janela-dados.css`). Sem
+ * linha de estado no cabeçalho: o que vai ser rolado já está escrito
+ * na vitrine e no botão, e a frase longa de regra só truncava.
  *
  * A rolagem acontece na MESA do próprio painel — é ali que o design
  * coloca a arena 3D, e é dela que sai o valor lido da face superior.
@@ -28,7 +29,6 @@ export function PainelDados({ onFechar, campaignId, personagemSugerido }: {
       id="dados"
       icone={<Dices size={16} />}
       titulo="Rolar Dados"
-      modo="d8 · maior dado + perícia + modificadores"
       rotulo="Ferramenta Rolar Dados"
       rotuloFechar="Fechar ferramenta Rolar Dados"
       aoFechar={onFechar}
@@ -36,8 +36,8 @@ export function PainelDados({ onFechar, campaignId, personagemSugerido }: {
       testId="painel-dados"
       atributos={{ "data-design": "ferramenta-flutuante" }}
     >
-      <div className="rv-dados-corpo rup-scroll">
-        <RoladorDados campaignId={campaignId} personagemSugerido={personagemSugerido} />
+      <div className="rv-dados-corpo jf-corpo rup-scroll">
+        <RoladorDados campaignId={campaignId} personagemSugerido={personagemSugerido} variante="f" />
       </div>
     </JanelaFerramenta>
   );

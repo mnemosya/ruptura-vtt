@@ -487,7 +487,7 @@ async function main() {
     // permanente, e é isso que este critério passa a cobrir — porque é
     // o que a mesa usa quando alguém quer deixar a medida à vista de
     // todos.
-    await jogadorPage.locator('section[aria-label="Ferramenta Medir"] .rv-fp-seg-btn:has-text("Permanente")').click();
+    await jogadorPage.locator('section[aria-label="Ferramenta Medir"] [data-testid="medir-duracao-permanente"]').click();
     await jogadorPage.waitForTimeout(150);
     await jogadorPage.mouse.move(oX, oY);
     await jogadorPage.mouse.down();
@@ -546,7 +546,7 @@ async function main() {
     );
 
     // Volta pra instantânea — os critérios seguintes assumem o padrão.
-    await jogadorPage.locator('section[aria-label="Ferramenta Medir"] .rv-fp-seg-btn:has-text("Instantânea")').click();
+    await jogadorPage.locator('section[aria-label="Ferramenta Medir"] [data-testid="medir-duracao-instantanea"]').click();
     await jogadorPage.waitForTimeout(150);
 
     // 7f — medir de novo depois da anterior continua funcionando.

@@ -1,0 +1,121 @@
+/* Linha F — CSS próprio desta janela. As peças compartilhadas estão em `janelas-f.css`.
+   Janelas do MAPA: Camadas, Terreno e Imagens. */
+
+/* ── CAMADAS ───────────────────────────────────────────────────────── */
+.jf-cam-hero { display: flex; align-items: center; gap: 18px; padding: 14px 20px 14px 10px; }
+.jf-placa {
+  fill: transparent; stroke: #1a3a4b; stroke-width: 1; stroke-dasharray: 3 3;
+  transition: fill 140ms ease-out, stroke 140ms ease-out;
+}
+.jf-placa.is-vis { fill: color-mix(in srgb, var(--jf-acento) 6%, #05101a); stroke: color-mix(in srgb, var(--jf-acento) 55%, transparent); stroke-dasharray: none; }
+.jf-placa.is-foco { fill: color-mix(in srgb, var(--jf-acento) 24%, #05101a); stroke: #eaf6ff; stroke-dasharray: none; }
+.jf-placa.is-foco.is-oculta { fill: transparent; stroke: #7f95b3; stroke-dasharray: 3 3; }
+.jf-cam-stats { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.jf-cam-stat { display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid #122a38; }
+.jf-cam-stat .jf-l { font: 600 9.5px var(--rv-display), sans-serif; letter-spacing: .2em; text-transform: uppercase; color: #4f7086; }
+.jf-cam-stat b { font: 700 20px/.8 var(--rv-display), sans-serif; color: #eaf6ff; }
+.jf-cam-stat small { font: 700 12px var(--rv-display), sans-serif; color: #4f7086; }
+
+.jf-cam-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+/* Especificidade dobrada (`.rv-fp--f`) de propósito: as linhas mantêm
+   `rv-camadas-item`/`-nome`/`-btn` como gancho dos roteiros de
+   verificação, e o desenho antigo dessas classes em `vtt.css` não
+   pode vazar pra cá. */
+.rv-fp--f .jf-cam {
+  position: relative; display: flex; align-items: center; gap: 12px; height: 40px;
+  padding: 0 5px 0 10px; border: 0; border-radius: 0; background: rgba(5, 16, 26, .55);
+  transition: background 120ms ease-out, opacity 120ms ease-out;
+}
+.rv-fp--f .jf-cam:hover { background: #0f2735; }
+.rv-fp--f .jf-cam-sigla {
+  flex: none; width: 28px; height: 20px; border: 0; border-radius: 0; display: grid; place-items: center;
+  font: 700 9.5px var(--font-mono), monospace; color: var(--jf-acento);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--jf-acento) 40%, transparent);
+}
+.rv-fp--f .jf-cam-nome {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 600 13px var(--rv-body), sans-serif; letter-spacing: 0; text-transform: none; color: #eaf6ff;
+}
+.rv-fp--f .jf-cam[data-oculta] .jf-cam-nome { color: #4f7086; }
+.rv-fp--f .jf-cam[data-oculta] .jf-cam-sigla { color: #4f7086; box-shadow: inset 0 0 0 1px #1a3a4b; }
+.rv-fp--f .jf-cam-btn { width: 30px; height: 30px; border: 0; border-radius: 0; color: #4f7086; }
+.rv-fp--f .jf-cam-btn.is-on { color: var(--jf-acento); }
+.rv-fp--f .jf-cam-btn:hover { color: #eaf6ff; }
+.jf-cam-vago { flex: none; width: 30px; }
+/* Reordenar: alça, ▲▼ no hover e a linha que diz onde vai cair. */
+.jf-cam[draggable="true"] { cursor: grab; }
+.jf-cam-alca { flex: none; width: 12px; margin-right: -4px; display: grid; place-items: center; color: #2a4a5c; transition: color 120ms ease-out; }
+.jf-cam:hover .jf-cam-alca { color: #7f95b3; }
+.jf-cam-ordem { display: flex; opacity: 0; transition: opacity 120ms ease-out; }
+.jf-cam:hover .jf-cam-ordem, .jf-cam:focus-within .jf-cam-ordem { opacity: 1; }
+.jf-cam-ordem .jf-mini { width: 22px; }
+.rv-fp--f .jf-cam.is-arrastando { opacity: .35; }
+.jf-cam.is-alvo-acima::before, .jf-cam.is-alvo-abaixo::after {
+  content: ""; position: absolute; left: 0; right: 0; height: 2px;
+  background: var(--jf-acento); box-shadow: 0 0 8px var(--jf-acento);
+}
+.jf-cam.is-alvo-acima::before { top: -2px; }
+.jf-cam.is-alvo-abaixo::after { bottom: -2px; }
+.jf-cam-pontas { font: 600 8.5px var(--font-mono), monospace; letter-spacing: .12em; color: #2f4f62; }
+.jf-cam-pontas--fim { align-self: flex-end; margin-top: -4px; }
+
+/* ── TERRENO ───────────────────────────────────────────────────────── */
+.jf-ter-hero { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 16px 14px; }
+.jf-cel { fill: rgba(17, 42, 57, .25); stroke: #16313f; stroke-width: 1; transition: fill 120ms ease-out, stroke 120ms ease-out; }
+.jf-cel.is-pinta { fill: color-mix(in srgb, var(--jf-t) 26%, transparent); stroke: var(--jf-t); }
+.jf-cel.is-pinta.is-apaga { fill: transparent; stroke: #7f95b3; stroke-dasharray: 2 2; }
+.jf-cel.is-centro { stroke-width: 2; }
+.jf-leg.is-vivo { color: #b8d8e8; }
+/* O tipo carrega `rv-fp-opcao` só como gancho de teste: neutraliza o
+   desenho antigo que não colide com `jf-tile`. */
+.rv-fp--f .jf-tile.rv-fp-opcao { width: auto; border-radius: 0; text-align: center; }
+.rv-fp--f .jf-tile.rv-fp-opcao::before { content: none; }
+.jf-ter-acao { clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); }
+.jf-terreno .jf-prim { background: var(--jf-acento); }
+
+/* ── IMAGENS ───────────────────────────────────────────────────────── */
+.jf-img-hero { padding: 10px; }
+.jf-img-solta {
+  display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px 16px 16px;
+  outline: 1px dashed #22526a; outline-offset: -1px;
+  transition: outline-color 140ms ease-out, background 140ms ease-out;
+}
+.jf-img-hero:hover .jf-img-solta { outline-color: color-mix(in srgb, var(--jf-acento) 70%, transparent); background: color-mix(in srgb, var(--jf-acento) 5%, transparent); }
+.jf-img-solta > svg { color: var(--jf-acento); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--jf-acento) 40%, transparent)); }
+.jf-img-s1 { font: 500 13px var(--rv-body), sans-serif; color: #eaf6ff; }
+.jf-img-s2 { display: flex; align-items: center; gap: 6px; font: 9.5px var(--font-mono), monospace; letter-spacing: .1em; text-transform: uppercase; color: #4f7086; }
+.jf-img-botoes { width: 100%; margin-top: 6px; }
+.jf-img-vazio {
+  display: grid; place-items: center; height: 44px; margin: 0;
+  font: 9.5px var(--font-mono), monospace; letter-spacing: .12em; text-transform: uppercase;
+  color: #4f7086; background: rgba(5, 16, 26, .35);
+}
+.jf-img-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.jf-img {
+  position: relative; display: flex; align-items: center; height: 52px; padding: 0 6px;
+  border: 1px solid transparent; background: rgba(5, 16, 26, .55);
+  transition: background 120ms ease-out, border-color 120ms ease-out;
+}
+.jf-img:hover { background: #0f2735; }
+.jf-img.is-on { border-color: var(--jf-acento); background: color-mix(in srgb, var(--jf-acento) 9%, #05101a); }
+.jf-img-sel {
+  flex: 1; min-width: 0; height: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer;
+}
+.jf-img-sel:focus-visible { outline: 1px solid var(--jf-acento); outline-offset: 2px; }
+.jf-img-thumb { flex: none; width: 52px; height: 38px; overflow: hidden; background: #0b1c29; transition: opacity 120ms ease-out; }
+.jf-img-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.jf-img.is-oculta .jf-img-thumb { opacity: .35; }
+.jf-img-med { font: 9.5px var(--font-mono), monospace; letter-spacing: .06em; color: #7f95b3; }
+.jf-img-estado { display: flex; gap: 2px; padding-right: 6px; color: #4f7086; transition: opacity 120ms ease-out; }
+.jf-img-acts {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: flex;
+  opacity: 0; pointer-events: none; transition: opacity 120ms ease-out;
+}
+.jf-img:hover .jf-img-acts, .jf-img:focus-within .jf-img-acts { opacity: 1; pointer-events: auto; }
+.jf-img:hover .jf-img-estado, .jf-img:focus-within .jf-img-estado { opacity: 0; }
+.jf-imagens .jf-quieto:disabled { opacity: .45; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  .jf-placa, .jf-cel, .jf-cam, .jf-img, .jf-img-acts, .jf-img-estado, .jf-cam-ordem { transition: none; }
+}
