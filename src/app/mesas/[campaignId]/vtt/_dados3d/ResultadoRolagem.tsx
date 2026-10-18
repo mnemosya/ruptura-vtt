@@ -501,7 +501,7 @@ const MARGEM_ALCANCAVEL = 48;
  * perde se o ponteiro sair da alça no meio do caminho, e acaba sozinho
  * em `pointercancel` (dedo levantado, gesto do sistema).
  */
-function useArrasto() {
+export function useArrastoJanela() {
   const refJanela = useRef<HTMLElement | null>(null);
   const [desloc, setDesloc] = useState({ x: 0, y: 0 });
   const [arrastando, setArrastando] = useState(false);
@@ -565,7 +565,7 @@ export function MolduraRolagem({ indice, codigo, titulo, modo, acento = ACCENTS.
   children: ReactNode;
   testId?: string;
 }) {
-  const { desloc, iniciarArrasto, arrastando, refJanela } = useArrasto();
+  const { desloc, iniciarArrasto, arrastando, refJanela } = useArrastoJanela();
   return (
     <section
       ref={refJanela}

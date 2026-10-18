@@ -1,0 +1,61 @@
+/* =====================================================================
+   ROLAR DADOS DO CONSOLE — o que a janela F precisa fora do VTT
+
+   A janela é a MESMA da ferramenta do VTT (`JanelaFerramenta` +
+   `janelas-f.css` + `janela-dados.css`). Só que o Console também roda
+   em `/ficha` e no harness da ficha, onde `vtt.css` (e os tokens de
+   `_design/vtt-chassi.css` que ela importa) não são carregados — sem
+   isto a casca nasceria sem borda, sem cabeçalho em linha e sem fonte.
+
+   Por isso, aqui só o ESQUELETO da casca e os tokens, escopados em
+   `.rc-rolagem-f`, com os mesmos valores já resolvidos da Forja. Os
+   tokens vão em `:where()` (especificidade zero): onde a folha do VTT
+   está carregada, é ela quem manda, e nada aqui diverge dela.
+   ===================================================================== */
+
+:where(.rc-rolagem-f) {
+  --rv-display: var(--font-oxanium), "Oxanium", var(--font-chakra), sans-serif;
+  --rv-body: var(--font-corpo), system-ui, sans-serif;
+  --rv-mono: var(--font-mono), ui-monospace, monospace;
+  --rv-line-strong: #1a3a4b;
+  --jf-acento: #00d4ff;
+}
+
+/* Casca — a posição vem do Console (`useCentroDoConsole`) e do arrasto. */
+.rv-fp.rc-rolagem-f {
+  position: relative;
+  width: 420px; max-width: calc(100vw - 32px);
+  max-height: min(660px, calc(100dvh - 32px));
+  display: flex; flex-direction: column; overflow: hidden;
+  border: 1px solid var(--rv-line-strong, #1a3a4b);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55);
+  font-size: 12px; box-sizing: border-box;
+}
+.rc-rolagem-f *, .rc-rolagem-f *::before, .rc-rolagem-f *::after { box-sizing: border-box; }
+.rc-rolagem-f :is(button, input) { font: inherit; }
+
+.rc-rolagem-f .rv-fp-cab {
+  flex: none; display: flex; align-items: center;
+  cursor: grab; touch-action: none; user-select: none;
+}
+.rc-rolagem-f .rv-fp-cab:active { cursor: grabbing; }
+.rc-rolagem-f .rv-fp-cab-icone { display: flex; color: var(--jf-acento); }
+.rc-rolagem-f .rv-fp-cab-txt { display: flex; min-width: 0; flex: 1 1 auto; }
+.rc-rolagem-f .rv-fp-modo { display: flex; align-items: center; gap: 6px; }
+.rc-rolagem-f .rv-fp-modo::before { content: ""; flex: none; }
+.rc-rolagem-f .rv-fp-fechar { flex: none; display: grid; place-items: center; cursor: pointer; }
+
+.rc-rolagem-f .jf-corpo { flex: 1; min-height: 0; overflow-y: auto; }
+
+/* Peças do rolador que moram em `vtt.css`/`painel.css`. */
+.rc-rolagem-f .rv-sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+.rc-rolagem-f .rv-dados-rolando { display: inline-flex; animation: rv-dados-pulso 1.05s ease-in-out infinite; }
+@keyframes rv-dados-pulso { 0%, 100% { opacity: .32; } 50% { opacity: .8; } }
+.rc-rolagem-f .rv-dados-status { font-family: var(--font-mono), monospace; font-size: 10px; text-transform: uppercase; letter-spacing: .14em; color: #7f95b3; }
+
+/* Identidade FIXA: no Console quem rola é a ficha aberta — o mesmo
+   token da vitrine, sem lista e sem seta. */
+.rc-rolagem-f .rv-rf-token.is-fixo { cursor: default; border-bottom-color: transparent; }

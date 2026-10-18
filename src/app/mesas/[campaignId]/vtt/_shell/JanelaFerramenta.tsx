@@ -45,7 +45,7 @@
 
 import {
   createContext, useCallback, useContext, useEffect, useRef, useState,
-  type ReactNode, type RefObject,
+  type CSSProperties, type ReactNode, type RefObject,
 } from "react";
 import { X } from "lucide-react";
 import { ATALHO_FERRAMENTA, type FerramentaId } from "../_ferramentas/controlador";
@@ -109,6 +109,17 @@ export interface JanelaFerramentaProps {
   testIdRecolher?: string;
   testIdFechar?: string;
   atributos?: Record<string, string>;
+  /**
+   * Posição DE FORA — para quem hospeda a janela longe do palco do VTT
+   * (a rolagem do Console). Com ela, a janela não lê nem grava posição
+   * lembrada nem fica invisível esperando medida: quem a montou já sabe
+   * onde ela mora.
+   */
+  estiloExterno?: CSSProperties;
+  /** Arrasto de fora (ex.: `useArrastoJanela`), somado ao do cabeçalho. */
+  aoPressionarCabecalhoExterno?: (e: React.PointerEvent) => void;
+  /** Ref do `<section>` para quem arrasta de fora. */
+  refExterna?: (el: HTMLElement | null) => void;
   children: ReactNode;
 }
 
@@ -152,7 +163,8 @@ function teclaDaJanela(id: JanelaId): string | null {
 export function JanelaFerramenta({
   id, acento, largura = "ferramenta", tecla, icone, titulo, modo, modoAtributos, rotulo, rotuloFechar, aoFechar,
   recolhido, aoAlternarRecolhido, rotuloRecolher, acoesCabecalho,
-  className, ancoraAcimaDe, testId, testIdCabecalho, testIdRecolher, testIdFechar, atributos, children,
+  className, ancoraAcimaDe, testId, testIdCabecalho, testIdRecolher, testIdFechar, atributos,
+  estiloExterno, aoPressionarCabecalhoExterno, refExterna, children,
 }: JanelaFerramentaProps) {
   const ctx = useContext(JanelasContexto);
   const espinha = ESPINHA[id];
@@ -195,7 +207,10 @@ export function JanelaFerramenta({
    * ferramenta abre" (o painel só existe enquanto a ferramenta está
    * ativa).
    */
+  const externo = !!estiloExterno;
   useEffect(() => {
+    // Posicionada de fora: nada de posição lembrada (ela é da ferramenta do VTT).
+    if (externo) return;
     if (ancoraAcimaDe) {
       setPosicao(posicaoAcimaDaAncora());
       return;
@@ -207,7 +222,7 @@ export function JanelaFerramenta({
     // `asideRef`, que já existe neste ponto do efeito (o DOM foi
     // commitado antes dos efeitos rodarem).
     setPosicao(limitar(alvo));
-  }, [ancoraAcimaDe, ctx, id, limitar, posicaoAcimaDaAncora]);
+  }, [ancoraAcimaDe, ctx, externo, id, limitar, posicaoAcimaDaAncora]);
 
   const aoPressionarCabecalho = (e: React.PointerEvent) => {
     if (ancoraAcimaDe || e.button !== 0 || !posicao) return;
@@ -267,7 +282,7 @@ export function JanelaFerramenta({
 
   return (
     <section
-      ref={asideRef}
+      ref={(el) => { asideRef.current = el; refExterna?.(el); }}
       className={`rv-flutuante rv-fp rv-fp--f${largura === "gestao" ? " rv-fp--gestao" : ""}${recolhido ? " rv-fp--recolhida" : ""}${ancoraAcimaDe ? " rv-fp--ancorada" : ""}${className ? ` ${className}` : ""}`}
       role="group"
       aria-label={rotulo}
@@ -277,14 +292,15 @@ export function JanelaFerramenta({
       // vez de piscar no canto: um frame no lugar errado é pior que um
       // frame ausente.
       style={{
-        ...(posicao ? { left: posicao.x, top: posicao.y } : { visibility: "hidden" }),
+        ...(posicao ? { left: posicao.x, top: posicao.y } : estiloExterno ? null : { visibility: "hidden" }),
+        ...estiloExterno,
         ["--jf-acento" as string]: cor,
       }}
     >
       <header
         className="rv-fp-cab"
         data-testid={testIdCabecalho}
-        onPointerDown={aoPressionarCabecalho}
+        onPointerDown={(e) => { aoPressionarCabecalhoExterno?.(e); aoPressionarCabecalho(e); }}
         onPointerMove={aoMoverCabecalho}
         onPointerUp={aoSoltarCabecalho}
         onPointerCancel={aoSoltarCabecalho}

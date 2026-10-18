@@ -330,7 +330,7 @@ function FreePool({
  * fechado (total, sucesso, margem), do mesmo jeito que o Console
  * resolve. Assim não existem duas versões da regra pra divergir.
  */
-type Roll = {
+export type Roll = {
   dados: number[];
   maiorDado: number;
   quantidadeDados: number;
@@ -447,7 +447,7 @@ function useTest(campaignId: string | null, ficha: FichaRolagem | null, visibili
  * Enquanto CARREGA (antes de soltar), os ícones tremem — porte literal
  * de `charge dice/src/components/dice.tsx` (`TestPool`).
  */
-function TestPool({
+export function TestPool({
   r, count, size = 46, rolling = false, landed = false, carga = 0,
 }: {
   r: Roll | null; count: number; size?: number; rolling?: boolean; landed?: boolean; carga?: number;
@@ -666,7 +666,7 @@ function useContextoRolagem(campaignId: string | null, characterId: string | nul
   return { ctx, carregando, erro, recarregar };
 }
 
-type Identidade = { id: string; nome: string; avatarUrl: string | null; tipo: "jogador" | "pn" };
+export type Identidade = { id: string; nome: string; avatarUrl: string | null; tipo: "jogador" | "pn" };
 
 /** O rosto + nome no formato do cartão de alvo — usado no gatilho e em cada linha da lista. */
 function CartaoIdentidade({ p, onFalhaAvatar }: { p: Identidade; onFalhaAvatar?: (p: Identidade) => void }) {
@@ -914,13 +914,18 @@ export function BandejaDados({ campaignId = null, personagemSugerido = null }: {
 /*  `FaixaResultado`/`FaixaSoma`) da pele clássica — muda só o         */
 /*  desenho. Estilo em `_tema/janela-dados.css`, escopado em           */
 /*  `.rv-fp--f`, porque é ali que `janelas-f.css` dá as peças `jf-`.   */
+/*                                                                     */
+/*  As peças (`SeletorToken`, `AvatarIdentidade`, `AjusteMod`,         */
+/*  `AjusteCD`, `QuemVe`, `TestPool`) são exportadas: a rolagem do     */
+/*  Console (`ficha/_console/panels/PainelRolagem.tsx`) é esta mesma   */
+/*  janela, e uma cópia lá divergiria no primeiro ajuste.              */
 /* ================================================================== */
 
 /** Acento da janela Rolar Dados (`ESPINHA.dados`) — o PolyDie quer hex, não `var()`. */
 const ACENTO_F = "#00d4ff";
 const ACENTO_F_SOFT = "rgba(0,212,255,0.14)";
 
-type OpcaoLista = { id: string; rotulo: string; valor?: string; lado?: "pj" | "pn"; frente?: ReactNode };
+export type OpcaoLista = { id: string; rotulo: string; valor?: string; lado?: "pj" | "pn"; frente?: ReactNode };
 
 /**
  * Seletor em "token" (sublinhado tracejado) com LISTA PRÓPRIA — não o
@@ -931,7 +936,7 @@ type OpcaoLista = { id: string; rotulo: string; valor?: string; lado?: "pj" | "p
  * pedido e couber no corpo da janela; senão abre pra baixo.
  * Fecha com clique fora, Esc ou escolha; ↑/↓ andam pela lista.
  */
-function SeletorToken({ titulo, valor, opcoes, onEscolher, desabilitado = false, preferirCima = false, direita = false, frente, tag, classe, testId }: {
+export function SeletorToken({ titulo, valor, opcoes, onEscolher, desabilitado = false, preferirCima = false, direita = false, frente, tag, classe, testId }: {
   titulo: string; valor: string; opcoes: OpcaoLista[]; onEscolher: (id: string) => void;
   desabilitado?: boolean; preferirCima?: boolean; direita?: boolean;
   /** Avatar (ou outro adorno) antes do nome, no gatilho. */
@@ -1017,7 +1022,7 @@ function SeletorToken({ titulo, valor, opcoes, onEscolher, desabilitado = false,
 }
 
 /** Rosto redondo com anel na cor do lado — o `avatarUrl` real; sem ele (ou se falhar), a sigla. */
-function AvatarIdentidade({ p, onFalha }: { p: Identidade; onFalha?: (p: Identidade) => void }) {
+export function AvatarIdentidade({ p, onFalha }: { p: Identidade; onFalha?: (p: Identidade) => void }) {
   const [falhou, setFalhou] = useState(false);
   useEffect(() => { setFalhou(false); }, [p.avatarUrl]);
   return (
@@ -1030,7 +1035,7 @@ function AvatarIdentidade({ p, onFalha }: { p: Identidade; onFalha?: (p: Identid
 }
 
 /** Modificador: − valor + — o valor continua digitável, como no `Stepper`. */
-function AjusteMod({ valor, onChange }: { valor: number; onChange: (n: number) => void }) {
+export function AjusteMod({ valor, onChange }: { valor: number; onChange: (n: number) => void }) {
   const fmt = valor > 0 ? `+${valor}` : `${valor}`;
   const [editando, setEditando] = useState(false);
   const [rascunho, setRascunho] = useState(fmt);
@@ -1064,7 +1069,7 @@ function AjusteMod({ valor, onChange }: { valor: number; onChange: (n: number) =
  * antiga virou o próprio −: abaixo de 1 a CD some — e apagar o campo
  * também tira. Mesmos limites do `CampoCD` (1–99).
  */
-function AjusteCD({ valor, onChange }: { valor: string; onChange: (v: string) => void }) {
+export function AjusteCD({ valor, onChange }: { valor: string; onChange: (v: string) => void }) {
   const vazia = valor.trim() === "";
   const atual = Number.parseInt(valor, 10);
   return (
@@ -1099,7 +1104,7 @@ const ICONE_VISIB: Record<TableLogVisibility, ReactNode> = {
 };
 
 /** "Quem vê" em blocos — a visibilidade real; `gm` só aparece pro narrador (o servidor revalida). */
-function QuemVe({ valor, onChange, ehNarrador }: { valor: TableLogVisibility; onChange: (v: TableLogVisibility) => void; ehNarrador: boolean }) {
+export function QuemVe({ valor, onChange, ehNarrador }: { valor: TableLogVisibility; onChange: (v: TableLogVisibility) => void; ehNarrador: boolean }) {
   const opcoes = VISIBILIDADES.filter((o) => o.v !== "gm" || ehNarrador);
   return (
     <div className="jf-grupo">
