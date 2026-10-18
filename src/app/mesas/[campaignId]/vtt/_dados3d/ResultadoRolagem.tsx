@@ -714,7 +714,7 @@ export function reduzirMovimentoAtivo(): boolean {
 
 export const VISIBILIDADES: { v: TableLogVisibility; label: string; dica: string }[] = [
   { v: "public", label: "Mesa", dica: "todo mundo vê" },
-  { v: "private", label: "Privada", dica: "só você e o narrador" },
+  { v: "private", label: "Privada", dica: "só você" },
   { v: "gm", label: "Narrador", dica: "só o narrador" },
 ];
 

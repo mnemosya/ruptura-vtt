@@ -327,7 +327,8 @@ export interface LogViewer {
 /**
  * Lista os logs de uma mesa JÁ FILTRADOS por visibilidade, no servidor,
  * conforme quem está pedindo. Regras:
- *   • narrador logado dono da mesa: vê TUDO (public/private/gm);
+ *   • narrador logado dono da mesa: public + gm + o próprio private
+ *     ("Privada" é só de quem criou — nem o narrador vê a dos outros);
  *   • jogador autenticado: public + private do próprio (por
  *     created_by_user_id); NUNCA gm;
  *   • sem conta: só public.
@@ -354,11 +355,10 @@ export async function listLogsForViewer(campaignId: string, viewer: LogViewer = 
   }
 
   const all = await listLogs(campaignId);
-  if (isOwner) return all;
 
   return all.filter((entry) => {
     if (entry.visibility === "public") return true;
-    if (entry.visibility === "gm") return false; // jogador nunca vê gm
+    if (entry.visibility === "gm") return isOwner; // jogador nunca vê gm
     return viewerUserId != null && entry.created_by_user_id === viewerUserId;
   });
 }
