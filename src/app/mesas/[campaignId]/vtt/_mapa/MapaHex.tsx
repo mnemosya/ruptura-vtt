@@ -3485,7 +3485,7 @@ export function MapaHex({
         tempo que a de Medir — só existe enquanto um token está sendo
         arrastado, e isso só acontece com "interagir" ativa. */}
     {arrasto && (
-      <div className="rv-flutuante rv-submenu" role="status">
+      <div className="rv-flutuante rv-submenu rv-dica-arrasto" role="status">
         <span className="rv-sub-info">Q: adicionar ponto · Backspace: remover ponto · Esc: cancelar</span>
       </div>
     )}
