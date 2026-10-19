@@ -325,17 +325,66 @@
 .rv-fp-corpo.rv-tempo-corpo { display: grid; gap: 0; min-height: 0; max-height: min(74vh, 760px); overflow: auto; padding: 0; color: var(--rv-ink); font: 12px var(--rv-body); }
 .rv-tempo-secao { padding: 14px 16px; border-bottom: 1px solid var(--rv-line); }
 .rv-tempo-secao[aria-label="Calendário Imperial"] { padding-top: 18px; }
-.rv-tempo-mes-cab { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 3px 8px; margin-bottom: 13px; }
+.rv-tempo-mes-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 13px; }
+.rv-tempo-mes-titulo { display: flex; align-items: baseline; gap: 14px; min-width: 0; }
+.rv-tempo-mes-numero { margin-left: 5px; color: var(--rv-cy); font: 600 12px var(--rv-mono); letter-spacing: 0; }
 .rv-tempo-mes { color: var(--rv-ink); font: 600 17px var(--rv-display); text-transform: uppercase; letter-spacing: .07em; }
 .rv-tempo-ano { color: var(--rv-ink-dim); font: 10px var(--rv-mono); text-transform: uppercase; }
-.rv-tempo-mes-nav { display: flex; grid-column: 2; grid-row: 1 / span 2; gap: 4px; }
-.rv-tempo-mes-nav button { padding: 5px; }
+.rv-tempo-mes-nav { display: flex; align-items: center; gap: 4px; }
+.rv-tempo-mes-nav button { padding: 3px 5px; }
+.rv-tempo-corpo .rv-tempo-mes-hoje { padding: 4px 8px; background: transparent; color: var(--rv-cy-hi); font-size: 9px; letter-spacing: .08em; }
 .rv-tempo-calendario { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; }
 .rv-tempo-dia-semana, .rv-tempo-dia { min-height: 32px; display: grid; place-items: center; text-align: center; font: 11px var(--rv-mono); }
 .rv-tempo-dia-semana { min-height: 22px; color: var(--rv-ink-faint); }
 .rv-tempo-corpo .rv-tempo-dia { justify-content: center; border: 1px solid var(--rv-line); background: var(--rv-sunken); color: var(--rv-ink-dim); border-radius: 0; padding: 0; }
 .rv-tempo-corpo .rv-tempo-dia:hover { border-color: var(--rv-line-hover); color: var(--rv-ink); }
 .rv-tempo-corpo .rv-tempo-dia[aria-pressed="true"], .rv-tempo-dia[data-atual="true"] { border-color: var(--rv-cy); background: var(--rv-cy-soft); color: var(--rv-cy-hi); }
+.rv-tempo-secao-calendario { position: relative; }
+.rv-tempo-corpo .rv-tempo-dia { position: relative; min-height: 36px; padding-bottom: 6px; }
+.rv-tempo-corpo .rv-tempo-dia[data-alvo="true"] { border-style: dashed; border-color: var(--rv-cy); color: var(--rv-ink); }
+.rv-tempo-dia-marcas { position: absolute; left: 0; right: 0; bottom: 4px; display: flex; justify-content: center; align-items: center; gap: 3px; height: 5px; pointer-events: none; }
+.rv-tempo-dia-mais { color: var(--rv-ink-dim); font: 8px var(--rv-mono); line-height: 1; }
+/* Cor por TIPO; marcação do narrador vira losango, sem cor extra. */
+.rv-tempo-marcador { flex: none; width: 5px; height: 5px; border-radius: 50%; background: var(--rv-tempo-marca); --rv-tempo-marca: var(--rv-cy); }
+.rv-tempo-marcador[data-tipo="prazo"] { --rv-tempo-marca: var(--rv-am); }
+.rv-tempo-marcador[data-tipo="evento"] { --rv-tempo-marca: var(--rv-ar); }
+.rv-tempo-marcador[data-tipo="memoria"] { --rv-tempo-marca: var(--rv-ink-dim); box-sizing: border-box; background: transparent; border: 1px solid var(--rv-tempo-marca); }
+.rv-tempo-marcador[data-oficial="true"] { border-radius: 0; transform: rotate(45deg); background: var(--rv-tempo-marca); border: 0; }
+.rv-tempo-balao { position: absolute; z-index: 4; width: 268px; box-sizing: border-box; padding: 10px 11px; border: 1px solid var(--rv-line-strong); background: linear-gradient(180deg, var(--fj-fundo-3, #0b1322), var(--fj-fundo-2, #080e19)); box-shadow: var(--sombra, 0 14px 40px rgba(0,0,0,.6)); pointer-events: none; }
+.rv-tempo-balao-cab { display: flex; justify-content: space-between; gap: 8px; margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--rv-line-2); color: var(--rv-ink-faint); font: 8.5px var(--rv-mono); letter-spacing: .12em; text-transform: uppercase; }
+.rv-tempo-balao-cab span:last-child { color: var(--rv-am); }
+.rv-tempo-balao-item { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; }
+.rv-tempo-balao-item .rv-tempo-marcador { width: 7px; height: 7px; margin-top: 4px; }
+.rv-tempo-balao-item > span:last-child { display: grid; gap: 1px; min-width: 0; }
+.rv-tempo-balao-item strong { color: var(--rv-ink); font: 600 12px var(--rv-body); line-height: 1.3; }
+.rv-tempo-balao-item small { color: var(--rv-ink-dim); font: 10px var(--rv-mono); }
+.rv-tempo-balao-dica { margin: 8px 0 0; padding-top: 6px; border-top: 1px solid var(--rv-line-2); color: var(--rv-ink-faint); font: 9px var(--rv-mono); }
+.rv-tempo-nova { position: fixed; z-index: 60; width: 320px; border: 1px solid var(--rv-line-2); background: linear-gradient(180deg, var(--fj-fundo-3, #0b1322), var(--fj-fundo-2, #080e19)); box-shadow: var(--sombra, 0 18px 50px rgba(0,0,0,.6)); color: var(--rv-ink); }
+.rv-tempo-nova-cab { display: flex; align-items: center; gap: 10px; padding: 12px 14px 10px; border-bottom: 1px solid var(--rv-line-2); }
+.rv-tempo-nova-cab > div { display: grid; gap: 6px; flex: 1; min-width: 0; }
+.rv-tempo-nova-cab h2 { margin: 0; color: var(--rv-ink); font: 700 13px var(--rv-display); letter-spacing: .12em; text-transform: uppercase; line-height: 1; }
+.rv-tempo-nova-modo { display: flex; align-items: center; gap: 6px; color: var(--rv-ink-faint); font: 10px var(--rv-mono); letter-spacing: .14em; text-transform: uppercase; }
+.rv-tempo-nova-modo::before { content: ""; flex: none; width: 4px; height: 4px; border-radius: 50%; background: var(--rv-cy); }
+.rv-tempo-nova-fechar { flex: none; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 1px solid var(--rv-line-strong); background: transparent; color: var(--rv-ink-faint); cursor: pointer; }
+.rv-tempo-nova-fechar:hover { color: var(--rv-ink); border-color: var(--rv-line-hover); }
+.rv-tempo-nova-corpo { display: grid; gap: 14px; padding: 14px; }
+.rv-tempo-nova-campo { display: grid; gap: 5px; min-width: 0; margin: 0; padding: 0; border: 0; color: var(--rv-ink-faint); font: 600 10px var(--rv-display); letter-spacing: .12em; text-transform: uppercase; }
+.rv-tempo-nova-campo legend { padding: 0; margin-bottom: 5px; }
+.rv-tempo-nova-campo input { box-sizing: border-box; width: 100%; height: 32px; padding: 0 10px; border: 1px solid var(--rv-line-strong); border-radius: 0; background: var(--rv-sunken); color: var(--rv-ink); font: 12px var(--rv-mono); letter-spacing: 0; text-transform: none; }
+.rv-tempo-nova-campo input::placeholder { color: var(--rv-ink-faint); }
+.rv-tempo-nova-campo input:focus-visible { outline: 1px solid var(--rv-cy); outline-offset: 1px; }
+.rv-tempo-nova-opcoes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.rv-tempo-nova-opcoes[data-colunas="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.rv-tempo-nova button:not(.rv-tempo-nova-fechar) { display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; height: 32px; padding: 0 10px; border: 1px solid var(--rv-line-strong); border-radius: 0; background: var(--rv-panel-2); color: var(--rv-ink); font: 600 10px var(--rv-display); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; cursor: pointer; }
+.rv-tempo-nova-opcoes[data-colunas="2"] button { justify-content: flex-start; }
+.rv-tempo-nova-opcoes[data-colunas="3"] button { padding: 0 4px; }
+.rv-tempo-nova button:not(.rv-tempo-nova-fechar):hover { border-color: var(--rv-line-hover); color: var(--rv-cy-hi); }
+.rv-tempo-nova button[aria-pressed="true"] { border-color: var(--rv-cy); background: var(--rv-cy-soft); color: var(--rv-cy-hi); }
+.rv-tempo-nova-opcoes .rv-tempo-marcador { width: 6px; height: 6px; }
+.rv-tempo-nova-rodape { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding-top: 12px; border-top: 1px solid var(--rv-line-2); color: var(--rv-ink-faint); font: 9px var(--rv-mono); }
+.rv-tempo-nova-rodape button[type="submit"] { border-color: var(--rv-cy); color: var(--rv-cy-hi); }
+.rv-tempo-nova-rodape button:disabled { opacity: .5; cursor: default; }
+.rv-tempo-nova .rv-tempo-erro { margin: 0; }
 .rv-tempo-calendario-rodape { display: flex; justify-content: space-between; align-items: center; padding: 12px 0 6px; color: var(--rv-ink-dim); font: 10px var(--rv-mono); }
 .rv-tempo-horario { color: var(--rv-cy-hi); font: 600 19px var(--rv-mono); }
 .rv-tempo-atalhos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin: 5px 0 12px; }
