@@ -180,6 +180,13 @@ export interface ItemContent {
   } | null;
   /** `estatisticas.cargas_max` (consumíveis de farmácia/granadas com carga própria) — `null` = item usa `quantidade` da instância como consumo direto. */
   cargasMax: number | null;
+  /**
+   * Quantos usos o item tem antes de acabar — lido do texto do efeito do
+   * Notion ("Uso único." = 1, "3 usos." = 3). Explosivo e vertina sem esse
+   * texto contam como uso único. `null` = o item NÃO é gasto ao usar
+   * (dispositivo, ferramenta…).
+   */
+  usos: number | null;
   /** `estatisticas.pericia_teste` no contexto de USO do item (ex.: "biologia" em farmácia) — mesmo campo bruto de `periciaAtaque`, mas nomeado para o contexto de uso, nunca inferido. `null` se ausente. */
   periciaUso: string | null;
   /** `estatisticas.alvo` (ex.: "adjacente_ou_proprio") — texto do escopo de alvo declarado pelo conteúdo; nunca usado para alvo estruturado. `null` se ausente. */
@@ -198,6 +205,15 @@ function asRecord(v: unknown): Record<string, unknown> | null {
 }
 
 /** Preserva o payload inteiro do registro — não achata nem descarta campos (estatísticas completas ficam disponíveis para checkpoints futuros). */
+function usosDoItem(raw: Record<string, unknown>, estatisticas: Record<string, unknown> | null | undefined): number | null {
+  const campos = estatisticas?.campos_tabela as Record<string, unknown> | undefined;
+  const texto = [campos?.Efeito, raw.descricao_curta].filter((t): t is string => typeof t === "string").join(" ");
+  if (/uso\s+único/i.test(texto)) return 1;
+  const n = /(\d+)\s+usos?\b/i.exec(texto);
+  if (n) return Number(n[1]);
+  return raw.categoria === "explosivo" || raw.categoria === "vertina" ? 1 : null;
+}
+
 export function normalizeItemContent(raw: Record<string, unknown>): ItemContent {
   raw = normalizeMarketTechnicalFields(raw).raw;
   const estatisticas = asRecord(raw.estatisticas);
@@ -268,7 +284,10 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
         penalidadeAlemEficaz: num(bruto.penalidade_alem_eficaz),
       };
     })(),
-    cargasMax: typeof estatisticas?.cargas_max === "number" ? estatisticas.cargas_max : null,
+    usos: usosDoItem(raw, estatisticas),
+    // "3 usos" sem cargas_max estruturado vira carga: o Medkit tem 3 usos por unidade.
+    cargasMax: typeof estatisticas?.cargas_max === "number" ? estatisticas.cargas_max
+      : (usosDoItem(raw, estatisticas) ?? 0) > 1 ? usosDoItem(raw, estatisticas) : null,
     periciaUso: typeof estatisticas?.pericia_teste === "string" ? estatisticas.pericia_teste : null,
     alvoUso: typeof estatisticas?.alvo === "string" ? estatisticas.alvo : null,
     classePorte: typeof estatisticas?.classe_porte === "string" ? estatisticas.classe_porte : null,
@@ -1004,12 +1023,17 @@ export interface ConsumeItemChargeResult {
  * disponibilidade antes (ver `getItemChargesAtual`/checagem de
  * `quantidade` no handler de uso).
  */
-export function consumeItemCharge(character: Character, instanceId: string, item: Pick<ItemContent, "cargasMax">): ConsumeItemChargeResult | null {
+export function consumeItemCharge(character: Character, instanceId: string, item: Pick<ItemContent, "cargasMax"> & { usos?: number | null }): ConsumeItemChargeResult | null {
   const atual = character.inventario ?? [];
   const instance = atual.find((i) => i.id === instanceId);
   if (!instance) return null;
 
   const quantityBefore = instance.quantidade;
+  // Item sem usos (dispositivo, ferramenta) não é gasto.
+  if (item.usos === null) {
+    const cargas = instance.cargasAtual ?? null;
+    return { character, quantityBefore, quantityAfter: quantityBefore, chargesBefore: cargas, chargesAfter: cargas, removed: false };
+  }
   if (item.cargasMax == null) {
     if (quantityBefore <= 0) return null;
     const quantityAfter = quantityBefore - 1;

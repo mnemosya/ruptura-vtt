@@ -23,11 +23,14 @@ const ROTULO_LOCAL: Record<FonteRecarga["local"], string> = {
 export function JanelaRecarga({
   arma,
   municao,
+  dano,
   fontes,
   onRecarregar,
   onFechar,
 }: {
   arma: string;
+  /** "1d6 perfurante" — o mesmo subtítulo do card da arma no Console. */
+  dano?: string | null;
   municao: { atual: number; max: number };
   fontes: FonteRecarga[];
   onRecarregar: (fonte: FonteRecarga) => void;
@@ -45,14 +48,28 @@ export function JanelaRecarga({
   })();
 
   return (
-    <AuxJanela titulo="Recarregar" onFechar={onFechar}>
+    <AuxJanela titulo={`Recarregar ${titulo}`} onFechar={onFechar} plano
+      cabecalho={
+        // Mesma faixa sangrada da janela da arma (WEAPON://…): a recarga é uma ação SOBRE ela.
+        <div className="rc-arma-cab">
+          <span className="rc-arma-cab-id">RELOAD://<b>{titulo}</b></span>
+          <button type="button" className="rc-arma-fechar" onClick={onFechar} aria-label="Fechar">×</button>
+        </div>
+      }>
       <div className="rc-rec">
         <div className="rc-rec-arma">
-          <div>
-            <div className="rc-rec-nome">{titulo}</div>
-            {tipo && <div className="rc-rec-tipo">{tipo}</div>}
+          <div className="rc-rec-nome">{titulo}</div>
+          {(dano || tipo) && (
+            <div className="rc-rec-tipo">{dano && <b>{dano}</b>}{tipo && <span>{tipo}</span>}</div>
+          )}
+          {/* A barra de munição do card da arma: vazia, fica só o trilho e o número em vermelho. */}
+          <div className="rc-rec-munlinha" aria-label={`Munição ${municao.atual} de ${municao.max}`}>
+            <span className="rc-rec-munrot">Mun.</span>
+            <span className="rc-rec-barra" aria-hidden="true">
+              <i style={{ width: `${municao.max > 0 ? Math.min(100, (municao.atual / municao.max) * 100) : 0}%` }} />
+            </span>
+            <span className="rc-rec-mun" data-vazia={municao.atual <= 0 || undefined}>{municao.atual}<span>/{municao.max}</span></span>
           </div>
-          <span className="rc-rec-mun">{municao.atual}<span>/{municao.max}</span></span>
         </div>
 
         <div className="rc-rec-lista" role="radiogroup" aria-label="Fonte de munição">

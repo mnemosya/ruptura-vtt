@@ -666,7 +666,7 @@ function useContextoRolagem(campaignId: string | null, characterId: string | nul
   return { ctx, carregando, erro, recarregar };
 }
 
-type Identidade = { id: string; nome: string; avatarUrl: string | null; tipo: "jogador" | "pn" };
+export type Identidade = { id: string; nome: string; avatarUrl: string | null; tipo: "jogador" | "pn" };
 
 /** O rosto + nome no formato do cartão de alvo — usado no gatilho e em cada linha da lista. */
 function CartaoIdentidade({ p, onFalhaAvatar }: { p: Identidade; onFalhaAvatar?: (p: Identidade) => void }) {
@@ -1125,7 +1125,7 @@ function estiloTremor(carga: number, i: number): CSSProperties {
   };
 }
 
-function HeroTeste({ s }: { s: ReturnType<typeof useTest> }) {
+function HeroTeste({ s, travado = false }: { s: EstadoTesteF; travado?: boolean }) {
   const { ficha, atributo } = s;
   if (!ficha) {
     return (
@@ -1152,14 +1152,73 @@ function HeroTeste({ s }: { s: ReturnType<typeof useTest> }) {
       </div>
       <div className="rv-rf-frase">
         <SeletorToken titulo="Atributo" valor={s.atributoId} opcoes={opcoesAtributo} onEscolher={s.setAtributoId}
-          desabilitado={s.rolling} preferirCima tag={tagAtributo} />
+          desabilitado={s.rolling || travado} preferirCima tag={tagAtributo} />
         <span className="rv-rf-mais" aria-hidden="true">+</span>
         <SeletorToken titulo="Perícia" valor={s.periciaId} opcoes={opcoesPericia} onEscolher={s.setPericiaId}
-          desabilitado={s.rolling} preferirCima direita tag={s.pericia ? `+${s.pericia.valor}` : undefined} />
+          desabilitado={s.rolling || travado} preferirCima direita tag={s.pericia ? `+${s.pericia.valor}` : undefined} />
       </div>
       {atributo?.valor === 0 && <p className="rv-rf-aviso">Atributo 0: role 2d8 e use o menor resultado.</p>}
       {s.roll && !s.rolling && <div className="rup-reveal rv-rf-faixa"><FaixaResultado r={s.roll} /></div>}
     </>
+  );
+}
+
+/** Estado do teste que a vitrine F desenha — o do rolador da mesa ou um adaptado (Console). */
+export type EstadoTesteF = {
+  ficha: FichaRolagem | null;
+  atributoId: string; setAtributoId: (id: string) => void;
+  periciaId: string; setPericiaId: (id: string) => void;
+  atributo: { id: string; nome: string; valor: number } | null;
+  pericia: { id: string; nome: string; valor: number } | null;
+  mods: number; setMods: (n: number) => void;
+  cdInput: string; setCdInput: (v: string) => void;
+  roll: Roll | null; doRoll: (forca: number) => void | Promise<void>;
+  rolling: boolean; landed: boolean; carga: number; setCarga: (n: number) => void;
+  erro: string | null; podeRolar: boolean;
+};
+export type RolagemF = Roll;
+
+/**
+ * Corpo "Atributo & Perícia" da janela Rolar Dados, para quem traz o
+ * PRÓPRIO estado — o Console (perícia clicada, ataque do token, defesa,
+ * colapso) rola pelas regras dele e usa esta mesma vitrine, em vez de
+ * uma segunda janela com outro desenho.
+ */
+export function CorpoTesteF({ s, identidade, visibilidade, onVisibilidade, ehNarrador = false, rotulo, nota, extra, travado = false }: {
+  s: EstadoTesteF;
+  identidade?: Identidade | null;
+  visibilidade?: TableLogVisibility;
+  onVisibilidade?: (v: TableLogVisibility) => void;
+  ehNarrador?: boolean;
+  rotulo: string;
+  nota?: ReactNode;
+  /** Avisos entre a vitrine e os ajustes (defesa sem Reação…). */
+  extra?: ReactNode;
+  /** Atributo, perícia e CD vêm da regra (teste decisivo de colapso). */
+  travado?: boolean;
+}) {
+  return (
+    <div className="rv-rf">
+      <div className="jf-hero rv-rf-hero">
+        {identidade && (
+          <SeletorToken titulo="Rolando como" valor={identidade.id} desabilitado classe="rv-rf-ident" onEscolher={() => {}}
+            opcoes={[{ id: identidade.id, rotulo: identidade.nome, lado: identidade.tipo === "pn" ? "pn" : "pj", valor: identidade.tipo === "pn" ? "PN" : "PJ" }]}
+            frente={<AvatarIdentidade p={identidade} />} />
+        )}
+        <HeroTeste s={s} travado={travado} />
+      </div>
+      {s.erro && <ErroRolagem texto={s.erro} />}
+      {extra}
+      <div className="jf-ajustes rv-rf-ajustes">
+        <AjusteMod valor={s.mods} onChange={s.setMods} />
+        {travado
+          ? <div className="jf-ajuste"><span className="jf-l">CD</span><span className="jf-ajuste-ctl"><span className="jf-ajuste-v rv-rf-num">{s.cdInput || "—"}</span></span></div>
+          : <AjusteCD valor={s.cdInput} onChange={s.setCdInput} />}
+      </div>
+      {visibilidade && onVisibilidade && <QuemVe valor={visibilidade} onChange={onVisibilidade} ehNarrador={ehNarrador} />}
+      <RollButton variante="f" label={rotulo} disabled={s.rolling || !s.podeRolar} onRoll={s.doRoll} onChargeChange={s.setCarga} />
+      {nota && <p className="jf-nota">{nota}</p>}
+    </div>
   );
 }
 

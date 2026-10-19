@@ -36,7 +36,7 @@ type VertDef = (typeof VERTENTES_HUD)[number];
 const VERT = (id: string): VertDef => VERTENTES_HUD.find((v) => v.id === id) ?? VERTENTES_HUD[0];
 /** Os quatro tipos de magia de Ruptura. */
 const COR_TIPO: Record<string, string> = { ataque: "#ff5f74", controle: "#f5a200", movimento: "#6ff0ff", suporte: "#22d3aa" };
-const corTipo = (t: string) => COR_TIPO[t.toLowerCase()] ?? "#7f95b3";
+export const corTipo = (t: string) => COR_TIPO[t.toLowerCase()] ?? "#7f95b3";
 const CY = "#00d4ff", AMB = "#ff8a1f", GELO = "#cfeff4", CASCO = "#081925";
 
 export interface MagiaHud {

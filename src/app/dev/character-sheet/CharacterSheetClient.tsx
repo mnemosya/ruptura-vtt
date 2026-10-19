@@ -177,11 +177,14 @@ import { CharacterConsole } from "../../ficha/_console/CharacterConsole";
 import { ConsoleErrorBoundary } from "../../ficha/_console/ConsoleErrorBoundary";
 import { useConsoleCloseOverride } from "../../ficha/_console/ConsoleCloseContext";
 import { PainelAcaoToken, type OpcaoAcaoToken } from "../../mesas/[campaignId]/vtt/_shell/PainelAcaoToken";
+import { acaoDaMagia } from "../../ficha/_console/panels/hud/MagiasHud";
+import { canonicalVertenteId } from "../../../lib/character/spells";
 import { PainelRolagem } from "../../ficha/_console/panels/PainelRolagem";
-import { contextoAcaoTokenAction } from "../../mesas/[campaignId]/vtt/_painel/acoes/targetsPainel";
+import { contextoAcaoTokenAction, usarItemEmAliadoAction } from "../../mesas/[campaignId]/vtt/_painel/acoes/targetsPainel";
 import { declararAtaqueAction } from "../../mesas/[campaignId]/vtt/_painel/acoes/ataquePainel";
 import type { AlvoAcaoToken, ContextoAcaoToken, PedidoAcaoToken } from "../../mesas/[campaignId]/vtt/_dominio/targets";
-import { deriveItemUseKind, getItemUsePreview, getItemUsePaCost } from "../../../lib/character/itemUse";
+import { deriveItemUseKind, getItemUsePreview, getItemUsePaCost, formulasRoladasDoItem, dadosDaFormula, rngDeFaces } from "../../../lib/character/itemUse";
+import { useRolarNaMesa } from "../../mesas/[campaignId]/vtt/_dados3d/ContextoMesaDados";
 import { registrarRolagemPericiaAction } from "../../mesas/[campaignId]/vtt/_painel/acoes/rolagemPainel";
 import type { TurnWindow } from "../../../lib/table/turnTrack";
 import type { ConsoleApi, ConsolePin, TermoDeRegra } from "../../ficha/_console/types";
@@ -362,6 +365,18 @@ export default function CharacterSheetClient({
   initialTab,
 }: Props) {
   const [character, setCharacter] = useState<Character>(() => createInitialCharacter(regras));
+  /**
+   * Dado de efeito rola nos dados 3D da mesa: as faces que pararem SÃO o
+   * resultado. Fora da mesa (/dev), `null` e o sorteio de sempre.
+   */
+  const rolarNaMesa = useRolarNaMesa();
+  async function facesNaMesa(formulas: string[], cor: string): Promise<{ value: number; sides: number }[] | null> {
+    const pedido = formulas.flatMap((f, i) => dadosDaFormula(f).map((sides, j) => ({ id: `efeito-${i}-${j}`, sides })));
+    if (!rolarNaMesa || !pedido.length) return null;
+    const fisicos = await rolarNaMesa(pedido, cor);
+    // A física devolve na ordem em que os corpos pararam: volta à ordem do pedido.
+    return pedido.map((d) => ({ value: fisicos.find((f) => f.id === d.id)?.value ?? 1, sides: d.sides }));
+  }
   const characterRef = useRef(character);
   characterRef.current = character;
   // Último payload conhecido como "igual ao banco" — atualizado sempre
@@ -2171,7 +2186,9 @@ export default function CharacterSheetClient({
     }
 
     const nowIso = new Date().toISOString();
+    const faces = await facesNaMesa(formulasRoladasDoItem(itemModelo), "#22d3aa");
     const result = useItemOnCharacter({
+      rng: faces ? rngDeFaces(faces) : undefined,
       character: current,
       instance,
       item: itemModelo,
@@ -2247,6 +2264,8 @@ export default function CharacterSheetClient({
             chargesAfter: result.chargesAfter,
             resourceChanges: result.resourceChanges,
             healingRolled: result.healingRolled,
+            dadosRolados: faces?.map((f) => f.value) ?? [],
+            formulaRolada: formulasRoladasDoItem(itemModelo).join(" + ") || null,
             damageRolled: result.damageRolled,
             damageType: result.damageRolled[0]?.damageType ?? null,
             area: itemModelo.areaMetros,
@@ -2311,7 +2330,9 @@ export default function CharacterSheetClient({
 
     const nowIso = new Date().toISOString();
     const targetDerivados = computeDerivedStats(ally.character.atributos, regras, ally.character.mana_bonus_ruptura ?? 0, characterDerivedFormulas(ally.character));
+    const faces = await facesNaMesa(formulasRoladasDoItem(itemModelo), "#22d3aa");
     const result = useItemOnAlly({
+      rng: faces ? rngDeFaces(faces) : undefined,
       source: current,
       target: ally.character,
       instance,
@@ -4140,6 +4161,15 @@ export default function CharacterSheetClient({
         const municao = c.instanceId && modelo?.usesAmmunition ? checkAttackAmmoBlock(character, itemsIniciais, { weaponInstanceId: c.instanceId }) : null;
         return { id: c.instanceId ?? "__desarmado__", nome: c.nome, custo: acao?.custoLabel ?? "Custo indisponível", aviso: acao?.warning, alvo: "obrigatorio", pericia: resolucao.skill,
           fatos: [{ rotulo: "Dano-base", valor: resolucao.danoBase ?? "—" }, { rotulo: "Perícia", valor: regras?.pericias.find(p => p.id === resolucao.skill)?.nome ?? resolucao.skill ?? "—" }],
+          recarga: (() => {
+            const info = c.instanceId ? fontesDeRecarga(c.instanceId) : null;
+            const inst = character.inventario?.find(i => i.id === c.instanceId);
+            return info && info.fontes.length > 0 && modelo?.municaoMax && (inst?.municaoAtual ?? 0) < modelo.municaoMax
+              ? { municao: { atual: inst?.municaoAtual ?? 0, max: modelo.municaoMax }, fontes: info.fontes } : undefined;
+          })(),
+          visual: { tipo: "arma", nome: c.nome, categoria: modelo?.categoria ?? "arma", dano: resolucao.danoBase ?? null,
+            pericia: regras?.pericias.find(p => p.id === resolucao.skill)?.nome ?? resolucao.skill ?? null,
+            pa: ((n) => Number.isNaN(n) ? null : n)(Number.parseInt(acao?.custoLabel ?? "", 10)) },
           detalhe: "Após confirmar, abre a rolagem. Com alvo, o ataque segue no chat: o alvo defende, você escolhe a região pela margem e o narrador aplica o dano.",
           bloqueio: !acao?.enabled ? acao?.disabledReason ?? "Ação indisponível." : municao === "sem_municao" ? "Arma descarregada. Recarregue antes de atacar." : municao ? "Munição indisponível; confira arma e aljava na ficha." : !resolucao.skill ? "Perícia de ataque não definida no catálogo." : null };
       });
@@ -4148,20 +4178,25 @@ export default function CharacterSheetClient({
         const teste = castSpell({ character, spell: s, paMax: derivados.pa_max, manaMax: derivados.mana_max });
         return { id: s.slug, nome: s.nome, custo: `${s.estatisticas.custo_pa} PA · ${s.estatisticas.custo_mana ?? "não definido"} Mana`, alvo: "opcional",
           fatos: [{ rotulo: "Alcance", valor: s.estatisticas.alcanceTexto ?? "—" }],
-          detalhe: "Resistências e efeitos no alvo são resolvidos manualmente.", aviso: teste.ok ? teste.reason : undefined, bloqueio: teste.ok ? null : teste.reason };
+          visual: { tipo: "magia", nivel: s.estatisticas.nivel, vertente: canonicalVertenteId(s.vertente), tipoMagia: s.estatisticas.tipo_magia ?? "", mana: s.estatisticas.custo_mana,
+            acao: acaoDaMagia({ pa: s.estatisticas.custo_pa, conjuracao: s.estatisticas.custo_pa === 0 && s.estatisticas.conjuracaoTexto && !/\bPA$/i.test(s.estatisticas.conjuracaoTexto) ? s.estatisticas.conjuracaoTexto : null }) },
+          detalhe: "Resistências e efeitos no alvo são resolvidos manualmente.", aviso: teste.ok ? teste.reason : undefined, bloqueio: teste.ok ? null : teste.reason } satisfies OpcaoAcaoToken;
       });
     } else if (acaoToken.categoria === "item") {
       opcoes = (character.inventario ?? []).flatMap(i => {
         const m = catalogoItens.get(i.itemSlug);
         if (!m || !deriveItemUseKind(m)) return [];
         const preview = getItemUsePreview(m, character);
-        const proprio = deriveItemUseKind(m) === "pharmacy";
+        const farmacia = deriveItemUseKind(m) === "pharmacy";
         const custoPa = getItemUsePaCost(m);
         const paAtual = Math.max(0, derivados.pa_max - (character.estado_jogo?.pa_gastos ?? 0));
-        return [{ id: i.id, nome: `${i.itemNome || m.nome} · ${i.quantidade} un.`, alvo: proprio ? "proprio" : "opcional",
-          custo: `${custoPa ?? m.custoPaUsoTexto ?? "conforme regra do item"} PA · consome 1 uso`,
+        // Farmácia vai em si mesmo ou num aliado marcado no mapa; sem custo de PA no
+        // catálogo, o cartão não inventa um ("conforme regra do item PA").
+        return [{ id: i.id, nome: `${i.itemNome || m.nome} · ${i.quantidade} un.`, alvo: "opcional", rotuloSemAlvo: farmacia ? "Em mim mesmo" : undefined,
+          custo: custoPa != null ? `${custoPa} PA · consome 1 uso` : "consome 1 uso",
           aviso: custoPa != null && custoPa > paAtual ? `PA insuficiente (atual: ${paAtual}, necessário: ${custoPa}).` : undefined,
-          detalhe: [...preview.automatic, ...preview.manual, ...(proprio ? ["Uso em si mesmo. Uso em aliados permanece no fluxo da ficha."] : [])].join(" "),
+          visual: { tipo: "item", nome: i.itemNome || m.nome, quantidade: i.quantidade, categoria: m.categoria, categoriaRotulo: m.categoria_label ?? m.categoria, pa: custoPa ?? null },
+          detalhe: [...preview.automatic, ...preview.manual, ...(farmacia ? ["Sem alvo, o uso é em si mesmo."] : [])].join(" "),
           bloqueio: i.quantidade <= 0 ? "Sem estoque." : preview.blockedReason } satisfies OpcaoAcaoToken];
       });
     }
@@ -4199,6 +4234,30 @@ export default function CharacterSheetClient({
           } : undefined,
         });
       } else if (acaoToken.categoria === "conjurar") await handleCastSpell(opcao.id, r.dados);
+      else if (r.dados.alvoCharacterId && r.dados.alvoCharacterId !== characterId && r.dados.alvoTokenId) {
+        // O jogador não grava a ficha de outro: o banco aplica no aliado e consome aqui.
+        const modelo = catalogoItens.get(antes.inventario?.find(i => i.id === opcao.id)?.itemSlug ?? "");
+        const faces = modelo ? await facesNaMesa(formulasRoladasDoItem(modelo), "#22d3aa") : null;
+        const uso = await usarItemEmAliadoAction(acaoToken.tokenId, r.dados.alvoTokenId, opcao.id, faces?.map(f => f.value) ?? null);
+        if (!uso.ok || !uso.dados) throw new Error(uso.erro ?? "Não foi possível usar o item.");
+        const u = uso.dados;
+        const depois = normalizeCharacter(u.source.payload);
+        characterRef.current = depois;
+        setCharacter(depois);
+        const partes = [
+          ...(u.paCusto != null ? [`PA ${u.paAntes} → ${u.paDepois}`] : []),
+          ...(u.consumido ? [`quantidade ${u.quantidadeAntes} → ${u.quantidadeDepois}`] : []),
+          ...u.mudancas.map(m => `${m.recurso.toUpperCase()} de ${u.alvoNome} ${m.antes} → ${m.depois} (${m.dado}: ${m.rolado})`),
+          ...(u.removidas.length ? [`removeu de ${u.alvoNome}: ${u.removidas.join(", ")}`] : []),
+        ];
+        addLogEntry("recurso", `Usou ${u.itemNome} em ${u.alvoNome} (${partes.join(" · ")})${u.lembretes.length ? ` — Lembrete: ${u.lembretes.join(" ")}` : ""}.`);
+        if (selectedCampaignId) void addLog({ campaignId: selectedCampaignId, characterId: characterId ?? undefined, type: "item_used", visibility: r.dados.logVisibility,
+          payload: { characterId, characterNome: antes.nome, sourceCharacterId: characterId, sourceCharacterName: antes.nome, targetCharacterId: u.alvoCharacterId, targetCharacterName: u.alvoNome,
+            targetMode: "ally", itemInstanceId: opcao.id, itemName: u.itemNome, paCost: u.paCusto, paBefore: u.paAntes, paAfter: u.paDepois,
+            quantityBefore: u.quantidadeAntes, quantityAfter: u.quantidadeDepois, targetResourceChanges: u.mudancas,
+            dadosRolados: faces?.map(f => f.value) ?? [], formulaRolada: u.mudancas.map(m => m.dado).join(" + ") || null, targetRemovedConditions: u.removidas, reminders: u.lembretes, ...r.dados } }).catch(() => {});
+        return;
+      } else if (alvoId && !r.dados.alvoCharacterId) throw new Error("Itens só podem ser usados em personagens. Desmarque o alvo para usar em si mesmo.");
       else await handleUseItem(opcao.id, undefined, r.dados);
       if (characterRef.current === antes) throw new Error("Ação não executada. Confira os recursos e as condições de uso na ficha.");
     };
@@ -4206,6 +4265,7 @@ export default function CharacterSheetClient({
       <PainelAcaoToken key={`${acaoToken.tokenId}:${acaoToken.categoria}`} pedido={acaoToken} nome={character.nome} opcoes={opcoes} alvos={alvosNoMapa}
         erroCatalogo={acaoToken.categoria === "atacar" ? combatActionsError : acaoToken.categoria === "conjurar" ? spellsError : itemsError}
         erroGravacao={consoleApi.erro} onExecutar={executar}
+        onRecarregar={acaoToken.categoria === "atacar" ? (opcaoId, fonteId) => recarregarDaFonteEscolhida(opcaoId, fonteId) : undefined}
         onConcluir={() => { if (acaoToken.categoria !== "atacar") consoleCloseOverride?.(); }}
         onFechar={() => { setRolagemToken(null); consoleCloseOverride?.(); }} />
       {rolagemToken && <PainelRolagem api={consoleApi} prefill={{ tipo: "pericia", periciaId: rolagemToken.pericia }} acaoToken={rolagemToken} onFechar={() => { setRolagemToken(null); consoleCloseOverride?.(); }} />}

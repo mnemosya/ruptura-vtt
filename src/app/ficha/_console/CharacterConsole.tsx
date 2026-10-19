@@ -621,6 +621,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
         <JanelaRecarga
           arma={aux.instancia.itemNome}
           municao={aux.municao}
+          dano={(() => { const m = api.catalogo.get(aux.instancia.itemSlug); return m ? [m.danoBase, m.subtipoDano ?? m.tipoDano].filter(Boolean).join(" ") || null : null; })()}
           fontes={aux.fontes}
           onRecarregar={(f) => {
             avisar(api.recarregarDe(aux.instancia.id, f.id));

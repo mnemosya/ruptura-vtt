@@ -129,11 +129,6 @@ export function isConditionRemovalPrimaryItem(item: Pick<ItemContent, "payloadAu
   return effects.some(isConditionRemovalEffect) && !effects.some((e) => HEAL_EFFECT_TYPES.has(e.tipo));
 }
 
-/** Cura aplicável AGORA — `tipo: "cura"` sem `gatilho` textual (ex.: `descanso_curto`). Cura com gatilho nunca é aplicada no uso, vira lembrete (checkpoint pós-v0.62). */
-function isImmediateHealEffect(efeito: ItemUseEffect): boolean {
-  return HEAL_EFFECT_TYPES.has(efeito.tipo) && typeof efeito.gatilho !== "string";
-}
-
 /**
  * Alvo do efeito `estabilizar` derivado de `pausa_marcador` — mesma
  * correspondência físico→PV / mental→PE da regra canônica de Colapso
@@ -186,6 +181,8 @@ const DAMAGE_EFFECT_TYPES = new Set(["efeito_com_resistencia", "dano_em_area"]);
  * (mina/carga remota) — ambos tratados igual no resto do fluxo.
  */
 export function deriveItemUseKind(item: Pick<ItemContent, "categoria" | "tags" | "payloadAutomacao" | "alcanceArremessoMetros">): ItemUseKind | null {
+  // Arma vai pelo Atacar; armadura, escudo, munição e veículo são passivos.
+  if (CATEGORIAS_SEM_USO.has(item.categoria)) return null;
   const effects = getItemUseEffects(item);
   const hasHeal = effects.some((e) => HEAL_EFFECT_TYPES.has(e.tipo));
   const hasDamageOrAreaEffect = effects.some((e) => DAMAGE_EFFECT_TYPES.has(e.tipo) || e.tipo === "ambiente" || e.tipo === "desativar_dispositivos");
@@ -194,15 +191,19 @@ export function deriveItemUseKind(item: Pick<ItemContent, "categoria" | "tags" |
   if (item.categoria === "explosivo" || hasDamageOrAreaEffect) {
     return item.alcanceArremessoMetros != null ? "grenade" : "explosive";
   }
-  // Item com efeitos declarados mas sem categoria farmácia/explosivo reconhecida — ainda assim
-  // permite uso manual (algum efeito existe, mesmo que não seja cura/dano estruturado).
-  if (effects.length > 0) return "manual";
+  // Vertina é consumida sempre; ferramenta e dispositivo só com efeito ATIVO
+  // (efeito passivo — penalidade, modificador — não vira botão "Usar").
+  if (item.categoria === "vertina") return "manual";
+  if (effects.some((e) => !EFEITOS_PASSIVOS.has(e.tipo))) return "manual";
   return null;
 }
 
+const CATEGORIAS_SEM_USO = new Set(["arma", "armadura", "escudo", "municao", "veiculo"]);
+const EFEITOS_PASSIVOS = new Set(["penalidade_pericia", "modificador"]);
+
 export function getItemUsePaCost(item: ItemContent): number | null {
-  const curaImediata = deriveItemUseKind(item) === "pharmacy" && getItemUseEffects(item).some(isImmediateHealEffect);
-  return item.custoPaUso ?? (curaImediata && item.custoPaUsoTexto == null ? 1 : null);
+  // Sem custo no catálogo, usar um item custa 1 PA (regra da mesa).
+  return item.custoPaUso ?? (item.custoPaUsoTexto == null ? 1 : null);
 }
 
 export interface ItemUseResourceChange {
@@ -912,4 +913,34 @@ export function getItemUsePreview(
   }
 
   return { automatic, manual, blockedReason };
+}
+
+/**
+ * Fórmulas que o uso do item vai rolar, NA ORDEM em que `useItemOnCharacter`/
+ * `useItemOnAlly` chamam o `rng` — para os dados 3D da mesa rolarem antes e
+ * as faces virarem o resultado (`rngDeFaces`).
+ */
+export function formulasRoladasDoItem(item: ItemContent): string[] {
+  const kind = deriveItemUseKind(item);
+  const out: string[] = [];
+  for (const e of getItemUseEffects(item)) {
+    if (e.tipo === "cura" && kind === "pharmacy" && typeof e.gatilho !== "string" && typeof e.dado === "string") out.push(e.dado);
+    else if ((e.tipo === "efeito_com_resistencia" || e.tipo === "dano_em_area") && kind !== "pharmacy") {
+      const f = typeof e.dano === "string" ? e.dano : typeof e.dado === "string" ? e.dado : null;
+      if (f) out.push(f);
+    }
+  }
+  return out.filter((f) => /^\d+d\d+([+-]\d+)?$/.test(f.replace(/\s+/g, "")));
+}
+
+/** Dados de uma fórmula "NdS(+M)" para o rolador 3D. */
+export function dadosDaFormula(formula: string): number[] {
+  const m = /^(\d+)d(\d+)/.exec(formula.replace(/\s+/g, ""));
+  return m ? Array.from({ length: Math.min(Number(m[1]), 100) }, () => Number(m[2])) : [];
+}
+
+/** `rng` que devolve as faces já roladas, em ordem; acabou a fila, volta ao sorteio. */
+export function rngDeFaces(faces: { value: number; sides: number }[]): () => number {
+  const fila = [...faces];
+  return () => { const f = fila.shift(); return f ? (f.value - 0.5) / f.sides : Math.random(); };
 }

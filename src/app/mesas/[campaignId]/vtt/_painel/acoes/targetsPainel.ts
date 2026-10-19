@@ -29,3 +29,20 @@ export async function contextoAcaoTokenAction(actorId:string,targetId:string|nul
     return {ok:true,dados:{...context,distanciaMetros:context.alvoTokenId ? await distanciaTokens(context.sceneId,context.actorTokenId,context.alvoTokenId) : null}};
   } catch { return {ok:false,erro:"Não foi possível validar o alvo."}; }
 }
+
+export interface UsoItemEmAliado {
+  source: { id: string; payload: unknown; updated_at: string };
+  alvoNome: string; alvoCharacterId: string; itemNome: string;
+  paCusto: number | null; paAntes: number; paDepois: number; quantidadeAntes: number; quantidadeDepois: number; consumido: boolean;
+  mudancas: { recurso: "pv" | "pe"; dado: string; rolado: number; antes: number; depois: number }[];
+  removidas: string[]; lembretes: string[];
+}
+/** Item de farmácia num aliado: a regra roda no banco (vtt_use_item_on_ally), que grava as duas fichas. */
+export async function usarItemEmAliadoAction(actorTokenId:string,alvoTokenId:string,instanceId:string,faces:number[]|null=null):Promise<ResultadoPainel<UsoItemEmAliado>> {
+  try {
+    const client=await getScopedTableClient();
+    const {data,error}=await client.rpc("vtt_use_item_on_ally",{p_actor_token:actorTokenId,p_target_token:alvoTokenId,p_instance_id:instanceId,p_faces:faces});
+    if(error||!data) return {ok:false,erro:error?.message??"Não foi possível usar o item."};
+    return {ok:true,dados:data as UsoItemEmAliado};
+  } catch { return {ok:false,erro:"Não foi possível usar o item."}; }
+}

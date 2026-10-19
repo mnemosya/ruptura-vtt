@@ -19,7 +19,8 @@
 
 import { BookOpen, Package, Sparkles, Wand2 } from "lucide-react";
 import { CartaoBase } from "../ui/CartaoBase";
-import { Chip, Chips, Modulo, Modulos, PainelTecnico } from "../ui/primitivas";
+import { BarraAlvo, Chip, Chips, Modulo, Modulos, PainelTecnico } from "../ui/primitivas";
+import { ACCENTS, DadosRolados } from "../../_dados3d/ResultadoRolagem";
 import type { AcentoCartao, CartaoReferencia, CartaoUso, SnapshotConteudo } from "./contratos";
 import { cabecalhoDe } from "./CabecalhoPersonagem";
 import { EVENTO_ABRIR_COMPENDIO } from "../../_compendio/modelo";
@@ -151,30 +152,33 @@ export function ContentUseCard({
       testId="painel-feed-uso"
       atributos={{ "data-kind": "uso" }}
     >
-      {(cartao.tags.length > 0 || cartao.gatilho || cartao.recarga || cartao.restante) && (
+      {cartao.tipoUso === "talento" && (cartao.gatilho || cartao.recarga || cartao.tags.length > 0) && (
         <Chips>
-          {cartao.tipoUso === "talento" && cartao.gatilho && (
-            <Chip acento="mana" titulo="O que dispara o talento">Gatilho: {cartao.gatilho}</Chip>
-          )}
-          {cartao.tipoUso === "talento" && cartao.recarga && (
-            <Chip acento="am" titulo="Quando volta a ficar disponível">Recarga: {cartao.recarga}</Chip>
-          )}
-          {cartao.tipoUso === "item" && cartao.restante && (
-            <Chip acento="cy" titulo="O que sobrou depois do uso">Restam {cartao.restante}</Chip>
-          )}
-          {cartao.tags.slice(0, 5).map((t) => (
-            <Chip key={t}>{t}</Chip>
-          ))}
+          {cartao.gatilho && <Chip acento="mana" titulo="O que dispara o talento">Gatilho: {cartao.gatilho}</Chip>}
+          {cartao.recarga && <Chip acento="am" titulo="Quando volta a ficar disponível">Recarga: {cartao.recarga}</Chip>}
+          {cartao.tags.slice(0, 5).map((t) => <Chip key={t}>{t}</Chip>)}
         </Chips>
       )}
-      {cartao.custos.length > 0 && (
-        <Modulos colunas={cartao.custos.length >= 3 ? 3 : 2}>
-          {cartao.custos.map((m, i) => (
-            <Modulo key={i} rotulo={m.rotulo} valor={m.valor} acento={m.acento ?? acento} />
+      {cartao.tipoUso === "item" && cartao.dados.length > 0 && (
+        <div data-testid="painel-feed-uso-dados">
+          <DadosRolados dados={cartao.dados} maiorDado={Math.max(...cartao.dados)} size={34} landed acento={ACCENTS.good} />
+        </div>
+      )}
+      {cartao.tipoUso === "item" && cartao.alvo && <BarraAlvo nome={cartao.alvo} acento="ok" />}
+      {(cartao.custos.length > 0 || (cartao.tipoUso === "item" && cartao.resultados.length > 0)) && (
+        <Modulos colunas={3}>
+          {cartao.tipoUso === "item" && cartao.resultados.map((r, i) => (
+            // O que o item FEZ é a leitura principal: "+6 PE", com o antes → depois embaixo.
+            <Modulo key={`r${i}`} destaque acento="ok" rotulo={cartao.formula && i === 0 ? `${r.recurso} · ${cartao.formula}` : r.recurso}
+              valor={`${r.ganho >= 0 ? "+" : "−"}${Math.abs(r.ganho)}`} sub={<span style={{ marginLeft: 10 }}>{r.antes} → {r.depois}</span>} />
           ))}
+          {cartao.custos.map((m, i) => <Modulo key={i} rotulo={m.rotulo} valor={m.valor} acento={m.acento ?? acento} />)}
         </Modulos>
       )}
-      {cartao.efeito && <p className="pn-texto">{cartao.efeito}</p>}
+      {cartao.tipoUso === "item" && cartao.removidas.length > 0 && (
+        <Chips>{cartao.removidas.map((c) => <Chip key={c} acento="ok">Removeu {c}</Chip>)}</Chips>
+      )}
+      {cartao.efeito && (cartao.tipoUso === "talento" || (cartao.resultados.length === 0 && cartao.removidas.length === 0)) && <p className="pn-texto">{cartao.efeito}</p>}
     </CartaoBase>
   );
 }

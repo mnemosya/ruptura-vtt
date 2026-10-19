@@ -177,6 +177,14 @@ export interface CartaoUso extends CartaoComum {
   efeito: string | null;
   /** Item: o que sobrou depois do uso ("2 de 5 cargas"). */
   restante: string | null;
+  /** Item: cada recurso que mudou — "+6 PE", de 5 para 11. */
+  resultados: { recurso: string; ganho: number; antes: number; depois: number }[];
+  /** Item: faces que os dados 3D pararam mostrando, e a fórmula. */
+  dados: number[];
+  formula: string | null;
+  /** Item usado em outro personagem. */
+  alvo: string | null;
+  removidas: string[];
   /** Talento: o que dispara o uso. */
   gatilho: string | null;
   /** Talento: quando volta a ficar disponível. */
@@ -693,10 +701,49 @@ function projetarReferencia(entry: TableLogEntry): CartaoFeed {
   return { ...comum(entry), kind: "referencia", conteudo: snapshotDoPayload(entry.payload as P) };
 }
 
+/**
+ * O uso de item da ficha grava os fatos em inglês (resourceChanges,
+ * targetResourceChanges, removedConditions…), não um texto pronto: o
+ * card monta "PE 1 → 4 (1d6: 3)" a partir deles.
+ */
+function efeitoDoItem(p: P): string | undefined {
+  type Mud = { resource?: string; recurso?: string; before?: number; antes?: number; after?: number; depois?: number; dado?: string; rolado?: number };
+  const alvo = typeof p.targetCharacterName === "string" ? p.targetCharacterName : null;
+  const muds = [...(Array.isArray(p.resourceChanges) ? p.resourceChanges : []), ...(Array.isArray(p.targetResourceChanges) ? p.targetResourceChanges : [])] as Mud[];
+  const partes = muds.map((m) => {
+    const r = String(m.resource ?? m.recurso ?? "").toUpperCase();
+    const rolagem = m.dado && m.rolado != null ? ` (${m.dado}: ${m.rolado})` : "";
+    return `${r}${alvo ? ` de ${alvo}` : ""} ${m.before ?? m.antes} → ${m.after ?? m.depois}${rolagem}`;
+  });
+  if (!muds.length && typeof p.healingRolled === "number") partes.push(`Cura ${p.healingRolled}`);
+  for (const d of (Array.isArray(p.damageRolled) ? p.damageRolled : []) as { formula?: string; result?: number }[]) partes.push(`Dano ${d.result} (${d.formula})`);
+  const rem = [...(Array.isArray(p.removedConditions) ? p.removedConditions : []), ...(Array.isArray(p.targetRemovedConditions) ? p.targetRemovedConditions : [])];
+  if (rem.length) partes.push(`Removeu ${rem.join(", ")}`);
+  if (!partes.length && alvo) partes.push(`Em ${alvo}`);
+  return partes.length ? partes.join(" · ") : undefined;
+}
+function restanteDoItem(p: P): string | undefined {
+  if (typeof p.chargesAfter === "number") return `${p.chargesAfter} carga${p.chargesAfter === 1 ? "" : "s"}`;
+  return typeof p.quantityAfter === "number" ? String(p.quantityAfter) : undefined;
+}
+function fatosDoItem(p: P): Pick<CartaoUso, "resultados" | "dados" | "formula" | "alvo" | "removidas"> {
+  type Mud = { resource?: string; recurso?: string; before?: number; antes?: number; after?: number; depois?: number; dado?: string };
+  const muds = [...(Array.isArray(p.resourceChanges) ? p.resourceChanges : []), ...(Array.isArray(p.targetResourceChanges) ? p.targetResourceChanges : [])] as Mud[];
+  const resultados = muds.flatMap((m) => {
+    const antes = m.before ?? m.antes, depois = m.after ?? m.depois;
+    return typeof antes === "number" && typeof depois === "number"
+      ? [{ recurso: String(m.resource ?? m.recurso ?? "").toUpperCase(), ganho: depois - antes, antes, depois }] : [];
+  });
+  const dados = numeros(p, "dadosRolados");
+  const formula = txt(p, "formulaRolada") ?? muds.find((m) => typeof m.dado === "string")?.dado ?? null;
+  const removidas = [...(Array.isArray(p.removedConditions) ? p.removedConditions : []), ...(Array.isArray(p.targetRemovedConditions) ? p.targetRemovedConditions : [])].map(String);
+  return { resultados, dados, formula, alvo: typeof p.targetCharacterName === "string" ? p.targetCharacterName : null, removidas };
+}
+
 function projetarUso(entry: TableLogEntry): CartaoFeed {
   const p = entry.payload as P;
   const custos: ModuloCartao[] = [];
-  const pa = num(p, "paGasto", "custoPa", "pa");
+  const pa = num(p, "paGasto", "custoPa", "pa", "paCost");
   if (pa != null) custos.push({ rotulo: "PA", valor: String(pa) });
   const cargas = num(p, "cargasGastas", "cargasAtual");
   if (cargas != null) custos.push({ rotulo: "Cargas", valor: String(cargas) });
@@ -706,12 +753,13 @@ function projetarUso(entry: TableLogEntry): CartaoFeed {
     ...comum(entry),
     kind: "uso",
     tipoUso: entry.type === "item_used" ? "item" : "talento",
-    nome: txt(p, "itemNome", "talentoNome", "nome") ?? (entry.type === "item_used" ? "Item" : "Talento"),
+    nome: txt(p, "itemNome", "itemName", "talentoNome", "nome") ?? (entry.type === "item_used" ? "Item" : "Talento"),
     descricao: txt(p, "descricao", "efeito", "efeitoTexto"),
     tags: lista(p, "tags"),
     custos,
-    efeito: txt(p, "resultado", "efeitoResultado"),
-    restante: txt(p, "restanteRotulo", "restante", "quantidadeRestante"),
+    efeito: txt(p, "resultado", "efeitoResultado") ?? efeitoDoItem(p) ?? null,
+    restante: txt(p, "restanteRotulo", "restante", "quantidadeRestante") ?? restanteDoItem(p) ?? null,
+    ...fatosDoItem(p),
     gatilho: txt(p, "gatilho", "trigger"),
     recarga: txt(p, "recarga", "recargaRotulo"),
   };

@@ -100,6 +100,8 @@
 .hx-cartao-magia { background: rgba(0, 212, 255, .08); transition: background .15s; }
 .hx-cartao-magia:hover { background: rgba(0, 212, 255, .28); }
 .hx-cartao-magia:hover > span { background: #0c2129 !important; }
+.hx-cartao-magia:disabled:hover { background: rgba(0, 212, 255, .08); }
+.hx-cartao-magia:disabled:hover > span { background: #081925 !important; }
 
 /* botão principal ciano */
 .hx-btn-conjurar { background: rgba(0, 212, 255, .14) !important; color: var(--hx-cy) !important; transition: all .15s; }
@@ -517,6 +519,27 @@ button.hx-mun-valor:hover { border-color: rgba(0, 212, 255, .35); background: rg
 .pa-aviso, .pa-bloqueio { font: 500 11px var(--font-mono), monospace; letter-spacing: .04em; line-height: 1.4; }
 .pa-aviso { color: var(--hx-amb); }
 .pa-bloqueio { color: var(--hx-dim); }
+.pa-grupo { display: flex; flex-direction: column; gap: 10px; }
+.pa-item { display: flex; flex-direction: column; }
+.pa-ok { margin: 0; font: 500 11px var(--font-mono), monospace; letter-spacing: .04em; color: #22d3aa; }
+/* Recarga embaixo do card da arma: mesma largura, encostada, como uma gaveta. */
+.pa-recarga { margin: -1px 0 0 18px; border: 1px solid rgba(0, 212, 255, .14); border-top: 0; background: #071520; }
+.hx .pa-recarga-botao { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 12px; border: 0; background: transparent; color: var(--hx-cy); font: 600 10px var(--font-mono), monospace; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; text-align: left; }
+.hx .pa-recarga-botao:hover { background: rgba(0, 212, 255, .08); }
+.hx .pa-recarga-botao:focus-visible { outline: 1px solid var(--hx-cy); outline-offset: -1px; }
+.hx .pa-recarga-botao > span:nth-child(2) { flex: 1; }
+.pa-recarga-mun { color: #ff5f74; letter-spacing: .04em; }
+.pa-recarga-mun span { color: #4f6285; }
+.pa-recarga-pa { padding: 1px 6px; border: 1px solid rgba(0, 212, 255, .25); color: #8fb0c2; letter-spacing: .06em; }
+.pa-recarga-pa[data-caro] { border-color: rgba(255, 138, 31, .5); color: #ff8a1f; }
+.pa-recarga-lista { display: flex; flex-direction: column; border-top: 1px solid rgba(0, 212, 255, .1); }
+.hx .pa-recarga-fonte { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 0; border-top: 1px solid rgba(0, 212, 255, .06); background: transparent; color: var(--hx-texto, #cfeff4); cursor: pointer; text-align: left; font: 600 12px var(--font-mono), monospace; }
+.hx .pa-recarga-fonte:first-child { border-top: 0; }
+.hx .pa-recarga-fonte:hover { background: rgba(0, 212, 255, .08); }
+.hx .pa-recarga-fonte:focus-visible { outline: 1px solid var(--hx-cy); outline-offset: -1px; }
+.pa-recarga-fonte-nome { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.pa-recarga-fonte-nome span { font-weight: 500; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #6a7f99; }
+.hx-cartao-magia .pa-aviso, .hx-cartao-magia .pa-bloqueio { display: block; margin-top: 6px; text-transform: none; letter-spacing: .02em; }
 
 .pa-trocar { padding: 0; border: 0; background: transparent; color: var(--hx-cy); cursor: pointer; font: 700 10px var(--font-mono), monospace !important; letter-spacing: 1.6px; text-transform: uppercase; }
 .pa-trocar:hover { color: var(--hx-cy-hi); }

@@ -237,6 +237,21 @@ export const GRUPOS_CARDS: Grupo[] = [
         ],
       },
       {
+        chave: "item-cura",
+        titulo: "Item — cura rolada nos dados 3D",
+        nota: "Formato real da ficha: faces, ganho em destaque, PA e o que sobrou.",
+        entradas: [
+          log("item_used", {
+            characterNome: "Natsu", itemName: "Ansiolítico", paCost: 1, quantityBefore: 1, quantityAfter: 0,
+            resourceChanges: [{ resource: "pe", before: 5, after: 11 }], healingRolled: 6, dadosRolados: [6], formulaRolada: "1d6",
+          }),
+          log("item_used", {
+            characterNome: "Natsu", itemName: "Medkit", paCost: 1, quantityBefore: 2, quantityAfter: 1, targetCharacterName: "Combatente",
+            targetResourceChanges: [{ recurso: "pv", dado: "1d6", rolado: 6, antes: 3, depois: 9 }], dadosRolados: [4], formulaRolada: "1d6",
+          }),
+        ],
+      },
+      {
         chave: "talento",
         titulo: "Talento — gatilho e recarga",
         nota: "Acento violeta e os dois chips que só o talento tem.",

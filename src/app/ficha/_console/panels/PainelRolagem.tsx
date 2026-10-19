@@ -41,26 +41,16 @@ import type { TableLogVisibility } from "../../../../lib/table";
 import type { PhysicsDieSpec } from "../../../mesas/[campaignId]/vtt/_dados3d/ArenaDados";
 import { useRolarNaMesa } from "../../../mesas/[campaignId]/vtt/_dados3d/ContextoMesaDados";
 import { lerContextoRolagemAction } from "../../../mesas/[campaignId]/vtt/_painel/acoes/rolagemPainel";
-import {
-  ACCENTS, BODY, CampoCD, DISPLAY, DadosRolados, FaixaResultado, INK, INK_FAINT, MONO,
-  MolduraRolagem, RESULTS, RollButton, Select, SeletorVisibilidade, Stack, Stepper,
-  type ResultKey,
-} from "../../../mesas/[campaignId]/vtt/_dados3d/ResultadoRolagem";
+import { type ResultKey } from "../../../mesas/[campaignId]/vtt/_dados3d/ResultadoRolagem";
+import { CorpoTesteF, type EstadoTesteF, type RolagemF } from "../../../mesas/[campaignId]/vtt/_dados3d/RoladorDados";
+import type { FichaRolagem } from "../../../mesas/[campaignId]/vtt/_painel/acoes/rolagemPainel";
+import { Dices, X } from "lucide-react";
+import "../../../mesas/[campaignId]/vtt/_tema/janelas-f.css";
+import "../../../mesas/[campaignId]/vtt/_tema/janela-dados.css";
 import type { ConsoleApi } from "../types";
 import { useCentroDoConsole } from "../useCentroDoConsole";
 
 const SEM_PERICIA = "";
-
-function InfoCanonica({ label, valor }: { label: string; valor: string }) {
-  return (
-    <div>
-      <span style={{ display: "block", fontFamily: DISPLAY, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.16em", color: INK_FAINT }}>{label}</span>
-      <div style={{ marginTop: 4, minHeight: 32, display: "flex", alignItems: "center", padding: "6px 9px", borderRadius: 0, border: "1px solid #244050", background: "#10202a", color: INK, fontFamily: MONO, fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-        {valor}
-      </div>
-    </div>
-  );
-}
 
 /** O que o clique no Console pediu — o estado inicial do painel. */
 export type PrefillRolagem =
@@ -143,23 +133,6 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
   const nd8 = pool.quantidadeDados;
   const podeRolar = !rolando && !!rolarNaMesa && !((testeColapso || acaoToken) && resultado);
 
-  const opcoesAtributo = atributos.map((a) => {
-    const definicao = getRupturaPool(api.character.atributos[a.id as keyof CharacterAttributes] ?? 0);
-    return {
-      id: a.id,
-      rotulo: a.nome,
-      valor: `${definicao.quantidadeDados}d8 ${definicao.modoSelecao === "lowest" ? "↓" : "↑"}`,
-    };
-  });
-  // A perícia é escolhível SEMPRE — inclusive num teste que nasceu de
-  // um clique em atributo. Era a única coisa que o clique fechava sem
-  // ter por quê: rolar Corpo e decidir no meio que aquilo é Atletismo
-  // é o caso normal, não a exceção.
-  const opcoesPericia = [
-    { id: SEM_PERICIA, rotulo: "Sem perícia" },
-    ...pericias.map((p) => ({ id: p.id, rotulo: p.nome, valor: `+${api.character.pericias[p.id] ?? 0}` })),
-  ];
-
   const doRoll = useCallback(async (forca: number) => {
     if (rolando || !rolarNaMesa || (acaoToken && resultado)) return;
     setRolando(true);
@@ -219,6 +192,43 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
     ? "defesa · gasta 1 reação ao rolar"
     : `d8 · ${pool.modoSelecao === "lowest" ? "menor" : "maior"} dado + perícia + modificadores`;
 
+  // A vitrine F (a mesma da ferramenta Rolar Dados da mesa) lê o teste
+  // neste formato; a regra continua sendo a do Console (`api.rolarTeste`).
+  const nomeAtributo = (id: string) => atributos.find((a) => a.id === id)?.nome ?? id;
+  const ficha: FichaRolagem = {
+    characterId: mesa?.characterId ?? "",
+    nome: api.character.nome,
+    atributos: atributos.map((a) => ({ id: a.id, nome: a.nome, valor: api.character.atributos[a.id as keyof CharacterAttributes] ?? 0 })),
+    pericias: pericias.map((p) => ({ id: p.id, nome: p.nome, valor: api.character.pericias[p.id] ?? 0 })),
+  } as FichaRolagem;
+  const periciaSel = periciaId === SEM_PERICIA ? null : ficha.pericias.find((p) => p.id === periciaId) ?? null;
+  const roll: RolagemF | null = resultado ? {
+    dados: resultado.dados,
+    maiorDado: resultado.maiorDado,
+    quantidadeDados: resultado.dados.length,
+    modoSelecao: resultado.modoSelecao,
+    atributo: nomeAtributo(atributoId),
+    atributoValor: valorAtributo,
+    pericia: resultado.periciaNome ?? null,
+    periciaValor: resultado.periciaValor,
+    modificador: resultado.modificador,
+    total: resultado.total,
+    cd: resultado.cd ?? null,
+    sucesso: resultado.sucesso ?? null,
+    classificacao: (resultado.classificacaoMargem as ResultKey | undefined) ?? null,
+  } : null;
+  const estado: EstadoTesteF = {
+    ficha, atributoId, setAtributoId, periciaId, setPericiaId,
+    atributo: ficha.atributos.find((a) => a.id === atributoId) ?? null,
+    pericia: periciaSel,
+    mods, setMods, cdInput, setCdInput, roll, doRoll, rolling: rolando, landed, carga, setCarga,
+    erro: null, podeRolar,
+  };
+  const rotulo = rolando ? "Rolando…" : testeColapso && resultado ? "Resultado aplicado" : resultado ? "Rolar de novo" : `Rolar ${nd8}d8`;
+  const nota = acaoToken
+    ? `${acaoToken.nome}${acaoToken.penalidadeAlcance ? ` · alcance ${acaoToken.penalidadeAlcance}` : ""}`
+    : carga > 0 ? `Força ${Math.round(carga * 100)}%${carga >= 0.995 ? " · máxima" : ""}` : "Segure pra carregar força";
+
   return (
     <div style={CAMADA} data-testid="console-rolagem-camada">
       {/* Sem Console pra centralizar (ação do token), `posicao` é a TELA
@@ -227,120 +237,40 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
           tela deixa passar; só a janela em si recebe clique. */}
       <div style={{ ...posicao, pointerEvents: centro ? "auto" : "none" }}>
       <div ref={janelaRef} style={{ pointerEvents: "auto" }}>
-      <MolduraRolagem
-        indice="01"
-        codigo="Rolar Dados"
-        titulo="Rolar Dados"
-        modo={modo}
-        aoFechar={onFechar}
-        rotuloFechar="Fechar rolagem"
-        testId="console-painel-rolagem"
-      >
-        <Stack gap={16}>
-          {/* "Rolando como" — o mesmo cartão da ferramenta Rolar Dados (aqui fixo: é a ficha aberta). */}
-          {identidade && <div>
-            <span style={{ fontFamily: DISPLAY, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.16em", color: INK_FAINT }}>Rolando como</span>
-            <div className="rv-ident-cartao rv-ident-gatilho" data-lado={identidade.tipo === "pn" ? "pn" : "pj"} style={{ cursor: "default" }}>
-              <span className="rv-ident-face" aria-hidden="true">{identidade.avatarUrl ? <img src={identidade.avatarUrl} alt="" /> : identidade.nome.slice(0, 3).toUpperCase()}</span>
-              <span className="rv-ident-nome">{identidade.nome}</span>
-            </div>
-          </div>}
-          {/* Uma grade só: Atributo · Perícia · Modificadores. A perícia
-              leva mais espaço — os nomes dela são mais longos. */}
-          {testeColapso ? (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-              <InfoCanonica label="Atributo" valor={opcoesAtributo.find((item) => item.id === atributoId)?.rotulo ?? atributoId} />
-              <InfoCanonica label="Perícia" valor="Sem perícia" />
-              <InfoCanonica label="CD" valor={cdInput} />
-            </div>
-          ) : <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.35fr) auto", gap: 8, alignItems: "end" }}>
-            <Select label="Atributo" value={atributoId} onChange={setAtributoId} options={opcoesAtributo} disabled={rolando} />
-            <Select label="Perícia" value={periciaId} onChange={setPericiaId} options={opcoesPericia} disabled={rolando} />
-            <div>
-              <span style={{ display: "block", fontFamily: DISPLAY, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.16em", color: INK_FAINT }}>Mod.</span>
-              <div style={{ marginTop: 4 }}><Stepper value={mods} onChange={setMods} /></div>
-            </div>
-          </div>}
-
-          <div style={{ borderRadius: 0, padding: 14, background: "var(--fj-fundo-3, #0a1220)", border: "1px solid var(--fj-fundo-6, #16233a)" }}>
-            <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: INK_FAINT }}>
-                Pool · <span style={{ color: "#00d4ff" }}>{nd8}d8</span> · {pool.modoSelecao === "lowest" ? "menor dado" : "maior dado"}
-              </span>
-              <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: INK_FAINT }}>
-                {cdInput.trim() === "" ? "sem CD definida" : `cd ${cdInput}`}
-              </span>
-            </div>
-
-            <div data-testid="console-roll-dados">
-              <DadosRolados
-                dados={resultado ? resultado.dados : Array.from({ length: nd8 }, () => 0)}
-                maiorDado={resultado ? resultado.maiorDado : -1}
-                size={40}
-                landed={landed}
-                dim={!resultado}
-                acento={resultado?.classificacaoMargem ? RESULTS[resultado.classificacaoMargem as ResultKey].accent : undefined}
-              />
-            </div>
-
-            {resultado && !rolando && (
-              <div className="rup-reveal" style={{ marginTop: 14 }}>
-                <FaixaResultado
-                  testIdTotal="console-roll-total"
-                  r={{
-                    maiorDado: resultado.maiorDado,
-                    modoSelecao: resultado.modoSelecao,
-                    pericia: resultado.periciaNome ?? null,
-                    periciaValor: resultado.periciaValor,
-                    modificador: resultado.modificador,
-                    total: resultado.total,
-                    cd: resultado.cd ?? null,
-                    classificacao: (resultado.classificacaoMargem as ResultKey | undefined) ?? null,
-                  }}
-                  nota={resultado.promocaoAplicada ? (
-                    <div style={{ marginTop: 4, fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em", color: ACCENTS.arcane.hex }}>
-                      margem promovida por {resultado.promocaoAplicada}
-                    </div>
-                  ) : undefined}
-                />
-              </div>
-            )}
-
-            {valorAtributo === 0 && (
-              <p style={{ margin: "10px 0 0", fontFamily: BODY, fontSize: 11.5, color: INK_FAINT }}>
-                Atributo 0: role 2d8 e use o menor resultado.
+      {/* A moldura da janela Rolar Dados da mesa (linha F), sem o arrasto: aqui ela vive presa ao Console.
+          `rv-moldura-rolagem` traz os tokens da mesa (fontes, acento), que fora do `.rv-mesa` não chegam. */}
+      <section className="rv-moldura-rolagem rv-fp rv-fp--f rv-dados-painel" role="dialog" aria-label="Rolar dados" data-testid="console-painel-rolagem"
+        style={{ position: "relative", left: "auto", top: "auto", ["--jf-acento" as string]: "#00d4ff" }}>
+        <header className="rv-fp-cab">
+          <span className="rv-fp-cab-icone" aria-hidden="true"><Dices size={16} /></span>
+          <span className="rv-fp-cab-txt">
+            <span className="rv-fp-titulo">Rolar Dados</span>
+            {/* Como na ferramenta da mesa, sem linha de estado — exceto quando ela muda a regra. */}
+            {(prefill.tipo === "defesa" || testeColapso) && <span className="rv-fp-modo">{modo}</span>}
+          </span>
+          <button type="button" className="rv-fp-fechar" aria-label="Fechar rolagem" onClick={onFechar}><X size={15} /></button>
+        </header>
+        <div className="rv-dados-corpo jf-corpo rup-scroll">
+          <CorpoTesteF
+            s={estado}
+            identidade={identidade && mesa ? { id: mesa.characterId, ...identidade } : null}
+            visibilidade={mesa ? visibilidade : undefined}
+            onVisibilidade={mesa ? setVisibilidade : undefined}
+            ehNarrador={ehNarrador}
+            rotulo={rotulo}
+            nota={nota}
+            travado={testeColapso}
+            extra={defesa && !defesa.usouReacao ? (
+              <p role="status" className="rv-rf-aviso">
+                Sem Reação disponível — {defesa.defesasSemReacao}ª defesa sem Reação nesta rodada, penalidade cumulativa
+                de <strong>{defesa.penalidade}</strong> já aplicada.
               </p>
-            )}
-          </div>
-
-          {defesa && !defesa.usouReacao && (
-            <p role="status" style={{
-              margin: 0, borderRadius: 0, border: `1px solid ${ACCENTS.amber.hex}55`, background: ACCENTS.amber.soft,
-              padding: "8px 10px", fontFamily: BODY, fontSize: 11.5, lineHeight: 1.45, color: "#e5c187",
-            }}>
-              Sem Reação disponível — {defesa.defesasSemReacao}ª defesa sem Reação nesta rodada, penalidade cumulativa
-              de <strong style={{ color: ACCENTS.amber.hex }}>{defesa.penalidade}</strong> já aplicada acima.
-            </p>
-          )}
-
-          {!testeColapso && <CampoCD value={cdInput} onChange={setCdInput} />}
-
-          <RollButton
-            label={rolando ? "Rolando…" : testeColapso && resultado ? "Resultado aplicado" : resultado ? "Rolar de novo" : `Rolar ${nd8}d8`}
-            disabled={!podeRolar}
-            onRoll={doRoll}
-            onChargeChange={setCarga}
+            ) : undefined}
           />
-
-
-          {mesa && <SeletorVisibilidade valor={visibilidade} onChange={setVisibilidade} ehNarrador={ehNarrador} />}
-          {acaoToken && <p style={{ color: INK_FAINT, fontFamily: MONO, fontSize: 11 }}>{acaoToken.nome}{acaoToken.penalidadeAlcance ? ` · Alcance: ${acaoToken.penalidadeAlcance}` : ""}</p>}
-        </Stack>
-      </MolduraRolagem>
+        </div>
+      </section>
       </div>
       </div>
-      {/* `carga` alimenta só o tremor dos dados no botão; nada a mostrar aqui. */}
-      <span hidden>{carga}</span>
     </div>
   );
 }

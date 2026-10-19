@@ -4913,11 +4913,17 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
 /* ── Recarga: janela de escolha de fonte + aviso com Desfazer ─────────
    Ver `panels/JanelaRecarga.tsx`. A janela é uma tabela curta (uma
    linha por pilha de munição); o aviso é uma linha só, no pé da tela. */
-.rc-rec { display: grid; gap: 14px; }
-.rc-rec-arma { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
-.rc-rec-nome { font: 700 16px/1.1 var(--font-chakra), sans-serif; text-transform: uppercase; letter-spacing: .04em; color: #e6f6ff; }
-.rc-rec-tipo { margin-top: 4px; font: 500 11px var(--font-mono), monospace; letter-spacing: 1.6px; text-transform: uppercase; color: #6a7f99; }
-.rc-rec-mun { font: 700 15px var(--font-mono), monospace; color: #ff5f74; white-space: nowrap; }
+.rc-rec { display: grid; gap: 14px; padding: 16px 20px 0; }
+.rc-rec-arma { display: grid; gap: 6px; }
+.rc-rec-nome { font: 700 18px/1.1 var(--font-chakra), sans-serif; text-transform: uppercase; letter-spacing: .04em; color: #e6f6ff; }
+.rc-rec-tipo { display: flex; align-items: baseline; gap: 8px; font: 500 11px var(--font-mono), monospace; letter-spacing: 1.6px; text-transform: uppercase; color: #6a7f99; }
+.rc-rec-tipo b { font: 700 15px var(--font-chakra), sans-serif; letter-spacing: .02em; text-transform: none; color: #ff5f74; }
+.rc-rec-munlinha { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.rc-rec-munrot { font: 500 10px var(--font-mono), monospace; letter-spacing: .16em; text-transform: uppercase; color: #4f6285; }
+.rc-rec-barra { position: relative; flex: 1; height: 6px; background: rgba(0, 212, 255, .07); }
+.rc-rec-barra i { position: absolute; inset: 0 auto 0 0; background: var(--rc-cy); box-shadow: 0 0 8px -1px var(--rc-cy); transition: width .15s; }
+.rc-rec-mun { font: 700 15px var(--font-mono), monospace; color: #e6f6ff; white-space: nowrap; }
+.rc-rec-mun[data-vazia] { color: #ff5f74; }
 .rc-rec-mun span { font-size: 11px; color: #4f6285; }
 .rc-rec-lista { display: grid; border: 1px solid #1d4152; }
 .rc-rec-op { position: relative; display: grid; grid-template-columns: 10px minmax(0, 1fr) auto 44px; align-items: center; gap: 12px; padding: 10px 12px 10px 14px; cursor: pointer; transition: background .14s; }
@@ -4938,7 +4944,7 @@ span.rc-acao-carga, span.rc-nsob-pip { cursor: default; }
 .rc-rec-pa { justify-self: end; padding: 2px 6px; border: 1px solid #1d4152; font: 700 11px var(--font-mono), monospace; color: #9fb2c8; white-space: nowrap; }
 .rc-rec-pa[data-caro] { border-color: #4a3317; color: #ff8a1f; }
 .rc-rec-nota { margin: 0; font-size: 12px; color: #6a7f99; }
-.rc-rec-acoes { align-items: center; justify-content: space-between; }
+.rc-rec-acoes { align-items: center; justify-content: space-between; padding: 0 20px 18px; }
 .rc-rec-aviso {
   position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%); z-index: 700;
   display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 14px; max-width: min(520px, calc(100vw - 32px));
