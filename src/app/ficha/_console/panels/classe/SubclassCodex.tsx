@@ -1,14 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ChevronRight, X, BookOpen, Crosshair, HeartPulse, Swords, Sparkles, Radar, Cpu, Shield } from "lucide-react";
+import { ChevronRight, X, BookOpen, Crosshair, HeartPulse, Swords, Handshake, HatGlasses, Cpu, Shield } from "lucide-react";
 import type { SubclassContentV12 } from "../../../../../lib/rulesetV12/contracts";
 import { reached } from "../../../../../lib/character/classManagement";
 import { JanelaMercado } from "../hud/JanelaMercado";
 import { TextoComRegras } from "../../TextoComRegras";
 import "./subclassCodex.css";
 
-const symbols = { ancora: HeartPulse, cacador: Crosshair, combatente: Swords, face: Sparkles, infiltrador: Radar, tecnico: Cpu, vanguarda: Shield };
+const symbols = { ancora: HeartPulse, cacador: Crosshair, combatente: Swords, face: Handshake, infiltrador: HatGlasses, tecnico: Cpu, vanguarda: Shield };
 export function SubclassCodex({ sub, rank, color }: { sub: SubclassContentV12; rank: string; color: string }) {
   const [open, setOpen] = useState(false);
   const [selection, setSelection] = useState("");
@@ -24,7 +24,7 @@ export function SubclassCodex({ sub, rank, color }: { sub: SubclassContentV12; r
       <div className="hc-subclass-codex-body">
         <header className="hc-subclass-header"><span className="hc-subclass-header-sigil"><Icon size={24}/></span><div><small>COMPÊNDIO · ESPECIALIZAÇÃO / RANKING {rank}</small><h2>{sub.nome}</h2></div><button type="button" onClick={close} aria-label="Fechar técnicas"><X size={20}/></button></header>
         <div className="hc-subclass-reader"><nav aria-label="Características da subclasse">{["E", "C", "A"].filter(required => features.some(item => item.rank === required)).map(required => <div key={required}><span className="hc-subclass-tier">RANKING {required}</span>{features.filter(item => item.rank === required).map(item => <button key={item.key} type="button" aria-current={active.key === item.key ? "true" : undefined} onClick={() => setSelection(item.key)}><span className="hc-subclass-index-rank">{item.rank}</span><span>{item.nome}</span></button>)}</div>)}</nav>
-          <article key={active.key}><div className="hc-subclass-hero"><div><small>ESPECIALIZAÇÃO · RANKING {active.rank}</small><h3>{active.nome}</h3><span>CARACTERÍSTICA ADQUIRIDA</span></div><Icon size={122} strokeWidth={1} aria-hidden="true"/></div><div className="hc-subclass-prose"><TextoComRegras glossario={[]} texto={active.descricao}/></div><footer>RUPTURA V1.2 <span>Requisitos e efeitos resolvidos com a mesa</span></footer></article>
+          <article key={active.key}><div className="hc-subclass-hero"><div><small>ESPECIALIZAÇÃO · RANKING {active.rank}</small><h3>{active.nome}</h3><span>CARACTERÍSTICA ADQUIRIDA</span></div><Icon size={122} strokeWidth={1} aria-hidden="true"/></div><div className="hc-subclass-prose"><TextoComRegras glossario={[]} texto={active.descricao}/></div></article>
         </div>
       </div>
     </div>}</JanelaMercado>}

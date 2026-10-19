@@ -128,7 +128,7 @@ export function ClassOperations({ api, classId, rank, subclassId }: { api: Api; 
   }
 
   if (classId === "infiltrador") return <section className="hc-operation hc-infiltrator" aria-label="Brechas">
-    <header className="hc-op-head"><div><span className="hc-kicker">01 / OPORTUNIDADES</span><h3>Brechas</h3></div><span className="hc-op-meta">VÁLIDAS NESTA CENA</span></header>
+    <header className="hc-op-head"><div><span className="hc-kicker">01 / OPORTUNIDADES</span><h3>BRECHAS</h3></div><span className="hc-op-meta">VÁLIDAS NESTA CENA</span></header>
     <div className="hc-infiltrator-layout"><div className="hc-breach-bank"><div className="hc-reserve-caption"><span>Brechas disponíveis</span><small>{state.resource} / {resource.max}</small></div><div className="hc-breach-slots">{Array.from({ length: resource.max }, (_, index) => <button type="button" key={index} disabled={locked} aria-label={index < state.resource ? `Gastar brecha ${index + 1}` : `Ganhar brecha ${index + 1}`} title={index < state.resource ? "Gastar brecha" : "Ganhar brecha"} onClick={() => send?.({ type: index < state.resource ? "spend" : "gain" })}><HexSlot ready={index < state.resource}/></button>)}</div></div></div>
   </section>;
 

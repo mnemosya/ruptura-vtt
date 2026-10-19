@@ -4,6 +4,12 @@
   --hc-body: var(--font-corpo, system-ui), sans-serif;
   --hc-ease: cubic-bezier(.16, 1, .3, 1);
 }
+.hc-panel[data-game] :is(h2,h3,h4,h5,h6),
+.hc-module-dialog[data-core] :is(h2,h3,h4,h5,h6),
+.hc-subclass-codex :is(h2,h3,h4,h5,h6),
+.hc-panel[data-game] :is(.hc-subclass-entry>span>strong,.hc-module-card strong) {
+  text-transform: uppercase;
+}
 .hc-module-dialog, .hc-subclass-codex {
   --hx-display: var(--hc-font);
   --hx-corpo: var(--hc-body);
@@ -147,7 +153,7 @@
 /* Direct resource interaction: the token itself is the control. */
 .hc-panel .hc-face-layout,.hc-panel .hc-infiltrator-layout { grid-template-columns:minmax(0,1fr); }
 .hc-reserve-caption { display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px; }
-.hc-reserve-caption>span { color:#d4e5e9;font:600 14px/1.5 var(--hc-font);letter-spacing:0;text-transform:none; }
+.hc-reserve-caption>span { color:#d4e5e9;font:600 14px/1.5 var(--hc-font);letter-spacing:.04em;text-transform:uppercase; }
 .hc-reserve-caption>small { color:#8ca7b4;font:12px/1.5 var(--hc-body); }
 .hc-panel .hc-face-reserve { padding:24px; }
 .hc-panel .hc-face-slots,.hc-trade-reserve .hc-face-slots { display:flex;flex-wrap:wrap;gap:14px;margin:0; }

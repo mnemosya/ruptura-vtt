@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, ChevronRight, Cpu, Crosshair, HeartPulse, Radar, Shield, Sparkles, Swords } from "lucide-react";
+import { BookOpen, ChevronRight, Cpu, Crosshair, Handshake, HatGlasses, HeartPulse, Shield, Swords } from "lucide-react";
 import type { ConsoleApi } from "../types";
 import type { ClassContentV12, SubclassContentV12 } from "../../../../lib/rulesetV12/contracts";
 import { progression, readClassPlay, reached } from "../../../../lib/character/classManagement";
@@ -24,7 +24,7 @@ import "./classe/classPolish.css";
 const livros = [ancora, cacador, combatente, face, infiltrador, tecnico, vanguarda] as unknown as { classes: ClassContentV12[]; subclasses: SubclassContentV12[] }[];
 const classes = livros.flatMap(l => l.classes);
 const subclasses = livros.flatMap(l => l.subclasses);
-const icons = { ancora: HeartPulse, cacador: Crosshair, combatente: Swords, face: Sparkles, infiltrador: Radar, tecnico: Cpu, vanguarda: Shield };
+const icons = { ancora: HeartPulse, cacador: Crosshair, combatente: Swords, face: Handshake, infiltrador: HatGlasses, tecnico: Cpu, vanguarda: Shield };
 const colors = { ancora: "#32c978", cacador: "#dfbd6f", combatente: "#f16d79", face: "#c578d9", infiltrador: "#42b9c7", tecnico: "#f3a342", vanguarda: "#6ba9e7" };
 const ranks = ["F", "E", "D", "C", "B", "A", "S", "S+"];
 type Api = Pick<ConsoleApi, "character" | "somenteLeitura"> & Partial<Pick<ConsoleApi, "oficina" | "catalogo" | "classe" | "derivados" | "atributoDaPericia" | "rolarTeste">>;
@@ -46,7 +46,7 @@ export function ClassPanel({ api }: { api: Api }) {
       <header className="hc-hero">
         <div className="hc-game-art" style={{ backgroundImage: `url(/forja/classes/${current.slug}.webp)` }} aria-hidden="true" />
         <div className="hc-emblem"><Icon size={37} strokeWidth={1.4} aria-hidden="true" /></div>
-        <div className="hc-heading"><span className="hc-kicker">ARQUIVO DE CLASSE / RUPTURA V1.2</span><h2>{current.nome}</h2><p>{sub ? sub.nome : reached(p.ranking, "E") ? "Subclasse não escolhida" : "Subclasse disponível no Ranking E"}</p></div>
+        <div className="hc-heading"><span className="hc-kicker">ARQUIVO DE CLASSE / RUPTURA V1.2</span><h2>{current.nome}</h2>{sub && <p>{sub.nome}</p>}</div>
         <div className="hc-rank"><strong>{p.ranking}</strong><span>RANKING</span></div>
       </header>
 
