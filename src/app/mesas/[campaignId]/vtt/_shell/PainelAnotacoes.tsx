@@ -34,7 +34,7 @@ export function usePlataformaMac(): boolean {
 }
 
 const NOME_COR: Record<CorPredefinida, string> = {
-  ciano: "Ciano", ambar: "Âmbar", verde: "Verde", vermelho: "Vermelho", roxo: "Roxo", branco: "Branco",
+  vermelho: "Cinética", laranja: "Energética", ambar: "Material", verde: "Biótica", ciano: "Sináptica", roxo: "Cognitiva", branco: "Branco",
 };
 const ESPESSURAS = [1, 2, 3, 4, 5, 6];
 const TAMANHOS = [12, 16, 20, 24, 28, 32];

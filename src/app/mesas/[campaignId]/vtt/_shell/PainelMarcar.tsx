@@ -39,13 +39,14 @@ import { Clock, Eraser, Eye, EyeOff, Loader2, MapPin } from "lucide-react";
 import { SINAIS_MARCA, type SinalMarcaUi } from "../_dominio/sinaisDeMarca";
 import { JanelaFerramenta } from "./JanelaFerramenta";
 
-/** As seis cores que `vtt_marks.cor` aceita — nem uma a mais. */
+/** As cores que `vtt_marks.cor` aceita: as 6 das vertentes + branco. */
 export const CORES_MARCA = [
-  { valor: "ciano", rotulo: "Ciano", hex: "#00d4ff" },
-  { valor: "ambar", rotulo: "Âmbar", hex: "#f5a200" },
-  { valor: "verde", rotulo: "Verde", hex: "#22d3aa" },
-  { valor: "vermelho", rotulo: "Vermelho", hex: "#ff5f74" },
-  { valor: "roxo", rotulo: "Roxo", hex: "#8b5cf6" },
+  { valor: "vermelho", rotulo: "Cinética", hex: "#e0455f" },
+  { valor: "laranja", rotulo: "Energética", hex: "#f07a1f" },
+  { valor: "ambar", rotulo: "Material", hex: "#f5a200" },
+  { valor: "verde", rotulo: "Biótica", hex: "#3ccf6e" },
+  { valor: "ciano", rotulo: "Sináptica", hex: "#35c7d8" },
+  { valor: "roxo", rotulo: "Cognitiva", hex: "#8b5cf6" },
   { valor: "branco", rotulo: "Branco", hex: "#eafcff" },
 ] as const;
 

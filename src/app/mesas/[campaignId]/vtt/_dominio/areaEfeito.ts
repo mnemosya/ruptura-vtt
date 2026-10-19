@@ -109,11 +109,12 @@ export const MAXIMO_PONTOS = 64;
  */
 export const MAGNITUDE_MAXIMA_COORDENADA = 1000;
 
-export const CORES_AREA = ["ciano", "ambar", "verde", "vermelho", "roxo", "branco"] as const;
+/** As 6 cores das vertentes (na ordem do livro) + branco. Os nomes são os de sempre no banco; o hex é o da vertente. */
+export const CORES_AREA = ["vermelho", "laranja", "ambar", "verde", "ciano", "roxo", "branco"] as const;
 export type CorArea = (typeof CORES_AREA)[number];
 
 export const HEX_COR_AREA: Record<CorArea, string> = {
-  ciano: "#00d4ff", ambar: "#f5a200", verde: "#22d3aa", vermelho: "#ff5f74", roxo: "#8b5cf6", branco: "#eafcff",
+  vermelho: "#e0455f", laranja: "#f07a1f", ambar: "#f5a200", verde: "#3ccf6e", ciano: "#35c7d8", roxo: "#8b5cf6", branco: "#eafcff",
 };
 
 export interface MetaTipoArea {
@@ -163,7 +164,7 @@ export const META_AREA: Record<TipoArea, MetaTipoArea> = {
   },
   personalizada: {
     rotulo: "Livre", glifo: "⬟", instrucao: "Clique para adicionar pontos e fechar a área.", gesto: "pontos", tridimensional: false,
-    descricao: "Não é um formato oficial do livro — é apoio ao narrador para efeitos incomuns. Polígono livre, inclusive côncavo.",
+    descricao: "Contorno desenhado ponto a ponto, para efeitos que não cabem nos outros formatos — uma poça irregular, um desabamento, a sala inteira.",
   },
 };
 

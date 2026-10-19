@@ -7039,3 +7039,11 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
     animation: none !important; transition: none !important;
   }
 }
+
+/* Marca persistida: o hex da vitrine da janela Marcar (`.jmar-hx-on`), no mapa. */
+.rv-marca-hex {
+  fill: color-mix(in srgb, var(--mk) 14%, transparent);
+  stroke: var(--mk); stroke-width: 1.4;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--mk) 45%, transparent));
+}
+.rv-marca-hex[data-privada] { stroke-dasharray: 4 3; }

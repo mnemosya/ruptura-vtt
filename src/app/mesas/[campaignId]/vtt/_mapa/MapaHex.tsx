@@ -110,6 +110,8 @@ import { CORES_VERTENTE } from "../../../../_design/coresVertente";
 const COR_JA_AGIU = "#5f7492";
 
 export const TAM = 26; // raio do hexágono em px do mundo
+/** Hex da célula marcada, um pouco por dentro da grade (raio 23 de 26) pra não encostar na linha. */
+const HEX_MARCA = [0, 1, 2, 3, 4, 5].map((k) => { const a = (Math.PI / 3) * k - Math.PI / 2; return `${(23 * Math.cos(a)).toFixed(2)},${(23 * Math.sin(a)).toFixed(2)}`; }).join(" ");
 
 const AnotacaoNoMapa = memo(function AnotacaoNoMapa({ a, selecionada, delta, bloqueada, podeEditar, interativa, onPressionar }: {
   a: AnotacaoCena; selecionada: boolean; delta: { dq: number; dr: number } | null;
@@ -490,7 +492,7 @@ export interface PropsMapaHex {
    * pro banco. `podeApagar` decide se o clique nesta marcação
    * específica dispara `onClicarMarca` (autor ou narrador).
    */
-  marcas?: { id: string; q: number; r: number; cor: string; podeApagar: boolean; sinal: string; texto: string | null }[];
+  marcas?: { id: string; q: number; r: number; cor: string; podeApagar: boolean; sinal: string; texto: string | null; privada?: boolean }[];
   onClicarMarca?: (id: string) => void;
 
   /**
@@ -2750,6 +2752,13 @@ export function MapaHex({
                   <circle
                     r={12}
                     fill={ferramenta === "medir" || (m.podeApagar && !bloqueada) ? "transparent" : "none"}
+                  />
+                  {/* A célula marcada como na vitrine da janela Marcar: hex
+                      com véu e contorno na cor da marca (tracejado se for
+                      privada). Fica atrás do glifo e não recebe clique. */}
+                  <polygon
+                    className="rv-marca-hex" data-privada={m.privada || undefined}
+                    points={HEX_MARCA} style={{ ["--mk" as string]: m.cor }} pointerEvents="none"
                   />
                   {/* Um glifo por SINAL — alvo, perigo, rota, nota. SÃO
                       os mesmos componentes `lucide-react` que a janela

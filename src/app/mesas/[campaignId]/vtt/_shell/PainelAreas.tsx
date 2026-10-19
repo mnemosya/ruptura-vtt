@@ -148,7 +148,7 @@ const ICONE_TIPO: Record<TipoArea, string> = {
 };
 const ROTULO_GESTO: Record<string, string> = { arraste: "Arraste", token: "Token", pontos: "Pontos" };
 const NOME_COR_AREA: Record<CorArea, string> = {
-  ciano: "Ciano", ambar: "Âmbar", verde: "Verde", vermelho: "Vermelho", roxo: "Roxo", branco: "Branco",
+  vermelho: "Cinética", laranja: "Energética", ambar: "Material", verde: "Biótica", ciano: "Sináptica", roxo: "Cognitiva", branco: "Branco",
 };
 const ICONE_CELULA = "M12 3l7.8 4.5v9L12 21l-7.8-4.5v-9zM11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0";
 const ICONE_TOKEN = "M8 8a4 4 0 1 0 8 0a4 4 0 1 0 -8 0M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6";

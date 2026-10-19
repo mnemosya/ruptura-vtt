@@ -177,7 +177,7 @@ import { useTemaVtt } from "./_tema/useTemaVtt";
 type EstadoCenaVtt = Awaited<ReturnType<typeof lerCenaAtiva>>["dados"];
 
 const COR_MARCA_HEX: Record<string, string> = {
-  ciano: "#00d4ff", ambar: "#f5a200", verde: "#22d3aa", vermelho: "#ff5f74", roxo: "#8b5cf6", branco: "#eafcff",
+  vermelho: "#e0455f", laranja: "#f07a1f", ambar: "#f5a200", verde: "#3ccf6e", ciano: "#35c7d8", roxo: "#8b5cf6", branco: "#eafcff",
 };
 
 const ICONE_FERRAMENTA: Record<FerramentaId, typeof MousePointer2> = {
@@ -1234,6 +1234,7 @@ export function VttClient({
     cor: COR_MARCA_HEX[m.cor] ?? "#00d4ff",
     sinal: m.sinal,
     texto: m.texto,
+    privada: m.privada,
     podeApagar: ehNarrador || m.autorId === usuarioId,
   })).filter((m) => {
     const original = estadoCena?.marcas.find((o) => o.id === m.id);
@@ -3452,7 +3453,9 @@ export function VttClient({
   }, [areasResolvidas, areaSelecionadaId, idAreaEmEdicao, previaResolvida, paramsAreaCorrente, estadoAreas.fase, configAreas.cor, configAreas.opacidade, configAreas.rotulo]);
 
   const alcasAreas = useMemo<AlcaArea[]>(() => {
-    if (estadoAreas.fase !== "editando") return [];
+    // Também na área recém-desenhada (antes de "Manter na mesa"): dá pra
+    // mover e ajustar o rascunho com as mesmas alças da área já criada.
+    if (estadoAreas.fase !== "editando" && estadoAreas.fase !== "concluida_local") return [];
     return alcasDeParametros(estadoAreas.params, TAM);
   }, [estadoAreas]);
 
@@ -3588,7 +3591,7 @@ export function VttClient({
   }, []);
 
   const areaAlcaMover = useCallback((id: string, ponto: PontoAxial, precisaoLivre = false) => {
-    setEstadoAreas((e) => (e.fase === "editando" ? { ...e, params: aplicarAlca(e.params, id, ponto, TAM, configAreas, precisaoLivre) } : e));
+    setEstadoAreas((e) => (e.fase === "editando" || e.fase === "concluida_local" ? { ...e, params: aplicarAlca(e.params, id, ponto, TAM, configAreas, precisaoLivre) } : e));
   }, [configAreas]);
 
   // ── Persistência ────────────────────────────────────────────────

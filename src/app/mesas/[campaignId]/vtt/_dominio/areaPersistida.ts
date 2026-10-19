@@ -133,6 +133,6 @@ export function camposDeParametros(p: ParametrosArea): CamposPersistenciaArea {
 
 /** Slug de cor persistido → slug do domínio, com queda segura pro padrão. */
 export function corValida(bruta: string): CorArea {
-  const validas: readonly string[] = ["ciano", "ambar", "verde", "vermelho", "roxo", "branco"];
+  const validas: readonly string[] = ["ciano", "ambar", "verde", "vermelho", "roxo", "branco", "laranja"];
   return (validas.includes(bruta) ? bruta : "ciano") as CorArea;
 }

@@ -131,7 +131,7 @@ const ESPINHA: Partial<Record<JanelaId, { indice: string; acento: string }>> = {
   medir:     { indice: "02", acento: "#00d4ff" },
   marcar:    { indice: "03", acento: "#c25a8c" },
   desenhar:  { indice: "11", acento: "#00d4ff" },
-  texto:     { indice: "12", acento: "#7f9bd1" },
+  texto:     { indice: "12", acento: "#00d4ff" },  // mesmo ciano do Desenhar
   areas:     { indice: "04", acento: "#8878d6" },
   rodadas:   { indice: "05", acento: "#ff8a1f" },
   terreno:   { indice: "06", acento: "#4fae82" },

@@ -2,8 +2,7 @@ import type { PontoAxial } from "./escalaMapa";
 
 export type TipoAnotacao = "desenho" | "texto";
 export const CORES_ANOTACAO = {
-  ciano: "#00d4ff", ambar: "#f5a200", verde: "#22d3aa",
-  vermelho: "#ff5f74", roxo: "#8b5cf6", branco: "#eafcff",
+  vermelho: "#e0455f", laranja: "#f07a1f", ambar: "#f5a200", verde: "#3ccf6e", ciano: "#35c7d8", roxo: "#8b5cf6", branco: "#eafcff",
 } as const;
 export type CorPredefinida = keyof typeof CORES_ANOTACAO;
 export type CorAnotacao = CorPredefinida | `#${string}`;

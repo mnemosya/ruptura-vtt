@@ -24,7 +24,7 @@ import { getCurrentUser } from "../auth/session";
 
 export type TipoTerreno = "dificil" | "bloqueado";
 export type TipoMarca = "linha" | "seta" | "desenho" | "texto";
-export type CorMarca = "ciano" | "ambar" | "verde" | "vermelho" | "roxo" | "branco";
+export type CorMarca = "ciano" | "ambar" | "verde" | "vermelho" | "roxo" | "branco" | "laranja";
 
 /**
  * Os padrões da grade (0122) — os MESMOS que a constante de CSS tinha

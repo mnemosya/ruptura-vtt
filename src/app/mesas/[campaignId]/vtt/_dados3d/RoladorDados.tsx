@@ -1306,12 +1306,11 @@ function RoladorDadosF({ campaignId, personagemSugerido }: { campaignId: string 
     : (semDados ? "Escolha dados" : l.rolling ? "Rolando…" : l.results ? "Rolar de novo" : `Rolar ${formula}`);
   const desabilitado = teste ? s.rolling || !s.podeRolar : semDados || l.rolling || !l.podeRolar;
   const carga = teste ? s.carga : l.liveCharge;
-  const dica = VISIBILIDADES.find((v) => v.v === visibilidade)?.dica;
   const nota = semDados
     ? "Clique nos dados acima pra montar a rolagem"
     : carga > 0
       ? `Força ${Math.round(carga * 100)}%${carga >= 0.995 ? " · máxima" : ""}`
-      : `Segure pra carregar força${campaignId && dica ? ` · ${dica}` : ""}`;
+      : "Segure pra carregar força";
   const erroRolagem = teste ? s.erro : l.erro;
 
   const opcoesIdent: OpcaoLista[] = identidades.map((p) => ({

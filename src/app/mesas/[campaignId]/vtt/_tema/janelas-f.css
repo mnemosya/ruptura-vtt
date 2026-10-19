@@ -46,6 +46,10 @@
   color: #eaf6ff;
 }
 /* Estado da janela — mono, apagado, com um losango no acento. */
+/* Sem linha de estado ao lado do título nas janelas da mesa ("◆ PRONTO"):
+   o que vai acontecer já está na vitrine. Fica no DOM pelos testes; a
+   rolagem do Console (sem `.rv-flutuante`) ainda mostra a da defesa. */
+.rv-flutuante.rv-fp--f .rv-fp-modo { display: none; }
 .rv-fp--f .rv-fp-modo {
   margin: 0; min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -160,8 +164,9 @@
 }
 button.jf-linha { cursor: pointer; width: 100%; }
 .jf-linha:hover { background: #0f2735; }
-.jf-linha .jf-l,
-.jf-ajuste .jf-l {
+/* MOD e CD: rótulo e ± um degrau mais claros que o resto — são controles, não legenda. */
+.jf-ajuste .jf-l { flex: none; font: 600 10.5px var(--rv-display), sans-serif; letter-spacing: .18em; text-transform: uppercase; color: #8fb0c2; }
+.jf-linha .jf-l {
   flex: none;
   font: 600 9.5px var(--rv-display), sans-serif; letter-spacing: .2em; text-transform: uppercase;
   color: #4f7086;
@@ -175,12 +180,12 @@ button.jf-linha { cursor: pointer; width: 100%; }
 }
 .jf-ajuste-ctl { display: flex; align-items: center; }
 .jf-ajuste-ctl button {
-  width: 26px; height: 26px; padding: 0; border: 0; background: transparent; color: #7f95b3;
+  width: 26px; height: 26px; padding: 0; border: 0; background: transparent; color: #a9c2d6;
   display: grid; place-items: center; cursor: pointer;
   transition: background 120ms ease-out, color 120ms ease-out;
 }
 .jf-ajuste-ctl button:hover:not(:disabled) { background: #112a39; color: #eaf6ff; }
-.jf-ajuste-ctl button:disabled { opacity: .35; cursor: default; }
+.jf-ajuste-ctl button:disabled { opacity: .45; cursor: default; }
 .jf-ajuste-v { min-width: 34px; text-align: center; font: 700 15px var(--rv-display), sans-serif; color: #eaf6ff; }
 .jf-ajuste-v.is-vazio { color: #4f7086; }
 
@@ -233,7 +238,10 @@ button.jf-linha { cursor: pointer; width: 100%; }
   display: grid; place-items: center; cursor: pointer; transition: background 120ms ease-out;
 }
 .jf-cor:hover { background: #112a39; }
-.jf-cor > span { width: 11px; height: 11px; transform: rotate(45deg); background: var(--jf-k); }
+.jf-cor > span { width: 11px; height: 11px; transform: rotate(45deg); background: var(--jf-k); transition: transform 120ms ease-out, box-shadow 120ms ease-out; }
+/* Hover por cor: o losango cresce e ganha o anel fino na própria cor — prévia do "escolhido". */
+.jf-cor:hover:not(:disabled) > span { transform: rotate(45deg) scale(1.2); box-shadow: 0 0 0 2px var(--fj-fundo-2, #071621), 0 0 0 3px color-mix(in srgb, var(--jf-k) 55%, transparent); }
+.jf-cor[aria-pressed="true"]:hover > span { transform: rotate(45deg) scale(1.1); box-shadow: 0 0 0 2px var(--fj-fundo-2, #071621), 0 0 0 3.5px var(--jf-k); }
 .jf-cor[aria-pressed="true"] > span { box-shadow: 0 0 0 2px var(--fj-fundo-2, #071621), 0 0 0 3.5px var(--jf-k); }
 
 /* ── Seção recolhível (linha com resumo) ───────────────────────────── */
