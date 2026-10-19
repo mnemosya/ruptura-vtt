@@ -19,8 +19,13 @@
 .hc-panel[data-game] button{transition:background .16s,border-color .16s,transform .16s,box-shadow .16s}
 .hc-panel[data-game] button:focus-visible{outline-offset:3px}
 .hc-panel[data-game] .hc-section{padding:20px 0}
-.hc-panel[data-game] .hc-features summary{padding:13px 7px;background:linear-gradient(90deg,var(--game-glow),transparent 65%)}
-.hc-panel[data-game] .hc-feature-rank{display:grid;place-items:center;width:25px;height:29px;border:1px solid var(--game-line)}
+.hc-panel[data-game] .hc-features summary{padding:16px 18px;background:transparent;gap:16px}
+.hc-panel[data-game] .hc-features summary:hover{background:color-mix(in srgb,var(--hc-accent) 6%,transparent)}
+.hc-panel[data-game] .hc-features summary:focus-visible{outline:2px solid var(--hc-accent);outline-offset:-2px}
+.hc-panel[data-game] .hc-features summary strong{font:600 16px/1.4 var(--font-oxanium),sans-serif;text-transform:none}
+.hc-panel[data-game] .hc-features details[open]{background:color-mix(in srgb,var(--hc-accent) 3%,transparent)}
+.hc-panel[data-game] .hc-features summary>svg{flex:none;color:#90acb6;transition:transform .16s}
+.hc-panel[data-game] .hc-feature-rank{flex:none;width:auto;height:auto;border:0;white-space:nowrap;color:#94b2bc;font:500 11px/1.4 var(--font-corpo),sans-serif;text-transform:none;letter-spacing:0}
 /* Anchor: a living connection diagram and an intervention station. */
 .hc-panel[data-game=ancora] .hc-anchor-layout{grid-template-columns:minmax(0,1.15fr) minmax(210px,.85fr);gap:22px}
 .hc-panel[data-game=ancora] .hc-anchor-roster{padding:0;border:0;background:none}
@@ -86,7 +91,7 @@
 .hc-panel[data-game=cacador] .hc-hunter-hud>div{display:block;padding-bottom:15px}.hc-panel[data-game=cacador] .hc-hunter-hud span{display:block;font-size:10px;line-height:1.6}.hc-panel[data-game=cacador] .hc-hunter-hud strong{display:block;font:600 38px var(--font-oxanium),sans-serif;margin-top:4px}.hc-panel[data-game=cacador] .hc-hunter-hud small{font-size:14px}.hc-panel[data-game=cacador] .hc-hunter-hud p{font-size:11px;line-height:1.6}
 
 /* Face: kept results are jewels in a hand; the active test has its own work surface. */
-.hc-panel[data-game=face] .hc-face-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.hc-panel[data-game=face] .hc-face-layout{grid-template-columns:minmax(0,1fr);gap:18px}
 .hc-panel[data-game=face] .hc-face-reserve{padding:17px 14px;border:1px solid #80558e;background:radial-gradient(ellipse at 50% 35%,#c578d91c,transparent 70%),#141b2c;box-shadow:inset 0 2px #c578d9}
 .hc-panel[data-game=face] .hc-face-test{padding:17px 14px;border:1px solid #4b3c62;background:linear-gradient(135deg,#241d34,#0d1b28);align-self:start}
 .hc-panel[data-game=face] .hc-face-slots{grid-template-columns:repeat(auto-fit,minmax(76px,1fr));gap:8px;margin:19px 0}
@@ -100,7 +105,7 @@
 .hc-panel[data-game=face] .hc-face-rolled{grid-template-columns:1fr}.hc-panel[data-game=face] .hc-rolled-die{display:grid;grid-template-columns:30px 20px 1fr;align-items:center;gap:4px;background:#2a2238}.hc-panel[data-game=face] .hc-rolled-die>div{margin:0;justify-content:end;flex-wrap:wrap}.hc-panel[data-game=face] .hc-rolled-die button{padding:7px;font-size:9px}.hc-panel[data-game=face] .hc-die-editor{margin:12px 0;padding:10px;gap:8px}.hc-panel[data-game=face] .hc-die-editor input{font-size:18px}.hc-panel[data-game=face] .hc-die-editor label{font-size:9px}
 
 /* Infiltrator: a circuit bank with clear occupied sockets and a concise action rail. */
-.hc-panel[data-game=infiltrador] .hc-infiltrator-layout{gap:0;border:1px solid #316775;background:linear-gradient(120deg,#11313c,#071a25);grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr)}
+.hc-panel[data-game=infiltrador] .hc-infiltrator-layout{gap:0;border:1px solid #316775;background:linear-gradient(120deg,#11313c,#071a25);grid-template-columns:minmax(0,1fr)}
 .hc-panel[data-game=infiltrador] .hc-breach-bank{position:relative;isolation:isolate;border:0;border-right:1px solid #316775;background:radial-gradient(ellipse at center,#42b9c718,transparent 70%);padding:22px 18px}
 .hc-breach-circuit{margin-top:15px;height:40px}.hc-breach-circuit svg{width:100%;height:100%;fill:none;stroke:#367c87;stroke-width:1}
 .hc-panel[data-game=infiltrador] .hc-breach-slots{position:relative;justify-content:center;gap:9px;margin:0 0 15px;padding:8px 0 17px;border-bottom:1px solid #28535e}

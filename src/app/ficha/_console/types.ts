@@ -262,7 +262,11 @@ export interface ConsoleApi {
    * destravar a ficha.
    */
   editarNome: (nome: string) => void;
+  oficina?: { authorId:string; aplicar:(command:import("../../../lib/character/workshop").WorkshopCommand)=>string | undefined; transferir?:(itemId:string)=>Promise<void> };
   classe?: {
+    carregandoAlvos?: boolean;
+    erroAlvos?: string;
+    atualizarAlvos?: () => void;
     alvos: { id: string; nome: string; aliado: boolean; pv?: number; pe?: number; condicoes?: string[] }[];
     executar: (comando: import("../../../lib/character/classManagement").ClassCommand) => void;
   };

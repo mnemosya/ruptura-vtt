@@ -1,4 +1,5 @@
 "use client";
+import { applyWorkshop } from "../../../lib/character/workshop";
 import { applyClassCommand, guardDefenseBonus, resetRoundPaWithClass } from "../../../lib/character/classManagement";
 import { reorderInventoryItem } from "../../../lib/character/inventoryOrder";
 
@@ -26,6 +27,7 @@ import { aplicarBancada, montarBancada } from "../../../lib/character/supportLoa
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { lerAliadosClasseAction, type AliadoClasse } from "../../mesas/[campaignId]/vtt/_painel/acoes/aliadosClasse";
 import {
   createInitialCharacter,
   characterDerivedFormulas,
@@ -485,6 +487,21 @@ export default function CharacterSheetClient({
    * um item.
    */
   const [alliesAtivos, setAlliesAtivos] = useState<{ id: string; nome: string; character: Character }[]>([]);
+  const [aliadosClasse, setAliadosClasse] = useState<{ campanha: string; dados: AliadoClasse[]; erro?: string; carregando: boolean } | null>(null);
+  const [revisaoAliadosClasse, setRevisaoAliadosClasse] = useState(0);
+  useEffect(() => {
+    if (mode !== "product" || !selectedCampaignId) return;
+    let ativo = true;
+    const campanha = selectedCampaignId;
+    setAliadosClasse({ campanha, dados: [], carregando: true });
+    void lerAliadosClasseAction(campanha).then(result => {
+      if (ativo) setAliadosClasse({ campanha, dados: result.dados ?? [], erro: result.ok ? undefined : result.erro, carregando: false });
+    }).catch(() => {
+      if (ativo) setAliadosClasse({ campanha, dados: [], erro: "Não foi possível carregar os aliados da campanha.", carregando: false });
+    });
+    return () => { ativo = false; };
+  }, [mode, selectedCampaignId, revisaoAliadosClasse]);
+
   // Log local mínimo (não persiste no Supabase) — alimentado por rolagens
   // (via callback passado a RollsTab) e pelos handlers de recurso/PA/
   // reação abaixo. Limitado às últimas 50 entradas.
@@ -3824,8 +3841,17 @@ export default function CharacterSheetClient({
     editarAtributo: updateAtributo,
     editarPericia: updatePericia,
     editarNome: (nome) => setCharacter((prev) => ({ ...prev, nome })),
+    oficina: { authorId: characterId ?? "local", aplicar: command => {
+      if (somenteLeitura) return "Ficha em modo de leitura.";
+      const current=characterRef.current; const instance=current.inventario?.find(i=>i.id===command.itemId);
+      const result=applyWorkshop(current,command,characterId??"local",instance?catalogoItens.get(instance.itemSlug):undefined);
+      if(result.error)return result.error; characterRef.current=result.character;setCharacter(result.character);
+    }, transferir: selectedCampaignId && !somenteLeitura ? id=>handleSendItemToCrew(id,1) : undefined },
     classe: {
-      alvos: [...alliesAtivos.map(a => ({ id: a.id, nome: a.nome, aliado: true, pv: a.character.recursos_atuais?.pv, pe: a.character.recursos_atuais?.pe, condicoes: (a.character.condicoes_ativas ?? []).filter(c => c.ativa).map(c => c.nome) })), ...alvosNoMapa.filter(a => !alliesAtivos.some(b => b.id === a.characterId)).map(a => ({ id: a.characterId ?? a.tokenId, nome: a.nome, aliado: a.lado === "aliado" }))],
+      carregandoAlvos: mode === "product" && !!selectedCampaignId && (aliadosClasse?.campanha !== selectedCampaignId || aliadosClasse.carregando),
+      erroAlvos: aliadosClasse?.campanha === selectedCampaignId ? aliadosClasse.erro : undefined,
+      atualizarAlvos: () => setRevisaoAliadosClasse(value => value + 1),
+      alvos: [...(aliadosClasse?.campanha === selectedCampaignId ? aliadosClasse.dados : []).filter(a => a.id !== characterId && !alliesAtivos.some(b => b.id === a.id)).map(a => ({ ...a, aliado: true })),...alliesAtivos.map(a => ({ id: a.id, nome: a.nome, aliado: true, pv: a.character.recursos_atuais?.pv, pe: a.character.recursos_atuais?.pe, condicoes: (a.character.condicoes_ativas ?? []).filter(c => c.ativa).map(c => c.nome) })), ...alvosNoMapa.filter(a => a.characterId !== characterId && !alliesAtivos.some(b => b.id === a.characterId) && !(aliadosClasse?.campanha === selectedCampaignId && aliadosClasse.dados.some(b => b.id === a.characterId))).map(a => ({ id: a.characterId ?? a.tokenId, nome: a.nome, aliado: a.lado === "aliado" }))],
       executar: (comando) => {
         if (somenteLeitura) return;
         const result = applyClassCommand(characterRef.current, comando, derivados.pa_max, derivados.pv_max);

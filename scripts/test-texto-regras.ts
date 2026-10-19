@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import { emBlocos } from '../src/app/ficha/_console/blocosDeRegra';
+import ancora from '../content/v12/db_classe_ancora_v1_2.json';
+const text = ancora.classes[0].caracteristicas.F[0].descricao;
+const blocks = emBlocos(text);
+assert(blocks.some(b => b.tipo === 'titulo' && b.texto === 'INTERVENÇÕES'));
+assert(blocks.some(b => b.tipo === 'lista' && b.itens.some(i => i.texto.startsWith('Ajustar:'))));
+assert(!blocks.some(b => b.tipo === 'p' && b.linhas.includes('INTERVENÇÕES')));
+assert.deepEqual(emBlocos('# Título\nTexto\n\nSegundo parágrafo.').map(b => b.tipo), ['titulo','p','p']);
+assert.deepEqual(emBlocos('| A | B |\n| --- | --- |\n| 1 | 2 |').map(b => b.tipo), ['tabela']);
+assert.equal(emBlocos('Você recebe 1 PA e +1 vantagem.')[0].tipo,'p');
+assert.equal(emBlocos('> Nota\n> - Exemplo')[0].tipo,'citacao');
+assert.equal(emBlocos('---')[0].tipo,'divisor');
+console.log('Leitor de regras: títulos legados/Markdown, parágrafos, listas, tabelas e notas — OK');

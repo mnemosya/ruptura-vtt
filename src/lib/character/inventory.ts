@@ -1466,15 +1466,15 @@ export function hasSobregravacaoAccess(
  * limite base normalmente (a inscrição existe, mas não beneficia).
  */
 export function getSlotsRunaMaxEfetivo(
-  instance: Pick<InventoryItemInstance, "sobregravacao">,
+  instance: Pick<InventoryItemInstance, "sobregravacao" | "propriedadesTecnicas">,
   itemContent: Pick<ItemContent, "slotsRunaMax"> | undefined,
   currentCharacterId: string | null,
 ): number | null {
   const base = itemContent?.slotsRunaMax ?? null;
   if (base == null) return null;
-  if (!instance.sobregravacao) return base;
-  if (!hasSobregravacaoAccess(instance, currentCharacterId)) return base;
-  return Math.floor(base * instance.sobregravacao.multiplicador);
+  const extra = (instance.propriedadesTecnicas??[]).filter(p=>p.workshopAuthor && p.key==="sobregravacao").length;
+  if (!instance.sobregravacao || !hasSobregravacaoAccess(instance, currentCharacterId)) return base+extra;
+  return Math.floor(base * instance.sobregravacao.multiplicador)+extra;
 }
 
 /** Remove só a instalação da runa (nunca o modelo da Biblioteca, nunca o item). */
@@ -1666,7 +1666,8 @@ export function unequipDefensiveItem(character: Character, instanceId: string): 
 /** Ajusta MIT atual manualmente — nunca negativo, nunca acima do máximo conhecido (se houver). */
 export function setItemMitAtual(character: Character, instanceId: string, value: number, mitMax?: number | null): Character {
   const clamped = Math.max(0, Math.trunc(Number.isFinite(value) ? value : 0));
-  const bounded = mitMax != null ? Math.min(clamped, mitMax) : clamped;
+  const bonus=(character.inventario?.find(i=>i.id===instanceId)?.propriedadesTecnicas??[]).filter(p=>p.workshopAuthor && p.key==="blindagem").length*3;
+  const bounded = mitMax != null ? Math.min(clamped, mitMax+bonus) : clamped;
   const inventario = character.inventario ?? [];
   const next = inventario.map((i) => (i.id === instanceId ? { ...i, mitAtual: bounded } : i));
   return { ...character, inventario: next };
@@ -1675,7 +1676,8 @@ export function setItemMitAtual(character: Character, instanceId: string, value:
 /** Ajusta PD atual manualmente — mesmo critério de `setItemMitAtual`. */
 export function setItemPdAtual(character: Character, instanceId: string, value: number, pdMax?: number | null): Character {
   const clamped = Math.max(0, Math.trunc(Number.isFinite(value) ? value : 0));
-  const bounded = pdMax != null ? Math.min(clamped, pdMax) : clamped;
+  const bonus=(character.inventario?.find(i=>i.id===instanceId)?.propriedadesTecnicas??[]).filter(p=>p.workshopAuthor && p.key==="reforco").length*5;
+  const bounded = pdMax != null ? Math.min(clamped, pdMax+bonus) : clamped;
   const inventario = character.inventario ?? [];
   const next = inventario.map((i) => (i.id === instanceId ? { ...i, pdAtual: bounded } : i));
   return { ...character, inventario: next };
@@ -1713,6 +1715,10 @@ export function setItemMunicaoAtual(character: Character, instanceId: string, va
   return { ...character, inventario: next };
 }
 
+export function workshopDefenseBonus(instance: Pick<InventoryItemInstance,"propriedadesTecnicas">, kind: "mit"|"pd"):number {
+  return (instance.propriedadesTecnicas??[]).filter(p=>p.workshopAuthor && p.key===(kind==="mit"?"blindagem":"reforco")).length*(kind==="mit"?3:5);
+}
+
 export interface ArmaduraVestida { instance: InventoryItemInstance; item: ItemContent; mitMax: number; mitAtual: number; tipoProtecao: string | null }
 
 export interface EquippedDefenseProfile {
@@ -1743,10 +1749,10 @@ export function getEquippedDefenseProfile(character: Pick<Character, "inventario
     if (!item || item.status !== "published") continue;
 
     if (instance.equipamentoSlot === "armadura" && item.mitMax != null) {
-      profile.armaduras.push({ instance, item, mitMax: item.mitMax, mitAtual: getItemMitAtual(instance, item), tipoProtecao: item.tipoProtecao });
+      profile.armaduras.push({ instance, item, mitMax: item.mitMax+workshopDefenseBonus(instance,"mit"), mitAtual: getItemMitAtual(instance, item), tipoProtecao: item.tipoProtecao });
     }
     if (instance.equipamentoSlot === "escudo" && item.pdMax != null) {
-      profile.escudo = { instance, item, pdMax: item.pdMax, pdAtual: getItemPdAtual(instance, item), tipoProtecao: item.tipoProtecao };
+      profile.escudo = { instance, item, pdMax: item.pdMax+workshopDefenseBonus(instance,"pd"), pdAtual: getItemPdAtual(instance, item), tipoProtecao: item.tipoProtecao };
     }
   }
 

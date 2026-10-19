@@ -35,14 +35,12 @@ function PolyDie({ faces }: { faces: number }) {
 
 function HexSlot({ ready }: { ready: boolean }) {
   return <svg viewBox="0 0 64 68" className="hc-breach-hex" data-ready={ready} aria-hidden="true">
-    <polygon points="17,2 47,2 62,34 47,66 17,66 2,34" />
+    <polygon points="16.5,7.15 47.5,7.15 63,34 47.5,60.85 16.5,60.85 1,34" />
     {ready ? <><circle cx="32" cy="34" r="10" /><circle cx="32" cy="34" r="3" /><path d="M12 34h6m28 0h6M32 14v7m0 26v7" /></> : <path d="M25 34h14m-7-7v14" />}
   </svg>;
 }
 
 export function ClassOperations({ api, classId, rank, subclassId }: { api: Api; classId: string; rank: string; subclassId?: string }) {
-  const [interactionSkill, setInteractionSkill] = useState("influencia");
-  const [reserveIndex, setReserveIndex] = useState(0);
   const [dieEditor, setDieEditor] = useState<number | null>(null);
   const [dieValue, setDieValue] = useState("");
   const [choosingManeuvers, setChoosingManeuvers] = useState(false);
@@ -62,21 +60,34 @@ export function ClassOperations({ api, classId, rank, subclassId }: { api: Api; 
     const interventions = availableClassActions(api.character).filter(action => ["ajustar", "conter"].includes(action.id));
     return <section className="hc-operation hc-anchor" aria-label="Gestão de Focos e Intervenções">
       <header className="hc-op-head"><div><span className="hc-kicker">01 / REDE DE APOIO</span><h3>Focos e intervenções</h3></div><span className="hc-op-meta">{allFocus ? "EQUIPE INTEIRA" : `${focusIds.length} / ${limit} FOCOS`}</span></header>
-      <div className="hc-anchor-layout">
-        <div className="hc-anchor-roster"><div className="hc-link-sigil" aria-hidden="true"><svg viewBox="0 0 240 100"><path d="M20 50h55l45-35 45 35h55M75 50l45 35 45-35M120 15v70"/><circle cx="120" cy="50" r="29"/><circle cx="120" cy="50" r="39" strokeDasharray="2 7"/><circle cx="20" cy="50" r="6"/><circle cx="220" cy="50" r="6"/></svg><HeartPulse size={24}/></div><div className="hc-panel-label"><Users size={15} /> Aliados na mesa</div>
-          <div className="hc-focus-list">{allies.length ? allies.map(ally => {
-            const selected = focusIds.includes(ally.id);
-            return <button key={ally.id} type="button" className="hc-focus-card" aria-pressed={selected} disabled={locked} onClick={() => allFocus ? send?.({ type: "target", id: ally.id }) : send?.({ type: "focus", id: ally.id })}>
-              <span className="hc-focus-avatar"><Users size={22}/></span><span className="hc-focus-text"><strong>{ally.nome}</strong><small>{selected ? "FOCO DESIGNADO" : "SELECIONAR COMO FOCO"}{ally.pv != null ? ` · ${ally.pv} PV` : ""}</small></span><span className="hc-focus-mark">{selected ? <Check size={16} /> : <Plus size={16} />}</span>
-            </button>;
-          }) : <div className="hc-focus-empty"><HeartPulse size={24} /><strong>Nenhum aliado disponível</strong><span>Os Focos usam os personagens da mesa.</span></div>}</div>
-          <p className="hc-hint">Selecione seus Focos. Um novo vínculo substitui o mais antigo quando as vagas estão ocupadas.</p>
-        </div>
-        <div className="hc-anchor-interventions"><div className="hc-panel-label"><HeartPulse size={15} /> Intervenções</div><div className="hc-intervention-count"><strong>{state.resource}</strong><span>/ {resource.max}<small>DISPONÍVEIS</small></span></div><div className="hc-intervention-pips">{Array.from({ length: resource.max }, (_, index) => <i key={index} data-ready={index < state.resource} />)}</div>
-          <label className="hc-target-select">INTERVIR POR<select value={currentTarget} onChange={event => send?.({ type: "target", id: event.target.value })} disabled={locked || !focusIds.length}>{focusIds.length ? focusIds.map(id => <option key={id} value={id}>{allies.find(ally => ally.id === id)?.nome ?? id}</option>) : <option value="">Escolha um Foco</option>}</select></label>
-          <div className="hc-intervention-actions">{interventions.map(action => <button key={action.id} type="button" disabled={locked || !currentTarget || !!classActionBlock(api.character, action, paMax, currentTarget)} onClick={() => send?.({ type: "use", id: action.id, target: currentTarget })}><span>{action.name}</span><small>{action.id === "ajustar" ? "+1 vantagem" : "Reduz a consequência"}</small></button>)}</div>
-        </div>
+      <div className="hc-support-bank">
+        <div><span>Intervenções disponíveis</span><strong>{state.resource}<small> / {resource.max}</small></strong></div>
+        <div className="hc-support-charges" aria-hidden="true">{Array.from({ length: resource.max }, (_, index) => <i key={index} data-ready={index < state.resource} />)}</div>
+        <span className="hc-support-bank-note">{state.resource ? "Prontas para apoiar seus Focos" : "Nenhuma intervenção restante"}</span>
       </div>
+      {allies.length ? <div className="hc-support-network">
+        <div className="hc-support-label"><h4>Seus aliados</h4><span>{allFocus ? "Todos são Focos" : `Designe até ${limit} Focos`}</span></div>
+        <div className="hc-support-allies">{allies.map(ally => {
+          const focused = focusIds.includes(ally.id);
+          const active = currentTarget === ally.id;
+          return <div key={ally.id} className="hc-support-ally" data-active={active} data-focused={focused}>
+            <button type="button" className="hc-support-select" aria-pressed={active} disabled={locked} onClick={() => send?.({ type: focused ? "target" : "focus", id: ally.id })}>
+              <span className="hc-support-avatar">{ally.nome.trim().slice(0, 2).toUpperCase()}</span>
+              <span><strong>{ally.nome}</strong><small>{focused ? active ? "Foco selecionado" : "Foco designado" : "Designar como Foco"}{ally.pv != null ? ` · ${ally.pv} PV` : ""}</small></span>
+              {focused ? <Check size={16} /> : <Plus size={16} />}
+            </button>
+            {focused && !allFocus && <button type="button" className="hc-support-remove" aria-label={`Remover ${ally.nome} dos Focos`} title="Remover Foco" disabled={locked} onClick={() => send?.({ type: "focus", id: ally.id })}><Minus size={15}/></button>}
+          </div>;
+        })}</div>
+        {currentTarget && allies.some(ally => ally.id === currentTarget) ? <div className="hc-support-response">
+          <div className="hc-support-label"><h4>Apoiar <span>{allies.find(ally => ally.id === currentTarget)?.nome}</span></h4><span>1 intervenção por uso</span></div>
+          <div className="hc-support-actions">{interventions.map(action => {
+            const block = classActionBlock(api.character, action, paMax, currentTarget);
+            return <button key={action.id} type="button" disabled={locked || !!block} title={block ?? action.description} onClick={() => send?.({ type: "use", id: action.id, target: currentTarget })}><span><strong>{action.name}</strong><small>{action.id === "ajustar" ? "+1 vantagem" : "Reduz a consequência"}</small></span><ArrowRight size={18}/></button>;
+          })}</div>
+        </div> : <p className="hc-support-prompt">Escolha um aliado acima para designar seu primeiro Foco.</p>}
+      </div> : <div className="hc-support-empty"><Users size={24}/><div><h4>{api.classe?.carregandoAlvos ? "Carregando aliados…" : api.classe?.erroAlvos ? "Não foi possível carregar os aliados" : "Nenhum aliado disponível"}</h4><p>{api.classe?.erroAlvos ?? "Os outros personagens de jogador vinculados à campanha aparecem aqui. Personagens arquivados não entram na lista."}</p>{api.classe?.atualizarAlvos && <button type="button" className="hc-action" disabled={api.classe.carregandoAlvos} onClick={api.classe.atualizarAlvos}>Atualizar aliados</button>}</div></div>}
+
     </section>;
   }
 
@@ -100,28 +111,25 @@ export function ClassOperations({ api, classId, rank, subclassId }: { api: Api; 
     return <section className="hc-operation hc-fighter" aria-label="Dados de Manobra">
       <header className="hc-op-head"><div><span className="hc-kicker">01 / DOUTRINA DE COMBATE</span><h3>Dados de Manobra</h3></div><span className="hc-op-meta">{state.resource} / 4 PRONTOS</span></header>
       <div className="hc-die-bank">{Array.from({ length: 4 }, (_, index) => { const ready = !spentDice.includes(index); return <button key={index} type="button" className="hc-manouver-die" data-ready={ready} aria-pressed={!ready} disabled={locked} onClick={() => send?.({ type: "toggleDie", index })} aria-label={`Dado de manobra ${index + 1}: d${resource.die} ${ready ? "disponível; clicar para gastar" : "gasto; clicar para restaurar"}`}><span className="hc-die-number">0{index + 1}</span><PolyDie faces={resource.die ?? 4} /><strong>d{resource.die}</strong><small>{ready ? "PRONTO" : "GASTO"}</small></button>; })}</div>
-      <p className="hc-hint">Clique no dado para gastar ou devolver · Recuperação no descanso longo</p>
-      <div className="hc-maneuvers"><div className="hc-maneuvers-top"><div><span>MANOBRAS APRENDIDAS</span><strong>{selected.length ? `${selected.length} ${selected.length === 1 ? "técnica" : "técnicas"} no seu repertório` : "Escolha seu repertório"}</strong></div><button type="button" disabled={locked} aria-expanded={choosingManeuvers} onClick={() => setChoosingManeuvers(open => !open)}>{choosingManeuvers ? "Fechar" : `Selecionar · ${selected.length}/${learned}`}<ArrowRight size={14} /></button></div>{!choosingManeuvers && selected.length > 0 && <GameRepertoire compact entries={maneuverOptions.filter(option => selected.includes(option.id))}/>} {choosingManeuvers && <GameRepertoire entries={available} selected={selected} readOnly={locked} max={learned} onToggle={toggleManeuver}/>}</div>
+      <div className="hc-resource-caption"><span>Recuperação</span><strong>Descanso longo</strong></div>
+      <div className="hc-maneuvers"><div className="hc-maneuvers-top"><div><span>Manobras aprendidas</span><strong>{selected.length ? `${selected.length} ${selected.length === 1 ? "técnica" : "técnicas"} no seu repertório` : "Monte seu repertório de combate"}</strong></div><button type="button" disabled={locked} aria-expanded={choosingManeuvers} onClick={() => setChoosingManeuvers(open => !open)}>{choosingManeuvers ? "Fechar" : `Editar repertório · ${selected.length}/${learned}`}<ArrowRight size={14} /></button></div>{!choosingManeuvers && selected.length > 0 && <GameRepertoire compact entries={maneuverOptions.filter(option => selected.includes(option.id))}/>} {choosingManeuvers && <GameRepertoire entries={available} selected={selected} readOnly={locked} max={learned} onToggle={toggleManeuver}/>}</div>
     </section>;
   }
 
   if (classId === "face") {
-    const test = state.test;
-    const roll = () => { const attribute = api.atributoDaPericia?.(interactionSkill) ?? "animo"; const value = api.character.atributos[attribute]; const count = value > 0 ? value : 2 + Math.abs(value); const random = new Uint32Array(count); crypto.getRandomValues(random); send?.({ type: "interactionStart", faces: Array.from(random, value => value % 8 + 1), skill: interactionSkill, attribute }); };
-    const openEditor = (index: number) => { setDieEditor(index); setDieValue(state.dice[index]?.toString() ?? ""); setReserveIndex(index); };
+    const openEditor = (index: number) => { setDieEditor(index); setDieValue(state.dice[index]?.toString() ?? ""); };
     const saveDie = () => { if (dieEditor !== null && /^[1-8]$/.test(dieValue)) { send?.({ type: "setDie", index: dieEditor, value: Number(dieValue) }); setDieEditor(null); } };
     return <section className="hc-operation hc-face" aria-label="Reserva de Confiança">
       <header className="hc-op-head"><div><span className="hc-kicker">01 / INFLUÊNCIA</span><h3>Reserva de Confiança</h3></div><span className="hc-op-meta">{state.dice.length} / {resource.max} D8 GUARDADOS</span></header>
-      <div className="hc-face-layout"><div className="hc-face-reserve"><div className="hc-panel-label">RESULTADOS PRESERVADOS</div><div className="hc-face-slots">{Array.from({ length: resource.max }, (_, index) => <button key={index} type="button" aria-label={`Editar dado guardado ${index + 1}: ${state.dice[index] ?? "vazio"}`} disabled={locked || index > state.dice.length} onClick={() => openEditor(index)} data-filled={state.dice[index] != null}><small>0{index + 1}</small><svg className="hc-confidence-gem" viewBox="0 0 100 110" aria-hidden="true"><path d="M50 4 94 55 50 106 6 55Z"/><path d="M6 55 50 25 94 55 50 85Z"/></svg><strong>{state.dice[index] ?? "+"}</strong><span>{state.dice[index] == null ? "INSERIR VALOR" : "EDITAR D8"}</span></button>)}</div>
+      <div className="hc-face-layout"><div className="hc-face-reserve"><div className="hc-reserve-caption"><span>Dados guardados</span><small>{reached(rank, "B") ? "Até o fim da operação" : "Até o fim da cena"}</small></div><div className="hc-face-slots">{Array.from({ length: resource.max }, (_, index) => <button key={index} type="button" aria-label={`Editar dado guardado ${index + 1}: ${state.dice[index] ?? "vazio"}`} disabled={locked || index > state.dice.length} onClick={() => openEditor(index)} data-filled={state.dice[index] != null}><small>0{index + 1}</small><svg className="hc-confidence-gem" viewBox="0 0 100 110" aria-hidden="true"><path d="M50 4 94 55 50 106 6 55Z"/><path d="M6 55 50 25 94 55 50 85Z"/></svg><strong>{state.dice[index] ?? "+"}</strong><span>{state.dice[index] == null ? "INSERIR VALOR" : "EDITAR D8"}</span></button>)}</div>
         {dieEditor !== null && <div className="hc-die-editor"><label>RESULTADO DO D8<input autoFocus type="number" inputMode="numeric" min="1" max="8" value={dieValue} onChange={event => setDieValue(event.target.value)} onKeyDown={event => { if (event.key === "Enter") saveDie(); if (event.key === "Escape") setDieEditor(null); }} /></label><button type="button" disabled={!/^[1-8]$/.test(dieValue)} onClick={saveDie}>Salvar</button>{state.dice[dieEditor] != null && <button type="button" onClick={() => { send?.({ type: "setDie", index: dieEditor, value: null }); setDieEditor(null); }}>Remover</button>}</div>}
-        <p>{reached(rank, "B") ? "Resultados permanecem até o fim da operação." : "Resultados permanecem até o fim da cena."} Clique num dado para registrar o valor obtido na mesa.</p></div>
-        <div className="hc-face-test"><div className="hc-panel-label">TESTE DE INTERAÇÃO</div>{!test ? <><p>Role aqui ou registre um resultado manualmente na reserva. Guarde ou troque dados antes da resolução.</p><div className="hc-face-start"><select aria-label="Perícia de Interação" value={interactionSkill} onChange={event => setInteractionSkill(event.target.value)}>{["artes", "carisma", "influencia", "intimidacao", "psicologia", "sociedade"].map(skill => <option key={skill} value={skill}>{skill}</option>)}</select><button type="button" disabled={locked || !api.atributoDaPericia || !api.rolarTeste} onClick={roll}>Rolar d8 <ArrowRight size={15} /></button></div></> : <><div className="hc-face-rolled">{test.dice.map((die, index) => <div key={index} className="hc-rolled-die"><strong>{die}</strong><span>d8</span><div><button type="button" disabled={locked || test.dice.length <= 1 || state.dice.length >= resource.max} onClick={() => send?.({ type: "storeDie", index })}>Guardar</button><button type="button" disabled={locked || state.dice[reserveIndex] == null} onClick={() => send?.({ type: "swapDie", index, reserveIndex })}>Trocar</button></div></div>)}</div><button type="button" className="hc-face-resolve" disabled={locked || !api.rolarTeste} onClick={() => { api.rolarTeste?.({ atributoId: test.attribute as "corpo" | "mente" | "animo", periciaId: test.skill, modificador: 0, cd: null, dados: test.dice, visibilidade: "public" }); send?.({ type: "interactionDone" }); }}>Resolver teste <ArrowRight size={15} /></button></>}</div></div>
+        </div></div>
     </section>;
   }
 
   if (classId === "infiltrador") return <section className="hc-operation hc-infiltrator" aria-label="Brechas">
     <header className="hc-op-head"><div><span className="hc-kicker">01 / OPORTUNIDADES</span><h3>Brechas</h3></div><span className="hc-op-meta">VÁLIDAS NESTA CENA</span></header>
-    <div className="hc-infiltrator-layout"><div className="hc-breach-bank"><div className="hc-panel-label"><ScanEye size={15} /> Brechas prontas</div><div className="hc-breach-circuit" aria-hidden="true"><svg viewBox="0 0 300 50"><path d="M0 8h45l30 30h45l15-15h30l15 15h45l30-30h45M0 25h30l20 20M300 25h-30l-20 20"/><circle cx="150" cy="23" r="7"/></svg></div><div className="hc-breach-slots">{Array.from({ length: resource.max }, (_, index) => <HexSlot key={index} ready={index < state.resource} />)}</div><strong>{state.resource}<small> / {resource.max}</small></strong></div><div className="hc-breach-play"><p>Registre uma Brecha quando superar vigilância, acesso ou outro obstáculo. Gaste quando ela fizer diferença na ação.</p><div><button type="button" disabled={locked || state.resource >= resource.max} onClick={() => send?.({ type: "gain" })}><Plus size={15} /> Ganhar Brecha</button><button type="button" disabled={locked || state.resource < 1} onClick={() => send?.({ type: "spend" })}><Minus size={15} /> Gastar Brecha</button></div><small>Os gatilhos e limites de uso são resolvidos pela mesa.</small></div></div>
+    <div className="hc-infiltrator-layout"><div className="hc-breach-bank"><div className="hc-reserve-caption"><span>Brechas disponíveis</span><small>{state.resource} / {resource.max}</small></div><div className="hc-breach-slots">{Array.from({ length: resource.max }, (_, index) => <button type="button" key={index} disabled={locked} aria-label={index < state.resource ? `Gastar brecha ${index + 1}` : `Ganhar brecha ${index + 1}`} title={index < state.resource ? "Gastar brecha" : "Ganhar brecha"} onClick={() => send?.({ type: index < state.resource ? "spend" : "gain" })}><HexSlot ready={index < state.resource}/></button>)}</div></div></div>
   </section>;
 
   if (classId === "tecnico") {
@@ -132,10 +140,10 @@ export function ClassOperations({ api, classId, rank, subclassId }: { api: Api; 
     </section>;
   }
 
-  const furyAction = subclassId === "berserker" ? availableClassActions(api.character).find(action => action.id === "furia") : undefined;
+  const furyAction = subclassId === "berserker" ? availableClassActions(api.character, api.derivados?.pv_max).find(action => action.id === "furia") : undefined;
   return <section className="hc-operation hc-vanguard" aria-label="Ímpeto">
     <header className="hc-op-head"><div><span className="hc-kicker">01 / LINHA DE FRENTE</span><h3>Ímpeto</h3></div><Shield size={27} aria-hidden="true" /></header>
-    <div className="hc-vanguard-layout"><div className="hc-momentum"><svg className="hc-momentum-crest" viewBox="0 0 180 160" aria-hidden="true"><path d="M90 8 156 32v66l-66 52-66-52V32Z"/><path d="m90 20 54 22v50l-54 44-54-44V42Z"/><path d="M90 37 61 84h24l-6 38 40-55H95l10-30Z"/><path d="M7 55h9m148 0h9M7 80h9m148 0h9M7 105h9m148 0h9"/></svg><div className="hc-panel-label"><Zap size={15} /> Ímpeto disponível</div><div className="hc-momentum-track">{Array.from({ length: resource.max }, (_, index) => <span key={index} data-ready={index < state.resource}><Zap size={25} /></span>)}</div><div className="hc-momentum-count"><strong>{state.resource}</strong><span>/ {resource.max}</span></div></div><div className="hc-vanguard-play"><p>Ganhe Ímpeto ao entrar ou começar o turno junto a uma ameaça.</p><strong>2 m <small>de avanço por Ímpeto gasto após uma ação</small></strong><div><button type="button" disabled={locked || state.resource >= resource.max} onClick={() => send?.({ type: "gain" })}>Ganhar Ímpeto</button><button type="button" disabled={locked || state.resource < 1} onClick={() => send?.({ type: "spend" })}>Gastar 1</button></div></div></div>
-    {furyAction && <div className="hc-fury-module"><div><span className="hc-panel-label"><Zap size={15} /> Fúria</span><p>{state.active.furia ? "Ativa nesta cena" : "Acompanhe a ativação durante o confronto."}</p></div><button type="button" aria-pressed={!!state.active.furia} disabled={locked || (!state.active.furia && !!classActionBlock(api.character, furyAction, paMax))} onClick={() => send?.(state.active.furia ? { type: "clearActive", id: "furia" } : { type: "use", id: "furia" })}>{state.active.furia ? "Encerrar Fúria" : "Ativar Fúria"}</button></div>}
+    <div className="hc-momentum-bank"><div className="hc-reserve-caption"><span>Ímpeto disponível</span><small>{state.resource} / {resource.max}</small></div><div className="hc-momentum-tokens">{Array.from({length:resource.max},(_,index)=><button type="button" key={index} disabled={locked} aria-pressed={index < state.resource} aria-label={index < state.resource ? `Gastar ímpeto ${index+1}` : `Ganhar ímpeto ${index+1}`} onClick={()=>send?.({type:index < state.resource ? "spend" : "gain"})}><Zap size={30}/><span>{index < state.resource ? "Disponível" : "Adicionar"}</span></button>)}</div><div className="hc-resource-caption"><span>Após uma ação</span><strong>2 m de avanço por Ímpeto</strong></div></div>
+    {furyAction && <div className="hc-fury-module" data-active={!!state.active.furia}><div className="hc-fury-emblem"><Zap size={30}/></div><div><span className="hc-panel-label"><Zap size={15} /> Fúria</span><p>{state.active.furia ? "Ativa nesta cena" : (furyAction.resource ? "Após sofrer dano · 2 Ímpetos · dura a cena" : "Até metade dos PV · ativação gratuita após o gatilho")}</p></div><button type="button" aria-pressed={!!state.active.furia} disabled={locked || (!state.active.furia && !!classActionBlock(api.character, furyAction, paMax))} onClick={() => send?.(state.active.furia ? { type: "clearActive", id: "furia" } : { type: "use", id: "furia" })}>{state.active.furia ? "Encerrar Fúria" : "Ativar Fúria"}</button></div>}
   </section>;
 }

@@ -1,4 +1,5 @@
 "use client";
+import { workshopDefenseBonus } from "../../../../lib/character/inventory";
 import { itemDescription } from "../../../../lib/character/itemDescription";
 import { itemDisplayName } from "../../../../lib/character/itemDisplayName";
 
@@ -66,8 +67,8 @@ export function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
     onde: inst.estado === "abrigo" ? "abrigo" : inst.estado === "mochila" ? "mochila" : "equipado",
     espacos: espacosDoItem(modelo),
     protecao: modelo?.tipoProtecao ?? null,
-    mit: modelo?.mitMax != null ? [inst.mitAtual ?? modelo.mitMax, modelo.mitMax] : null,
-    pd: modelo?.pdMax != null ? [inst.pdAtual ?? modelo.pdMax, modelo.pdMax] : null,
+    mit: modelo?.mitMax != null ? [inst.mitAtual ?? modelo.mitMax, modelo.mitMax+workshopDefenseBonus(inst,"mit")] : null,
+    pd: modelo?.pdMax != null ? [inst.pdAtual ?? modelo.pdMax, modelo.pdMax+workshopDefenseBonus(inst,"pd")] : null,
     regioes: modelo?.regioes ?? [],
     dano: dano ? { dado: dano.dado, tipo: dano.tipo } : null,
     municao: modelo?.municaoMax != null ? [inst.municaoAtual ?? modelo.municaoMax, modelo.municaoMax] : null,

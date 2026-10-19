@@ -21,10 +21,12 @@ export function SubclassCodex({ sub, rank, color }: { sub: SubclassContentV12; r
       <span className="hc-subclass-sigil"><Icon size={29}/></span><span><small>ESPECIALIZAÇÃO</small><strong>{sub.nome}</strong><em>{features.length} características adquiridas · consultar técnicas</em></span><ChevronRight size={21}/>
     </button>
     {open && active && <JanelaMercado titulo={`Técnicas · ${sub.nome}`} onFechar={() => { setOpen(false); requestAnimationFrame(() => opener.current?.focus()); }}>{close => <div className="hc-subclass-codex" style={{"--hc-accent": color} as React.CSSProperties}>
-      <header><Icon size={33}/><div><small>ESPECIALIZAÇÃO / RANKING {rank}</small><h2>{sub.nome}</h2></div><button type="button" onClick={close} aria-label="Fechar técnicas"><X size={20}/></button></header>
-      <div className="hc-subclass-reader"><nav aria-label="Características da subclasse">{["E", "C", "A"].filter(required => features.some(item => item.rank === required)).map(required => <div key={required}><span className="hc-subclass-tier">RANKING {required}</span>{features.filter(item => item.rank === required).map(item => <button key={item.key} type="button" aria-current={active.key === item.key ? "true" : undefined} onClick={() => setSelection(item.key)}>{item.nome}<ChevronRight size={13}/></button>)}</div>)}</nav>
-        <article key={active.key}><div className="hc-subclass-plate"><span>{active.rank}</span><Icon size={54}/><small>CARACTERÍSTICA ADQUIRIDA</small></div><h3>{active.nome}</h3><TextoComRegras glossario={[]} texto={active.descricao}/></article>
-      </div><footer>RUPTURA V1.2 <span>Requisitos e efeitos resolvidos com a mesa</span></footer>
+      <div className="hc-subclass-codex-body">
+        <header className="hc-subclass-header"><span className="hc-subclass-header-sigil"><Icon size={24}/></span><div><small>COMPÊNDIO · ESPECIALIZAÇÃO / RANKING {rank}</small><h2>{sub.nome}</h2></div><button type="button" onClick={close} aria-label="Fechar técnicas"><X size={20}/></button></header>
+        <div className="hc-subclass-reader"><nav aria-label="Características da subclasse">{["E", "C", "A"].filter(required => features.some(item => item.rank === required)).map(required => <div key={required}><span className="hc-subclass-tier">RANKING {required}</span>{features.filter(item => item.rank === required).map(item => <button key={item.key} type="button" aria-current={active.key === item.key ? "true" : undefined} onClick={() => setSelection(item.key)}><span className="hc-subclass-index-rank">{item.rank}</span><span>{item.nome}</span></button>)}</div>)}</nav>
+          <article key={active.key}><div className="hc-subclass-hero"><div><small>ESPECIALIZAÇÃO · RANKING {active.rank}</small><h3>{active.nome}</h3><span>CARACTERÍSTICA ADQUIRIDA</span></div><Icon size={122} strokeWidth={1} aria-hidden="true"/></div><div className="hc-subclass-prose"><TextoComRegras glossario={[]} texto={active.descricao}/></div><footer>RUPTURA V1.2 <span>Requisitos e efeitos resolvidos com a mesa</span></footer></article>
+        </div>
+      </div>
     </div>}</JanelaMercado>}
   </section>;
 }

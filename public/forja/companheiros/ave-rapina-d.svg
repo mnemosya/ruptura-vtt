@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-labelledby="title desc">
+  <title id="title">Ave de rapina — opção D</title>
+  <desc id="desc">Falcão em mergulho frontal, asas longas e pontiagudas, capuz facial e cauda estreita, no traço dos demais companheiros.</desc>
+  <g fill="none" stroke="#dfbd6f" stroke-linecap="round" stroke-linejoin="round">
+    <g opacity=".32" stroke-width="1"><circle cx="100" cy="100" r="81"/><path d="M100 5v20m0 150v20M5 100h20m150 0h20M42 42l14 14m88 88 14 14M42 158l14-14m88-88 14-14M100 26l64 37v74l-64 37-64-37V63Z"/></g>
+    <g stroke-width="1.7">
+      <path fill="#dfbd6f" fill-opacity=".15" d="M91 85C74 66 55 50 31 39l10 26-13 1 20 14-13 5 25 8-10 8 29 4 13 20 8 28 8-28 13-20 29-4-10-8 25-8-13-5 20-14-13-1 10-26c-24 11-43 27-60 46l-9-15-9 15Z"/>
+      <path fill="#dfbd6f" fill-opacity=".23" d="M89 85 87 69c-1-12 4-20 13-23 9 3 14 11 13 23l-2 16-11 13Z"/>
+      <path fill="#dfbd6f" fill-opacity=".20" d="m88 116 12 14 12-14-3 29-9 22-9-22Z"/>
+      <path d="M31 39c25 21 41 42 55 65M41 65c16 12 29 25 40 40M48 80l25 19M60 93l14 7m95-61c-25 21-41 42-55 65m45-39c-16 12-29 25-40 40m33-25-25 19m13-6-14 7M100 98v53m-12-35 12 14 12-14m-20 25 8 13 8-13"/>
+      <path fill="#f6df9c" stroke="none" d="m95 75 5 8 5-8-5-4Z"/>
+      <path fill="#f6df9c" stroke="none" d="m89 69 8 2-5 4Zm22 0-8 2 5 4Z"/>
+      <path d="m89 61 8 7m14-7-8 7"/>
+    </g>
+  </g>
+</svg>

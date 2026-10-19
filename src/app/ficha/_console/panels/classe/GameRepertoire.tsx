@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Check, Plus, ChevronRight, Crosshair, Shield, Footprints, Backpack, Radio, RotateCcw, Swords, ScanEye, Wrench, Zap, Network, MessageSquare } from "lucide-react";
 import { TextoComRegras } from "../../TextoComRegras";
 
@@ -18,20 +19,32 @@ function entryIcon(name: string) {
   if (/CORTAR|DEMOLIÇÃO|GUARDA|FINTA/.test(name)) return Swords;
   return MessageSquare;
 }
-/** Rule cards keep consultation separate from changing the player's loadout. */
-export function GameRepertoire({ entries, selected, onToggle, readOnly, max, compact = false }: {
+type Props = {
   entries: RepertoireEntry[]; selected?: string[]; onToggle?: (id: string) => void;
   readOnly?: boolean; max?: number; compact?: boolean;
-}) {
-  return <div className={`hc-repertoire${compact ? " hc-repertoire--compact" : ""}`}>{entries.map((entry, index) => {
-    const equipped = selected?.includes(entry.id);
-    const Icon = entryIcon(entry.name.toUpperCase());
-    const preview = entry.description.split(/\n\n/)[0].replace(/[*_]/g, "");
-    return <article key={entry.id} className="hc-rule-card" data-equipped={equipped}>
-      <div className="hc-rule-card-top"><span className="hc-rule-seal"><Icon size={22}/></span><span>{entry.category ?? "REPERTÓRIO"}</span><small>{String(index + 1).padStart(2, "0")}</small></div>
-      <h4>{entry.name}</h4><p className="hc-rule-preview">{preview.length > 180 ? `${preview.slice(0, 177)}…` : preview}</p>
-      <details><summary>Consultar efeito <ChevronRight size={14}/></summary><div className="hc-rule-description"><TextoComRegras glossario={[]} texto={entry.description}/></div></details>
-      {onToggle && <button type="button" disabled={readOnly || (!equipped && max != null && (selected?.length ?? 0) >= max)} aria-pressed={!!equipped} onClick={() => onToggle(entry.id)}>{equipped ? <Check size={15}/> : <Plus size={15}/>} {equipped ? "Selecionado · retirar" : "Selecionar"}<span className="sr-only"> {entry.name}</span></button>}
-    </article>;
-  })}</div>;
+};
+/** Each effect is rendered once. Expanding reveals the remainder in place. */
+export function GameRepertoire({ entries, compact = false, ...props }: Props) {
+  return <div className={`hc-repertoire${compact ? " hc-repertoire--compact" : ""}`}>
+    {entries.map(entry => <RepertoireCard key={entry.id} entry={entry} {...props} />)}
+  </div>;
+}
+function RepertoireCard({ entry, selected, onToggle, readOnly, max }: Omit<Props, "entries" | "compact"> & { entry: RepertoireEntry }) {
+  const [expanded, setExpanded] = useState(false);
+  const equipped = selected?.includes(entry.id) ?? false;
+  const Icon = entryIcon(entry.name.toUpperCase());
+  const description = entry.description.replace(/\p{L}/u, letter => letter.toLocaleUpperCase("pt-BR"));
+  const long = description.length > 240 || description.includes("\n");
+  const preview = description.split(/\n\n/)[0].replace(/[*_]/g, "");
+  return <article className="hc-rule-card" data-equipped={equipped} data-open={expanded} data-expanded={expanded || !long}>
+    <header className="hc-rule-card-heading"><span className="hc-rule-seal"><Icon size={22} aria-hidden="true" /></span>
+      <div><span className="hc-rule-category">{entry.category ?? "Repertório"}</span><h4>{entry.name}</h4></div>
+      {equipped && <Check className="hc-rule-equipped" size={16} aria-label="Selecionado" />}
+    </header>
+    <div className="hc-rule-description">{long && !expanded ? <p>{preview.length > 190 ? `${preview.slice(0, 187).trimEnd()}…` : preview}</p> : <TextoComRegras glossario={[]} texto={description} />}</div>
+    {(long || onToggle) && <footer className="hc-rule-actions">
+      {long && <button type="button" className="hc-rule-expand" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? "Recolher" : "Ver efeito completo"}<ChevronRight size={14}/><span className="sr-only"> {entry.name}</span></button>}
+      {onToggle && <button type="button" className="hc-rule-select" disabled={readOnly || (!equipped && max != null && (selected?.length ?? 0) >= max)} aria-pressed={equipped} onClick={() => onToggle(entry.id)}>{equipped ? <Check size={15}/> : <Plus size={15}/>} {equipped ? "Equipado" : "Equipar"}<span className="sr-only"> {entry.name}</span></button>}
+    </footer>}
+  </article>;
 }

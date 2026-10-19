@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 280" role="img" aria-labelledby="title desc">
+<title id="title">Ave de rapina — opção A</title><desc id="desc">Perfil lateral de falcão com bico curvo e plumagem angular, em ouro sobre fundo escuro.</desc>
+<defs><radialGradient id="bg"><stop stop-color="#26332e"/><stop offset="1" stop-color="#0b1c25"/></radialGradient><linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f9e4a3"/><stop offset=".55" stop-color="#d6b66c"/><stop offset="1" stop-color="#8d7646"/></linearGradient></defs>
+<rect width="280" height="280" rx="8" fill="url(#bg)"/>
+<g fill="none" stroke="#bea263" stroke-opacity=".38" stroke-width="1.3"><circle cx="140" cy="136" r="111"/><path d="M140 9v20m0 214v20M13 136h20m214 0h20M140 29 233 83v107l-93 54-93-54V83Z"/></g>
+<g transform="translate(42 32) scale(.96)" stroke="url(#gold)" stroke-linecap="round" stroke-linejoin="round">
+<path d="M48 183c14-25 17-48 20-70 4-43 27-70 62-70 25 0 43 11 54 28l21 7c6 2 8 8 4 13l-23 27-4-20-20-5c-5 32-24 61-55 78l-27-5-18 20-5-20Z" fill="#d6b66c" fill-opacity=".16" stroke-width="2.5"/>
+<path d="M184 71c-13 2-21 9-27 22m27-22 21 7c6 2 8 8 4 13l-23 27-4-20-20-5" fill="none" stroke-width="2.5"/>
+<path d="M70 110c14 12 26 17 42 18M65 131c13 11 25 17 38 17M59 153c12 9 20 13 34 13M84 102l30-23 38-3M114 79l12 20 36-6M107 171c-9-15-11-33 5-43" fill="none" stroke-width="1.8"/>
+<path d="m128 91 17 2-10 8Z" fill="#f9e4a3" stroke="none"/><path d="m131 89 3 8" stroke="#182325" stroke-width="1.6"/>
+</g><path d="M78 240h124" stroke="#c5a764" stroke-opacity=".55" stroke-width="1"/><path d="M108 240h64" stroke="#edcf86" stroke-width="2"/>
+</svg>

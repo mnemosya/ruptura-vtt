@@ -49,10 +49,23 @@ export function Scrollbar({ targetRef, orientacao }: { targetRef: React.RefObjec
     // (ex.: `.rc-grid`, com dimensão própria) sim — observa os dois.
     const ro = new ResizeObserver(atualizar);
     ro.observe(el);
-    if (el.firstElementChild) ro.observe(el.firstElementChild);
+    let conteudo = el.firstElementChild;
+    if (conteudo) ro.observe(conteudo);
+    // Trocar de aba preserva o contêiner, mas substitui seu conteúdo.
+    // Reconecta a medição para não manter barras da aba anterior.
+    const mo = new MutationObserver(() => {
+      if (conteudo !== el.firstElementChild) {
+        if (conteudo) ro.unobserve(conteudo);
+        conteudo = el.firstElementChild;
+        if (conteudo) ro.observe(conteudo);
+      }
+      atualizar();
+    });
+    mo.observe(el, { childList: true, subtree: true });
     return () => {
       el.removeEventListener("scroll", atualizar);
       ro.disconnect();
+      mo.disconnect();
     };
   }, [targetRef, atualizar]);
 

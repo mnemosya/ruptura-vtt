@@ -1,0 +1,14 @@
+/* Leitura de regras compartilhada pelo console, catálogos e dossiês. */
+.rc-prosa{font-family:var(--font-corpo,system-ui),sans-serif;font-size:14px;line-height:1.75;letter-spacing:normal;text-transform:none;overflow-wrap:anywhere;min-width:0;color:inherit}
+.rc-prosa .rc-regra-titulo{margin:1.65em 0 .65em;padding-bottom:.45em;border-bottom:1px solid color-mix(in srgb,currentColor 18%,transparent);font:700 16px/1.4 var(--font-oxanium,system-ui),sans-serif;letter-spacing:.04em;color:var(--hc-accent,var(--rv-vertente-cor,#bce8f2));text-transform:none}
+.rc-prosa>.rc-regra-titulo:first-child{margin-top:0}
+.rc-prosa :is(p,li){font:inherit;letter-spacing:inherit;text-transform:none}
+.rc-prosa .rc-negrito{font-weight:700;color:var(--hc-accent,var(--rv-vertente-cor,#d9eff3))}
+.rc-prosa li::marker{color:var(--hc-accent,var(--rv-vertente-cor,#83c7d7))}
+.rc-prosa .rc-lista-texto>li+li{margin-top:.65em!important}
+.rc-prosa blockquote{color:inherit;opacity:1!important;background:color-mix(in srgb,currentColor 4%,transparent);padding:.75em 1em!important;border-left-color:var(--hc-accent,var(--rv-vertente-cor,#83c7d7))!important}
+.rc-prosa hr{border:0;border-top:1px solid color-mix(in srgb,currentColor 20%,transparent);margin:1.5em 0}
+.rc-regra-tabela{max-width:100%;overflow-x:auto;margin:1em 0;overscroll-behavior-inline:contain}
+.rc-prosa table{line-height:1.5}.rc-prosa :is(th,td){padding:.65em .8em!important;vertical-align:top}.rc-prosa th{background:color-mix(in srgb,currentColor 7%,transparent)}
+.hc-feature-description .rc-prosa{font-size:14px;line-height:1.75}.hc-subclass-prose .rc-prosa{font-size:15px}
+@container(max-width:440px){.hc-feature-description{padding-left:16px}.rc-prosa{font-size:14px}}

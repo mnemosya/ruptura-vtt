@@ -37,55 +37,8 @@ import { TermoComDica } from "./TermoComDica";
 import { separarTermos } from "./termosDeRegra";
 import type { TermoDeRegra } from "./types";
 
-type Bloco =
-  | { tipo: "p"; linhas: string[] }
-  | { tipo: "lista"; ordenada: boolean; itens: { nivel: number; texto: string }[] }
-  | { tipo: "tabela"; linhas: string[][] }
-  | { tipo: "citacao"; linhas: string[] };
-
-const ITEM = /^(\s*)([-*•]|\d+[.)])\s+(.*)$/;
-const CELULAS = (l: string) => l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
-const SEPARADOR_TABELA = /^\s*\|?\s*:?-{2,}/;
-
-function emBlocos(texto: string): Bloco[] {
-  const blocos: Bloco[] = [];
-  for (const linha of texto.replace(/\r\n?/g, "\n").split("\n")) {
-    const ultimo = blocos[blocos.length - 1];
-    if (!linha.trim()) {
-      // Linha em branco fecha parágrafo/citação; listas e tabelas continuam se o próximo for do mesmo tipo.
-      if (ultimo?.tipo === "p" || ultimo?.tipo === "citacao") blocos.push({ tipo: "p", linhas: [] });
-      continue;
-    }
-    const item = ITEM.exec(linha);
-    if (item) {
-      const ordenada = /\d/.test(item[2]);
-      const nivel = Math.floor(item[1].replace(/\t/g, "  ").length / 2);
-      if (ultimo?.tipo === "lista" && (ultimo.ordenada === ordenada || nivel > 0)) ultimo.itens.push({ nivel, texto: item[3] });
-      else blocos.push({ tipo: "lista", ordenada, itens: [{ nivel, texto: item[3] }] });
-      continue;
-    }
-    if (linha.trim().startsWith("|")) {
-      if (SEPARADOR_TABELA.test(linha) && !/[^\s|:-]/.test(linha)) continue;
-      if (ultimo?.tipo === "tabela") ultimo.linhas.push(CELULAS(linha));
-      else blocos.push({ tipo: "tabela", linhas: [CELULAS(linha)] });
-      continue;
-    }
-    if (linha.startsWith(">")) {
-      const t = linha.replace(/^>\s?/, "");
-      if (ultimo?.tipo === "citacao") ultimo.linhas.push(t);
-      else blocos.push({ tipo: "citacao", linhas: [t] });
-      continue;
-    }
-    // Linha recuada logo depois de um item continua o item.
-    if (ultimo?.tipo === "lista" && /^\s+/.test(linha)) {
-      ultimo.itens[ultimo.itens.length - 1].texto += ` ${linha.trim()}`;
-      continue;
-    }
-    if (ultimo?.tipo === "p") ultimo.linhas.push(linha);
-    else blocos.push({ tipo: "p", linhas: [linha] });
-  }
-  return blocos.filter((b) => (b.tipo === "p" ? b.linhas.length > 0 : true));
-}
+import { emBlocos, ITEM } from "./blocosDeRegra";
+import "./textoComRegras.css";
 
 /** ID da página do Notion num link (`app.notion.com/p/<id>`, `notion.so/...-<id>`) — é o mesmo ID dos capítulos do Compêndio. */
 const paginaDoNotion = (url: string) => /notion\.(?:com|so)\/(?:[^?#]*?[-/])?([0-9a-f]{32})(?:[?#]|$)/i.exec(url)?.[1] ?? null;
@@ -146,7 +99,12 @@ export function TextoComRegras({
     () =>
       emBlocos(texto).map((b, i) => {
         const k = `b${i}`;
-        const topo = i === 0 ? 0 : "0.6em";
+        const topo = i === 0 ? 0 : "1em";
+        if (b.tipo === "titulo") {
+          const Titulo = `h${b.nivel}` as "h3" | "h4" | "h5" | "h6";
+          return <Titulo key={k} className="rc-regra-titulo">{emLinha(b.texto, glossario, k)}</Titulo>;
+        }
+        if (b.tipo === "divisor") return <hr key={k}/>;
         if (b.tipo === "p") return <p key={k} style={{ margin: `${topo} 0 0` }}>{emLinha(b.linhas.join(" "), glossario, k)}</p>;
         if (b.tipo === "citacao") {
           // Listas dentro de uma nota mantêm seus blocos e marcadores.
@@ -177,21 +135,21 @@ export function TextoComRegras({
         if (b.tipo === "tabela") {
           const [cab, ...corpo] = b.linhas;
           return (
-            <table key={k} style={{ margin: `${topo} 0 0`, borderCollapse: "collapse", width: "100%", fontSize: "0.92em" }}>
+            <div key={k} className="rc-regra-tabela"><table style={{ margin: `${topo} 0 0`, borderCollapse: "collapse", width: "100%", fontSize: "0.92em" }}>
               <thead><tr>{cab.map((c, j) => <th key={j} style={{ textAlign: "left", padding: "4px 8px 4px 0", borderBottom: "1px solid color-mix(in srgb, currentColor 25%, transparent)" }}>{emLinha(c.replace(/\*\*/g, ""), glossario, `${k}h${j}`)}</th>)}</tr></thead>
               <tbody>{corpo.map((l, r) => <tr key={r}>{l.map((c, j) => <td key={j} style={{ padding: "4px 8px 4px 0", borderBottom: "1px solid color-mix(in srgb, currentColor 10%, transparent)" }}>{emLinha(c, glossario, `${k}r${r}c${j}`)}</td>)}</tr>)}</tbody>
-            </table>
+            </table></div>
           );
         }
         const Lista = b.ordenada ? "ol" : "ul";
         return (
           <Lista key={k} className="rc-lista-texto" style={{ margin: `${topo} 0 0`, paddingLeft: "1.2em", listStyle: b.ordenada ? "decimal" : "disc" }}>
-            {b.itens.map((it, j) => <li key={j} style={{ marginTop: j ? "0.35em" : 0, marginLeft: `${it.nivel * 1.2}em` }}>{emLinha(it.texto, glossario, `${k}i${j}`)}</li>)}
+            {b.itens.map((it, j) => <li key={j} style={{ marginTop: j ? "0.35em" : 0, marginLeft: `${it.nivel * 1.2}em` }}>{emLinha(it.texto.replace(/^([^:*\n]{2,65}):(?=\s)/, "**$1:**"), glossario, `${k}i${j}`)}</li>)}
           </Lista>
         );
       }),
     [texto, glossario],
   );
 
-  return <div className={className}>{conteudo}</div>;
+  return <div className={["rc-prosa", className].filter(Boolean).join(" ")}>{conteudo}</div>;
 }

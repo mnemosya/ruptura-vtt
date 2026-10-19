@@ -4,6 +4,7 @@ import { BookOpen, ChevronRight, Cpu, Crosshair, HeartPulse, Radar, Shield, Spar
 import type { ConsoleApi } from "../types";
 import type { ClassContentV12, SubclassContentV12 } from "../../../../lib/rulesetV12/contracts";
 import { progression, readClassPlay, reached } from "../../../../lib/character/classManagement";
+import { TextoComRegras } from "../TextoComRegras";
 import { CabecalhoModulo } from "./CabecalhoModulo";
 import { ClassOperations } from "./classe/ClassOperations";
 import { SubclassCodex } from "./classe/SubclassCodex";
@@ -18,6 +19,7 @@ import vanguarda from "../../../../../content/v12/db_classe_vanguarda_v1_2.json"
 import "./hud/hud-base.css";
 import "./classe/classe.css";
 import "./classe/classGame.css";
+import "./classe/classPolish.css";
 
 const livros = [ancora, cacador, combatente, face, infiltrador, tecnico, vanguarda] as unknown as { classes: ClassContentV12[]; subclasses: SubclassContentV12[] }[];
 const classes = livros.flatMap(l => l.classes);
@@ -25,7 +27,7 @@ const subclasses = livros.flatMap(l => l.subclasses);
 const icons = { ancora: HeartPulse, cacador: Crosshair, combatente: Swords, face: Sparkles, infiltrador: Radar, tecnico: Cpu, vanguarda: Shield };
 const colors = { ancora: "#32c978", cacador: "#dfbd6f", combatente: "#f16d79", face: "#c578d9", infiltrador: "#42b9c7", tecnico: "#f3a342", vanguarda: "#6ba9e7" };
 const ranks = ["F", "E", "D", "C", "B", "A", "S", "S+"];
-type Api = Pick<ConsoleApi, "character" | "somenteLeitura"> & Partial<Pick<ConsoleApi, "classe" | "derivados" | "atributoDaPericia" | "rolarTeste">>;
+type Api = Pick<ConsoleApi, "character" | "somenteLeitura"> & Partial<Pick<ConsoleApi, "oficina" | "catalogo" | "classe" | "derivados" | "atributoDaPericia" | "rolarTeste">>;
 
 export function ClassPanel({ api }: { api: Api }) {
   const p = progression(api.character);
@@ -54,7 +56,7 @@ export function ClassPanel({ api }: { api: Api }) {
 
       <ClassModules api={api} current={current} sub={sub} rank={p.ranking} />
 
-      <section className="hc-section hc-features"><div className="hc-section-head"><h3>Características adquiridas</h3><span>{featureRows.length} disponíveis</span></div><div>{featureRows.map(feature => <details key={`${feature.source}-${feature.slug}`}><summary><span className="hc-feature-rank">{feature.rank}</span><span><strong>{feature.nome}</strong><small>{feature.source}</small></span><ChevronRight size={15} /></summary><p>{feature.descricao}</p></details>)}</div></section>
+      <section className="hc-section hc-features"><div className="hc-section-head"><h3>Características adquiridas</h3><span>{featureRows.length} disponíveis</span></div><div>{featureRows.map(feature => <details key={`${feature.source}-${feature.slug}`}><summary><span className="hc-feature-heading"><strong>{feature.nome}</strong></span><span className="hc-feature-rank">Ranking {feature.rank}</span><ChevronRight size={16} /></summary><div className="hc-feature-description"><TextoComRegras glossario={[]} texto={feature.descricao}/></div></details>)}</div></section>
       {state.last && <p className="hc-status" role="status">{state.last}</p>}
     </div>
   </section>;
