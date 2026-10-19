@@ -654,8 +654,7 @@ button.rc-modo-chip[data-icone="true"]::after { content: none; }
      item que só ocupa espaço via `grid-row: span`, a coluna 1
      "vazava" pra fora da grade via `overflow: visible` (padrão do
      grid) — isso é o que fazia `.rc-body` perder o padding-bottom de
-     24px no fim do scroll (mesmo bug, mesma causa, do `.rc-foco-content`
-     no modo Foco). Sem essa altura mínima artificial, a grade HUGA o
+     24px no fim do scroll (mesmo bug, mesma causa, do `.rc-foco-content`). Sem essa altura mínima artificial, a grade HUGA o
      item mais alto de verdade, sem descompasso. */
   align-self: start;
 }

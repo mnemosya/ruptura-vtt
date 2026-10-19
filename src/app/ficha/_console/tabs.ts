@@ -9,8 +9,7 @@
  * (implantes cibernéticos), IdCard para Identidade (antigo nome
  * "Características" — traços/identidade do personagem).
  *
- * "personagem" NÃO entra em `ABAS` — é uma aba especial que só existe
- * no modo Foco (spec "modos Painel e Foco"), renderizada num grupo
+ * "personagem" NÃO entra em `ABAS` — é uma aba especial, renderizada num grupo
  * próprio do trilho (`TabRail`), com paleta e ícone customizados, não
  * genéricos como as demais.
  */

@@ -14,13 +14,8 @@
  * troca o conteúdo de lá; só "Equipamentos" mostra conteúdo de verdade
  * por enquanto, as demais abas seguem placeholder (spec §7).
  *
- * Modos Painel/Foco (spec "Alteração do Console do Personagem: modos
- * Painel e Foco"): no Painel (comportamento de sempre), as colunas 1/2
- * ficam fixas e só a área de conteúdo troca de aba. No Foco, a janela
- * mostra só a aba ativa — as colunas 1/2 viram a aba especial
- * "Personagem", reaproveitando os MESMOS componentes (`IdentityAside`,
- * `VitalsRow`, `SkillsGrid`, `ConditionsPanel`, `PinsRow`) num layout
- * novo (`renderPersonagem`), não uma cópia do conteúdo.
+ * A janela mostra só a aba ativa; as colunas de identidade, vitais e
+ * perícias vivem na aba especial "Personagem" (`renderPersonagem`).
  *
  * O estado do avatar (preview local — o projeto ainda não tem fluxo de
  * upload real, ver limitações) vive AQUI, não dentro de `IdentityAside`,
@@ -79,7 +74,7 @@ import {
 } from "./panels/AuxModals";
 import { itensCompativeisComSlot, projectBodySlots, type BodySlotId } from "./slots";
 import { ABAS, type AbaId } from "./tabs";
-import { FOCO_MAX_W, FOCO_ALTURA_INICIAL } from "./geometry";
+import { LARGURA_INICIAL_MAX, ALTURA_INICIAL_FALLBACK } from "./geometry";
 import { PainelRolagem, type PrefillRolagem } from "./panels/PainelRolagem";
 import { AvisoRecarga, JanelaRecarga } from "./panels/JanelaRecarga";
 import { JanelaBancada } from "./panels/JanelaBancada";
@@ -391,9 +386,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
     setAux({ tipo: "rolagem", prefill: { tipo: "defesa", periciaId, acao: NOME_DEFESA.resistir } });
   }
 
-  /** Conteúdo da aba de NAVEGAÇÃO ativa — reusado sem mudanças tanto no
-      Painel (`.rc-tabsarea-outer`) quanto no Foco (mesma estrutura,
-      só a largura disponível muda). */
+  /** Conteúdo da aba de NAVEGAÇÃO ativa. */
   function renderConteudoAba() {
     return (
       <div className="rc-tabsarea-outer">
@@ -468,9 +461,8 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
     );
   }
 
-  /** Conteúdo da aba especial "Personagem" (só no Foco) — MESMOS
-      componentes das colunas 1/2 do Painel, layout lado a lado num
-      wrapper novo (`.rc-foco-personagem`) em vez de colunas de grid. */
+  /** Conteúdo da aba especial "Personagem" — identidade, vitais,
+      estados e perícias lado a lado (`.rc-foco-personagem`). */
   function renderPersonagem() {
     return (
       <div className="rc-foco-personagem">
@@ -536,8 +528,8 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
         }
         dockContent={<MinimizedDockContent api={api} avatarUrl={avatarUrl} onEditarRecurso={editarRecursoComConfirmacao} />}
         tablist={<TabRail aba={aba} onChangeAba={escolherAba} temClasse={temClasse} />}
-        larguraMaximaFixa={FOCO_MAX_W}
-        alturaFallbackInicial={FOCO_ALTURA_INICIAL}
+        larguraInicialMax={LARGURA_INICIAL_MAX}
+        alturaInicialFallback={ALTURA_INICIAL_FALLBACK}
         conteudoChave={aba}
       >
         <div className="rc-foco-content">{aba === "personagem" ? renderPersonagem() : renderConteudoAba()}</div>

@@ -10,8 +10,8 @@
  * para rolar, e linha alinhada em colunas se compara melhor que card.
  *
  * QUANTAS COLUNAS — isso é medido, não fixado. O Console é uma janela
- * redimensionável e tem dois modos (Painel e Foco) com larguras bem
- * diferentes; um número fixo de colunas ou espreme os nomes ou
+ * redimensionável, com larguras bem diferentes de uma tela pra
+ * outra; um número fixo de colunas ou espreme os nomes ou
  * desperdiça metade da mesa. Um `ResizeObserver` lê a largura
  * disponível e divide por `LARGURA_MINIMA_COLUNA`.
  *

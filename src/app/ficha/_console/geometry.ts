@@ -88,20 +88,17 @@ const LARGURA_INICIAL_VW = 0.86;
 const ALTURA_INICIAL_VH = 0.9;
 
 /**
- * Modo Foco (spec "Alteração do Console do Personagem: modos Painel e
- * Foco") — a janela mostra só a aba ativa, sem as colunas 1/2 fixas.
+ * Tamanho com que o Console NASCE. `LARGURA_INICIAL_MAX` é a largura
+ * da JANELA (sem a tabrail) — só o teto de abertura, não um limite: o
+ * usuário pode arrastar ou maximizar além disso. A legibilidade da
+ * prosa é garantida pelo `max-width` de `.rc-prosa`, não travando a
+ * janela.
  *
- * `FOCO_MAX_W` já É a largura da JANELA (sem a tabrail), não uma
- * largura de conteúdo que precisa somar chrome — por isso é passada
- * direto como `larguraMaxima` pras funções abaixo, ao contrário do
- * modo Painel (que mede `.rc-grid` e soma `CHROME_HORIZONTAL`).
- *
- * `FOCO_ALTURA_INICIAL` é só o valor de PARTIDA (spec: "não é uma
- * altura fixa") — some assim que a altura natural do conteúdo da aba
- * ativa é medida (mesmo mecanismo do modo Painel, reaproveitado).
+ * `ALTURA_INICIAL_FALLBACK` é só o valor de PARTIDA — some assim que a
+ * altura natural do conteúdo da aba ativa é medida.
  */
-export const FOCO_MAX_W = 818;
-export const FOCO_ALTURA_INICIAL = 726;
+export const LARGURA_INICIAL_MAX = 818;
+export const ALTURA_INICIAL_FALLBACK = 726;
 
 function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v));
@@ -222,23 +219,17 @@ export function limitarPosicao(geo: Geometry, vp: Viewport): Geometry {
 /**
  * Redimensionamento pelo canto inferior DIREITO: a borda esquerda (x)
  * e o topo (y) não se mexem. Respeita os mínimos e não deixa a janela
- * crescer além da viewport a partir da posição atual. `alturaMaxima`/
- * `larguraMaxima` (conteúdo natural + chrome) são um segundo teto,
- * junto do teto de viewport — o usuário não consegue arrastar a janela
- * maior que o conteúdo natural mesmo tendo espaço de sobra na tela.
+ * crescer além da viewport a partir da posição atual. Não há teto de
+ * conteúdo aqui: arrastar a alça é pedir espaço de propósito.
  */
 export function redimensionar(
   geo: Geometry,
   larguraAlvo: number,
   alturaAlvo: number,
   vp: Viewport,
-  alturaMaxima?: number,
-  larguraMaxima?: number,
 ): Geometry {
-  const maxWViewport = Math.max(MIN_W, vp.w - geo.x - TABLIST_W);
-  const maxW = larguraMaxima == null ? maxWViewport : Math.min(maxWViewport, Math.max(MIN_W, larguraMaxima));
-  const maxHViewport = Math.max(MIN_H, vp.h - geo.y);
-  const maxH = alturaMaxima == null ? maxHViewport : Math.min(maxHViewport, Math.max(MIN_H, alturaMaxima));
+  const maxW = Math.max(MIN_W, vp.w - geo.x - TABLIST_W);
+  const maxH = Math.max(MIN_H, vp.h - geo.y);
   return {
     ...geo,
     w: clamp(Math.round(larguraAlvo), MIN_W, maxW),
@@ -259,14 +250,10 @@ export function redimensionarPelaEsquerda(
   larguraAlvo: number,
   alturaAlvo: number,
   vp: Viewport,
-  alturaMaxima?: number,
-  larguraMaxima?: number,
 ): Geometry {
   const bordaDireita = geo.x + geo.w;
-  const maxWViewport = Math.max(MIN_W, bordaDireita);
-  const maxW = larguraMaxima == null ? maxWViewport : Math.min(maxWViewport, Math.max(MIN_W, larguraMaxima));
-  const maxHViewport = Math.max(MIN_H, vp.h - geo.y);
-  const maxH = alturaMaxima == null ? maxHViewport : Math.min(maxHViewport, Math.max(MIN_H, alturaMaxima));
+  const maxW = Math.max(MIN_W, bordaDireita);
+  const maxH = Math.max(MIN_H, vp.h - geo.y);
   const w = clamp(Math.round(larguraAlvo), MIN_W, maxW);
   const h = clamp(Math.round(alturaAlvo), MIN_H, maxH);
   return { x: bordaDireita - w, y: geo.y, w, h };
@@ -274,16 +261,11 @@ export function redimensionarPelaEsquerda(
 
 /**
  * Área útil ocupada ao maximizar (com o inset visual da spec §1).
- * `alturaMaxima`/`larguraMaxima` limitam a janela maximizada ao
- * conteúdo natural pelo mesmo motivo do resize manual — sem isso,
- * maximizar recriava o problema de janela grande demais em telas com
- * bastante espaço livre.
+ * Maximizar é ocupar a tela — sem teto de conteúdo.
  */
-export function geometriaMaximizada(vp: Viewport, alturaMaxima?: number, larguraMaxima?: number): Geometry {
-  const hViewport = Math.max(MIN_H, vp.h - INSET_MAXIMIZADO * 2);
-  const h = alturaMaxima == null ? hViewport : Math.min(hViewport, Math.max(MIN_H, alturaMaxima));
-  const wViewport = Math.max(MIN_W, vp.w - INSET_MAXIMIZADO * 2 - TABLIST_W);
-  const w = larguraMaxima == null ? wViewport : Math.min(wViewport, Math.max(MIN_W, larguraMaxima));
+export function geometriaMaximizada(vp: Viewport): Geometry {
+  const h = Math.max(MIN_H, vp.h - INSET_MAXIMIZADO * 2);
+  const w = Math.max(MIN_W, vp.w - INSET_MAXIMIZADO * 2 - TABLIST_W);
   return {
     x: INSET_MAXIMIZADO,
     y: INSET_MAXIMIZADO,

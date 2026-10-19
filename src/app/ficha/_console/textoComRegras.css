@@ -1,5 +1,6 @@
 /* Leitura de regras compartilhada pelo console, catálogos e dossiês. */
-.rc-prosa{font-family:var(--font-corpo,system-ui),sans-serif;font-size:14px;line-height:1.75;letter-spacing:normal;text-transform:none;overflow-wrap:anywhere;min-width:0;color:inherit}
+/* Teto de legibilidade: a janela do Console pode crescer à vontade, a linha de texto não. */
+.rc-prosa{max-width:760px;font-family:var(--font-corpo,system-ui),sans-serif;font-size:14px;line-height:1.75;letter-spacing:normal;text-transform:none;overflow-wrap:anywhere;min-width:0;color:inherit}
 .rc-prosa .rc-regra-titulo{margin:1.65em 0 .65em;padding-bottom:.45em;border-bottom:1px solid color-mix(in srgb,currentColor 18%,transparent);font:700 16px/1.4 var(--font-oxanium,system-ui),sans-serif;letter-spacing:.04em;color:var(--hc-accent,var(--rv-vertente-cor,#bce8f2));text-transform:none}
 .rc-prosa>.rc-regra-titulo:first-child{margin-top:0}
 .rc-prosa :is(p,li){font:inherit;letter-spacing:inherit;text-transform:none}

@@ -41,7 +41,7 @@ export function PreviewEscalpos() {
       <label><input type="checkbox" checked={falha} onChange={e => setFalha(e.target.checked)} /> Catálogo indisponível</label>
     </div>
     <div className="rc-cursor-scope" style={{ width: "100%", maxWidth: 860, height: "min(820px, calc(100dvh - 100px))", minHeight: 540, margin: "auto", display: "flex" }}>
-      {janela ? <ConsoleWindow aberto onClose={() => setJanela(false)} titulo="Prévia de escalpos" dockContent="Escalpos" larguraMaximaFixa={860} alturaFallbackInicial={820}><div className="rc-foco-content" style={{ height: 760, display: "flex", minHeight: 0 }}>{painel}</div></ConsoleWindow> : painel}
+      {janela ? <ConsoleWindow aberto onClose={() => setJanela(false)} titulo="Prévia de escalpos" dockContent="Escalpos" larguraInicialMax={860} alturaInicialFallback={820}><div className="rc-foco-content" style={{ height: 760, display: "flex", minHeight: 0 }}>{painel}</div></ConsoleWindow> : painel}
     </div>
   </main>;
 }

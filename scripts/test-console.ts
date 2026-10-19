@@ -65,9 +65,9 @@ assert.equal(inicialPequena.h, MIN_H, "Idem para a altura.");
 console.log("4. Geometria inicial — OK");
 
 // -------------------------------------------------------------
-// 4b. `alturaMaxima` (altura da coluna 1) vira teto real da altura —
-// mesmo numa viewport grande, a janela não abre/redimensiona/maximiza
-// mais alta que a coluna 1 (spec "a altura máxima deve ser o tamanho
+// 4b. `alturaMaxima` (altura da coluna 1) vira teto da altura de
+// ABERTURA — mesmo numa viewport grande, a janela não abre mais alta
+// que a coluna 1 (spec "a altura máxima deve ser o tamanho
 // da coluna 1"). Sem o parâmetro, comportamento idêntico ao de antes
 // (testado acima em #4/#5/#7) — é só um teto ADICIONAL, opcional.
 // -------------------------------------------------------------
@@ -76,11 +76,10 @@ const inicialComTeto = geometriaInicial(vpGrande, alturaColuna1);
 assert.equal(inicialComTeto.h, alturaColuna1, "Inicial não passa da altura da coluna 1, mesmo com viewport grande.");
 assert.ok(inicialComTeto.h < Math.round(vpGrande.h * 0.9), "Realmente é MENOR que o cálculo de viewport (90vh) sozinho daria.");
 
-const maxComTeto = geometriaMaximizada(vpGrande, alturaColuna1);
-assert.equal(maxComTeto.h, alturaColuna1, "Maximizada também respeita o teto da coluna 1.");
-
-const resizeComTeto = redimensionar({ x: 10, y: 10, w: 1300, h: 780 }, 1300, 2000, vpGrande, alturaColuna1);
-assert.equal(resizeComTeto.h, alturaColuna1, "Resize manual não passa do teto da coluna 1 mesmo pedindo mais.");
+// O teto de conteúdo vale só pra ABRIR: resize manual e maximizar são
+// pedidos explícitos de espaço e só param na viewport.
+const resizeAlemDoConteudo = redimensionar({ x: 10, y: 10, w: 1300, h: 780 }, 1300, 2000, vpGrande);
+assert.equal(resizeAlemDoConteudo.h, vpGrande.h - 10, "Resize manual cresce até a borda da viewport, não até o conteúdo.");
 
 // O teto nunca derruba abaixo do piso de segurança MIN_H.
 const tetoMenorQueMinimo = geometriaInicial(vpGrande, 50);

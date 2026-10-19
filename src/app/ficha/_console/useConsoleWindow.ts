@@ -35,17 +35,13 @@ function viewport() {
 }
 
 /**
- * `larguraMaximaFixa`/`alturaFallbackInicial` existem pro modo Foco do
- * Console (spec "modos Painel e Foco"): Foco tem uma largura MÁXIMA
- * fixa (818px, não medida) e uma altura de PARTIDA fixa (726px, até a
- * altura natural do conteúdo da aba ativa ser medida). Quem decide
- * QUANDO passar esses valores é o chamador (`ConsoleWindow`, que só
- * repassa o que recebe de `CharacterConsole` — o hook aqui não sabe o
- * que é "Foco", só sabe aplicar os overrides quando informados).
+ * `larguraInicialMax`/`alturaInicialFallback` vêm do chamador: a
+ * largura com que a janela nasce (teto só da ABERTURA, não do resize)
+ * e a altura de partida até o conteúdo ser medido.
  */
 export interface OpcoesConsoleWindow {
-  larguraMaximaFixa?: number;
-  alturaFallbackInicial?: number;
+  larguraInicialMax?: number;
+  alturaInicialFallback?: number;
 }
 
 export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
@@ -56,10 +52,9 @@ export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
 
   /**
    * Altura/largura de janela equivalentes ao tamanho NATURAL do
-   * conteúdo atualmente visível — altura da coluna 1 (`.rc-aside`) e
-   * largura do `.rc-grid` no modo Painel, ou altura/largura da aba
-   * ativa no modo Foco (spec: janela não estica além do conteúdo
-   * quando a viewport sobra). `null` até `ConsoleWindow` medir pela
+   * conteúdo atualmente visível (coluna 1 `.rc-aside`/`.rc-grid`, ou a
+   * aba Personagem) — teto só do tamanho AUTOMÁTICO (abrir e
+   * sincronizar antes do primeiro resize manual). `null` até `ConsoleWindow` medir pela
    * primeira vez (só é possível depois que a janela já montou com
    * algum tamanho provisório, daí o ajuste-depois-do-primeiro-paint em
    * vez de abrir já no tamanho certo).
@@ -73,34 +68,18 @@ export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
     setLarguraMaximaConteudo(Math.round(larguraConteudo) + CHROME_HORIZONTAL);
   }, []);
 
-  // `opts?.larguraMaximaFixa` (818 no Foco, `undefined` no Painel) SEMPRE
-  // vence sobre a largura medida — no Foco a largura nunca é medida, é
-  // fixa. A altura medida, quando existir, sempre vence sobre o
-  // fallback inicial (726 é só ponto de PARTIDA, não teto — spec
-  // explícita: "não é uma altura fixa").
-  const alturaMaximaEfetiva = alturaMaximaConteudo ?? opts?.alturaFallbackInicial ?? undefined;
-  const larguraMaximaEfetiva = opts?.larguraMaximaFixa ?? larguraMaximaConteudo ?? undefined;
+  // A largura de abertura (`larguraInicialMax`) vence sobre a medida;
+  // a altura medida, quando existir, vence sobre o fallback inicial.
+  const alturaMaximaEfetiva = alturaMaximaConteudo ?? opts?.alturaInicialFallback ?? undefined;
+  const larguraMaximaEfetiva = opts?.larguraInicialMax ?? larguraMaximaConteudo ?? undefined;
 
   /**
-   * Uma vez que o usuário redimensiona a janela na mão, o acompanhamento
-   * automático do teto vira só um TETO (clampa se ultrapassar), não mais
-   * um tamanho que a gente empurra pra cima e pra baixo sozinho — senão
-   * a preferência do usuário seria sobrescrita a cada mudança de
-   * conteúdo (ex.: PA ganhou mais um ponto).
+   * Uma vez que o usuário redimensiona a janela na mão, o tamanho é
+   * dele: a sincronização automática com o conteúdo para de mexer —
+   * senão a preferência seria sobrescrita a cada mudança de conteúdo
+   * (ex.: PA ganhou mais um ponto). Só a viewport continua limitando.
    */
   const redimensionadaManualmente = useRef(false);
-
-  // Troca de modo (Painel↔Foco, sinalizada por `larguraMaximaFixa`
-  // aparecer/sumir): o conteúdo medido é de OUTRO layout agora, então
-  // força remedição do zero — e devolve a sincronização automática (o
-  // usuário pode ter travado o tamanho no modo anterior, mas isso não
-  // deveria valer pro novo modo).
-  useEffect(() => {
-    setAlturaMaximaConteudo(null);
-    setLarguraMaximaConteudo(null);
-    redimensionadaManualmente.current = false;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opts?.larguraMaximaFixa]);
 
   // Geometria inicial só no cliente (depende da viewport real).
   useEffect(() => {
@@ -110,41 +89,20 @@ export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
   }, [aberto, geo, alturaMaximaEfetiva, larguraMaximaEfetiva]);
 
   // Conteúdo acabou de ser medido (ou mudou de tamanho, ex.: atributo
-  // ganhou mais um ponto na trilha de PA): sincroniza a janela com o
-  // novo teto. NORMAL reusa a MESMA fórmula de `geometriaInicial`
-  // (fração de viewport + teto de conteúdo) — ESSENCIAL manter o teto
-  // de viewport aqui também: uma versão anterior deste efeito só
-  // olhava pro teto de conteúdo, e numa tela pequena com a coluna 1
-  // naturalmente alta isso empurrava a janela pra mais alta que a
-  // própria tela. ANTES do primeiro resize manual, sincroniza nos dois
-  // sentidos (cresce E encolhe) — cobre tanto o "flash" do primeiro
-  // paint quanto uma 1ª medição incompleta (dados do personagem
-  // carregando async). DEPOIS do primeiro resize manual, só clampa pra
-  // baixo se ultrapassar — não briga com o tamanho que o usuário
-  // escolheu.
-  //
-  // MAXIMIZADA também precisa desse resync, não só normal: se o
-  // usuário clica em maximizar ANTES da 1ª medição terminar (bem
-  // possível — a medição só chega depois de pelo menos um paint),
-  // `geometriaMaximizada` roda sem teto nenhum e a janela maximizada
-  // fica presa no tamanho de tela cheia pra sempre, mesmo depois da
-  // medição chegar — sobrando espaço vazio nas colunas que não
-  // esticam pra preencher (é exatamente o "espaço vazio" relatado).
+  // ganhou mais um ponto na trilha de PA): enquanto o usuário não
+  // redimensionou na mão, sincroniza a janela com a MESMA fórmula de
+  // `geometriaInicial` (fração de viewport + teto de conteúdo) nos dois
+  // sentidos — cobre o "flash" do primeiro paint e uma 1ª medição
+  // incompleta (dados carregando async). ESSENCIAL manter o teto de
+  // viewport aqui: só o de conteúdo deixava a janela mais alta que a
+  // tela em telas pequenas. Maximizada ou redimensionada na mão: não
+  // mexe.
   useEffect(() => {
     if (alturaMaximaEfetiva == null && larguraMaximaEfetiva == null) return;
-    if (mode !== "normal" && mode !== "maximized") return;
+    if (mode !== "normal" || redimensionadaManualmente.current) return;
     setGeo((atual) => {
       if (!atual) return atual;
-      if (mode === "maximized") {
-        const alvo = geometriaMaximizada(viewport(), alturaMaximaEfetiva, larguraMaximaEfetiva);
-        return atual.w === alvo.w && atual.h === alvo.h && atual.x === alvo.x && atual.y === alvo.y ? atual : alvo;
-      }
       const alvo = geometriaInicial(viewport(), alturaMaximaEfetiva, larguraMaximaEfetiva);
-      if (redimensionadaManualmente.current) {
-        const w = Math.min(atual.w, alvo.w);
-        const h = Math.min(atual.h, alvo.h);
-        return w === atual.w && h === atual.h ? atual : { ...atual, w, h };
-      }
       return atual.w === alvo.w && atual.h === alvo.h ? atual : { ...atual, w: alvo.w, h: alvo.h };
     });
   }, [alturaMaximaEfetiva, larguraMaximaEfetiva, mode]);
@@ -157,7 +115,7 @@ export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
       const vp = viewport();
       setGeo((atual) => {
         if (!atual) return atual;
-        if (mode === "maximized") return geometriaMaximizada(vp, alturaMaximaEfetiva, larguraMaximaEfetiva);
+        if (mode === "maximized") return geometriaMaximizada(vp);
         // Uma viewport menor também precisa reduzir a janela: só ajustar x/y
         // deixava o trilho e os controles do lado direito fora da tela.
         const w = Math.min(atual.w, Math.max(MIN_W, vp.w - 32 - TABLIST_W));
@@ -167,7 +125,7 @@ export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
     }
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [aberto, mode, alturaMaximaEfetiva, larguraMaximaEfetiva]);
+  }, [aberto, mode]);
 
   const podeManipular = mode === "normal";
 
@@ -229,8 +187,6 @@ export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
                 larguraInicial + (ev.clientX - inicioX),
                 alturaInicial + (ev.clientY - inicioY),
                 viewport(),
-                alturaMaximaEfetiva,
-                larguraMaximaEfetiva,
               )
             : atual,
         );
@@ -245,7 +201,7 @@ export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
       alvo.addEventListener("pointerup", soltar);
       alvo.addEventListener("pointercancel", soltar);
     },
-    [geo, podeManipular, alturaMaximaEfetiva, larguraMaximaEfetiva],
+    [geo, podeManipular],
   );
 
   /** Resize pelo canto inferior ESQUERDO — espelhado, ancorado na borda direita. */
@@ -273,8 +229,6 @@ export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
                 larguraInicial - (ev.clientX - inicioX),
                 alturaInicial + (ev.clientY - inicioY),
                 viewport(),
-                alturaMaximaEfetiva,
-                larguraMaximaEfetiva,
               )
             : atual,
         );
@@ -289,7 +243,7 @@ export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
       alvo.addEventListener("pointerup", soltar);
       alvo.addEventListener("pointercancel", soltar);
     },
-    [geo, podeManipular, alturaMaximaEfetiva, larguraMaximaEfetiva],
+    [geo, podeManipular],
   );
 
   /**
@@ -309,9 +263,9 @@ export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
       return;
     }
     if (geo) geoAntesDeMaximizar.current = geo;
-    setGeo(geometriaMaximizada(viewport(), alturaMaximaEfetiva, larguraMaximaEfetiva));
+    setGeo(geometriaMaximizada(viewport()));
     setMode("maximized");
-  }, [geo, mode, alturaMaximaEfetiva, larguraMaximaEfetiva]);
+  }, [geo, mode]);
 
   /** Modo de antes de minimizar — para o dock devolver ao estado certo. */
   const modoAntesDeMinimizar = useRef<Exclude<WindowMode, "minimized">>("normal");

@@ -52,8 +52,8 @@ export function ConsoleWindow({
   titlebarExtra,
   dockContent,
   tablist,
-  larguraMaximaFixa,
-  alturaFallbackInicial,
+  larguraInicialMax,
+  alturaInicialFallback,
   conteudoChave = "",
   children,
 }: {
@@ -69,22 +69,20 @@ export function ConsoleWindow({
       borda direita (spec "JANELA CONSOLE"). Opcional pra manter
       `ConsoleWindow` reutilizável por quem não tem abas. */
   tablist?: ReactNode;
-  /** Largura MÁXIMA fixa da janela (spec modo Foco: 818px) — quando
-      informada, substitui a largura medida de `.rc-grid`. `undefined`
-      no modo Painel (largura volta a ser medida). */
-  larguraMaximaFixa?: number;
-  /** Altura de PARTIDA antes da 1ª medição do conteúdo ativo (spec
-      modo Foco: 726px) — só o valor inicial, não um teto; some assim
-      que a medição real chega. */
-  alturaFallbackInicial?: number;
-  /** Muda sempre que o conteúdo medido (`.rc-aside`/`.rc-grid` ou
-      `.rc-foco-content`) troca de identidade — ex.: alternar Painel↔
-      Foco, ou trocar de aba dentro do Foco — pra recolocar o
-      `ResizeObserver` no elemento certo. */
+  /** Largura com que a janela NASCE (Console: 818px) — teto só da
+      abertura; arrastar e maximizar podem passar dela. Quando
+      informada, substitui a largura medida de `.rc-grid`. */
+  larguraInicialMax?: number;
+  /** Altura de PARTIDA antes da 1ª medição do conteúdo ativo (Console:
+      726px) — só o valor inicial, não um teto; some assim que a
+      medição real chega. */
+  alturaInicialFallback?: number;
+  /** Muda sempre que o conteúdo medido troca de identidade (ex.: trocar
+      de aba) — pra recolocar o `ResizeObserver` no elemento certo. */
   conteudoChave?: string | number;
   children: ReactNode;
 }) {
-  const win = useConsoleWindow(aberto, { larguraMaximaFixa, alturaFallbackInicial });
+  const win = useConsoleWindow(aberto, { larguraInicialMax, alturaInicialFallback });
   const cursorHabilitado = useCursorHabilitado();
   const ancorado = useConsoleAncorado();
   const windowRef = useRef<HTMLDivElement>(null);
@@ -105,26 +103,19 @@ export function ConsoleWindow({
 
   const minimizada = win.mode === "minimized";
 
-  // A altura máxima da janela é a altura NATURAL do conteúdo que HUGA
-  // (não estica) — coluna 1 (`.rc-aside`) no modo Painel, ou a aba
-  // Personagem (`.rc-foco-personagem`) no modo Foco — e a largura
-  // máxima é a largura NATURAL do `.rc-grid` (só existe no Painel; no
-  // Foco a largura é fixa, ver `larguraMaximaFixa`). Spec: a janela
-  // não estica além do conteúdo quando a viewport sobra.
+  // Mede o tamanho NATURAL do conteúdo que não estica — coluna 1
+  // (`.rc-aside`) ou a aba Personagem (`.rc-foco-personagem`) na
+  // altura, `.rc-grid` na largura — pra janela ABRIR (e se ajustar
+  // até o primeiro resize manual) sem sobrar espaço vazio. Não é teto
+  // do resize: arrastar ou maximizar pode passar disso.
   //
-  // Só `.rc-foco-personagem` é medida no Foco, NÃO `.rc-foco-content`
-  // (que hoje estica pra preencher `.rc-body`, então medi-la seria
-  // circular) nem as abas de navegação comuns (`.rc-tabsarea-outer`,
-  // que também esticam lá dentro — ver console.css) — quando a aba
-  // ativa não é "Personagem", a altura da janela simplesmente não é
-  // re-sincronizada, e o conteúdo rola por dentro se precisar.
+  // `.rc-foco-content` e as abas de navegação esticam pra preencher
+  // `.rc-body`, então medi-las seria circular — nelas o conteúdo rola
+  // por dentro se precisar.
   //
-  // `.rc-aside`/`.rc-grid`/`.rc-foco-personagem` só existem depois que
-  // `win.geo` monta o conteúdo (por isso o `!!win.geo` na dependência,
-  // não só `aberto`) — a janela abre num tamanho provisório e se
-  // ajusta assim que a medição chega. `conteudoChave` força reconectar
-  // o observer quando o elemento medido troca de identidade (alternar
-  // Painel↔Foco, ou trocar de aba dentro do Foco).
+  // Os alvos só existem depois que `win.geo` monta o conteúdo (por isso
+  // o `!!win.geo` na dependência); `conteudoChave` reconecta o observer
+  // quando o elemento medido troca de identidade (troca de aba).
   useEffect(() => {
     if (!aberto || !win.geo) return;
     const raiz = windowRef.current;
