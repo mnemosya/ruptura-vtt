@@ -24,48 +24,58 @@
    é a silhueta externa; o preenchimento é uma segunda silhueta interna.
    Não recortamos uma borda CSS: os dois fios diagonais ficam inteiros. */
 .rv-token-actions { position: fixed; width: 0; height: 0; z-index: 490; }
-.rv-token-actions__anel { position: absolute; width: 128px; height: 128px; left: -64px; top: -64px; border: 1px solid var(--rc-btn-border); border-radius: 50%; pointer-events: none; }
-.rv-token-actions button, .rv-token-flow button {
+/* Roda tática na escala do mapa: anel de 34–112px de raio em volta do
+   disco. Fatias levemente translúcidas pra não esconder quem está ao lado. */
+.rv-token-actions__roda { position: absolute; width: 280px; height: 280px; left: -140px; top: -140px; overflow: visible; pointer-events: none; }
+.rv-token-actions__orbita { fill: none; stroke: #1c3a4c; stroke-width: 1; stroke-dasharray: 2 6; }
+.rv-token-actions__roda [data-fatia] { fill: rgba(19,37,48,.9); stroke: var(--rc-btn-border); stroke-width: 1.2; transition: fill .15s, stroke .15s; }
+.rv-token-actions__roda [data-fatia="fechar"] { fill: rgba(16,29,37,.9); }
+.rv-token-actions__roda [data-fatia][data-on] { fill: rgba(10,52,68,.94); stroke: var(--rc-cy); }
+.rv-token-actions__roda [data-fatia="fechar"][data-on] { fill: rgba(42,26,32,.94); stroke: #ff6b7d; }
+.rv-token-actions__ponteiro { fill: var(--rc-cy); opacity: 0; transition: transform .22s cubic-bezier(.3,1.4,.5,1), opacity .12s; }
+.rv-token-actions__ponteiro[data-visivel] { opacity: 1; }
+.rv-token-actions__ponteiro[data-sair] { fill: #ff8f9c; }
+.rv-token-actions button {
+  position: absolute; width: 72px; height: 64px; margin: -32px 0 0 -36px; padding: 0; border: 0; background: transparent;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  font: 600 9px/1.2 var(--font-mono), ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase;
+  color: #8fb0c2; cursor: pointer; transition: color .15s;
+}
+.rv-token-actions kbd { font: 400 8px/1.4 var(--font-mono), ui-monospace, monospace; letter-spacing: .02em; padding: 0 4px; border: 1px solid #2a4a5e; border-radius: 3px; color: #7d9fb2; text-transform: none; }
+.rv-token-actions button[data-on] { color: var(--rc-cy); }
+.rv-token-actions button[data-on] kbd { border-color: var(--rc-cy); color: var(--rc-cy); }
+.rv-token-actions button.rv-token-actions__fechar[data-on] { color: #ff8f9c; }
+.rv-token-actions button.rv-token-actions__fechar[data-on] kbd { border-color: #ff8f9c; color: #ff8f9c; }
+.rv-token-actions button:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 2px; border-radius: 6px; }
+/* Centro de cada fatia no raio médio (73px). */
+.rv-token-actions__atacar { left: 0; top: -73px; }
+.rv-token-actions__conjurar { left: 73px; top: 0; }
+.rv-token-actions__fechar { left: 0; top: 73px; }
+.rv-token-actions__item { left: -73px; top: 0; }
+.rv-token-flow button {
   --token-fio: var(--rc-btn-border); --token-fundo: var(--rc-btn-bg);
   position: relative; isolation: isolate; border: 0; background: transparent;
   color: rgba(234,247,255,.8); font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px; line-height: 1.4; padding: 8px 12px; min-height: 36px;
   transition: color .14s; cursor: pointer;
 }
-.rv-token-actions button::before, .rv-token-flow button::before,
-.rv-token-actions button::after, .rv-token-flow button::after {
+.rv-token-flow button::before, .rv-token-flow button::after {
   content: ""; position: absolute; z-index: -1; pointer-events: none;
   clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
   transition: background .14s;
 }
-.rv-token-actions button::before, .rv-token-flow button::before { inset: 0; background: var(--token-fio); }
-.rv-token-actions button::after, .rv-token-flow button::after {
+.rv-token-flow button::before { inset: 0; background: var(--token-fio); }
+.rv-token-flow button::after {
   inset: 1px; background: var(--token-fundo);
   clip-path: polygon(0 0, calc(100% - 7.414px) 0, 100% 7.414px, 100% 100%, 7.414px 100%, 0 calc(100% - 7.414px));
 }
-.rv-token-actions button:not(:disabled):hover, .rv-token-flow button:not(:disabled):hover {
+.rv-token-flow button:not(:disabled):hover {
   --token-fio: var(--rc-btn-border-hover); --token-fundo: var(--rc-btn-bg-hover); color: var(--rc-text-forte);
 }
-.rv-token-actions button:not(:disabled):active, .rv-token-flow button:not(:disabled):active {
+.rv-token-flow button:not(:disabled):active {
   --token-fio: var(--rc-btn-border-active); --token-fundo: var(--rc-btn-bg-active);
 }
-.rv-token-actions button:focus-visible, .rv-token-flow button:focus-visible { outline: 2px solid var(--rc-btn-border-hover); outline-offset: 3px; }
-/* LARGURA DO TEXTO: cada ação tem o tamanho do próprio rótulo (com
-   padding), e não 78px fixos. Por isso a posição é pela BORDA voltada
-   pro token — assim a distância ao disco não muda com o texto. */
-.rv-token-actions button { position: absolute; width: auto; height: 32px; min-height: 32px; padding: 0 14px; white-space: nowrap; font-weight: 600; }
-/* Halo compacto (anel de 128px): Atacar e Fechar acompanham o anel;
-   as ações LATERAIS saem mais pra fora, longe do disco do token.
-   Fechar é só o ícone, num quadrado de 36px. */
-.rv-token-actions__atacar { left: 0; top: -88px; transform: translateX(-50%); }
-.rv-token-actions__conjurar { left: 44px; top: -16px; }
-.rv-token-actions__item { right: 44px; top: -16px; }
-.rv-token-actions button.rv-token-actions__fechar { left: 0; top: 52px; width: 36px; height: 36px; min-height: 36px; padding: 0; transform: translateX(-50%); display: grid; place-items: center; }
-/* Caixa alta e SEM o branco: em repouso um azul apagado; no hover, o
-   acento — o branco ficava reservado pra nada e gritava no mapa. */
-.rv-token-actions button { text-transform: uppercase; letter-spacing: .08em; color: #8fb0c2; }
-.rv-token-actions button:not(:disabled):hover,
-.rv-token-actions button:focus-visible { color: var(--rc-cy); }
+.rv-token-flow button:focus-visible { outline: 2px solid var(--rc-btn-border-hover); outline-offset: 3px; }
 [data-testid="token-acao-painel"] .pn-jan-corpo { padding: 0; }
 .rv-token-flow { display: flex; flex-direction: column; gap: 18px; min-height: 100%; padding: 18px; box-sizing: border-box; font-family: var(--font-corpo), sans-serif; font-size: 14px; color: var(--rc-text-forte); }
 .rv-token-flow p, .rv-token-flow h3 { margin: 0; line-height: 1.45; }
