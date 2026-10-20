@@ -7,6 +7,13 @@
         "arquivo": "content/v12/capas/braxus.webp"
       }
     },
+    "d760a1363552829eb58e814f8490a07a": {
+      "pagina": "IMPÉRIO CENTRAL",
+      "capa": {
+        "arquivo": "content/v12/capas/imperio-central.webp",
+        "substituirPrimeiraImagem": true
+      }
+    },
     "bf70a13635528362988b0130fd646fb3": {
       "pagina": "2. GUERRAS MÁGICAS",
       "capa": {
