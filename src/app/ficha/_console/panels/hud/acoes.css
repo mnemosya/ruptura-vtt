@@ -66,7 +66,7 @@
 .ha-estrela { flex: none; color: #ff8a1f; }
 .ha-etq { padding: 1px 5px; font: 500 9px var(--hx-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--hx-abismo); background: var(--ha-k); }
 .ha-aviso { position: relative; display: inline-grid; place-items: center; width: 15px; height: 14px; padding-top: 3px; font: 700 10px var(--hx-mono); color: var(--hx-abismo); background: #e0a458; clip-path: polygon(50% 0, 100% 100%, 0 100%); cursor: help; }
-.ha-aviso:hover::after { content: "Pela ficha: " attr(data-dica); position: absolute; z-index: 9; left: -6px; top: calc(100% + 6px); padding: 6px 9px; white-space: nowrap; font: 400 11.5px var(--hx-corpo); letter-spacing: 0; text-transform: none; color: var(--hx-ice); background: #0c2433; border: 1px solid #e0a45866; box-shadow: 0 8px 20px -8px #000; }
+.ha-aviso:hover::after { content: "Ficha: " attr(data-dica); position: absolute; z-index: 9; left: -6px; top: calc(100% + 6px); padding: 6px 9px; white-space: nowrap; font: 400 11.5px var(--hx-corpo); letter-spacing: 0; text-transform: none; color: var(--hx-ice); background: #0c2433; border: 1px solid #e0a45866; box-shadow: 0 8px 20px -8px #000; }
 .ha-custo { flex: none; display: flex; gap: 10px; text-align: right; }
 .ha-custo b { display: block; font: 800 17px/1 var(--hx-display); color: var(--ha-k); }
 .ha-custo b.ha-ram { color: #c578d9; }
