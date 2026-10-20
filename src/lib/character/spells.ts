@@ -31,6 +31,7 @@
 
 import { rollDamageFormula } from "./attack";
 import { getOverloadMaxPerDay } from "./overload";
+import { somarPaGastos } from "./paGastos";
 import { rollPericia } from "../dice";
 import type { Character, OverloadRulesPayload } from "./types";
 
@@ -962,7 +963,7 @@ export function castSpell(params: {
   const manaDepois = manaCostUnknown ? manaAntes : manaAntes - (custoMana - consumidoDaTemporaria);
   const nextCharacter: Character = {
     ...character,
-    estado_jogo: { ...character.estado_jogo, pa_gastos: paGastosAntes + custoPa },
+    estado_jogo: { ...character.estado_jogo, pa_gastos: somarPaGastos(paGastosAntes, custoPa, paMax) },
     recursos_atuais: manaCostUnknown
       ? character.recursos_atuais
       : { ...character.recursos_atuais, mana: manaDepois, mana_temporaria: manaTemporariaDepois },

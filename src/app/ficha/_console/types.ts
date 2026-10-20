@@ -144,8 +144,8 @@ export interface ConsoleApi {
   /** Idem, para a trilha de Integridade (mesmo `updateRecursoAtual`, chave "integridade"). */
   editarIntegridade: (valor: number) => void;
 
-  /** Delta em PA gastos / Reações usadas (`adjustEstadoJogo`). */
-  ajustarPa: (delta: number) => void;
+  /** Delta em PA gastos / Reações usadas (`adjustEstadoJogo`). `ajustarPa` devolve o quanto o contador mudou de fato: o gasto além do PA da rodada não acumula. */
+  ajustarPa: (delta: number) => number;
   ajustarReacoes: (delta: number) => void;
 
   /** Aplica um surto de Sobrecarga pelo fluxo existente (inclui Ruptura no 3º). */

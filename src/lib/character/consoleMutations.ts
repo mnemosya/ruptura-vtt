@@ -11,6 +11,7 @@ import { applyGmCondition } from "./gmActions";
 import { detectCollapseOnResourceChange, resolveCollapseAdditionalDamage } from "./collapse";
 import { spendReactionForDefense, type ReactionRules } from "./reactions";
 import { progression, readClassPlay } from "./classManagement";
+import { somarPaGastos } from "./paGastos";
 import type {
   ActiveCondition,
   Character,
@@ -150,7 +151,7 @@ export function applyConsoleMutation(
 
   if (mutation.type === "pa") {
     const credit = progression(character)?.classe_id === "cacador" ? readClassPlay(character).resource : 0;
-    const spent = Math.max(-credit, Math.trunc((character.estado_jogo?.pa_gastos ?? 0) + mutation.delta));
+    const spent = somarPaGastos(character.estado_jogo?.pa_gastos ?? 0, mutation.delta, context.derived.pa_max, credit);
     return {
       character: { ...character, estado_jogo: { ...character.estado_jogo, pa_gastos: spent } },
       meta: {},

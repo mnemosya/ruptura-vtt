@@ -33,6 +33,7 @@ import {
 } from "./reactions";
 import { isActionAllowedInWindow, type TurnWindow } from "../table/turnTrack";
 import type { ActiveEffect } from "./activeEffects";
+import { somarPaGastos } from "./paGastos";
 
 // ---------------------------------------------------------------------
 // Tipos de conteúdo bruto (subconjunto lido de content_documents.payload)
@@ -1041,7 +1042,7 @@ export function executeActionOnCharacter(
 
   if (cost.pa != null && deveCobrarPA) {
     const paGastosAntes = nextCharacter.estado_jogo?.pa_gastos ?? 0;
-    nextCharacter = { ...nextCharacter, estado_jogo: { ...nextCharacter.estado_jogo, pa_gastos: paGastosAntes + cost.pa } };
+    nextCharacter = { ...nextCharacter, estado_jogo: { ...nextCharacter.estado_jogo, pa_gastos: somarPaGastos(paGastosAntes, cost.pa, derivedPaMax ?? Number.POSITIVE_INFINITY) } };
     paAfter = paBefore - cost.pa;
   } else if (cost.reacao != null) {
     const spend = spendReactionForDefense(

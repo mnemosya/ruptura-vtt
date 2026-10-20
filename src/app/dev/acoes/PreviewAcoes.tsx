@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AcoesPanel } from "../../ficha/_console/panels/AcoesPanel";
+import { somarPaGastos } from "../../../lib/character/paGastos";
 import { createInitialCharacter, computeDerivedStats, normalizeItemContent, type Character, type CharacterRulesPayload } from "../../../lib/character";
 import itens from "../../../../content/v12/db_mercado_itens_v1_2.json";
 import regrasJson from "../../../../content/db_regras_personagem_normalizado_v1_4.json";
@@ -59,7 +60,13 @@ export function PreviewAcoes() {
         <AcoesPanel
           api={{
             character, derivados, catalogo, glossario: [], regras, somenteLeitura: leitura,
-            ajustarPa: (d) => { ajustar("pa_gastos", d); anotar(`PA ${d > 0 ? "−" : "+"}${Math.abs(d)}`); },
+            ajustarPa: (d) => {
+              const antes = character.estado_jogo?.pa_gastos ?? 0;
+              const depois = somarPaGastos(antes, d, derivados.pa_max);
+              setCharacter((c) => ({ ...c, estado_jogo: { ...c.estado_jogo, pa_gastos: depois } }));
+              anotar(`PA ${d > 0 ? "−" : "+"}${Math.abs(d)}`);
+              return depois - antes;
+            },
             ajustarReacoes: (d) => ajustar("reacoes_usadas", d),
             adicionarCondicao: (i) => setCharacter((c) => ({ ...c, condicoes_ativas: [...(c.condicoes_ativas ?? []), { id: `${i.conditionId}-${Date.now()}`, conditionId: i.conditionId, nome: i.nome, aplicadaEm: new Date().toISOString(), ativa: true }] })),
             removerCondicao: (id) => setCharacter((c) => ({ ...c, condicoes_ativas: (c.condicoes_ativas ?? []).map((x) => (x.id === id ? { ...x, ativa: false } : x)) })),

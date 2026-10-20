@@ -76,7 +76,8 @@ export function companionChange(value: HuntingCompanion | undefined, cmd: Compan
     case 'command':
       if (!c.hp) return fail('O companheiro está em Colapso.');
       if (c.commanded) return fail('O companheiro já recebeu este comando.');
-      if (availablePa < 1 || (cmd.reserve && reserve < 1)) return fail(cmd.reserve ? 'Reserva Tática insuficiente.' : 'PA insuficientes.');
+      // Sem PA o comando continua permitido (avisa na UI); só a Reserva Tática é recurso que trava.
+      if (cmd.reserve && reserve < 1) return fail('Reserva Tática insuficiente.');
       spent = 1; reserveSpent = cmd.reserve ? 1 : 0;
       c.commanded = true; c.pa = 2; break;
     case 'action': {

@@ -25,6 +25,7 @@ import { getCurrentUser } from "../../../../../lib/auth/session";
 import { fetchControlledCharacterIdsStrict } from "../../../../../lib/campaign/session";
 import { listCharactersForNarratorCampaign } from "../../../../../lib/character/storage";
 import { addLog } from "../../../../../lib/table/storage";
+import { renovarRecursosDaRodadaVtt } from "../../../../../lib/table/renovarRodadaVtt";
 import { diffTrilha, paraComparavel, payloadDoEvento } from "../_painel/feed/eventosCombate";
 import {
   carregarCenaAtiva,
@@ -1249,7 +1250,11 @@ export async function iniciarTrilhaAction(params: {
   if (v.erro) return { ok: false, erro: v.erro };
   const anterior = await carregarTrilha(params.sceneId).catch(() => null);
   const r = await iniciarTrilha({ sceneId: params.sceneId, estado: params.estado });
-  if (r.ok) await registrarEventosDaTrilha(params.campaignId, anterior?.estado ?? null, params.estado);
+  if (r.ok) {
+    await registrarEventosDaTrilha(params.campaignId, anterior?.estado ?? null, params.estado);
+    // A primeira rodada do combate começa com PA e Reações cheios na ficha.
+    await renovarFichasDaTrilha(params.campaignId, params.sceneId, params.estado);
+  }
   return r.ok ? { ok: true, dados: r.trilha ?? null } : { ok: false, erro: r.erro };
 }
 
@@ -1300,6 +1305,12 @@ export async function atualizarTrilhaAction(params: {
     if (rodada !== null && rodada !== rodadaDaTrilha(anterior?.estado ?? null)) {
       await expirarMarcasDaCena({ sceneId: params.sceneId, rodadaAtual: rodada, combateEncerrado: false }).catch(() => 0);
     }
+    // Rodada nova: o PA da ficha renova junto. Só pra frente — voltar
+    // a rodada (correção do narrador) não devolve PA a ninguém.
+    const rodadaAnterior = rodadaDaTrilha(anterior?.estado ?? null);
+    if (rodada !== null && rodadaAnterior !== null && rodada > rodadaAnterior) {
+      await renovarFichasDaTrilha(params.campaignId, params.sceneId, params.estado);
+    }
   }
   return r.ok ? { ok: true, dados: r.trilha ?? null } : { ok: false, erro: r.erro };
 }
@@ -1311,6 +1322,27 @@ async function tokensQueControlo(campaignId: string, sceneId: string): Promise<S
   const client = await getScopedTableClient();
   const { data } = await client.from("vtt_tokens").select("id").eq("scene_id", sceneId).in("character_id", personagens);
   return new Set(((data as { id: string }[] | null) ?? []).map((t) => t.id));
+}
+
+/**
+ * Renova PA/Reações nas fichas dos personagens da trilha (os ids dos
+ * participantes são ids de token). Best-effort: a trilha já foi gravada.
+ */
+async function renovarFichasDaTrilha(campaignId: string, sceneId: string, estado: unknown): Promise<void> {
+  try {
+    const rodada = rodadaDaTrilha(estado);
+    const participantes = (estado as { participantes?: { id?: unknown }[] } | null)?.participantes ?? [];
+    const tokenIds = participantes.map((p) => p.id).filter((id): id is string => typeof id === "string");
+    if (rodada === null || tokenIds.length === 0) return;
+    const client = await getScopedTableClient();
+    const { data } = await client.from("vtt_tokens").select("character_id").eq("scene_id", sceneId).in("id", tokenIds);
+    const characterIds = ((data as { character_id: string | null }[] | null) ?? [])
+      .map((t) => t.character_id)
+      .filter((id): id is string => !!id);
+    await renovarRecursosDaRodadaVtt({ campaignId, characterIds, rodada });
+  } catch {
+    // Ver a nota acima.
+  }
 }
 
 /** Rodada corrente de um estado de trilha cru, ou `null` se ilegível. */

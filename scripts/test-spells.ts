@@ -71,8 +71,8 @@ const personagemSemPa = { ...personagemComRecursos, estado_jogo: { pa_gastos: 3,
 const falhaConjuracao = castSpell({ character: personagemSemPa, spell: controle!, paMax: 3, manaMax: 10 });
 assert.equal(falhaConjuracao.ok, true);
 assert.ok(falhaConjuracao.reason?.includes("PA insuficiente"));
-assert.ok((falhaConjuracao.character.estado_jogo?.pa_gastos ?? 0) > 3);
-console.log("3. Conjurar sem PA suficiente — avisa e registra custo — OK");
+assert.equal(falhaConjuracao.character.estado_jogo?.pa_gastos, 3, "conjura assim mesmo; o contador não passa do PA máximo.");
+console.log("3. Conjurar sem PA suficiente — avisa, conjura e o PA fica em 0 — OK");
 
 // -------------------------------------------------------------
 // 4. Magia com custo_mana REAL (se existir no DB) desconta Mana de verdade.

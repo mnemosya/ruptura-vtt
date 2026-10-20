@@ -43,8 +43,11 @@ deployed=applyClassCommand(deployed,{type:'unitPd',index:0,value:7},4).character
 assert.equal(readClassPlay(deployed).entities[0].attachment,'Drone de reconhecimento');
 deployed=applyClassCommand(deployed,{type:'unit',index:1,operation:'install',installation:'positioned'},4).character;
 assert.equal(readClassPlay(deployed).entities[1].installation,'positioned');
-const denied=applyClassCommand({...deployed,estado_jogo:{pa_gastos:4}},{type:'unit',index:0,operation:'retrieve'},4);
-assert.ok(denied.error);assert.equal(readClassPlay(denied.character).entities.length,2);
+// Sem PA a operação segue (agir com 0 PA é permitido) e o contador não passa do máximo.
+const semPa=applyClassCommand({...deployed,estado_jogo:{pa_gastos:4}},{type:'unit',index:0,operation:'retrieve'},4);
+assert.ok(!semPa.error);assert.equal(readClassPlay(semPa.character).entities.length,1);assert.equal(semPa.character.estado_jogo?.pa_gastos,4,'teto de PA gastos');
+const desfeito=applyClassCommand(semPa.character,{type:'undo'},4);
+assert.equal(desfeito.character.estado_jogo?.pa_gastos,4,'undo não devolve PA que não saiu');assert.equal(readClassPlay(desfeito.character).entities.length,2);
 deployed=applyClassCommand(deployed,{type:'unit',index:0,operation:'retrieve'},4).character;
 assert.equal(readClassPlay(deployed).entities.length,1);
 console.log('Unidades: instalação posicionada/acoplada, sistema conectado, PD e recolhimento OK.');

@@ -1,6 +1,7 @@
 "use client";
 import { applyWorkshop } from "../../../lib/character/workshop";
 import { applyClassCommand, guardDefenseBonus, resetRoundPaWithClass } from "../../../lib/character/classManagement";
+import { somarPaGastos } from "../../../lib/character/paGastos";
 import { reorderInventoryItem } from "../../../lib/character/inventoryOrder";
 
 import { weaponRangeAt } from "../../../lib/character/weaponRange";
@@ -1713,8 +1714,8 @@ export default function CharacterSheetClient({
     }
   }
 
-  /** Mesmo redutor puro consumido pelo HUD; esta camada só mantém o log local da ficha. */
-  function ajustarPaConsole(delta: number) {
+  /** Mesmo redutor puro consumido pelo HUD; esta camada só mantém o log local da ficha. Devolve o quanto o contador mudou de fato (o teto pode engolir parte do gasto). */
+  function ajustarPaConsole(delta: number): number {
     const current = characterRef.current;
     const before = current.estado_jogo?.pa_gastos ?? 0;
     const result = applyConsoleMutation(
@@ -1726,6 +1727,7 @@ export default function CharacterSheetClient({
     characterRef.current = result.character;
     setCharacter(result.character);
     if (after !== before) addLogEntry("pa", `PA gastos: ${before} → ${after}`);
+    return after - before;
   }
 
   /**
@@ -2706,7 +2708,7 @@ export default function CharacterSheetClient({
     let next = result.character;
     const spent = antes.estado_jogo?.pa_gastos ?? 0;
     if (result.custoPa && selectedCampaignId) {
-      next = { ...next, estado_jogo: { ...next.estado_jogo, pa_gastos: spent + result.custoPa } };
+      next = { ...next, estado_jogo: { ...next.estado_jogo, pa_gastos: somarPaGastos(spent, result.custoPa, derivados.pa_max) } };
     }
     characterRef.current = next;
     setCharacter(next);
@@ -2782,7 +2784,7 @@ export default function CharacterSheetClient({
     }
     if (result.custoPa && selectedCampaignId) {
       const spent = current.estado_jogo?.pa_gastos ?? 0;
-      result.character = {...result.character,estado_jogo:{...result.character.estado_jogo,pa_gastos:spent+result.custoPa}};
+      result.character = {...result.character,estado_jogo:{...result.character.estado_jogo,pa_gastos:somarPaGastos(spent,result.custoPa,derivados.pa_max)}};
     }
     characterRef.current = result.character;
     setCharacter(result.character);

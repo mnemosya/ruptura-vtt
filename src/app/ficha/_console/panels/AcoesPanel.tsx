@@ -165,10 +165,10 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
     return () => window.removeEventListener("keydown", tecla);
   }, []);
 
-  /** Gasta o custo e devolve como desfazer. Nada é bloqueado: sem PA, gasta assim mesmo. */
+  /** Gasta o custo e devolve como desfazer. Nada é bloqueado: sem PA, age assim mesmo. O desfazer devolve só o que saiu de fato. */
   function gastar(acao: AcaoV12, pa: number) {
-    if (pa) api.ajustarPa(pa);
-    return () => { if (pa) api.ajustarPa(-pa); };
+    const saiu = pa ? api.ajustarPa(pa) : 0;
+    return () => { if (saiu) api.ajustarPa(-saiu); };
   }
 
   function confirmar(item: ItemAbaAcao, escolha: { pa: number; pericia: string | null; opcao: string | null }) {
@@ -203,8 +203,8 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
     if (acao.custo.pa_preparado) {
       // Preparar Turno: 1 Reação + o PA das ações preparadas, gastos na declaração.
       api.ajustarReacoes(1);
-      if (escolha.pa) api.ajustarPa(escolha.pa);
-      setToast({ texto: `${acao.nome} · −1 Reação · −${escolha.pa} PA`, desfazer: () => { api.ajustarReacoes(-1); if (escolha.pa) api.ajustarPa(-escolha.pa); } });
+      const saiu = escolha.pa ? api.ajustarPa(escolha.pa) : 0;
+      setToast({ texto: `${acao.nome} · −1 Reação · −${escolha.pa} PA`, desfazer: () => { api.ajustarReacoes(-1); if (saiu) api.ajustarPa(-saiu); } });
       return;
     }
     if (acao.tipo === "reacao" && escolha.pericia) {
