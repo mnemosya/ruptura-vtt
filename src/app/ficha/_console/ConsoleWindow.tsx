@@ -116,6 +116,7 @@ export function ConsoleWindow({
   // Os alvos só existem depois que `win.geo` monta o conteúdo (por isso
   // o `!!win.geo` na dependência); `conteudoChave` reconecta o observer
   // quando o elemento medido troca de identidade (troca de aba).
+  const alturaJaMedida = useRef(false);
   useEffect(() => {
     if (!aberto || !win.geo) return;
     const raiz = windowRef.current;
@@ -123,7 +124,13 @@ export function ConsoleWindow({
     const alvoAltura = raiz.querySelector<HTMLElement>(".rc-aside") ?? raiz.querySelector<HTMLElement>(".rc-foco-personagem");
     const alvoLargura = raiz.querySelector<HTMLElement>(".rc-grid");
     const observers: ResizeObserver[] = [];
+    // Aberta direto numa aba sem coluna medível (ex.: roda tática →
+    // Ações): sem medida, a altura ficaria presa no fallback. Sem teto
+    // de conteúdo, vale só o da viewport — o mesmo tamanho da abertura
+    // pela aba Personagem.
+    if (!alvoAltura && !alturaJaMedida.current) win.registrarAlturaColuna1(Number.MAX_SAFE_INTEGER);
     if (alvoAltura) {
+      alturaJaMedida.current = true;
       const roAltura = new ResizeObserver((entries) => {
         const altura = entries[0]?.contentRect.height;
         if (altura != null) win.registrarAlturaColuna1(altura);

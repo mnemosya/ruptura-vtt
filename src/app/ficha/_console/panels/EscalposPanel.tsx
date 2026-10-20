@@ -58,7 +58,7 @@ export function EscalposPanel({ api }: { api: EscalposApi }) {
   const registro = registros.find(r => r.id === aberto);
   const contar = (id: string) => registros.filter(e => regiaoEscalpo(e.modelo).id === id).length;
   return <section className="rc-eq-outer" aria-label="Escalpos"><div className="rc-eq-card-outer rc-inv-moldura">
-    <CabecalhoModulo id="ID://ESCALPOS" mod="MOD.BIO // 03" />
+    <CabecalhoModulo id="ID://ESCALPOS" mod="MOD.SCALPS // 08" />
     <div className={`rc-inv hx hx-grade hs hs-motion ${oxanium.variable}`} data-testid="console-escalpos" data-entrada-encerrada={entradaEncerrada || undefined} onPointerDownCapture={() => setEntradaEncerrada(true)} onFocusCapture={() => setEntradaEncerrada(true)} style={{ ["--hs-cor" as string]: COR }}>
       <div className="hs-body-column">
         <div className="hs-body-tools">{regiao !== "todos" && <button type="button" onClick={() => setRegiao("todos")}>Ver todos os escalpos</button>}<button type="button" onClick={() => setGuia(true)} aria-label="Guia de escalpos"><BookOpen size={15} /></button></div>

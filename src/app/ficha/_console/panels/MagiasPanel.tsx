@@ -111,7 +111,7 @@ function MagiasEmJogo({ api }: { api: ConsoleApi }) {
   const primaria = vp ? canonicalVertenteId(vp) : null;
   return <section className="rc-eq-outer" aria-label="Magias">
     <div className="rc-eq-card-outer rc-inv-moldura">
-      <CabecalhoModulo id="ID://MAGIAS" mod="MOD.ARC // 07" />
+      <CabecalhoModulo id="ID://MAGIAS" mod="MOD.SPELLS // 07" />
       <div className="rc-inv" data-testid="console-magias">
         <MagiasHud
           magias={magias}
@@ -154,7 +154,7 @@ function MagiasLista({ api }: { api: ConsoleApi }) {
   const filtros = [["", "Todas"], ...VERTENTES, ...[...new Set(publicadas.map(s => canonicalVertenteId(s.vertente)))].filter(v => !VERTENTES.some(([id]) => id === v)).map(v => [v, rotulo(v)])];
   return <section className="rc-eq-outer" aria-label="Magias">
     <div className="rc-eq-card-outer rc-inv-moldura">
-      <CabecalhoModulo id="ID://MAGIAS" mod="MOD.ARC" />
+      <CabecalhoModulo id="ID://MAGIAS" mod="MOD.SPELLS // 07" />
       <div className="rc-inv rc-mag" data-testid="console-magias">
         <div className="rc-inv-abas rc-mag-abas" role="group" aria-label="Filtrar por vertente">
           {filtros.map(([id, label]) => <button key={id} type="button" className="rc-inv-aba" data-ativo={vertente === id || undefined} aria-pressed={vertente === id} onClick={() => setVertente(id)}>

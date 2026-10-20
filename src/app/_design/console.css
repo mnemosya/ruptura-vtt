@@ -47,11 +47,7 @@
 .rv-token-actions button.rv-token-actions__fechar[data-on] { color: #ff8f9c; }
 .rv-token-actions button.rv-token-actions__fechar[data-on] kbd { border-color: #ff8f9c; color: #ff8f9c; }
 .rv-token-actions button:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 2px; border-radius: 6px; }
-/* Centro de cada fatia no raio médio (73px). */
-.rv-token-actions__atacar { left: 0; top: -73px; }
-.rv-token-actions__conjurar { left: 73px; top: 0; }
-.rv-token-actions__fechar { left: 0; top: 73px; }
-.rv-token-actions__item { left: -73px; top: 0; }
+/* O centro de cada fatia (raio médio 73px) vem inline do componente. */
 .rv-token-flow button {
   --token-fio: var(--rc-btn-border); --token-fundo: var(--rc-btn-bg);
   position: relative; isolation: isolate; border: 0; background: transparent;

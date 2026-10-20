@@ -77,7 +77,7 @@ export function IdentityPanel({ api, avatarUrl, onCompletar, onEvoluir }: { onCo
     { titulo: "Credenciais e identidades", campos: [["Credenciais", dados.credenciais], ["Identidades alternativas", dados.registros_alternativos]] },
   ];
   return <section className={`hx hi-painel ${oxanium.variable}`} aria-label="Identidade do personagem">
-    <CabecalhoModulo id="ID://IDENTIDADE" mod="MOD.ID // 08" />
+    <CabecalhoModulo id="ID://IDENTIDADE" mod="MOD.ID // 09" />
     <div className="hi-corpo">
       <header className="hi-resumo">
         <div className="hi-avatar">{avatarUrl ? <img src={avatarUrl} alt={`Retrato de ${c.nome}`} /> : <UserRound size={48} strokeWidth={1} aria-hidden="true" />}</div>

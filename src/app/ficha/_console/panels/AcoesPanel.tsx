@@ -33,11 +33,11 @@ import "./hud/acoes.css";
 
 const CATALOGO = catalogoJson as unknown as CatalogoAcoesV12;
 const NOME_CENA: Record<CenaAcao, string> = { combate: "Combate", investigacao: "Investigação", trama: "Trama" };
-const COR_CENA: Record<CenaAcao, string> = { combate: "#ff8a1f", investigacao: "#00d4ff", trama: "#c578d9" };
+const COR_CENA: Record<CenaAcao, string> = { combate: "#ff8a1f", investigacao: "#c578d9", trama: "#00d4ff" };
 // Cor por tipo de ação; grupos sem entrada caem na cor da cena.
 const COR_GRUPO: Record<string, string> = {
   movimento: "#4d9fff", ofensiva: "#ff5a4e", defensiva: "#3ddc97", postura: "#ffd23f", diversa: "#a3b1c2", livre: "#7ee8fa",
-  investigacao: "#00d4ff", comando: "#c578d9", protocolo_ofensiva: "#ff5fa2", protocolo_trilha: "#9b8cff",
+  investigacao: "#c578d9", comando: "#00d4ff", protocolo_ofensiva: "#6ff0ff", protocolo_trilha: "#2aa8c4",
 };
 const corDoGrupo = (slug: string, cena: CenaAcao) => COR_GRUPO[slug] ?? COR_CENA[cena];
 const CHAVE_FIXADAS = "ruptura:acoes:fixadas";
@@ -121,7 +121,7 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
   const extraDe = (acao: AcaoV12) => (repeticoes[acao.slug] ?? 0) * (acao.custo.repeticao_incremento ?? 0);
 
   useEffect(() => {
-    setFixadas(lerLocal<string[]>(CHAVE_FIXADAS, ["combate:agarrar", "combate:esquivar"]));
+    setFixadas(lerLocal<string[]>(CHAVE_FIXADAS, []));
     const salva = lerLocal<CenaAcao | null>(CHAVE_CENA, null);
     if (salva) setUltimaCena(salva);
     setVisao(lerLocal<Visao>(CHAVE_VISAO, "lista"));
@@ -233,7 +233,7 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
   return (
     <section className="rc-eq-outer" aria-label="Ações">
       <div className="rc-eq-card-outer rc-inv-moldura">
-        <CabecalhoModulo id="ID://AÇÕES" mod="MOD.TÁTICO // 06" />
+        <CabecalhoModulo id="ID://AÇÕES" mod="MOD.ACTIONS // 11" />
         <div className={`rc-inv hx hx-grade ha ${oxanium.variable}`} data-testid="console-acoes" style={{ ["--ha-k" as string]: COR_CENA[cena] }}>
           {/* Mesmo fundo de Magias: abismo + grade + varredura. */}
           <div className="hx-scan" style={{ position: "absolute", inset: 0, opacity: .6, pointerEvents: "none" }} aria-hidden="true" />
@@ -250,7 +250,7 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
             <Recurso rotulo="PA" atual={r.pa.restantes} max={r.pa.max} forma="losango" />
             {cena === "combate" && <Recurso rotulo="Reação" atual={r.reacoes.restantes} max={r.reacoes.total} forma="losango" />}
             {cena === "trama" && r.trama && <>
-              <Barra rotulo="RAM" atual={r.trama.ram} max={r.trama.ramMax} cor="#c578d9" />
+              <Barra rotulo="RAM" atual={r.trama.ram} max={r.trama.ramMax} cor="#00d4ff" />
               <Barra rotulo="Detecção" atual={r.trama.deteccao} max={r.trama.limite ?? 10} cor={r.trama.limite && r.trama.deteccao >= r.trama.limite - 2 ? "#ff5f74" : "#ff8a1f"} />
               <div className="ha-rec"><span>Rastro</span><b className="ha-num">{r.trama.rastro}</b></div>
             </>}
@@ -281,19 +281,9 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
                 })
               ) : <p className="ha-vazio">Nenhuma ação com “{busca}”.</p>
             ) : <>
-              {cena === "combate" && (aba.ataques.length > 0 || aba.fixadas.some((i) => i.acao.cena === "combate")) && (
-                <Secao titulo="Atalhos" nota="armas e fixadas" cor={COR_CENA.combate} aberta={!fechados.has("atalhos")} onAlternar={() => alternar("atalhos")}>
+              {cena === "combate" && aba.fixadas.some((i) => i.acao.cena === "combate") && (
+                <Secao titulo="Atalhos" nota="fixadas por você" cor={COR_CENA.combate} aberta={!fechados.has("atalhos")} onAlternar={() => alternar("atalhos")}>
                   <div className="ha-grade">
-                    {aba.ataques.map((a) => (
-                      <button key={a.instanceId ?? "desarmado"} type="button" className="ha-card ha-arma" disabled={leitura} onClick={() => onAtacar(a.instanceId)}>
-                        <span className="ha-ic" aria-hidden="true"><Sword size={17} strokeWidth={1.6} /></span>
-                        <span className="ha-txt">
-                          <span className="ha-nome">Atacar · {a.nome}</span>
-                          <span className="ha-linha"><span>{a.forma}</span>{a.pericia && <em>{a.pericia}</em>}{a.dano && <span>Dano <em>{a.dano}</em></span>}</span>
-                        </span>
-                        <Custo valor="2" unidade="PA" />
-                      </button>
-                    ))}
                     {aba.fixadas.filter((i) => i.acao.cena === "combate").map((i) => <Cartao key={i.chave} item={i} semIcone onAbrir={() => setAberta(i)} onFixar={leitura ? undefined : () => alternarFixada(i.chave)} />)}
                   </div>
                 </Secao>

@@ -1,6 +1,6 @@
 .rc-tabpanel:has(> .hc-panel){padding:0;border:0;background:transparent}
-.hc-panel{--hc-accent:#00d4ff;flex:0 0 auto;width:100%;min-width:0;min-height:100%;box-sizing:border-box;color:#c4dde6;background:repeating-linear-gradient(0deg,transparent 0 3px,#75dfff06 4px),#06141e;border:1px solid #174358;container-type:inline-size}
-.hc-panel>.rc-modcab{--rc-cab-pad:0px;margin:0;width:100%;padding:0 12px}
+.hc-panel{--hc-accent:#00d4ff;flex:0 0 auto;width:100%;min-width:0;min-height:100%;box-sizing:border-box;color:#c4dde6;background:repeating-linear-gradient(0deg,transparent 0 3px,#75dfff06 4px),#06141e;border:1px solid rgba(0,212,255,.14);container-type:inline-size}
+.hc-panel>.rc-modcab{--rc-cab-pad:0px;margin:0;width:100%;padding:0 12px;background:rgba(17,37,49,.7)}
 .hc-body{padding:24px 28px 34px;max-width:100%}
 .hc-kicker,.hc-rank span,.hc-section-head span,.hc-feature-rank,.hc-features small{font:10px var(--hx-mono,monospace);letter-spacing:.16em;text-transform:uppercase;color:#86a6b8}
 .hc-hero{display:flex;align-items:center;gap:20px;padding:4px 0 24px;border-bottom:1px solid #1c4557}

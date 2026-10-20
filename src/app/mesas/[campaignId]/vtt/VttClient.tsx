@@ -2318,13 +2318,18 @@ export function VttClient({
     if (t?.characterId && t.podeControlar) consoleDaMesa?.abrirAcaoToken(t.characterId, { tokenId: t.id, categoria });
     fecharRadial();
   };
+  const abrirAbaAcoesDoToken = () => {
+    const t = radialTokenId ? tokenPorId.get(radialTokenId) : null;
+    if (t?.characterId && t.podeControlar) consoleDaMesa?.abrir(t.characterId, "acoes");
+    fecharRadial();
+  };
   useEffect(() => {
     const ouvir = (e: KeyboardEvent) => {
       if (e.defaultPrevented || elementoEhEditavel(document.activeElement as HTMLElement | null)) return;
       if (!e.shiftKey || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
       const tecla = e.key.toLowerCase();
       const categoria = ({ q: "atacar", w: "conjurar", e: "item" } as const)[tecla as "q" | "w" | "e"];
-      if (tecla !== "a" && !categoria) return;
+      if (tecla !== "a" && tecla !== "r" && !categoria) return;
 
       let tokenId = selecionadoId;
       // SEM SELEÇÃO: se o jogador EDITA um único personagem e ele tem
@@ -2341,6 +2346,7 @@ export function VttClient({
       if (!token?.characterId || !token.podeControlar || !consoleDaMesa) return;
       e.preventDefault();
       if (tecla === "a") { abrirRadial(tokenId); return; }
+      if (tecla === "r") { fecharCartaoToken(); setMenuContextual(null); fecharRadial(); consoleDaMesa.abrir(token.characterId, "acoes"); return; }
       fecharCartaoToken();
       setMenuContextual(null);
       fecharRadial();
@@ -6231,7 +6237,7 @@ export function VttClient({
 
       {/* ═══ PALCO — mapa em tela cheia, tudo flutua por cima ═══ */}
       <main className="rv-palco" ref={palcoRef} data-arrastando-arquivo={arrastandoArquivo || undefined}>
-        {radialTokenId && tokenPorId.get(radialTokenId)?.podeControlar && <AcoesRapidasToken tokenId={radialTokenId} nome={tokenPorId.get(radialTokenId)!.nome} onEscolher={escolherAcaoToken} onFechar={fecharRadial} />}
+        {radialTokenId && tokenPorId.get(radialTokenId)?.podeControlar && <AcoesRapidasToken tokenId={radialTokenId} nome={tokenPorId.get(radialTokenId)!.nome} onEscolher={escolherAcaoToken} onAbrirAcoes={abrirAbaAcoesDoToken} onFechar={fecharRadial} />}
         {targets.erro && <div className="rv-target-status" role="status">{targets.erro}</div>}
         {/* O contêiner do mapa é quem recebe o arrasto vindo do painel
             (`dragover`/`drop` não chegam dentro do `<svg>`). Só reage

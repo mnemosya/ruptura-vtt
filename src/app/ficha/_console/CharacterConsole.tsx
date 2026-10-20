@@ -102,6 +102,8 @@ type Aux =
 
 export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto: boolean; onClose: () => void; api: ConsoleApi; abaInicial?: AbaId }) {
   const [aba, setAba] = useState<AbaId>(abaInicial ?? "personagem");
+  // Pedido de aba com o Console já aberto (ex.: roda tática → Ações).
+  useEffect(() => { if (abaInicial) setAba(abaInicial); }, [abaInicial]);
   /**
    * FOCO é o padrão de abertura: o Console abre na ficha do
    * personagem, não numa aba de gestão. Painel continua a um clique no

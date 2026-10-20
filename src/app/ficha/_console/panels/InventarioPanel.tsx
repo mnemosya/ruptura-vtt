@@ -481,7 +481,7 @@ export function InventarioPanel({ api, onGerenciarSuporte }: { api: ConsoleApi; 
        Equipamentos); o miolo é o HUD do protótipo. */
     <section aria-label="Inventário" className="rc-eq-outer">
       <div className="rc-eq-card-outer rc-inv-moldura">
-        <CabecalhoModulo id="ID://INVENTÁRIO" mod="MOD.INV // 05" />
+        <CabecalhoModulo id="ID://INVENTÁRIO" mod="MOD.INVENTORY // 06" />
         <div className="rc-inv" data-testid="console-inventario">
           <InventarioHud
             itens={itens}

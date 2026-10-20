@@ -129,7 +129,7 @@ export function EquipmentPanel({
   return (
     <section aria-label="Equipamentos" className="rc-eq-outer">
       <div className="rc-eq-card-outer rc-inv-moldura">
-        <CabecalhoModulo id="ID://EQUIPAMENTO" mod="MOD.GEAR // 06" />
+        <CabecalhoModulo id="ID://EQUIPAMENTO" mod="MOD.GEAR // 05" />
         <div className="rc-inv" data-testid="console-equipamentos">
           <EquipamentoHud
             encaixes={encaixes}

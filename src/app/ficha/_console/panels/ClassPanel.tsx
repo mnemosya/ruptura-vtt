@@ -41,7 +41,7 @@ export function ClassPanel({ api }: { api: Api }) {
     ...Object.entries(current.caracteristicas).flatMap(([rank, items]) => reached(p.ranking, rank) ? items.map(item => ({ ...item, rank, source: "Classe" })) : []),
   ].sort((a, b) => ranks.indexOf(a.rank) - ranks.indexOf(b.rank));
   return <section className="hc-panel" data-game={current.slug} style={{ "--hc-accent": color } as React.CSSProperties} aria-label={`Classe ${current.nome}`}>
-    <CabecalhoModulo id="ID://CLASSE" mod="MOD.CLS // 09" />
+    <CabecalhoModulo id="ID://CLASSE" mod="MOD.CLASS // 10" />
     <div className="hc-body">
       <header className="hc-hero">
         <div className="hc-game-art" style={{ backgroundImage: `url(/forja/classes/${current.slug}.webp)` }} aria-hidden="true" />

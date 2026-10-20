@@ -25,3 +25,6 @@ build/
 # Protótipos exportados do Figma Make (referência local, não versionar)
 /inventario equip magia/
 /inventario/
+
+# Pasta de trabalho temporário (importações, mockups)
+/work/

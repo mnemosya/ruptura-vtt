@@ -1,24 +1,33 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { FlaskConical, Sparkle, Sword, X } from "lucide-react";
+import { FlaskConical, Sparkle, Sword, X, Zap } from "lucide-react";
 import type { CategoriaAcaoToken } from "../_dominio/targets";
 
-// Roda tática: quatro fatias em volta do token, na escala do mapa
-// (hex de 26px, token médio ~43px). As fatias têm vão PARALELO de 8px
-// — o vão angular abria em cunha pra fora. O ponteiro gira sempre pelo
-// caminho mais curto (Atacar → Usar item vai direto pra esquerda).
-type Fatia = CategoriaAcaoToken | "fechar";
-const ANGULO: Record<Fatia, number> = { atacar: 0, conjurar: 90, fechar: 180, item: 270 } as Record<Fatia, number>;
-const FATIAS: { id: Fatia; d: string }[] = [
-  { id: "atacar", d: "M -76.3 -82 A 112 112 0 0 1 76.3 -82 L 21 -26.7 A 34 34 0 0 0 -21 -26.7 Z" },
-  { id: "conjurar", d: "M 82 -76.3 A 112 112 0 0 1 82 76.3 L 26.7 21 A 34 34 0 0 0 26.7 -21 Z" },
-  { id: "fechar", d: "M 76.3 82 A 112 112 0 0 1 -76.3 82 L -21 26.7 A 34 34 0 0 0 21 26.7 Z" },
-  { id: "item", d: "M -82 76.3 A 112 112 0 0 1 -82 -76.3 L -26.7 -21 A 34 34 0 0 0 -26.7 21 Z" },
-];
+// Roda tática: cinco fatias em volta do token, na escala do mapa
+// (hex de 26px, token médio ~43px). Fechar fica embaixo e as outras se
+// abrem em leque simétrico. As fatias têm vão PARALELO de 8px — o vão
+// angular abria em cunha pra fora. O ponteiro gira sempre pelo caminho
+// mais curto.
+type Fatia = CategoriaAcaoToken | "acoes" | "fechar";
+const ANGULO: Record<Fatia, number> = { atacar: 324, conjurar: 36, acoes: 108, fechar: 180, item: 252 };
+const MEIA = 36, R_FORA = 112, R_DENTRO = 34, VAO = 4, R_ROTULO = 73;
+const rad = (g: number) => (g * Math.PI) / 180;
+/** Ponto no círculo de raio `r`, na reta da borda `borda` deslocada `VAO` px pra dentro da fatia. */
+function ponto(r: number, borda: number, sentido: 1 | -1) {
+  const u = [Math.sin(rad(borda)), -Math.cos(rad(borda))], n = [sentido * Math.cos(rad(borda)), sentido * Math.sin(rad(borda))];
+  const k = Math.sqrt(r * r - VAO * VAO);
+  return `${(k * u[0] + VAO * n[0]).toFixed(1)} ${(k * u[1] + VAO * n[1]).toFixed(1)}`;
+}
+function fatia(a: number) {
+  const ini = a - MEIA, fim = a + MEIA;
+  return `M ${ponto(R_FORA, ini, 1)} A ${R_FORA} ${R_FORA} 0 0 1 ${ponto(R_FORA, fim, -1)} L ${ponto(R_DENTRO, fim, -1)} A ${R_DENTRO} ${R_DENTRO} 0 0 0 ${ponto(R_DENTRO, ini, 1)} Z`;
+}
+const FATIAS = (Object.keys(ANGULO) as Fatia[]).map((id) => ({ id, d: fatia(ANGULO[id]) }));
+const lugar = (id: Fatia) => ({ left: +(R_ROTULO * Math.sin(rad(ANGULO[id]))).toFixed(1), top: +(-R_ROTULO * Math.cos(rad(ANGULO[id]))).toFixed(1) });
 
-export function AcoesRapidasToken({tokenId,nome,onEscolher,onFechar}:{
-  tokenId:string;nome:string;onEscolher:(categoria:CategoriaAcaoToken)=>void;onFechar:()=>void;
+export function AcoesRapidasToken({tokenId,nome,onEscolher,onAbrirAcoes,onFechar}:{
+  tokenId:string;nome:string;onEscolher:(categoria:CategoriaAcaoToken)=>void;onAbrirAcoes:()=>void;onFechar:()=>void;
 }) {
   const [pos,setPos]=useState<{x:number;y:number}|null>(null);
   const [ativa,setAtiva]=useState<{id:Fatia;ang:number}|null>(null);
@@ -49,9 +58,9 @@ export function AcoesRapidasToken({tokenId,nome,onEscolher,onFechar}:{
     const atual=a?.ang??ANGULO[id];
     return {id,ang:atual+((ANGULO[id]-atual)%360+540)%360-180};
   });
-  const acao=(id:CategoriaAcaoToken,rotulo:string,tecla:string,icone:React.ReactNode)=>(
-    <button type="button" className={`rv-token-actions__${id}`} data-on={ativa?.id===id||undefined} aria-label={rotulo} aria-keyshortcuts={`Shift+${tecla}`}
-      onPointerEnter={()=>apontar(id)} onFocus={()=>apontar(id)} onClick={()=>onEscolher(id)}>
+  const acao=(id:CategoriaAcaoToken|"acoes",rotulo:string,tecla:string,icone:React.ReactNode)=>(
+    <button type="button" className={`rv-token-actions__${id}`} style={lugar(id)} data-on={ativa?.id===id||undefined} aria-label={rotulo} aria-keyshortcuts={`Shift+${tecla}`}
+      onPointerEnter={()=>apontar(id)} onFocus={()=>apontar(id)} onClick={()=>id==="acoes"?onAbrirAcoes():onEscolher(id)}>
       {icone}<span>{rotulo}</span><kbd>⇧ {tecla}</kbd>
     </button>
   );
@@ -66,7 +75,8 @@ export function AcoesRapidasToken({tokenId,nome,onEscolher,onFechar}:{
     {acao("atacar","Atacar","Q",<Sword size={18} aria-hidden="true"/>)}
     {acao("conjurar","Conjurar","W",<Sparkle size={18} aria-hidden="true"/>)}
     {acao("item","Usar item","E",<FlaskConical size={18} aria-hidden="true"/>)}
-    <button type="button" className="rv-token-actions__fechar" data-on={ativa?.id==="fechar"||undefined} aria-label="Fechar" aria-keyshortcuts="Escape"
+    {acao("acoes","Ações","R",<Zap size={18} aria-hidden="true"/>)}
+    <button type="button" className="rv-token-actions__fechar" style={lugar("fechar")} data-on={ativa?.id==="fechar"||undefined} aria-label="Fechar" aria-keyshortcuts="Escape"
       onPointerEnter={()=>apontar("fechar")} onFocus={()=>apontar("fechar")} onClick={onFechar}>
       <X size={16} aria-hidden="true"/><span>Fechar</span><kbd>Esc</kbd>
     </button>

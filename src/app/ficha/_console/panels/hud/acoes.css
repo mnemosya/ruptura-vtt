@@ -7,18 +7,19 @@
 .ha button:focus-visible, .ha input:focus-visible { outline: 2px solid var(--hx-cy); outline-offset: -2px; }
 
 /* cenas */
-.ha-cenas { display: flex; flex: none; padding: 0 18px; border-bottom: 1px solid #00d4ff14; }
-.ha-cena { position: relative; display: flex; align-items: center; gap: 8px; padding: 12px 16px 11px; font: 600 12px var(--hx-display); text-transform: uppercase; letter-spacing: .14em; color: var(--hx-dim); transition: background .15s, color .15s; }
-.ha-cena::before { content: ""; width: 7px; height: 7px; background: var(--ha-k); opacity: .45; clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
-.ha-cena:hover { color: var(--hx-ice); }
-.ha-cena[aria-selected=true] { color: var(--ha-k); background: color-mix(in srgb, var(--ha-k) 10%, transparent); }
-.ha-cena[aria-selected=true]::before { opacity: 1; }
-.ha-cena[aria-selected=true]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--ha-k); }
+.ha-cenas { display: flex; flex: none; align-items: flex-end; gap: 20px; padding: 18px 24px 0; border-bottom: 1px solid #00d4ff24; }
+/* Mesmo desenho das abas do Inventário: texto grande, sem fundo, sublinhado ciano que cresce. */
+.ha-cena { position: relative; display: flex; align-items: center; gap: 8px; padding: 4px 12px 8px; font: 700 15px var(--hx-display); text-transform: uppercase; letter-spacing: .14em; color: var(--hx-dim); transition: color .15s; }
+.ha-cena:first-child { padding-left: 0; }
+.ha-cena:hover, .ha-cena[aria-selected=true] { color: var(--hx-ice); }
+.ha-cena::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px; background: var(--hx-cy); box-shadow: 0 0 10px var(--hx-cy); transform: scaleX(0); transform-origin: left; transition: transform .3s; }
+.ha-cena:first-child::after { left: 0; }
+.ha-cena[aria-selected=true]::after { transform: scaleX(1); }
 .ha-ao-vivo { display: inline-flex; align-items: center; gap: 4px; font: 9px var(--hx-mono); letter-spacing: .1em; color: var(--ha-k); text-transform: lowercase; }
 .ha-ao-vivo::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ha-k); box-shadow: 0 0 6px var(--ha-k); animation: hx-pulse 1.6s ease-in-out infinite; }
 
 /* recursos do turno */
-.ha-recursos { display: flex; flex: none; flex-wrap: wrap; gap: 14px 28px; align-items: center; min-height: 58px; padding: 12px 18px; border-bottom: 1px solid #00d4ff14; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--ha-k) 6%, transparent)); }
+.ha-recursos { display: flex; flex: none; flex-wrap: wrap; gap: 14px 28px; align-items: center; min-height: 58px; padding: 12px 24px; border-bottom: 1px solid #00d4ff14; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--ha-k) 6%, transparent)); }
 .ha-rec { display: flex; flex-direction: column; gap: 6px; }
 .ha-rec > span:first-child { font: 9px var(--hx-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--hx-dim); white-space: nowrap; }
 .ha-rec > span:first-child b { color: var(--hx-ice); font-weight: 500; }
@@ -28,18 +29,18 @@
 .ha-barra { position: relative; display: block; width: 120px; height: 10px; overflow: hidden; background: color-mix(in srgb, var(--ha-k) 14%, transparent); transform: skew(-20deg); }
 .ha-barra i { position: absolute; inset: 0 auto 0 0; background: var(--ha-k); transition: width .3s; }
 .ha-barra::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 9px, var(--hx-casco) 9px 11px); }
-.ha-num { font: 700 18px/10px var(--hx-display); color: #c578d9; }
+.ha-num { font: 700 18px/10px var(--hx-display); color: #00d4ff; }
 .ha-estado { font: 700 13px var(--hx-display); letter-spacing: .16em; text-transform: uppercase; color: var(--hx-dim); }
 
 /* busca */
-.ha-ferr { flex: none; padding: 12px 18px 4px; }
+.ha-ferr { flex: none; padding: 12px 24px 4px; }
 .ha-busca { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; border: 1px solid #00d4ff22; background: #06141e; color: var(--hx-dim); }
 .ha-busca input { flex: 1; min-width: 0; background: none; border: 0; outline: none; color: var(--hx-ice); font: 13px var(--hx-corpo); }
 .ha-busca button { display: grid; place-items: center; color: var(--hx-dim); }
 .ha-tecla { font: 10px var(--hx-mono); border: 1px solid #00d4ff30; padding: 1px 5px; }
 
 /* lista */
-.ha-lista { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 18px 28px; }
+.ha-lista { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 24px 28px; }
 .ha-vazio { margin-top: 30px; text-align: center; color: var(--hx-dim); font-size: 13px; }
 .ha-sec { display: flex; width: 100%; gap: 9px; align-items: center; margin: 20px 0 10px; text-align: left; }
 .ha-sec:disabled { cursor: default; }
@@ -69,7 +70,7 @@
 .ha-aviso:hover::after { content: "Ficha: " attr(data-dica); position: absolute; z-index: 9; left: -6px; top: calc(100% + 6px); padding: 6px 9px; white-space: nowrap; font: 400 11.5px var(--hx-corpo); letter-spacing: 0; text-transform: none; color: var(--hx-ice); background: #0c2433; border: 1px solid #e0a45866; box-shadow: 0 8px 20px -8px #000; }
 .ha-custo { flex: none; display: flex; gap: 10px; text-align: right; }
 .ha-custo b { display: block; font: 800 17px/1 var(--hx-display); color: var(--ha-k); }
-.ha-custo b.ha-ram { color: #c578d9; }
+.ha-custo b.ha-ram { color: #00d4ff; }
 .ha-custo small { display: block; margin-top: 3px; font: 9px var(--hx-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--hx-dim); }
 
 /* atalho de arma */
@@ -81,7 +82,7 @@
 .ha-arma .ha-custo b { color: #ff8a1f; }
 
 /* aviso da cena (Trama sem acesso) */
-.ha-aviso-cena { display: flex; gap: 14px; align-items: flex-start; margin-top: 14px; padding: 14px 16px; color: #c578d9; border: 1px solid #c578d940; background: linear-gradient(90deg, #c578d914, transparent); }
+.ha-aviso-cena { display: flex; gap: 14px; align-items: flex-start; margin-top: 14px; padding: 14px 16px; color: #00d4ff; border: 1px solid #00d4ff40; background: linear-gradient(90deg, #00d4ff14, transparent); }
 .ha-aviso-cena p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--hx-texto); }
 .ha-aviso-cena b { color: var(--hx-ice); font-weight: 600; }
 
@@ -96,7 +97,7 @@
 .ha-g-cab p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--hx-texto); }
 .ha-g-custos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .ha-g-custos span { padding: 3px 7px; font: 10px var(--hx-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ha-k); border: 1px solid color-mix(in srgb, var(--ha-k) 45%, transparent); }
-.ha-g-custos span.ha-vio { color: #c578d9; border-color: #c578d955; }
+.ha-g-custos span.ha-vio { color: #00d4ff; border-color: #00d4ff55; }
 .ha-g-corpo { flex: 1; min-height: 0; overflow-y: auto; padding: 6px 20px 16px; }
 .ha-g-aviso { margin-top: 14px; padding: 10px 12px; font-size: 12.5px; line-height: 1.5; color: var(--hx-texto); border-left: 2px solid #e0a458; background: #e0a45812; }
 .ha-g-aviso b { display: block; margin-bottom: 3px; font: 700 10px var(--hx-mono); letter-spacing: .12em; text-transform: uppercase; color: #e0a458; }
