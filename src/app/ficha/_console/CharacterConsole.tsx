@@ -163,7 +163,8 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
   })();
   /** Criado só com o nome ("+ Personagem"): ainda falta passar pelo assistente v1.2. */
   const criacaoPendente = (api.character as unknown as { criacao_pendente?: boolean }).criacao_pendente === true;
-  const temClasse = !!(api.character as { progressao?: { classe_id?: string } }).progressao?.classe_id;
+  const classeId = (api.character as { progressao?: { classe_id?: string } }).progressao?.classe_id;
+  const temClasse = !!classeId;
   const janelas = useJanelasDaMesa();
   const fecharConsole = useConsoleCloseOverride();
   /**
@@ -527,7 +528,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
           </>
         }
         dockContent={<MinimizedDockContent api={api} avatarUrl={avatarUrl} onEditarRecurso={editarRecursoComConfirmacao} />}
-        tablist={<TabRail aba={aba} onChangeAba={escolherAba} temClasse={temClasse} />}
+        tablist={<TabRail aba={aba} onChangeAba={escolherAba} temClasse={temClasse} classeId={classeId} />}
         larguraInicialMax={LARGURA_INICIAL_MAX}
         alturaInicialFallback={ALTURA_INICIAL_FALLBACK}
         conteudoChave={aba}

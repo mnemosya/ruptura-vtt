@@ -1,18 +1,19 @@
 /* Aba corporal: mesma densidade do equipamento e do grimório.
    Catálogo usa JanelaMercado + catalogo-magias.css; detalhes usam FichaItemConteudo. */
-.hs { container-type: inline-size; display: grid !important; grid-template-columns: 44% minmax(0,1fr); flex: 1; overflow: hidden; background: transparent; }
+.hs { container-type: inline-size; display: grid !important; grid-template-columns: 44% minmax(0,1fr); flex: 1; overflow: hidden; background: var(--hx-abismo); }
 .hs button:focus-visible, .hs-catalog button:focus-visible, .hs-dialog button:focus-visible, .hs-dialog summary:focus-visible { outline: 2px solid var(--hx-cy); outline-offset: -2px; }
 .hs-body-column { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid #00d4ff18; padding: 16px 18px 20px; }
 .hs-body-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: none; }
 .hs-body-tools button { min-height: 30px; color: var(--hx-dim); font: 10px var(--hx-mono); letter-spacing: .1em; text-transform: uppercase; }
 .hs-body-tools button[aria-pressed=true], .hs-body-tools button:hover { color: var(--hx-cy); }
-.hs-body-tools button:last-child { display: grid; place-items: center; width: 30px; border: 1px solid #00d4ff25; }
+.hs-body-tools button:last-child { display: grid; place-items: center; width: 30px; border: 1px solid #00d4ff25; margin-left: auto; }
 .hs-mobile-systems { display: none; }
 .hs-body-stage { min-height: 180px; flex: 1; display: flex; align-items: center; justify-content: center; }
 .hs-body-stage > svg { display: block; width: 100%; height: 100%; max-height: 540px; overflow: visible; }
 .hs-node { pointer-events: bounding-box; color: #396176; cursor: pointer; outline: none; }
 .hs-wire { fill: none; stroke: #00d4ff18; stroke-width: 1; transition: stroke .2s; }
-.hs-wire-dot { fill: #285365; }
+.hs-wire-dot { fill: #285365; transition: fill .2s; }
+.hs-node-link:hover .hs-wire-dot, .hs-node-link[data-ativo] .hs-wire-dot { fill: var(--hs-cor); }
 .hs-node-box { fill: #071822; stroke: #275366; stroke-width: 1; stroke-dasharray: 3 2; transition: fill .2s, stroke .2s; }
 .hs-node-label { fill: #819db0; font: 10px var(--hx-mono); text-transform: uppercase; letter-spacing: 1.4px; }
 .hs-node[data-ocupado] { color: var(--hs-cor); }
@@ -124,3 +125,21 @@
   .hs-empty { padding-top: 30px; }
 }
 @media (prefers-reduced-motion: reduce) { .hs *, .hs-dialog * { transition: none !important; } }
+
+/* Entrada do módulo: leitura do corpo → conexões → nós → implantes (como Equipamento). */
+.hs-motion.hx-grade::before { animation: hs-fade 120ms ease-out backwards; }
+.hs-motion .hs-corpo { animation: hs-corpo 420ms cubic-bezier(.2,.8,.2,1) 60ms backwards; transform-box: fill-box; transform-origin: 50% 50%; }
+.hs-motion .hs-wire { animation: hs-fio 240ms cubic-bezier(.2,.8,.2,1) calc(var(--hs-delay) + 120ms) backwards; }
+.hs-motion .hs-wire-dot { animation: hs-fade 120ms ease-out calc(var(--hs-delay) + 340ms) backwards; }
+.hs-motion .hs-node { animation: hs-node 220ms cubic-bezier(.2,.8,.2,1) var(--hs-delay) backwards; transform-box: fill-box; transform-origin: 50% 50%; }
+.hs-motion :is(.hs-body-caption, .hs-bio-stats, .hs-integrity, .hs-toolbar) { animation: hs-sobe 220ms cubic-bezier(.2,.8,.2,1) 700ms backwards; }
+.hs-motion .hs-grupo { animation: hs-sobe 220ms cubic-bezier(.2,.8,.2,1) var(--hs-delay) backwards; }
+.hs-motion[data-entrada-encerrada] :is(.hs-corpo, .hs-wire, .hs-wire-dot, .hs-node, .hs-body-caption, .hs-bio-stats, .hs-integrity, .hs-toolbar, .hs-grupo) { animation: none; }
+@keyframes hs-fade { from { opacity: 0; } }
+@keyframes hs-corpo { from { opacity: 0; transform: scale(.97); } }
+@keyframes hs-node { from { opacity: 0; transform: scale(.85); } }
+@keyframes hs-fio { from { stroke-dasharray: 1; stroke-dashoffset: 1; } to { stroke-dasharray: 1; stroke-dashoffset: 0; } }
+@keyframes hs-sobe { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) {
+  .hs-motion :is(.hs-corpo, .hs-wire, .hs-wire-dot, .hs-node, .hs-body-caption, .hs-bio-stats, .hs-integrity, .hs-toolbar, .hs-grupo) { animation: hs-fade 100ms ease-out backwards; }
+}

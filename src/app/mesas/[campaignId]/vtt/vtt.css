@@ -6866,7 +6866,7 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
 .rv-mk-item[data-completo] .rv-mk-nome { color: var(--mk-cor); }
 .rv-mk-selo {
   padding: 4px 6px 4px 8px; line-height: 1;
-  font: 9px var(--rv-mono); letter-spacing: .2em; text-transform: uppercase;
+  font: 700 9px var(--rv-mono); letter-spacing: .2em; text-transform: uppercase;
   color: var(--rv-ground); background: var(--mk-cor);
   animation: rv-mk-fade 160ms 80ms ease-out backwards;
 }

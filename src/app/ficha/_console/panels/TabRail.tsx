@@ -14,7 +14,7 @@
  * (`.rc-tabrail-btn`) — um tema só de selecionada.
  */
 
-import { ABAS, type AbaId } from "../tabs";
+import { ABAS, ICONES_CLASSE, type AbaId } from "../tabs";
 
 /** Ícone customizado da aba Personagem — pessoa dentro de um quadro,
     sempre `currentColor` (a cor vem do estado do botão via CSS, igual
@@ -70,10 +70,13 @@ export function TabRail({
   aba,
   onChangeAba,
   temClasse = false,
+  classeId,
 }: {
   aba: AbaId;
   onChangeAba: (id: AbaId) => void;
   temClasse?: boolean;
+  /** Slug da classe: a aba Classe usa o símbolo dela. */
+  classeId?: string;
 }) {
   return (
     <nav className="rc-tabrail" role="tablist" aria-label="Seções do console" aria-orientation="vertical">
@@ -89,7 +92,7 @@ export function TabRail({
       <div className="rc-tabrail-divider" aria-hidden="true" />
 
       <div className="rc-tabrail-group">
-        {ABAS.filter(({ id }) => id !== "classe" || temClasse).map(({ id, label, Icon }) => (
+        {ABAS.filter(({ id }) => id !== "classe" || temClasse).map(({ id, label, Icon: IconAba }) => { const Icon = id === "classe" && classeId ? ICONES_CLASSE[classeId] ?? IconAba : IconAba; return (
           <TabBotao
             key={id}
             selecionada={aba === id}
@@ -98,7 +101,7 @@ export function TabRail({
             testId={`console-tab-${id}`}
             Icon={() => <Icon size={18} aria-hidden="true" />}
           />
-        ))}
+        ); })}
       </div>
 
     </nav>

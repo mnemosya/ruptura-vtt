@@ -14,7 +14,7 @@
  * genéricos como as demais.
  */
 
-import { LayoutGrid, Wand2, Backpack, BrainCircuit, IdCard, Zap, Shield, type LucideIcon } from "lucide-react";
+import { Shirt, Swords, Wand2, Backpack, BrainCircuit, IdCard, Zap, Shield, HeartPulse, Crosshair, Handshake, HatGlasses, Cpu, type LucideIcon } from "lucide-react";
 
 export type AbaId = "personagem" | "equipamentos" | "mochila" | "magias" | "escalpos" | "caracteristicas" | "classe" | "acoes";
 
@@ -25,7 +25,7 @@ export interface ConsoleTabDef {
 }
 
 export const ABAS: ConsoleTabDef[] = [
-  { id: "equipamentos", label: "Equipamentos", Icon: LayoutGrid },
+  { id: "equipamentos", label: "Equipamentos", Icon: Shirt },
   // O id continua `mochila` (é o que o estado e os testes usam) e o
   // ícone continua a mochila; o que muda é o NOME: a aba mostra o
   // inventário inteiro — mochila, equipado e abrigo —, e chamá-la de
@@ -37,3 +37,6 @@ export const ABAS: ConsoleTabDef[] = [
   { id: "classe", label: "Classe", Icon: Shield },
   { id: "acoes", label: "Ações", Icon: Zap },
 ];
+
+/** Símbolo de cada Classe (slug), usado na aba Classe, no painel e no Códex. */
+export const ICONES_CLASSE: Record<string, LucideIcon> = { ancora: HeartPulse, cacador: Crosshair, combatente: Swords, face: Handshake, infiltrador: HatGlasses, tecnico: Cpu, vanguarda: Shield };

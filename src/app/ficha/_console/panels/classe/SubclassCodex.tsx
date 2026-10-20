@@ -2,20 +2,20 @@
 
 import { useRef, useState } from "react";
 import { ChevronRight, X, BookOpen, Crosshair, HeartPulse, Swords, Handshake, HatGlasses, Cpu, Shield } from "lucide-react";
+import { ICONES_CLASSE } from "../../tabs";
 import type { SubclassContentV12 } from "../../../../../lib/rulesetV12/contracts";
 import { reached } from "../../../../../lib/character/classManagement";
 import { JanelaMercado } from "../hud/JanelaMercado";
 import { TextoComRegras } from "../../TextoComRegras";
 import "./subclassCodex.css";
 
-const symbols = { ancora: HeartPulse, cacador: Crosshair, combatente: Swords, face: Handshake, infiltrador: HatGlasses, tecnico: Cpu, vanguarda: Shield };
 export function SubclassCodex({ sub, rank, color }: { sub: SubclassContentV12; rank: string; color: string }) {
   const [open, setOpen] = useState(false);
   const [selection, setSelection] = useState("");
   const opener = useRef<HTMLButtonElement>(null);
   const features = Object.entries(sub.caracteristicas).filter(([required]) => reached(rank, required)).flatMap(([required, items]) => items.map((item, index) => ({...item, rank: required, key: `${required}-${index}`})));
   const active = features.find(item => item.key === selection) ?? features[0];
-  const Icon = symbols[sub.classe_slug as keyof typeof symbols] ?? BookOpen;
+  const Icon = ICONES_CLASSE[sub.classe_slug] ?? BookOpen;
   return <section className="hc-subclass-hub" aria-label={`Especialização ${sub.nome}`}>
     <button ref={opener} type="button" className="hc-subclass-entry" onClick={() => setOpen(true)}>
       <span className="hc-subclass-sigil"><Icon size={29}/></span><span><small>ESPECIALIZAÇÃO</small><strong>{sub.nome}</strong><em>{features.length} características adquiridas · consultar técnicas</em></span><ChevronRight size={21}/>

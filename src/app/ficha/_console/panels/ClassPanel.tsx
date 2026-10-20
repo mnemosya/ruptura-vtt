@@ -1,6 +1,7 @@
 "use client";
 
 import { BookOpen, ChevronRight, Cpu, Crosshair, Handshake, HatGlasses, HeartPulse, Shield, Swords } from "lucide-react";
+import { ICONES_CLASSE } from "../tabs";
 import type { ConsoleApi } from "../types";
 import type { ClassContentV12, SubclassContentV12 } from "../../../../lib/rulesetV12/contracts";
 import { progression, readClassPlay, reached } from "../../../../lib/character/classManagement";
@@ -24,7 +25,6 @@ import "./classe/classPolish.css";
 const livros = [ancora, cacador, combatente, face, infiltrador, tecnico, vanguarda] as unknown as { classes: ClassContentV12[]; subclasses: SubclassContentV12[] }[];
 const classes = livros.flatMap(l => l.classes);
 const subclasses = livros.flatMap(l => l.subclasses);
-const icons = { ancora: HeartPulse, cacador: Crosshair, combatente: Swords, face: Handshake, infiltrador: HatGlasses, tecnico: Cpu, vanguarda: Shield };
 const colors = { ancora: "#32c978", cacador: "#dfbd6f", combatente: "#f16d79", face: "#c578d9", infiltrador: "#42b9c7", tecnico: "#f3a342", vanguarda: "#6ba9e7" };
 const ranks = ["F", "E", "D", "C", "B", "A", "S", "S+"];
 type Api = Pick<ConsoleApi, "character" | "somenteLeitura"> & Partial<Pick<ConsoleApi, "oficina" | "catalogo" | "classe" | "derivados" | "atributoDaPericia" | "rolarTeste">>;
@@ -35,7 +35,7 @@ export function ClassPanel({ api }: { api: Api }) {
   if (!p?.classe_id || !current) return null;
   const sub = reached(p.ranking, "E") ? subclasses.find(item => item.slug === p.subclasse_id && item.classe_slug === current.slug) : undefined;
   const state = readClassPlay(api.character);
-  const Icon = icons[current.slug as keyof typeof icons] ?? BookOpen;
+  const Icon = ICONES_CLASSE[current.slug] ?? BookOpen;
   const color = colors[current.slug as keyof typeof colors] ?? "#00d4ff";
   const featureRows = [
     ...Object.entries(current.caracteristicas).flatMap(([rank, items]) => reached(p.ranking, rank) ? items.map(item => ({ ...item, rank, source: "Classe" })) : []),
