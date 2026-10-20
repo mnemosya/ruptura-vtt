@@ -34,6 +34,12 @@ import "./hud/acoes.css";
 const CATALOGO = catalogoJson as unknown as CatalogoAcoesV12;
 const NOME_CENA: Record<CenaAcao, string> = { combate: "Combate", investigacao: "Investigação", trama: "Trama" };
 const COR_CENA: Record<CenaAcao, string> = { combate: "#ff8a1f", investigacao: "#00d4ff", trama: "#c578d9" };
+// Cor por tipo de ação; grupos sem entrada caem na cor da cena.
+const COR_GRUPO: Record<string, string> = {
+  movimento: "#4d9fff", ofensiva: "#ff5a4e", defensiva: "#3ddc97", postura: "#ffd23f", diversa: "#a3b1c2", livre: "#7ee8fa",
+  investigacao: "#00d4ff", comando: "#c578d9", protocolo_ofensiva: "#ff5fa2", protocolo_trilha: "#9b8cff",
+};
+const corDoGrupo = (slug: string, cena: CenaAcao) => COR_GRUPO[slug] ?? COR_CENA[cena];
 const CHAVE_FIXADAS = "ruptura:acoes:fixadas";
 const CHAVE_CENA = "ruptura:acoes:cena";
 const CHAVE_VISAO = "ruptura:acoes:visao";
@@ -108,6 +114,11 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
   const [aberta, setAberta] = useState<ItemAbaAcao | null>(null);
   const [toast, setToast] = useState<{ texto: string; desfazer?: () => void } | null>(null);
   const buscaRef = useRef<HTMLInputElement>(null);
+  /** Repetições no turno (Deslocar: +1 PA a cada uma). Zera quando o PA volta ao início. */
+  const [repeticoes, setRepeticoes] = useState<Record<string, number>>({});
+  const paGastos = api.character.estado_jogo?.pa_gastos ?? 0;
+  useEffect(() => { if (paGastos === 0) setRepeticoes({}); }, [paGastos]);
+  const extraDe = (acao: AcaoV12) => (repeticoes[acao.slug] ?? 0) * (acao.custo.repeticao_incremento ?? 0);
 
   useEffect(() => {
     setFixadas(lerLocal<string[]>(CHAVE_FIXADAS, ["combate:agarrar", "combate:esquivar"]));
@@ -160,7 +171,7 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
     return () => { if (pa) api.ajustarPa(-pa); };
   }
 
-  function confirmar(item: ItemAbaAcao, escolha: { pa: number; pericia: string | null; postura?: boolean }) {
+  function confirmar(item: ItemAbaAcao, escolha: { pa: number; pericia: string | null; opcao: string | null }) {
     const { acao } = item;
     setAberta(null);
     if (acao.estado === "postura") {
@@ -175,8 +186,25 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
       return;
     }
     if (acao.slug === "atacar") {
-      // O ataque tem fluxo próprio (alvo no mapa, arma, dano): a primeira arma empunhada, ou desarmado.
-      onAtacar(aba.ataques[0]?.instanceId ?? null);
+      // O ataque tem fluxo próprio (alvo no mapa, arma, dano): a arma empunhada que casa com a forma escolhida.
+      if (escolha.opcao === "secundario") {
+        const segunda = aba.ataques[1];
+        if (segunda) onAtacar(segunda.instanceId);
+        else setToast({ texto: "Ataque secundário pede uma segunda arma leve empunhada" });
+        return;
+      }
+      const forma = escolha.opcao === "corpo_a_corpo" ? "Corpo a corpo" : escolha.opcao === "distancia" ? "À distância" : null;
+      const arma = aba.ataques.find((a) => !forma || a.forma === forma);
+      if (arma) { onAtacar(arma.instanceId); return; }
+      if (escolha.opcao === "corpo_a_corpo") { onRolar({ tipo: "acao", periciaId: "luta", acao: "Atacar · desarmado", custoPa: escolha.pa }); return; }
+      setToast({ texto: "Nenhuma arma à distância empunhada" });
+      return;
+    }
+    if (acao.custo.pa_preparado) {
+      // Preparar Turno: 1 Reação + o PA das ações preparadas, gastos na declaração.
+      api.ajustarReacoes(1);
+      if (escolha.pa) api.ajustarPa(escolha.pa);
+      setToast({ texto: `${acao.nome} · −1 Reação · −${escolha.pa} PA`, desfazer: () => { api.ajustarReacoes(-1); if (escolha.pa) api.ajustarPa(-escolha.pa); } });
       return;
     }
     if (acao.tipo === "reacao" && escolha.pericia) {
@@ -184,11 +212,16 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
       onRolar({ tipo: "defesa", periciaId: escolha.pericia, acao: acao.nome });
       return;
     }
-    const desfazer = gastar(acao, escolha.pa);
+    const repete = !!acao.custo.repeticao_incremento;
+    if (repete) setRepeticoes((m) => ({ ...m, [acao.slug]: (m[acao.slug] ?? 0) + 1 }));
+    const nomeOpcao = acao.opcoes?.find((o) => o.slug === escolha.opcao)?.nome;
     if (escolha.pericia) {
-      onRolar({ tipo: "acao", periciaId: escolha.pericia, acao: acao.nome });
+      // O PA sai na rolagem: fechar o painel sem rolar não cobra nada.
+      onRolar({ tipo: "acao", periciaId: escolha.pericia, acao: nomeOpcao && repete ? `${acao.nome} · ${nomeOpcao}` : acao.nome, custoPa: escolha.pa });
       return;
     }
+    const gasto = gastar(acao, escolha.pa);
+    const desfazer = () => { gasto(); if (repete) setRepeticoes((m) => ({ ...m, [acao.slug]: Math.max(0, (m[acao.slug] ?? 0) - 1) })); };
     setToast({ texto: `${acao.nome} · ${escolha.pa ? `−${escolha.pa} PA` : "usado"}`, desfazer });
   }
 
@@ -275,7 +308,7 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
             </>}
           </div>
 
-          {aberta && <Gaveta item={aberta} api={api} leitura={leitura} nomePericia={nomePericia} paRestantes={r.pa.restantes} onFechar={() => setAberta(null)} onConfirmar={(e) => confirmar(aberta, e)} />}
+          {aberta && <Gaveta item={aberta} api={api} leitura={leitura} nomePericia={nomePericia} paRestantes={r.pa.restantes} paMax={r.pa.max} extraPa={extraDe(aberta.acao)} onFechar={() => setAberta(null)} onConfirmar={(e) => confirmar(aberta, e)} />}
           {toast && (
             <div className="ha-toast" role="status">
               <span>{toast.texto}</span>
@@ -333,7 +366,7 @@ function Secao({ titulo, nota, qtd, cor, aberta = true, onAlternar, children }: 
 
 function Grupo({ grupo, aberto, onAlternar, onAbrir, onFixar }: { grupo: GrupoAbaAcao; aberto: boolean; onAlternar: () => void; onAbrir: (i: ItemAbaAcao) => void; onFixar?: (chave: string) => void }) {
   return (
-    <Secao titulo={grupo.nome} nota={grupo.nota} qtd={grupo.itens.length} cor={COR_CENA[grupo.cena]} aberta={aberto} onAlternar={onAlternar}>
+    <Secao titulo={grupo.nome} nota={grupo.nota} qtd={grupo.itens.length} cor={corDoGrupo(grupo.slug, grupo.cena)} aberta={aberto} onAlternar={onAlternar}>
       <div className="ha-grade">
         {grupo.itens.map((i) => <Cartao key={i.chave} item={i} onAbrir={() => onAbrir(i)} onFixar={onFixar ? () => onFixar(i.chave) : undefined} />)}
       </div>
@@ -354,7 +387,7 @@ function Cartao({ item, onAbrir, onFixar, semIcone }: { item: ItemAbaAcao; onAbr
   const Ic = iconeDe(item.acao);
   const avisos = item.avisos.filter((a) => a.alcance === "acao");
   return (
-    <div className="ha-card-wrap" style={{ ["--ha-k" as string]: COR_CENA[item.acao.cena] }}>
+    <div className="ha-card-wrap" style={{ ["--ha-k" as string]: corDoGrupo(item.acao.grupo, item.acao.cena) }}>
       <button type="button" className="ha-card" data-ativa={item.ativa || undefined} data-com-icone={!semIcone || undefined} onClick={onAbrir}
         onContextMenu={onFixar ? (e) => { e.preventDefault(); onFixar(); } : undefined}>
         <span className="ha-ic" aria-hidden="true"><Ic size={17} strokeWidth={1.6} /></span>
@@ -379,14 +412,17 @@ function periciasDaAcao(acao: AcaoV12, opcao: OpcaoAcaoV12 | null, todas: string
   return p ?? [];
 }
 
-function Gaveta({ item, api, leitura, nomePericia, paRestantes, onFechar, onConfirmar }: {
+function Gaveta({ item, api, leitura, nomePericia, paRestantes, paMax, extraPa, onFechar, onConfirmar }: {
   item: ItemAbaAcao;
   api: AcoesApi;
   leitura: boolean;
   nomePericia: (id: string) => string;
   paRestantes: number;
+  paMax: number;
+  /** PA a mais por repetição no turno (Deslocar). */
+  extraPa: number;
   onFechar: () => void;
-  onConfirmar: (e: { pa: number; pericia: string | null }) => void;
+  onConfirmar: (e: { pa: number; pericia: string | null; opcao: string | null }) => void;
 }) {
   const { acao } = item;
   const [opcaoSlug, setOpcaoSlug] = useState<string | null>(acao.opcoes?.[0]?.slug ?? null);
@@ -397,7 +433,9 @@ function Gaveta({ item, api, leitura, nomePericia, paRestantes, onFechar, onConf
   useEffect(() => { setPericia((p) => (p && pericias.includes(p) ? p : pericias[0] ?? null)); }, [opcaoSlug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const valorPericia = (id: string) => api.character.pericias?.[id] ?? 0;
-  const custoPa = opcao?.custo.pa ?? acao.custo.pa ?? 0;
+  const preparar = !!acao.custo.pa_preparado;
+  const [paPreparado, setPaPreparado] = useState(Math.max(1, Math.min(2, paRestantes)));
+  const custoPa = preparar ? paPreparado : (opcao?.custo.pa ?? acao.custo.pa ?? 0) + extraPa;
   const avisos = item.avisos.map((a) => a.texto);
   const temTeste = pericias.length > 0;
   const k = COR_CENA[acao.cena];
@@ -422,7 +460,7 @@ function Gaveta({ item, api, leitura, nomePericia, paRestantes, onFechar, onConf
         </header>
         <div className="ha-g-corpo hx-semsb">
           {avisos.length > 0 && (
-            <div className="ha-g-aviso"><b>Aviso</b>Pela ficha: {avisos.join(". ")}. Você pode usar mesmo assim.</div>
+            <div className="ha-g-aviso"><b>Ficha:</b>{avisos.join(". ")}.</div>
           )}
           {acao.opcoes && (
             <Campo rotulo="Forma">
@@ -434,6 +472,15 @@ function Gaveta({ item, api, leitura, nomePericia, paRestantes, onFechar, onConf
                 ))}
               </div>
               {opcao && <p className="ha-op-funcao">{opcao.funcao}</p>}
+            </Campo>
+          )}
+          {preparar && (
+            <Campo rotulo="PA preparados" dica="custo total das ações">
+              <div className="ha-ops">
+                {Array.from({ length: Math.max(1, paMax) }, (_, i) => i + 1).map((n) => (
+                  <button key={n} type="button" className="ha-op" aria-pressed={n === paPreparado} onClick={() => setPaPreparado(n)}><b>{n} PA</b></button>
+                ))}
+              </div>
             </Campo>
           )}
           {temTeste && (
@@ -448,7 +495,7 @@ function Gaveta({ item, api, leitura, nomePericia, paRestantes, onFechar, onConf
             </Campo>
           )}
           <div className="ha-previa">
-            {custoPa > 0 && <div><span>Gasta</span><span>{custoPa} PA · {paRestantes - custoPa >= 0 ? `sobra ${paRestantes - custoPa}` : `faltam ${custoPa - paRestantes}`}</span></div>}
+            {custoPa > 0 && <div><span>Gasta</span><span>{custoPa} PA{extraPa ? ` (+${extraPa} repetição)` : ""} · {paRestantes - custoPa >= 0 ? `sobra ${paRestantes - custoPa}` : `faltam ${custoPa - paRestantes}`}</span></div>}
             {acao.custo.reacao && <div><span>Gasta</span><span>1 Reação</span></div>}
             {acao.cena === "trama" && <div className="ha-risco"><span>Se falhar</span><span>padrão +1 Detecção · crítica +3</span></div>}
             {acao.duracao && <div><span>Duração</span><span>{acao.duracao}</span></div>}
@@ -461,7 +508,7 @@ function Gaveta({ item, api, leitura, nomePericia, paRestantes, onFechar, onConf
         </div>
         <footer className="ha-g-pe">
           <button type="button" className="ha-btn ha-btn--sec" onClick={onFechar}>Cancelar</button>
-          <button type="button" className="ha-btn" disabled={leitura} onClick={() => onConfirmar({ pa: ehPostura ? 1 : custoPa, pericia: temTeste ? pericia : null })}>
+          <button type="button" className="ha-btn" disabled={leitura} onClick={() => onConfirmar({ pa: ehPostura ? 1 : custoPa, pericia: temTeste ? pericia : null, opcao: opcaoSlug })}>
             {verbo} {acao.nome}{opcao && acao.slug !== "sacar_guardar_trocar" && acao.slug !== "recarregar" ? ` · ${opcao.nome}` : ""}
           </button>
         </footer>

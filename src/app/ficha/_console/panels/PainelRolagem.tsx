@@ -66,7 +66,7 @@ export type PrefillRolagem =
    */
   | { tipo: "defesa"; periciaId: string; acao: string }
   /** Ação da aba Ações (Agarrar, Investigar, Sondar…): o feed mostra o nome da ação, não só a perícia. */
-  | { tipo: "acao"; periciaId: string; acao: string };
+  | { tipo: "acao"; periciaId: string; acao: string; custoPa?: number };
 
 export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
   api: ConsoleApi;
@@ -147,6 +147,8 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
 
     // A Reação da defesa é gasta AQUI, junto da rolagem que ela paga.
     const info = prefill.tipo === "defesa" ? api.prepararDefesa() : null;
+    // O PA da ação também: só sai quando a rolagem acontece.
+    if (prefill.tipo === "acao" && prefill.custoPa) api.ajustarPa(prefill.custoPa);
     setDefesa(info);
 
     const cdNum = cdInput.trim() === "" ? null : Number.parseInt(cdInput, 10);
