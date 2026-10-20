@@ -1,7 +1,7 @@
 /* The Console tabpanel owns scrolling. The panel must never flex-shrink below its content. */
 .rc-tabpanel:has(> .hi-painel) { padding:0; border:0; background:transparent; }
 .hi-painel { flex:0 0 auto; width:100%; min-height:100%; border:1px solid #00d4ff30; background:linear-gradient(#00d4ff03 1px,transparent 1px),#06121c; background-size:100% 4px; container-type:inline-size; }
-.hi-painel>.rc-modcab {--rc-cab-pad:0px;padding:0 12px;background:#0c243077;border-bottom:1px solid #00d4ff30;}
+.hi-painel>.rc-modcab {--rc-cab-pad:0px;margin:0;width:100%;padding:0 10px;background:rgba(17,37,49,.7);}
 .hi-corpo { padding:22px; }
 .hi-resumo {display:flex;align-items:center;gap:18px;padding-bottom:22px;border-bottom:1px solid #00d4ff25;}
 .hi-avatar {width:92px;height:92px;flex:none;display:grid;place-items:center;background:#0b2632;color:#466b7d;border:1px solid #00d4ff30;overflow:hidden;}
