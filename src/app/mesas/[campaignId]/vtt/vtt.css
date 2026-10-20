@@ -382,7 +382,9 @@
 .rv-tempo-nova button[aria-pressed="true"] { border-color: var(--rv-cy); background: var(--rv-cy-soft); color: var(--rv-cy-hi); }
 .rv-tempo-nova-opcoes .rv-tempo-marcador { width: 6px; height: 6px; }
 .rv-tempo-nova-rodape { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding-top: 12px; border-top: 1px solid var(--rv-line-2); color: var(--rv-ink-faint); font: 9px var(--rv-mono); }
-.rv-tempo-nova-rodape button[type="submit"] { border-color: var(--rv-cy); color: var(--rv-cy-hi); }
+/* Ação principal: ciano sólido, como o "Rolar" do rolador; hover em gelo. */
+.rv-tempo-nova .rv-tempo-nova-rodape button[type="submit"] { border-color: #00d4ff; background: #00d4ff; color: #08111c; font-weight: 700; letter-spacing: .12em; }
+.rv-tempo-nova .rv-tempo-nova-rodape button[type="submit"]:not(:disabled):hover { border-color: #cfeff4; background: #cfeff4; color: #08111c; }
 .rv-tempo-nova-rodape button:disabled { opacity: .5; cursor: default; }
 .rv-tempo-nova .rv-tempo-erro { margin: 0; }
 .rv-tempo-calendario-rodape { display: flex; justify-content: space-between; align-items: center; padding: 12px 0 6px; color: var(--rv-ink-dim); font: 10px var(--rv-mono); }

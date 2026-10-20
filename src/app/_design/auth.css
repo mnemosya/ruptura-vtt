@@ -519,8 +519,10 @@
     linear-gradient(45deg, transparent 50%, var(--control-outline) 50% calc(50% + 1px), transparent calc(50% + 1px)) bottom left / var(--control-notch) var(--control-notch) no-repeat;
 }
 .rv-segmented { --control-notch: 12px; --control-outline: rgba(0, 212, 255, 0.1); }
-/* Abas Entrar / Criar conta: corte um pouco maior que o padrão (8px). */
-.rv-seg-btn { --control-notch: 12px; }
+/* Abas Entrar / Criar conta: chanfro concêntrico ao do contêiner. A aba fica
+   recuada 6px (borda 1 + padding 5); a diagonal paralela a 6px de distância
+   corta 12 − 6·(2 − √2) ≈ 8.5px. */
+.rv-seg-btn { --control-notch: calc(12px - 6px * (2 - 1.41421)); }
 .rv-input-wrap { --control-outline: rgba(14, 107, 127, 0.6); }
 .rv-input-wrap:focus-within { --control-outline: #54acbe; border-color: var(--control-outline); }
 .rv-input-wrap--err { --control-outline: rgba(255, 60, 80, 0.5); }

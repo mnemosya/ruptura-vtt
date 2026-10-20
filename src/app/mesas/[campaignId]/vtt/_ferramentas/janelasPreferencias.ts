@@ -65,26 +65,15 @@ export function chaveJanelas(usuarioId: string | null, campaignId: string): stri
   return `rv-janelas:${VERSAO_SCHEMA}:${usuarioId ?? "anon"}:${campaignId}`;
 }
 
-function ehPosicao(v: unknown): v is PosicaoJanela {
-  return !!v && typeof v === "object"
-    && Number.isFinite((v as { x: unknown }).x)
-    && Number.isFinite((v as { y: unknown }).y);
-}
+/**
+ * Posições lembradas SÓ na memória da página: valem enquanto a mesa
+ * está aberta e um refresh (ou sair e voltar) as limpa, devolvendo
+ * toda janela à âncora padrão ao lado da barra.
+ */
+const memoria = new Map<string, Record<string, PosicaoJanela>>();
 
 function lerTudo(chave: string): Record<string, PosicaoJanela> {
-  if (typeof window === "undefined") return {};
-  try {
-    const bruto = window.localStorage.getItem(chave);
-    if (!bruto) return {};
-    const json = JSON.parse(bruto) as Record<string, unknown>;
-    const saida: Record<string, PosicaoJanela> = {};
-    for (const [id, valor] of Object.entries(json)) {
-      if (ehPosicao(valor)) saida[id] = { x: valor.x, y: valor.y, manual: valor.manual === true };
-    }
-    return saida;
-  } catch {
-    return {};
-  }
+  return memoria.get(chave) ?? {};
 }
 
 /**
@@ -97,14 +86,8 @@ export function carregarPosicaoJanela(usuarioId: string | null, campaignId: stri
 }
 
 export function salvarPosicaoJanela(usuarioId: string | null, campaignId: string, id: JanelaId, pos: PosicaoJanela): void {
-  if (typeof window === "undefined") return;
   const chave = chaveJanelas(usuarioId, campaignId);
-  try {
-    window.localStorage.setItem(chave, JSON.stringify({ ...lerTudo(chave), [id]: pos }));
-  } catch {
-    // Storage cheio/desabilitado (aba privada) — a posição vira só
-    // desta sessão, o que não é motivo pra quebrar a ferramenta.
-  }
+  memoria.set(chave, { ...lerTudo(chave), [id]: pos });
 }
 
 /**
