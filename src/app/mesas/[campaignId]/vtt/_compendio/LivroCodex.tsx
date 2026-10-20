@@ -11,7 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { CapituloCompendio } from "../../../../../lib/compendio/tipos";
 import { CabecalhoCodex, Shell, useIndiceAtivo } from "../_forja/Codex";
-import { Mono } from "../_forja/ui";
+import { Key, Mono } from "../_forja/ui";
 import { oxanium } from "../../../../_design/oxanium";
 import "../_forja/forja.css";
 import "./compendio.css";
@@ -78,6 +78,18 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
   const pedindoTextos = useRef(false);
   const [abertos, setAbertos] = useState<Set<string>>(new Set());
   const [avisoEnvio, setAvisoEnvio] = useState<string | null>(null);
+
+  /** No celular o índice vira gaveta e a busca abre por um botão (desktop: sempre visíveis). */
+  const [indiceAberto, setIndiceAberto] = useState(false);
+  const indiceAbertoRef = useRef(indiceAberto);
+  indiceAbertoRef.current = indiceAberto;
+  const [buscaAberta, setBuscaAberta] = useState(!!buscaInicial);
+  const campoBusca = useRef<HTMLInputElement>(null);
+  const indiceRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!indiceAberto) return;
+    indiceRef.current?.querySelector(".fj-indice__item--ativo")?.scrollIntoView({ block: "center" });
+  }, [indiceAberto]);
 
   /** Imagem aberta em tela cheia ("Expandir"). */
   const [ampliada, setAmpliada] = useState<{ url: string; legenda: string } | null>(null);
@@ -207,6 +219,12 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
         setAmpliada(null);
         return;
       }
+      if (indiceAbertoRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIndiceAberto(false);
+        return;
+      }
       if (!fecharRef.current) return;
       e.preventDefault();
       e.stopPropagation();
@@ -255,12 +273,14 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
   atualRef.current = atual;
   const ir = useCallback((destino: DestinoLivro) => {
     setBusca("");
+    setBuscaAberta(false);
     const a = atualRef.current;
     if (!a || a.pageId !== destino.pageId || a.ancora !== destino.ancora) setHistorico((h) => [...h, a]);
     setAtual({ ...destino });
   }, []);
   const irCapa = () => {
     setBusca("");
+    setBuscaAberta(false);
     if (atualRef.current) setHistorico((h) => [...h, atualRef.current]);
     setAtual(null);
   };
@@ -297,6 +317,8 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
   const destinoRetomar = (ultimoLido && linhas?.find((c) => c.pageId === ultimoLido))
     ?? linhas?.find((c) => !c.paiPageId) ?? null;
   const { anterior, proximo } = linhas && atual ? vizinhos(linhas, atual.pageId) : { anterior: null, proximo: null };
+  // Na capa, "Próximo" abre o primeiro capítulo.
+  const proximoDaBarra = atual ? proximo : linhas?.find((c) => !c.paiPageId) ?? null;
   const resultados = linhas ? buscarNoLivro(linhas, busca, textos) : [];
   const buscando = busca.trim().length >= 2;
   // Com capa, a abertura vai para o herói (ver separarAbertura).
@@ -308,7 +330,7 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
   const naRaiz = raizAtual === atual?.pageId;
 
   return (
-    <div className="fj-borda fj-ch fj-codex" data-testid="compendio-livro">
+    <div className="fj-borda fj-ch fj-codex fj-livro" data-testid="compendio-livro">
       {ampliada && createPortal(
         <div className={`fj-root ${oxanium.variable} fj-mapa-grande fj-livro-ampliada`} role="dialog" aria-modal="true" aria-label="Imagem ampliada" onClick={() => setAmpliada(null)} data-testid="compendio-imagem-ampliada">
           <div className="fj-mapa-grande__topo" onClick={(e) => e.stopPropagation()}>
@@ -342,25 +364,58 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
           icone={<span className="fj-ch-hex fj-codex-cab__sigla">{linhaAtual?.numero ?? "RP"}</span>}
           kicker={linhaAtual ? `Compêndio · ${linhaAtual.paiPageId ? titulos.get(linhaAtual.paiPageId) ?? linhaAtual.secao : linhaAtual.secao}` : "Compêndio · RUPTURA v1.2"}
           titulo={linhaAtual?.titulo ?? "Introdução"}
-          onClose={onClose}
         >
-          {avisoEnvio && <span className="fj-mono fj-mono--pequeno fj-mono--am" role="status" data-testid="compendio-aviso-envio">{avisoEnvio}</span>}
+          {avisoEnvio && <span className="fj-mono fj-mono--pequeno fj-mono--am fj-livro-aviso-envio" role="status" data-testid="compendio-aviso-envio">{avisoEnvio}</span>}
           {historico.length > 0 && (
-            <button type="button" className="fj-fechar" onClick={voltar} data-testid="compendio-voltar">‹ Voltar</button>
+            <button type="button" className="fj-fechar fj-livro-voltar" onClick={voltar} aria-label="Voltar" data-testid="compendio-voltar">‹<span className="fj-livro-so-desktop"> Voltar</span></button>
           )}
           <input
+            ref={campoBusca}
             type="search"
-            className="fj-livro-busca"
+            enterKeyHint="search"
+            className={`fj-livro-busca ${buscaAberta ? "fj-livro-busca--aberta" : ""}`}
             placeholder="Buscar no livro…"
             aria-label="Buscar no livro"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
             data-testid="compendio-busca"
           />
+          <button
+            type="button"
+            className={`fj-livro-icone fj-livro-so-celular ${buscaAberta ? "fj-livro-icone--on" : ""}`}
+            aria-label={buscaAberta ? "Fechar busca" : "Buscar no livro"}
+            aria-expanded={buscaAberta}
+            onClick={() => {
+              if (buscaAberta) { setBuscaAberta(false); setBusca(""); }
+              else { setBuscaAberta(true); window.setTimeout(() => campoBusca.current?.focus(), 0); }
+            }}
+            data-testid="compendio-abrir-busca"
+          >
+            {buscaAberta ? <IconeFechar /> : <IconeBusca />}
+          </button>
+          {onClose && (
+            <button type="button" onClick={onClose} className="fj-fechar fj-livro-fechar" aria-label="Fechar o livro">
+              <span className="fj-livro-so-desktop"><Key k="ESC" /> Fechar</span>
+              <span className="fj-livro-so-celular" aria-hidden="true"><IconeFechar /></span>
+            </button>
+          )}
         </CabecalhoCodex>
 
-        <div className="fj-codex__grade">
-          <nav className="fj-sem-barra fj-indice" aria-label="Índice do livro">
+        <div className={`fj-codex__grade ${indiceAberto ? "fj-livro-grade--indice" : ""}`}>
+          <button type="button" className="fj-livro-indice-veu" aria-label="Fechar índice" tabIndex={-1} onClick={() => setIndiceAberto(false)} />
+          <nav
+            ref={indiceRef}
+            id="compendio-indice"
+            className="fj-sem-barra fj-indice fj-livro-indice"
+            aria-label="Índice do livro"
+            // Escolher qualquer destino fecha a gaveta (no desktop não há gaveta).
+            onClick={(e) => { if ((e.target as Element).closest("button:not(.fj-livro-indice-topo__fechar)")) setIndiceAberto(false); }}
+          >
+            <div className="fj-livro-indice-topo fj-livro-so-celular">
+              <Mono pequeno tom="cy">Índice do livro</Mono>
+              <button type="button" className="fj-livro-icone fj-livro-indice-topo__fechar" aria-label="Fechar índice" onClick={() => setIndiceAberto(false)}><IconeFechar /></button>
+            </div>
             <div className="fj-indice__grupo">
               <button type="button" onClick={irCapa} className={`fj-indice__item ${!atual ? "fj-indice__item--ativo" : ""}`} aria-current={!atual ? "page" : undefined} data-testid="compendio-indice-capa">
                 <span className="fj-indice__n">00</span>
@@ -501,7 +556,51 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
             )}
           </div>
         </div>
+
+        {/* Celular: navegação ao alcance do polegar. */}
+        <nav className="fj-livro-barra" aria-label="Navegação do livro" data-testid="compendio-barra">
+          <button
+            type="button"
+            className="fj-livro-barra__seta"
+            disabled={!anterior}
+            onClick={() => anterior && ir({ pageId: anterior.pageId })}
+            aria-label={anterior ? `Anterior: ${rotuloCapitulo(anterior)}` : "Anterior"}
+          >‹</button>
+          <button
+            type="button"
+            className={`fj-livro-barra__indice ${indiceAberto ? "fj-livro-barra__indice--on" : ""}`}
+            aria-expanded={indiceAberto}
+            aria-controls="compendio-indice"
+            onClick={() => setIndiceAberto((v) => !v)}
+            data-testid="compendio-abrir-indice"
+          >
+            <IconeIndice />
+            <span className="fj-livro-barra__rotulo">
+              <span className="fj-mono fj-mono--pequeno">Índice</span>
+              <span className="fj-livro-barra__atual">{linhaAtual ? rotuloCapitulo(linhaAtual) : "Introdução"}</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            className="fj-livro-barra__seta"
+            disabled={!proximoDaBarra}
+            onClick={() => proximoDaBarra && ir({ pageId: proximoDaBarra.pageId })}
+            aria-label={proximoDaBarra ? `Próximo: ${rotuloCapitulo(proximoDaBarra)}` : "Próximo"}
+          >›</button>
+        </nav>
       </div>
     </div>
   );
+}
+
+function IconeBusca() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.5 15.5 21 21" /></svg>;
+}
+
+function IconeFechar() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>;
+}
+
+function IconeIndice() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h13" /></svg>;
 }
