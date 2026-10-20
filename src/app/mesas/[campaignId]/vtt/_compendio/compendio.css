@@ -4,6 +4,14 @@
  * citações, etiquetas de termo, busca. Tokens e moldura vêm de forja.css.
  */
 
+/* ── Ícones (Lucide): acompanham o tamanho do texto ao lado. ── */
+.fj-livro-ico { display: inline-block; width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; stroke-width: 2; }
+.fj-livro-voltar, .fj-livro-pai, .fj-livro-card__abrir { display: inline-flex; align-items: center; gap: 2px; }
+.fj-livro-vizinho .fj-mono { display: inline-flex; align-items: center; gap: 2px; }
+.fj-livro-vizinho--proximo .fj-mono { align-self: flex-end; }
+.fj-livro-verbete__seta.fj-livro-ico { width: 16px; height: 16px; }
+.fj-livro-expandir .fj-livro-ico { width: 16px; height: 16px; }
+
 /* ── Cabeçalho ─────────────────────────────────────────── */
 .fj-livro-busca {
   width: 220px;
@@ -51,7 +59,7 @@
 .fj-capa__retomar { display: flex; align-items: center; justify-content: space-between; gap: var(--hud-space-5); width: 100%; margin-bottom: 32px; padding: var(--hud-space-3) var(--hud-space-5); border-left: 2px solid var(--fj-am); background: color-mix(in srgb, var(--fj-cy) 8%, transparent); font: 700 14px/1.4 var(--fj-display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fj-gelo); transition: var(--fj-trans); }
 .fj-capa__retomar:hover { background: color-mix(in srgb, var(--fj-cy) 14%, transparent); color: var(--fj-cy); }
 .fj-capa__retomar small { display: block; margin-top: 3px; font: 400 11px/1.4 var(--fj-mono); text-transform: none; letter-spacing: 0.03em; color: var(--fj-apagado); }
-.fj-capa__retomar > span:last-child { color: var(--fj-cy); font-size: 20px; }
+.fj-capa__retomar > .fj-livro-ico { width: 22px; height: 22px; color: var(--fj-cy); }
 .fj-capa__texto { max-width: 720px; }
 .fj-capa__texto p { margin-top: var(--hud-space-6); font-size: 17px; font-style: normal; line-height: 1.75; color: var(--fj-texto); }
 .fj-capa__texto p:first-child::first-letter { float: left; padding: 5px 9px 0 0; font: 500 52px/0.95 var(--fj-display); color: var(--fj-gelo); }
@@ -255,8 +263,8 @@
 .fj-livro-pagina-botao__texto { position: relative; display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
 .fj-livro-pagina-botao__titulo { font: 700 16px/1.3 var(--fj-display); text-transform: uppercase; letter-spacing: 0.14em; color: var(--fj-gelo); transition: var(--fj-trans); }
 .fj-livro-pagina-botao:hover .fj-livro-pagina-botao__titulo { color: var(--fj-cy); }
-.fj-livro-pagina-botao:hover .fj-codex-botao__setas span:first-child { opacity: 0.6; transform: translateX(4px); }
-.fj-livro-pagina-botao:hover .fj-codex-botao__setas span:last-child { opacity: 1; transform: translateX(6px); }
+.fj-livro-pagina-botao .fj-codex-botao__setas .fj-livro-ico { width: 20px; height: 20px; opacity: 0.6; transition: var(--fj-trans); }
+.fj-livro-pagina-botao:hover .fj-codex-botao__setas .fj-livro-ico { opacity: 1; transform: translateX(5px); }
 
 /* ════════════════════════ CELULAR ════════════════════════
  * Abaixo de 768px o livro ocupa a tela toda: cabeçalho de uma linha (a busca
@@ -289,7 +297,8 @@
   .fj-livro .fj-codex-cab__titulos > .fj-mono { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .fj-livro .fj-codex-cab__titulo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; letter-spacing: 0.08em; }
   .fj-livro .fj-codex-cab__acoes { margin-left: 0; gap: 0; }
-  .fj-livro-voltar { display: grid; place-items: center; width: 40px; height: 40px; font-size: 24px; font-weight: 400; }
+  .fj-livro-voltar { display: grid; place-items: center; width: 40px; height: 40px; }
+  .fj-livro-voltar .fj-livro-ico { width: 22px; height: 22px; }
   .fj-livro-fechar { display: grid; place-items: center; width: 40px; height: 40px; }
   .fj-livro-fechar svg { width: 20px; height: 20px; }
   .fj-livro-aviso-envio { position: absolute; top: 100%; right: var(--hud-space-4); z-index: 5; margin-top: var(--hud-space-2); padding: var(--hud-space-1) var(--hud-space-3); background: var(--fj-abismo); border: 1px solid color-mix(in srgb, var(--fj-am) 40%, transparent); }
@@ -318,7 +327,8 @@
 
   /* Barra inferior. */
   .fj-livro-barra { display: flex; flex: none; align-items: stretch; border-top: 1px solid color-mix(in srgb, var(--fj-cy) 25%, transparent); background: linear-gradient(to top, var(--fj-abismo), color-mix(in srgb, var(--fj-fundo) 95%, transparent)); padding-bottom: env(safe-area-inset-bottom); }
-  .fj-livro-barra__seta { display: grid; place-items: center; width: 56px; min-height: 56px; flex: none; font: 400 28px var(--fj-display); color: var(--fj-cy); transition: var(--fj-trans); }
+  .fj-livro-barra__seta { display: grid; place-items: center; width: 56px; min-height: 56px; flex: none; color: var(--fj-cy); transition: var(--fj-trans); }
+  .fj-livro-barra__seta .fj-livro-ico { width: 26px; height: 26px; }
   .fj-livro-barra__seta:active:not(:disabled) { background: color-mix(in srgb, var(--fj-cy) 12%, transparent); }
   .fj-livro-barra__seta:disabled { color: color-mix(in srgb, var(--fj-apagado) 40%, transparent); }
   .fj-livro-barra__indice { display: flex; flex: 1; min-width: 0; align-items: center; gap: var(--hud-space-4); padding: var(--hud-space-2) var(--hud-space-4); border-inline: 1px solid color-mix(in srgb, var(--fj-cy) 15%, transparent); text-align: left; color: var(--fj-gelo); transition: var(--fj-trans); }

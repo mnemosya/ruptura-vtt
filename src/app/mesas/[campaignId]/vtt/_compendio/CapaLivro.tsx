@@ -1,3 +1,4 @@
+import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 import { MarcaRuptura } from "../../../../_design/Marca";
 import cidadeVosek from "../../../../../../content/v12/capas/sylvain-sarrailh-g2-esports.jpg";
@@ -31,7 +32,7 @@ export function CapaLivro({
         {retomar && (
           <button type="button" className="fj-capa__retomar" onClick={onRetomar} data-testid="compendio-retomar">
             <span>{retomar.ultimoLido ? "Retomar leitura" : "Começar a ler"}<small>{retomar.titulo}</small></span>
-            <span aria-hidden="true">↗</span>
+            <ArrowUpRight className="fj-livro-ico" aria-hidden="true" />
           </button>
         )}
         <div className="fj-capa__secao"><span>00</span><span>INTRODUÇÃO</span><i aria-hidden="true" /></div>

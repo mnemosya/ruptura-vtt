@@ -6,6 +6,7 @@
  * link quando o termo é um verbete do livro), verbetes abrem e fecham.
  */
 
+import { ChevronRight, ChevronsRight, Maximize } from "lucide-react";
 import { Fragment, type ReactNode } from "react";
 import type { BlocoCompendio, TrechoCompendio } from "../../../../../lib/compendio/tipos";
 import { resolverTermo, type DestinoLivro } from "./modelo";
@@ -98,7 +99,7 @@ function BotaoPagina({ pageId, tituloReserva, ctx }: { pageId: string; tituloRes
             <span className="fj-mono fj-mono--pequeno fj-mono--am">{kicker}</span>
             <span className="fj-livro-pagina-botao__titulo">{titulo}</span>
           </span>
-          <span className="fj-codex-botao__setas" aria-hidden="true"><span>›</span><span>›</span></span>
+          <span className="fj-codex-botao__setas" aria-hidden="true"><ChevronsRight className="fj-livro-ico" /></span>
         </span>
       </span>
     </button>
@@ -109,7 +110,7 @@ function BotaoPagina({ pageId, tituloReserva, ctx }: { pageId: string; tituloRes
 export function BotaoExpandir({ onClick }: { onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} className="fj-mapa__expandir fj-livro-expandir" aria-label="Expandir imagem" title="Expandir" data-testid="compendio-expandir-imagem">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+      <Maximize className="fj-livro-ico" aria-hidden="true" />
     </button>
   );
 }
@@ -214,7 +215,7 @@ function Bloco({ b, ctx }: { b: BlocoCompendio; ctx: ContextoLeitura }) {
       return (
         <section id={b.ancora} className={`fj-livro-verbete ${aberto ? "fj-livro-verbete--aberto" : ""}`}>
           <button type="button" className="fj-livro-verbete__titulo" aria-expanded={aberto} onClick={() => ctx.alternar(b.ancora)}>
-            <span className="fj-livro-verbete__seta" aria-hidden="true">›</span>
+            <ChevronRight className="fj-livro-ico fj-livro-verbete__seta" aria-hidden="true" />
             <span><Texto trechos={b.titulo} ctx={{ ...ctx, termos: new Map() }} /></span>
           </button>
           {aberto && ctx.enviar && (
@@ -312,7 +313,7 @@ function Bloco({ b, ctx }: { b: BlocoCompendio; ctx: ContextoLeitura }) {
                         {[1, 2, 3].map((n) => <span key={n} className={`fj-livro-card__losango ${n <= nivel ? "fj-livro-card__losango--cheio" : ""}`} />)}
                       </span>
                     ) : <span />}
-                    <span className="fj-livro-card__abrir">Abrir ›</span>
+                    <span className="fj-livro-card__abrir">Abrir <ChevronRight className="fj-livro-ico" aria-hidden="true" /></span>
                   </span>
                 </span>
               </button>

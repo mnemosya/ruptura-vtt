@@ -7,6 +7,7 @@
  * Ver docs/prd/PLANO_COMPENDIO_NOTION.md, Fase 2.
  */
 
+import { ChevronLeft, ChevronRight, Search, TableOfContents, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { CapituloCompendio } from "../../../../../lib/compendio/tipos";
@@ -367,7 +368,7 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
         >
           {avisoEnvio && <span className="fj-mono fj-mono--pequeno fj-mono--am fj-livro-aviso-envio" role="status" data-testid="compendio-aviso-envio">{avisoEnvio}</span>}
           {historico.length > 0 && (
-            <button type="button" className="fj-fechar fj-livro-voltar" onClick={voltar} aria-label="Voltar" data-testid="compendio-voltar">‹<span className="fj-livro-so-desktop"> Voltar</span></button>
+            <button type="button" className="fj-fechar fj-livro-voltar" onClick={voltar} aria-label="Voltar" data-testid="compendio-voltar"><ChevronLeft className="fj-livro-ico" aria-hidden="true" /><span className="fj-livro-so-desktop">Voltar</span></button>
           )}
           <input
             ref={campoBusca}
@@ -517,7 +518,7 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
                   <div className="fj-codex__heroi-texto">
                     {linhaAtual.paiPageId ? (
                       <button type="button" className="fj-livro-pai" onClick={() => ir({ pageId: linhaAtual.paiPageId! })}>
-                        ‹ {titulos.get(linhaAtual.paiPageId) ?? linhaAtual.secao}
+                        <ChevronLeft className="fj-livro-ico" aria-hidden="true" />{titulos.get(linhaAtual.paiPageId) ?? linhaAtual.secao}
                       </button>
                     ) : (
                       <Mono tom="am">{linhaAtual.secao}{linhaAtual.numero != null ? ` · Capítulo ${linhaAtual.numero}` : ""}</Mono>
@@ -538,13 +539,13 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
                   <nav className="fj-livro-vizinhos" aria-label="Capítulos vizinhos">
                     {anterior ? (
                       <button type="button" className="fj-livro-vizinho" onClick={() => ir({ pageId: anterior.pageId })}>
-                        <Mono pequeno>‹ Anterior</Mono>
+                        <Mono pequeno><ChevronLeft className="fj-livro-ico" aria-hidden="true" />Anterior</Mono>
                         <span>{rotuloCapitulo(anterior)}</span>
                       </button>
                     ) : <span />}
                     {proximo && (
                       <button type="button" className="fj-livro-vizinho fj-livro-vizinho--proximo" onClick={() => ir({ pageId: proximo.pageId })}>
-                        <Mono pequeno>Próximo ›</Mono>
+                        <Mono pequeno>Próximo<ChevronRight className="fj-livro-ico" aria-hidden="true" /></Mono>
                         <span>{rotuloCapitulo(proximo)}</span>
                       </button>
                     )}
@@ -565,7 +566,7 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
             disabled={!anterior}
             onClick={() => anterior && ir({ pageId: anterior.pageId })}
             aria-label={anterior ? `Anterior: ${rotuloCapitulo(anterior)}` : "Anterior"}
-          >‹</button>
+          ><ChevronLeft className="fj-livro-ico" aria-hidden="true" /></button>
           <button
             type="button"
             className={`fj-livro-barra__indice ${indiceAberto ? "fj-livro-barra__indice--on" : ""}`}
@@ -586,7 +587,7 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
             disabled={!proximoDaBarra}
             onClick={() => proximoDaBarra && ir({ pageId: proximoDaBarra.pageId })}
             aria-label={proximoDaBarra ? `Próximo: ${rotuloCapitulo(proximoDaBarra)}` : "Próximo"}
-          >›</button>
+          ><ChevronRight className="fj-livro-ico" aria-hidden="true" /></button>
         </nav>
       </div>
     </div>
@@ -594,13 +595,13 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
 }
 
 function IconeBusca() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.5 15.5 21 21" /></svg>;
+  return <Search aria-hidden="true" />;
 }
 
 function IconeFechar() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>;
+  return <X aria-hidden="true" />;
 }
 
 function IconeIndice() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h13" /></svg>;
+  return <TableOfContents aria-hidden="true" />;
 }
