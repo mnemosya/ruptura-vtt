@@ -252,9 +252,14 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
             {cena === "trama" && r.trama && <>
               <Barra rotulo="RAM" atual={r.trama.ram} max={r.trama.ramMax} cor="#00d4ff" />
               <Barra rotulo="Detecção" atual={r.trama.deteccao} max={r.trama.limite ?? 10} cor={r.trama.limite && r.trama.deteccao >= r.trama.limite - 2 ? "#ff5f74" : "#ff8a1f"} />
-              <div className="ha-rec"><span>Rastro</span><b className="ha-num">{r.trama.rastro}</b></div>
+              <div className="ha-rec" aria-label={`Rastro: ${r.trama.rastro}`}><b className="ha-rec-num ha-rec-num--cena">{r.trama.rastro}</b><span className="ha-rec-lado"><span className="ha-rec-rot">Rastro</span></span></div>
             </>}
-            {cena === "trama" && !r.trama && <div className="ha-rec"><span>Sessão</span><b className="ha-estado">{avisoCena ? "sem acesso" : "desconectada"}</b></div>}
+            {cena === "trama" && !r.trama && (
+              <div className="ha-rec ha-rec--off">
+                <Lock size={18} aria-hidden="true" />
+                <span className="ha-rec-lado"><span className="ha-rec-rot">Sessão</span><b className="ha-estado">{avisoCena ? "sem acesso" : "desconectada"}</b></span>
+              </div>
+            )}
           </div>
 
           <div className="ha-ferr">
@@ -324,8 +329,11 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
 function Recurso({ rotulo, atual, max, forma }: { rotulo: string; atual: number; max: number; forma: "losango" }) {
   return (
     <div className="ha-rec" aria-label={`${rotulo}: ${atual} de ${max}`}>
-      <span>{rotulo} · <b>{atual}/{max}</b></span>
-      <span className="ha-pips">{Array.from({ length: max }, (_, i) => <i key={i} className={`ha-pip ha-pip--${forma}`} data-gasto={i >= atual || undefined} />)}</span>
+      <Contagem atual={atual} max={max} />
+      <span className="ha-rec-lado">
+        <span className="ha-rec-rot">{rotulo}</span>
+        <span className="ha-pips">{Array.from({ length: max }, (_, i) => <i key={i} className={`ha-pip ha-pip--${forma}`} data-gasto={i >= atual || undefined} />)}</span>
+      </span>
     </div>
   );
 }
@@ -333,10 +341,17 @@ function Recurso({ rotulo, atual, max, forma }: { rotulo: string; atual: number;
 function Barra({ rotulo, atual, max, cor }: { rotulo: string; atual: number; max: number; cor: string }) {
   return (
     <div className="ha-rec" style={{ ["--ha-k" as string]: cor }} aria-label={`${rotulo}: ${atual} de ${max}`}>
-      <span>{rotulo} · <b>{atual}/{max}</b></span>
-      <span className="ha-barra"><i style={{ width: `${Math.min(100, (atual / Math.max(1, max)) * 100)}%` }} /></span>
+      <Contagem atual={atual} max={max} />
+      <span className="ha-rec-lado">
+        <span className="ha-rec-rot">{rotulo}</span>
+        <span className="ha-barra"><i style={{ width: `${Math.min(100, (atual / Math.max(1, max)) * 100)}%` }} /></span>
+      </span>
     </div>
   );
+}
+
+function Contagem({ atual, max }: { atual: number; max: number }) {
+  return <b className="ha-rec-num" data-zerado={atual <= 0 || undefined} aria-hidden="true">{atual}<small>/{max}</small></b>;
 }
 
 function Secao({ titulo, nota, qtd, cor, aberta = true, onAlternar, children }: { titulo: string; nota?: string; qtd?: number; cor: string; aberta?: boolean; onAlternar?: () => void; children: React.ReactNode }) {

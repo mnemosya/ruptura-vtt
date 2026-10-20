@@ -19,18 +19,36 @@
 .ha-ao-vivo::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ha-k); box-shadow: 0 0 6px var(--ha-k); animation: hx-pulse 1.6s ease-in-out infinite; }
 
 /* recursos do turno */
-.ha-recursos { display: flex; flex: none; flex-wrap: wrap; gap: 14px 28px; align-items: center; min-height: 58px; padding: 12px 24px; border-bottom: 1px solid #00d4ff14; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--ha-k) 6%, transparent)); }
-.ha-rec { display: flex; flex-direction: column; gap: 6px; }
-.ha-rec > span:first-child { font: 9px var(--hx-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--hx-dim); white-space: nowrap; }
-.ha-rec > span:first-child b { color: var(--hx-ice); font-weight: 500; }
-.ha-pips { display: flex; gap: 4px; padding-left: 2px; }
-.ha-pip--losango { width: 11px; height: 11px; margin: 0 2px; background: var(--ha-k); transform: rotate(45deg); box-shadow: 0 0 8px -2px var(--ha-k); transition: background .3s, box-shadow .3s; }
-.ha-pip[data-gasto] { background: color-mix(in srgb, var(--ha-k) 14%, transparent); box-shadow: none; }
-.ha-barra { position: relative; display: block; width: 120px; height: 10px; overflow: hidden; background: color-mix(in srgb, var(--ha-k) 14%, transparent); transform: skew(-20deg); }
-.ha-barra i { position: absolute; inset: 0 auto 0 0; background: var(--ha-k); transition: width .3s; }
-.ha-barra::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 9px, var(--hx-casco) 9px 11px); }
-.ha-num { font: 700 18px/10px var(--hx-display); color: #00d4ff; }
-.ha-estado { font: 700 13px var(--hx-display); letter-spacing: .16em; text-transform: uppercase; color: var(--hx-dim); }
+.ha-recursos { display: flex; flex: none; flex-wrap: wrap; gap: 10px; align-items: stretch; padding: 14px 24px; border-bottom: 1px solid #00d4ff14; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--ha-k) 6%, transparent)); }
+/* Célula chanfrada (cantos sup.-esq. e inf.-dir.). A borda são duas camadas:
+   o fio pinta a célula inteira e o ::before (1px para dentro) pinta o fundo.
+   Borda CSS + clip-path cortaria o fio no chanfro. O chanfro de dentro é
+   0,41px menor (√2−1) para a diagonal sair com 1px, igual às retas. */
+.ha-rec {
+  --ha-chanfro: 10px; --ha-fio: color-mix(in srgb, var(--ha-k) 32%, var(--hx-abismo)); --ha-fundo: color-mix(in srgb, var(--ha-k) 8%, var(--hx-abismo));
+  position: relative; isolation: isolate; display: flex; align-items: center; gap: 14px; height: 56px; padding: 0 18px 0 16px; box-sizing: border-box;
+  background: var(--ha-fio);
+  clip-path: polygon(var(--ha-chanfro) 0, 100% 0, 100% calc(100% - var(--ha-chanfro)), calc(100% - var(--ha-chanfro)) 100%, 0 100%, 0 var(--ha-chanfro));
+}
+.ha-rec::before {
+  --c: calc(var(--ha-chanfro) - .41px);
+  content: ""; position: absolute; inset: 1px; z-index: -1; background: var(--ha-fundo);
+  clip-path: polygon(var(--c) 0, 100% 0, 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, 0 100%, 0 var(--c));
+}
+.ha-rec-num { min-width: 34px; font: 700 30px/1 var(--hx-display); letter-spacing: .02em; color: #eaf7ff; }
+.ha-rec-num small { margin-left: 1px; font-size: 13px; font-weight: 500; color: var(--hx-dim); }
+.ha-rec-num[data-zerado] { color: var(--hx-dim); }
+.ha-rec-num--cena { color: var(--ha-k); }
+.ha-rec-lado { display: flex; flex-direction: column; gap: 7px; }
+.ha-rec-rot { font: 500 10px var(--hx-mono); letter-spacing: .2em; text-transform: uppercase; color: #93a9c4; white-space: nowrap; }
+.ha-pips { display: flex; gap: 9px; padding-left: 2px; }
+.ha-pip--losango { width: 12px; height: 12px; background: var(--ha-k); transform: rotate(45deg); box-shadow: 0 0 9px -1px var(--ha-k); transition: background .3s, box-shadow .3s; }
+.ha-pip[data-gasto] { background: transparent; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ha-k) 50%, transparent); }
+.ha-barra { position: relative; display: block; width: 110px; height: 6px; overflow: hidden; background: color-mix(in srgb, var(--ha-k) 16%, transparent); }
+.ha-barra i { position: absolute; inset: 0 auto 0 0; background: var(--ha-k); box-shadow: 0 0 8px -1px var(--ha-k); transition: width .3s; }
+/* Trama sem sessão: célula listrada que ocupa o resto da faixa. */
+.ha-rec--off { --ha-k: var(--hx-dim); --ha-fundo: repeating-linear-gradient(135deg, #7f95b30d 0 8px, transparent 8px 16px), var(--hx-abismo); flex: 1; color: #93a9c4; }
+.ha-estado { font: 700 14px var(--hx-display); letter-spacing: .16em; text-transform: uppercase; color: #eaf7ff; }
 
 /* busca */
 .ha-ferr { flex: none; padding: 12px 24px 4px; }
