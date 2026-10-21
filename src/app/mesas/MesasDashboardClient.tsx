@@ -146,7 +146,7 @@ export default function MesasDashboardClient({
   }, [campanhas, filter, search]);
 
   // Destaque: a sessão em andamento; sem nenhuma, a campanha da última
-  // sessão registrada ("retomar operação").
+  // sessão registrada.
   const comSessao = filtradas
     .filter((item) => !item.sessionError && item.latestSession)
     .sort((a, b) => b.latestSession!.started_at.localeCompare(a.latestSession!.started_at) || a.campaign.id.localeCompare(b.campaign.id));
@@ -331,7 +331,7 @@ function FeaturedCampaign({ data }: { data: CampaignCardData }) {
           <span className="ag-mono ag-mono--am ag-destaque__status">
             {aoVivo
               ? "// Sessão em andamento"
-              : <>{"// Retomar operação · última sessão "}{relativeTime(latestSession!.started_at)}</>}
+              : <>{"// Última sessão "}{relativeTime(latestSession!.started_at)}</>}
           </span>
           <h2 className="ag-destaque__titulo">{campaign.name}</h2>
           {campaign.description && <p className="ag-destaque__descricao">{campaign.description}</p>}
