@@ -169,7 +169,7 @@
 .ag .ag-entrar--peq { --ag-n: 8px; width: 100%; min-height: 36px; padding: 9px 18px; font-size: 12px; line-height: 1; }
 .ag .ag-entrar--peq span { transform: translateY(1px); }
 
-/* ── Destaque: retomar operação ── */
+/* ── Destaque da campanha com sessão recente ── */
 .ag .ag-destaque-borda { container: campanha-destaque / inline-size; }
 .ag .ag-destaque { position: relative; overflow: hidden; display: flex; flex-direction: column; background: var(--ag-abismo); }
 .ag .ag-destaque__capa, .ag .ag-cartao__capa { position: absolute; inset: 0; background-size: cover; background-position: center; }
