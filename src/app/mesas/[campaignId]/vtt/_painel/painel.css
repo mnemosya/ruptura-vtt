@@ -1895,6 +1895,7 @@
 .rv-pn-scroll--pers .rv-pn-linha:hover,
 .rv-pn-scroll--pers .rv-pn-linha:focus-visible {
   border-color: color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 55%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 55%, transparent);
   background: color-mix(in srgb, var(--fg-a, var(--rv-cy, #45b8c9)) 11%, var(--rv-peca, #0c1526));
 }
 /* O SELECIONADO tem que vencer o fundo acima — as duas regras empatam

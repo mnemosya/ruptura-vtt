@@ -408,11 +408,8 @@
 .rv-submit--cyan .rv-submit-glow--hover { background: linear-gradient(58deg, transparent 10%, rgba(0, 212, 255, 0.08) 30%, rgba(0, 212, 255, 0.24) 50%, rgba(0, 212, 255, 0.08) 70%, transparent 90%); }
 .rv-submit--amber .rv-submit-glow--hover { background: linear-gradient(58deg, transparent 10%, rgba(230, 165, 46, 0.08) 30%, rgba(230, 165, 46, 0.24) 50%, rgba(230, 165, 46, 0.08) 70%, transparent 90%); }
 
-/* Hover/Click: mesmos valores no Figma ("Property 1=Hover" e "Property
-   1=Click" são idênticos) — a diferenciação do clique fica só por conta
-   do scale(0.995) abaixo, não por cor/glow extra. O Figma também NÃO
-   muda border-color no hover (a primeira versão do port mudava,
-   #1690a6/#8a6428 — não existe na referência, removido). */
+/* Hover/Click: mantém as cores e o brilho da referência; o contorno de
+   2px no hover é um ajuste do VTT. O clique também usa scale(0.995). */
 .rv-submit--cyan:hover:not(:disabled),
 .rv-submit--cyan:active:not(:disabled) {
   color: rgba(127, 255, 253, 0.88);
@@ -604,4 +601,15 @@
 .rv-segmented[data-modo="register"] .rv-seg-indicador-cor--amber { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
   .rv-seg-indicador, .rv-seg-indicador-cor { transition: none; }
+}
+
+/* O segundo pixel é desenhado por dentro, sem alterar a caixa do controle:
+   texto e ícones permanecem no mesmo lugar durante o hover. */
+.rv-input-wrap:is(:hover, :focus-within) {
+  box-shadow: inset 0 0 0 1px var(--control-outline), inset 0 0 14px rgba(0, 212, 255, 0.06);
+}
+.auth-submit-btn:is(:hover:not(:disabled), :focus-visible),
+.rv-submit:is(:hover:not(:disabled), :focus-visible) {
+  outline: 1px solid var(--control-outline);
+  outline-offset: -2px;
 }

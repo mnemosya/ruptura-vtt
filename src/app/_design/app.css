@@ -662,6 +662,11 @@
 .ra-textarea { resize: vertical; min-height: 82px; line-height: 1.5; }
 .ra-input::placeholder, .ra-textarea::placeholder { color: rgba(0, 212, 255, 0.28); }
 .ra-input:focus, .ra-textarea:focus, .ra-select:focus { border-color: rgba(0, 212, 255, 0.55); box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.12); background: rgba(0, 25, 45, 0.75); }
+/* Segundo pixel por dentro: o texto do nome não se desloca no hover. */
+#conta-nome-exibicao:is(:hover, :focus) {
+  border-color: rgba(0, 212, 255, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(0, 212, 255, 0.55);
+}
 .ra-hint { font-family: var(--font-mono), monospace; font-size: 10px; color: rgba(184, 216, 232, 0.45); letter-spacing: 0.06em; line-height: 1.6; }
 
 .ra-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(0, 212, 255, 0.08); }
@@ -932,6 +937,20 @@
 .ra2-search { --ra-chanfro-fio: rgba(0, 212, 255, 0.14); }
 .ra2-search:hover { --ra-chanfro-fio: rgba(0, 212, 255, 0.28); }
 .ra2-search:focus-within { --ra-chanfro-fio: rgba(0, 212, 255, 0.6); box-shadow: inset 0 0 0 1px rgba(0, 212, 255, 0.25); }
+/* Busca quadrada: segundo pixel e brilho são pintados por dentro para
+   manter texto e ícone parados ao passar o mouse ou focar. */
+.ra2-search {
+  clip-path: none;
+  border-radius: 0;
+  corner-shape: round;
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+.ra2-search::after { content: none; }
+.ra2-search:is(:hover, :focus-within) {
+  border-color: rgba(0, 212, 255, .65);
+  background: #1b303e;
+  box-shadow: inset 0 0 0 1px rgba(0, 212, 255, .65), 0 0 14px rgba(0, 212, 255, .14);
+}
 .ra2-segmented { --ra-chanfro-fio: rgba(0, 212, 255, 0.1); }
 .ra2-seg { --ra-chanfro: 6px; --ra-chanfro-fio: transparent; }
 .ra2-seg--active { --ra-chanfro-fio: #3a94ac; }
