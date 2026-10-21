@@ -12,6 +12,7 @@
 import { X } from "lucide-react";
 import { Plus } from "../../../_design/icons";
 import type { ConsoleApi, ConsolePin } from "../types";
+import { visualDaCondicao } from "./condicoesVisual";
 import { CabecalhoModulo } from "./CabecalhoModulo";
 import { useDicaPortal } from "../../../mesas/[campaignId]/vtt/_painel/ui/DicaPortal";
 
@@ -87,6 +88,8 @@ export interface SharedCondition {
   descricao?: string;
   nivel?: number;
   nivelMaximo?: number;
+  /** Slug da Biblioteca (família/ícone do chip). */
+  conditionId?: string | null;
 }
 
 /** Mesma lista/chips/teclado usada pela ficha e pelo HUD. */
@@ -119,27 +122,37 @@ export function ConditionsControls({
           ? <CabecalhoModulo id="ID://ESTADOS" mod="MOD.STATUS // 02" />
           : <span className="rc-ncond-titulo">Condições</span>}
         {conditions.length === 0 && <p className="rc-ncond-vazio">Nenhuma condição ativa.</p>}
-        {conditions.map((c) => (
-          <span key={c.id} className="rc-ncond-tag">
-            {onDetails && !readOnly ? (
-              <button type="button" className="rc-ncond-abrir" onClick={() => onDetails(c.id)} title={c.descricao ?? c.nome}>
-                {c.nome}{c.nivelMaximo ? ` ${c.nivel ?? 1}/${c.nivelMaximo}` : ""}
-              </button>
-            ) : <span className="rc-ncond-abrir" title={c.descricao ?? c.nome}>{c.nome}{c.nivelMaximo ? ` ${c.nivel ?? 1}/${c.nivelMaximo}` : ""}</span>}
-            {editable && (
-              <button
-                type="button"
-                className="rc-ncond-x"
-                onClick={() => onRemove?.(c.id)}
-                disabled={busy}
-                aria-label={`Remover condição ${c.nome}`}
-                title="Remover"
-              >
-                <X size={10} strokeWidth={1.6} />
-              </button>
-            )}
-          </span>
-        ))}
+        {conditions.map((c) => {
+          const v = visualDaCondicao(c.conditionId);
+          const rotulo = <>
+            <span className="rc-ncond-medalha" aria-hidden="true"><v.Icone size={12} strokeWidth={1.8} /></span>
+            <span className="rc-ncond-nome">{c.nome}</span>
+            {c.nivelMaximo ? (
+              <span className="rc-ncond-nivel" aria-label={`nível ${c.nivel ?? 1} de ${c.nivelMaximo}`}>
+                {Array.from({ length: c.nivelMaximo }, (_, i) => <i key={i} data-cheio={i < (c.nivel ?? 1) || undefined} />)}
+              </span>
+            ) : null}
+          </>;
+          return (
+            <span key={c.id} className="rc-ncond-tag" style={{ ["--cond-cor" as string]: v.cor, ["--cond-fundo" as string]: v.fundo }}>
+              {onDetails && !readOnly ? (
+                <button type="button" className="rc-ncond-abrir" onClick={() => onDetails(c.id)} title={c.descricao ?? c.nome}>{rotulo}</button>
+              ) : <span className="rc-ncond-abrir" title={c.descricao ?? c.nome}>{rotulo}</span>}
+              {editable && (
+                <button
+                  type="button"
+                  className="rc-ncond-x"
+                  onClick={() => onRemove?.(c.id)}
+                  disabled={busy}
+                  aria-label={`Remover condição ${c.nome}`}
+                  title="Remover"
+                >
+                  <X size={11} strokeWidth={1.8} />
+                </button>
+              )}
+            </span>
+          );
+        })}
         {!readOnly && onAdd && (
           <>
           {/* Botão-ícone, igual aos do cabeçalho (Ver no mapa, Ajustar). */}

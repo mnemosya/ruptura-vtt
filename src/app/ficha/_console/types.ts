@@ -233,7 +233,7 @@ export interface ConsoleApi {
   adicionarCondicao: (input: { conditionId: string | null; nome: string; descricao: string; origem: string; duracao: string }) => void;
   removerCondicao: (id: string) => void;
   /** Condições publicadas na Biblioteca, para o seletor. */
-  condicoesDisponiveis: { slug: string; nome: string; descricao_curta?: string }[];
+  condicoesDisponiveis: { slug: string; nome: string; descricao_curta?: string; descricao_longa?: string; tags?: string[]; nivel_maximo?: number; acoes?: { acao: string; custo_pa?: number }[] }[];
 
   /** Modo atual da ficha — o Console só LÊ e alterna; a regra de quem pode editar continua no client. */
   modo: ConsoleModo;

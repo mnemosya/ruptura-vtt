@@ -374,9 +374,10 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
   // segundo passo em vez de rolar direto.
   const PERICIA_DEFESA: Partial<Record<TipoDefesa, string>> = { esquivar: "reflexos", bloquear: "reflexos", aparar: "luta" };
   const NOME_DEFESA: Record<TipoDefesa, string> = { esquivar: "Esquivar", bloquear: "Bloquear", aparar: "Aparar", resistir: "Resistir" };
-  function onEscolherDefesa(tipo: TipoDefesa) {
+  function onEscolherDefesa(tipo: TipoDefesa, periciaResistir?: "vigor" | "mobilidade") {
     if (tipo === "resistir") {
-      setAux({ tipo: "resistir-atributo" });
+      if (periciaResistir) onEscolherResistir(periciaResistir);
+      else setAux({ tipo: "resistir-atributo" });
       return;
     }
     // Regra "Reação": rolar qualquer defesa gasta 1 Reação — sem
@@ -662,6 +663,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
       {aux?.tipo === "condicao" && (
         <ConditionPickerModal
           disponiveis={api.condicoesDisponiveis}
+          ativas={new Map((api.character.condicoes_ativas ?? []).filter((c) => c.ativa && c.conditionId).map((c) => [c.conditionId as string, c.nivel ?? 1]))}
           onAplicar={(condicoes) => {
             for (const c of condicoes) {
               api.adicionarCondicao({ conditionId: c.slug, nome: c.nome, descricao: "", origem: "Console", duracao: "" });
@@ -672,7 +674,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
         />
       )}
 
-      {aux?.tipo === "defesa" && <DefensePickerModal onEscolher={onEscolherDefesa} onFechar={() => setAux(null)} />}
+      {aux?.tipo === "defesa" && <DefensePickerModal api={api} onEscolher={onEscolherDefesa} onFechar={() => setAux(null)} />}
 
       {aux?.tipo === "resistir-atributo" && <ResistirAtributoModal onEscolher={onEscolherResistir} onFechar={() => setAux(null)} />}
 

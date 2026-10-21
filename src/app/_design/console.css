@@ -2115,23 +2115,41 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   border-radius: var(--rc-r-card); border: 1px solid rgba(0, 212, 255, 0.14);
   background: rgba(17, 37, 49, 0.70);
 }
+/* Chip de condição: mini medalhão na cor da família (mesmas famílias e
+   glifos da janela de Adicionar condição), nome, pips de nível e o X. */
 .rc-ncond-tag {
-  display: inline-flex; height: 28px; padding: 0 6px; align-items: center; gap: 6px;
-  border: 1px solid rgba(255, 95, 116, 0.50);
-  background: rgba(255, 95, 116, 0.08);
+  --cond-cor: var(--rc-danger); --cond-fundo: #2a0f16;
+  display: inline-flex; height: 30px; padding: 0 6px 0 4px; align-items: center; gap: 4px;
+  border: 1px solid color-mix(in srgb, var(--cond-cor) 38%, transparent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--cond-fundo) 85%, transparent), color-mix(in srgb, var(--cond-cor) 5%, transparent));
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+  transition: border-color .14s, background .14s;
 }
+.rc-ncond-tag:hover { border-color: color-mix(in srgb, var(--cond-cor) 70%, transparent); }
 .rc-ncond-abrir {
-  background: none; border: none; color: color-mix(in srgb, var(--rc-danger) 75%, #fff); font: inherit; padding: 0; cursor: pointer;
-  font-family: var(--font-corpo), sans-serif; font-size: 13px; font-weight: 600; line-height: 18px;
+  display: inline-flex; align-items: center; gap: 7px; height: 100%;
+  background: none; border: none; padding: 0 2px 0 0; cursor: pointer; color: inherit; font: inherit;
 }
-.rc-ncond-abrir:hover { text-decoration: underline; }
-.rc-ncond-abrir:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 2px; }
+span.rc-ncond-abrir { cursor: default; }
+.rc-ncond-abrir:focus-visible { outline: 2px solid var(--cond-cor); outline-offset: 2px; }
+.rc-ncond-medalha {
+  width: 22px; height: 22px; flex: none; display: grid; place-items: center; border-radius: 50%;
+  border: 1.5px solid var(--cond-cor); background: #050b11; color: var(--cond-cor);
+  box-shadow: inset 0 0 6px -2px var(--cond-cor);
+}
+.rc-ncond-nome {
+  font-family: var(--font-oxanium), var(--font-corpo), sans-serif; font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--cond-cor) 30%, #e8f6fb); white-space: nowrap;
+}
+.rc-ncond-nivel { display: inline-flex; gap: 3px; margin-left: 1px; }
+.rc-ncond-nivel i { width: 5px; height: 5px; transform: rotate(45deg); border: 1px solid var(--cond-cor); }
+.rc-ncond-nivel i[data-cheio] { background: var(--cond-cor); }
 .rc-ncond-x {
-  display: grid; place-items: center; width: 14px; height: 14px; cursor: pointer;
-  border: none; background: transparent; color: color-mix(in srgb, var(--rc-danger) 70%, var(--rc-surface-3));
+  display: grid; place-items: center; width: 18px; height: 18px; margin-left: 2px; cursor: pointer;
+  border: none; background: transparent; color: color-mix(in srgb, var(--cond-cor) 45%, #6d8399);
 }
-.rc-ncond-x:hover { color: color-mix(in srgb, var(--rc-danger) 75%, #fff); }
-.rc-ncond-x:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 1px; }
+.rc-ncond-x:hover { color: #fff; }
+.rc-ncond-x:focus-visible { outline: 2px solid var(--cond-cor); outline-offset: 1px; }
 .rc-ncond-vazio {
   flex: 1 0 0; align-self: stretch; margin: 0; display: flex; align-items: center;
   color: var(--rc-dim);

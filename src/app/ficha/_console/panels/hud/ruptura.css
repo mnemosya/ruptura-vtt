@@ -18,15 +18,12 @@
   --rp-texto: #a9c4d4;
   --rp-branco: #e8f6fb;
   container-type: inline-size;
-  min-height: 100%;
+  flex: 1; min-height: 0; overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding: 16px 22px 20px;
   color: var(--rp-texto);
-  background:
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.012) 0 1px, transparent 1px 3px),
-    radial-gradient(ellipse 70% 55% at 30% 28%, #0b1722 0%, var(--hx-abismo) 70%);
 }
 .rp-k { font-family: var(--hx-mono); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--rp-apagado); }
 .rp-k-am, .rp-am { color: var(--rp-am); }

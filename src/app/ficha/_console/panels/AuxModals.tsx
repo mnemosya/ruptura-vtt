@@ -8,7 +8,9 @@
  */
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { BatteryCharging, Bomb, Check, Crosshair, EyeOff, Scale, Timer, TriangleAlert, X, Zap } from "lucide-react";
+import { Anchor, BatteryCharging, Bomb, Check, CircleAlert, Crosshair, EyeOff, Scale, Shield, Swords, Timer, TriangleAlert, Wind, X, Zap } from "lucide-react";
+import { FAMILIAS_CONDICAO, ICONE_CONDICAO } from "./condicoesVisual";
+import { deriveItemProperties } from "../../../../lib/character/inventory";
 import { SURTOS_SOBRECARGA } from "../../../../lib/rulesetV12/ruptura";
 import "./hud/hud-base.css";
 import "./hud/surto.css";
@@ -541,73 +543,135 @@ const LABEL_DEFESA: Record<TipoDefesa, string> = {
 };
 
 /**
- * Escolha de defesa (botão "Rolar defesa" de Reações) — regra "AÇÕES
- * DEFENSIVAS": Esquivar e Bloquear testam Reflexos, Aparar testa
- * Luta, todas perícias reais em `regras_personagem` (id "reflexos"/
- * "luta"). "Resistir" não tem perícia fixa — a regra deixa a critério
- * do narrador entre Vigor (força) e Mobilidade (agilidade) —, então
- * escolher "Resistir" aqui abre um segundo passo (`ResistirAtributoModal`)
- * em vez de rolar direto.
+ * Rolar defesa (botão de Reações) — RUPTURA 1.2, "Ações defensivas".
+ * Esquivar e Bloquear testam Reflexos, Aparar testa Luta e Resistir
+ * testa Vigor ou Mobilidade (o narrador indica qual; a escolha fica
+ * aqui mesmo). Toda defesa custa 1 Reação; sem Reação ela acontece com
+ * desvantagem cumulativa. Requisitos (arma com Aparar, escudo
+ * empunhado) avisam, nunca travam. Teclas 1–3 rolam direto; 4 escolhe
+ * Resistir.
  */
-export function DefensePickerModal({ onEscolher, onFechar }: { onEscolher: (tipo: TipoDefesa) => void; onFechar: () => void }) {
-  const [selecionada, setSelecionada] = useState<TipoDefesa | null>(null);
+const DEFESAS: Record<TipoDefesa, { nome: string; pericias: string[]; contra: string; critico: string; Icone: typeof Zap }> = {
+  esquivar: { nome: "Esquivar", pericias: ["reflexos"], contra: "Ataques, magias de área, armadilhas e perigos físicos que dá para evitar.", critico: "Reposicione-se 1 metro imediatamente.", Icone: Wind },
+  bloquear: { nome: "Bloquear", pericias: ["reflexos"], contra: "Um ataque contra você ou um aliado adjacente. O dano vai para os PD da proteção.", critico: "Reduza em 1d4 o dano aplicado aos PD da proteção.", Icone: Shield },
+  aparar: { nome: "Aparar", pericias: ["luta"], contra: "Um ataque corpo a corpo, desviado com a arma.", critico: "O atacante fica exposto por 1 turno (−1 nas defesas contra você) e seu próximo ataque causa +1d4.", Icone: Swords },
+  resistir: { nome: "Resistir", pericias: ["vigor", "mobilidade"], contra: "Ser deslocado, derrubado, arrastado ou imobilizado.", critico: "+1 de vantagem no próximo teste de Corpo até o fim do próximo turno.", Icone: Anchor },
+};
+const NOME_PERICIA: Record<string, string> = { reflexos: "Reflexos", luta: "Luta", vigor: "Vigor", mobilidade: "Mobilidade" };
 
-  // Os atalhos existem SÓ enquanto esta janela está montada. A captura
-  // interrompe os atalhos do VTT por baixo do modal, e a tecla já segue
-  // para o fluxo real (inclusive o segundo passo de Resistir), sem
-  // exigir o botão do rodapé.
+function requisitoDaDefesa(tipo: TipoDefesa, api: ConsoleApi): string | null {
+  const prontos = (api.character.inventario ?? []).filter((i) => i.estado === "empunhado" || i.estado === "equipado");
+  if (tipo === "bloquear") return prontos.some((i) => i.categoria === "escudo") ? null : "Você não empunha escudo ou proteção";
+  if (tipo === "aparar") {
+    const temAparar = prontos.some((i) => i.categoria === "arma"
+      && deriveItemProperties({ instance: i, item: api.catalogo.get(i.itemSlug), properties: [] }).some((p) => p.key === "aparar"));
+    return temAparar ? null : "Sua arma empunhada não tem a propriedade Aparar";
+  }
+  return null;
+}
+
+export function DefensePickerModal({ api, onEscolher, onFechar }: {
+  api: ConsoleApi;
+  onEscolher: (tipo: TipoDefesa, periciaResistir?: "vigor" | "mobilidade") => void;
+  onFechar: () => void;
+}) {
+  const [selecionada, setSelecionada] = useState<TipoDefesa>("esquivar");
+  const [resistirCom, setResistirCom] = useState<"vigor" | "mobilidade">("vigor");
+  const reacoesMax = api.derivados.reacoes_por_rodada ?? 0;
+  const reacoesUsadas = api.character.estado_jogo?.reacoes_usadas ?? 0;
+  const restantes = Math.max(0, reacoesMax - reacoesUsadas);
+  const penalidade = restantes > 0 ? 0 : (api.character.estado_jogo?.defesas_sem_reacao ?? 0) + 1;
+
   useEffect(() => {
     function escolherPorAtalho(event: KeyboardEvent) {
       if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
       const alvo = event.target;
       if (alvo instanceof HTMLInputElement || alvo instanceof HTMLTextAreaElement || alvo instanceof HTMLSelectElement) return;
-      const indice = Number(event.key) - 1;
-      const tipo = TIPOS_DEFESA[indice];
+      const tipo = TIPOS_DEFESA[Number(event.key) - 1];
       if (!tipo) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      onEscolher(tipo);
+      if (tipo === "resistir") setSelecionada("resistir");
+      else onEscolher(tipo);
     }
     window.addEventListener("keydown", escolherPorAtalho, true);
     return () => window.removeEventListener("keydown", escolherPorAtalho, true);
   }, [onEscolher]);
 
+  const def = DEFESAS[selecionada];
+  const periciaRolada = selecionada === "resistir" ? resistirCom : def.pericias[0];
+  const valorPericia = (id: string) => api.character.pericias?.[id] ?? 0;
+
   return (
-    <ConsolePicker
-      titulo="Rolar defesa"
-      id="ID://DEFESA"
-      modulo="MOD.DEFENSE // 05"
-      onFechar={onFechar}
-      rodape={(
-        <>
-          <span className="rc-picker-status">
-            {selecionada ? `Defesa selecionada: ${LABEL_DEFESA[selecionada]}` : "Teclas 1–4 abrem a rolagem"}
-          </span>
-          <button
-            type="button"
-            className="rc-picker-aplicar"
-            disabled={!selecionada}
-            onClick={() => selecionada && onEscolher(selecionada)}
-          >
-            <img className="rc-defesa-escudo" src="/console/icons/shield-defense.svg" alt="" aria-hidden="true" />
-            Rolar defesa
+    <AuxJanela titulo="Rolar defesa" onFechar={onFechar} plano cabecalho={<></>}>
+      <div className={`hx sx df ${oxanium.variable}`}>
+        <header className="sx-cab">
+          <div className="sx-cab-titulo">
+            <h2>Rolar defesa</h2>
+            <span className="sx-k">Custa 1 Reação</span>
+          </div>
+          <div className="df-reacoes" aria-label={`Reações: ${restantes} de ${reacoesMax}`}>
+            <div className="df-losangos">
+              {Array.from({ length: reacoesMax }, (_, i) => <i key={i} data-cheio={i < restantes || undefined} />)}
+            </div>
+            <span className="sx-trilha-num">{restantes}<small>/{reacoesMax}</small></span>
+          </div>
+          <button type="button" className="sx-fechar" aria-label="Cancelar" onClick={onFechar}><X size={16} aria-hidden="true" /></button>
+        </header>
+
+        <div className="df-corpo">
+          <div className="df-grade" role="listbox" aria-label="Defesas">
+            {TIPOS_DEFESA.map((tipo) => {
+              const d = DEFESAS[tipo];
+              const aviso = requisitoDaDefesa(tipo, api);
+              return (
+                <button key={tipo} type="button" role="option" aria-selected={selecionada === tipo} className="df-card" data-sel={selecionada === tipo || undefined}
+                  onClick={() => setSelecionada(tipo)} onDoubleClick={() => tipo !== "resistir" && onEscolher(tipo)}>
+                  <span className="df-icone"><d.Icone size={20} aria-hidden="true" /></span>
+                  <span className="df-card-txt">
+                    <span className="df-nome">{d.nome}</span>
+                    <span className="df-pericia">{d.pericias.map((p) => `${NOME_PERICIA[p]} ${valorPericia(p)}`).join(" · ")}</span>
+                  </span>
+                  {aviso && <span className="df-aviso-dot" title={aviso} aria-label={aviso}><TriangleAlert size={14} aria-hidden="true" /></span>}
+                </button>
+              );
+            })}
+          </div>
+
+          <section className="df-detalhe" aria-live="polite">
+            {selecionada === "resistir" && (
+              <div className="df-escolha" role="radiogroup" aria-label="Resistir com">
+                {(["vigor", "mobilidade"] as const).map((p) => (
+                  <button key={p} type="button" role="radio" aria-checked={resistirCom === p} className="df-opcao" data-sel={resistirCom === p || undefined} onClick={() => setResistirCom(p)}>
+                    <b>{NOME_PERICIA[p]} {valorPericia(p)}</b>
+                    <small>{p === "vigor" ? "Firmeza: suportar o impacto" : "Agilidade: sair do efeito"}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+            <dl className="df-linhas">
+              <div><dt>Contra</dt><dd>{def.contra}</dd></div>
+              <div><dt>Teste</dt><dd className="df-teste"><span className="df-badge">{NOME_PERICIA[periciaRolada]} <b>{valorPericia(periciaRolada)}</b></span><span className="df-vs">contra o valor do ataque</span></dd></div>
+              <div><dt>Crítico +5</dt><dd>{def.critico}</dd></div>
+            </dl>
+            {requisitoDaDefesa(selecionada, api) && (
+              <div className="df-alerta"><TriangleAlert size={14} aria-hidden="true" /><span>{requisitoDaDefesa(selecionada, api)}.</span></div>
+            )}
+            {penalidade > 0 && (
+              <div className="df-alerta df-alerta--perigo"><TriangleAlert size={14} aria-hidden="true" /><span>Sem Reação nesta rodada: −{penalidade} de desvantagem.</span></div>
+            )}
+          </section>
+        </div>
+
+        <footer className="sx-rodape">
+          <button type="button" className="sx-btn sx-btn--sec" onClick={onFechar}>Cancelar</button>
+          <button type="button" className="sx-btn sx-btn--pri" data-testid="defesa-rolar"
+            onClick={() => onEscolher(selecionada, selecionada === "resistir" ? resistirCom : undefined)}>
+            Rolar {selecionada === "resistir" ? NOME_PERICIA[periciaRolada] : def.nome}
           </button>
-        </>
-      )}
-    >
-      <div className="rc-picker-grade" data-impar="false">
-        {TIPOS_DEFESA.map((tipo, indice) => (
-          <PickerOption
-            key={tipo}
-            indice={indice}
-            nome={LABEL_DEFESA[tipo]}
-            selecionado={selecionada === tipo}
-            atalho={String(indice + 1)}
-            onClick={() => setSelecionada(tipo)}
-          />
-        ))}
+        </footer>
       </div>
-    </ConsolePicker>
+    </AuxJanela>
   );
 }
 
@@ -883,20 +947,37 @@ export function ConfirmModal({
   );
 }
 
-/** Seleção de condição — lista as publicadas na Biblioteca. */
+/**
+ * Adicionar condição — as condições publicadas na Biblioteca (nenhuma
+ * lista local no lugar), em medalhões agrupados por família, como runas
+ * de jogo. Seleção múltipla; condição ativa ganha a fita com o nível
+ * (cumulativa já ativa: aplicar de novo agrava, regra do narrador v1.2).
+ * Ao clicar numa condição, a faixa acima do rodapé mostra o efeito dela.
+ */
 export function ConditionPickerModal({
   disponiveis,
+  ativas,
   onAplicar,
   onFechar,
 }: {
-  disponiveis: { slug: string; nome: string; descricao_curta?: string }[];
+  disponiveis: { slug: string; nome: string; descricao_curta?: string; descricao_longa?: string; tags?: string[]; nivel_maximo?: number; acoes?: { acao: string; custo_pa?: number }[] }[];
+  /** Condições ativas no personagem: slug → nível atual. */
+  ativas: Map<string, number>;
   onAplicar: (condicoes: { slug: string; nome: string }[]) => void;
   onFechar: () => void;
 }) {
   const [selecionadas, setSelecionadas] = useState<Set<string>>(() => new Set());
+  const [foco, setFoco] = useState<string | null>(null);
   const [aplicando, setAplicando] = useState(false);
-  const exibidas = disponiveis.slice(0, 40);
   const total = selecionadas.size;
+  const porSlug = new Map(disponiveis.map((c) => [c.slug, c]));
+  const conhecidas = new Set<string>(FAMILIAS_CONDICAO.flatMap((f) => [...f.slugs]));
+  const grupos = [
+    ...FAMILIAS_CONDICAO.map((f) => ({ ...f, itens: f.slugs.map((s) => porSlug.get(s)).filter((c): c is NonNullable<typeof c> => !!c) })),
+    { id: "outras", nome: "Outras", cor: "#7f95b3", fundo: "#0b1822", slugs: [] as string[], itens: disponiveis.filter((c) => !conhecidas.has(c.slug)) },
+  ].filter((g) => g.itens.length > 0);
+  const familiaDe = (slug: string) => grupos.find((g) => g.itens.some((c) => c.slug === slug)) ?? grupos[0];
+  const focada = foco ? porSlug.get(foco) : undefined;
 
   function alternar(slug: string) {
     setSelecionadas((atuais) => {
@@ -910,48 +991,76 @@ export function ConditionPickerModal({
   function aplicarSelecionadas() {
     if (aplicando || total === 0) return;
     setAplicando(true);
-    onAplicar(exibidas.filter((condicao) => selecionadas.has(condicao.slug)));
+    onAplicar(disponiveis.filter((c) => selecionadas.has(c.slug)));
   }
 
+  const famFoco = focada ? familiaDe(focada.slug) : undefined;
+  const IconeFoco = focada ? ICONE_CONDICAO[focada.slug] ?? CircleAlert : null;
+
   return (
-    <ConsolePicker
-      titulo="Adicionar condição"
-      id="ID://ESTADOS"
-      modulo="MOD.STATUS // 02"
-      tamanho="largo"
-      onFechar={onFechar}
-      rodape={(
-        <>
-          <span className="rc-picker-status">
-            {total === 0 ? "Nenhuma condição selecionada" : total === 1 ? "1 condição selecionada" : `${total} condições selecionadas`}
-          </span>
-          <button
-            type="button"
-            className="rc-picker-aplicar"
-            disabled={total === 0 || aplicando}
-            onClick={aplicarSelecionadas}
-          >
-            <Check size={13} aria-hidden="true" />
-            Aplicar
+    <AuxJanela titulo="Adicionar condição" onFechar={onFechar} plano cabecalho={<></>}>
+      <div className={`hx sx df cd ${oxanium.variable}`}
+        onClick={(e) => { if (!(e.target as Element).closest(".cd-runa, .cd-dica")) setFoco(null); }}>
+        <header className="sx-cab">
+          <div className="sx-cab-titulo">
+            <h2>Adicionar condição</h2>
+            <span className="sx-k">{ativas.size === 0 ? "Nenhuma ativa" : ativas.size === 1 ? "1 ativa" : `${ativas.size} ativas`}</span>
+          </div>
+          <button type="button" className="sx-fechar" aria-label="Fechar" onClick={onFechar}><X size={16} aria-hidden="true" /></button>
+        </header>
+
+        {disponiveis.length === 0 ? (
+          <p className="sx-cheio">A Biblioteca de condições não está disponível. Nenhuma lista local é usada no lugar.</p>
+        ) : (
+          <div className="cd-corpo">
+            {grupos.map((g) => (
+              <section key={g.id} className="cd-familia" style={{ ["--cd-cor" as string]: g.cor, ["--cd-fundo" as string]: g.fundo }}>
+                <h3 className="cd-familia-titulo"><i aria-hidden="true" />{g.nome}<span aria-hidden="true" /></h3>
+                <div className="cd-runas" role="listbox" aria-multiselectable="true" aria-label={g.nome}>
+                  {g.itens.map((c) => {
+                    const sel = selecionadas.has(c.slug);
+                    const nivel = ativas.get(c.slug);
+                    const max = c.nivel_maximo ?? 1;
+                    const Ic = ICONE_CONDICAO[c.slug] ?? CircleAlert;
+                    return (
+                      <button key={c.slug} type="button" role="option" aria-selected={sel} className="cd-runa"
+                        data-sel={sel || undefined} data-ativa={nivel != null || undefined}
+                        onClick={() => { alternar(c.slug); setFoco(c.slug); }}
+                        aria-label={`${c.nome}${nivel != null ? `, ativa${max > 1 ? ` nível ${nivel}` : ""}` : ""}`}>
+                        <span className="cd-medalha">
+                          <span className="cd-anel" aria-hidden="true" />
+                          <Ic size={22} aria-hidden="true" />
+                          {nivel != null && <span className="cd-fita">{max > 1 ? `${nivel}/${max}` : "Ativa"}</span>}
+                          {sel && <span className="cd-marca" aria-hidden="true"><Check size={10} /></span>}
+                        </span>
+                        <span className="cd-runa-nome">{c.nome}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+
+        {focada && IconeFoco && famFoco && (
+          <div className="cd-dica" aria-live="polite" style={{ ["--cd-cor" as string]: famFoco.cor, ["--cd-fundo" as string]: famFoco.fundo }}>
+            <span className="cd-dica-icone"><IconeFoco size={18} aria-hidden="true" /></span>
+            <span className="cd-dica-txt">
+              <b>{focada.nome}{(focada.nivel_maximo ?? 1) > 1 && <small> · cumulativa até {focada.nivel_maximo}</small>}</b>
+              <span>{focada.descricao_curta ?? "Sem descrição na Biblioteca."}</span>
+            </span>
+          </div>
+        )}
+
+        <footer className="sx-rodape">
+          <span className="cd-resumo">{total === 0 ? "Nenhuma selecionada" : disponiveis.filter((c) => selecionadas.has(c.slug)).map((c) => c.nome).join(", ")}</span>
+          <button type="button" className="sx-btn sx-btn--sec" onClick={onFechar}>Cancelar</button>
+          <button type="button" className="sx-btn sx-btn--pri" disabled={total === 0 || aplicando} onClick={aplicarSelecionadas} data-testid="condicao-aplicar">
+            Aplicar{total > 1 ? ` ${total}` : ""}
           </button>
-        </>
-      )}
-    >
-      {exibidas.length === 0 ? (
-        <p className="rc-picker-vazio">A Biblioteca de condições não está disponível — nenhuma lista local é usada no lugar.</p>
-      ) : (
-        <div className="rc-picker-grade" data-impar={exibidas.length % 2 !== 0 ? "true" : "false"}>
-          {exibidas.map((condicao, indice) => (
-            <PickerOption
-              key={condicao.slug}
-              indice={indice}
-              nome={condicao.nome}
-              selecionado={selecionadas.has(condicao.slug)}
-              onClick={() => alternar(condicao.slug)}
-            />
-          ))}
-        </div>
-      )}
-    </ConsolePicker>
+        </footer>
+      </div>
+    </AuxJanela>
   );
 }

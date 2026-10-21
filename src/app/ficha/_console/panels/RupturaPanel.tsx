@@ -28,6 +28,7 @@ import { FAMILIAS_MARCA, MARCAS_RUPTURA, TIPOS_TRACO, marcaPorId, tracoPorDados 
 import { useRolarNaMesa } from "../../../mesas/[campaignId]/vtt/_dados3d/ContextoMesaDados";
 import { oxanium } from "../../../_design/oxanium";
 import type { ConsoleApi } from "../types";
+import { CabecalhoModulo } from "./CabecalhoModulo";
 import { COR_FAMILIA, COR_TIPO_TRACO, FUNDO_FAMILIA, FUNDO_TIPO_TRACO, ICONE_MARCA, ICONE_TIPO_TRACO, romano } from "./ruptura/iconesMarca";
 import { RodaTracos, type EscolhaTraco } from "./ruptura/RodaTracos";
 import "./hud/hud-base.css";
@@ -128,6 +129,18 @@ function dataCurta(iso: string | undefined) {
   if (!iso) return "";
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("pt-BR");
+}
+
+/** Carcaça padrão das abas do Console: moldura + cabeçalho de módulo (igual a Ações). */
+function Moldura({ children }: { children: React.ReactNode }) {
+  return (
+    <section className="rc-eq-outer" aria-label="Ruptura">
+      <div className="rc-eq-card-outer rc-inv-moldura">
+        <CabecalhoModulo id="ID://RUPTURA" mod="MOD.FRATURA // 08" />
+        {children}
+      </div>
+    </section>
+  );
 }
 
 function Cadeado() {
@@ -268,7 +281,7 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
   if (passo === "marca") {
     const cor = COR_FAMILIA[marca.familia];
     return (
-      <div className={`hx rp ${oxanium.variable}`} data-passo="marca" data-testid="console-ruptura">
+      <Moldura><div className={`hx hx-grade rp ${oxanium.variable}`} data-passo="marca" data-testid="console-ruptura">
         {cabecalhoPasso}
         <div className="rp-marca-legenda" aria-hidden="true">
           <span className="rp-k">Escolha 1 Marca · é permanente</span>
@@ -319,7 +332,7 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
             </div>
           </div>
         </section>
-      </div>
+      </div></Moldura>
     );
   }
 
@@ -328,7 +341,7 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
     const tipo = TIPOS_TRACO[tipoVisto - 1];
     const corTipo = COR_TIPO_TRACO[tipoVisto - 1];
     return (
-      <div className={`hx rp ${oxanium.variable}`} data-passo="traco" data-testid="console-ruptura">
+      <Moldura><div className={`hx hx-grade rp ${oxanium.variable}`} data-passo="traco" data-testid="console-ruptura">
         {cabecalhoPasso}
         <div className="rp-traco">
           <div className="rp-traco-roda">
@@ -378,7 +391,7 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
             </div>
           </div>
         </div>
-      </div>
+      </div></Moldura>
     );
   }
 
@@ -394,11 +407,7 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
   );
 
   return (
-    <div className={`hx rp ${oxanium.variable}`} data-passo="visao" data-testid="console-ruptura">
-      <header className="rp-topo">
-        <span className="rp-k rp-k-am">ID://RUPTURA</span>
-        <span className="rp-k rp-topo-mod">MOD.FRATURA // 08</span>
-      </header>
+    <Moldura><div className={`hx hx-grade rp ${oxanium.variable}`} data-passo="visao" data-testid="console-ruptura">
 
       <section className="rp-hero" data-pendente={pendente || undefined}>
         <div className="rp-anel">
@@ -429,7 +438,7 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
               <p className="rp-nota" data-alerta={previa.ultimaVontade || undefined}>
                 {previa.ultimaVontade
                   ? "Esta Ruptura leva a Integridade a 0: resolva já. Em seguida vem a Última Vontade."
-                  : "Preço automático, depois 1 Marca e 1 Traço. Quando quiser — não precisa esperar o fim da cena."}
+                  : "Preço automático, depois 1 Marca e 1 Traço."}
               </p>
             </div>
           ) : concluida ? (
@@ -499,7 +508,7 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
         </ol>
       </section>
       {detalhe && renderDetalhe()}
-    </div>
+    </div></Moldura>
   );
 
   function renderDetalhe() {

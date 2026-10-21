@@ -60,6 +60,9 @@ export interface OpcaoCondicaoConsole {
   descricao_curta?: string;
   tags?: string[];
   nivel_maximo?: number;
+  descricao_longa?: string;
+  /** Ações que a condição habilita (ex.: Escapar, 2 PA). */
+  acoes?: { acao: string; custo_pa?: number }[];
 }
 
 export interface DadosConsole {
@@ -139,11 +142,13 @@ export async function carregarDadosConsole(campaignId: string | null): Promise<D
     erroFatal: regrasR.erro,
 
     condicoesDisponiveis: docsCondicoes.map((doc) => {
-      const payload = doc.payload as { descricao_curta?: string; tags?: string[]; nivel_maximo?: number } | null;
+      const payload = doc.payload as { descricao_curta?: string; descricao_longa?: string; tags?: string[]; nivel_maximo?: number; acoes_habilitadas?: { acao: string; custo_pa?: number }[] } | null;
       return {
         slug: doc.slug,
         nome: doc.nome ?? doc.slug,
         descricao_curta: payload?.descricao_curta,
+        descricao_longa: payload?.descricao_longa,
+        acoes: Array.isArray(payload?.acoes_habilitadas) ? payload.acoes_habilitadas : undefined,
         tags: Array.isArray(payload?.tags) ? payload.tags : undefined,
         nivel_maximo: typeof payload?.nivel_maximo === "number" ? payload.nivel_maximo : undefined,
       };

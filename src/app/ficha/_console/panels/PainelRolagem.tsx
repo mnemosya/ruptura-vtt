@@ -186,12 +186,9 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
      trocava de aba (chat, Console) no meio do ataque. */
   const janelaRef = useRef<HTMLDivElement>(null);
 
-  // Com o cabeçalho fora, é a linha de modo da janela que diz quando a
-  // rolagem é uma DEFESA — e isso não pode sumir: defesa gasta Reação.
+  // Linha de modo da janela: só o teste decisivo de Colapso usa.
   const modo = prefill.tipo === "colapso"
     ? "colapso · teste decisivo"
-    : prefill.tipo === "defesa"
-    ? "defesa · gasta 1 reação ao rolar"
     : `d8 · ${pool.modoSelecao === "lowest" ? "menor" : "maior"} dado + perícia + modificadores`;
 
   // A vitrine F (a mesma da ferramenta Rolar Dados da mesa) lê o teste
@@ -248,7 +245,7 @@ export function PainelRolagem({ api, prefill, onFechar, acaoToken }: {
           <span className="rv-fp-cab-txt">
             <span className="rv-fp-titulo">Rolar Dados</span>
             {/* Como na ferramenta da mesa, sem linha de estado — exceto quando ela muda a regra. */}
-            {(prefill.tipo === "defesa" || testeColapso) && <span className="rv-fp-modo">{modo}</span>}
+            {testeColapso && <span className="rv-fp-modo">{modo}</span>}
           </span>
           <button type="button" className="rv-fp-fechar" aria-label="Fechar rolagem" onClick={onFechar}><X size={15} /></button>
         </header>
