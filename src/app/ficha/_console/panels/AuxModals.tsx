@@ -9,7 +9,7 @@
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Anchor, BatteryCharging, Bomb, Check, CircleAlert, Crosshair, EyeOff, Scale, Shield, Swords, Timer, TriangleAlert, Wind, X, Zap } from "lucide-react";
-import { FAMILIAS_CONDICAO, ICONE_CONDICAO } from "./condicoesVisual";
+import { FAMILIAS_CONDICAO, ICONE_CONDICAO, visualDaCondicao } from "./condicoesVisual";
 import { deriveItemProperties } from "../../../../lib/character/inventory";
 import { SURTOS_SOBRECARGA } from "../../../../lib/rulesetV12/ruptura";
 import "./hud/hud-base.css";
@@ -942,6 +942,78 @@ export function ConfirmModal({
         <button type="button" className="rc-ghost" onClick={onConfirmar} data-testid="console-confirmar">
           Confirmar
         </button>
+      </div>
+    </AuxJanela>
+  );
+}
+
+/**
+ * Detalhe de uma condição ativa (clique no chip). As regras vêm da
+ * Biblioteca pelo slug — descrição completa, ou a curta, e as ações que
+ * ela habilita —; da condição ativa vêm nível, origem, duração e quando
+ * foi aplicada. Remover fica no rodapé (some na ficha só de leitura).
+ */
+export function ConditionDetailModal({ condicao, regra, onRemover, onFechar }: {
+  condicao: { nome: string; conditionId?: string | null; descricao?: string; origem?: string; duracao?: string; aplicadaEm?: string; aplicadaNaRodada?: number; nivel?: number; nivelMaximo?: number };
+  regra?: { nome: string; descricao_curta?: string; descricao_longa?: string; nivel_maximo?: number; tags?: string[]; acoes?: { acao: string; custo_pa?: number }[] };
+  onRemover?: () => void;
+  onFechar: () => void;
+}) {
+  const v = visualDaCondicao(condicao.conditionId);
+  const familia = FAMILIAS_CONDICAO.find((f) => (f.slugs as readonly string[]).includes(condicao.conditionId ?? ""));
+  const texto = regra?.descricao_longa || regra?.descricao_curta || condicao.descricao || "A Biblioteca não tem o texto desta condição.";
+  const max = condicao.nivelMaximo ?? regra?.nivel_maximo ?? 1;
+  const nivel = condicao.nivel ?? 1;
+  const data = condicao.aplicadaEm ? new Date(condicao.aplicadaEm) : null;
+  const quando = [
+    condicao.aplicadaNaRodada ? `Rodada ${condicao.aplicadaNaRodada}` : "",
+    data && !Number.isNaN(data.getTime()) ? data.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "",
+  ].filter(Boolean).join(" · ");
+  // "Console" é o padrão e ids internos (ex.: dev_table_narrator_tool) não dizem nada à mesa.
+  const origemLegivel = condicao.origem && condicao.origem !== "Console" && !/^[a-z0-9_]+$/.test(condicao.origem) ? condicao.origem : null;
+  const nomeAcao = (a: string) => a.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+
+  return (
+    <AuxJanela titulo={condicao.nome} onFechar={onFechar} plano cabecalho={<></>}>
+      <div className={`hx sx df cd cdd ${oxanium.variable}`} style={{ ["--cd-cor" as string]: v.cor, ["--cd-fundo" as string]: v.fundo }}>
+        <header className="cdd-cab">
+          <span className="cd-medalha cdd-medalha">
+            <span className="cd-anel" aria-hidden="true" />
+            <v.Icone size={26} aria-hidden="true" />
+            {max > 1 && <span className="cd-fita">{nivel}/{max}</span>}
+          </span>
+          <div className="cdd-titulo">
+            <span className="sx-k" style={{ color: v.cor }}>{familia?.nome ?? "Condição"}</span>
+            <h2>{condicao.nome}</h2>
+            {max > 1 && (
+              <span className="cdd-nivel" aria-label={`Nível ${nivel} de ${max}`}>
+                {Array.from({ length: max }, (_, i) => <i key={i} data-cheio={i < nivel || undefined} />)}
+                <small>Nível {nivel} de {max}</small>
+              </span>
+            )}
+          </div>
+          <button type="button" className="sx-fechar" aria-label="Fechar" onClick={onFechar}><X size={16} aria-hidden="true" /></button>
+        </header>
+
+        <div className="cdd-corpo">
+          <p className="cdd-texto">{texto}</p>
+          {(!!regra?.acoes?.length || regra?.tags?.includes("fim_de_rodada") || !!condicao.duracao || !!origemLegivel || !!quando) && <dl className="df-linhas cd-linhas">
+            {!!regra?.acoes?.length && (
+              <div><dt>Ação</dt><dd className="df-teste">{regra.acoes.map((a) => (
+                <span key={a.acao} className="df-badge">{nomeAcao(a.acao)}{a.custo_pa != null && <b>{a.custo_pa} PA</b>}</span>
+              ))}</dd></div>
+            )}
+            {regra?.tags?.includes("fim_de_rodada") && <div><dt>Gatilho</dt><dd>Age no fim de cada rodada</dd></div>}
+            {condicao.duracao && <div><dt>Duração</dt><dd>{condicao.duracao}</dd></div>}
+            {origemLegivel && <div><dt>Origem</dt><dd>{origemLegivel}</dd></div>}
+            {quando && <div><dt>Aplicada</dt><dd>{quando}</dd></div>}
+          </dl>}
+        </div>
+
+        <footer className="sx-rodape">
+          {onRemover && <button type="button" className="sx-btn sx-btn--sec cdd-remover" onClick={onRemover}>Remover condição</button>}
+          <button type="button" className="sx-btn sx-btn--pri" onClick={onFechar}>Fechar</button>
+        </footer>
       </div>
     </AuxJanela>
   );

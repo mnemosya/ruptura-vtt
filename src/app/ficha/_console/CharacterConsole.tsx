@@ -66,6 +66,7 @@ const JanelaEvolucao = dynamic(() => import("../../mesas/[campaignId]/vtt/_paine
 import {
   AttackModal,
   BackpackPickerModal,
+  ConditionDetailModal,
   ConditionPickerModal,
   ConfirmModal,
   DefensePickerModal,
@@ -94,6 +95,7 @@ type Aux =
   | { tipo: "bancada"; instancia: InventoryItemInstance; bancada: Bancada }
   | { tipo: "recarga"; instancia: InventoryItemInstance; fontes: FonteRecarga[]; municao: { atual: number; max: number } }
   | { tipo: "condicao" }
+  | { tipo: "condicao-detalhe"; id: string }
   | { tipo: "defesa" }
   | { tipo: "resistir-atributo" }
   | { tipo: "retorno-colapso"; recurso: "pv" | "pe"; valor: number; desfecho: "morte" | "coma" }
@@ -361,8 +363,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
     setAux({ tipo: "condicao" });
   }
   function onDetalhesCondicao(id: string) {
-    const c = (api.character.condicoes_ativas ?? []).find((x) => x.id === id);
-    setAux({ tipo: "aviso", titulo: c?.nome ?? "Condição", mensagem: c?.descricao ?? "Sem descrição registrada." });
+    setAux({ tipo: "condicao-detalhe", id });
   }
   function onAbrirPin(p: ConsolePin) {
     setAux({ tipo: "aviso", titulo: p.nome, mensagem: `Abrir ${p.tipo} (${p.ref}) — fluxo definitivo pendente.` });
@@ -677,6 +678,19 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
       {aux?.tipo === "defesa" && <DefensePickerModal api={api} onEscolher={onEscolherDefesa} onFechar={() => setAux(null)} />}
 
       {aux?.tipo === "resistir-atributo" && <ResistirAtributoModal onEscolher={onEscolherResistir} onFechar={() => setAux(null)} />}
+
+      {aux?.tipo === "condicao-detalhe" && (() => {
+        const ativa = (api.character.condicoes_ativas ?? []).find((x) => x.id === aux.id);
+        if (!ativa) return null;
+        return (
+          <ConditionDetailModal
+            condicao={ativa}
+            regra={ativa.conditionId ? api.condicoesDisponiveis.find((c) => c.slug === ativa.conditionId) : undefined}
+            onRemover={api.somenteLeitura ? undefined : () => { api.removerCondicao(ativa.id); setAux(null); }}
+            onFechar={() => setAux(null)}
+          />
+        );
+      })()}
 
       {aux?.tipo === "aviso" && (
         <ConfirmModal titulo={aux.titulo} mensagem={aux.mensagem} onConfirmar={() => setAux(null)} onFechar={() => setAux(null)} />
