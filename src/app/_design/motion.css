@@ -341,9 +341,9 @@
 }
 
 /* Palco exclusivo do terminal da campanha. Na entrada fria ainda não
-   existe casca com altura resolvida, então `100dvh` impede o painel de
-   nascer no topo e saltar para o centro quando o layout chega. Dentro
-   da casca/VTT, os seletores seguintes devolvem a medida ao conteúdo. */
+   existe casca com altura resolvida; o terminal em si cobre a viewport
+   com position: fixed. Dentro da casca/VTT, o palco volta a medir a
+   região de conteúdo para preservar o fluxo da rota. */
 .mo-boot-stage--campaign {
   position: relative;
   min-height: 100dvh;

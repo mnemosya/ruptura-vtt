@@ -1157,9 +1157,8 @@
 .rv-dot[data-on="true"] { background: var(--ok); box-shadow: 0 0 7px color-mix(in srgb, var(--ok) 30%, transparent); }
 
 /* ── Fundação funcional das ferramentas (estado persistido) ────── */
-/* A tela de espera da mesa: só o palco escuro e, no meio, o painel de
-   carga compartilhado (`BootPanel`) — o `.mo-boot-stage` de dentro é
-   quem centraliza. */
+/* Palco de espera da mesa. O terminal compartilhado (`BootPanel`) cobre
+   a viewport durante o carregamento; esta base mantém a altura da rota. */
 .rv-mesa--carregando { display: flex; align-items: center; justify-content: center; width: 100%; height: 100vh; background: var(--fj-fundo-1, #0a0e14); color: var(--txt-dim); font-size: 13px; }
 .rv-mesa-erro { max-width: 40ch; text-align: center; line-height: 1.5; }
 .rv-spin { animation: rv-spin 1s linear infinite; color: var(--cy); }

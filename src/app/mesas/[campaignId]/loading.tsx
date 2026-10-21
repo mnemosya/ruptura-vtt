@@ -9,17 +9,15 @@
  * Dois cenários caem aqui, e o arquivo precisa servir aos dois:
  *
  *  - NAVEGANDO ENTRE ROTAS DA CAMPANHA (Mesa → Bando → Livro…): a
- *    casca já está montada e PERMANECE — trilho, cabeçalho, dock e
- *    painel de sessão não piscam. `.mo-boot-stage` centraliza o painel
- *    dentro de `.rm-shell-main`, que já exclui rail/header/dock por
- *    construção (é a região que só rola o CONTEÚDO, ver mesa.css).
+ *    casca já está montada e PERMANECE. O terminal do BootPanel cobre
+ *    a viewport inteira durante o carregamento.
  *
  *  - ENTRANDO NA CAMPANHA VINDO DE FORA (do dashboard, ou por link
  *    direto): aqui o `layout.tsx` da campanha ainda está resolvendo
  *    acesso, log e roster, então a casca ainda NÃO existe. A variante
  *    `--campaign` usa `100dvh` nesse instante; quando a casca chega,
- *    volta a medir 100% da área real de conteúdo. O painel permanece
- *    centralizado nos dois contextos, sem salto vertical.
+ *    volta a medir 100% da área real de conteúdo. O terminal usa
+ *    posicionamento fixo nos dois contextos, sem salto vertical.
  *
  * Este fallback NÃO tem duração mínima garantida — o React pode
  * removê-lo a qualquer momento, assim que o conteúdo real fica pronto.
