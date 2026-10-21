@@ -353,6 +353,10 @@ export interface Character {
   ruptura_pendente?: boolean;
   /** Placeholder documentado — sem modelo real de "nível de Ruptura" ainda; sempre 1 quando ruptura_pendente vira true. */
   ruptura_nivel_pendente?: number;
+  /** RUPTURA 1.2: +1 no limite de Sobrecarga por Ruptura (máx. 5), já em vigor. */
+  sobrecarga_limite_bonus?: number;
+  /** Bônus de limite ganho numa Ruptura, que só entra no fim do próximo descanso longo. */
+  sobrecarga_limite_bonus_pendente?: number;
   /** Último surto de Sobrecarga usado — só para exibição/histórico simples, não é log persistente. */
   ultimo_surto?: {
     tipo: string;
@@ -1026,6 +1030,12 @@ export interface RuptureResolvedEntry {
   pendingChoiceId: string;
   ultimaVontadePendente: boolean;
   resolvidoEm: string;
+  /** RUPTURA 1.2 (cap. 18): Marca escolhida (`MARCAS_RUPTURA`). */
+  marcaId?: string;
+  /** Magia presa à Marca, quando ela pede uma (Manejo Intuitivo). */
+  marcaMagia?: string;
+  /** Traço pelo par do sorteio: tipo 1–4 (1d4), número 1–8 (1d8). */
+  traco?: { tipo: number; numero: number };
 }
 
 export type EvolutionHistoryEntryTipo = "ganho" | "gasto" | "ajuste";

@@ -23,7 +23,7 @@
  * resolvidos e ações que a ficha já implementa).
  */
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, useId } from "react";
 import { readIdentityDossier } from "../../../../lib/character/identity";
 import { progression, readClassPlay } from "../../../../lib/character/classManagement";
 import { ImageUp, Trash2 } from "lucide-react";
@@ -131,10 +131,19 @@ const SURGE_INSET: Record<"first" | "middle" | "last", string> = {
 };
 
 function SurgePip({ position, usada }: { position: "first" | "middle" | "last"; usada: boolean }) {
+  // Tracinhos diagonais: a prévia do próximo surto no hover do card (CSS).
+  const listra = `rc-nsob-listra-${useId().replace(/:/g, "")}`;
   return (
     <svg viewBox="0 0 88 12" preserveAspectRatio="none" aria-hidden="true" data-usada={usada || undefined}>
+      {/* `defs` por último: o CSS pinta o segmento por `path:first-child` e o contorno por `path:last-of-type`. */}
       <path d={SURGE_OUTER[position]} />
+      <path className="rc-nsob-listra" d={SURGE_OUTER[position]} fill={`url(#${listra})`} />
       <path d={SURGE_INSET[position]} fill="none" />
+      <defs>
+        <pattern id={listra} width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="2" height="5" fill="currentColor" />
+        </pattern>
+      </defs>
     </svg>
   );
 }
@@ -553,6 +562,8 @@ export function IdentityAside({
   const paTotal = derivados.pa_max + (progression(character)?.classe_id === "cacador" ? readClassPlay(character).resource : 0);
   const reacoesDisponiveis = Math.max(0, derivados.reacoes_por_rodada - (character.estado_jogo?.reacoes_usadas ?? 0));
   const sobrecarga = character.sobrecarga_usada_dia ?? 0;
+  const limiteSurtos = api.limiteSobrecarga ?? MAX_OVERLOAD_SURGES_PER_DAY;
+  const podeLiberarSurto = !leitura && api.podeUsarSobrecarga && sobrecarga < limiteSurtos;
   // Ranking da progressão v1.2 (F…S+).
   const ranking = (character as { progressao?: { ranking?: string } }).progressao?.ranking ?? null;
 
@@ -802,22 +813,37 @@ export function IdentityAside({
 
         {/* Sobrecarga logo abaixo da Integridade: é o recurso que se
             gasta ao custo dela. */}
-        <div className="rc-nric-faixa rc-nsob-card">
+        {/* O card inteiro libera um surto (abre a janela); o hover acende o
+            próximo segmento. O último segmento usado continua desfazendo. */}
+        <div
+          className="rc-nric-faixa rc-nsob-card"
+          data-clicavel={podeLiberarSurto || undefined}
+          role={podeLiberarSurto ? "button" : undefined}
+          tabIndex={podeLiberarSurto ? 0 : undefined}
+          aria-label={podeLiberarSurto ? `Liberar surto de Sobrecarga (${sobrecarga} de ${limiteSurtos})` : undefined}
+          onClick={podeLiberarSurto ? () => guard(onEscolherSurto) : undefined}
+          onKeyDown={podeLiberarSurto ? (e) => {
+            if (e.target !== e.currentTarget || (e.key !== "Enter" && e.key !== " ")) return;
+            e.preventDefault();
+            guard(onEscolherSurto);
+          } : undefined}
+          data-testid="console-sobrecarga"
+        >
         <div className="rc-nsob-head">
           <span className="rc-nsob-label">Sobrecarga</span>
           <span className="rc-nsob-val">
             {sobrecarga}
-            <span className="rc-nsob-total">/{MAX_OVERLOAD_SURGES_PER_DAY}</span>
+            <span className="rc-nsob-total">/{limiteSurtos}</span>
           </span>
         </div>
-        <div className="rc-nsob-pips">
-          {Array.from({ length: MAX_OVERLOAD_SURGES_PER_DAY }, (_, i) => {
+        <div className="rc-nsob-pips" data-n={limiteSurtos}>
+          {Array.from({ length: limiteSurtos }, (_, i) => {
             const usada = i < sobrecarga;
             const position: "first" | "middle" | "last" =
-              i === 0 ? "first" : i === MAX_OVERLOAD_SURGES_PER_DAY - 1 ? "last" : "middle";
+              i === 0 ? "first" : i === limiteSurtos - 1 ? "last" : "middle";
             if (leitura) {
               return (
-                <span key={i} className="rc-nsob-pip" aria-label={`Sobrecarga ${i + 1} de ${MAX_OVERLOAD_SURGES_PER_DAY}${usada ? " (usada)" : ""}`}>
+                <span key={i} className="rc-nsob-pip" aria-label={`Sobrecarga ${i + 1} de ${limiteSurtos}${usada ? " (usada)" : ""}`}>
                   <SurgePip position={position} usada={usada} />
                 </span>
               );
@@ -830,12 +856,18 @@ export function IdentityAside({
                 type="button"
                 className="rc-nsob-pip"
                 disabled={ultimaUsada ? false : usada || !api.podeUsarSobrecarga}
-                onClick={() => (ultimaUsada ? guard(api.removerSobrecarga) : guard(onEscolherSurto))}
+                data-proximo={i === sobrecarga || undefined}
+                tabIndex={ultimaUsada ? 0 : -1}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (ultimaUsada) guard(api.removerSobrecarga);
+                  else guard(onEscolherSurto);
+                }}
                 data-testid={`console-surto-${i + 1}`}
                 title={ultimaUsada ? "Remover este surto" : undefined}
                 aria-label={ultimaUsada
-                  ? `Remover sobrecarga ${i + 1} de ${MAX_OVERLOAD_SURGES_PER_DAY}`
-                  : `Sobrecarga ${i + 1} de ${MAX_OVERLOAD_SURGES_PER_DAY}${usada ? " (usada)" : ""}`}
+                  ? `Remover sobrecarga ${i + 1} de ${limiteSurtos}`
+                  : `Sobrecarga ${i + 1} de ${limiteSurtos}${usada ? " (usada)" : ""}`}
               >
                 <SurgePip position={position} usada={usada} />
               </button>

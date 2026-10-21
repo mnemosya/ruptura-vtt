@@ -177,7 +177,8 @@ export function ConsoleWindow({
         const emCampo =
           alvo instanceof Element && alvo.closest("input, textarea, select, [contenteditable='true']") !== null;
         const emSelecaoInventario = alvo instanceof Element && alvo.closest(".ih[data-selecao]") !== null;
-        if (emCampo || emSelecaoInventario || document.querySelector(".rc-aux")) return;
+        // `.rp-ficha`: detalhe de Marca/Traço na aba Ruptura, que fecha a si mesmo.
+        if (emCampo || emSelecaoInventario || document.querySelector(".rc-aux, .rp-ficha")) return;
         e.stopPropagation();
         fechar();
         return;

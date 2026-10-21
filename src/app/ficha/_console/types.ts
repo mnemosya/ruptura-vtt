@@ -27,6 +27,7 @@ import type {
   ItemContent,
 } from "../../../lib/character";
 import type { RupturaRollResult } from "../../../lib/dice/types";
+import type { EscolhaRuptura } from "../../../lib/character/rupturaV12";
 import type { TableLogVisibility } from "../../../lib/table";
 import type { BodySlotId } from "./slots";
 import type { ItemLoadoutState } from "../../../lib/character/inventory";
@@ -161,6 +162,10 @@ export interface ConsoleApi {
   tiposDeSurto: readonly string[];
   /** `false` quando novos surtos estão bloqueados até o próximo descanso longo. */
   podeUsarSobrecarga: boolean;
+  /** Limite de Sobrecarga em vigor (3, +1 por Ruptura depois do descanso longo, até 5). */
+  limiteSobrecarga: number;
+  /** Resolve a Ruptura pendente (RUPTURA 1.2): preço + Marca + Traço de uma vez. Devolve o erro, ou `null`. */
+  ruptura?: { resolver: (escolha: EscolhaRuptura) => string | null };
 
   avancarColapso: () => void;
   aplicarTesteDecisivoColapso: (dados: number[]) => void;

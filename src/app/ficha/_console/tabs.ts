@@ -14,9 +14,9 @@
  * genéricos como as demais.
  */
 
-import { Shirt, Swords, Wand2, Backpack, BrainCircuit, IdCard, Zap, Shield, HeartPulse, Crosshair, Handshake, HatGlasses, Cpu, type LucideIcon } from "lucide-react";
+import { Shirt, Swords, Wand2, Backpack, BrainCircuit, IdCard, Zap, Shield, Flame, HeartPulse, Crosshair, Handshake, HatGlasses, Cpu, type LucideIcon } from "lucide-react";
 
-export type AbaId = "personagem" | "equipamentos" | "mochila" | "magias" | "escalpos" | "caracteristicas" | "classe" | "acoes";
+export type AbaId = "personagem" | "equipamentos" | "mochila" | "magias" | "escalpos" | "caracteristicas" | "classe" | "acoes" | "ruptura";
 
 export interface ConsoleTabDef {
   id: AbaId;
@@ -36,6 +36,8 @@ export const ABAS: ConsoleTabDef[] = [
   { id: "caracteristicas", label: "Identidade", Icon: IdCard },
   { id: "classe", label: "Classe", Icon: Shield },
   { id: "acoes", label: "Ações", Icon: Zap },
+  // RUPTURA 1.2, cap. 18: Rupturas, Marcas e Traços.
+  { id: "ruptura", label: "Ruptura", Icon: Flame },
 ];
 
 /** Símbolo de cada Classe (slug), usado na aba Classe, no painel e no Códex. */

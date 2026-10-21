@@ -8,7 +8,11 @@
  */
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { Check, TriangleAlert, X } from "lucide-react";
+import { BatteryCharging, Bomb, Check, Crosshair, EyeOff, Scale, Timer, TriangleAlert, X, Zap } from "lucide-react";
+import { SURTOS_SOBRECARGA } from "../../../../lib/rulesetV12/ruptura";
+import "./hud/hud-base.css";
+import "./hud/surto.css";
+import { oxanium } from "../../../_design/oxanium";
 import { Plus as ConsolePlus } from "../../../_design/icons";
 import type { RupturaRollResult } from "../../../../lib/dice/types";
 import {
@@ -390,42 +394,138 @@ const CAMADA_ROLAGEM: React.CSSProperties = {
   display: "grid", placeItems: "center", padding: 24,
 };
 
-/** Seleção de surto de Sobrecarga — os rótulos vêm das regras publicadas. */
+/**
+ * Surto de Sobrecarga (RUPTURA 1.2, cap. 18). Lista os seis surtos do
+ * livro com custo, efeito e quando anunciar, e mostra antes de liberar
+ * o que acontece: os pontos entram na trilha, cada um causa o dado de
+ * dano psíquico, e alcançar o limite pede Vontade CD 7 e provoca uma
+ * Ruptura. Surtos que passariam do limite ficam indisponíveis.
+ */
+const ICONE_SURTO: Record<string, typeof Zap> = {
+  "Surto de Energia": BatteryCharging,
+  "Surto de Foco": Crosshair,
+  "Surto de Desequilíbrio": Scale,
+  "Surto de Impacto": Bomb,
+  "Surto de Urgência": Timer,
+  "Surto de Discrição": EyeOff,
+};
+
 export function SurgePickerModal({
-  tipos,
+  usada,
+  limite,
+  dado,
   onEscolher,
   onFechar,
 }: {
-  tipos: readonly string[];
-  onEscolher: (tipo: string) => void;
+  usada: number;
+  limite: number;
+  /** Dado do dano psíquico por ponto (ex.: "1d4"). */
+  dado: string;
+  onEscolher: (tipo: string, pontos: number) => void;
   onFechar: () => void;
 }) {
+  const restante = Math.max(0, limite - usada);
+  const primeiroDisponivel = SURTOS_SOBRECARGA.find((s) => s.custo.min <= restante) ?? SURTOS_SOBRECARGA[0];
+  const [nome, setNome] = useState(primeiroDisponivel.nome);
+  const [pontosUrgencia, setPontosUrgencia] = useState(1);
   const [enviando, setEnviando] = useState(false);
+  const surto = SURTOS_SOBRECARGA.find((s) => s.nome === nome) ?? primeiroDisponivel;
+  const maxPontos = Math.min(surto.custo.max, restante);
+  const pontos = surto.custo.min === surto.custo.max ? surto.custo.min : Math.min(Math.max(pontosUrgencia, surto.custo.min), Math.max(surto.custo.min, maxPontos));
+  const disponivel = surto.custo.min <= restante;
+  const depois = Math.min(limite, usada + pontos);
+  const chegaAoLimite = disponivel && depois >= limite;
+  const Icone = ICONE_SURTO[surto.nome] ?? Zap;
+  const nomeCurto = (n: string) => n.replace(/^Surto de /, "");
+
   return (
-    <AuxJanela titulo="Surto de Sobrecarga" onFechar={onFechar}>
-      <p className="rc-vazio">Escolha o tipo de surto. O terceiro surto do dia dispara Ruptura.</p>
-      <div className="rc-aux-lista">
-        {tipos.map((t) => (
-          <button
-            key={t}
-            type="button"
-            className="rc-aux-item"
-            disabled={enviando}
-            // Trava contra clique repetido aplicando o mesmo surto 2×.
-            onClick={() => {
-              if (enviando) return;
-              setEnviando(true);
-              onEscolher(t);
-            }}
-          >
-            <span>{t.replace(/_/g, " ")}</span>
-          </button>
-        ))}
-      </div>
-      <div className="rc-aux-acoes">
-        <button type="button" className="rc-ghost" onClick={onFechar} disabled={enviando}>
-          Cancelar
-        </button>
+    <AuxJanela titulo="Surto de Sobrecarga" onFechar={onFechar} plano cabecalho={<></>}>
+      <div className={`hx sx ${oxanium.variable}`} data-limite={chegaAoLimite || undefined}>
+        <header className="sx-cab">
+          <div className="sx-cab-titulo">
+            <h2>Surto de Sobrecarga</h2>
+            <span className="sx-k">Ação livre</span>
+          </div>
+          <div className="sx-trilha" aria-label={`Sobrecarga ${usada} de ${limite}${disponivel ? `, vai a ${depois}` : ""}`}>
+            <div className="sx-pips">
+              {Array.from({ length: limite }, (_, i) => (
+                <span key={i} className="sx-pip" data-estado={i < usada ? "usado" : disponivel && i < depois ? "novo" : "livre"} />
+              ))}
+            </div>
+            <span className="sx-trilha-num">{usada}{disponivel && pontos > 0 && <><i aria-hidden="true">▸</i><b>{depois}</b></>}<small>/{limite}</small></span>
+          </div>
+          <button type="button" className="sx-fechar" aria-label="Cancelar" onClick={onFechar}><X size={16} aria-hidden="true" /></button>
+        </header>
+
+        {restante === 0 ? (
+          <p className="sx-cheio">Sobrecarga no limite ({usada}/{limite}). Novos surtos só depois de um descanso longo.</p>
+        ) : (
+          <div className="sx-corpo">
+            <div className="sx-lista" role="listbox" aria-label="Surtos">
+              {SURTOS_SOBRECARGA.map((s) => {
+                const Ic = ICONE_SURTO[s.nome] ?? Zap;
+                const ok = s.custo.min <= restante;
+                return (
+                  <button key={s.nome} type="button" role="option" aria-selected={s.nome === nome} className="sx-item"
+                    data-sel={s.nome === nome || undefined} disabled={!ok || enviando} onClick={() => setNome(s.nome)}
+                    title={ok ? undefined : "Passaria do limite de Sobrecarga"}>
+                    <Ic size={16} aria-hidden="true" />
+                    <span className="sx-item-nome">{nomeCurto(s.nome)}</span>
+                    <span className="sx-custo">{s.custo.min === s.custo.max ? s.custo.min : `${s.custo.min}–${s.custo.max}`}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <section className="sx-detalhe" aria-live="polite">
+              <div className="sx-detalhe-cab">
+                <span className="sx-icone"><Icone size={26} aria-hidden="true" /></span>
+                <div>
+                  <span className="sx-k">{surto.custo.min === surto.custo.max ? `${surto.custo.min} Sobrecarga` : `${surto.custo.min} a ${surto.custo.max} Sobrecargas`}</span>
+                  <h3>{nomeCurto(surto.nome)}</h3>
+                </div>
+              </div>
+              <p className="sx-efeito">{surto.efeito}</p>
+              <p className="sx-quando">{surto.quando}</p>
+
+              {surto.custo.max > surto.custo.min && (
+                <div className="sx-pontos">
+                  <span className="sx-k">Pontos (−PA na magia)</span>
+                  <div className="hx-passo hx-passo--ambar">
+                    <button type="button" aria-label="Menos um ponto" disabled={pontos <= surto.custo.min} onClick={() => setPontosUrgencia(pontos - 1)}>−</button>
+                    <span>{pontos}</span>
+                    <button type="button" aria-label="Mais um ponto" disabled={pontos >= maxPontos} onClick={() => setPontosUrgencia(pontos + 1)}>+</button>
+                  </div>
+                </div>
+              )}
+
+              <dl className="sx-preco">
+                <div><dt>Sobrecarga</dt><dd>+{pontos}</dd></div>
+                <div><dt>Dano psíquico</dt><dd>{pontos > 1 ? `${pontos} × ${dado}` : dado} <small>em PE</small></dd></div>
+              </dl>
+              {chegaAoLimite && (
+                <div className="sx-aviso" role="note">
+                  <TriangleAlert size={16} aria-hidden="true" />
+                  <span>Alcança o limite: teste de Vontade CD 7 (falha: Atordoado por 1 rodada) e uma <b>Ruptura</b>, resolvida na aba Ruptura.</span>
+                </div>
+              )}
+            </section>
+          </div>
+        )}
+
+        <footer className="sx-rodape">
+          <button type="button" className="sx-btn sx-btn--sec" onClick={onFechar} disabled={enviando}>Cancelar</button>
+          {restante > 0 && (
+            <button type="button" className="sx-btn sx-btn--pri" disabled={!disponivel || enviando} data-testid="surto-liberar"
+              onClick={() => {
+                if (enviando || !disponivel) return;
+                setEnviando(true);
+                onEscolher(surto.nome, pontos);
+              }}>
+              Liberar {nomeCurto(surto.nome)}
+            </button>
+          )}
+        </footer>
       </div>
     </AuxJanela>
   );

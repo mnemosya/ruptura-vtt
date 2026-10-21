@@ -15,6 +15,7 @@ export * from "./actionConsole";
 export * from "./reactions";
 export * from "./endRoundConditions";
 export * from "./rupture";
+export * from "./rupturaV12";
 export * from "./attack";
 export * from "./inventory";
 export * from "./spells";

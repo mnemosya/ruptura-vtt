@@ -49,6 +49,7 @@ import { InventarioPanel } from "./panels/InventarioPanel";
 import { MagiasPanel } from "./panels/MagiasPanel";
 import { IdentityPanel } from "./panels/IdentityPanel";
 import { ClassPanel } from "./panels/ClassPanel";
+import { RupturaPanel } from "./panels/RupturaPanel";
 import { EscalposPanel } from "./panels/EscalposPanel";
 import { AcoesPanel } from "./panels/AcoesPanel";
 import { SkillsGrid } from "./panels/SkillsGrid";
@@ -401,7 +402,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
               é o primeiro filho, então `top: 0` daqui cai exatamente na
               borda de cima dele. A aba de Equipamentos tem a sua
               própria, no `.rc-eq-card-outer`. */}
-          {aba !== "equipamentos" && aba !== "mochila" && aba !== "magias" && aba !== "escalpos" && aba !== "caracteristicas" && aba !== "classe" && aba !== "acoes" && <DecoTop />}
+          {aba !== "equipamentos" && aba !== "mochila" && aba !== "magias" && aba !== "escalpos" && aba !== "caracteristicas" && aba !== "classe" && aba !== "acoes" && aba !== "ruptura" && <DecoTop />}
           <div className="rc-tabpanel" role="tabpanel" ref={tabpanelRef}>
             {aba === "mochila" ? (
               <InventarioPanel api={api} onGerenciarSuporte={(id) => {
@@ -430,6 +431,8 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
               <IdentityPanel api={api} avatarUrl={avatarUrl} onCompletar={criacaoPendente && api.mesa ? () => api.mesa && janelas.abrirCompletar({ characterId: api.mesa.characterId, nome: api.character.nome }) : undefined} onEvoluir={!criacaoPendente && api.mesa ? evoluir : undefined} />
             ) : aba === "classe" ? (
               <ClassPanel api={api} />
+            ) : aba === "ruptura" ? (
+              <RupturaPanel api={api} />
             ) : aba === "equipamentos" ? (
               <EquipmentPanel
                 slots={projecao.slots}
@@ -530,7 +533,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
           </>
         }
         dockContent={<MinimizedDockContent api={api} avatarUrl={avatarUrl} onEditarRecurso={editarRecursoComConfirmacao} />}
-        tablist={<TabRail aba={aba} onChangeAba={escolherAba} temClasse={temClasse} classeId={classeId} />}
+        tablist={<TabRail aba={aba} onChangeAba={escolherAba} temClasse={temClasse} classeId={classeId} alertas={{ ruptura: api.character.ruptura_pendente === true }} />}
         larguraInicialMax={LARGURA_INICIAL_MAX}
         alturaInicialFallback={ALTURA_INICIAL_FALLBACK}
         conteudoChave={aba}
@@ -576,10 +579,13 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
 
       {aux?.tipo === "surto" && (
         <SurgePickerModal
-          tipos={api.tiposDeSurto}
-          onEscolher={(t) => {
+          usada={api.character.sobrecarga_usada_dia ?? 0}
+          limite={api.limiteSobrecarga}
+          dado={api.dadoDoSurto}
+          onEscolher={(t, pontos) => {
             setAux(null);
-            void rolarSurto(t);
+            // Cada ponto é um surto na trilha, com o próprio dado de dano psíquico (cap. 18).
+            void (async () => { for (let i = 0; i < pontos; i++) await rolarSurto(t); })();
           }}
           onFechar={() => setAux(null)}
         />

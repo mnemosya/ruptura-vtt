@@ -182,5 +182,13 @@ export function applyStunFromFailedWillTest(condicoes: ActiveCondition[], nowIso
  * descanso).
  */
 export function resetOverloadForLongRest(character: Character): Character {
-  return { ...character, sobrecarga_usada_dia: 0 };
+  // RUPTURA 1.2: o +1 de limite ganho numa Ruptura entra no fim do próximo descanso longo.
+  const pendente = character.sobrecarga_limite_bonus_pendente ?? 0;
+  return {
+    ...character,
+    sobrecarga_usada_dia: 0,
+    ...(pendente > 0
+      ? { sobrecarga_limite_bonus: (character.sobrecarga_limite_bonus ?? 0) + pendente, sobrecarga_limite_bonus_pendente: 0 }
+      : {}),
+  };
 }

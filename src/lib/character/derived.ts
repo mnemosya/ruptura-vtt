@@ -52,7 +52,30 @@ export function characterDerivedFormulas(character: unknown): CharacterDerivedFo
     const node = (raw as Record<string, unknown>)[id];
     if (isFormulaNode(node)) formulas[id] = node;
   }
+  somarMarcasDeRuptura(character, formulas);
   return Object.keys(formulas).length > 0 ? formulas : undefined;
+}
+
+/**
+ * Marcas de Ruptura que mexem em derivado (RUPTURA 1.2, cap. 18):
+ * Carapaça Arcana soma Corpo + 3 aos PV máximos, Escudo Psíquico soma
+ * Mente + 3 aos PE máximos, uma vez por Marca escolhida. Entram na
+ * fórmula do personagem para acompanhar o atributo se ele mudar.
+ */
+const MARCAS_COM_DERIVADO: Record<string, { derivado: DerivedId; atributo: string }> = {
+  carapaca_arcana: { derivado: "pv_max", atributo: "corpo" },
+  escudo_psiquico: { derivado: "pe_max", atributo: "mente" },
+};
+
+function somarMarcasDeRuptura(character: object, formulas: CharacterDerivedFormulas): void {
+  const historico = (character as { historico_ruptura?: unknown }).historico_ruptura;
+  if (!Array.isArray(historico)) return;
+  for (const entrada of historico) {
+    const marca = MARCAS_COM_DERIVADO[(entrada as { marcaId?: string } | null)?.marcaId ?? ""];
+    const base = marca && formulas[marca.derivado];
+    if (!marca || !base) continue;
+    formulas[marca.derivado] = { op: "+", args: [base, { ref: "atributo", id: marca.atributo }, { const: 3 }] };
+  }
 }
 
 function isConstNode(node: FormulaNode): node is { const: number } {

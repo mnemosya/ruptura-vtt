@@ -1106,14 +1106,31 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
 .rc-nsob-total { font-weight: 400; color: rgba(214, 234, 245, 0.60); }
 .rc-nsob-pips { display: flex; justify-content: center; align-items: flex-start; align-self: stretch; }
 .rc-nsob-pip { flex: 1; min-width: 0; height: 12px; padding: 0; border: none; background: none; cursor: pointer; }
-.rc-nsob-pip:not(:first-child) { margin-left: -10px; }
+/* Os segmentos se encaixam pelas diagonais (margem negativa). O vão
+   aparente cresce um pouco com mais segmentos, que ficam mais estreitos:
+   3 → -8px, 4 → -7px, 5 → -6px (ver `data-n` em IdentityAside). */
+.rc-nsob-pip:not(:first-child) { margin-left: -8px; }
+.rc-nsob-pips[data-n="4"] .rc-nsob-pip:not(:first-child) { margin-left: -7px; }
+.rc-nsob-pips[data-n="5"] .rc-nsob-pip:not(:first-child) { margin-left: -6px; }
 .rc-nsob-pip svg { width: 100%; height: 100%; display: block; }
 .rc-nsob-pip:disabled { cursor: not-allowed; }
 .rc-nsob-pip svg path:first-child { transition: fill 0.14s; fill: color-mix(in srgb, var(--rc-am) 6%, #0b1016); }
 .rc-nsob-pip svg[data-usada] path:first-child { fill: color-mix(in srgb, var(--rc-am) 55%, transparent); }
-.rc-nsob-pip svg path:last-child { stroke: var(--rc-am); stroke-opacity: .8; }
+.rc-nsob-pip svg path:last-of-type { stroke: var(--rc-am); stroke-opacity: .8; }
+.rc-nsob-pip svg { color: var(--rc-am); }
+.rc-nsob-pip svg .rc-nsob-listra { opacity: 0; transition: opacity .14s; }
 .rc-nsob-pip:not(:disabled):hover svg path:first-child { fill: color-mix(in srgb, var(--rc-am) 28%, transparent); }
 .rc-nsob-pip:focus-visible { outline: 2px solid var(--rc-am); outline-offset: 1px; }
+/* Card inteiro clicável: libera um surto. O hover acende, de leve, só o
+   próximo segmento livre; os demais segmentos livres não reagem sozinhos
+   (quem age é o card). O último usado mantém o hover de desfazer. */
+.rc-nsob-card[data-clicavel] { cursor: pointer; transition: background .14s; }
+.rc-nsob-card[data-clicavel]:hover { background: color-mix(in srgb, var(--rc-am) 3%, transparent); }
+.rc-nsob-card[data-clicavel]:focus-visible { outline: 2px solid var(--rc-am); outline-offset: 2px; }
+.rc-nsob-card[data-clicavel] .rc-nsob-pip:not(:disabled):not([title]):not([data-proximo]):hover svg path:first-child { fill: color-mix(in srgb, var(--rc-am) 6%, #0b1016); }
+.rc-nsob-card[data-clicavel]:is(:hover, :focus-visible) .rc-nsob-pip[data-proximo] svg path:first-child { fill: color-mix(in srgb, var(--rc-am) 20%, #0b1016); }
+.rc-nsob-card[data-clicavel]:is(:hover, :focus-visible) .rc-nsob-pip[data-proximo] svg path:last-of-type { stroke-opacity: 1; }
+.rc-nsob-card[data-clicavel]:is(:hover, :focus-visible) .rc-nsob-pip[data-proximo] svg .rc-nsob-listra { opacity: .75; }
 
 /* ── Card Deslocamento v2 (spec Figma) ───────────────────────────── */
 .rc-ndesl-card {
@@ -1576,6 +1593,7 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
    trilho não desabilita aba nenhuma; a regra existe para que a primeira
    que precisar não invente um tratamento próprio. */
 .rc-tabrail-btn:disabled { opacity: .35; cursor: not-allowed; }
+.rc-tabrail-alerta { position: absolute; right: -4px; top: -4px; width: 9px; height: 9px; border-radius: 50%; background: #ff8a1f; box-shadow: 0 0 8px rgba(255, 138, 31, .8); }
 .rc-tabrail-btn:disabled:hover { background: #0c1c26; border-color: rgba(0, 212, 255, 0.15); color: var(--rc-dim); }
 /* O ícone da aba ATIVA é CIANO, não branco: a cor da marca é o que diz
    "é esta", e um branco mais forte que o dos vizinhos exigia comparar

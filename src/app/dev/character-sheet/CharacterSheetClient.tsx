@@ -2,6 +2,8 @@
 import { applyWorkshop } from "../../../lib/character/workshop";
 import { applyClassCommand, guardDefenseBonus, resetRoundPaWithClass } from "../../../lib/character/classManagement";
 import { somarPaGastos } from "../../../lib/character/paGastos";
+import { limiteSobrecarga, removerUltimoSurto, resolverRupturaV12, type EscolhaRuptura } from "../../../lib/character/rupturaV12";
+import { marcaPorId, tracoPorDados } from "../../../lib/rulesetV12/ruptura";
 import { reorderInventoryItem } from "../../../lib/character/inventoryOrder";
 
 import { weaponRangeAt } from "../../../lib/character/weaponRange";
@@ -1292,19 +1294,40 @@ export default function CharacterSheetClient({
     const current = characterRef.current;
     const antes = current.sobrecarga_usada_dia ?? 0;
     if (antes <= 0) return;
-    const next = { ...current, sobrecarga_usada_dia: antes - 1 };
+    // Se este era o surto que alcançou o limite, a Ruptura que ele provocou some junto.
+    const next = removerUltimoSurto(current, limiteSobrecarga(current, regras?.sobrecarga));
     characterRef.current = next;
     setCharacter(next);
-    addLogEntry("recurso", `Sobrecarga: ${antes} → ${antes - 1} (surto removido).`);
+    const rupturaDesfeita = current.ruptura_pendente === true && next.ruptura_pendente !== true;
+    addLogEntry("recurso", `Sobrecarga: ${antes} → ${antes - 1} (surto removido)${rupturaDesfeita ? "; Ruptura pendente desfeita" : ""}.`);
     await persistAutomatedActionExecution(next);
+  }
+
+  /** RUPTURA 1.2: resolve a Ruptura pendente com a Marca e o Traço escolhidos na aba Ruptura. */
+  function handleResolverRuptura(escolha: EscolhaRuptura): string | null {
+    if (somenteLeitura) return "Ficha em modo de leitura.";
+    const current = characterRef.current;
+    const resultado = resolverRupturaV12(current, escolha, { nowIso: new Date().toISOString(), rules: regras?.sobrecarga });
+    if ("erro" in resultado) return resultado.erro;
+    const { character: next, previa } = resultado;
+    characterRef.current = next;
+    setCharacter(next);
+    const marca = marcaPorId(escolha.marcaId)?.nome ?? escolha.marcaId;
+    const traco = tracoPorDados(escolha.traco.tipo, escolha.traco.numero)?.nome ?? "";
+    addLogEntry(
+      "recurso",
+      `Ruptura ${previa.numero} resolvida — Integridade ${previa.integridadeAntes} → ${previa.integridadeDepois}, Mana máx. +${previa.manaBonus}, Marca ${marca}, Traço ${traco}.`,
+    );
+    void persistAutomatedActionExecution(next);
+    return null;
   }
 
   async function handleUseOverloadSurge(tipo: string, danoRolado?: number) {
     const nowIso = new Date().toISOString();
     const sobrecargaAntes = character.sobrecarga_usada_dia ?? 0;
     const overloadRules = regras?.sobrecarga;
-    const maxSurtos = getOverloadMaxPerDay(overloadRules);
-    const result = useOverloadSurge(characterRef.current, tipo, nowIso, undefined, overloadRules, undefined, danoRolado);
+    const maxSurtos = limiteSobrecarga(characterRef.current, overloadRules);
+    const result = useOverloadSurge(characterRef.current, tipo, nowIso, undefined, overloadRules, maxSurtos, danoRolado);
 
     if (!result.surge) {
       addLogEntry("recurso", result.warnings[0] ?? "Limite de surtos de Sobrecarga atingido.");
@@ -4039,8 +4062,10 @@ export default function CharacterSheetClient({
     removerSobrecarga: () => void handleRemoveOverloadSurge(),
     descansar: (tipo) => void (tipo === "curto" ? handleApplyShortRest() : handleApplyLongRest({ jaConfirmado: true })),
     tiposDeSurto: OVERLOAD_SURGE_TYPES,
-    // Ruptura pendente bloqueia novos surtos até o próximo descanso longo.
-    podeUsarSobrecarga: !(character.ruptura_pendente ?? false),
+    // O limite do dia é a única trava (RUPTURA 1.2): Ruptura pendente não bloqueia nada.
+    podeUsarSobrecarga: true,
+    limiteSobrecarga: limiteSobrecarga(character, regras?.sobrecarga),
+    ruptura: { resolver: handleResolverRuptura },
 
     avancarColapso: handleAdvanceCollapseSegmentManual,
     aplicarTesteDecisivoColapso: (dados) => void handleResolveCollapseDecisiveTest(dados),

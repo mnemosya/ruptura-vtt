@@ -40,6 +40,7 @@ function TabBotao({
   testId,
   className = "",
   Icon,
+  alerta = false,
 }: {
   selecionada: boolean;
   label: string;
@@ -47,6 +48,8 @@ function TabBotao({
   testId: string;
   className?: string;
   Icon: () => React.ReactElement;
+  /** Ponto laranja: algo espera o jogador nesta aba (ex.: Ruptura pronta). */
+  alerta?: boolean;
 }) {
   return (
     <button
@@ -59,6 +62,7 @@ function TabBotao({
       data-testid={testId}
     >
       <Icon />
+      {alerta && <span className="rc-tabrail-alerta" aria-hidden="true" />}
       <span className="rc-tabrail-hint" aria-hidden="true">
         {label}
       </span>
@@ -71,12 +75,14 @@ export function TabRail({
   onChangeAba,
   temClasse = false,
   classeId,
+  alertas,
 }: {
   aba: AbaId;
   onChangeAba: (id: AbaId) => void;
   temClasse?: boolean;
   /** Slug da classe: a aba Classe usa o símbolo dela. */
   classeId?: string;
+  alertas?: Partial<Record<AbaId, boolean>>;
 }) {
   return (
     <nav className="rc-tabrail" role="tablist" aria-label="Seções do console" aria-orientation="vertical">
@@ -96,7 +102,8 @@ export function TabRail({
           <TabBotao
             key={id}
             selecionada={aba === id}
-            label={label}
+            label={alertas?.[id] ? `${label} · pendente` : label}
+            alerta={!!alertas?.[id]}
             onClick={() => onChangeAba(id)}
             testId={`console-tab-${id}`}
             Icon={() => <Icon size={18} aria-hidden="true" />}
