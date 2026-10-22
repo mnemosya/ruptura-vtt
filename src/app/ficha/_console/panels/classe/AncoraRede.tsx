@@ -127,9 +127,20 @@ export function AncoraRede({ api, rank, subclassId }: { api: Api; rank: string; 
   const trocando = fase === "entra" || fase === "sai";
   // Com vaga livre a escolha é designação (sem quem sai), e pode ser de vários.
   const designando = fase === "entra" && focos.length < limite;
-  const leitura = (ally: Aliado) => subclassId === "vitalista" && ally.pv != null ? { atual: ally.pv, max: ally.pvMax, cor: COR_RECURSO.pv, sigla: "PV" } : subclassId === "terapeuta" && ally.pe != null ? { atual: ally.pe, max: ally.peMax, cor: COR_RECURSO.pe, sigla: "PE" } : null;
-  // Triagem de Combate (Vitalista C): faixas de PV, não o número.
-  const faixa = (ally: Aliado) => ally.pv == null || !ally.pvMax ? null : ally.pv <= 0 ? "0 PV" : ally.pv >= ally.pvMax ? "PV cheio" : ally.pv > ally.pvMax / 2 ? "Acima da metade" : "Metade ou menos";
+  // Leitura de recurso dos aliados SÓ POR FAIXA, e só quando uma característica dá esse
+  // conhecimento: Triagem de Combate (Vitalista C, PV) e a leitura de PE do Terapeuta (C).
+  // Nunca o número; o arco também anda por faixa, senão revelaria a proporção exata.
+  const recursoLido = reached(rank, "C") ? subclassId === "vitalista" ? "pv" as const : subclassId === "terapeuta" ? "pe" as const : null : null;
+  const FAIXAS = [{ texto: "Cheio", fracao: 100 }, { texto: "Acima da metade", fracao: 75 }, { texto: "Metade ou menos", fracao: 33 }, { texto: "Zerado", fracao: 0 }, { texto: "Colapso mental", fracao: 0 }];
+  // PE desce até −⌈máx/2⌉; nesse piso é Colapso mental. PV para em 0.
+  const faixaDe = (atual?: number, max?: number) => atual == null || !max ? null : atual >= max ? FAIXAS[0] : atual > max / 2 ? FAIXAS[1] : atual > 0 ? FAIXAS[2] : recursoLido === "pe" && atual <= -Math.ceil(max / 2) ? FAIXAS[4] : FAIXAS[3];
+  const leitura = (ally: Aliado) => {
+    if (!recursoLido) return null;
+    const faixa = recursoLido === "pv" ? faixaDe(ally.pv, ally.pvMax) : faixaDe(ally.pe, ally.peMax);
+    if (!faixa) return null;
+    const sigla = recursoLido === "pv" ? "PV" : "PE";
+    return { faixa, sigla, cor: COR_RECURSO[recursoLido], texto: faixa.fracao === 100 ? `${sigla} cheio` : faixa === FAIXAS[3] ? (recursoLido === "pv" ? "0 PV · Colapso" : "0 PE ou menos") : faixa.texto, critico: faixa.fracao <= 33 };
+  };
   const triagem = subclassId === "vitalista" && reached(rank, "C");
   const alerta = triagem ? foraDaRede.find(ally => ally.pvMax && ally.pv != null && ally.pv <= ally.pvMax / 2) : undefined;
   const indiceAlvo = alvo ? focos.indexOf(orientar ? focos.find(f => f.id === orientar.origem) ?? alvo : alvo) : -1;
@@ -153,8 +164,7 @@ export function AncoraRede({ api, rank, subclassId }: { api: Api; rank: string; 
     <header className="ar-cab">
       <h2>ÂNCORA</h2>
       <span>{trocando ? (designando ? "ESCOLHER FOCOS" : "TROCAR FOCO") : meuRotulo}</span>
-      {fase === "anel" && subclassId === "terapeuta" && <span className="ar-legenda"><i style={{ background: COR_RECURSO.pe }} />PE</span>}
-      {fase === "anel" && triagem && <span className="ar-legenda"><i style={{ background: COR_RECURSO.pv }} />PV POR FAIXA</span>}
+      {fase === "anel" && recursoLido && <span className="ar-legenda"><i style={{ background: COR_RECURSO[recursoLido] }} />{recursoLido === "pv" ? "PV" : "PE"} POR FAIXA</span>}
     </header>
 
     {!allies.length ? <div className="ar-vazio"><strong>{api.classe?.carregandoAlvos ? "Carregando aliados…" : api.classe?.erroAlvos ? "Não foi possível carregar os aliados" : "Nenhum aliado disponível"}</strong><p>{api.classe?.erroAlvos ?? "Os outros personagens de jogador vinculados à campanha aparecem aqui. Personagens arquivados não entram na lista."}</p>{api.classe?.atualizarAlvos && <button type="button" className="ar-link" disabled={api.classe.carregandoAlvos} onClick={api.classe.atualizarAlvos}>Atualizar aliados</button>}</div> : <>
@@ -181,8 +191,8 @@ export function AncoraRede({ api, rank, subclassId }: { api: Api; rank: string; 
           const dado = leitura(ally);
           const usada = ultimaId && state.target === ally.id ? MARCA[ultimaId] ?? null : null;
           const condicao = ally.condicoes?.[0];
-          const meta = saindo ? { texto: "SAI", cor: "#ff8a7a" } : origem ? { texto: ultimaId === "conter" ? "CONTIDO" : "AJUSTADO", cor: "#8fa6b4" } : destino ? { texto: "ORIENTADO", cor: "var(--ar-verde)" } : triagem && faixa(ally) ? { texto: faixa(ally)!.toUpperCase(), cor: faixa(ally) === "Metade ou menos" || faixa(ally) === "0 PV" ? "#ff8a9a" : "#c9a3ab" } : dado ? { texto: dado.max ? `${dado.sigla} ${dado.atual}/${dado.max}` : `${dado.sigla} ${dado.atual}`, cor: subclassId === "terapeuta" ? "#c3b0ff" : "#c9a3ab" } : null;
-          const fracao = dado?.max ? Math.max(0, Math.min(100, Math.round(dado.atual / dado.max * 100))) : null;
+          const meta = saindo ? { texto: "SAI", cor: "#ff8a7a" } : origem ? { texto: ultimaId === "conter" ? "CONTIDO" : "AJUSTADO", cor: "#8fa6b4" } : destino ? { texto: "ORIENTADO", cor: "var(--ar-verde)" }  : dado ? { texto: dado.texto.toUpperCase(), cor: dado.critico ? (dado.sigla === "PV" ? "#ff8a9a" : "#c9a3ff") : (dado.sigla === "PV" ? "#c9a3ab" : "#c3b0ff") } : null;
+          const fracao = dado ? dado.faixa.fracao : null;
           return <button key={ally.id} type="button" className="ar-foco" disabled={locked || (!!orientar && origem)} aria-pressed={selecionado || saindo || destino}
             data-selecionado={selecionado || origem} data-saindo={saindo} data-candidato={candidato} data-destino={destino}
             style={{ left: `calc(50% + ${Math.round(R * Math.cos(a))}px)`, top: `${Math.round(R + R * Math.sin(a))}px`, "--ar-i": index } as React.CSSProperties}
@@ -260,8 +270,17 @@ export function AncoraRede({ api, rank, subclassId }: { api: Api; rank: string; 
     </footer>
 
     {painel === "habilidades" && <Painel titulo="HABILIDADES" fechar={fecharPainel}>
-      {[{ secao: "CLASSE", itens: classe.caracteristicas as Record<string, Caracteristica[]> }, ...(sub ? [{ secao: sub.nome.toUpperCase(), itens: sub.caracteristicas }] : [])].map(({ secao, itens }) => <div key={secao} className="ar-hab-secao">
-        <span className="ar-hab-titulo">{secao}</span>
+      {[{ secao: "CLASSE", tipo: "classe", nome: classe.nome, itens: classe.caracteristicas as Record<string, Caracteristica[]> }, ...(sub ? [{ secao: sub.nome.toUpperCase(), tipo: "subclasse", nome: sub.nome, itens: sub.caracteristicas }] : [])].map(({ secao, tipo, nome, itens }) => {
+        const todas = CLASS_RANKS.flatMap(r => itens[r] ?? []).length;
+        const liberadas = CLASS_RANKS.filter(r => reached(rank, r)).flatMap(r => itens[r] ?? []).length;
+        return <div key={secao} className="ar-hab-secao" data-tipo={tipo}>
+        <div className="ar-hab-cab">
+          <span className="ar-hab-selo" aria-hidden="true">{tipo === "classe"
+            ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z" /></svg>
+            : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m12 3 8 9-8 9-8-9z" /></svg>}</span>
+          <span className="ar-hab-cab-texto"><small>{tipo === "classe" ? "CLASSE" : "SUBCLASSE"}</small><strong>{nome}</strong></span>
+          <span className="ar-hab-conta">{liberadas} de {todas} liberadas</span>
+        </div>
         {CLASS_RANKS.flatMap(r => (itens[r] ?? []).map(item => ({ ...item, r }))).map(item => {
           const id = `${secao}-${item.r}-${item.nome}`, aberto = aberta === id, travada = !reached(rank, item.r);
           return <div key={id} className="ar-hab">
@@ -269,11 +288,13 @@ export function AncoraRede({ api, rank, subclassId }: { api: Api; rank: string; 
               <span className="ar-hab-rank">{item.r}</span><span className="ar-hab-nome">{item.nome}</span>
               {travada && <><span className="ar-hab-nota">Ranking {item.r}</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg></>}
               {!travada && item.nome === "Atenção Dividida" && <span className="ar-hab-nota" data-tom="ouro">{state.uses["scene:atencao"] ? "Troca grátis usada" : "Troca grátis pronta"}</span>}
+              <svg className="ar-hab-seta" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
             </button>
             {aberto && <div className="ar-hab-texto">{blocos(item.descricao).map((b, index) => b.tipo === "titulo" ? <span key={index} className="ar-hab-sub">{b.texto}</span> : b.tipo === "item" ? <p key={index} className="ar-hab-item"><b>{b.destaque}</b>{b.texto}</p> : <p key={index}><b>{b.destaque}</b>{b.texto}</p>)}</div>}
           </div>;
         })}
-      </div>)}
+      </div>;
+      })}
     </Painel>}
 
     {painel === "pacientes" && <Painel titulo="PACIENTES" fechar={fecharPainel} intro="Sessão de 1 h · Vontade CD 7 com +2 · 3 sucessos devolvem 1 de Integridade">

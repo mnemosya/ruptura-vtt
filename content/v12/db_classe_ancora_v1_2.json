@@ -426,6 +426,11 @@
             "slug": "intervencao_cognitiva",
             "nome": "Intervenção Cognitiva",
             "descricao": "Quando um de seus Focos perder PE, receber uma condição mental ou for submetido a um efeito da Vertente Cognitiva, você pode utilizar uma das opções abaixo como uma Intervenção:\n\n• Recuperar o Eixo: utilize Aterramento sobre o Foco fora de seu turno, pagando normalmente seu custo.\n\n• Romper a Influência: caso o efeito permita um teste para ser encerrado ou resistido, o Foco pode repetir imediatamente esse teste com +1 vantagem. Uma criatura só pode receber esta opção uma vez contra cada aplicação do mesmo efeito.\n\n• Suspender a Crise: suspenda até o final do próximo turno do Foco uma condição mental que o esteja afetando. A duração da condição continua transcorrendo normalmente, e ela retorna ao final desse período caso ainda não tenha terminado.\n\nIntervenção Cognitiva não encerra efeitos instantâneos nem reverte alterações permanentes."
+          },
+          {
+            "slug": "leitura_de_desgaste",
+            "nome": "Leitura de Desgaste",
+            "descricao": "Você reconhece rapidamente o desgaste mental de qualquer aliado que possa perceber. Você sabe se ele está com seus PE máximos; está acima da metade de seus PE máximos; está com metade de seus PE máximos ou menos; está com 0 PE ou menos; ou está em Colapso mental.\n\nEssa leitura não revela a quantidade exata de PE do aliado."
           }
         ],
         "A": [

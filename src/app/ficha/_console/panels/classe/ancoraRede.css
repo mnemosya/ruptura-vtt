@@ -107,14 +107,13 @@
 /* Painéis (Habilidades, Pacientes, Briefing): sobem do rodapé. */
 .ar-sheet{position:absolute;inset:0;z-index:2;overflow:hidden}
 .ar-veu{position:absolute;inset:0;background:rgba(6,14,20,.72)}
-.ar-painel{position:absolute;left:0;right:0;bottom:0;top:min(72px,10%);display:flex;flex-direction:column;background:#0a171d;border-top:1px solid #2e5a48;box-shadow:0 -24px 48px rgba(0,0,0,.5)}
+.ar-painel{position:absolute;left:0;right:0;bottom:0;top:0;display:flex;flex-direction:column;background:#0a171d;border-top:1px solid #2e5a48;box-shadow:0 -24px 48px rgba(0,0,0,.5)}
 .ar-painel-cab{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 8px}
 .ar-painel-cab h3{margin:0;font:700 15px/1 var(--ar-oxa);letter-spacing:.14em;color:#eaf6f2}
 .ar-painel-cab button{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:0;background:none;color:#8fa6b4 !important}
 .ar-painel-intro{margin:0 24px 18px;font-size:13px;line-height:1.5;color:#8fa6b4}
 .ar-painel-corpo{flex-grow:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;padding:0 24px 24px}
 
-.ar-hab-titulo{padding:22px 0 10px;font:600 11px/1 var(--ar-mono);letter-spacing:.18em;color:#6f8799}
 .ar-hab{border-top:1px solid #142836}
 .ar-hab>button{width:100%;min-height:50px;display:flex;align-items:center;gap:16px;padding:0;border:0;background:none;text-align:left}
 .ar-hab>button[data-travada=true]:not([data-aberto=true]){opacity:.5}
@@ -226,7 +225,8 @@
 .ar-resultado{animation:ar-sobe .32s var(--ar-chega) both}
 .ar-alerta{animation:ar-sobe .3s var(--ar-entra) both}
 .ar-candidato{animation:ar-sobe .32s var(--ar-chega) both;animation-delay:calc(var(--ar-i,0) * .05s)}
-.ar-tela button:not(:disabled):not(.ar-foco):active{transform:scale(.97)}
+/* Afundar só nos botões compactos: em linhas de largura total (habilidades, opções) o encolher puxava o texto para o lado. */
+.ar-tela :is(.ar-botoes button,.ar-extra,.ar-registrar,.ar-novo,.ar-alerta button,.ar-painel-fim button,.ar-sel-gatilho:not([data-leve=true] *)):not(:disabled):active{transform:scale(.97)}
 .ar-botoes button,.ar-extra,.ar-registrar,.ar-painel-fim button{transition:background .16s var(--ar-padrao),color .16s var(--ar-padrao),border-color .16s var(--ar-padrao),transform .1s var(--ar-padrao)}
 @keyframes ar-sobe{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
@@ -290,3 +290,38 @@
 .ar-registrar:not(:disabled):hover{background:var(--ar-verde) !important;border-color:var(--ar-verde) !important;color:#062018 !important}
 .ar-registrar:disabled{opacity:.4}
 .ar-paciente-fim{width:auto;align-items:flex-end}
+
+/* Habilidades: classe e subclasse como blocos próprios, com cabeçalho e faixa lateral. */
+.ar-hab-secao{position:relative;margin-top:14px;padding:4px 16px 6px 18px;border:1px solid #1c3445;background:rgba(13,29,34,.55)}
+.ar-hab-secao+.ar-hab-secao{margin-top:22px}
+.ar-hab-secao::before{content:"";position:absolute;left:-1px;top:-1px;bottom:-1px;width:3px;background:var(--ar-verde)}
+.ar-hab-secao[data-tipo=subclasse]{background:rgba(0,212,255,.035)}
+.ar-hab-secao[data-tipo=subclasse]::before{background:#00d4ff}
+.ar-hab-cab{display:flex;align-items:center;gap:12px;padding:12px 0 10px}
+.ar-hab-selo{width:34px;height:34px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #2e5a48;background:#102a22;color:var(--ar-verde)}
+.ar-hab-secao[data-tipo=subclasse] .ar-hab-selo{border-color:#1f4a5a;background:#0b2530;color:#00d4ff}
+.ar-hab-cab-texto{flex-grow:1;display:flex;flex-direction:column;gap:5px}
+.ar-hab-cab-texto small{font:600 10px/1 var(--ar-mono);letter-spacing:.18em;color:#6f8799}
+.ar-hab-cab-texto strong{font:800 17px/1 var(--ar-oxa);letter-spacing:.06em;text-transform:uppercase;color:#eaf6f2}
+.ar-hab-conta{font:500 11px/1 var(--ar-mono);letter-spacing:.1em;text-transform:uppercase;color:#8fa6b4}
+.ar-hab-secao .ar-hab:last-child{border-bottom:0}
+.ar-hab-secao[data-tipo=subclasse] .ar-hab>button[data-aberto=true] :is(.ar-hab-rank,.ar-hab-nome){color:#7fe6ff}
+.ar-hab-secao[data-tipo=subclasse] .ar-hab-sub{color:#7fe6ff}
+.ar-hab-secao[data-tipo=subclasse] .ar-hab-item{border-left-color:#1f4a5a}
+
+/* Seta de expandir: aparece no hover (e no foco por teclado); aberta, fica visível e virada. */
+/* Escondida não ocupa espaço (largura 0, e a margem negativa anula o vão de 16 px da linha); no hover cresce e empurra notas e cadeado. */
+.ar-hab-seta{flex:none;width:0;margin-left:-16px;color:#8fa6b4;opacity:0;transition:width .2s var(--ar-padrao),margin .2s var(--ar-padrao),opacity .16s var(--ar-padrao),transform .2s var(--ar-padrao),color .16s var(--ar-padrao)}
+.ar-hab>button:hover .ar-hab-seta,.ar-hab>button:focus-visible .ar-hab-seta{width:14px;margin-left:0;opacity:1;color:#a6f3cb}
+.ar-hab>button[data-aberto=true] .ar-hab-seta{width:14px;margin-left:0;opacity:1;transform:rotate(180deg);color:var(--ar-verde)}
+.ar-hab-secao[data-tipo=subclasse] .ar-hab>button:hover .ar-hab-seta{color:#7fe6ff}
+.ar-hab-secao[data-tipo=subclasse] .ar-hab>button[data-aberto=true] .ar-hab-seta{color:#00d4ff}
+
+/* Linha de habilidade de ponta a ponta no bloco (anula o recuo 18/16 do cartão) com fundo no hover. */
+.ar-hab-secao .ar-hab{margin:0 -16px 0 -18px}
+.ar-hab-secao .ar-hab>button{box-sizing:border-box;padding:0 16px 0 18px;transition:background .16s var(--ar-padrao)}
+.ar-hab-secao .ar-hab>button:hover{background:rgba(61,220,132,.07)}
+.ar-hab-secao[data-tipo=subclasse] .ar-hab>button:hover{background:rgba(0,212,255,.07)}
+.ar-hab-secao .ar-hab>button[data-aberto=true]{background:rgba(61,220,132,.05)}
+.ar-hab-secao[data-tipo=subclasse] .ar-hab>button[data-aberto=true]{background:rgba(0,212,255,.05)}
+.ar-hab-secao .ar-hab-texto{margin-left:62px;margin-right:16px}
