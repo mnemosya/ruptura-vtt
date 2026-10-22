@@ -23,6 +23,7 @@
 import { redirect } from "next/navigation";
 import { readOnlineSession } from "../../../lib/campaign/onlineSessionActions";
 import { readNetworkPresence } from "../../../lib/campaign/userProfileActions";
+import { heartbeatAccountPresence } from "../../../lib/campaign/accountPresenceActions";
 import { getCurrentUser } from "../../../lib/auth/session";
 import {
   getCampaignParticipantInfo,
@@ -104,6 +105,7 @@ export default async function MesasPage() {
 
   // Presença de toda a Rede numa consulta só — antes o painel mostrava
   // "Online" fixo para a própria conta e "offline" fixo para o resto.
+  await heartbeatAccountPresence();
   const rede = await readNetworkPresence();
 
   return (

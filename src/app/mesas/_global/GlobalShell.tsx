@@ -28,6 +28,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { LinkPending, NavPendingProvider } from "../../_design/NavPending";
 import { BootMinDurationOverlay } from "../../_boundaries/BootMinDurationOverlay";
 import { setAppearOffline } from "../../../lib/campaign/presencePreferenceActions";
+import { heartbeatAccountPresence } from "../../../lib/campaign/accountPresenceActions";
 import { signOut, updateVisualPrefs } from "../../../lib/auth/actions";
 import {
   AlertTriangle, BookText, CheckCircle, ChevronDown, Eye, EyeOff, LayoutGrid, LogOut, Menu,
@@ -260,6 +261,19 @@ export function GlobalShell({
   const [signingOut, setSigningOut] = useState(false);
   const [aparecerOffline, setAparecerOffline] = useState(aparecerOfflineInicial);
   const [presencaOcupada, setPresencaOcupada] = useState(false);
+  // A Rede mede atividade na conta, inclusive nesta página fora de uma mesa.
+  useEffect(() => {
+    let ativo = true;
+    const renovar = async () => {
+      const ok = await heartbeatAccountPresence();
+      if (ok && ativo && pathname === "/mesas") router.refresh();
+    };
+    void renovar();
+    const timer = window.setInterval(() => { void renovar(); }, 60_000);
+    const aoVoltar = () => { void renovar(); };
+    window.addEventListener("focus", aoVoltar);
+    return () => { ativo = false; window.clearInterval(timer); window.removeEventListener("focus", aoVoltar); };
+  }, [pathname, router]);
   const [prefs, setPrefs] = useState<VisualPrefs>(visualPrefsIniciais ?? { reduceMotion: false, highContrast: false });
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastSeq = useRef(0);
