@@ -4,6 +4,10 @@ export const RUPTURA_V12_RULESET_VERSION = "1.2" as const;
 export const RUPTURA_V12_CONTENT_SCHEMA_VERSION = 1 as const;
 export const RUPTURA_V12_CHARACTER_SCHEMA_VERSION = 2 as const;
 
+/** Cada traço autoral pertence só ao personagem; o identificador não referencia o catálogo. */
+export const isCustomTraitIdV12 = (id: unknown): id is string =>
+  typeof id === "string" && /^personalizado_[0-9a-f]{32}$/.test(id);
+
 export const RANKINGS_V12 = ["F", "E", "D", "C", "B", "A", "S", "S+"] as const;
 export type RankingV12 = (typeof RANKINGS_V12)[number];
 
@@ -156,12 +160,18 @@ export interface RulesetContentBundleV12 {
   complications: ComplicationContentV12[];
 }
 
+export const ANTECEDENTE_PERSONALIZADO_ID = "personalizado";
+
 export interface CharacterTrajectoryV12 {
   regiao_id: string;
   local_origem: string;
   idiomas: string[];
   antecedente: {
     antecedente_id: string;
+    /** Conteúdo autoral, presente apenas quando antecedente_id é "personalizado". */
+    titulo?: string;
+    descricao?: string;
+    familiaridade?: string;
     meio: string;
     papel: string;
     relacao_atual: string;

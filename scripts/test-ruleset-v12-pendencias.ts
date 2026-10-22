@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  ANTECEDENTE_PERSONALIZADO_ID,
   buildCharacterV2,
   escolhasCriacaoV12,
   niveisPericiaV12,
@@ -107,6 +108,29 @@ const ctx: CreationContextV12 = {
 };
 const criado = buildCharacterV2(escolhasCriacaoV12(completo, regioes), ctx);
 assert.equal(criado.ok, true, criado.ok ? "" : criado.errors.join("\n"));
+const autoral: DraftV12 = { ...completo, antecedenteId: ANTECEDENTE_PERSONALIZADO_ID, antecedentePersonalizado: { titulo: "Cartógrafa", descricao: "Mapas proibidos.", familiaridade: "Conhece rotas esquecidas." } };
+assert.deepEqual(pendenciasCriacaoV12(autoral, cat), []);
+const criadoAutoral = buildCharacterV2(escolhasCriacaoV12(autoral, regioes), ctx);
+assert.equal(criadoAutoral.ok, true, criadoAutoral.ok ? "" : criadoAutoral.errors.join("\n"));
+assert.equal(criadoAutoral.ok && criadoAutoral.character.trajetoria.antecedente.titulo, "Cartógrafa");
+const autoralIncompleto = { ...autoral, antecedentePersonalizado: { ...autoral.antecedentePersonalizado!, familiaridade: "" } };
+assert.ok(pendenciasCriacaoV12(autoralIncompleto, cat).some((p) => p.campo === "antecedente"));
+assert.equal(buildCharacterV2(escolhasCriacaoV12(autoralIncompleto, regioes), ctx).ok, false);
+
+// Traços autorais sobrevivem à conversão e ao servidor com título, descrição e custo.
+const customQuality = { id: `personalizado_${"a".repeat(32)}`, pontos: 1 as const, titulo: "Passe livre", descricao: "Pode usar a rede ferroviária civil." };
+const customComplication = { id: `personalizado_${"b".repeat(32)}`, pontos: 2 as const, titulo: "Caçado", descricao: "Agentes imperiais o perseguem nas estações." };
+const comTracosAutorais: DraftV12 = { ...completo, qualidades: [{ id: "aliado", pontos: 2 }, customQuality], complicacoes: [customComplication] };
+assert.deepEqual(pendenciasCriacaoV12(comTracosAutorais, cat), []);
+assert.deepEqual(escolhasCriacaoV12(comTracosAutorais, regioes).trajetoria.qualidades[1].detalhes, { titulo: customQuality.titulo, descricao: customQuality.descricao });
+const criadoComTracos = buildCharacterV2(escolhasCriacaoV12(comTracosAutorais, regioes), ctx);
+assert.equal(criadoComTracos.ok, true, criadoComTracos.ok ? "" : criadoComTracos.errors.join("\n"));
+assert.equal(criadoComTracos.ok && criadoComTracos.character.trajetoria.complicacoes[0].detalhes.titulo, "Caçado");
+const tracoSemDescricao = { ...comTracosAutorais, qualidades: [{ ...customQuality, descricao: "" }, { id: "aliado", pontos: 2 as const }] };
+assert.ok(pendenciasCriacaoV12(tracoSemDescricao, cat).some((p) => p.campo === "qualidades"));
+assert.equal(buildCharacterV2(escolhasCriacaoV12(tracoSemDescricao, regioes), ctx).ok, false);
+const tracoRepetido = { ...comTracosAutorais, complicacoes: [customComplication, customComplication] };
+assert.equal(buildCharacterV2(escolhasCriacaoV12(tracoRepetido, regioes), ctx).ok, false);
 
 // Atributos não dependem da Classe: dá para distribuir antes de escolhê-la.
 const semClasse = pendenciasCriacaoV12({ ...completo, classeSlug: "", perfilPericias: "", pericias: {} }, cat);

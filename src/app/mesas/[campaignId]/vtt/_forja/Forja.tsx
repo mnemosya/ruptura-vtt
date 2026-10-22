@@ -13,7 +13,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { CatalogosCriacaoV12 } from "../_acoes/criacaoV12Actions";
-import { RANKINGS_V12, REGIOES_V12, escolhasDoAvancoV12, perfisAtributosV12, resolveClassResourceV12, type AttributeIdV12, type ClassContentV12, type DraftV12, type RankingV12, type RegiaoIdV12 } from "../../../../../lib/rulesetV12";
+import { ANTECEDENTE_PERSONALIZADO_ID, RANKINGS_V12, REGIOES_V12, escolhasDoAvancoV12, perfisAtributosV12, resolveClassResourceV12, type AttributeIdV12, type ClassContentV12, type DraftV12, type RankingV12, type RegiaoIdV12 } from "../../../../../lib/rulesetV12";
 import { ImagemRecusadaError, enviarParaUrlAssinada, prepararRecorteQuadrado, type ImagemPreparada } from "../../../../../lib/vtt/imagePreparation";
 import { cancelarUploadAction, definirAvatarPersonagemAction, finalizarUploadAvatarAction, reservarUploadAction } from "../_acoes/imageActions";
 import { EnvioImagem } from "../../../../ficha/_console/EnvioImagem";
@@ -80,7 +80,7 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
   const classe = catalogos.classes.find((x) => x.slug === d.classeSlug);
   const vt = VERTENTES_ACERVO.find((v) => v.id === d.vertente);
   const reg = REGIOES.find((r) => r.id === d.regiaoId);
-  const nomeAntecedente = catalogos.antecedentes.find((a) => a.slug === d.antecedenteId)?.nome;
+  const nomeAntecedente = d.antecedenteId === ANTECEDENTE_PERSONALIZADO_ID ? d.antecedentePersonalizado?.titulo.trim() || "Personalizado" : catalogos.antecedentes.find((a) => a.slug === d.antecedenteId)?.nome;
   const vars = { "--vc": vt?.cor ?? "var(--fj-cy)", "--vc-brilho": vt?.brilho ?? "var(--fj-cy)" } as CSSProperties;
 
   /*
@@ -538,7 +538,7 @@ function centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente, s
     case 0: return semAvatar ? (
       <div className="fj-conceito">
         <div className="fj-conceito__avatar">
-          <Holograma d={d} avatar={avatar.url} progress={c.sincronia} nomeAntecedente={nomeAntecedente} />
+          <Holograma d={d} avatar={avatar.url} progress={c.sincronia} nomeAntecedente={nomeAntecedente} onNavigate={c.irPara} />
         </div>
         <div className="fj-conceito__rodape">
           <Mono>O avatar é enviado depois que o personagem entrar numa campanha</Mono>
@@ -546,13 +546,15 @@ function centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente, s
       </div>
     ) : (
       <div className="fj-conceito">
-        <button type="button" id="fj-avatar-abrir" className="fj-conceito__avatar" aria-label={avatar.preparada ? "Trocar avatar" : "Carregar avatar"}
-          onClick={() => avatar.abrir()}
-          onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); }}
-          onDrop={(e) => { const f = e.dataTransfer.files?.[0]; if (f) { e.preventDefault(); avatar.abrir(f); } }}>
-          <Holograma d={d} avatar={avatar.url} progress={c.sincronia} nomeAntecedente={nomeAntecedente} />
-          <span className="fj-conceito__carregar"><Key k="U" /> {avatar.preparada ? "Trocar avatar" : "Carregar avatar"}</span>
-        </button>
+        <div className="fj-conceito__avatar">
+          <Holograma d={d} avatar={avatar.url} progress={c.sincronia} nomeAntecedente={nomeAntecedente} onNavigate={c.irPara} />
+          <button type="button" id="fj-avatar-abrir" className="fj-conceito__avatar-acionar" aria-label={avatar.preparada ? "Trocar avatar" : "Carregar avatar"}
+            onClick={() => avatar.abrir()}
+            onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); }}
+            onDrop={(e) => { const f = e.dataTransfer.files?.[0]; if (f) { e.preventDefault(); avatar.abrir(f); } }}>
+            <span className="fj-conceito__carregar"><Key k="U" /> {avatar.preparada ? "Trocar avatar" : "Carregar avatar"}</span>
+          </button>
+        </div>
         {avatar.preparada && (
           <div className="fj-conceito__rodape">
             <button type="button" onClick={avatar.remover} className="fj-conceito__remover">Remover avatar</button>
@@ -563,12 +565,12 @@ function centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente, s
     case 1: return <Carrossel items={REGIOES.map((r) => ({ id: r.id, nome: r.nome, img: r.img, top: `CAPITAL · ${r.capital.toUpperCase()}`, sub: r.tag, color: r.tint }))} value={d.regiaoId} viewId={view.regiao} onView={onView("regiao")} onPick={(id) => set({ regiaoId: id, localOrigem: id === d.regiaoId ? d.localOrigem : "" })} cta="Fixar origem" />;
     case 2: return <Antecedente d={d} set={set} catalogos={catalogos} />;
     case 3: return <Tracos d={d} set={set} catalogos={catalogos} />;
-    case 4: return <Carrossel items={CLASSES_ACERVO.filter((x) => catalogos.classes.some((k) => k.slug === x.id)).map((x) => ({ id: x.id, nome: x.nome, img: x.arte, top: `CLASSE · ${x.sigla}`, sub: x.papel }))} value={d.classeSlug} viewId={view.classe} onView={onView("classe")} onPick={c.trocarClasse} cta="Assumir classe" />;
-    case 5: return <Atributos d={d} set={set} perfis={perfisAtributosV12(catalogos.classes, d.classeSlug)} avatar={avatar.url} progress={c.sincronia} nomeAntecedente={nomeAntecedente} />;
+    case 4: return <Carrossel items={CLASSES_ACERVO.filter((x) => catalogos.classes.some((k) => k.slug === x.id)).map((x) => ({ id: x.id, nome: x.nome, img: x.arte, top: `CLASSE · ${x.sigla}`, sub: x.papel, posicaoArte: x.id === "face" ? "67% top" : x.id === "ancora" ? "35% top" : x.id === "combatente" ? "58% top" : undefined, escalaArte: x.id === "ancora" ? 1.14 : undefined }))} value={d.classeSlug} viewId={view.classe} onView={onView("classe")} onPick={c.trocarClasse} cta="Assumir classe" />;
+    case 5: return <Atributos d={d} set={set} perfis={perfisAtributosV12(catalogos.classes, d.classeSlug)} avatar={avatar.url} progress={c.sincronia} nomeAntecedente={nomeAntecedente} onNavigate={c.irPara} />;
     case 6: return <Pericias d={d} set={set} catalogos={catalogos} classe={classe} irParaClasse={() => c.irPara(4)} />;
     case 7: return <Carrossel items={VERTENTES_ACERVO.map((v) => ({ id: v.id, nome: v.nome, img: v.arte, top: "VERTENTE PRIMÁRIA", sub: v.frase.split(".")[0], color: v.cor }))} value={d.vertente} viewId={view.vertente} onView={onView("vertente")} onPick={(id) => set({ vertente: id })} cta="Sintonizar" />;
     case 8: return <Progressao d={d} set={set} catalogos={catalogos} etapas={c.etapas} irParaClasse={() => c.irPara(4)} />;
-    default: return <div className="fj-revisao-centro"><Holograma d={d} avatar={avatar.url} progress={c.sincronia} solid={c.sincronia >= 1} nomeAntecedente={nomeAntecedente} /></div>;
+    default: return <div className="fj-revisao-centro"><Holograma d={d} avatar={avatar.url} progress={c.sincronia} solid={c.sincronia >= 1} nomeAntecedente={nomeAntecedente} onNavigate={c.irPara} /></div>;
   }
 }
 
@@ -578,7 +580,7 @@ function centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente, s
  * − e + trocam o valor com o atributo que tem o vizinho, então a
  * distribuição está sempre completa e sempre válida.
  */
-function Atributos({ d, set, perfis, avatar, progress, nomeAntecedente }: { d: DraftV12; set: SetDraft; perfis: ClassContentV12["criacao"]["perfis_atributos"]; avatar: string; progress: number; nomeAntecedente?: string }) {
+function Atributos({ d, set, perfis, avatar, progress, nomeAntecedente, onNavigate }: { d: DraftV12; set: SetDraft; perfis: ClassContentV12["criacao"]["perfis_atributos"]; avatar: string; progress: number; nomeAntecedente?: string; onNavigate: (step: number) => void }) {
   const perfil = perfis.find((p) => p.slug === d.perfilAtributos);
   // Escolher o perfil NÃO distribui os valores: quem cria decide onde
   // cada um vai. Trocar de perfil limpa a distribuição anterior.
@@ -623,7 +625,7 @@ function Atributos({ d, set, perfis, avatar, progress, nomeAntecedente }: { d: D
     <div className="fj-atributos">
       <div className="fj-atributos__linha">
         <div className="fj-atributos__esq">{no(0)}</div>
-        <Holograma d={d} avatar={avatar} progress={progress} size="md" nomeAntecedente={nomeAntecedente} />
+        <Holograma d={d} avatar={avatar} progress={progress} size="md" nomeAntecedente={nomeAntecedente} onNavigate={onNavigate} />
         <div className="fj-atributos__dir">{no(1)}</div>
       </div>
       <div className="fj-atributos__linha fj-atributos__linha--base">
@@ -757,7 +759,7 @@ function lateral({ c, catalogos, classe, view, regiaoCampanha, setRegiaoCampanha
 
 function Revisao({ c, catalogos, classe, pn, setPn }: { c: Criacao; catalogos: CatalogosCriacaoV12; classe?: ClassContentV12; pn: boolean; setPn: (v: boolean) => void }) {
   const { d, forja } = c;
-  const nomes = (lista: { slug: string; nome: string }[], escolhas: DraftV12["qualidades"]) => escolhas.map((e) => `${lista.find((x) => x.slug === e.id)?.nome ?? e.id} (${e.pontos})`).join(", ");
+  const nomes = (lista: { slug: string; nome: string }[], escolhas: DraftV12["qualidades"]) => escolhas.map((e) => `${lista.find((x) => x.slug === e.id)?.nome ?? e.titulo?.trim() ?? e.id} (${e.pontos})`).join(", ");
   const regiao = REGIOES.find((r) => r.id === d.regiaoId)?.nome ?? "";
   const pericias = ([3, 2, 1] as const)
     .map((v) => Object.entries(d.pericias).filter(([, x]) => x === v).map(([id]) => catalogos.pericias.find((p) => p.id === id)?.nome ?? id))
@@ -766,7 +768,7 @@ function Revisao({ c, catalogos, classe, pn, setPn }: { c: Criacao; catalogos: C
     .join(" · ");
   const rows: [string, string][] = [
     ["Região", regiao],
-    ["Antecedente", catalogos.antecedentes.find((x) => x.slug === d.antecedenteId)?.nome ?? ""],
+    ["Antecedente", d.antecedenteId === ANTECEDENTE_PERSONALIZADO_ID ? d.antecedentePersonalizado?.titulo.trim() ?? "" : catalogos.antecedentes.find((x) => x.slug === d.antecedenteId)?.nome ?? ""],
     ["Qualidades", nomes(catalogos.qualidades, d.qualidades)],
     ["Complicações", nomes(catalogos.complicacoes, d.complicacoes)],
     ["Classe", classe?.nome ?? ""],

@@ -15,6 +15,8 @@ import { mochilaInicial } from "../character/backpacks";
 import {
   RUPTURA_V12_CHARACTER_SCHEMA_VERSION,
   RUPTURA_V12_RULESET_VERSION,
+  ANTECEDENTE_PERSONALIZADO_ID,
+  isCustomTraitIdV12,
   type AttributeIdV12,
   type CharacterTrajectoryV12,
   type BackgroundContentV12,
@@ -94,16 +96,31 @@ export function initialAretzV12(
 
 function validateTrajectoryChoicesV12(trajetoria: CharacterTrajectoryV12, ctx: CreationContextV12): string[] {
   const errors: string[] = [];
-  if (!ctx.trajetoria.antecedentes.has(trajetoria.antecedente?.antecedente_id)) {
+  if (trajetoria.antecedente?.antecedente_id === ANTECEDENTE_PERSONALIZADO_ID) {
+    for (const campo of ["titulo", "descricao", "familiaridade"] as const) {
+      const valor = trajetoria.antecedente[campo];
+      if (typeof valor !== "string" || !valor.trim() || valor.length > (campo === "titulo" ? 120 : 2000)) {
+        errors.push(`trajetoria.antecedente.${campo}: texto obrigatório ou tamanho inválido.`);
+      }
+    }
+  } else if (!ctx.trajetoria.antecedentes.has(trajetoria.antecedente?.antecedente_id)) {
     errors.push(`trajetoria.antecedente: Antecedente inexistente ou não publicado "${trajetoria.antecedente?.antecedente_id}".`);
   }
   const checar = (
-    lista: Array<{ id: string; pontos: number }>,
+    lista: Array<{ id: string; pontos: number; detalhes: Record<string, string> }>,
     catalogo: Map<string, QualityContentV12 | ComplicationContentV12>,
     rotulo: string,
   ) => {
     const vistos = new Set<string>();
-    for (const { id, pontos } of lista) {
+    for (const { id, pontos, detalhes } of lista) {
+      if (isCustomTraitIdV12(id)) {
+        if (vistos.has(id)) errors.push(`trajetoria.${rotulo}: traço personalizado repetido.`);
+        vistos.add(id);
+        if ((pontos !== 1 && pontos !== 2) || !detalhes || typeof detalhes.titulo !== "string" || !detalhes.titulo.trim() || detalhes.titulo.length > 120 || typeof detalhes.descricao !== "string" || !detalhes.descricao.trim() || detalhes.descricao.length > 2000) {
+          errors.push(`trajetoria.${rotulo}: traço personalizado exige título, descrição e custo válidos.`);
+        }
+        continue;
+      }
       const opcao = catalogo.get(id);
       if (!opcao) {
         errors.push(`trajetoria.${rotulo}: opção inexistente ou não publicada "${id}".`);
@@ -116,8 +133,8 @@ function validateTrajectoryChoicesV12(trajetoria: CharacterTrajectoryV12, ctx: C
       vistos.add(id);
     }
   };
-  checar((trajetoria.qualidades ?? []).map((q) => ({ id: q.quality_id, pontos: q.pontos })), ctx.trajetoria.qualidades, "qualidades");
-  checar((trajetoria.complicacoes ?? []).map((c) => ({ id: c.complication_id, pontos: c.pontos })), ctx.trajetoria.complicacoes, "complicacoes");
+  checar((trajetoria.qualidades ?? []).map((q) => ({ id: q.quality_id, pontos: q.pontos, detalhes: q.detalhes })), ctx.trajetoria.qualidades, "qualidades");
+  checar((trajetoria.complicacoes ?? []).map((c) => ({ id: c.complication_id, pontos: c.pontos, detalhes: c.detalhes })), ctx.trajetoria.complicacoes, "complicacoes");
   return errors;
 }
 

@@ -35,7 +35,7 @@ function Sinergia({ id }: { id: string }) {
             <span className="fj-sinergia__nome">{s.v}</span>
             <span className="fj-sinergia__pips" aria-label={`${s.n} de 5`}>
               {Array.from({ length: 5 }).map((_, i) => (
-                <span key={i} className="fj-losango" style={i < s.n && v ? { background: v.cor, boxShadow: `0 0 6px ${v.brilho}` } : undefined} />
+                <span key={i} className="fj-losango" style={i < s.n && v ? { background: v.cor } : undefined} />
               ))}
             </span>
           </div>
@@ -53,7 +53,6 @@ function Assumir({ id, d, escolher }: { id: string; d: DraftV12; escolher: (slug
 export function ClasseLateral({ d, escolher, id }: { d: DraftV12; escolher: (slug: string) => void; id: string }) {
   const [open, setOpen] = useState(false);
   const c = meta(id), dos = c.dossie, on = d.classeSlug === id;
-  const now = dos.feats.find((r) => r.r === "F")?.feats ?? [];
   const top = [...dos.syn].sort((a, z) => z.n - a.n).filter((s) => s.n === 5);
   useAtalhoCodex(() => setOpen(true));
 
@@ -69,7 +68,6 @@ export function ClasseLateral({ d, escolher, id }: { d: DraftV12; escolher: (slu
         frase={c.frase}
         linhas={[
           { rotulo: "Papel", valor: dos.role },
-          { rotulo: "Você começa com", valor: now.map((f) => title(f.n)).join(" · "), ambar: true },
           {
             rotulo: "Afinidade máxima",
             valor: (

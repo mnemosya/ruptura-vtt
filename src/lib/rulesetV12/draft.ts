@@ -13,7 +13,7 @@
  * publicado acontece ao restaurar (`sanitizeDraftV12`).
  */
 
-import { RANKINGS_V12, type AttributeIdV12, type RankingV12 } from "./contracts";
+import { ANTECEDENTE_PERSONALIZADO_ID, isCustomTraitIdV12, RANKINGS_V12, type AttributeIdV12, type RankingV12 } from "./contracts";
 import type { DraftAvancoV12 } from "./progressaoInicial";
 
 export const DRAFT_V12_SCHEMA_VERSION = 2 as const;
@@ -22,6 +22,8 @@ export const DRAFT_V12_STEPS = 5;
 export interface DraftEscolhaV12 {
   id: string;
   pontos: 1 | 2;
+  titulo?: string;
+  descricao?: string;
 }
 
 export interface DraftV12 {
@@ -34,6 +36,7 @@ export interface DraftV12 {
   localOrigem: string;
   idiomaCampanha: string;
   antecedenteId: string;
+  antecedentePersonalizado?: { titulo: string; descricao: string; familiaridade: string };
   antecedente: { meio: string; papel: string; relacao_atual: string };
   refratario: { estopim: string; primeiros_passos: string; consequencia: string };
   rpi: { nome_registrado: string; ocupacao_declarada: string; origem: string };
@@ -96,7 +99,10 @@ function escolhas(raw: unknown): DraftEscolhaV12[] | null {
   const out: DraftEscolhaV12[] = [];
   for (const e of raw) {
     if (!isObj(e) || !isText(e.id) || (e.pontos !== 1 && e.pontos !== 2)) return null;
-    out.push({ id: e.id, pontos: e.pontos });
+    if (isCustomTraitIdV12(e.id)) {
+      if (!isText(e.titulo) || !isText(e.descricao) || e.titulo.length > 120) return null;
+      out.push({ id: e.id, pontos: e.pontos, titulo: e.titulo, descricao: e.descricao });
+    } else out.push({ id: e.id, pontos: e.pontos });
   }
   return out;
 }
@@ -115,11 +121,12 @@ export function parseDraftV12(raw: unknown): DraftV12 | null {
     if (!isText(raw[k])) return null;
   }
   const antecedente = textos(raw.antecedente, ["meio", "papel", "relacao_atual"] as const);
+  const antecedentePersonalizado = raw.antecedentePersonalizado === undefined ? undefined : textos(raw.antecedentePersonalizado, ["titulo", "descricao", "familiaridade"] as const);
   const refratario = textos(raw.refratario, ["estopim", "primeiros_passos", "consequencia"] as const);
   const rpi = textos(raw.rpi, ["nome_registrado", "ocupacao_declarada", "origem"] as const);
   const qualidades = escolhas(raw.qualidades);
   const complicacoes = escolhas(raw.complicacoes);
-  if (!antecedente || !refratario || !rpi || !qualidades || !complicacoes) return null;
+  if (!antecedente || (raw.antecedentePersonalizado !== undefined && !antecedentePersonalizado) || !refratario || !rpi || !qualidades || !complicacoes) return null;
 
   if (!isObj(raw.atributos)) return null;
   const atributos = {} as Record<AttributeIdV12, number | null>;
@@ -179,6 +186,7 @@ export function parseDraftV12(raw: unknown): DraftV12 | null {
   }
 
   return {
+    ...(antecedentePersonalizado ? { antecedentePersonalizado } : {}),
     ...(forja ? { forja } : {}),
     ...(avancos ? { avancos } : {}),
     ...(rankingInicial ? { rankingInicial } : {}),
@@ -243,13 +251,15 @@ export function sanitizeDraftV12(draft: DraftV12, cat: DraftCatalogosV12): { dra
   const d: DraftV12 = structuredClone(draft);
   d.regiaoId = manter(cat.regioes.some((r) => r.id === d.regiaoId), d.regiaoId, cat.regioes[0]?.id ?? "");
   d.idiomaCampanha = manter(d.idiomaCampanha === "" || cat.regioes.some((r) => r.idioma === d.idiomaCampanha), d.idiomaCampanha, "");
-  d.antecedenteId = manter(cat.antecedentes.some((a) => a.slug === d.antecedenteId), d.antecedenteId, "");
+  d.antecedenteId = manter(d.antecedenteId === ANTECEDENTE_PERSONALIZADO_ID || cat.antecedentes.some((a) => a.slug === d.antecedenteId), d.antecedenteId, "");
 
   const filtrarEscolhas = (lista: DraftEscolhaV12[], opcoes: DraftCatalogosV12["qualidades"]) => {
     const vistos = new Set<string>();
     return lista.filter((e) => {
       const o = opcoes.find((x) => x.slug === e.id);
-      const ok = !!o && o.custos.includes(e.pontos) && (o.repetivel || !vistos.has(e.id));
+      const ok = isCustomTraitIdV12(e.id)
+        ? !vistos.has(e.id)
+        : !!o && o.custos.includes(e.pontos) && (o.repetivel || !vistos.has(e.id));
       vistos.add(e.id);
       if (!ok) descartados++;
       return ok;

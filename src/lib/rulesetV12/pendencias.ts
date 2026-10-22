@@ -11,9 +11,9 @@
  * ficam entre jogador e narrador, e o servidor também os aceita vazios.
  */
 
-import type { AttributeIdV12, ClassContentV12 } from "./contracts";
+import { ANTECEDENTE_PERSONALIZADO_ID, isCustomTraitIdV12, type AttributeIdV12, type ClassContentV12 } from "./contracts";
 import type { CreationChoicesV12 } from "./creation";
-import type { DraftV12 } from "./draft";
+import type { DraftEscolhaV12, DraftV12 } from "./draft";
 
 export type CampoCriacaoV12 =
   | "nome"
@@ -54,6 +54,9 @@ export function perfisAtributosV12(classes: ClassContentV12[], classeSlug: strin
 
 export const somaPontosV12 = (lista: Array<{ pontos: number }>) => lista.reduce((s, e) => s + e.pontos, 0);
 
+const detalhesTracoV12 = (e: DraftEscolhaV12): Record<string, string> =>
+  isCustomTraitIdV12(e.id) ? { titulo: e.titulo?.trim() ?? "", descricao: e.descricao?.trim() ?? "" } : {};
+
 export function contagemPericiasV12(pericias: Record<string, number>): Record<1 | 2 | 3, number> {
   const c = { 1: 0, 2: 0, 3: 0 };
   for (const v of Object.values(pericias)) if (v === 1 || v === 2 || v === 3) c[v]++;
@@ -88,11 +91,16 @@ export function pendenciasCriacaoV12(d: DraftV12, cat: CatalogoPendenciasV12): P
 
   if (!d.nome.trim()) p.push({ campo: "nome", texto: "Defina o nome do personagem." });
   if (!d.antecedenteId) p.push({ campo: "antecedente", texto: "Escolha um Antecedente." });
+  if (d.antecedenteId === ANTECEDENTE_PERSONALIZADO_ID && (!d.antecedentePersonalizado?.titulo.trim() || !d.antecedentePersonalizado.descricao.trim() || !d.antecedentePersonalizado.familiaridade.trim())) {
+    p.push({ campo: "antecedente", texto: "Preencha título, descrição e familiaridade do Antecedente personalizado." });
+  }
 
   const q = somaPontosV12(d.qualidades);
   if (q !== 3) p.push({ campo: "qualidades", texto: `Qualidades devem somar 3 pontos (atual: ${q}).` });
+  if (d.qualidades.some((e) => isCustomTraitIdV12(e.id) && (!e.titulo?.trim() || !e.descricao?.trim()))) p.push({ campo: "qualidades", texto: "Preencha título e descrição das Qualidades personalizadas." });
   const c = somaPontosV12(d.complicacoes);
   if (c < 2) p.push({ campo: "complicacoes", texto: `Complicações devem somar ao menos 2 pontos (atual: ${c}).` });
+  if (d.complicacoes.some((e) => isCustomTraitIdV12(e.id) && (!e.titulo?.trim() || !e.descricao?.trim()))) p.push({ campo: "complicacoes", texto: "Preencha título e descrição das Complicações personalizadas." });
 
   if (!classe) p.push({ campo: "classe", texto: "Escolha uma Classe." });
 
@@ -144,15 +152,23 @@ export function escolhasCriacaoV12(d: DraftV12, regioes: Array<{ id: string; idi
       regiao_id: d.regiaoId,
       local_origem: d.localOrigem.trim(),
       idiomas: idiomasCriacaoV12(d, regioes),
-      antecedente: { antecedente_id: d.antecedenteId, ...d.antecedente },
+      antecedente: {
+        antecedente_id: d.antecedenteId,
+        ...(d.antecedenteId === ANTECEDENTE_PERSONALIZADO_ID ? {
+          titulo: d.antecedentePersonalizado?.titulo.trim() ?? "",
+          descricao: d.antecedentePersonalizado?.descricao.trim() ?? "",
+          familiaridade: d.antecedentePersonalizado?.familiaridade.trim() ?? "",
+        } : {}),
+        ...d.antecedente,
+      },
       transformacao_refratario: d.refratario,
       rpi_forjado: { nivel: 1, ...d.rpi },
       ...(codinome ? { codinome } : {}),
       ...(textos.conceito ? { conceito: textos.conceito } : {}),
       ...(textos.aparencia ? { aparencia: textos.aparencia } : {}),
       ...(textos.relato_refratario ? { relato_refratario: textos.relato_refratario } : {}),
-      qualidades: d.qualidades.map((q) => ({ quality_id: q.id, pontos: q.pontos, detalhes: {} })),
-      complicacoes: d.complicacoes.map((c) => ({ complication_id: c.id, pontos: c.pontos, detalhes: {} })),
+      qualidades: d.qualidades.map((q) => ({ quality_id: q.id, pontos: q.pontos, detalhes: detalhesTracoV12(q) })),
+      complicacoes: d.complicacoes.map((c) => ({ complication_id: c.id, pontos: c.pontos, detalhes: detalhesTracoV12(c) })),
     },
     compras: Object.entries(d.compras).filter(([, q]) => q > 0).map(([itemSlug, quantidade]) => ({ itemSlug, quantidade })),
   };

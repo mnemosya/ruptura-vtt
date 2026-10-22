@@ -1,5 +1,7 @@
 import {
   CLASS_FEATURE_RANKINGS_V12,
+  ANTECEDENTE_PERSONALIZADO_ID,
+  isCustomTraitIdV12,
   RANKINGS_V12,
   REGIOES_V12,
   RUPTURA_V12_CHARACTER_SCHEMA_VERSION,
@@ -307,6 +309,12 @@ export function validateCharacterV2(value: unknown): ValidationResultV12<Charact
   requireStringArray(trajectory.idiomas, "trajetoria.idiomas", errors, 1);
   const background = requireRecord(trajectory.antecedente, "trajetoria.antecedente", errors);
   requireSlug(background.antecedente_id, "trajetoria.antecedente.antecedente_id", errors);
+  if (background.antecedente_id === ANTECEDENTE_PERSONALIZADO_ID) {
+    for (const campo of ["titulo", "descricao", "familiaridade"] as const) {
+      const valor = requireString(background[campo], `trajetoria.antecedente.${campo}`, errors);
+      if (valor.length > (campo === "titulo" ? 120 : 2000)) errors.push(`trajetoria.antecedente.${campo}: texto longo demais.`);
+    }
+  }
   // Meio, Papel, Relação atual, a transformação e os dados do RPI são
   // narrativos: ficam entre jogador e narrador e podem ficar vazios.
   optionalString(background.meio, "trajetoria.antecedente.meio", errors);
@@ -327,13 +335,25 @@ export function validateCharacterV2(value: unknown): ValidationResultV12<Charact
     const item = requireRecord(entry, `trajetoria.qualidades[${index}]`, errors);
     requireSlug(item.quality_id, `trajetoria.qualidades[${index}].quality_id`, errors);
     if (item.pontos !== 1 && item.pontos !== 2) errors.push(`trajetoria.qualidades[${index}].pontos: esperado 1 ou 2.`);
-    requireRecord(item.detalhes, `trajetoria.qualidades[${index}].detalhes`, errors);
+    const detalhes = requireRecord(item.detalhes, `trajetoria.qualidades[${index}].detalhes`, errors);
+    if (isCustomTraitIdV12(item.quality_id)) {
+      for (const campo of ["titulo", "descricao"] as const) {
+        const valor = requireString(detalhes[campo], `trajetoria.qualidades[${index}].detalhes.${campo}`, errors);
+        if (valor.length > (campo === "titulo" ? 120 : 2000)) errors.push(`trajetoria.qualidades[${index}].detalhes.${campo}: texto longo demais.`);
+      }
+    }
   });
   complications.forEach((entry, index) => {
     const item = requireRecord(entry, `trajetoria.complicacoes[${index}]`, errors);
     requireSlug(item.complication_id, `trajetoria.complicacoes[${index}].complication_id`, errors);
     if (item.pontos !== 1 && item.pontos !== 2) errors.push(`trajetoria.complicacoes[${index}].pontos: esperado 1 ou 2.`);
-    requireRecord(item.detalhes, `trajetoria.complicacoes[${index}].detalhes`, errors);
+    const detalhes = requireRecord(item.detalhes, `trajetoria.complicacoes[${index}].detalhes`, errors);
+    if (isCustomTraitIdV12(item.complication_id)) {
+      for (const campo of ["titulo", "descricao"] as const) {
+        const valor = requireString(detalhes[campo], `trajetoria.complicacoes[${index}].detalhes.${campo}`, errors);
+        if (valor.length > (campo === "titulo" ? 120 : 2000)) errors.push(`trajetoria.complicacoes[${index}].detalhes.${campo}: texto longo demais.`);
+      }
+    }
   });
   const qualityBudget = qualities.reduce((sum, entry) => sum + (record(entry)?.pontos === 2 ? 2 : record(entry)?.pontos === 1 ? 1 : 0), 0);
   const complicationBudget = complications.reduce((sum, entry) => sum + (record(entry)?.pontos === 2 ? 2 : record(entry)?.pontos === 1 ? 1 : 0), 0);

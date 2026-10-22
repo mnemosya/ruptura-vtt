@@ -11,7 +11,7 @@ import type { DraftV12 } from "../../../../../lib/rulesetV12";
  * (`--vc`, `--vc-brilho`, definidas na raiz da Forja) e os fragmentos
  * de origem, antecedente, classe e vertente conforme o jogador escolhe.
  */
-export function Holograma({ d, avatar, progress, size = "lg", solid = false, nomeAntecedente }: { d: DraftV12; avatar: string; progress: number; size?: "md" | "lg"; solid?: boolean; nomeAntecedente?: string }) {
+export function Holograma({ d, avatar, progress, size = "lg", solid = false, nomeAntecedente, onNavigate }: { d: DraftV12; avatar: string; progress: number; size?: "md" | "lg"; solid?: boolean; nomeAntecedente?: string; onNavigate: (step: number) => void }) {
   const reg = REGIOES.find((r) => r.id === d.regiaoId);
   const cls = CLASSES_ACERVO.find((c) => c.id === d.classeSlug);
   const vt = VERTENTES_ACERVO.find((v) => v.id === d.vertente);
@@ -44,34 +44,41 @@ export function Holograma({ d, avatar, progress, size = "lg", solid = false, nom
           </div>
         </div>
 
-        <Fragmento on={!!reg} lugar="origem" label="REGIÃO" value={reg?.nome} />
-        <Fragmento on={!!d.antecedenteId} lugar="antecedente" label="ANTECEDENTE" value={nomeAntecedente} />
-        {/* Classe no mesmo desenho da Vertente: arte no hexágono + nome. */}
+        <Fragmento on={!!reg} lugar="origem" label="REGIÃO" value={reg?.nome} step={1} onNavigate={onNavigate} />
+        <Fragmento on={!!d.antecedenteId} lugar="antecedente" label="ANTECEDENTE" value={nomeAntecedente} step={2} onNavigate={onNavigate} />
         {cls && (
-          <div className="fj-boot fj-holo__classe">
+          <button type="button" className="fj-boot fj-holo__classe fj-holo__selo" onClick={() => onNavigate(4)} aria-label={`Ir para Classe: ${cls.nome}`}>
             <span className="fj-ch-hex fj-holo__vertente-hex fj-holo__classe-hex">
               {/* eslint-disable-next-line @next/next/no-img-element -- arte estática pequena, sem otimização */}
               <img src={cls.arte} alt="" />
             </span>
-            <span className="fj-holo__vertente-nome fj-holo__classe-nome">{cls.nome}</span>
-          </div>
+            <span className="fj-holo__selo-texto">
+              <span className="fj-holo__selo-rotulo">CLASSE</span>
+              <span className="fj-holo__vertente-nome fj-holo__classe-nome">{cls.nome}</span>
+            </span>
+          </button>
         )}
         {vt && (
-          <div className="fj-boot fj-holo__vertente">
+          <button type="button" className="fj-boot fj-holo__vertente fj-holo__selo" style={{ borderColor: vt.brilho }} onClick={() => onNavigate(7)} aria-label={`Ir para Vertente: ${vt.nome}`}>
             <span className="fj-ch-hex fj-holo__vertente-hex" style={{ background: vt.cor }}>
               {/* eslint-disable-next-line @next/next/no-img-element -- arte estática pequena, sem otimização */}
               <img src={vt.arte} alt="" />
             </span>
-            <span className="fj-holo__vertente-nome" style={{ color: vt.brilho }}>{vt.nome}</span>
-          </div>
+            <span className="fj-holo__selo-texto">
+              <span className="fj-holo__selo-rotulo">VERTENTE</span>
+              <span className="fj-holo__vertente-nome" style={{ color: vt.brilho }}>{vt.nome}</span>
+            </span>
+          </button>
         )}
       </div>
 
       <div className="fj-holo__pedestal">
+        <div className="fj-holo__chao" />
+        <div className="fj-holo__emissor" />
         <div className="fj-holo__anel1" />
         <div className="fj-holo__anel2" />
         <div className="fj-holo__luz" />
-        <div className="fj-holo__chao" />
+        <div className="fj-holo__nucleo" />
       </div>
       <div className="fj-holo__rodape">
         <span>{solid ? "REGISTRO MATERIALIZADO" : "PROJEÇÃO INSTÁVEL"}</span>
@@ -81,10 +88,10 @@ export function Holograma({ d, avatar, progress, size = "lg", solid = false, nom
   );
 }
 
-function Fragmento({ on, lugar, label, value, sub }: { on: boolean; lugar: "origem" | "antecedente"; label: string; value?: string; sub?: string }) {
+function Fragmento({ on, lugar, label, value, sub, step, onNavigate }: { on: boolean; lugar: "origem" | "antecedente"; label: string; value?: string; sub?: string; step: number; onNavigate: (step: number) => void }) {
   if (!on) return null;
   return (
-    <div className={`fj-boot fj-holo__fragmento fj-holo__fragmento--${lugar}`}>
+    <button type="button" className={`fj-boot fj-holo__fragmento fj-holo__fragmento--${lugar}`} onClick={() => onNavigate(step)} aria-label={`Ir para ${label.toLowerCase()}: ${value ?? ""}`}>
       <div className="fj-holo__fragmento-linha">
         <div className="fj-ch-l fj-holo__fragmento-caixa">
           <div className="fj-holo__fragmento-rotulo">{label}</div>
@@ -93,6 +100,6 @@ function Fragmento({ on, lugar, label, value, sub }: { on: boolean; lugar: "orig
         </div>
         <span className="fj-holo__fragmento-fio" />
       </div>
-    </div>
+    </button>
   );
 }

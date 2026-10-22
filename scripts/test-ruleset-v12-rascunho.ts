@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { parseDraftV12, sanitizeDraftV12, REGIOES_V12, VERTENTES_V12, type DraftV12, type RulesetContentBundleV12 } from "../src/lib/rulesetV12";
+import { ANTECEDENTE_PERSONALIZADO_ID, parseDraftV12, sanitizeDraftV12, REGIOES_V12, VERTENTES_V12, type DraftV12, type RulesetContentBundleV12 } from "../src/lib/rulesetV12";
 
 const root = join(process.cwd(), "content");
 const ancora = JSON.parse(readFileSync(join(root, "v12", "db_classe_ancora_v1_2.json"), "utf8")) as RulesetContentBundleV12;
@@ -45,6 +45,21 @@ const rascunho: DraftV12 = {
 
 // Formato: round-trip, rejeição de lixo e separação dos formatos v1/v2.
 assert.deepEqual(parseDraftV12(JSON.parse(JSON.stringify(rascunho))), rascunho);
+const autoral = { ...rascunho, antecedenteId: ANTECEDENTE_PERSONALIZADO_ID, antecedentePersonalizado: { titulo: "Cartógrafa", descricao: "Mapas proibidos.", familiaridade: "Conhece rotas esquecidas." } };
+assert.deepEqual(parseDraftV12(JSON.parse(JSON.stringify(autoral))), autoral);
+assert.deepEqual(sanitizeDraftV12(autoral, catalogos).draft.antecedentePersonalizado, autoral.antecedentePersonalizado);
+assert.equal(sanitizeDraftV12(autoral, catalogos).draft.antecedenteId, ANTECEDENTE_PERSONALIZADO_ID);
+const customId = `personalizado_${"a".repeat(32)}`;
+const tracosAutorais: DraftV12 = {
+  ...rascunho,
+  qualidades: [{ id: customId, pontos: 2, titulo: "Acesso ferroviário", descricao: "Entrada na malha de trens." }],
+  complicacoes: [{ id: `personalizado_${"b".repeat(32)}`, pontos: 1, titulo: "Perseguido", descricao: "A corporação o procura." }],
+};
+assert.deepEqual(parseDraftV12(JSON.parse(JSON.stringify(tracosAutorais))), tracosAutorais);
+assert.deepEqual(sanitizeDraftV12(tracosAutorais, catalogos).draft.qualidades, tracosAutorais.qualidades);
+assert.deepEqual(sanitizeDraftV12(tracosAutorais, catalogos).draft.complicacoes, tracosAutorais.complicacoes);
+assert.equal(sanitizeDraftV12({ ...tracosAutorais, qualidades: [...tracosAutorais.qualidades, ...tracosAutorais.qualidades] }, catalogos).draft.qualidades.length, 1);
+assert.equal(parseDraftV12({ ...tracosAutorais, qualidades: [{ id: customId, pontos: 1, titulo: "Sem descrição" }] }), null);
 assert.equal(parseDraftV12({ ...rascunho, schema_version: 1 }), null);
 assert.equal(parseDraftV12({ ...rascunho, step: 9 }), null);
 assert.equal(parseDraftV12({ ...rascunho, nome: "x".repeat(5000) }), null);

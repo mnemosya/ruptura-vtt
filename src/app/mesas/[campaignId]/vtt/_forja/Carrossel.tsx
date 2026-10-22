@@ -8,6 +8,10 @@ export interface ItemCarrossel {
   img: string;
   top: string;
   sub: string;
+  /** Enquadramento da arte no recorte vertical da carta. */
+  posicaoArte?: string;
+  /** Aproxima a arte mantendo o topo visível. */
+  escalaArte?: number;
   /** Cor própria do item (região, vertente). Sem ela, a marca é ciano. */
   color?: string;
 }
@@ -132,7 +136,7 @@ export function Carrossel({ items, value, viewId, onView, onPick, cta }: {
               <div className={`fj-ch fj-carta__borda ${on ? (picked ? "fj-carta__borda--escolhida" : "fj-carta__borda--foco") : ""}`}>
                 <div className="fj-ch fj-carta__corpo">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={it.img} alt="" className="fj-carta__arte" />
+                  <img src={it.img} alt="" className="fj-carta__arte" style={it.posicaoArte || it.escalaArte ? { objectPosition: it.posicaoArte, transform: it.escalaArte ? `scale(${it.escalaArte})` : undefined, transformOrigin: it.escalaArte ? "center top" : undefined } : undefined} />
                   <div className="fj-carta__veu" />
                   <div className="fj-scan fj-cobre fj-carta__scan" />
                   <div className="fj-carta__topo">{it.top}</div>
