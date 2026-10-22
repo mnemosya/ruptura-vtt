@@ -85,10 +85,10 @@ export function Composer({
   ultimaEnviada: string | null;
   /** Imagem anexada, ainda local — sobe só no envio. */
   anexo?: { arquivo: File; previewUrl: string } | null;
-  onAnexar?: (arquivo: File) => void;
+  /** Abre o modal de envio; com arquivo (colado), já no enquadramento. */
+  onAnexar?: (arquivo?: File) => void;
   onRemoverAnexo?: () => void;
 }) {
-  const arquivoRef = useRef<HTMLInputElement>(null);
   const campoRef = useRef<HTMLTextAreaElement>(null);
   const btnAutoriaRef = useRef<HTMLButtonElement>(null);
   const btnVisRef = useRef<HTMLButtonElement>(null);
@@ -237,7 +237,7 @@ export function Composer({
               type="button"
               className="pn-chipbtn pn-chipbtn--icone"
               data-acento="neutro"
-              onClick={() => arquivoRef.current?.click()}
+              onClick={() => onAnexar()}
               title="Anexar imagem"
               disabled={enviando}
               data-testid="painel-chat-anexar"
@@ -245,18 +245,6 @@ export function Composer({
               <ImagePlus aria-hidden="true" />
               <span className="rv-sr-only">Anexar imagem</span>
             </button>
-            <input
-              ref={arquivoRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              hidden
-              onChange={(e) => {
-                const arquivo = e.target.files?.[0];
-                if (arquivo) onAnexar(arquivo);
-                // Limpa para a mesma imagem poder ser escolhida de novo.
-                e.target.value = "";
-              }}
-            />
           </>
         )}
 

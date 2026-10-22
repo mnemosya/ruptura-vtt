@@ -34,6 +34,7 @@ import { CompendioTab } from "../../mesas/[campaignId]/vtt/_painel/CompendioTab"
 import { PersonagensTab } from "../../mesas/[campaignId]/vtt/_painel/PersonagensTab";
 import { ParticipantesTab } from "../../mesas/[campaignId]/vtt/_painel/ParticipantesTab";
 import { Composer } from "../../mesas/[campaignId]/vtt/_painel/feed/Composer";
+import { EnvioImagem } from "../../ficha/_console/EnvioImagem";
 import { LimiteErroAba } from "../../mesas/[campaignId]/vtt/_painel/LimiteErroAba";
 import { SemCampanha } from "./SemCampanha";
 import type { TableLogEntry, TableLogVisibility } from "../../../lib/table";
@@ -185,6 +186,8 @@ export function VitrineComposer() {
   const [texto, setTexto] = useState("");
   const [visibilidade, setVisibilidade] = useState<TableLogVisibility>("public");
   const [caso, setCaso] = useState<"normal" | "enviando" | "erro">("normal");
+  const [anexo, setAnexo] = useState<{ arquivo: File; previewUrl: string } | null>(null);
+  const [envio, setEnvio] = useState<{ arquivo?: File } | null>(null);
 
   return (
     <>
@@ -211,8 +214,23 @@ export function VitrineComposer() {
           onEnviar={SEM_EFEITO}
           onLimparErro={SEM_EFEITO}
           ultimaEnviada={null}
+          anexo={anexo}
+          onAnexar={(arquivo) => setEnvio({ arquivo })}
+          onRemoverAnexo={() => setAnexo(null)}
         />
       </ColunaDoPainel>
+      {envio && (
+        <EnvioImagem
+          titulo="IMAGEM NO CHAT"
+          canal="UPLOAD://CHAT"
+          forma="livre"
+          arquivoInicial={envio.arquivo ?? null}
+          aviso="A imagem sobe quando a mensagem for enviada."
+          rotuloUsar="ANEXAR"
+          onUsar={(arquivo) => { setAnexo({ arquivo, previewUrl: URL.createObjectURL(arquivo) }); return true; }}
+          fechar={() => setEnvio(null)}
+        />
+      )}
     </>
   );
 }

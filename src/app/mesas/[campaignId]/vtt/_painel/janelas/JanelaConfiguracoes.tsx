@@ -22,6 +22,7 @@ import { definirRegiaoCampanhaAction, renomearCampanhaAction } from "../../_acoe
 import { RANKINGS_V12, REGIOES_V12, regiaoValida, type RankingV12, type RegiaoIdV12 } from "../../../../../../lib/rulesetV12";
 import { useCampaignSession } from "../../../_shell/CampaignRealtimeProvider";
 import { setCampaignCover, setCampaignDescription, setCampaignInitialRanking } from "../../../../../../lib/campaign/metadataActions";
+import { EnvioImagem } from "../../../../../ficha/_console/EnvioImagem";
 
 type EstadoSalvar =
   | { tipo: "parado" }
@@ -42,6 +43,7 @@ export function JanelaConfiguracoes({ campaignId, onFechar }: { campaignId: stri
   const [descricao, setDescricao] = useState(campaign.description ?? "");
   const [estadoDescricao, setEstadoDescricao] = useState<EstadoSalvar>({ tipo: "parado" });
   const [estadoCapa, setEstadoCapa] = useState<EstadoSalvar>({ tipo: "parado" });
+  const [envioCapa, setEnvioCapa] = useState<{ arquivo?: File } | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const descriptionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -65,14 +67,16 @@ export function JanelaConfiguracoes({ campaignId, onFechar }: { campaignId: stri
     }, ESPERA_AUTOSAVE_MS);
   }
 
-  async function trocarCapa(file: File | null) {
+  async function trocarCapa(file: File | null): Promise<boolean> {
     setEstadoCapa({ tipo: "salvando" });
     try {
       await setCampaignCover(campaignId, file);
       setEstadoCapa({ tipo: "salvo" });
       void reloadCampaign?.();
+      return true;
     } catch (error) {
       setEstadoCapa({ tipo: "erro", mensagem: error instanceof Error ? error.message : "Erro ao alterar capa." });
+      return false;
     }
   }
 
@@ -190,10 +194,37 @@ export function JanelaConfiguracoes({ campaignId, onFechar }: { campaignId: stri
         </p>
 
         <label className="rv-config-rotulo" htmlFor="rv-config-capa">Arte de capa</label>
-        {campaign.cover_path && <div role="img" aria-label="Capa atual da campanha" style={{ height: 130, backgroundImage: `url('/api/campaigns/${campaignId}/cover?v=${encodeURIComponent(campaign.cover_path)}')`, backgroundSize: "cover", backgroundPosition: "center", marginBottom: 10 }} />}
-        <input id="rv-config-capa" type="file" accept="image/png,image/jpeg,image/webp"
-          disabled={estadoCapa.tipo === "salvando"} onChange={(e) => { const file = e.target.files?.[0]; if (file) void trocarCapa(file); }} />
-        {campaign.cover_path && <button type="button" disabled={estadoCapa.tipo === "salvando"} onClick={() => void trocarCapa(null)}>Remover capa</button>}
+        <button
+          id="rv-config-capa" type="button" className="rv-config-capa"
+          data-vazia={!campaign.cover_path || undefined}
+          disabled={estadoCapa.tipo === "salvando"}
+          onClick={() => setEnvioCapa({})}
+          onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); }}
+          onDrop={(e) => {
+            const arquivo = Array.from(e.dataTransfer.files).find((f) => f.type.startsWith("image/"));
+            if (!arquivo) return;
+            e.preventDefault();
+            setEnvioCapa({ arquivo });
+          }}
+          style={campaign.cover_path ? { backgroundImage: `url('/api/campaigns/${campaignId}/cover?v=${encodeURIComponent(campaign.cover_path)}')` } : undefined}
+        >
+          <span>{campaign.cover_path ? "Trocar capa" : "Enviar arte de capa"}</span>
+        </button>
+        {envioCapa && (
+          <EnvioImagem
+            titulo="ARTE DE CAPA"
+            canal="UPLOAD://CAPA"
+            forma="livre"
+            atual={campaign.cover_path ? `/api/campaigns/${campaignId}/cover?v=${encodeURIComponent(campaign.cover_path)}` : null}
+            arquivoInicial={envioCapa.arquivo ?? null}
+            erro={estadoCapa.tipo === "erro" ? estadoCapa.mensagem : null}
+            enviando={estadoCapa.tipo === "salvando"}
+            rotuloUsar="USAR COMO CAPA"
+            onUsar={(arquivo) => trocarCapa(arquivo)}
+            onRemover={campaign.cover_path ? () => trocarCapa(null) : undefined}
+            fechar={() => setEnvioCapa(null)}
+          />
+        )}
         <p className="rv-config-estado" aria-live="polite">
           {estadoCapa.tipo === "salvando" && "Salvando…"}
           {estadoCapa.tipo === "salvo" && <span data-ok="true">✓ Salvo</span>}

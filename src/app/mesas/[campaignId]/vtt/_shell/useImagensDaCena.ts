@@ -171,8 +171,8 @@ export function useImagensDaCena(params: {
   const pendenteRef = useRef<ImagemPendente | null>(null);
   pendenteRef.current = pendente;
 
-  const prepararArquivo = useCallback(async (arquivo: File, ancora: PontoAxial) => {
-    if (!ehNarrador) return;
+  const prepararArquivo = useCallback(async (arquivo: File, ancora: PontoAxial): Promise<boolean> => {
+    if (!ehNarrador) return false;
     setErro(null);
     try {
       // Decodifica, reduz e gera o preview SEM enviar nada. É isto que
@@ -183,8 +183,10 @@ export function useImagensDaCena(params: {
         if (anterior) URL.revokeObjectURL(anterior.preparada.previewUrl);
         return { preparada, ancora };
       });
+      return true;
     } catch (e) {
       setErro(e instanceof ImagemRecusadaError ? e.message : "Não foi possível ler esta imagem.");
+      return false;
     }
   }, [ehNarrador]);
 

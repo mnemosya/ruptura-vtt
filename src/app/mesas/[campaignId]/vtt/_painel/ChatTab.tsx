@@ -52,6 +52,7 @@ import type { CartaoAtaque } from "./feed/contratos";
 import { getRupturaPool } from "../../../../../lib/dice";
 import { lerContextoRolagemAction } from "./acoes/rolagemPainel";
 import { EstadoErro, EstadoVazio } from "./Estados";
+import { EnvioImagem } from "../../../../ficha/_console/EnvioImagem";
 
 /** Acento das rolagens feitas pelo chat — o mesmo ciano do composer. */
 /**
@@ -94,18 +95,25 @@ export function ChatTab({
      composer (com prévia) até o envio, para dar tempo de escrever a
      legenda; é no envio que ela sobe (migration 0153). */
   const [anexo, setAnexo] = useState<{ arquivo: File; previewUrl: string } | null>(null);
-  const anexar = useCallback((arquivo: File) => {
+  /* Clipe, colar e soltar passam pelo modal de envio; a imagem só vira
+     anexo quando confirmada nele. */
+  const [envioAnexo, setEnvioAnexo] = useState<{ arquivo?: File } | null>(null);
+  const [erroAnexo, setErroAnexo] = useState<string | null>(null);
+  const abrirEnvioAnexo = useCallback((arquivo?: File) => { setErroAnexo(null); setEnvioAnexo({ arquivo }); }, []);
+  const anexar = useCallback((arquivo: File): boolean => {
     try {
       validarArquivo(arquivo);
     } catch (e) {
-      setErroEnvio(e instanceof Error ? e.message : "Imagem recusada.");
-      return;
+      setErroAnexo(e instanceof Error ? e.message : "Imagem recusada.");
+      return false;
     }
+    setErroAnexo(null);
     setErroEnvio(null);
     setAnexo((atual) => {
       if (atual) URL.revokeObjectURL(atual.previewUrl);
       return { arquivo, previewUrl: URL.createObjectURL(arquivo) };
     });
+    return true;
   }, []);
   const removerAnexo = useCallback(() => {
     setAnexo((atual) => {
@@ -670,7 +678,7 @@ export function ChatTab({
     profundidadeArrasto.current = 0;
     setArrastando(false);
     const arquivo = Array.from(e.dataTransfer.files).find((f) => f.type.startsWith("image/")) ?? e.dataTransfer.files[0];
-    if (arquivo) anexar(arquivo);
+    if (arquivo) abrirEnvioAnexo(arquivo);
   };
 
   // ── Menu do card: excluir, fixar, abrir ficha (migration 0152) ──
@@ -861,7 +869,7 @@ export function ChatTab({
 
       <Composer
         anexo={anexo}
-        onAnexar={anexar}
+        onAnexar={abrirEnvioAnexo}
         onRemoverAnexo={removerAnexo}
         papel={role}
         identidade={{ characterId: identidade.characterId, nome: identidade.nome, modo: identidade.modo }}
@@ -878,6 +886,19 @@ export function ChatTab({
         onLimparErro={() => setErroEnvio(null)}
         ultimaEnviada={ultimaEnviadaRef.current}
       />
+      {envioAnexo && (
+        <EnvioImagem
+          titulo="IMAGEM NO CHAT"
+          canal="UPLOAD://CHAT"
+          forma="livre"
+          arquivoInicial={envioAnexo.arquivo ?? null}
+          erro={erroAnexo}
+          aviso="A imagem sobe quando a mensagem for enviada."
+          rotuloUsar="ANEXAR"
+          onUsar={(arquivo) => anexar(arquivo)}
+          fechar={() => { setEnvioAnexo(null); setErroAnexo(null); }}
+        />
+      )}
     </div>
   );
 }

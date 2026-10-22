@@ -173,6 +173,7 @@ import "./_tema/janela-mapa.css";
 import "./_tema/janela-objetos-token.css";
 import "./_tema/janela-combate.css";
 import { useTemaVtt } from "./_tema/useTemaVtt";
+import { EnvioImagem } from "../../../ficha/_console/EnvioImagem";
 
 type EstadoCenaVtt = Awaited<ReturnType<typeof lerCenaAtiva>>["dados"];
 
@@ -5444,11 +5445,13 @@ export function VttClient({
     };
   }, [estadoCena?.cena.largura, estadoCena?.cena.altura]);
 
-  const inputImagemRef = useRef<HTMLInputElement | null>(null);
+  /* Escolher, colar e soltar abrem o mesmo modal de envio; a âncora
+     fica guardada desde o gesto (o ponto do drop, o ponteiro no colar). */
+  const [envioCena, setEnvioCena] = useState<{ arquivo?: File; ancora: PontoAxial } | null>(null);
   const [bibliotecaAberta, setBibliotecaAberta] = useState(false);
   const escolherArquivoDeImagem = useCallback(() => {
-    inputImagemRef.current?.click();
-  }, []);
+    setEnvioCena({ ancora: ancoraParaImagem() });
+  }, [ancoraParaImagem]);
 
   // Colar. O guarda de foco é o ponto crítico: sem ele, colar um texto
   // no chat ou um nome no campo de token seria interceptado pelo mapa —
@@ -5462,11 +5465,11 @@ export function VttClient({
         ?.getAsFile();
       if (!arquivo) return;
       e.preventDefault();
-      void imgs.prepararArquivo(arquivo, ancoraParaImagem());
+      setEnvioCena({ arquivo, ancora: ancoraParaImagem() });
     }
     window.addEventListener("paste", aoColar);
     return () => window.removeEventListener("paste", aoColar);
-  }, [ehNarrador, imgs, ancoraParaImagem]);
+  }, [ehNarrador, ancoraParaImagem]);
 
   // Soltar um arquivo do sistema. `dragover` precisa do `preventDefault`
   // para o `drop` chegar — sem ele o navegador abre a imagem numa aba e
@@ -5503,7 +5506,7 @@ export function VttClient({
       // arquivo, então `ancoraPonteiroRef` estaria parado onde o mouse
       // esteve pela última vez antes do arraste começar.
       const p = pontoAxialDoEvento(e.clientX, e.clientY);
-      void imgs.prepararArquivo(arquivo, p ?? ancoraParaImagem());
+      setEnvioCena({ arquivo, ancora: p ?? ancoraParaImagem() });
     }
 
     alvo.addEventListener("dragover", aoArrastar);
@@ -5514,7 +5517,7 @@ export function VttClient({
       alvo.removeEventListener("dragleave", aoSair);
       alvo.removeEventListener("drop", aoSoltar);
     };
-  }, [ehNarrador, imgs, ancoraParaImagem, pontoAxialDoEvento]);
+  }, [ehNarrador, ancoraParaImagem, pontoAxialDoEvento]);
 
   // ── Objetos: seleção de células PENDENTE, local — só vira objeto de
   // verdade quando o narrador confirma (`criarObjetoPendente`). Clique
@@ -6534,20 +6537,18 @@ export function VttClient({
             onFechar={() => setBibliotecaAberta(false)}
           />
         )}
-        {/* Input fora da tela, dono do gesto "Enviar arquivo…". Fica
-            aqui e não dentro do painel porque o painel é apresentação
-            pura, e porque colar/soltar/escolher precisam terminar no
-            mesmo lugar. `value = ""` a cada escolha: sem isso, escolher
-            o MESMO arquivo duas vezes seguidas não dispara `change`. */}
-        <input
-          ref={inputImagemRef} type="file" accept="image/png,image/jpeg,image/webp"
-          hidden aria-hidden="true" tabIndex={-1}
-          onChange={(e) => {
-            const arquivo = e.target.files?.[0];
-            e.target.value = "";
-            if (arquivo) void imgs.prepararArquivo(arquivo, ancoraParaImagem());
-          }}
-        />
+        {envioCena && (
+          <EnvioImagem
+            titulo="IMAGEM NA CENA"
+            canal="UPLOAD://CENA"
+            forma="livre"
+            arquivoInicial={envioCena.arquivo ?? null}
+            erro={imgs.erro}
+            rotuloUsar="COLOCAR NA CENA"
+            onUsar={(arquivo) => imgs.prepararArquivo(arquivo, envioCena.ancora)}
+            fechar={() => setEnvioCena(null)}
+          />
+        )}
         {/* Realce de "pode soltar aqui". Um alvo de drop invisível é um
             alvo que ninguém encontra. */}
         {arrastandoArquivo && (

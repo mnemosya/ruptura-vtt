@@ -55,6 +55,7 @@ import {
   enviarParaUrlAssinada, prepararImagem,
 } from "../../../../../lib/vtt/imagePreparation";
 import { NovaCena, type ValoresNovaCena } from "./NovaCena";
+import { EnvioImagem } from "../../../../ficha/_console/EnvioImagem";
 import { caixaDaGrade } from "../_dominio/imagemCena";
 import { GavetaCasca } from "./GavetaCasca";
 import { LinhaPasta } from "./LinhaPasta";
@@ -235,7 +236,9 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   const [configurandoId, setConfigurandoId] = useState<string | null>(null);
   /** O mapa escolhido, decodificado em memória e ainda não enviado. */
   const [mapaPendente, setMapaPendente] = useState<{ preparada: ImagemPreparada; nome: string } | null>(null);
-  const campoMapaRef = useRef<HTMLInputElement | null>(null);
+  /** Modal de envio do mapa; o erro de leitura aparece nele. */
+  const [envioMapa, setEnvioMapa] = useState(false);
+  const [erroMapa, setErroMapa] = useState<string | null>(null);
   /**
    * O menu do "Nova cena". As duas origens de uma cena — do zero e a
    * partir de um mapa — eram dois botões de peso desigual: um rotulado
@@ -595,8 +598,9 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
    * menu "A partir de um mapa", onde o seletor de arquivo vem primeiro
    * e a folha nasce já com a imagem dentro.
    */
-  async function escolherMapa(arquivo: File) {
+  async function escolherMapa(arquivo: File): Promise<boolean> {
     setErroNova(null);
+    setErroMapa(null);
     try {
       const preparada = await prepararImagem(arquivo);
       setMapaPendente((anterior) => {
@@ -604,11 +608,14 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
         return { preparada, nome: arquivo.name.replace(/\.[^.]+$/, "") };
       });
       setCriando(true);
+      return true;
     } catch (e) {
       // A folha NÃO fecha nem abre por um arquivo recusado: trocar o
       // mapa por um arquivo ruim não pode descartar o que já foi
-      // digitado, e recusar antes de abrir não deve abrir nada.
-      setErroNova(e instanceof ImagemRecusadaError ? e.message : "Não foi possível ler esta imagem.");
+      // digitado, e recusar antes de abrir não deve abrir nada. O erro
+      // fica no modal, que segue aberto para outra escolha.
+      setErroMapa(e instanceof ImagemRecusadaError ? e.message : "Não foi possível ler esta imagem.");
+      return false;
     }
   }
 
@@ -1283,18 +1290,6 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
       onBusca={setBusca}
       onFechar={p.onFechar}
       acoes={<>
-        {/* Fora do fluxo visual: o botão do mapa é quem o aciona. */}
-        <input
-          ref={campoMapaRef} type="file" accept="image/*" hidden
-          data-testid="cena-de-mapa-arquivo"
-          onChange={(e) => {
-            const arquivo = e.target.files?.[0];
-            // Zerar o valor deixa escolher O MESMO arquivo de novo: sem
-            // isto, um segundo clique no mesmo mapa não dispara `change`.
-            e.target.value = "";
-            if (arquivo) void escolherMapa(arquivo);
-          }}
-        />
         {/* Criar some na aba de arquivo: uma cena nova nasce em uso, e
             oferecer "Nova cena" ali prometeria criar algo arquivado,
             que não existe. */}
@@ -1322,7 +1317,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                   <button
                     type="button" role="menuitem" className="rv-cena-menu-item"
                     data-testid="cena-de-mapa-abrir"
-                    onClick={() => { setMenuNovaAberto(false); campoMapaRef.current?.click(); }}
+                    onClick={() => { setMenuNovaAberto(false); setErroMapa(null); setEnvioMapa(true); }}
                   >
                     <ImagePlus size={14} aria-hidden="true" /> A partir de um mapa
                   </button>
@@ -1960,10 +1955,24 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
             mapa={mapaPendente}
             ocupado={salvandoNova}
             erro={erroNova}
-            onEscolherMapa={() => campoMapaRef.current?.click()}
+            onEscolherMapa={() => { setErroMapa(null); setEnvioMapa(true); }}
             onRemoverMapa={removerMapa}
             onCriar={(v) => void criar(v)}
             onCancelar={fecharNova}
+          />
+        )}
+
+        {envioMapa && (
+          <EnvioImagem
+            titulo="MAPA DA CENA"
+            canal="UPLOAD://MAPA"
+            forma="livre"
+            atual={mapaPendente?.preparada.previewUrl ?? null}
+            erro={erroMapa}
+            rotuloUsar="USAR COMO MAPA"
+            onUsar={(arquivo) => escolherMapa(arquivo)}
+            onRemover={mapaPendente ? () => { removerMapa(); return true; } : undefined}
+            fechar={() => { setEnvioMapa(false); setErroMapa(null); }}
           />
         )}
 
