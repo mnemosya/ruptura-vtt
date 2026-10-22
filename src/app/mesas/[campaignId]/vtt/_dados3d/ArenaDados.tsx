@@ -70,6 +70,10 @@ function addFaceLabels(
   accent: string,
   escala = 1,
 ) {
+  if (sides === 4) {
+    addD4VertexLabels(geo, parent, accent, escala);
+    return;
+  }
   const tpf = TRIS_PER_FACE[sides] ?? 1;
   const pos = geo.attributes.position as THREE.BufferAttribute;
   const totalTris = pos.count / 3;
@@ -112,6 +116,62 @@ function addFaceLabels(
     plane.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
     parent.add(plane);
   }
+}
+
+/**
+ * d4 — numerado nos VÉRTICES, como o dado físico.
+ *
+ * Um tetraedro em repouso tem uma ponta pra cima e três faces inclinadas
+ * por igual: não existe "face de cima" pra ler. O valor é o da face que
+ * ficou no chão (`topFaceValue`), e cada face mostra, perto de cada
+ * vértice, o número da face OPOSTA a ele. Assim a ponta de cima carrega o
+ * resultado repetido nas três faces que se veem de cima.
+ */
+function addD4VertexLabels(
+  geo: THREE.BufferGeometry,
+  parent: THREE.Group,
+  accent: string,
+  escala: number,
+) {
+  const pos = geo.attributes.position as THREE.BufferAttribute;
+  const faces = Array.from({ length: pos.count / 3 }, (_, f) =>
+    [0, 1, 2].map((k) => new THREE.Vector3().fromBufferAttribute(pos, f * 3 + k)),
+  );
+  const mesmoPonto = (a: THREE.Vector3, b: THREE.Vector3) => a.distanceToSquared(b) < 1e-6;
+  const porte = (geo.boundingSphere?.radius ?? CIRCUNRAIO_ALVO * escala) / CIRCUNRAIO_ALVO;
+  const texturas = new Map<number, THREE.CanvasTexture>();
+
+  faces.forEach((tri, f) => {
+    const centroid = new THREE.Vector3().add(tri[0]).add(tri[1]).add(tri[2]).divideScalar(3);
+    const normal = new THREE.Vector3()
+      .crossVectors(new THREE.Vector3().subVectors(tri[1], tri[0]), new THREE.Vector3().subVectors(tri[2], tri[0]))
+      .normalize();
+    if (normal.dot(centroid) < 0) normal.negate();
+
+    for (const vertice of tri) {
+      const oposta = faces.findIndex((outra, g) => g !== f && !outra.some((p) => mesmoPonto(p, vertice)));
+      const valor = oposta + 1;
+      let textura = texturas.get(valor);
+      if (!textura) {
+        textura = makeFaceLabel(valor, accent);
+        texturas.set(valor, textura);
+      }
+      const mat = new THREE.MeshBasicMaterial({
+        map: textura,
+        transparent: true,
+        depthTest: true,
+        depthWrite: false,
+        side: THREE.FrontSide,
+      });
+      // O topo do algarismo aponta pro vértice — é como o d4 físico se lê.
+      const eixoY = new THREE.Vector3().subVectors(vertice, centroid).normalize();
+      const eixoX = new THREE.Vector3().crossVectors(eixoY, normal);
+      const plane = new THREE.Mesh(new THREE.PlaneGeometry(0.3 * porte, 0.3 * porte), mat);
+      plane.position.copy(centroid).lerp(vertice, 0.5).addScaledVector(normal, 0.06 * porte);
+      plane.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(eixoX, eixoY, normal));
+      parent.add(plane);
+    }
+  });
 }
 
 /* ---- Three.js geometry per die type ----------------------------- */
@@ -331,12 +391,15 @@ export function buildDieModel(sides: number, escala = 1): DieModel {
   };
 }
 
-export function topFaceValue(faces: FaceInfo[], quaternion: CANNON.Quaternion) {
+export function topFaceValue(faces: FaceInfo[], quaternion: CANNON.Quaternion, sides?: number) {
   const rotation = new THREE.Quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+  // d4 se lê pela face no CHÃO (ver `addD4VertexLabels`): as três de
+  // cima ficam empatadas na inclinação.
+  const sinal = sides === 4 ? -1 : 1;
   let best = faces[0];
   let bestUp = -Infinity;
   for (const face of faces) {
-    const up = face.normal.clone().applyQuaternion(rotation).y;
+    const up = sinal * face.normal.clone().applyQuaternion(rotation).y;
     if (up > bestUp) {
       best = face;
       bestUp = up;
@@ -421,18 +484,25 @@ export function PhysicsDiceArena({
     // a altura do lançamento.
     const pixelsPorUnidadeAlvo = 54;
     let pixelsPorUnidade = Math.min(pixelsPorUnidadeAlvo, Math.max(1, Math.min(el.clientWidth, el.clientHeight)) / 8);
+    // Câmera um pouco inclinada pra frente, como quem olha a mesa
+    // sentado: reta de cima, as faces do d4 (a ~70° do chão) ficavam
+    // achatadas a um terço. Inclinada, o piso visível encolhe na
+    // vertical por cos(inclinação) — por isso a metade Z do piso é a
+    // metade da TELA dividida por ele, pra paredes e borda baterem.
+    const inclinacao = THREE.MathUtils.degToRad(15);
+    let metadeTelaV = Math.max(el.clientHeight, 1) / (2 * pixelsPorUnidade);
     let arenaHalfX = Math.max(el.clientWidth, 1) / (2 * pixelsPorUnidade);
-    let arenaHalfZ = Math.max(el.clientHeight, 1) / (2 * pixelsPorUnidade);
-    const camera = new THREE.OrthographicCamera(-arenaHalfX, arenaHalfX, arenaHalfZ, -arenaHalfZ, 0.1, 200);
+    let arenaHalfZ = metadeTelaV / Math.cos(inclinacao);
+    const camera = new THREE.OrthographicCamera(-arenaHalfX, arenaHalfX, metadeTelaV, -metadeTelaV, 0.1, 200);
 
     // Punhado: todos os dados saem juntos, de um grupo compacto, na
     // MESMA direção — como uma mão que solta vários dados de uma vez.
     const columns = Math.ceil(Math.sqrt(dice.length));
     const rows = Math.ceil(dice.length / columns);
-    // Vista vertical: X/Z do mundo correspondem aos limites da tela,
-    // independentemente da altura Y alcançada durante o lançamento.
+    // X/Z do mundo correspondem aos limites da tela; a câmera recua pro
+    // lado de baixo da tela (+Z) e olha pra frente, inclinada.
     camera.up.set(0, 0, -1);
-    camera.position.set(0, 100, 0);
+    camera.position.set(0, 100 * Math.cos(inclinacao), 100 * Math.sin(inclinacao));
     camera.lookAt(0, 0, 0);
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.32));
@@ -627,9 +697,10 @@ export function PhysicsDiceArena({
       renderer.setSize(width, nextHeight, false);
       pixelsPorUnidade = Math.min(pixelsPorUnidadeAlvo, Math.min(width, nextHeight) / 8);
       arenaHalfX = width / (2 * pixelsPorUnidade);
-      arenaHalfZ = nextHeight / (2 * pixelsPorUnidade);
+      metadeTelaV = nextHeight / (2 * pixelsPorUnidade);
+      arenaHalfZ = metadeTelaV / Math.cos(inclinacao);
       camera.left = -arenaHalfX; camera.right = arenaHalfX;
-      camera.top = arenaHalfZ; camera.bottom = -arenaHalfZ;
+      camera.top = metadeTelaV; camera.bottom = -metadeTelaV;
       camera.updateProjectionMatrix();
       // Margem de 4px absorve a pequena penetração numérica do solver.
       const folga = 4 / pixelsPorUnidade;
@@ -679,7 +750,7 @@ export function PhysicsDiceArena({
         physicalDice.forEach(({ body }) => body.sleep());
         const results = physicalDice.map(({ die, model, body }) => ({
           ...die,
-          value: topFaceValue(model.faces, body.quaternion),
+          value: topFaceValue(model.faces, body.quaternion, die.sides),
         }));
         onSettledRef.current(results);
       }

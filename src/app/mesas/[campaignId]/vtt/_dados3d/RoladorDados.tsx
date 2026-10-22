@@ -95,7 +95,7 @@ function ModeToggle({ value, onChange }: { value: CountMode; onChange: (m: Count
  * registro no log) não pode ter duas cópias.
  */
 function useLivre({
-  initial = { 8: 1 } as Record<number, number>, defaultMode = "sum" as CountMode,
+  initial = {} as Record<number, number>, defaultMode = "sum" as CountMode,
   campaignId = null, characterId = null, visibilidade = "public" as TableLogVisibility,
 }: {
   initial?: Record<number, number>; defaultMode?: CountMode;
@@ -199,7 +199,7 @@ function useLivre({
 }
 
 function FreePool({
-  size = 46, solidRoll = false, initial = { 8: 1 } as Record<number, number>, defaultMode = "sum" as CountMode,
+  size = 46, solidRoll = false, initial = {} as Record<number, number>, defaultMode = "sum" as CountMode,
   campaignId = null, characterId = null, visibilidade = "public" as TableLogVisibility,
 }: {
   size?: number; solidRoll?: boolean; initial?: Record<number, number>; defaultMode?: CountMode;
