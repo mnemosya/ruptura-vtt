@@ -1,7 +1,9 @@
 /* Perfil de usuário (NET-01). Serve às duas entradas: a página cheia em
    /perfil e o modal interceptado sob /mesas. */
 
-.rv-perfil-pagina { min-height: 100dvh; display: flex; align-items: flex-start; justify-content: center; padding: 48px 16px; }
+.rv-perfil-pagina { box-sizing: border-box; min-height: 100dvh; display: flex; align-items: flex-start; justify-content: center; padding: 48px 16px; }
+
+.rv-perfil, .rv-perfil *, .rv-perfil-veu, .rv-perfil-caixa, .rv-perfil-fechar { box-sizing: border-box; }
 
 .rv-perfil {
   width: 100%; max-width: 560px; padding: 22px 24px 24px;
@@ -16,6 +18,16 @@
   background: rgba(0, 212, 255, 0.08); border: 1px solid rgba(84, 172, 190, 0.28); color: rgba(207, 234, 246, 0.85);
 }
 .rv-perfil-ident { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.rv-perfil-presenca {
+  display: inline-flex; align-items: center; align-self: flex-start; gap: 6px;
+  padding: 3px 6px; border: 1px solid rgba(245, 162, 0, 0.25); border-radius: 3px;
+  background: rgba(245, 162, 0, 0.06); color: #f5a200;
+  font-family: var(--font-mono), monospace; font-weight: 800; font-size: 10px; line-height: 14px;
+  letter-spacing: 0.18em; text-transform: uppercase;
+}
+.rv-perfil-presenca-dot { flex: none; width: 4px; height: 4px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; }
+.rv-perfil-presenca[data-offline] { color: #96aeba; border-color: rgba(150, 174, 186, 0.25); background: rgba(150, 174, 186, 0.06); }
+.rv-perfil-presenca[data-offline] .rv-perfil-presenca-dot { box-shadow: none; }
 .rv-perfil-nome {
   margin: 0; font-family: var(--font-orbitron), sans-serif; font-weight: 700; font-size: 19px;
   letter-spacing: 0.04em; overflow-wrap: anywhere;
@@ -35,7 +47,7 @@
 .rv-perfil-vazio-nota { margin: 0; font-size: 13px; color: rgba(150, 174, 186, 0.8); }
 .rv-perfil-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .rv-perfil-linha {
-  display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: baseline;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: baseline;
   padding: 10px 12px; border: 1px solid rgba(84, 172, 190, 0.16); border-radius: 3px;
   background: rgba(0, 212, 255, 0.04);
 }
@@ -45,17 +57,20 @@
 .rv-perfil-papel[data-papel="narrator"] { color: rgba(240, 190, 90, 0.9); }
 .rv-perfil-personagens { grid-column: 1 / -1; font-size: 12px; color: rgba(184, 216, 232, 0.72); }
 .rv-perfil-personagens em { font-style: italic; color: rgba(150, 174, 186, 0.6); }
+.rv-perfil-campanha, .rv-perfil-personagens { overflow-wrap: anywhere; }
 
 /* Modal — mesma caixa, sobre o véu. */
 .rv-perfil-veu {
   position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 24px 16px;
   background: rgba(2, 8, 12, 0.72); backdrop-filter: blur(2px);
 }
-.rv-perfil-caixa { position: relative; width: 100%; max-width: 560px; }
+.rv-perfil-caixa { position: relative; width: 100%; max-width: 610px; max-height: calc(100dvh - 48px); overflow-y: auto; }
+.rv-perfil-caixa > .rv-perfil { max-width: none; }
+.rv-perfil-caixa .rv-perfil-cab { padding-right: 30px; }
 .rv-perfil-caixa:focus { outline: none; }
 .rv-perfil-fechar {
   position: absolute; top: 10px; right: 10px; z-index: 1; display: grid; place-items: center;
-  width: 30px; height: 30px; border-radius: 3px; cursor: pointer;
+  width: 30px; height: 30px; padding: 0; border-radius: 3px; cursor: pointer;
   background: transparent; border: 1px solid transparent; color: rgba(150, 174, 186, 0.8);
 }
 .rv-perfil-fechar:hover, .rv-perfil-fechar:focus-visible {
@@ -65,5 +80,33 @@
 @media (max-width: 520px) {
   .rv-perfil { padding: 18px 16px 20px; }
   .rv-perfil-cab { flex-wrap: wrap; }
-  .rv-perfil-conta { margin-left: 0; }
+  .rv-perfil-ident { flex: 1; }
+  .rv-perfil-conta { margin-left: 0; flex-basis: 100%; width: fit-content; }
 }
+
+/* Retrato ampliado — o dialog nativo mantém foco e fica acima do perfil. */
+.rv-avatar-trigger { position: relative; padding: 0; overflow: hidden; cursor: zoom-in; transition: border-color 160ms, box-shadow 160ms; }
+.rv-avatar-trigger > img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 180ms; }
+.rv-avatar-trigger:disabled { cursor: default; }
+.rv-avatar-trigger:not(:disabled):hover, .rv-avatar-trigger:focus-visible { border-color: #00d4ff; box-shadow: 0 0 0 3px #00d4ff18, 0 0 18px #00d4ff20; outline: none; }
+.rv-avatar-trigger:not(:disabled):hover > img { transform: scale(1.08); }
+.rv-avatar-zoom { position: absolute; right: 0; bottom: 0; display: grid; place-items: center; width: 20px; height: 20px; background: #06151ee6; color: #8cecff; opacity: 0; transition: opacity 160ms; }
+.rv-avatar-trigger:hover .rv-avatar-zoom, .rv-avatar-trigger:focus-visible .rv-avatar-zoom { opacity: 1; }
+.rv-avatar-dialog {
+  box-sizing: border-box; width: min(560px, calc(100vw - 32px)); max-width: none; max-height: calc(100dvh - 32px);
+  margin: auto; padding: 0; overflow: auto; color: #d8eef8; background: #08141b;
+  border: 1px solid #397080; border-radius: 5px; box-shadow: 0 28px 100px #000a, 0 0 32px #00d4ff12;
+}
+.rv-avatar-dialog::backdrop { background: #02080cdb; backdrop-filter: blur(7px); }
+.rv-avatar-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 20px; border-bottom: 1px solid #54acbe30; }
+.rv-avatar-heading > div { min-width: 0; }
+.rv-avatar-eyebrow { color: #70b5c4; font: 9px var(--font-mono), monospace; letter-spacing: .18em; text-transform: uppercase; }
+.rv-avatar-heading h2 { margin: 6px 0 0; font: 700 16px var(--font-orbitron), sans-serif; overflow-wrap: anywhere; }
+.rv-avatar-heading button { flex: none; display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid #54acbe40; border-radius: 3px; background: #00d4ff08; color: #9ebecb; cursor: pointer; }
+.rv-avatar-heading button:hover, .rv-avatar-heading button:focus-visible { background: #00d4ff18; color: #b9f3ff; outline: 1px solid #00d4ff; outline-offset: 2px; }
+.rv-avatar-frame { position: relative; display: grid; place-items: center; margin: 20px; padding: 10px; border: 1px solid #54acbe30; background: #030c12; }
+.rv-avatar-frame::after { content: ""; position: absolute; inset: -1px; pointer-events: none; border: 1px solid #00d4ff; clip-path: polygon(0 0, 18px 0, 18px 1px, 1px 1px, 1px 18px, 0 18px, 0 0, 100% 0, 100% 18px, calc(100% - 1px) 18px, calc(100% - 1px) 1px, calc(100% - 18px) 1px, calc(100% - 18px) 0, 100% 0, 100% 100%, calc(100% - 18px) 100%, calc(100% - 18px) calc(100% - 1px), calc(100% - 1px) calc(100% - 1px), calc(100% - 1px) calc(100% - 18px), 100% calc(100% - 18px), 100% 100%, 0 100%, 0 calc(100% - 18px), 1px calc(100% - 18px), 1px calc(100% - 1px), 18px calc(100% - 1px), 18px 100%, 0 100%); }
+.rv-avatar-frame img { display: block; width: 100%; max-height: max(120px, calc(100dvh - 230px)); object-fit: contain; }
+.rv-avatar-footer { display: flex; justify-content: space-between; gap: 12px; padding: 0 20px 18px; color: #7897a5; font: 9px var(--font-mono), monospace; letter-spacing: .06em; }
+@media (hover: none) { .rv-avatar-zoom { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .rv-avatar-trigger, .rv-avatar-trigger > img, .rv-avatar-zoom { transition: none; } .rv-avatar-trigger:not(:disabled):hover > img { transform: none; } }

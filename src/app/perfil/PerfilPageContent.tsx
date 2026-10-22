@@ -12,8 +12,8 @@
 
 import Link from "next/link";
 import { readUserProfile } from "../../lib/campaign/userProfileActions";
-import { User, Users } from "../_design/icons";
-import { AvatarUsuario } from "../_design/AvatarUsuario";
+import { Users } from "../_design/icons";
+import { PerfilAvatar } from "./PerfilAvatar";
 import "./perfil.css";
 
 export interface PerfilPageContentParams {
@@ -36,14 +36,12 @@ export async function PerfilPageContent({ searchParams }: { searchParams: Promis
   return (
     <div className="rv-perfil" data-testid="perfil">
       <header className="rv-perfil-cab">
-        <span className="rv-perfil-face" aria-hidden="true" style={{ overflow: "hidden" }}>
-          <AvatarUsuario userId={profile.user_id} versao={profile.avatar_path} fallback={<User size={22} strokeWidth={1.3} />} />
-        </span>
+        <PerfilAvatar userId={profile.user_id} versao={profile.avatar_path} nome={profile.display_name} />
         <div className="rv-perfil-ident">
           <h1 className="rv-perfil-nome" data-testid="perfil-nome">{profile.display_name}</h1>
-          <span className="ra-online" data-offline={!profile.online || undefined} data-testid="perfil-presenca">
-            <span className="ra-online-dot" aria-hidden="true" />
-            <span className="ra-online-txt">{profile.online ? "Online" : "Offline"}</span>
+          <span className="rv-perfil-presenca" data-offline={!profile.online || undefined} data-testid="perfil-presenca">
+            <span className="rv-perfil-presenca-dot" aria-hidden="true" />
+            <span>{profile.online ? "Online" : "Offline"}</span>
           </span>
         </div>
         {/* Quem olha o próprio perfil vê o que os outros veem — e daqui
