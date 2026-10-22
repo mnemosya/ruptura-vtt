@@ -58,7 +58,7 @@ function mensagemDeErro(e: unknown, padrao: string): string {
   return padrao;
 }
 
-export type IntencaoUpload = "fundo" | "tile" | "retrato" | "avatar" | "chat";
+export type IntencaoUpload = "fundo" | "tile" | "retrato" | "avatar" | "chat" | "companheiro";
 
 export interface ReservaUpload {
   /** `true` quando o conteúdo já existia nesta campanha: não há o que enviar. */
@@ -339,6 +339,80 @@ export async function definirAvatarPersonagemAction(
   if (v.erro) return { ok: false, erro: v.erro };
   const client = await getScopedTableClient();
   const { data, error } = await client.rpc("set_character_avatar_image", {
+    p_character_id: characterId,
+    p_image_id: imageId,
+  });
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true, dados: data };
+}
+
+/**
+ * Imagem do companheiro de caça (Domador). Mesmo caminho do avatar da
+ * ficha: coluna própria (`companion_image_id`), assinatura decidida no
+ * servidor e reserva autorizada para ESTA ficha.
+ */
+export async function finalizarUploadCompanheiroAction(
+  campaignId: string,
+  reservaId: string,
+  storagePathSha: string,
+  characterId: string,
+): Promise<ResultadoAcao<unknown>> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+
+  try {
+    const medida = await validarEReencodar(`${campaignId}/${storagePathSha}.webp`);
+    const client = await getScopedTableClient();
+    const { data, error } = await client.rpc("finalizar_upload_e_definir_companheiro", {
+      p_reserva_id: reservaId,
+      p_bytes_reais: medida.bytes,
+      p_width_px: medida.widthPx,
+      p_height_px: medida.heightPx,
+      p_character_id: characterId,
+    });
+    if (error) return { ok: false, erro: error.message };
+    return { ok: true, dados: data };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Não foi possível concluir o envio.") };
+  }
+}
+
+/** URL assinada da imagem do companheiro; `null` = sem imagem (ou sem acesso a ela). */
+export async function lerImagemCompanheiroAction(
+  campaignId: string,
+  characterId: string,
+): Promise<ResultadoAcao<{ imageId: string | null; url: string | null }>> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const usuario = await getCurrentUser();
+  if (!usuario) return { ok: false, erro: "Sessão expirada." };
+
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from("characters").select("companion_image_id").eq("id", characterId).maybeSingle();
+  if (error) return { ok: false, erro: error.message };
+
+  const imageId = (data?.companion_image_id as string | null) ?? null;
+  if (!imageId) return { ok: true, dados: { imageId: null, url: null } };
+
+  try {
+    const mapa = await assinarDownloadUrls([imageId], usuario.id);
+    return { ok: true, dados: { imageId, url: mapa.get(imageId) ?? null } };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Não foi possível carregar a imagem do companheiro.") };
+  }
+}
+
+/** Ligar a imagem do companheiro a um arquivo que já existe, ou tirá-la (`null`). */
+export async function definirImagemCompanheiroAction(
+  campaignId: string,
+  characterId: string,
+  imageId: string | null,
+): Promise<ResultadoAcao<unknown>> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("set_character_companion_image", {
     p_character_id: characterId,
     p_image_id: imageId,
   });

@@ -9,6 +9,7 @@ import { TextoComRegras } from "../TextoComRegras";
 import { CabecalhoModulo } from "./CabecalhoModulo";
 import { ClassOperations } from "./classe/ClassOperations";
 import { AncoraRede } from "./classe/AncoraRede";
+import { CacadorReticula } from "./classe/CacadorReticula";
 import { SubclassCodex } from "./classe/SubclassCodex";
 import { ClassModules } from "./classe/ClassModules";
 import ancora from "../../../../../content/v12/db_classe_ancora_v1_2.json";
@@ -26,7 +27,7 @@ import "./classe/classPolish.css";
 const livros = [ancora, cacador, combatente, face, infiltrador, tecnico, vanguarda] as unknown as { classes: ClassContentV12[]; subclasses: SubclassContentV12[] }[];
 const classes = livros.flatMap(l => l.classes);
 const subclasses = livros.flatMap(l => l.subclasses);
-const colors = { ancora: "#32c978", cacador: "#dfbd6f", combatente: "#f16d79", face: "#c578d9", infiltrador: "#42b9c7", tecnico: "#f3a342", vanguarda: "#6ba9e7" };
+const colors = { ancora: "#32c978", cacador: "#ff6a3d", combatente: "#f16d79", face: "#c578d9", infiltrador: "#42b9c7", tecnico: "#f3a342", vanguarda: "#6ba9e7" };
 const ranks = ["F", "E", "D", "C", "B", "A", "S", "S+"];
 type Api = Pick<ConsoleApi, "character" | "somenteLeitura"> & Partial<Pick<ConsoleApi, "oficina" | "catalogo" | "classe" | "derivados" | "atributoDaPericia" | "rolarTeste">>;
 
@@ -43,6 +44,7 @@ export function ClassPanel({ api }: { api: Api }) {
   ].sort((a, b) => ranks.indexOf(a.rank) - ranks.indexOf(b.rank));
   // A Âncora tem tela própria (o anel da rede), aprovada no canvas de redesign.
   if (current.slug === "ancora") return <AncoraRede api={api} rank={p.ranking} subclassId={sub?.slug} />;
+  if (current.slug === "cacador") return <CacadorReticula api={api} rank={p.ranking} subclassId={sub?.slug} />;
   return <section className="hc-panel" data-game={current.slug} style={{ "--hc-accent": color } as React.CSSProperties} aria-label={`Classe ${current.nome}`}>
     <CabecalhoModulo id="ID://CLASSE" mod="MOD.CLASS // 10" />
     <div className="hc-body">

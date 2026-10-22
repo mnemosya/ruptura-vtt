@@ -470,7 +470,9 @@
 
 /* Conceito */
 .fj-conceito { display: flex; height: 100%; flex-direction: column; align-items: center; justify-content: center; gap: var(--hud-space-5); }
-.fj-conceito__avatar { position: relative; cursor: pointer; }
+.fj-conceito__avatar { position: relative; cursor: pointer; display: block; padding: 0; border: 0; background: none; color: inherit; font: inherit; }
+.fj-conceito__avatar:focus-visible { outline: none; }
+.fj-conceito__avatar:focus-visible .fj-conceito__carregar { opacity: 1; outline: 2px solid var(--fj-cy); outline-offset: 2px; }
 .fj-conceito__carregar {
   position: absolute; left: 50%; top: 40%; display: flex; transform: translateX(-50%); align-items: center; gap: var(--hud-space-3); white-space: nowrap;
   padding: var(--hud-space-3) var(--hud-space-5); background: color-mix(in srgb, var(--fj-abismo) 85%, transparent);

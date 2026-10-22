@@ -46,7 +46,7 @@ import { pegadaEfetiva, projetarPegada, pegadasSobrepoem } from "../_dominio/peg
 import { type LadoToken, type VertenteToken } from "../_dominio/tokenApresentacao";
 import { GAP_LATERAL } from "../_ferramentas/janelasPreferencias";
 import { prepararRecorteQuadrado, type ImagemPreparada } from "../../../../../lib/vtt/imagePreparation";
-import { JanelaRecorte } from "../../../../ficha/_console/RecorteImagem";
+import { EnvioImagem } from "../../../../ficha/_console/EnvioImagem";
 
 export interface ValoresFormularioToken {
   nome: string;
@@ -432,10 +432,10 @@ export function GerenciadorToken({
   /* O recorte é um PASSO, não uma janela paralela: enquanto ele está
      aberto, o formulário sai de cena — mesma regra do editor de
      retrato. */
-  const [arquivoParaRecortar, setArquivoParaRecortar] = useState<File | null>(null);
+  /** Modal de envio aberto; `arquivo` quando a imagem foi solta no botão. */
+  const [envioRetrato, setEnvioRetrato] = useState<{ arquivo: File | null } | null>(null);
   const [erroArquivo, setErroArquivo] = useState<string | null>(null);
   const [preparandoArquivo, setPreparandoArquivo] = useState(false);
-  const campoArquivoRef = useRef<HTMLInputElement>(null);
   const enviandoRef = useRef(false);
 
   const primeiroCampoRef = useRef<HTMLInputElement>(null);
@@ -556,9 +556,7 @@ export function GerenciadorToken({
    * vive no rascunho. Cancelar o formulário não deixa resíduo: nenhuma
    * cota reservada, nenhum objeto no Storage, nada pra coleta recolher.
    */
-  async function prepararArquivo(origem: { x: number; y: number; tamanho: number }) {
-    const arquivo = arquivoParaRecortar;
-    if (!arquivo) return;
+  async function prepararArquivo(arquivo: File, origem: { x: number; y: number; tamanho: number }): Promise<boolean> {
     setPreparandoArquivo(true);
     setErroArquivo(null);
     try {
@@ -568,9 +566,10 @@ export function GerenciadorToken({
         // Arquivo e endereço são exclusivos — escolher um limpa o outro.
         return { ...v, retratoArquivo: preparada, retratoUrl: null };
       });
-      setArquivoParaRecortar(null);
+      return true;
     } catch (e) {
       setErroArquivo(e instanceof Error ? e.message : "Não foi possível ler esta imagem.");
+      return false;
     } finally {
       setPreparandoArquivo(false);
     }
@@ -673,13 +672,21 @@ export function GerenciadorToken({
         contexto do que se estava criando. Ela é `position: fixed` com
         z-index bem acima (521, em `console.css`), então basta existir
         ao lado. */}
-    {arquivoParaRecortar && (
-      <JanelaRecorte
+    {envioRetrato && (
+      <EnvioImagem
+        titulo="RETRATO DO TOKEN"
+        canal="UPLOAD://RETRATO"
+        forma="circulo"
+        previaToken={corLado}
+        atual={valores.retratoArquivo?.previewUrl ?? null}
+        arquivoInicial={envioRetrato.arquivo}
         erro={erroArquivo}
-        arquivo={arquivoParaRecortar}
-        ocupado={preparandoArquivo}
-        onConfirmar={(r) => { void prepararArquivo(r); }}
-        onCancelar={() => { setArquivoParaRecortar(null); setErroArquivo(null); }}
+        enviando={preparandoArquivo}
+        aviso="A imagem sobe quando o token for criado."
+        rotuloUsar="USAR NO TOKEN"
+        onUsar={(arquivo, recorte) => recorte ? prepararArquivo(arquivo, recorte) : false}
+        onRemover={() => { setValores((v) => { if (v.retratoArquivo) URL.revokeObjectURL(v.retratoArquivo.previewUrl); return { ...v, retratoArquivo: null }; }); return true; }}
+        fechar={() => { setEnvioRetrato(null); setErroArquivo(null); }}
       />
     )}
     <div
@@ -859,7 +866,9 @@ export function GerenciadorToken({
                 <div className="rv-tok-img">
                   <button
                     type="button" className="rv-tok-img-btn"
-                    onClick={() => campoArquivoRef.current?.click()}
+                    onClick={() => { setErroArquivo(null); setEnvioRetrato({ arquivo: null }); }}
+                    onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); }}
+                    onDrop={(e) => { const f = e.dataTransfer.files?.[0]; if (f) { e.preventDefault(); setErroArquivo(null); setEnvioRetrato({ arquivo: f }); } }}
                     aria-label={valores.retratoArquivo ? "Trocar a imagem escolhida" : "Escolher uma imagem do computador"}
                   >
                     {valores.retratoArquivo
@@ -880,14 +889,6 @@ export function GerenciadorToken({
                       })}
                     ><X size={14} /></button>
                   )}
-                  <input
-                    ref={campoArquivoRef} type="file" accept="image/png,image/jpeg,image/webp" hidden
-                    onChange={(e) => {
-                      const arquivo = e.target.files?.[0];
-                      e.target.value = ""; // permite reescolher o MESMO arquivo
-                      if (arquivo) { setErroArquivo(null); setArquivoParaRecortar(arquivo); }
-                    }}
-                  />
                 </div>
                 {erroArquivo && <p className="rv-form-aviso" role="alert">{erroArquivo}</p>}
                 {!valores.retratoArquivo && (

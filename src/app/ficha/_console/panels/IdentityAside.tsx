@@ -525,7 +525,7 @@ export function IdentityAside({
   api,
   avatarUrl,
   avatarErro,
-  onAvatarChange,
+  onAvatarAbrir,
   onAvatarRemover,
   avatarOcupado,
   onRolarAtributo,
@@ -537,7 +537,8 @@ export function IdentityAside({
   api: ConsoleApi;
   avatarUrl: string | null;
   avatarErro: string | null;
-  onAvatarChange: (file: File) => void;
+  /** Abre o modal de envio; com `arquivo` quando a imagem foi solta no avatar. */
+  onAvatarAbrir: (arquivo?: File) => void;
   /** Desfaz o vínculo do avatar. Sem ela, o botão de remover não aparece. */
   onAvatarRemover?: () => void;
   /** Envio ou remoção em voo — trava os dois gestos. */
@@ -575,11 +576,6 @@ export function IdentityAside({
      sobre o avatar do próximo. */
   useEffect(() => { setConfirmandoRemocao(false); }, [avatarUrl]);
 
-  function aoEscolherArquivo(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) onAvatarChange(file);
-    e.target.value = "";
-  }
 
   return (
     <aside className="rc-aside">
@@ -609,7 +605,10 @@ export function IdentityAside({
           </span>
         </div>
       ) : (
-      <label className="rc-avatar" data-no-drag>
+      <button type="button" className="rc-avatar" data-no-drag disabled={avatarOcupado} aria-label="Trocar avatar do personagem"
+        onClick={() => onAvatarAbrir()}
+        onDragOver={e => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); }}
+        onDrop={e => { const f = e.dataTransfer.files?.[0]; if (f) { e.preventDefault(); onAvatarAbrir(f); } }}>
         <span className="rc-avatar-fill">
           {avatarUrl && <img src={avatarUrl} alt="" />}
           {!avatarUrl && (
@@ -625,15 +624,7 @@ export function IdentityAside({
             <ImageUp size={22} strokeWidth={1.6} />
           </span>
         </span>
-        <input
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          onChange={aoEscolherArquivo}
-          hidden
-          aria-label="Trocar avatar do personagem"
-          disabled={avatarOcupado}
-        />
-      </label>
+      </button>
       )}
       {/* REMOVER fica FORA do `<label>`: dentro dele, qualquer clique
           — inclusive no botão — abriria o seletor de arquivo, e

@@ -14,9 +14,9 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { CatalogosCriacaoV12 } from "../_acoes/criacaoV12Actions";
 import { RANKINGS_V12, REGIOES_V12, escolhasDoAvancoV12, perfisAtributosV12, resolveClassResourceV12, type AttributeIdV12, type ClassContentV12, type DraftV12, type RankingV12, type RegiaoIdV12 } from "../../../../../lib/rulesetV12";
-import { BYTES_ORIGINAL_MAXIMO, ImagemRecusadaError, enviarParaUrlAssinada, prepararRecorteQuadrado, type ImagemPreparada } from "../../../../../lib/vtt/imagePreparation";
+import { ImagemRecusadaError, enviarParaUrlAssinada, prepararRecorteQuadrado, type ImagemPreparada } from "../../../../../lib/vtt/imagePreparation";
 import { cancelarUploadAction, definirAvatarPersonagemAction, finalizarUploadAvatarAction, reservarUploadAction } from "../_acoes/imageActions";
-import { JanelaRecorte } from "../../../../ficha/_console/RecorteImagem";
+import { EnvioImagem } from "../../../../ficha/_console/EnvioImagem";
 import { REGIOES } from "./acervo/regioes";
 import { CLASSES_ACERVO } from "./acervo/classes";
 import { VERTENTES_ACERVO } from "./acervo/vertentes";
@@ -188,14 +188,22 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
         />
       </div>
 
-      {avatar.recortando && (
-        <JanelaRecorte
-          arquivo={avatar.recortando}
-          rotuloConfirmar="Usar no refratário"
-          ocupado={avatar.ocupado}
+      {avatar.abrindo && (
+        <EnvioImagem
+          titulo="AVATAR DO REFRATÁRIO"
+          contexto="FORJA"
+          canal="UPLOAD://AVATAR"
+          forma="circulo"
+          previaToken="#45b8c9"
+          atual={avatar.preparada?.previewUrl ?? null}
+          arquivoInicial={avatar.abrindo.arquivo}
+          rotuloUsar="USAR NO REFRATÁRIO"
+          enviando={avatar.ocupado}
           erro={avatar.erro}
-          onConfirmar={(r) => void avatar.confirmarRecorte(r)}
-          onCancelar={avatar.cancelarRecorte}
+          aviso="A imagem sobe quando o personagem for criado."
+          onUsar={(arquivo, recorte) => recorte ? avatar.confirmarRecorte(arquivo, recorte) : false}
+          onRemover={() => { avatar.remover(); return true; }}
+          fechar={avatar.fecharEnvio}
         />
       )}
       {progressao && (campaignId || semCampanha) && <ProgressaoInicial key={progressao.characterId} campaignId={campaignId ?? null}
@@ -207,7 +215,8 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
 
 /** Estado do avatar: arquivo em recorte, imagem preparada (local) e o envio no Selar. */
 function useAvatarDaForja() {
-  const [recortando, setRecortando] = useState<File | null>(null);
+  /** Modal de envio aberto; `arquivo` quando a imagem foi solta no avatar. */
+  const [abrindo, setAbrindo] = useState<{ arquivo: File | null } | null>(null);
   const [preparada, setPreparada] = useState<ImagemPreparada | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
@@ -215,23 +224,18 @@ function useAvatarDaForja() {
   // A prévia é um `blob:` em memória: solta a anterior ao trocar e a última ao sair.
   useEffect(() => () => { if (previewRef.current) URL.revokeObjectURL(previewRef.current); }, []);
 
-  const escolher = (f: File) => {
-    setErro(null);
-    if (!/^image\/(png|jpeg|webp)$/.test(f.type)) { setErro("Formato inválido — use PNG, JPEG ou WebP."); return; }
-    if (f.size > BYTES_ORIGINAL_MAXIMO) { setErro("Imagem grande demais — até 30 MB."); return; }
-    setRecortando(f);
-  };
-  const confirmarRecorte = async (recorte: { x: number; y: number; tamanho: number }) => {
-    if (!recortando) return;
+  const abrir = (arquivo?: File) => { setErro(null); setAbrindo({ arquivo: arquivo ?? null }); };
+  const confirmarRecorte = async (arquivo: File, recorte: { x: number; y: number; tamanho: number }): Promise<boolean> => {
     setOcupado(true);
     try {
-      const p = await prepararRecorteQuadrado(recortando, recorte);
+      const p = await prepararRecorteQuadrado(arquivo, recorte);
       if (previewRef.current) URL.revokeObjectURL(previewRef.current);
       previewRef.current = p.previewUrl;
       setPreparada(p);
-      setRecortando(null);
+      return true;
     } catch (e) {
       setErro(e instanceof ImagemRecusadaError || e instanceof Error ? e.message : "Não foi possível preparar a imagem.");
+      return false;
     } finally {
       setOcupado(false);
     }
@@ -264,9 +268,9 @@ function useAvatarDaForja() {
   };
   return {
     url: preparada?.previewUrl ?? AVATAR_PADRAO,
-    preparada, recortando, erro, ocupado,
-    escolher, confirmarRecorte, remover, enviar,
-    cancelarRecorte: () => setRecortando(null),
+    preparada, abrindo, erro, ocupado,
+    abrir, confirmarRecorte, remover, enviar,
+    fecharEnvio: () => { setAbrindo(null); setErro(null); },
     limparErro: () => setErro(null),
   };
 }
@@ -409,7 +413,7 @@ function Doca({ step, setStep, oculto = () => false, pendentes, podeSelar, envia
       const tecla = e.key.toLowerCase();
       if (tecla === "q" && step > 0) setStep(anterior(step));
       else if (tecla === "e") { if (step < PASSOS.length - 1) setStep(proximo(step)); else if (podeSelarAgora) onSelar(); }
-      else if (tecla === "u") document.getElementById("fj-avatar-arquivo")?.click();
+      else if (tecla === "u") document.getElementById("fj-avatar-abrir")?.click();
       else return;
       e.preventDefault();
     };
@@ -542,11 +546,13 @@ function centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente, s
       </div>
     ) : (
       <div className="fj-conceito">
-        <label className="fj-conceito__avatar">
+        <button type="button" id="fj-avatar-abrir" className="fj-conceito__avatar" aria-label={avatar.preparada ? "Trocar avatar" : "Carregar avatar"}
+          onClick={() => avatar.abrir()}
+          onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); }}
+          onDrop={(e) => { const f = e.dataTransfer.files?.[0]; if (f) { e.preventDefault(); avatar.abrir(f); } }}>
           <Holograma d={d} avatar={avatar.url} progress={c.sincronia} nomeAntecedente={nomeAntecedente} />
           <span className="fj-conceito__carregar"><Key k="U" /> {avatar.preparada ? "Trocar avatar" : "Carregar avatar"}</span>
-          <input id="fj-avatar-arquivo" type="file" accept="image/png,image/jpeg,image/webp" className="fj-sr" onChange={(e) => { const f = e.target.files?.[0]; if (f) avatar.escolher(f); e.target.value = ""; }} />
-        </label>
+        </button>
         {avatar.preparada && (
           <div className="fj-conceito__rodape">
             <button type="button" onClick={avatar.remover} className="fj-conceito__remover">Remover avatar</button>

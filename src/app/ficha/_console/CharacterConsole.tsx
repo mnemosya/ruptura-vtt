@@ -26,7 +26,6 @@ import { useConsoleDaMesa } from "../../mesas/[campaignId]/_shell/ConsoleDaMesa"
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Eye } from "lucide-react";
 import {
-  BYTES_ORIGINAL_MAXIMO,
   ImagemRecusadaError,
   enviarParaUrlAssinada,
   prepararRecorteQuadrado,
@@ -38,7 +37,7 @@ import {
   lerAvatarAssinadoAction,
   reservarUploadAction,
 } from "../../mesas/[campaignId]/vtt/_acoes/imageActions";
-import { JanelaRecorte } from "./RecorteImagem";
+import { EnvioImagem } from "./EnvioImagem";
 import { ConsoleWindow } from "./ConsoleWindow";
 import { Scrollbar } from "./scrollbar";
 import { DecoTop } from "./deco";
@@ -215,7 +214,8 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
    */
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarErro, setAvatarErro] = useState<string | null>(null);
-  const [avatarParaRecortar, setAvatarParaRecortar] = useState<File | null>(null);
+  /** Modal de envio aberto; `arquivo` quando a imagem já veio solta no avatar. */
+  const [envioAvatar, setEnvioAvatar] = useState<{ arquivo: File | null } | null>(null);
   const [avatarEnviando, setAvatarEnviando] = useState(false);
   const mesa = api.mesa;
 
@@ -238,30 +238,18 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
     return () => { vivo = false; clearInterval(timer); };
   }, [aberto, campaignId, characterId]);
 
-  function onAvatarChange(file: File) {
+  function abrirEnvioAvatar(arquivo?: File) {
     setAvatarErro(null);
-    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
-      setAvatarErro("Formato inválido — use PNG, JPEG ou WebP.");
-      return;
-    }
-    // Teto do ORIGINAL, antes de decodificar. O recorte reduz muito, mas
-    // um arquivo gigante trava o navegador antes de chegar lá.
-    if (file.size > BYTES_ORIGINAL_MAXIMO) {
-      setAvatarErro("Imagem grande demais — até 30 MB.");
-      return;
-    }
-    if (!mesa) {
-      // Sem mesa não há onde guardar; o preview local é o que sempre foi.
-      setAvatarUrl(URL.createObjectURL(file));
-      setAvatarErro("Esta ficha não está numa mesa — a imagem vale só nesta sessão.");
-      return;
-    }
-    setAvatarParaRecortar(file);
+    setEnvioAvatar({ arquivo: arquivo ?? null });
   }
 
-  async function enviarAvatarRecortado(recorte: { x: number; y: number; tamanho: number }) {
-    const arquivo = avatarParaRecortar;
-    if (!arquivo || !mesa) return;
+  /** Envio do recorte escolhido no modal. Devolve se deu certo (o modal só fecha então). */
+  async function enviarAvatarRecortado(arquivo: File, recorte: { x: number; y: number; tamanho: number }): Promise<boolean> {
+    if (!mesa) {
+      // Sem mesa não há onde guardar; a prévia local vale nesta sessão.
+      try { setAvatarUrl((await prepararRecorteQuadrado(arquivo, recorte)).previewUrl); return true; }
+      catch (e) { setAvatarErro(e instanceof Error ? e.message : "Não foi possível processar a imagem."); return false; }
+    }
     setAvatarEnviando(true);
     setAvatarErro(null);
     let reservaId: string | null = null;
@@ -288,13 +276,14 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
       // Mostra o recorte local na hora; a URL assinada chega logo em
       // seguida pelo efeito acima e substitui esta sem piscar.
       setAvatarUrl(preparada.previewUrl);
-      setAvatarParaRecortar(null);
+      return true;
     } catch (e) {
       // Reserva viva sem uso prende quota até vencer; devolver aqui é
       // cortesia (a coleta resolve de qualquer jeito).
       if (reservaId && mesa) void cancelarUploadAction(mesa.campaignId, reservaId).catch(() => {});
       setAvatarErro(e instanceof ImagemRecusadaError || e instanceof Error
         ? e.message : "Não foi possível enviar a imagem.");
+      return false;
     } finally {
       setAvatarEnviando(false);
     }
@@ -306,16 +295,19 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
    * biblioteca da campanha (pode estar em uso por outro personagem);
    * o que se desfaz aqui é só o vínculo.
    */
-  async function removerAvatar() {
-    if (!mesa || avatarEnviando) return;
+  async function removerAvatar(): Promise<boolean> {
+    if (!mesa) { setAvatarUrl(null); return true; }
+    if (avatarEnviando) return false;
     setAvatarEnviando(true);
     setAvatarErro(null);
     try {
       const r = await definirAvatarPersonagemAction(mesa.campaignId, mesa.characterId, null);
       if (!r.ok) throw new Error(r.erro ?? "Não foi possível remover o avatar.");
       setAvatarUrl(null);
+      return true;
     } catch (e) {
       setAvatarErro(e instanceof Error ? e.message : "Não foi possível remover o avatar.");
+      return false;
     } finally {
       setAvatarEnviando(false);
     }
@@ -482,7 +474,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
           api={api}
           avatarUrl={avatarUrl}
           avatarErro={avatarErro}
-          onAvatarChange={onAvatarChange}
+          onAvatarAbrir={abrirEnvioAvatar}
           onAvatarRemover={() => { void removerAvatar(); }}
           avatarOcupado={avatarEnviando}
           onRolarAtributo={rolarAtributo}
@@ -556,14 +548,22 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
           auxiliares (e não dentro do painel lateral) porque precisa de
           espaço: a janela de recorte tem 240 px e a coluna da esquerda
           não tem isso. */}
-      {avatarParaRecortar && (
-        <JanelaRecorte
+      {envioAvatar && (
+        <EnvioImagem
           centralizarNoConsole
+          titulo="AVATAR DA FICHA"
+          contexto={api.character.nome ? `FICHA · ${api.character.nome.toUpperCase()}` : undefined}
+          canal="UPLOAD://AVATAR"
+          forma="circulo"
+          previaToken="#45b8c9"
+          atual={avatarUrl}
+          arquivoInicial={envioAvatar.arquivo}
           erro={avatarErro}
-          arquivo={avatarParaRecortar}
-          ocupado={avatarEnviando}
-          onConfirmar={(r) => { void enviarAvatarRecortado(r); }}
-          onCancelar={() => { setAvatarParaRecortar(null); setAvatarErro(null); }}
+          enviando={avatarEnviando}
+          aviso={mesa ? null : "Esta ficha não está numa mesa: a imagem vale só nesta sessão."}
+          onUsar={(arquivo, recorte) => recorte ? enviarAvatarRecortado(arquivo, recorte) : false}
+          onRemover={removerAvatar}
+          fechar={() => { setEnvioAvatar(null); setAvatarErro(null); }}
         />
       )}
       {aux?.tipo === "rolagem" && (

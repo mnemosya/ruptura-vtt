@@ -31,6 +31,7 @@ import { applyLongRest, applyShortRest } from "../../../../lib/character/rest";
 import { RANKINGS_V12, type RankingV12 } from "../../../../lib/rulesetV12";
 import type { ConsoleApi, ConsoleModo } from "../types";
 // A dica padrão do VTT, por portal (não é recortada pela janela da ficha).
+import { oxanium } from "../../../_design/oxanium";
 import { useDicaPortal } from "../../../mesas/[campaignId]/vtt/_painel/ui/DicaPortal";
 
 /**
@@ -300,7 +301,38 @@ export function DescansoChip({
   const linhas = previa
     ? LINHAS_DESCANSO.filter((l) => tipo === "longo" || l.chave === "mana")
     : [];
-  const fracao = (v: number, max: number) => (max > 0 ? Math.max(0, Math.min(1, v / max)) * 100 : 0);
+  const temporarios = previa ? previa.before.pv_temporario > 0 || previa.before.mana_temporaria > 0 : false;
+
+  /**
+   * Pips: um por ponto até 20 (o que já há cheio, o que volta em
+   * contorno). Acima disso vira barra em dois trechos. A Sobrecarga é
+   * o contrário: os surtos usados aparecem tracejados, porque zeram.
+   */
+  function medidor(chave: (typeof LINHAS_DESCANSO)[number]["chave"], antes: number, depois: number) {
+    const max = Math.max(maximo[chave], antes, depois);
+    if (chave === "sobrecarga_usada_dia") {
+      return (
+        <span className="rc-descanso__pips" style={{ gridTemplateColumns: `repeat(${Math.max(1, max)}, minmax(0, 1fr))` }}>
+          {Array.from({ length: max }, (_, i) => <i key={i} data-estado={i < depois ? "cheio" : i < antes ? "zera" : "vazio"} />)}
+        </span>
+      );
+    }
+    if (max > 20) {
+      const base = Math.min(antes, depois);
+      return (
+        <span className="rc-descanso__trecho">
+          <i style={{ flexGrow: base }} data-estado="cheio" />
+          {depois > antes && <i style={{ flexGrow: depois - antes }} data-estado="volta" />}
+          {max > Math.max(antes, depois) && <i style={{ flexGrow: max - Math.max(antes, depois) }} data-estado="vazio" />}
+        </span>
+      );
+    }
+    return (
+      <span className="rc-descanso__pips" style={{ gridTemplateColumns: `repeat(${Math.max(1, max)}, minmax(0, 1fr))` }}>
+        {Array.from({ length: max }, (_, i) => <i key={i} data-estado={i < Math.min(antes, depois) ? "cheio" : i < depois ? "volta" : "vazio"} />)}
+      </span>
+    );
+  }
 
   return (
     <>
@@ -324,7 +356,7 @@ export function DescansoChip({
       {aberto && previa && typeof document !== "undefined" && createPortal(
         <div
           ref={painel}
-          className="rc-descanso"
+          className={`rc-descanso ${oxanium.variable}`}
           role="dialog"
           aria-label="Descansar"
           style={pos ? { top: pos.top, left: pos.left } : { visibility: "hidden" }}
@@ -335,10 +367,15 @@ export function DescansoChip({
           onPointerDown={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
+          <div className="rc-descanso__cab">
+            <Moon size={16} strokeWidth={1.8} aria-hidden="true" />
+            <span>Descansar</span>
+          </div>
           <div className="rc-descanso__seg" role="group" aria-label="Tipo de descanso">
             {(["curto", "longo"] as const).map((t) => (
               <button key={t} type="button" aria-pressed={tipo === t} onClick={() => setTipo(t)} data-testid={`console-descanso-${t}`}>
-                {t === "curto" ? "Curto · 30 min" : "Longo · 8 h"}
+                <b>{t === "curto" ? "Curto" : "Longo"}</b>
+                <small>{t === "curto" ? "30 min" : "8 horas"}</small>
               </button>
             ))}
           </div>
@@ -346,23 +383,31 @@ export function DescansoChip({
             {linhas.map((l) => {
               const antes = previa.before[l.chave];
               const depois = previa.after[l.chave];
-              const max = maximo[l.chave];
+              const sobrecarga = l.chave === "sobrecarga_usada_dia";
               return (
-                <div key={l.chave} className="rc-descanso__linha" style={{ ["--rc-desc-cor" as string]: l.cor }} data-igual={antes === depois || undefined}>
-                  <span className="rc-descanso__rot">{l.rotulo}</span>
-                  <span className="rc-descanso__barra" aria-hidden="true">
-                    <i style={{ width: `${fracao(Math.max(antes, depois), max)}%` }} data-fantasma="true" />
-                    <i style={{ width: `${fracao(Math.min(antes, depois), max)}%` }} />
-                  </span>
-                  <span className="rc-descanso__val">{antes}<span> → </span>{depois}</span>
+                <div key={l.chave} className="rc-descanso__linha" style={{ ["--rc-desc-cor" as string]: l.cor }}>
+                  <div className="rc-descanso__topo">
+                    <span className="rc-descanso__rot">{sobrecarga ? "Sobrecarga" : l.rotulo}</span>
+                    {antes === depois ? (
+                      <span className="rc-descanso__val" data-igual>{sobrecarga ? `${antes} surtos` : `${antes}/${maximo[l.chave]} · cheio`}</span>
+                    ) : (
+                      <span className="rc-descanso__val">
+                        {antes} <span aria-hidden="true">▸</span> {depois}
+                        <em>{sobrecarga ? "zera" : `+${depois - antes}`}</em>
+                      </span>
+                    )}
+                  </div>
+                  {medidor(l.chave, antes, depois)}
                 </div>
               );
             })}
           </div>
-          {tipo === "longo" && <p className="rc-descanso__nota">Zera PV e Mana temporários.</p>}
+          {tipo === "longo" && temporarios && (
+            <p className="rc-descanso__nota"><span>PV e Mana temporários</span><span>zerados</span></p>
+          )}
           <button
             type="button"
-            className="rv-btn rv-btn--pri rc-descanso__cta"
+            className="rc-descanso__cta"
             onClick={() => { setAberto(false); onDescansar(tipo); }}
             data-testid="console-descanso-aplicar"
           >

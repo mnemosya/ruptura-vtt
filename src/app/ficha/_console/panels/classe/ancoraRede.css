@@ -315,6 +315,7 @@
 .ar-hab>button:hover .ar-hab-seta,.ar-hab>button:focus-visible .ar-hab-seta{width:14px;margin-left:0;opacity:1;color:#a6f3cb}
 .ar-hab>button[data-aberto=true] .ar-hab-seta{width:14px;margin-left:0;opacity:1;transform:rotate(180deg);color:var(--ar-verde)}
 .ar-hab-secao[data-tipo=subclasse] .ar-hab>button:hover .ar-hab-seta{color:#7fe6ff}
+.ar-hab-secao[data-tipo=subclasse] .ar-hab>button:hover .ar-hab-nome{color:#7fe6ff}
 .ar-hab-secao[data-tipo=subclasse] .ar-hab>button[data-aberto=true] .ar-hab-seta{color:#00d4ff}
 
 /* Linha de habilidade de ponta a ponta no bloco (anula o recuo 18/16 do cartão) com fundo no hover. */
@@ -325,3 +326,17 @@
 .ar-hab-secao .ar-hab>button[data-aberto=true]{background:rgba(61,220,132,.05)}
 .ar-hab-secao[data-tipo=subclasse] .ar-hab>button[data-aberto=true]{background:rgba(0,212,255,.05)}
 .ar-hab-secao .ar-hab-texto{margin-left:62px;margin-right:16px}
+
+/* Regras com mais formatos: lista agrupada, ficha em tabela, ação com custo e título com custo. */
+.ar-hab-lista{display:flex;flex-direction:column;gap:4px}
+.ar-hab-lista .ar-hab-item{padding:9px 14px}
+.ar-hab-sub em{margin-left:10px;padding:3px 6px;border:1px solid currentColor;font:600 10px/1 var(--ar-mono);font-style:normal;letter-spacing:.1em;vertical-align:1px}
+.ar-hab-ficha{margin:0;border:1px solid #142836}
+.ar-hab-ficha>div{display:grid;grid-template-columns:120px 1fr}
+.ar-hab-ficha>div+div{border-top:1px solid #142836}
+.ar-hab-ficha dt{padding:8px 12px;background:#0d1d22;font:600 10px/1.5 var(--ar-mono);letter-spacing:.12em;text-transform:uppercase;color:#8fa6b4}
+.ar-hab-ficha dd{margin:0;padding:8px 12px;font-size:14px;line-height:1.5;color:#c3d6df}
+.ar-hab-texto .ar-hab-acao{position:relative;padding-left:56px}
+.ar-hab-custo{position:absolute;left:0;top:2px;width:44px;padding:4px 0;background:#13283a;text-align:center;font:700 11px/1 var(--ar-mono);letter-spacing:.06em;color:var(--ar-verde)}
+.ar-hab-secao[data-tipo=subclasse] .ar-hab-custo{color:#7fe6ff}
+.ar-hab-acao i{margin:0 8px;padding:2px 6px;background:#2a1a20;font:600 9px/1 var(--ar-mono);font-style:normal;letter-spacing:.1em;color:#f2c4cc;vertical-align:2px}

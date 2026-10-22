@@ -39,7 +39,7 @@ import {
   enviarParaUrlAssinada,
   prepararRecorteQuadrado,
 } from "../../../../../lib/vtt/imagePreparation";
-import { JanelaRecorte } from "../../../../ficha/_console/RecorteImagem";
+import { EnvioImagem } from "../../../../ficha/_console/EnvioImagem";
 import {
   definirRetratoImagemAction,
   definirRetratoUrlAction,
@@ -101,28 +101,17 @@ export function EditorRetratoToken({
 }: PropsEditorRetratoToken) {
   const [aba, setAba] = useState<Aba>(origem === "endereco" ? "endereco" : "arquivo");
   const [url, setUrl] = useState(retratoUrlAtual ?? "");
-  /** Arquivo escolhido, esperando enquadramento. Nada subiu ainda. */
-  const [arquivoParaRecortar, setArquivoParaRecortar] = useState<File | null>(null);
+  /** Modal de envio aberto (escolher, enquadrar, usar). Nada sobe antes do "usar". */
+  const [enviando, setEnviando] = useState(false);
+  const [arquivoSolto, setArquivoSolto] = useState<File | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
-  const inputArquivo = useRef<HTMLInputElement>(null);
 
   // Não há object URL de longa vida aqui: o blob do recorte é criado e
   // consumido dentro de `recortarEEnviar`, e o preview do arquivo
   // escolhido pertence ao `RecorteImagem`, que o revoga sozinho.
 
-  function escolherArquivo(arquivo: File | null | undefined) {
-    if (!arquivo) return;
-    setErro(null);
-    // NÃO prepara aqui: o enquadramento é que decide qual pedaço da
-    // imagem vira o arquivo. Preparar antes geraria um blob (e um
-    // `sha256`) que seria descartado no passo seguinte.
-    setArquivoParaRecortar(arquivo);
-  }
-
-  async function recortarEEnviar(recorte: { x: number; y: number; tamanho: number }) {
-    const arquivo = arquivoParaRecortar;
-    if (!arquivo) return;
+  async function recortarEEnviar(arquivo: File, recorte: { x: number; y: number; tamanho: number }): Promise<boolean> {
     setOcupado(true);
     setErro(null);
     try {
@@ -140,7 +129,7 @@ export function EditorRetratoToken({
         const r = await definirRetratoImagemAction(campaignId, tokenId, reserva.dados.assetId, revision);
         if (!r.ok) throw new Error(r.erro ?? "Não foi possível definir o retrato.");
         onConcluido({ salvo: lerRetratoSalvo(r.dados) });
-        return;
+        return true;
       }
 
       // Passo 2: `PUT` na capability. O browser não usa credencial
@@ -154,8 +143,10 @@ export function EditorRetratoToken({
       );
       if (!fim.ok) throw new Error(fim.erro ?? "Não foi possível concluir o envio.");
       onConcluido({ salvo: lerRetratoSalvo(fim.dados) });
+      return true;
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha ao enviar a imagem.");
+      return false;
     } finally {
       setOcupado(false);
     }
@@ -179,13 +170,14 @@ export function EditorRetratoToken({
    * herança volta a valer. A janela diz isso antes de a pessoa clicar,
    * para o resultado não parecer uma imagem antiga ressuscitando.
    */
-  async function remover() {
+  async function remover(): Promise<boolean> {
     setOcupado(true);
     setErro(null);
     const r = await definirRetratoImagemAction(campaignId, tokenId, null, revision);
     setOcupado(false);
-    if (!r.ok) { setErro(r.erro ?? "Não foi possível remover o retrato."); return; }
+    if (!r.ok) { setErro(r.erro ?? "Não foi possível remover o retrato."); return false; }
     onConcluido({ manterAberto: true, salvo: lerRetratoSalvo(r.dados) });
+    return true;
   }
 
   const previewMostrado = previewAtual;
@@ -203,20 +195,27 @@ export function EditorRetratoToken({
   // O enquadramento roda ANTES de qualquer envio, sobre o arquivo
   // escolhido. Enquanto ele está aberto, o resto do editor sai de cena:
   // são dois passos de uma coisa só, não duas coisas ao mesmo tempo.
-  if (arquivoParaRecortar) {
-    return (
-      <JanelaRecorte
-        erro={erro}
-        arquivo={arquivoParaRecortar}
-        ocupado={ocupado}
-        onConfirmar={(r) => { void recortarEEnviar(r); }}
-        onCancelar={() => { setArquivoParaRecortar(null); setErro(null); }}
-      />
-    );
-  }
+  const modal = enviando && (
+    <EnvioImagem
+      titulo="RETRATO DO TOKEN"
+      contexto={nomePersonagem ? `TOKEN · ${nomePersonagem.toUpperCase()}` : undefined}
+      canal="UPLOAD://RETRATO"
+      forma="circulo"
+      previaToken="#45b8c9"
+      atual={origem === "arquivo" ? previewAtual : null}
+      erro={erro}
+      enviando={ocupado}
+      aviso={origem === "herdado" ? `A imagem atual vem da ficha${nomePersonagem ? ` de ${nomePersonagem}` : ""}. Enviar aqui vale só para este token.` : null}
+      onUsar={(arquivo, recorte) => recorte ? recortarEEnviar(arquivo, recorte) : false}
+      arquivoInicial={arquivoSolto}
+      onRemover={origem === "arquivo" ? remover : undefined}
+      fechar={() => { setEnviando(false); setArquivoSolto(null); setErro(null); }}
+    />
+  );
 
   return (
     <div className="rv-editor-retrato">
+      {modal}
       <div className="rv-editor-retrato__abas" role="tablist" aria-label="Origem do retrato">
         <button type="button" role="tab" aria-selected={aba === "arquivo"}
           className={aba === "arquivo" ? "is-ativa" : undefined}
@@ -232,17 +231,15 @@ export function EditorRetratoToken({
 
       {aba === "arquivo" ? (
         <>
-          <input
-            ref={inputArquivo} type="file" accept="image/png,image/jpeg,image/webp"
-            hidden onChange={(e) => void escolherArquivo(e.target.files?.[0])}
-          />
           {/* O preview é REDONDO porque o token é redondo. Um quadrado
               aqui esconderia o corte que o mapa vai fazer — o mesmo
               erro que o enquadramento existe para resolver. Clicar nele
               troca a imagem: é o alvo maior e o mais óbvio. */}
           <button
             type="button" className="rv-editor-retrato__disco"
-            onClick={() => inputArquivo.current?.click()} disabled={ocupado}
+            onClick={() => { setErro(null); setEnviando(true); }} disabled={ocupado}
+            onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); }}
+            onDrop={(e) => { const f = e.dataTransfer.files?.[0]; if (f) { e.preventDefault(); setErro(null); setArquivoSolto(f); setEnviando(true); } }}
             aria-label={previewAtual ? "Trocar a imagem do retrato" : "Escolher uma imagem"}
           >
             {previewMostrado
