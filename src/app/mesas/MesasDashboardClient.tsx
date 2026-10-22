@@ -317,6 +317,11 @@ export default function MesasDashboardClient({
 }
 
 // ── Destaque ────────────────────────────────────────────────────────
+function CampaignRoleBadge({ role }: { role: CampaignCardData["role"] }) {
+  const narrator = role === "narrator";
+  return <span className={`ag-etiqueta ag-etiqueta--${narrator ? "narrador" : "jogador"}`}>◆ {narrator ? "Narrador" : "Jogador"}</span>;
+}
+
 function FeaturedCampaign({ data }: { data: CampaignCardData }) {
   const { campaign, role, narratorOnline, playerCount, latestSession } = data;
   const aoVivo = latestSession!.ended_at === null;
@@ -328,17 +333,17 @@ function FeaturedCampaign({ data }: { data: CampaignCardData }) {
         <div className="ag-destaque__capa" style={capaDaCampanha(campaign)} aria-hidden="true" />
         <div className="ag-destaque__veu" aria-hidden="true" />
         <div className="ag-destaque__corpo">
-          <span className="ag-mono ag-mono--am ag-destaque__status">
-            {aoVivo
-              ? "// Sessão em andamento"
-              : <>{"// Última sessão "}{relativeTime(latestSession!.started_at)}</>}
-          </span>
+          <div className="ag-destaque__cabecalho">
+            <span className="ag-mono ag-mono--am ag-destaque__status">
+              {aoVivo
+                ? "// Sessão em andamento"
+                : <>{"// Última sessão "}{relativeTime(latestSession!.started_at)}</>}
+            </span>
+            <CampaignRoleBadge role={role} />
+          </div>
           <h2 className="ag-destaque__titulo">{campaign.name}</h2>
           {campaign.description && <p className="ag-destaque__descricao">{campaign.description}</p>}
-          <div className="ag-destaque__identidade">
-            {regiao && <span className="ag-destaque__regiao">Região · {regiao}</span>}
-            <span className={`ag-papel${role === "narrator" ? " ag-papel--narrador" : ""}`}>{role === "narrator" ? "Narrador" : "Jogador"}</span>
-          </div>
+          {regiao && <div className="ag-destaque__identidade"><span className="ag-destaque__regiao">Região · {regiao}</span></div>}
           {aoVivo && <p className="ag-destaque__presenca" data-testid="dash-destaque-participantes" title={descricao}><span className="ag-destaque__presenca-ponto" aria-hidden="true" />{descricao}</p>}
         </div>
         <div className="ag-destaque__rodape">
@@ -375,7 +380,7 @@ function CampaignCard({ data }: { data: CampaignCardData }) {
         <div className="ag-cartao__capa" style={capaDaCampanha(campaign)} aria-hidden="true" />
         <div className="ag-cartao__veu" aria-hidden="true" />
         <div className="ag-cartao__corpo">
-          <span className={`ag-etiqueta ag-etiqueta--${narrador ? "narrador" : "jogador"}`}>◆ {narrador ? "Narrador" : "Jogador"}</span>
+          <CampaignRoleBadge role={role} />
           <h3 className="ag-cartao__titulo" title={campaign.name}>{campaign.name}</h3>
           <div className="ag-cartao__rodape">
             <span className="ag-mono ag-mono--peq">{regiao ? `${regiao} · ` : ""}{relativeTime(campaign.updated_at)}</span>
