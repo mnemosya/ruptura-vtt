@@ -683,6 +683,12 @@ export default function CharacterSheetClient({
     () => computeDerivedStats(character.atributos, regras, character.mana_bonus_ruptura ?? 0, characterDerivedFormulas(character)),
     [character.atributos, regras, character.mana_bonus_ruptura],
   );
+  // Máximos de PV/PE de um aliado com ficha carregada: o anel da Âncora
+  // desenha a fração restante. Aliados só com nome ficam sem o arco.
+  const maximosAliado = (aliado: Character) => {
+    const d = computeDerivedStats(aliado.atributos, regras, aliado.mana_bonus_ruptura ?? 0, characterDerivedFormulas(aliado));
+    return { pvMax: d.pv_max, peMax: d.pe_max };
+  };
   // Janela atual da trilha de turnos (checkpoint pós-v0.94, fase 1;
   // achado da rodada de consolidação — sem isto, `buildActionConsoleItems`/
   // `executeActionOnCharacter` nunca recebiam a janela real, então o
@@ -3900,7 +3906,7 @@ export default function CharacterSheetClient({
       carregandoAlvos: mode === "product" && !!selectedCampaignId && (aliadosClasse?.campanha !== selectedCampaignId || aliadosClasse.carregando),
       erroAlvos: aliadosClasse?.campanha === selectedCampaignId ? aliadosClasse.erro : undefined,
       atualizarAlvos: () => setRevisaoAliadosClasse(value => value + 1),
-      alvos: [...(aliadosClasse?.campanha === selectedCampaignId ? aliadosClasse.dados : []).filter(a => a.id !== characterId && !alliesAtivos.some(b => b.id === a.id)).map(a => ({ ...a, aliado: true })),...alliesAtivos.map(a => ({ id: a.id, nome: a.nome, aliado: true, pv: a.character.recursos_atuais?.pv, pe: a.character.recursos_atuais?.pe, condicoes: (a.character.condicoes_ativas ?? []).filter(c => c.ativa).map(c => c.nome) })), ...alvosNoMapa.filter(a => a.characterId !== characterId && !alliesAtivos.some(b => b.id === a.characterId) && !(aliadosClasse?.campanha === selectedCampaignId && aliadosClasse.dados.some(b => b.id === a.characterId))).map(a => ({ id: a.characterId ?? a.tokenId, nome: a.nome, aliado: a.lado === "aliado" }))],
+      alvos: [...(aliadosClasse?.campanha === selectedCampaignId ? aliadosClasse.dados : []).filter(a => a.id !== characterId && !alliesAtivos.some(b => b.id === a.id)).map(a => ({ ...a, aliado: true })),...alliesAtivos.map(a => ({ id: a.id, nome: a.nome, aliado: true, avatarUrl: aliadosClasse?.campanha === selectedCampaignId ? aliadosClasse.dados.find(b => b.id === a.id)?.avatarUrl : undefined, pv: a.character.recursos_atuais?.pv, pe: a.character.recursos_atuais?.pe, ...maximosAliado(a.character), condicoes: (a.character.condicoes_ativas ?? []).filter(c => c.ativa).map(c => c.nome) })), ...alvosNoMapa.filter(a => a.characterId !== characterId && !alliesAtivos.some(b => b.id === a.characterId) && !(aliadosClasse?.campanha === selectedCampaignId && aliadosClasse.dados.some(b => b.id === a.characterId))).map(a => ({ id: a.characterId ?? a.tokenId, nome: a.nome, aliado: a.lado === "aliado" }))],
       executar: (comando) => {
         if (somenteLeitura) return;
         const result = applyClassCommand(characterRef.current, comando, derivados.pa_max, derivados.pv_max);

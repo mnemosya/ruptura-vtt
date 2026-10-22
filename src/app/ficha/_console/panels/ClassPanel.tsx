@@ -8,6 +8,7 @@ import { progression, readClassPlay, reached } from "../../../../lib/character/c
 import { TextoComRegras } from "../TextoComRegras";
 import { CabecalhoModulo } from "./CabecalhoModulo";
 import { ClassOperations } from "./classe/ClassOperations";
+import { AncoraRede } from "./classe/AncoraRede";
 import { SubclassCodex } from "./classe/SubclassCodex";
 import { ClassModules } from "./classe/ClassModules";
 import ancora from "../../../../../content/v12/db_classe_ancora_v1_2.json";
@@ -40,6 +41,8 @@ export function ClassPanel({ api }: { api: Api }) {
   const featureRows = [
     ...Object.entries(current.caracteristicas).flatMap(([rank, items]) => reached(p.ranking, rank) ? items.map(item => ({ ...item, rank, source: "Classe" })) : []),
   ].sort((a, b) => ranks.indexOf(a.rank) - ranks.indexOf(b.rank));
+  // A Âncora tem tela própria (o anel da rede), aprovada no canvas de redesign.
+  if (current.slug === "ancora") return <AncoraRede api={api} rank={p.ranking} subclassId={sub?.slug} />;
   return <section className="hc-panel" data-game={current.slug} style={{ "--hc-accent": color } as React.CSSProperties} aria-label={`Classe ${current.nome}`}>
     <CabecalhoModulo id="ID://CLASSE" mod="MOD.CLASS // 10" />
     <div className="hc-body">

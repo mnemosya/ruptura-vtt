@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, MapPin, Link2, Check, Crosshair, HeartPulse, Minus, Plus, Radio, ScanEye, Shield, Users, Zap } from "lucide-react";
+import { ArrowRight, MapPin, Link2, Crosshair, HeartPulse, Minus, Plus, Radio, ScanEye, Shield, Zap } from "lucide-react";
 import type { ConsoleApi } from "../../types";
-import { availableClassActions, classActionBlock, classActionPaWarning, classResource, readClassPlay, reached } from "../../../../../lib/character/classManagement";
+import { availableClassActions, classActionBlock, classResource, readClassPlay, reached } from "../../../../../lib/character/classManagement";
 import combatente from "../../../../../../content/v12/db_classe_combatente_v1_2.json";
 import "./classOperations.css";
 import "./classSecondary.css";
@@ -52,44 +52,6 @@ export function ClassOperations({ api, classId, rank, subclassId }: { api: Api; 
   const paMax = api.derivados?.pa_max ?? 0;
   const paFree = paMax - (api.character.estado_jogo?.pa_gastos ?? 0);
 
-  if (classId === "ancora") {
-    const allFocus = reached(rank, "S");
-    const limit = allFocus ? allies.length : (reached(rank, "B") ? 3 : reached(rank, "D") ? 2 : 1) + (subclassId === "coordenador" ? reached(rank, "A") ? 3 : reached(rank, "C") ? 2 : 1 : 0);
-    const focusIds = allFocus ? allies.map(ally => ally.id) : state.focus;
-    const currentTarget = focusIds.includes(state.target ?? "") ? state.target ?? "" : focusIds[0] ?? "";
-    const interventions = availableClassActions(api.character).filter(action => ["ajustar", "conter"].includes(action.id));
-    return <section className="hc-operation hc-anchor" aria-label="Gestão de Focos e Intervenções">
-      <header className="hc-op-head"><div><span className="hc-kicker">01 / REDE DE APOIO</span><h3>Focos e intervenções</h3></div><span className="hc-op-meta">{allFocus ? "EQUIPE INTEIRA" : `${focusIds.length} / ${limit} FOCOS`}</span></header>
-      <div className="hc-support-bank">
-        <div><span>Intervenções disponíveis</span><strong>{state.resource}<small> / {resource.max}</small></strong></div>
-        <div className="hc-support-charges" aria-hidden="true">{Array.from({ length: resource.max }, (_, index) => <i key={index} data-ready={index < state.resource} />)}</div>
-        <span className="hc-support-bank-note">{state.resource ? "Prontas para apoiar seus Focos" : "Nenhuma intervenção restante"}</span>
-      </div>
-      {allies.length ? <div className="hc-support-network">
-        <div className="hc-support-label"><h4>Seus aliados</h4><span>{allFocus ? "Todos são Focos" : `Designe até ${limit} Focos`}</span></div>
-        <div className="hc-support-allies">{allies.map(ally => {
-          const focused = focusIds.includes(ally.id);
-          const active = currentTarget === ally.id;
-          return <div key={ally.id} className="hc-support-ally" data-active={active} data-focused={focused}>
-            <button type="button" className="hc-support-select" aria-pressed={active} disabled={locked} onClick={() => send?.({ type: focused ? "target" : "focus", id: ally.id })}>
-              <span className="hc-support-avatar">{ally.nome.trim().slice(0, 2).toUpperCase()}</span>
-              <span><strong>{ally.nome}</strong><small>{focused ? active ? "Foco selecionado" : "Foco designado" : "Designar como Foco"}{ally.pv != null ? ` · ${ally.pv} PV` : ""}</small></span>
-              {focused ? <Check size={16} /> : <Plus size={16} />}
-            </button>
-            {focused && !allFocus && <button type="button" className="hc-support-remove" aria-label={`Remover ${ally.nome} dos Focos`} title="Remover Foco" disabled={locked} onClick={() => send?.({ type: "focus", id: ally.id })}><Minus size={15}/></button>}
-          </div>;
-        })}</div>
-        {currentTarget && allies.some(ally => ally.id === currentTarget) ? <div className="hc-support-response">
-          <div className="hc-support-label"><h4>Apoiar <span>{allies.find(ally => ally.id === currentTarget)?.nome}</span></h4><span>1 intervenção por uso</span></div>
-          <div className="hc-support-actions">{interventions.map(action => {
-            const block = classActionBlock(api.character, action, paMax, currentTarget);
-            return <button key={action.id} type="button" disabled={locked || !!block} title={block ?? classActionPaWarning(api.character, action, paMax) ?? action.description} onClick={() => send?.({ type: "use", id: action.id, target: currentTarget })}><span><strong>{action.name}</strong><small>{action.id === "ajustar" ? "+1 vantagem" : "Reduz a consequência"}</small></span><ArrowRight size={18}/></button>;
-          })}</div>
-        </div> : <p className="hc-support-prompt">Escolha um aliado acima para designar seu primeiro Foco.</p>}
-      </div> : <div className="hc-support-empty"><Users size={24}/><div><h4>{api.classe?.carregandoAlvos ? "Carregando aliados…" : api.classe?.erroAlvos ? "Não foi possível carregar os aliados" : "Nenhum aliado disponível"}</h4><p>{api.classe?.erroAlvos ?? "Os outros personagens de jogador vinculados à campanha aparecem aqui. Personagens arquivados não entram na lista."}</p>{api.classe?.atualizarAlvos && <button type="button" className="hc-action" disabled={api.classe.carregandoAlvos} onClick={api.classe.atualizarAlvos}>Atualizar aliados</button>}</div></div>}
-
-    </section>;
-  }
 
   if (classId === "cacador") {
     const pending = Number(state.selections.reservaPendente ?? 0);

@@ -272,7 +272,7 @@ export interface ConsoleApi {
     carregandoAlvos?: boolean;
     erroAlvos?: string;
     atualizarAlvos?: () => void;
-    alvos: { id: string; nome: string; aliado: boolean; pv?: number; pe?: number; condicoes?: string[] }[];
+    alvos: { id: string; nome: string; aliado: boolean; pv?: number; pe?: number; pvMax?: number; peMax?: number; condicoes?: string[]; avatarUrl?: string | null }[];
     executar: (comando: import("../../../lib/character/classManagement").ClassCommand) => void;
   };
   editarIdentidade?: (dados: import("../../../lib/character/identity").IdentityDossier) => void;
