@@ -33,7 +33,7 @@ vertices.forEach((a, i) => vertices.forEach((b, j) => {
 
 function drawHologram(ctx: CanvasRenderingContext2D, width: number, height: number, time: number) {
   ctx.clearRect(0, 0, width, height);
-  const color = (alpha: number) => `rgba(117,234,255,${alpha})`;
+  const color = (alpha: number) => `rgba(0,212,255,${alpha})`;
   const cx = width * .52, cy = height * .51;
   const radius = Math.min(width * .365, height * .39);
   const scale = radius * .49;
