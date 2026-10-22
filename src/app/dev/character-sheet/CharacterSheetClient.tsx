@@ -1322,17 +1322,39 @@ export default function CharacterSheetClient({
     return null;
   }
 
-  async function handleUseOverloadSurge(tipo: string, danoRolado?: number) {
+  /**
+   * `pontos` surtos de uma vez (Surto de Urgência): cada um entra na
+   * trilha com o próprio dado, mas o dano psíquico sai somado num só
+   * desconto de PE e num só card. `danosRolados[i]` é o dado do i-ésimo.
+   */
+  async function handleUseOverloadSurge(tipo: string, danosRolados?: number[], pontos = 1) {
     const nowIso = new Date().toISOString();
     const sobrecargaAntes = character.sobrecarga_usada_dia ?? 0;
     const overloadRules = regras?.sobrecarga;
     const maxSurtos = limiteSobrecarga(characterRef.current, overloadRules);
-    const result = useOverloadSurge(characterRef.current, tipo, nowIso, undefined, overloadRules, maxSurtos, danoRolado);
+    let atual = characterRef.current;
+    let ultimo: ReturnType<typeof useOverloadSurge> | null = null;
+    let danoTotal = 0;
+    let requiresWillRoll = false;
+    let rupturePending = false;
+    const warnings: string[] = [];
+    for (let i = 0; i < pontos; i++) {
+      const r = useOverloadSurge(atual, tipo, nowIso, undefined, overloadRules, maxSurtos, danosRolados?.[i]);
+      if (!r.surge) { if (!ultimo) warnings.push(...r.warnings); break; }
+      ultimo = r;
+      atual = r.character;
+      danoTotal += r.surge.danoPsiquico;
+      requiresWillRoll ||= r.requiresWillRoll;
+      rupturePending ||= r.rupturePending;
+      warnings.push(...r.warnings);
+    }
 
-    if (!result.surge) {
-      addLogEntry("recurso", result.warnings[0] ?? "Limite de surtos de Sobrecarga atingido.");
+    if (!ultimo?.surge) {
+      addLogEntry("recurso", warnings[0] ?? "Limite de surtos de Sobrecarga atingido.");
       return;
     }
+    const usados = ultimo.surge.indice - sobrecargaAntes;
+    const result = { character: atual, surge: { indice: ultimo.surge.indice, danoPsiquico: danoTotal }, requiresWillRoll, rupturePending, warnings };
 
     // Dano psíquico do surto vai direto em PE (cap. 16 da 1.2: "dano
     // psíquico … causado por Sobrecargas … reduz os PE"), pelo mesmo
@@ -1351,7 +1373,9 @@ export default function CharacterSheetClient({
       addLogEntry("recurso", "Colapso iniciado (PE no limite) — Inconsciente aplicado.");
       void persistCollapseEvent("collapse_started", { tipo: comDano.meta.collapseStarted });
     }
-    const dado = getOverloadSurgeDamageDie(overloadRules);
+    const dadoUnico = getOverloadSurgeDamageDie(overloadRules);
+    const md = /^(\d+)d(\d+)(.*)$/.exec(dadoUnico.replace(/\s+/g, ""));
+    const dado = usados > 1 && md ? `${Number(md[1]) * usados}d${md[2]}${md[3]}` : dadoUnico;
     addLogEntry(
       "recurso",
       `Surto de Sobrecarga (${tipo}) — ${result.surge.indice}/${maxSurtos}, dano psíquico ${result.surge.danoPsiquico} (${dado}) — PE ${peAntes} → ${peDepois}.`,
@@ -4057,7 +4081,7 @@ export default function CharacterSheetClient({
     ajustarPa: (delta) => ajustarPaConsole(delta),
     ajustarReacoes: (delta) => ajustarReacoesConsole(delta),
 
-    usarSobrecarga: (tipo, danoRolado) => void handleUseOverloadSurge(tipo, danoRolado),
+    usarSobrecarga: (tipo, danosRolados, pontos) => void handleUseOverloadSurge(tipo, danosRolados, pontos),
     dadoDoSurto: getOverloadSurgeDamageDie(regras?.sobrecarga),
     removerSobrecarga: () => void handleRemoveOverloadSurge(),
     descansar: (tipo) => void (tipo === "curto" ? handleApplyShortRest() : handleApplyLongRest({ jaConfirmado: true })),

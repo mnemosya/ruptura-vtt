@@ -31,6 +31,7 @@ import type { ConsoleApi } from "../types";
 import { CabecalhoModulo } from "./CabecalhoModulo";
 import { COR_FAMILIA, COR_TIPO_TRACO, FUNDO_FAMILIA, FUNDO_TIPO_TRACO, ICONE_MARCA, ICONE_TIPO_TRACO, romano } from "./ruptura/iconesMarca";
 import { RodaTracos, type EscolhaTraco } from "./ruptura/RodaTracos";
+import { rotulo as rotuloVertente } from "./MagiasPanel";
 import "./hud/hud-base.css";
 import "./hud/ruptura.css";
 
@@ -229,11 +230,21 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
   const integAtual = c.recursos_atuais?.integridade ?? integMax;
   const faixaAgora = getIntegrityBand(integAtual).label;
   const faixaDepois = getIntegrityBand(previa.integridadeDepois).label;
+  /** Repertório como o Grimório mostra: só magias publicadas e aprendidas. */
   const magias = useMemo(() => {
-    const nomes = new Map(api.magias.spells.map((s) => [s.slug, s.nome]));
-    return (api.magias.magiasAprendidas ?? []).map((m) => ({ slug: m.spellSlug, nome: nomes.get(m.spellSlug) ?? m.spellSlug.replace(/_/g, " ") }));
+    const aprendidas = new Set((api.magias.magiasAprendidas ?? []).map((m) => m.spellSlug));
+    return api.magias.spells
+      .filter((s) => s.status === "published" && aprendidas.has(s.slug))
+      .map((s) => ({ slug: s.slug, nome: s.nome, vertente: rotuloVertente(s.vertente), nivel: s.estatisticas.nivel }))
+      .sort((a, b) => a.nivel - b.nivel || a.nome.localeCompare(b.nome, "pt-BR"));
   }, [api.magias.spells, api.magias.magiasAprendidas]);
   const marca = marcaPorId(marcaId)!;
+  /** Marcas que a ficha soma sozinha num derivado: mostra o antes ▸ depois. */
+  const automatico = marca.id === "carapaca_arcana"
+    ? { rotulo: "PV máx.", antes: api.derivados.pv_max ?? 0, soma: (c.atributos.corpo ?? 0) + 3 }
+    : marca.id === "escudo_psiquico"
+      ? { rotulo: "PE máx.", antes: api.derivados.pe_max ?? 0, soma: (c.atributos.mente ?? 0) + 3 }
+      : null;
   const tracoAtual = traco ? tracoPorDados(traco.tipo, traco.numero) : undefined;
 
   function abrirResolucao() {
@@ -301,8 +312,9 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
                 onClick={() => setMarcaId(m.id)} data-testid={`ruptura-marca-${m.id}`}>
                 <span className="rp-tile-tick" aria-hidden="true" />
                 {ja > 0 && <span className="rp-tile-ja">×{ja}</span>}
-                <span className="rp-tile-glifo"><Glifo id={m.id} cor={sel ? COR_FAMILIA[m.familia] : "#8aa0b2"} tamanho={24} /></span>
+                <span className="rp-tile-glifo"><Glifo id={m.id} cor={sel ? COR_FAMILIA[m.familia] : "#8aa0b2"} tamanho={28} /></span>
                 <span className="rp-tile-nome">{m.nome}</span>
+                <span className="rp-tile-resumo">{m.resumo}</span>
               </button>
             );
           })}
@@ -312,19 +324,32 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
           <div className="rp-detalhe-corpo">
             <span className="rp-k" style={{ color: cor }}>{[FAMILIAS_MARCA[marca.familia].nome, marca.selo].filter(Boolean).join(" · ")}</span>
             <h3 className="rp-detalhe-nome">{marca.nome}</h3>
-            <p className="rp-detalhe-resumo">{marca.resumo}</p>
             <p className="rp-detalhe-texto">{marca.texto}</p>
+            {automatico ? (
+              <p className="rp-efeito" data-auto>
+                <span className="rp-k">Automático</span>
+                <span>{automatico.rotulo} {automatico.antes} <i aria-hidden="true">▸</i> <b>{automatico.antes + automatico.soma}</b></span>
+              </p>
+            ) : marca.emJogo ? (
+              <p className="rp-efeito"><span className="rp-k">Em jogo</span><span>{marca.emJogo}</span></p>
+            ) : null}
           </div>
           <div className="rp-detalhe-lado">
-            <div className="rp-naficha"><span className="rp-k">Na ficha</span><span>{marca.naFicha}</span></div>
             {marca.pedeMagia && (
-              <label className="rp-campo">
-                <span className="rp-k">Qual magia?</span>
-                <select value={marcaMagia} onChange={(e) => setMarcaMagia(e.target.value)}>
-                  <option value="">{magias.length ? "Escolha do repertório…" : "Nenhuma magia aprendida"}</option>
-                  {magias.map((m) => <option key={m.slug} value={m.slug}>{m.nome}</option>)}
-                </select>
-              </label>
+              <div className="rp-campo">
+                <span className="rp-k">Magia</span>
+                {magias.length ? (
+                  <div className="rp-magias" role="listbox" aria-label="Magia da Marca">
+                    {magias.map((m) => (
+                      <button key={m.slug} type="button" role="option" aria-selected={marcaMagia === m.slug} className="rp-magia"
+                        data-sel={marcaMagia === m.slug || undefined} onClick={() => setMarcaMagia(m.slug)}>
+                        <span className="rp-magia-nome">{m.nome}</span>
+                        <span className="rp-magia-sub">{m.vertente} · Nv {m.nivel}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : <span className="rp-nota">Nenhuma magia aprendida.</span>}
+              </div>
             )}
             <div className="rp-acoes">
               <button type="button" className="rp-btn-sec" onClick={() => setPasso("visao")}>Voltar</button>
@@ -346,32 +371,30 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
         <div className="rp-traco">
           <div className="rp-traco-roda">
             <RodaTracos valor={traco} onEscolher={escolherTraco} rolarDados={rolarNaMesa ? rolarTraco : undefined} />
-            <p className="rp-nota rp-centro">Gire: o 1d4 escolhe o tipo, o 1d8 o traço.<br />Ou escolha direto na roda ou na lista.</p>
           </div>
-          <div className="rp-traco-lado">
+          <div className="rp-traco-card" style={{ ["--rp-cor" as string]: traco ? COR_TIPO_TRACO[traco.tipo - 1] : "#2a4a5c" }}>
+            {tracoAtual && traco ? (
+              <div key={`${traco.tipo}-${traco.numero}`} className="rp-surge">
+                <span className="rp-k" style={{ color: COR_TIPO_TRACO[traco.tipo - 1] }}>{tracoAtual.tipo.nome} · {traco.tipo}–{traco.numero}</span>
+                <h3 className="rp-traco-nome">{tracoAtual.nome}</h3>
+                <p className="rp-traco-texto">{tracoAtual.texto}</p>
+              </div>
+            ) : (
+              <div>
+                <span className="rp-k">Traço</span>
+                <h3 className="rp-traco-nome rp-apagado">Gire ou escolha</h3>
+              </div>
+            )}
+          </div>
+          <div className="rp-traco-escolha">
             <div className="rp-tipos" role="tablist" aria-label="Tipos de Traço">
               {TIPOS_TRACO.map((t, i) => (
                 <button key={t.id} type="button" role="tab" aria-selected={tipoVisto === i + 1} className="rp-tipo" style={{ ["--rp-cor" as string]: COR_TIPO_TRACO[i] }}
                   onClick={() => setTipoVisto(i + 1)}>
-                  <span className="rp-tipo-n">{i + 1}</span>{t.nome}
+                  <span className="rp-tipo-n">{i + 1}</span><span className="rp-tipo-nome">{t.nome}</span>
                   {traco?.tipo === i + 1 && <i className="rp-tipo-marca" aria-label="tipo escolhido" />}
                 </button>
               ))}
-            </div>
-            <div className="rp-traco-card" style={{ ["--rp-cor" as string]: traco ? COR_TIPO_TRACO[traco.tipo - 1] : "#2a4a5c" }}>
-              {tracoAtual && traco ? (
-                <div key={`${traco.tipo}-${traco.numero}`} className="rp-surge">
-                  <span className="rp-k" style={{ color: COR_TIPO_TRACO[traco.tipo - 1] }}>{tracoAtual.tipo.nome} · {traco.numero}</span>
-                  <h3 className="rp-traco-nome">{tracoAtual.nome}</h3>
-                  <p className="rp-traco-texto">{tracoAtual.texto}</p>
-                </div>
-              ) : (
-                <div>
-                  <span className="rp-k">Traço</span>
-                  <h3 className="rp-traco-nome rp-apagado">Gire ou escolha</h3>
-                  <p className="rp-traco-texto">Não muda números: muda como o personagem aparece, sente e afeta o lugar. Dá para ajustar com o narrador depois.</p>
-                </div>
-              )}
             </div>
             <div className="rp-traco-lista" role="listbox" aria-label={`Traços ${tipo.nome}`} style={{ ["--rp-cor" as string]: corTipo }}>
               {tipo.tracos.map((t, i) => {
@@ -384,12 +407,12 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
                 );
               })}
             </div>
-            {erro && <p className="rp-erro" role="alert">{erro}</p>}
-            <div className="rp-acoes">
-              <button type="button" className="rp-btn-sec" onClick={() => setPasso("marca")}>Voltar</button>
-              <button type="button" className="rp-btn" disabled={!traco || leitura} onClick={concluir} data-testid="ruptura-concluir">Concluir Ruptura {romano(previa.numero)}</button>
-            </div>
           </div>
+        </div>
+        {erro && <p className="rp-erro" role="alert">{erro}</p>}
+        <div className="rp-acoes rp-acoes-rodape">
+          <button type="button" className="rp-btn-sec" onClick={() => setPasso("marca")}>Voltar</button>
+          <button type="button" className="rp-btn" disabled={!traco || leitura} onClick={concluir} data-testid="ruptura-concluir">Concluir Ruptura {romano(previa.numero)}</button>
         </div>
       </div></Moldura>
     );
@@ -435,11 +458,9 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
               <button type="button" className="rp-btn rp-btn-grande" onClick={abrirResolucao} disabled={leitura} data-testid="ruptura-resolver">
                 Resolver Ruptura {romano(previa.numero)}
               </button>
-              <p className="rp-nota" data-alerta={previa.ultimaVontade || undefined}>
-                {previa.ultimaVontade
-                  ? "Esta Ruptura leva a Integridade a 0: resolva já. Em seguida vem a Última Vontade."
-                  : "Preço automático, depois 1 Marca e 1 Traço."}
-              </p>
+              {previa.ultimaVontade && (
+                <p className="rp-nota" data-alerta>Esta Ruptura leva a Integridade a 0: resolva já. Em seguida vem a Última Vontade.</p>
+              )}
             </div>
           ) : concluida ? (
             <p className="rp-status">{concluida}</p>

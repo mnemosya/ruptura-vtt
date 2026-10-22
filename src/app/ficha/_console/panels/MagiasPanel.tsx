@@ -15,7 +15,7 @@ const VERTENTES = [
   ["cinetica", "Cinética"], ["energetica", "Energética"], ["material", "Material"],
   ["biotica", "Biótica"], ["sinaptica", "Sináptica"], ["cognitiva", "Cognitiva"],
 ] as const;
-const rotulo = (id: string) => VERTENTES.find(([slug]) => slug === canonicalVertenteId(id))?.[1] ?? id;
+export const rotulo = (id: string) => VERTENTES.find(([slug]) => slug === canonicalVertenteId(id))?.[1] ?? id;
 /**
  * A `descricao_longa` do catálogo v1.2 começa repetindo a `descricao_curta`
  * inteira (o importador do Notion grava o 1º parágrafo nas duas). Aqui o

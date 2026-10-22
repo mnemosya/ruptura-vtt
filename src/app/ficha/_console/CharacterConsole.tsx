@@ -149,13 +149,17 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
    * faces que pararem SÃO o dano. Sem mesa (fora do VTT) ou com fórmula
    * que não for NdS(+M), cai no sorteio de sempre.
    */
-  async function rolarSurto(tipo: string) {
+  async function rolarSurto(tipo: string, pontos = 1) {
     const m = /^(\d+)d(\d+)([+-]\d+)?$/.exec(api.dadoDoSurto.replace(/\s+/g, ""));
-    if (!rolarNaMesa || !m) { api.usarSobrecarga(tipo); return; }
-    const pedido = Array.from({ length: Number(m[1]) }, (_, i) => ({ id: `surto-${i}`, sides: Number(m[2]) }));
+    if (!rolarNaMesa || !m) { api.usarSobrecarga(tipo, undefined, pontos); return; }
+    // Todos os pontos rolam juntos (3 pontos de 1d4 → 3d4 de uma vez).
+    const porSurto = Number(m[1]);
+    const pedido = Array.from({ length: porSurto * pontos }, (_, i) => ({ id: `surto-${i}`, sides: Number(m[2]) }));
     const fisicos = await rolarNaMesa(pedido, "#8d62e8");
-    const total = fisicos.reduce((soma, d) => soma + d.value, 0) + (m[3] ? Number(m[3]) : 0);
-    api.usarSobrecarga(tipo, Math.max(0, total));
+    const mod = m[3] ? Number(m[3]) : 0;
+    const danos = Array.from({ length: pontos }, (_, i) =>
+      Math.max(0, fisicos.slice(i * porSurto, (i + 1) * porSurto).reduce((soma, d) => soma + d.value, 0) + mod));
+    api.usarSobrecarga(tipo, danos, pontos);
   }
   /**
    * Personagem RUPTURA v1.2: o avanço de Ranking é o caminho da progressão;
@@ -586,8 +590,8 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
           dado={api.dadoDoSurto}
           onEscolher={(t, pontos) => {
             setAux(null);
-            // Cada ponto é um surto na trilha, com o próprio dado de dano psíquico (cap. 18).
-            void (async () => { for (let i = 0; i < pontos; i++) await rolarSurto(t); })();
+            // Cada ponto é um surto na trilha (cap. 18); os dados rolam juntos, num card só.
+            void rolarSurto(t, pontos);
           }}
           onFechar={() => setAux(null)}
         />

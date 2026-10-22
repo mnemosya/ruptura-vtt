@@ -162,7 +162,7 @@ export function EffectApplicationCard({
       atributos={{ "data-kind": "efeito", "data-acao": cartao.acao, "data-familia": cartao.familia }}
     >
       <Chips>
-        {cartao.fonte && <Chip acento="neutro">Fonte: {cartao.fonte}</Chip>}
+        {cartao.fonte && !/^[a-z0-9_]+$/.test(cartao.fonte) && <Chip acento="neutro">Fonte: {cartao.fonte}</Chip>}
         {/* Intensidade é da CONDIÇÃO; duração é do EFEITO TEMPORÁRIO.
             Mostrar os dois campos sempre deixava metade vazia. */}
         {ehCondicao && cartao.intensidade != null && (

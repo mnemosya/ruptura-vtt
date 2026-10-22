@@ -151,7 +151,7 @@ export interface ConsoleApi {
 
   /** Aplica um surto de Sobrecarga pelo fluxo existente (inclui Ruptura no 3º). */
   /** `danoRolado`: total dos dados 3D da mesa; sem ele, o dano é sorteado. */
-  usarSobrecarga: (tipo: string, danoRolado?: number) => void;
+  usarSobrecarga: (tipo: string, danosRolados?: number[], pontos?: number) => void;
   /** Fórmula do dano psíquico do surto (ex.: "1d4"), da regra canônica. */
   dadoDoSurto: string;
   /** Desfaz o último surto do dia (só o contador; não mexe em Ruptura pendente). */

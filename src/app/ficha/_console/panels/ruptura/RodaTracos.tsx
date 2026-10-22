@@ -145,7 +145,7 @@ export function RodaTracos({
             <path
               key={`${f.tipo}-${f.numero}`}
               d={f.d}
-              fill={f.ativa ? COR_TIPO_TRACO[f.tipo - 1] : FUNDO_TIPO_TRACO[f.tipo - 1]}
+              style={{ fill: f.ativa ? COR_TIPO_TRACO[f.tipo - 1] : `color-mix(in srgb, ${COR_TIPO_TRACO[f.tipo - 1]} 18%, ${FUNDO_TIPO_TRACO[f.tipo - 1]})` }}
               stroke={f.ativa ? "#ffffff" : "#0f2230"}
               strokeWidth={1.5}
               filter={f.ativa ? "url(#rp-brilho)" : undefined}
@@ -154,7 +154,7 @@ export function RodaTracos({
             />
           ))}
           {fatias.map((f) => (
-            <text key={`n-${f.tipo}-${f.numero}`} x={f.tx} y={f.ty} textAnchor="middle" className="rp-fatia-num" fill={f.ativa ? "#03090f" : "#3d5466"}>{f.numero}</text>
+            <text key={`n-${f.tipo}-${f.numero}`} x={f.tx} y={f.ty} textAnchor="middle" className="rp-fatia-num" fill={f.ativa ? "#03090f" : COR_TIPO_TRACO[f.tipo - 1]} fillOpacity={f.ativa ? 1 : 0.65}>{f.numero}</text>
           ))}
         </svg>
       </div>

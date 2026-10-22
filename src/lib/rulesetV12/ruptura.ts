@@ -18,8 +18,11 @@ export interface MarcaRuptura {
   resumo: string;
   /** Texto do livro. */
   texto: string;
-  /** Como a ficha trata a Marca (uma linha). */
-  naFicha: string;
+  /**
+   * Quando o jogador usa a Marca na mesa (uma linha). Sem ele, a Marca
+   * ou é automática (mexe em derivado) ou não pede ação.
+   */
+  emJogo?: string;
   /** Cadência ou natureza, para o selo do cartão. */
   selo?: string;
   /** Pede uma magia do repertório na escolha (Manejo Intuitivo). */
@@ -37,91 +40,87 @@ export const MARCAS_RUPTURA: MarcaRuptura[] = [
     id: "carapaca_arcana", nome: "Carapaça Arcana", familia: "resistencia", selo: "Aplica na ficha",
     resumo: "PV máximos + Corpo + 3.",
     texto: "O arcano impregna sua carne, tornando-a mais resistente: seus Pontos de Vida (PV) aumentam em um valor igual ao seu Corpo + 3.",
-    naFicha: "PV máximos sobem sozinhos.",
   },
   {
     id: "escudo_psiquico", nome: "Escudo Psíquico", familia: "resistencia", selo: "Aplica na ficha",
     resumo: "PE máximos + Mente + 3.",
     texto: "O excesso arcano reforça sua mente, tornando-a mais difícil de abalar: seus Pontos de Estresse (PE) aumentam em um valor igual à sua Mente + 3.",
-    naFicha: "PE máximos sobem sozinhos.",
   },
   {
     id: "pelicula_arcana", nome: "Película Arcana", familia: "resistencia",
     resumo: "Ao receber Sobrecarga, PV temporários = 2 × Sobrecarga atual.",
     texto: "A pressão acumulada faz o arcano transbordar pela superfície do corpo, formando uma camada protetora. Sempre que receber Sobrecarga, ganhe uma quantidade de PV temporários igual ao dobro de sua Sobrecarga atual. Esses PV temporários não se acumulam e desaparecem ao final da cena.",
-    naFicha: "Registrada; aplique os PV temporários ao receber Sobrecarga.",
+    emJogo: "Aplique os PV temporários ao receber Sobrecarga.",
   },
   {
     id: "valvula_de_escape", nome: "Válvula de Escape", familia: "resistencia", selo: "1× por cena",
     resumo: "1×/cena: −1d4 no dano psíquico da Sobrecarga.",
     texto: "Seu conduto encontra maneiras menos destrutivas de liberar parte da pressão acumulada. Uma vez por cena, quando receber um ou mais pontos de Sobrecarga, reduza em 1d4 o dano psíquico causado por eles, até o mínimo de 0.",
-    naFicha: "Registrada; use ao receber Sobrecarga, uma vez por cena.",
+    emJogo: "Use ao receber Sobrecarga, uma vez por cena.",
   },
   {
     id: "conduto_voraz", nome: "Conduto Voraz", familia: "conduto", selo: "1× por cena",
     resumo: "1×/cena: magia que derruba uma criatura dá 1d6 de Mana temporária.",
     texto: "Seu conduto absorve o resíduo arcano deixado pela queda de outras criaturas. Uma vez por cena, quando uma magia sua reduzir uma criatura a 0 PV ou 0 PE, ganhe 1d6 de Mana temporária. A Mana temporária obtida desta forma não se acumula.",
-    naFicha: "Registrada; use quando sua magia derrubar alguém.",
+    emJogo: "Use quando sua magia derrubar alguém.",
   },
   {
     id: "refluxo_arcano", nome: "Refluxo Arcano", familia: "conduto",
     resumo: "Crítico com magia: 1d4 de Mana temporária.",
     texto: "A força do arcano retorna com intensidade toda vez que você ultrapassa seus limites. Sempre que obtiver um sucesso crítico em um teste de ataque de uma magia ou ao menos um alvo obtiver uma falha crítica no teste de resistência contra uma magia sua, ganhe 1d4 de Mana temporária. Cada conjuração pode conceder essa Mana apenas uma vez, mesmo que mais de um alvo obtenha uma falha crítica. A Mana temporária obtida desta forma não se acumula.",
-    naFicha: "Registrada; use no crítico.",
+    emJogo: "Use no crítico.",
   },
   {
     id: "aura_continua", nome: "Aura Contínua", familia: "conduto", selo: "1× por descanso",
     resumo: "1×/descanso longo: ancora uma magia sustentada sem custo extra.",
     texto: "Uma vez por descanso longo, ao sustentar uma magia, você pode ancorá-la em seu fluxo arcano. Enquanto estiver ancorada, você não paga o custo adicional de Mana para sustentá-la, ela não aumenta em 2 o custo de Mana das novas magias que você conjurar e não é contada para determinar a CD dos testes de Vontade realizados para manter suas magias sustentadas. A magia continua sujeita às demais regras de sustentação.",
-    naFicha: "Registrada; use ao sustentar uma magia.",
+    emJogo: "Use ao sustentar uma magia.",
   },
   {
     id: "furia_arcana", nome: "Fúria Arcana", familia: "magia",
     resumo: "Magias de Ataque: +1 dado de dano ao acertar.",
     texto: "A presença do arcano intensifica sua ofensiva, canalizando energia extra a cada golpe. Suas magias de Ataque causam 1 dado adicional de dano sempre que acertam.",
-    naFicha: "Registrada; some o dado no dano das magias de Ataque.",
+    emJogo: "Some o dado no dano das magias de Ataque.",
   },
   {
     id: "expansao_arcana", nome: "Expansão Arcana", familia: "magia",
     resumo: "Magias de Controle: alcance e área em dobro.",
     texto: "Suas magias de Controle alcançam distâncias e se expandem em áreas o dobro do tamanho do normal.",
-    naFicha: "Registrada; dobre alcance e área das magias de Controle.",
+    emJogo: "Dobre alcance e área das magias de Controle.",
   },
   {
     id: "presenca_persistente", nome: "Presença Persistente", familia: "magia",
     resumo: "Magias de Suporte: duração em dobro.",
     texto: "O fluxo arcano se acomoda em você, prolongando os efeitos de tudo que ampara e fortalece. Suas magias de Suporte permanecem ativas pelo dobro da duração.",
-    naFicha: "Registrada; dobre a duração das magias de Suporte.",
+    emJogo: "Dobre a duração das magias de Suporte.",
   },
   {
     id: "pulso_de_movimento", nome: "Pulso de Movimento", familia: "magia", selo: "1× por cena",
     resumo: "1×/cena: magia de Movimento (até nível 3) sem PA.",
     texto: "O arcano se antecipa ao seu desejo de deslocamento, tornando o movimento quase instintivo. Uma vez por cena, no seu próprio turno, pode conjurar uma magia de Movimento (até nível 3) sem gastar PA.",
-    naFicha: "Registrada; conjure sem PA uma vez por cena.",
+    emJogo: "Conjure sem PA uma vez por cena.",
   },
   {
     id: "poder_difuso", nome: "Poder Difuso", familia: "magia",
     resumo: "Magias de vários alvos: +1 alvo.",
     texto: "Sua presença arcana se espalha além do esperado, alcançando mais do que o comum. Sempre que conjurar uma magia que afete múltiplos alvos, escolha um alvo adicional.",
-    naFicha: "Registrada; escolha um alvo a mais.",
+    emJogo: "Escolha um alvo a mais.",
   },
   {
     id: "sussurro_arcano", nome: "Sussurro Arcano", familia: "magia",
     resumo: "Magias de nível 1 a 3 sem manifestação visível.",
     texto: "O poder flui de forma tão sutil que mal deixa rastros no ar. Suas magias de níveis 1, 2 e 3 não produzem manifestações visíveis.",
-    naFicha: "Registrada.",
   },
   {
     id: "manejo_intuitivo", nome: "Manejo Intuitivo", familia: "magia", selo: "Escolha uma magia", pedeMagia: true,
     resumo: "Uma magia sua: moldar com Complexidade um grau menor.",
     texto: "Escolha uma magia do seu repertório. Sempre que moldar essa magia, considere a Complexidade da alteração pretendida um grau menor.",
-    naFicha: "Fica presa à magia escolhida.",
   },
   {
     id: "repertorio_expandido", nome: "Repertório Expandido", familia: "magia", selo: "Nova magia",
     resumo: "Aprenda uma magia de uma vertente sua (exceto nível 5).",
     texto: "Aprenda uma nova magia de uma vertente que já faz parte do seu repertório, escolhendo qualquer nível a que tenha acesso (exceto nível 5).",
-    naFicha: "Aprenda a magia pelo Grimório depois.",
+    emJogo: "Aprenda a magia pelo Grimório depois.",
   },
 ];
 
