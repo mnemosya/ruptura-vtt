@@ -24,6 +24,8 @@
 .ca-legenda i[data-forma=circulo]{transform:none;border-radius:50%;width:9px;height:9px}
 .ca-chips{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:12px 24px 0}
 .ca-chip{position:relative;min-height:32px;display:flex;align-items:center;gap:10px;padding:0 12px;box-sizing:border-box;border:1px solid #24394a;background:transparent;font:700 10.5px/1 var(--ar-mono);letter-spacing:.12em;color:#c3d6df;cursor:help}
+.ar-tela button.ca-chip{font:700 10.5px/1 var(--ar-mono);color:#c3d6df}
+.ar-tela button.ca-chip:is(:hover,:focus-visible){color:#eef4f7}
 .ca-chip svg{flex:none;color:var(--ca-claro)}
 .ca-chip:is(button){cursor:pointer}
 .ca-chip:hover,.ca-chip:focus-visible{border-color:var(--ca-borda);color:#eef4f7;background:rgba(255,255,255,.03)}

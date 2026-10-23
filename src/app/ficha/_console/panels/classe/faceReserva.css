@@ -1,52 +1,65 @@
 /* Tela da Face — Reserva de Confiança e Manobras Sociais. Valores das telas
-   aprovadas no canvas (R4, I5, M3, RR1). Reaproveita chão, rodapé, painel e
-   Habilidades da Âncora (`ancoraRede.css`) e chips, dicas, links e botão
-   primário do Combatente (`combatenteAnel.css`), no roxo da Face. */
-.fr-raiz{--ca:#c578d9;--ca-tinta:#120a16}
-
-.fr-chips{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:10px 12px;padding:12px 24px 0}
-.fr-chips[data-muitos=true]{justify-content:flex-start}
+   aprovadas no canvas (R4, I5, M3, RR1), copiados do markup das pranchetas.
+   Reaproveita chão, rodapé, painel e Habilidades da Âncora (`ancoraRede.css`)
+   e chips e dicas do Combatente (`combatenteAnel.css`), no roxo da Face. */
+.fr-raiz{--ca:#c578d9;--ca-tinta:#120a16;--ca-suave:color-mix(in srgb,var(--ca) 70%,#a9bfcb)}
+.fr-raiz .ar-rolagem{padding-bottom:0}
+.fr-raiz .ar-cab>.ca-legenda{font:500 11px/1 var(--ar-mono);letter-spacing:.12em;color:#8fa6b4}
 .fr-raiz .ca-chip{white-space:nowrap}
-.fr-raiz .ca-chip[data-usado=true] b{color:#8fa6b4}
+.fr-raiz .ca-chip[data-vazio=true] b{color:#7fe6ff}
 
 .fr-palco{flex:1 0 auto;display:flex;flex-direction:column;justify-content:center;gap:44px;padding:12px 24px 16px}
 .fr-palco[data-abas=true]{gap:24px}
 
-.fr-reserva{display:flex;flex-direction:column;align-items:center;gap:14px}
-.fr-reserva[data-alto=true]{min-height:214px;justify-content:center}
-.fr-titulo{display:flex;flex-direction:column;align-items:center;gap:8px}
-.fr-titulo>span:first-child{position:relative;font:500 11px/1 var(--ar-mono);letter-spacing:.18em;color:#8fa6b4;cursor:help}
-.fr-titulo>small{font:500 10.5px/1 var(--ar-mono);letter-spacing:.12em;color:var(--ca-suave)}
-.fr-titulo>button{padding:0;border:0;background:none;font:500 11px/1 var(--ar-mono) !important;letter-spacing:.18em;color:#8fa6b4 !important}
-.fr-titulo>button b{font-weight:500;color:var(--ca-claro)}
-.fr-titulo>button:hover b{color:#fff}
+/* Links de texto (desfazer, remover, cancelar, desistir). */
+.fr-link{min-height:40px;padding:0 4px;border:0;background:transparent;font:600 11px/1 var(--ar-oxa) !important;letter-spacing:.12em;color:var(--ca-claro) !important}
+.fr-link[data-tom=neutro]{color:#8fa6b4 !important}
+.fr-link:not(:disabled):hover{color:#fff !important}
 
+/* Reserva de Confiança. */
+.fr-reserva{display:flex;flex-direction:column;align-items:center;gap:14px}
+.fr-titulo{display:flex;flex-direction:column;align-items:center;gap:8px}
+.fr-titulo>span{position:relative;font:500 11px/1 var(--ar-mono);letter-spacing:.18em;color:#8fa6b4;cursor:help}
+.fr-titulo>small{font:500 10.5px/1 var(--ar-mono);letter-spacing:.12em;color:var(--ca-suave)}
 .fr-gemas{display:flex;justify-content:center;gap:40px}
-.fr-gema{width:124px;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0;border:0;background:none}
+.fr-gema{width:124px;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0;border:0;background:transparent}
 .fr-gema>span:first-child{position:relative;width:104px;height:108px;display:flex;align-items:center;justify-content:center}
 .fr-gema svg{position:absolute;inset:0;transition:filter .16s,transform .16s}
-.fr-gema:not(:disabled):hover svg{filter:brightness(1.35) drop-shadow(0 0 12px var(--ca-halo));transform:scale(1.05)}
+.fr-gema:not(:disabled):hover svg{filter:brightness(1.35) drop-shadow(0 0 12px var(--ca-halo)) !important;transform:scale(1.05)}
 .fr-gema strong{position:relative;font:800 40px/1 var(--ar-oxa);color:#fff}
 .fr-gema[data-vazia=true] strong{font-size:30px;color:#4f6676}
 .fr-gema[data-vazia=true][data-proxima=true] strong{color:#8fa6b4}
 .fr-gema small{font:700 10px/1 var(--ar-mono);letter-spacing:.14em;color:var(--ca-suave)}
 .fr-gema[data-vazia=true] small{color:#7f97a6}
 .fr-gema[aria-pressed=true] small{color:var(--ca-claro)}
-.fr-gemas[data-menor=true]{gap:22px}
-.fr-gemas[data-menor=true] .fr-gema{width:80px}
-.fr-gemas[data-menor=true] .fr-gema>span:first-child{width:64px;height:66px}
-.fr-gemas[data-menor=true] .fr-gema strong{font-size:24px}
-
 .fr-escolha{min-height:48px;display:flex;align-items:center;justify-content:center;gap:8px}
-.fr-escolha>span{margin-right:8px;font:700 10px/1 var(--ar-mono);letter-spacing:.14em;color:var(--ca-claro)}
-.fr-valor{width:42px;height:42px;padding:0;border:1px solid var(--ca-borda);background:transparent;font:700 16px/1 var(--ar-oxa) !important;color:#eef4f7 !important}
-.fr-valor[aria-pressed=true]{border-color:var(--ca-claro);background:var(--ca-medio)}
+.fr-escolha .fr-link{min-height:42px}
+.fr-escolha .fr-link[data-remover]{margin-left:8px}
+.fr-valor{width:42px;height:42px;padding:0;border:1px solid var(--ca-borda);background:transparent;font:700 16px/1 var(--ar-oxa) !important;color:#eef4f7 !important;transition:background .14s,border-color .14s}
+.fr-valor[aria-pressed=true]{border-color:var(--ca-claro);background:var(--ca-medio);color:#fff !important}
 .fr-valor:not(:disabled):hover{border-color:#d9a6e6;background:var(--ca-halo);color:#fff !important}
 
+/* Reserva de Negociação: gemas sem rótulo e escolha com "VALOR DO D8". */
+.fr-reserva[data-neg=true]{min-height:214px;justify-content:center}
+.fr-gemas[data-neg=true]{gap:32px}
+.fr-gemas[data-neg=true] .fr-gema{width:120px;gap:8px}
+.fr-gemas[data-neg=true] .fr-gema strong{font-size:39px}
+.fr-gemas[data-folha=true]{gap:22px}
+.fr-gemas[data-folha=true] .fr-gema{width:80px;gap:8px}
+.fr-gemas[data-folha=true] .fr-gema>span:first-child{width:64px;height:66px}
+.fr-gemas[data-folha=true] .fr-gema strong{font-size:24px}
+.fr-escolha[data-neg=true]{min-height:44px}
+.fr-escolha[data-neg=true]>span{margin-right:8px;font:700 10px/1 var(--ar-mono);letter-spacing:.14em;color:var(--ca-claro)}
+.fr-escolha[data-neg=true] .fr-valor{width:40px;height:40px}
+.fr-resultado-link{padding:0;border:0;background:transparent;font:500 11px/1 var(--ar-mono) !important;letter-spacing:.18em;color:#8fa6b4 !important}
+.fr-resultado-link b{font-weight:500;color:var(--ca-claro)}
+.fr-resultado-link:hover b{color:#fff}
+
+/* Manobras Sociais. */
 .fr-manobras{display:flex;flex-direction:column;align-items:center;gap:16px}
 .fr-manobras>span{font:500 11px/1 var(--ar-mono);letter-spacing:.18em;color:#8fa6b4}
 .fr-manobras>div{width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 10px}
-.fr-manobra{position:relative;min-height:52px;display:flex;align-items:center;gap:12px;padding:4px 8px;cursor:help}
+.fr-manobra{position:relative;min-height:52px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:4px 8px;cursor:help}
 .fr-manobra>span:first-child{position:relative;width:38px;height:42px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--ca-claro);transition:transform .16s,filter .16s}
 .fr-manobra>span:first-child>svg:first-child{position:absolute;inset:0}
 .fr-manobra>span:first-child>svg:last-child{position:relative}
@@ -59,14 +72,13 @@
 
 /* Abas Confiança / Negociação (Mercador). */
 .fr-abas{align-self:center;display:flex;gap:2px;padding:3px;border:1px solid #24394a;background:#08151c}
-.fr-abas button{min-height:32px;padding:0 16px;border:1px solid transparent;background:transparent;font:700 10.5px/1 var(--ar-mono) !important;letter-spacing:.14em;color:#8fa6b4 !important}
+.fr-abas button{min-height:32px;padding:0 16px;border:1px solid #24394a;background:transparent;font:700 10.5px/1 var(--ar-mono) !important;letter-spacing:.14em;color:#8fa6b4 !important}
 .fr-abas button[aria-selected=true]{border-color:var(--ca);background:var(--ca-fundo);color:#eef4f7 !important}
 .fr-abas button:not([aria-selected=true]):hover{color:#eef4f7 !important;background:rgba(255,255,255,.04)}
 
 /* Opções de escolha (compra/venda, horas, resultado). */
-.fr-opcao{border:1px solid #24394a;background:transparent;text-align:left}
-.fr-opcao[aria-pressed=true],.fr-opcao[aria-checked=true]{border-color:var(--ca-claro);background:var(--ca-medio)}
-.fr-opcao:not(:disabled):hover{border-color:var(--ca-borda);background:color-mix(in srgb,var(--ca-halo) 45%,transparent)}
+.fr-opcao{border:1px solid #24394a;background:transparent;text-align:left;transition:background .14s,border-color .14s}
+.fr-opcao[aria-pressed=true],.fr-opcao[aria-checked=true],.fr-opcao:not(:disabled):hover{border-color:var(--ca-borda);background:color-mix(in srgb,var(--ca-halo) 45%,transparent)}
 .fr-tipos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .fr-tipos .fr-opcao{min-height:60px;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:10px 14px}
 .fr-tipos strong{font:600 15px/1 var(--ar-oxa);color:#eef4f7}
@@ -75,35 +87,58 @@
 .fr-horas{display:flex;align-items:center;gap:8px}
 .fr-horas>span{margin-right:4px;font:500 10px/1 var(--ar-mono);letter-spacing:.14em;color:#8fa6b4}
 .fr-horas .fr-opcao{width:52px;height:40px;padding:0;text-align:center;font:700 13px/1 var(--ar-oxa) !important;color:#eef4f7 !important}
+.fr-horas .fr-primario{min-width:0;min-height:40px;margin-left:10px}
+.fr-nova{width:440px;max-width:100%}
 .fr-nota{font-size:12.5px;color:#8fa6b4}
-.fr-nova{width:440px;max-width:100%;display:flex;flex-direction:column;align-items:center;gap:14px}
-.fr-resultados{display:flex;gap:8px}
+.fr-resultados{display:flex;gap:8px;margin-bottom:16px}
 .fr-resultados .fr-opcao{flex:1 1 0;min-height:40px;padding:0 8px;text-align:center;font:700 10.5px/1 var(--ar-mono) !important;letter-spacing:.12em;color:#a9bfcb !important}
 .fr-resultados .fr-opcao[aria-checked=true]{color:#fff !important}
 .fr-resultados .fr-opcao[data-falha=true][aria-checked=true]{border-color:#8fa6b4;background:#1a2630}
 
-/* Folhas: rótulos, campos e botão primário no padrão do companheiro do Caçador. */
-.fr-folha{display:flex;flex-direction:column;gap:14px;padding:0 24px 22px}
-.fr-folha .fr-rotulo-sec{font:500 10px/1 var(--ar-mono);letter-spacing:.16em;color:#8fa6b4}
+/* Folhas: corpo, rótulos, campos e botão primário no padrão do companheiro do Caçador. */
+.fr-raiz .ar-painel-corpo{padding-bottom:22px}
+.fr-folha{display:flex;flex-direction:column;gap:12px}
+.fr-intro{margin:0 0 18px;font-size:13px;line-height:1.5;color:#8fa6b4}
+.fr-intro[data-curta]{margin-bottom:6px}
+.fr-rotulo-sec{display:block;margin:0 0 10px;font:500 10px/1 var(--ar-mono);letter-spacing:.16em;color:#8fa6b4}
+.fr-folha .fr-tipos{margin-bottom:18px}
+.fr-folha .fr-tipos .fr-opcao{min-height:64px}
+.fr-folha .fr-horas{margin-bottom:6px}
+.fr-folha .fr-horas .fr-opcao{width:64px;height:44px;font-size:14px !important}
+.fr-folha .fr-horas>small{margin-left:8px;font-size:13px;color:#8fa6b4}
+.fr-folha .fr-gemas+.fr-escolha{margin-top:0}
+.fr-campos{display:flex;flex-direction:column;gap:20px}
 .fr-campo{display:flex;flex-direction:column;gap:6px;font:500 10px/1 var(--ar-mono);letter-spacing:.14em;color:#8fa6b4}
+.fr-campos .fr-campo>span{font-weight:700}
 .fr-campo input{height:48px;box-sizing:border-box;padding:0 14px;background:#0d1d22;border:1px solid #1c3445;font:400 15px/1 var(--ar-plex);letter-spacing:0;color:#eef4f7}
+.fr-campos .fr-campo input{font-size:14px}
 .fr-campo input::placeholder{color:#6f8799}
 .fr-campo input:focus{outline:none;border-color:var(--ca)}
+.fr-campo[data-valor]{margin-bottom:14px}
 .fr-primario{align-self:flex-end;min-width:200px;min-height:48px;padding:0 18px;border:0;background:var(--ca);font:700 14px/1 var(--ar-oxa) !important;letter-spacing:.12em;color:var(--ca-tinta) !important;transition:filter .14s,transform .1s}
 .fr-primario:not(:disabled):hover{filter:brightness(1.12)}
 .fr-primario:not(:disabled):active{transform:scale(.97)}
 .fr-primario:disabled{background:#13283a;color:#6f8799 !important}
-.fr-texto-resultado{margin:0;font-size:14px;line-height:1.5;color:var(--ca-claro)}
+.fr-folha>.fr-primario[data-rolar]{margin-top:14px}
+.fr-texto-resultado{margin:0 0 16px;font-size:14px;line-height:1.5;color:var(--ca-claro)}
 .fr-texto-resultado[data-falha=true]{color:#a9bfcb}
 .fr-fim{display:flex;align-items:center;gap:16px}
+.fr-fim .fr-link{padding:0 2px}
 .fr-fim .fr-primario{margin-left:auto}
 
 /* Regras: seções e linhas. */
-.fr-regras{display:flex;flex-direction:column;padding:0 24px 22px}
+.fr-regras{display:flex;flex-direction:column;gap:12px}
 .fr-regras>span{padding:14px 0 8px;font:500 10.5px/1 var(--ar-mono);letter-spacing:.18em;color:#8fa6b4}
 .fr-regras>div{display:flex;align-items:flex-start;gap:14px;padding:11px 0;border-top:1px solid #142836}
 .fr-regras>div>b{width:74px;flex:none;font:700 10.5px/1.4 var(--ar-mono);letter-spacing:.12em;color:var(--ca-claro)}
 .fr-regras>div>span{font-size:13.5px;line-height:1.5;color:#c3d6df}
+
+/* Rodapé: Esvaziar à esquerda, Regras no centro, Habilidades à direita. */
+.fr-raiz .ar-rodape button{min-height:44px;display:flex;align-items:center}
+.fr-raiz .ar-rodape button:first-child,.fr-raiz .ar-rodape button:last-child{flex:1 1 0}
+.fr-raiz .ar-rodape button:nth-child(2){padding:0 4px}
+.fr-raiz .ar-rodape button:last-child{justify-content:flex-end}
+.fr-raiz .ar-rodape button:disabled{opacity:1;color:#4f6676}
 
 @container rc-eq (max-width:640px){
   .fr-manobras>div{grid-template-columns:repeat(2,minmax(0,1fr))}

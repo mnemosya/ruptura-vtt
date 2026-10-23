@@ -45,9 +45,6 @@ const ICONES = {
   negocio: "M3 7h18l-2 12H5L3 7ZM8 7V5a4 4 0 0 1 8 0v2",
   ouvidos: "M3 18v-6a9 9 0 0 1 18 0v6M21 19a2 2 0 0 1-2 2h-1v-6h3ZM3 19a2 2 0 0 0 2 2h1v-6H3Z",
   porta: "M13 4h3a2 2 0 0 1 2 2v14M2 20h3M13 20h9M10 12v.01M13 4.6v16.8L5 19.5V5.4Z",
-  rota: "M4 19h4a4 4 0 0 0 4-4V9a4 4 0 0 1 4-4h4M17 2l3 3-3 3",
-  casa: "M3 11 12 4l9 7M5 10v10h14V10M10 20v-6h4v6",
-  saida: "M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10",
 };
 
 const RESULTADOS: [ResultadoNegociacao, string][] = [["falha", "FALHA"], ["limitado", "LIMITADO"], ["padrao", "PADRÃO"], ["critico", "CRÍTICO"]];
@@ -63,7 +60,7 @@ const rolarD8 = () => 1 + (crypto.getRandomValues(new Uint32Array(1))[0] % 8);
 type Persona = { imagem: string; meio: string; espera: string };
 const lerPersona = (texto?: string): Persona => { try { return { imagem: "", meio: "", espera: "", ...JSON.parse(texto ?? "{}") }; } catch { return { imagem: "", meio: "", espera: "" }; } };
 
-type Chip = { chave: string; icone: string; rotulo: string; valor: string; usado: boolean; dica: string; clicar: () => void };
+type Chip = { chave: string; icone: string; rotulo: string; valor: string; usado: boolean; vazio?: boolean; dica: string; clicar: () => void };
 
 export function FaceReserva({ api, rank, subclassId }: { api: Api; rank: string; subclassId?: string }) {
   const [painel, setPainel] = useState<null | "habilidades" | "regras" | "persona" | "negocio">(null);
@@ -102,29 +99,36 @@ export function FaceReserva({ api, rank, subclassId }: { api: Api; rank: string;
   const tirar = () => { if (editando != null && vagas[editando] != null) enviar({ type: "setDie", index: editando, value: null }); setEditando(null); };
   const fimReserva = at("B") ? "ATÉ O FIM DA OPERAÇÃO" : "ATÉ O FIM DA CENA";
 
-  const gemas = (valores: (number | null)[], aberta: number | null, tocar: (j: number) => void, rotulo: (j: number) => string, menor = false) =>
-    <div className="fr-gemas" data-menor={menor || undefined}>{valores.map((v, j) => {
-      const vazia = v == null, ed = aberta === j, prox = vazia && j === proxima && !menor;
+  /** Gemas da Reserva. "confianca": vagas com rótulo 01, 02…; "neg" e "folha": dados da Negociação, sem rótulo. */
+  const gemas = (valores: (number | null)[], aberta: number | null, tocar: (j: number) => void, rotulo: (j: number) => string, tipo: "confianca" | "neg" | "folha" = "confianca") => {
+    const neg = tipo !== "confianca";
+    return <div className="fr-gemas" data-neg={tipo === "neg" || undefined} data-folha={tipo === "folha" || undefined}>{valores.map((v, j) => {
+      const vazia = v == null, ed = aberta === j, prox = vazia && j === proxima;
+      const brilho = ed ? `drop-shadow(0 0 ${neg ? 12 : 14}px var(--ca-halo))` : vazia ? "none" : `drop-shadow(0 0 ${neg ? 6 : 8}px var(--ca-halo))`;
       return <button key={j} type="button" className="fr-gema" data-vazia={vazia} data-proxima={prox || undefined} aria-pressed={ed} disabled={locked}
-        aria-label={vazia ? `${rotulo(j)}: vazia. Tocar para guardar um valor` : `${rotulo(j)}: ${v}. Tocar para mudar${menor ? "" : " ou remover"}`} onClick={() => tocar(j)}>
+        aria-label={vazia ? `${rotulo(j)}: vazia. Tocar para guardar um valor` : `${rotulo(j)}: ${v}. Tocar para mudar${neg ? " o valor" : " ou tirar"}`} onClick={() => tocar(j)}>
         <span>
-          <svg viewBox="0 0 48 50" width="100%" height="100%" fill={ed ? "var(--ca-medio)" : vazia ? "transparent" : "var(--ca-fundo)"} stroke={ed ? "#fff" : vazia ? (prox ? "#4b6a7d" : "#35546a") : "var(--ca)"} strokeWidth="1.6" strokeDasharray={vazia && !ed ? "2.5 2.5" : undefined} strokeLinejoin="round"
-            style={{ filter: ed ? "drop-shadow(0 0 14px var(--ca-halo))" : vazia ? "none" : "drop-shadow(0 0 8px var(--ca-halo))" }} aria-hidden="true">
-            <path d="M24 2 46 24 24 46 2 24Z" />{!vazia && <path d="M2 24 24 11l22 13-22 13Z" fill="none" strokeWidth=".8" opacity=".7" />}
+          <svg viewBox="0 0 48 50" width="100%" height="100%" fill={ed ? "var(--ca-medio)" : vazia ? "transparent" : "var(--ca-fundo)"} stroke={ed ? "#fff" : vazia ? (prox ? "#4b6a7d" : "#2c4556") : "var(--ca)"} strokeWidth={neg ? 1.8 : 1.6} strokeDasharray={vazia && !ed ? "2.5 2.5" : undefined} strokeLinejoin="round"
+            style={{ filter: brilho }} aria-hidden="true">
+            <path d="M24 2 46 24 24 46 2 24Z" />{!vazia && <path d="M2 24 24 11l22 13-22 13Z" fill="none" strokeWidth=".8" opacity={neg ? .55 : .7} />}
           </svg>
           <strong>{vazia ? "+" : v}</strong>
         </span>
-        {!menor && <small>0{j + 1}</small>}
+        {!neg && <small>0{j + 1}</small>}
       </button>;
     })}</div>;
+  };
 
-  const escolhaValor = (titulo: string, atual: number | null | undefined, escolher: (v: number) => void, cancelar: () => void, remover?: () => void) =>
-    <div className="fr-escolha">
-      <span>{titulo}</span>
-      {[1, 2, 3, 4, 5, 6, 7, 8].map(v => <button key={v} type="button" className="fr-valor" aria-pressed={v === atual} aria-label={`D8 com valor ${v}`} onClick={() => escolher(v)}>{v}</button>)}
-      {remover && <button type="button" className="ca-link" style={{ marginLeft: 8 }} onClick={remover}>REMOVER</button>}
-      <button type="button" className="ca-link" data-tom="neutro" onClick={cancelar}>CANCELAR</button>
-    </div>;
+  const valores = (atual: number | null | undefined, escolher: (v: number) => void) =>
+    [1, 2, 3, 4, 5, 6, 7, 8].map(v => <button key={v} type="button" className="fr-valor" aria-pressed={v === atual} aria-label={`D8 com valor ${v}`} onClick={() => escolher(v)}>{v}</button>);
+  const linkDesfazer = topoPilha ? <button type="button" className="fr-link" disabled={locked} onClick={desfazer}>DESFAZER · {topoPilha.toUpperCase()}</button> : null;
+  /** Linha de valor dos dados da Negociação (aba e folha). */
+  const escolhaNeg = (n: NonNullable<typeof st.negociacao>) => <div className="fr-escolha" data-neg="true">
+    {editNeg != null && <>
+      <span>VALOR DO D8</span>
+      {valores(n.dados[editNeg], v => { if (n.dados[editNeg] !== v) enviar({ type: "negociacao", op: "dado", index: editNeg, valor: v }); setEditNeg(null); })}
+    </>}
+  </div>;
 
   /* ── Mercador: Intermediação ── */
   const neg = st.negociacao;
@@ -145,19 +149,13 @@ export function FaceReserva({ api, rank, subclassId }: { api: Api; rank: string;
     : Number(valorNeg) > 0 ? `Recebe ${aretz(Math.floor(Number(valorNeg) * pct[resultadoNeg] / 100))} · ${pct[resultadoNeg]}% do valor justo.` : `Vende por ${pct[resultadoNeg]}% do valor justo.`;
   const podeConcluir = !!neg && !!resultadoNeg && (neg.tipo === "comprar" || resultadoNeg === "falha" || Number(valorNeg) > 0);
 
-  const novaNegociacao = <div className="fr-nova">
-    <div className="fr-tipos" style={{ width: "100%" }}>
-      {([["comprar", "Comprar", compraFeita ? "COMPRA DA OPERAÇÃO FEITA" : "1 POR OPERAÇÃO", compraFeita], ["vender", "Vender", vendaHoje ? "TENTATIVA DE HOJE FEITA" : `1 POR DIA · RESTAM ${aretz(Math.max(0, teto - vendido))}`, vendaHoje]] as const).map(([id, nome, status, usado]) =>
-        <button key={id} type="button" className="fr-opcao" aria-pressed={prepNeg.tipo === id} data-usado={usado || undefined} disabled={locked} onClick={() => setPrepNeg(p => ({ ...p, tipo: id }))}><strong>{nome}</strong><small>{status}</small></button>)}
-    </div>
-    <div className="fr-horas">
-      <span>HORAS</span>
-      {[1, 2, 3].map(h => <button key={h} type="button" className="fr-opcao" aria-pressed={prepNeg.horas === h} disabled={locked} onClick={() => setPrepNeg(p => ({ ...p, horas: h }))}>{h} H</button>)}
-      <button type="button" className="fr-primario" style={{ minWidth: 0, minHeight: 40, marginLeft: 10, fontSize: 12 }} disabled={locked} onClick={abrirNeg}>ROLAR {nDados}D8</button>
-    </div>
-    <span className="fr-nota">1d8 por hora, até {mente} d8 (Mente {mente}).</span>
-    {topoPilha && <button type="button" className="ca-link" disabled={locked} onClick={desfazer}>DESFAZER · {topoPilha.toUpperCase()}</button>}
+  const notaHoras = `1d8 por hora, até ${mente} d8 (Mente ${mente}).`;
+  const tiposNeg = <div className="fr-tipos">
+    {([["comprar", "Comprar", compraFeita ? "COMPRA DA OPERAÇÃO FEITA" : "1 POR OPERAÇÃO", compraFeita], ["vender", "Vender", vendaHoje ? "TENTATIVA DE HOJE FEITA" : `1 POR DIA · RESTAM ${aretz(Math.max(0, teto - vendido))}`, vendaHoje]] as const).map(([id, nome, status, usado]) =>
+      <button key={id} type="button" className="fr-opcao" aria-pressed={prepNeg.tipo === id} data-usado={usado || undefined} disabled={locked} onClick={() => setPrepNeg(p => ({ ...p, tipo: id }))}><strong>{nome}</strong><small>{status}</small></button>)}
   </div>;
+  const horasNeg = [1, 2, 3].map(h => <button key={h} type="button" className="fr-opcao" aria-pressed={prepNeg.horas === h} disabled={locked} onClick={() => setPrepNeg(p => ({ ...p, horas: h }))}>{h} H</button>);
+  const rolarTexto = `ROLAR ${nDados}D8`;
 
   /* ── Chips da subclasse (padrão do Combatente: uso marca e desmarca no toque) ── */
   const usoChip = (chave: string, icone: string, rotulo: string, livre: string, feito: string, dica: string, passo: string, limite = 1): Chip => {
@@ -170,7 +168,7 @@ export function FaceReserva({ api, rank, subclassId }: { api: Api; rank: string;
   if (temSub && subclassId === "icone") {
     chips.push(usoChip("scene:mobilizar", ICONES.mobilizar, "MOBILIZAR", "1× POR CENA", "PEDIDO FEITO NA CENA",
       "Peça ajuda ao seu Público. Pedidos simples, da sua Persona e sem custo ou risco saem sem teste; os que exigem tempo, recursos limitados, exposição ou vão contra a preferência do Público pedem um Teste de Interação.", "Pedido ao Público", at("C") ? 2 : 1));
-    chips.push({ chave: "persona", icone: ICONES.persona, rotulo: "PERSONA", valor: (persona.imagem || "DEFINIR").toUpperCase(), usado: false,
+    chips.push({ chave: "persona", icone: ICONES.persona, rotulo: "PERSONA", valor: (persona.imagem || "DEFINIR").toUpperCase(), usado: false, vazio: !persona.imagem,
       dica: persona.imagem ? `${[persona.meio, persona.espera].filter(Boolean).join(" · ")}. Toque para editar.` : "Defina a imagem pela qual você é conhecido, onde ela circula e o que seu Público espera.",
       clicar: () => { setRascunho(persona); setPainel("persona"); } });
   } else if (temSub && subclassId === "mercador") {
@@ -184,19 +182,11 @@ export function FaceReserva({ api, rank, subclassId }: { api: Api; rank: string;
       "Dez minutos observando e conversando com quem vive ali: escolha até duas perguntas sobre o território e o Narrador responde com um rumor, indício, nome ou local. O primeiro Teste de Interação que seguir uma dessas pistas recebe +1 de vantagem.", "Ouvidos no Chão"));
     chips.push(usoChip("scene:porta", ICONES.porta, "PORTA ENTREABERTA", "1× POR CENA", "USADA NA CENA",
       "Encontre em 10 minutos alguém disposto a negociar abrigo, passagem, atendimento clandestino, um encontro, um espaço discreto ou transporte na região. Ajuda simples sai sem teste; com recurso limitado, exposição, ilegalidade ou perigo, faça um Teste de Interação.", "Porta Entreaberta"));
-    if (at("C")) {
-      chips.push(usoChip("scene:rota", ICONES.rota, "ROTA ALTERNATIVA", "1× POR CENA", "USADA NA CENA",
-        "Gato de Telhado: o Narrador indica uma passagem que contorne um obstáculo urbano entre o grupo e o destino. A rota não elimina testes, custos ou perigos próprios.", "Rota alternativa"));
-      chips.push(usoChip("operation:casa", ICONES.casa, "CASA SEGURA", "1× POR OPERAÇÃO", "PREPARADA NA OPERAÇÃO",
-        "Uma hora para encontrar e preparar um esconderijo na região. Lá dentro, quem procura o grupo sofre −1 de desvantagem (−2 sem pista ligada ao esconderijo).", "Casa Segura"));
-    }
-    if (at("A")) chips.push(usoChip("operation:saida", ICONES.saida, "SAÍDA DOS FUNDOS", "1× POR OPERAÇÃO", "USADA NA OPERAÇÃO",
-      "Cercados, perseguidos ou prestes a ser capturados: você conduz o grupo por uma saída improvável e a perseguição termina. O Narrador apresenta uma consequência.", "Saída dos Fundos"));
   }
-  const chipView = (c: Chip, i: number, total: number) =>
-    <button key={c.chave} type="button" className="ca-chip ca-tem-dica" data-usado={c.usado || undefined} disabled={locked} onClick={c.clicar}>
+  const chipView = (c: Chip, i: number) =>
+    <button key={c.chave} type="button" className="ca-chip ca-tem-dica" data-usado={c.usado || undefined} data-vazio={c.vazio || undefined} disabled={locked} onClick={c.clicar}>
       <Svg d={c.icone} tam={14} traco={2} />{c.rotulo}<b>· {c.valor}</b>
-      <Dica texto={c.dica} pos={total <= 2 && i === total - 1 && i > 0 ? "baixo-dir" : "baixo-esq"} />
+      <Dica texto={c.dica} pos={i === 0 ? "baixo-esq" : "baixo-dir"} />
     </button>;
 
   const mercador = temSub && subclassId === "mercador";
@@ -220,17 +210,29 @@ export function FaceReserva({ api, rank, subclassId }: { api: Api; rank: string;
       <small>{fimReserva}</small>
     </div>
     {gemas(vagas, editando, tocarVaga, j => `Vaga ${j + 1} da Reserva`)}
-    {editando != null ? escolhaValor(`VAGA 0${editando + 1} · VALOR DO D8`, vagas[editando], definir, () => setEditando(null), vagas[editando] != null ? tirar : undefined)
-      : <div className="fr-escolha">{topoPilha && <button type="button" className="ca-link" disabled={locked} onClick={desfazer}>DESFAZER · {topoPilha.toUpperCase()}</button>}</div>}
+    <div className="fr-escolha">
+      {editando != null ? <>
+        {valores(vagas[editando], definir)}
+        {vagas[editando] != null && <button type="button" className="fr-link" data-remover="true" onClick={tirar}>REMOVER</button>}
+        <button type="button" className="fr-link" data-tom="neutro" onClick={() => setEditando(null)}>CANCELAR</button>
+      </> : linkDesfazer}
+    </div>
   </section>;
 
-  const blocoNegociacao = <section className="fr-reserva" data-alto="true" aria-label="Reserva de Negociação">
+  const blocoNegociacao = <section className="fr-reserva" data-neg="true" aria-label="Reserva de Negociação">
     {neg ? <>
-      <div className="fr-titulo"><button type="button" onClick={() => setPainel("negocio")}>{neg.tipo === "vender" ? "VENDA" : "COMPRA"} · <b>RESULTADO ›</b></button></div>
-      {gemas(neg.dados, editNeg, j => setEditNeg(editNeg === j ? null : j), j => `Dado ${j + 1} da Reserva de Negociação`)}
-      {editNeg != null ? escolhaValor("VALOR DO D8", neg.dados[editNeg], v => { if (neg.dados[editNeg] !== v) enviar({ type: "negociacao", op: "dado", index: editNeg, valor: v }); setEditNeg(null); }, () => setEditNeg(null))
-        : <div className="fr-escolha">{topoPilha && <button type="button" className="ca-link" disabled={locked} onClick={desfazer}>DESFAZER · {topoPilha.toUpperCase()}</button>}</div>}
-    </> : novaNegociacao}
+      <button type="button" className="fr-resultado-link" onClick={() => setPainel("negocio")}>{neg.tipo === "vender" ? "VENDA" : "COMPRA"} · <b>RESULTADO ›</b></button>
+      {gemas(neg.dados, editNeg, j => setEditNeg(editNeg === j ? null : j), j => `Dado ${j + 1} da Reserva de Negociação`, "neg")}
+      {escolhaNeg(neg)}
+    </> : <>
+      <div className="fr-nova">{tiposNeg}</div>
+      <div className="fr-horas">
+        <span>HORAS</span>
+        {horasNeg}
+        <button type="button" className="fr-primario" disabled={locked} onClick={abrirNeg}>{rolarTexto}</button>
+      </div>
+      <span className="fr-nota">{notaHoras}</span>
+    </>}
   </section>;
 
   return <section className={`rc-eq-outer ar-raiz ca-raiz fr-raiz ${oxanium.variable} ${plex.variable}`} aria-label="Classe Face">
@@ -243,7 +245,7 @@ export function FaceReserva({ api, rank, subclassId }: { api: Api; rank: string;
         <span>{rotulo}</span>
         <span className="ca-legenda" aria-hidden="true"><span><i />GUARDAR OU TROCAR · 1× POR TESTE</span></span>
       </header>
-      {chips.length > 0 && <div className="fr-chips" data-muitos={chips.length > 2 || undefined}>{chips.map((c, i) => chipView(c, i, chips.length))}</div>}
+      {chips.length > 0 && <div className="ca-chips">{chips.map(chipView)}</div>}
 
       <div className="fr-palco" data-abas={mercador || undefined}>
         {mercador && <div className="fr-abas" role="tablist" aria-label="Reserva">
@@ -281,35 +283,46 @@ export function FaceReserva({ api, rank, subclassId }: { api: Api; rank: string;
       <div className="fr-regras">{regras.map((r, i) => typeof r === "string" ? <span key={i}>{r}</span> : <div key={i}><b>{r[0]}</b><span>{r[1]}</span></div>)}</div>
     </Painel>}
 
-    {painel === "persona" && rascunho && <Painel baixo titulo="PERSONA PÚBLICA" intro="A imagem pela qual você é conhecido, onde ela circula e o que seu Público espera de você. Dentro desse meio, um pequeno grupo já forma seu Público." fechar={() => setPainel(null)}>
+    {painel === "persona" && rascunho && <Painel baixo titulo="PERSONA PÚBLICA" fechar={() => setPainel(null)}>
       <div className="fr-folha">
-        <label className="fr-campo">COMO VOCÊ É CONHECIDO<input type="text" maxLength={60} disabled={locked} placeholder="Ex.: a cantora dos túneis, o pregador da Malha" value={rascunho.imagem} onChange={e => setRascunho({ ...rascunho, imagem: e.target.value })} /></label>
-        <label className="fr-campo">ONDE SUA PERSONA CIRCULA<input type="text" maxLength={80} disabled={locked} placeholder="Comunidade, circuito ou ambiente social" value={rascunho.meio} onChange={e => setRascunho({ ...rascunho, meio: e.target.value })} /></label>
-        <label className="fr-campo">O QUE SEU PÚBLICO ESPERA<input type="text" maxLength={80} disabled={locked} placeholder="Coragem, irreverência, competência, luxo, tradição…" value={rascunho.espera} onChange={e => setRascunho({ ...rascunho, espera: e.target.value })} /></label>
-        <button type="button" className="fr-primario" disabled={locked || !rascunho.imagem.trim()} onClick={() => {
-          enviar({ type: "select", key: "persona", value: JSON.stringify({ imagem: rascunho.imagem.trim(), meio: rascunho.meio.trim(), espera: rascunho.espera.trim() }) });
-          setPainel(null);
-        }}>SALVAR PERSONA</button>
+        <p className="fr-intro">A imagem pela qual você é conhecido, onde ela circula e o que seu Público espera de você. Dentro desse meio, um pequeno grupo já forma seu Público.</p>
+        <div className="fr-campos">
+          <label className="fr-campo"><span>COMO VOCÊ É CONHECIDO</span><input type="text" maxLength={60} disabled={locked} placeholder="Ex.: a cantora dos túneis, o pregador da Malha" value={rascunho.imagem} onChange={e => setRascunho({ ...rascunho, imagem: e.target.value })} /></label>
+          <label className="fr-campo"><span>ONDE SUA PERSONA CIRCULA</span><input type="text" maxLength={80} disabled={locked} placeholder="Comunidade, circuito ou ambiente social" value={rascunho.meio} onChange={e => setRascunho({ ...rascunho, meio: e.target.value })} /></label>
+          <label className="fr-campo"><span>O QUE SEU PÚBLICO ESPERA</span><input type="text" maxLength={80} disabled={locked} placeholder="Coragem, irreverência, competência, luxo, tradição…" value={rascunho.espera} onChange={e => setRascunho({ ...rascunho, espera: e.target.value })} /></label>
+          <button type="button" className="fr-primario" disabled={locked || !rascunho.imagem.trim()} onClick={() => {
+            enviar({ type: "select", key: "persona", value: JSON.stringify({ imagem: rascunho.imagem.trim(), meio: rascunho.meio.trim(), espera: rascunho.espera.trim() }) });
+            setPainel(null);
+          }}>SALVAR PERSONA</button>
+        </div>
       </div>
     </Painel>}
 
-    {painel === "negocio" && <Painel baixo titulo="INTERMEDIAÇÃO" intro={neg ? "Só desta transação. No Teste de Interação, troque dados com ela como na Reserva de Confiança: toque no dado que saiu e escolha o que entrou." : "Procure um fornecedor ou um comprador com seus contatos. Cada hora dedicada rola 1d8 para uma Reserva de Negociação só desta transação."} fechar={() => setPainel(null)}>
+    {painel === "negocio" && <Painel baixo titulo="INTERMEDIAÇÃO" fechar={() => setPainel(null)}>
       <div className="fr-folha">
         {neg ? <>
           <span className="fr-rotulo-sec">RESERVA DE NEGOCIAÇÃO · {neg.tipo === "vender" ? "VENDA" : "COMPRA"}</span>
-          {gemas(neg.dados, editNeg, j => setEditNeg(editNeg === j ? null : j), j => `Dado ${j + 1} da Reserva de Negociação`, true)}
-          {editNeg != null && escolhaValor("VALOR DO D8", neg.dados[editNeg], v => { if (neg.dados[editNeg] !== v) enviar({ type: "negociacao", op: "dado", index: editNeg, valor: v }); setEditNeg(null); }, () => setEditNeg(null))}
+          <p className="fr-intro" data-curta="true">Só desta transação. No Teste de Interação, troque dados com ela como na Reserva de Confiança: toque no dado que saiu e escolha o que entrou.</p>
+          {gemas(neg.dados, editNeg, j => setEditNeg(editNeg === j ? null : j), j => `Dado ${j + 1} da Reserva de Negociação`, "folha")}
+          {escolhaNeg(neg)}
           <span className="fr-rotulo-sec">COMO FOI O TESTE?</span>
           <div className="fr-resultados" role="radiogroup" aria-label="Resultado da negociação">
             {RESULTADOS.map(([id, nome]) => <button key={id} type="button" role="radio" className="fr-opcao" data-falha={id === "falha" || undefined} aria-checked={resultadoNeg === id} disabled={locked} onClick={() => setResultadoNeg(id)}>{nome}</button>)}
           </div>
-          {neg.tipo === "vender" && <label className="fr-campo">VALOR JUSTO DO LOTE · Ⱥ<input type="text" inputMode="numeric" disabled={locked} placeholder="Valor justo, em aretz" value={valorNeg} onChange={e => setValorNeg(e.target.value.replace(/\D/g, ""))} /></label>}
+          {neg.tipo === "vender" && <label className="fr-campo" data-valor="true">VALOR JUSTO DO LOTE · Ⱥ<input type="text" inputMode="numeric" disabled={locked} placeholder="Valor justo, em aretz" value={valorNeg} onChange={e => setValorNeg(e.target.value.replace(/\D/g, ""))} /></label>}
           {textoNeg && <p className="fr-texto-resultado" data-falha={resultadoNeg === "falha" || undefined}>{textoNeg}</p>}
           <div className="fr-fim">
-            <button type="button" className="ca-link" data-tom="neutro" disabled={locked} onClick={() => { setResultadoNeg(null); setValorNeg(""); setEditNeg(null); enviar({ type: "negociacao", op: "desistir" }); }}>DESISTIR DA NEGOCIAÇÃO</button>
+            <button type="button" className="fr-link" data-tom="neutro" disabled={locked} onClick={() => { setResultadoNeg(null); setValorNeg(""); setEditNeg(null); enviar({ type: "negociacao", op: "desistir" }); }}>DESISTIR DA NEGOCIAÇÃO</button>
             <button type="button" className="fr-primario" disabled={locked || !podeConcluir} onClick={concluirNeg}>{neg.tipo === "vender" ? "CONCLUIR VENDA" : "CONCLUIR COMPRA"}</button>
           </div>
-        </> : novaNegociacao}
+        </> : <>
+          <p className="fr-intro">Procure um fornecedor ou um comprador com seus contatos. Cada hora dedicada rola 1d8 para uma Reserva de Negociação só desta transação.</p>
+          <span className="fr-rotulo-sec">O QUE VAI NEGOCIAR</span>
+          {tiposNeg}
+          <span className="fr-rotulo-sec">HORAS COM SEUS CONTATOS</span>
+          <div className="fr-horas">{horasNeg}<small>{notaHoras}</small></div>
+          <button type="button" className="fr-primario" data-rolar="true" disabled={locked} onClick={abrirNeg}>{rolarTexto}</button>
+        </>}
       </div>
     </Painel>}
     </div>
