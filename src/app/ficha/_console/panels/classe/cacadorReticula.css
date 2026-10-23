@@ -18,8 +18,7 @@
 .cr-raiz .ar-hab-secao[data-tipo=classe] .ar-hab>button:hover .ar-hab-seta,
 .cr-raiz .ar-hab-secao[data-tipo=classe] .ar-hab>button:focus-visible .ar-hab-seta{color:var(--cr-claro)}
 .cr-raiz .ar-hab-secao[data-tipo=classe] .ar-hab>button[data-aberto=true] :is(.ar-hab-rank,.ar-hab-nome){color:var(--cr-claro)}
-.cr-raiz .ar-hab-texto .ar-hab-item{border-left-color:var(--cr-borda)}
-.cr-raiz .ar-hab-secao[data-tipo=subclasse] .ar-hab-texto .ar-hab-item{border-left-color:#1f4a5a}
+.cr-raiz .ar-hab-secao[data-tipo=classe] .ar-hab-texto,.cr-detalhe .ar-hab-texto{--hc-accent:var(--cr)}
 .cr-raiz .ar-hab-nota[data-tom=laranja]{color:var(--cr)}
 .cr-raiz .ar-link{color:var(--cr-claro) !important}
 .cr-raiz .ar-link:not(:disabled):hover{color:#fff !important}
@@ -179,10 +178,7 @@
 .cr-detalhe header svg{stroke:var(--cr-claro)}
 .cr-detalhe header strong{font:700 18px/1 var(--ar-oxa);color:#f4f8fa}
 .cr-detalhe header span{margin-left:auto;font:700 10px/1 var(--ar-mono);letter-spacing:.12em;color:#8fa6b4}
-.cr-detalhe .ar-hab-texto{margin:0;max-width:none}
-.cr-detalhe .ar-hab-texto{gap:8px}
-.cr-detalhe .ar-hab-texto p{font-size:14px;line-height:1.6}
-.cr-detalhe .ar-hab-item{padding:8px 12px;font-size:13px !important;line-height:1.55 !important;background:#0a171d}
+.cr-detalhe .ar-hab-texto{margin:0;max-width:none;line-height:1.6}
 /* Folha do painel: o miolo rola, o rodapé fica preso embaixo. */
 .cr-folha{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;margin:0 -24px -24px}
 .cr-rola{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 24px 16px;scrollbar-width:thin;scrollbar-color:#1c3445 transparent}

@@ -69,3 +69,30 @@ assert.equal(desfeito.character.estado_jogo?.pa_gastos,4,'undo não devolve PA q
 deployed=applyClassCommand(deployed,{type:'unit',index:0,operation:'retrieve'},4).character;
 assert.equal(readClassPlay(deployed).entities.length,1);
 console.log('Unidades: instalação posicionada/acoplada, sistema conectado, PD e recolhimento OK.');
+// Combatente: dado com valor, registro, Ponto Fraco, Comprometer, marcas sem trava e desfazer passo a passo.
+{let k=make('combatente','dissecador','B');
+ let g=applyClassCommand(k,{type:'gastarManobra',itens:[{nome:'Explorar a Guarda',valor:6,texto:'+6 de dano'}]},4);assert.equal(g.error,undefined);
+ let st=readClassPlay(g.character);assert.deepEqual(st.spentDice,[0]);assert.equal(st.valoresDados?.[0],6);assert.equal(st.gastos?.length,1);assert.equal(st.resource,3);
+ assert.ok(applyClassCommand(k,{type:'gastarManobra',itens:[{nome:'X',valor:9,texto:''}]},4).error,'d8 não sai 9');
+ g=applyClassCommand(g.character,{type:'gastarManobra',itens:[{nome:'Cortar',valor:2,texto:''},{nome:'Explorar',valor:5,texto:''}],uso:'round:composta'},4);st=readClassPlay(g.character);
+ assert.deepEqual(st.spentDice,[0,1,2],'Composta gasta dois dados');assert.equal(st.uses['round:composta'],1);
+ assert.equal(applyClassCommand(g.character,{type:'gastarManobra',itens:[{nome:'A',valor:1,texto:''},{nome:'B',valor:1,texto:''}],uso:'round:composta'},4).error,'Dados de Manobra insuficientes');
+ assert.equal(applyClassCommand(g.character,{type:'gastarManobra',itens:[{nome:'A',valor:1,texto:''}],uso:'round:composta'},4).error,undefined,'uso por rodada não trava');
+ let d=applyClassCommand(g.character,{type:'desfazerCombate'},4);st=readClassPlay(d.character);assert.deepEqual(st.spentDice,[0],'desfaz a Composta inteira');assert.equal(st.uses['round:composta'],undefined);
+ d=applyClassCommand(d.character,{type:'desfazerCombate'},4);assert.equal(readClassPlay(d.character).resource,4,'desfaz até o primeiro gasto');
+ assert.ok(applyClassCommand(d.character,{type:'desfazerCombate'},4).error,'pilha vazia');
+ let m=applyClassCommand(k,{type:'toggleDie',index:2},4);st=readClassPlay(m.character);assert.equal(st.gastos?.[0].nome,'Marcado à mão');m=applyClassCommand(m.character,{type:'toggleDie',index:2},4);assert.equal(readClassPlay(m.character).gastos?.length,0,'restaurar tira do registro');
+ let u=applyClassCommand(k,{type:'marcarUso',chave:'round:vantagem'},4);assert.equal(readClassPlay(u.character).uses['round:vantagem'],1);u=applyClassCommand(u.character,{type:'marcarUso',chave:'round:vantagem'},4);assert.equal(readClassPlay(u.character).uses['round:vantagem'],undefined,'marcar de novo desmarca');
+ let pf=applyClassCommand(k,{type:'pontoFraco',alvo:'saq',regiao:'pernas'},4);assert.equal(readClassPlay(pf.character).marcas?.saq.regiao,'pernas');
+ assert.equal(applyClassCommand(pf.character,{type:'pontoFraco',alvo:'saq',regiao:'cabeca'},4).error,undefined,'marcar de novo na rodada não trava');
+ assert.ok(applyClassCommand(k,{type:'comprometer',alvo:'saq',valor:4},4).error,'sem marca não compromete');
+ let cp=applyClassCommand(pf.character,{type:'comprometer',alvo:'saq',valor:4},4);st=readClassPlay(cp.character);assert.equal(st.marcas?.saq.comp,true);assert.equal(st.resource,3);
+ assert.equal(readClassPlay({...cp.character,current_round:3}).marcas?.saq.comp,false,'comprometimento acaba depois da rodada seguinte');
+ assert.equal(readClassPlay({...cp.character,current_round:2}).marcas?.saq.comp,true);
+ assert.deepEqual(readClassPlay({...cp.character,current_scene:2}).marcas,{},'marcas acabam com a cena');
+ let tm=applyClassCommand(cp.character,{type:'pontoFraco',alvo:'saq',regiao:null},4);assert.equal(readClassPlay(tm.character).marcas?.saq,undefined,'tirar marca');
+ assert.ok(applyClassCommand(make('combatente','brutalista','B'),{type:'pontoFraco',alvo:'x',regiao:'pernas'},4).error,'Ponto Fraco é do Dissecador');
+ const descanso=readClassPlay(resetClassLongRest(cp.character));assert.equal(descanso.resource,4);assert.deepEqual(descanso.gastos,[]);
+}
+console.log('Combatente: dados com valor, registro, Ponto Fraco, Comprometer e desfazer OK.');
+{let b=make("combatente","brutalista","B");b=applyClassCommand(b,{type:"marcarUso",chave:"round:x",valor:true},4).character;b=applyClassCommand(b,{type:"marcarUso",chave:"round:x",valor:true},4).character;assert.equal(readClassPlay(b).uses["round:x"],1,"valor:true não desmarca");}

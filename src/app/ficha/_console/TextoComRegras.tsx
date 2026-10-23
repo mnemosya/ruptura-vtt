@@ -27,7 +27,7 @@
  * rótulo — os links apontam para páginas internas do Notion).
  */
 
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, Fragment, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { BookOpen } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -60,6 +60,23 @@ function LinkDoLivro({ pageId, children }: { pageId: string; children: ReactNode
     {aberto && <LivroCodex campaignId={null} inicial={{ pageId }} onClose={() => setAberto(false)} />}
   </>;
 }
+
+/**
+ * Glossário do Console inteiro. Quem chama sem glossário próprio (painéis
+ * de classe, fichas de companheiro, codex) usa este, então todo texto de
+ * regra aberto no Console grifa as mesmas ações e condições.
+ */
+export const GlossarioDoConsole = createContext<TermoDeRegra[]>([]);
+
+/* Formatos dos livros de classe, além do Markdown. */
+const ACAO = /^(\d+ PA) ([^.]+?)\.\s*(.*)$/;
+const NATURAL = /\s*\(Ataque natural\)$/;
+const MAIUSC = "A-ZÁÉÍÓÚÂÊÔÃÕÇÜ";
+const CHAVE_VALOR = new RegExp(`^([${MAIUSC}][^:.]{0,24}):\\s*(.+)$`);
+const PALAVRA = `[${MAIUSC}][\\wÀ-ÿ-]*`;
+// Nome em destaque no começo do parágrafo: "Passos Silenciosos. O companheiro…", "Instinto. Utilizar…".
+const NOME_NA_FRENTE = new RegExp(`^(${PALAVRA}(?:\\s+(?:de|da|do|das|dos|e|em|${PALAVRA})){0,4}\\.)\\s+(.+)$`);
+const ROTULO = /^(Exemplos?|Nota|Observação|Especial):\s+(.+)$/;
 
 /** Texto corrido: negrito, itálico, `termo`, [link](url) — e os termos do glossário grifados em tudo. */
 function emLinha(texto: string, glossario: TermoDeRegra[], chave: string): ReactNode[] {
@@ -95,22 +112,36 @@ export function TextoComRegras({
   glossario: TermoDeRegra[];
   className?: string;
 }) {
+  const doConsole = useContext(GlossarioDoConsole);
+  const termos = glossario.length ? glossario : doConsole;
   const conteudo = useMemo<ReactNode[]>(
-    () =>
-      emBlocos(texto).map((b, i) => {
+    () => {
+      const todos = emBlocos(texto);
+      return todos.map((b, i) => {
         const k = `b${i}`;
         const topo = i === 0 ? 0 : "1em";
         if (b.tipo === "titulo") {
           const Titulo = `h${b.nivel}` as "h3" | "h4" | "h5" | "h6";
-          return <Titulo key={k} className="rc-regra-titulo">{emLinha(b.texto, glossario, k)}</Titulo>;
+          return <Titulo key={k} className="rc-regra-titulo">{emLinha(b.texto, termos, k)}{b.custo && <span className="rc-custo">{b.custo}</span>}</Titulo>;
         }
         if (b.tipo === "divisor") return <hr key={k}/>;
-        if (b.tipo === "p") return <p key={k} style={{ margin: `${topo} 0 0` }}>{emLinha(b.linhas.join(" "), glossario, k)}</p>;
+        if (b.tipo === "p") {
+          const corrido = b.linhas.join(" ");
+          const margem = { margin: `${topo} 0 0` };
+          // "1 PA Andar. texto": a ação com o custo à frente (fichas de companheiro e máquinas).
+          const acao = ACAO.exec(corrido);
+          if (acao) return <p key={k} className="rc-acao" style={margem}><span className="rc-custo">{acao[1]}</span><strong className="rc-acao-nome">{emLinha(acao[2].replace(NATURAL, ""), termos, `${k}n`)}</strong>{NATURAL.test(acao[2]) && <span className="rc-marca">ATAQUE NATURAL</span>}{acao[3] && <> {emLinha(acao[3], termos, `${k}t`)}</>}</p>;
+          // Frase curta que abre a lista logo abaixo ("Se o ataque acertar:").
+          if (corrido.endsWith(":") && corrido.length <= 140 && todos[i + 1]?.tipo === "lista") return <p key={k} className="rc-introduz" style={margem}>{emLinha(corrido, termos, k)}</p>;
+          const rotulo = ROTULO.exec(corrido), lider = rotulo ?? NOME_NA_FRENTE.exec(corrido);
+          if (lider) return <p key={k} style={margem}><strong className="rc-negrito">{lider[1]}{rotulo ? ":" : ""}</strong> {emLinha(lider[2], termos, k)}</p>;
+          return <p key={k} style={margem}>{emLinha(corrido, termos, k)}</p>;
+        }
         if (b.tipo === "citacao") {
           // Listas dentro de uma nota mantêm seus blocos e marcadores.
           // Unir tudo com espaços transforma os exemplos em um único parágrafo.
           if (b.linhas.some(linha => ITEM.test(linha))) {
-            return <blockquote key={k} style={{ margin: `${topo} 0 0`, paddingLeft: "0.8em", borderLeft: "2px solid currentColor" }}><TextoComRegras texto={b.linhas.join("\n")} glossario={glossario} /></blockquote>;
+            return <blockquote key={k} style={{ margin: `${topo} 0 0`, paddingLeft: "0.8em", borderLeft: "2px solid currentColor" }}><TextoComRegras texto={b.linhas.join("\n")} glossario={termos} /></blockquote>;
           }
           // Citação do Notion = nota em itálico, exportada picotada ("*texto *[*link*](url)* *").
           // O bloco inteiro já é itálico; os "*" soltos que sobram saem (o **negrito** fica).
@@ -120,15 +151,15 @@ export function TextoComRegras({
             .replace(/\[\*?([^\]]*?)\*?\]\(([^)]*)\)/g, (_t, rot: string, url: string) => `\u0000${links.push(`[${rot.replace(/\*/g, "")}](${url})`) - 1}\u0000`)
             .replace(/(?<!\*)\*(?!\*)/g, "").replace(/\s+/g, " ").trim()
             .replace(/\u0000(\d+)\u0000/g, (_t, i: string) => links[Number(i)]);
-          return <blockquote key={k} style={{ margin: `${topo} 0 0`, paddingLeft: "0.8em", borderLeft: "2px solid currentColor", opacity: 0.75, fontStyle: "italic" }}>{emLinha(texto, glossario, k)}</blockquote>;
+          return <blockquote key={k} style={{ margin: `${topo} 0 0`, paddingLeft: "0.8em", borderLeft: "2px solid currentColor", opacity: 0.75, fontStyle: "italic" }}>{emLinha(texto, termos, k)}</blockquote>;
         }
         if (b.tipo === "tabela" && b.linhas.length === 1 && b.linhas[0].length === 2) {
           // Tabela só com cabeçalho de duas células ("RAM:" | "5 + (Mana × 2)") é uma fórmula: vira destaque.
           const [rotulo, valor] = b.linhas[0];
           return (
             <div key={k} className="rc-formula" style={{ margin: `${topo} 0 0`, display: "flex", alignItems: "baseline", gap: "0.8em", flexWrap: "wrap", padding: "0.6em 0.9em", borderLeft: "2px solid var(--rv-vertente-cor, currentColor)", background: "color-mix(in srgb, currentColor 6%, transparent)" }}>
-              <span style={{ fontSize: "0.8em", fontWeight: 800, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--rv-vertente-cor, currentColor)" }}>{emLinha(rotulo.replace(/\*\*/g, ""), glossario, `${k}r`)}</span>
-              <span style={{ fontSize: "1.15em", fontWeight: 700 }}>{emLinha(valor.replace(/\*\*/g, ""), glossario, `${k}v`)}</span>
+              <span style={{ fontSize: "0.8em", fontWeight: 800, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--rv-vertente-cor, currentColor)" }}>{emLinha(rotulo.replace(/\*\*/g, ""), termos, `${k}r`)}</span>
+              <span style={{ fontSize: "1.15em", fontWeight: 700 }}>{emLinha(valor.replace(/\*\*/g, ""), termos, `${k}v`)}</span>
             </div>
           );
         }
@@ -136,19 +167,27 @@ export function TextoComRegras({
           const [cab, ...corpo] = b.linhas;
           return (
             <div key={k} className="rc-regra-tabela"><table style={{ margin: `${topo} 0 0`, borderCollapse: "collapse", width: "100%", fontSize: "0.92em" }}>
-              <thead><tr>{cab.map((c, j) => <th key={j} style={{ textAlign: "left", padding: "4px 8px 4px 0", borderBottom: "1px solid color-mix(in srgb, currentColor 25%, transparent)" }}>{emLinha(c.replace(/\*\*/g, ""), glossario, `${k}h${j}`)}</th>)}</tr></thead>
-              <tbody>{corpo.map((l, r) => <tr key={r}>{l.map((c, j) => <td key={j} style={{ padding: "4px 8px 4px 0", borderBottom: "1px solid color-mix(in srgb, currentColor 10%, transparent)" }}>{emLinha(c, glossario, `${k}r${r}c${j}`)}</td>)}</tr>)}</tbody>
+              <thead><tr>{cab.map((c, j) => <th key={j} style={{ textAlign: "left", padding: "4px 8px 4px 0", borderBottom: "1px solid color-mix(in srgb, currentColor 25%, transparent)" }}>{emLinha(c.replace(/\*\*/g, ""), termos, `${k}h${j}`)}</th>)}</tr></thead>
+              <tbody>{corpo.map((l, r) => <tr key={r}>{l.map((c, j) => <td key={j} style={{ padding: "4px 8px 4px 0", borderBottom: "1px solid color-mix(in srgb, currentColor 10%, transparent)" }}>{emLinha(c, termos, `${k}r${r}c${j}`)}</td>)}</tr>)}</tbody>
             </table></div>
           );
         }
+        // Lista só de "Chave: valor" (Tamanho, PV, regiões, modulações…) vira uma ficha de duas colunas.
+        const pares = !b.ordenada && b.itens.length > 1 && b.itens.every(it => !it.nivel) ? b.itens.map(it => CHAVE_VALOR.exec(it.texto.replace(/^\*\*([^*]+?):?\*\*:?/, "$1:"))) : [];
+        if (pares.length && pares.every(Boolean)) return (
+          <dl key={k} className="rc-ficha" style={{ margin: `${topo} 0 0` }}>
+            {pares.map((par, j) => <div key={j}><dt>{emLinha(par![1], termos, `${k}c${j}`)}</dt><dd>{emLinha(par![2], termos, `${k}v${j}`)}</dd></div>)}
+          </dl>
+        );
         const Lista = b.ordenada ? "ol" : "ul";
         return (
-          <Lista key={k} className="rc-lista-texto" style={{ margin: `${topo} 0 0`, paddingLeft: "1.2em", listStyle: b.ordenada ? "decimal" : "disc" }}>
-            {b.itens.map((it, j) => <li key={j} style={{ marginTop: j ? "0.35em" : 0, marginLeft: `${it.nivel * 1.2}em` }}>{emLinha(it.texto.replace(/^([^:*\n]{2,65}):(?=\s)/, "**$1:**"), glossario, `${k}i${j}`)}</li>)}
+          <Lista key={k} className="rc-lista-texto" data-marca={b.ordenada ? undefined : "losango"} style={{ margin: `${topo} 0 0`, paddingLeft: "1.2em", listStyle: b.ordenada ? "decimal" : "none" }}>
+            {b.itens.map((it, j) => <li key={j} style={{ marginTop: j ? "0.35em" : 0, marginLeft: `${it.nivel * 1.2}em` }}>{emLinha(it.texto.replace(/^([^:*\n]{2,65}):(?=\s)/, "**$1:**"), termos, `${k}i${j}`)}</li>)}
           </Lista>
         );
-      }),
-    [texto, glossario],
+      });
+    },
+    [texto, termos],
   );
 
   return <div className={["rc-prosa", className].filter(Boolean).join(" ")}>{conteudo}</div>;

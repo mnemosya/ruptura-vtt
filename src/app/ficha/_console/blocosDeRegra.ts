@@ -1,5 +1,5 @@
 export type Bloco =
-  | { tipo: "titulo"; nivel: number; texto: string }
+  | { tipo: "titulo"; nivel: number; texto: string; custo?: string }
   | { tipo: "divisor" }
   | { tipo: "p"; linhas: string[] }
   | { tipo: "lista"; ordenada: boolean; itens: { nivel: number; texto: string }[] }
@@ -20,11 +20,13 @@ export function emBlocos(texto: string): Bloco[] {
       continue;
     }
     const titulo = /^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$/.exec(linha);
-    const textoTitulo = linha.trim();
+    // Título com custo no fim ("COMANDAR COMPANHEIRO 1 PA"): o custo vira etiqueta.
+    const custo = /\s+(\d+\s*PA)$/.exec(linha.trim());
+    const textoTitulo = custo ? linha.trim().slice(0, custo.index) : linha.trim();
     // Os livros legados usam títulos isolados em caixa alta, sem Markdown.
     const tituloLegado = textoTitulo.length <= 90 && /^[A-ZÁÀÂÃÉÊÍÓÔÕÚÜÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÜÇ\s/–—:()-]+$/.test(textoTitulo);
     if (titulo || tituloLegado) {
-      blocos.push({ tipo: "titulo", nivel: titulo ? Math.min(6, titulo[1].length + 2) : 4, texto: titulo ? titulo[2] : textoTitulo.replace(/:$/, "") });
+      blocos.push({ tipo: "titulo", nivel: titulo ? Math.min(6, titulo[1].length + 2) : 4, texto: titulo ? titulo[2] : textoTitulo.replace(/:$/, ""), custo: tituloLegado ? custo?.[1] : undefined });
       continue;
     }
     if (/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(linha)) {

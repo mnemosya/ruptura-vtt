@@ -13,3 +13,18 @@
 .rc-prosa table{line-height:1.5}.rc-prosa :is(th,td){padding:.65em .8em!important;vertical-align:top}.rc-prosa th{background:color-mix(in srgb,currentColor 7%,transparent)}
 .hc-feature-description .rc-prosa{font-size:14px;line-height:1.75}.hc-subclass-prose .rc-prosa{font-size:15px}
 @container(max-width:440px){.hc-feature-description{padding-left:16px}.rc-prosa{font-size:14px}}
+/* Formatos dos livros de classe: lista com marcador do HUD, frase que abre lista, ficha, ação e custo. */
+.rc-prosa .rc-lista-texto[data-marca=losango]>li{position:relative}
+.rc-prosa .rc-lista-texto[data-marca=losango]>li::before{content:"";position:absolute;left:-1.05em;top:.72em;width:5px;height:5px;transform:rotate(45deg);background:var(--hc-accent,var(--rv-vertente-cor,#83c7d7))}
+.rc-prosa .rc-introduz{font-weight:600;color:color-mix(in srgb,currentColor 55%,#eef4f7)}
+.rc-prosa .rc-ficha{border:1px solid color-mix(in srgb,currentColor 16%,transparent)}
+.rc-prosa .rc-ficha>div{display:grid;grid-template-columns:minmax(96px,max-content) 1fr}
+.rc-prosa .rc-ficha>div+div{border-top:1px solid color-mix(in srgb,currentColor 12%,transparent)}
+.rc-prosa .rc-ficha dt{padding:.55em .9em;background:color-mix(in srgb,currentColor 6%,transparent);font:600 11px/1.6 var(--font-mono,ui-monospace),monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--hc-accent,var(--rv-vertente-cor,#8fa6b4))}
+.rc-prosa .rc-ficha dd{margin:0;padding:.55em .9em;line-height:1.55}
+.rc-prosa .rc-custo{display:inline-block;margin-left:.7em;padding:.15em .5em;border:1px solid currentColor;font:600 10px/1.3 var(--font-mono,ui-monospace),monospace;letter-spacing:.1em;vertical-align:.15em;color:var(--hc-accent,var(--rv-vertente-cor,#83c7d7))}
+.rc-prosa .rc-acao{position:relative;padding-left:4.4em}
+.rc-prosa .rc-acao>.rc-custo{position:absolute;left:0;top:.2em;margin:0;min-width:3.2em;text-align:center}
+.rc-prosa .rc-acao-nome{font-weight:700;color:color-mix(in srgb,currentColor 30%,#ffffff)}
+.rc-prosa .rc-marca{margin-left:.6em;padding:.15em .45em;background:color-mix(in srgb,var(--hc-accent,#83c7d7) 16%,transparent);font:600 9px/1.3 var(--font-mono,ui-monospace),monospace;letter-spacing:.1em;vertical-align:.2em;color:var(--hc-accent,var(--rv-vertente-cor,#83c7d7))}
+.rc-prosa .rc-introduz+:is(.rc-lista-texto,.rc-ficha){margin-top:.45em!important}

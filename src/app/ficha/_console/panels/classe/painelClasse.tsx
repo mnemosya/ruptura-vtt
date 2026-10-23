@@ -2,107 +2,24 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { reached, CLASS_RANKS } from "../../../../../lib/character/classManagement";
+import { TextoComRegras } from "../../TextoComRegras";
+import type { TermoDeRegra } from "../../types";
 
 /** Peças comuns às telas de classe redesenhadas (Âncora, Caçador). */
 
 export type Caracteristica = { nome: string; descricao: string };
-export type Bloco =
-  | { tipo: "titulo"; texto: string; custo?: string }
-  | { tipo: "item" | "paragrafo"; destaque: string; texto: string }
-  | { tipo: "ficha"; chave: string; texto: string }
-  | { tipo: "acao"; custo: string; nome: string; marca?: string; texto: string };
-
-const MAIUSC = "A-ZÁÉÍÓÚÂÊÔÃÕÇÜ";
-const TITULO_SOLTO = new RegExp(`^[${MAIUSC} ]+:$`);
-const CAIXA_ALTA = new RegExp(`^[${MAIUSC}][${MAIUSC} ,()/-]*[${MAIUSC})]$`);
-const ACAO = /^(\d+ PA) ([^.]+?)\.\s*(.*)$/;
-const CHAVE_VALOR = new RegExp(`^([${MAIUSC}][^:.]{0,24}):\\s*(.+)$`);
-// Nome em destaque no começo do parágrafo: "Passos Silenciosos. O companheiro…", "Instinto. Utilizar…".
-const PALAVRA = `[${MAIUSC}][\\wÀ-ÿ-]*`;
-const NOME_NA_FRENTE = new RegExp(`^(${PALAVRA}(?:\\s+(?:de|da|do|das|dos|e|em|${PALAVRA})){0,4}\\.)\\s+(.+)$`);
-const semEnfase = (texto: string) => texto.replace(/\*([^*]+)\*/g, "$1");
-
-function paragrafo(corrido: string): Bloco {
-  const acao = corrido.match(ACAO);
-  if (acao) {
-    const ataque = /\s*\(Ataque natural\)$/.test(acao[2]);
-    return { tipo: "acao", custo: acao[1], nome: acao[2].replace(/\s*\(Ataque natural\)$/, ""), marca: ataque ? "ATAQUE NATURAL" : undefined, texto: acao[3] };
-  }
-  if (corrido.startsWith("• ")) {
-    const corpo = corrido.slice(2), i = corpo.indexOf(":");
-    return { tipo: "item", destaque: i > 0 ? corpo.slice(0, i + 1) + " " : "", texto: i > 0 ? corpo.slice(i + 1).trim() : corpo };
-  }
-  const exemplos = corrido.match(/^(Exemplos:)\s+(.+)$/);
-  if (exemplos) return { tipo: "paragrafo", destaque: exemplos[1] + " ", texto: exemplos[2] };
-  const nome = corrido.match(NOME_NA_FRENTE);
-  return nome ? { tipo: "paragrafo", destaque: nome[1] + " ", texto: nome[2] } : { tipo: "paragrafo", destaque: "", texto: corrido };
-}
-
-function itemDeLista(linha: string): Bloco {
-  if (CAIXA_ALTA.test(linha.replace(/\s+\d+ PA$/, ""))) {
-    const custo = linha.match(/\s+(\d+ PA)$/);
-    return { tipo: "titulo", texto: custo ? linha.slice(0, custo.index) : linha, custo: custo?.[1] };
-  }
-  const kv = linha.match(CHAVE_VALOR);
-  if (kv) return { tipo: "ficha", chave: kv[1], texto: kv[2] };
-  return { tipo: "item", destaque: "", texto: linha };
-}
-
-/**
- * Texto de regra em blocos. Entende os formatos dos livros:
- * - títulos em caixa alta (soltos, com ":" ou com custo: "COMANDAR COMPANHEIRO 1 PA");
- * - "• Nome: texto" em linha corrida e "- item" / "| a | b |" linha a linha;
- * - fichas "Chave: valor" (Tamanho, PV, Perícias…), que viram uma tabela;
- * - ações "1 PA Andar. texto", com a marca de ataque natural;
- * - o nome em destaque no começo do parágrafo ("Faro Apurado.", "Instinto.").
- */
-export function blocos(texto: string): Bloco[] {
-  return semEnfase(texto).split("\n\n").flatMap(trecho => {
-    let linhas = trecho.split("\n").map(l => l.trim()).filter(Boolean);
-    const saida: Bloco[] = [];
-    if (linhas.length === 1 && (TITULO_SOLTO.test(linhas[0]) || CAIXA_ALTA.test(linhas[0]))) return [{ tipo: "titulo", texto: linhas[0].replace(/:$/, "") }];
-    if (linhas.length > 1 && !/^[-|]/.test(linhas[0]) && linhas[0] === linhas[0].toUpperCase()) { saida.push({ tipo: "titulo", texto: linhas[0].replace(/:$/, "") }); linhas = linhas.slice(1); }
-    if (linhas.length && linhas.every(l => /^(- |\|)/.test(l))) {
-      const tabela = linhas.filter(l => l.startsWith("|") && !/^\|\s*-/.test(l));
-      // Tabela: a primeira linha é o cabeçalho; cada linha seguinte vira um item "a · b".
-      tabela.slice(1).forEach(l => saida.push({ tipo: "item", destaque: "", texto: l.replace(/^\||\|$/g, "").split("|").map(c => c.trim()).join(" · ") }));
-      linhas.filter(l => l.startsWith("- ")).forEach(l => saida.push(itemDeLista(l.slice(2))));
-      return saida;
-    }
-    if (linhas.length) saida.push(paragrafo(linhas.join(" ")));
-    return saida;
-  });
-}
-
-/** Junta itens e fichas vizinhos num só bloco, para a lista e a tabela não virarem caixas soltas. */
-function agrupar(lista: Bloco[]) {
-  const grupos: (Bloco | { tipo: "lista"; itens: Bloco[] } | { tipo: "fichas"; itens: Extract<Bloco, { tipo: "ficha" }>[] })[] = [];
-  for (const b of lista) {
-    const ultimo = grupos[grupos.length - 1];
-    if (b.tipo === "item") { if (ultimo?.tipo === "lista") ultimo.itens.push(b); else grupos.push({ tipo: "lista", itens: [b] }); }
-    else if (b.tipo === "ficha") { if (ultimo?.tipo === "fichas") ultimo.itens.push(b); else grupos.push({ tipo: "fichas", itens: [b] }); }
-    else grupos.push(b);
-  }
-  return grupos;
-}
-
-export function TextoRegra({ texto, className = "ar-hab-texto" }: { texto: string; className?: string }) {
-  return <div className={className}>{agrupar(blocos(texto)).map((b, index) => {
-    if (b.tipo === "titulo") return <span key={index} className="ar-hab-sub">{b.texto}{b.custo && <em>{b.custo}</em>}</span>;
-    if (b.tipo === "lista") return <div key={index} className="ar-hab-lista">{b.itens.map((item, i) => item.tipo === "item" && <p key={i} className="ar-hab-item"><b>{item.destaque}</b>{item.texto}</p>)}</div>;
-    if (b.tipo === "fichas") return <dl key={index} className="ar-hab-ficha">{b.itens.map((f, i) => <div key={i}><dt>{f.chave}</dt><dd>{f.texto}</dd></div>)}</dl>;
-    if (b.tipo === "acao") return <p key={index} className="ar-hab-acao"><span className="ar-hab-custo">{b.custo}</span><b>{b.nome}</b>{b.marca && <i>{b.marca}</i>}{b.texto && <> {b.texto}</>}</p>;
-    if (b.tipo === "paragrafo" || b.tipo === "item") return <p key={index}><b>{b.destaque}</b>{b.texto}</p>;
-    return null;
-  })}</div>;
+/** Texto de regra das telas de classe: o mesmo leitor do resto do console, com os termos do glossário. */
+export function TextoRegra({ texto, glossario = [], className = "ar-hab-texto" }: { texto: string; glossario?: TermoDeRegra[]; className?: string }) {
+  return <TextoComRegras texto={texto} glossario={glossario} className={className} />;
 }
 
 /** Habilidades da classe e da subclasse, em blocos, com as do ranking ainda não alcançado travadas. */
-export function ListaHabilidades({ classe, sub, rank, iconeClasse, nota }: {
+export function ListaHabilidades({ classe, sub, rank, iconeClasse, nota, glossario }: {
   classe: { nome: string; caracteristicas: Record<string, Caracteristica[]> };
   sub?: { nome: string; caracteristicas: Record<string, Caracteristica[]> };
   rank: string;
   iconeClasse: ReactNode;
+  glossario?: TermoDeRegra[];
   /** Estado de uso ao lado do nome (ex.: "Troca grátis pronta"). */
   nota?: (nome: string) => { texto: string; tom?: string } | null;
 }) {
@@ -127,14 +44,14 @@ export function ListaHabilidades({ classe, sub, rank, iconeClasse, nota }: {
             {estado && <span className="ar-hab-nota" data-tom={estado.tom}>{estado.texto}</span>}
             <svg className="ar-hab-seta" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
           </button>
-          {aberto && <TextoRegra texto={item.descricao} />}
+          {aberto && <TextoRegra texto={item.descricao} glossario={glossario} />}
         </div>;
       })}
     </div>;
   })}</>;
 }
 
-export function Painel({ titulo, intro, fechar, children }: { titulo: string; intro?: string; fechar: () => void; children: ReactNode | ((sair: () => void) => ReactNode) }) {
+export function Painel({ titulo, intro, fechar, children, baixo }: { titulo: string; intro?: string; fechar: () => void; children: ReactNode | ((sair: () => void) => ReactNode); /** Folha só da altura do conteúdo, em vez de subir até o teto. */ baixo?: boolean }) {
   // Sai animado: marca a saída e só desmonta quando a animação do painel termina.
   const [saindo, setSaindo] = useState(false);
   const raiz = useRef<HTMLDivElement>(null);
@@ -158,7 +75,7 @@ export function Painel({ titulo, intro, fechar, children }: { titulo: string; in
   }, []);
   return <div ref={raiz} className="ar-sheet">
     <div className="ar-veu" aria-hidden="true" data-saindo={saindo} onClick={sair} />
-    <div className="ar-painel" role="dialog" aria-label={titulo} data-saindo={saindo}
+    <div className="ar-painel" role="dialog" aria-label={titulo} data-saindo={saindo} data-baixo={baixo || undefined}
       onKeyDown={event => { if (event.key === "Escape") { event.stopPropagation(); sair(); } }}
       onAnimationEnd={event => { if (saindo && event.target === event.currentTarget) fechar(); }}>
       <div className="ar-painel-cab"><h3>{titulo}</h3><button ref={fecharBotao} type="button" aria-label={`Fechar ${titulo.toLowerCase()}`} onClick={sair}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg></button></div>

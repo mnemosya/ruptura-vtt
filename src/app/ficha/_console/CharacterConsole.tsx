@@ -83,6 +83,7 @@ import type { Bancada } from "../../../lib/character/supportLoadout";
 import type { FonteRecarga } from "../../../lib/character/reloadSources";
 import { useRolarNaMesa } from "../../mesas/[campaignId]/vtt/_dados3d/ContextoMesaDados";
 import type { ConsoleApi, ConsolePin } from "./types";
+import { GlossarioDoConsole } from "./TextoComRegras";
 import { parseTerceiroSegmentoThreshold, pisoPeNegativo, type CharacterAttributes, type InventoryItemInstance, type ItemContent } from "../../../lib/character";
 
 /** Estado do modal auxiliar aberto no momento (um por vez). */
@@ -504,7 +505,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
   }
 
   return (
-    <>
+    <GlossarioDoConsole.Provider value={api.glossario}>
       <ConsoleWindow
         aberto={aberto}
         onClose={onClose}
@@ -700,6 +701,6 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
         <ConfirmModal titulo={aux.titulo} mensagem={aux.mensagem} onConfirmar={() => setAux(null)} onFechar={() => setAux(null)} />
       )}
       </div>
-    </>
+    </GlossarioDoConsole.Provider>
   );
 }

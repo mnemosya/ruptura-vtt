@@ -9,6 +9,7 @@ import { CabecalhoModulo } from "../CabecalhoModulo";
 import { oxanium } from "../../../../_design/oxanium";
 import cacador from "../../../../../../content/v12/db_classe_cacador_v1_2.json";
 import condicoes from "../../../../../../content/db_condicoes_normalizado_v1_5.json";
+import type { TermoDeRegra } from "../../types";
 import { ListaHabilidades, Painel, Seletor, TextoRegra, type Caracteristica } from "./painelClasse";
 import { useImagemCompanheiro } from "./ImagemCompanheiro";
 import { EnvioImagem, HEXAGONO } from "../../EnvioImagem";
@@ -17,7 +18,7 @@ import "./cacadorReticula.css";
 
 const plex = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex", display: "swap" });
 
-type Api = Pick<ConsoleApi, "character" | "somenteLeitura"> & Partial<Pick<ConsoleApi, "classe" | "derivados" | "mesa">>;
+type Api = Pick<ConsoleApi, "character" | "somenteLeitura"> & Partial<Pick<ConsoleApi, "classe" | "derivados" | "mesa" | "glossario">>;
 type Livro = { nome: string; caracteristicas: Record<string, Caracteristica[]> };
 type Estado = "pronto" | "agora" | "usado" | "indisponivel" | "travado";
 type Pos = "esq" | "dir" | "base3" | "topo" | "base" | "te" | "td";
@@ -370,11 +371,11 @@ export function CacadorReticula({ api, rank, subclassId }: { api: Api; rank: str
     </footer>
 
     {painel === "habilidades" && <Painel titulo="HABILIDADES" fechar={fecharPainel}>
-      <ListaHabilidades classe={classe} sub={sub} rank={rank} iconeClasse={<Icone d={ICONE.mira} tamanho={16} />}
+      <ListaHabilidades classe={classe} sub={sub} rank={rank} glossario={api.glossario} iconeClasse={<Icone d={ICONE.mira} tamanho={16} />}
         nota={nome => nome === "Reação Planejada" ? { texto: usos("reacaoPlanejada", "round") ? "Usada nesta rodada" : "Pronta", tom: "laranja" } : null} />
     </Painel>}
     {painel === "preparos" && <Painel titulo={modoPreparo === "fora" ? "PREPARO FORA DA LISTA" : "TROCAR PREPAROS"} fechar={fecharPainel}>{sair =>
-      <TrocarPreparos max={maxPreparos} equipados={equipados} usos={nome => usos(idPreparo(nome))} fora={modoPreparo === "fora"} locked={locked}
+      <TrocarPreparos glossario={api.glossario} max={maxPreparos} equipados={equipados} usos={nome => usos(idPreparo(nome))} fora={modoPreparo === "fora"} locked={locked}
         salvar={lista => send?.({ type: "select", key: "preparos", value: lista.join("|") })}
         usarFora={nome => { send?.({ type: "use", id: "dezFora" }); send?.({ type: "use", id: idPreparo(nome) }); sair(); }} sair={sair} />}
     </Painel>}
@@ -395,7 +396,7 @@ export function CacadorReticula({ api, rank, subclassId }: { api: Api; rank: str
 }
 
 /* ── Trocar Preparos: encaixes em cima, arsenal embaixo, regra do que está em foco. ── */
-function TrocarPreparos({ max, equipados, usos, fora, locked, salvar, usarFora, sair }: { max: number; equipados: string[]; usos: (nome: string) => number; fora: boolean; locked: boolean; salvar: (lista: string[]) => void; usarFora: (nome: string) => void; sair: () => void }) {
+function TrocarPreparos({ max, equipados, usos, fora, locked, salvar, usarFora, sair, glossario }: { glossario?: TermoDeRegra[]; max: number; equipados: string[]; usos: (nome: string) => number; fora: boolean; locked: boolean; salvar: (lista: string[]) => void; usarFora: (nome: string) => void; sair: () => void }) {
   const [foco, setFoco] = useState(equipados[0] ?? NOMES_PREPARO[0]);
   const cheio = equipados.length >= max;
   const estado = (nome: string) => usos(nome) ? { texto: "USADO NA CENA", cor: "#6f8799" } : { texto: "PRONTO", cor: "var(--cr)" };
@@ -429,7 +430,7 @@ function TrocarPreparos({ max, equipados, usos, fora, locked, salvar, usarFora, 
     })}</div>
     <div className="cr-detalhe">
       <header><Icone d={info.icone} tamanho={20} traco={1.9} /><strong>{info.nome}</strong><span>{rotuloFoco}</span></header>
-      <TextoRegra texto={regraPreparo(foco)} />
+      <TextoRegra texto={regraPreparo(foco)} glossario={glossario} />
     </div>
     </div>
     {!fora && <div className="cr-fim"><span>{cheio ? "PRONTO PARA A PRÓXIMA CENA" : `FALTA ESCOLHER ${max - equipados.length}`}</span><button type="button" className="cr-primario" onClick={sair}>CONFIRMAR</button></div>}
