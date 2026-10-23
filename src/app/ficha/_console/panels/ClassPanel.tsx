@@ -11,6 +11,7 @@ import { ClassOperations } from "./classe/ClassOperations";
 import { AncoraRede } from "./classe/AncoraRede";
 import { CacadorReticula } from "./classe/CacadorReticula";
 import { CombatenteAnel } from "./classe/CombatenteAnel";
+import { FaceReserva } from "./classe/FaceReserva";
 import { SubclassCodex } from "./classe/SubclassCodex";
 import { ClassModules } from "./classe/ClassModules";
 import ancora from "../../../../../content/v12/db_classe_ancora_v1_2.json";
@@ -47,6 +48,7 @@ export function ClassPanel({ api }: { api: Api }) {
   if (current.slug === "ancora") return <AncoraRede api={api} rank={p.ranking} subclassId={sub?.slug} />;
   if (current.slug === "cacador") return <CacadorReticula api={api} rank={p.ranking} subclassId={sub?.slug} />;
   if (current.slug === "combatente") return <CombatenteAnel key={sub?.slug ?? "base"} api={api} rank={p.ranking} subclassId={sub?.slug} />;
+  if (current.slug === "face") return <FaceReserva key={sub?.slug ?? "base"} api={api} rank={p.ranking} subclassId={sub?.slug} />;
   return <section className="hc-panel" data-game={current.slug} style={{ "--hc-accent": color } as React.CSSProperties} aria-label={`Classe ${current.nome}`}>
     <CabecalhoModulo id="ID://CLASSE" mod="MOD.CLASS // 10" />
     <div className="hc-body">

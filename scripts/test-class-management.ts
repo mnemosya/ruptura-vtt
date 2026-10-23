@@ -96,3 +96,35 @@ console.log('Unidades: instalação posicionada/acoplada, sistema conectado, PD 
 }
 console.log('Combatente: dados com valor, registro, Ponto Fraco, Comprometer e desfazer OK.');
 {let b=make("combatente","brutalista","B");b=applyClassCommand(b,{type:"marcarUso",chave:"round:x",valor:true},4).character;b=applyClassCommand(b,{type:"marcarUso",chave:"round:x",valor:true},4).character;assert.equal(readClassPlay(b).uses["round:x"],1,"valor:true não desmarca");}
+// Face: Reserva com valores, esvaziar, usos da subclasse com limite, Persona, negociação do Mercador e desfazer.
+{let f=make('face','icone','D');f={...f,atributos:{...f.atributos,mente:2}} as Character;
+ let r=applyClassCommand(f,{type:'setDie',index:0,value:6},4);r=applyClassCommand(r.character,{type:'setDie',index:1,value:3},4);r=applyClassCommand(r.character,{type:'setDie',index:2,value:8},4);
+ assert.deepEqual(readClassPlay(r.character).dice,[6,3,8],'três vagas no ranking D');
+ assert.ok(applyClassCommand(r.character,{type:'setDie',index:3,value:1},4).error,'não passa de 3 vagas');
+ r=applyClassCommand(r.character,{type:'setDie',index:0,value:null},4);assert.deepEqual(readClassPlay(r.character).dice,[3,8],'tirar compacta as vagas');
+ let d=applyClassCommand(r.character,{type:'desfazerCombate'},4);assert.deepEqual(readClassPlay(d.character).dice,[6,3,8],'desfaz o tirar');
+ r=applyClassCommand(r.character,{type:'esvaziarReserva'},4);assert.deepEqual(readClassPlay(r.character).dice,[]);
+ assert.deepEqual(readClassPlay(applyClassCommand(r.character,{type:'desfazerCombate'},4).character).dice,[3,8],'desfaz o esvaziar');
+ assert.deepEqual(readClassPlay({...d.character,current_scene:2}).dice,[],'Reserva acaba com a cena antes do B');
+ let m=applyClassCommand(f,{type:'marcarUso',chave:'scene:mobilizar',limite:2},4);assert.equal(readClassPlay(m.character).uses['scene:mobilizar'],1);
+ m=applyClassCommand(m.character,{type:'marcarUso',chave:'scene:mobilizar',limite:2},4);assert.equal(readClassPlay(m.character).uses['scene:mobilizar'],2,'Mobilização: dois pedidos');
+ m=applyClassCommand(m.character,{type:'marcarUso',chave:'scene:mobilizar',limite:2},4);assert.equal(readClassPlay(m.character).uses['scene:mobilizar'],undefined,'terceiro toque zera');
+ let ps=applyClassCommand(f,{type:'select',key:'persona_imagem',value:'A Voz da Fronteira'},4);assert.equal(readClassPlay(ps.character).selections.persona_imagem,'A Voz da Fronteira');
+ assert.equal(readClassPlay(applyClassCommand(ps.character,{type:'desfazerCombate'},4).character).selections.persona_imagem,undefined,'desfaz a Persona');
+ let mc=make('face','mercador','D');mc={...mc,atributos:{...mc.atributos,mente:2}} as Character;
+ assert.ok(applyClassCommand(f,{type:'negociacao',op:'abrir',tipo:'vender',horas:2,dados:[7,4]},4).error,'Intermediação é do Mercador');
+ assert.ok(applyClassCommand(mc,{type:'negociacao',op:'abrir',tipo:'vender',horas:3,dados:[7,4,2]},4).error,'no máximo Mente dados');
+ let n=applyClassCommand(mc,{type:'negociacao',op:'abrir',tipo:'vender',horas:3,dados:[7,4]},4);assert.equal(n.error,undefined);
+ assert.ok(applyClassCommand(n.character,{type:'negociacao',op:'abrir',tipo:'comprar',horas:1,dados:[5]},4).error,'uma negociação por vez');
+ n=applyClassCommand(n.character,{type:'negociacao',op:'dado',index:1,valor:2},4);assert.deepEqual(readClassPlay(n.character).negociacao?.dados,[7,2]);
+ assert.deepEqual(readClassPlay({...n.character,current_scene:3}).negociacao?.dados,[7,2],'a negociação atravessa cenas');
+ assert.ok(applyClassCommand(n.character,{type:'negociacao',op:'concluir',resultado:'padrao'},4).error,'venda pede valor justo');
+ let v=applyClassCommand(n.character,{type:'negociacao',op:'concluir',resultado:'padrao',valor:480},4);let sv=readClassPlay(v.character);
+ assert.equal(sv.negociacao,undefined);assert.equal(sv.uses['operation:vendido'],480);assert.equal(sv.uses['day:venda'],1);
+ v=applyClassCommand(v.character,{type:'cycle',cycle:'day'},4);assert.equal(readClassPlay(v.character).uses['day:venda'],undefined,'novo dia libera a venda');assert.equal(readClassPlay(v.character).uses['operation:vendido'],480);
+ let c=applyClassCommand(mc,{type:'negociacao',op:'abrir',tipo:'comprar',horas:1,dados:[5]},4);c=applyClassCommand(c.character,{type:'negociacao',op:'concluir',resultado:'falha'},4);assert.equal(readClassPlay(c.character).uses['operation:compra'],undefined,'compra que falhou não conta');
+ c=applyClassCommand(mc,{type:'negociacao',op:'abrir',tipo:'comprar',horas:1,dados:[5]},4);c=applyClassCommand(c.character,{type:'negociacao',op:'concluir',resultado:'limitado'},4);assert.equal(readClassPlay(c.character).uses['operation:compra'],1);
+ assert.equal(readClassPlay(applyClassCommand(c.character,{type:'desfazerCombate'},4).character).negociacao?.tipo,'comprar','desfaz o concluir');
+ let g=applyClassCommand(mc,{type:'marcarUso',chave:'operation:garimpo',passo:'Desconto do Garimpo'},4);assert.equal(readClassPlay({...g.character,current_scene:5}).uses['operation:garimpo'],1,'uso da operação atravessa cenas');
+}
+console.log('Face: Reserva, usos, Persona, negociação do Mercador e desfazer OK.');
