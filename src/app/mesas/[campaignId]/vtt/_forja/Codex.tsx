@@ -172,34 +172,23 @@ export function IndiceCodex({ toc, active, go }: { toc: ItemIndice[]; active: st
   );
 }
 
-/** Botão de abrir o Códex, com varredura no hover. */
-export function BotaoCodex({ arte, kicker, titulo, legenda, onOpen, hexCor, posicaoArte }: {
-  arte: string;
+/** Acesso ao Códex no formato de linha de arquivo. */
+export function BotaoCodex({ kicker, titulo, legenda, onOpen, disabled = false }: {
   kicker: string;
   titulo: string;
   legenda?: string;
   onOpen: () => void;
-  hexCor?: string;
-  posicaoArte?: "topo";
+  disabled?: boolean;
 }) {
   return (
-    <button type="button" onClick={onOpen} className="fj-codex-botao">
-      <span className="fj-borda fj-ch fj-codex-botao__borda">
-        <span className="fj-ch fj-codex-botao__corpo">
-          <span className="fj-codex-botao__varredura" />
-          <span className="fj-ch-hex fj-codex-botao__hex" style={hexCor ? { background: hexCor } : undefined}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={arte} alt="" className={`fj-ch-hex fj-codex-botao__arte ${posicaoArte === "topo" ? "fj-codex-botao__arte--topo" : ""}`} />
-          </span>
-          <span className="fj-codex-botao__texto">
-            <Mono pequeno tom="am">{kicker}</Mono>
-            <span className="fj-codex-botao__titulo">{titulo}</span>
-          </span>
-          <span className="fj-codex-botao__setas" aria-hidden="true">
-            <span>›</span>
-            <span>›</span>
-          </span>
+    <button type="button" onClick={onOpen} disabled={disabled} aria-haspopup="dialog" className="fj-codex-botao">
+      <span className="fj-codex-botao__corpo">
+        <span className="fj-codex-botao__trilho" aria-hidden="true" />
+        <span className="fj-codex-botao__texto">
+          <Mono pequeno tom="am">{kicker}</Mono>
+          <span className="fj-codex-botao__titulo">{titulo}</span>
         </span>
+        <span className="fj-codex-botao__setas" aria-hidden="true">›</span>
       </span>
       {legenda && <span className="fj-codex-botao__rodape"><Mono pequeno>{legenda}</Mono></span>}
     </button>

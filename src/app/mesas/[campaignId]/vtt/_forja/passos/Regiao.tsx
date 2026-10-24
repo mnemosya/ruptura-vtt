@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { MAPA_DO_IMPERIO, REGIOES, REGRAS_DE_ORIGEM, type RegiaoAcervo } from "../acervo/regioes";
 import { BotaoCodex, BotaoEscolha, IndiceCodex, SecHead, Shell, useAtalhoCodex, useIndiceAtivo, type ItemIndice } from "../Codex";
@@ -55,18 +55,12 @@ export function RegiaoLateral({ d, set, id, regiaoCampanha, setRegiaoCampanha }:
         ]}
         codex={
           <div className="fj-lado__codex">
-            <BotaoCodex arte={r.img} kicker={`Atlas · ${r.nome}`} titulo="Ler códex regional" onOpen={() => setOpen(true)} />
+            <BotaoCodex kicker={`Atlas · ${r.nome}`} titulo="Ler códex regional" onOpen={() => setOpen(true)} />
           </div>
         }
       >
         {setRegiaoCampanha ? (
-          <label className="fj-campo fj-dossie__campo">
-            <Mono pequeno>A campanha começa em</Mono>
-            <select value={regiaoCampanha ?? ""} onChange={(e) => setRegiaoCampanha(e.target.value as RegiaoIdV12)} className="fj-campo__input fj-campo__select">
-              <option value="" disabled>Escolha a região</option>
-              {REGIOES.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}
-            </select>
-          </label>
+          <SeletorRegiaoCampanha value={regiaoCampanha} onChange={setRegiaoCampanha} />
         ) : null}
       </CartaoDossie>
 
@@ -75,6 +69,123 @@ export function RegiaoLateral({ d, set, id, regiaoCampanha, setRegiaoCampanha }:
           <CodexRegional start={id} d={d} set={set} onClose={() => setOpen(false)} />
         </Shell>, document.body)}
     </>
+  );
+}
+
+function SeletorRegiaoCampanha({ value, onChange }: { value: RegiaoIdV12 | null; onChange: (id: RegiaoIdV12) => void }) {
+  const [aberto, setAberto] = useState(false);
+  const [posicao, setPosicao] = useState<{ top: number; left: number; width: number; maxHeight: number } | null>(null);
+  const gatilhoRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const opcoesRef = useRef<(HTMLButtonElement | null)[]>([]);
+  const focoInicialRef = useRef(0);
+  const id = useId();
+  const atual = REGIOES.find((r) => r.id === value);
+
+  const fechar = (devolverFoco = false) => {
+    setAberto(false);
+    if (devolverFoco) gatilhoRef.current?.focus();
+  };
+
+  const abrir = (indice = Math.max(0, REGIOES.findIndex((r) => r.id === value))) => {
+    const rect = gatilhoRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const alturaMenu = REGIOES.length * 38 + 8;
+    const altura = Math.min(alturaMenu, Math.max(48, rect.top - 12));
+    const largura = Math.min(rect.width, window.innerWidth - 16);
+    focoInicialRef.current = indice;
+    setPosicao({
+      top: Math.max(8, rect.top - altura - 4),
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - largura - 8)),
+      width: largura,
+      maxHeight: altura,
+    });
+    setAberto(true);
+  };
+
+  useEffect(() => {
+    if (!aberto) return;
+    opcoesRef.current[focoInicialRef.current]?.focus({ preventScroll: true });
+    opcoesRef.current[focoInicialRef.current]?.scrollIntoView({ block: "nearest" });
+    const fora = (event: PointerEvent) => {
+      const alvo = event.target as Node;
+      if (!gatilhoRef.current?.contains(alvo) && !menuRef.current?.contains(alvo)) setAberto(false);
+    };
+    const reposicionar = () => setAberto(false);
+    document.addEventListener("pointerdown", fora);
+    window.addEventListener("scroll", reposicionar);
+    window.addEventListener("resize", reposicionar);
+    return () => {
+      document.removeEventListener("pointerdown", fora);
+      window.removeEventListener("scroll", reposicionar);
+      window.removeEventListener("resize", reposicionar);
+    };
+  }, [aberto]);
+
+  const tecladoMenu = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const indice = opcoesRef.current.findIndex((opcao) => opcao === document.activeElement);
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const deslocamento = event.key === "ArrowDown" ? 1 : -1;
+      opcoesRef.current[(indice + deslocamento + REGIOES.length) % REGIOES.length]?.focus();
+    } else if (event.key === "Home" || event.key === "End") {
+      event.preventDefault();
+      opcoesRef.current[event.key === "Home" ? 0 : REGIOES.length - 1]?.focus();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      fechar(true);
+    }
+  };
+
+  return (
+    <div className="fj-regiao-select fj-dossie__campo">
+      <span id={`${id}-rotulo`} className="fj-mono fj-mono--pequeno">A campanha começa em</span>
+      <button
+        ref={gatilhoRef}
+        type="button"
+        className="fj-regiao-select__gatilho"
+        aria-labelledby={`${id}-rotulo ${id}-valor`}
+        aria-haspopup="listbox"
+        aria-expanded={aberto}
+        aria-controls={aberto ? `${id}-lista` : undefined}
+        onClick={() => aberto ? fechar() : abrir()}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            abrir(event.key === "ArrowDown" ? 0 : REGIOES.length - 1);
+          }
+        }}
+      >
+        <span id={`${id}-valor`} className={atual ? "" : "fj-regiao-select__placeholder"}>{atual?.nome ?? "Escolha a região"}</span>
+        <span className="fj-regiao-select__seta" aria-hidden="true" />
+      </button>
+      {aberto && posicao && createPortal(
+        <div
+          ref={menuRef}
+          id={`${id}-lista`}
+          role="listbox"
+          aria-labelledby={`${id}-rotulo`}
+          className={`fj-root ${oxanium.variable} fj-regiao-select__menu`}
+          style={posicao}
+          onKeyDown={tecladoMenu}
+          onBlur={(event) => {
+            const destino = event.relatedTarget as Node | null;
+            if (!event.currentTarget.contains(destino) && !gatilhoRef.current?.contains(destino)) setAberto(false);
+          }}
+        >
+          {REGIOES.map((r, indice) => (
+            <button
+              key={r.id}
+              ref={(node) => { opcoesRef.current[indice] = node; }}
+              type="button"
+              role="option"
+              aria-selected={r.id === value}
+              className="fj-regiao-select__opcao"
+              onClick={() => { onChange(r.id); fechar(true); }}
+            >{r.nome}</button>
+          ))}
+        </div>, document.body)}
+    </div>
   );
 }
 

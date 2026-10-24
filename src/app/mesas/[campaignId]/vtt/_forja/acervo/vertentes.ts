@@ -41,8 +41,6 @@ export interface VertenteAcervo {
   arte: string;
   /** Uma frase de apresentação, usada na carta do carrossel. */
   frase: string;
-  /** Como a Vertente é conjurada, em poucas palavras. */
-  gatilho: string;
   grimorio: Grimorio;
 }
 
@@ -53,13 +51,13 @@ function limparGrimorio(g: Grimorio): Grimorio {
   return { ...g, body: g.body.filter((p) => p.trim() !== "---") };
 }
 
-const META: Array<{ id: VertenteId; nome: string; frase: string; gatilho: string }> = [
-  { id: "biotica", nome: "Biótica", frase: "Carne, sangue e crescimento. Molda o que está vivo.", gatilho: "Foco mental + domínio corporal" },
-  { id: "cinetica", nome: "Cinética", frase: "Movimento, impulso e inércia sob o seu comando.", gatilho: "Movimento corporal" },
-  { id: "cognitiva", nome: "Cognitiva", frase: "Percepção, memória e a arquitetura do pensamento.", gatilho: "Silêncio — só o pensamento" },
-  { id: "energetica", nome: "Energética", frase: "Calor, luz e descarga. A face mais visível da ruptura.", gatilho: "Controle preciso das mãos" },
-  { id: "material", nome: "Material", frase: "Matéria inerte que responde, dobra e se reforma.", gatilho: "Cálculo + gestos precisos" },
-  { id: "sinaptica", nome: "Sináptica", frase: "Conexões entre mentes, máquinas e redes.", gatilho: "Mente, com gestos de interface" },
+const META: Array<{ id: VertenteId; nome: string; frase: string }> = [
+  { id: "biotica", nome: "Biótica", frase: "Carne, sangue e crescimento. Molda o que está vivo." },
+  { id: "cinetica", nome: "Cinética", frase: "Movimento, impulso e inércia sob o seu comando." },
+  { id: "cognitiva", nome: "Cognitiva", frase: "Percepção, memória e a arquitetura do pensamento." },
+  { id: "energetica", nome: "Energética", frase: "Calor, luz e descarga. A face mais visível da ruptura." },
+  { id: "material", nome: "Material", frase: "Matéria inerte que responde, dobra e se reforma." },
+  { id: "sinaptica", nome: "Sináptica", frase: "Conexões entre mentes, máquinas e redes." },
 ];
 
 export const VERTENTES_ACERVO: VertenteAcervo[] = META.map((m) => ({

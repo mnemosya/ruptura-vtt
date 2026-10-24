@@ -1275,49 +1275,12 @@
    150px e quebra de linha quando não cabe. */
 .rv-pn-linha-busca .rv-pn-select { flex: none; padding-block: 0; }
 
-/* LINHA 2: criar à esquerda, switch à direita. */
+/* LINHA 2: ações de criação. */
 .rv-pn-filtros { flex: none; display: flex; align-items: center; gap: 8px; padding: 8px; flex-wrap: wrap; }
 /* Criar ancora na ESQUERDA — é a ação principal da faixa. Quebra junto
    com ela: em coluna estreita os dois botões não cabem lado a lado. */
 .rv-pn-filtros-acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 
-/* O switch de recursos herda o interruptor do VTT (`.rv-fp-switch`). */
-/* CLASSE DUPLICADA de propósito. `.rv-fp-switch` mora em `vtt.css` e
-   tem a mesma especificidade que `.rv-pn-switch`; empatadas, quem
-   ganha é a ordem das folhas — e era a de lá, então o `padding: 6px
-   2px` do formulário voltava e colava o switch na borda esquerda.
-   Repetir a classe desempata sem inventar um seletor falso.
-
-   Ele vive na linha dos botões de criar, encostado na direita: os dois
-   lados da faixa são "o que eu faço com a lista", e o switch é o único
-   que não cria nada. O `padding` zerado deixa a margem por conta da
-   linha (`.rv-pn-filtros`), pra ele encostar onde os outros encostam. */
-/* Mesma PEÇA dos botões da linha (`.pn-btn`: borda, superfície, altura
-   e rótulo em caixa alta) — era o único controle arredondado e em caixa
-   normal numa faixa de botões retos, e destoava. Continua interruptor:
-   o trilho fica dentro da peça, reto como o resto do painel. */
-.rv-pn-switch.rv-pn-switch {
-  margin-left: auto; gap: 8px; padding: 6px 11px; min-height: 26px;
-  border: 1px solid var(--rv-line-strong);
-  /* O chanfro que a regra global do chassi dá aos botões — o `label`
-     não é alcançado por ela, então vem daqui. */
-  border-radius: 0 7px 0 7px; corner-shape: round bevel round bevel;
-  background: var(--rv-peca, #0c1526);
-  transition: border-color .14s;
-}
-.rv-pn-switch.rv-pn-switch:hover { border-color: color-mix(in srgb, var(--pn-cy) 45%, transparent); }
-.rv-pn-switch .rv-fp-switch-tr {
-  width: 24px; height: 12px; border-radius: 0;
-  background: transparent; box-shadow: inset 0 0 0 1px var(--rv-line-max, #2a3b58);
-}
-.rv-pn-switch .rv-fp-switch-tr::after { left: 2px; top: 2px; width: 8px; height: 8px; border-radius: 0; }
-.rv-pn-switch input:checked + .rv-fp-switch-tr { box-shadow: inset 0 0 0 1px var(--pn-cy); background: color-mix(in srgb, var(--pn-cy) 18%, transparent); }
-.rv-pn-switch input:checked + .rv-fp-switch-tr::after { transform: translateX(12px); }
-.rv-pn-switch .rv-fp-switch-txt {
-  font-family: var(--rv-body);
-  font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--rv-ink-dim);
-}
-.rv-pn-switch input:checked ~ .rv-fp-switch-txt { color: var(--pn-txt-forte); }
 .rv-pn-select.rv-pn-select, .rv-pn-input.rv-pn-input {
   padding: 3px 6px; border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
   background: var(--rv-peca, #0c1526); color: var(--pn-txt-forte);
@@ -1949,7 +1912,6 @@
   content: ""; position: absolute; z-index: 1; right: 0; top: 1px; bottom: 1px; width: 1px;
   background: var(--rv-line-strong, #1c2b45); pointer-events: none;
 }
-.rv-pn-scroll--pers[data-recursos="true"] .rv-pn-face { width: 70px; }
 /* A sigla acompanha a caixa maior: 11px num quadrado de 54 ficava
    perdida no meio, e ela é o substituto do rosto pra quem não tem
    avatar — precisa ter o mesmo peso de leitura. */
@@ -2028,30 +1990,6 @@
 .rv-pn-linha-marca { flex: none; }
 .rv-pn-linha-rodape { display: block; margin-top: 5px; }
 
-/* Barras de recurso DENTRO da linha do diretório — mesma anatomia da
-   `.rv-fg-barra` do dossiê, só mais fina, com o rótulo antes e a fração
-   depois. A cor vem de `--rec-cor`, que o componente define a partir de
-   `coresRecurso.ts` — as mesmas do Console. */
-.rv-pn-linha-rec { display: flex; align-items: center; gap: 6px; }
-.rv-pn-linha-rec + .rv-pn-linha-rec { margin-top: 3px; }
-.rv-pn-linha-rec-tag {
-  flex: none; width: 20px;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; font-weight: 700; letter-spacing: .08em;
-  color: var(--rec-cor);
-}
-.rv-pn-linha-rec-trilha { position: relative; height: 4px; flex: 1; min-width: 0; overflow: hidden; border-radius: var(--rv-r-sm); background: var(--rv-line-2, #16233a); }
-.rv-pn-linha-rec-trilha i {
-  display: block; height: 100%; border-radius: var(--rv-r-sm); background: var(--rec-cor);
-  box-shadow: 0 0 5px color-mix(in srgb, var(--rec-cor) 53%, transparent);
-}
-.rv-pn-linha-rec-fracao {
-  flex: none; font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; font-weight: 700; color: var(--pn-dim);
-}
-/* PV baixo avisa pela FRAÇÃO, em âmbar: a barra já é vermelha, e
-   escurecer um vermelho pra dizer "agora é grave" não se lê. */
-.rv-pn-linha-rec-fracao[data-baixo="true"] { color: var(--rv-am); }
 /* Barra de recurso (HpBar/BarMeter) — fina, contínua, com glow. Só
    aqui: o resto do painel usa células discretas de propósito (ver
    `.pn-recurso`); a referência mostra PV/PE/Mana como trilha contínua. */

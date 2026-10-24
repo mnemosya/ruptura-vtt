@@ -44,8 +44,8 @@ function Essencia({ id }: { id: string }) {
         <p className="fj-lado__resumo fj-lado__resumo--livre">{plain(d.lead).split(". ").slice(1).join(". ") || plain(d.lead)}</p>
       </div>
       <div className="fj-essencia__linha">
+        <span className="fj-essencia__rotulo">Dificuldade:</span>
         <Dificuldade diff={d.diff} cor={v.cor} />
-        <span className="fj-essencia__gatilho">{v.gatilho}</span>
       </div>
     </div>
   );
@@ -62,7 +62,7 @@ export function VertenteLateral({ d, set, id }: { d: DraftV12; set: SetDraft; id
         <FaixaEstado colada on={tuned} confirmado="SINTONIZADA" pendente="VISUALIZANDO · NÃO SINTONIZADA" />
         <div key={id} className="fj-boot"><Essencia id={id} /></div>
         <div className="fj-lado__codex">
-          <BotaoCodex arte={v.arte} hexCor={`${v.cor}55`} kicker={`Grimório · ${v.grimorio.house}`} titulo="Abrir códex e magias" onOpen={() => setOpen(true)} />
+          <BotaoCodex kicker={`Grimório · ${v.grimorio.house}`} titulo="Abrir códex e magias" onOpen={() => setOpen(true)} />
         </div>
       </Panel>
 
@@ -122,17 +122,17 @@ function CodexVertente({ id, d: rascunho, set, onClose }: { id: VertenteId; d: D
                   <h4 className="fj-codex__sub fj-codex__sub--grande">Manifestação</h4>
                   <RuleText text={d.manif} className="fj-texto-leitura" />
                 </div>
-                <div id="prog" data-sec>
+                <div id="prog" data-sec className="fj-vertente-progressao-secao">
                   <h4 className="fj-codex__sub fj-codex__sub--grande">Progressão</h4>
-                  <div className="fj-progressao">
+                  <ol className="fj-vertente-progressao">
                     {d.prog.map((p) => (
-                      <div key={p.lv} className={`fj-ch fj-progressao__nivel ${p.lv === 1 ? "fj-progressao__nivel--atual" : ""}`}>
+                      <li key={p.lv} className={`fj-ch fj-vertente-progressao__nivel ${p.lv === 1 ? "fj-vertente-progressao__nivel--atual" : ""}`}>
                         <Mono pequeno>Nível {p.lv}</Mono>
-                        <div className="fj-progressao__n">{p.n}</div>
-                        <Mono pequeno tom="cy">magias · CD {p.cd}</Mono>
-                      </div>
+                        <span className="fj-vertente-progressao__n">{p.n}</span>
+                        <span className="fj-vertente-progressao__rodape"><span>Magias</span><span>CD {p.cd}</span></span>
+                      </li>
                     ))}
-                  </div>
+                  </ol>
                   <p className="fj-codex__dica">CD da vertente = 6 + nível. Na criação, a Vertente Primária começa no nível 1.</p>
                 </div>
               </section>

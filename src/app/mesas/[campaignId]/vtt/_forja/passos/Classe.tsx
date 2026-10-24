@@ -83,7 +83,7 @@ export function ClasseLateral({ d, escolher, id }: { d: DraftV12; escolher: (slu
         ]}
         codex={
           <div className="fj-lado__codex">
-            <BotaoCodex arte={c.arte} posicaoArte="topo" kicker={`Dossiê · ${c.nome}`} titulo="Ler códex completo" onOpen={() => setOpen(true)} />
+            <BotaoCodex kicker={`Dossiê · ${c.nome}`} titulo="Ler códex completo" onOpen={() => setOpen(true)} />
           </div>
         }
       />

@@ -57,7 +57,6 @@ import { BotaoAba, BuscaDiretorio, CabecalhoGrupo, LinhaDiretorio, RodapeAcoes }
 import { EsqueletoLista, EstadoCarregando, EstadoErro, EstadoVazio } from "./Estados";
 import { BotaoTecnico, SecaoDossie } from "./ui/primitivas";
 import { PedidosEntrada } from "./PedidosEntrada";
-import { COR_RECURSO, ROTULO_RECURSO } from "../../../../ficha/_console/coresRecurso";
 import {
   MIME_PASTA_ARRASTADA,
   MIME_PERSONAGEM_ARRASTADO,
@@ -94,38 +93,6 @@ import { useJanelasDaMesa } from "../_shell/JanelasDaMesa";
 import { comecarLeitura, dadosDoEstado, falharLeitura, type EstadoAba } from "./tipos";
 import { DialogoConfirmar, DialogoTexto } from "./ui/Dialogo";
 import { MIME_ITEM_BANDO, desserializarItemBando, type ItemTransferivel } from "./bandoModelo";
-
-/**
- * Uma barra de recurso na linha do diretório — PV e PE, com o RÓTULO à
- * vista.
- *
- * A barra antiga era anônima e ciano: não dizia o que media, e um
- * personagem com PV cheio parecia ter uma barra de "alguma coisa". As
- * cores vêm de `coresRecurso.ts`, as mesmas do Console — o vermelho do
- * PV na mesa é o vermelho do PV na ficha, e não um vermelho parecido.
- *
- * PV BAIXO não muda a cor da BARRA: ela já é vermelha, e escurecer um
- * vermelho pra dizer "agora é grave" não se lê. Quem avisa é a fração,
- * que passa a âmbar — o mesmo tom que o resto da mesa usa pra alerta.
- */
-function BarraRecurso({ id, atual, max }: { id: "pv" | "pe"; atual: number; max: number }) {
-  const fracao = max > 0 ? Math.max(0, Math.min(1, atual / max)) : 0;
-  const baixo = id === "pv" && max > 0 && fracao < 0.35;
-  return (
-    <span
-      className="rv-pn-linha-rec"
-      style={{ ["--rec-cor" as string]: COR_RECURSO[id] }}
-      role="img"
-      aria-label={`${ROTULO_RECURSO[id]} ${atual} de ${max}`}
-    >
-      <span className="rv-pn-linha-rec-tag" aria-hidden="true">{ROTULO_RECURSO[id]}</span>
-      <span className="rv-pn-linha-rec-trilha" aria-hidden="true"><i style={{ width: `${fracao * 100}%` }} /></span>
-      <span className="rv-pn-linha-rec-fracao" data-baixo={baixo ? "true" : undefined} aria-hidden="true">
-        {atual}/{max}
-      </span>
-    </span>
-  );
-}
 
 
 /**
@@ -191,16 +158,6 @@ export function PersonagensTab({
   // A ordem é sempre a manual (arrastar); sem ela, a de criação.
   const [ordenacao, setOrdenacao] = useState<Ordenacao>("manual");
   const [incluirArquivados, setIncluirArquivados] = useState(false);
-  /**
-   * PV e PE ficam ESCONDIDOS por padrão.
-   *
-   * A lista responde "quem existe nesta campanha"; os números são a
-   * pergunta seguinte, e só durante o combate. Ligados sempre, eles
-   * dobravam a altura de cada linha e enchiam a coluna de barras
-   * coloridas que ninguém estava lendo — e ainda mostravam o PV de
-   * todo mundo pra quem só queria achar um nome.
-   */
-  const [mostrarRecursos, setMostrarRecursos] = useState(false);
   /* O degradê nas pontas da lista — a coluna é alta e a rolagem passa
      despercebida sem ele. Ver `useRolagemVelada`. */
   const veuDaLista = useRolagemVelada<HTMLDivElement>();
@@ -698,7 +655,6 @@ export function PersonagensTab({
    */
   function renderizarEntrada(entrada: EntradaDiretorio, no: NoDiretorio, nivel: number): React.ReactNode {
                 const acento = entrada.tipo === "pn" ? "var(--rv-dg)" : "var(--rv-cy)";
-                const pv = entrada.pv;
                 return (
                 <LinhaDiretorio
                   key={entrada.characterId}
@@ -718,16 +674,6 @@ export function PersonagensTab({
                      depois não tem como ler. Com as duas à vista, a
                      coluna responde de quem é cada personagem. */
                   subtitulo={entrada.tipo === "pn" ? "PN" : "PJ"}
-                  rodape={
-                    mostrarRecursos && pv ? (
-                      <>
-                        <BarraRecurso id="pv" atual={pv.atual} max={pv.max} />
-                        {entrada.pe && (
-                          <BarraRecurso id="pe" atual={entrada.pe.atual} max={entrada.pe.max} />
-                        )}
-                      </>
-                    ) : undefined
-                  }
                   marca={
                     entrada.arquivado ? <span className="rv-pn-tag">arquivado</span> : undefined
                   }
@@ -1003,9 +949,6 @@ export function PersonagensTab({
                pastas — é pra ela que o personagem volta quando sai de
                uma. Não tendo caixa própria, quem acende é a área. */
             data-alvo-raiz={containerSobre === "__raiz__" ? "true" : undefined}
-            /* A largura do avatar acompanha o modo — ver `.rv-pn-face`
-               em `painel.css`, que explica por que não é `aspect-ratio`. */
-            data-recursos={mostrarRecursos ? "true" : undefined}
             data-testid="painel-personagens-scroll"
           >
             {estado.fase === "carregando" && <EsqueletoLista rotulo="Carregando personagens" testId="painel-personagens-carregando" />}
@@ -1028,9 +971,7 @@ export function PersonagensTab({
             {arvore && renderizarNo(arvore, 0)}
           </div>
 
-          {/* RODAPÉ — o que se FAZ com a lista: criar (personagem, e pasta
-              para quem organiza a mesa) e o switch de recursos. Vale para
-              narrador e jogador; "Abrir Personagens" e "Arquivados" saíram. */}
+          {/* RODAPÉ — criar personagem e pasta para quem organiza a mesa. */}
           <RodapeAcoes>
             <div className="rv-pn-filtros">
               {podeAdministrar && (
@@ -1092,16 +1033,6 @@ export function PersonagensTab({
                   />
                 </span>
               )}
-              <label className="rv-fp-switch rv-pn-switch">
-              <input
-                type="checkbox"
-                checked={mostrarRecursos}
-                onChange={(e) => setMostrarRecursos(e.target.checked)}
-                data-testid="painel-personagens-recursos"
-              />
-              <span className="rv-fp-switch-tr" aria-hidden="true" />
-                <span className="rv-fp-switch-txt">Recursos</span>
-              </label>
             </div>
           </RodapeAcoes>
         </div>

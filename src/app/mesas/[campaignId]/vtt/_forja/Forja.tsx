@@ -397,9 +397,10 @@ function Doca({ step, setStep, oculto = () => false, pendentes, podeSelar, envia
   onSelar: () => void;
 }) {
   const podeSelarAgora = podeSelar && pendentes === 0 && !enviando;
+  const mostrarSelar = step === PASSOS.length - 1 || pendentes === 0;
   const proximo = (i: number) => { let n = i + 1; while (n < PASSOS.length - 1 && oculto(n)) n++; return n; };
   const anterior = (i: number) => { let n = i - 1; while (n > 0 && oculto(n)) n--; return Math.max(0, n); };
-  // Atalhos da doca: Q volta, E confirma (ou sela, no último passo), U abre o avatar.
+  // Atalhos da doca: Q volta, E avança ou sela quando não há pendências, U abre o avatar.
   // Não disparam enquanto se digita nem com modificadores.
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
@@ -412,7 +413,7 @@ function Doca({ step, setStep, oculto = () => false, pendentes, podeSelar, envia
       if (modais.some((m) => !m.querySelector(".fj-doca"))) return;
       const tecla = e.key.toLowerCase();
       if (tecla === "q" && step > 0) setStep(anterior(step));
-      else if (tecla === "e") { if (step < PASSOS.length - 1) setStep(proximo(step)); else if (podeSelarAgora) onSelar(); }
+      else if (tecla === "e") { if (mostrarSelar) { if (podeSelarAgora) onSelar(); } else setStep(proximo(step)); }
       else if (tecla === "u") document.getElementById("fj-avatar-abrir")?.click();
       else return;
       e.preventDefault();
@@ -420,14 +421,13 @@ function Doca({ step, setStep, oculto = () => false, pendentes, podeSelar, envia
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- proximo/anterior derivam de `oculto`
-  }, [step, setStep, podeSelarAgora, onSelar, oculto]);
+  }, [step, setStep, mostrarSelar, podeSelarAgora, onSelar, oculto]);
   const motivo = pendentes > 0 ? "Resolva as pendências da Revisão." : !podeSelar ? "O Selar cria o personagem dentro da mesa." : undefined;
   return (
     <footer className="fj-doca">
       <button type="button" onClick={() => setStep(anterior(step))} className="fj-doca__voltar"><Key k="Q" /> Voltar</button>
-      {step < PASSOS.length - 1 ? (
+      {!mostrarSelar ? (
         <button type="button" onClick={() => setStep(proximo(step))} className="fj-doca__avancar">
-          <span className="fj-doca__confirmar">Confirmar</span>
           <span className="fj-ch fj-doca__proximo">{PASSOS[proximo(step)].label} ›</span>
           <Key k="E" />
         </button>
@@ -437,6 +437,7 @@ function Doca({ step, setStep, oculto = () => false, pendentes, podeSelar, envia
           <button type="button" disabled={!podeSelarAgora} aria-busy={enviando} onClick={onSelar} title={motivo} className="fj-ch fj-doca__selar">
             {enviando ? "Selando…" : rotuloSelar}
           </button>
+          <Key k="E" />
         </div>
       )}
     </footer>
@@ -568,7 +569,7 @@ function centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente, s
     case 4: return <Carrossel items={CLASSES_ACERVO.filter((x) => catalogos.classes.some((k) => k.slug === x.id)).map((x) => ({ id: x.id, nome: x.nome, img: x.arte, top: `CLASSE · ${x.sigla}`, sub: x.papel, posicaoArte: x.id === "face" ? "67% top" : x.id === "ancora" ? "35% top" : x.id === "combatente" ? "58% top" : undefined, escalaArte: x.id === "ancora" ? 1.14 : undefined }))} value={d.classeSlug} viewId={view.classe} onView={onView("classe")} onPick={c.trocarClasse} cta="Assumir classe" />;
     case 5: return <Atributos d={d} set={set} perfis={perfisAtributosV12(catalogos.classes, d.classeSlug)} avatar={avatar.url} progress={c.sincronia} nomeAntecedente={nomeAntecedente} onNavigate={c.irPara} />;
     case 6: return <Pericias d={d} set={set} catalogos={catalogos} classe={classe} irParaClasse={() => c.irPara(4)} />;
-    case 7: return <Carrossel items={VERTENTES_ACERVO.map((v) => ({ id: v.id, nome: v.nome, img: v.arte, top: "VERTENTE PRIMÁRIA", sub: v.frase.split(".")[0], color: v.cor }))} value={d.vertente} viewId={view.vertente} onView={onView("vertente")} onPick={(id) => set({ vertente: id })} cta="Sintonizar" />;
+    case 7: return <Carrossel items={VERTENTES_ACERVO.map((v) => ({ id: v.id, nome: v.nome, img: v.arte, top: "VERTENTE PRIMÁRIA", sub: v.frase.split(".")[0], color: v.cor, posicaoArte: v.id === "cognitiva" ? "left top" : undefined }))} value={d.vertente} viewId={view.vertente} onView={onView("vertente")} onPick={(id) => set({ vertente: id })} cta="Sintonizar" />;
     case 8: return <Progressao d={d} set={set} catalogos={catalogos} etapas={c.etapas} irParaClasse={() => c.irPara(4)} />;
     default: return <div className="fj-revisao-centro"><Holograma d={d} avatar={avatar.url} progress={c.sincronia} solid={c.sincronia >= 1} nomeAntecedente={nomeAntecedente} onNavigate={c.irPara} /></div>;
   }
@@ -725,25 +726,20 @@ function lateral({ c, catalogos, classe, view, regiaoCampanha, setRegiaoCampanha
                 const formula = classe.criacao.recursos[r.id];
                 const v = resolveClassResourceV12(classe, r.id, atr);
                 if (!formula || v === undefined) return null;
-                const max = formula.constante + 3 * (formula.multiplicador_atributo ?? (formula.atributo ? 1 : 0));
                 return (
-                  <div key={r.id} className="fj-recurso">
-                    <div className="fj-ch-l fj-recurso__moldura">
-                      <div className="fj-recurso__topo"><span className="fj-recurso__nome">{r.nome}</span><Mono tom="cy">{formula.texto ?? r.base}</Mono></div>
-                      <div className="fj-recurso__trilho"><div className="fj-recurso__barra" style={{ width: `${Math.min(100, (v / max) * 100)}%` }} /><span className="fj-recurso__valor">{v}</span></div>
-                    </div>
+                  <div key={r.id} className={`fj-recurso ${r.id === "reacoes" ? "fj-recurso--acao" : ""} ${r.id === "andar" || r.id === "correr" ? "fj-recurso--movimento" : ""}`}>
+                    <span className="fj-recurso__nome">{r.nome}</span>
+                    {r.id === "reacoes" && <span className="fj-recurso__pips" aria-hidden="true">{Array.from({ length: Math.max(0, v) }).map((_, i) => <span key={i} />)}</span>}
+                    <strong className="fj-recurso__valor">{v}</strong>
+                    <span className="fj-recurso__formula">{formula.texto ?? r.base}</span>
                   </div>
                 );
               })}
-              {/* PA no mesmo desenho dos recursos: o valor em losangos, sem barra (não é um recurso que se gasta da ficha). */}
-              <div className="fj-recurso fj-recurso--pa">
-                <div className="fj-ch-l fj-recurso__moldura">
-                  <div className="fj-recurso__topo"><span className="fj-recurso__nome">PA</span><Mono tom="cy">Ranking {d.rankingInicial ?? RANKINGS_V12[0]}</Mono></div>
-                  <div className="fj-recurso__pa">
-                    <span className="fj-recurso__pips">{Array.from({ length: classe.progressao[d.rankingInicial ?? RANKINGS_V12[0]]?.pa ?? 0 }).map((_, i) => <span key={i} />)}</span>
-                    <span className="fj-recurso__valor">{classe.progressao[d.rankingInicial ?? RANKINGS_V12[0]]?.pa ?? "—"}</span>
-                  </div>
-                </div>
+              <div className="fj-recurso fj-recurso--acao">
+                <span className="fj-recurso__nome">PA</span>
+                <span className="fj-recurso__pips" aria-hidden="true">{Array.from({ length: classe.progressao[d.rankingInicial ?? RANKINGS_V12[0]]?.pa ?? 0 }).map((_, i) => <span key={i} />)}</span>
+                <strong className="fj-recurso__valor">{classe.progressao[d.rankingInicial ?? RANKINGS_V12[0]]?.pa ?? "—"}</strong>
+                <span className="fj-recurso__formula">Ranking {d.rankingInicial ?? RANKINGS_V12[0]}</span>
               </div>
             </div>
           ) : <p className="fj-recursos__nota">Escolha um perfil para ver os recursos.</p>}
