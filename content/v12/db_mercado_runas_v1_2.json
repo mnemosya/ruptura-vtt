@@ -3,9 +3,9 @@
   "_meta": {
     "conteudo": "rune",
     "versao_schema": "1.2.0",
-    "total_registros": 52,
+    "total_registros": 38,
     "fonte": "Notion: capítulo MERCADO NOTURNO / LISTA DE MERCADORIAS",
-    "extraido_em": "2026-10-09T23:25:05.912Z",
+    "extraido_em": "2026-10-24T05:28:53.702Z",
     "hash_sha256_origem": "ee5cfbb9169196dd58a53634caef89b8ccf26720a4c55a8968c3557b1e4da7ec",
     "observacao": "Preço e descrição canônicos. Efeitos mecânicos e instalação são manuais nesta transcrição inicial."
   },
@@ -45,60 +45,6 @@
         "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
         "tabelaBlocoId": "d47c01172ceb4ac9995184a3b3c557fc",
         "linhaBlocoId": "4fccd4714f5d4ca4ba0b8d929ae18131",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "runa",
-      "categoria_label": "Runa",
-      "slots_possiveis": [
-        "arma"
-      ],
-      "restricao_subtipo": "corpo_a_corpo",
-      "custo_integridade": 0
-    },
-    {
-      "id": "armas_impeto",
-      "slug": "armas_impeto",
-      "nome": "Ímpeto",
-      "raridade": "incomum",
-      "raridade_label": "Incomum",
-      "preco": 1000,
-      "preco_texto": "1.000",
-      "preco_qualificador": null,
-      "descricao_curta": "Se mover 6 m antes de atacar, causa +1d4 de dano.",
-      "descricao_longa": "*Incomum*\n\nCanaliza energia cinética pelas inscrições, acumulando força em cada passo. Quando liberada, a runa transfere esse ímpeto diretamente para o golpe final, transformando deslocamento em impacto.\n\n- **Efeito:** se o usuário se mover ao menos 6 metros antes de atacar, a arma causa **+1d4 de dano** nesse golpe.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.000\n\nDados da lista de mercadorias:\n- Efeito: Se mover 6 m antes de atacar, causa +1d4 de dano.\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.000",
-      "tags": [
-        "loja"
-      ],
-      "dados_notion": {
-        "pagina": "ARMAS",
-        "secao": [
-          "ARMAS CORPO A CORPO",
-          "RUNAS"
-        ],
-        "tipo_tabela": "Runa",
-        "campos": {
-          "Runa": "Ímpeto",
-          "Efeito": "Se mover 6 m antes de atacar, causa +1d4 de dano.",
-          "Raridade": "Incomum",
-          "Espaços": "1 (avulsa)",
-          "Preço (Ⱥ)": "1.000"
-        },
-        "tabela_tecnica": null
-      },
-      "fonte_notion": {
-        "paginaNotionId": "9690a136355283c59bd8813acc4e4935",
-        "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
-        "tabelaBlocoId": "d47c01172ceb4ac9995184a3b3c557fc",
-        "linhaBlocoId": "78e12f243e774c059e670de4467a60b7",
         "tabelaTecnicaFonte": null
       },
       "vinculos_sugeridos": null,
@@ -207,60 +153,6 @@
         "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
         "tabelaBlocoId": "d47c01172ceb4ac9995184a3b3c557fc",
         "linhaBlocoId": "b640c404137d48a9b8c0e44b78a08465",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "runa",
-      "categoria_label": "Runa",
-      "slots_possiveis": [
-        "arma"
-      ],
-      "restricao_subtipo": "corpo_a_corpo",
-      "custo_integridade": 0
-    },
-    {
-      "id": "armas_clarao",
-      "slug": "armas_clarao",
-      "nome": "Clarão",
-      "raridade": "incomum",
-      "raridade_label": "Incomum",
-      "preco": 1000,
-      "preco_texto": "1.000",
-      "preco_qualificador": null,
-      "descricao_curta": "ao acertar, emite luz que ofusca inimigos em 2 m.",
-      "descricao_longa": "*Incomum*\n\nSímbolos luminosos gravados no metal armazenam radiação latente, liberada em um único estalo quando acionada. O clarão rompe a escuridão e desorienta qualquer um ao redor, confundindo a visão no calor da luta.\n\n- **Efeito:** por 1 PA, após acertar, a arma emite luz intensa; inimigos em até 2 metros devem fazer teste de **Desviar**, CD 7 ou ficam **`Ofuscados`** até o fim do próximo turno deles.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.000\n\nDados da lista de mercadorias:\n- Efeito: ao acertar, emite luz que ofusca inimigos em 2 m.\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.000",
-      "tags": [
-        "loja"
-      ],
-      "dados_notion": {
-        "pagina": "ARMAS",
-        "secao": [
-          "ARMAS CORPO A CORPO",
-          "RUNAS"
-        ],
-        "tipo_tabela": "Runa",
-        "campos": {
-          "Runa": "Clarão",
-          "Efeito": "ao acertar, emite luz que ofusca inimigos em 2 m.",
-          "Raridade": "Incomum",
-          "Espaços": "1 (avulsa)",
-          "Preço (Ⱥ)": "1.000"
-        },
-        "tabela_tecnica": null
-      },
-      "fonte_notion": {
-        "paginaNotionId": "9690a136355283c59bd8813acc4e4935",
-        "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
-        "tabelaBlocoId": "d47c01172ceb4ac9995184a3b3c557fc",
-        "linhaBlocoId": "6d40b0c6870542dda18798af9a793ba0",
         "tabelaTecnicaFonte": null
       },
       "vinculos_sugeridos": null,
@@ -605,70 +497,16 @@
       "custo_integridade": 0
     },
     {
-      "id": "armas_retornavel",
-      "slug": "armas_retornavel",
-      "nome": "Retornável",
-      "raridade": "comum",
-      "raridade_label": "Comum",
-      "preco": 500,
-      "preco_texto": "500",
-      "preco_qualificador": null,
-      "descricao_curta": "Projétil retorna automaticamente à mão do usuário.",
-      "descricao_longa": "*Incomum*\n\nGravuras cinéticas criam um laço arcano entre usuário e projétil. Assim que cumpre sua trajetória, ele vibra e retorna em linha reta para a mão do arremessador.\n\n- **Efeito:** após o uso, a arma retorna automaticamente ao portador, sem custo de ação.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 500\n\nDados da lista de mercadorias:\n- Efeito: Projétil retorna automaticamente à mão do usuário.\n- Raridade: Comum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 500",
-      "tags": [
-        "loja"
-      ],
-      "dados_notion": {
-        "pagina": "ARMAS",
-        "secao": [
-          "ARMAS DE ARREMESSO E DISPARO",
-          "RUNAS"
-        ],
-        "tipo_tabela": "Runa",
-        "campos": {
-          "Runa": "Retornável",
-          "Efeito": "Projétil retorna automaticamente à mão do usuário.",
-          "Raridade": "Comum",
-          "Espaços": "1 (avulsa)",
-          "Preço (Ⱥ)": "500"
-        },
-        "tabela_tecnica": null
-      },
-      "fonte_notion": {
-        "paginaNotionId": "9690a136355283c59bd8813acc4e4935",
-        "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
-        "tabelaBlocoId": "5075edacfc6649049c6827a7aaaa1142",
-        "linhaBlocoId": "b048cbe5f4ee4cc7b14745f799424241",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "runa",
-      "categoria_label": "Runa",
-      "slots_possiveis": [
-        "arma"
-      ],
-      "restricao_subtipo": "arremesso_disparo",
-      "custo_integridade": 0
-    },
-    {
       "id": "armas_batedora",
       "slug": "armas_batedora",
       "nome": "Batedora",
-      "raridade": "comum",
-      "raridade_label": "Comum",
-      "preco": 500,
-      "preco_texto": "500",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 800,
+      "preco_texto": "800",
       "preco_qualificador": null,
       "descricao_curta": "Revela inimigos em até 10 metros.",
-      "descricao_longa": "*Incomum*\n\nSímbolos rúnicos gravados no projétil geram um pulso de varredura ao impacto. O pulso não é visível a olho nu e apenas usuários com *Óptica Rúnica *ou óculos VA/VR calibrado à runa recebem o sinal, exibido como sobreposição de pontos luminosos em sua visão.\n\n- **Efeito:** ao atingir qualquer alvo ou superfície, o usuário recebe instantaneamente o número e a posição aproximada de todos os inimigos em até 10 metros do ponto de impacto.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 800\n\nDados da lista de mercadorias:\n- Efeito: Revela inimigos em até 10 metros.\n- Raridade: Comum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 500",
+      "descricao_longa": "*Incomum*\n\nSímbolos rúnicos gravados no projétil geram um pulso de varredura ao impacto. O pulso não é visível a olho nu e apenas usuários com *Óptica Rúnica *ou óculos VA/VR calibrado à runa recebem o sinal, exibido como sobreposição de pontos luminosos em sua visão.\n\n- **Efeito:** ao atingir qualquer alvo ou superfície, o usuário recebe instantaneamente o número e a posição aproximada de todos os inimigos em até 10 metros do ponto de impacto.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 800\n\nDados da lista de mercadorias:\n- Efeito: Revela inimigos em até 10 metros.\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 800\n- Aplicação: Projéteis (disparo e arremesso)",
       "tags": [
         "loja"
       ],
@@ -875,124 +713,16 @@
       "custo_integridade": 0
     },
     {
-      "id": "armas_camuflagem",
-      "slug": "armas_camuflagem",
-      "nome": "Camuflagem",
-      "raridade": "raro",
-      "raridade_label": "Raro",
-      "preco": 1500,
-      "preco_texto": "1.500",
-      "preco_qualificador": null,
-      "descricao_curta": "Projéteis tornam-se invisíveis e inimigos sofrem –1 ao defender.",
-      "descricao_longa": "*Raro*\n\nLinhas de distorção ocultam o projétil em pleno voo, como se fosse engolido pelo ar. O alvo percebe o disparo apenas no último instante, com menos tempo de reação.\n\n- **Efeito:** inimigos sofrem –2 na ação defensiva contra os ataques.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.500\n\nDados da lista de mercadorias:\n- Efeito: Projéteis tornam-se invisíveis e inimigos sofrem –1 ao defender.\n- Raridade: Raro\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.500",
-      "tags": [
-        "loja"
-      ],
-      "dados_notion": {
-        "pagina": "ARMAS",
-        "secao": [
-          "ARMAS DE ARREMESSO E DISPARO",
-          "RUNAS"
-        ],
-        "tipo_tabela": "Runa",
-        "campos": {
-          "Runa": "Camuflagem",
-          "Efeito": "Projéteis tornam-se invisíveis e inimigos sofrem –1 ao defender.",
-          "Raridade": "Raro",
-          "Espaços": "1 (avulsa)",
-          "Preço (Ⱥ)": "1.500"
-        },
-        "tabela_tecnica": null
-      },
-      "fonte_notion": {
-        "paginaNotionId": "9690a136355283c59bd8813acc4e4935",
-        "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
-        "tabelaBlocoId": "5075edacfc6649049c6827a7aaaa1142",
-        "linhaBlocoId": "bf49204b6e8949f88ea7e3e296d03204",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "runa",
-      "categoria_label": "Runa",
-      "slots_possiveis": [
-        "arma"
-      ],
-      "restricao_subtipo": "arremesso_disparo",
-      "custo_integridade": 0
-    },
-    {
-      "id": "armas_armas_de_arremesso_e_disparo_toxica_f5d0f7",
-      "slug": "armas_armas_de_arremesso_e_disparo_toxica_f5d0f7",
-      "nome": "Tóxica",
-      "raridade": "raro",
-      "raridade_label": "Raro",
-      "preco": 1500,
-      "preco_texto": "1.500",
-      "preco_qualificador": null,
-      "descricao_curta": "Sucesso crítico aplica Envenenado no alvo.",
-      "descricao_longa": "*Raro*\n\nO entalhe impregna o projétil com energia corrosiva e volátil. Ao penetrar no corpo do inimigo, libera toxinas que se espalham pelo sistema.\n\n- **Efeito:** a cada acerto, o alvo deve fazer um teste de **`Vigor`**, CD 7. Em falha, fica **`Envenenado`**.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.500\n\nDados da lista de mercadorias:\n- Efeito: Sucesso crítico aplica Envenenado no alvo.\n- Raridade: Raro\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.500",
-      "tags": [
-        "loja"
-      ],
-      "dados_notion": {
-        "pagina": "ARMAS",
-        "secao": [
-          "ARMAS DE ARREMESSO E DISPARO",
-          "RUNAS"
-        ],
-        "tipo_tabela": "Runa",
-        "campos": {
-          "Runa": "Tóxica",
-          "Efeito": "Sucesso crítico aplica Envenenado no alvo.",
-          "Raridade": "Raro",
-          "Espaços": "1 (avulsa)",
-          "Preço (Ⱥ)": "1.500"
-        },
-        "tabela_tecnica": null
-      },
-      "fonte_notion": {
-        "paginaNotionId": "9690a136355283c59bd8813acc4e4935",
-        "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
-        "tabelaBlocoId": "5075edacfc6649049c6827a7aaaa1142",
-        "linhaBlocoId": "f5d0f7b7796348798f638f5a1efe48d0",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "runa",
-      "categoria_label": "Runa",
-      "slots_possiveis": [
-        "arma"
-      ],
-      "restricao_subtipo": "arremesso_disparo",
-      "custo_integridade": 0
-    },
-    {
       "id": "armas_armas_de_fogo_silenciadora",
       "slug": "armas_armas_de_fogo_silenciadora",
       "nome": "Silenciadora",
       "raridade": "incomum",
       "raridade_label": "Incomum",
-      "preco": 1000,
-      "preco_texto": "1.000",
+      "preco": 1500,
+      "preco_texto": "1.500",
       "preco_qualificador": null,
       "descricao_curta": "Tiros não produzem ruído audível.",
-      "descricao_longa": "*Incomum*\n\nCircuitos acústicos dispersam o som no momento do disparo, tornando tiros completamente inaudíveis mesmo em espaços fechados. O operador pode agir sem chamar atenção de seguranças, patrulhas ou sensores sonoros.\n\n- **Efeito:** todos os tiros disparados não produzem ruído audível em qualquer distância.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.000\n\nDados da lista de mercadorias:\n- Efeito: Tiros não produzem ruído audível.\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.000",
+      "descricao_longa": "*Incomum*\n\nCircuitos acústicos dispersam o som no momento do disparo, tornando tiros completamente inaudíveis mesmo em espaços fechados. O operador pode agir sem chamar atenção de seguranças, patrulhas ou sensores sonoros.\n\n- **Efeito:** todos os tiros disparados não produzem ruído audível. A arma ganha a propriedade *Silencioso*.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.500\n\nDados da lista de mercadorias:\n- Efeito: Tiros não produzem ruído audível.\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.500\n- Aplicação: Armas de fogo",
       "tags": [
         "loja"
       ],
@@ -1094,13 +824,13 @@
       "id": "armas_pente_fantasma",
       "slug": "armas_pente_fantasma",
       "nome": "Pente Fantasma",
-      "raridade": "incomum",
-      "raridade_label": "Incomum",
-      "preco": 1000,
-      "preco_texto": "1.000",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "preco_texto": "1.500",
       "preco_qualificador": null,
       "descricao_curta": "Pente recarrega 1 munição por rodada.",
-      "descricao_longa": "*Raro*\n\nEntalhes de recarga automática criam uma conexão rúnica entre munição reserva e o pente, garantindo fluxo contínuo de balas sem ação manual.\n\n- **Efeito:** o pente recarrega automaticamente **1 munição por rodada** enquanto houver munição disponível.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.500\n\nDados da lista de mercadorias:\n- Efeito: Pente recarrega 1 munição por rodada.\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.000",
+      "descricao_longa": "*Raro*\n\nEntalhes de recarga automática criam uma conexão rúnica entre munição reserva e o pente, garantindo fluxo contínuo de balas sem ação manual.\n\n- **Efeito:** o pente recarrega automaticamente **1 munição por rodada** enquanto houver munição disponível.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.500\n\nDados da lista de mercadorias:\n- Efeito: Pente recarrega 1 munição por rodada.\n- Raridade: Raro\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.500\n- Aplicação: Armas de fogo",
       "tags": [
         "loja"
       ],
@@ -1125,276 +855,6 @@
         "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
         "tabelaBlocoId": "bb83235c13c141348c88a770a30840bf",
         "linhaBlocoId": "4394d696b2a747b892b13d5294e564cc",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "runa",
-      "categoria_label": "Runa",
-      "slots_possiveis": [
-        "arma"
-      ],
-      "restricao_subtipo": "fogo",
-      "custo_integridade": 0
-    },
-    {
-      "id": "armas_armas_de_fogo_serpentina",
-      "slug": "armas_armas_de_fogo_serpentina",
-      "nome": "Serpentina",
-      "raridade": "incomum",
-      "raridade_label": "Incomum",
-      "preco": 1000,
-      "preco_texto": "1.000",
-      "preco_qualificador": null,
-      "descricao_curta": "Projétil pode contornar obstáculos leves.",
-      "descricao_longa": "*Raro*\n\nGravuras arcanas manipulam microcorrentes de ar, permitindo ao projétil descrever trajetórias não-lineares. O usuário pode mirar em alvos atrás de móveis, paredes finas ou obstáculos.\n\n- **Efeito:** projéteis podem contornar obstáculos leves para atingir um alvo fora da linha reta, desde que haja qualquer brecha física.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.500\n\nDados da lista de mercadorias:\n- Efeito: Projétil pode contornar obstáculos leves.\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.000",
-      "tags": [
-        "loja"
-      ],
-      "dados_notion": {
-        "pagina": "ARMAS",
-        "secao": [
-          "ARMAS DE FOGO",
-          "RUNAS"
-        ],
-        "tipo_tabela": "Runa",
-        "campos": {
-          "Runa": "Serpentina",
-          "Efeito": "Projétil pode contornar obstáculos leves.",
-          "Raridade": "Incomum",
-          "Espaços": "1 (avulsa)",
-          "Preço (Ⱥ)": "1.000"
-        },
-        "tabela_tecnica": null
-      },
-      "fonte_notion": {
-        "paginaNotionId": "9690a136355283c59bd8813acc4e4935",
-        "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
-        "tabelaBlocoId": "bb83235c13c141348c88a770a30840bf",
-        "linhaBlocoId": "d6b5f1fc7907486b847bcba6394837d6",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "runa",
-      "categoria_label": "Runa",
-      "slots_possiveis": [
-        "arma"
-      ],
-      "restricao_subtipo": "fogo",
-      "custo_integridade": 0
-    },
-    {
-      "id": "armas_atordoante",
-      "slug": "armas_atordoante",
-      "nome": "Atordoante",
-      "raridade": "raro",
-      "raridade_label": "Raro",
-      "preco": 1500,
-      "preco_texto": "1.500",
-      "preco_qualificador": null,
-      "descricao_curta": "Causa Atordoamento em sucesso crítico.",
-      "descricao_longa": "*Raro*\n\nSímbolos vibratórios concentram energia de impacto que, liberada no momento certo, pode sobrecarregar os sentidos do alvo. Ideal para operações de contenção ou neutralização rápida.\n\n- **Efeito:** 1 vez por cena, ao causar sucesso crítico, o alvo fica **`Atordoado`** até o fim do próximo turno dele.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.500\n\nDados da lista de mercadorias:\n- Efeito: Causa Atordoamento em sucesso crítico.\n- Raridade: Raro\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.500",
-      "tags": [
-        "loja"
-      ],
-      "dados_notion": {
-        "pagina": "ARMAS",
-        "secao": [
-          "ARMAS DE FOGO",
-          "RUNAS"
-        ],
-        "tipo_tabela": "Runa",
-        "campos": {
-          "Runa": "Atordoante",
-          "Efeito": "Causa Atordoamento em sucesso crítico.",
-          "Raridade": "Raro",
-          "Espaços": "1 (avulsa)",
-          "Preço (Ⱥ)": "1.500"
-        },
-        "tabela_tecnica": null
-      },
-      "fonte_notion": {
-        "paginaNotionId": "9690a136355283c59bd8813acc4e4935",
-        "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
-        "tabelaBlocoId": "bb83235c13c141348c88a770a30840bf",
-        "linhaBlocoId": "ee2e06695d5a4539be2b3ec37922839b",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "runa",
-      "categoria_label": "Runa",
-      "slots_possiveis": [
-        "arma"
-      ],
-      "restricao_subtipo": "fogo",
-      "custo_integridade": 0
-    },
-    {
-      "id": "armas_armas_de_fogo_ricochete",
-      "slug": "armas_armas_de_fogo_ricochete",
-      "nome": "Ricochete",
-      "raridade": "raro",
-      "raridade_label": "Raro",
-      "preco": 1500,
-      "preco_texto": "1.500",
-      "preco_qualificador": null,
-      "descricao_curta": "Projétil pode saltar para outro inimigo.",
-      "descricao_longa": "*Raro*\n\nEntalhes refletores alteram o ângulo do projétil ao impacto. Após atingir um alvo, a bala salta para o próximo inimigo próximo em linha, multiplicando o efeito letal em corredores ou espaços fechados.\n\n- **Efeito:** projétil pode saltar para atingir outro inimigo a até 2 metros do primeiro alvo, causando metade do dano original.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.600\n\nDados da lista de mercadorias:\n- Efeito: Projétil pode saltar para outro inimigo.\n- Raridade: Raro\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.500",
-      "tags": [
-        "loja"
-      ],
-      "dados_notion": {
-        "pagina": "ARMAS",
-        "secao": [
-          "ARMAS DE FOGO",
-          "RUNAS"
-        ],
-        "tipo_tabela": "Runa",
-        "campos": {
-          "Runa": "Ricochete",
-          "Efeito": "Projétil pode saltar para outro inimigo.",
-          "Raridade": "Raro",
-          "Espaços": "1 (avulsa)",
-          "Preço (Ⱥ)": "1.500"
-        },
-        "tabela_tecnica": null
-      },
-      "fonte_notion": {
-        "paginaNotionId": "9690a136355283c59bd8813acc4e4935",
-        "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
-        "tabelaBlocoId": "bb83235c13c141348c88a770a30840bf",
-        "linhaBlocoId": "d5b7e9abc3744167abbc29bcc0d1bd03",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "runa",
-      "categoria_label": "Runa",
-      "slots_possiveis": [
-        "arma"
-      ],
-      "restricao_subtipo": "fogo",
-      "custo_integridade": 0
-    },
-    {
-      "id": "armas_cadencia",
-      "slug": "armas_cadencia",
-      "nome": "Cadência",
-      "raridade": "raro",
-      "raridade_label": "Raro",
-      "preco": 1500,
-      "preco_texto": "1.500",
-      "preco_qualificador": null,
-      "descricao_curta": "1 vez por cena, dispara 1 bala extra sem custo.",
-      "descricao_longa": "*Raro*\n\nRunas de fluxo acelerado sincronizam mecanismos internos, permitindo disparos adicionais sem esforço extra do atirador.\n\n- **Efeito:** 1 vez por cena, pode disparar 1 bala extra sem custo de PA durante uma ação de ataque. O tiro extra usa o mesmo resultado do teste realizado.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.500\n\nDados da lista de mercadorias:\n- Efeito: 1 vez por cena, dispara 1 bala extra sem custo.\n- Raridade: Raro\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.500",
-      "tags": [
-        "loja"
-      ],
-      "dados_notion": {
-        "pagina": "ARMAS",
-        "secao": [
-          "ARMAS DE FOGO",
-          "RUNAS"
-        ],
-        "tipo_tabela": "Runa",
-        "campos": {
-          "Runa": "Cadência",
-          "Efeito": "1 vez por cena, dispara 1 bala extra sem custo.",
-          "Raridade": "Raro",
-          "Espaços": "1 (avulsa)",
-          "Preço (Ⱥ)": "1.500"
-        },
-        "tabela_tecnica": null
-      },
-      "fonte_notion": {
-        "paginaNotionId": "9690a136355283c59bd8813acc4e4935",
-        "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
-        "tabelaBlocoId": "bb83235c13c141348c88a770a30840bf",
-        "linhaBlocoId": "b74c7b14b4ef431f9bc01aa7e5c64cfe",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "runa",
-      "categoria_label": "Runa",
-      "slots_possiveis": [
-        "arma"
-      ],
-      "restricao_subtipo": "fogo",
-      "custo_integridade": 0
-    },
-    {
-      "id": "armas_armas_de_fogo_estabilidade",
-      "slug": "armas_armas_de_fogo_estabilidade",
-      "nome": "Estabilidade",
-      "raridade": "raro",
-      "raridade_label": "Raro",
-      "preco": 1500,
-      "preco_texto": "1.500",
-      "preco_qualificador": null,
-      "descricao_curta": "+1 em testes de ataque com essa arma.",
-      "descricao_longa": "*Raro*\n\nGravuras de compensação reduzem o recuo e estabilizam a trajetória dos disparos, melhorando a performance até sob pressão.\n\n- **Efeito:** concede +1 em todos os testes de ataque realizados com essa arma.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.500\n\nDados da lista de mercadorias:\n- Efeito: +1 em testes de ataque com essa arma.\n- Raridade: Raro\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.500",
-      "tags": [
-        "loja"
-      ],
-      "dados_notion": {
-        "pagina": "ARMAS",
-        "secao": [
-          "ARMAS DE FOGO",
-          "RUNAS"
-        ],
-        "tipo_tabela": "Runa",
-        "campos": {
-          "Runa": "Estabilidade",
-          "Efeito": "+1 em testes de ataque com essa arma.",
-          "Raridade": "Raro",
-          "Espaços": "1 (avulsa)",
-          "Preço (Ⱥ)": "1.500"
-        },
-        "tabela_tecnica": null
-      },
-      "fonte_notion": {
-        "paginaNotionId": "9690a136355283c59bd8813acc4e4935",
-        "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
-        "tabelaBlocoId": "bb83235c13c141348c88a770a30840bf",
-        "linhaBlocoId": "df7c2b91a9f2421bac172c6cec9c1268",
         "tabelaTecnicaFonte": null
       },
       "vinculos_sugeridos": null,
@@ -1631,114 +1091,6 @@
       "custo_integridade": 0
     },
     {
-      "id": "armas_armas_de_energia_estabilidade",
-      "slug": "armas_armas_de_energia_estabilidade",
-      "nome": "Estabilidade",
-      "raridade": "raro",
-      "raridade_label": "Raro",
-      "preco": 1500,
-      "preco_texto": "1.500",
-      "preco_qualificador": null,
-      "descricao_curta": "Concede +1 nos testes de ataque.",
-      "descricao_longa": "*Raro*\n\nGravuras de compensação corrigem vibrações do emissor e pequenas alterações de trajetória durante o disparo.\n\n- **Efeito:** concede **+1 em todos os testes de ataque** realizados com a arma.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** 1.500 Ⱥ\n\nDados da lista de mercadorias:\n- Efeito: Concede +1 nos testes de ataque.\n- Raridade: Raro\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.500",
-      "tags": [
-        "loja"
-      ],
-      "dados_notion": {
-        "pagina": "ARMAS",
-        "secao": [
-          "ARMAS DE ENERGIA",
-          "RUNAS"
-        ],
-        "tipo_tabela": "Runa",
-        "campos": {
-          "Runa": "Estabilidade",
-          "Efeito": "Concede +1 nos testes de ataque.",
-          "Raridade": "Raro",
-          "Espaços": "1 (avulsa)",
-          "Preço (Ⱥ)": "1.500"
-        },
-        "tabela_tecnica": null
-      },
-      "fonte_notion": {
-        "paginaNotionId": "9690a136355283c59bd8813acc4e4935",
-        "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
-        "tabelaBlocoId": "c63f16e73a294414a334351203c18f2e",
-        "linhaBlocoId": "003ba942501d4ec39ecf134e99872c3d",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "runa",
-      "categoria_label": "Runa",
-      "slots_possiveis": [
-        "arma"
-      ],
-      "restricao_subtipo": "energia",
-      "custo_integridade": 0
-    },
-    {
-      "id": "armas_amplificacao",
-      "slug": "armas_amplificacao",
-      "nome": "Amplificação",
-      "raridade": "raro",
-      "raridade_label": "Raro",
-      "preco": 2000,
-      "preco_texto": "2.000",
-      "preco_qualificador": null,
-      "descricao_curta": "Consome carga adicional para causar +1d4 de dano.",
-      "descricao_longa": "*Raro*\n\nSímbolos de potência forçam a célula a liberar uma quantidade maior de energia em cada disparo.\n\n- **Efeito:** antes de atacar, o usuário pode fazer o disparo consumir **1 carga adicional**. Caso acerte, causa **+1d4 de dano** do mesmo tipo da arma.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** 2.000 Ⱥ\n\nDados da lista de mercadorias:\n- Efeito: Consome carga adicional para causar +1d4 de dano.\n- Raridade: Raro\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 2.000",
-      "tags": [
-        "loja"
-      ],
-      "dados_notion": {
-        "pagina": "ARMAS",
-        "secao": [
-          "ARMAS DE ENERGIA",
-          "RUNAS"
-        ],
-        "tipo_tabela": "Runa",
-        "campos": {
-          "Runa": "Amplificação",
-          "Efeito": "Consome carga adicional para causar +1d4 de dano.",
-          "Raridade": "Raro",
-          "Espaços": "1 (avulsa)",
-          "Preço (Ⱥ)": "2.000"
-        },
-        "tabela_tecnica": null
-      },
-      "fonte_notion": {
-        "paginaNotionId": "9690a136355283c59bd8813acc4e4935",
-        "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
-        "tabelaBlocoId": "c63f16e73a294414a334351203c18f2e",
-        "linhaBlocoId": "971b773ded3b486d94a0e191ba0814be",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "runa",
-      "categoria_label": "Runa",
-      "slots_possiveis": [
-        "arma"
-      ],
-      "restricao_subtipo": "energia",
-      "custo_integridade": 0
-    },
-    {
       "id": "armas_eficiencia",
       "slug": "armas_eficiencia",
       "nome": "Eficiência",
@@ -1856,7 +1208,7 @@
       "preco_texto": "500",
       "preco_qualificador": null,
       "descricao_curta": "Recupera o MIT perdido em um descanso longo.",
-      "descricao_longa": "*Comum*\n\nCircuitos autorreparadores lentamente restauram a estrutura da peça durante períodos de descanso.\n\n- **Efeito:** após cada descanso longo, a peça recupera totalmente o MIT perdido,\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 500\n\nDados da lista de mercadorias:\n- Efeito: Recupera o MIT perdido em um descanso longo.\n- Raridade: Comum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 500",
+      "descricao_longa": "*Comum*\n\nCircuitos autorreparadores lentamente restauram a estrutura da peça durante períodos de descanso.\n\n- **Efeito:** após cada descanso longo, a armadura recupera toda a MIT perdida em suas Regiões protegidas. Se utilizar MIT compartilhada, restaure sua reserva única.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 500\n\nDados da lista de mercadorias:\n- Efeito: Recupera o MIT perdido em um descanso longo.\n- Raridade: Comum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 500",
       "tags": [
         "loja"
       ],
@@ -1910,7 +1262,7 @@
       "preco_texto": "1.000",
       "preco_qualificador": null,
       "descricao_curta": "Altera o visual da armadura em roupa comum.",
-      "descricao_longa": "*Incomum*\n\nEntalhes ilusionistas se ativam para alterar a aparência externa da armadura, simulando visual de roupas comuns.\n\n- **Efeito:** enquanto ativa, a peça assume qualquer aparência de roupa cotidiana à escolha do usuário. Uma criatura suspeita pode realizar um teste de **`Lógica`**, CD 7, para notar a ilusão.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.000\n\nDados da lista de mercadorias:\n- Efeito: Altera o visual da armadura em roupa comum.\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.000",
+      "descricao_longa": "Dados da lista de mercadorias:\n- Efeito: Altera o visual da armadura em roupa comum.\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.000",
       "tags": [
         "loja"
       ],
@@ -2126,7 +1478,7 @@
       "preco_texto": "2.000",
       "preco_qualificador": null,
       "descricao_curta": "Ataques causam –1d4 de dano na peça equipada.",
-      "descricao_longa": "*Raro*\n\nTraços arcanos dispersam e enfraquecem energia dirigida à peça, minimizando o estrago.\n\n- **Efeito:** ataques que atingem a peça causam **–1d4 de dano** no total recebido.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 2.000\n\nDados da lista de mercadorias:\n- Efeito: Ataques causam –1d4 de dano na peça equipada.\n- Raridade: Raro\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 2.000",
+      "descricao_longa": "Dados da lista de mercadorias:\n- Efeito: Ataques causam –1d4 de dano na peça equipada.\n- Raridade: Raro\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 2.000",
       "tags": [
         "loja"
       ],
@@ -2233,8 +1585,8 @@
       "preco": 500,
       "preco_texto": "500",
       "preco_qualificador": null,
-      "descricao_curta": "O escudo pode ser retraído, ficando ocultável ou fácil de transportar.",
-      "descricao_longa": "*Comum*\n\nPlacas segmentadas e inscrições de material adaptativo permitem recolher o escudo em formato compacto.\n\n- **Efeito:** O escudo pode ser retraído, tornando-se ocultável ou fácil de transportar em espaços urbanos.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 500.\n\nDados da lista de mercadorias:\n- Efeito: O escudo pode ser retraído, ficando ocultável ou fácil de transportar.\n- Raridade: Comum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 500",
+      "descricao_curta": "Ao recolher, 2 espaços passam a 1, 3 passam a 2 e Carga passa a 3. Expandir ou recolher exige Interagir 1 PA.",
+      "descricao_longa": "*Comum*\n\nPlacas segmentadas e inscrições de material adaptativo permitem recolher o escudo em formato compacto.\n\n- **Efeito:** você pode recolher o escudo em um formato compacto ou expandi-lo com **Interagir** **`1 PA`**. Enquanto recolhido, um escudo de 2 espaços ocupa 1 espaço, um de 3 espaços ocupa 2 espaços e um de Carga ocupa 3 espaços. O escudo recolhido pode ser ocultado conforme seu novo volume, mas não concede cobertura nem pode ser utilizado para **Bloquear** até ser expandido.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 500.\n\nDados da lista de mercadorias:\n- Efeito: Ao recolher, 2 espaços passam a 1, 3 passam a 2 e Carga passa a 3. Expandir ou recolher exige Interagir 1 PA.\n- Raridade: Comum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 500",
       "tags": [
         "loja"
       ],
@@ -2341,8 +1693,8 @@
       "preco": 1000,
       "preco_texto": "1.000",
       "preco_qualificador": null,
-      "descricao_curta": "O escudo recebe +2 PD temporários no início de cada cena.",
-      "descricao_longa": "*Incomum*\n\nEntalhes de reforço potencializam a estrutura do escudo, tornando-o mais robusto diante de impactos.\n\n- **Efeito:** No início de cada cena, o escudo recebe +2 PD temporários, somando-se ao valor original.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.000.\n\nDados da lista de mercadorias:\n- Efeito: O escudo recebe +2 PD temporários no início de cada cena.\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.000",
+      "descricao_curta": "O escudo recebe +3 PD temporários no início de cada cena.",
+      "descricao_longa": "*Incomum*\n\nEntalhes de reforço potencializam a estrutura do escudo, tornando-o mais robusto diante de impactos.\n\n- **Efeito:** No início de cada cena, o escudo recebe +3 PD temporários, somando-se ao valor original.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.000.\n\nDados da lista de mercadorias:\n- Efeito: O escudo recebe +3 PD temporários no início de cada cena.\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.000",
       "tags": [
         "loja"
       ],
@@ -2367,114 +1719,6 @@
         "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
         "tabelaBlocoId": "ddca3d8504a042889485c442ea641805",
         "linhaBlocoId": "4b35243111b841f9af4a466891780cce",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "runa",
-      "categoria_label": "Runa",
-      "slots_possiveis": [
-        "escudo"
-      ],
-      "restricao_subtipo": null,
-      "custo_integridade": 0
-    },
-    {
-      "id": "armaduras_e_escudos_escudos_dissipacao",
-      "slug": "armaduras_e_escudos_escudos_dissipacao",
-      "nome": "Dissipação",
-      "raridade": "raro",
-      "raridade_label": "Raro",
-      "preco": 1500,
-      "preco_texto": "1.500",
-      "preco_qualificador": null,
-      "descricao_curta": "Reduz em 1d4 o dano que alcançaria o usuário após Bloquear.",
-      "descricao_longa": "*Raro*\n\nTraços arcanos dispersam energia e força física que atravessam a proteção, reduzindo o impacto que alcança o portador.\n\n- **Efeito:** Quando um **Bloquear** bem-sucedido com este escudo fizer com que parte do dano alcance o usuário, seja por exceder os PD restantes ou pelas regras de Resistência do escudo, reduza em **1d4** o total de dano que alcançaria o usuário, até o mínimo de 0.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.500.\n\nDados da lista de mercadorias:\n- Efeito: Reduz em 1d4 o dano que alcançaria o usuário após Bloquear.\n- Raridade: Raro\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.500",
-      "tags": [
-        "loja"
-      ],
-      "dados_notion": {
-        "pagina": "ARMADURAS E ESCUDOS",
-        "secao": [
-          "ESCUDOS",
-          "RUNAS"
-        ],
-        "tipo_tabela": "Runa",
-        "campos": {
-          "Runa": "Dissipação",
-          "Efeito": "Reduz em 1d4 o dano que alcançaria o usuário após Bloquear.",
-          "Raridade": "Raro",
-          "Espaços": "1 (avulsa)",
-          "Preço (Ⱥ)": "1.500"
-        },
-        "tabela_tecnica": null
-      },
-      "fonte_notion": {
-        "paginaNotionId": "3f00a136355280de9992cec6eca3f6b6",
-        "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
-        "tabelaBlocoId": "ddca3d8504a042889485c442ea641805",
-        "linhaBlocoId": "404246c2b2db44afb75c7262beeb929a",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "runa",
-      "categoria_label": "Runa",
-      "slots_possiveis": [
-        "escudo"
-      ],
-      "restricao_subtipo": null,
-      "custo_integridade": 0
-    },
-    {
-      "id": "armaduras_e_escudos_interceptacao",
-      "slug": "armaduras_e_escudos_interceptacao",
-      "nome": "Interceptação",
-      "raridade": "raro",
-      "raridade_label": "Raro",
-      "preco": 1500,
-      "preco_texto": "1.500",
-      "preco_qualificador": null,
-      "descricao_curta": "Uma vez por cena, permite deslocar-se até 1 metro para Bloquear um ataque contra um aliado.",
-      "descricao_longa": "*Raro*\n\nA runa aprimora a resposta física do portador, acelerando seus movimentos e permitindo que ele se desloque no instante exato para proteger aliados um pouco mais distantes.\n\n- **Efeito:** Uma vez por cena, quando um aliado a até **1 m** for alvo de um ataque, você pode se deslocar até **1 m** antes da resolução do ataque, sem gastar PA. O deslocamento deve terminar adjacente ao aliado e permite utilizar **Bloquear** com este escudo. **Bloquear** continua exigindo uma ação defensiva normalmente.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.500.\n\nDados da lista de mercadorias:\n- Efeito: Uma vez por cena, permite deslocar-se até 1 metro para Bloquear um ataque contra um aliado.\n- Raridade: Raro\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.500",
-      "tags": [
-        "loja"
-      ],
-      "dados_notion": {
-        "pagina": "ARMADURAS E ESCUDOS",
-        "secao": [
-          "ESCUDOS",
-          "RUNAS"
-        ],
-        "tipo_tabela": "Runa",
-        "campos": {
-          "Runa": "Interceptação",
-          "Efeito": "Uma vez por cena, permite deslocar-se até 1 metro para Bloquear um ataque contra um aliado.",
-          "Raridade": "Raro",
-          "Espaços": "1 (avulsa)",
-          "Preço (Ⱥ)": "1.500"
-        },
-        "tabela_tecnica": null
-      },
-      "fonte_notion": {
-        "paginaNotionId": "3f00a136355280de9992cec6eca3f6b6",
-        "paginaEditadaEm": "2026-10-08T22:18:00.000Z",
-        "tabelaBlocoId": "ddca3d8504a042889485c442ea641805",
-        "linhaBlocoId": "da8dc38bddc84ef68c8c28b6585bbc0e",
         "tabelaTecnicaFonte": null
       },
       "vinculos_sugeridos": null,
@@ -2557,20 +1801,20 @@
       "preco": 500,
       "preco_texto": "500",
       "preco_qualificador": null,
-      "descricao_curta": "Recupera totalmente o PD perdido em um descanso longo",
-      "descricao_longa": "*Incomum*\n\nSímbolos de regeneração mantêm drones e robôs em estado funcional, ativando ajustes e recomposições automáticas mesmo sem intervenção externa.\n\n- **Efeito:** ao final de cada descanso curto, o drone ou robô recupera totalmente o PD perdido.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 500\n\nDados da lista de mercadorias:\n- Efeito: Recupera totalmente o PD perdido em um descanso longo\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 500",
+      "descricao_curta": "Recupera totalmente o PD perdido ao final de um descanso curto",
+      "descricao_longa": "*Incomum*\n\nSímbolos de regeneração mantêm Máquinas Autônomas em estado funcional, ativando ajustes e recomposições automáticas mesmo sem intervenção externa.\n\n- **Efeito:** ao final de cada descanso curto, a Máquina Autônoma recupera totalmente o PD perdido.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 500\n\nDados da lista de mercadorias:\n- Efeito: Recupera totalmente o PD perdido ao final de um descanso curto\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 500",
       "tags": [
         "loja"
       ],
       "dados_notion": {
-        "pagina": "DRONES E ROBÔS",
+        "pagina": "MÁQUINAS AUTÔNOMAS",
         "secao": [
           "RUNAS"
         ],
         "tipo_tabela": "Runa",
         "campos": {
           "Runa": "Autorreparo",
-          "Efeito": "Recupera totalmente o PD perdido em um descanso longo",
+          "Efeito": "Recupera totalmente o PD perdido ao final de um descanso curto",
           "Raridade": "Incomum",
           "Espaços": "1 (avulsa)",
           "Preço (Ⱥ)": "500"
@@ -2579,9 +1823,9 @@
       },
       "fonte_notion": {
         "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
-        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
-        "tabelaBlocoId": "792f53090323408c946846339f5edbf0",
-        "linhaBlocoId": "cad05994d6e2472891defbf2852d6e10",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "d06d507f1ba54532b6d6055169a368d3",
+        "linhaBlocoId": "e3d02ccf626949e0886cc83f8be8fe2f",
         "tabelaTecnicaFonte": null
       },
       "vinculos_sugeridos": null,
@@ -2592,7 +1836,7 @@
       "status": "published",
       "versao": "1.2.0",
       "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
+      "updated_at": "2026-10-24",
       "categoria": "runa",
       "categoria_label": "Runa",
       "slots_possiveis": [
@@ -2600,7 +1844,8 @@
         "robo"
       ],
       "restricao_subtipo": null,
-      "custo_integridade": 0
+      "custo_integridade": 0,
+      "estatisticas": {}
     },
     {
       "id": "drones_e_robos_camuflagem",
@@ -2611,20 +1856,20 @@
       "preco": 700,
       "preco_texto": "700",
       "preco_qualificador": null,
-      "descricao_curta": "Testes para localizar ou alvejar o drone ou robô têm –2.",
-      "descricao_longa": "*Incomum*\n\nO drone ou robô altera padrões visuais e térmicos, tornando-se difícil de identificar em câmeras, sensores e a olho nu.\n\n- **Efeito:** ativa com **`1 PA`** (do operador, no caso de drones, ou do próprio robô). Até o fim da cena, testes para localizar, rastrear ou alvejar o drone/robô têm –2.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 700\n\nDados da lista de mercadorias:\n- Efeito: Testes para localizar ou alvejar o drone ou robô têm –2.\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 700",
+      "descricao_curta": "Testes para localizar ou alvejar a Máquina Autônoma sofrem –2 de desvantagem.",
+      "descricao_longa": "*Incomum*\n\nA Máquina Autônoma altera padrões visuais e térmicos, tornando-se difícil de identificar em câmeras, sensores e a olho nu.\n\n- **Efeito:** a máquina ativa a runa com **`1 PA`**. Até o fim da cena, testes para localizar, rastrear ou alvejar a Máquina Autônoma sofrem –2 de desvantagem.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 700\n\nDados da lista de mercadorias:\n- Efeito: Testes para localizar ou alvejar a Máquina Autônoma sofrem –2 de desvantagem.\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 700",
       "tags": [
         "loja"
       ],
       "dados_notion": {
-        "pagina": "DRONES E ROBÔS",
+        "pagina": "MÁQUINAS AUTÔNOMAS",
         "secao": [
           "RUNAS"
         ],
         "tipo_tabela": "Runa",
         "campos": {
           "Runa": "Camuflagem",
-          "Efeito": "Testes para localizar ou alvejar o drone ou robô têm –2.",
+          "Efeito": "Testes para localizar ou alvejar a Máquina Autônoma sofrem –2 de desvantagem.",
           "Raridade": "Incomum",
           "Espaços": "1 (avulsa)",
           "Preço (Ⱥ)": "700"
@@ -2633,9 +1878,9 @@
       },
       "fonte_notion": {
         "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
-        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
-        "tabelaBlocoId": "792f53090323408c946846339f5edbf0",
-        "linhaBlocoId": "e9f0eb882bf847459b9576024325456a",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "d06d507f1ba54532b6d6055169a368d3",
+        "linhaBlocoId": "90cc88aad24d4d0e9e7b7061e773986f",
         "tabelaTecnicaFonte": null
       },
       "vinculos_sugeridos": null,
@@ -2646,7 +1891,7 @@
       "status": "published",
       "versao": "1.2.0",
       "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
+      "updated_at": "2026-10-24",
       "categoria": "runa",
       "categoria_label": "Runa",
       "slots_possiveis": [
@@ -2654,7 +1899,8 @@
         "robo"
       ],
       "restricao_subtipo": null,
-      "custo_integridade": 0
+      "custo_integridade": 0,
+      "estatisticas": {}
     },
     {
       "id": "drones_e_robos_alcance",
@@ -2665,20 +1911,20 @@
       "preco": 700,
       "preco_texto": "700",
       "preco_qualificador": null,
-      "descricao_curta": "Dobra o alcance de controle do drone ou robô",
-      "descricao_longa": "*Incomum*\n\nRunas de amplificação canalizam energia sináptica para reforçar a transmissão de comandos e dados, permitindo controle estável mesmo a grandes distâncias.\n\n- **Efeito:** dobra o alcance de controle do drone ou robô enquanto instalada.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 700\n\nDados da lista de mercadorias:\n- Efeito: Dobra o alcance de controle do drone ou robô\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 700",
+      "descricao_curta": "Dobra o alcance de controle da Máquina Autônoma",
+      "descricao_longa": "*Incomum*\n\nRunas de amplificação canalizam energia sináptica para reforçar a transmissão de comandos e dados, permitindo controle estável mesmo a grandes distâncias.\n\n- **Efeito:** dobra o alcance de controle da Máquina Autônoma enquanto instalada.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 700\n\nDados da lista de mercadorias:\n- Efeito: Dobra o alcance de controle da Máquina Autônoma\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 700",
       "tags": [
         "loja"
       ],
       "dados_notion": {
-        "pagina": "DRONES E ROBÔS",
+        "pagina": "MÁQUINAS AUTÔNOMAS",
         "secao": [
           "RUNAS"
         ],
         "tipo_tabela": "Runa",
         "campos": {
           "Runa": "Alcance",
-          "Efeito": "Dobra o alcance de controle do drone ou robô",
+          "Efeito": "Dobra o alcance de controle da Máquina Autônoma",
           "Raridade": "Incomum",
           "Espaços": "1 (avulsa)",
           "Preço (Ⱥ)": "700"
@@ -2687,9 +1933,9 @@
       },
       "fonte_notion": {
         "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
-        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
-        "tabelaBlocoId": "792f53090323408c946846339f5edbf0",
-        "linhaBlocoId": "a16711d6382042c393b2c8dec259ddee",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "d06d507f1ba54532b6d6055169a368d3",
+        "linhaBlocoId": "b4ff4e3bf29549e2bf880c1604a5e5b8",
         "tabelaTecnicaFonte": null
       },
       "vinculos_sugeridos": null,
@@ -2700,7 +1946,7 @@
       "status": "published",
       "versao": "1.2.0",
       "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
+      "updated_at": "2026-10-24",
       "categoria": "runa",
       "categoria_label": "Runa",
       "slots_possiveis": [
@@ -2708,7 +1954,8 @@
         "robo"
       ],
       "restricao_subtipo": null,
-      "custo_integridade": 0
+      "custo_integridade": 0,
+      "estatisticas": {}
     },
     {
       "id": "drones_e_robos_interferencia",
@@ -2720,12 +1967,12 @@
       "preco_texto": "1.000",
       "preco_qualificador": null,
       "descricao_curta": "Bloqueia sinais em 10 m por 1 minuto.",
-      "descricao_longa": "*Incomum*\n\nPulsos tecnomágicos bloqueiam sinais e dificultam rastreamento.\n\n- **Efeito:** pode, por  **`1 PA`**** **(do operador, no caso de drones, ou do próprio robô), bloquear todos os rastreadores e transmissões em um raio de 10 m por 1 minuto.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.000\n\nDados da lista de mercadorias:\n- Efeito: Bloqueia sinais em 10 m por 1 minuto.\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.000",
+      "descricao_longa": "*Incomum*\n\nPulsos tecnomágicos bloqueiam sinais e dificultam rastreamento.\n\n- **Efeito:** a máquina pode utilizar **`1 PA`** para bloquear todos os rastreadores e transmissões em um raio de 10 m por 1 minuto.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.000\n\nDados da lista de mercadorias:\n- Efeito: Bloqueia sinais em 10 m por 1 minuto.\n- Raridade: Incomum\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.000",
       "tags": [
         "loja"
       ],
       "dados_notion": {
-        "pagina": "DRONES E ROBÔS",
+        "pagina": "MÁQUINAS AUTÔNOMAS",
         "secao": [
           "RUNAS"
         ],
@@ -2741,9 +1988,9 @@
       },
       "fonte_notion": {
         "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
-        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
-        "tabelaBlocoId": "792f53090323408c946846339f5edbf0",
-        "linhaBlocoId": "0e46a07f55fe42a6b55d8d25d85d2aa9",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "d06d507f1ba54532b6d6055169a368d3",
+        "linhaBlocoId": "ef6a0b3ba1484fa4b705a24121f6ca62",
         "tabelaTecnicaFonte": null
       },
       "vinculos_sugeridos": null,
@@ -2754,7 +2001,7 @@
       "status": "published",
       "versao": "1.2.0",
       "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
+      "updated_at": "2026-10-24",
       "categoria": "runa",
       "categoria_label": "Runa",
       "slots_possiveis": [
@@ -2762,7 +2009,8 @@
         "robo"
       ],
       "restricao_subtipo": null,
-      "custo_integridade": 0
+      "custo_integridade": 0,
+      "estatisticas": {}
     },
     {
       "id": "drones_e_robos_energia",
@@ -2773,20 +2021,20 @@
       "preco": 1500,
       "preco_texto": "1.500",
       "preco_qualificador": null,
-      "descricao_curta": "1 vez por cena, pode gastar 1 PA extra.",
-      "descricao_longa": "*Raro*\n\nInscrições energéticas otimizam os circuitos, liberando energia extra em momentos críticos.\n\n- **Efeito:** 1 vez por cena, pode gastar **`1 PA`** adicional, mesmo que já tenha atingido o limite no turno.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.500\n\nDados da lista de mercadorias:\n- Efeito: 1 vez por cena, pode gastar 1 PA extra.\n- Raridade: Raro\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.500",
+      "descricao_curta": "Fornece 1 PA adicional uma vez por cena e aumenta em 1 o limite de PA da máquina naquela rodada.",
+      "descricao_longa": "*Raro*\n\nInscrições energéticas otimizam os circuitos da Máquina Autônoma, liberando energia adicional em momentos críticos.\n\n- **Efeito:** uma vez por cena, a runa fornece **1 PA adicional** para executar uma ação da máquina, aumentando em 1 seu limite de PA naquela rodada. Esse PA não consome os recursos do operador nem outros PA autônomos disponíveis.\n\n- **Espaços:** 1 (avulsa)\n\n- **Preço:** Ⱥ 1.500\n\nA runa não concede ativações próprias. Em máquinas convencionais, sua utilização ocorre durante a ativação do operador.\n\nDados da lista de mercadorias:\n- Efeito: Fornece 1 PA adicional uma vez por cena e aumenta em 1 o limite de PA da máquina naquela rodada.\n- Raridade: Raro\n- Espaços: 1 (avulsa)\n- Preço (Ⱥ): 1.500",
       "tags": [
         "loja"
       ],
       "dados_notion": {
-        "pagina": "DRONES E ROBÔS",
+        "pagina": "MÁQUINAS AUTÔNOMAS",
         "secao": [
           "RUNAS"
         ],
         "tipo_tabela": "Runa",
         "campos": {
           "Runa": "Energia",
-          "Efeito": "1 vez por cena, pode gastar 1 PA extra.",
+          "Efeito": "Fornece 1 PA adicional uma vez por cena e aumenta em 1 o limite de PA da máquina naquela rodada.",
           "Raridade": "Raro",
           "Espaços": "1 (avulsa)",
           "Preço (Ⱥ)": "1.500"
@@ -2795,9 +2043,9 @@
       },
       "fonte_notion": {
         "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
-        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
-        "tabelaBlocoId": "792f53090323408c946846339f5edbf0",
-        "linhaBlocoId": "255f1530e9fb4935a9e42e4258425075",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "d06d507f1ba54532b6d6055169a368d3",
+        "linhaBlocoId": "f6de45b02e8d4bb4910fd8424925be04",
         "tabelaTecnicaFonte": null
       },
       "vinculos_sugeridos": null,
@@ -2808,7 +2056,7 @@
       "status": "published",
       "versao": "1.2.0",
       "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
+      "updated_at": "2026-10-24",
       "categoria": "runa",
       "categoria_label": "Runa",
       "slots_possiveis": [
@@ -2816,7 +2064,8 @@
         "robo"
       ],
       "restricao_subtipo": null,
-      "custo_integridade": 0
+      "custo_integridade": 0,
+      "estatisticas": {}
     }
   ]
 }

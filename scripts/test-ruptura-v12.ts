@@ -8,6 +8,7 @@ import {
   resetOverloadForLongRest,
   resolverRupturaV12,
   rupturasSofridas,
+  useOverloadSurge,
   type Character,
 } from "../src/lib/character";
 import { MARCAS_RUPTURA, TIPOS_TRACO, tracoPorDados } from "../src/lib/rulesetV12/ruptura";
@@ -27,12 +28,22 @@ const base = {
 const nowIso = "2026-10-21T12:00:00Z";
 const ok = (r: ReturnType<typeof resolverRupturaV12>) => { if ("erro" in r) throw new Error(r.erro); return r; };
 
-// Catálogo do livro: 15 Marcas, 4 tipos × 8 Traços.
-assert.equal(MARCAS_RUPTURA.length, 15);
-assert.equal(new Set(MARCAS_RUPTURA.map((m) => m.id)).size, 15);
+// Catálogo do capítulo 18 em 24/10: 17 Marcas, 4 tipos × 8 Traços.
+assert.equal(MARCAS_RUPTURA.length, 17);
+assert.equal(new Set(MARCAS_RUPTURA.map((m) => m.id)).size, 17);
+assert.deepEqual(MARCAS_RUPTURA.filter((m) => m.repetivel).map((m) => m.id).sort(), ["carapaca_arcana", "escudo_psiquico", "manejo_intuitivo", "repertorio_expandido"]);
 assert.equal(TIPOS_TRACO.length, 4);
 assert.ok(TIPOS_TRACO.every((t) => t.tracos.length === 8));
 assert.equal(tracoPorDados(3, 6)?.nome, "Fascínio quebrado");
+
+const semSobrecarga = { ...base, sobrecarga_usada_dia: 0, ruptura_pendente: false } as Character;
+assert.equal(useOverloadSurge(semSobrecarga, "Surto de Proteção", nowIso, () => 0).surge, null);
+const comPelícula = { ...semSobrecarga, historico_ruptura: [{ marcaId: "pelicula_arcana" }] } as Character;
+const protecao = useOverloadSurge(comPelícula, "Surto de Proteção", nowIso, () => 0);
+assert.equal(protecao.surge?.pvTemporarios, 3);
+assert.equal(protecao.character.recursos_atuais?.pv_temporario, 3);
+const comReserva = { ...semSobrecarga, historico_ruptura: [{ marcaId: "reserva_excedente" }] } as Character;
+assert.equal(useOverloadSurge(comReserva, "Surto de Energia", nowIso, () => 0).character.recursos_atuais?.mana_temporaria, 7);
 
 // 1ª Ruptura: −1 Integridade, Mana + Ânimo + 2, limite 3 → 4 só depois do descanso longo.
 const p1 = previaRuptura(base);
@@ -61,6 +72,7 @@ assert.equal(descansado.sobrecarga_limite_bonus_pendente, 0);
 const r2 = ok(resolverRupturaV12({ ...descansado, ruptura_pendente: true }, { marcaId: "escudo_psiquico", traco: { tipo: 2, numero: 1 } }, { nowIso }));
 assert.equal(r2.character.recursos_atuais?.integridade, 11);
 const r3 = ok(resolverRupturaV12({ ...resetOverloadForLongRest(r2.character), ruptura_pendente: true }, { marcaId: "furia_arcana", traco: { tipo: 4, numero: 8 } }, { nowIso }));
+assert.ok("erro" in resolverRupturaV12({ ...r3.character, ruptura_pendente: true }, { marcaId: "furia_arcana", traco: { tipo: 1, numero: 1 } }, { nowIso }), "Marca não repetível não pode ser escolhida novamente");
 assert.equal(r3.character.recursos_atuais?.integridade, 8);
 const r3d = resetOverloadForLongRest(r3.character);
 assert.equal(limiteSobrecarga(r3d), 5);

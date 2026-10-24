@@ -3,48 +3,45 @@
   "_meta": {
     "conteudo": "companion_model",
     "versao_schema": "1.2.0",
-    "total_registros": 10,
+    "total_registros": 17,
     "fonte": "Notion: capítulo MERCADO NOTURNO / LISTA DE MERCADORIAS",
-    "extraido_em": "2026-10-09T23:25:05.912Z",
+    "extraido_em": "2026-10-24T05:28:53.702Z",
     "hash_sha256_origem": "ee5cfbb9169196dd58a53634caef89b8ccf26720a4c55a8968c3557b1e4da7ec",
     "observacao": "Preço e descrição canônicos. Efeitos mecânicos e instalação são manuais nesta transcrição inicial."
   },
   "modelos_companheiros": [
     {
-      "id": "drones_e_robos_mosca",
-      "slug": "drones_e_robos_mosca",
-      "nome": "Mosca",
+      "id": "maquinas_autonomas_acaro",
+      "slug": "maquinas_autonomas_acaro",
+      "nome": "Ácaro",
       "raridade": "incomum",
       "raridade_label": "Incomum",
-      "preco": 500,
-      "preco_texto": "500",
+      "preco": 750,
+      "preco_texto": "750",
       "preco_qualificador": null,
-      "descricao_curta": "Minúsculo, infiltração e vigilância.",
-      "descricao_longa": "*Incomum*\n\nDrone minúsculo, inspirado em insetos voadores. Movimenta-se por dutos e frestas, transmitindo imagens e sons sem ser percebido. Ideal para infiltração, vigilância de ambientes fechados ou espionagem.\n\n- **Espaços:** 1\n\n- **Preço:** Ⱥ 500\n\n**DRONE MOSCA **(CD 5)\n\n[Imagem no Notion]\n\n---\n\n**Alcance:** 500 m\n\n**Mente:** 2\n\n**PD: **3\n\n**Ações:**\n\n- **Deslocar-se** (12 m, caminhada e voo) **`1 PA`**\n\n- **Transmitir **(imagem e som) **`1 PA`**\n\n**CD para ser percebido:** 10\n\nDados da lista de mercadorias:\n- Resumo: Minúsculo, infiltração e vigilância.\n- Alcance: 500 m\n- Raridade: Incomum\n- Espaços: 1\n- Preço (Ⱥ): 500",
+      "descricao_curta": "*Incomum · Robô*",
+      "descricao_longa": "*Incomum · Robô*\n\nRobô aracnídeo compacto, com patas aderentes, micromanipuladores e uma sonda retrátil para acessar dispositivos. Projetado para infiltração física e operações discretas em espaços confinados.\n\n- **Espaços:** 1\n\n- **Preço:** Ⱥ 750\n\n### **ÁCARO**\n\n---\n\n- **Atributos:** **`Corpo 0`**, **`Mente 2`**\n\n- **PA:** 3\n\n- **PD:** 4\n\n- **Perícias:** **`Furtividade 3`** **`Precisão 2`** **`Percepção 1`**\n\n- **MIT:** 0\n\n- **Alcance de Controle:** 500 m\n\n- **Regiões:** Cabeça (câmera e sensores), Tronco (chassi e processamento), Braços (micromanipuladores e sonda), Pernas (patas de locomoção)\n\n- **Sistemas:** câmera, patas aderentes, braços mecânicos pequenos e sonda retrátil\n\n- **Rotinas:** infiltrar, inspecionar, manipular, conectar e retornar\n\n#### **AÇÕES**\n\n- **DESLOCAR-SE** **`1 PA`**\n  Percorre até 8 m, podendo se mover por paredes, tetos e superfícies compatíveis com suas patas aderentes, sem testes adicionais em condições normais.\n\n- **INTERAGIR** **`1 PA`**\n  Utiliza seus micromanipuladores para operar mecanismos pequenos, instalar dispositivos, conectar cabos ou posicionar sua sonda. Quando houver dificuldade relevante, realiza um teste de **`Precisão`**.\n\n#### **CARACTERÍSTICAS**\n\n- **INTERFACE REMOTA**\n  Ao conectar sua sonda a uma interface física compatível, o Ácaro permite que seu operador autorizado a utilize remotamente enquanto a conexão permanecer ativa.\n  \n  O operador gasta seus próprios PA e realiza os testes exigidos pela operação. Senhas, Bloqueios e demais proteções continuam funcionando normalmente.\n  \n  A conexão não concede ações adicionais ao Ácaro nem permite acessar funções indisponíveis naquela interface.\n\nDados da lista de mercadorias:\n- Função: Infiltração\n- Raridade: Incomum\n- Espaços: 1\n- Preço (Ⱥ): 750",
       "tags": [
         "loja"
       ],
       "dados_notion": {
-        "pagina": "DRONES E ROBÔS",
-        "secao": [
-          "DRONES"
-        ],
-        "tipo_tabela": "Drone",
+        "pagina": "MÁQUINAS AUTÔNOMAS",
+        "secao": [],
+        "tipo_tabela": "Máquina",
         "campos": {
-          "Drone": "Mosca",
-          "Resumo": "Minúsculo, infiltração e vigilância.",
-          "Alcance": "500 m",
+          "Máquina": "Ácaro",
+          "Função": "Infiltração",
           "Raridade": "Incomum",
           "Espaços": "1",
-          "Preço (Ⱥ)": "500"
+          "Preço (Ⱥ)": "750"
         },
         "tabela_tecnica": null
       },
       "fonte_notion": {
         "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
-        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
-        "tabelaBlocoId": "a82e7d4a1b8640ab8acc079d8309f7f3",
-        "linhaBlocoId": "6b619a44c2f64d39be20eef95c9879c6",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "effca216264e4ef29cfb0369dbdfca37",
+        "linhaBlocoId": "11f3995902504af8b1edbdd372fbbdbc",
         "tabelaTecnicaFonte": null
       },
       "vinculos_sugeridos": null,
@@ -54,139 +51,52 @@
       },
       "status": "published",
       "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "drone",
+      "created_at": "2026-10-24",
+      "updated_at": "2026-10-24",
+      "categoria": "robo",
+      "atributos_texto": "Corpo 0, Mente 2",
+      "pericias_texto": "Furtividade 3 Precisão 2 Percepção 1",
+      "pa_maximo": 3,
+      "pd_maximo": 4,
+      "mit": 0,
       "alcance_controle": "500 m",
-      "atributos_texto": null,
-      "acoes": []
-    },
-    {
-      "id": "drones_e_robos_reconhecimento",
-      "slug": "drones_e_robos_reconhecimento",
-      "nome": "Reconhecimento",
-      "raridade": "incomum",
-      "raridade_label": "Incomum",
-      "preco": 500,
-      "preco_texto": "500",
-      "preco_qualificador": null,
-      "descricao_curta": "Voo, imagens e sinais à distância.",
-      "descricao_longa": "*Incomum*\n\nEquipamento aéreo leve, opera em altitudes médias e transmite imagens, sinais de calor e áudio em tempo real para o operador. Usado para mapeamento de zonas, monitoramento de alvos à distância e cobertura tática de áreas perigosas.\n\n- **Espaços:** 2\n\n- **Preço:** Ⱥ 500\n\n**DRONE DE RECONHECIMENTO **(CD 5)\n\n---\n\n**Alcance:** 2 km\n\n**Mente:** 2\n\n**PD: **8\n\n**Ações:**\n\n- **Deslocar-se** (16 m, voo) **`1 PA`**\n\n- **Transmitir **(imagem e som) **`1 PA`**\n\nDados da lista de mercadorias:\n- Resumo: Voo, imagens e sinais à distância.\n- Alcance: 2 km\n- Raridade: Incomum\n- Espaços: 2\n- Preço (Ⱥ): 500",
-      "tags": [
-        "loja"
-      ],
-      "dados_notion": {
-        "pagina": "DRONES E ROBÔS",
-        "secao": [
-          "DRONES"
-        ],
-        "tipo_tabela": "Drone",
-        "campos": {
-          "Drone": "Reconhecimento",
-          "Resumo": "Voo, imagens e sinais à distância.",
-          "Alcance": "2 km",
-          "Raridade": "Incomum",
-          "Espaços": "2",
-          "Preço (Ⱥ)": "500"
+      "regioes_texto": "Cabeça (câmera e sensores), Tronco (chassi e processamento), Braços (micromanipuladores e sonda), Pernas (patas de locomoção)",
+      "sistemas_texto": "câmera, patas aderentes, braços mecânicos pequenos e sonda retrátil",
+      "rotinas_texto": "infiltrar, inspecionar, manipular, conectar e retornar",
+      "acoes": [
+        {
+          "nome": "DESLOCAR-SE",
+          "custoPA": 1,
+          "descricao": "Percorre até 8 m, podendo se mover por paredes, tetos e superfícies compatíveis com suas patas aderentes, sem testes adicionais em condições normais."
         },
-        "tabela_tecnica": null
-      },
-      "fonte_notion": {
-        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
-        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
-        "tabelaBlocoId": "a82e7d4a1b8640ab8acc079d8309f7f3",
-        "linhaBlocoId": "9e6efbdd407c4e3b8fc308a7bd9b87d5",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "drone",
-      "alcance_controle": "2 km",
-      "atributos_texto": null,
-      "acoes": []
+        {
+          "nome": "INTERAGIR",
+          "custoPA": 1,
+          "descricao": "Utiliza seus micromanipuladores para operar mecanismos pequenos, instalar dispositivos, conectar cabos ou posicionar sua sonda. Quando houver dificuldade relevante, realiza um teste de **`Precisão`**."
+        }
+      ]
     },
     {
-      "id": "drones_e_robos_reparador",
-      "slug": "drones_e_robos_reparador",
-      "nome": "Reparador",
-      "raridade": "incomum",
-      "raridade_label": "Incomum",
-      "preco": 1000,
-      "preco_texto": "1.000",
-      "preco_qualificador": null,
-      "descricao_curta": "Reparo tecnomágico rápido.",
-      "descricao_longa": "*Incomum*\n\nUnidade compacta com ferramentas tecnomágicas integradas. Executa reparos de emergência em armas, portas, veículos ou equipamentos danificados, acessando locais de difícil alcance para humanos.\n\n- **Espaços:** 2\n\n- **Preço:** Ⱥ 1.000\n\n**DRONE REPARADOR **(CD 6)\n\n---\n\n**Alcance:** 500 m\n\n**Mente:** 2\n\n**PD: **8\n\n**Ações:**\n\n- **Deslocar-se** (16 m, caminhada ou voo) **`1 PA`**\n\n- **Transmitir **(status de reparo ou imagem) **`1 PA`**\n\n- **Reparar** (3x/dia, alvo adjacente) **`2 PA`**\n  - Faça **`Mente + 2`**. Em sucesso, restaura **1d4 PD/MIT** do objeto.\n\nDados da lista de mercadorias:\n- Resumo: Reparo tecnomágico rápido.\n- Alcance: 500 m\n- Raridade: Incomum\n- Espaços: 2\n- Preço (Ⱥ): 1.000",
-      "tags": [
-        "loja"
-      ],
-      "dados_notion": {
-        "pagina": "DRONES E ROBÔS",
-        "secao": [
-          "DRONES"
-        ],
-        "tipo_tabela": "Drone",
-        "campos": {
-          "Drone": "Reparador",
-          "Resumo": "Reparo tecnomágico rápido.",
-          "Alcance": "500 m",
-          "Raridade": "Incomum",
-          "Espaços": "2",
-          "Preço (Ⱥ)": "1.000"
-        },
-        "tabela_tecnica": null
-      },
-      "fonte_notion": {
-        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
-        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
-        "tabelaBlocoId": "a82e7d4a1b8640ab8acc079d8309f7f3",
-        "linhaBlocoId": "fcd87bef77a54a54bacab6c2e399a7f5",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "drone",
-      "alcance_controle": "500 m",
-      "atributos_texto": null,
-      "acoes": []
-    },
-    {
-      "id": "drones_e_robos_assalto_leve",
-      "slug": "drones_e_robos_assalto_leve",
-      "nome": "Assalto Leve",
+      "id": "maquinas_autonomas_farejador",
+      "slug": "maquinas_autonomas_farejador",
+      "nome": "Farejador",
       "raridade": "incomum",
       "raridade_label": "Incomum",
       "preco": 1200,
       "preco_texto": "1.200",
       "preco_qualificador": null,
-      "descricao_curta": "Não-letal, contenção tática.",
-      "descricao_longa": "*Incomum*\n\nModelo ágil, equipado com munição não-letal: gás lacrimogêneo ou projéteis de borracha para dispersar, conter ou incapacitar alvos sem causar morte.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 1.200\n\n**DRONE DE ASSALTO LEVE** (CD 7)\n\n---\n\n**Alcance:** 200 m\n\n**Mente:** 2\n\n**PD: **8\n\n**Ações:**\n\n- **Deslocar-se** (16 m, voo) **`1 PA`**\n\n- **Transmitir **(imagem) **`1 PA`**\n\n- **Atacar **(Projétil de borracha: alcance 8 m, propriedade: *Atordoante*) **`2 PA`**\n  - Faça **`Mente + 2`**. O alvo faz teste de **Desviar** ou **Bloquear****.** Em falha, sofre **1d6 de dano contundente **(não letal).\n\n- **Atacar **(Gás lacrimogênio: alcance 8 m, raio de 2 m) **`2 PA`**\n  - Faça **`Mente + 2`**. Criaturas na área fazem teste de **`Corpo + Vigor`****.** Em falha, o alvo fica **`Cego`**** **por 1 rodada.\n\n- **Esquivar ****`Reação`**\n  - Em resposta a um ataque corpo a corpo ou à distância, faça **`Mente + 2`**. Em sucesso, o drone desvia do ataque.\n\nDados da lista de mercadorias:\n- Resumo: Não-letal, contenção tática.\n- Alcance: 200 m\n- Raridade: Incomum\n- Espaços: Carga\n- Preço (Ⱥ): 1.200",
+      "descricao_curta": "*Incomum · Robô*",
+      "descricao_longa": "*Incomum · Robô*\n\nRobô terrestre de corpo baixo e alongado, equipado com sensores químicos, câmera térmica e um analisador de amostras integrado. Projetado para identificar substâncias, registrar assinaturas sensoriais e acompanhar rastros em ambientes complexos. Seu conjunto de sensores frontal aproxima-se das superfícies para examinar resíduos e vestígios.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 1.200\n\n### **FAREJADOR**\n\n---\n\n- **Atributos:** **`Corpo 1`**, **`Mente 2`**\n\n- **PA:** 3\n\n- **PD:** 8\n\n- **Perícias:** **`Percepção 3`** **`Mobilidade 1`** **`Furtividade 1`**\n\n- **MIT:** 0\n\n- **Alcance de Controle:** 500 m\n\n- **Regiões:** Cabeça (sensores e analisador), Tronco (chassi e processamento), Braços (membros anteriores), Pernas (membros posteriores)\n\n- **Sistemas:** câmera térmica, sensores químicos, analisador de amostras e quatro patas articuladas\n\n- **Rotinas:** inspecionar, registrar, rastrear, localizar e retornar\n\n#### **AÇÕES**\n\n- **DESLOCAR-SE** **`1 PA`**\n  Percorre até 10 m utilizando suas quatro pernas articuladas, podendo atravessar terrenos irregulares e pequenos obstáculos compatíveis com seu porte.\n\n- **INVESTIGAR** **`1 PA`**\n  Examina um vestígio ou ponto de interesse utilizando seus sensores e analisador integrado. Realiza testes de **`Percepção`** quando necessário, podendo detectar substâncias, identificar características químicas, reconhecer resíduos compatíveis e observar variações térmicas que seriam imperceptíveis aos sentidos humanos.\n  \n  Pode analisar uma amostra e registrar sua assinatura química como parte dessa ação.\n  \n  Em buscas mais amplas, utiliza **Vasculhar** **`2 PA`**, conforme as regras de investigação.\n\n#### **CARACTERÍSTICAS**\n\n- **REFERÊNCIA SENSORIAL**\n  O Farejador utiliza seu analisador integrado para examinar amostras ou vestígios e registrar suas assinaturas químicas. Essas referências permitem distinguir resíduos com características compatíveis e acompanhar seus rastros pelo ambiente.\n  \n  Após registrar uma referência, o Farejador pode identificar e acompanhar vestígios correspondentes por meio de seus sensores e Rotinas de rastreamento. A tarefa não exige novos comandos a cada etapa, mas deslocamentos e ações realizadas em cenas estruturadas consomem os PA correspondentes.\n  \n  O rastreamento não exige novos comandos ou testes a cada deslocamento. Novos testes são realizados quando obstáculos, interferências ambientais ou vestígios conflitantes dificultarem a identificação ou continuidade do rastro.\n  \n  O Farejador também pode detectar substâncias e fontes de calor sem uma referência prévia, mas precisa analisar uma amostra ou vestígio para acompanhar uma assinatura química específica.\n  \n  Assinaturas compatíveis não garantem uma origem comum nem permitem identificar individualmente uma criatura. O rastreamento depende da existência de vestígios detectáveis, que podem desaparecer, dispersar-se ou tornar-se indistinguíveis pelas condições ambientais.\n\nDados da lista de mercadorias:\n- Função: Rastreamento\n- Raridade: Incomum\n- Espaços: Carga\n- Preço (Ⱥ): 1.200",
       "tags": [
         "loja"
       ],
       "dados_notion": {
-        "pagina": "DRONES E ROBÔS",
-        "secao": [
-          "DRONES"
-        ],
-        "tipo_tabela": "Drone",
+        "pagina": "MÁQUINAS AUTÔNOMAS",
+        "secao": [],
+        "tipo_tabela": "Máquina",
         "campos": {
-          "Drone": "Assalto Leve",
-          "Resumo": "Não-letal, contenção tática.",
-          "Alcance": "200 m",
+          "Máquina": "Farejador",
+          "Função": "Rastreamento",
           "Raridade": "Incomum",
           "Espaços": "Carga",
           "Preço (Ⱥ)": "1.200"
@@ -195,9 +105,9 @@
       },
       "fonte_notion": {
         "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
-        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
-        "tabelaBlocoId": "a82e7d4a1b8640ab8acc079d8309f7f3",
-        "linhaBlocoId": "ae882265f9f946d9b5451713281f4ef2",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "effca216264e4ef29cfb0369dbdfca37",
+        "linhaBlocoId": "d32a0615dd7341dd85b616211f8920cf",
         "tabelaTecnicaFonte": null
       },
       "vinculos_sugeridos": null,
@@ -207,99 +117,63 @@
       },
       "status": "published",
       "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "drone",
-      "alcance_controle": "200 m",
-      "atributos_texto": null,
-      "acoes": []
-    },
-    {
-      "id": "drones_e_robos_assalto_pesado",
-      "slug": "drones_e_robos_assalto_pesado",
-      "nome": "Assalto Pesado",
-      "raridade": "raro",
-      "raridade_label": "Raro",
-      "preco": 1800,
-      "preco_texto": "1.800",
-      "preco_qualificador": null,
-      "descricao_curta": "Letal, combate e apoio.",
-      "descricao_longa": "*Raro*\n\nPlataforma robusta de combate, armada com projéteis letais e microgranadas. Usado em confrontos abertos, apoio tático ou missões de destruição.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 1.800\n\n**DRONE DE ASSALTO PESADO **(CD 8)\n\n---\n\n**Alcance:** 200 m\n\n**Mente:** 3\n\n**PD: **12\n\n**Ações:**\n\n- **Deslocar-se** (16 m, voo) **`1 PA`**\n\n- **Transmitir **(imagem) **`1 PA`**\n\n- **Atacar **(Atirar: alcance 12 m, propriedade: *Sangramento*) **`2 PA`**\n  - Faça **`Mente + 3`**. O alvo faz teste de **Desviar** ou **Bloquear****.** Em falha, sofre 2d8 de dano perfurante.\n\n- **Atacar** (Lançar Granada: alcance 12 m, raio de 2 m) **`2 PA`**\n  - Faça **`Mente + 3`**. Todos na área fazem teste de **Desviar**. Em falha, sofrem **1d6 de dano contundente + 1d4 de dano ígneo**. Em sucesso, metade do dano.\n\n- **Esquivar ****`Reação`**\n  - Em resposta a um ataque corpo a corpo ou à distância, faça **`Mente + 3`**. Em sucesso, o drone desvia do ataque.\n\nDados da lista de mercadorias:\n- Resumo: Letal, combate e apoio.\n- Alcance: 200 m\n- Raridade: Raro\n- Espaços: Carga\n- Preço (Ⱥ): 1.800",
-      "tags": [
-        "loja"
-      ],
-      "dados_notion": {
-        "pagina": "DRONES E ROBÔS",
-        "secao": [
-          "DRONES"
-        ],
-        "tipo_tabela": "Drone",
-        "campos": {
-          "Drone": "Assalto Pesado",
-          "Resumo": "Letal, combate e apoio.",
-          "Alcance": "200 m",
-          "Raridade": "Raro",
-          "Espaços": "Carga",
-          "Preço (Ⱥ)": "1.800"
+      "created_at": "2026-10-24",
+      "updated_at": "2026-10-24",
+      "categoria": "robo",
+      "atributos_texto": "Corpo 1, Mente 2",
+      "pericias_texto": "Percepção 3 Mobilidade 1 Furtividade 1",
+      "pa_maximo": 3,
+      "pd_maximo": 8,
+      "mit": 0,
+      "alcance_controle": "500 m",
+      "regioes_texto": "Cabeça (sensores e analisador), Tronco (chassi e processamento), Braços (membros anteriores), Pernas (membros posteriores)",
+      "sistemas_texto": "câmera térmica, sensores químicos, analisador de amostras e quatro patas articuladas",
+      "rotinas_texto": "inspecionar, registrar, rastrear, localizar e retornar",
+      "acoes": [
+        {
+          "nome": "DESLOCAR-SE",
+          "custoPA": 1,
+          "descricao": "Percorre até 10 m utilizando suas quatro pernas articuladas, podendo atravessar terrenos irregulares e pequenos obstáculos compatíveis com seu porte."
         },
-        "tabela_tecnica": null
-      },
-      "fonte_notion": {
-        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
-        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
-        "tabelaBlocoId": "a82e7d4a1b8640ab8acc079d8309f7f3",
-        "linhaBlocoId": "f025681829034edfa7d8dae0d7eaa228",
-        "tabelaTecnicaFonte": null
-      },
-      "vinculos_sugeridos": null,
-      "uso_manual": true,
-      "payload_automacao": {
-        "efeitos": []
-      },
-      "status": "published",
-      "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "drone",
-      "alcance_controle": "200 m",
-      "atributos_texto": null,
-      "acoes": []
+        {
+          "nome": "INVESTIGAR",
+          "custoPA": 1,
+          "descricao": "Examina um vestígio ou ponto de interesse utilizando seus sensores e analisador integrado. Realiza testes de **`Percepção`** quando necessário, podendo detectar substâncias, identificar características químicas, reconhecer resíduos compatíveis e observar variações térmicas que seriam imperceptíveis aos sentidos humanos.\n\nPode analisar uma amostra e registrar sua assinatura química como parte dessa ação.\n\nEm buscas mais amplas, utiliza **Vasculhar** **`2 PA`**, conforme as regras de investigação."
+        }
+      ]
     },
     {
-      "id": "drones_e_robos_carga",
-      "slug": "drones_e_robos_carga",
-      "nome": "Carga",
+      "id": "maquinas_autonomas_coruja",
+      "slug": "maquinas_autonomas_coruja",
+      "nome": "Coruja",
       "raridade": "incomum",
       "raridade_label": "Incomum",
-      "preco": 1000,
-      "preco_texto": "1.000",
+      "preco": 900,
+      "preco_texto": "900",
       "preco_qualificador": null,
-      "descricao_curta": "Transporta até 1.000 kg, força bruta.",
-      "descricao_longa": "*Incomum*\n\nModelo robusto, não-humanóide, usado para transporte de materiais pesados, apoio em obras, barricadas ou resgates.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 1.000\n\n**ROBÔ DE CARGA **(CD 4)\n\n---\n\n**Alcance:** 100 m\n\n**Corpo:** 3\n\n**Mente:** 0\n\n**PD:** 10\n\n**Ações (3 PA):**\n\n- **Deslocar-se** (13 m caminhada, transportando até 1.000 kg) **`1 PA`**\n\n- **Transmitir** (imagem ou status) **`1 PA`**\n\n- **Destravar/Forçar** (porta, obstáculo ou veículo adjacente) **`2 PA`**\n  - Faça **`Corpo + 2`** contra uma CD definida pelo narrador.\n\nDados da lista de mercadorias:\n- Resumo: Transporta até 1.000 kg, força bruta.\n- Atributos: Corpo 3, Mente 0\n- Raridade: Incomum\n- Espaços: Carga\n- Preço (Ⱥ): 1.000",
+      "descricao_curta": "*Incomum · Drone*",
+      "descricao_longa": "*Incomum · Drone*\n\nDrone voador compacto, equipado com câmeras estabilizadas, lentes de ampliação óptica e sistemas de reconhecimento visual. Projetado para vigilância prolongada, acompanhamento de alvos e mapeamento de áreas, registra e organiza movimentações sem exigir supervisão contínua do operador.\n\n- **Espaços:** 2\n\n- **Preço:** Ⱥ 900\n\n### **CORUJA**\n\n---\n\n- **Atributos:** **`Corpo 0`**, **`Mente 2`**\n\n- **PA:** 3\n\n- **PD:** 6\n\n- **Perícias:** **`Percepção 3`** **`Mobilidade 2`** **`Furtividade 1`**\n\n- **MIT:** 0\n\n- **Alcance de Controle:** 2 km\n\n- **Regiões:** Cabeça (módulo óptico), Tronco (chassi e processamento), Braços (rotores e suportes), Pernas (trem de pouso e estabilizadores)\n\n- **Sistemas:** câmera com zoom, câmera panorâmica, estabilizador de imagem, sensores de navegação, gravador e rotores protegidos\n\n- **Rotinas:** vigiar, acompanhar, reconhecer, mapear e retornar\n\n#### **AÇÕES**\n\n- **DESLOCAR-SE** **`1 PA`**\n  Voa até 16 m, podendo pairar e realizar deslocamentos verticais. Seus sistemas de estabilização permitem manter as câmeras direcionadas enquanto se movimenta.\n\n- **INVESTIGAR** **`1 PA`**\n  Examina visualmente um ponto de interesse utilizando suas câmeras e lentes de ampliação. Realiza testes de **`Percepção`** quando necessário, podendo observar detalhes distantes, identificar movimentações e reconhecer elementos visíveis no ambiente.\n  \n  Em buscas mais amplas, utiliza **Vasculhar** **`2 PA`**, conforme as regras de investigação.\n\n#### **CARACTERÍSTICAS**\n\n- **VIGILÂNCIA PANORÂMICA**\n  A Coruja pode monitorar autonomamente uma área visível, registrando continuamente imagens e movimentações enquanto executa a Rotina **Vigiar**.\n  \n  Seu sistema de reconhecimento visual identifica e organiza acontecimentos observáveis, como entradas e saídas, deslocamentos de pessoas e veículos, alterações na posição de objetos e padrões recorrentes de movimentação.\n  \n  O operador pode consultar os registros e localizar acontecimentos identificados pela máquina sem precisar examinar toda a gravação. Quando a identificação de um evento depender de detalhes difíceis de perceber, a Coruja realiza um teste de **`Percepção`**.\n  \n  A Coruja também pode acompanhar visualmente um alvo designado, mantendo suas câmeras direcionadas a ele. Quando precisar mudar de posição, utiliza **Deslocar-se**, respeitando seu custo em PA durante cenas estruturadas. Caso perca o alvo de vista, pode procurá-lo pelos meios normais, sem conhecer automaticamente sua nova localização.\n  \n  Os registros permanecem armazenados localmente caso a comunicação seja interrompida, podendo ser recuperados posteriormente.\n  \n  A vigilância depende das condições de visibilidade e do campo de visão dos sensores. A Coruja não observa através de obstáculos opacos, não identifica automaticamente criaturas ocultas e não reconhece a identidade de alguém sem informações visuais suficientes.\n\nDados da lista de mercadorias:\n- Função: Vigilância aérea\n- Raridade: Incomum\n- Espaços: 2\n- Preço (Ⱥ): 900",
       "tags": [
         "loja"
       ],
       "dados_notion": {
-        "pagina": "DRONES E ROBÔS",
-        "secao": [
-          "ROBÔS"
-        ],
-        "tipo_tabela": "Robô",
+        "pagina": "MÁQUINAS AUTÔNOMAS",
+        "secao": [],
+        "tipo_tabela": "Máquina",
         "campos": {
-          "Robô": "Carga",
-          "Resumo": "Transporta até 1.000 kg, força bruta.",
-          "Atributos": "Corpo 3, Mente 0",
+          "Máquina": "Coruja",
+          "Função": "Vigilância aérea",
           "Raridade": "Incomum",
-          "Espaços": "Carga",
-          "Preço (Ⱥ)": "1.000"
+          "Espaços": "2",
+          "Preço (Ⱥ)": "900"
         },
         "tabela_tecnica": null
       },
       "fonte_notion": {
         "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
-        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
-        "tabelaBlocoId": "7e23aa76d90f4c24898eac27970d2641",
-        "linhaBlocoId": "ac6af3cece624490ab5d0eb7af4d2367",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "effca216264e4ef29cfb0369dbdfca37",
+        "linhaBlocoId": "fd0ed9deda9c49a49f717a4425d61fa6",
         "tabelaTecnicaFonte": null
       },
       "vinculos_sugeridos": null,
@@ -309,48 +183,63 @@
       },
       "status": "published",
       "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "robo",
-      "alcance_controle": null,
-      "atributos_texto": "Corpo 3, Mente 0",
-      "acoes": []
+      "created_at": "2026-10-24",
+      "updated_at": "2026-10-24",
+      "categoria": "drone",
+      "atributos_texto": "Corpo 0, Mente 2",
+      "pericias_texto": "Percepção 3 Mobilidade 2 Furtividade 1",
+      "pa_maximo": 3,
+      "pd_maximo": 6,
+      "mit": 0,
+      "alcance_controle": "2 km",
+      "regioes_texto": "Cabeça (módulo óptico), Tronco (chassi e processamento), Braços (rotores e suportes), Pernas (trem de pouso e estabilizadores)",
+      "sistemas_texto": "câmera com zoom, câmera panorâmica, estabilizador de imagem, sensores de navegação, gravador e rotores protegidos",
+      "rotinas_texto": "vigiar, acompanhar, reconhecer, mapear e retornar",
+      "acoes": [
+        {
+          "nome": "DESLOCAR-SE",
+          "custoPA": 1,
+          "descricao": "Voa até 16 m, podendo pairar e realizar deslocamentos verticais. Seus sistemas de estabilização permitem manter as câmeras direcionadas enquanto se movimenta."
+        },
+        {
+          "nome": "INVESTIGAR",
+          "custoPA": 1,
+          "descricao": "Examina visualmente um ponto de interesse utilizando suas câmeras e lentes de ampliação. Realiza testes de **`Percepção`** quando necessário, podendo observar detalhes distantes, identificar movimentações e reconhecer elementos visíveis no ambiente.\n\nEm buscas mais amplas, utiliza **Vasculhar** **`2 PA`**, conforme as regras de investigação."
+        }
+      ]
     },
     {
-      "id": "drones_e_robos_patrulha",
-      "slug": "drones_e_robos_patrulha",
-      "nome": "Patrulha",
+      "id": "maquinas_autonomas_eco",
+      "slug": "maquinas_autonomas_eco",
+      "nome": "Eco",
       "raridade": "incomum",
       "raridade_label": "Incomum",
-      "preco": 1000,
-      "preco_texto": "1.000",
+      "preco": 1100,
+      "preco_texto": "1.100",
       "preco_qualificador": null,
-      "descricao_curta": "Vasculha, alerta, transmite sinais.",
-      "descricao_longa": "*Incomum*\n\nUnidade humanóide compacta, programada para rondas em áreas urbanas ou industriais, identificação de suspeitos, resposta rápida e emissão de alerta.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 1.000\n\n**ROBÔ DE PATRULHA** (CD 5)\n\n---\n\n**Alcance:** 500 m\n\n**Corpo:** 2\n\n**Mente:** 2\n\n**PD:** 10\n\n**Ações (3 PA):**\n\n- **Deslocar-se** (12 m, caminhada. 24 m, corrida) **`1 PA`**\n\n- **Vasculhar** (detecta criaturas, dispositivos eletrônicos, armadilhas e sinais rúnicos em raio de 10 m; revela posição, número e natureza básica dos alvos detectados) **`1 PA`**\n  - Faça **`Mente + 2`** contra uma CD definida pelo narrador ou teste contestado.\n\n- **Transmitir **(imagem e som) **`1 PA`**\n\n- **Emitir Alerta** (sirene audível a 15 m) **`1 PA`**\n\n- **Esquivar ****`Reação`**\n  - Em resposta a um ataque, faça **`Corpo + 2`**. Em sucesso, desvia do ataque.\n\nDados da lista de mercadorias:\n- Resumo: Vasculha, alerta, transmite sinais.\n- Atributos: Corpo 2, Mente 2\n- Raridade: Incomum\n- Espaços: Carga\n- Preço (Ⱥ): 1.000",
+      "descricao_curta": "*Incomum · Robô*",
+      "descricao_longa": "*Incomum · Robô*\n\nPequeno robô terrestre equipado com emissores sonoros direcionais, sintetizador de voz e projetor holográfico. Projetado para criar distrações, reproduzir identidades e simular acontecimentos, adaptando suas emissões ao comportamento de observadores próximos.\n\n- **Espaços:** 1\n\n- **Preço:** Ⱥ 1.100\n\n### **ECO**\n\n---\n\n- **Atributos:** **`Corpo 0`**, **`Mente 2`**\n\n- **PA:** 3\n\n- **PD:** 5\n\n- **Perícias:** **`Lógica 2`** **`Furtividade 2`** **`Percepção 1`**\n\n- **MIT:** 0\n\n- **Alcance de Controle:** 500 m\n\n- **Regiões:** Cabeça (sensores e projetor), Tronco (chassi e processamento), Braços (emissores laterais), Pernas (três membros articulados)\n\n- **Sistemas:** projetor holográfico, alto-falantes, sintetizador de voz, câmera, microfones e três pernas articuladas\n\n- **Rotinas:** distrair, simular, encenar, reposicionar e retornar\n\n#### **AÇÕES**\n\n- **DESLOCAR-SE** **`1 PA`**\n  Percorre até 8 m utilizando suas três pernas articuladas, podendo atravessar pequenos obstáculos compatíveis com seu porte.\n\n- **EMITIR** **`1 PA`**\n  Reproduz sons, vozes ou projeções holográficas por meio de seus sistemas integrados. Pode simular ruídos, conversas, silhuetas e figuras em movimento.\n  \n  As projeções devem permanecer a até 3 m do Eco e não possuem consistência física.\n  \n  Uma emissão pode permanecer ativa autonomamente, sem novos custos de PA. Alterar substancialmente a emissão ou iniciar outra exige utilizar esta ação novamente.\n\n#### **CARACTERÍSTICAS**\n\n- **ENCENAÇÃO**\n  O Eco combina emissões sonoras e projeções holográficas para simular acontecimentos em sua proximidade. Pode executar sequências programadas e selecionar respostas previstas em suas Rotinas conforme os movimentos e reações detectados nos observadores.\n  \n  A máquina também pode reproduzir a aparência e a voz de pessoas específicas, desde que possua material de referência suficiente. Fotografias e gravações permitem reproduzir características conhecidas, enquanto vídeos e amostras de voz mais completos possibilitam imitar gestos, movimentos e padrões de fala. A qualidade da reprodução depende das referências disponíveis.\n  \n  Quando houver motivos para questionar a autenticidade da encenação, observadores podem realizar testes de **`Lógica`** para identificar inconsistências e reconhecer o engano. Testes de **`Percepção`** podem revelar defeitos sensoriais ou localizar os emissores. A dificuldade depende da qualidade da simulação e das condições de observação.\n  \n  O Eco não produz matéria física nem reproduz automaticamente calor, odores ou outras assinaturas sensoriais. Suas respostas improvisadas são limitadas às informações disponíveis e às suas Rotinas.\n  \n  A encenação não obriga criaturas a investigar, fugir ou adotar comportamentos específicos. Suas reações dependem do contexto e de suas motivações.\n  \n  O Eco pode manter uma única encenação ativa por vez.\n\nDados da lista de mercadorias:\n- Função: Distração e engano\n- Raridade: Incomum\n- Espaços: 1\n- Preço (Ⱥ): 1.100",
       "tags": [
         "loja"
       ],
       "dados_notion": {
-        "pagina": "DRONES E ROBÔS",
-        "secao": [
-          "ROBÔS"
-        ],
-        "tipo_tabela": "Robô",
+        "pagina": "MÁQUINAS AUTÔNOMAS",
+        "secao": [],
+        "tipo_tabela": "Máquina",
         "campos": {
-          "Robô": "Patrulha",
-          "Resumo": "Vasculha, alerta, transmite sinais.",
-          "Atributos": "Corpo 2, Mente 2",
+          "Máquina": "Eco",
+          "Função": "Distração e engano",
           "Raridade": "Incomum",
-          "Espaços": "Carga",
-          "Preço (Ⱥ)": "1.000"
+          "Espaços": "1",
+          "Preço (Ⱥ)": "1.100"
         },
         "tabela_tecnica": null
       },
       "fonte_notion": {
         "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
-        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
-        "tabelaBlocoId": "7e23aa76d90f4c24898eac27970d2641",
-        "linhaBlocoId": "20404df045ae444293a29d2ca9ab926e",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "effca216264e4ef29cfb0369dbdfca37",
+        "linhaBlocoId": "ecb91051dea54d2c8582a4abda51f158",
         "tabelaTecnicaFonte": null
       },
       "vinculos_sugeridos": null,
@@ -360,48 +249,134 @@
       },
       "status": "published",
       "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
+      "created_at": "2026-10-24",
+      "updated_at": "2026-10-24",
       "categoria": "robo",
-      "alcance_controle": null,
-      "atributos_texto": "Corpo 2, Mente 2",
-      "acoes": []
+      "atributos_texto": "Corpo 0, Mente 2",
+      "pericias_texto": "Lógica 2 Furtividade 2 Percepção 1",
+      "pa_maximo": 3,
+      "pd_maximo": 5,
+      "mit": 0,
+      "alcance_controle": "500 m",
+      "regioes_texto": "Cabeça (sensores e projetor), Tronco (chassi e processamento), Braços (emissores laterais), Pernas (três membros articulados)",
+      "sistemas_texto": "projetor holográfico, alto-falantes, sintetizador de voz, câmera, microfones e três pernas articuladas",
+      "rotinas_texto": "distrair, simular, encenar, reposicionar e retornar",
+      "acoes": [
+        {
+          "nome": "DESLOCAR-SE",
+          "custoPA": 1,
+          "descricao": "Percorre até 8 m utilizando suas três pernas articuladas, podendo atravessar pequenos obstáculos compatíveis com seu porte."
+        },
+        {
+          "nome": "EMITIR",
+          "custoPA": 1,
+          "descricao": "Reproduz sons, vozes ou projeções holográficas por meio de seus sistemas integrados. Pode simular ruídos, conversas, silhuetas e figuras em movimento.\n\nAs projeções devem permanecer a até 3 m do Eco e não possuem consistência física.\n\nUma emissão pode permanecer ativa autonomamente, sem novos custos de PA. Alterar substancialmente a emissão ou iniciar outra exige utilizar esta ação novamente."
+        }
+      ]
     },
     {
-      "id": "drones_e_robos_suporte",
-      "slug": "drones_e_robos_suporte",
-      "nome": "Suporte",
-      "raridade": "raro",
-      "raridade_label": "Raro",
+      "id": "maquinas_autonomas_mula",
+      "slug": "maquinas_autonomas_mula",
+      "nome": "Mula",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1400,
+      "preco_texto": "1.400",
+      "preco_qualificador": null,
+      "descricao_curta": "*Incomum · Robô*",
+      "descricao_longa": "*Incomum · Robô*\n\nRobô quadrúpede de chassi robusto, equipado com suportes dorsais, guincho e mecanismos de recolhimento. Projetado para transportar suprimentos, recuperar materiais e evacuar pessoas incapacitadas, acompanha trajetos e executa operações de carga autonomamente.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 1.400\n\n### **MULA**\n\n---\n\n- **Atributos:** **`Corpo 3`**, **`Mente 1`**\n\n- **PA:** 3\n\n- **PD:** 14\n\n- **Perícias:** **`Mobilidade 2`** **`Percepção 1`** **`Precisão 1`**\n\n- **MIT:** 0\n\n- **Alcance de Controle:** 500 m\n\n- **Regiões:** Cabeça (sensores e navegação), Tronco (chassi, compartimentos e guincho), Braços (membros anteriores e mecanismos de recolhimento), Pernas (membros posteriores e estabilizadores)\n\n- **Sistemas:** suportes de carga ajustáveis, compartimentos de carga, guincho motorizado, braços mecânicos, berço retrátil de transporte e sensores de navegação\n\n- **Rotinas:** acompanhar, transportar, recolher, entregar e retornar\n\n- **Capacidade de Transporte:** 10 Espaços, uma Carga compatível ou uma criatura de porte compatível\n\n#### **AÇÕES**\n\n- **DESLOCAR-SE** **`1 PA`**\n  Percorre até 10 m utilizando suas quatro pernas articuladas. Pode atravessar terrenos irregulares, degraus e pequenos obstáculos compatíveis com suas dimensões e com a carga transportada.\n\n- **INTERAGIR** **`1 PA`**\n  Utiliza seus mecanismos de manipulação para pegar, posicionar, entregar ou soltar objetos pequenos e acessíveis. Quando a operação exigir precisão ou apresentar dificuldade relevante, realiza um teste de **`Precisão`**.\n\n- **RECOLHER** **`2 PA`**\n  Utiliza seu guincho e mecanismos de recolhimento para levantar, acomodar e prender uma Carga compatível ou uma criatura incapacitada ou que consinta com o transporte.\n  \n  O alvo precisa estar ao alcance dos mecanismos de recolhimento, e deve haver espaço suficiente para a operação. Objetos presos ao ambiente ou obstáculos que dificultem o recolhimento podem exigir ações ou testes adicionais.\n\n#### **CARACTERÍSTICAS**\n\n- **RECOLHIMENTO AUTÔNOMO**\n  A Mula pode receber ordens para recuperar cargas ou criaturas e transportá-las até um destino designado, utilizando suas Rotinas de navegação e recolhimento. Durante cenas estruturadas, as ações necessárias consomem os PA fornecidos pelo operador ou por outra capacidade que permita à máquina agir independentemente.\n  \n  Sua estrutura admite três configurações alternativas de transporte:\n  \n  - **Equipamentos:** até 10 Espaços em compartimentos e suportes externos.\n  \n  - **Carga:** um objeto classificado como Carga, desde que suas dimensões e peso sejam compatíveis com a estrutura.\n  \n  - **Evacuação:** uma criatura de porte compatível, acomodada e presa ao berço de transporte.\n  \n  Essas configurações não são cumulativas. A Mula precisa descarregar ou reorganizar seus suportes antes de substituir uma configuração ocupada por outra.\n  \n  Os equipamentos transportados não recebem compactação tecnomágica. Objetos e criaturas precisam caber fisicamente na estrutura e permanecer presos durante o deslocamento.\n  \n  Enquanto transporta uma carga compatível, a Mula mantém seu deslocamento normal, desde que o terreno permita sua passagem.\n  \n  A máquina não presta cuidados médicos, não estabiliza criaturas e não oferece proteção adicional ao que transporta.\n\nDados da lista de mercadorias:\n- Função: Transporte\n- Raridade: Incomum\n- Espaços: Carga\n- Preço (Ⱥ): 1.400",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "MÁQUINAS AUTÔNOMAS",
+        "secao": [],
+        "tipo_tabela": "Máquina",
+        "campos": {
+          "Máquina": "Mula",
+          "Função": "Transporte",
+          "Raridade": "Incomum",
+          "Espaços": "Carga",
+          "Preço (Ⱥ)": "1.400"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "effca216264e4ef29cfb0369dbdfca37",
+        "linhaBlocoId": "f0ef5508d59d440d99cdb4ac333f6364",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-24",
+      "updated_at": "2026-10-24",
+      "categoria": "robo",
+      "atributos_texto": "Corpo 3, Mente 1",
+      "pericias_texto": "Mobilidade 2 Percepção 1 Precisão 1",
+      "pa_maximo": 3,
+      "pd_maximo": 14,
+      "mit": 0,
+      "alcance_controle": "500 m",
+      "regioes_texto": "Cabeça (sensores e navegação), Tronco (chassi, compartimentos e guincho), Braços (membros anteriores e mecanismos de recolhimento), Pernas (membros posteriores e estabilizadores)",
+      "sistemas_texto": "suportes de carga ajustáveis, compartimentos de carga, guincho motorizado, braços mecânicos, berço retrátil de transporte e sensores de navegação",
+      "rotinas_texto": "acompanhar, transportar, recolher, entregar e retornar",
+      "acoes": [
+        {
+          "nome": "DESLOCAR-SE",
+          "custoPA": 1,
+          "descricao": "Percorre até 10 m utilizando suas quatro pernas articuladas. Pode atravessar terrenos irregulares, degraus e pequenos obstáculos compatíveis com suas dimensões e com a carga transportada."
+        },
+        {
+          "nome": "INTERAGIR",
+          "custoPA": 1,
+          "descricao": "Utiliza seus mecanismos de manipulação para pegar, posicionar, entregar ou soltar objetos pequenos e acessíveis. Quando a operação exigir precisão ou apresentar dificuldade relevante, realiza um teste de **`Precisão`**."
+        },
+        {
+          "nome": "RECOLHER",
+          "custoPA": 2,
+          "descricao": "Utiliza seu guincho e mecanismos de recolhimento para levantar, acomodar e prender uma Carga compatível ou uma criatura incapacitada ou que consinta com o transporte.\n\nO alvo precisa estar ao alcance dos mecanismos de recolhimento, e deve haver espaço suficiente para a operação. Objetos presos ao ambiente ou obstáculos que dificultem o recolhimento podem exigir ações ou testes adicionais."
+        }
+      ]
+    },
+    {
+      "id": "maquinas_autonomas_operario",
+      "slug": "maquinas_autonomas_operario",
+      "nome": "Operário",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
       "preco": 1500,
       "preco_texto": "1.500",
       "preco_qualificador": null,
-      "descricao_curta": "Repara e faz primeiros socorros.",
-      "descricao_longa": "*Raro*\n\nUnidade multifunção, equipada para primeiros socorros, conserto rápido de equipamentos ou suporte logístico no campo.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 1.500\n\n**ROBÔ DE SUPORTE **(CD 7)\n\n---\n\n**Alcance:** 200 m\n\n**Corpo:** 1\n\n**Mente:** 3\n\n**PD:** 10\n\n**Ações (3 PA):**\n\n- **Deslocar-se** (11 m, caminhada. 22 m, corrida) **`1 PA`**\n\n- **Transmitir **(imagem e som) **`1 PA`**\n\n- **Emitir Alerta** (sirene audível a 15 m) **`1 PA`**\n\n- **Reparar** (2x/dia, alvo adjacente) **`2 PA`**\n  - Faça **`Mente + 3`**. Em sucesso, recupera **1d4 PD/MIT** do objeto.\n\n- **Primeiros Socorros** (alvo adjacente) **`2 PA`**\n  - Faça **`Mente + 3`**. Em sucesso, recupera **1d6 PV** do alvo. Requer 1 Medkit; o robô pode armazenar até 3 Kits.\n  \n  - O robô também pode aplicar um kit de estabilização. Nesse caso, o alvo não recupera vida, mas o marcador de colapso é finalizado.\n\n- **Esquivar ****`Reação`**\n  - Em resposta a um ataque, faça **`Corpo + 3`**. Em sucesso, desvia do ataque.\n\nDados da lista de mercadorias:\n- Resumo: Repara e faz primeiros socorros.\n- Atributos: Corpo 1, Mente 3\n- Raridade: Raro\n- Espaços: Carga\n- Preço (Ⱥ): 1.500",
+      "descricao_curta": "*Incomum · Robô voador*",
+      "descricao_longa": "*Incomum · Robô voador*\n\nRobô voador de manutenção, equipado com braços articulados, ferramentas industriais e mecanismos de ancoragem. Projetado para executar reparos, instalar componentes e realizar intervenções técnicas em locais perigosos ou de difícil acesso, operando autonomamente conforme as instruções recebidas.\n\n- **Espaços:** 3\n\n- **Preço:** Ⱥ 1.500\n\n### **OPERÁRIO**\n\n---\n\n- **Atributos:** **`Corpo 1`**, **`Mente 2`**\n\n- **PA:** 3\n\n- **PD:** 8\n\n- **Perícias:** **`Engenharia 3`** **`Precisão 2`** **`Percepção 1`**\n\n- **MIT:** 0\n\n- **Alcance de Controle:** 500 m\n\n- **Regiões:** Cabeça (sensores de inspeção), Tronco (chassi, processamento e ferramentas integradas), Braços (manipuladores articulados), Pernas (propulsores e mecanismos de ancoragem)\n\n- **Sistemas:** dois braços mecânicos, soldador, cortador, ferramentas de montagem, sensores de inspeção, grampos de fixação e Kit de Reparo integrado (3 cargas)\n\n- **Rotinas:** inspecionar, instalar, desmontar, reparar, transportar e retornar\n\n#### **AÇÕES**\n\n- **DESLOCAR-SE** **`1 PA`**\n  Voa até 12 m, podendo pairar e realizar deslocamentos verticais. Seus sistemas de estabilização permitem executar operações leves enquanto permanece suspenso.\n\n- **INTERAGIR** **`1 PA`**\n  Utiliza seus manipuladores e ferramentas integradas para segurar, posicionar, conectar ou remover pequenos componentes. Pode realizar cortes, soldagens e outras operações técnicas compatíveis com suas ferramentas, utilizando testes de **`Engenharia`** ou **`Precisão`** quando necessário.\n  \n  Trabalhos mais complexos podem exigir tempo, materiais e procedimentos adicionais, conforme sua natureza.\n\n- **REPARAR** **`3 PA`**\n  Utiliza o Kit de Reparo integrado para restaurar PD ou MIT de um equipamento, objeto, máquina ou veículo danificado.\n  \n  Realiza um teste de **`Engenharia`** contra a CD definida pelo narrador.\n  \n  - **Sucesso:** restaura 1d6 PD ou MIT.\n  \n  - **Falha:** restaura metade do resultado, arredondada para baixo.\n  \n  - **Consumo:** 1 carga do Kit de Reparo.\n  \n  Quando o alvo possuir MIT em várias Regiões, distribua o total recuperado entre as Regiões danificadas, conforme as regras do Kit de Reparo.\n\n#### **CARACTERÍSTICAS**\n\n- **OFICINA EMBARCADA**\n  O Operário possui ferramentas integradas para executar procedimentos programados de manutenção, montagem, desmontagem e reparo em equipamentos e estruturas acessíveis.\n  \n  Seus mecanismos de ancoragem permitem fixar-se a superfícies compatíveis, estabilizando o chassi para realizar operações que exijam força ou precisão. A fixação pode ser realizada como parte de uma interação normal.\n  \n  Em cenas estruturadas, o Operário utiliza seus próprios atributos e perícias, enquanto os custos das ações são pagos pelo operador ou por uma capacidade que lhe conceda PA autônomos. Trabalhos que exijam peças, materiais ou consumíveis específicos continuam dependendo desses recursos.\n  \n  O Kit de Reparo integrado possui 3 cargas e segue as regras normais desse equipamento. Suas cargas podem ser repostas mediante a substituição dos consumíveis correspondentes.\n  \n  O Operário não dispensa ferramentas especializadas que não possua, não realiza operações incompatíveis com sua capacidade física e não ignora sistemas de segurança ou autenticação.\n\nDados da lista de mercadorias:\n- Função: Reparos\n- Raridade: Incomum\n- Espaços: 3\n- Preço (Ⱥ): 1.500",
       "tags": [
         "loja"
       ],
       "dados_notion": {
-        "pagina": "DRONES E ROBÔS",
-        "secao": [
-          "ROBÔS"
-        ],
-        "tipo_tabela": "Robô",
+        "pagina": "MÁQUINAS AUTÔNOMAS",
+        "secao": [],
+        "tipo_tabela": "Máquina",
         "campos": {
-          "Robô": "Suporte",
-          "Resumo": "Repara e faz primeiros socorros.",
-          "Atributos": "Corpo 1, Mente 3",
-          "Raridade": "Raro",
-          "Espaços": "Carga",
+          "Máquina": "Operário",
+          "Função": "Reparos",
+          "Raridade": "Incomum",
+          "Espaços": "3",
           "Preço (Ⱥ)": "1.500"
         },
         "tabela_tecnica": null
       },
       "fonte_notion": {
         "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
-        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
-        "tabelaBlocoId": "7e23aa76d90f4c24898eac27970d2641",
-        "linhaBlocoId": "01654d2dd96d486f90419adec7bf8986",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "effca216264e4ef29cfb0369dbdfca37",
+        "linhaBlocoId": "676befff6b6143b2ac6ff82aa9f5ca01",
         "tabelaTecnicaFonte": null
       },
       "vinculos_sugeridos": null,
@@ -411,48 +386,68 @@
       },
       "status": "published",
       "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
+      "created_at": "2026-10-24",
+      "updated_at": "2026-10-24",
       "categoria": "robo",
-      "alcance_controle": null,
-      "atributos_texto": "Corpo 1, Mente 3",
-      "acoes": []
+      "atributos_texto": "Corpo 1, Mente 2",
+      "pericias_texto": "Engenharia 3 Precisão 2 Percepção 1",
+      "pa_maximo": 3,
+      "pd_maximo": 8,
+      "mit": 0,
+      "alcance_controle": "500 m",
+      "regioes_texto": "Cabeça (sensores de inspeção), Tronco (chassi, processamento e ferramentas integradas), Braços (manipuladores articulados), Pernas (propulsores e mecanismos de ancoragem)",
+      "sistemas_texto": "dois braços mecânicos, soldador, cortador, ferramentas de montagem, sensores de inspeção, grampos de fixação e Kit de Reparo integrado (3 cargas)",
+      "rotinas_texto": "inspecionar, instalar, desmontar, reparar, transportar e retornar",
+      "acoes": [
+        {
+          "nome": "DESLOCAR-SE",
+          "custoPA": 1,
+          "descricao": "Voa até 12 m, podendo pairar e realizar deslocamentos verticais. Seus sistemas de estabilização permitem executar operações leves enquanto permanece suspenso."
+        },
+        {
+          "nome": "INTERAGIR",
+          "custoPA": 1,
+          "descricao": "Utiliza seus manipuladores e ferramentas integradas para segurar, posicionar, conectar ou remover pequenos componentes. Pode realizar cortes, soldagens e outras operações técnicas compatíveis com suas ferramentas, utilizando testes de **`Engenharia`** ou **`Precisão`** quando necessário.\n\nTrabalhos mais complexos podem exigir tempo, materiais e procedimentos adicionais, conforme sua natureza."
+        },
+        {
+          "nome": "REPARAR",
+          "custoPA": 3,
+          "descricao": "Utiliza o Kit de Reparo integrado para restaurar PD ou MIT de um equipamento, objeto, máquina ou veículo danificado.\n\nRealiza um teste de **`Engenharia`** contra a CD definida pelo narrador.\n\n- **Sucesso:** restaura 1d6 PD ou MIT.\n\n- **Falha:** restaura metade do resultado, arredondada para baixo.\n\n- **Consumo:** 1 carga do Kit de Reparo.\n\nQuando o alvo possuir MIT em várias Regiões, distribua o total recuperado entre as Regiões danificadas, conforme as regras do Kit de Reparo."
+        }
+      ]
     },
     {
-      "id": "drones_e_robos_combate",
-      "slug": "drones_e_robos_combate",
-      "nome": "Combate",
+      "id": "maquinas_autonomas_socorrista",
+      "slug": "maquinas_autonomas_socorrista",
+      "nome": "Socorrista",
       "raridade": "raro",
       "raridade_label": "Raro",
-      "preco": 2000,
-      "preco_texto": "2.000",
+      "preco": 1800,
+      "preco_texto": "1.800",
       "preco_qualificador": null,
-      "descricao_curta": "Ataca, imobiliza, defesa pesada.",
-      "descricao_longa": "*Raro*\n\nHumanóide blindado, equipado para repressão em zonas de conflito, contenção violenta ou defesa de instalações críticas.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 2.000\n\n**ROBÔ DE COMBATE **(CD 8)\n\n---\n\n**Alcance:** 200 m\n\n**Corpo:** 3\n\n**Mente:** 1\n\n**PD:** 16\n\n**Ações (3 PA):**\n\n- **Deslocar-se** (13 m, caminhada. 26 m, corrida) **`1 PA`**\n\n- **Transmitir** (imagem e status) **`1 PA`**\n\n- **Atacar** (alcance 8 m. Propriedades: *Sangramento *e* Perfuração*) **`2 PA`**\n  - Faça **`Corpo + 3`**. O alvo faz teste de **Desviar** ou **Bloquear**. Em falha, sofre **2d6 de dano perfurante**.\n\n- **Imobilizar** (alvo adjacente) **`2 PA`**\n  - Faça **`Corpo + 3`**. O alvo faz teste de **Desviar** ou **Resistir**. Em falha, fica **`Agarrado`**.\n\n- **Esquivar ****`Reação`**\n  - Em resposta a um ataque, faça **`Corpo + 3`**. Em sucesso, desvia do ataque.\n\nDados da lista de mercadorias:\n- Resumo: Ataca, imobiliza, defesa pesada.\n- Atributos: Corpo 3, Mente 1\n- Raridade: Raro\n- Espaços: Carga\n- Preço (Ⱥ): 2.000",
+      "descricao_curta": "*Raro · Drone*",
+      "descricao_longa": "*Raro · Drone*\n\nDrone médico compacto, equipado com sensores biométricos, manipuladores de precisão e compartimentos de suprimentos. Projetado para monitorar pacientes, administrar tratamentos de emergência e prestar primeiros socorros autonomamente, priorizando aqueles em condições críticas.\n\n- **Espaços:** 2\n\n- **Preço:** Ⱥ 1.800\n\n### **SOCORRISTA**\n\n---\n\n- **Atributos:** **`Corpo 0`**, **`Mente 2`**\n\n- **PA:** 3\n\n- **PD:** 6\n\n- **Perícias:** **`Medicina 3`** **`Mobilidade 1`** **`Percepção 2`**\n\n- **MIT:** 0\n\n- **Alcance de Controle:** 500 m\n\n- **Regiões:** Cabeça (sensores biométricos), Tronco (chassi, processamento e compartimentos médicos), Braços (manipuladores e instrumentos de atendimento), Pernas (propulsores e estabilizadores)\n\n- **Sistemas:** sensores biométricos, instrumentos médicos, braços mecânicos, propulsores, Medkit integrado (3 usos) e Kit de Estabilização (PV) integrado (1 uso)\n\n- **Rotinas:** monitorar, examinar, atender, acompanhar e retornar\n\n#### **AÇÕES**\n\n- **DESLOCAR-SE** **`1 PA`**\n  Voa até 12 m, podendo pairar e realizar deslocamentos verticais. Seus sistemas de estabilização permitem executar procedimentos médicos simples enquanto permanece suspenso.\n\n- **EXAMINAR** **`1 PA`**\n  Examina uma criatura acessível utilizando seus sensores biométricos e instrumentos de diagnóstico. Pode identificar ferimentos, alterações fisiológicas e sinais de comprometimento das funções vitais, realizando testes de **`Medicina`** quando necessário.\n  \n  Seus instrumentos não identificam automaticamente doenças desconhecidas, mutações complexas ou efeitos tecnomágicos.\n\n- **APLICAR MEDKIT** **`2 PA`**\n  Utiliza seu Medkit integrado para tratar uma criatura adjacente.\n  \n  Realiza um teste de **`Medicina`** contra a CD definida pelo narrador.\n  \n  - **Sucesso:** recupera 1d6 + 2 PV.\n  \n  - **Falha:** recupera metade do resultado, arredondada para baixo.\n  \n  - **Consumo:** 1 uso do Medkit integrado.\n  \n  O Medkit possui 3 usos e segue as regras normais desse equipamento.\n\n- **ESTABILIZAR** **`2 PA`**\n  Utiliza seu Kit de Estabilização (PV) integrado em uma criatura adjacente que esteja em Colapso físico.\n  \n  Realiza um teste de **`Medicina`** contra a CD definida pelo narrador. Em sucesso, interrompe o avanço do marcador de Colapso, mas não recupera PV nem faz a criatura recobrar a consciência.\n  \n  **Consumo:** 1 uso do Kit de Estabilização (PV), independentemente do resultado.\n\n#### **CARACTERÍSTICAS**\n\n- **TRIAGEM AUTÔNOMA**\n  O Socorrista utiliza seus sensores biométricos para monitorar criaturas visíveis a até 10 m, identificando alterações nos sinais vitais e situações que exijam atendimento.\n  \n  Ao receber uma ordem de assistência, o Socorrista pode identificar e classificar pacientes conforme as prioridades programadas, incluindo aqueles em Colapso ou em condições mais graves. Em cenas estruturadas, deslocamentos, exames e procedimentos médicos consomem os PA correspondentes, fornecidos pelo operador ou por uma capacidade que conceda PA autônomos.\n  \n  A triagem não exige uma nova ordem para cada paciente. O Socorrista continua seguindo as prioridades estabelecidas enquanto possuir suprimentos e conseguir alcançar os alvos.\n  \n  Seus procedimentos consomem normalmente os suprimentos disponíveis. A máquina não recupera PV gratuitamente, não realiza tratamentos incompatíveis com seus instrumentos e não substitui instalações médicas especializadas.\n  \n  O monitoramento depende do alcance e das condições de funcionamento de seus sensores. O Socorrista não identifica automaticamente pacientes através de barreiras ou fora de sua área de detecção.\n\nDados da lista de mercadorias:\n- Função: Assistência médica\n- Raridade: Raro\n- Espaços: 2\n- Preço (Ⱥ): 1.800",
       "tags": [
         "loja"
       ],
       "dados_notion": {
-        "pagina": "DRONES E ROBÔS",
-        "secao": [
-          "ROBÔS"
-        ],
-        "tipo_tabela": "Robô",
+        "pagina": "MÁQUINAS AUTÔNOMAS",
+        "secao": [],
+        "tipo_tabela": "Máquina",
         "campos": {
-          "Robô": "Combate",
-          "Resumo": "Ataca, imobiliza, defesa pesada.",
-          "Atributos": "Corpo 3, Mente 1",
+          "Máquina": "Socorrista",
+          "Função": "Assistência médica",
           "Raridade": "Raro",
-          "Espaços": "Carga",
-          "Preço (Ⱥ)": "2.000"
+          "Espaços": "2",
+          "Preço (Ⱥ)": "1.800"
         },
         "tabela_tecnica": null
       },
       "fonte_notion": {
         "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
-        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
-        "tabelaBlocoId": "7e23aa76d90f4c24898eac27970d2641",
-        "linhaBlocoId": "24daafdbc3484acfabc34a5e89618a86",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "effca216264e4ef29cfb0369dbdfca37",
+        "linhaBlocoId": "efc41b06630b4fe2b131a823e42f8386",
         "tabelaTecnicaFonte": null
       },
       "vinculos_sugeridos": null,
@@ -462,48 +457,73 @@
       },
       "status": "published",
       "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
-      "categoria": "robo",
-      "alcance_controle": null,
-      "atributos_texto": "Corpo 3, Mente 1",
-      "acoes": []
+      "created_at": "2026-10-24",
+      "updated_at": "2026-10-24",
+      "categoria": "drone",
+      "atributos_texto": "Corpo 0, Mente 2",
+      "pericias_texto": "Medicina 3 Mobilidade 1 Percepção 2",
+      "pa_maximo": 3,
+      "pd_maximo": 6,
+      "mit": 0,
+      "alcance_controle": "500 m",
+      "regioes_texto": "Cabeça (sensores biométricos), Tronco (chassi, processamento e compartimentos médicos), Braços (manipuladores e instrumentos de atendimento), Pernas (propulsores e estabilizadores)",
+      "sistemas_texto": "sensores biométricos, instrumentos médicos, braços mecânicos, propulsores, Medkit integrado (3 usos) e Kit de Estabilização (PV) integrado (1 uso)",
+      "rotinas_texto": "monitorar, examinar, atender, acompanhar e retornar",
+      "acoes": [
+        {
+          "nome": "DESLOCAR-SE",
+          "custoPA": 1,
+          "descricao": "Voa até 12 m, podendo pairar e realizar deslocamentos verticais. Seus sistemas de estabilização permitem executar procedimentos médicos simples enquanto permanece suspenso."
+        },
+        {
+          "nome": "EXAMINAR",
+          "custoPA": 1,
+          "descricao": "Examina uma criatura acessível utilizando seus sensores biométricos e instrumentos de diagnóstico. Pode identificar ferimentos, alterações fisiológicas e sinais de comprometimento das funções vitais, realizando testes de **`Medicina`** quando necessário.\n\nSeus instrumentos não identificam automaticamente doenças desconhecidas, mutações complexas ou efeitos tecnomágicos."
+        },
+        {
+          "nome": "APLICAR MEDKIT",
+          "custoPA": 2,
+          "descricao": "Utiliza seu Medkit integrado para tratar uma criatura adjacente.\n\nRealiza um teste de **`Medicina`** contra a CD definida pelo narrador.\n\n- **Sucesso:** recupera 1d6 + 2 PV.\n\n- **Falha:** recupera metade do resultado, arredondada para baixo.\n\n- **Consumo:** 1 uso do Medkit integrado.\n\nO Medkit possui 3 usos e segue as regras normais desse equipamento."
+        },
+        {
+          "nome": "ESTABILIZAR",
+          "custoPA": 2,
+          "descricao": "Utiliza seu Kit de Estabilização (PV) integrado em uma criatura adjacente que esteja em Colapso físico.\n\nRealiza um teste de **`Medicina`** contra a CD definida pelo narrador. Em sucesso, interrompe o avanço do marcador de Colapso, mas não recupera PV nem faz a criatura recobrar a consciência.\n\n**Consumo:** 1 uso do Kit de Estabilização (PV), independentemente do resultado."
+        }
+      ]
     },
     {
-      "id": "drones_e_robos_ceifador",
-      "slug": "drones_e_robos_ceifador",
-      "nome": "Ceifador",
-      "raridade": "muito_raro",
-      "raridade_label": "Muito Raro",
-      "preco": 10000,
-      "preco_texto": "10.000",
+      "id": "maquinas_autonomas_escudeiro",
+      "slug": "maquinas_autonomas_escudeiro",
+      "nome": "Escudeiro",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "preco_texto": "2.500",
       "preco_qualificador": null,
-      "descricao_curta": "Devasta grupos em combate corpo a corpo.",
-      "descricao_longa": "*Muito raro*\n\nUnidade de guerra especializada em combate próximo. Estrutura humanóide reforçada, equipada com quatro braços-lâmina e uma cauda perfurante, projetada para dizimar múltiplos inimigos de uma vez só. Sua presença nas ruas é sinônimo de massacre iminente.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 10.000\n\n**ROBÔ CEIFADOR **(CD 10)\n\n[Imagem no Notion]\n\n---\n\n**Alcance:** 200 m\n\n**Corpo:** 4\n\n**Mente:** 2\n\n**PD:** 30\n\n**Ações (5 PA):**\n\n- **Deslocar-se** (14 m, caminhada. 28 m, corrida) **`1 PA`**\n\n- **Transmitir** (imagem e status) **`1 PA`**\n\n- **Atacar** (Lâmina: adjacente, propriedade: *Sangramento*) **`2 PA`**\n  - Faça **`Corpo + 4`**. O alvo faz teste de **Desviar**,** ****Aparar** ou **Bloquear**. Em falha, sofre **1d10 de dano cortante**.\n\n- **Atacar** (Cauda: alcance 2 m, propriedade: *Perfurante*) **`2 PA`**\n  - Faça **`Corpo + 4`**. O alvo faz teste de **Desviar**** **ou **Bloquear**. Em falha, sofre **1d6 de dano perfurante** e deve testar **`Vigor`** CD 8. Em falha, fica **`Envenenado`**.\n\n- **Esquivar ****`Reação`**\n  - Em resposta a um ataque, faça **`Corpo + 4`**. Em sucesso, desvia do ataque.\n\n**Frenesi das Lâminas** (**1x por cena**)\n\n- Durante uma rodada, o Ceifador pode realizar até dois ataques de lâmina por ação de **Atacar**.\n\nDados da lista de mercadorias:\n- Resumo: Devasta grupos em combate corpo a corpo.\n- Atributos: Corpo 4, Mente 2\n- Raridade: Muito Raro\n- Espaços: Carga\n- Preço (Ⱥ): 10.000",
+      "descricao_curta": "*Raro · Drone*",
+      "descricao_longa": "*Raro · Drone*\n\nDrone de escolta equipado com placas blindadas articuladas, propulsores direcionais e sensores de ameaça. Projetado para acompanhar e proteger aliados, intercepta ataques com o próprio chassi, absorvendo impactos que seriam direcionados ao alvo protegido.\n\n- **Espaços:** 3\n\n- **Preço:** Ⱥ 2.500\n\n### **ESCUDEIRO**\n\n---\n\n- **Atributos:** **`Corpo 2`**, **`Mente 1`**\n\n- **PA:** 3\n\n- **PD:** 16\n\n- **Perícias:** **`Reflexos 3`** **`Mobilidade 2`** **`Percepção 2`**\n\n- **MIT:** 1 (Braços, contra dano físico). Demais Regiões: 0\n\n- **Reações:** 2 por rodada\n\n- **Alcance de Controle:** 500 m\n\n- **Regiões:** Cabeça (sensores de ameaça), Tronco (chassi e processamento), Braços (placas blindadas articuladas), Pernas (propulsores e estabilizadores)\n\n- **Sistemas:** placas blindadas articuladas, propulsores direcionais, sensores de ameaça e estabilizadores\n\n- **Rotinas:** escoltar, proteger, vigiar, posicionar e retornar\n\n#### **AÇÕES**\n\n- **DESLOCAR-SE** **`1 PA`**\n  Voa até 12 m, podendo pairar e realizar deslocamentos verticais. Seus propulsores direcionais permitem acompanhar aliados e ajustar seu posicionamento durante o deslocamento.\n\n#### **CARACTERÍSTICAS**\n\n- **INTERCEPTAÇÃO DEFENSIVA**\n  - **BLOQUEAR** **`Reação`**\n    O Escudeiro pode utilizar suas placas blindadas para interceptar um ataque contra si mesmo ou contra uma criatura adjacente em seu campo de visão, desde que consiga interpor fisicamente a proteção na trajetória do ataque.\n    \n    Realiza um teste de **`Reflexos`** contra o resultado do atacante.\n    \n    - **Sucesso:** se o resultado for superior ao do atacante, o ataque é interceptado. O alvo original não sofre dano nem efeitos, e o dano é aplicado aos PD do Escudeiro. Utilize a MIT dos Braços quando aplicável.\n    \n    - **Falha:** o ataque continua normalmente contra o alvo original, que pode realizar sua própria defesa contra o resultado do atacante, sem penalidade adicional.\n    \n    Um empate não é suficiente para interceptar o ataque.\n    \n    As placas fazem parte do próprio chassi e não possuem uma reserva de PD separada. O dano excedente continua sendo absorvido pelo Escudeiro, não pelo alvo protegido.\n    \n    O Escudeiro possui 2 Reações por rodada e não pode utilizar esta característica quando não possuir Reações disponíveis.\n    \n    Enquanto executa uma ordem de proteção, pode utilizar **Bloquear** autonomamente, sem exigir novos comandos do operador. A interceptação não permite deslocamento adicional: a máquina precisa estar em posição adequada no momento do ataque.\n    \n    A característica não protege automaticamente contra ataques ou efeitos em área.\n\nDados da lista de mercadorias:\n- Função: Proteção móvel\n- Raridade: Raro\n- Espaços: 3\n- Preço (Ⱥ): 2.500",
       "tags": [
         "loja"
       ],
       "dados_notion": {
-        "pagina": "DRONES E ROBÔS",
-        "secao": [
-          "ROBÔS"
-        ],
-        "tipo_tabela": "Robô",
+        "pagina": "MÁQUINAS AUTÔNOMAS",
+        "secao": [],
+        "tipo_tabela": "Máquina",
         "campos": {
-          "Robô": "Ceifador",
-          "Resumo": "Devasta grupos em combate corpo a corpo.",
-          "Atributos": "Corpo 4, Mente 2",
-          "Raridade": "Muito Raro",
-          "Espaços": "Carga",
-          "Preço (Ⱥ)": "10.000"
+          "Máquina": "Escudeiro",
+          "Função": "Proteção móvel",
+          "Raridade": "Raro",
+          "Espaços": "3",
+          "Preço (Ⱥ)": "2.500"
         },
         "tabela_tecnica": null
       },
       "fonte_notion": {
         "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
-        "paginaEditadaEm": "2026-10-08T22:19:00.000Z",
-        "tabelaBlocoId": "7e23aa76d90f4c24898eac27970d2641",
-        "linhaBlocoId": "b01b50b5ee5943f18d05611ca3d491ee",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "effca216264e4ef29cfb0369dbdfca37",
+        "linhaBlocoId": "05f52ddd8acc4f7a8e2307bcc36082a3",
         "tabelaTecnicaFonte": null
       },
       "vinculos_sugeridos": null,
@@ -513,12 +533,648 @@
       },
       "status": "published",
       "versao": "1.2.0",
-      "created_at": "2026-10-09",
-      "updated_at": "2026-10-09",
+      "created_at": "2026-10-24",
+      "updated_at": "2026-10-24",
+      "categoria": "drone",
+      "atributos_texto": "Corpo 2, Mente 1",
+      "pericias_texto": "Reflexos 3 Mobilidade 2 Percepção 2",
+      "pa_maximo": 3,
+      "pd_maximo": 16,
+      "mit": 0,
+      "alcance_controle": "500 m",
+      "regioes_texto": "Cabeça (sensores de ameaça), Tronco (chassi e processamento), Braços (placas blindadas articuladas), Pernas (propulsores e estabilizadores)",
+      "sistemas_texto": "placas blindadas articuladas, propulsores direcionais, sensores de ameaça e estabilizadores",
+      "rotinas_texto": "escoltar, proteger, vigiar, posicionar e retornar",
+      "acoes": [
+        {
+          "nome": "DESLOCAR-SE",
+          "custoPA": 1,
+          "descricao": "Voa até 12 m, podendo pairar e realizar deslocamentos verticais. Seus propulsores direcionais permitem acompanhar aliados e ajustar seu posicionamento durante o deslocamento."
+        }
+      ]
+    },
+    {
+      "id": "maquinas_autonomas_colmeia",
+      "slug": "maquinas_autonomas_colmeia",
+      "nome": "Colmeia",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2200,
+      "preco_texto": "2.200",
+      "preco_qualificador": null,
+      "descricao_curta": "*Raro · Drone*",
+      "descricao_longa": "*Raro · Drone*\n\nDrone compacto equipado com compartimentos de lançamento e um enxame de microdrones especializados em interferência sensorial. Quando direcionado contra uma criatura, o enxame passa a persegui-la, circulando ao redor de seu corpo e dificultando suas manobras defensivas.\n\n- **Espaços:** 2\n\n- **Preço:** Ⱥ 2.200\n\n### **COLMEIA**\n\n---\n\n- **Atributos:** **`Corpo 0`**, **`Mente 2`**\n\n- **PA:** 3\n\n- **PD:** 9\n\n- **Perícias:** **`Robótica 2`** **`Percepção 2`** **`Mobilidade 1`**\n\n- **MIT:** 0\n\n- **Alcance de Controle:** 500 m\n\n- **Regiões:** Cabeça (sensores de identificação), Tronco (chassi, processamento e sistema de coordenação), Braços (compartimentos de lançamento e recolhimento), Pernas (propulsores e estabilizadores)\n\n- **Sistemas:** sensores de identificação, compartimentos de microdrones, luzes, alto-falantes e propulsores\n\n- **Rotinas:** acompanhar, perseguir, perturbar, recolher e retornar\n\n#### **AÇÕES**\n\n- **DESLOCAR-SE** **`1 PA`**\n  Voa até 10 m, podendo pairar e realizar deslocamentos verticais. Pode se deslocar enquanto seu enxame estiver ativo.\n\n- **DIRECIONAR ENXAME** **`1 PA`**\n  Escolhe uma criatura visível a até 10 m e envia seus microdrones para persegui-la.\n  \n  O enxame passa a circular ao redor da criatura, executando movimentos rápidos e produzindo interferências visuais, acústicas e físicas para dificultar suas manobras defensivas.\n  \n  A Colmeia pode perseguir apenas uma criatura por vez. Direcionar o enxame contra outra criatura encerra imediatamente a perseguição anterior.\n\n- **RECOLHER ENXAME** **`1 PA`**\n  Encerra a perseguição e ordena o retorno dos microdrones aos compartimentos do módulo central.\n\n#### **CARACTERÍSTICAS**\n\n- **ENXAME PERSEGUIDOR**\n  Enquanto os microdrones estiverem circundando o alvo, ele sofre **–1 de desvantagem nos testes para Esquivar, Aparar e Bloquear**.\n  \n  O enxame acompanha automaticamente os movimentos da criatura designada, sem exigir novos comandos ou gastos de PA, desde que ela permaneça a até **15 m da Colmeia**. Esse acompanhamento é realizado pelos microdrones e não concede deslocamento gratuito ao módulo central.\n  \n  Se o alvo ultrapassar esse alcance ou os microdrones forem impedidos de acompanhá-lo, a penalidade deixa de ser aplicada. A ordem de perseguição permanece ativa, e a Colmeia pode se reposicionar utilizando suas ações normais para restabelecer o efeito, sem precisar direcionar o enxame novamente.\n  \n  Os microdrones não retornam automaticamente quando perdem o alvo. Permanecem procurando restabelecer a perseguição dentro do alcance operacional, utilizando a última localização conhecida. A penalidade volta a ser aplicada quando conseguem alcançar e identificar novamente a criatura.\n  \n  A perseguição termina quando a Colmeia direciona o enxame contra outra criatura, ordena seu recolhimento ou deixa de funcionar.\n  \n  O efeito não é cumulativo com o de outras Colmeias.\n  \n  Os microdrones operam como uma única unidade, compartilhando os atributos e a reserva de PD da Colmeia. Não possuem turnos, PA, Reações ou PD individuais.\n  \n  Ataques e efeitos capazes de atingir uma parcela significativa do enxame podem causar dano à máquina normalmente. Um mesmo ataque não causa dano múltiplas vezes por atingir vários microdrones.\n  \n  Os microdrones não podem realizar ataques individuais nem executar tarefas independentes do módulo central.\n\nDados da lista de mercadorias:\n- Função: Perturbação tática\n- Raridade: Raro\n- Espaços: 2\n- Preço (Ⱥ): 2.200",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "MÁQUINAS AUTÔNOMAS",
+        "secao": [],
+        "tipo_tabela": "Máquina",
+        "campos": {
+          "Máquina": "Colmeia",
+          "Função": "Perturbação tática",
+          "Raridade": "Raro",
+          "Espaços": "2",
+          "Preço (Ⱥ)": "2.200"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "effca216264e4ef29cfb0369dbdfca37",
+        "linhaBlocoId": "8c710c97ce794266a8a600006bc88f89",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-24",
+      "updated_at": "2026-10-24",
+      "categoria": "drone",
+      "atributos_texto": "Corpo 0, Mente 2",
+      "pericias_texto": "Robótica 2 Percepção 2 Mobilidade 1",
+      "pa_maximo": 3,
+      "pd_maximo": 9,
+      "mit": 0,
+      "alcance_controle": "500 m",
+      "regioes_texto": "Cabeça (sensores de identificação), Tronco (chassi, processamento e sistema de coordenação), Braços (compartimentos de lançamento e recolhimento), Pernas (propulsores e estabilizadores)",
+      "sistemas_texto": "sensores de identificação, compartimentos de microdrones, luzes, alto-falantes e propulsores",
+      "rotinas_texto": "acompanhar, perseguir, perturbar, recolher e retornar",
+      "acoes": [
+        {
+          "nome": "DESLOCAR-SE",
+          "custoPA": 1,
+          "descricao": "Voa até 10 m, podendo pairar e realizar deslocamentos verticais. Pode se deslocar enquanto seu enxame estiver ativo."
+        },
+        {
+          "nome": "DIRECIONAR ENXAME",
+          "custoPA": 1,
+          "descricao": "Escolhe uma criatura visível a até 10 m e envia seus microdrones para persegui-la.\n\nO enxame passa a circular ao redor da criatura, executando movimentos rápidos e produzindo interferências visuais, acústicas e físicas para dificultar suas manobras defensivas.\n\nA Colmeia pode perseguir apenas uma criatura por vez. Direcionar o enxame contra outra criatura encerra imediatamente a perseguição anterior."
+        },
+        {
+          "nome": "RECOLHER ENXAME",
+          "custoPA": 1,
+          "descricao": "Encerra a perseguição e ordena o retorno dos microdrones aos compartimentos do módulo central."
+        }
+      ]
+    },
+    {
+      "id": "maquinas_autonomas_bastiao",
+      "slug": "maquinas_autonomas_bastiao",
+      "nome": "Bastião",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 3500,
+      "preco_texto": "3.500",
+      "preco_qualificador": null,
+      "descricao_curta": "*Raro · Robô*",
+      "descricao_longa": "*Raro · Robô*\n\nRobô terrestre blindado, equipado com uma carabina integrada, sensores de vigilância e placas de proteção retráteis. Projetado para defender posições estratégicas, pode fixar-se ao terreno e expandir suas placas, formando um posto fortificado que oferece cobertura aos aliados enquanto mantém vigilância armada sobre o setor.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 3.500\n\n### **BASTIÃO**\n\n---\n\n- **Atributos:** **`Corpo 3`**, **`Mente 1`**\n\n- **PA:** 3\n\n- **PD:** 18\n\n- **Perícias:** **`Balística 2`** **`Percepção 2`** **`Mobilidade 1`**\n\n- **MIT:** 2 (Tronco e Braços, contra dano físico). Demais Regiões: 0\n\n- **Reações:** 2 por rodada\n\n- **Alcance de Controle:** 500 m\n\n- **Regiões:** Cabeça (sensores e armamento), Tronco (chassi, processamento e compartimento de munição), Braços (placas blindadas retráteis), Pernas (esteiras e estabilizadores)\n\n- **Sistemas:** carabina integrada, câmera, placas blindadas retráteis, esteiras e estabilizadores hidráulicos\n\n- **Rotinas:** vigiar, defender, implantar, recolher, reposicionar e retornar\n\n#### **ARMAMENTO**\n\n**CARABINA INTEGRADA**\n\n| Propriedade | Valor |\n| --- | --- |\n| **Dano** | 1d8 perfurante |\n| **Alcance eficaz** | 50 m |\n| **Alcance máximo** | 100 m, com –2 de desvantagem |\n| **Munição** | 20 disparos |\n| **Propriedades** | Sangramento, Perfuração, Precisão |\n\nA carabina utiliza as propriedades e regras normais desse armamento. Sua munição precisa ser reposta normalmente.\n\n#### **AÇÕES**\n\n- **DESLOCAR-SE** **`1 PA`**\n  Percorre até 6 m utilizando suas esteiras articuladas. Não pode se deslocar enquanto estiver implantado.\n\n- **ATACAR** **`2 PA`**\n  Realiza um disparo com sua carabina integrada contra um alvo válido, utilizando **`Balística`** e seguindo as regras normais de ataques à distância.\n  \n  Cada disparo consome uma munição.\n\n- **IMPLANTAR** **`1 PA`**\n  Aciona seus estabilizadores e expande as placas blindadas, estabelecendo um posto fortificado na posição atual.\n  \n  Enquanto estiver implantado, o Bastião permanece imóvel, mas pode utilizar seu armamento e realizar outras ações que não exijam deslocamento.\n\n- **RECOLHER** **`1 PA`**\n  Recolhe suas placas blindadas e estabilizadores, encerrando o estado implantado e permitindo que volte a se deslocar.\n\n#### **CARACTERÍSTICAS**\n\n- **POSTO FORTIFICADO**\n  Enquanto estiver implantado, o Bastião mantém suas placas blindadas expandidas, formando uma proteção física que pode servir como cobertura para criaturas posicionadas atrás delas.\n  \n  A proteção segue as regras normais de Cobertura:\n  \n  - **Cobertura parcial:** impõe –1 aos testes de ataques direcionais contra o alvo protegido.\n  \n  - **Cobertura maior:** impõe –2 aos testes de ataques direcionais quando as placas ocultarem quase completamente o alvo.\n  \n  - **Cobertura total:** impede ataques direcionais através da proteção quando ela bloquear completamente a trajetória.\n  \n  O grau de cobertura depende da posição do atacante, da criatura protegida e das placas blindadas. Estar próximo ao Bastião não concede proteção automaticamente.\n  \n  As placas fazem parte da estrutura da máquina e compartilham seus PD e MIT. Quando um ataque atinge as placas, o dano é aplicado ao Bastião, seguindo as regras normais de dano contra coberturas e máquinas blindadas.\n\n- **PROTOCOLO DE GUARDA**\n  O Bastião pode vigiar uma passagem, entrada ou posição designada, identificando ameaças conforme suas Rotinas e ordens recebidas.\n  \n  Durante o combate, pode utilizar **Preparar Turno** **`Reação`** para reservar um ataque contra um gatilho objetivo, como a passagem de uma criatura hostil por uma entrada.\n  \n  Os PA são gastos durante a preparação, fornecidos pelo operador ou por uma capacidade que conceda PA autônomos à máquina. Quando o gatilho ocorre, o Bastião consome uma Reação e executa o ataque conforme as regras de **Preparar Turno**, após a resolução da ação que ativou o gatilho.\n  \n  Se o gatilho não ocorrer até o fim da rodada, a preparação é perdida. A ordem de guarda permanece válida, mas os PA precisam ser reservados novamente nas rodadas seguintes.\n  \n  O Bastião não recebe ataques ou Reações adicionais por executar o Protocolo de Guarda.\n\nDados da lista de mercadorias:\n- Função: Defesa de posição\n- Raridade: Raro\n- Espaços: Carga\n- Preço (Ⱥ): 3.500",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "MÁQUINAS AUTÔNOMAS",
+        "secao": [],
+        "tipo_tabela": "Máquina",
+        "campos": {
+          "Máquina": "Bastião",
+          "Função": "Defesa de posição",
+          "Raridade": "Raro",
+          "Espaços": "Carga",
+          "Preço (Ⱥ)": "3.500"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "effca216264e4ef29cfb0369dbdfca37",
+        "linhaBlocoId": "378e89f47191450eaec4285ea2aaf680",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-24",
+      "updated_at": "2026-10-24",
       "categoria": "robo",
-      "alcance_controle": null,
-      "atributos_texto": "Corpo 4, Mente 2",
-      "acoes": []
+      "atributos_texto": "Corpo 3, Mente 1",
+      "pericias_texto": "Balística 2 Percepção 2 Mobilidade 1",
+      "pa_maximo": 3,
+      "pd_maximo": 18,
+      "mit": 0,
+      "alcance_controle": "500 m",
+      "regioes_texto": "Cabeça (sensores e armamento), Tronco (chassi, processamento e compartimento de munição), Braços (placas blindadas retráteis), Pernas (esteiras e estabilizadores)",
+      "sistemas_texto": "carabina integrada, câmera, placas blindadas retráteis, esteiras e estabilizadores hidráulicos",
+      "rotinas_texto": "vigiar, defender, implantar, recolher, reposicionar e retornar",
+      "acoes": [
+        {
+          "nome": "DESLOCAR-SE",
+          "custoPA": 1,
+          "descricao": "Percorre até 6 m utilizando suas esteiras articuladas. Não pode se deslocar enquanto estiver implantado."
+        },
+        {
+          "nome": "ATACAR",
+          "custoPA": 2,
+          "descricao": "Realiza um disparo com sua carabina integrada contra um alvo válido, utilizando **`Balística`** e seguindo as regras normais de ataques à distância.\n\nCada disparo consome uma munição."
+        },
+        {
+          "nome": "IMPLANTAR",
+          "custoPA": 1,
+          "descricao": "Aciona seus estabilizadores e expande as placas blindadas, estabelecendo um posto fortificado na posição atual.\n\nEnquanto estiver implantado, o Bastião permanece imóvel, mas pode utilizar seu armamento e realizar outras ações que não exijam deslocamento."
+        },
+        {
+          "nome": "RECOLHER",
+          "custoPA": 1,
+          "descricao": "Recolhe suas placas blindadas e estabilizadores, encerrando o estado implantado e permitindo que volte a se deslocar."
+        }
+      ]
+    },
+    {
+      "id": "maquinas_autonomas_perseguidora_explosiva",
+      "slug": "maquinas_autonomas_perseguidora_explosiva",
+      "nome": "Perseguidora explosiva",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 650,
+      "preco_texto": "650",
+      "preco_qualificador": null,
+      "descricao_curta": "*Raro · Robô esférico*",
+      "descricao_longa": "*Raro · Robô esférico*\n\nPequena máquina esférica equipada com sensores de rastreamento, locomoção omnidirecional e uma carga explosiva. Persegue autonomamente uma criatura designada, contornando obstáculos até alcançar uma posição adequada para detonar.\n\n- **Espaços:** 1\n\n- **Preço:** Ⱥ 650\n\n### **PERSEGUIDORA EXPLOSIVA**\n\n---\n\n- **Atributos:** **`Corpo 0`**, **`Mente 1`**\n\n- **PA:** 3\n\n- **PD:** 5\n\n- **Perícias:** **`Mobilidade 3`** **`Percepção 2`** **`Furtividade 1`**\n\n- **MIT:** 0\n\n- **Alcance de Controle:** 500 m\n\n- **Regiões:** Cabeça (sensores de rastreamento), Tronco (chassi, processamento e carga explosiva), Braços (membros auxiliares retráteis), Pernas (locomoção omnidirecional)\n\n- **Sistemas:** câmera, câmera térmica, corpo esférico motorizado, braços retráteis e carga explosiva integrada\n\n- **Rotinas:** localizar, perseguir, contornar e detonar\n\n#### **AÇÕES**\n\n- **DESLOCAR-SE** **`1 PA`**\n  Percorre até 12 m utilizando sua locomoção omnidirecional. Pode realizar mudanças bruscas de direção e transpor pequenos obstáculos com auxílio dos membros retráteis.\n  \n  Não pode voar, escalar superfícies verticais ou atravessar obstáculos incompatíveis com suas dimensões.\n\n- **DETONAR** **`2 PA`**\n  A Perseguidora detona sua carga quando estiver a até 1 m do alvo, causando **1d6 de dano contundente + 1d6 de dano ígneo** a todas as criaturas em um raio de 2 m.\n  \n  As criaturas atingidas podem utilizar **Esquivar** contra CD 8. Em sucesso, sofrem metade do dano, arredondada para baixo.\n  \n  A explosão não distingue aliados de inimigos e destrói completamente a Perseguidora.\n\n#### **CARACTERÍSTICAS**\n\n- **BUSCA AUTÔNOMA**\n  A Perseguidora pode receber a designação de uma criatura e utilizar seus sensores e Rotinas para persegui-la, identificando trajetos acessíveis e contornando obstáculos.\n  \n  Se perder o alvo, procura restabelecer o contato a partir da última localização conhecida. A perseguição não exige novas ordens, mas a máquina não conhece automaticamente a posição de criaturas ocultas ou fora do alcance de seus sensores.\n  \n  Durante cenas estruturadas, seus deslocamentos e a ação **Detonar** consomem os PA fornecidos pelo operador ou por uma capacidade que lhe conceda PA autônomos.\n\n- **CARGA DESCARTÁVEL**\n  A detonação destrói a máquina. A Perseguidora Explosiva não pode ser recuperada ou rearmada após utilizar sua carga.\n\nDados da lista de mercadorias:\n- Função: Ataque autoguiado\n- Raridade: Raro\n- Espaços: 1\n- Preço (Ⱥ): 650",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "MÁQUINAS AUTÔNOMAS",
+        "secao": [],
+        "tipo_tabela": "Máquina",
+        "campos": {
+          "Máquina": "Perseguidora explosiva",
+          "Função": "Ataque autoguiado",
+          "Raridade": "Raro",
+          "Espaços": "1",
+          "Preço (Ⱥ)": "650"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "effca216264e4ef29cfb0369dbdfca37",
+        "linhaBlocoId": "c27f0403fd584860953e638b65e13551",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-24",
+      "updated_at": "2026-10-24",
+      "categoria": "robo",
+      "atributos_texto": "Corpo 0, Mente 1",
+      "pericias_texto": "Mobilidade 3 Percepção 2 Furtividade 1",
+      "pa_maximo": 3,
+      "pd_maximo": 5,
+      "mit": 0,
+      "alcance_controle": "500 m",
+      "regioes_texto": "Cabeça (sensores de rastreamento), Tronco (chassi, processamento e carga explosiva), Braços (membros auxiliares retráteis), Pernas (locomoção omnidirecional)",
+      "sistemas_texto": "câmera, câmera térmica, corpo esférico motorizado, braços retráteis e carga explosiva integrada",
+      "rotinas_texto": "localizar, perseguir, contornar e detonar",
+      "acoes": [
+        {
+          "nome": "DESLOCAR-SE",
+          "custoPA": 1,
+          "descricao": "Percorre até 12 m utilizando sua locomoção omnidirecional. Pode realizar mudanças bruscas de direção e transpor pequenos obstáculos com auxílio dos membros retráteis.\n\nNão pode voar, escalar superfícies verticais ou atravessar obstáculos incompatíveis com suas dimensões."
+        },
+        {
+          "nome": "DETONAR",
+          "custoPA": 2,
+          "descricao": "A Perseguidora detona sua carga quando estiver a até 1 m do alvo, causando **1d6 de dano contundente + 1d6 de dano ígneo** a todas as criaturas em um raio de 2 m.\n\nAs criaturas atingidas podem utilizar **Esquivar** contra CD 8. Em sucesso, sofrem metade do dano, arredondada para baixo.\n\nA explosão não distingue aliados de inimigos e destrói completamente a Perseguidora."
+        }
+      ]
+    },
+    {
+      "id": "maquinas_autonomas_perseguidora_eletrica",
+      "slug": "maquinas_autonomas_perseguidora_eletrica",
+      "nome": "Perseguidora elétrica",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 850,
+      "preco_texto": "850",
+      "preco_qualificador": null,
+      "descricao_curta": "*Incomum · Robô esférico*",
+      "descricao_longa": "*Incomum · Robô esférico*\n\nPequena máquina esférica equipada com sensores de rastreamento e um módulo de descarga elétrica. Persegue criaturas designadas e libera uma descarga concentrada ao se aproximar, incapacitando temporariamente o alvo sem destruir o próprio chassi.\n\n- **Espaços:** 1\n\n- **Preço:** Ⱥ 850\n\n### **PERSEGUIDORA ELÉTRICA**\n\n---\n\n- **Atributos:** **`Corpo 0`**, **`Mente 1`**\n\n- **PA:** 3\n\n- **PD:** 5\n\n- **Perícias:** **`Mobilidade 3`** **`Percepção 2`** **`Furtividade 1`**\n\n- **MIT:** 0\n\n- **Alcance de Controle:** 500 m\n\n- **Regiões:** Cabeça (sensores de rastreamento), Tronco (chassi, processamento e módulo elétrico), Braços (eletrodos e membros auxiliares retráteis), Pernas (locomoção omnidirecional)\n\n- **Sistemas:** câmera, câmera térmica, corpo esférico motorizado, braços retráteis, eletrodos e módulo elétrico consumível\n\n- **Rotinas:** localizar, perseguir, contornar e descarregar\n\n#### **AÇÕES**\n\n- **DESLOCAR-SE** **`1 PA`**\n  Percorre até 12 m utilizando sua locomoção omnidirecional. Pode realizar mudanças bruscas de direção e transpor pequenos obstáculos com auxílio dos membros retráteis.\n  \n  Não pode voar, escalar superfícies verticais ou atravessar obstáculos incompatíveis com suas dimensões.\n\n- **DESCARGA ELÉTRICA** **`2 PA`**\n  A Perseguidora libera uma descarga elétrica concentrada contra uma criatura a até 1 m.\n  \n  O alvo pode utilizar **Resistir** contra CD 8. Em falha, fica **`Atordoado`** até o fim de seu próximo turno.\n  \n  A descarga consome o módulo elétrico, independentemente do resultado.\n\n#### **CARACTERÍSTICAS**\n\n- **BUSCA AUTÔNOMA**\n  A Perseguidora pode receber a designação de uma criatura e utilizar seus sensores e Rotinas para persegui-la, identificando trajetos acessíveis e contornando obstáculos.\n  \n  Se perder o alvo, procura restabelecer o contato a partir da última localização conhecida. A perseguição não exige novas ordens, mas a máquina não conhece automaticamente a posição de criaturas ocultas ou fora do alcance de seus sensores.\n  \n  Durante cenas estruturadas, seus deslocamentos e a ação **Descarga Elétrica** consomem os PA fornecidos pelo operador ou por uma capacidade que lhe conceda PA autônomos.\n\n- **MÓDULO CONSUMÍVEL**\n  Após a descarga, a Perseguidora permanece operacional, mas não pode utilizar **Descarga Elétrica** novamente até receber um novo módulo elétrico.\n  \n  A substituição exige recuperar a máquina e realizar o rearmamento com um módulo compatível, fora do combate.\n\nDados da lista de mercadorias:\n- Função: Incapacitação\n- Raridade: Incomum\n- Espaços: 1\n- Preço (Ⱥ): 850",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "MÁQUINAS AUTÔNOMAS",
+        "secao": [],
+        "tipo_tabela": "Máquina",
+        "campos": {
+          "Máquina": "Perseguidora elétrica",
+          "Função": "Incapacitação",
+          "Raridade": "Incomum",
+          "Espaços": "1",
+          "Preço (Ⱥ)": "850"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "effca216264e4ef29cfb0369dbdfca37",
+        "linhaBlocoId": "a0aaba6deae84d8ba2809f6f6d2704f2",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-24",
+      "updated_at": "2026-10-24",
+      "categoria": "robo",
+      "atributos_texto": "Corpo 0, Mente 1",
+      "pericias_texto": "Mobilidade 3 Percepção 2 Furtividade 1",
+      "pa_maximo": 3,
+      "pd_maximo": 5,
+      "mit": 0,
+      "alcance_controle": "500 m",
+      "regioes_texto": "Cabeça (sensores de rastreamento), Tronco (chassi, processamento e módulo elétrico), Braços (eletrodos e membros auxiliares retráteis), Pernas (locomoção omnidirecional)",
+      "sistemas_texto": "câmera, câmera térmica, corpo esférico motorizado, braços retráteis, eletrodos e módulo elétrico consumível",
+      "rotinas_texto": "localizar, perseguir, contornar e descarregar",
+      "acoes": [
+        {
+          "nome": "DESLOCAR-SE",
+          "custoPA": 1,
+          "descricao": "Percorre até 12 m utilizando sua locomoção omnidirecional. Pode realizar mudanças bruscas de direção e transpor pequenos obstáculos com auxílio dos membros retráteis.\n\nNão pode voar, escalar superfícies verticais ou atravessar obstáculos incompatíveis com suas dimensões."
+        },
+        {
+          "nome": "DESCARGA ELÉTRICA",
+          "custoPA": 2,
+          "descricao": "A Perseguidora libera uma descarga elétrica concentrada contra uma criatura a até 1 m.\n\nO alvo pode utilizar **Resistir** contra CD 8. Em falha, fica **`Atordoado`** até o fim de seu próximo turno.\n\nA descarga consome o módulo elétrico, independentemente do resultado."
+        }
+      ]
+    },
+    {
+      "id": "maquinas_autonomas_perseguidora_de_contencao",
+      "slug": "maquinas_autonomas_perseguidora_de_contencao",
+      "nome": "Perseguidora de contenção",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1100,
+      "preco_texto": "1.100",
+      "preco_qualificador": null,
+      "descricao_curta": "*Raro · Robô esférico*",
+      "descricao_longa": "*Raro · Robô esférico*\n\nPequena máquina esférica equipada com sensores de rastreamento e um lançador de filamentos reforçados. Persegue criaturas designadas e dispara uma rede de contenção ao se aproximar, restringindo seus movimentos para facilitar a captura.\n\n- **Espaços:** 1\n\n- **Preço:** Ⱥ 1.100\n\n### **PERSEGUIDORA DE CONTENÇÃO**\n\n---\n\n- **Atributos:** **`Corpo 0`**, **`Mente 1`**\n\n- **PA:** 3\n\n- **PD:** 5\n\n- **Perícias:** **`Mobilidade 3`** **`Percepção 2`** **`Furtividade 1`**\n\n- **MIT:** 0\n\n- **Alcance de Controle:** 500 m\n\n- **Regiões:** Cabeça (sensores de rastreamento), Tronco (chassi, processamento e módulo de contenção), Braços (lançador de filamentos e membros auxiliares retráteis), Pernas (locomoção omnidirecional)\n\n- **Sistemas:** câmera, câmera térmica, corpo esférico motorizado, braços retráteis, lançador de rede e módulo de contenção consumível\n\n- **Rotinas:** localizar, perseguir, contornar e conter\n\n#### **AÇÕES**\n\n- **DESLOCAR-SE** **`1 PA`**\n  Percorre até 12 m utilizando sua locomoção omnidirecional. Pode realizar mudanças bruscas de direção e transpor pequenos obstáculos com auxílio dos membros retráteis.\n  \n  Não pode voar, escalar superfícies verticais ou atravessar obstáculos incompatíveis com suas dimensões.\n\n- **LANÇAR REDE** **`2 PA`**\n  A Perseguidora dispara uma rede de filamentos reforçados contra uma criatura a até 1 m, envolvendo seus membros e restringindo seus movimentos.\n  \n  O alvo pode utilizar **Esquivar** contra CD 8. Em falha, fica **`Imobilizado`**.\n  \n  A criatura pode utilizar **Escapar** **`2 PA`**, realizando um teste de **`Luta`** ou **`Vigor`** contra CD 8 para romper ou remover a contenção.\n  \n  A rede permanece no alvo após o disparo, independentemente da posição da Perseguidora.\n  \n  O disparo consome o módulo de contenção, independentemente do resultado.\n\n#### **CARACTERÍSTICAS**\n\n- **BUSCA AUTÔNOMA**\n  A Perseguidora pode receber a designação de uma criatura e utilizar seus sensores e Rotinas para persegui-la, identificando trajetos acessíveis e contornando obstáculos.\n  \n  Se perder o alvo, procura restabelecer o contato a partir da última localização conhecida. A perseguição não exige novas ordens, mas a máquina não conhece automaticamente a posição de criaturas ocultas ou fora do alcance de seus sensores.\n  \n  Durante cenas estruturadas, seus deslocamentos e a ação **Lançar Rede** consomem os PA fornecidos pelo operador ou por uma capacidade que lhe conceda PA autônomos.\n\n- **MÓDULO CONSUMÍVEL**\n  Após lançar a rede, a Perseguidora permanece operacional, mas não pode utilizar **Lançar Rede** novamente até receber um novo módulo de contenção.\n  \n  A substituição exige recuperar a máquina e realizar o rearmamento com um módulo compatível, fora do combate.\n\nDados da lista de mercadorias:\n- Função: Captura\n- Raridade: Raro\n- Espaços: 1\n- Preço (Ⱥ): 1.100",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "MÁQUINAS AUTÔNOMAS",
+        "secao": [],
+        "tipo_tabela": "Máquina",
+        "campos": {
+          "Máquina": "Perseguidora de contenção",
+          "Função": "Captura",
+          "Raridade": "Raro",
+          "Espaços": "1",
+          "Preço (Ⱥ)": "1.100"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "effca216264e4ef29cfb0369dbdfca37",
+        "linhaBlocoId": "6b3f2fe026d84aae95ebdf41275ea7f9",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-24",
+      "updated_at": "2026-10-24",
+      "categoria": "robo",
+      "atributos_texto": "Corpo 0, Mente 1",
+      "pericias_texto": "Mobilidade 3 Percepção 2 Furtividade 1",
+      "pa_maximo": 3,
+      "pd_maximo": 5,
+      "mit": 0,
+      "alcance_controle": "500 m",
+      "regioes_texto": "Cabeça (sensores de rastreamento), Tronco (chassi, processamento e módulo de contenção), Braços (lançador de filamentos e membros auxiliares retráteis), Pernas (locomoção omnidirecional)",
+      "sistemas_texto": "câmera, câmera térmica, corpo esférico motorizado, braços retráteis, lançador de rede e módulo de contenção consumível",
+      "rotinas_texto": "localizar, perseguir, contornar e conter",
+      "acoes": [
+        {
+          "nome": "DESLOCAR-SE",
+          "custoPA": 1,
+          "descricao": "Percorre até 12 m utilizando sua locomoção omnidirecional. Pode realizar mudanças bruscas de direção e transpor pequenos obstáculos com auxílio dos membros retráteis.\n\nNão pode voar, escalar superfícies verticais ou atravessar obstáculos incompatíveis com suas dimensões."
+        },
+        {
+          "nome": "LANÇAR REDE",
+          "custoPA": 2,
+          "descricao": "A Perseguidora dispara uma rede de filamentos reforçados contra uma criatura a até 1 m, envolvendo seus membros e restringindo seus movimentos.\n\nO alvo pode utilizar **Esquivar** contra CD 8. Em falha, fica **`Imobilizado`**.\n\nA criatura pode utilizar **Escapar** **`2 PA`**, realizando um teste de **`Luta`** ou **`Vigor`** contra CD 8 para romper ou remover a contenção.\n\nA rede permanece no alvo após o disparo, independentemente da posição da Perseguidora.\n\nO disparo consome o módulo de contenção, independentemente do resultado."
+        }
+      ]
+    },
+    {
+      "id": "maquinas_autonomas_chacal",
+      "slug": "maquinas_autonomas_chacal",
+      "nome": "Chacal",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 3500,
+      "preco_texto": "3.500",
+      "preco_qualificador": null,
+      "descricao_curta": "*Raro · Robô*",
+      "descricao_longa": "*Raro · Robô*\n\nRobô quadrúpede de combate, equipado com revestimento de camuflagem adaptativa, sensores de rastreamento e uma submetralhadora integrada. Projetado para perseguir e neutralizar alvos, utiliza aproximações furtivas, mudanças rápidas de posição e ataques de surpresa para explorar vulnerabilidades nas defesas inimigas.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 3.500\n\n### **CHACAL**\n\n---\n\n- **Atributos:** **`Corpo 2`**, **`Mente 1`**\n\n- **PA:** 3\n\n- **PD:** 12\n\n- **Perícias:** **`Mobilidade 3`** **`Furtividade 2`** **`Balística 2`**\n\n- **MIT:** 0\n\n- **Reações:** 2 por rodada\n\n- **Alcance de Controle:** 500 m\n\n- **Regiões:** Cabeça (sensores ópticos e térmicos), Tronco (chassi, processamento e armamento), Braços (membros dianteiros), Pernas (membros traseiros e sistema de propulsão mecânica)\n\n- **Sistemas:** câmera, câmera térmica, revestimento de camuflagem adaptativa, amortecedores, quatro patas articuladas e submetralhadora integrada\n\n- **Rotinas:** rastrear, perseguir, flanquear, emboscar, recuar e reagrupar\n\n#### **ARMAMENTO**\n\n**SUBMETRALHADORA INTEGRADA**\n\n| Propriedade | Valor |\n| --- | --- |\n| **Dano** | 1d6 perfurante |\n| **Alcance eficaz** | 20 m |\n| **Alcance máximo** | 40 m, com –2 de desvantagem |\n| **Munição** | 30 disparos |\n| **Propriedades** | Sangramento, Rajada (3) |\n\nA submetralhadora utiliza as propriedades e regras normais desse armamento. Sua munição precisa ser reposta normalmente.\n\n#### **AÇÕES**\n\n- **DESLOCAR-SE** **`1 PA`**\n  Percorre até 14 m utilizando suas patas articuladas. Pode realizar mudanças bruscas de direção, transpor obstáculos compatíveis com seu porte e percorrer terrenos irregulares, realizando testes de **`Mobilidade`** quando necessário.\n\n- **ATACAR** **`2 PA`**\n  Realiza um ataque com sua submetralhadora integrada contra um alvo válido, utilizando **`Balística`** e seguindo as regras normais de ataques à distância.\n  \n  Consome munição conforme a modalidade de disparo utilizada.\n\n- **ESCONDER-SE** **`1 PA`**\n  Utiliza cobertura, condições ambientais e seu revestimento adaptativo para tentar ocultar sua posição, seguindo as regras normais de **Esconder-se**.\n  \n  Realiza um teste de **`Furtividade`** contra a **`Percepção`** dos observadores pertinentes ou a CD determinada pelo narrador.\n\n- **INVESTIDA DE FLANCO** **`2 PA`** · 1×/rodada\n  Quando estiver **`Oculto`** em relação a uma criatura, o Chacal pode deslocar-se até 6 m e realizar um ataque com sua submetralhadora integrada contra ela.\n  \n  O deslocamento deve terminar em uma posição válida para o disparo.\n  \n  O ataque segue as regras normais, recebendo os benefícios de ponto cego apenas se o alvo não conseguir perceber o Chacal no momento do disparo.\n  \n  A ação encerra a condição **`Oculto`** em relação ao alvo atacado.\n\n#### **CARACTERÍSTICAS**\n\n- **CAMUFLAGEM ADAPTATIVA**\n  O revestimento óptico do Chacal ajusta sua aparência às cores e aos padrões do ambiente, dificultando sua identificação visual.\n  \n  Pode utilizar **Esconder-se** em locais com elementos visuais suficientes para confundir seu contorno, mesmo quando a cobertura física disponível não seria suficiente para ocultá-lo normalmente.\n  \n  A camuflagem não concede invisibilidade, não dispensa testes de **`Furtividade`** e não impede sua detecção por ruídos, sensores térmicos ou outros meios apropriados.\n  \n  Quando o Chacal realiza um ataque, o disparo revela sua posição normalmente.\n\nDados da lista de mercadorias:\n- Função: Emboscada\n- Raridade: Raro\n- Espaços: Carga\n- Preço (Ⱥ): 3.500",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "MÁQUINAS AUTÔNOMAS",
+        "secao": [],
+        "tipo_tabela": "Máquina",
+        "campos": {
+          "Máquina": "Chacal",
+          "Função": "Emboscada",
+          "Raridade": "Raro",
+          "Espaços": "Carga",
+          "Preço (Ⱥ)": "3.500"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "effca216264e4ef29cfb0369dbdfca37",
+        "linhaBlocoId": "a990f97fdbe84e118899662585bf9512",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-24",
+      "updated_at": "2026-10-24",
+      "categoria": "robo",
+      "atributos_texto": "Corpo 2, Mente 1",
+      "pericias_texto": "Mobilidade 3 Furtividade 2 Balística 2",
+      "pa_maximo": 3,
+      "pd_maximo": 12,
+      "mit": 0,
+      "alcance_controle": "500 m",
+      "regioes_texto": "Cabeça (sensores ópticos e térmicos), Tronco (chassi, processamento e armamento), Braços (membros dianteiros), Pernas (membros traseiros e sistema de propulsão mecânica)",
+      "sistemas_texto": "câmera, câmera térmica, revestimento de camuflagem adaptativa, amortecedores, quatro patas articuladas e submetralhadora integrada",
+      "rotinas_texto": "rastrear, perseguir, flanquear, emboscar, recuar e reagrupar",
+      "acoes": [
+        {
+          "nome": "DESLOCAR-SE",
+          "custoPA": 1,
+          "descricao": "Percorre até 14 m utilizando suas patas articuladas. Pode realizar mudanças bruscas de direção, transpor obstáculos compatíveis com seu porte e percorrer terrenos irregulares, realizando testes de **`Mobilidade`** quando necessário."
+        },
+        {
+          "nome": "ATACAR",
+          "custoPA": 2,
+          "descricao": "Realiza um ataque com sua submetralhadora integrada contra um alvo válido, utilizando **`Balística`** e seguindo as regras normais de ataques à distância.\n\nConsome munição conforme a modalidade de disparo utilizada."
+        },
+        {
+          "nome": "ESCONDER-SE",
+          "custoPA": 1,
+          "descricao": "Utiliza cobertura, condições ambientais e seu revestimento adaptativo para tentar ocultar sua posição, seguindo as regras normais de **Esconder-se**.\n\nRealiza um teste de **`Furtividade`** contra a **`Percepção`** dos observadores pertinentes ou a CD determinada pelo narrador."
+        },
+        {
+          "nome": "INVESTIDA DE FLANCO",
+          "custoPA": 2,
+          "descricao": "Quando estiver **`Oculto`** em relação a uma criatura, o Chacal pode deslocar-se até 6 m e realizar um ataque com sua submetralhadora integrada contra ela.\n\nO deslocamento deve terminar em uma posição válida para o disparo.\n\nO ataque segue as regras normais, recebendo os benefícios de ponto cego apenas se o alvo não conseguir perceber o Chacal no momento do disparo.\n\nA ação encerra a condição **`Oculto`** em relação ao alvo atacado."
+        }
+      ]
+    },
+    {
+      "id": "maquinas_autonomas_mantis",
+      "slug": "maquinas_autonomas_mantis",
+      "nome": "Mantis",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 3800,
+      "preco_texto": "3.800",
+      "preco_qualificador": null,
+      "descricao_curta": "*Raro · Robô*",
+      "descricao_longa": "*Raro · Robô*\n\nMáquina insetoide inspirada em um louva-a-deus, equipada com lâminas integradas aos membros dianteiros e atuadores de resposta rápida. Especializada em combate corpo a corpo, intercepta golpes com movimentos precisos e explora as aberturas produzidas pelas aparadas para contra-atacar.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 3.800\n\n### **MANTIS**\n\n---\n\n- **Atributos:** **`Corpo 2`**, **`Mente 1`**\n\n- **PA:** 3\n\n- **PD:** 14\n\n- **Perícias:** **`Luta 3`** **`Reflexos 2`** **`Mobilidade 2`**\n\n- **MIT:** 1 no Tronco, contra dano físico. Demais Regiões: 0\n\n- **Reações:** 2 por rodada\n\n- **Alcance de Controle:** 500 m\n\n- **Regiões:** Cabeça (sensores de proximidade), Tronco (chassi e processamento), Braços (membros laminados e atuadores de resposta rápida), Pernas (quatro membros locomotores articulados)\n\n- **Sistemas:** sensores de proximidade, duas lâminas, quatro patas articuladas, estabilizadores das articulações e chassi reforçado\n\n- **Rotinas:** enfrentar, interceptar, contra-atacar, pressionar, recuar e reagrupar\n\n#### **ARMAMENTO**\n\n**LÂMINAS INTEGRADAS**\n\n| Propriedade | Valor |\n| --- | --- |\n| **Dano** | Corpo + 1d8 cortante |\n| **Alcance** | 1 m |\n| **Perícia** | **`Luta`** |\n| **Propriedades** | Sangramento, Aparar |\n\n#### **AÇÕES**\n\n- **DESLOCAR-SE** **`1 PA`**\n  Percorre até 10 m utilizando seus membros articulados. Pode realizar mudanças rápidas de direção e atravessar terrenos irregulares, realizando testes de **`Mobilidade`** quando necessário.\n\n- **ATACAR** **`2 PA`**\n  Realiza um ataque corpo a corpo com suas lâminas integradas contra uma criatura a até 1 m.\n  \n  Utilize **`Luta`** e as regras normais de ataques corpo a corpo. Em caso de acerto, causa **Corpo + 1d8 de dano cortante**, aplicando as propriedades do armamento.\n\n- **APARAR** **`Reação`**\n  Em resposta a um ataque corpo a corpo, utiliza suas lâminas para interceptar o golpe.\n  \n  Realiza um teste de **`Luta`** contra o resultado do atacante. Se obtiver um resultado superior, intercepta o ataque, evitando seu dano e efeitos.\n  \n  A ação utiliza as regras normais de **Aparar**, incluindo seus efeitos por margem de impacto.\n\n#### **CARACTERÍSTICAS**\n\n- **RESPOSTA CORTANTE · 1×/rodada**\n  Quando a Mantis utiliza **Aparar** **`Reação`** e intercepta com sucesso um ataque corpo a corpo, pode realizar imediatamente um contra-ataque com suas lâminas integradas contra o agressor, desde que ele esteja a até 1 m.\n  \n  O contra-ataque utiliza **`Luta`** e segue as regras normais de ataque, causando **Corpo + 1d8 de dano cortante**, com as propriedades do armamento.\n  \n  O agressor pode se defender normalmente.\n  \n  O contra-ataque faz parte da mesma Reação utilizada para Aparar e não consome PA adicionais.\n  \n  Os benefícios de um sucesso crítico em **Aparar** também se aplicam normalmente.\n\nDados da lista de mercadorias:\n- Função: Combate corpo a corpo\n- Raridade: Raro\n- Espaços: Carga\n- Preço (Ⱥ): 3.800",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "MÁQUINAS AUTÔNOMAS",
+        "secao": [],
+        "tipo_tabela": "Máquina",
+        "campos": {
+          "Máquina": "Mantis",
+          "Função": "Combate corpo a corpo",
+          "Raridade": "Raro",
+          "Espaços": "Carga",
+          "Preço (Ⱥ)": "3.800"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "effca216264e4ef29cfb0369dbdfca37",
+        "linhaBlocoId": "9bbf18c918744d6a8f0c865e078b8f4e",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-24",
+      "updated_at": "2026-10-24",
+      "categoria": "robo",
+      "atributos_texto": "Corpo 2, Mente 1",
+      "pericias_texto": "Luta 3 Reflexos 2 Mobilidade 2",
+      "pa_maximo": 3,
+      "pd_maximo": 14,
+      "mit": 0,
+      "alcance_controle": "500 m",
+      "regioes_texto": "Cabeça (sensores de proximidade), Tronco (chassi e processamento), Braços (membros laminados e atuadores de resposta rápida), Pernas (quatro membros locomotores articulados)",
+      "sistemas_texto": "sensores de proximidade, duas lâminas, quatro patas articuladas, estabilizadores das articulações e chassi reforçado",
+      "rotinas_texto": "enfrentar, interceptar, contra-atacar, pressionar, recuar e reagrupar",
+      "acoes": [
+        {
+          "nome": "DESLOCAR-SE",
+          "custoPA": 1,
+          "descricao": "Percorre até 10 m utilizando seus membros articulados. Pode realizar mudanças rápidas de direção e atravessar terrenos irregulares, realizando testes de **`Mobilidade`** quando necessário."
+        },
+        {
+          "nome": "ATACAR",
+          "custoPA": 2,
+          "descricao": "Realiza um ataque corpo a corpo com suas lâminas integradas contra uma criatura a até 1 m.\n\nUtilize **`Luta`** e as regras normais de ataques corpo a corpo. Em caso de acerto, causa **Corpo + 1d8 de dano cortante**, aplicando as propriedades do armamento."
+        },
+        {
+          "nome": "APARAR",
+          "descricao": "Em resposta a um ataque corpo a corpo, utiliza suas lâminas para interceptar o golpe.\n\nRealiza um teste de **`Luta`** contra o resultado do atacante. Se obtiver um resultado superior, intercepta o ataque, evitando seu dano e efeitos.\n\nA ação utiliza as regras normais de **Aparar**, incluindo seus efeitos por margem de impacto."
+        }
+      ]
+    },
+    {
+      "id": "maquinas_autonomas_harpia",
+      "slug": "maquinas_autonomas_harpia",
+      "nome": "Harpia",
+      "raridade": "muito_raro",
+      "raridade_label": "Muito Raro",
+      "preco": 5500,
+      "preco_texto": "5.500",
+      "preco_qualificador": null,
+      "descricao_curta": "*Muito Raro · Drone*",
+      "descricao_longa": "*Muito Raro · Drone*\n\nDrone de combate equipado com metralhadora integrada, propulsores vetoriais e sistemas de estabilização de tiro. Projetado para acompanhar forças terrestres e oferecer apoio de fogo aéreo, utiliza a altitude para alcançar ângulos favoráveis e pressionar inimigos com disparos automáticos.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 5.500\n\n### **HARPIA**\n\n---\n\n- **Atributos:** **`Corpo 2`**, **`Mente 1`**\n\n- **PA:** 3\n\n- **PD:** 12\n\n- **Perícias:** **`Balística 2`** **`Percepção 2`** **`Mobilidade 2`**\n\n- **MIT:** 1 no Tronco, contra dano físico. Demais Regiões: 0\n\n- **Reações:** 2 por rodada\n\n- **Alcance de Controle:** 500 m\n\n- **Regiões:** Cabeça (sensores ópticos e sistema de mira), Tronco (chassi, processamento e compartimento de munição), Braços (suporte articulado da metralhadora), Pernas (propulsores e estabilizadores de voo)\n\n- **Sistemas:** câmera, propulsores, metralhadora integrada, estabilizador de arma e compensador de recuo\n\n- **Rotinas:** acompanhar, vigiar, atacar, suprimir, reposicionar e retornar\n\n#### **ARMAMENTO**\n\n**METRALHADORA INTEGRADA**\n\n| Propriedade | Valor |\n| --- | --- |\n| **Dano** | 1d8 perfurante |\n| **Alcance eficaz** | 100 m |\n| **Alcance máximo** | 250 m, com –2 de desvantagem |\n| **Munição** | 80 balas |\n| **Consumo** | 10 balas por disparo |\n| **Propriedades** | Sangramento, Rajada (4) |\n| **Perícia** | **`Balística`** |\n\nA metralhadora utiliza as propriedades e regras normais desse armamento. Um disparo consome 10 balas. Ao utilizar Rajada (4), realiza quatro disparos em uma única ação de ataque, consumindo 40 balas e sofrendo –1 de desvantagem no teste.\n\n#### **AÇÕES**\n\n- **DESLOCAR-SE** **`1 PA`**\n  Voa até 12 m utilizando seus propulsores vetoriais. Pode subir, descer e mudar de direção durante o deslocamento, respeitando os obstáculos e as condições do ambiente.\n\n- **ATACAR** **`2 PA`**\n  Realiza um ataque à distância com sua metralhadora integrada contra um alvo válido, utilizando **`Balística`**.\n  \n  Pode realizar um disparo normal ou utilizar Rajada (4), consumindo a munição correspondente.\n\n#### **CARACTERÍSTICAS**\n\n- **ÂNGULO ELEVADO**\n  A Harpia utiliza seu posicionamento aéreo e o sistema estabilizado de mira para explorar ângulos de tiro descendentes.\n  \n  Enquanto estiver voando a pelo menos 3 m acima do alvo, seus ataques ignoram a penalidade de **Cobertura parcial** proporcionada por obstáculos baixos ou proteções frontais que não bloqueiem sua linha de tiro.\n  \n  Essa característica não permite ignorar Cobertura maior ou total.\n  \n  A diferença de altura também pode conceder os benefícios normais de terreno elevado, conforme as regras de combate.\n\n- **SUPRESSÃO AÉREA**\n  Quando a Harpia utiliza **Rajada (4)** com sua metralhadora integrada e acerta o alvo, este também sofre **–1 de desvantagem** na próxima ação ofensiva que realizar durante **1 rodada**.\n  \n  O ataque mantém o custo, o consumo de munição e a penalidade normais de Rajada (4).\n  \n  O efeito de supressão é aplicado apenas uma vez por ataque, independentemente da quantidade de disparos que acertarem o alvo.\n\nDados da lista de mercadorias:\n- Função: Supressão aérea\n- Raridade: Muito Raro\n- Espaços: Carga\n- Preço (Ⱥ): 5.500",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "MÁQUINAS AUTÔNOMAS",
+        "secao": [],
+        "tipo_tabela": "Máquina",
+        "campos": {
+          "Máquina": "Harpia",
+          "Função": "Supressão aérea",
+          "Raridade": "Muito Raro",
+          "Espaços": "Carga",
+          "Preço (Ⱥ)": "5.500"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "effca216264e4ef29cfb0369dbdfca37",
+        "linhaBlocoId": "d8b54b43e9004997beb0d69675103e40",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-24",
+      "updated_at": "2026-10-24",
+      "categoria": "drone",
+      "atributos_texto": "Corpo 2, Mente 1",
+      "pericias_texto": "Balística 2 Percepção 2 Mobilidade 2",
+      "pa_maximo": 3,
+      "pd_maximo": 12,
+      "mit": 0,
+      "alcance_controle": "500 m",
+      "regioes_texto": "Cabeça (sensores ópticos e sistema de mira), Tronco (chassi, processamento e compartimento de munição), Braços (suporte articulado da metralhadora), Pernas (propulsores e estabilizadores de voo)",
+      "sistemas_texto": "câmera, propulsores, metralhadora integrada, estabilizador de arma e compensador de recuo",
+      "rotinas_texto": "acompanhar, vigiar, atacar, suprimir, reposicionar e retornar",
+      "acoes": [
+        {
+          "nome": "DESLOCAR-SE",
+          "custoPA": 1,
+          "descricao": "Voa até 12 m utilizando seus propulsores vetoriais. Pode subir, descer e mudar de direção durante o deslocamento, respeitando os obstáculos e as condições do ambiente."
+        },
+        {
+          "nome": "ATACAR",
+          "custoPA": 2,
+          "descricao": "Realiza um ataque à distância com sua metralhadora integrada contra um alvo válido, utilizando **`Balística`**.\n\nPode realizar um disparo normal ou utilizar Rajada (4), consumindo a munição correspondente."
+        }
+      ]
+    },
+    {
+      "id": "maquinas_autonomas_prisma",
+      "slug": "maquinas_autonomas_prisma",
+      "nome": "Prisma",
+      "raridade": "muito_raro",
+      "raridade_label": "Muito Raro",
+      "preco": 4200,
+      "preco_texto": "4.200",
+      "preco_qualificador": null,
+      "descricao_curta": "*Muito Raro · Drone*",
+      "descricao_longa": "*Muito Raro · Drone*\n\nPequeno drone flutuante equipado com lentes móveis, cristais e circuitos rúnicos. Seu núcleo de refração manipula a trajetória de projéteis e feixes energéticos, permitindo que aliados realizem ataques a partir de ângulos normalmente inacessíveis. Também possui um emissor próprio para confrontos diretos.\n\n- **Espaços:** Carga\n\n- **Preço:** Ⱥ 4.200\n\n### **PRISMA**\n\n---\n\n- **Atributos:** **`Corpo 0`**, **`Mente 2`**\n\n- **PA:** 3\n\n- **PD:** 8\n\n- **Perícias:** **`Tecnomagia 2`** **`Balística 2`** **`Percepção 2`** **`Mobilidade 1`**\n\n- **MIT:** 0\n\n- **Reações:** 3 por rodada\n\n- **Alcance de Controle:** 500 m\n\n- **Regiões:** Cabeça (sensores ópticos e lentes de aquisição), Tronco (núcleo de cristalídeo e processamento), Braços (lentes móveis e emissores), Pernas (propulsores tecnomágicos)\n\n- **Sistemas:** câmera, lentes móveis, núcleo de refração, circuito rúnico de orientação, emissor de energia e propulsores tecnomágicos\n\n- **Rotinas:** acompanhar, posicionar, refratar, disparar, reposicionar e retornar\n\n#### **ARMAMENTO**\n\n**FEIXE PRISMÁTICO**\n\n| Propriedade | Valor |\n| --- | --- |\n| **Dano** | 1d6 ígneo |\n| **Alcance eficaz** | 30 m |\n| **Alcance máximo** | 60 m, com –2 de desvantagem |\n| **Cargas** | 8 |\n| **Propriedades** | Precisão |\n| **Perícia** | **`Balística`** |\n\nO emissor concentra energia de cristalídeo em um feixe estreito, disparado diretamente contra o alvo. Cada disparo consome uma carga.\n\n#### **AÇÕES**\n\n- **DESLOCAR-SE** **`1 PA`**\n  Voa até 12 m utilizando seus propulsores tecnomágicos. Pode subir, descer e mudar de direção durante o deslocamento, respeitando obstáculos e condições ambientais.\n\n- **ATACAR** **`2 PA`**\n  Realiza um ataque à distância com seu Feixe Prismático contra um alvo válido, utilizando **`Balística`**.\n  \n  O ataque segue as regras normais de ataques à distância e consome uma carga do emissor.\n\n#### **CARACTERÍSTICAS**\n\n- **REFRAÇÃO TÁTICA** **`Reação`** · 1×/rodada\n  Quando um aliado realiza um ataque à distância com uma arma de fogo ou de energia, o Prisma pode utilizar seu núcleo de refração para redirecionar o disparo através de suas lentes.\n  \n  Para isso, o aliado precisa ter uma trajetória desobstruída até o Prisma, e o Prisma precisa ter linha de visão e de efeito até o alvo.\n  \n  O ataque é realizado normalmente pelo aliado, utilizando sua própria perícia, arma, dano e propriedades. Entretanto, o disparo percorre dois segmentos:\n  \n  1. Do atacante até o Prisma.\n  \n  1. Do Prisma até o alvo.\n  \n  A distância total percorrida é utilizada para determinar o alcance do armamento e suas penalidades. A cobertura do alvo é avaliada a partir da posição do Prisma.\n  \n  O Prisma transmite a posição do alvo ao atacante durante a refração, permitindo que ele ataque uma criatura que não consiga enxergar diretamente, desde que as duas trajetórias sejam válidas.\n  \n  A característica permite redirecionar um disparo direcionado contra uma única criatura. Não se aplica a Rajada, ataques em área ou conjurações de magia.\n  \n  A Refração Tática não consome PA nem munição adicionais do atacante, mas utiliza uma Reação do Prisma.\n  \n  **EXEMPLO DE UTILIZAÇÃO**\n  \n  Um aliado não possui uma trajetória direta até um inimigo, pois uma barreira bloqueia o disparo. O Prisma está posicionado acima da cobertura, com uma trajetória livre a partir do aliado e outra até o inimigo.\n  \n  O disparo pode percorrer o trajeto **Aliado → Prisma → Inimigo**, contornando a barreira. A distância total dos dois segmentos determina o alcance do armamento, e a cobertura é avaliada a partir da posição do Prisma.\n\nDados da lista de mercadorias:\n- Função: Refração tática\n- Raridade: Muito Raro\n- Espaços: Carga\n- Preço (Ⱥ): 4.200",
+      "tags": [
+        "loja"
+      ],
+      "dados_notion": {
+        "pagina": "MÁQUINAS AUTÔNOMAS",
+        "secao": [],
+        "tipo_tabela": "Máquina",
+        "campos": {
+          "Máquina": "Prisma",
+          "Função": "Refração tática",
+          "Raridade": "Muito Raro",
+          "Espaços": "Carga",
+          "Preço (Ⱥ)": "4.200"
+        },
+        "tabela_tecnica": null
+      },
+      "fonte_notion": {
+        "paginaNotionId": "7a00a13635528396b33501c34c719d2a",
+        "paginaEditadaEm": "2026-10-23T00:39:00.000Z",
+        "tabelaBlocoId": "effca216264e4ef29cfb0369dbdfca37",
+        "linhaBlocoId": "41b0393fd3404875977bcac5fdba8321",
+        "tabelaTecnicaFonte": null
+      },
+      "vinculos_sugeridos": null,
+      "uso_manual": true,
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-10-24",
+      "updated_at": "2026-10-24",
+      "categoria": "drone",
+      "atributos_texto": "Corpo 0, Mente 2",
+      "pericias_texto": "Tecnomagia 2 Balística 2 Percepção 2 Mobilidade 1",
+      "pa_maximo": 3,
+      "pd_maximo": 8,
+      "mit": 0,
+      "alcance_controle": "500 m",
+      "regioes_texto": "Cabeça (sensores ópticos e lentes de aquisição), Tronco (núcleo de cristalídeo e processamento), Braços (lentes móveis e emissores), Pernas (propulsores tecnomágicos)",
+      "sistemas_texto": "câmera, lentes móveis, núcleo de refração, circuito rúnico de orientação, emissor de energia e propulsores tecnomágicos",
+      "rotinas_texto": "acompanhar, posicionar, refratar, disparar, reposicionar e retornar",
+      "acoes": [
+        {
+          "nome": "DESLOCAR-SE",
+          "custoPA": 1,
+          "descricao": "Voa até 12 m utilizando seus propulsores tecnomágicos. Pode subir, descer e mudar de direção durante o deslocamento, respeitando obstáculos e condições ambientais."
+        },
+        {
+          "nome": "ATACAR",
+          "custoPA": 2,
+          "descricao": "Realiza um ataque à distância com seu Feixe Prismático contra um alvo válido, utilizando **`Balística`**.\n\nO ataque segue as regras normais de ataques à distância e consome uma carga do emissor."
+        }
+      ]
     }
   ]
 }

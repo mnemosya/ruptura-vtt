@@ -30,7 +30,7 @@ const subclassModules: Record<string, Module> = {
   perito: { key: "dossier", title: "Dossiê", subtitle: "Alvo e até três deduções", feature: "Dossiê", icon: ClipboardList },
   mercador: { key: "trade", title: "Negociações", subtitle: "Intermediação e reserva própria", feature: "Intermediação", icon: ClipboardList },
   artifice: { key: "workshop", title: "Oficina", subtitle: "Modificações e projetos", feature: "Oficina", icon: Wrench },
-  maquinista: { key: "machines", title: "Máquinas vinculadas", subtitle: "Modos e comando das unidades", feature: "Modos de Operação", icon: Radio },
+  roboticista: { key: "machines", title: "Máquinas vinculadas", subtitle: "IA, Sistemas e vínculos", feature: "Núcleo de IA", icon: Radio },
   tecelao: { key: "weave", title: "Unidades na Trama", subtitle: "Posição digital e processamento", feature: "Unidades na Trama", icon: Radio },
   biomecanico: { key: "bio", title: "Procedimento Biomecânico", subtitle: "Equipamentos e limites", feature: "Procedimento Biomecânico", icon: Wrench },
   icone: { key: "persona", title: "Persona Pública", subtitle: "Identidade e mobilização", feature: "Persona Pública", icon: Users },

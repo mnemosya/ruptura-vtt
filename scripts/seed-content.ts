@@ -25,6 +25,7 @@
  *   CONTENT_DIR=./content \
  *   npx tsx scripts/seed-content.ts
  * Para publicar só tipos selecionados: SEED_CONTENT_TYPES=spell (lista separada por vírgulas).
+ * Para limitar a documentos específicos: SEED_DOCUMENT_IDS=class:tecnico,subclass:roboticista.
  *
  * CONTENT_DIR deve conter o manifesto e todos os db_*.json.
  *
@@ -242,6 +243,7 @@ const SOURCES: SourceSpec[] = [
 /** Arquivos com o formato RulesetContentBundleV12 (catálogos do Notion têm contrato próprio). */
 const RULESET_V12_BUNDLES = [...new Set(SOURCES.filter((s) => /^v12\/db_(classe_|trajetoria_)/.test(s.file)).map((s) => s.file))];
 const TIPOS_SELECIONADOS = new Set((process.env.SEED_CONTENT_TYPES ?? "").split(",").map((s) => s.trim()).filter(Boolean));
+const IDS_SELECIONADOS = new Set((process.env.SEED_DOCUMENT_IDS ?? "").split(",").map((s) => s.trim()).filter(Boolean));
 const FONTES_SELECIONADAS = TIPOS_SELECIONADOS.size ? SOURCES.filter((s) => TIPOS_SELECIONADOS.has(s.contentType)) : SOURCES;
 if (FONTES_SELECIONADAS.length === 0) throw new Error("SEED_CONTENT_TYPES não selecionou nenhuma fonte conhecida.");
 
@@ -251,6 +253,15 @@ if (FONTES_SELECIONADAS.length === 0) throw new Error("SEED_CONTENT_TYPES não s
 function readJson<T = any>(file: string): T {
   const path = join(CONTENT_DIR, file);
   return JSON.parse(readFileSync(path, "utf8")) as T;
+}
+
+function selectRows(rows: DocumentRow[]): DocumentRow[] {
+  if (!IDS_SELECIONADOS.size) return rows;
+  const selected = rows.filter((row) => IDS_SELECIONADOS.has(row.id));
+  const found = new Set(selected.map((row) => row.id));
+  const missing = [...IDS_SELECIONADOS].filter((id) => !found.has(id));
+  if (missing.length) throw new Error(`SEED_DOCUMENT_IDS não encontrou: ${missing.join(", ")}`);
+  return selected;
 }
 
 function asString(v: unknown): string | null {
@@ -525,7 +536,7 @@ async function main(): Promise<void> {
 
   if (DRY_RUN) {
     const pkg = manifest.package ?? {};
-    const rows = FONTES_SELECIONADAS.flatMap((spec) => buildRowsForSource(spec, pkg.id, pkg.version));
+    const rows = selectRows(FONTES_SELECIONADAS.flatMap((spec) => buildRowsForSource(spec, pkg.id, pkg.version)));
     const ids = new Set<string>();
     for (const r of rows) {
       if (ids.has(r.id)) throw new Error(`id duplicado: ${r.id}`);
@@ -567,8 +578,9 @@ async function main(): Promise<void> {
   }
 
   // Busca estado atual para decidir created/updated/sem-mudança.
-  const existing = await fetchExisting(supabase, allRows.map((r) => r.id));
-  const classified = classifyRows(allRows, existing);
+  const selectedRows = selectRows(allRows);
+  const existing = await fetchExisting(supabase, selectedRows.map((r) => r.id));
+  const classified = classifyRows(selectedRows, existing);
 
   // Só escreve o que de fato mudou (ou é novo).
   await upsertDocuments(supabase, classified.toInsertOrUpdate);
@@ -576,7 +588,7 @@ async function main(): Promise<void> {
 
   // Contagem final por content_type (sobre o estado alvo, não só o que mudou).
   const counts = new Map<string, number>();
-  for (const r of allRows) {
+  for (const r of selectedRows) {
     counts.set(r.content_type, (counts.get(r.content_type) ?? 0) + 1);
   }
   console.log("\nContagem final por content_type:");
@@ -584,7 +596,7 @@ async function main(): Promise<void> {
     console.log(`  ${ct.padEnd(16)} ${counts.get(ct)}`);
   }
   console.log(
-    `\nTotal: ${allRows.length} documentos ` +
+    `\nTotal: ${selectedRows.length} documentos ` +
       `(created=${classified.createdCount}, updated=${classified.updatedCount}, ` +
       `sem_mudanca=${classified.unchangedCount}).`,
   );

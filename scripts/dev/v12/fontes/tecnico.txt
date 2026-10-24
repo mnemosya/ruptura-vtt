@@ -12,7 +12,7 @@ Durante uma cena, o Técnico instala dispositivos que podem reparar, controlar, 
 Alguns Técnicos modificam armas, armaduras e ferramentas. Outros operam sobre escalpos, coordenam drones e robôs ou mergulham na Malha para controlar sistemas conectados. Escolha esta classe se quiser preparar o ambiente, integrar diferentes equipamentos e construir uma infraestrutura que se torne mais capaz conforme a operação avança.
 | Papel principal | Engenharia |
 | Papéis secundários | Reparo, automação, controle de sistemas e suporte técnico |
-| Subclasses | Artífice, Biomecânico, Maquinista e Tecelão |
+| Subclasses | Artífice, Biomecânico, Roboticista e Tecelão |
 # CRIANDO UM TÉCNICO
 ### 1. ATRIBUTOS
 Distribua 4 pontos entre Corpo, Mente e Ânimo, utilizando uma das distribuições abaixo. Os valores podem ser atribuídos livremente aos três atributos.
@@ -34,9 +34,9 @@ Determine seus recursos iniciais:
 ### 3. PERÍCIAS
 1. Escolha um perfil para determinar seus níveis iniciais de perícia:
 | Perfil | Valor 1 | Valor 2 | Valor 3 | Total |
-| Abrangente | 10 | 4 | 1 | 21 |
-| Padrão | 7 | 3 | 2 | 19 |
-| Especializado | 3 | 2 | 3 | 16 |
+| Abrangente | 8 | 5 | 1 | 21 |
+| Padrão | 5 | 4 | 2 | 19 |
+| Especializado | 4 | 2 | 3 | 17 |
 2. Escolha suas perícias de valor 3 entre:
 Engenharia Furtividade Lógica Robótica Tecnomagia Biologia
 3. Escolha suas perícias de valor 2 entre:
@@ -127,12 +127,12 @@ Até o início do seu próximo turno, a Unidade acompanha esse alvo. Você sabe 
 Monitoramento só detecta acontecimentos que os sensores ou meios de percepção da Unidade seriam capazes de perceber.
 > *Exemplo: uma Unidade posicionada diante de uma entrada pode Monitorar a porta e avisar você imediatamente caso ela seja aberta, danificada ou utilizada.*
 ### RANKING E
-Escolha uma Subclasse de Técnico: Artífice, Biomecânico, Maquinista ou Tecelão.
+Escolha uma Subclasse de Técnico: Artífice, Biomecânico, Roboticista ou Tecelão.
 Você recebe a primeira Característica de Subclasse no Ranking E e recebe novas características da mesma subclasse nos Rankings C e A.
 | Subclasse | Identidade e funcionamento |
 | Artífice | Fabrica e modifica equipamentos, combinando ajustes técnicos e runas. |
 | Biomecânico | Instala, recupera, recalibra e potencializa escalpos. |
-| Maquinista | Controla e programa drones e robôs acoplados às suas Unidades. |
+| Roboticista | Controla e programa drones e robôs acoplados às suas Unidades. |
 | Tecelão | Distribui suas Unidades pela Trama para executar Comandos e controlar sistemas da Malha. |
 As Características de Subclasse podem alterar a maneira como você constrói, instala e opera suas Unidades de Campo e como suas Funções interagem com outros sistemas.
 ### RANKING D
@@ -217,7 +217,7 @@ Cada Subclasse de Técnico representa uma maneira diferente de especializar suas
 | Subclasse | Identidade e funcionamento |
 | Artífice | Fabrica e modifica equipamentos, combinando ajustes técnicos e runas. |
 | Biomecânico | Instala, recupera, recalibra e potencializa escalpos. |
-| Maquinista | Controla e programa drones e robôs acoplados às suas Unidades. |
+| Roboticista | Controla e programa drones e robôs acoplados às suas Unidades. |
 | Tecelão | Distribui suas Unidades pela Trama para executar Comandos e controlar sistemas da Malha. |
 ## ARTÍFICE
 Artífices transformam equipamentos em soluções ajustadas para cada operação. Reforçam peças vulneráveis, recalibram ferramentas, alteram o funcionamento de armas e integram runas, escalpos e dispositivos por meio de modificações próprias.
@@ -289,37 +289,74 @@ Ao iniciar a fabricação de um item, escolha uma Modificação compatível. Acr
 Uma Modificação incorporada dessa forma não conta para o seu limite e não pode ser removida ou substituída. O equipamento ainda pode receber outra Modificação normalmente.
 Você pode possuir uma quantidade de equipamentos com Modificações permanentes igual à sua Mente, mínimo de 1. Depois de alcançar esse limite, não pode incorporar outra Modificação enquanto um desses equipamentos ainda existir.
 Você também pode incorporar uma Modificação ao equipamento produzido por seu Projeto Híbrido, desde que ela seja compatível com suas duas configurações.
-## MAQUINISTA
-Maquinistas são especialistas no controle e na programação de drones e robôs. Conectam essas máquinas às suas Unidades de Campo para operá-las diretamente, ampliar sua autonomia e coordenar suas ações durante uma operação.
-Alguns trabalham com pequenos drones de reconhecimento e intervenção. Outros preferem autômatos industriais, plataformas de combate ou máquinas construídas para funções específicas. Em todos os casos, suas características funcionam com qualquer drone ou robô que possuam, obtenham ou assumam durante o jogo. Cada máquina conserva sua própria ficha, ações, atributos, PD, alcance e espaços de runa.
+## ROBOTICISTA
+Roboticistas desenvolvem inteligências artificiais capazes de operar Máquinas Autônomas sem supervisão constante. Suas criações interpretam objetivos, tomam decisões e adaptam seu comportamento às circunstâncias, permitindo que drones e robôs executem tarefas enquanto o Roboticista se dedica a outras atividades.
+Sua especialidade também abrange a manutenção e a modificação dessas máquinas. Roboticistas recuperam unidades destruídas, transferem Sistemas entre diferentes modelos e exploram vulnerabilidades no funcionamento de equipamentos adversários.
 ### RANKING E
-Você adquire as características Modos de Operação, Domínio Técnico e Reconstrução.
-#### MODOS DE OPERAÇÃO
-Enquanto uma Unidade de Campo estiver acoplada a um drone ou robô, você pode operá-los de uma das seguintes formas:
-- Controle direto: você utiliza seus próprios PA e atributos para executar as ações da máquina. Ela não age autonomamente enquanto estiver sob seu controle direto.
-- Operação autônoma: a máquina utiliza seus próprios atributos para seguir a programação recebida. Durante seu turno, você pode gastar 1 PA para comandá-la. Quando comandada, ela recebe todos os PA indicados em sua ficha em sua ativação. Caso não seja comandada, recebe apenas 1 PA, que pode utilizar para se deslocar, procurar proteção ou executar uma ação defensiva descrita em sua ficha. Ela age logo depois do seu turno e não conta para a alternância de turnos de PJ e PN.
-Alternar entre essas formas custa 1 PA. Quando você assume o controle direto, quaisquer PA que a máquina ainda possua naquela rodada são perdidos. Quando encerra o controle, ela retorna à programação anterior.
-Você pode perceber através dos sensores de uma máquina acoplada. A Unidade também pode utilizar esses sensores para perceber acontecimentos e escolher alvos para suas Funções.
-#### DOMÍNIO TÉCNICO
-Uma falha limitada em um teste de Robótica para controlar ou programar uma máquina acoplada conta como sucesso limitado.
+Você adquire as características Vínculo Expandido, Núcleo de IA e Reconstrução.
+#### VÍNCULO EXPANDIDO
+Você pode manter **1 Máquina Autônoma adicional** vinculada a você, além do limite determinado por sua `Robótica`.
+#### NÚCLEO DE IA
+Você desenvolve uma inteligência artificial capaz de interpretar objetivos, tomar decisões e operar uma Máquina Autônoma sem supervisão constante.
+**INSTALAÇÃO E LIMITE**
+Você pode instalar uma IA em uma máquina vinculada a você que possua uma de suas Unidades de Campo acoplada. A instalação ocorre junto ao acoplamento, sem custo adicional.
+Cada Unidade de Campo pode sustentar **1 IA ativa**, desde que instalada em uma máquina diferente. Todas continuam sujeitas ao seu limite de Vínculos de Controle.
+Uma máquina não pode acumular os PA autônomos de diferentes IAs. Instalar seu Núcleo de IA não remove nem substitui automaticamente uma inteligência artificial preexistente ou suas proteções.
+**PA AUTÔNOMOS**
+Cada máquina equipada com IA recebe **1 PA autônomo por rodada**, que pode utilizar sem consumir os PA pessoais do Roboticista.
+Você pode complementar o custo das ações da máquina com seus próprios PA. Utilize primeiro os PA autônomos disponíveis e pague a diferença, sem custos adicionais para transmitir comandos.
+A máquina utiliza seus próprios atributos, perícias e recursos. O total de PA utilizados por ela, incluindo os fornecidos por você, não pode ultrapassar o limite indicado em sua ficha. Os PA autônomos não podem ser transferidos entre máquinas.
+**ORDENS E COMPORTAMENTO**
+A IA pode receber objetivos complexos e adaptar suas decisões às circunstâncias. Uma ordem permanece válida até ser concluída, substituída ou se tornar impossível de executar. Transmitir ou modificar ordens não exige PA.
+**ATIVAÇÕES**
+Em cenas estruturadas, suas máquinas com IA agem durante sua ativação, sem ocupar posições adicionais na alternância de turnos.
+Você pode distribuir seus PA entre suas próprias ações e as das máquinas. O total de PA utilizados determina a janela de turno, e a ativação compartilhada pode ser fragmentada apenas uma vez por rodada.
+**OPERAÇÃO INDEPENDENTE**
+Se a comunicação for interrompida, a IA continua executando seu último objetivo com seus PA autônomos, mas não pode receber novas ordens nem utilizar PA fornecidos por você até que a conexão seja restabelecida.
+Se você estiver incapacitado ou não participar da cena, suas máquinas com IA compartilham uma única posição na alternância, utilizando apenas seus PA autônomos. Essa ativação respeita as janelas de turno e o limite de uma fragmentação por rodada.
+**CONTINUIDADE DA IA**
+Enquanto sustentar uma IA, a Unidade de Campo pode continuar executando suas outras Funções, respeitando os custos e requisitos normais.
+Se a Unidade for recolhida, desacoplada ou ficar Inativa, a IA deixa de funcionar e a máquina retorna à operação convencional.
 #### RECONSTRUÇÃO
-Você também pode reconstruir um drone ou robô destruído caso recupere seus componentes principais. A reconstrução exige 8 horas de trabalho, materiais equivalentes a 25% do preço da máquina e um teste de Robótica contra sua CD. Em falha, o tempo é gasto, mas os materiais podem ser reutilizados em outra tentativa.
+Você pode reconstruir Máquinas Autônomas destruídas, desde que seus componentes principais ainda possam ser recuperados.
+O procedimento exige ferramentas apropriadas, **8 horas de trabalho** e materiais equivalentes a **25% do preço original** da máquina.
+Ao concluir a reconstrução, a máquina recupera seus PD máximos e volta a funcionar com suas características originais. Munições, runas e componentes perdidos ou destruídos precisam ser repostos separadamente.
 ### RANKING C
-Você adquire as características Resposta Mecânica e Intervenção Direta.
-#### RESPOSTA MECÂNICA
-O Protocolo de uma Unidade acoplada pode utilizar uma ação da máquina como Resposta. Quando o Gatilho ocorrer, a máquina executa a ação com seus próprios atributos e PA. Ela precisa estar em operação autônoma e ser capaz de realizar a ação.
-#### INTERVENÇÃO DIRETA
-Uma vez por rodada, quando uma máquina acoplada falhar em um teste durante sua operação autônoma, você pode gastar 1 PA para repetir o teste utilizando seus próprios atributos. Você deve utilizar o novo resultado. Essa intervenção não altera a forma de operação da máquina.
+Você adquire as características Autonomia Aprimorada, Reconfiguração Modular e Intrusão Mecânica.
+#### AUTONOMIA APRIMORADA
+Suas inteligências artificiais passam a receber **2 PA autônomos por rodada**, em vez de 1.
+#### RECONFIGURAÇÃO MODULAR
+Você pode transferir um Sistema de uma Máquina Autônoma para outra, desde que ele seja compatível com a estrutura e os componentes da máquina receptora.
+A transferência exige **10 minutos de trabalho**, ferramentas apropriadas e acesso físico às duas máquinas. Cada máquina pode receber apenas **1 Sistema adicional** por meio desta característica.
+O Sistema deixa de funcionar na máquina de origem e passa a integrar a receptora, seguindo estas regras:
+- **Funcionalidade:** a máquina receptora adquire as capacidades físicas e tecnológicas do Sistema transferido.
+- **Ações:** as ações associadas ao Sistema também ficam disponíveis, utilizando os atributos, perícias e PA da máquina receptora, mas preservando seus custos e efeitos originais.
+- **Autonomia:** se possuir uma de suas IAs, a máquina poderá utilizar o Sistema autonomamente, respeitando suas capacidades e os PA disponíveis.
+- **Recursos:** munições, cargas e outros consumíveis acompanham o Sistema, mantendo suas quantidades restantes.
+A transferência não concede atributos, perícias, PA, PD ou características próprias da máquina de origem. Também não permite transferir componentes essenciais ao funcionamento de seu chassi.
+A modificação permanece até que o Sistema seja removido ou substituído, sem criar ou duplicar equipamentos.
+#### INTRUSÃO MECÂNICA
+**Interferir em Sistema** `2 PA` · **1×/rodada**
+Você pode interferir no funcionamento de uma Máquina Autônoma que não esteja sob seu controle.
+Para isso, precisa acessar uma interface física de manutenção ou operação, pessoalmente ou por meio de uma máquina equipada com Sistemas apropriados. As ações necessárias para estabelecer esse acesso mantêm seus custos normais.
+Faça um teste de `Robótica` contra a CD de segurança do Nó da máquina. Se essa CD não estiver definida, utilize a de sua Trama de Controle ou uma dificuldade determinada pelo Narrador.
+Se obtiver sucesso, escolha um Sistema acessível e aplique um dos seguintes efeitos:
+- **Acionar:** force o Sistema a realizar uma operação simples, como abrir um compartimento, liberar uma trava ou recolher placas defensivas. Esse efeito não permite executar ataques, deslocamentos ou outras ações completas da máquina.
+- **Interromper:** desative o Sistema até o final da próxima ativação da máquina, impedindo o uso de suas capacidades durante esse período.
+Em caso de falha, a interferência não produz efeito.
+Intrusão Mecânica não altera o Vínculo de Controle nem permite assumir o controle geral da máquina. Um mesmo Sistema só pode ser afetado por esta característica uma vez por cena.
 ### RANKING A
-Você adquire as características Enxame e Overclock.
-#### ENXAME
-Uma vez por dia, você pode designar até 4 modelos idênticos de drones ou 2 modelos de robôs como “pareados”. Enquanto permanecerem ativos, todos respondem a seus comandos como uma unidade coordenada. Uma máquina só permanece pareada enquanto estiver a até 20 m de você ou de uma de suas Unidades ativas e puder receber seus sinais.
-Uma única Unidade pode manter acopladas todas as máquinas pareadas do mesmo modelo para fins das características desta subclasse.
-Para cada ação específica que você ordena, escolha se quer executá-la:
-- Pareada: todos as máquinas designadas executam a mesma ação de forma simultânea, cada um rolando e aplicando resultados separadamente, sem custo extra de PA.
-- Independente: as máquinas agem de forma separada, cada uma podendo receber comandos diferentes (custando PA normalmente para cada ação).
-#### OVERCLOCK
-Uma vez por cena, ao comandar seu Enxame, você pode ativar seu Overclock. Ao fazer isso, todas as suas máquinas pareadas em operação autônoma recebem 2 PA adicionais até o final da rodada.
+Você adquire as características Autonomia Plena e Reconfiguração de Emergência.
+#### AUTONOMIA PLENA
+Suas inteligências artificiais passam a receber **3 PA autônomos por rodada**, em vez de 2.
+Mesmo quando você contribui com seus próprios PA, cada máquina continua sujeita ao limite de PA indicado em sua ficha.
+#### RECONFIGURAÇÃO DE EMERGÊNCIA
+**Alternar Sistemas** `1 PA` · **1×/rodada**
+Você pode preparar uma Máquina Autônoma para alternar rapidamente entre dois Sistemas intercambiáveis.
+A preparação exige **10 minutos de trabalho**, ferramentas apropriadas e ambos os Sistemas instalados em suportes compatíveis. Um deles permanece ativo, enquanto o outro fica em reserva. Apenas o Sistema ativo pode ser utilizado e conta para o limite de Reconfiguração Modular.
+Enquanto mantiver comunicação com a máquina, você pode utilizar **Alternar Sistemas** para trocar remotamente qual dos dois Sistemas está ativo.
+A troca não recupera munições ou cargas, não repara danos nem concede PA ou ativações adicionais.
+Cada máquina pode manter apenas um conjunto de Sistemas intercambiáveis, que permanece preparado até ser desmontado ou modificado com ferramentas apropriadas.
 ## TECELÃO
 Tecelões transformam a Malha numa extensão de sua infraestrutura. Distribuem suas Unidades de Campo pela Trama, observam sistemas a partir de diferentes posições e mantêm processos preparados junto aos Nós que pretendem controlar.
 Alguns utilizam Decks Sinápticos e bibliotecas especializadas. Outros estabelecem a conexão por meio de magia Sináptica. Em ambos os casos, suas Unidades permitem que continuem operando em pontos pelos quais já passaram, sustentando controle sobre a Trama enquanto avançam em direção ao objetivo.

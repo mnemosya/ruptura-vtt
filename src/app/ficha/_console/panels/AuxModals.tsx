@@ -416,6 +416,7 @@ export function SurgePickerModal({
   usada,
   limite,
   dado,
+  marcas,
   onEscolher,
   onFechar,
 }: {
@@ -423,18 +424,19 @@ export function SurgePickerModal({
   limite: number;
   /** Dado do dano psíquico por ponto (ex.: "1d4"). */
   dado: string;
+  marcas: string[];
   onEscolher: (tipo: string, pontos: number) => void;
   onFechar: () => void;
 }) {
   const restante = Math.max(0, limite - usada);
-  const primeiroDisponivel = SURTOS_SOBRECARGA.find((s) => s.custo.min <= restante) ?? SURTOS_SOBRECARGA[0];
+  const primeiroDisponivel = SURTOS_SOBRECARGA.find((s) => s.custo.min <= restante && (!s.exigeMarcaId || marcas.includes(s.exigeMarcaId))) ?? SURTOS_SOBRECARGA[0];
   const [nome, setNome] = useState(primeiroDisponivel.nome);
   const [pontosUrgencia, setPontosUrgencia] = useState(1);
   const [enviando, setEnviando] = useState(false);
   const surto = SURTOS_SOBRECARGA.find((s) => s.nome === nome) ?? primeiroDisponivel;
   const maxPontos = Math.min(surto.custo.max, restante);
   const pontos = surto.custo.min === surto.custo.max ? surto.custo.min : Math.min(Math.max(pontosUrgencia, surto.custo.min), Math.max(surto.custo.min, maxPontos));
-  const disponivel = surto.custo.min <= restante;
+  const disponivel = surto.custo.min <= restante && (!surto.exigeMarcaId || marcas.includes(surto.exigeMarcaId));
   const depois = Math.min(limite, usada + pontos);
   const chegaAoLimite = disponivel && depois >= limite;
   const Icone = ICONE_SURTO[surto.nome] ?? Zap;
@@ -466,11 +468,11 @@ export function SurgePickerModal({
             <div className="sx-lista" role="listbox" aria-label="Surtos">
               {SURTOS_SOBRECARGA.map((s) => {
                 const Ic = ICONE_SURTO[s.nome] ?? Zap;
-                const ok = s.custo.min <= restante;
+                const ok = s.custo.min <= restante && (!s.exigeMarcaId || marcas.includes(s.exigeMarcaId));
                 return (
                   <button key={s.nome} type="button" role="option" aria-selected={s.nome === nome} className="sx-item"
                     data-sel={s.nome === nome || undefined} disabled={!ok || enviando} onClick={() => setNome(s.nome)}
-                    title={ok ? undefined : "Passaria do limite de Sobrecarga"}>
+                    title={ok ? undefined : s.exigeMarcaId && !marcas.includes(s.exigeMarcaId) ? "Exige a Marca de Ruptura correspondente" : "Passaria do limite de Sobrecarga"}>
                     <Ic size={16} aria-hidden="true" />
                     <span className="sx-item-nome">{nomeCurto(s.nome)}</span>
                     <span className="sx-custo">{s.custo.min === s.custo.max ? s.custo.min : `${s.custo.min}–${s.custo.max}`}</span>

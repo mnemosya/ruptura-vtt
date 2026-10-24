@@ -4,7 +4,7 @@
  * com as ações das três cenas (combate, investigação e Trama) num formato só.
  *
  * Fontes:
- * - combate: `fontes/combate_v12.md` (cópia do Notion, cap. 22. CENAS DE COMBATE);
+ * - combate: `fontes/combate_v12_notion_atual.md` (cópia do Notion, cap. 22. CENAS DE COMBATE);
  * - Trama: `fontes/trama_v12.md` (cópia do Notion, cap. 24. TECENDO A MALHA);
  * - investigação: `content/v12/db_investigacao_v1_2.json` (já transcrito).
  *
@@ -44,6 +44,7 @@ function limpar(md) {
     .replace(/\*\*\s*\*\*/g, " ")
     .replace(/^---\s*$/gm, "")
     .replace(/[  ]+\n/g, "\n")
+    .replace(/^-\s*\n\s*/gm, "- ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
@@ -107,9 +108,10 @@ function semFilhos(corpo) {
 // Combate (cap. 22)
 // ---------------------------------------------------------------------------
 
-const combateMd = readFileSync(`${FONTES}/combate_v12.md`, "utf8");
+const combateMd = readFileSync(`${FONTES}/combate_v12_notion_atual.md`, "utf8");
 const inicioAcoes = combateMd.indexOf("AÇÕES DE MOVIMENTO");
-const fimAcoes = combateMd.indexOf("# CAMPO DE BATALHA");
+const fimAcoes = combateMd.indexOf("<details><summary>CAMPO DE BATALHA");
+if (inicioAcoes < 0 || fimAcoes < 0) throw new Error("Capítulo de combate sem limites da seção Ações.");
 const combateBlocos = blocos(combateMd.slice(combateMd.lastIndexOf("<details>", inicioAcoes), fimAcoes));
 
 const pa = (valor, extra = {}) => ({ pa: valor, ...extra });
@@ -121,8 +123,8 @@ const COMBATE = [
   { slug: "deslocar", titulo: "Deslocar-se", grupo: "movimento", custo: pa(1, { repeticao_incremento: 1 }), funcao: "Andar, correr, manobrar ou saltar.",
     opcoes: [
       { slug: "andar", nome: "Andar", funcao: "Até 10 + Corpo metros, sem teste." },
-      { slug: "correr", nome: "Correr", funcao: "O dobro de Andar; pode exigir Mobilidade (Corpo 3+ dispensa).", teste: { pericias: ["mobilidade"], condicional: true } },
-      { slug: "manobrar", nome: "Manobrar", funcao: "Até 10 + Corpo metros por terreno difícil; sempre testa Mobilidade.", teste: { pericias: ["mobilidade"] } },
+      { slug: "correr", nome: "Correr", funcao: "O dobro de Andar; riscos relevantes podem exigir Mobilidade. Ataques à distância no mesmo turno sofrem –1 de desvantagem.", teste: { pericias: ["mobilidade"], condicional: true } },
+      { slug: "manobrar", nome: "Manobrar", funcao: "Até 10 + Corpo metros com teste de Mobilidade; ignora terreno difícil no sucesso e pode gerar vantagem tática.", teste: { pericias: ["mobilidade"] } },
       { slug: "saltar_horizontal", nome: "Saltar (horizontal)", funcao: "Distância pela tabela de Corpo; com ou sem impulso." },
       { slug: "saltar_vertical", nome: "Saltar (vertical)", funcao: "Altura pela tabela de Corpo, sem teste." },
     ] },
@@ -150,11 +152,11 @@ const COMBATE = [
         requisitos: [{ tipo: "arma_secundaria_leve", aviso: "Você não empunha uma segunda arma leve" }] },
     ] },
   { slug: "agarrar", titulo: "Agarrar", grupo: "ofensiva", custo: pa(2), funcao: "Prender um alvo adjacente.", teste: { pericias: ["luta"], contra: "Resistir ou Esquivar do alvo" } },
-  { slug: "estrangular", titulo: "Estrangular", grupo: "ofensiva", custo: pa(2), funcao: "Incapacitar um alvo Imobilizado ou Atordoado.", teste: { pericias: ["luta"], contra: "Vigor do alvo" } },
+  { slug: "estrangular", titulo: "Estrangular", grupo: "ofensiva", custo: pa(2), funcao: "Incapacitar alvo adjacente que você mantém Agarrado.", teste: { pericias: ["luta"], contra: "Vigor do alvo" } },
   { slug: "derrubar", titulo: "Derrubar", grupo: "ofensiva", custo: pa(2), funcao: "Deixar um alvo adjacente Caído.", teste: { pericias: ["luta"], contra: "Resistir ou Esquivar do alvo" } },
   { slug: "empurrar", titulo: "Empurrar", grupo: "ofensiva", custo: pa(2), funcao: "Deslocar o oponente à força.", teste: { pericias: ["luta"], contra: "Resistir ou Esquivar do alvo" } },
   { slug: "desarmar", titulo: "Desarmar", grupo: "ofensiva", custo: pa(2), funcao: "Tirar a arma da mão do oponente.", teste: { pericias: ["luta"], contra: "Resistir ou Esquivar do alvo" } },
-  { slug: "fintar", titulo: "Fintar", grupo: "ofensiva", custo: pa(1), funcao: "Abrir a guarda para o próximo golpe.", teste: { pericias: ["luta", "influencia"], contra: "Percepção ou Lógica do alvo" } },
+  { slug: "fintar", titulo: "Fintar", grupo: "ofensiva", custo: pa(1), funcao: "O próximo ataque corpo a corpo contra o alvo recebe +1 de vantagem e +1 de dano no sucesso.", teste: { pericias: ["luta", "influencia"], contra: "Percepção ou Lógica do alvo" } },
 
   { slug: "aparar", titulo: "Aparar", grupo: "defensiva", tipo: "reacao", custo: reacao, funcao: "Desviar um golpe corpo a corpo com a arma.", teste: { pericias: ["luta"] },
     requisitos: [{ tipo: "arma_com_propriedade", propriedade: "aparar", aviso: "Sua arma empunhada não tem a propriedade Aparar" }] },

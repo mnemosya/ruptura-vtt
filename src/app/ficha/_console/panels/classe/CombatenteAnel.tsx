@@ -355,20 +355,26 @@ export function CombatenteAnel({ api, rank, subclassId }: { api: Api; rank: stri
     baixo = <Losango nome="Dano do Ataque" icone="M13 2 4 14h7l-1 8 9-12h-7z" estado={modo === "dano" ? "ativo" : "pronto"} status={modo === "dano" ? "FECHAR" : "ROLAR E MELHORAR O DANO"}
       onClick={() => { setEscolhidas([]); setFerramenta(null); setModo(modo === "dano" ? null : "dano"); }} />;
   } else if (temSub && subclassId === "acrobata") {
-    const ultimoImpulso = usado("round:impulso") ? st.gastos?.filter(g => g.nome === "Impulso Contínuo").at(-1)?.valor : null;
+    const ultimoImpulso = usado("round:impulsoGratis")
+      ? st.uses["scene:impulsoValor"]
+      : usado("round:impulso") ? st.gastos?.filter(g => g.nome === "Impulso Contínuo").at(-1)?.valor : null;
     baixo = <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
       <div className="ca-losangos">
-        {at("C") ? <Losango nome="Impulso Contínuo" icone="M4 18c3-9 9-13 16-12M14 4l6 2-2 6" dica={REGRAS.impulso} desligado={locked || !prontos}
-          estado={!prontos ? "usado" : usado("round:impulso") ? "usado" : "pronto"} status={!prontos ? "SEM DADOS" : usado("round:impulso") ? "USADO NESTA RODADA" : `1 DADO · −1 PA · +D${faces} M`}
+        {at("C") ? <Losango nome="Impulso Contínuo" icone="M4 18c3-9 9-13 16-12M14 4l6 2-2 6" dica={REGRAS.impulso} desligado={locked || !prontos || usado("round:impulso")}
+          estado={!prontos ? "usado" : usado("round:impulso") ? "usado" : "pronto"} status={usado("round:impulso") ? "USADO NESTA RODADA" : !prontos ? "SEM DADOS" : `1 DADO · −1 PA · +D${faces} M`}
           onClick={() => gastar([{ nome: "Impulso Contínuo", texto: v => `−1 PA na ação ofensiva · +${v} m no Manobrar` }], "round:impulso")} />
           : <Losango nome="Impulso Contínuo" icone="M4 18c3-9 9-13 16-12M14 4l6 2-2 6" estado="travado" status="RANKING C" dica={REGRAS.impulso} />}
+        {at("C") && <Losango nome="Impulso livre" icone="M12 3v18M4 12h16" dica="Uma vez por cena, role o Dado de Manobra sem gastá-lo. O resultado aumenta o deslocamento restante de Manobrar. Ainda vale o limite de uma vez por rodada."
+          estado={usado("scene:impulsoGratis") ? "usado" : "pronto"} status={usado("scene:impulsoGratis") ? "USADO NESTA CENA" : `1/CENA · ROLAR D${faces}`}
+          desligado={locked || usado("scene:impulsoGratis") || usado("round:impulso")}
+          onClick={() => enviar({ type: "impulsoGratis", valor: rolarDado(faces) })} />}
         <Losango nome="+1 de vantagem" icone="M12 5v14M5 12h14" dica={`${REGRAS.vantagem} Toque para marcar o uso; toque de novo para desmarcar.`} estado={usado("round:vantagemTransitoria") ? "usado" : "pronto"}
           status={usado("round:vantagemTransitoria") ? "USADA NESTA RODADA" : "AÇÃO OFENSIVA TRANSITÓRIA"} desligado={locked}
           onClick={() => enviar({ type: "marcarUso", chave: "round:vantagemTransitoria", passo: "+1 de vantagem" })} />
       </div>
       <span className="ca-resultado">
         {ultimoImpulso != null && <span>IMPULSO · +{ultimoImpulso} M NO MANOBRAR · −1 PA NA AÇÃO</span>}
-        {(topoPilha === "Impulso Contínuo" || topoPilha === "+1 de vantagem") && <button type="button" className="ca-link" onClick={desfazer}>DESFAZER · {topoPilha.toUpperCase()}</button>}
+        {(topoPilha === "Impulso Contínuo" || topoPilha === "Impulso Contínuo livre" || topoPilha === "+1 de vantagem") && <button type="button" className="ca-link" onClick={desfazer}>DESFAZER · {topoPilha.toUpperCase()}</button>}
       </span>
     </div>;
   }

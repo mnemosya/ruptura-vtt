@@ -1,25 +1,11 @@
 /**
- * Sobrecarga diária e Ruptura pendente — checkpoint v0.37 (PRD 10.5/10.6).
- *
- * Primeira versão jogável: rastreia surtos usados no dia (0..3), aplica
- * o dano psíquico de 1d4 por surto, e no 3º surto marca Ruptura
- * pendente + exige teste de Vontade CD 7 (falha aplica Atordoado por
- * "1 rodada" via o sistema de condições já existente, v0.32/v0.33).
- *
- * Tipos de surto são rótulos (`OVERLOAD_SURGE_TYPES`); o único com
- * efeito automático é o Surto de Energia (+5 de mana temporária). SEM
- * resolução de Ruptura (Marca/Traço), SEM Colapso. `ruptura_pendente`
- * só é limpo por uma resolução de Ruptura futura — nunca por descanso.
- *
- * Dano psíquico: o PRD não amarra "dano psíquico" a nenhum recurso
- * específico, e não existe nenhuma regra codificada no app hoje que
- * relacione "dano psíquico" a PE automaticamente (PE só é editado
- * manualmente, sem sistema de dano). Por isso este módulo NUNCA
- * desconta PE sozinho — só devolve o valor rolado (`surge.danoPsiquico`)
- * para o jogador aplicar manualmente, com um warning explícito.
+ * Aplica Surtos de Sobrecarga e registra a Ruptura pendente ao atingir o
+ * limite. O chamador desconta o dano psíquico de PE pelo fluxo de recursos,
+ * que também processa Integridade e Colapso.
  */
 
 import { rollDamageFormula } from "./attack";
+import { SURTOS_SOBRECARGA } from "../rulesetV12/ruptura";
 import type { ActiveCondition, Character, OverloadRulesPayload } from "./types";
 
 export const OVERLOAD_SURGE_TYPES = [
@@ -27,6 +13,11 @@ export const OVERLOAD_SURGE_TYPES = [
   "Surto de Foco",
   "Surto de Desequilíbrio",
   "Surto de Impacto",
+  "Surto de Urgência",
+  "Surto de Discrição",
+  "Surto de Expansão",
+  "Surto de Proteção",
+  "Surto de Difusão",
   "Outro",
 ] as const;
 export type OverloadSurgeType = (typeof OVERLOAD_SURGE_TYPES)[number];
@@ -38,7 +29,7 @@ export const MANA_DO_SURTO_DE_ENERGIA = 5;
 const WILL_TEST_CD = 7;
 const DEFAULT_SURGE_DAMAGE_DIE = "1d4";
 
-/** Máximo de cargas/dia da regra canônica `regras_personagem.sobrecarga` — fallback 3 (PRD 10.5) quando a regra não carregou. */
+/** Limite base de Sobrecarga; Marcas de Ruptura podem ampliá-lo. */
 export function getOverloadMaxPerDay(rules: OverloadRulesPayload | null | undefined): number {
   const declarado = rules?.cargas_maximas_por_dia;
   return typeof declarado === "number" && declarado > 0 ? declarado : MAX_OVERLOAD_SURGES_PER_DAY;
@@ -50,7 +41,7 @@ export function getOverloadSurgeDamageDie(rules: OverloadRulesPayload | null | u
   return typeof dado === "string" && dado.trim() ? dado : DEFAULT_SURGE_DAMAGE_DIE;
 }
 
-/** Teste do 3º surto (perícia + CD) e condição de falha — da regra canônica; fallback Vontade CD 7 / Atordoado 1 rodada. */
+/** Teste ao alcançar o limite e condição de falha. */
 export function getOverloadWillTestRule(rules: OverloadRulesPayload | null | undefined): {
   pericia: string;
   cd: number;
@@ -71,6 +62,7 @@ export interface OverloadSurgeSummary {
   tipo: string;
   indice: number;
   danoPsiquico: number;
+  pvTemporarios?: number;
   criadoEm: string;
 }
 
@@ -78,14 +70,14 @@ export interface UseOverloadSurgeResult {
   character: Character;
   surge: OverloadSurgeSummary | null;
   warnings: string[];
-  /** true só no 3º surto — o chamador deve oferecer a rolagem de Vontade CD 7. */
+  /** true ao alcançar o limite; o chamador oferece a rolagem de Vontade. */
   requiresWillRoll: boolean;
   rupturePending: boolean;
 }
 
 /**
- * Usa um surto de Sobrecarga. Recusa (sem mudar nada) se já houver 3
- * surtos usados no dia — `surge: null` sinaliza isso ao chamador.
+ * Usa um ponto de Sobrecarga. Recusa (sem mudar nada) se o limite atual
+ * estiver esgotado — `surge: null` sinaliza isso ao chamador.
  * `rng` é injetável para teste determinístico; por padrão usa
  * `Math.random` (mesmo padrão de `rollDie`, sem depender do módulo de
  * dice para manter este arquivo sem dependência cruzada desnecessária).
@@ -104,6 +96,16 @@ export function useOverloadSurge(
   const usadosAntes = character.sobrecarga_usada_dia ?? 0;
   const maxCanonico = getOverloadMaxPerDay(rules);
   const maxPerDay = typeof maxPerDayOverride === "number" && maxPerDayOverride > maxCanonico ? maxPerDayOverride : maxCanonico;
+  const surtoCanonico = SURTOS_SOBRECARGA.find((surto) => surto.nome === tipo);
+  if (surtoCanonico?.exigeMarcaId && !(character.historico_ruptura ?? []).some((entrada) => entrada.marcaId === surtoCanonico.exigeMarcaId)) {
+    return {
+      character,
+      surge: null,
+      warnings: [`${tipo} exige uma Marca de Ruptura que o personagem ainda não possui.`],
+      requiresWillRoll: false,
+      rupturePending: character.ruptura_pendente ?? false,
+    };
+  }
 
   if (usadosAntes >= maxPerDay) {
     return {
@@ -118,14 +120,19 @@ export function useOverloadSurge(
   const indice = usadosAntes + 1;
   const dado = getOverloadSurgeDamageDie(rules);
   const danoPsiquico = typeof danoRolado === "number" ? danoRolado : rollDamageFormula(dado, rng);
-  const surge: OverloadSurgeSummary = { tipo, indice, danoPsiquico, criadoEm: nowIso };
+  const pvTemporarios = tipo === "Surto de Proteção" ? rollDamageFormula("1d8", rng) + 2 * indice : undefined;
+  const surge: OverloadSurgeSummary = { tipo, indice, danoPsiquico, ...(pvTemporarios === undefined ? {} : { pvTemporarios }), criadoEm: nowIso };
   const terceiro = indice >= maxPerDay;
 
   const recursos = character.recursos_atuais;
   const nextCharacter: Character = {
     ...character,
-    ...(tipo === SURTO_DE_ENERGIA && recursos
-      ? { recursos_atuais: { ...recursos, mana_temporaria: (recursos.mana_temporaria ?? 0) + MANA_DO_SURTO_DE_ENERGIA } }
+    ...(recursos && (tipo === SURTO_DE_ENERGIA || pvTemporarios !== undefined)
+      ? { recursos_atuais: {
+          ...recursos,
+          ...(tipo === SURTO_DE_ENERGIA ? { mana_temporaria: (recursos.mana_temporaria ?? 0) + ((character.historico_ruptura ?? []).some((entrada) => entrada.marcaId === "reserva_excedente") ? 7 : MANA_DO_SURTO_DE_ENERGIA) } : {}),
+          ...(pvTemporarios === undefined ? {} : { pv_temporario: Math.max(recursos.pv_temporario ?? 0, pvTemporarios) }),
+        } }
       : {}),
     sobrecarga_usada_dia: indice,
     ultimo_surto: surge,

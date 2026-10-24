@@ -14,6 +14,8 @@ export interface MarcaRuptura {
   id: string;
   nome: string;
   familia: FamiliaMarca;
+  /** Só estas Marcas podem ser escolhidas mais de uma vez. */
+  repetivel?: boolean;
   /** Uma linha, para a grade. */
   resumo: string;
   /** Texto do livro. */
@@ -37,20 +39,20 @@ export const FAMILIAS_MARCA: Record<FamiliaMarca, { nome: string; descricao: str
 
 export const MARCAS_RUPTURA: MarcaRuptura[] = [
   {
-    id: "carapaca_arcana", nome: "Carapaça Arcana", familia: "resistencia", selo: "Aplica na ficha",
+    id: "carapaca_arcana", nome: "Carapaça Arcana", familia: "resistencia", selo: "Repetível · aplica na ficha", repetivel: true,
     resumo: "PV máximos + Corpo + 3.",
     texto: "O arcano impregna sua carne, tornando-a mais resistente: seus Pontos de Vida (PV) aumentam em um valor igual ao seu Corpo + 3.",
   },
   {
-    id: "escudo_psiquico", nome: "Escudo Psíquico", familia: "resistencia", selo: "Aplica na ficha",
+    id: "escudo_psiquico", nome: "Escudo Psíquico", familia: "resistencia", selo: "Repetível · aplica na ficha", repetivel: true,
     resumo: "PE máximos + Mente + 3.",
     texto: "O excesso arcano reforça sua mente, tornando-a mais difícil de abalar: seus Pontos de Estresse (PE) aumentam em um valor igual à sua Mente + 3.",
   },
   {
     id: "pelicula_arcana", nome: "Película Arcana", familia: "resistencia",
-    resumo: "Ao receber Sobrecarga, PV temporários = 2 × Sobrecarga atual.",
-    texto: "A pressão acumulada faz o arcano transbordar pela superfície do corpo, formando uma camada protetora. Sempre que receber Sobrecarga, ganhe uma quantidade de PV temporários igual ao dobro de sua Sobrecarga atual. Esses PV temporários não se acumulam e desaparecem ao final da cena.",
-    emJogo: "Aplique os PV temporários ao receber Sobrecarga.",
+    resumo: "Surto de Proteção: 1d8 + 2 × Sobrecarga atual em PV temporários.",
+    texto: "Você adquire o Surto de Proteção (1 Sobrecarga). Quando estiver prestes a sofrer dano aos PV, pode utilizá-lo mesmo fora do seu turno, após determinar o dano e antes de aplicá-lo. Receba PV temporários iguais a 1d8 + o dobro de sua Sobrecarga atual, incluindo o ponto recebido por este Surto. Eles absorvem o dano normalmente, não se acumulam e desaparecem ao final da cena.",
+    emJogo: "Use o Surto de Proteção antes de aplicar dano aos PV.",
   },
   {
     id: "valvula_de_escape", nome: "Válvula de Escape", familia: "resistencia", selo: "1× por cena",
@@ -78,15 +80,15 @@ export const MARCAS_RUPTURA: MarcaRuptura[] = [
   },
   {
     id: "furia_arcana", nome: "Fúria Arcana", familia: "magia",
-    resumo: "Magias de Ataque: +1 dado de dano ao acertar.",
-    texto: "A presença do arcano intensifica sua ofensiva, canalizando energia extra a cada golpe. Suas magias de Ataque causam 1 dado adicional de dano sempre que acertam.",
-    emJogo: "Some o dado no dano das magias de Ataque.",
+    resumo: "Surto de Impacto em Ataque: role 2 dados extras e use o maior.",
+    texto: "Sempre que utilizar Surto de Impacto para aumentar o dano de uma magia de Ataque, role dois dados adicionais do mesmo tipo e utilize apenas o maior resultado.",
+    emJogo: "Ao usar Surto de Impacto em dano, escolha o maior dos dois dados extras.",
   },
   {
     id: "expansao_arcana", nome: "Expansão Arcana", familia: "magia",
-    resumo: "Magias de Controle: alcance e área em dobro.",
-    texto: "Suas magias de Controle alcançam distâncias e se expandem em áreas o dobro do tamanho do normal.",
-    emJogo: "Dobre alcance e área das magias de Controle.",
+    resumo: "Surto de Expansão: dobre alcance ou amplie área em 2 m.",
+    texto: "Você adquire o Surto de Expansão (1 Sobrecarga). Ao conjurar uma magia de Controle, escolha um benefício: dobre o alcance da magia ou aumente em 2 m uma dimensão de sua área, como raio, comprimento ou largura.",
+    emJogo: "Use o Surto de Expansão ao conjurar Controle.",
   },
   {
     id: "presenca_persistente", nome: "Presença Persistente", familia: "magia",
@@ -102,25 +104,36 @@ export const MARCAS_RUPTURA: MarcaRuptura[] = [
   },
   {
     id: "poder_difuso", nome: "Poder Difuso", familia: "magia",
-    resumo: "Magias de vários alvos: +1 alvo.",
-    texto: "Sua presença arcana se espalha além do esperado, alcançando mais do que o comum. Sempre que conjurar uma magia que afete múltiplos alvos, escolha um alvo adicional.",
-    emJogo: "Escolha um alvo a mais.",
+    resumo: "Surto de Difusão: +1 alvo individual, sem ampliar área.",
+    texto: "Você adquire o Surto de Difusão (1 Sobrecarga). Ao conjurar uma magia que permita escolher múltiplos alvos individualmente, acrescente um alvo adicional. Ele deve respeitar o alcance e as demais restrições da magia. Este Surto não amplia áreas de efeito.",
+    emJogo: "Use o Surto de Difusão ao escolher os alvos.",
   },
   {
     id: "sussurro_arcano", nome: "Sussurro Arcano", familia: "magia",
-    resumo: "Magias de nível 1 a 3 sem manifestação visível.",
-    texto: "O poder flui de forma tão sutil que mal deixa rastros no ar. Suas magias de níveis 1, 2 e 3 não produzem manifestações visíveis.",
+    resumo: "Magias de níveis 1 e 2 sem manifestação visível.",
+    texto: "O poder flui de forma tão sutil que mal deixa rastros no ar. Suas magias de níveis 1 e 2 não produzem manifestações visíveis.",
   },
   {
-    id: "manejo_intuitivo", nome: "Manejo Intuitivo", familia: "magia", selo: "Escolha uma magia", pedeMagia: true,
+    id: "manejo_intuitivo", nome: "Manejo Intuitivo", familia: "magia", selo: "Repetível · escolha uma magia", pedeMagia: true, repetivel: true,
     resumo: "Uma magia sua: moldar com Complexidade um grau menor.",
     texto: "Escolha uma magia do seu repertório. Sempre que moldar essa magia, considere a Complexidade da alteração pretendida um grau menor.",
   },
   {
-    id: "repertorio_expandido", nome: "Repertório Expandido", familia: "magia", selo: "Nova magia",
+    id: "repertorio_expandido", nome: "Repertório Expandido", familia: "magia", selo: "Repetível · nova magia", repetivel: true,
     resumo: "Aprenda uma magia de uma vertente sua (exceto nível 5).",
     texto: "Aprenda uma nova magia de uma vertente que já faz parte do seu repertório, escolhendo qualquer nível a que tenha acesso (exceto nível 5).",
     emJogo: "Aprenda a magia pelo Grimório depois.",
+  },
+  {
+    id: "fluxo_restaurador", nome: "Fluxo Restaurador", familia: "magia",
+    resumo: "Surto de Impacto em cura: role 2 dados extras e use o maior.",
+    texto: "Sempre que utilizar Surto de Impacto para aumentar a quantidade de PV ou PE restaurados por uma magia, role dois dados adicionais do mesmo tipo e utilize apenas o maior resultado.",
+    emJogo: "Ao usar Surto de Impacto em restauração, escolha o maior dos dois dados extras.",
+  },
+  {
+    id: "reserva_excedente", nome: "Reserva Excedente", familia: "conduto",
+    resumo: "Surto de Energia concede 7 de Mana temporária em vez de 5.",
+    texto: "Seu conduto aproveita uma quantidade maior de energia ao ultrapassar seus limites. Sempre que utilizar Surto de Energia, receba 7 de Mana temporária, em vez de 5.",
   },
 ];
 
@@ -206,6 +219,7 @@ export interface SurtoSobrecarga {
   efeito: string;
   /** Quando anunciar e limites de uso. */
   quando: string;
+  exigeMarcaId?: string;
 }
 
 /** Surtos de Sobrecarga — RUPTURA 1.2, cap. 18. Todos são Ação Livre. */
@@ -216,4 +230,7 @@ export const SURTOS_SOBRECARGA: SurtoSobrecarga[] = [
   { nome: "Surto de Impacto", custo: { min: 1, max: 1 }, efeito: "Adicione +1 dado ao efeito da magia, como +1d8 de dano ou +1d6 de cura.", quando: "Depois de saber que a magia afetou o alvo, antes de rolar ou aplicar o efeito." },
   { nome: "Surto de Urgência", custo: { min: 1, max: 3 }, efeito: "Ao conjurar, receba de 1 a 3 pontos de Sobrecarga para reduzir o custo da magia na mesma quantidade de PA, até 0 PA.", quando: "Anuncie antes de pagar o PA. Não passe do necessário para chegar a 0 PA nem do seu limite." },
   { nome: "Surto de Discrição", custo: { min: 1, max: 1 }, efeito: "Conjure uma magia sem manifestação visual ou sensorial: o efeito fica completamente discreto.", quando: "Anuncie ao conjurar a magia." },
+  { nome: "Surto de Expansão", custo: { min: 1, max: 1 }, efeito: "Ao conjurar uma magia de Controle, dobre seu alcance ou amplie em 2 m uma dimensão da área.", quando: "Exige a Marca Expansão Arcana.", exigeMarcaId: "expansao_arcana" },
+  { nome: "Surto de Proteção", custo: { min: 1, max: 1 }, efeito: "Antes de sofrer dano aos PV, receba 1d8 + 2 × Sobrecarga atual em PV temporários.", quando: "Exige a Marca Película Arcana. Pode ser usado fora do turno, após determinar o dano e antes de aplicá-lo.", exigeMarcaId: "pelicula_arcana" },
+  { nome: "Surto de Difusão", custo: { min: 1, max: 1 }, efeito: "Ao conjurar uma magia de alvos individuais múltiplos, acrescente um alvo válido.", quando: "Exige a Marca Poder Difuso. Não amplia áreas.", exigeMarcaId: "poder_difuso" },
 ];

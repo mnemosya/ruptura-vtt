@@ -6,80 +6,80 @@
       "rotulo": "Condições",
       "arquivo": "content/db_condicoes_normalizado_v1_5.json",
       "pageId": "9d60a136355282ba8f7301ec177c75fe",
-      "revisadoEm": "2026-10-01T16:11:05.000Z",
-      "hashRevisado": null
+      "revisadoEm": "2026-10-24T05:36:02.546Z",
+      "hashRevisado": "763a0ef4d380eef61d4c09b0d864901dae578ae52370233f7f138b9d5fb2048d"
     },
     {
       "chave": "acoes-combate",
       "rotulo": "Ações de combate",
       "arquivo": "content/db_acoes_combate_normalizado_v1_1.json",
       "pageId": "0210a136355282b09ba50128db510387",
-      "revisadoEm": "2026-10-01T16:17:15.000Z",
-      "hashRevisado": null
+      "revisadoEm": "2026-10-24T19:35:19.608Z",
+      "hashRevisado": "492d5dfdb38395fa5f3e9632cd957fa017cdc900ac86178b85124197b0353925"
     },
     {
       "chave": "bando",
       "rotulo": "Bando",
       "arquivo": "content/v12/db_bando_v1_2.json",
       "pageId": "3600a136355280a698d2d265cb64ae8e",
-      "revisadoEm": "2026-10-01T20:11:02.000Z",
-      "hashRevisado": null
+      "revisadoEm": "2026-10-24T19:47:36.920Z",
+      "hashRevisado": "5924b9473415e6e19e8e5edbd1798983f6de6c5e60fc42f6b7ce8eb34b743fb5"
     },
     {
       "chave": "conflitos-sociais",
       "rotulo": "Conflitos Sociais",
       "arquivo": "content/v12/db_conflitos_sociais_v1_2.json",
       "pageId": "3dd0a13635528012b7aeda3739fddde8",
-      "revisadoEm": "2026-10-01T16:30:07.000Z",
-      "hashRevisado": null
+      "revisadoEm": "2026-10-24T19:47:36.920Z",
+      "hashRevisado": "3cb1ad664005591313e8a965dd98cffe9e81085995b2a8f01c7d8c0da2886ccc"
     },
     {
       "chave": "investigacao",
       "rotulo": "Investigação",
       "arquivo": "content/v12/db_investigacao_v1_2.json",
       "pageId": "3dc0a13635528184a959c3cdbfc10389",
-      "revisadoEm": "2026-10-01T16:30:07.000Z",
-      "hashRevisado": null
+      "revisadoEm": "2026-10-24T19:47:36.920Z",
+      "hashRevisado": "4822a75e24a2be8e6eb145916a92b75e81a7b9cbe10efc81a39841f943e5a313"
     },
     {
       "chave": "trajetoria",
       "rotulo": "Trajetória",
       "arquivo": "content/v12/db_trajetoria_v1_2.json",
       "pageId": "3c30a136355280ee9165ca698f42f843",
-      "revisadoEm": "2026-10-01T03:40:45.000Z",
-      "hashRevisado": null
+      "revisadoEm": "2026-10-24T19:39:54.095Z",
+      "hashRevisado": "7f0053298dd8cc3658d71a861350bcb94dbf5770c58180ad65d94768483162ad"
     },
     {
       "chave": "classe-ancora",
       "rotulo": "Classe Âncora",
       "arquivo": "content/v12/db_classe_ancora_v1_2.json",
       "pageId": "3d90a1363552800aa253ecb7b72a8b0d",
-      "revisadoEm": "2026-10-04T18:56:59.199Z",
-      "hashRevisado": "97a4526bd520a45c2e6c23440ee7715b2d4dd54e1c9175aa9219161f98b779e3"
+      "revisadoEm": "2026-10-24T19:45:46.359Z",
+      "hashRevisado": "1829aa54b9e47a558cfb503cb78eb11a6cbddd24081e69aa4684d3ab34c896dd"
     },
     {
       "chave": "classe-cacador",
       "rotulo": "Classe Caçador",
       "arquivo": "content/v12/db_classe_cacador_v1_2.json",
       "pageId": "3d90a13635528034a166dbb1dd0c2b3b",
-      "revisadoEm": "2026-10-05T17:41:29.601Z",
-      "hashRevisado": "51e43f2ca6d1c458ae73cb18870cf4e943b3ee5c696cd306b6c994c77aed1ab8"
+      "revisadoEm": "2026-10-24T19:45:46.359Z",
+      "hashRevisado": "f0ae956aa5aa7fbceecf5d12064c66b51f0f69de41f35798511eb3bad04c41ff"
     },
     {
       "chave": "classe-combatente",
       "rotulo": "Classe Combatente",
       "arquivo": "content/v12/db_classe_combatente_v1_2.json",
       "pageId": "3d90a13635528088ac28caeaca52d623",
-      "revisadoEm": "2026-10-02T03:31:15.000Z",
-      "hashRevisado": null
+      "revisadoEm": "2026-10-24T19:45:46.359Z",
+      "hashRevisado": "007fb32f0e8f8cba26ab0a9945f8d12d0e8ae3edd91fe6ec66bbab20e9ae0956"
     },
     {
       "chave": "classe-face",
       "rotulo": "Classe Face",
       "arquivo": "content/v12/db_classe_face_v1_2.json",
       "pageId": "3d90a136355280b18fc8e6819e95616f",
-      "revisadoEm": "2026-10-02T03:31:15.000Z",
-      "hashRevisado": null
+      "revisadoEm": "2026-10-24T05:36:02.546Z",
+      "hashRevisado": "374a4c500b5a5cb6de0f5960f6c513795da241d86365f0125dd0fdb5e028ee0b"
     },
     {
       "chave": "classe-infiltrador",
@@ -94,16 +94,16 @@
       "rotulo": "Classe Técnico",
       "arquivo": "content/v12/db_classe_tecnico_v1_2.json",
       "pageId": "3d90a13635528045a101de4d967cd26c",
-      "revisadoEm": "2026-10-05T17:41:28.727Z",
-      "hashRevisado": "71ee8c7346a7b1f6f5da63f2a992440d57c4734c51e3e53591d69b4d841aa57d"
+      "revisadoEm": "2026-10-24T05:36:02.546Z",
+      "hashRevisado": "6d1f84578e2ea54e93450076cb540f9b7a77cd37985629af9dcc5b17ecb01c7d"
     },
     {
       "chave": "classe-vanguarda",
       "rotulo": "Classe Vanguarda",
       "arquivo": "content/v12/db_classe_vanguarda_v1_2.json",
       "pageId": "3d90a1363552807aad18f3d230b68c40",
-      "revisadoEm": "2026-10-04T18:56:59.199Z",
-      "hashRevisado": "c8662b501398b9ebb68a9151e38f44b3c7030acf4853ec180ddb477048899d4e"
+      "revisadoEm": "2026-10-24T19:45:46.359Z",
+      "hashRevisado": "d7a6eb443ddb9f8ddce55b95fa4786b4d0f5eba9f492c59be7135a519621e96a"
     }
   ]
 }

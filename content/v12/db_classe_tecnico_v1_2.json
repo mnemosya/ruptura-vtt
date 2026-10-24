@@ -2,8 +2,8 @@
   "_meta": {
     "ruleset_version": "1.2",
     "fonte": "https://app.notion.com/p/3d90a13635528045a101de4d967cd26c",
-    "fonte_editada_em": "2026-10-05T16:01:00.000Z",
-    "extraido_em": "2026-10-05",
+    "fonte_editada_em": "2026-10-24T04:13:52.401Z",
+    "extraido_em": "2026-10-24",
     "pendencias_editoriais": [
       "equipamento_inicial: os pacotes recomendados ainda são placeholders no Notion; nenhum item foi inferido."
     ]
@@ -168,7 +168,7 @@
           {
             "slug": "unidades_de_campo",
             "nome": "Unidades de Campo",
-            "descricao": "Você possui 1 Unidade de Campo, utilizada para instalar soluções temporárias durante uma operação.\n\nUma Unidade pode assumir formas concretas muito diferentes: como uma câmera de vigilância portátil, uma maleta de reparos aberta no chão ou uma placa rúnica colado a uma superfície. Também pode ser acoplada como uma pulseira presa ao usuário, um sensor preso à uma máquina ou um programa carregado em um notebook conectado à Malha. Sua forma não altera suas regras.\n\nCada Unidade de Campo possui 10 PD e custa 1 PA para ser instalada ou recolhida ao seu alcance.\n\nAo chegar a 0 PD, a Unidade fica Inativa e seus efeitos são suspensos. Ela pode ser recolhida normalmente e recupera todos os seus PD após 10 minutos de reparo com ferramentas apropriadas.\n\nEm cenas estruturadas, a Unidade permanece ativa até ser recolhida, ficar Inativa ou a cena terminar. Fora delas, pode permanecer ativa enquanto você estiver próximo ou operando a infraestrutura à qual pertence.\n\nAo instalar uma Unidade, escolha uma das formas abaixo:\n\n- Posicionada: ocupa um espaço e possui uma área de atuação de 4 m de raio.\n- Acoplada: conecta-se a um equipamento, máquina, dispositivo, implante, prótese, escalpo, Nó ou outro sistema compatível e acompanha seus movimentos.\n\nUma vez por rodada, cada Unidade ativa pode executar uma das Funções abaixo quando você gastar 1 PA. Escolha a Função e seu alvo no momento da execução.\n\nVocê pode operar uma Unidade a até 20 m, salvo quando outra característica permitir operá-la a uma distância maior.\n\nSe estiver Posicionada, escolha um alvo compatível dentro de sua área de atuação. Se estiver Acoplada, a Função afeta o sistema conectado ou seu usuário, conforme aplicável.\n\nUma Unidade de Campo não realiza Ações de Investigação por conta própria nem possui perícias. Quando uma Função permite examinar, acompanhar ou manipular algo, você continua sendo o operador e utiliza suas próprias perícias quando necessário.\n\nUnidades também não substituem kits, ferramentas ou outros recursos exigidos por uma ação, salvo quando uma regra determinar o contrário. Para utilizar um desses recursos por meio de uma Unidade, ele precisa estar conectado ou disposto de forma que possa atuar sobre o alvo."
+            "descricao": "Você possui 1 Unidade de Campo, utilizada para instalar soluções temporárias durante uma operação.\n\nUma Unidade pode assumir formas concretas muito diferentes: como uma câmera de vigilância portátil, uma maleta de reparos aberta no chão ou uma placa rúnica colado a uma superfície. Também pode ser acoplada como uma pulseira presa ao usuário, um sensor preso à uma máquina ou um programa carregado em um notebook conectado à Malha. Sua forma não altera suas regras.\n\nCada Unidade de Campo possui 10 PD e custa 1 PA para ser instalada ou recolhida ao seu alcance.\n\nAo chegar a 0 PD, a Unidade fica Inativa e seus efeitos são suspensos. Ela pode ser recolhida normalmente e recupera todos os seus PD após 10 minutos de reparo com ferramentas apropriadas.\n\nA Unidade permanece ativa até ser recolhida ou ficar Inativa.\n\nAo instalar uma Unidade, escolha uma das formas abaixo:\n\n- Posicionada: ocupa um espaço e possui uma área de atuação de 4 m de raio.\n- Acoplada: conecta-se a um equipamento, máquina, dispositivo, implante, prótese, escalpo, Nó ou outro sistema compatível e acompanha seus movimentos.\n\nUma vez por rodada, cada Unidade ativa pode executar uma das Funções abaixo quando você gastar 1 PA. Escolha a Função e seu alvo no momento da execução.\n\nVocê pode operar uma Unidade a até 20 m, salvo quando outra característica permitir operá-la a uma distância maior.\n\nSe estiver Posicionada, escolha um alvo compatível dentro de sua área de atuação. Se estiver Acoplada, a Função afeta o sistema conectado ou seu usuário, conforme aplicável.\n\nUma Unidade de Campo não realiza Ações de Investigação por conta própria nem possui perícias. Quando uma Função permite examinar, acompanhar ou manipular algo, você continua sendo o operador e utiliza suas próprias perícias quando necessário.\n\nUnidades também não substituem kits, ferramentas ou outros recursos exigidos por uma ação, salvo quando uma regra determinar o contrário. Para utilizar um desses recursos por meio de uma Unidade, ele precisa estar conectado ou disposto de forma que possa atuar sobre o alvo."
           },
           {
             "slug": "funcoes_do_ranking_f",
@@ -230,7 +230,7 @@
       },
       "subclasses": [
         "artifice",
-        "maquinista",
+        "roboticista",
         "tecelao",
         "biomecanico"
       ],
@@ -360,12 +360,12 @@
           {
             "slug": "modificacoes",
             "nome": "Modificações",
-            "descricao": "Ao instalar uma Modificação, escolha uma das opções abaixo. O equipamento precisa ser compatível com o efeito escolhido.\n\nBALANCEAMENTO:\n\nEscolha uma arma. Ela recebe uma das seguintes propriedades: *Alcance*, *Arremesso (6 m/12 m)* ou *Silencioso*.\n\nBLINDAGEM ADICIONAL:\n\nEscolha uma armadura. Sua MIT máxima e atual aumentam em 3.\n\nQuando a Modificação for removida, reduza a MIT máxima e atual da peça em 3, até o mínimo de 0.\n\nCALIBRAÇÃO:\n\nEscolha uma ferramenta, dispositivo, escalpo ou outro sistema utilizado para realizar testes. Determine uma de suas funções técnicas. Testes realizados por meio dessa função recebem +2.\n\nCalibração não pode ser aplicada a testes de ataque ou ações defensivas.\n\nPOTENCIALIZAÇÃO:\n\nEscolha uma arma. Ela causa +1d4 de dano.\n\nREFORÇO ESTRUTURAL:\n\nEscolha um escudo, ferramenta, dispositivo, escalpo ou outro sistema que possua PD. Seus PD máximos e atuais aumentam em 5.\n\nSOBREGRAVAÇÃO:\n\nEscolha um equipamento que comporte runas. Ele recebe 1 espaço adicional de runa enquanto esta Modificação permanecer instalada."
+            "descricao": "Ao instalar uma Modificação, escolha uma das opções abaixo. O equipamento precisa ser compatível com o efeito escolhido.\n\nBALANCEAMENTO:\n\nEscolha uma arma. Ela recebe uma das seguintes propriedades: *Alcance*, *Arremesso (6 m/12 m)* ou *Silencioso*.\n\nBLINDAGEM ADICIONAL:\n\nEscolha uma armadura e uma Região que ela proteja. A MIT máxima e atual dessa Região aumentam em 3. Se a armadura utilizar MIT compartilhada, o aumento é aplicado uma única vez à reserva.\n\nQuando a Modificação for removida, reduza em 3 a MIT máxima e atual afetadas, até o mínimo de 0.\n\nCALIBRAÇÃO:\n\nEscolha uma ferramenta, dispositivo, escalpo ou outro sistema utilizado para realizar testes. Determine uma de suas funções técnicas. Testes realizados por meio dessa função recebem +2.\n\nCalibração não pode ser aplicada a testes de ataque ou ações defensivas.\n\nPOTENCIALIZAÇÃO:\n\nEscolha uma arma. Ela causa +1d4 de dano.\n\nREFORÇO ESTRUTURAL:\n\nEscolha um escudo, ferramenta, dispositivo, escalpo ou outro sistema que possua PD. Seus PD máximos e atuais aumentam em 5.\n\nSOBREGRAVAÇÃO:\n\nEscolha um equipamento que comporte runas. Ele recebe 1 espaço adicional de runa enquanto esta Modificação permanecer instalada."
           },
           {
             "slug": "pratica_de_reparo",
             "nome": "Prática de Reparo",
-            "descricao": "Quando você utilizar um item para restaurar MIT ou PD de um equipamento, objeto, drone, robô ou veículo, o alvo recupera +1d6 MIT/PD. Esse dado adicional é aplicado apenas uma vez por uso, mesmo que o efeito produza mais de uma recuperação.\n\nAlém disso, você não precisa realizar testes normalmente exigidos para utilizar Kits de Reparo ou outros itens destinados a restaurar MIT ou PD. A aplicação é automaticamente bem-sucedida."
+            "descricao": "Quando você utilizar um item para restaurar MIT ou PD de um equipamento, objeto, drone, robô ou veículo, o alvo recupera +1d6 MIT/PD. Esse dado adicional é aplicado apenas uma vez por uso, mesmo que o efeito produza mais de uma recuperação. Em armaduras com várias Regiões, distribua a recuperação total entre as Regiões danificadas.\n\nAlém disso, você não precisa realizar testes normalmente exigidos para utilizar Kits de Reparo ou outros itens destinados a restaurar MIT ou PD. A aplicação é automaticamente bem-sucedida."
           },
           {
             "slug": "projetos",
@@ -402,50 +402,55 @@
     {
       "schema_version": 1,
       "ruleset_version": "1.2",
-      "slug": "maquinista",
-      "nome": "Maquinista",
+      "slug": "roboticista",
+      "nome": "Roboticista",
       "classe_slug": "tecnico",
-      "descricao": "Maquinistas são especialistas no controle e na programação de drones e robôs. Conectam essas máquinas às suas Unidades de Campo para operá-las diretamente, ampliar sua autonomia e coordenar suas ações durante uma operação.\n\nAlguns trabalham com pequenos drones de reconhecimento e intervenção. Outros preferem autômatos industriais, plataformas de combate ou máquinas construídas para funções específicas. Em todos os casos, suas características funcionam com qualquer drone ou robô que possuam, obtenham ou assumam durante o jogo. Cada máquina conserva sua própria ficha, ações, atributos, PD, alcance e espaços de runa.",
+      "descricao": "Roboticistas desenvolvem inteligências artificiais capazes de operar Máquinas Autônomas sem supervisão constante. Suas criações interpretam objetivos, tomam decisões e adaptam seu comportamento às circunstâncias, permitindo que drones e robôs executem tarefas enquanto o Roboticista se dedica a outras atividades.\n\nSua especialidade também abrange a manutenção e a modificação dessas máquinas. Roboticistas recuperam unidades destruídas, transferem Sistemas entre diferentes modelos e exploram vulnerabilidades no funcionamento de equipamentos adversários.",
       "caracteristicas": {
         "E": [
           {
-            "slug": "modos_de_operacao",
-            "nome": "Modos de Operação",
-            "descricao": "Enquanto uma Unidade de Campo estiver acoplada a um drone ou robô, você pode operá-los de uma das seguintes formas:\n\n- Controle direto: você utiliza seus próprios PA e atributos para executar as ações da máquina. Ela não age autonomamente enquanto estiver sob seu controle direto.\n- Operação autônoma: a máquina utiliza seus próprios atributos para seguir a programação recebida. Durante seu turno, você pode gastar 1 PA para comandá-la. Quando comandada, ela recebe todos os PA indicados em sua ficha em sua ativação. Caso não seja comandada, recebe apenas 1 PA, que pode utilizar para se deslocar, procurar proteção ou executar uma ação defensiva descrita em sua ficha. Ela age logo depois do seu turno e não conta para a alternância de turnos de PJ e PN.\n\nAlternar entre essas formas custa 1 PA. Quando você assume o controle direto, quaisquer PA que a máquina ainda possua naquela rodada são perdidos. Quando encerra o controle, ela retorna à programação anterior.\n\nVocê pode perceber através dos sensores de uma máquina acoplada. A Unidade também pode utilizar esses sensores para perceber acontecimentos e escolher alvos para suas Funções."
+            "slug": "vinculo_expandido",
+            "nome": "Vínculo Expandido",
+            "descricao": "Você pode manter **1 Máquina Autônoma adicional** vinculada a você, além do limite determinado por sua `Robótica`."
           },
           {
-            "slug": "dominio_tecnico",
-            "nome": "Domínio Técnico",
-            "descricao": "Uma falha limitada em um teste de Robótica para controlar ou programar uma máquina acoplada conta como sucesso limitado."
+            "slug": "nucleo_de_ia",
+            "nome": "Núcleo de IA",
+            "descricao": "Você desenvolve uma inteligência artificial capaz de interpretar objetivos, tomar decisões e operar uma Máquina Autônoma sem supervisão constante.\n\n**INSTALAÇÃO E LIMITE**\n\nVocê pode instalar uma IA em uma máquina vinculada a você que possua uma de suas Unidades de Campo acoplada. A instalação ocorre junto ao acoplamento, sem custo adicional.\n\nCada Unidade de Campo pode sustentar **1 IA ativa**, desde que instalada em uma máquina diferente. Todas continuam sujeitas ao seu limite de Vínculos de Controle.\n\nUma máquina não pode acumular os PA autônomos de diferentes IAs. Instalar seu Núcleo de IA não remove nem substitui automaticamente uma inteligência artificial preexistente ou suas proteções.\n\n**PA AUTÔNOMOS**\n\nCada máquina equipada com IA recebe **1 PA autônomo por rodada**, que pode utilizar sem consumir os PA pessoais do Roboticista.\n\nVocê pode complementar o custo das ações da máquina com seus próprios PA. Utilize primeiro os PA autônomos disponíveis e pague a diferença, sem custos adicionais para transmitir comandos.\n\nA máquina utiliza seus próprios atributos, perícias e recursos. O total de PA utilizados por ela, incluindo os fornecidos por você, não pode ultrapassar o limite indicado em sua ficha. Os PA autônomos não podem ser transferidos entre máquinas.\n\n**ORDENS E COMPORTAMENTO**\n\nA IA pode receber objetivos complexos e adaptar suas decisões às circunstâncias. Uma ordem permanece válida até ser concluída, substituída ou se tornar impossível de executar. Transmitir ou modificar ordens não exige PA.\n\n**ATIVAÇÕES**\n\nEm cenas estruturadas, suas máquinas com IA agem durante sua ativação, sem ocupar posições adicionais na alternância de turnos.\n\nVocê pode distribuir seus PA entre suas próprias ações e as das máquinas. O total de PA utilizados determina a janela de turno, e a ativação compartilhada pode ser fragmentada apenas uma vez por rodada.\n\n**OPERAÇÃO INDEPENDENTE**\n\nSe a comunicação for interrompida, a IA continua executando seu último objetivo com seus PA autônomos, mas não pode receber novas ordens nem utilizar PA fornecidos por você até que a conexão seja restabelecida.\n\nSe você estiver incapacitado ou não participar da cena, suas máquinas com IA compartilham uma única posição na alternância, utilizando apenas seus PA autônomos. Essa ativação respeita as janelas de turno e o limite de uma fragmentação por rodada.\n\n**CONTINUIDADE DA IA**\n\nEnquanto sustentar uma IA, a Unidade de Campo pode continuar executando suas outras Funções, respeitando os custos e requisitos normais.\n\nSe a Unidade for recolhida, desacoplada ou ficar Inativa, a IA deixa de funcionar e a máquina retorna à operação convencional."
           },
           {
             "slug": "reconstrucao",
             "nome": "Reconstrução",
-            "descricao": "Você também pode reconstruir um drone ou robô destruído caso recupere seus componentes principais. A reconstrução exige 8 horas de trabalho, materiais equivalentes a 25% do preço da máquina e um teste de Robótica contra sua CD. Em falha, o tempo é gasto, mas os materiais podem ser reutilizados em outra tentativa."
+            "descricao": "Você pode reconstruir Máquinas Autônomas destruídas, desde que seus componentes principais ainda possam ser recuperados.\n\nO procedimento exige ferramentas apropriadas, **8 horas de trabalho** e materiais equivalentes a **25% do preço original** da máquina.\n\nAo concluir a reconstrução, a máquina recupera seus PD máximos e volta a funcionar com suas características originais. Munições, runas e componentes perdidos ou destruídos precisam ser repostos separadamente."
           }
         ],
         "C": [
           {
-            "slug": "resposta_mecanica",
-            "nome": "Resposta Mecânica",
-            "descricao": "O Protocolo de uma Unidade acoplada pode utilizar uma ação da máquina como Resposta. Quando o Gatilho ocorrer, a máquina executa a ação com seus próprios atributos e PA. Ela precisa estar em operação autônoma e ser capaz de realizar a ação."
+            "slug": "autonomia_aprimorada",
+            "nome": "Autonomia Aprimorada",
+            "descricao": "Suas inteligências artificiais passam a receber **2 PA autônomos por rodada**, em vez de 1."
           },
           {
-            "slug": "intervencao_direta",
-            "nome": "Intervenção Direta",
-            "descricao": "Uma vez por rodada, quando uma máquina acoplada falhar em um teste durante sua operação autônoma, você pode gastar 1 PA para repetir o teste utilizando seus próprios atributos. Você deve utilizar o novo resultado. Essa intervenção não altera a forma de operação da máquina."
+            "slug": "reconfiguracao_modular",
+            "nome": "Reconfiguração Modular",
+            "descricao": "Você pode transferir um Sistema de uma Máquina Autônoma para outra, desde que ele seja compatível com a estrutura e os componentes da máquina receptora.\n\nA transferência exige **10 minutos de trabalho**, ferramentas apropriadas e acesso físico às duas máquinas. Cada máquina pode receber apenas **1 Sistema adicional** por meio desta característica.\n\nO Sistema deixa de funcionar na máquina de origem e passa a integrar a receptora, seguindo estas regras:\n\n- **Funcionalidade:** a máquina receptora adquire as capacidades físicas e tecnológicas do Sistema transferido.\n- **Ações:** as ações associadas ao Sistema também ficam disponíveis, utilizando os atributos, perícias e PA da máquina receptora, mas preservando seus custos e efeitos originais.\n- **Autonomia:** se possuir uma de suas IAs, a máquina poderá utilizar o Sistema autonomamente, respeitando suas capacidades e os PA disponíveis.\n- **Recursos:** munições, cargas e outros consumíveis acompanham o Sistema, mantendo suas quantidades restantes.\n\nA transferência não concede atributos, perícias, PA, PD ou características próprias da máquina de origem. Também não permite transferir componentes essenciais ao funcionamento de seu chassi.\n\nA modificação permanece até que o Sistema seja removido ou substituído, sem criar ou duplicar equipamentos."
+          },
+          {
+            "slug": "intrusao_mecanica",
+            "nome": "Intrusão Mecânica",
+            "descricao": "**Interferir em Sistema** `2 PA` · **1×/rodada**\n\nVocê pode interferir no funcionamento de uma Máquina Autônoma que não esteja sob seu controle.\n\nPara isso, precisa acessar uma interface física de manutenção ou operação, pessoalmente ou por meio de uma máquina equipada com Sistemas apropriados. As ações necessárias para estabelecer esse acesso mantêm seus custos normais.\n\nFaça um teste de `Robótica` contra a CD de segurança do Nó da máquina. Se essa CD não estiver definida, utilize a de sua Trama de Controle ou uma dificuldade determinada pelo Narrador.\n\nSe obtiver sucesso, escolha um Sistema acessível e aplique um dos seguintes efeitos:\n\n- **Acionar:** force o Sistema a realizar uma operação simples, como abrir um compartimento, liberar uma trava ou recolher placas defensivas. Esse efeito não permite executar ataques, deslocamentos ou outras ações completas da máquina.\n- **Interromper:** desative o Sistema até o final da próxima ativação da máquina, impedindo o uso de suas capacidades durante esse período.\n\nEm caso de falha, a interferência não produz efeito.\n\nIntrusão Mecânica não altera o Vínculo de Controle nem permite assumir o controle geral da máquina. Um mesmo Sistema só pode ser afetado por esta característica uma vez por cena."
           }
         ],
         "A": [
           {
-            "slug": "enxame",
-            "nome": "Enxame",
-            "descricao": "Uma vez por dia, você pode designar até 4 modelos idênticos de drones ou 2 modelos de robôs como “pareados”. Enquanto permanecerem ativos, todos respondem a seus comandos como uma unidade coordenada. Uma máquina só permanece pareada enquanto estiver a até 20 m de você ou de uma de suas Unidades ativas e puder receber seus sinais.\n\nUma única Unidade pode manter acopladas todas as máquinas pareadas do mesmo modelo para fins das características desta subclasse.\n\nPara cada ação específica que você ordena, escolha se quer executá-la:\n\n- Pareada: todos as máquinas designadas executam a mesma ação de forma simultânea, cada um rolando e aplicando resultados separadamente, sem custo extra de PA.\n- Independente: as máquinas agem de forma separada, cada uma podendo receber comandos diferentes (custando PA normalmente para cada ação)."
+            "slug": "autonomia_plena",
+            "nome": "Autonomia Plena",
+            "descricao": "Suas inteligências artificiais passam a receber **3 PA autônomos por rodada**, em vez de 2.\n\nMesmo quando você contribui com seus próprios PA, cada máquina continua sujeita ao limite de PA indicado em sua ficha."
           },
           {
-            "slug": "overclock",
-            "nome": "Overclock",
-            "descricao": "Uma vez por cena, ao comandar seu Enxame, você pode ativar seu Overclock. Ao fazer isso, todas as suas máquinas pareadas em operação autônoma recebem 2 PA adicionais até o final da rodada."
+            "slug": "reconfiguracao_de_emergencia",
+            "nome": "Reconfiguração de Emergência",
+            "descricao": "**Alternar Sistemas** `1 PA` · **1×/rodada**\n\nVocê pode preparar uma Máquina Autônoma para alternar rapidamente entre dois Sistemas intercambiáveis.\n\nA preparação exige **10 minutos de trabalho**, ferramentas apropriadas e ambos os Sistemas instalados em suportes compatíveis. Um deles permanece ativo, enquanto o outro fica em reserva. Apenas o Sistema ativo pode ser utilizado e conta para o limite de Reconfiguração Modular.\n\nEnquanto mantiver comunicação com a máquina, você pode utilizar **Alternar Sistemas** para trocar remotamente qual dos dois Sistemas está ativo.\n\nA troca não recupera munições ou cargas, não repara danos nem concede PA ou ativações adicionais.\n\nCada máquina pode manter apenas um conjunto de Sistemas intercambiáveis, que permanece preparado até ser desmontado ou modificado com ferramentas apropriadas."
           }
         ]
       }

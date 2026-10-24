@@ -414,11 +414,11 @@
       },
       {
         "rank": "C",
-        "text": "Mobilização: até2/cena; segundo pedido bloqueado enquanto primeiro em execução. Acompanhar resultado coletivo, progresso narrativo, concessões e capacidade real do Público."
+        "text": "Mobilizar: até2/cena; segundo pedido bloqueado enquanto primeiro em execução. Acompanhar resultado coletivo, progresso narrativo, concessões e capacidade real do Público."
       },
       {
         "rank": "A",
-        "text": "Movimento: território/circuito de atuação, convocação 1/operação, objetivo coletivo, meio de transmissão, tempo para chegar/produzir efeito, custos e consequências persistentes."
+        "text": "Movimentar: território/circuito de atuação, convocação 1/operação, objetivo coletivo, meio de transmissão, tempo para chegar/produzir efeito, custos e consequências persistentes."
       }
     ],
     "plural": "Públicos"
@@ -603,42 +603,6 @@
       }
     ],
     "plural": "Projetos"
-  },
-  "maquinista": {
-    "classe": "tecnico",
-    "nome": "Maquinista",
-    "titulo": "Central de máquinas",
-    "layout": "frota",
-    "entidade": "Máquina",
-    "campos": [
-      "Modelo",
-      "Ficha vinculada",
-      "Modo de controle",
-      "Protocolo",
-      "Unidade pareada"
-    ],
-    "estados": [
-      "Disponível",
-      "Em operação",
-      "Em reparo"
-    ],
-    "cor": "#ff951c",
-    "nucleo": "Unidades · Protocolos",
-    "regras": [
-      {
-        "rank": "E",
-        "text": "Modos de Operação: máquina vinculada a Unidade, direto/autônomo, programação, PA próprios, atributos usados, sensores, PD e ficha real. Trocar modo1 PA; entrar em direto perde PA remanescentes da máquina. Autônoma comandada por1 PA recebe PA da ficha; sem comando recebe1 PA restrito; age após jogador. Domínio Técnico: converter falha limitada de Robótica pertinente. Reconstrução: componentes recuperados,8 h, materiais25%, CD e resultado; falha preserva materiais."
-      },
-      {
-        "rank": "C",
-        "text": "Resposta Mecânica: ação de máquina como Resposta, só autônoma e pagando PA dela. Intervenção Direta:1/rodada;1 PA para repetir falha autônoma com atributos do jogador, novo resultado obrigatório."
-      },
-      {
-        "rank": "A",
-        "text": "Enxame: pareamento1/dia, até4 drones idênticos ou2 robôs; composição, alcance20 m/sinal e comando pareado/independente. Uma Unidade pode acoplar grupo do mesmo modelo. Overclock:1/cena, +2 PA em cada máquina pareada autônoma, até fim da rodada."
-      }
-    ],
-    "plural": "Máquinas"
   },
   "tecelao": {
     "classe": "tecnico",
@@ -850,5 +814,41 @@
       }
     ],
     "plural": "Proteções"
+  },
+  "roboticista": {
+    "classe": "tecnico",
+    "nome": "Roboticista",
+    "titulo": "Núcleo de IA",
+    "layout": "frota",
+    "entidade": "Máquina",
+    "campos": [
+      "Modelo",
+      "Ficha vinculada",
+      "Unidade acoplada",
+      "IA ativa",
+      "Sistemas intercambiáveis"
+    ],
+    "estados": [
+      "Disponível",
+      "Em operação",
+      "Em reparo"
+    ],
+    "cor": "#ff951c",
+    "nucleo": "Vínculos · IA · Sistemas",
+    "regras": [
+      {
+        "rank": "E",
+        "text": "Vínculo Expandido: +1 Máquina Autônoma vinculada. Núcleo de IA: 1 PA autônomo por rodada por máquina com Unidade acoplada, sujeito ao PA máximo da ficha. PA pessoais podem completar o custo; ordens não custam PA. Reconstrução exige ferramentas, 8 horas e 25% do preço em materiais."
+      },
+      {
+        "rank": "C",
+        "text": "Autonomia Aprimorada: 2 PA autônomos por rodada. Reconfiguração Modular: transfira um Sistema compatível em 10 minutos, sem duplicar o original. Intrusão Mecânica: 2 PA, 1 vez por rodada; teste Robótica contra a segurança do Nó para acionar ou interromper um Sistema acessível."
+      },
+      {
+        "rank": "A",
+        "text": "Autonomia Plena: 3 PA autônomos por rodada, respeitando o limite de PA da máquina. Reconfiguração de Emergência: prepare dois Sistemas intercambiáveis e alterne o ativo por 1 PA, uma vez por rodada."
+      }
+    ],
+    "plural": "Máquinas"
   }
 }

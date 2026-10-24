@@ -75,7 +75,7 @@ export const REGRAS = {
   percurso: "Percurso Livre: seu Manobrar desloca +5 m e não pede teste de Mobilidade. No percurso você pode atravessar espaços ocupados (sem terminar neles), correr por paredes e saltar sobre criaturas e obstáculos sem gastar deslocamento a mais.",
   aterrissagem: "Reduza qualquer queda em metros iguais ao seu Andar. Se isso evitar todo o dano, você aterrissa em pé e pode escolher um espaço livre a até 2 m de onde cairia.",
   vantagem: "Uma vez por rodada, a ação ofensiva feita de uma posição transitória recebe +1 de vantagem.",
-  impulso: "Uma vez por rodada, na ação ofensiva feita de uma posição transitória: gaste um Dado de Manobra para reduzir o custo da ação em 1 PA (mínimo 1). Depois da ação, some o resultado em metros ao Manobrar que resta, mesmo se a ação falhar. Pode mudar de direção e de apoio. Não conta como manobra.",
+  impulso: "Uma vez por rodada, na ação ofensiva feita de uma posição transitória: gaste e role um Dado de Manobra para reduzir o custo da ação em 1 PA (mínimo 1). Depois da ação, some o resultado em metros ao Manobrar que resta, mesmo se a ação falhar. Uma vez por cena, pode usar sem gastar o dado, rolando um dado do mesmo tipo para o deslocamento. Não conta como manobra.",
 };
 
 /** Rolagem de um dado de N faces (o valor vai para o motor, que só registra). */

@@ -14,6 +14,7 @@ type Mercadoria = {
 type Classe = {
   id: string; content_type_proposto: "item" | "rune" | "escalpo" | "companion_model" | null;
   categoria_proposta: string | null; subtipo_proposto: string | null;
+  situacao?: string;
   vinculos_sugeridos?: { content_type: string; slugs: string[]; criterio: string };
 };
 
@@ -53,7 +54,7 @@ function categoriaEscalpo(m: Mercadoria, c: Classe): string {
   return slugify(secao.replace(/^ESCALPOS /, "")) || "escalpo";
 }
 function slotsRuna(m: Mercadoria): string[] {
-  if (m.categoria === "DRONES E ROBÔS") return ["drone", "robo"];
+  if (m.categoria === "DRONES E ROBÔS" || m.categoria === "MÁQUINAS AUTÔNOMAS") return ["drone", "robo"];
   if (m.categoria === "ARMADURAS E ESCUDOS") return m.secao[0] === "ESCUDOS" ? ["escudo"] : ["armadura"];
   return ["arma"];
 }
@@ -65,10 +66,43 @@ function tipoRuna(m: Mercadoria): string | null {
   return null;
 }
 const grupos: Record<"item" | "rune" | "escalpo" | "companion_model", Record<string, unknown>[]> = { item: [], rune: [], escalpo: [], companion_model: [] };
+function fichaMaquina(m: Mercadoria): Record<string, unknown> {
+  const blocos = m.detalhe_blocos ?? [];
+  const tipo = blocos.find((b) => b.tipo === "paragraph")?.texto ?? "";
+  const detalhes = blocos.find((b) => b.tipo === "callout")?.filhos ?? [];
+  const campos = new Map(detalhes.filter((b) => b.tipo === "bulleted_list_item" && b.texto?.includes(":"))
+    .map((b) => { const i = b.texto!.indexOf(":"); return [b.texto!.slice(0, i).trim(), b.texto!.slice(i + 1).trim()] as const; }));
+  const numero = (nome: string) => { const n = Number(campos.get(nome)); return Number.isFinite(n) && n > 0 ? n : null; };
+  const acoes = [];
+  let lendoAcoes = false;
+  for (const b of detalhes) {
+    if (b.tipo === "heading_4") { lendoAcoes = b.texto === "AÇÕES"; continue; }
+    if (!lendoAcoes || b.tipo !== "bulleted_list_item" || !b.texto) continue;
+    const acao = /^(.*?)\s+(\d+) PA(?:\s*[·•].*)?$/.exec(b.texto);
+    const reacao = /^(.*?)\s+Reação$/.exec(b.texto);
+    acoes.push({
+      nome: acao?.[1] ?? reacao?.[1] ?? b.texto,
+      ...(acao ? { custoPA: Number(acao[2]) } : {}),
+      descricao: renderizarBlocos(b.filhos ?? []),
+    });
+  }
+  return {
+    categoria: /\bDrone\b/i.test(tipo) ? "drone" : "robo",
+    atributos_texto: campos.get("Atributos") ?? null,
+    pericias_texto: campos.get("Perícias") ?? null,
+    pa_maximo: numero("PA"), pd_maximo: numero("PD"), mit: numero("MIT") ?? 0,
+    alcance_controle: campos.get("Alcance de Controle") ?? null,
+    regioes_texto: campos.get("Regiões") ?? null,
+    sistemas_texto: campos.get("Sistemas") ?? null,
+    rotinas_texto: campos.get("Rotinas") ?? null,
+    acoes,
+  };
+}
 for (const m of mercadorias) {
   const c = classes.get(m.id);
   if (!c) throw new Error(`Mercadoria sem classificação: ${m.nome}`);
   const tipo = c.content_type_proposto ?? (c.subtipo_proposto === "modulo_escalpo" ? "item" : null);
+  if (!tipo && c.situacao === "revisao_editorial") continue;
   if (!tipo) throw new Error(`Mercadoria sem tipo: ${m.nome}`);
   if (!Number.isFinite(m.preco_numerico)) throw new Error(`Preço inválido: ${m.nome}`);
   const raridade = m.raridade === "Módulo" ? null : slugify(m.raridade);
@@ -102,9 +136,12 @@ for (const m of mercadorias) {
       custo_integridade: null, slot: null, requisitos: [],
     });
   } else {
-    grupos.companion_model.push({ ...base, categoria: m.tipo_tabela === "Drone" ? "drone" : "robo",
-      alcance_controle: m.campos.Alcance ?? null, atributos_texto: m.campos.Atributos ?? null,
-      acoes: [],
+    grupos.companion_model.push({ ...base,
+      ...(m.tipo_tabela === "Máquina" ? fichaMaquina(m) : {
+        categoria: m.tipo_tabela === "Drone" ? "drone" : "robo",
+        alcance_controle: m.campos.Alcance ?? null, atributos_texto: m.campos.Atributos ?? null,
+        acoes: [],
+      }),
     });
   }
 }

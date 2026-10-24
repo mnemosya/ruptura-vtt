@@ -12,6 +12,10 @@
  * `subclasses`) e este import sai.
  */
 import dossiesPrototipo from "./classesPrototipo.json";
+import faceV12 from "../../../../../../../content/v12/db_classe_face_v1_2.json";
+import tecnicoV12 from "../../../../../../../content/v12/db_classe_tecnico_v1_2.json";
+import vanguardaV12 from "../../../../../../../content/v12/db_classe_vanguarda_v1_2.json";
+import combatenteV12 from "../../../../../../../content/v12/db_classe_combatente_v1_2.json";
 
 export type Caracteristica = { n: string; d: string };
 export type RankDossie = { r: string; lead: string; feats: Caracteristica[] };
@@ -37,6 +41,49 @@ export interface ClasseAcervo {
 }
 
 const DOSSIES = dossiesPrototipo as Record<string, DossieClasse>;
+const roboticistaV12 = tecnicoV12.subclasses.find((subclasse) => subclasse.slug === "roboticista");
+if (roboticistaV12) {
+  const tecnico = DOSSIES["Técnico"];
+  tecnico.subs = tecnico.subs.filter((subclasse) => subclasse.n !== "Maquinista");
+  tecnico.subs.splice(1, 0, {
+    n: roboticistaV12.nome,
+    tag: "Desenvolve IAs para operar Máquinas Autônomas e reconfigura seus Sistemas.",
+    lore: roboticistaV12.descricao,
+    ranks: (["E", "C", "A"] as const).map((r) => ({
+      r,
+      lead: `Você adquire as características ${roboticistaV12.caracteristicas[r].map((f) => f.nome).join(", ")}.`,
+      feats: roboticistaV12.caracteristicas[r].map((f) => ({ n: f.nome.toUpperCase(), d: f.descricao })),
+    })),
+  });
+}
+const iconeV12 = faceV12.subclasses.find((subclasse) => subclasse.slug === "icone");
+if (iconeV12) {
+  const icone = DOSSIES.Face.subs.find((subclasse) => subclasse.n === "Ícone");
+  if (icone) {
+    icone.ranks = (["E", "C", "A"] as const).map((r) => ({
+      r,
+      lead: `Você adquire as características ${iconeV12.caracteristicas[r].map((f) => f.nome).join(", ")}.`,
+      feats: iconeV12.caracteristicas[r].map((f) => ({ n: f.nome.toUpperCase(), d: f.descricao })),
+    }));
+  }
+}
+const guardiaoV12 = vanguardaV12.subclasses.find((subclasse) => subclasse.slug === "guardiao");
+if (guardiaoV12) {
+  const guardiao = DOSSIES.Vanguarda.subs.find((subclasse) => subclasse.n === "Guardião");
+  const arsenal = guardiao?.ranks.flatMap((rank) => rank.feats).find((feature) => feature.n === "ARSENAL DEFENSIVO");
+  const arsenalAtual = guardiaoV12.caracteristicas.E.find((feature) => feature.nome === "Arsenal Defensivo");
+  if (arsenal && arsenalAtual) arsenal.d = arsenalAtual.descricao;
+  const abrigo = guardiao?.ranks.flatMap((rank) => rank.feats).find((feature) => feature.n === "ABRIGO MÓVEL");
+  const regraAtual = guardiaoV12.caracteristicas.C.find((feature) => feature.nome === "Abrigo Móvel");
+  if (abrigo && regraAtual) abrigo.d = regraAtual.descricao;
+}
+const acrobataV12 = combatenteV12.subclasses.find((subclasse) => subclasse.slug === "acrobata");
+if (acrobataV12) {
+  const acrobata = DOSSIES.Combatente.subs.find((subclasse) => subclasse.n === "Acrobata");
+  const impulso = acrobata?.ranks.flatMap((rank) => rank.feats).find((feature) => feature.n === "IMPULSO CONTÍNUO");
+  const regraAtual = acrobataV12.caracteristicas.C.find((feature) => feature.nome === "Impulso Contínuo");
+  if (impulso && regraAtual) impulso.d = regraAtual.descricao;
+}
 
 const META: Array<Omit<ClasseAcervo, "arte" | "dossie">> = [
   { id: "ancora", nome: "Âncora", sigla: "ANC", papel: "Sustentação", frase: "Mantém o grupo de pé quando a realidade dobra." },

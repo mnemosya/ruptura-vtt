@@ -7,9 +7,10 @@
  * (Rupturas sofridas, quanto custa a próxima, Sobrecarga do dia, Mana
  * ganha), a coleção de Marcas e Traços em slots e a escada de faixas de
  * Integridade. Com uma Ruptura pendente, "Resolver" abre dois passos:
- * a Marca (grade de 15) e o Traço (roleta 4 × 8). O preço (Integridade,
- * Mana, limite) só é aplicado ao concluir, junto com as escolhas —
- * fechar no meio não gasta nada. Nada espera o fim da cena.
+ * a Marca (grade de 17) e o Traço (roleta 4 × 8). O preço (Integridade,
+ * Mana, limite) só é aplicado ao concluir, junto com as escolhas.
+ * A resolução ocorre no fim da cena ou imediatamente se levar a
+ * Integridade a 0.
  *
  * O Console é uma janela redimensionável (até ~300 px de largura): o
  * layout se reorganiza pela largura do próprio painel (container
@@ -225,6 +226,8 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
   const [detalhe, setDetalhe] = useState<{ tipo: "marca" | "traco"; id: string } | { tipo: "bloqueado" } | null>(null);
 
   const historico = c.historico_ruptura ?? [];
+  const marcaJaEscolhida = historico.some((entrada) => entrada.marcaId === marcaId);
+  const marcaIndisponivel = marcaJaEscolhida && !marcaPorId(marcaId)?.repetivel;
   const sofridas = rupturasSofridas(c);
   const integMax = api.derivados.integridade_max ?? 0;
   const integAtual = c.recursos_atuais?.integridade ?? integMax;
@@ -306,10 +309,11 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
           {MARCAS_RUPTURA.map((m) => {
             const sel = m.id === marcaId;
             const ja = historico.filter((h) => h.marcaId === m.id).length;
+            const indisponivel = ja > 0 && !m.repetivel;
             return (
               <button key={m.id} type="button" role="option" aria-selected={sel} className="rp-tile" data-sel={sel || undefined}
                 style={{ ["--rp-cor" as string]: COR_FAMILIA[m.familia], ["--rp-fundo" as string]: FUNDO_FAMILIA[m.familia] }}
-                onClick={() => setMarcaId(m.id)} data-testid={`ruptura-marca-${m.id}`}>
+                onClick={() => setMarcaId(m.id)} disabled={indisponivel} title={indisponivel ? "Esta Marca já foi escolhida" : undefined} data-testid={`ruptura-marca-${m.id}`}>
                 <span className="rp-tile-tick" aria-hidden="true" />
                 {ja > 0 && <span className="rp-tile-ja">×{ja}</span>}
                 <span className="rp-tile-glifo"><Glifo id={m.id} cor={sel ? COR_FAMILIA[m.familia] : "#8aa0b2"} tamanho={28} /></span>
@@ -342,7 +346,9 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
                   <div className="rp-magias" role="listbox" aria-label="Magia da Marca">
                     {magias.map((m) => (
                       <button key={m.slug} type="button" role="option" aria-selected={marcaMagia === m.slug} className="rp-magia"
-                        data-sel={marcaMagia === m.slug || undefined} onClick={() => setMarcaMagia(m.slug)}>
+                        data-sel={marcaMagia === m.slug || undefined}
+                        disabled={historico.some((entrada) => entrada.marcaId === "manejo_intuitivo" && entrada.marcaMagia === m.slug)}
+                        onClick={() => setMarcaMagia(m.slug)}>
                         <span className="rp-magia-nome">{m.nome}</span>
                         <span className="rp-magia-sub">{m.vertente} · Nv {m.nivel}</span>
                       </button>
@@ -353,7 +359,7 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
             )}
             <div className="rp-acoes">
               <button type="button" className="rp-btn-sec" onClick={() => setPasso("visao")}>Voltar</button>
-              <button type="button" className="rp-btn" disabled={marca.pedeMagia && !marcaMagia} onClick={() => setPasso("traco")} data-testid="ruptura-escolher-marca">Escolher</button>
+              <button type="button" className="rp-btn" disabled={marcaIndisponivel || (marca.pedeMagia && (!marcaMagia || historico.some((entrada) => entrada.marcaId === "manejo_intuitivo" && entrada.marcaMagia === marcaMagia)))} onClick={() => setPasso("traco")} data-testid="ruptura-escolher-marca">Escolher</button>
             </div>
           </div>
         </section>
@@ -460,6 +466,9 @@ export function RupturaPanel({ api }: { api: ConsoleApi }) {
               </button>
               {previa.ultimaVontade && (
                 <p className="rp-nota" data-alerta>Esta Ruptura leva a Integridade a 0: resolva já. Em seguida vem a Última Vontade.</p>
+              )}
+              {!previa.ultimaVontade && (
+                <p className="rp-nota">Resolva esta Ruptura ao final da cena.</p>
               )}
             </div>
           ) : concluida ? (

@@ -2,7 +2,7 @@
   "_schema": "ruptura.vtt.content.condicoes.v1.5",
   "_meta": {
     "conteudo": "condicoes",
-    "fonte": "RUPTURA v1.2 — capítulo 22. CONDIÇÕES (Notion, 01/10/2026)",
+    "fonte": "RUPTURA v1.2 — capítulo 23. CONDIÇÕES (Notion, 23/10/2026)",
     "versao_schema": "1.5.0",
     "status_padrao": "published",
     "gerado_em": "2026-06-25",
@@ -13,7 +13,7 @@
       "Níveis substituem os efeitos anteriores; abaixo de 1 a condição termina.",
       "Oculto é relativo ao observador; a relação fica registrada no texto até o VTT possuir percepção por criatura."
     ],
-    "revisao": "RUPTURA v1.2: 18 condições; níveis cumulativos persistentes; Oculto incluído; cura reduz Contundido/Sangrando e não remove Envenenado."
+    "revisao": "RUPTURA v1.2: 18 condições; Insaturado e Saturado usam apenas custo de Mana na área, sem bônus ou testes extras de conjuração; Surdo impede perceber sons."
   },
   "enums": {
     "status": [
@@ -512,8 +512,8 @@
       "nome": "Insaturado",
       "categoria": "condicao",
       "categoria_label": "Condição",
-      "descricao_curta": "Após 1 rodada em baixa saturação, criaturas fazem Vigor CD 7 uma vez por cena; falha aplica Lento. Magistas têm conjuração mais difícil e custosa.",
-      "descricao_longa": "Todas as criaturas após 1 rodada expostas à área de baixa saturação devem realizar um teste de Vigor CD 7. Em falha, sofrem Lento até que deixem a área. Esse teste é feito apenas uma vez por cena. No caso de magistas, enquanto permanecer na área, todas as conjurações passam a exigir teste, mesmo as triviais, sofrendo –1 de desvantagem e custando +1 de mana.",
+      "descricao_curta": "Após 1 rodada em baixa saturação, Vigor CD 7 uma vez por cena; falha aplica Lento. Magias custam +1 de Mana na área.",
+      "descricao_longa": "Após permanecer 1 rodada em uma área de baixa saturação, toda criatura realiza um teste de Vigor (CD 7 recomendada), uma vez por cena. Em falha, sofre Lento enquanto permanecer na área. Enquanto permanecer na área, toda magia conjurada custa +1 de Mana.",
       "tags": [
         "ambiente",
         "arcano",
@@ -550,7 +550,7 @@
       "status": "published",
       "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-10-01"
+      "updated_at": "2026-10-24"
     },
     {
       "id": "inconsciente",
@@ -900,8 +900,8 @@
       "nome": "Saturado",
       "categoria": "condicao",
       "categoria_label": "Condição",
-      "descricao_curta": "Após 1 rodada em saturação, criaturas fazem Vigor CD 7 uma vez por cena; falha aplica Envenenado. Magistas conjuram com menor custo e +1.",
-      "descricao_longa": "Todas as criaturas após 1 rodada expostas à área de saturação devem realizar um teste de Vigor CD 7. Em falha, sofrem Envenenado. Esse teste é feito apenas uma vez por cena. Pode-se realizar um novo teste de Vigor todo fim de rodada para remover Envenenado. No caso de magistas, enquanto permanecer na área, toda magia custa –1 de mana e recebe +1 de vantagem nos testes de conjuração.",
+      "descricao_curta": "Após 1 rodada em saturação, Vigor CD 7 uma vez por cena; falha aplica Envenenado 1. Magias custam −1 de Mana na área.",
+      "descricao_longa": "Após permanecer 1 rodada em uma área de saturação, toda criatura realiza um teste de Vigor (CD 7 recomendada), uma vez por cena. Em falha, sofre Envenenado 1. No fim de cada rodada, pode realizar novo teste de Vigor para encerrar o Envenenado provocado pela área; sair da área não o encerra imediatamente. Enquanto permanecer na área, toda magia conjurada custa −1 de Mana, até o mínimo de 1.",
       "tags": [
         "ambiente",
         "arcano",
@@ -946,7 +946,7 @@
       "status": "published",
       "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-10-01"
+      "updated_at": "2026-10-24"
     },
     {
       "id": "surdo",
@@ -954,8 +954,8 @@
       "nome": "Surdo",
       "categoria": "condicao",
       "categoria_label": "Condição",
-      "descricao_curta": "Falha automaticamente em testes que dependem de audição.",
-      "descricao_longa": "Falha automaticamente em testes que dependem de audição.",
+      "descricao_curta": "Falha automaticamente em testes que dependam de audição e não pode perceber sons.",
+      "descricao_longa": "Falha automaticamente em testes que dependam de audição e não pode perceber sons.",
       "tags": [
         "audicao",
         "falha_automatica",
@@ -977,7 +977,7 @@
       "status": "published",
       "versao": "1.2.0",
       "created_at": "2026-06-25",
-      "updated_at": "2026-10-01"
+      "updated_at": "2026-10-24"
     }
   ]
 }

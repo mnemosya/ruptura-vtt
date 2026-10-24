@@ -337,7 +337,7 @@
           {
             "slug": "impulso_continuo",
             "nome": "Impulso Contínuo",
-            "descricao": "Uma vez por rodada, ao realizar uma ação ofensiva a partir de uma posição transitória, você pode gastar um Dado de Manobra para reduzir o custo da ação em 1 PA, até o mínimo de 1 PA.\n\nDepois de resolver a ação, aumente o deslocamento restante de Manobrar em uma quantidade de metros igual ao resultado do dado. Você pode mudar a direção do percurso e escolher uma nova superfície, obstáculo ou criatura como ponto de apoio.\n\nEsse deslocamento adicional conserva todos os benefícios de Percurso Livre e pode ser realizado mesmo que a ação ofensiva falhe.\n\nEsta característica não conta como uma manobra aplicada à ação."
+            "descricao": "Uma vez por rodada, ao realizar uma ação ofensiva a partir de uma posição transitória, você pode gastar e rolar um Dado de Manobra para reduzir o custo da ação em 1 PA, até o mínimo de 1 PA.\n\nDepois de resolver a ação, aumente o deslocamento restante de Manobrar em uma quantidade de metros igual ao resultado do dado. Você pode mudar a direção do percurso e escolher uma nova superfície, obstáculo ou criatura como ponto de apoio.\n\nEsse deslocamento adicional conserva todos os benefícios de Percurso Livre e pode ser realizado mesmo que a ação ofensiva falhe.\n\nUma vez por cena, você pode utilizar Impulso Contínuo sem gastar um Dado de Manobra. Nesse caso, role um dado do mesmo tipo dos seus Dados de Manobra para determinar o deslocamento adicional.\n\nEsta característica não conta como uma manobra aplicada à ação."
           }
         ],
         "A": [

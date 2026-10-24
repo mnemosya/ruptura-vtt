@@ -75,7 +75,7 @@ Os valores dos dados não são alterados. Você só pode Guardar ou Trocar uma v
 Isso permite fortalecer o teste atual ou aceitar um resultado menor para preservar um dado mais valioso para outra interação.
 Exemplo: a Face possui 6 e 5 em sua Reserva. Em um novo teste, rola 8 e 3. Por considerar que esse teste é menos importante, troca o 5 guardado pelo 8 rolado. O teste passa a ter 5 e 3, enquanto sua Reserva passa a conter 8 e 6.
 #### MANOBRAS SOCIAIS
-Quando obtiver sucesso em um Teste de Interação, você pode transformar esse sucesso em uma Manobra Social apropriada ao argumento e às circunstâncias.
+Uma vez por rodada, quando obtiver sucesso em um Teste de Interação, você pode transformar esse sucesso em uma Manobra Social apropriada ao argumento e às circunstâncias.
 Escolha uma das opções:
 - Arrancar: o alvo revela uma informação curta que pretendia esconder ou confirma algo que tentava evitar.
 - Comprometer: o alvo assume uma promessa, posição, acordo ou responsabilidade explícita.
@@ -133,7 +133,7 @@ Cada Subclasse de Face representa uma maneira diferente de transformar confianç
 Ícones transformam sua imagem em uma força coletiva. Podem ser artistas, influenciadores, agitadores, atletas, líderes comunitários, pregadores ou símbolos de um movimento. Não dependem apenas de convencer quem está diante deles: cultivam um Público disposto a oferecer recursos, espalhar mensagens e agir em seu nome.
 A influência de um Ícone não equivale a controle mental. Ela depende da relação construída entre sua Persona e as pessoas que a reconhecem. Quanto maior a exposição, o risco ou o sacrifício exigido, mais forte precisa ser essa relação.
 ### RANKING E
-Você adquire as características Persona Pública, Cativar e Mobilizar.
+Você adquire as características Persona Pública, Cativar e Convocar.
 #### PERSONA PÚBLICA
 Defina a imagem pela qual você é conhecido, os meios pelos quais ela circula e o que seu Público espera de você. Sua Persona pode estar associada a uma comunidade, causa, religião, movimento político, circuito artístico, ambiente da Malha ou outro meio social. As expectativas criadas por ela podem envolver coragem, irreverência, competência, honestidade, luxo, rebeldia, tradição ou qualquer outro valor compatível com essa imagem.
 Ao escolher esta subclasse, defina uma comunidade, circuito ou ambiente social no qual sua Persona já circula. Dentro desse meio, um pequeno grupo conhece sua imagem e possui simpatia suficiente para formar seu Público, salvo quando as circunstâncias indicarem o contrário. O simples reconhecimento não é suficiente: inimigos, críticos e pessoas indiferentes podem conhecer sua Persona sem fazer parte de seu Público.
@@ -144,7 +144,7 @@ Quando obtiver sucesso em um Teste de Interação dirigido simultaneamente a vá
 - Em um sucesso padrão, um pequeno grupo entre as criaturas afetadas passa a fazer parte de seu Público pelo restante da cena.
 - Em um sucesso crítico, todas as criaturas afetadas que não sejam abertamente hostis passam a fazer parte de seu Público pelo restante da cena.
 Criaturas hostis podem ser impressionadas, intimidadas ou afetadas normalmente por suas Manobras Sociais, mas não passam a integrar seu Público apenas por meio de Cativar.
-#### MOBILIZAR
+#### CONVOCAR
 Você pode pedir ajuda ao seu Público. Pedidos simples, compatíveis com sua Persona e que não imponham custo ou risco relevante são atendidos sem a necessidade de um teste, desde que os integrantes do Público sejam capazes de realizá-los.
 Esses pedidos podem incluir:
 - Apresentar você a alguém.
@@ -161,8 +161,8 @@ Quando o pedido exigir tempo, recursos limitados, exposição ou contrariar uma 
 - Em um sucesso crítico, o Público também oferece uma vantagem adicional, como agir imediatamente, ampliar o alcance da ajuda ou disponibilizar recursos melhores.
 Você pode realizar um pedido dessa forma uma vez por cena. Um pedido feito ao Público não pode exigir violência, perigo grave, prejuízo significativo ou ruptura com seus interesses fundamentais.
 ### RANKING C
-Você adquire a característica Mobilização.
-#### MOBILIZAÇÃO
+Você adquire a característica Mobilizar.
+#### MOBILIZAR
 Seu Público passa a aceitar pedidos que envolvam exposição, risco moderado ou um custo significativo, desde que sejam compatíveis com sua Persona e com os interesses das pessoas envolvidas.
 Esses pedidos podem incluir:
 - Bloquear uma passagem.
@@ -181,8 +181,8 @@ Além disso, quando Mobilizar seu Público durante uma cena, você pode conduzir
 A mobilização não concede capacidades que o Público não possui. Uma multidão desarmada pode bloquear uma rua, cercar um veículo ou distrair agentes de segurança, mas não passa a combater como uma unidade militar.
 Você pode Mobilizar seu Público até duas vezes por cena, mas não pode realizar um segundo pedido enquanto o primeiro ainda estiver sendo executado.
 ### RANKING A
-Você adquire a característica Movimento.
-#### MOVIMENTO
+Você adquire a característica Movimentar.
+#### MOVIMENTAR
 Sua Persona tornou-se o centro de uma comunidade organizada, causa ou movimento capaz de agir mesmo quando você não está presente.
 Escolha uma cidade, região, comunidade distribuída ou circuito social compatível com sua trajetória. Sua Persona é amplamente reconhecida nesse meio, embora reconhecimento ainda não implique simpatia automática. Dentro desse alcance, sempre existe Público suficiente para que você tente uma convocação por meio desta característica.
 Uma vez por operação, você pode transmitir uma convocação ao seu Público por qualquer meio capaz de alcançá-lo. Declare um objetivo coletivo compatível com sua Persona e realize um Teste de Interação.

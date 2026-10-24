@@ -45,7 +45,7 @@ def titulo(nome):
     palavras = nome.strip().lower().split()
     out = []
     for i, p in enumerate(palavras):
-        out.append(p if (i > 0 and p in menores) else "-".join(x[:1].upper() + x[1:] for x in p.split("-")))
+        out.append("IA" if p == "ia" else p if (i > 0 and p in menores) else "-".join(x[:1].upper() + x[1:] for x in p.split("-")))
     return " ".join(out)
 
 

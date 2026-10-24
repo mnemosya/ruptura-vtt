@@ -48,6 +48,11 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  */
 export function normalizeCharacter(character: unknown, derived?: DerivedStats): Character {
   const raw = isPlainObject(character) ? character : {};
+  // Maquinista foi substituído por Roboticista no livro v1.2. Personagens
+  // antigos conservam seu Ranking, mas passam a usar a subclasse vigente.
+  const progressao = isPlainObject(raw.progressao) && raw.progressao.classe_id === "tecnico" && raw.progressao.subclasse_id === "maquinista"
+    ? { ...raw.progressao, subclasse_id: "roboticista" }
+    : raw.progressao;
 
   const nome = typeof raw.nome === "string" && raw.nome.trim() !== "" ? raw.nome : DEFAULT_NOME;
 
@@ -236,6 +241,7 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
 
   return {
     ...raw,
+    progressao,
     nome,
     atributos,
     pericias,

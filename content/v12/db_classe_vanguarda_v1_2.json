@@ -2,7 +2,7 @@
   "_meta": {
     "ruleset_version": "1.2",
     "fonte": "https://app.notion.com/p/3d90a1363552807aad18f3d230b68c40",
-    "fonte_editada_em": "2026-09-14T23:11:38.554Z",
+    "fonte_editada_em": "2026-10-06T00:54:09.581Z",
     "extraido_em": "2026-10-01",
     "pendencias_editoriais": [
       "equipamento_inicial: os pacotes recomendados 1 e 2 ainda são placeholders no Notion; nenhum item foi inferido."
@@ -432,7 +432,7 @@
           {
             "slug": "arsenal_defensivo",
             "nome": "Arsenal Defensivo",
-            "descricao": "Você pode equipar um escudo como arma primária e outro como arma secundária. Cada escudo mantém seus próprios PD, e você escolhe qual deles utiliza sempre que Bloquear. Ataques corpo a corpo realizados com um escudo causam 1d6 + Corpo de dano."
+            "descricao": "Você pode equipar um escudo como arma primária e outro como arma secundária. Cada escudo mantém seus próprios PD, e você escolhe qual deles utiliza sempre que Bloquear.\n\nEnquanto estiver empunhando dois escudos com ao menos 1 PD cada, recebe +1 de vantagem em testes de Reflexos para Bloquear.\n\nAtaques corpo a corpo realizados com um escudo causam 1d6 + Corpo de dano."
           },
           {
             "slug": "posicao_de_guarda",
@@ -454,7 +454,7 @@
           {
             "slug": "abrigo_movel",
             "nome": "Abrigo Móvel",
-            "descricao": "Depois de obter sucesso ao Bloquear, você pode gastar 1 Ímpeto para criar um abrigo móvel até o início do seu próximo turno.\n\nEnquanto estiver ativo:\n• Você e seus aliados adjacentes a você recebem os benefícios de cobertura parcial.\n• Quando gastar Ímpeto para se deslocar, escolha um aliado protegido; depois do seu deslocamento, ele pode se deslocar até 2 m sem gastar PA. O aliado precisa terminar esse deslocamento a até 2 m de você."
+            "descricao": "Depois de obter sucesso ao Bloquear com um escudo, você pode gastar 1 Ímpeto para transformar esse escudo em um abrigo móvel até o início do seu próximo turno.\n\nEnquanto estiver ativo e o escudo permanecer empunhado e com ao menos 1 PD:\n\n- Aliados adjacentes a você recebem o mesmo grau de cobertura concedido pelo escudo usado para ativar Abrigo Móvel, mesmo que não estejam diretamente atrás de você. Essa proteção só se aplica contra ataques cuja origem você perceba e contra os quais possa interpor o escudo.\n- Quando gastar Ímpeto para se deslocar, escolha um aliado protegido por Abrigo Móvel; depois do seu deslocamento, ele pode se deslocar até 2 m sem gastar PA. O aliado precisa terminar esse deslocamento a até 2 m de você."
           }
         ],
         "A": [

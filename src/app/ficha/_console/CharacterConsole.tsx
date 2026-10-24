@@ -589,6 +589,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
           usada={api.character.sobrecarga_usada_dia ?? 0}
           limite={api.limiteSobrecarga}
           dado={api.dadoDoSurto}
+          marcas={(api.character.historico_ruptura ?? []).map((entrada) => entrada.marcaId).filter((id): id is string => !!id)}
           onEscolher={(t, pontos) => {
             setAux(null);
             // Cada ponto é um surto na trilha (cap. 18); os dados rolam juntos, num card só.

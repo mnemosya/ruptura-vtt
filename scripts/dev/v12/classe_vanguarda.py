@@ -79,7 +79,7 @@ guardiao = subclasse(
     "Guardiões transformam escudos em posições defensivas móveis. Interceptam ataques, absorvem impactos destinados aos aliados e avançam mantendo o grupo protegido. Com disciplina e Ímpeto, sustentam uma linha de defesa capaz de atravessar até as regiões mais expostas do confronto.",
     [
         f("arsenal_defensivo", "Arsenal Defensivo",
-          "Você pode equipar um escudo como arma primária e outro como arma secundária. Cada escudo mantém seus próprios PD, e você escolhe qual deles utiliza sempre que Bloquear. Ataques corpo a corpo realizados com um escudo causam 1d6 + Corpo de dano."),
+          "Você pode equipar um escudo como arma primária e outro como arma secundária. Cada escudo mantém seus próprios PD, e você escolhe qual deles utiliza sempre que Bloquear.\n\nEnquanto estiver empunhando dois escudos com ao menos 1 PD cada, recebe +1 de vantagem em testes de Reflexos para Bloquear.\n\nAtaques corpo a corpo realizados com um escudo causam 1d6 + Corpo de dano."),
         f("posicao_de_guarda", "Posição de Guarda",
           "Uma vez por cena, durante seu turno, você pode assumir Postura Defensiva sem gastar PA."),
         f("impeto_protetor", "Ímpeto Protetor",

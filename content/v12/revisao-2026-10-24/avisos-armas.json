@@ -1,0 +1,289 @@
+{
+  "extraido_em": "2026-10-24T05:28:53.702Z",
+  "avisos": [
+    {
+      "slug": "armas_shuriken",
+      "motivo": "Conflito em pericia_teste: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_shuriken",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_rv_12_razorstar_shuriken",
+      "motivo": "Conflito em pericia_teste: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_arco_curto",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_sk_7_red_falcon_arco_curto",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_sk_24_blue_hawk_arco_composto",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_besta_leve",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_arco_longo",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_sk_60_white_vulture_arco_longo",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_besta_pesada",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_pistola_de_bolso",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_revolver",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_pistola_pesada",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_sw_9_ghostline_pistola_pesada",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_as_10_overdrive_pistola_pesada",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_dl_8_cry_havoc_pistola_automatica",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_submetralhadora",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_sw_22_spiral_submetralhadora",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_dl_21_reaper_submetralhadora",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_carabina",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_sw_36_crossfade_carabina",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_dl_34_ravage_carabina",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_as_65_runaway_carabina",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_escopeta_curta",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_espingarda",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_bb_14_sprawl_espingarda",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_bb_30_blight_escopeta_pesada",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_rifle_de_assalto",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_sw_51_deviant_rifle_de_assalto",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_dl_47_butcher_rifle_de_assalto",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_as_762_redshift_rifle_de_assalto",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_rifle_de_precisao",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_sw_80_parallax_rifle_de_precisao",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_as_86_terminal_rifle_de_precisao",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_as_127_wrecker_rifle_antimaterial",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_metralhadora",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_dl_66_widowmaker_metralhadora",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_pistola_de_feixe",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_pistola_de_feixe",
+      "motivo": "Conflito em municao_compativel: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_fundidora",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_fundidora",
+      "motivo": "Conflito em municao_compativel: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_pistola_voltaica",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_pistola_voltaica",
+      "motivo": "Conflito em municao_compativel: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_crioagulha",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_crioagulha",
+      "motivo": "Conflito em municao_compativel: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_ofuscador",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_ofuscador",
+      "motivo": "Conflito em municao_compativel: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_carabina_de_feixe",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_carabina_de_feixe",
+      "motivo": "Conflito em municao_compativel: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_repetidora_termica",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_repetidora_termica",
+      "motivo": "Conflito em municao_compativel: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_fuzil_voltaico",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_fuzil_voltaico",
+      "motivo": "Conflito em municao_compativel: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_disruptor",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_disruptor",
+      "motivo": "Conflito em municao_compativel: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_criojetor",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_criojetor",
+      "motivo": "Conflito em municao_compativel: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_ressonador",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_ressonador",
+      "motivo": "Conflito em municao_compativel: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_incinerador",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_incinerador",
+      "motivo": "Conflito em municao_compativel: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_rifle_de_feixe_concentrado",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_rifle_de_feixe_concentrado",
+      "motivo": "Conflito em municao_compativel: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_canhao_de_plasma",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_canhao_de_plasma",
+      "motivo": "Conflito em municao_compativel: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_metralhadora_de_arco",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_metralhadora_de_arco",
+      "motivo": "Conflito em municao_compativel: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_lanca_crio",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_lanca_crio",
+      "motivo": "Conflito em municao_compativel: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_ressonador_de_cerco",
+      "motivo": "Conflito em alcance: campo técnico preservado; revisar tabela."
+    },
+    {
+      "slug": "armas_ressonador_de_cerco",
+      "motivo": "Conflito em municao_compativel: campo técnico preservado; revisar tabela."
+    }
+  ]
+}

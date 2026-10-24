@@ -2,11 +2,11 @@
   "_schema": "ruptura.vtt.content.acoes_combate.v1.1",
   "_meta": {
     "conteudo": "acoes_combate",
-    "fonte": "16 COMBATE 0210a136355282b09ba50128db510387.md",
-    "hash_sha256_origem": "462f093c61a7c623fb8fcd16180515825ba04d57afb8f4f1a2e2dece0d90596b",
+    "fonte": "Notion: 22. CENAS DE COMBATE (0210a136355282b09ba50128db510387)",
+    "hash_sha256_origem": "fe6580535be00205ca6aa4ae9bcf372c0adb8eb6b5830037383ea6be13643a7f",
     "versao_schema": "1.1.0",
     "status_padrao": "published",
-    "gerado_em": "2026-06-25",
+    "gerado_em": "2026-10-24",
     "total_registros": 30,
     "observacoes": [
       "Catálogo de ações extraído do capítulo de Combate.",
@@ -15,7 +15,7 @@
       "Visibilidade condicional controla exibição por condição, não valida alvo ou token.",
       "Fonte autoritativa do catálogo de ações (M5). Integridade referencial profunda validada por validação semântica customizada."
     ],
-    "revisao": "v1.1: schema estrito (additionalProperties=false, enums de FK), efeitos_combate declarado, fonte autoritativa de M5."
+    "revisao": "v1.1: descrições revisadas em 24/10/2026; Deslocar-se, Escapar, Estrangular e Fintar alinhadas ao capítulo atual."
   },
   "enums": {
     "status": [
@@ -255,7 +255,7 @@
         "movimento"
       ],
       "descricao_curta": "Move o personagem por andar, correr, manobrar ou saltar.",
-      "descricao_longa": "Gasta 1 PA para mover-se. Pode repetir no mesmo turno com +1 PA por repetição. O deslocamento de uma mesma ação pode ser dividido ao longo do turno.",
+      "descricao_longa": "> **DESLOCAMENTO EM PARTES**\n> O deslocamento de uma mesma ação pode ser dividido ao longo do turno. Você não precisa usar toda a distância de uma vez: pode se mover parte do trajeto, realizar outra ação e depois continuar se movendo, desde que ainda tenha deslocamento restante daquela ação. Por exemplo, um personagem pode correr 5 metros, atacar e então correr mais 10 metros, desde que a soma total não ultrapasse a distância permitida pela ação de **Correr**.\n\nVocê pode gastar 1 PA para se mover, escolhendo uma entre cinco formas distintas: andar, correr, manobrar, saltar (horizontal) ou saltar (vertical). Essa ação pode ser repetida mais de uma vez no mesmo turno, mas cada repetição aumenta o custo em +1 PA.\n\n- **ANDAR**\n\nPode avançar até **10 + `Corpo`** metros no turno, sem necessidade de teste.\n\n- **CORRER**\n\nVocê se desloca rapidamente, percorrendo até o dobro da distância de **Andar**: **`2 × (10 + Corpo)`** metros.\n\nCorrer em condições normais não exige teste. Diante de obstáculos, terreno instável ou outros riscos relevantes, o narrador pode exigir um teste de **`Mobilidade`**. Em caso de falha, o deslocamento máximo desta ação é reduzido à distância de **Andar**, e o narrador pode aplicar uma consequência apropriada ao risco.\n\nAtaques à distância realizados no mesmo turno em que você corre sofrem **–1 de desvantagem**. Correr não impõe penalidades às ações defensivas nem aos ataques corpo a corpo.\n\n- **MANOBRAR Manobrar** representa deslocamentos que exigem controle corporal ou permitem explorar o posicionamento no combate, como atravessar terreno difícil, deslizar sob obstáculos, contornar a guarda de um adversário ou alcançar uma posição vantajosa.\n\nO personagem pode percorrer até **`10 + Corpo`** metros e deve realizar um teste de **`Mobilidade`**.\n\n**SUCESSO**\n\nO personagem completa o deslocamento, ignorando terreno difícil. Quando a manobra criar uma oportunidade tática concreta contra um adversário, pode obter um dos seguintes benefícios:\n\n- **Criar abertura:** recebe **+1 de vantagem** no próximo ataque contra o adversário cuja posição ou guarda foi comprometida.\n- **Desequilibrar:** impõe **–1 de desvantagem** à próxima ação ofensiva ou defensiva desse adversário, desde que o movimento tenha interferido diretamente em sua capacidade de agir.\n\nOs benefícios se aplicam apenas ao adversário afetado pela manobra e expiram ao final da rodada caso não sejam utilizados. Movimentos acrobáticos que não alterem efetivamente as condições do confronto não concedem benefícios táticos.\n\n**FALHA**\n\nO personagem percorre até metade da distância máxima de Manobrar, arredondada para baixo, sem receber benefícios táticos. Essa redução já considera os efeitos do terreno difícil, não sendo aplicada novamente.\n\nQuando a manobra envolver um risco específico, o narrador pode aplicar uma consequência apropriada, conforme as circunstâncias.\n\n- **SALTAR (HORIZONTAL)**\n\nO salto pode ser feito de duas maneiras:\n\n- **Com impulso:** avança 2 metros em linha reta como parte da própria ação de Saltar (horizontal) e, em seguida, salta até o valor da tabela.\n- **Sem impulso:** partindo parado, o alcance máximo é reduzido à metade.\n\n| Valor de **`Corpo`** | Distância (com impulso) | Distância (sem impulso) |\n| --- | --- | --- |\n| 1 | 1 m | 50 cm |\n| 2 | 1,5 m | 75 cm |\n| 3 | 2 m | 1 m |\n| 4 | 2,5 m | 1,25 m |\n| 5 | 3 m | 1,5 m |\n\nA partir de **`Corpo`** 3, é possível tentar saltos um pouco além do limite, mas é necessário um teste de **`Mobilidade`**. Em sucesso, a distância aumenta em 1 metro. Em falha, cobre apenas metade da distância original (arredondada para baixo) e termina **`Caído`**.\n\n- **SALTAR (VERTICAL)**\n\nO personagem flexiona as pernas e salta para cima, alcançando o valor da tabela abaixo sem necessidade de teste.\n\n| Valor de Corpo | Distância vertical |\n| --- | --- |\n| 1 | 30 cm |\n| 2 | 40 cm |\n| 3 | 60 cm |\n| 4 | 1 m |\n| 5 | 1,5 m |\n\nA partir de **Corpo** 3, é possível tentar saltos um pouco além do limite, mas é necessário um teste de **`Mobilidade`**. Em sucesso, a distância aumenta em 20 cm. Em falha, cobre apenas metade da distância original (arredondada para baixo) e termina **`Caído`**.\n\n> **ESFORÇO PROLONGADO**\n> Quando um personagem realiza esforço físico intenso por um período prolongado, o narrador pode exigir um teste de **`Vigor`** para determinar se ele consegue manter o ritmo.\n> A necessidade do teste e sua Complexidade dependem da duração, intensidade, terreno, equipamentos transportados e condições físicas do personagem.\n> Em caso de falha, o personagem precisa reduzir ou interromper o esforço temporariamente. As consequências devem ser proporcionais à atividade realizada.\n> Magias e equipamentos que ampliam o desempenho físico também podem exigir esse teste quando o personagem continua dependendo de esforço muscular intenso. Deslocamentos produzidos diretamente por forças externas, como levitação, transporte e propulsão mágica, não exigem o teste apenas pela distância percorrida.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -308,21 +308,18 @@
             "tipo": "simples_condicional",
             "pericias": [
               "mobilidade"
-            ],
-            "dispensa_teste_se_corpo_min": 3
+            ]
           },
           "falha": [
             {
               "tipo": "limitar_deslocamento",
-              "valor_m": 10
+              "valor_formula": "10 + Corpo"
             },
             {
-              "tipo": "consequencia_narrador",
-              "sugestoes": [
-                "caido"
-              ]
+              "tipo": "consequencia_narrador"
             }
-          ]
+          ],
+          "penalidade_ataque_distancia_mesmo_turno": -1
         },
         {
           "id": "manobrar",
@@ -350,7 +347,18 @@
               "tipo": "ignorar_terreno_dificil"
             },
             {
-              "tipo": "efeito_tatico_narrativo"
+              "tipo": "efeito_tatico_narrativo",
+              "opcoes": [
+                {
+                  "tipo": "vantagem_proximo_ataque",
+                  "valor": 1
+                },
+                {
+                  "tipo": "desvantagem_proxima_acao_alvo",
+                  "valor": -1
+                }
+              ],
+              "expira": "fim_rodada"
             }
           ],
           "falha": [
@@ -360,12 +368,7 @@
               "arredondamento": "baixo"
             },
             {
-              "tipo": "consequencia_narrador",
-              "sugestoes": [
-                "caido",
-                "lento",
-                "complicacao_leve"
-              ]
+              "tipo": "consequencia_narrador"
             }
           ]
         },
@@ -442,7 +445,7 @@
         "acao_remove"
       ],
       "descricao_curta": "Remove a condição Caído.",
-      "descricao_longa": "Remove a condição Caído.",
+      "descricao_longa": "O personagem pode tentar se erguer do chão após ter sido derrubado, empurrado ou abaixado voluntariamente. Levantar remove a condição **`Caído`** e permite que o personagem volte a se mover e agir normalmente.\n\nSe houver obstáculos, inimigos pressionando ou terreno instável, o narrador pode exigir um teste de **`Mobilidade`** ou **`Vigor`** para que a ação seja bem-sucedida.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -481,7 +484,7 @@
         "controle"
       ],
       "descricao_curta": "Tenta se libertar de restrição de movimento.",
-      "descricao_longa": "Tenta se libertar de restrição de movimento.",
+      "descricao_longa": "O personagem tenta se libertar de uma restrição que impede ou limita seus movimentos, como um agarrão, armadilha, equipamento de contenção ou efeito mágico que possa ser superado fisicamente.\n\nAo realizar a ação, escolha a restrição que deseja superar.\n\n- **Restrição mantida por uma criatura:** realize um teste contestado de **`Luta`** ou **`Vigor`** contra a ação defensiva **Resistir** do oponente.\n- **Restrição causada por objetos, armadilhas ou obstáculos:** realize um teste simples de **`Luta`** ou **`Vigor`** contra a CD definida pelo narrador.\n- **Restrição mágica:** utilize o procedimento estabelecido pelo efeito. Quando ele permitir uma tentativa de libertação física sem especificar a resolução, o narrador pode solicitar um teste de **`Luta`** ou **`Vigor`** contra a CD apropriada.\n\nEm caso de sucesso, o personagem se liberta da restrição escolhida, removendo as condições **`Agarrado`**, **`Imobilizado`** ou similares que tenham sido aplicadas por ela. Restrições provenientes de outras fontes permanecem ativas.\n\nSe a restrição era mantida por uma criatura, ela deixa de estar **`Agarrando`** aquele alvo.\n\n**Escapar** não encerra automaticamente efeitos que apenas reduzam o deslocamento, como **`Lento`**, nem substitui procedimentos específicos de libertação estabelecidos por magias, equipamentos ou outras regras.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -514,6 +517,14 @@
             "vigor"
           ],
           "cd": "narrador"
+        },
+        "se_magia": {
+          "procedimento": "efeito_especifico",
+          "fallback_pericias": [
+            "luta",
+            "vigor"
+          ],
+          "cd": "narrador"
         }
       },
       "sucesso": [
@@ -522,7 +533,8 @@
           "condicoes": [
             "agarrado",
             "imobilizado"
-          ]
+          ],
+          "apenas_da_restricao_escolhida": true
         },
         {
           "tipo": "remover_condicao_do_oponente",
@@ -546,8 +558,8 @@
         "ofensiva",
         "social"
       ],
-      "descricao_curta": "Cria abertura para o próximo ataque corpo a corpo.",
-      "descricao_longa": "Cria abertura para o próximo ataque corpo a corpo.",
+      "descricao_curta": "O próximo ataque corpo a corpo contra o alvo recebe +1 de vantagem e +1 de dano no sucesso.",
+      "descricao_longa": "O personagem tenta enganar um adversário com um movimento falso de ataque, criando uma abertura para golpeá-lo em seguida.\n\nRealize um teste contestado de **`Luta`** ou **`Influência`** contra **`Percepção`** ou **`Lógica`** do alvo.\n\nEm caso de sucesso, o próximo ataque corpo a corpo que o personagem realizar contra esse alvo até o fim do seu turno recebe **+1 de vantagem** e causa **+1 de dano**, caso acerte.\n\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| +5 ou mais (sucesso crítico) | Além dos benefícios normais, o alvo precisa gastar 1 Reação adicional para realizar uma ação defensiva contra o próximo ataque corpo a corpo do personagem neste turno, totalizando 2 Reações. Caso não tenha Reações suficientes ou não queira gastá-las, ainda pode tentar se defender seguindo as regras de defesa sem Reação. |",
       "payload_automacao": {
         "efeitos": [
           {
@@ -564,12 +576,14 @@
         "tipo": "contestado",
         "atacante": {
           "pericias": [
+            "luta",
             "influencia"
           ]
         },
         "defensor": {
           "pericias": [
-            "percepcao"
+            "percepcao",
+            "logica"
           ]
         },
         "sucesso_se_atacante_maior_ou_igual": true
@@ -577,6 +591,17 @@
       "sucesso": [
         {
           "tipo": "modificador",
+          "valor": 1,
+          "alvo_acoes": [
+            "atacar"
+          ],
+          "alvo_tags": [
+            "ataque_corpo_a_corpo"
+          ],
+          "duracao": "mesmo_turno"
+        },
+        {
+          "tipo": "bonus_dano",
           "valor": 1,
           "alvo_acoes": [
             "atacar"
@@ -596,7 +621,7 @@
           ],
           "efeitos": [
             {
-              "tipo": "forcar_gasto_pa_defesa",
+              "tipo": "exigir_reacao_adicional_defesa",
               "valor": 1
             }
           ]
@@ -621,7 +646,7 @@
         "visao"
       ],
       "descricao_curta": "Furtividade contestada pela Percepção de cada inimigo; no sucesso fica Oculto para ele.",
-      "descricao_longa": "Exige estar fora da linha de visão dos observadores, ter cobertura suficiente ou alguma condição que dificulte a localização (escuridão, fumaça, vegetação, distração). Teste de Furtividade contestado pela Percepção de cada inimigo capaz de localizar o personagem; contra quem não procura ativamente, o narrador pode usar uma CD. No sucesso, fica Oculto para aquele inimigo: sua posição exata não é conhecida e ataques contra ele sem localizá-lo são resolvidos como contra um alvo que não pode ser visto. Deixa de estar Oculto ao entrar na linha de visão sem ocultação suficiente, ao realizar ação ofensiva contra o observador, ao produzir sinal evidente ou ao ser localizado por Usar Perícia com Percepção.",
+      "descricao_longa": "O personagem tenta sair da atenção dos inimigos e ocultar sua posição. Para realizar esta ação, precisa estar fora da linha de visão dos observadores, possuir cobertura suficiente ou contar com alguma condição que dificulte sua localização, como escuridão, fumaça, vegetação ou uma distração.\n\nComo parte da ação, o personagem pode se deslocar até **metade da distância de Andar**, arredondada para baixo, sem gastar PA adicionais. O percurso precisa permitir que ele evite ou rompa a observação dos inimigos dos quais pretende se esconder. Terreno difícil continua afetando esse deslocamento normalmente.\n\nApós o deslocamento, se houver, realize um teste de **`Furtividade`** contestado pela **`Percepção`** de cada inimigo capaz de localizar o personagem. Contra inimigos que não estejam procurando ativamente por ele, o narrador pode utilizar uma CD em vez de um teste contestado.\n\nEm caso de sucesso, o personagem recebe a condição **`Oculto`** em relação ao inimigo que perdeu sua localização. Sua posição exata deixa de ser conhecida, impedindo que o adversário o escolha como alvo de ações direcionadas que dependam de visão. Efeitos em área ainda podem atingi-lo normalmente.\n\n**Não enxergar um personagem não significa necessariamente desconhecer sua localização.** Se o inimigo acompanhar o deslocamento ou continuar sabendo onde o personagem está, ele não se torna **`Oculto`** para esse inimigo. Ataques realizados sem visibilidade, mas contra um alvo de localização conhecida, seguem as regras correspondentes.\n\nO personagem deixa de estar **`Oculto`** para um inimigo quando:\n\n- Entra na linha de visão dele sem possuir ocultação suficiente.\n- Realiza uma ação ofensiva contra ele.\n- Produz um sinal evidente que revele sua posição.\n- É localizado por uma ação de **Usar Perícia `1 PA`** com **`Percepção`** ou outro meio apropriado.\n\nUm personagem que já esteja **`Oculto`** pode utilizar **Deslocar-se `1 PA`** sem precisar repetir **Esconder-se**, desde que o deslocamento não revele sua localização. Sair de um esconderijo não o revela automaticamente caso continue protegido por cobertura, escuridão ou outro meio de ocultação.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -664,7 +689,7 @@
         "objeto"
       ],
       "descricao_curta": "Manipula objeto, dispositivo ou elemento de cena; também apaga o fogo (Queimando) ou contém um sangramento (Sangrando).",
-      "descricao_longa": "Manipula objeto, dispositivo ou elemento de cena. Enquanto Queimando, Interagir pode abafar as chamas e reduz Queimando em 1 nível. Enquanto Sangrando, Interagir pode pressionar o ferimento: Sangrando não aumenta de nível no fim desta rodada (o dano continua).",
+      "descricao_longa": "**Interagir** cobre ações simples com objetos, dispositivos ou elementos da cena. Isso inclui puxar uma alavanca, apertar um botão, abrir uma porta, virar uma mesa para criar cobertura, aplicar um consumível ou ativar um escalpo.\n\nAlguns itens apresentam um custo próprio de PA. Nesse caso, utilize o custo indicado em sua descrição no lugar de **Interagir**.\n\nQuando um item não apresentar um custo próprio para ser utilizado, seu uso é considerado uma ação de **Interagir `1 PA`**.\n\nO narrador determina se a interação exige um teste. Por exemplo, operar um console de segurança pode exigir **`Tecnomagia`**. Forçar um mecanismo emperrado pode exigir **`Vigor`**.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -788,7 +813,7 @@
         "arma"
       ],
       "descricao_curta": "Restaura munição de uma arma.",
-      "descricao_longa": "Restaura munição de uma arma.",
+      "descricao_longa": "**Recarregar** é a ação de preparar novamente uma arma para disparo, restaurando sua capacidade de munição. Você pode transferir qualquer quantidade de munição compatível para a arma, até sua capacidade máxima, desde que possua munição suficiente.\n\nO custo depende da localização da munição:\n\n- **Suporte de Munição ou Acesso Rápido:** custo de **`1 PA`**. Utilize a munição disponível diretamente, sem precisar sacar os projéteis separadamente.\n- **Mochila:** custo de **`2 PA`**. Retire a munição necessária e recarregue a arma como parte da mesma ação.\n\nO custo já inclui o acesso à munição. Se utilizar munição de mais de uma localização durante a mesma recarga, aplique o maior custo entre elas. Munições podem vir de conjuntos diferentes, respeitando a quantidade disponível e a capacidade da arma.\n\nPara armas de energia, **Recarregar** substitui a célula instalada por outra compatível, sem recuperar as cargas da célula removida. A célula retirada pode ocupar a localização deixada livre pela célula de reserva utilizada ou ser descartada no espaço do personagem, sem custo adicional. Guardá-la em outra localização exige os custos normais de acesso ao Inventário.\n\nEquipamentos com regras próprias de recarregamento, como a Aljava Autoalimentadora, seguem os efeitos indicados em suas descrições.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -818,7 +843,7 @@
         "postura"
       ],
       "descricao_curta": "+1 em ofensivas e magias de Ataque; –1 em defensivas.",
-      "descricao_longa": "+1 em ofensivas e magias de Ataque; –1 em defensivas.",
+      "descricao_longa": "O personagem assume uma posição voltada para o ataque. Enquanto mantiver essa postura, recebe **+1 de vantagem** em todas as ações ofensivas ou conjurações de magias de **Ataque**, mas sofre **–1 de desvantagem** ao realizar qualquer ação defensiva.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -864,7 +889,7 @@
         "postura"
       ],
       "descricao_curta": "+1 em ações defensivas, –1 em ofensivas e magias de Ataque.",
-      "descricao_longa": "+1 em ações defensivas, –1 em ofensivas e magias de Ataque.",
+      "descricao_longa": "O personagem assume uma posição totalmente voltada para a proteção. Enquanto mantiver essa postura, recebe **+1 de vantagem** em todas as ações defensivas, mas sofre **–1 de desvantagem** ao realizar qualquer ação ofensiva ou conjuração de magia de **Ataque**.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -910,7 +935,7 @@
         "ataque"
       ],
       "descricao_curta": "Ataque básico contra criatura ou objeto.",
-      "descricao_longa": "Ataque básico contra criatura ou objeto.",
+      "descricao_longa": "**Atacar** é a manobra básica para ferir um inimigo ou danificar um objeto.\n\nEm criaturas, resolva por um teste contestado, em que o defensor pode escolher entre **Esquivar**, **Aparar** ou **Bloquear** o ataque desferido, além de decidir se vai gastar uma Reação para se defender plenamente. Caso o defensor não tenha mais ou opte por não gastar uma Reação, o teste dele acumula –1 de desvantagem a cada defesa sem Reação na mesma rodada.\n\nSe o resultado do atacante for **igual ou maior** que o do defensor, o ataque acerta. A margem entre os resultados define a parte do corpo atingida (tronco, braços, pernas ou cabeça), o modificador de dano e pode habilitar efeitos secundários descritos na arma ou no método utilizado (*Veja mais em **<mention url=\"https://app.notion.com/p/0210a136355282b09ba50128db510387#4dc0a136355282798d5c81874d685c16\">REGIÃO DO CORPO</mention>**)*.\n\nContra objetos inanimados, trata-se de teste simples. O narrador define a CD para acertar e a quantidade de PD do alvo. A cada acerto, reduza os PD até o objeto ceder, romper ou ficar inutilizável.\n\n> O valor do atributo **`Corpo`** é somado ao dano total de todos os ataques corpo a corpo e de armas de disparo e arremesso.\n> Ataques desarmados causam o valor de **`Corpo`** de dano contundente.\n\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Regiões | Mod. de dano |\n| --- | --- | --- |\n| 0 a +1 (sucesso limitado) | Tronco | –1 no dano |\n| +2 a +4 (sucesso padrão) | Tronco, braços, pernas | — |\n| +5 ou mais (sucesso crítico) | Cabeça, tronco, braços, pernas | +1 dado de dano |",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1056,7 +1081,7 @@
         "corpo_a_corpo"
       ],
       "descricao_curta": "Prende alvo adjacente com teste de Luta.",
-      "descricao_longa": "Prende alvo adjacente com teste de Luta.",
+      "descricao_longa": "**Agarrar** é uma manobra de controle em combate corpo a corpo. O atacante precisa estar adjacente ao alvo (1 m) e ter pelo menos uma mão livre para iniciar a ação. É sempre um teste contestado: o atacante rola **`Luta`** e o alvo reage com a ação defensiva **Resistir** ou **Esquivar**.\n\nEm caso de sucesso, o atacante também passa a sofrer as limitações da própria manobra. Ele recebe a condição **`Agarrando`**, recebendo –1 de desvantagem em ações ofensivas e defensivas e tendo o deslocamento reduzido à metade enquanto mantiver o controle. Soltar o alvo é simples e pode ser feito através da ação livre **Gestos Rápidos** a qualquer momento da rodada.\n\n<quote>\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| 0 a +1 (sucesso limitado) | Alvo fica **`Agarrado`**. Não se desloca, tem –1 de desvantagem ofensiva e defensiva e ganha +1 de vantagem para tentar **Escapar** deste agarrão. |\n| +2 a +4 (sucesso padrão) | Igual ao sucesso limitado porém sem o bônus de +1 para tentar **Escapar**. |\n| +5 ou mais (sucesso crítico) | Alvo fica **`Imobilizado`**. Não se desloca nem realiza ações físicas. Pode tentar **Escapar** com –2 de desvantagem. Um alvo **`Imobilizado`** pode ser alvo da ação **Estrangular**. |\n\n</quote>",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1165,8 +1190,8 @@
         "controle",
         "asfixia"
       ],
-      "descricao_curta": "Incapacita alvo adjacente Imobilizado ou Atordoado.",
-      "descricao_longa": "Incapacita alvo adjacente Imobilizado ou Atordoado.",
+      "descricao_curta": "Incapacitar alvo adjacente que você mantém Agarrado.",
+      "descricao_longa": "**Estrangular** é uma manobra de incapacitação usada para neutralizar um adversário por meio da compressão do pescoço. O atacante deve estar adjacente (1 m) ao alvo e mantendo-o **`Agarrado`**.\n\nA manobra pode ser realizada como uma **Neutralização Furtiva** ou um **Estrangulamento em Combate**, conforme as circunstâncias.\n\nEm ambos os casos, realize um teste contestado de **`Luta`** do atacante contra **`Vigor`** do alvo. Esse teste representa a resistência física ao estrangulamento e pode ser realizado mesmo quando o alvo está **`Imobilizado`** ou **`Atordoado`**.\n\n**NEUTRALIZAÇÃO FURTIVA**\n\nPode ser realizada quando o alvo não percebeu a aproximação do atacante antes de ser agarrado e ainda não conseguiu alertar outras criaturas.\n\nEm caso de sucesso, o alvo fica **`Inconsciente`** até ser despertado, sofrer novos danos ou recuperar a consciência após um período apropriado, determinado pelo narrador.\n\n- **Sucesso limitado (0 a +1):** o alvo é neutralizado, mas oferece resistência suficiente para produzir ruídos ou perturbações perceptíveis nas proximidades.\n- **Sucesso padrão ou crítico (+2 ou mais):** o alvo é neutralizado silenciosamente, sem produzir perturbações capazes de denunciar a ação por si só.\n\n**ESTRANGULAMENTO EM COMBATE**\n\nPara utilizar a manobra em combate, o alvo precisa estar **`Imobilizado`** ou **`Atordoado`**, além de estar sendo agarrado pelo atacante.\n\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| 0 a +1 (sucesso limitado) | O alvo fica **`Inconsciente`** por 1 rodada. |\n| +2 a +4 (sucesso padrão) | O alvo sofre 1d4 de dano físico e fica **`Inconsciente`** por uma quantidade de rodadas igual à margem. |\n| +5 ou mais (sucesso crítico) | O alvo sofre 2d4 de dano físico e fica **`Inconsciente`** por 5 rodadas. |\n\n**FALHA**\n\nO alvo não perde a consciência. Se puder agir, pode realizar imediatamente uma tentativa de **Escapar `2 PA`**, sem gastar PA.\n\nSe a tentativa ocorrer durante uma Neutralização Furtiva, o alvo percebe a agressão e pode tentar alertar outras criaturas, conforme as circunstâncias.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1184,11 +1209,7 @@
           "valor": "adjacente"
         },
         {
-          "tipo": "alvo_com_condicao_qualquer",
-          "condicoes": [
-            "imobilizado",
-            "atordoado"
-          ]
+          "tipo": "alvo_agarrado_pelo_atacante"
         }
       ],
       "teste": {
@@ -1221,7 +1242,7 @@
             {
               "tipo": "aplicar_condicao",
               "condicao": "inconsciente",
-              "duracao_rodadas_formula": "ceil(margem / 2)"
+              "duracao_rodadas": 1
             }
           ]
         },
@@ -1234,7 +1255,7 @@
           "efeitos": [
             {
               "tipo": "causar_dano",
-              "dano": 1,
+              "dano": "1d4",
               "tipo_dano": "fisico"
             },
             {
@@ -1253,16 +1274,20 @@
           "efeitos": [
             {
               "tipo": "causar_dano",
-              "dano": "1d4",
+              "dano": "2d4",
               "tipo_dano": "fisico"
             },
             {
               "tipo": "aplicar_condicao",
               "condicao": "inconsciente",
-              "duracao_rodadas_formula": "margem * 2"
+              "duracao_rodadas": 5
             }
           ]
         }
+      ],
+      "modos": [
+        "neutralizacao_furtiva",
+        "estrangulamento_em_combate"
       ]
     },
     {
@@ -1283,7 +1308,7 @@
         "corpo_a_corpo"
       ],
       "descricao_curta": "Derruba alvo adjacente.",
-      "descricao_longa": "Derruba alvo adjacente.",
+      "descricao_longa": "**Derrubar** é uma manobra de controle em combate corpo a corpo, usada para tirar o alvo do equilíbrio com varridas, rasteiras ou quedas de ombro.\n\nO atacante deve estar adjacente (1 m) ao alvo e realiza um teste contestado de **`Luta`** contra **Resistir** ou **Esquivar** do alvo.\n\nEm caso de sucesso, o alvo recebe a condição **`Caído`**.\n\nA manobra não causa dano por padrão, mas quedas em desníveis, impactos contra objetos ou perigos do ambiente podem provocar consequências adicionais, conforme a situação e a decisão do narrador.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1341,7 +1366,7 @@
         "movimento_forcado"
       ],
       "descricao_curta": "Desloca o alvo à força.",
-      "descricao_longa": "Desloca o alvo à força.",
+      "descricao_longa": "**Empurrar** é uma manobra de controle usada para deslocar um oponente à força, retirando-o de cobertura, afastando-o de uma posição ou abrindo caminho.\n\nO atacante deve estar adjacente (1 m) ao alvo e realiza um teste contestado de **`Luta`** contra **Resistir** ou **Esquivar** do alvo.\n\nA ação não causa dano por padrão, mas colisões, quedas e perigos do ambiente podem provocar consequências adicionais, conforme a situação e a decisão do narrador.\n\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| 0 a +1 (sucesso limitado) | Empurra o alvo **1 m** na direção escolhida pelo atacante. |\n| +2 a +4 (sucesso padrão) | Empurra o alvo uma distância em metros igual à margem, na direção escolhida pelo atacante. |\n| +5 ou mais (sucesso crítico) | Empurra o alvo até **5 m** na direção escolhida pelo atacante. O alvo também recebe a condição **`Caído`**. |\n\nA distância máxima que um alvo pode ser empurrado por esta ação é de **5 m**, independentemente da margem obtida. O deslocamento termina caso o alvo encontre um obstáculo que impeça sua passagem.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1437,7 +1462,7 @@
         "arma"
       ],
       "descricao_curta": "Remove uma arma do alvo.",
-      "descricao_longa": "Remove uma arma do alvo.",
+      "descricao_longa": "**Desarmar** é uma manobra corpo a corpo para remover a arma do oponente sem causar dano. O atacante deve estar adjacente e realiza teste contestado: **`Luta`** contra a ação defensiva **Resistir** ou **Esquivar** do alvo.\n\nSe o alvo empunhar duas armas, o atacante escolhe qual vai tentar derrubar. Se não houver espaço livre no ponto de queda, a arma para no último ponto disponível antes do obstáculo.\n\nJogadores podem usar a ação **Interagir `1 PA`** para apanhar a arma.\n\n<quote>\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| 0 a +1 (sucesso limitado) | Arma cai aos pés do alvo no mesmo hex. |\n| +2 a +4 (sucesso padrão) | Arma cai aos pés do alvo ou é arremessada a distância igual à metade da margem (arredondada para cima), na direção escolhida pelo atacante. |\n| +5 ou mais (sucesso crítico) | Arma cai aos pés do alvo ou é arremessada a distância igual à margem, na direção escolhida pelo atacante. |\n\n</quote>",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1536,7 +1561,7 @@
         "reacao"
       ],
       "descricao_curta": "Anula um golpe corpo a corpo com arma de Aparar. Teste de Luta.",
-      "descricao_longa": "Anula um golpe corpo a corpo com arma de Aparar. Teste de Luta.",
+      "descricao_longa": "**Aparar** é usar uma arma com a propriedade *Aparar* para interceptar e desviar um golpe corpo a corpo antes que ele cause dano.\n\nEm resposta a um ataque corpo a corpo, teste **`Luta`**. Se superar o valor do atacante, o golpe é bloqueado e nenhum efeito ou dano é aplicado.\n\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| +5 ou mais (sucesso crítico) | O atacante fica exposto por 1 turno com –1 de desvantagem em ações defensivas contra você. Seu próximo ataque dentro desse período causa +1d4 de dano do mesmo tipo da arma. |",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1610,7 +1635,7 @@
         "escudo"
       ],
       "descricao_curta": "Absorve um ataque com escudo, contra si ou um aliado adjacente. Teste de Reflexos.",
-      "descricao_longa": "Absorve um ataque com escudo, contra si ou um aliado adjacente. Teste de Reflexos.",
+      "descricao_longa": "**Bloquear** é interpor um escudo ou outra proteção física empunhada na trajetória de um ataque. Diferente da cobertura concedida passivamente por um escudo, esta ação representa uma interceptação deliberada de um golpe que atingiria o alvo.\n\nPode ser usada em resposta a um ataque contra você ou contra uma criatura adjacente que esteja no seu campo de visão, desde que a proteção possa fisicamente ser colocada entre o ataque e o alvo.\n\nFaça um teste de **`Reflexos`** contra o resultado do atacante. Se obtiver um resultado superior, o ataque é interceptado. Em caso de empate, o ataque também é interceptado se estiver utilizando um escudo. O alvo original não sofre dano nem efeitos, e o dano é aplicado aos PD da proteção. Qualquer excedente atinge o personagem que realizou **Bloquear**, seguindo suas proteções e resistências. Se estiver utilizando um escudo, aplique também suas regras de **Resistência**.\n\nQuando **Bloquear** for usado para proteger outra criatura, ela aguarda a resolução da interceptação. Se o bloqueio falhar, o ataque continua normalmente contra o alvo original, que pode realizar sua própria defesa contra o mesmo resultado do atacante, sem penalidade adicional.\n\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| +5 ou mais (sucesso crítico) | Reduza em **1d4** o dano aplicado aos PD da proteção. |",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1686,7 +1711,7 @@
         "movimento"
       ],
       "descricao_curta": "Evita um ataque. Teste de Reflexos.",
-      "descricao_longa": "Evita um ataque. Teste de Reflexos.",
+      "descricao_longa": "**Esquivar** é recuar, rolar ou mudar de posição no instante exato em que um perigo se manifesta. O personagem evita o impacto usando pura agilidade e leitura do ambiente, seja contra ataques, magias, armadilhas, explosões ou qualquer efeito que permita evasão física.\n\nEm resposta a ataques corpo a corpo, ataques à distância, magias de área, efeitos de movimento forçado ou perigos físicos que possam ser evitados com reflexo, teste **`Reflexos`** contra o valor do ataque ou CD do efeito. Se superar o valor, o personagem evita totalmente o impacto e quaisquer efeitos associados.\n\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| +5 ou mais (sucesso crítico) | O personagem pode reposicionar-se 1 metro imediatamente. |",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1741,7 +1766,7 @@
         "resistencia"
       ],
       "descricao_curta": "Impede deslocamento, derrubada, arrasto ou imobilização. Teste de Vigor ou Mobilidade.",
-      "descricao_longa": "Impede deslocamento, derrubada, arrasto ou imobilização. Teste de Vigor ou Mobilidade.",
+      "descricao_longa": "**Resistir** é travar o corpo ou se adaptar no instante em que uma força externa tenta te deslocar, derrubar, arrastar ou imobilizar. O personagem pode optar por firmeza muscular ou agilidade, enfrentando a força com robustez ou maleabilidade.\n\nUse **`Vigor`** quando a resistência se baseia em suportar impacto ou pressão física, e **`Mobilidade`** quando a saída é evitar o efeito com agilidade. O narrador indica qual das duas opções se aplica em cada situação.\n\nSe superar o valor, ignora totalmente o movimento ou a condição que seria imposta.\n\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| +5 ou mais (sucesso crítico) | Ganha +1 de vantagem no próximo teste de ações de **`Corpo`** até o fim do próximo turno. |",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1800,7 +1825,7 @@
         "ataque_distancia"
       ],
       "descricao_curta": "Alinha um ataque à distância e acumula bônus.",
-      "descricao_longa": "Alinha um ataque à distância e acumula bônus.",
+      "descricao_longa": "**Mirar** é dedicar atenção a um alvo para acompanhar seus movimentos, identificar aberturas em sua proteção e reconhecer o momento mais favorável para realizar um ataque à distância.\n\nO personagem usa **`Percepção`** em um teste simples contra uma CD definida pelo narrador, que deve considerar fatores como distância, iluminação, cobertura e movimentação do alvo.\n\nSe bem-sucedido, o personagem recebe **+1 de vantagem** no próximo ataque à distância realizado contra o mesmo alvo até o fim da rodada. Esse bônus pode acumular até **+2 de vantagem**, desde que o personagem utilize a ação de **Mirar** de maneira consecutiva sem realizar ataques entre elas.\n\n**EFEITOS POR MARGEM DE IMPACTO**\n\n| Margem | Efeito |\n| --- | --- |\n| +5 ou mais (sucesso crítico) | O bônus passa a ser +2 de vantagem. |",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1866,7 +1891,7 @@
         "malha"
       ],
       "descricao_curta": "Estabelece vínculo inicial com um ponto de acesso exposto no alcance (protocolo Conectar).",
-      "descricao_longa": "O personagem estabelece um vínculo inicial com um ponto de acesso exposto no alcance. Para usuários de Deck Sináptico, representa a execução do protocolo Conectar e consome o custo indicado (PA e RAM) normalmente.",
+      "descricao_longa": "O personagem estabelece um vínculo inicial com um ponto de acesso exposto no alcance. Essa ação representa a execução do protocolo **Conectar** para usuários de Deck Sináptico, e consome o custo indicado (PA e RAM) normalmente.\n\n*Veja mais detalhes no capítulo **<mention url=\"https://app.notion.com/p/6a30a136355283b49bb901ca6eaa097c\" />**.*",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1898,7 +1923,7 @@
         "reacao"
       ],
       "descricao_curta": "Prepara sequência de ações vinculada a gatilho objetivo.",
-      "descricao_longa": "Prepara sequência de ações vinculada a gatilho objetivo.",
+      "descricao_longa": "O personagem pode reservar uma sequência de ações para executá-la quando uma oportunidade específica surgir, agindo fora da ordem normal de turnos.\n\nDurante seu turno, escolha um **gatilho objetivo e único** e determine quais ações serão executadas quando ele ocorrer. Gaste imediatamente os PA correspondentes à sequência preparada. Esses PA não precisam ser gastos novamente na execução.\n\nQuando o gatilho ocorrer, o personagem pode gastar **1 Reação** para executar a sequência imediatamente após a resolução da ação que provocou o gatilho, ignorando a alternância normal entre personagens. Preparar Turno não permite interromper uma ação em andamento.\n\n**OBSERVAÇÕES**\n\n- **Gatilho:** deve representar um acontecimento específico e verificável. O narrador pode recusar condições vagas ou múltiplas.\n- **Janelas de turno:** a preparação não permite antecipar ações de turnos lentos para a janela de turnos rápidos. Sequências que exigem 3 PA ou mais só podem ser preparadas e executadas durante os turnos lentos.\n- **Fragmentação:** executar o turno preparado conta como uma segunda ativação na rodada, mesmo quando ocorre fora da ordem habitual. Essa execução pode acontecer na mesma janela em que a preparação foi realizada, mas não permite ultrapassar o limite de PA dessa janela. O personagem não pode fragmentar seus PA novamente depois disso.\n- **Reação:** é consumida apenas quando a sequência é executada. Se o personagem não tiver uma Reação disponível no momento do gatilho, não poderá ativar o turno preparado.\n- **Recursos:** os custos de Mana e outros recursos associados às ações preparadas são pagos somente quando elas forem executadas.\n- **Prazo:** se o gatilho não ocorrer até o fim da rodada, a preparação é perdida. Os PA reservados não são recuperados.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1936,7 +1961,7 @@
         "pericia"
       ],
       "descricao_curta": "Usa uma perícia para criar vantagem, impor desvantagem ou influenciar a cena.",
-      "descricao_longa": "Usa uma perícia para criar vantagem, impor desvantagem ou influenciar a cena.",
+      "descricao_longa": "O personagem pode utilizar uma perícia durante o combate para obter informações, explorar oportunidades, criar vantagens ou dificultar as ações de um adversário.\n\nDescreva o que pretende fazer e como a perícia será utilizada. A ação precisa representar uma intervenção concreta na cena, capaz de produzir o efeito desejado.\n\nQuando houver risco, oposição ou incerteza relevante, o narrador solicita um teste simples ou contestado, utilizando a perícia apropriada. Em caso de sucesso, determina o efeito conforme a abordagem utilizada e as circunstâncias.\n\nEntre os resultados possíveis estão:\n\n- **Criar vantagem:** conceder **+1 de vantagem** a um teste específico, desde que a intervenção justifique esse benefício.\n- **Impor desvantagem:** aplicar **–1 de desvantagem** a um teste específico de um adversário.\n- **Obter informações:** identificar vulnerabilidades, reconhecer padrões de comportamento ou descobrir elementos relevantes do ambiente.\n- **Interferir na cena:** provocar uma reação, dificultar uma atividade ou modificar temporariamente as circunstâncias de uma ação.\n\n**OBSERVAÇÕES**\n\n- **Duração:** vantagens e desvantagens se aplicam ao próximo teste pertinente à intervenção e expiram ao final da próxima rodada, caso não sejam utilizadas.\n- **Acúmulo:** efeitos idênticos produzidos pela repetição da mesma abordagem não se acumulam.\n- **Limitações:** a ação não pode reproduzir diretamente os efeitos de outras ações específicas, como **Mirar** ou **Fintar**, nem substituir seus requisitos e custos.\n- **Consequências:** o narrador pode determinar resultados diferentes dos exemplos apresentados, desde que sejam proporcionais à intervenção realizada e às circunstâncias da cena.\n\nPor exemplo, um personagem pode utilizar **`Intimidação`** para pressionar um adversário e prejudicar sua próxima ação, **`Engenharia`** para identificar uma vulnerabilidade estrutural ou **`Psicologia`** para antecipar o comportamento de um inimigo. Cada aplicação deve produzir consequências compatíveis com o que o personagem efetivamente realizou.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1971,7 +1996,7 @@
         "social"
       ],
       "descricao_curta": "Fala livremente durante a rodada.",
-      "descricao_longa": "Fala livremente durante a rodada.",
+      "descricao_longa": "Personagens podem se expressar livremente durante a rodada. Isso inclui gritar ordens, soltar xingamentos, provocar inimigos, alertar aliados ou até trocar algumas frases rápidas, sempre respeitando a lógica de 10 segundos por rodada.\n\n  Se a fala tiver peso suficiente para alterar o rumo do combate (ex.: convencer alguém a recuar, fazer um discurso de comando, enganar um inimigo com uma mentira elaborada), o narrador pode exigir que seja tratada como uma ação de **Usar Perícia `1 PA`**. Fora disso, a fala é livre, e não gasta PA nem Reação.",
       "payload_automacao": {
         "efeitos": [
           {
@@ -1999,7 +2024,7 @@
         "livre"
       ],
       "descricao_curta": "Movimentos simples que comunicam intenção.",
-      "descricao_longa": "Movimentos simples que comunicam intenção.",
+      "descricao_longa": "Movimentos simples que transmitem informação ou intenção sem exigir esforço relevante. Exemplos incluem:\n\n  - Apontar uma direção ou alvo\n  - Abrir ou fechar a mão\n  - Inclinar ou balançar a cabeça\n  - Fazer sinais manuais breves (como um joinha ou um código pré-combinado)\n  - Soltar um alvo que você esteja agarrando.\n\n  Se o movimento tiver peso suficiente para alterar o rumo do combate, o narrador pode exigir que seja tratado com uma ação de **Interagir `1 PA`**.",
       "payload_automacao": {
         "efeitos": [
           {

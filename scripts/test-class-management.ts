@@ -164,3 +164,18 @@ console.log('Face: Reserva, usos, Persona, negociação do Mercador e desfazer O
  assert.equal(readClassPlay({...pl.character,current_scene:2}).resource,2,'nova cena no S recomeça com 2');
 }
 console.log('Infiltrador: Brechas, usos, registro, Caminho Fantasma, Plano e desfazer OK.');
+{
+ const acrobata=make('combatente','acrobata','C');
+ const livre=applyClassCommand(acrobata,{type:'impulsoGratis',valor:4},4);
+ assert.equal(livre.error,undefined);
+ let estado=readClassPlay(livre.character);
+ assert.equal(estado.resource,4,'Impulso gratuito não consome Dado de Manobra');
+ assert.equal(estado.uses['scene:impulsoValor'],4);
+ assert.ok(applyClassCommand(livre.character,{type:'impulsoGratis',valor:3},4).error,'um uso gratuito por cena');
+ assert.ok(applyClassCommand(livre.character,{type:'gastarManobra',itens:[{nome:'Impulso Contínuo',valor:3,texto:'+3 m'}],uso:'round:impulso'},4).error,'Impulso ainda respeita o limite da rodada');
+ estado=readClassPlay({...livre.character,current_round:2});
+ assert.equal(estado.uses['round:impulso'],undefined);
+ assert.equal(estado.uses['scene:impulsoGratis'],1);
+ assert.equal(readClassPlay({...livre.character,current_scene:2}).uses['scene:impulsoGratis'],undefined);
+ assert.equal(readClassPlay(applyClassCommand(livre.character,{type:'desfazerCombate'},4).character).uses['scene:impulsoGratis'],undefined);
+}

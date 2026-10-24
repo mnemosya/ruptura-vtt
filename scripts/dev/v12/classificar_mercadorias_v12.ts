@@ -34,6 +34,11 @@ function classificar(m: Mercadoria): Classe {
       if (m.tipo_tabela === "Arma") return item("arma", m.secao[0] ?? null);
       if (m.tipo_tabela === "Runa") return especializado("rune", m.secao[0] ?? null);
       if (["Tipo", "Flecha", "Munição", "Célula"].includes(m.tipo_tabela)) return item("municao", m.tipo_tabela);
+      if (m.tipo_tabela === "Verbete sem tabela") return {
+        content_type_proposto: null, categoria_proposta: null, subtipo_proposto: null,
+        situacao: "revisao_editorial",
+        observacao: "A arma tem verbete, mas ainda não tem linha de estatísticas; não publicar ficha incompleta.",
+      };
       break;
     }
     case "ARMADURAS E ESCUDOS": {
@@ -47,6 +52,11 @@ function classificar(m: Mercadoria): Classe {
       if (m.tipo_tabela === "Drone") return especializado("companion_model", "drone");
       if (m.tipo_tabela === "Robô") return especializado("companion_model", "robo");
       if (m.tipo_tabela === "Runa") return especializado("rune", "drone_robo");
+      break;
+    }
+    case "MÁQUINAS AUTÔNOMAS": {
+      if (m.tipo_tabela === "Máquina") return especializado("companion_model", "maquina_autonoma");
+      if (m.tipo_tabela === "Runa") return especializado("rune", "maquina_autonoma");
       break;
     }
     case "ESCALPOS": {

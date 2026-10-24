@@ -17,6 +17,7 @@
 
 import { getOverloadMaxPerDay } from "./overload";
 import { getIntegrityBand, getRuptureManaBonus } from "./rupture";
+import { marcaPorId } from "../rulesetV12/ruptura";
 import type { Character, OverloadRulesPayload, RuptureResolvedEntry } from "./types";
 
 export const LIMITE_SOBRECARGA_MAXIMO = 5;
@@ -83,6 +84,14 @@ export function resolverRupturaV12(
 ): { character: Character; previa: PreviaRuptura } | { erro: string } {
   if (character.ruptura_pendente !== true) return { erro: "Não há Ruptura para resolver." };
   if (!escolha.marcaId) return { erro: "Escolha uma Marca." };
+  const marca = marcaPorId(escolha.marcaId);
+  if (!marca) return { erro: "Marca desconhecida." };
+  const escolhasAnteriores = (character.historico_ruptura ?? []).filter((entrada) => entrada.marcaId === escolha.marcaId);
+  if (escolhasAnteriores.length && !marca.repetivel) return { erro: "Essa Marca só pode ser escolhida uma vez." };
+  if (marca.pedeMagia && !escolha.marcaMagia) return { erro: "Escolha uma magia para esta Marca." };
+  if (marca.pedeMagia && escolhasAnteriores.some((entrada) => entrada.marcaMagia === escolha.marcaMagia)) {
+    return { erro: "Escolha uma magia diferente para Manejo Intuitivo." };
+  }
   if (!(escolha.traco.tipo >= 1 && escolha.traco.tipo <= 4 && escolha.traco.numero >= 1 && escolha.traco.numero <= 8)) {
     return { erro: "Escolha um Traço." };
   }
