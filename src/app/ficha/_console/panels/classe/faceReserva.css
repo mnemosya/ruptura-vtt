@@ -126,17 +126,9 @@
 .fr-fim .fr-link{padding:0 2px}
 .fr-fim .fr-primario{margin-left:auto}
 
-/* Regras: seções e linhas. */
-.fr-regras{display:flex;flex-direction:column;gap:12px}
-.fr-regras>span{padding:14px 0 8px;font:500 10.5px/1 var(--ar-mono);letter-spacing:.18em;color:#8fa6b4}
-.fr-regras>div{display:flex;align-items:flex-start;gap:14px;padding:11px 0;border-top:1px solid #142836}
-.fr-regras>div>b{width:74px;flex:none;font:700 10.5px/1.4 var(--ar-mono);letter-spacing:.12em;color:var(--ca-claro)}
-.fr-regras>div>span{font-size:13.5px;line-height:1.5;color:#c3d6df}
-
-/* Rodapé: Esvaziar à esquerda, Regras no centro, Habilidades à direita. */
+/* Rodapé: Esvaziar à esquerda, Habilidades à direita. */
 .fr-raiz .ar-rodape button{min-height:44px;display:flex;align-items:center}
 .fr-raiz .ar-rodape button:first-child,.fr-raiz .ar-rodape button:last-child{flex:1 1 0}
-.fr-raiz .ar-rodape button:nth-child(2){padding:0 4px}
 .fr-raiz .ar-rodape button:last-child{justify-content:flex-end}
 .fr-raiz .ar-rodape button:disabled{opacity:1;color:#4f6676}
 

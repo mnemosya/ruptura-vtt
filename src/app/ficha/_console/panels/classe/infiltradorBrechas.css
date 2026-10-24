@@ -1,0 +1,95 @@
+/* Tela do Infiltrador — Brechas como marcadores de alvo. Valores das telas
+   aprovadas no canvas (H2 Marcadores sobre a I1, R3, BT1, SR1), copiados do
+   markup das pranchetas. Reaproveita chão, rodapé, painel e Habilidades da
+   Âncora (`ancoraRede.css`) e chips e dicas do Combatente (`combatenteAnel.css`). */
+.in-raiz{--ca:#42b9c7;--ca-suave:color-mix(in srgb,var(--ca) 70%,#a9bfcb)}
+.in-raiz .ar-rolagem{padding-bottom:0}
+.in-raiz .ar-cab>.ca-legenda{font:500 11px/1 var(--ar-mono);letter-spacing:.12em;color:#8fa6b4}
+.in-raiz .ca-legenda i.in-legenda-icone{width:6px;height:12px;transform:none}
+.in-chips{flex-wrap:wrap;gap:10px 12px}
+.in-raiz .ca-chip{white-space:nowrap}
+.in-raiz .ca-chip[data-ativo=true] b{color:#fff}
+
+.in-palco{flex:1 0 auto;display:flex;flex-direction:column;justify-content:center;gap:40px;padding:12px 24px 16px}
+.in-palco[data-chips=true]{gap:36px}
+
+/* Brechas: título, marcadores e a linha de uso. */
+.in-brechas{display:flex;flex-direction:column;align-items:center;gap:14px}
+.in-titulo{display:flex;flex-direction:column;align-items:center;gap:8px}
+.in-titulo>span{position:relative;font:500 11px/1 var(--ar-mono);letter-spacing:.18em;color:#8fa6b4;cursor:help}
+.in-titulo>small{font:500 10.5px/1 var(--ar-mono);letter-spacing:.12em;color:var(--ca-suave)}
+.in-marcadores{display:flex;justify-content:center}
+.in-marcador{width:112px;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0;border:0;background:transparent}
+.in-marcador svg{overflow:visible;transition:filter .16s,transform .16s}
+.in-marcador:not(:disabled):hover svg{filter:brightness(1.3) drop-shadow(0 0 12px var(--ca-halo)) !important;transform:scale(1.05)}
+.in-marcador small{font:700 10px/1 var(--ar-mono);letter-spacing:.14em;color:#7f97a6}
+.in-marcador[data-acesa=true] small{color:var(--ca-suave)}
+.in-marcador[aria-pressed=true] small{color:var(--ca-claro)}
+.in-escolha{min-height:48px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px}
+.in-escolha>span{margin-right:8px;font:700 10px/1 var(--ar-mono);letter-spacing:.14em;color:var(--ca-claro)}
+.in-uso{min-height:42px;padding:0 14px;border:1px solid var(--ca-borda);background:transparent;font:700 10.5px/1 var(--ar-mono) !important;letter-spacing:.12em;color:#eef4f7 !important;transition:background .14s,border-color .14s}
+.in-uso:not(:disabled):hover{border-color:var(--ca-borda);background:color-mix(in srgb,var(--ca-halo) 45%,transparent)}
+.in-uso:disabled{opacity:.45}
+.in-link{min-height:40px;padding:0 4px;border:0;background:transparent;font:600 11px/1 var(--ar-oxa) !important;letter-spacing:.12em;color:var(--ca-claro) !important}
+.in-link[data-tom=neutro]{min-height:42px;color:#8fa6b4 !important}
+.in-link:not(:disabled):hover{color:#fff !important}
+
+/* Receber Brecha: Procurar Brecha e os gatilhos do livro. */
+.in-receber{display:flex;flex-direction:column;align-items:center;gap:16px}
+.in-receber>span{font:500 11px/1 var(--ar-mono);letter-spacing:.18em;color:#8fa6b4}
+.in-receber>span b{font-weight:500;color:var(--ca-claro)}
+.in-receber>span b[data-usado=true]{color:#8fa6b4}
+.in-receber>div{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px}
+.in-gatilho{position:relative;min-height:56px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:4px 8px;border:0;background:transparent;text-align:left}
+.in-gatilho>span:first-child{position:relative;width:38px;height:42px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--ca-claro);transition:transform .16s,filter .16s}
+.in-gatilho>span:first-child>svg:first-child{position:absolute;inset:0}
+.in-gatilho>span:first-child>svg:last-child{position:relative}
+.in-gatilho>span:nth-child(2){display:flex;flex-direction:column;gap:5px}
+.in-gatilho strong{font:600 14.5px/1.1 var(--ar-oxa);color:#eef4f7}
+.in-gatilho small{font:700 9.5px/1.2 var(--ar-mono);letter-spacing:.1em;color:var(--ca-suave)}
+.in-gatilho[data-feito=true] :is(strong,small){color:#8fa6b4}
+.in-gatilho:not(:disabled):hover>span:first-child,.in-gatilho:focus-visible>span:first-child{transform:scale(1.1);filter:drop-shadow(0 0 10px var(--ca-halo))}
+.in-gatilho:not(:disabled):hover strong{color:#fff}
+.in-raiz .ca-dica[data-pos=cima-esq]{left:0;bottom:calc(100% + 10px);transform:translateY(4px)}
+.in-raiz .ca-dica[data-pos=cima-dir]{right:0;bottom:calc(100% + 10px);transform:translateY(4px)}
+.in-raiz .ca-tem-dica:hover>.ca-dica:is([data-pos=cima-esq],[data-pos=cima-dir]),.in-raiz .ca-tem-dica:focus-visible>.ca-dica:is([data-pos=cima-esq],[data-pos=cima-dir]){transform:none}
+
+/* Folhas: Brechas da cena e Reconhecer o Caminho. */
+.in-raiz .ar-painel-corpo{padding-bottom:22px}
+.in-folha{display:flex;flex-direction:column;gap:12px}
+.in-intro{margin:0 0 6px;font-size:13px;line-height:1.5;color:#8fa6b4}
+.in-folha>div:not(.in-folha-fim){display:flex;flex-direction:column}
+.in-linha{min-height:64px;display:flex;align-items:center;gap:16px;border-top:1px solid #142836}
+.in-linha>span:first-child{position:relative;width:40px;height:42px;flex:none;display:flex;align-items:center;justify-content:center;color:#6f8799}
+.in-linha:is([data-tipo=recebeu],[data-tipo=marcou])>span:first-child{color:var(--ca-claro)}
+.in-linha>span:first-child>svg:first-child{position:absolute;inset:0}
+.in-linha>span:first-child>svg:last-child{position:relative}
+.in-linha>span:nth-child(2){flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:6px}
+.in-linha strong{font:600 15px/1.2 var(--ar-oxa);color:#eef4f7}
+.in-linha>span:nth-child(2)>span{font-size:13.5px;line-height:1.4;color:#a9bfcb}
+.in-linha small{font:500 10.5px/1 var(--ar-mono);letter-spacing:.12em;color:#8fa6b4}
+.in-folha-fim{display:flex;justify-content:flex-end;min-height:40px;padding-top:8px}
+.in-rotulo-sec{display:block;margin:0 0 4px;font:500 10px/1 var(--ar-mono);letter-spacing:.16em;color:#8fa6b4}
+.in-rotulo-sec b{font-weight:500;color:var(--ca-claro)}
+.in-pergunta{min-height:52px;display:flex;align-items:center;gap:14px;padding:10px 14px;border:1px solid #24394a;background:transparent;text-align:left;transition:background .14s,border-color .14s}
+.in-pergunta[aria-pressed=true]{border-color:var(--ca-claro);background:var(--ca-medio)}
+.in-pergunta:not(:disabled):hover{border-color:var(--ca-borda);background:color-mix(in srgb,var(--ca-halo) 45%,transparent)}
+.in-pergunta>span:first-child{width:18px;height:18px;flex:none;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border:1.5px solid #24394a;color:#06181b}
+.in-pergunta>span:first-child svg{opacity:0}
+.in-pergunta[aria-pressed=true]>span:first-child{border-color:var(--ca-claro);background:var(--ca-claro)}
+.in-pergunta[aria-pressed=true]>span:first-child svg{opacity:1}
+.in-pergunta>span:last-child{font-size:14.5px;line-height:1.4;color:#eef4f7}
+
+/* Rodapé: Perder à esquerda, Brechas da cena no centro, Habilidades à direita. */
+.in-raiz .ar-rodape button{min-height:44px;display:flex;align-items:center}
+.in-raiz .ar-rodape button:first-child,.in-raiz .ar-rodape button:last-child{flex:1 1 0}
+.in-raiz .ar-rodape button:nth-child(2){gap:10px;padding:0 4px}
+.in-raiz .ar-rodape button:last-child{justify-content:flex-end}
+.in-raiz .ar-rodape button:disabled{opacity:1;color:#4f6676}
+.in-contador{min-width:22px;height:22px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 6px;background:var(--ca-fundo);border:1px solid var(--ca-borda);font:700 11px/1 var(--ar-mono);color:var(--ca-claro)}
+
+@container rc-eq (max-width:640px){
+  .in-receber>div{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .in-marcadores{flex-wrap:wrap}
+  .in-escolha>span{width:100%;margin:0;text-align:center}
+}

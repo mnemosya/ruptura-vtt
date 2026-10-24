@@ -128,3 +128,39 @@ console.log('Combatente: dados com valor, registro, Ponto Fraco, Comprometer e d
  let g=applyClassCommand(mc,{type:'marcarUso',chave:'operation:garimpo',passo:'Desconto do Garimpo'},4);assert.equal(readClassPlay({...g.character,current_scene:5}).uses['operation:garimpo'],1,'uso da operação atravessa cenas');
 }
 console.log('Face: Reserva, usos, Persona, negociação do Mercador e desfazer OK.');
+
+// Infiltrador: Brechas por gatilho e por Procurar Brecha, usos por ranking e subclasse, registro da cena, poderes do B e do S e desfazer.
+{const i=make('infiltrador','batedor','D');
+ assert.deepEqual(readClassPlay(i).registro,[],'registro começa vazio');
+ let r=applyClassCommand(i,{type:'brecha',op:'receber',fonte:'procurar'},4);let s=readClassPlay(r.character);
+ assert.equal(s.resource,1);assert.equal(s.uses['scene:procurar'],1);assert.equal(r.character.estado_jogo?.pa_gastos??0,0,'Procurar Brecha não desconta PA sozinho');
+ r=applyClassCommand(r.character,{type:'brecha',op:'receber',fonte:'despercebido'},4);r=applyClassCommand(r.character,{type:'brecha',op:'receber',fonte:'barreira'},4);s=readClassPlay(r.character);
+ assert.equal(s.resource,3,'três Brechas no D');assert.equal(s.uses['round:gatilho'],2,'o limite por rodada só é contado, não trava');
+ assert.ok(applyClassCommand(r.character,{type:'brecha',op:'receber',fonte:'info'},4).error,'não passa do limite');
+ assert.ok(applyClassCommand(r.character,{type:'brecha',op:'receber',fonte:'inventada'},4).error,'só fontes do livro');
+ r=applyClassCommand(r.character,{type:'brecha',op:'usar',uso:'encobrir'},4);assert.equal(readClassPlay(r.character).resource,2,'Encobrir falha a partir do D');
+ assert.ok(applyClassCommand(r.character,{type:'brecha',op:'usar',uso:'aliado'},4).error,'Encobrir aliado só no C');
+ assert.ok(applyClassCommand(r.character,{type:'brecha',op:'usar',uso:'posicao'},4).error,'Posição Falsa é do Sorrateiro');
+ assert.deepEqual(readClassPlay(r.character).registro?.map(x=>`${x.tipo}:${x.id}`),['recebeu:procurar','recebeu:despercebido','recebeu:barreira','usou:encobrir']);
+ const d=applyClassCommand(r.character,{type:'desfazerCombate'},4);assert.equal(readClassPlay(d.character).resource,3,'desfaz o uso');assert.equal(readClassPlay(d.character).registro?.length,3,'e tira do registro');
+ r=applyClassCommand(r.character,{type:'brecha',op:'perder'},4);s=readClassPlay(r.character);assert.equal(s.resource,0);assert.deepEqual(s.registro?.at(-1),{tipo:'perdeu',id:'perdeu',n:2,rodada:1});
+ const nova=readClassPlay({...r.character,current_scene:2});assert.deepEqual([nova.resource,nova.registro,nova.uses['scene:procurar']],[0,[],undefined],'nova cena zera Brechas, registro e Procurar');
+ assert.ok(applyClassCommand(i,{type:'brecha',op:'fantasma'},4).error,'Caminho Fantasma no B');
+ let b=make('infiltrador','batedor','C');b=applyClassCommand(b,{type:'brecha',op:'receber',fonte:'vaga'},4).character;
+ assert.equal(applyClassCommand(b,{type:'brecha',op:'usar',uso:'aliado'},4).error,undefined,'Encobrir aliado no C');
+ let p=applyClassCommand(b,{type:'marcarUso',chave:'ativo:passos',passo:'Sigam Meus Passos'},4);assert.equal(readClassPlay(p.character).registro?.at(-1)?.id,'passos','Sigam Meus Passos entra no registro');
+ assert.equal(readClassPlay({...p.character,current_round:2}).uses['ativo:passos'],1,'a orientação atravessa a rodada');
+ assert.equal(readClassPlay({...p.character,current_scene:2}).uses['ativo:passos'],undefined,'e acaba com a cena');
+ let so=make('infiltrador','sorrateiro','A');so=applyClassCommand(so,{type:'brecha',op:'receber',fonte:'vaga'},4).character;so=applyClassCommand(so,{type:'brecha',op:'receber',fonte:'vaga'},4).character;
+ assert.ok(applyClassCommand(make('infiltrador','sorrateiro','A'),{type:'brecha',op:'usar',uso:'piscar'},4).error,'Entre Um Piscar pede 2 Brechas');
+ let pi=applyClassCommand(so,{type:'brecha',op:'usar',uso:'piscar'},4);assert.equal(readClassPlay(pi.character).resource,0);assert.equal(readClassPlay(pi.character).uses['scene:piscar'],1);
+ let pf=applyClassCommand(so,{type:'brecha',op:'usar',uso:'posicao'},4);assert.deepEqual([readClassPlay(pf.character).uses['round:posicao'],readClassPlay(pf.character).uses['ativo:posicao']],[1,1],'Posição Falsa marca a rodada e fica ativa');
+ let fa=applyClassCommand(pf.character,{type:'brecha',op:'fantasma'},4);assert.equal(readClassPlay(fa.character).resource,2);assert.equal(readClassPlay(fa.character).uses['scene:fantasma'],1,'antes do S, 1× por cena');
+ const sx=make('infiltrador','sorrateiro','S');const ss=readClassPlay(sx);
+ assert.equal(ss.resource,2,'Ninguém Esteve Aqui: começa a cena com 2');assert.deepEqual(ss.registro,[{tipo:'recebeu',id:'inicio',rodada:0,n:2}]);
+ let f2=applyClassCommand(applyClassCommand(sx,{type:'brecha',op:'usar',uso:'margem'},4).character,{type:'brecha',op:'fantasma'},4);assert.equal(readClassPlay(f2.character).uses['round:fantasma'],1,'no S, por rodada');
+ let pl=applyClassCommand(f2.character,{type:'brecha',op:'plano'},4);assert.equal(readClassPlay(pl.character).resource,0);assert.deepEqual(readClassPlay(pl.character).registro?.at(-1),{tipo:'perdeu',id:'plano',n:2,rodada:1});
+ assert.equal(readClassPlay(applyClassCommand(pl.character,{type:'desfazerCombate'},4).character).resource,2,'desfaz o Plano');
+ assert.equal(readClassPlay({...pl.character,current_scene:2}).resource,2,'nova cena no S recomeça com 2');
+}
+console.log('Infiltrador: Brechas, usos, registro, Caminho Fantasma, Plano e desfazer OK.');

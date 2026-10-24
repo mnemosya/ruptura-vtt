@@ -63,7 +63,7 @@ const lerPersona = (texto?: string): Persona => { try { return { imagem: "", mei
 type Chip = { chave: string; icone: string; rotulo: string; valor: string; usado: boolean; vazio?: boolean; dica: string; clicar: () => void };
 
 export function FaceReserva({ api, rank, subclassId }: { api: Api; rank: string; subclassId?: string }) {
-  const [painel, setPainel] = useState<null | "habilidades" | "regras" | "persona" | "negocio">(null);
+  const [painel, setPainel] = useState<null | "habilidades" | "persona" | "negocio">(null);
   const [editando, setEditando] = useState<number | null>(null);
   const [editNeg, setEditNeg] = useState<number | null>(null);
   const [visao, setVisao] = useState<"confianca" | "negociacao">("confianca");
@@ -191,18 +191,6 @@ export function FaceReserva({ api, rank, subclassId }: { api: Api; rank: string;
 
   const mercador = temSub && subclassId === "mercador";
   const rotulo = temSub ? `${sub!.nome.toUpperCase()} · ${rank}` : `RANKING ${rank}`;
-  const regras: ([string, string] | string)[] = [
-    "RESERVA DE CONFIANÇA",
-    ["QUANDO", "Depois de rolar os d8 de um Teste de Interação e antes de determinar o resultado. Uma vez por teste."],
-    ["GUARDAR", "Tire um dos d8 rolados e coloque numa vaga vazia. Pelo menos um dado fica no teste."],
-    ["TROCAR", "Um d8 do teste e um da Reserva trocam de lugar."],
-    ["VALORES", `Os dados guardados mantêm o resultado. A Reserva começa vazia em cada ${at("B") ? "operação e é descartada no fim dela" : "cena e é descartada no fim dela"}.`],
-    "MANOBRAS SOCIAIS",
-    ["LIMITADO", "A Manobra ocorre em parte, exige uma concessão ou produz uma complicação."],
-    ["PADRÃO", "A Manobra produz todo o efeito pretendido."],
-    ["CRÍTICO", at("S") ? "Até três Manobras diferentes da mesma abordagem." : "Duas Manobras diferentes da mesma abordagem, ou a original em termos melhores."],
-    ["ALVO", "Cada Manobra afeta a mesma criatura ou grupo uma vez por cena."],
-  ];
 
   const blocoReserva = <section className="fr-reserva" aria-label="Reserva de Confiança">
     <div className="fr-titulo">
@@ -271,16 +259,11 @@ export function FaceReserva({ api, rank, subclassId }: { api: Api; rank: string;
 
     <footer className="ar-rodape">
       <button type="button" disabled={locked || !reserva.length} onClick={() => { setEditando(null); enviar({ type: "esvaziarReserva" }); }}>ESVAZIAR RESERVA</button>
-      <button type="button" onClick={() => setPainel("regras")}>REGRAS</button>
       <button type="button" onClick={() => setPainel("habilidades")}>HABILIDADES ›</button>
     </footer>
 
     {painel === "habilidades" && <Painel titulo="HABILIDADES" fechar={() => setPainel(null)}>
       <ListaHabilidades classe={classe} sub={temSub ? sub : undefined} rank={rank} glossario={api.glossario} iconeClasse={<Svg d={ICONES.classe} tam={16} />} />
-    </Painel>}
-
-    {painel === "regras" && <Painel baixo titulo="REGRAS DA FACE" fechar={() => setPainel(null)}>
-      <div className="fr-regras">{regras.map((r, i) => typeof r === "string" ? <span key={i}>{r}</span> : <div key={i}><b>{r[0]}</b><span>{r[1]}</span></div>)}</div>
     </Painel>}
 
     {painel === "persona" && rascunho && <Painel baixo titulo="PERSONA PÚBLICA" fechar={() => setPainel(null)}>
