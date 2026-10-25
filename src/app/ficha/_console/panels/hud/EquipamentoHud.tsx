@@ -350,7 +350,11 @@ function Encaixe({ peca, encaixe, ativo, quente, onClick, lado = "e" }: { peca: 
       )}
       {peca && <span style={{ position: "absolute", right: 0, top: 0, width: 0, height: 0, borderLeft: "8px solid transparent", borderTop: `8px solid ${corRar(peca.raridade)}` }} />}
       <span style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", display: "grid" }}>
-        <ItemCategoryIcon category={ehArmadura(encaixe) ? encaixe : encaixe === "mochila_equipada" ? "mochila_equipada" : peca?.categoria ?? (encaixe === "arma_secundaria" ? "escudo" : ehArma(encaixe) ? "arma" : encaixe.startsWith("acesso_rapido") ? "acesso_rapido" : encaixe)} weaponName={peca?.weaponName ?? peca?.nome} itemType={peca?.tipo} size={S * .46} color={peca ? cor : CY} strokeWidth={1.5} style={{ opacity: peca ? 1 : .22 }} />
+        {!peca && encaixe.startsWith("acesso_rapido")
+          ? <svg viewBox="0 0 50 50" width={S * .46} height={S * .46} fill={CY} opacity={.22} aria-hidden="true" data-icon="noun_Cross_34348">
+              <polygon points="18.64,1.843 31.43,1.843 31.43,18.638 48.156,18.638 48.156,31.358 31.43,31.358 31.43,48.157 18.64,48.157 18.64,31.358 1.843,31.358 1.843,18.638 18.64,18.638" />
+            </svg>
+          : <ItemCategoryIcon category={ehArmadura(encaixe) ? encaixe : encaixe === "mochila_equipada" ? "mochila_equipada" : peca?.categoria ?? (encaixe === "arma_secundaria" ? "escudo" : ehArma(encaixe) ? "arma" : encaixe)} weaponName={peca?.weaponName ?? peca?.nome} itemType={peca?.tipo} size={S * .46} color={peca ? cor : CY} strokeWidth={1.5} style={{ opacity: peca ? 1 : .22 }} />}
       </span>
       {selo != null && (
         <span className="hx-display" style={{ position: "absolute", top: "50%", transform: "translateY(-50%)",

@@ -2,6 +2,7 @@
 import { workshopDefenseBonus } from "../../../../lib/character/inventory";
 import { itemDescription } from "../../../../lib/character/itemDescription";
 import { itemDisplayName } from "../../../../lib/character/itemDisplayName";
+import { itemPropertyPresentation } from "../../../../lib/character/itemPropertyPresentation";
 
 /**
  * Aba EQUIPAMENTOS — o "ripperdoc" (`hud/EquipamentoHud.tsx`) ligado
@@ -45,7 +46,7 @@ export function pecaDe(api: ConsoleApi, inst: InventoryItemInstance): PecaHud {
   if (ocultavel) linhas.push({ rotulo: "Ocultável", valor: ocultavel });
   // Valor do item (o mesmo "₳ 1.500" da coluna Valor da lista do Inventário).
   if (modelo?.preco) linhas.push({ rotulo: "Valor", valor: `₳ ${modelo.preco.toLocaleString("pt-BR")}` });
-  const propriedades = api.propriedadesDoItem(inst.id).filter(t => !/ocult/i.test(`${t.slug} ${t.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "")}`)).map(t => ({ nome: t.nome, descricao: t.descricao }));
+  const propriedades = api.propriedadesDoItem(inst.id).filter(t => !/ocult/i.test(`${t.slug} ${t.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "")}`)).map(t => itemPropertyPresentation(t, modelo));
   const descricao = itemDescription(modelo, [...linhas.map(l => l.rotulo), ...(dano ? ["Dano"] : []),
     ...(propriedades.length ? ["Propriedades"] : []), ...(modelo?.mitMax != null ? ["MIT", "Proteção"] : []),
     ...(modelo?.pdMax != null ? ["PD", "Proteção"] : []), ...(modelo?.regioes && modelo.regioes.length > 1 ? ["Cobertura"] : [])]);

@@ -2,6 +2,7 @@
 import { itemDescription } from "../../../../lib/character/itemDescription";
 import { ammunitionType } from "../../../../lib/character/ammunitionType";
 import { itemDisplayName } from "../../../../lib/character/itemDisplayName";
+import { itemPropertyPresentation } from "../../../../lib/character/itemPropertyPresentation";
 import { ehMochilaMk } from "../../../../lib/character/backpacks";
 
 /**
@@ -229,7 +230,7 @@ function itemDoHud(api: ConsoleApi, instancia: InventoryItemInstance): ItemHud {
   if (modelo?.custoPaUsoTexto) linhas.push({ rotulo: "Duração", valor: modelo.custoPaUsoTexto });
   if (ocultavel) linhas.push({ rotulo: "Ocultável", valor: ocultavel });
 
-  const propriedades = api.propriedadesDoItem(instancia.id).map(t => t.nome);
+  const propriedades = api.propriedadesDoItem(instancia.id).map(t => itemPropertyPresentation(t, modelo).nome);
   const descricao = itemDescription(modelo, [...linhas.map(l => l.rotulo), ...(dano ? ["Dano"] : []),
     ...(propriedades.length ? ["Propriedades"] : []), ...(modelo?.custoPaUso != null ? ["Custo"] : []),
     ...(modelo?.municaoMax != null ? ["Munição"] : []), ...(modelo?.cargasMax != null ? ["Cargas"] : [])]);
@@ -387,8 +388,7 @@ export function produtoDoModelo(api: ConsoleApi, modelo: ItemContent): ProdutoHu
   if (modelo.pdMax != null) linhas.push({ rotulo: "PD", valor: String(modelo.pdMax) });
   if (ocultavel) linhas.push({ rotulo: "Ocultável", valor: ocultavel });
   const termos = new Map((api.propriedadesCatalogo ?? api.glossario.filter(t => t.tipo === "propriedade")).map(t => [t.slug, t]));
-  const nomes = new Map([...termos].map(([slug, termo]) => [slug, termo.nome]));
-  const propriedades = modelo.propertySlugs.map(s => nomes.get(s) ?? s);
+  const propriedades = modelo.propertySlugs.map(s => itemPropertyPresentation(termos.get(s) ?? { slug: s, nome: s, descricao: null }, modelo).nome);
   const descricao = itemDescription(modelo, [...linhas.map(l => l.rotulo), ...(dano ? ["Dano"] : []),
     ...(propriedades.length ? ["Propriedades"] : []), ...(modelo.custoPaUso != null ? ["Custo"] : []),
     ...(modelo.municaoMax != null ? ["Munição"] : []), ...(modelo.cargasMax != null ? ["Cargas"] : [])]);
@@ -407,7 +407,8 @@ export function produtoDoModelo(api: ConsoleApi, modelo: ItemContent): ProdutoHu
     propriedades,
     descricoesPropriedades: Object.fromEntries(modelo.propertySlugs.map(slug => {
       const termo = termos.get(slug);
-      return [nomes.get(slug) ?? slug, termo?.descricao ?? null];
+      const apresentada = itemPropertyPresentation(termo ?? { slug, nome: slug, descricao: null }, modelo);
+      return [apresentada.nome, apresentada.descricao];
     })),
     linhas,
     pa: modelo.custoPaUso ?? null,

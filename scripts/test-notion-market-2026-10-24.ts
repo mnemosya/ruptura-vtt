@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { normalizeItemContent } from "../src/lib/character/inventory";
+import { itemPropertyPresentation } from "../src/lib/character/itemPropertyPresentation";
 import { normalizeCompanionModel } from "../src/lib/character/companionModels";
 import { itemCabeNoSlot } from "../src/app/ficha/_console/slots";
 import type { ItemContent } from "../src/lib/character";
@@ -40,6 +41,18 @@ assert.match(runas.find((runa: { slug: string }) => runa.slug === "armaduras_e_e
 assert.match(runas.find((runa: { slug: string }) => runa.slug === "armaduras_e_escudos_retratil").descricao_longa, /Interagir.*1 PA/);
 assert.match(items.find((item: { slug: string }) => item.slug === "mobilidade_baia_de_unidades").descricao_longa, /2 Máquinas Autônomas/);
 assert.equal(items.find((item: { slug: string }) => item.slug === "armas_rv_4_shiv_faca").estatisticas.rajada_x, 2);
+const shiv = normalizeItemContent(items.find((item: { slug: string }) => item.slug === "armas_rv_4_shiv_faca"));
+assert.equal(shiv.rajadaX, 2);
+assert.deepEqual(itemPropertyPresentation({ slug: "rajada", nome: "Rajada", descricao: "Permite disparar X vezes com uma única ação." }, shiv), {
+  nome: "Rajada (2)", descricao: "Permite disparar 2 vezes com uma única ação.",
+});
+for (const [nome, quantidade] of [["Submetralhadora", 3], ["Metralhadora", 4]] as const) {
+  const arma = normalizeItemContent(items.find((item: { nome: string }) => item.nome === nome));
+  assert(arma.propertySlugs.includes("rajada"));
+  assert.deepEqual(itemPropertyPresentation({ slug: "rajada", nome: "Rajada", descricao: "Permite disparar X vezes." }, arma), {
+    nome: `Rajada (${quantidade})`, descricao: `Permite disparar ${quantidade} vezes.`,
+  });
+}
 const claws = items.find((item: { slug: string }) => item.slug === "armas_bb_6_claws_escopeta_curta");
 assert.equal(claws.estatisticas.maos, 1);
 assert(!claws.descricao_longa.includes("Padrão adaptativo"));

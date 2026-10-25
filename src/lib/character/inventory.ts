@@ -96,6 +96,8 @@ export interface ItemContent {
   tags: string[];
   /** Slugs canônicos de `estatisticas.propriedades` do modelo. */
   propertySlugs: string[];
+  /** `estatisticas.rajada_x` — disparos da propriedade Rajada deste modelo. */
+  rajadaX: number | null;
   /** Campo de modelo presente em armaduras/escudos; não representa o estado atual da instância. */
   ocultavel?: "sim" | "parcial" | "nao";
   /** Verdadeiro somente quando `estatisticas.municao_max` existe como número no modelo. */
@@ -233,6 +235,7 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
     descricao_longa: typeof raw.descricao_longa === "string" ? raw.descricao_longa : undefined,
     tags: asStringArray(raw.tags),
     propertySlugs: asStringArray(estatisticas?.propriedades),
+    rajadaX: typeof estatisticas?.rajada_x === "number" && Number.isInteger(estatisticas.rajada_x) && estatisticas.rajada_x > 0 ? estatisticas.rajada_x : null,
     ocultavel:
       raw.ocultavel === "sim" || raw.ocultavel === "parcial" || raw.ocultavel === "nao"
         ? raw.ocultavel
