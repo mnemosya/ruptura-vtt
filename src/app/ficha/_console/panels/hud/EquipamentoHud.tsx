@@ -2,6 +2,7 @@
 
 import { corCategoria } from "../../../../_design/itemCategoryColors";
 import { ItemCategoryIcon } from "../../../../_design/itemIcons";
+import { FilledIcon } from "../../../../_design/FilledIcon";
 
 /**
  * EQUIPAMENTO — o "ripperdoc" do protótipo
@@ -248,11 +249,11 @@ export function EquipamentoHud(props: PropsEquipamentoHud) {
               );
             })}
           </div>
-          <div style={{ position: "absolute", bottom: 38, left: `calc(50% - ${PALCO / 2}px)`, width: PALCO, display: "grid", gridTemplateColumns: `minmax(0, 1fr) ${S}px minmax(0, 1fr)`, alignItems: "end", gap: 12 }}>
-            {([["acessorio_1", "acessorio_2"], ["mochila_equipada"], ["locomocao"]] as EncaixeHud[][]).map((grupo, index) => <div key={index} style={{ display: "flex", flexDirection: index === 0 ? "column" : "row", gap: 20, alignItems: index === 0 ? "flex-start" : "center", justifyContent: index === 2 ? "flex-end" : "center" }}>
-              {grupo.map(e => <div key={e} style={{ width: S, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }} onMouseEnter={() => setHover(e)} onMouseLeave={() => setHover(null)}>
+          <div style={{ position: "absolute", bottom: 38, left: `calc(50% - ${PALCO / 2}px)`, width: PALCO, display: "grid", gridTemplateColumns: `minmax(0, 1fr) ${S}px minmax(0, 1fr)`, alignItems: "end", gap: 12, pointerEvents: "none" }}>
+            {([["acessorio_1", "acessorio_2"], ["mochila_equipada"], ["locomocao"]] as EncaixeHud[][]).map((grupo, index) => <div key={index} style={{ display: "flex", flexDirection: index === 0 ? "column" : "row", gap: 20, alignItems: index === 0 ? "flex-start" : "center", justifyContent: index === 2 ? "flex-end" : "center", pointerEvents: "none" }}>
+              {grupo.map(e => <div key={e} style={{ width: S, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, pointerEvents: "auto" }} onMouseEnter={() => setHover(e)} onMouseLeave={() => setHover(null)}>
                 <Encaixe peca={encaixes[e]} encaixe={e} lado={index === 2 ? "d" : "e"} ativo={sel === e} quente={hover === e} onClick={() => abrir(sel === e ? null : e)} />
-                <Tag className="hx-dim" style={{ fontSize: 10, whiteSpace: "nowrap" }}>{ROTULO[e]}</Tag>
+                <Tag className="hx-dim" style={{ fontSize: 10, opacity: .7, whiteSpace: "nowrap" }}>{ROTULO[e]}</Tag>
               </div>)}
             </div>)}
           </div>
@@ -351,10 +352,12 @@ function Encaixe({ peca, encaixe, ativo, quente, onClick, lado = "e" }: { peca: 
       {peca && <span style={{ position: "absolute", right: 0, top: 0, width: 0, height: 0, borderLeft: "8px solid transparent", borderTop: `8px solid ${corRar(peca.raridade)}` }} />}
       <span style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", display: "grid" }}>
         {!peca && encaixe.startsWith("acesso_rapido")
-          ? <svg viewBox="0 0 50 50" width={S * .46} height={S * .46} fill={CY} opacity={.22} aria-hidden="true" data-icon="noun_Cross_34348">
+          ? <svg viewBox="0 0 50 50" width={S * .42} height={S * .42} fill={CY} opacity={.22} aria-hidden="true" data-icon="noun_Cross_34348">
               <polygon points="18.64,1.843 31.43,1.843 31.43,18.638 48.156,18.638 48.156,31.358 31.43,31.358 31.43,48.157 18.64,48.157 18.64,31.358 1.843,31.358 1.843,18.638 18.64,18.638" />
             </svg>
-          : <ItemCategoryIcon category={ehArmadura(encaixe) ? encaixe : encaixe === "mochila_equipada" ? "mochila_equipada" : peca?.categoria ?? (encaixe === "arma_secundaria" ? "escudo" : ehArma(encaixe) ? "arma" : encaixe)} weaponName={peca?.weaponName ?? peca?.nome} itemType={peca?.tipo} size={S * .46} color={peca ? cor : CY} strokeWidth={1.5} style={{ opacity: peca ? 1 : .22 }} />}
+          : !peca && encaixe === "suporte_municao"
+            ? <FilledIcon icon="cartucheira" size={S * .50} color={CY} style={{ opacity: .22 }} />
+          : <ItemCategoryIcon category={ehArmadura(encaixe) ? encaixe : encaixe === "mochila_equipada" ? "mochila_equipada" : peca?.categoria ?? (encaixe === "arma_secundaria" ? "escudo" : ehArma(encaixe) ? "arma" : encaixe)} weaponName={peca?.weaponName ?? peca?.nome} itemType={peca?.tipo} size={S * (!peca && ["cabeca", "membro_superior", "arma_primaria", "estrutura_dorsal", "locomocao"].includes(encaixe) ? .56 : .46)} color={peca ? cor : CY} strokeWidth={1.5} style={{ opacity: peca ? 1 : .22 }} />}
       </span>
       {selo != null && (
         <span className="hx-display" style={{ position: "absolute", top: "50%", transform: "translateY(-50%)",

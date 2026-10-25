@@ -29,7 +29,7 @@ type Registro = { id: string; nome: string; modelo?: TechnicalContentItem; insta
 type EscalposApi = Pick<ConsoleApi, "character" | "derivados" | "catalogo" | "escalpos" | "glossario" | "somenteLeitura">;
 const NOS = [
   { id: "neurais", x: 38, y: 48, px: 160, py: 46 },
-  { id: "opticos", x: 322, y: 48, px: 176, py: 56 },
+  { id: "opticos", x: 322, y: 48, px: 164, py: 56 },
   { id: "auditivos", x: 38, y: 173, px: 140, py: 60 },
   { id: "internos", x: 322, y: 173, px: 170, py: 181 },
   { id: "de_braco", x: 38, y: 298, px: 113, py: 212 },
@@ -71,7 +71,7 @@ export function EscalposPanel({ api }: { api: EscalposApi }) {
             })}</g></g>
             {NOS.map(n => {
               const r = REGIOES_ESCALPOS.find(r => r.id === n.id)!, Icon = ICONES[r.id], quantidade = contar(r.id), selecionado = regiao === r.id;
-              return <g key={r.id} className="hs-node-link" data-ativo={selecionado || undefined} style={{ ["--hs-delay" as string]: `${300 + NOS.indexOf(n) * 70}ms` }}>{n.id !== "identidade" && <><path pathLength="1" d={`M${n.x} ${n.y}H${n.x < 180 ? 76 : 284}L${n.px} ${n.py}`} className="hs-wire" /><circle cx={n.px} cy={n.py} r="2" className="hs-wire-dot" /></>}<g className="hs-node" data-ativo={selecionado || undefined} data-ocupado={quantidade > 0 || undefined} role="button" tabIndex={0} aria-label={`${r.nome}: ${quantidade} ${quantidade === 1 ? "escalpo" : "escalpos"}`} aria-pressed={selecionado} onClick={() => setRegiao(selecionado ? "todos" : r.id)} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRegiao(selecionado ? "todos" : r.id); } }}>
+              return <g key={r.id} className="hs-node-link" data-ativo={selecionado || undefined} style={{ ["--hs-delay" as string]: `${300 + NOS.indexOf(n) * 70}ms` }}>{r.corpo != null && <><path pathLength="1" d={`M${n.x} ${n.y}H${n.x < 180 ? 76 : 284}L${n.px} ${n.py}`} className="hs-wire" /><circle cx={n.px} cy={n.py} r="2" className="hs-wire-dot" /></>}<g className="hs-node" data-ativo={selecionado || undefined} data-ocupado={quantidade > 0 || undefined} role="button" tabIndex={0} aria-label={`${r.nome}: ${quantidade} ${quantidade === 1 ? "escalpo" : "escalpos"}`} aria-pressed={selecionado} onClick={() => setRegiao(selecionado ? "todos" : r.id)} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRegiao(selecionado ? "todos" : r.id); } }}>
                 <rect x={n.x - 22} y={n.y - 22} width="44" height="44" className="hs-node-box" />
                 <Icon x={n.x - 11} y={n.y - 11} width={22} height={22} strokeWidth={1.5} />
                 <text x={n.x} y={n.y + 38} textAnchor="middle" className="hs-node-label">{r.nome}</text>
