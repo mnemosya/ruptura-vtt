@@ -105,7 +105,7 @@ export function InfiltradorBrechas({ api, rank, subclassId }: { api: Api; rank: 
 
   /* ── Brechas ── */
   const brechas = st.resource, max = res.max, cheia = brechas >= max;
-  const receber = (fonte: string) => { setUsando(false); if (!cheia) enviar({ type: "brecha", op: "receber", fonte }); };
+  const receber = (fonte: string) => { setUsando(false); if (!cheia) enviar({ type: "brecha", op: "receber", fonte, pa: fonte === "procurar" ? 1 : 0 }); };
   const tocar = (j: number) => { if (j < brechas) setUsando(!usando); else receber("vaga"); };
   const usos = Object.keys(ROTULO_USO).filter(id => { const u = USOS_BRECHA[id]; return at(u.rank) && (!u.sub || (temSub && subclassId === u.sub)); });
   const usar = (id: string) => { setUsando(false); enviar({ type: "brecha", op: "usar", uso: id }); };
@@ -130,7 +130,7 @@ export function InfiltradorBrechas({ api, rank, subclassId }: { api: Api; rank: 
     if (at("A")) chips.push({ chave: "todos", icone: ICONES.todos, rotulo: "TODOS PELO MESMO CAMINHO", usado: !!uso("scene:todos"), valor: uso("scene:todos") ? "PASSAGEM PREPARADA" : "1× POR CENA", dica: DICAS.todos, clicar: marca("scene:todos", "Todos Pelo Mesmo Caminho", "Passagem desmarcada") });
   } else if (temSub && subclassId === "sorrateiro") {
     chips.push({ chave: "sumir", icone: ICONES.sumir, rotulo: "SUMIR DE VISTA", usado: !!uso("round:sumir"), valor: uso("round:sumir") ? "USADO NA RODADA" : "1× POR RODADA", dica: DICAS.sumir, clicar: marca("round:sumir", "Sumir de Vista", "Sumir de Vista desmarcado") });
-    chips.push({ chave: "maos", icone: ICONES.maos, rotulo: "MÃOS LEVES", usado: !!uso("round:maos"), valor: uso("round:maos") ? "USADO NA RODADA" : "1× POR RODADA", dica: DICAS.maos, clicar: marca("round:maos", "Mãos Leves", "Mãos Leves desmarcado") });
+    chips.push({ chave: "maos", icone: ICONES.maos, rotulo: "MÃOS LEVES", usado: !!uso("round:maos"), valor: uso("round:maos") ? "USADO NA RODADA" : "1× POR RODADA", dica: DICAS.maos, clicar: () => enviar({ type: "marcarUso", chave: "round:maos", passo: uso("round:maos") ? "Mãos Leves desmarcado" : "Mãos Leves", pa: uso("round:maos") ? 1 : -1 }) });
     if (uso("ativo:posicao")) chips.push({ chave: "posicao", icone: ICONES.posicao, rotulo: "POSIÇÃO FALSA", usado: false, ativo: true, valor: "ATIVA ATÉ SEU PRÓXIMO TURNO", dica: DICAS.posicaoAtiva, clicar: () => enviar({ type: "marcarUso", chave: "ativo:posicao", valor: false, passo: "Posição Falsa encerrada" }) });
   }
   const chipView = (c: Chip, k: number) =>

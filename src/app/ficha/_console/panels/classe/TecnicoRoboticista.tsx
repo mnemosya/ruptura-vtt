@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import type { ConsoleApi } from "../../types";
 import type { ClassPlayState } from "../../../../../lib/character/classManagement";
 import { paDaMaquina, unidade, INTRUSAO, type TecnicoAcao } from "../../../../../lib/character/tecnicoTela";
 import { ItemCategoryIcon } from "../../../../_design/itemIcons";
 import companheiros from "../../../../../../content/v12/db_mercado_companheiros_v1_2.json";
 import { Painel } from "./painelClasse";
+import type { ChipSub, ModSub } from "./tecnicoSub";
 import "./tecnicoRoboticista.css";
 
 type Modelo = { slug: string; id: string; nome: string; categoria: string; preco: number; pa_maximo: number | null; pd_maximo: number | null; sistemas_texto: string | null; acoes: { nome: string; custoPA: number; descricao: string }[] };
@@ -39,13 +40,11 @@ function maquinasDoPersonagem(api: Pick<ConsoleApi, "character">): Maquina[] {
   ];
 }
 
-export type ChipSub = { chave: string; icone: string; rotulo: string; valor: string; usado: boolean; dica: string; clicar: () => void; tom?: string };
-
 /** Roboticista (RB2): máquinas com IA no rodapé, Comunicação e Intrusão Mecânica nos chips. */
 export function useRoboticista({ api, st, rank, max, acao, locked }: {
   api: Pick<ConsoleApi, "character">; st: ClassPlayState; rank: (r: string) => boolean; max: number;
-  acao: (a: TecnicoAcao, passo: string) => void; locked: boolean;
-}): { chips: ChipSub[]; rodape: ReactNode; painel: ReactNode } {
+  acao: (a: TecnicoAcao, passo: string, pa?: number) => void; locked: boolean;
+}): ModSub {
   const [painel, setPainel] = useState<null | "maquinas" | "maquina" | "intrusao">(null);
   const [sel, setSel] = useState<string | null>(null);
   const [transf, setTransf] = useState(false);
@@ -64,6 +63,8 @@ export function useRoboticista({ api, st, rank, max, acao, locked }: {
     return { e, pd, p, uj, ia, aut, lim, usAut: Math.min(p.n, aut), usSeu: Math.max(0, p.n - aut) };
   };
   const textoPa = (i: ReturnType<typeof info>) => !i.ia ? (i.p.n ? `${i.p.n} PA SEU${i.p.n === 1 ? "" : "S"}` : "PA SEUS") : `${i.usAut}/${i.aut} AUTÔNOMOS` + (i.usSeu ? ` · +${i.usSeu} SEU${i.usSeu === 1 ? "" : "S"}` : "");
+  /** PA do personagem quando a máquina passa de `de` para `para` PA gastos (o que excede os autônomos sai dos seus). */
+  const seus = (i: ReturnType<typeof info>, de: number, para: number) => Math.max(0, para - i.aut) - Math.max(0, de - i.aut);
   const corPip = (i: ReturnType<typeof info>, k: number) => k < i.p.n ? (k < i.aut ? "aut" : "seu") : k < i.aut ? "livre" : "vazio";
 
   const chips: ChipSub[] = [
@@ -94,7 +95,8 @@ export function useRoboticista({ api, st, rank, max, acao, locked }: {
 
   const painelView = painel === "maquinas" ? <Painel baixo titulo="MÁQUINAS VINCULADAS" fechar={() => setPainel(null)}>
     <div className="te-folha">
-      <div className="rb-cab"><span /><span className="ca-tem-dica" tabIndex={0}>IA · <b>{AUT} PA AUTÔNOMO{AUT === 1 ? "" : "S"} POR RODADA</b><span className="ca-dica" data-pos="baixo-dir" role="tooltip">Núcleo de IA: a máquina com uma Unidade sua acoplada recebe PA autônomos por rodada. Complete o custo das ações com seus PA, gastando primeiro os autônomos, até o limite de PA da ficha dela. Ordens não custam PA. Se a Unidade for recolhida, desacoplada ou ficar Inativa, a IA para.</span></span></div>
+      <div className="rb-cab"><span /><span>IA · <b>{AUT} PA AUTÔNOMO{AUT === 1 ? "" : "S"} POR RODADA</b></span></div>
+      <p className="te-intro">A máquina com uma Unidade sua acoplada recebe PA autônomos por rodada. As ações gastam primeiro os autônomos e depois os seus, até o limite de PA da ficha dela. Ordens não custam PA.</p>
       {maqs.length ? cartoes : <p className="te-intro">Nenhuma máquina vinculada.</p>}
     </div>
   </Painel> : painel === "maquina" && m && I ? <Painel baixo titulo={`${m.nome.toUpperCase()} · ${m.tipo}`} fechar={() => setPainel("maquinas")}>
@@ -112,13 +114,13 @@ export function useRoboticista({ api, st, rank, max, acao, locked }: {
       <div className="rb-pa-grande">
         <div role="group" aria-label="PA da rodada">{Array.from({ length: m.paMax }, (_, k) =>
           <button key={k} type="button" className="rb-pip" aria-label={`PA ${k + 1}`} disabled={locked} data-cor={corPip(I, k)}
-            onClick={() => { const n = k + 1 === I.p.n ? k : k + 1; acao({ op: "maquina", id: m.id, pa: n }, passo(`PA ${I.p.n} → ${n}`)); }}><i /></button>)}</div>
+            onClick={() => { const n = k + 1 === I.p.n ? k : k + 1; acao({ op: "maquina", id: m.id, pa: n }, passo(`PA ${I.p.n} → ${n}`), seus(I, I.p.n, n)); }}><i /></button>)}</div>
         <span data-ia={I.ia || undefined}>{textoPa(I)}</span>
         <button type="button" className="te-link" disabled={locked} onClick={() => acao({ op: "novaRodada" }, "Nova rodada")}>NOVA RODADA</button>
       </div>
       <span className="te-rotulo rb-sec">AÇÕES</span>
       <div className="rb-acoes">{m.acoes.map(x => { const n = I.p.feitas.filter(f => f === x.nome).length, cabe = I.pd > 0 && I.p.n + x.pa <= I.lim;
-        return <button key={x.nome} type="button" className="rb-acao ca-tem-dica" disabled={locked || !cabe} onClick={() => acao({ op: "maquina", id: m.id, acao: x.nome, custo: x.pa }, passo(x.nome))}>
+        return <button key={x.nome} type="button" className="rb-acao ca-tem-dica" disabled={locked || !cabe} onClick={() => acao({ op: "maquina", id: m.id, acao: x.nome, custo: x.pa }, passo(x.nome), seus(I, I.p.n, I.p.n + x.pa))}>
           <span><strong>{x.nome}</strong><small>{I.pd <= 0 ? "DESTRUÍDA" : n ? `${n}× NESTA RODADA` : cabe ? (I.ia && I.p.n + x.pa <= I.aut ? "COM PA AUTÔNOMO" : "COM PA SEU") : "ACIMA DO LIMITE"}</small></span>
           <b>{x.pa} PA</b>
           <span className="ca-dica" data-pos="cima" role="tooltip">{x.texto}</span>
@@ -140,7 +142,7 @@ export function useRoboticista({ api, st, rank, max, acao, locked }: {
         <span className="te-rotulo rb-sec">RECONFIGURAÇÃO DE EMERGÊNCIA · <b data-usado={!!st.uses["round:alternar"] || undefined}>{st.uses["round:alternar"] ? "USADA NA RODADA" : "1 PA · 1× POR RODADA"}</b></span>
         {I.e?.troca ? <div className="rb-troca"><span>Ativo: <b>{I.e.troca[0]}</b> · reserva: {I.e.troca[1]}</span>
           <button type="button" className="te-link" disabled={locked} onClick={() => acao({ op: "maquina", id: m.id, troca: null }, passo("Alternância desmontada"))}>DESMONTAR</button>
-          <button type="button" className="te-uso" disabled={locked} onClick={() => acao({ op: "maquina", id: m.id, troca: [I.e!.troca![1], I.e!.troca![0]], alternar: true }, passo(`${I.e!.troca![1]} ativo`))}>ALTERNAR · 1 PA</button>
+          <button type="button" className="te-uso" disabled={locked} onClick={() => acao({ op: "maquina", id: m.id, troca: [I.e!.troca![1], I.e!.troca![0]], alternar: true }, passo(`${I.e!.troca![1]} ativo`), 1)}>ALTERNAR · 1 PA</button>
         </div> : <>
           <button type="button" className="rb-receber ca-tem-dica" onClick={() => setPrep({ aberto: !prep.aberto, ativo: null, reserva: null })}>{prep.aberto ? "FECHAR" : "+ PREPARAR ALTERNÂNCIA · 10 MIN"}<span className="ca-dica" data-pos="cima-esq" role="tooltip">Com 10 minutos, ferramentas e os dois Sistemas em suportes compatíveis, um fica ativo e o outro em reserva. Só o ativo pode ser usado e conta para a Reconfiguração Modular. Com comunicação, Alternar Sistemas troca qual está ativo.</span></button>
           {prep.aberto && <div className="rb-grupos">
@@ -163,8 +165,8 @@ export function useRoboticista({ api, st, rank, max, acao, locked }: {
           <span><strong>{nome}</strong><small>{curta}</small></span>
         </button>; })}</div>
       <div className="te-folha-fim">
-        {intr ? <button type="button" className="te-link" disabled={locked} onClick={() => acao({ op: "intrusao", efeito: null }, "Intrusão Mecânica desmarcada")}>DESMARCAR</button>
-          : <button type="button" className="te-primario" disabled={locked || !intrRasc} onClick={() => { if (intrRasc) acao({ op: "intrusao", efeito: intrRasc }, intrRasc === "acionar" ? "Intrusão Mecânica: Acionar" : "Intrusão Mecânica: Interromper"); }}>INTERFERIR · 2 PA</button>}
+        {intr ? <button type="button" className="te-link" disabled={locked} onClick={() => acao({ op: "intrusao", efeito: null }, "Intrusão Mecânica desmarcada", -2)}>DESMARCAR</button>
+          : <button type="button" className="te-primario" disabled={locked || !intrRasc} onClick={() => { if (intrRasc) acao({ op: "intrusao", efeito: intrRasc }, intrRasc === "acionar" ? "Intrusão Mecânica: Acionar" : "Intrusão Mecânica: Interromper", 2); }}>INTERFERIR · 2 PA</button>}
       </div>
     </div>
   </Painel> : null;

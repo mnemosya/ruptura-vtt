@@ -36,8 +36,7 @@
 .fr-escolha .fr-link{min-height:42px}
 .fr-escolha .fr-link[data-remover]{margin-left:8px}
 .fr-valor{width:42px;height:42px;padding:0;border:1px solid var(--ca-borda);background:transparent;font:700 16px/1 var(--ar-oxa) !important;color:#eef4f7 !important;transition:background .14s,border-color .14s}
-.fr-valor[aria-pressed=true]{border-color:var(--ca-claro);background:var(--ca-medio);color:#fff !important}
-.fr-valor:not(:disabled):hover{border-color:#d9a6e6;background:var(--ca-halo);color:#fff !important}
+.fr-valor[aria-pressed=true],.fr-valor:not(:disabled):hover{border-color:#d9a6e6;background:var(--ca-halo);color:#fff !important}
 
 /* Reserva de Negociação: gemas sem rótulo e escolha com "VALOR DO D8". */
 .fr-reserva[data-neg=true]{min-height:214px;justify-content:center}

@@ -28,7 +28,20 @@ export type TecnicoEstado = {
   /** Tecelão: conectado à Trama e a posição de cada Unidade nela. */
   conectado?: boolean;
   trama?: Record<string, { doca: DocaTrama; comando?: ComandoTrama | null }>;
+  /** Artífice: Modificações instaladas (um espaço por posição) e Projetos. */
+  mods?: (ModInstalada | null)[];
+  projetos?: Projeto[];
+  /** Biomecânico: o que aconteceu com cada escalpo nesta cena (chave = id da instalação). */
+  escalpos?: Record<string, EstadoEscalpo>;
 };
+
+export type ModInstalada = { equip: string; mod: string; perm?: boolean };
+export type Projeto = { slug: string; nome: string; raridade: string; preco: number; cd: number; alvo: number; inicial: boolean; coberto: boolean; iniciado: boolean; prog: number; ultimo?: string };
+
+export const MELHORIAS = ["bonus", "desempenho", "protecao", "ativacao", "uso"] as const;
+export type Melhoria = (typeof MELHORIAS)[number];
+/** Vale só na cena gravada: Forçar Limites dura até o fim da cena; MIT e Desgaste são 1× por cena por escalpo. */
+export type EstadoEscalpo = { cena: number; forcado?: Melhoria | null; zona?: boolean; mit?: number | null; desgaste?: boolean };
 
 export const DOCAS_TRAMA = ["avatar", "acesso", "no", "bloqueio"] as const;
 export type DocaTrama = (typeof DOCAS_TRAMA)[number];
@@ -60,7 +73,10 @@ export type TecnicoAcao =
   | { op: "intrusao"; efeito: "acionar" | "interromper" | null }
   | { op: "conectar"; conectado: boolean }
   | { op: "trama"; unidade: number; doca: DocaTrama }
-  | { op: "comando"; unidade: number; comando: ComandoTrama | null };
+  | { op: "comando"; unidade: number; comando: ComandoTrama | null }
+  | { op: "mods"; lista: (ModInstalada | null)[] }
+  | { op: "projetos"; lista: Projeto[] }
+  | { op: "escalpo"; id: string; forcar?: Melhoria | null; zona?: boolean; mit?: number | null; desgaste?: boolean; calibracao?: boolean; funcao?: { unidade: number; funcao: string | null } };
 
 export const PD_UNIDADE = 10;
 export const idUnidade = (j: number) => `unit-${j}`;
@@ -79,6 +95,35 @@ export function funcaoDaRodada(s: ClassPlayState, j: number): string | null {
 export function paDaMaquina(s: ClassPlayState, id: string): { n: number; feitas: string[] } {
   const p = s.tecnico?.maqs?.[id]?.pa;
   return p && p.cena === s.scene && p.rodada === s.round ? { n: p.n, feitas: p.feitas } : { n: 0, feitas: [] };
+}
+
+/** Estado do escalpo nesta cena (vazio se a cena virou). */
+export function estadoEscalpo(s: ClassPlayState, id: string): EstadoEscalpo {
+  const e = s.tecnico?.escalpos?.[id];
+  return e && e.cena === s.scene ? e : { cena: s.scene };
+}
+
+function aplicarEscalpo(s: ClassPlayState, t: TecnicoEstado, a: Extract<TecnicoAcao, { op: "escalpo" }>): string | null {
+  if (!a.id) return "Escalpo inválido";
+  if (a.forcar && !MELHORIAS.includes(a.forcar)) return "Melhoria inválida";
+  if (a.mit !== undefined && a.mit !== null && (!Number.isInteger(a.mit) || a.mit < 1 || a.mit > 6)) return "Resultado de 1d6 inválido";
+  const e = { ...estadoEscalpo(s, a.id) };
+  if (a.forcar !== undefined) {
+    if (a.forcar === null && e.zona) delete s.uses["scene:zona"];
+    e.forcado = a.forcar;
+    e.zona = a.forcar ? !!a.zona : false;
+    if (a.forcar && a.zona) s.uses["scene:zona"] = 1;
+  }
+  if (a.mit !== undefined) e.mit = a.mit;
+  if (a.desgaste !== undefined) e.desgaste = a.desgaste;
+  if (a.calibracao !== undefined) { if (a.calibracao) s.uses["scene:calibracao"] = 1; else delete s.uses["scene:calibracao"]; }
+  (t.escalpos ??= {})[a.id] = e;
+  if (a.funcao) {
+    const k = String(a.funcao.unidade);
+    if (a.funcao.funcao === null) delete t.fn?.[k];
+    else (t.fn ??= {})[k] = { id: a.funcao.funcao, cena: s.scene, rodada: s.round };
+  }
+  return null;
 }
 
 /** Intrusão Mecânica marcada nesta rodada. */
@@ -117,6 +162,9 @@ function aplicarMaquinas(s: ClassPlayState, t: TecnicoEstado, a: Extract<Tecnico
 export function aplicarTecnico(s: ClassPlayState, a: TecnicoAcao, maxUnidades: number): string | null {
   const t: TecnicoEstado = (s.tecnico ??= {});
   if (a.op === "maquina" || a.op === "novaRodada" || a.op === "comunicacao" || a.op === "intrusao") return aplicarMaquinas(s, t, a);
+  if (a.op === "escalpo") return aplicarEscalpo(s, t, a);
+  if (a.op === "mods") { if (a.lista.some(m => m && (!m.equip || !m.mod))) return "Modificação incompleta"; t.mods = a.lista; return null; }
+  if (a.op === "projetos") { if (a.lista.some(p => !p.slug || p.prog < 0 || p.prog > p.alvo)) return "Projeto inválido"; t.projetos = a.lista; return null; }
   // Olho de Botão: a primeira conexão da cena revela 2 níveis (fica marcado na cena).
   if (a.op === "conectar") { t.conectado = a.conectado || undefined; if (a.conectado && !s.uses["scene:olho"]) s.uses["scene:olho"] = 1; return null; }
   if (!Number.isInteger(a.unidade) || a.unidade < 0 || a.unidade >= maxUnidades) return "Unidade inválida";

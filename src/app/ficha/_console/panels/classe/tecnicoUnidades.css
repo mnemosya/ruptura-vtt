@@ -61,7 +61,7 @@
 .te-funcoes>span b[data-usada=true]{color:#8fa6b4}
 .te-funcoes>div{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px}
 .ar-tela .te-funcao{position:relative;min-height:56px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:4px 8px;text-align:left;background:transparent;border:0}
-.te-funcao[data-off=true]{opacity:.45}
+.te-funcao[data-off=true]>span:not(.ca-dica){opacity:.45}
 :is(.te-funcao,.te-resposta)>span:first-child{position:relative;width:38px;height:42px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--ca-claro);transition:transform .16s,filter .16s}
 :is(.te-funcao,.te-resposta)>span:first-child>svg:first-child{position:absolute;inset:0}
 :is(.te-funcao,.te-resposta)>span:first-child>svg:last-child{position:relative}
@@ -120,3 +120,12 @@
   .te-funcoes>div,.te-respostas{grid-template-columns:repeat(2,minmax(0,1fr))}
   .te-inventario{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
+
+/* Tecelão: anel da Trama no hexágono e opções da Trama/Comando. */
+.te-hexa svg{overflow:visible}
+.te-hexa path.te-anel{fill:none;stroke:#00d4ff;stroke-width:1.2;stroke-dasharray:2 5;opacity:.75}
+.tc-opcoes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 8px}
+.tc-opcoes[data-col="3"]{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tc-opcoes .te-resposta{min-height:60px}
+.tc-opcoes .te-resposta:disabled{opacity:.35}
+.te-resposta em{font:700 9px/1.2 var(--ar-mono);font-style:normal;letter-spacing:.1em;color:#c3d6df}

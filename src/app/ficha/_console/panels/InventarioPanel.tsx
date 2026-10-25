@@ -361,7 +361,7 @@ export function grupoESubDoModelo(modelo: ItemContent): Pick<ProdutoHud, "grupo"
 }
 
 /** Modelo do catálogo → produto do Mercado. Mesma leitura de conteúdo da ficha do item. */
-function produtoDoModelo(api: ConsoleApi, modelo: ItemContent): ProdutoHud {
+export function produtoDoModelo(api: ConsoleApi, modelo: ItemContent): ProdutoHud {
   const dano = descricaoDoDano(modelo);
   const alcance = descricaoDoAlcance(modelo);
   const ocultavel = descricaoDeOcultavel(modelo);

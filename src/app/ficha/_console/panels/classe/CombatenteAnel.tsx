@@ -98,7 +98,9 @@ export function CombatenteAnel({ api, rank, subclassId }: { api: Api; rank: stri
     if (locked || itens.length > livres.length) return null;
     const valoresRolados = itens.map(() => rolarDado(faces));
     setRecentes(livres.slice(0, itens.length));
-    enviar({ type: "gastarManobra", itens: itens.map((x, i) => ({ nome: x.nome, valor: valoresRolados[i], texto: x.texto(valoresRolados[i]) })), uso, passo });
+    // Impulso Contínuo e Ataque Encadeado tiram 1 PA da ação: o PA volta ao personagem (e sai de novo no DESFAZER).
+    const desconto = (uso === "round:impulso" ? 1 : 0) + (itens.some(x => x.nome === "Ataque Encadeado") ? 1 : 0);
+    enviar({ type: "gastarManobra", itens: itens.map((x, i) => ({ nome: x.nome, valor: valoresRolados[i], texto: x.texto(valoresRolados[i]) })), uso, passo, pa: -desconto });
     return valoresRolados;
   };
 
@@ -367,7 +369,7 @@ export function CombatenteAnel({ api, rank, subclassId }: { api: Api; rank: stri
         {at("C") && <Losango nome="Impulso livre" icone="M12 3v18M4 12h16" dica="Uma vez por cena, role o Dado de Manobra sem gastá-lo. O resultado aumenta o deslocamento restante de Manobrar. Ainda vale o limite de uma vez por rodada."
           estado={usado("scene:impulsoGratis") ? "usado" : "pronto"} status={usado("scene:impulsoGratis") ? "USADO NESTA CENA" : `1/CENA · ROLAR D${faces}`}
           desligado={locked || usado("scene:impulsoGratis") || usado("round:impulso")}
-          onClick={() => enviar({ type: "impulsoGratis", valor: rolarDado(faces) })} />}
+          onClick={() => enviar({ type: "impulsoGratis", valor: rolarDado(faces), pa: -1 })} />}
         <Losango nome="+1 de vantagem" icone="M12 5v14M5 12h14" dica={`${REGRAS.vantagem} Toque para marcar o uso; toque de novo para desmarcar.`} estado={usado("round:vantagemTransitoria") ? "usado" : "pronto"}
           status={usado("round:vantagemTransitoria") ? "USADA NESTA RODADA" : "AÇÃO OFENSIVA TRANSITÓRIA"} desligado={locked}
           onClick={() => enviar({ type: "marcarUso", chave: "round:vantagemTransitoria", passo: "+1 de vantagem" })} />

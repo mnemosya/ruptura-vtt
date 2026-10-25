@@ -72,8 +72,7 @@
 .in-rotulo-sec{display:block;margin:0 0 4px;font:500 10px/1 var(--ar-mono);letter-spacing:.16em;color:#8fa6b4}
 .in-rotulo-sec b{font-weight:500;color:var(--ca-claro)}
 .in-pergunta{min-height:52px;display:flex;align-items:center;gap:14px;padding:10px 14px;border:1px solid #24394a;background:transparent;text-align:left;transition:background .14s,border-color .14s}
-.in-pergunta[aria-pressed=true]{border-color:var(--ca-claro);background:var(--ca-medio)}
-.in-pergunta:not(:disabled):hover{border-color:var(--ca-borda);background:color-mix(in srgb,var(--ca-halo) 45%,transparent)}
+.in-pergunta[aria-pressed=true],.in-pergunta:not(:disabled):hover{border-color:var(--ca-borda);background:color-mix(in srgb,var(--ca-halo) 45%,transparent)}
 .in-pergunta>span:first-child{width:18px;height:18px;flex:none;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border:1.5px solid #24394a;color:#06181b}
 .in-pergunta>span:first-child svg{opacity:0}
 .in-pergunta[aria-pressed=true]>span:first-child{border-color:var(--ca-claro);background:var(--ca-claro)}

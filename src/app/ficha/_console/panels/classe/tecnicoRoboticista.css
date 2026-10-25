@@ -6,7 +6,7 @@
 
 /* Cartão de máquina. */
 .rb-cab{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px}
-.rb-cab>span:last-child{position:relative;font:500 11px/1 var(--ar-mono);letter-spacing:.14em;color:#8fa6b4;cursor:help}
+.rb-cab>span:last-child{font:500 11px/1 var(--ar-mono);letter-spacing:.14em;color:#8fa6b4}
 .rb-cab b{font-weight:500;color:var(--ca-claro)}
 .rb-maquinas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .ar-tela .rb-cartao{--k:#b2ce62;position:relative;min-width:0;display:flex;align-items:center;gap:12px;padding:10px 12px;overflow:hidden;text-align:left;border:1px solid rgba(0,212,255,.1);background:#081925;transition:border-color .2s,box-shadow .2s}

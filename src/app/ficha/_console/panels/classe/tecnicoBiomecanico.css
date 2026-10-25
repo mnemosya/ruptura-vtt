@@ -1,0 +1,37 @@
+/* Biomecânico (BM2): escalpos no rodapé, folha do escalpo com Forçar Limites,
+   Manutenção e Segunda Calibração. Valores copiados das pranchetas aprovadas. */
+.bm-cab{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px}
+.bm-cab>span:last-child{font:500 11px/1 var(--ar-mono);letter-spacing:.14em;color:#8fa6b4}
+:is(.bm-cab,.bm-linha) b{font-weight:500;color:var(--ca-claro)}
+:is(.bm-cab,.bm-linha) b[data-usado=true]{color:#8fa6b4}
+.bm-escalpos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ar-tela .bm-cartao{--k:#c578d9;position:relative;min-width:0;display:flex;align-items:center;gap:12px;padding:8px 10px;overflow:hidden;text-align:left;border:1px solid rgba(0,212,255,.1);background:#081925;transition:border-color .2s,box-shadow .2s}
+.bm-cartao[data-forcado=sim]{border-color:color-mix(in srgb,var(--ca) 60%,transparent);box-shadow:inset 0 0 22px color-mix(in srgb,var(--ca) 16%,transparent),0 0 12px color-mix(in srgb,var(--ca) 22%,transparent)}
+.bm-cartao[data-forcado=zona]{border-color:color-mix(in srgb,#e2795f 60%,transparent);box-shadow:inset 0 0 22px color-mix(in srgb,#e2795f 16%,transparent),0 0 12px color-mix(in srgb,#e2795f 22%,transparent)}
+.bm-cartao:not([data-forcado]):hover{border-color:color-mix(in srgb,color-mix(in srgb,var(--k) 65%,#e8f6ff) 70%,transparent);box-shadow:inset 0 0 22px color-mix(in srgb,var(--k) 14%,transparent)}
+.bm-cartao:hover .bm-arte{filter:brightness(1.35)}
+.bm-arte{position:relative;width:48px;height:48px;flex:none;display:grid;place-items:center;overflow:hidden;border:1px solid rgba(0,212,255,.1);color:var(--k);background:radial-gradient(ellipse at 50% 55%,color-mix(in srgb,var(--k) 22%,#081925) 0%,#081925 75%);transition:filter .2s}
+.bm-arte>i{position:absolute;inset:0;opacity:.5;background-image:repeating-linear-gradient(135deg,color-mix(in srgb,var(--k) 8%,transparent) 0 1px,transparent 1px 8px)}
+.bm-arte>svg{position:relative;opacity:.9;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--k) 50%,transparent))}
+.bm-info{min-width:0;flex:1 1 auto;display:flex;flex-direction:column;gap:5px}
+.bm-info strong{font:700 12.5px/1.15 var(--ar-oxa);letter-spacing:.02em;text-transform:uppercase;color:#eaf6f2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bm-info small{font:700 8.5px/1.2 var(--ar-mono);letter-spacing:.1em;color:var(--k)}
+.bm-info small:last-child{letter-spacing:.08em;color:#6f8799;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bm-info small[data-tom=forcado]{color:var(--ca-claro)}
+.bm-info small[data-tom=zona]{color:#e2795f}
+.bm-info small[data-tom=marca]{color:var(--te-suave)}
+
+/* Folha do escalpo. */
+.bm-linha{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.bm-linha .te-rotulo{margin:0}
+.ar-tela .bm-zona[aria-pressed=true]{border-color:#e2795f;background:color-mix(in srgb,#e2795f 18%,transparent)}
+.bm-zona b{color:#e2795f}
+.bm-zona[aria-pressed=true] b{color:#fff}
+.tc-opcoes[data-zona=true] .te-resposta>span:first-child path{stroke:#e2795f}
+.te-resposta[data-apagada=true]{opacity:.4}
+.bm-fim{margin:12px 0 18px;justify-content:flex-end}
+.te-rotulo.bm-sec{margin-top:18px}
+
+@container rc-eq (max-width:640px){
+  .bm-escalpos{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

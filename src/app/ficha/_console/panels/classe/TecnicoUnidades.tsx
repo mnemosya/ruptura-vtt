@@ -12,6 +12,10 @@ import { corCategoria } from "../../../../_design/itemCategoryColors";
 import tecnico from "../../../../../../content/v12/db_classe_tecnico_v1_2.json";
 import { ListaHabilidades, Painel, type Caracteristica } from "./painelClasse";
 import { useRoboticista } from "./TecnicoRoboticista";
+import { useTecelao } from "./TecnicoTecelao";
+import { useBiomecanico } from "./TecnicoBiomecanico";
+import { useArtifice } from "./TecnicoArtifice";
+import type { ModSub } from "./tecnicoSub";
 import "./ancoraRede.css";
 import "./combatenteAnel.css";
 import "./tecnicoUnidades.css";
@@ -91,7 +95,7 @@ export function TecnicoUnidades({ api, rank, subclassId }: { api: Api; rank: str
   const sub = subclasses.find(item => item.slug === subclassId);
   const temSub = !!sub && at("E");
   const enviar = (cmd: ClassCommand) => { if (!locked) send?.(cmd); };
-  const acao = (a: TecnicoAcao, passo: string) => enviar({ type: "tecnico", acao: a, passo });
+  const acao = (a: TecnicoAcao, passo: string, pa = 0) => enviar({ type: "tecnico", acao: a, passo, pa });
   const topoPilha = st.pilha?.[st.pilha.length - 1]?.nome;
   const uso = (chave: string) => st.uses[chave] ?? 0;
 
@@ -111,7 +115,7 @@ export function TecnicoUnidades({ api, rank, subclassId }: { api: Api; rank: str
   const chipReg: Chip | null = at("B") ? { chave: "registro", icone: ICONES.registro, rotulo: "REGISTRO", usado: false,
     valor: reg ? "SALVO · RESTAURAR 2 PA" : "1× POR CENA · 1 PA",
     dica: "Registro: uma vez por cena, por 1 PA, preserve o estado técnico do sistema. Restaurar: por 2 PA, o sistema volta a esse estado e o Registro é apagado. Some se a Unidade for recolhida, ficar Inativa ou a cena acabar.",
-    clicar: () => acao({ op: "registro", unidade: j }, reg ? `${passoU}Registro restaurado` : `${passoU}Registro criado`) } : null;
+    clicar: () => acao({ op: "registro", unidade: j }, reg ? `${passoU}Registro restaurado` : `${passoU}Registro criado`, reg ? 2 : 1) } : null;
   const sync = !!uso("round:sync");
   const chipSync: Chip | null = at("S") ? { chave: "sync", icone: ICONES.sync, rotulo: "OPERAÇÃO SINCRONIZADA", usado: sync, valor: sync ? "USADA NA RODADA" : "1× POR RODADA",
     dica: "Uma vez por rodada, ao gastar 1 PA para executar manualmente a Função de uma Unidade, escolha outra Unidade ativa: ela também executa uma Função, sem PA adicional. Cada uma precisa de alvo válido e usa sua operação da rodada. Toque para marcar; toque de novo para desmarcar.",
@@ -125,25 +129,30 @@ export function TecnicoUnidades({ api, rank, subclassId }: { api: Api; rank: str
   /* ── Ações ── */
   const executar = (id: string, nome: string) => {
     if (!ativa) return;
-    if (fn === id) acao({ op: "funcao", unidade: j, funcao: null }, `${passoU}${nome} desmarcada`);
-    else acao({ op: "funcao", unidade: j, funcao: id }, `${passoU}${nome}`);
+    if (fn === id) acao({ op: "funcao", unidade: j, funcao: null }, `${passoU}${nome} desmarcada`, -1);
+    else acao({ op: "funcao", unidade: j, funcao: id }, `${passoU}${nome}`, fn ? 0 : 1);
   };
   const definirPd = (k: number) => { if (!instalada) return; const n = k === pd ? k - 1 : k; acao({ op: "pd", unidade: j, valor: n }, `${passoU}PD ${pd} → ${n}`); };
   const abrirAcoplar = (novo: boolean) => { setInstalando(novo); setRascAlvo(novo ? "" : u?.attachment ?? ""); setPainel("acoplar"); };
   const confirmarAlvo = () => {
     const nome = rascAlvo.trim(); if (!nome) return;
-    if (instalando) acao({ op: "instalar", unidade: j, forma: "acoplada", alvo: nome }, `${passoU}Instalada acoplada`);
+    if (instalando) acao({ op: "instalar", unidade: j, forma: "acoplada", alvo: nome }, `${passoU}Instalada acoplada`, 1);
     else acao({ op: "alvo", unidade: j, alvo: nome }, `${passoU}Sistema renomeado`);
     setPainel(null);
   };
   const salvarProtocolo = () => {
     if (!rascProt.gatilho.trim() || !rascProt.resposta) return;
-    acao({ op: "protocolo", unidade: j, protocolo: { gatilho: rascProt.gatilho, resposta: rascProt.resposta } }, `${passoU}Protocolo programado`);
+    acao({ op: "protocolo", unidade: j, protocolo: { gatilho: rascProt.gatilho, resposta: rascProt.resposta } }, `${passoU}Protocolo programado`, prot ? 1 : 0);
     setPainel(null);
   };
   /* ── Subclasse: chips no topo, ação no rodapé e folhas próprias ── */
+  const marcar = (chave: string, passo: string, pa = 0) => enviar({ type: "marcarUso", chave, passo, pa });
   const rob = useRoboticista({ api, st, rank: at, max, acao, locked });
-  const subMod = temSub && subclassId === "roboticista" ? rob : null;
+  const tec = useTecelao({ st, rank: at, j, rotuloU, passoU, acao, marcar, locked });
+  const bio = useBiomecanico({ api, st, rank: at, j, acao, locked });
+  const art = useArtifice({ api, st, rank: at, acao, marcar, locked });
+  const subMod: ModSub | null = !temSub ? null : subclassId === "roboticista" ? rob : subclassId === "tecelao" ? tec : subclassId === "biomecanico" ? bio : subclassId === "artifice" ? art : null;
+  const forma = subMod?.forma;
   const sistemas = painel === "acoplar" ? sistemasDoPersonagem(api) : [];
   const rotulo = temSub ? `${sub!.nome.toUpperCase()} · ${rank}` : `RANKING ${rank}`;
 
@@ -157,8 +166,8 @@ export function TecnicoUnidades({ api, rank, subclassId }: { api: Api; rank: str
         <span>{rotulo}</span>
         <span className="ca-legenda" aria-hidden="true"><span><svg width="11" height="12" viewBox="0 0 22 24" fill="none" stroke="#8fa6b4" strokeWidth="2.4"><path d="M11 1.5 20.5 7v10L11 22.5 1.5 17V7Z" /></svg>1 FUNÇÃO POR UNIDADE · 1 PA</span></span>
       </header>
-      {(chipSync || subMod?.chips.length) && <div className="ca-chips te-chips-topo" data-sub={!!subMod || undefined}>
-        {subMod?.chips.map((c, k, l) => chipView(c, k === l.length - 1 && k > 0 ? "baixo-dir" : "baixo-esq"))}
+      {(chipSync || subMod?.chips?.length) && <div className="ca-chips te-chips-topo" data-sub={!!subMod || undefined}>
+        {subMod?.chips?.map((c, k, l) => chipView(c, k === l.length - 1 && k > 0 ? "baixo-dir" : "baixo-esq"))}
         {chipSync && chipView(chipSync, subMod ? "baixo-dir" : "baixo-esq")}
       </div>}
 
@@ -169,12 +178,13 @@ export function TecnicoUnidades({ api, rank, subclassId }: { api: Api; rank: str
         <section className="te-unidade" aria-label="Unidade de Campo">
           <div className="te-titulo">
             <span className="ca-tem-dica" tabIndex={0}>{rotuloU} · {!instalada ? "GUARDADA" : inativa ? "INATIVA" : "ATIVA"}<Dica pos="cima" texto="10 PD. Com 0 PD fica Inativa e seus efeitos são suspensos; recupera todos os PD com 10 minutos de reparo. Instalar ou recolher ao seu alcance custa 1 PA. Opera a até 20 m." /></span>
-            <button type="button" className="te-forma" data-acoplada={acoplada || undefined} disabled={locked || !acoplada} onClick={() => abrirAcoplar(false)}>{formaTexto}</button>
+            <button type="button" className="te-forma" data-acoplada={acoplada || !!forma || undefined} disabled={locked || (!acoplada && !forma)} onClick={() => forma ? forma.clicar() : abrirAcoplar(false)}>{forma?.texto ?? formaTexto}</button>
           </div>
           <div className="te-hexa" data-estado={!instalada ? "guardada" : inativa ? "inativa" : "ativa"}>
             <svg width="120" height="132" viewBox="0 0 104 114" aria-hidden="true">
               <path d="M52 3 99 30v54L52 111 5 84V30Z" strokeWidth="1.8" />
               <path d="M52 18 86 37v40L52 96 18 77V37Z" fill="none" strokeWidth=".8" opacity=".5" />
+              {subMod?.anel && <path className="te-anel" d="M52 -7 108 25v64L52 121 -4 89V25Z" />}
             </svg>
             <b>{instalada ? pd : "—"}</b>
             <small>{instalada ? `/ ${PD_UNIDADE} PD` : "GUARDADA"}</small>
@@ -186,15 +196,17 @@ export function TecnicoUnidades({ api, rank, subclassId }: { api: Api; rank: str
                 data-cheio={instalada && k < pd || undefined} data-baixo={instalada && k < pd && pd <= 3 || undefined}><i /></button>)}</div>
             <b data-ativa={ativa || undefined}>{pd} / {PD_UNIDADE}</b>
           </div>
-          {(chipProt || chipReg) && <div className="te-chips">{chipProt && chipView(chipProt, "cima")}{chipReg && chipView(chipReg, "cima")}</div>}
+          {(chipProt || chipReg || subMod?.chipsUnidade?.length) && <div className="te-chips">{chipProt && chipView(chipProt, "cima")}{chipReg && chipView(chipReg, "cima")}{subMod?.chipsUnidade?.map(c => chipView(c, "cima"))}</div>}
           <div className="te-acoes">
             {instalada && <>
               {inativa && <button type="button" className="te-link" data-tom="claro" disabled={locked} onClick={() => acao({ op: "reparar", unidade: j }, `${passoU}Unidade reparada`)}>REPARAR · 10 MIN</button>}
-              <button type="button" className="te-link" disabled={locked} onClick={() => acao({ op: "recolher", unidade: j }, `${passoU}Unidade recolhida`)}>RECOLHER · 1 PA</button>
+              <button type="button" className="te-link" disabled={locked} onClick={() => acao({ op: "recolher", unidade: j }, `${passoU}Unidade recolhida`, 1)}>RECOLHER · 1 PA</button>
+              {subMod?.acoesInstalada}
             </>}
             {!instalada && <>
-              <button type="button" className="te-uso" disabled={locked} onClick={() => acao({ op: "instalar", unidade: j, forma: "posicionada" }, `${passoU}Instalada posicionada`)}>INSTALAR POSICIONADA · 1 PA</button>
+              <button type="button" className="te-uso" disabled={locked} onClick={() => acao({ op: "instalar", unidade: j, forma: "posicionada" }, `${passoU}Instalada posicionada`, 1)}>INSTALAR POSICIONADA · 1 PA</button>
               <button type="button" className="te-uso" disabled={locked} onClick={() => abrirAcoplar(true)}>INSTALAR ACOPLADA · 1 PA</button>
+              {subMod?.acoesGuardada}
             </>}
             {topoPilha && <button type="button" className="te-link" data-tom="claro" disabled={locked} onClick={() => enviar({ type: "desfazerCombate" })}>DESFAZER · {topoPilha.toUpperCase()}</button>}
           </div>

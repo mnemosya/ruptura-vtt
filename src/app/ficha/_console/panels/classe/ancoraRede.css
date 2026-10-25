@@ -105,7 +105,7 @@
 .ar-vazio p{max-width:420px;margin:0;font-size:13px;line-height:1.5;color:#8fa6b4}
 
 /* Painéis (Habilidades, Pacientes, Briefing): sobem do rodapé. */
-.ar-sheet{position:absolute;inset:0;z-index:2;overflow:hidden}
+.ar-sheet{position:absolute;inset:0;z-index:10;overflow:hidden}
 .ar-veu{position:absolute;inset:0;background:rgba(6,14,20,.72)}
 .ar-painel{position:absolute;left:0;right:0;bottom:0;top:0;display:flex;flex-direction:column;background:#0a171d;border-top:1px solid #2e5a48;box-shadow:0 -24px 48px rgba(0,0,0,.5)}
 .ar-painel-cab{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 8px}

@@ -1,0 +1,66 @@
+/* Artífice (AR1): Oficina no rodapé — Modificações, Projetos, Instalar,
+   Desmontar e Período de trabalho. Valores copiados das pranchetas aprovadas. */
+.af-oficina{gap:14px}
+.af-oficina>.te-rotulo{margin:0}
+.af-oficina .te-rotulo b,.af-projetos-cab .te-rotulo b{font-weight:500;color:var(--ca-claro)}
+.af-slots{display:grid;gap:10px}
+.ar-tela .af-vaga{min-height:128px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:0;background:transparent;border:1px dashed #2c4556}
+.af-vaga>span:first-child{font:800 22px/1 var(--ar-oxa);color:#8fa6b4}
+.af-vaga small{font:700 9.5px/1 var(--ar-mono);letter-spacing:.12em;color:#8fa6b4}
+.ar-tela .af-vaga:not(:disabled):hover{border-color:var(--ca-borda);background:color-mix(in srgb,var(--ca-halo) 45%,transparent)}
+
+/* Cartão de equipamento: arte que ocupa a altura, ícone real e info compacta. */
+.af-cartao .te-cartao-arte{height:auto;min-height:60px;flex:1 1 auto}
+.af-cartao .te-cartao-arte>em{position:absolute;top:6px;left:8px;font:700 8px/1 var(--ar-mono);font-style:normal;letter-spacing:.12em;color:var(--k)}
+.af-cartao .te-cartao-info{padding:8px 10px 10px}
+.af-cartao .te-cartao-info strong{min-height:0}
+.af-cartao .te-cartao-info b{font:700 8.5px/1.2 var(--ar-mono);letter-spacing:.08em;color:var(--te-suave)}
+.ar-tela .af-cartao:disabled{opacity:.4}
+.af-sel{display:flex;align-items:center;gap:14px;min-height:40px}
+.af-sel>span{flex:1 1 auto;font-size:13px;line-height:1.45;color:#a9bfcb}
+
+/* Projetos. */
+.af-projetos-cab{margin-top:6px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.af-projetos-cab .te-rotulo{margin:0}
+.af-projetos-cab .te-link{position:relative;min-height:32px}
+.af-projeto{display:flex;align-items:center;gap:14px;padding:10px 12px;border:1px solid #1c3445;background:#081925}
+.af-projeto-arte{position:relative;width:46px;height:46px;flex:none;display:grid;place-items:center;color:var(--k);border:1px solid rgba(0,212,255,.1);background:radial-gradient(ellipse at 50% 55%,color-mix(in srgb,var(--k) 22%,#081925) 0%,#081925 75%)}
+.af-projeto-arte>svg{filter:drop-shadow(0 0 8px color-mix(in srgb,var(--k) 50%,transparent))}
+.af-projeto-texto{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:5px}
+.af-projeto-texto strong{font:700 13px/1.1 var(--ar-oxa);letter-spacing:.02em;text-transform:uppercase;color:#eaf6f2}
+.af-projeto-texto small{font:700 9px/1 var(--ar-mono);letter-spacing:.1em;color:var(--k)}
+.af-projeto-texto em{font:500 9px/1.2 var(--ar-mono);font-style:normal;letter-spacing:.08em;color:var(--te-suave)}
+.af-progresso{width:170px;flex:none;display:flex;flex-direction:column;gap:6px}
+.af-progresso b{font:700 11px/1 var(--ar-oxa);color:var(--ca-claro);text-align:right}
+.af-progresso>span{height:6px;background:#1c3445}
+.af-progresso i{display:block;height:100%;background:var(--k);box-shadow:0 0 8px color-mix(in srgb,var(--k) 50%,transparent)}
+.af-materiais{width:170px;flex:none;font:700 9.5px/1.35 var(--ar-mono);letter-spacing:.1em;color:#8fa6b4;text-align:right}
+.af-materiais[data-coberto=true]{color:var(--ca-claro)}
+.ar-tela .af-botao{min-width:108px;min-height:40px;font-size:10px}
+.ar-tela .af-vaga-projeto{min-height:68px;flex-direction:row;gap:12px;padding:0 14px}
+.af-vaga-projeto>span:first-child{font-size:20px}
+.af-vaga-projeto>span:last-child{display:flex;flex-direction:column;gap:5px;text-align:left}
+.af-vaga-projeto b{font:700 10px/1 var(--ar-mono);letter-spacing:.12em;color:#c3d6df}
+.af-vaga-projeto small{font-size:9px;letter-spacing:.1em}
+
+/* Instalar e Desmontar. */
+.af-equips{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:8px}
+.af-equips[data-col="3"]{grid-template-columns:repeat(3,minmax(0,1fr))}
+.af-equips+.te-rotulo{margin-top:8px}
+
+/* Período de trabalho. */
+.af-grade3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:8px}
+.af-linha{display:flex;gap:8px;margin-bottom:8px}
+.af-linha>*{flex:1 1 0}
+.ar-tela .af-opcao{min-height:58px;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:8px 12px;text-align:left;background:transparent;border:1px solid #24394a;transition:background .14s,border-color .14s}
+.af-opcao strong{font:600 14.5px/1 var(--ar-oxa);color:#eef4f7}
+.af-opcao small{font:700 9px/1.2 var(--ar-mono);letter-spacing:.1em;color:var(--te-suave)}
+.ar-tela .af-resultado{min-height:42px;align-items:center;padding:0 12px;font:700 10px/1 var(--ar-mono);letter-spacing:.12em;color:#a9bfcb}
+.ar-tela .af-opcao[aria-pressed=true],.ar-tela .af-opcao:hover{border-color:var(--ca-borda);background:color-mix(in srgb,var(--ca-halo) 45%,transparent)}
+.ar-tela .af-resultado[aria-pressed=true]{color:#fff}
+.af-trab-texto{margin:4px 0 0;min-height:21px;font-size:14px;line-height:1.5;color:var(--ca-claro)}
+
+@container rc-eq (max-width:640px){
+  .af-equips{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .af-progresso,.af-materiais{width:120px}
+}

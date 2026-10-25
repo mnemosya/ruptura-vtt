@@ -79,6 +79,21 @@ export interface PropsMercadoHud {
   onFechar?: () => void;
   wishlist?: string[];
   onAlternarWishlist?: (slug: string) => void;
+  /** Escolha de Projeto (Artífice): no lugar da compra, adiciona o Projeto do item. */
+  projeto?: ModoProjeto;
+}
+
+export interface ModoProjeto {
+  /** Linha sobre o título (ex.: "projeto inicial · 2 de 2"). */
+  tag: string;
+  /** No lugar de mochila e aretz. */
+  contagem: { rotulo: string; valor: string };
+  ja: (slug: string) => boolean;
+  /** Linhas extras na ficha do item (CD, Progresso). */
+  linhas: (p: ProdutoHud) => { rotulo: string; valor: string }[];
+  materiais: (p: ProdutoHud) => number;
+  apos: (p: ProdutoHud) => string;
+  onAdicionar: (slug: string) => void;
 }
 
 const Tag = ({ children, style, className = "" }: { children: ReactNode; style?: React.CSSProperties; className?: string }) =>
@@ -102,7 +117,7 @@ const separarTipo = (nome: string): { titulo: string; tipo: string | null } => {
 const sem = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 
-export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onFechar, wishlist = [], onAlternarWishlist }: PropsMercadoHud) {
+export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onFechar, wishlist = [], onAlternarWishlist, projeto }: PropsMercadoHud) {
   const [wishlistAberta, setWishlistAberta] = useState(false);
   const [wishlistLocal, setWishlistLocal] = useState<string[]>([]);
   const desejos = onAlternarWishlist ? wishlist : wishlistLocal;
@@ -110,7 +125,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
     if (onAlternarWishlist) onAlternarWishlist(slug);
     else setWishlistLocal(lista => lista.includes(slug) ? lista.filter(s => s !== slug) : [...lista, slug]);
   };
-  const coracao = (slug: string, classe: string) => <button type="button" className={`hm-coracao ${classe}`} aria-label={`${desejos.includes(slug) ? "Remover da" : "Adicionar à"} wishlist: ${produtos.find(p => p.slug === slug)?.nome ?? slug}`} aria-pressed={desejos.includes(slug)} data-tooltip={desejos.includes(slug) ? "Remover da wishlist" : "Adicionar à wishlist"} onClick={() => alternarDesejo(slug)}><Heart size={18} fill={desejos.includes(slug) ? "currentColor" : "none"} aria-hidden="true" /></button>;
+  const coracao = (slug: string, classe: string) => projeto ? null : <button type="button" className={`hm-coracao ${classe}`} aria-label={`${desejos.includes(slug) ? "Remover da" : "Adicionar à"} wishlist: ${produtos.find(p => p.slug === slug)?.nome ?? slug}`} aria-pressed={desejos.includes(slug)} data-tooltip={desejos.includes(slug) ? "Remover da wishlist" : "Adicionar à wishlist"} onClick={() => alternarDesejo(slug)}><Heart size={18} fill={desejos.includes(slug) ? "currentColor" : "none"} aria-hidden="true" /></button>;
   const raiz = useRef<HTMLDivElement>(null);
   const botaoCategorias = useRef<HTMLButtonElement>(null);
   const tituloDetalhe = useRef<HTMLHeadingElement>(null);
@@ -228,14 +243,14 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
       <span style={{ position: "absolute", left: 0, right: 0, top: 0, height: 2, background: AMB, boxShadow: `0 0 14px ${AMB}` }} />
       <header className="hm-cabecalho">
         <div className="hm-identidade">
-          <Tag style={{ color: AMB, opacity: .8 }}>// lista de mercadorias</Tag>
+          <Tag style={{ color: AMB, opacity: .8 }}>// {projeto?.tag ?? "lista de mercadorias"}</Tag>
           <h2 className="hx-display hm-titulo">Mercado noturno<span className="hx-amb">.</span></h2>
         </div>
-        <div className="hm-carteira">
+        <div className="hm-carteira">{projeto ? <div style={{ textAlign: "right" }}><Tag className="hx-dim">{projeto.contagem.rotulo}</Tag><div className="hx-display" style={{ fontSize: 18, fontWeight: 700 }}>{projeto.contagem.valor}</div></div> : <>
           <div style={{ textAlign: "right" }}><Tag className="hx-dim">mochila</Tag><div className="hx-display" style={{ fontSize: 18, fontWeight: 700 }}>{usados}<span className="hx-dim">/{capacidade}</span></div></div>
           <div style={{ textAlign: "right" }}><Tag style={{ color: AMB, opacity: .7 }}>aretz</Tag><div className="hx-display" style={{ fontSize: 22, fontWeight: 900 }}><Aretz /> {fmt(saldo)}</div></div>
-        </div>
-        <div className="hm-cab-acoes"><button type="button" className="hx-fechar-quad hm-wishlist-acesso" aria-label={wishlistAberta ? "Voltar ao mercado" : `Abrir wishlist (${desejos.length})`} data-tooltip={wishlistAberta ? "Voltar ao mercado" : "Wishlist"} aria-pressed={wishlistAberta} onClick={() => { setWishlistAberta(!wishlistAberta); abrirGrupo(null); setDetalheAberto(false); }}><Heart size={18} fill={wishlistAberta ? "currentColor" : "none"} aria-hidden="true" /></button>
+        </>}</div>
+        <div className="hm-cab-acoes">{!projeto && <button type="button" className="hx-fechar-quad hm-wishlist-acesso" aria-label={wishlistAberta ? "Voltar ao mercado" : `Abrir wishlist (${desejos.length})`} data-tooltip={wishlistAberta ? "Voltar ao mercado" : "Wishlist"} aria-pressed={wishlistAberta} onClick={() => { setWishlistAberta(!wishlistAberta); abrirGrupo(null); setDetalheAberto(false); }}><Heart size={18} fill={wishlistAberta ? "currentColor" : "none"} aria-hidden="true" /></button>}
         {onFechar && <button type="button" aria-label="Fechar mercado" className="hx-fechar-quad hm-fechar" onClick={onFechar}><X size={16} aria-hidden="true" /></button>}
         </div>
       </header>
@@ -299,7 +314,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                 </div>
                 <div className="hm-grade">
                   {xs.map((p) => {
-                    const on = p.slug === sel?.slug, pobre = p.preco > saldo;
+                    const on = p.slug === sel?.slug, pobre = !projeto && p.preco > saldo, ja = !!projeto?.ja(p.slug);
                     const filhos = produtos.filter(c => c.parentSlugs?.includes(p.slug));
                     const rotulo = filhos.every(c => c.categoria === "veneno") ? "veneno" : "módulo";
                     return (
@@ -317,7 +332,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                         <span className="hx-produto-fio" />
                         <span className="hm-card-info">
                           <span className="hx-display hm-card-nome">{separarTipo(p.nome).titulo}</span>
-                          <span className="hm-card-preco hx-display" style={{ color: pobre ? "var(--hx-dim)" : undefined, textDecoration: pobre ? "line-through" : undefined }}><Aretz /> {fmt(p.preco)}</span>
+                          {ja ? <span className="hm-card-preco"><Tag className="hx-dim">já é projeto</Tag></span> : <span className="hm-card-preco hx-display" style={{ color: pobre ? "var(--hx-dim)" : undefined, textDecoration: pobre ? "line-through" : undefined }}><Aretz /> {fmt(p.preco)}</span>}
                           {filhos.length > 0 && <span className="hm-card-espacos"><span className="hm-card-complementos">{filhos.length} {rotulo}{filhos.length !== 1 ? "s" : ""}</span></span>}
                         </span>
                       </button>{coracao(p.slug, "hm-coracao-card")}</div>
@@ -371,6 +386,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                   {sel.municao != null && !sel.linhas?.some(l => l.rotulo === "Munição") && <Stat k="Munição" v={sel.municao} />}
                   {sel.cargas != null && <Stat k="Cargas" v={sel.cargas} />}
                   {sel.linhas?.map((l) => <Stat key={l.rotulo} k={l.rotulo} v={l.valor} />)}
+                  {projeto?.linhas(sel).map((l) => <Stat key={l.rotulo} k={l.rotulo} v={l.valor} />)}
                 </div>
                 {sel.propriedades && sel.propriedades.length > 0 && (
                   <div className="hx-props" style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 16, padding: "8px 0", borderBottom: "1px solid rgba(0,212,255,.08)" }}>
@@ -393,7 +409,14 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                 </button>)}</div>
               </section>}
             </div>
-            <div className="hm-compra">
+            {projeto ? <div className="hm-compra">
+              <div style={{ marginBottom: 12, display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
+                <Tag className="hx-dim">materiais ao iniciar</Tag>
+                <div style={{ textAlign: "right" }}><Tag className="hx-dim">50% do preço</Tag><div className="hx-display" style={{ fontSize: 22, fontWeight: 900 }}><Aretz /> {fmt(projeto.materiais(sel))}</div></div>
+              </div>
+              <button type="button" disabled={projeto.ja(sel.slug)} onClick={() => projeto.onAdicionar(sel.slug)} className="hx-btn-ambar" style={{ width: "100%" }}>{projeto.ja(sel.slug) ? "Já é projeto" : "Adicionar projeto"}</button>
+              <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between" }}><Tag className="hx-dim" style={{ opacity: .7 }}>{projeto.contagem.rotulo} após</Tag><Tag className="hx-dim">{projeto.apos(sel)}</Tag></div>
+            </div> : <div className="hm-compra">
               {negociacao && alvo && <section className="hm-negociacao" aria-label="Negociar preço" onKeyDown={e => { if (e.key === "Escape") { e.stopPropagation(); fecharNegociacao(); } }}>
                 <div className="hm-negociacao-cab"><span className="hx-display">Ajustar preço</span><button type="button" aria-label="Fechar ajuste de preço" onClick={fecharNegociacao}><X size={16} /></button></div>
                 <div className="hm-negociacao-modos">{(["preco", "desconto"] as const).map(modo => <button key={modo} type="button" aria-pressed={modoPreco === modo} onClick={() => { setModoPreco(modo); setRascunhoPreco(modo === "preco" ? String(precoUnitario) : String(Math.max(0, Math.round((1 - precoUnitario / alvo.preco) * 10000) / 100))); }}>{modo === "preco" ? "Definir preço" : "Desconto em %"}</button>)}</div>
@@ -428,7 +451,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                 <div role="note" style={{ marginTop: 8, display: "flex", justifyContent: "space-between" }}><Tag style={{ color: AMB }}>vai exceder a mochila</Tag><Tag style={{ color: AMB }}>{usados + (alvo?.espacos ?? 0) * n}/{capacidade}</Tag></div>
               )}
               <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between" }}><Tag className="hx-dim" style={{ opacity: .7 }}>saldo após</Tag><Tag className="hx-dim">₳ {fmt(Math.max(0, saldo - custo))}</Tag></div>
-            </div>
+            </div>}
           </aside>
         ) : <aside className="hm-detalhe" />}
       </div>
