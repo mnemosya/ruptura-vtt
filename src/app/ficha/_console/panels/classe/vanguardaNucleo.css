@@ -1,0 +1,78 @@
+/* Tela da Vanguarda — Ímpeto no Núcleo (A1 sobre a V1), rankings R1–R3 e as
+   subclasses aprovadas (BK2, CC1/CC4, CL2, GD2). Valores copiados do markup das
+   pranchetas. Reaproveita título, linha de escolha, gatilhos, folhas e rodapé do
+   Infiltrador (`infiltradorBrechas.css`), chips e dicas do Combatente. */
+.va-raiz{--ca:#6ba9e7;--ca-suave:color-mix(in srgb,var(--ca) 70%,#a9bfcb);--va-brasa:#e2795f}
+.va-raiz .ar-cab>.ca-legenda svg{color:#8fa6b4}
+.va-raiz .ar-cab>.ca-legenda>span{display:flex;align-items:center;gap:8px}
+
+/* Chips: até 3 numa linha que quebra; 4 em grade 2×2. */
+.va-chips{flex-wrap:wrap;gap:8px 12px}
+.va-chips[data-grade=true]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.va-chips[data-grade=true]>:nth-child(odd){justify-self:start}
+.va-chips[data-grade=true]>:nth-child(even){justify-self:end}
+.va-raiz .ca-chip{white-space:nowrap}
+.va-raiz span.ca-chip{cursor:help}
+.va-raiz .ca-chip[aria-pressed=true]{border-color:var(--ca-borda);background:color-mix(in srgb,var(--ca-halo) 45%,transparent);color:#eef4f7}
+.va-raiz .ca-chip[data-ativo=true] b{color:var(--ca-claro)}
+.va-raiz .ca-chip[data-brasa=true] b{color:var(--va-brasa)}
+
+.va-palco,.va-palco[data-chips=true]{gap:32px}
+.va-palco[data-vao=colosso]{gap:28px}
+.va-palco[data-vao=guardiao]{gap:22px}
+
+/* Núcleo: arco de segmentos ao redor do hexágono com o número. */
+.va-impeto{display:flex;flex-direction:column;align-items:center;gap:14px}
+.va-nucleo{position:relative;width:300px;height:280px;flex:none}
+.va-deco{position:absolute;left:0;top:0;overflow:visible}
+.ar-tela .va-arco{position:absolute;left:0;top:0;width:300px;height:300px;padding:0;border:0;background:transparent;pointer-events:none}
+.va-arco svg{overflow:visible}
+.va-arco .va-corpo{pointer-events:visiblePainted;cursor:pointer;transition:filter .16s}
+.va-arco:disabled .va-corpo{cursor:default}
+.va-arco:not(:disabled):hover .va-corpo{filter:brightness(1.35) drop-shadow(0 0 10px var(--ca-halo))}
+.va-arco:focus{outline:none}
+.va-arco:focus-visible .va-corpo{stroke:#fff}
+.va-arco text{font:700 10px var(--ar-mono);letter-spacing:.14em}
+.va-centro{position:absolute;left:50%;top:150px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px;cursor:help}
+.va-centro>strong{font:800 54px/1 var(--ar-oxa);color:#eef4f7;text-shadow:0 0 18px var(--ca-halo)}
+.va-raiz[data-furia=true] .va-centro>strong{text-shadow:0 0 18px color-mix(in srgb,var(--va-brasa) 45%,transparent)}
+.va-centro>span:not(.ca-dica){font:700 10px/1 var(--ar-mono);letter-spacing:.18em;color:#8fa6b4}
+.va-centro>em{font:700 10px/1 var(--ar-mono);font-style:normal;letter-spacing:.18em;color:var(--ca-claro)}
+.va-centro>em[data-brasa=true]{color:var(--va-brasa)}
+
+/* Gatilhos: um centralizado ou dois lado a lado. */
+.va-secao{gap:14px}
+.va-unico{display:flex;justify-content:center}
+.in-receber>.va-unico{width:auto;display:flex;justify-content:center}
+.in-receber>.va-par{width:100%;max-width:600px;grid-template-columns:repeat(2,minmax(0,1fr))}
+
+/* Guardião: escudos empunhados, resultado do bloqueio e Abrigo Móvel. */
+.va-bloquear{display:flex;flex-direction:column;align-items:center;gap:12px}
+.va-bloquear>span{position:relative;font:500 11px/1 var(--ar-mono);letter-spacing:.18em;color:#8fa6b4;cursor:help}
+.va-escudos{width:100%;max-width:640px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ar-tela .va-escudo{min-height:72px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:8px 12px;text-align:left;background:transparent;border:1px solid #24394a;transition:background .14s,border-color .14s}
+.ar-tela .va-escudo[aria-pressed=true],.ar-tela .va-escudo:not(:disabled):hover{border-color:var(--ca-borda);background:color-mix(in srgb,var(--ca-halo) 45%,transparent)}
+.va-escudo-arte{position:relative;width:48px;height:48px;flex:none;display:grid;place-items:center;border:1px solid rgba(0,212,255,.1);color:var(--ca-claro);background:radial-gradient(ellipse at 50% 55%,var(--ca-fundo) 0%,#081925 75%)}
+.va-escudo-info{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:6px}
+.va-escudo-info>span:first-child{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.va-escudo-info strong{font:700 13px/1.1 var(--ar-oxa);letter-spacing:.02em;text-transform:uppercase;color:#eaf6f2}
+.va-escudo-info b{font:700 10px/1 var(--ar-oxa);color:var(--ca-claro);white-space:nowrap}
+.va-escudo-pd{position:relative;height:4px;background:#1c3445}
+.va-escudo-pd>i{position:absolute;left:0;top:0;bottom:0;background:var(--ca)}
+.va-escudo-info small{font:700 8.5px/1.2 var(--ar-mono);letter-spacing:.1em;color:#6f8799}
+.va-escudo-info small[data-tom=abrigo]{color:var(--ca-claro)}
+.va-vazio{margin:0;font-size:13.5px;color:#8fa6b4}
+.va-escolha-bloqueio{min-height:44px}
+.va-escolha-bloqueio>small{font:700 9.5px/1 var(--ar-mono);letter-spacing:.12em;color:var(--ca-suave)}
+.va-escolha-bloqueio>small[data-usado=true]{color:#8fa6b4}
+.ar-tela .va-opcao{position:relative;min-height:40px;padding:0 14px;background:transparent;border:1px solid #24394a;font:700 10.5px/1 var(--ar-mono);letter-spacing:.12em;color:#eef4f7;transition:background .14s,border-color .14s}
+.ar-tela .va-opcao:not(:disabled):hover{border-color:var(--ca-borda);background:color-mix(in srgb,var(--ca-halo) 45%,transparent)}
+
+/* Rodapé sem botão à esquerda: o espaço segura o centro. */
+.va-raiz .ar-rodape>span:first-child{flex:1 1 0}
+
+@container rc-eq (max-width:640px){
+  .va-chips[data-grade=true]{grid-template-columns:minmax(0,1fr)}
+  .va-chips[data-grade=true]>:nth-child(even){justify-self:start}
+  .va-escudos,.in-receber>.va-par{grid-template-columns:minmax(0,1fr)}
+}

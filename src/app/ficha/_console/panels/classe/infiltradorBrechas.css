@@ -48,6 +48,8 @@
 .in-gatilho strong{font:600 14.5px/1.1 var(--ar-oxa);color:#eef4f7}
 .in-gatilho small{font:700 9.5px/1.2 var(--ar-mono);letter-spacing:.1em;color:var(--ca-suave)}
 .in-gatilho[data-feito=true] :is(strong,small){color:#8fa6b4}
+/* Esmaecer só o conteúdo: opacity no botão deixaria a dica translúcida. */
+.in-gatilho[data-esmaecido=true]>:not(.ca-dica){opacity:.45}
 .in-gatilho:not(:disabled):hover>span:first-child,.in-gatilho:focus-visible>span:first-child{transform:scale(1.1);filter:drop-shadow(0 0 10px var(--ca-halo))}
 .in-gatilho:not(:disabled):hover strong{color:#fff}
 .in-raiz .ca-dica[data-pos=cima-esq]{left:0;bottom:calc(100% + 10px);transform:translateY(4px)}

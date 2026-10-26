@@ -188,7 +188,7 @@ export function InfiltradorBrechas({ api, rank, subclassId }: { api: Api; rank: 
           <span>RECEBER BRECHA · <b data-usado={gatilhoRodada || undefined}>{gatilhoRodada ? "JÁ RECEBEU NESTA RODADA" : "1 POR RODADA"}</b></span>
           <div>{GATILHOS.map((g, k) => {
             const feito = g.id === "procurar" && procurou;
-            return <button key={g.id} type="button" className="in-gatilho ca-tem-dica" data-feito={feito || undefined} disabled={locked} style={{ opacity: cheia ? .45 : 1 }} onClick={() => receber(g.id)}>
+            return <button key={g.id} type="button" className="in-gatilho ca-tem-dica" data-feito={feito || undefined} data-esmaecido={cheia || undefined} disabled={locked} onClick={() => receber(g.id)}>
               <span>
                 <svg width="38" height="42" viewBox="0 0 58 64" aria-hidden="true"><path d="M29 2 55 17v30L29 62 3 47V17Z" fill="var(--ca-fundo)" stroke="var(--ca)" strokeWidth="2.4" /></svg>
                 <Svg d={ICONES[g.id]} tam={17} traco={2} />

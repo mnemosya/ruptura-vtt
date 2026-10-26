@@ -14,6 +14,7 @@ import { CombatenteAnel } from "./classe/CombatenteAnel";
 import { FaceReserva } from "./classe/FaceReserva";
 import { InfiltradorBrechas } from "./classe/InfiltradorBrechas";
 import { TecnicoUnidades } from "./classe/TecnicoUnidades";
+import { VanguardaNucleo } from "./classe/VanguardaNucleo";
 import { SubclassCodex } from "./classe/SubclassCodex";
 import { ClassModules } from "./classe/ClassModules";
 import ancora from "../../../../../content/v12/db_classe_ancora_v1_2.json";
@@ -53,6 +54,7 @@ export function ClassPanel({ api }: { api: Api }) {
   if (current.slug === "face") return <FaceReserva key={sub?.slug ?? "base"} api={api} rank={p.ranking} subclassId={sub?.slug} />;
   if (current.slug === "infiltrador") return <InfiltradorBrechas key={sub?.slug ?? "base"} api={api} rank={p.ranking} subclassId={sub?.slug} />;
   if (current.slug === "tecnico") return <TecnicoUnidades key={sub?.slug ?? "base"} api={api} rank={p.ranking} subclassId={sub?.slug} />;
+  if (current.slug === "vanguarda") return <VanguardaNucleo key={sub?.slug ?? "base"} api={api} rank={p.ranking} subclassId={sub?.slug} />;
   return <section className="hc-panel" data-game={current.slug} style={{ "--hc-accent": color } as React.CSSProperties} aria-label={`Classe ${current.nome}`}>
     <CabecalhoModulo id="ID://CLASSE" mod="MOD.CLASS // 10" />
     <div className="hc-body">
