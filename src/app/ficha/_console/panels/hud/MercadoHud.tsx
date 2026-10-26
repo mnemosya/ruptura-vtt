@@ -12,12 +12,13 @@ import { PropriedadeDoItem } from "./EquipamentoHud";
  * Só apresentação: recebe os produtos já resolvidos (`ProdutoHud`) e a
  * compra sai por `onComprar`. Quem lê o catálogo publicado e chama
  * `comprarItem` é o `InventarioPanel`; a galeria alimenta com dados de
- * exemplo. A compra vai para a mochila — é o que `comprarItem` faz.
+ * exemplo. A compra comum vai para a mochila; a ARS usa a região escolhida.
  *
  * Cor de categoria: paleta compartilhada com Inventário e Equipamentos.
  */
 
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { ARS_CONTENT_ID, ARS_REGIOES, type ArsRegiao } from "../../../../../lib/character/escalpos";
 import { oxanium } from "../../../../_design/oxanium";
 import "./hud-base.css";
 import "./mercado-layout.css";
@@ -75,7 +76,8 @@ export interface PropsMercadoHud {
   /** Espaços ocupados agora e capacidade — avisa antes de estourar a mochila. */
   usados: number;
   capacidade: number;
-  onComprar: (slug: string, quantidade: number, precoUnitario: number) => void;
+  onComprar: (slug: string, quantidade: number, precoUnitario: number, regiaoArs?: ArsRegiao) => void;
+  arsRegioesInstaladas?: ArsRegiao[];
   onFechar?: () => void;
   wishlist?: string[];
   onAlternarWishlist?: (slug: string) => void;
@@ -117,7 +119,7 @@ const separarTipo = (nome: string): { titulo: string; tipo: string | null } => {
 const sem = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 
-export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onFechar, wishlist = [], onAlternarWishlist, projeto }: PropsMercadoHud) {
+export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, arsRegioesInstaladas = [], onFechar, wishlist = [], onAlternarWishlist, projeto }: PropsMercadoHud) {
   const [wishlistAberta, setWishlistAberta] = useState(false);
   const [wishlistLocal, setWishlistLocal] = useState<string[]>([]);
   const desejos = onAlternarWishlist ? wishlist : wishlistLocal;
@@ -190,6 +192,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
   const [selSlug, setSel] = useState<string | null>(null);
   const [complementoSlug, setComplemento] = useState<string | null>(null);
   const [n, setN] = useState(1);
+  const [regiaoArs, setRegiaoArs] = useState<ArsRegiao | "">("");
   const [feito, setFeito] = useState(false);
   const [negociacao, setNegociacao] = useState(false);
   const [modoPreco, setModoPreco] = useState<"preco" | "desconto">("preco");
@@ -204,6 +207,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
   const sel = lista.find((p) => p.slug === selSlug) ?? lista[0] ?? null;
   const complementos = produtos.filter(p => sel && p.parentSlugs?.includes(sel.slug));
   const alvo = complementos.find(p => p.slug === complementoSlug) ?? sel;
+  const compraArs = alvo?.slug === ARS_CONTENT_ID;
   const familiaEscalpo = sel?.grupo?.id === "escalpos" && sel.categoria !== "modulo_escalpo" && sel.categoria !== "veneno";
   const escolherComplemento = (slug: string | null) => { setComplemento(slug); setN(1); setFeito(false); };
   const porNome = (a: ProdutoHud, b: ProdutoHud) => a.nome.localeCompare(b.nome, "pt-BR");
@@ -225,14 +229,16 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
   const rascunhoValido = rascunhoPreco.trim() !== "" && Number.isFinite(valorRascunho) && valorRascunho >= 0 && (modoPreco !== "desconto" || valorRascunho <= 100);
   const precoPrevisto = rascunhoValido ? Math.round(modoPreco === "desconto" ? (alvo?.preco ?? 0) * (1 - valorRascunho / 100) : valorRascunho) : null;
   useEffect(() => { setNegociacao(false); setPrecoCombinado(null); }, [alvo?.slug]);
+  useEffect(() => { setRegiaoArs(""); setN(1); }, [alvo?.slug]);
   useEffect(() => { if (negociacao) campoPrecoRef.current?.focus(); }, [negociacao, modoPreco]);
   const fecharNegociacao = () => { setNegociacao(false); requestAnimationFrame(() => ajusteRef.current?.focus()); };
   const custo = precoUnitario * n;
   const cabe = !!alvo && usados + alvo.espacos * n <= capacidade;
   const comprar = () => {
     if (!alvo) return;
+    if (compraArs && (n !== 1 || !regiaoArs || arsRegioesInstaladas.includes(regiaoArs))) return;
     if (custo > saldo) return;
-    onComprar(alvo.slug, n, precoUnitario);
+    onComprar(alvo.slug, n, precoUnitario, compraArs ? regiaoArs as ArsRegiao : undefined);
     setPrecoCombinado(null);
     setFeito(true); setTimeout(() => setFeito(false), 1200); setN(1);
   };
@@ -426,11 +432,12 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
                 <div className="hm-negociacao-acoes"><button type="button" onClick={fecharNegociacao}>Cancelar</button><button className="hx-btn-ambar" type="button" disabled={precoPrevisto === null} onClick={() => { if (precoPrevisto !== null) setPrecoCombinado({ slug: alvo.slug, valor: precoPrevisto }); fecharNegociacao(); }}>Aplicar à compra</button></div>
               </section>}
               {familiaEscalpo && alvo && <div className="hm-compra-alvo"><Tag className="hx-dim">{alvo === sel ? (sel.sub === "Identidade" ? "Identidade" : "Escalpo base") : alvo.categoria === "veneno" ? "Dose de veneno" : "Módulo"}</Tag><strong>{alvo.nome}</strong></div>}
+              {compraArs && <label className="hm-ars-region">Região da ARS<select aria-label="Região da ARS" value={regiaoArs} onChange={e => setRegiaoArs(e.target.value as ArsRegiao | "")}><option value="">Selecione uma região</option>{ARS_REGIOES.map(r => <option key={r.id} value={r.id} disabled={arsRegioesInstaladas.includes(r.id)}>{r.nome} · {r.mit} MIT{arsRegioesInstaladas.includes(r.id) ? " · instalada" : ""}</option>)}</select></label>}
               <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
                 <div className="hx-passo">
                   <button type="button" disabled={n <= 1} onClick={() => setN(n - 1)} aria-label="Menos">−</button>
                   <span className="hx-display" aria-live="polite">{n}</span>
-                  <button type="button" onClick={() => setN(n + 1)} aria-label="Mais">+</button>
+                  <button type="button" disabled={compraArs} onClick={() => setN(n + 1)} aria-label="Mais">+</button>
                 </div>
                 <div style={{ marginLeft: "auto", textAlign: "right" }}>
                   <Tag className="hx-dim">total</Tag>
@@ -440,8 +447,8 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, onF
               <div className="hm-compra-botoes">{feito ? (
                 <div className="hx-display" role="status" style={{ display: "grid", placeItems: "center", height: 44, border: `1px solid ${OK}80`, background: `${OK}1a`, color: OK, fontSize: 13, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".2em" }}>✓ Comprado</div>
               ) : (
-                <button type="button" disabled={custo > saldo} onClick={comprar} className="hx-btn-ambar" style={{ width: "100%" }}>
-                  {custo > saldo ? "Saldo insuficiente" : familiaEscalpo ? `Comprar ${alvo === sel ? (sel.sub === "Identidade" ? "item" : "escalpo") : alvo?.categoria === "veneno" ? "veneno" : "módulo"}` : "Comprar"}
+                <button type="button" disabled={custo > saldo || (compraArs && (!regiaoArs || arsRegioesInstaladas.includes(regiaoArs)))} onClick={comprar} className="hx-btn-ambar" style={{ width: "100%" }}>
+                  {custo > saldo ? "Saldo insuficiente" : compraArs ? "Comprar e registrar ARS" : familiaEscalpo ? `Comprar ${alvo === sel ? (sel.sub === "Identidade" ? "item" : "escalpo") : alvo?.categoria === "veneno" ? "veneno" : "módulo"}` : "Comprar"}
                 </button>
               )}<button ref={ajusteRef} type="button" className="hm-ajustar-preco" aria-label="Ajustar preço" data-tooltip="Ajustar preço" aria-expanded={negociacao} disabled={feito} onClick={() => { if (negociacao) fecharNegociacao(); else { setModoPreco("preco"); setRascunhoPreco(String(precoUnitario)); setNegociacao(true); } }}><SlidersHorizontal size={18} aria-hidden="true" /></button></div>
               {alvo && precoUnitario !== alvo.preco && <div className="hm-preco-aplicado"><Tag className="hx-amb">Preço ajustado</Tag><button type="button" onClick={() => setPrecoCombinado(null)}>Restaurar</button></div>}

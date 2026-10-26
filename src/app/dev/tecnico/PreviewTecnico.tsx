@@ -53,7 +53,7 @@ export function PreviewTecnico() {
       <div className="rc-foco-content" style={{ flex: 1, display: "flex", minWidth: 0 }}>
         <TecnicoUnidades key={`${rank}-${sub}`} rank={rank} subclassId={sub || undefined} api={{
           character, catalogo, glossario: [],
-          escalpos: { catalogo: catalogoEscalpos, erro: null, comEfeitoAutomatico: new Set(), instalar: () => {}, remover: () => {} },
+          escalpos: { catalogo: catalogoEscalpos, erro: null, comEfeitoAutomatico: new Set(), instalar: () => {}, remover: () => {}, ativarArs: () => {}, desativarArs: () => {} },
           classe: { alvos: [], executar: (cmd: ClassCommand) => { const r = applyClassCommand(character, cmd, 4); setErro(r.error ?? null); if (!r.error) setCharacter(r.character); } },
         } as never} />
       </div>

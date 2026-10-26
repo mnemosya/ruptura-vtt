@@ -20,6 +20,7 @@ export * from "./attack";
 export * from "./inventory";
 export * from "./spells";
 export * from "./escalpos";
+export * from "./arsDefense";
 export * from "./technicalEffects";
 export * from "./defense";
 export * from "./ammunition";

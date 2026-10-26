@@ -37,9 +37,7 @@ import {
   getEquippedDefenseProfile,
   normalizeCharacter,
   normalizeItemContent,
-  resolveDamageWithMitPd,
-  setItemMitAtual,
-  setItemPdAtual,
+  resolveLayeredDefense,
   type BodyRegion,
 } from "../../../../../../lib/character";
 import { listItems } from "../../../../../../lib/content";
@@ -97,32 +95,37 @@ async function calcularDano(personagemInicial: ReturnType<typeof normalizeCharac
   let danoFinal = dano, mitigado = 0;
   let resumoDefesa: string | null = null, armaduraNome: string | null = null;
   let protecao: { tipo: "mit" | "pd"; antes: number; depois: number; max: number } | null = null;
+  const camadas: { nome: string; antes: number; depois: number }[] = [];
   if (regiao || bloqueou) {
     const itens = (await listItems()).map((d) => normalizeItemContent(d.payload as Record<string, unknown>));
     const perfil = getEquippedDefenseProfile(personagem, itens);
     const txt = (...k: string[]) => { for (const c of k) if (typeof p[c] === "string" && p[c]) return p[c] as string; return undefined; };
     const armadura = !bloqueou && regiao ? armaduraDaRegiao(perfil, regiao) : undefined;
     const escudo = bloqueou ? perfil.escudo : undefined;
-    if (armadura || escudo) {
-      const r = resolveDamageWithMitPd({
+    if (armadura || escudo || regiao) {
+      const r = resolveLayeredDefense({
+        character: personagem,
         damageAmount: dano,
         damageType: txt("tipoDano", "danoTipo", "damageType"),
         damageSubtype: txt("subtipoDano", "danoSubtipo", "damageSubtype"),
         wasBlocked: bloqueou,
-        armor: armadura ? { atual: armadura.mitAtual, max: armadura.mitMax, tipoProtecao: armadura.tipoProtecao } : undefined,
-        shield: escudo ? { atual: escudo.pdAtual, max: escudo.pdMax, tipoProtecao: escudo.tipoProtecao } : undefined,
+        defense: perfil,
+        region: regiao ?? undefined,
       });
+      personagem = r.character;
       danoFinal = r.finalDamage;
-      mitigado = r.mitigatedByMit + r.mitigatedByPd;
+      mitigado = r.externa.mitigatedByMit + r.externa.mitigatedByPd + r.mitigatedByArs;
       resumoDefesa = r.summary;
-      armaduraNome = (armadura ?? escudo)!.instance.itemNome;
-      if (armadura) protecao = { tipo: "mit", antes: armadura.mitAtual, depois: r.mitAfter ?? armadura.mitAtual, max: armadura.mitMax };
-      if (escudo) protecao = { tipo: "pd", antes: escudo.pdAtual, depois: r.pdAfter ?? escudo.pdAtual, max: escudo.pdMax };
-      if (armadura && r.mitigatedByMit > 0) personagem = setItemMitAtual(personagem, armadura.instance.id, r.mitAfter ?? armadura.mitAtual, armadura.mitMax);
-      if (escudo && r.mitigatedByPd > 0) personagem = setItemPdAtual(personagem, escudo.instance.id, r.pdAfter ?? escudo.pdAtual, escudo.pdMax);
+      armaduraNome = [(armadura ?? escudo)?.instance.itemNome, r.ars ? "ARS" : null].filter(Boolean).join(" → ") || null;
+      if (armadura) protecao = { tipo: "mit", antes: armadura.mitAtual, depois: r.externa.mitAfter ?? armadura.mitAtual, max: armadura.mitMax };
+      if (escudo) protecao = { tipo: "pd", antes: escudo.pdAtual, depois: r.externa.pdAfter ?? escudo.pdAtual, max: escudo.pdMax };
+      if (!armadura && r.ars) protecao = { tipo: "mit", antes: r.ars.before, depois: r.ars.after, max: r.ars.max };
+      if (armadura) camadas.push({ nome: armadura.instance.itemNome, antes: armadura.mitAtual, depois: r.externa.mitAfter ?? armadura.mitAtual });
+      if (escudo) camadas.push({ nome: escudo.instance.itemNome, antes: escudo.pdAtual, depois: r.externa.pdAfter ?? escudo.pdAtual });
+      if (r.ars) camadas.push({ nome: "ARS", antes: r.ars.before, depois: r.ars.after });
     }
   }
-  return { personagem, danoFinal, mitigado, resumoDefesa, armaduraNome, regiao, bloqueou, protecao };
+  return { personagem, danoFinal, mitigado, resumoDefesa, armaduraNome, regiao, bloqueou, protecao, camadas };
 }
 
 export interface PreviaDano {
@@ -133,6 +136,7 @@ export interface PreviaDano {
   bloqueou: boolean;
   armadura: string | null;
   protecao: { tipo: "mit" | "pd"; antes: number; depois: number; max: number } | null;
+  camadas: { nome: string; antes: number; depois: number }[];
   mitigado: number;
   danoFinal: number;
   pvAntes: number;
@@ -162,7 +166,7 @@ export async function preverDanoAction(params: { campaignId: string; logId: stri
         dano,
         danoRolado: typeof p.danoBrutoRolado === "number" ? p.danoBrutoRolado : null,
         ajusteMargem: typeof p.ajusteMargem === "number" ? p.ajusteMargem : null,
-        regiao: c.regiao, bloqueou: c.bloqueou, armadura: c.armaduraNome, protecao: c.protecao,
+        regiao: c.regiao, bloqueou: c.bloqueou, armadura: c.armaduraNome, protecao: c.protecao, camadas: c.camadas,
         mitigado: c.mitigado, danoFinal: c.danoFinal, pvAntes: simulado.before, pvDepois: simulado.after, alvoNome: alvo.name,
       },
     };

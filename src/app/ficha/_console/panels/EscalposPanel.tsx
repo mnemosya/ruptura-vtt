@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { ArrowLeft, ArrowRight, BookOpen, BrainCircuit, Check, ChevronDown, Cpu, Ear, Eye, Fingerprint, Footprints, Hand, HeartPulse, Layers, Search, Sparkles, Trash2, Wrench, X } from "lucide-react";
 import { formatTechnicalContentField, type TechnicalContentItem } from "../../../../lib/content";
 import type { InstalledEscalpo } from "../../../../lib/character";
+import { ARS_CONTENT_ID, ARS_REGIOES, arsMitMax, type ArsRegiao } from "../../../../lib/character/escalpos";
 import { dadosEscalpo, normalizarEscalpo, REGIOES_ESCALPOS, regiaoEscalpo } from "../../../../lib/character/escalpoPresentation";
 import { marketEscalpoParents } from "../../../../lib/character/marketEscalpos";
 import { itemDescription } from "../../../../lib/character/itemDescription";
@@ -24,6 +25,14 @@ import "./hud/escalpos.css";
 const COR = corCategoria("escalpos")!;
 const moeda = (n: number) => `Ⱥ ${n.toLocaleString("pt-BR")}`;
 const custo = (n: number | null) => n == null ? "—" : n ? `−${n}` : "0";
+const ars = (item?: TechnicalContentItem) => item?.slug === ARS_CONTENT_ID;
+const nomeInstalacao = (i: InstalledEscalpo, modelo?: TechnicalContentItem) => {
+  const base = i.nomeCustomizado || modelo?.nome || i.contentId;
+  if (i.contentId !== ARS_CONTENT_ID) return base;
+  const regiao = ARS_REGIOES.find(r => r.id === i.regiaoArs);
+  return `${base} · ${regiao?.nome ?? "região não informada"}`;
+};
+const integridadeEscalpo = (item?: TechnicalContentItem) => ars(item) ? 1 : dadosEscalpo(item).integridade;
 const ICONES = { neurais: BrainCircuit, opticos: Eye, auditivos: Ear, de_braco: Hand, internos: HeartPulse, de_perna: Footprints, de_moda: Sparkles, identidade: Fingerprint, proteses: Wrench, outros: Cpu };
 type Registro = { id: string; nome: string; modelo?: TechnicalContentItem; instancia?: InstalledEscalpo };
 type EscalposApi = Pick<ConsoleApi, "character" | "derivados" | "catalogo" | "escalpos" | "glossario" | "somenteLeitura">;
@@ -43,15 +52,20 @@ export function EscalposPanel({ api }: { api: EscalposApi }) {
   const [busca, setBusca] = useState("");
   const [regiao, setRegiao] = useState("todos");
   const [aberto, setAberto] = useState<string | null>(null);
+  const [pendenteAberto, setPendenteAberto] = useState(false);
   const [catalogoAberto, setCatalogoAberto] = useState(false);
   /* A primeira interação encerra a entrada até a aba ser remontada. */
   const [entradaEncerrada, setEntradaEncerrada] = useState(false);
   const [guia, setGuia] = useState(false);
   const publicados = api.escalpos.catalogo.filter(e => e.status === "published");
   const porSlug = new Map(publicados.map(e => [e.slug, e]));
-  const registros: Registro[] = (api.character.escalpos_instalados ?? []).map(i => ({ id: i.id, nome: i.nomeCustomizado || porSlug.get(i.contentId)?.nome || i.contentId, modelo: porSlug.get(i.contentId), instancia: i }));
+  const arsComprada = (api.character.inventario ?? []).filter(i => i.itemSlug === ARS_CONTENT_ID).reduce((n, i) => n + i.quantidade, 0);
+  const arsInstaladas = (api.character.escalpos_instalados ?? []).filter(i => i.contentId === ARS_CONTENT_ID && i.regiaoArs);
+  const arsAtiva = arsInstaladas.some(i => i.arsAtiva);
+  const modeloArs = porSlug.get(ARS_CONTENT_ID);
+  const registros: Registro[] = (api.character.escalpos_instalados ?? []).map(i => ({ id: i.id, nome: nomeInstalacao(i, porSlug.get(i.contentId)), modelo: porSlug.get(i.contentId), instancia: i }));
   const visiveis = registros.filter(e => (regiao === "todos" || regiaoEscalpo(e.modelo).id === regiao) && normalizarEscalpo(`${e.nome} ${e.modelo?.descricaoCurta ?? ""}`).includes(normalizarEscalpo(busca.trim())));
-  const custos = registros.map(i => dadosEscalpo(i.modelo).integridade);
+  const custos = registros.map(i => integridadeEscalpo(i.modelo));
   const total = custos.every(n => n != null) ? custos.reduce<number>((s, n) => s + (n ?? 0), 0) : null;
   const atual = api.character.recursos_atuais?.integridade, max = api.derivados.integridade_max;
   const ativa = REGIOES_ESCALPOS.find(r => r.id === regiao);
@@ -80,9 +94,10 @@ export function EscalposPanel({ api }: { api: EscalposApi }) {
             })}
           </svg>
         </div>
-        <div className="hs-body-caption"><h3>{ativa?.nome ?? "Escalpos"}</h3><span className="hx-tag">{regiao === "todos" ? `${registros.length} ${registros.length === 1 ? "escalpo instalado" : "escalpos instalados"}` : `${contar(regiao)} nesta região`}</span></div>
+        <div className="hs-body-caption"><h3>{ativa?.nome ?? "Escalpos"}</h3><span className="hx-tag">{regiao === "todos" ? `${registros.length} ${registros.length === 1 ? "escalpo instalado" : "escalpos instalados"}` : regiao === "internos" && arsComprada > 0 ? `${contar(regiao)} instalado(s) · ${arsComprada} aguardando` : `${contar(regiao)} nesta região`}</span></div>
         <div className="hs-bio-stats hx-ch"><div><span className="hx-tag">Ânimo</span><strong>{api.character.atributos.animo}</strong></div><div><span className="hx-tag">Instalados</span><strong>{registros.length}</strong></div><div><span className="hx-tag">Integridade</span><strong>{custo(total)}</strong></div></div>
         <div className="hs-integrity"><span className="hx-tag">Integridade</span><span className="hs-integrity-track" aria-hidden="true"><i style={{ width: `${atual != null && max > 0 ? Math.max(0, Math.min(100, atual / max * 100)) : 0}%` }} /></span><strong>{atual ?? "—"}<small>/{max}</small></strong></div>
+        {arsInstaladas.length > 0 && <div className="hs-ars-control"><span>ARS {arsAtiva ? "ativa" : "inativa"} · {arsInstaladas.length} {arsInstaladas.length === 1 ? "região" : "regiões"}</span>{!api.somenteLeitura && <button type="button" onClick={arsAtiva ? api.escalpos.desativarArs : api.escalpos.ativarArs}>{arsAtiva ? "Desativar" : "Ativar · 1 PA"}</button>}</div>}
       </div>
       <div className="hs-installed-column">
         <div className="hs-toolbar"><label className="cm-busca"><Search size={15} aria-hidden="true" /><input type="search" aria-label="Buscar escalpo" placeholder="Buscar escalpo…" value={busca} onChange={e => setBusca(e.target.value)} /></label><button type="button" className="hx-catalogo" onClick={() => setCatalogoAberto(true)}><BookOpen size={17} /><span className="hx-catalogo-rot">Catálogo</span></button></div>
@@ -96,16 +111,18 @@ export function EscalposPanel({ api }: { api: EscalposApi }) {
               return <CartaoListaHud key={e.id} className="hs-implant" ariaLabel={`Ver ${e.nome}`}
                 nome={e.nome} subtitulo={e.modelo?.raridadeLabel ?? e.modelo?.raridade ?? "Modelo indisponível"} cor={COR}
                 onClick={() => setAberto(e.id)} metricas={[
-                  { valor: custo(d.integridade), unidade: "INT", cor: "#00d4ff" },
-                  { valor: d.modulos ?? "—", unidade: "módulos", cor: "#ff8a1f" },
+                  { valor: custo(integridadeEscalpo(e.modelo)), unidade: "INT", cor: "#00d4ff" },
+                  { valor: e.instancia?.regiaoArs ? e.instancia.arsMitAtual ?? arsMitMax(e.instancia.regiaoArs) : d.modulos ?? "—", unidade: e.instancia?.regiaoArs ? "MIT" : "módulos", cor: "#ff8a1f" },
                 ]} />;
             })}</section>;
           })}
-          {!visiveis.length && <div className="hs-empty"><span className="hx-ch-hex hs-empty-icon"><Cpu size={32} strokeWidth={1.2} /></span><h3>{busca ? "Nada encontrado" : regiao === "todos" ? "Sem escalpos" : `Sem escalpos ${ativa?.nome.toLowerCase() === "moda" ? "de moda" : "neste sistema"}`}</h3><p>{busca ? `Nenhum escalpo corresponde a “${busca}”.` : "Explore os escalpos no catálogo. Depois do procedimento com o biomecânico, registre a instalação."}</p>{(busca || regiao !== "todos") && <button type="button" onClick={() => { setBusca(""); setRegiao("todos"); }} className="hs-text-button">Ver todos os escalpos <ArrowRight size={13} /></button>}</div>}
+          {arsComprada > 0 && (regiao === "todos" || regiao === "internos") && (!busca || normalizarEscalpo("armadura reativa subdérmica ars").includes(normalizarEscalpo(busca))) && <section className="hs-grupo"><div className="hs-section-title"><span /><h3>Internos · aguardando instalação</h3><i /><small>{arsComprada}</small></div><CartaoListaHud className="hs-implant" ariaLabel="Instalar ARS comprada" nome="Armadura Reativa Subdérmica (ARS)" subtitulo={`${arsComprada} ${arsComprada === 1 ? "unidade comprada" : "unidades compradas"} · ${modeloArs ? "escolher região" : "catálogo indisponível"}`} cor={COR} onClick={() => { if (modeloArs) setPendenteAberto(true); }} metricas={[{ valor: "−1", unidade: "INT/região", cor: "#00d4ff" }]} /></section>}
+          {!visiveis.length && !(arsComprada > 0 && (regiao === "todos" || regiao === "internos") && (!busca || normalizarEscalpo("armadura reativa subdérmica ars").includes(normalizarEscalpo(busca)))) && <div className="hs-empty"><span className="hx-ch-hex hs-empty-icon"><Cpu size={32} strokeWidth={1.2} /></span><h3>{busca ? "Nada encontrado" : regiao === "todos" ? "Sem escalpos" : `Sem escalpos ${ativa?.nome.toLowerCase() === "moda" ? "de moda" : "neste sistema"}`}</h3><p>{busca ? `Nenhum escalpo corresponde a “${busca}”.` : "Explore os escalpos no catálogo. Depois do procedimento com o biomecânico, registre a instalação."}</p>{(busca || regiao !== "todos") && <button type="button" onClick={() => { setBusca(""); setRegiao("todos"); }} className="hs-text-button">Ver todos os escalpos <ArrowRight size={13} /></button>}</div>}
         </div>
       </div>
     </div>
     {registro && <JanelaEscalpo titulo={registro.nome} onFechar={() => setAberto(null)}><FichaItemConteudo p={pecaEscalpo(registro, api)} voltar={() => setAberto(null)} /><AcoesEscalpo registro={registro} api={api} onConcluir={() => setAberto(null)} /></JanelaEscalpo>}
+    {pendenteAberto && modeloArs && <JanelaEscalpo titulo="ARS comprada" onFechar={() => setPendenteAberto(false)}><FichaItemConteudo p={pecaEscalpo({ id: ARS_CONTENT_ID, nome: modeloArs.nome, modelo: modeloArs }, api)} voltar={() => setPendenteAberto(false)} /><AcoesEscalpo registro={{ id: ARS_CONTENT_ID, nome: modeloArs.nome, modelo: modeloArs }} api={api} onConcluir={() => setPendenteAberto(false)} /></JanelaEscalpo>}
     {catalogoAberto && <JanelaMercado titulo="Catálogo de escalpos" onFechar={() => setCatalogoAberto(false)}>{fechar => <CatalogoEscalpos api={api} onFechar={fechar} />}</JanelaMercado>}
     {guia && <JanelaEscalpo titulo="Guia de escalpos" onFechar={() => setGuia(false)}><div className="hs-guide"><button type="button" className="hx-ch-hex hx-fechar" aria-label="Fechar" onClick={() => setGuia(false)}><X size={15} /></button><h2>Escalpos</h2><p>Corpo, máquina e runas. A Integridade, definida pelo Ânimo, mede a capacidade de suportar os escalpos.</p><h3>Instalação</h3><p>Exige um biomecânico e normalmente leva 1 hora. O serviço já está incluído quando oferecido pela clínica. Caso contrário, a referência é 20% do preço.</p><h3>Módulos</h3><p>Ocupam espaços próprios no escalpo e normalmente não reduzem a Integridade. Possuir um módulo não significa que esteja instalado.</p><h3>Desgaste</h3><p><b>1 · Danificado:</b> funções especiais e módulos ficam inativos; funções naturais permanecem.</p><p><b>2 · Inativo:</b> deixa de funcionar completamente, inclusive como substituto de uma parte natural.</p><h3>Reparo</h3><p>Cada ponto exige um biomecânico: normalmente 1 hora e cerca de 10% do preço. Descansos não removem Desgaste. Gás arcano e manutenção cotidiana fazem parte da rotina.</p></div></JanelaEscalpo>}
   </div></section>;
@@ -117,10 +134,11 @@ function pecaEscalpo(registro: Registro, api: EscalposApi): PecaHud {
   const modulos = modelo ? [...api.catalogo.values()].filter(m => m.categoria === "modulo_escalpo" && marketEscalpoParents(m, api.catalogo).includes(modelo.slug)) : [];
   return {
     id: registro.id, nome: registro.nome, categoria: "escalpo", categoriaRotulo: r.nome, vertente: "nenhuma", raridade: modelo?.raridadeLabel ?? modelo?.raridade, onde: "equipado", espacos: dados.espacos ?? 0,
-    identificacao: <span className="hs-ficha-badge"><span>{instancia ? "Instalado" : "Catálogo"}</span><b>{custo(dados.integridade)} <small>INT</small></b></span>,
+    identificacao: <span className="hs-ficha-badge"><span>{instancia ? "Instalado" : "Catálogo"}</span><b>{custo(integridadeEscalpo(modelo))} <small>INT</small></b></span>,
     icone: <Icon size={52} strokeWidth={1.2} color={COR} style={{ filter: `drop-shadow(0 0 12px ${COR})` }} />,
     linhas: [
-      { rotulo: "Integridade", valor: dados.integridade == null ? "Não informada" : dados.integridade === 0 ? "Sem redução" : `${custo(dados.integridade)} ao instalar` },
+      { rotulo: "Integridade", valor: integridadeEscalpo(modelo) == null ? "Não informada" : integridadeEscalpo(modelo) === 0 ? "Sem redução" : `${custo(integridadeEscalpo(modelo))} ao instalar` },
+      ...(instancia?.regiaoArs ? [{ rotulo: "Região", valor: ARS_REGIOES.find(r => r.id === instancia.regiaoArs)?.nome ?? instancia.regiaoArs }, { rotulo: "MIT", valor: `${instancia.arsMitAtual ?? arsMitMax(instancia.regiaoArs)}/${arsMitMax(instancia.regiaoArs)}` }, { rotulo: "Estado", valor: instancia.arsAtiva ? "Ativa" : "Inativa" }] : []),
       ...(dados.modulos == null ? [] : [{ rotulo: "Módulos", valor: `${dados.modulos} ${dados.modulos === 1 ? "espaço" : "espaços"}` }]),
       ...(modelo?.preco == null ? [] : [{ rotulo: "Preço base", valor: moeda(modelo.preco) }]),
       ...dados.linhas.map(([k,v]) => ({ rotulo: k, valor: String(v) })),
@@ -138,10 +156,20 @@ function pecaEscalpo(registro: Registro, api: EscalposApi): PecaHud {
 
 function AcoesEscalpo({ registro, api, onConcluir }: { registro: Registro; api: EscalposApi; onConcluir: () => void }) {
   const [confirmando, setConfirmando] = useState(false);
+  const [regiaoArs, setRegiaoArs] = useState<ArsRegiao | "">("");
   if (api.somenteLeitura || (!registro.instancia && !registro.modelo)) return null;
   const remover = !!registro.instancia;
+  const escolherArs = !remover && ars(registro.modelo);
+  const ocupadas = new Set((api.character.escalpos_instalados ?? []).filter(i => i.contentId === ARS_CONTENT_ID).map(i => i.regiaoArs));
+  const selecionada = ARS_REGIOES.find(r => r.id === regiaoArs);
+  const arsNaMochila = escolherArs && (api.character.inventario ?? []).some(i => i.itemSlug === ARS_CONTENT_ID && i.quantidade > 0);
   return <footer className="hs-actions">
-    {confirmando ? <><p>{remover ? "Remover o registro e seus modificadores automáticos?" : "O procedimento já foi realizado? O registro não compra o escalpo, não retira itens do inventário e não ajusta a Integridade atual."}</p><div><button type="button" className="hs-back" onClick={() => setConfirmando(false)}><ArrowLeft size={14} /> Voltar</button><button type="button" className="cm-aprender" onClick={() => { if (remover) api.escalpos.remover(registro.instancia!.id); else api.escalpos.instalar(registro.modelo!.slug); onConcluir(); setConfirmando(false); }}>{remover ? "Confirmar remoção" : "Confirmar instalação"}</button></div></>
+    {confirmando ? <>
+      <p>{remover ? "Remover o registro e seus modificadores automáticos?" : `O procedimento já foi realizado? ${selecionada ? `${selecionada.nome}: ${selecionada.mit} MIT, 1 espaço e −1 Integridade. ` : ""}${arsNaMochila ? "Uma ARS já comprada será retirada da mochila. " : "O registro não compra o escalpo nem retira itens do inventário. "}A Integridade atual não é ajustada automaticamente.`}</p>
+      {escolherArs && <label className="hs-region-label">Região da ARS<select aria-label="Região da ARS" value={regiaoArs} onChange={e => setRegiaoArs(e.target.value as ArsRegiao | "")}><option value="">Selecione uma região</option>{ARS_REGIOES.map(r => <option key={r.id} value={r.id} disabled={ocupadas.has(r.id)}>{r.nome} · {r.mit} MIT · Ⱥ 1.500{ocupadas.has(r.id) ? " · instalada" : ""}</option>)}</select></label>}
+      {escolherArs && ocupadas.size >= ARS_REGIOES.length && <p>Todas as regiões já estão registradas.</p>}
+      <div><button type="button" className="hs-back" onClick={() => setConfirmando(false)}><ArrowLeft size={14} /> Voltar</button><button type="button" className="cm-aprender" disabled={escolherArs && (!regiaoArs || ocupadas.has(regiaoArs))} onClick={() => { if (remover) api.escalpos.remover(registro.instancia!.id); else api.escalpos.instalar(registro.modelo!.slug, escolherArs ? regiaoArs as ArsRegiao : undefined); onConcluir(); setConfirmando(false); }}>{remover ? "Confirmar remoção" : "Confirmar instalação"}</button></div>
+    </>
     : <button type="button" className={remover ? "hs-remove" : "cm-aprender"} onClick={() => setConfirmando(true)}>{remover ? <Trash2 size={14} /> : <Wrench size={14} />}{remover ? "Remover instalação" : "Registrar instalação"}</button>}
   </footer>;
 }
@@ -159,7 +187,7 @@ function CatalogoEscalpos({ api, onFechar }: { api: EscalposApi; onFechar: () =>
   return <div className={`hx cm-janela hs-catalog ${oxanium.variable}`} data-detalhe={detalhe || undefined} style={{ ["--cm-cor" as string]: COR, ["--cm-item-cor" as string]: COR }}>
     <header className="cm-cabecalho"><div><span className="hx-mono cm-sobretitulo">// Arquivo de escalpos</span><h2 className="hx-display">Catálogo de escalpos<span>.</span></h2></div><button type="button" className="hx-fechar-quad cm-fechar" aria-label="Fechar catálogo de escalpos" onClick={onFechar}><X size={16} /></button></header>
     <div className="cm-corpo"><nav className="cm-vertentes" aria-label="Categorias de escalpos"><button type="button" className="cm-vertente" aria-pressed={regiao === "todos"} onClick={() => escolherRegiao("todos")}><span className="cm-fio" /><Cpu size={18} /><span>Todos</span><small>{catalogo.length}</small></button>{REGIOES_ESCALPOS.filter(r => catalogo.some(e => regiaoEscalpo(e).id === r.id)).map(r => { const Icon = ICONES[r.id]; return <button type="button" key={r.id} className="cm-vertente" aria-pressed={regiao === r.id} onClick={() => escolherRegiao(r.id)}><span className="cm-fio" /><Icon size={18} /><span>{r.nome}</span><small>{catalogo.filter(e => regiaoEscalpo(e).id === r.id).length}</small></button>; })}</nav>
-      <div className="cm-catalogo"><div className="cm-busca-faixa"><label className="cm-busca"><Search size={15} /><input type="search" aria-label="Buscar escalpo no catálogo" placeholder="Buscar escalpo ou efeito…" value={busca} onChange={e => { setBusca(e.target.value); setDetalhe(false); }} /></label></div><div className="cm-lista">{REGIOES_ESCALPOS.map(r => { const grupo = visiveis.filter(e => regiaoEscalpo(e).id === r.id), Icon = ICONES[r.id]; if (!grupo.length) return null; return <section key={r.id}><div className="cm-secao"><Icon size={16} /><span className="hx-display">{r.nome}</span><small>{grupo.length}</small><span className="cm-traco" /></div><div className="cm-grade">{grupo.map(e => <button type="button" key={e.slug} className="cm-carta" aria-label={`Ver ${e.nome}`} aria-pressed={alvo?.slug === e.slug} onClick={() => { setSelecionado(e.slug); setDetalhe(true); }}><span className="cm-carta-arte"><Icon size={32} strokeWidth={1.3} /></span><span className="cm-carta-info"><strong className="hx-display">{e.nome}</strong><span className="cm-carta-meta">{custo(dadosEscalpo(e).integridade)} INT <span>{instalados.some(i => i.contentId === e.slug) ? <><Check size={12} /> Instalado</> : e.preco == null ? "—" : moeda(e.preco)}</span></span></span></button>)}</div></section>; })}{!visiveis.length && <p className="cm-vazio">{api.escalpos.erro ? "Catálogo indisponível." : "Nenhum escalpo corresponde à busca."}</p>}</div></div>
+      <div className="cm-catalogo"><div className="cm-busca-faixa"><label className="cm-busca"><Search size={15} /><input type="search" aria-label="Buscar escalpo no catálogo" placeholder="Buscar escalpo ou efeito…" value={busca} onChange={e => { setBusca(e.target.value); setDetalhe(false); }} /></label></div><div className="cm-lista">{REGIOES_ESCALPOS.map(r => { const grupo = visiveis.filter(e => regiaoEscalpo(e).id === r.id), Icon = ICONES[r.id]; if (!grupo.length) return null; return <section key={r.id}><div className="cm-secao"><Icon size={16} /><span className="hx-display">{r.nome}</span><small>{grupo.length}</small><span className="cm-traco" /></div><div className="cm-grade">{grupo.map(e => <button type="button" key={e.slug} className="cm-carta" aria-label={`Ver ${e.nome}`} aria-pressed={alvo?.slug === e.slug} onClick={() => { setSelecionado(e.slug); setDetalhe(true); }}><span className="cm-carta-arte"><Icon size={32} strokeWidth={1.3} /></span><span className="cm-carta-info"><strong className="hx-display">{e.nome}</strong><span className="cm-carta-meta">{custo(integridadeEscalpo(e))} INT <span>{ars(e) ? `${instalados.filter(i => i.contentId === e.slug && i.regiaoArs).length}/4 regiões` : instalados.some(i => i.contentId === e.slug) ? <><Check size={12} /> Instalado</> : e.preco == null ? "—" : moeda(e.preco)}</span></span></span></button>)}</div></section>; })}{!visiveis.length && <p className="cm-vazio">{api.escalpos.erro ? "Catálogo indisponível." : "Nenhum escalpo corresponde à busca."}</p>}</div></div>
       <aside className="cm-detalhe" aria-label="Detalhes do escalpo">{registro ? <><div className="cm-detalhe-voltar"><button type="button" onClick={() => setDetalhe(false)}>← Voltar ao catálogo</button></div><FichaItemConteudo key={registro.id} p={pecaEscalpo(registro, api)} /><AcoesEscalpo key={`acao:${registro.id}`} registro={registro} api={api} onConcluir={() => { /* Mantém o catálogo aberto, como ao aprender magias. */ }} /></> : <p className="cm-vazio">Selecione um escalpo para consultar seus detalhes.</p>}</aside>
     </div>
   </div>;

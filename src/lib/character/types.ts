@@ -990,6 +990,9 @@ export interface Character {
     contentId: string;
     nomeCustomizado?: string;
     notas?: string;
+    regiaoArs?: "bracos" | "cabeca" | "pernas" | "tronco";
+    arsAtiva?: boolean;
+    arsMitAtual?: number;
     instaladoEm: string;
   }[];
   /**

@@ -1,7 +1,7 @@
 import type { TechnicalContentItem } from "../content/technicalLibrary";
 import { normalizeItemContent, type ItemContent } from "./inventory";
 
-/** A compra guarda o escalpo na mochila; não registra instalação ou efeitos. */
+/** O catálogo vende escalpos como itens; a ficha trata a ARS por região ao concluir a compra. */
 export function catalogWithMarketEscalpos(items: ItemContent[], escalpos: TechnicalContentItem[]): Map<string, ItemContent> {
   const catalog = new Map(items.map(item => [item.slug, item]));
   for (const escalpo of escalpos) {

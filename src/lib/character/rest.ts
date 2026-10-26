@@ -25,6 +25,7 @@ import type { Character, CharacterResources, DerivedStats, TemporaryEffect } fro
 import { resetClassLongRest } from "./classManagement";
 import { resetOverloadForLongRest } from "./overload";
 import { expireRestTemporaryEffects } from "./temporaryEffects";
+import { restaurarArsDescansoLongo } from "./escalpos";
 
 export interface RestResourceSnapshot {
   pv: number;
@@ -130,11 +131,11 @@ export function applyLongRest(character: Character, derived: DerivedStats, nowIs
 
   // Efeitos temporários "até o próximo descanso longo" expiram aqui (checkpoint pós-v0.71).
   const restExpiry = expireRestTemporaryEffects(resetOverloadForLongRest(character), nowIso);
-  const nextCharacter: Character = {
+  const nextCharacter: Character = restaurarArsDescansoLongo({
     ...resetClassLongRest(restExpiry.character),
     recursos_atuais,
     metadados: { ...character.metadados, schema_version: character.metadados?.schema_version ?? 1, atualizado_em: nowIso },
-  };
+  });
 
   const after = snapshot(nextCharacter);
   const effectsApplied = [
@@ -148,6 +149,7 @@ export function applyLongRest(character: Character, derived: DerivedStats, nowIs
     before.sobrecarga_usada_dia > 0
       ? `Sobrecarga resetada (era ${before.sobrecarga_usada_dia} surto(s) usado(s) no dia)`
       : "Sobrecarga já estava zerada",
+    ...((character.escalpos_instalados ?? []).some(e => e.regiaoArs) ? ["MIT da ARS instalada restaurada ao máximo"] : []),
   ];
 
   if (restExpiry.expired.length > 0) {

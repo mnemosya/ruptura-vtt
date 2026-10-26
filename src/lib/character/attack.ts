@@ -24,14 +24,12 @@
  */
 
 import { detectCollapseOnResourceChange, resolveCollapseAdditionalDamage } from "./collapse";
-import { resolveDamageWithMitPd, type DefenseSourceInput } from "./defense";
+import { resolveLayeredDefense } from "./arsDefense";
 import { applyDamageThroughTemporaryPv } from "./temporaryPv";
 import type { Character, CollapseRulesPayload } from "./types";
 import {
   armaduraDaRegiao,
   deriveItemProperties,
-  setItemMitAtual,
-  setItemPdAtual,
   type InventoryItemInstance,
   type ItemContent,
   type EquippedDefenseProfile,
@@ -342,9 +340,12 @@ export interface AttackDamageResult {
   collapseAdvanceTableLogs: { type: string; payload: Record<string, unknown> }[];
   /** Dano bruto absorvido por MIT/PD (checkpoint v0.58) — 0 quando não havia equipamento defensivo ativo compatível. */
   mitigatedByMit: number;
+  mitigatedByArs: number;
   mitigatedByPd: number;
   mitBefore: number | null;
   mitAfter: number | null;
+  arsMitBefore: number | null;
+  arsMitAfter: number | null;
   pdBefore: number | null;
   pdAfter: number | null;
   /** Dano que efetivamente atingiu o PV — igual a `rollResult` quando não havia MIT/PD aplicável (comportamento anterior preservado). */
@@ -391,36 +392,22 @@ export function applyAttackDamage(params: {
 }): AttackDamageResult {
   const rollResult = rollDamageFormula(params.formula, params.rng);
 
-  const armadura = params.region ? armaduraDaRegiao(params.defense, params.region) : params.defense?.armadura;
-  const armorInput: DefenseSourceInput | undefined = armadura
-    ? { atual: armadura.mitAtual, max: armadura.mitMax, tipoProtecao: armadura.tipoProtecao }
-    : undefined;
-  const shieldInput: DefenseSourceInput | undefined = params.defense?.escudo
-    ? { atual: params.defense.escudo.pdAtual, max: params.defense.escudo.pdMax, tipoProtecao: params.defense.escudo.tipoProtecao }
-    : undefined;
-
-  const resolved = resolveDamageWithMitPd({
+  const layers = resolveLayeredDefense({
+    character: params.character,
     damageAmount: rollResult,
     damageType: params.damageType,
     damageSubtype: params.damageSubtype,
     wasBlocked: params.wasBlocked ?? false,
-    armor: armorInput,
-    shield: shieldInput,
+    defense: params.defense,
+    region: params.region,
   });
+  const resolved = layers.externa;
 
-  const damage = applyDamageThroughTemporaryPv(params.character, resolved.finalDamage);
+  const damage = applyDamageThroughTemporaryPv(layers.character, layers.finalDamage);
   const pvBefore = damage.pvBefore;
   const peAtual = params.character.recursos_atuais?.pe ?? 0;
   const pvAfter = damage.pvAfter;
-  let withDamage = damage.character;
-
-  // Persiste o MIT/PD atualizado na instância equipada (checkpoint v0.58) — só quando algo foi de fato absorvido.
-  if (armadura && resolved.mitigatedByMit > 0) {
-    withDamage = setItemMitAtual(withDamage, armadura.instance.id, resolved.mitAfter ?? armadura.mitAtual, armadura.mitMax);
-  }
-  if (params.defense?.escudo && resolved.mitigatedByPd > 0) {
-    withDamage = setItemPdAtual(withDamage, params.defense.escudo.instance.id, resolved.pdAfter ?? params.defense.escudo.pdAtual, params.defense.escudo.pdMax);
-  }
+  const withDamage = damage.character;
 
   const collapse = detectCollapseOnResourceChange(
     withDamage,
@@ -460,13 +447,16 @@ export function applyAttackDamage(params: {
     collapseWarnings: collapse.warnings,
     collapseAdvanceLogs,
     collapseAdvanceTableLogs,
-    mitigatedByMit: resolved.mitigatedByMit,
+    mitigatedByMit: resolved.mitigatedByMit + layers.mitigatedByArs,
+    mitigatedByArs: layers.mitigatedByArs,
     mitigatedByPd: resolved.mitigatedByPd,
     mitBefore: resolved.mitBefore,
     mitAfter: resolved.mitAfter,
+    arsMitBefore: layers.ars?.before ?? null,
+    arsMitAfter: layers.ars?.after ?? null,
     pdBefore: resolved.pdBefore,
     pdAfter: resolved.pdAfter,
-    finalDamage: resolved.finalDamage,
-    defenseSummary: resolved.summary,
+    finalDamage: layers.finalDamage,
+    defenseSummary: layers.summary,
   };
 }

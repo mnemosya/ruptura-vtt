@@ -76,6 +76,7 @@ export interface PreviaDanoCartao {
   bloqueou: boolean;
   armadura: string | null;
   protecao: { tipo: "mit" | "pd"; antes: number; depois: number; max: number } | null;
+  camadas?: { nome: string; antes: number; depois: number }[];
   mitigado: number;
   danoFinal: number;
   pvAntes: number;
@@ -306,7 +307,9 @@ export function AttackWorkflowCard({
                     ? `${previa.danoRolado} ${previa.ajusteMargem > 0 ? "+" : "−"} ${Math.abs(previa.ajusteMargem)} (${previa.ajusteMargem > 0 ? "crítico" : "margem curta"}) = ${previa.dano}`
                     : previa.dano}</dd></div>
                   <div><dt>{previa.bloqueou ? "Bloqueio" : `Região · ${ROTULO_REGIAO[previa.regiao ?? ""] ?? "—"}`}</dt>
-                    <dd>{previa.armadura
+                    <dd>{previa.camadas?.length
+                      ? previa.camadas.map(c => `${c.nome} · ${previa.bloqueou ? "PD" : "MIT"} ${c.antes}→${c.depois}`).join(" → ")
+                      : previa.armadura
                       ? `${previa.armadura}${previa.protecao ? ` · ${previa.protecao.tipo.toUpperCase()} ${previa.protecao.antes}→${previa.protecao.depois}` : ""}`
                       : previa.bloqueou ? "sem escudo" : "sem armadura"}</dd></div>
                   {previa.mitigado > 0 && <div><dt>Absorvido</dt><dd>−{previa.mitigado}</dd></div>}

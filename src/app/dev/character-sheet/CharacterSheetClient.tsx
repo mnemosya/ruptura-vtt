@@ -138,6 +138,8 @@ import {
   checkSpellVertenteLevel,
   installEscalpo,
   removeInstalledEscalpo,
+  ativarArs,
+  desativarArs,
 } from "../../../lib/character";
 import {
   updateCharacter,
@@ -2082,18 +2084,31 @@ export default function CharacterSheetClient({
    * (`purchaseItem`, `lib/character/inventory.ts`). Sem fundos
    * suficientes, não muda nada e só avisa no log local.
    */
-  function handleBuyItem(itemSlug: string, quantidade: number, walletId: WalletId, precoUnitario: number) {
+  function handleBuyItem(itemSlug: string, quantidade: number, walletId: WalletId, precoUnitario: number, regiaoArs?: import("../../../lib/character/escalpos").ArsRegiao) {
     const current = characterRef.current;
     const item = catalogoItens.get(itemSlug);
     if (!item) return;
+    const compraArs = itemSlug === "escalpos_armadura_reativa_subdermica_ars";
+    if (compraArs && (quantidade !== 1 || !regiaoArs || (current.escalpos_instalados ?? []).some(e => e.contentId === itemSlug && e.regiaoArs === regiaoArs))) {
+      addLogEntry("recurso", "Escolha uma região livre para comprar a ARS.");
+      return;
+    }
     const result = purchaseItem({ character: current, item, quantidade, walletId, precoUnitario, nowIso: new Date().toISOString(), catalog: [...catalogoItens.values()] });
     if (!result.ok) {
       addLogEntry("recurso", result.reason ?? "Compra não realizada.");
       return;
     }
-    characterRef.current = result.character;
-    setCharacter(result.character);
-    addLogEntry("recurso", `Comprado: ${item.nome} x${quantidade} — ${result.totalCost} (${result.walletBefore} → ${result.walletAfter}).`);
+    let next = result.character;
+    if (compraArs) {
+      const instalado = installEscalpo(next, { contentId: itemSlug, regiaoArs, nowIso: new Date().toISOString() });
+      if (instalado === next || !result.instance) return;
+      const consumido = removeQuantityFromInventory(instalado, result.instance.id, 1, new Date().toISOString());
+      if (!consumido.ok) return;
+      next = consumido.character;
+    }
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("recurso", `Comprado: ${item.nome}${regiaoArs ? ` (${({ bracos: "Braços", cabeca: "Cabeça", pernas: "Pernas", tronco: "Tronco" } as const)[regiaoArs]})` : ""} x${quantidade} — ${result.totalCost} (${result.walletBefore} → ${result.walletAfter}).`);
   }
 
   /** Mercador › Caderneta de Dívida — marca uma dívida como quitada manualmente (o pagamento em si é narrativo). */
@@ -2900,13 +2915,22 @@ export default function CharacterSheetClient({
    * referência passiva ao modelo (`installEscalpo`, `lib/character/
    * escalpos.ts`); nenhum efeito mecânico é aplicado nesta fase.
    */
-  function handleInstallEscalpo(contentId: string) {
+  function handleInstallEscalpo(contentId: string, regiaoArs?: import("../../../lib/character/escalpos").ArsRegiao) {
     const current = characterRef.current;
-    const next = installEscalpo(current, { contentId, nowIso: new Date().toISOString() });
+    let next = installEscalpo(current, { contentId, regiaoArs, nowIso: new Date().toISOString() });
+    if (next === current) return;
+    if (contentId === "escalpos_armadura_reativa_subdermica_ars") {
+      const comprado = (current.inventario ?? []).find(i => i.itemSlug === contentId && i.quantidade > 0);
+      if (comprado) {
+        const consumido = removeQuantityFromInventory(next, comprado.id, 1, new Date().toISOString());
+        if (!consumido.ok) return;
+        next = consumido.character;
+      }
+    }
     characterRef.current = next;
     setCharacter(next);
     const escalpo = escalposIniciais.find((e) => e.slug === contentId);
-    addLogEntry("condicao", `Escalpo instalado: ${escalpo?.nome ?? contentId}.`);
+    addLogEntry("condicao", `Escalpo instalado: ${escalpo?.nome ?? contentId}${regiaoArs ? ` (${({ bracos: "Braços", cabeca: "Cabeça", pernas: "Pernas", tronco: "Tronco" } as const)[regiaoArs]})` : ""}.`);
   }
 
   function handleRemoveEscalpo(instanceId: string) {
@@ -2916,6 +2940,24 @@ export default function CharacterSheetClient({
     characterRef.current = next;
     setCharacter(next);
     addLogEntry("condicao", "Escalpo removido.");
+  }
+
+  function handleAtivarArs() {
+    const result = ativarArs(characterRef.current, derivados.pa_max);
+    if (result.character === characterRef.current) {
+      addLogEntry("pa", result.reason ?? "ARS não ativada.");
+      return;
+    }
+    characterRef.current = result.character;
+    setCharacter(result.character);
+    addLogEntry("pa", "ARS ativada em todas as regiões instaladas (1 PA).");
+  }
+
+  function handleDesativarArs() {
+    const next = desativarArs(characterRef.current);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", "ARS desativada.");
   }
 
   /**
@@ -3860,6 +3902,8 @@ export default function CharacterSheetClient({
       erro: escalposError,
       instalar: handleInstallEscalpo,
       remover: handleRemoveEscalpo,
+      ativarArs: handleAtivarArs,
+      desativarArs: handleDesativarArs,
       comEfeitoAutomatico: installedEscalpoIdsWithEffect,
     },
     magias: {

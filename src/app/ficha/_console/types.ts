@@ -55,8 +55,10 @@ export interface ConsoleApi {
   escalpos: {
     catalogo: TechnicalContentItem[];
     erro: string | null;
-    instalar: (contentId: string) => void;
+    instalar: (contentId: string, regiaoArs?: import("../../../lib/character/escalpos").ArsRegiao) => void;
     remover: (instanceId: string) => void;
+    ativarArs: () => void;
+    desativarArs: () => void;
     comEfeitoAutomatico: Set<string>;
   };
   /** Catálogo e ações de magia compartilhados com a ficha. */
@@ -258,7 +260,7 @@ export interface ConsoleApi {
    */
   definirCarteira: (walletId: WalletId, valor: number) => void;
   /** PROVISÓRIO: compra do catálogo (`purchaseItem`), para testar Inventário e Equipamentos. */
-  comprarItem: (itemSlug: string, quantidade: number, walletId: WalletId, precoUnitario: number) => void;
+  comprarItem: (itemSlug: string, quantidade: number, walletId: WalletId, precoUnitario: number, regiaoArs?: import("../../../lib/character/escalpos").ArsRegiao) => void;
   alternarWishlist?: (slug: string) => void;
   editarPericia: (id: string, valor: number) => void;
   /**

@@ -531,9 +531,10 @@ export function InventarioPanel({ api, onGerenciarSuporte }: { api: ConsoleApi; 
             saldo={aretz ?? 0}
             usados={api.carga.ocupados}
             capacidade={api.carga.capacidade}
-            onComprar={(slug, n, precoUnitario) => {
+            arsRegioesInstaladas={(api.character.escalpos_instalados ?? []).filter(i => i.contentId === "escalpos_armadura_reativa_subdermica_ars" && i.regiaoArs).map(i => i.regiaoArs!)}
+            onComprar={(slug, n, precoUnitario, regiaoArs) => {
               const modelo = api.catalogo.get(slug);
-              if (modelo) api.comprarItem(slug, n, "aretz_informal", precoUnitario);
+              if (modelo) api.comprarItem(slug, n, "aretz_informal", precoUnitario, regiaoArs);
             }}
             onFechar={fechar}
           />}

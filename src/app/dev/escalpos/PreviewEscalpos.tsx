@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { EscalposPanel } from "../../ficha/_console/panels/EscalposPanel";
 import { ConsoleWindow } from "../../ficha/_console/ConsoleWindow";
-import { createInitialCharacter, installEscalpo, removeInstalledEscalpo, computeDerivedStats, normalizeItemContent } from "../../../lib/character";
+import { createInitialCharacter, installEscalpo, removeInstalledEscalpo, ativarArs, desativarArs, computeDerivedStats, normalizeItemContent } from "../../../lib/character";
 import { normalizeTechnicalContentItem } from "../../../lib/content/technicalLibrary";
 import { catalogWithMarketEscalpos } from "../../../lib/character/marketEscalpos";
 import db from "../../../../content/v12/db_mercado_escalpos_v1_2.json";
@@ -27,8 +27,10 @@ export function PreviewEscalpos() {
   const [janela, setJanela] = useState(false);
   const painel = <EscalposPanel api={{ character, derivados: computeDerivedStats(character.atributos, null, 0, { integridade_max: { ref: "atributo", id: "animo" } }), catalogo: falha ? new Map() : mercado, glossario: [{ tipo: "acao", slug: "resistir", nome: "Resistir", descricao: "Prévia de dica de regra: consulte a regra de Resistir na mesa." }], somenteLeitura,
     escalpos: { catalogo: falha ? [] : catalogo, erro: falha ? "Prévia de falha" : null, comEfeitoAutomatico: new Set(),
-      instalar: contentId => setCharacter(c => installEscalpo(c, { contentId, nowIso: new Date().toISOString() })),
+      instalar: (contentId, regiaoArs) => setCharacter(c => installEscalpo(c, { contentId, regiaoArs, nowIso: new Date().toISOString() })),
       remover: id => setCharacter(c => removeInstalledEscalpo(c, id)),
+      ativarArs: () => setCharacter(c => ativarArs(c, 3).character),
+      desativarArs: () => setCharacter(c => desativarArs(c)),
     },
   }} />;
   return <main style={{ minHeight: "100dvh", background: "#030b12", padding: "20px 12px", color: "#b8d8e8", fontFamily: "var(--font-corpo)" }}>

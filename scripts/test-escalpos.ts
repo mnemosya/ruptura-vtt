@@ -12,6 +12,13 @@ import {
   removeInstalledEscalpo,
   normalizeCharacter,
   createInitialCharacter,
+  ARS_CONTENT_ID,
+  ARS_REGIOES,
+  ativarArs,
+  desativarArs,
+  arsDaRegiao,
+  resolveLayeredDefense,
+  restaurarArsDescansoLongo,
 } from "../src/lib/character";
 import { normalizeTechnicalContentItem, type TechnicalContentItem } from "../src/lib/content";
 
@@ -107,5 +114,41 @@ const modeloEncontrado = escalpos.find((e) => e.slug === comModeloInexistente.es
 assert.equal(modeloEncontrado, undefined, "Slug inexistente não deve casar com nenhum modelo real — a UI trata isso defensivamente (ver BibliotecaTab).");
 assert.equal(comModeloInexistente.escalpos_instalados?.length, 1, "A instância continua registrada mesmo sem o modelo correspondente.");
 console.log("6. Modelo ausente da Biblioteca não quebra a instância (UI trata defensivamente) — OK");
+
+// A ARS ocupa uma região por instalação; não admite região vazia ou repetida.
+let comArs = personagem;
+assert.equal(installEscalpo(comArs, { contentId: ARS_CONTENT_ID, nowIso }), comArs);
+for (const regiao of ARS_REGIOES) {
+  const anterior = comArs;
+  comArs = installEscalpo(comArs, { contentId: ARS_CONTENT_ID, regiaoArs: regiao.id, nowIso });
+  assert.equal(comArs.escalpos_instalados?.at(-1)?.regiaoArs, regiao.id);
+  assert.equal(installEscalpo(comArs, { contentId: ARS_CONTENT_ID, regiaoArs: regiao.id, nowIso }), comArs);
+  assert.equal(comArs.escalpos_instalados!.length, (anterior.escalpos_instalados?.length ?? 0) + 1);
+}
+assert.equal(comArs.escalpos_instalados?.length, 4);
+assert.deepEqual(normalizeCharacter(JSON.parse(JSON.stringify(comArs))).escalpos_instalados?.map(e => e.regiaoArs), ARS_REGIOES.map(r => r.id));
+console.log("7. ARS exige região, aceita as quatro opções e bloqueia duplicatas — OK");
+
+const arsInativa = installEscalpo(personagem, { contentId: ARS_CONTENT_ID, regiaoArs: "tronco", nowIso });
+assert.equal(arsDaRegiao(arsInativa, "tronco"), null, "ARS precisa ser ativada antes de proteger.");
+const ativacao = ativarArs(arsInativa, 3);
+assert.equal(ativacao.character.estado_jogo?.pa_gastos, (arsInativa.estado_jogo?.pa_gastos ?? 0) + 1);
+assert.equal(arsDaRegiao(ativacao.character, "tronco")?.atual, 4);
+assert.equal(ativarArs(ativacao.character, 3).character, ativacao.character, "Ativação repetida não gasta PA.");
+const defesa = { armaduras: [{ instance: { id: "colete", itemNome: "Colete" }, item: { regioes: ["tronco"] }, mitMax: 3, mitAtual: 3, tipoProtecao: "fisica" }] } as unknown as Parameters<typeof resolveLayeredDefense>[0]["defense"];
+const impacto = resolveLayeredDefense({ character: ativacao.character, damageAmount: 6, damageType: "fisico", wasBlocked: false, defense: defesa, region: "tronco" });
+assert.equal(impacto.externa.mitigatedByMit, 3, "A armadura externa absorve primeiro.");
+assert.equal(impacto.mitigatedByArs, 3, "A ARS absorve só o dano restante.");
+assert.equal(impacto.finalDamage, 0);
+assert.equal(arsDaRegiao(impacto.character, "tronco")?.atual, 3);
+const soExterna = resolveLayeredDefense({ character: ativacao.character, damageAmount: 2, damageType: "fisico", wasBlocked: false, defense: defesa, region: "tronco" });
+assert.equal(soExterna.mitigatedByArs, 0, "A ARS não desgasta quando a camada externa absorve tudo.");
+assert.equal(arsDaRegiao(soExterna.character, "tronco")?.atual, 4);
+assert.equal(resolveLayeredDefense({ character: ativacao.character, damageAmount: 3, damageType: "fisico", wasBlocked: false, region: "cabeca" }).mitigatedByArs, 0);
+assert.equal(resolveLayeredDefense({ character: ativacao.character, damageAmount: 3, damageType: "energetico", wasBlocked: false, region: "tronco" }).mitigatedByArs, 0);
+assert.equal(resolveLayeredDefense({ character: ativacao.character, damageAmount: 3, damageType: "fisico", wasBlocked: true, region: "tronco" }).mitigatedByArs, 0);
+assert.equal(arsDaRegiao(restaurarArsDescansoLongo(impacto.character), "tronco")?.atual, 4);
+assert.equal(arsDaRegiao(desativarArs(ativacao.character), "tronco"), null);
+console.log("8. Armadura externa protege antes da ARS; ativação, desgaste e descanso longo — OK");
 
 console.log("\ntest-escalpos — todos os cenários passaram.");

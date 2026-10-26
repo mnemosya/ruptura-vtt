@@ -199,3 +199,5 @@
 .hm-wishlist-acesso[aria-pressed="true"], .hm-wishlist-acesso:hover { background: var(--hx-cy) !important; color: var(--hx-abismo) !important; }
 @container mercado (width < 720px) { .hm-cab-acoes { grid-column: 2; grid-row: 1; align-self: start; } }
 .hm-card-espacos-arte { position: absolute; top: 12px; left: 12px; z-index: 1; }
+.hm-ars-region { display: grid; gap: 6px; margin: 0 0 12px; color: var(--hx-dim); font: 11px var(--hx-mono); text-transform: uppercase; }
+.hm-ars-region select { width: 100%; min-height: 40px; padding: 8px 10px; color: var(--hx-texto); background: #081925; border: 1px solid #ff8a1f66; font: 13px var(--hx-corpo); }
