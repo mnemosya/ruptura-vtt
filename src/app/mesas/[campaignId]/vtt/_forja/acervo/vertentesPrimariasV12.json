@@ -1,0 +1,56 @@
+{
+  "_meta": {
+    "origem": "Notion — páginas das Vertentes do Compêndio Ruptura 1.2",
+    "observacao": "Benefícios de Vertente Primária do nível 3. O nível 5 ainda aparece como texto provisório nas seis páginas."
+  },
+  "vertentes": {
+    "biotica": {
+      "paginaNotion": "https://app.notion.com/p/3990a1363552809f976de2f4015f2b49",
+      "intro": "Quando Biótica é sua Vertente Primária, seu próprio organismo passa a responder continuamente à magia, acelerando sua recuperação e permitindo alterações conscientes em características menores do corpo.\n\nAlém dos benefícios abaixo, você pode utilizar os **Aprimoramentos da Primária** presentes nas magias de Biótica.",
+      "nivel3": {
+        "titulo": "PLASTICIDADE BIOLÓGICA",
+        "descricao": "Ao alcançar o nível 3 em Biótica, seu organismo passa a se regenerar com maior facilidade. Ao concluir um descanso curto, recupere uma quantidade de **PV igual a ****`Corpo`**. Ao concluir um descanso longo, recupere **`Corpo`**** PV adicionais** além da recuperação normal.\n\nAlém disso, ao longo de alguns minutos, você pode alterar pequenas características externas do próprio corpo. Essas alterações permanecem até que você as modifique novamente.\n\nVocê pode alterar características como a cor dos olhos, a pigmentação da pele, a cor, o comprimento e a distribuição de cabelos e pelos, o comprimento, a forma e a cor das unhas, além de produzir, modificar ou remover sardas, manchas, padrões superficiais, cicatrizes já curadas e outras características semelhantes.\n\nEssas alterações não modificam seu tamanho, estrutura óssea, atributos, sentidos ou capacidades físicas. Elas também não permitem reproduzir com precisão a aparência de outra pessoa."
+      }
+    },
+    "cinetica": {
+      "paginaNotion": "https://app.notion.com/p/3990a136355280d6bebdf6d88aa2caa3",
+      "intro": "Quando Cinética é sua Vertente Primária, seu domínio sobre impulso, movimento e gravidade ultrapassa a conjuração de magias individuais. Conforme aprofunda essa especialização, você desenvolve capacidades permanentes e aprende a levar suas magias além das formas acessíveis a outros magistas.\n\nAlém dos benefícios abaixo, você pode utilizar os **Aprimoramentos da Primária** presentes nas magias de Cinética.",
+      "nivel3": {
+        "titulo": "CAMPO CINÉTICO",
+        "descricao": "Ao alcançar o nível 3 em Cinética, seu domínio sobre o movimento mantém uma força cinética constante ao redor do corpo, capaz de impulsionar seus movimentos e exercer força sobre objetos próximos.\n\nSempre que realizar um deslocamento voluntário, aumente em **2 metros** a distância máxima que pode percorrer. Esse benefício se aplica independentemente da origem do deslocamento, incluindo magias, equipamentos e outras formas de locomoção. Ele não se aplica a deslocamentos involuntários, quedas ou quando você estiver apenas sendo transportado por outra criatura ou veículo.\n\nVocê também pode usar essa força para mover um objeto solto ou um conjunto de objetos soltos com **até 50 kg no total**, desde que estejam a até **10 metros** de você. Você os desloca em até **5 metros** em qualquer direção. Em cenas organizadas em rodadas, fazer isso custa **`1 PA`**.\n\nQuando mover vários objetos dessa forma, eles são tratados como uma única manipulação e devem permanecer juntos durante o deslocamento. Você não pode controlá-los separadamente, dar trajetórias diferentes a cada um ou realizar tarefas que exijam precisão.\n\nVocê pode manter um único objeto suspenso dessa forma enquanto ele permanecer no alcance. Essa força não afeta criaturas nem objetos vestidos, empunhados, carregados, presos ou ancorados. Também não pode causar dano, realizar ataques, operar mecanismos, manejar ferramentas ou executar tarefas que exijam precisão."
+      }
+    },
+    "cognitiva": {
+      "paginaNotion": "https://app.notion.com/p/3990a136355280988cecd2f7abb0fd28",
+      "intro": "Quando Cognitiva é sua Vertente Primária, sua percepção se estende além dos sentidos comuns, permitindo projetar a própria voz diretamente na mente de outras pessoas e captar pensamentos que emergem à superfície.\n\nAlém dos benefícios abaixo, você pode utilizar os **Aprimoramentos da Primária** presentes nas magias de Cognitiva.",
+      "nivel3": {
+        "titulo": "RESSONÂNCIA MENTAL",
+        "descricao": "Ao alcançar o nível 3 em Cognitiva, você pode falar telepaticamente com uma criatura que perceba diretamente a até **10 metros**. Apenas o alvo recebe suas palavras e não pode responder através desse vínculo. A comunicação exige que ele compreenda o idioma utilizado e não transmite imagens, memórias, emoções ou sensações.\n\nAlém disso, **uma vez por cena para cada criatura**, você pode concentrar sua atenção sobre uma criatura consciente que perceba diretamente a até **10 metros** e captar um pensamento que esteja ocupando sua mente naquele instante. O pensamento pode se manifestar como uma frase, imagem, preocupação, intenção imediata ou lembrança momentaneamente evocada.\n\nVocê não pode escolher diretamente qual informação encontrar nem vasculhar memórias ou conhecimentos que não estejam presentes nos pensamentos superficiais do alvo. Conversas, perguntas, objetos, imagens, acontecimentos e outras interações podem, no entanto, trazer determinado assunto à mente dele.\n\nQuando estiver claro que o assunto veio à mente do alvo, ele pode ser captado normalmente. Quando houver dúvida, o alvo realiza um teste de **`Vontade`** contra sua CD de Cognitiva. Em falha, o assunto emerge entre seus pensamentos superficiais e pode ser captado. Em sucesso, você não obtém informação sobre esse assunto."
+      }
+    },
+    "energetica": {
+      "paginaNotion": "https://app.notion.com/p/3990a136355280a1ba8bda484c8979c8",
+      "intro": "Quando Energética é sua Vertente Primária, seu corpo se adapta às formas de energia que você manipula, permitindo suportá-las e manifestá-las sem depender de uma conjuração completa.\n\nAlém dos benefícios abaixo, você pode utilizar os **Aprimoramentos da Primária** presentes nas magias de Energética.",
+      "nivel3": {
+        "titulo": "AFINIDADE ENERGÉTICA",
+        "descricao": "Ao alcançar o nível 3 em Energética, escolha uma forma de energia entre **calor, frio, eletricidade, luz ou som**. Essa escolha é permanente.\n\nSe escolher **calor**, você fica *Resistente* a dano ígneo. Se escolher **frio**, você fica *Resistente* a dano gélido. Se escolher **eletricidade**, você fica *Resistente* a dano elétrico. Se escolher **luz**, efeitos exclusivamente luminosos não podem deixá-lo **`Ofuscado`** nem prejudicar sua visão. Se escolher **som**, efeitos exclusivamente sonoros não podem deixá-lo **`Surdo`**, e ruídos ambientais não prejudicam sua audição.\n\nVocê também pode produzir e modular livremente manifestações inofensivas da energia escolhida, sem gastar Mana ou PA.\n\nCom **calor**, pode aquecer objetos, acender materiais inflamáveis, secar superfícies ou produzir uma pequena chama. Com **frio**, pode resfriar objetos e líquidos, congelar pequenas quantidades de água ou condensar a umidade do ambiente. Com **eletricidade**, pode produzir faíscas e correntes fracas, testar circuitos ou alimentar momentaneamente pequenos dispositivos. Com **luz**, pode emitir luz pelo próprio corpo e controlar sua intensidade e cor. Com **som**, pode produzir sons simples, tons e sinais, inclusive fora da faixa normalmente audível, além de alterar a intensidade da própria voz.\n\nEssas manifestações não causam dano, não aplicam condições e não reproduzem efeitos mecânicos de outras magias."
+      }
+    },
+    "material": {
+      "paginaNotion": "https://app.notion.com/p/3990a136355280deb5d8d153dac954fd",
+      "intro": "Quando Material é sua Vertente Primária, seu domínio sobre estruturas e propriedades físicas ultrapassa a conjuração imediata, permitindo restaurar matéria danificada e criar formas mais resistentes.\n\nAlém dos benefícios abaixo, você pode utilizar os **Aprimoramentos da Primária** presentes nas magias de Material.",
+      "nivel3": {
+        "titulo": "ESTRUTURA APRIMORADA",
+        "descricao": "Ao alcançar o nível 3 em Material, você passa a manipular e restaurar matéria inorgânica com maior eficiência.\n\nDurante um descanso curto, você pode trabalhar em objetos, equipamentos e estruturas inorgânicas aos quais tenha acesso. Ao concluir o descanso, recupere até **Material × 2 pontos**, distribuídos entre os alvos trabalhados.\n\nCada **1 PD** recuperado consome **1 ponto**. Cada **1 MIT** recuperado consome **2 pontos**. Em armaduras que cubram várias Regiões, distribua a MIT recuperada entre as Regiões danificadas. Um alvo não pode ultrapassar seus valores máximos.\n\nAlém disso, sempre que uma magia sua de Material criar uma estrutura, objeto, barreira ou proteção com **PD próprios**, aumente seus PD máximos em uma quantidade igual ao seu nível de Material.\n\nEsse benefício se aplica apenas aos PD concedidos pela própria magia. Ele não aumenta a recuperação de PD, o dano causado a PD ou os PD naturais de objetos e estruturas apenas afetados por uma magia."
+      }
+    },
+    "sinaptica": {
+      "paginaNotion": "https://app.notion.com/p/3990a136355280569b11cdb8e5c4a0f7",
+      "intro": "Quando Sináptica é sua Vertente Primária, sua conexão com a Malha deixa de depender inteiramente de interfaces externas, tornando parte de seus próprios sentidos aquilo que outros magistas precisam acessar por equipamentos.\n\nAlém dos benefícios abaixo, você pode utilizar os **Aprimoramentos da Primária** presentes nas magias de Sináptica.",
+      "nivel3": {
+        "titulo": "INTERFACE NATIVA",
+        "descricao": "Ao alcançar o nível 3 em Sináptica, sua conexão com a Malha passa a integrar diretamente seus sentidos.\n\nVocê não precisa de **Óptica Rúnica** ou **Transceptor Coclear** para perceber informações visuais ou sonoras provenientes de dispositivos e sistemas aos quais esteja conectado. Mensagens, mapas, interfaces, transmissões, chamadas, notificações e outros conteúdos compatíveis podem ser vistos ou ouvidos diretamente por você.\n\nVocê também pode transmitir sua voz por comandos neurais, sem precisar falar, para dispositivos vinculados ao seu ID sináptico.\n\nSua Interface Nativa conta como **Óptica Rúnica** e **Transceptor Coclear** para a instalação de módulos. Ela possui **1 espaço para módulos de Óptica Rúnica** e **2 espaços para módulos de Transceptor Coclear**. Esses módulos são adquiridos e instalados normalmente, mas não exigem que você possua os escalpos correspondentes.\n\nEsse benefício não concede acesso a informações protegidas, não substitui um **Neuroprocessador**, Mergulho ou outras formas de acesso e invasão de sistemas."
+      }
+    }
+  }
+}

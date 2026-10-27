@@ -1,21 +1,12 @@
-/**
- * Acervo de apresentação das Classes na Forja: sigla, papel, frase de
- * efeito, arte e o dossiê do Códex (introdução, características por
- * Ranking, subclasses, sinergia com Vertentes).
- *
- * O `id` é o slug da Classe publicada (`ancora`, `cacador`…). As regras
- * (perfis, perícias, recursos) vêm de `ClassContentV12`, nunca daqui.
- *
- * TEMPORÁRIO (Fase 3 do plano da Forja): o dossiê ainda é o JSON extraído
- * pelo protótipo do Figma. Ele passa a ser montado do conteúdo canônico
- * (`content/v12/db_classe_*`, campos `caracteristicas`, `progressao`,
- * `subclasses`) e este import sai.
- */
-import dossiesPrototipo from "./classesPrototipo.json";
+/** Apresentação das classes na Forja, derivada do conteúdo canônico v1.2. */
+import ancoraV12 from "../../../../../../../content/v12/db_classe_ancora_v1_2.json";
+import cacadorV12 from "../../../../../../../content/v12/db_classe_cacador_v1_2.json";
+import combatenteV12 from "../../../../../../../content/v12/db_classe_combatente_v1_2.json";
 import faceV12 from "../../../../../../../content/v12/db_classe_face_v1_2.json";
+import infiltradorV12 from "../../../../../../../content/v12/db_classe_infiltrador_v1_2.json";
 import tecnicoV12 from "../../../../../../../content/v12/db_classe_tecnico_v1_2.json";
 import vanguardaV12 from "../../../../../../../content/v12/db_classe_vanguarda_v1_2.json";
-import combatenteV12 from "../../../../../../../content/v12/db_classe_combatente_v1_2.json";
+import type { ClassContentV12, SubclassContentV12 } from "../../../../../../lib/rulesetV12/contracts";
 
 export type Caracteristica = { n: string; d: string };
 export type RankDossie = { r: string; lead: string; feats: Caracteristica[] };
@@ -23,8 +14,8 @@ export type DossieClasse = {
   role: string;
   sec: string;
   intro: string[];
+  /** IDs canônicos; o catálogo de perícias fornece os nomes exibidos. */
   skills3: string[];
-  /** Sinergia por Vertente: `v` é o NOME exibido (ex.: "Biótica"), `n` de 0 a 5. */
   syn: { v: string; d: string; n: number }[];
   feats: RankDossie[];
   subs: { n: string; tag: string; lore: string; ranks: RankDossie[] }[];
@@ -40,65 +31,76 @@ export interface ClasseAcervo {
   dossie: DossieClasse;
 }
 
-const DOSSIES = dossiesPrototipo as Record<string, DossieClasse>;
-const roboticistaV12 = tecnicoV12.subclasses.find((subclasse) => subclasse.slug === "roboticista");
-if (roboticistaV12) {
-  const tecnico = DOSSIES["Técnico"];
-  tecnico.subs = tecnico.subs.filter((subclasse) => subclasse.n !== "Maquinista");
-  tecnico.subs.splice(1, 0, {
-    n: roboticistaV12.nome,
-    tag: "Desenvolve IAs para operar Máquinas Autônomas e reconfigura seus Sistemas.",
-    lore: roboticistaV12.descricao,
-    ranks: (["E", "C", "A"] as const).map((r) => ({
-      r,
-      lead: `Você adquire as características ${roboticistaV12.caracteristicas[r].map((f) => f.nome).join(", ")}.`,
-      feats: roboticistaV12.caracteristicas[r].map((f) => ({ n: f.nome.toUpperCase(), d: f.descricao })),
-    })),
-  });
-}
-const iconeV12 = faceV12.subclasses.find((subclasse) => subclasse.slug === "icone");
-if (iconeV12) {
-  const icone = DOSSIES.Face.subs.find((subclasse) => subclasse.n === "Ícone");
-  if (icone) {
-    icone.ranks = (["E", "C", "A"] as const).map((r) => ({
-      r,
-      lead: `Você adquire as características ${iconeV12.caracteristicas[r].map((f) => f.nome).join(", ")}.`,
-      feats: iconeV12.caracteristicas[r].map((f) => ({ n: f.nome.toUpperCase(), d: f.descricao })),
-    }));
-  }
-}
-const guardiaoV12 = vanguardaV12.subclasses.find((subclasse) => subclasse.slug === "guardiao");
-if (guardiaoV12) {
-  const guardiao = DOSSIES.Vanguarda.subs.find((subclasse) => subclasse.n === "Guardião");
-  const arsenal = guardiao?.ranks.flatMap((rank) => rank.feats).find((feature) => feature.n === "ARSENAL DEFENSIVO");
-  const arsenalAtual = guardiaoV12.caracteristicas.E.find((feature) => feature.nome === "Arsenal Defensivo");
-  if (arsenal && arsenalAtual) arsenal.d = arsenalAtual.descricao;
-  const abrigo = guardiao?.ranks.flatMap((rank) => rank.feats).find((feature) => feature.n === "ABRIGO MÓVEL");
-  const regraAtual = guardiaoV12.caracteristicas.C.find((feature) => feature.nome === "Abrigo Móvel");
-  if (abrigo && regraAtual) abrigo.d = regraAtual.descricao;
-}
-const acrobataV12 = combatenteV12.subclasses.find((subclasse) => subclasse.slug === "acrobata");
-if (acrobataV12) {
-  const acrobata = DOSSIES.Combatente.subs.find((subclasse) => subclasse.n === "Acrobata");
-  const impulso = acrobata?.ranks.flatMap((rank) => rank.feats).find((feature) => feature.n === "IMPULSO CONTÍNUO");
-  const regraAtual = acrobataV12.caracteristicas.C.find((feature) => feature.nome === "Impulso Contínuo");
-  if (impulso && regraAtual) impulso.d = regraAtual.descricao;
+type FonteClasse = { classes: ClassContentV12[]; subclasses: SubclassContentV12[] };
+const FONTES = [ancoraV12, cacadorV12, combatenteV12, faceV12, infiltradorV12, tecnicoV12, vanguardaV12] as unknown as FonteClasse[];
+const VERTENTES: Record<string, string> = {
+  biotica: "Biótica", cinetica: "Cinética", cognitiva: "Cognitiva",
+  energetica: "Energética", material: "Material", sinaptica: "Sináptica",
+};
+const RANKINGS = ["F", "E", "D", "C", "B", "A", "S"] as const;
+const RANKINGS_SUBCLASSE = ["E", "C", "A"] as const;
+
+function feats(features: { nome: string; descricao: string }[]): Caracteristica[] {
+  return features.map((feature) => ({ n: feature.nome, d: feature.descricao }));
 }
 
-const META: Array<Omit<ClasseAcervo, "arte" | "dossie">> = [
-  { id: "ancora", nome: "Âncora", sigla: "ANC", papel: "Sustentação", frase: "Mantém o grupo de pé quando a realidade dobra." },
-  { id: "cacador", nome: "Caçador", sigla: "CAÇ", papel: "Preparação", frase: "Segue o rastro, escolhe o terreno, fecha o cerco." },
-  { id: "combatente", nome: "Combatente", sigla: "CMB", papel: "Eliminação", frase: "Disciplina física aplicada no ponto de ruptura." },
-  { id: "face", nome: "Face", sigla: "FAC", papel: "Influência", frase: "Abre portas que nenhuma arma abriria." },
-  { id: "infiltrador", nome: "Infiltrador", sigla: "INF", papel: "Infiltração", frase: "Entra onde não deveria. Sai antes do alarme." },
-  { id: "tecnico", nome: "Técnico", sigla: "TEC", papel: "Engenharia", frase: "Conserta, adapta e sobrecarrega máquinas." },
-  { id: "vanguarda", nome: "Vanguarda", sigla: "VNG", papel: "Linha de frente", frase: "Primeiro a entrar, último a recuar." },
+function leadCaracteristicas(features: Caracteristica[]): string {
+  const nomes = features.map((feature) => feature.n);
+  if (nomes.length === 1) return `Você adquire a característica ${nomes[0]}.`;
+  return `Você adquire as características ${nomes.join(", ")}.`;
+}
+
+function dossieClasse(classe: ClassContentV12, subclasses: SubclassContentV12[]): DossieClasse {
+  return {
+    role: classe.papel_principal,
+    sec: classe.papeis_secundarios.join(", "),
+    intro: classe.descricao.split(/\n\s*\n/).filter(Boolean),
+    skills3: classe.criacao.pericias_valor_3,
+    syn: Object.entries(classe.criacao.sinergia_vertentes ?? {}).map(([id, n]) => ({
+      v: VERTENTES[id] ?? id,
+      d: `Sinergia ${n} de 5 com ${VERTENTES[id] ?? id}.`,
+      n,
+    })),
+    feats: RANKINGS.map((r) => {
+      const caracteristicas = r === "F" || r === "D" || r === "B" || r === "S" ? feats(classe.caracteristicas[r]) : [];
+      const lead = caracteristicas.length ? leadCaracteristicas(caracteristicas)
+        : classe.progressao[r].escolhe_subclasse ? `Escolha uma Subclasse de ${classe.nome}: ${subclasses.map((s) => s.nome).join(", ")}.`
+          : `Você recebe as características de sua Subclasse neste Ranking.`;
+      return { r, lead, feats: caracteristicas };
+    }),
+    subs: subclasses.map((subclasse) => ({
+      n: subclasse.nome,
+      tag: subclasse.descricao.split(/[.!?](?:\s|$)/)[0] + ".",
+      lore: subclasse.descricao,
+      ranks: RANKINGS_SUBCLASSE.map((r) => ({ r, lead: "", feats: feats(subclasse.caracteristicas[r]) })),
+    })),
+  };
+}
+
+const META: Array<{ id: string; sigla: string; frase: string }> = [
+  { id: "ancora", sigla: "ANC", frase: "Mantém o grupo de pé quando a realidade dobra." },
+  { id: "cacador", sigla: "CAÇ", frase: "Segue o rastro, escolhe o terreno, fecha o cerco." },
+  { id: "combatente", sigla: "CMB", frase: "Disciplina física aplicada no ponto de ruptura." },
+  { id: "face", sigla: "FAC", frase: "Abre portas que nenhuma arma abriria." },
+  { id: "infiltrador", sigla: "INF", frase: "Entra onde não deveria. Sai antes do alarme." },
+  { id: "tecnico", sigla: "TEC", frase: "Integra máquinas, sistemas e dispositivos em campo." },
+  { id: "vanguarda", sigla: "VNG", frase: "Primeiro a entrar, último a recuar." },
 ];
 
-export const CLASSES_ACERVO: ClasseAcervo[] = META.map((m) => ({
-  ...m,
-  arte: `/forja/classes/${m.id}.webp`,
-  dossie: DOSSIES[m.nome],
-}));
-
-export const RANKINGS = ["F", "E", "D", "C", "B", "A", "S"] as const;
+export const CLASSES_ACERVO: ClasseAcervo[] = META.map((meta) => {
+  const fonte = FONTES.find((item) => item.classes[0]?.slug === meta.id);
+  const classe = fonte?.classes[0];
+  if (!fonte || !classe) throw new Error(`Conteúdo da classe ${meta.id} ausente na Forja.`);
+  const subclasses = classe.subclasses.map((slug) => {
+    const subclasse = fonte.subclasses.find((item) => item.slug === slug);
+    if (!subclasse) throw new Error(`Subclasse ${slug} ausente na classe ${classe.nome}.`);
+    return subclasse;
+  });
+  return {
+    ...meta,
+    nome: classe.nome,
+    papel: classe.papel_principal,
+    arte: `/forja/classes/${meta.id}.webp`,
+    dossie: dossieClasse(classe, subclasses),
+  };
+});

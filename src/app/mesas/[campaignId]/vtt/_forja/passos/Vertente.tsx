@@ -8,7 +8,6 @@ import { Mono, Panel } from "../ui";
 import type { SetDraft } from "../tipos";
 import type { DraftV12 } from "../../../../../../lib/rulesetV12";
 
-const title = (s: string) => s.toLowerCase().replace(/(^|\s)(\p{L})/gu, (_, a: string, c: string) => a + c.toUpperCase());
 const vmeta = (id: string): VertenteAcervo => VERTENTES_ACERVO.find((v) => v.id === id) ?? VERTENTES_ACERVO[0];
 const plain = (s: string) => s.replace(/\*\*/g, "");
 const DIFF: Record<string, number> = { "Fácil": 1, "Média": 2, "Difícil": 3 };
@@ -81,6 +80,7 @@ function CodexVertente({ id, d: rascunho, set, onClose }: { id: VertenteId; d: D
   const toc: ItemIndice[] = [
     { k: "visao", label: "Visão geral" },
     { k: "pratica", label: "Prática", kids: [{ k: "cast", label: d.castLabel }, { k: "manif", label: "Manifestação" }, { k: "prog", label: "Progressão" }] },
+    { k: "primaria", label: "Vertente Primária", kids: [{ k: "primaria-n3", label: `Nível 3 · ${d.primaria.nivel3.titulo}` }] },
     { k: "magias", label: "Magias", kids: d.levels.map((l) => ({ k: `lv-${l.lv}`, label: `Nível ${l.lv} · ${l.spells.length}` })) },
   ];
 
@@ -137,8 +137,17 @@ function CodexVertente({ id, d: rascunho, set, onClose }: { id: VertenteId; d: D
                 </div>
               </section>
 
+              <section id="primaria" data-sec className="fj-codex__secao fj-codex__secao--fio">
+                <SecHead n="03" t="Vertente Primária" />
+                <RuleText text={d.primaria.intro} className="fj-texto-leitura" />
+                <div id="primaria-n3" data-sec className="fj-codex__bloco">
+                  <h4 className="fj-codex__sub fj-codex__sub--grande">Nível 3 · {d.primaria.nivel3.titulo}</h4>
+                  <RuleText text={d.primaria.nivel3.descricao} className="fj-texto-leitura" />
+                </div>
+              </section>
+
               <section id="magias" data-sec className="fj-codex__secao fj-codex__secao--fio">
-                <SecHead n="03" t="Magias" />
+                <SecHead n="04" t="Magias" />
                 {d.levels.map((l) => (
                   <div key={l.lv} id={`lv-${l.lv}`} data-sec className="fj-nivel">
                     <div className="fj-ch-l fj-nivel__cab">
@@ -167,7 +176,7 @@ function CartaoMagia({ s, cor }: { s: MagiaGrimorio; cor: string }) {
     <article className="fj-magia" style={{ borderColor: `${cor}88` }}>
       <div className="fj-magia__topo">
         <div>
-          <h5 className="fj-magia__nome">{title(s.n)}</h5>
+          <h5 className="fj-magia__nome">{s.n}</h5>
           <div className="fj-magia__tags">
             {s.tags.map((t) => <span key={t} className="fj-magia__tag">{t}</span>)}
             {s.type && <span className="fj-magia__tag" style={{ color: cor, background: `${cor}1a` }}>{s.type.toUpperCase()}</span>}

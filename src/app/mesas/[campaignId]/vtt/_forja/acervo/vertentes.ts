@@ -5,12 +5,13 @@
  * `id` é o slug da v1.2 (`biotica`, `cinetica`…, ver `VERTENTES_V12`). A
  * cor vem da paleta única (`_design/coresVertente.ts`), a mesma do token.
  *
- * TEMPORÁRIO (Fase 3 do plano da Forja): o grimório ainda é o JSON
- * extraído pelo protótipo do Figma. As magias saem da criação (ficam
- * pendentes, como o servidor já faz) e o texto passa a vir do conteúdo
- * publicado quando o capítulo de magias fechar.
+ * O texto editorial de abertura e prática vem da extração enxuta do protótipo.
+ * As magias são montadas do catálogo publicado v1.2; a Vertente Primária
+ * vem das páginas atuais do Compêndio no Notion.
  */
-import grimoriosPrototipo from "./vertentesPrototipo.json";
+import grimoriosTexto from "./vertentesTexto.json";
+import primariasV12 from "./vertentesPrimariasV12.json";
+import magiasV12 from "../../../../../../../content/v12/db_magias_vertentes_v1_2.json";
 import { CORES_VERTENTE, brilhoVertente } from "../../../../../_design/coresVertente";
 
 export type MagiaGrimorio = { n: string; tags: string[]; type: string; range: string; dur: string; req: string; d: string };
@@ -25,6 +26,7 @@ export type Grimorio = {
   cast: string;
   castLabel: string;
   manif: string;
+  primaria: { intro: string; nivel3: { titulo: string; descricao: string } };
   prog: { lv: number; n: number; cd: number }[];
   levels: { lv: number; note: string; spells: MagiaGrimorio[] }[];
 };
@@ -44,11 +46,35 @@ export interface VertenteAcervo {
   grimorio: Grimorio;
 }
 
-const GRIMORIOS = grimoriosPrototipo as Record<string, Grimorio>;
+const GRIMORIOS = grimoriosTexto as Record<string, Omit<Grimorio, "primaria">>;
+const PRIMARIAS = primariasV12.vertentes as Record<VertenteId, Grimorio["primaria"]>;
 
 /** A extração do protótipo deixou divisores do Markdown (`---`) como parágrafos soltos no corpo. */
-function limparGrimorio(g: Grimorio): Grimorio {
-  return { ...g, body: g.body.filter((p) => p.trim() !== "---") };
+function montarGrimorio(id: VertenteId, g: Omit<Grimorio, "primaria">): Grimorio {
+  return {
+    ...g,
+    primaria: PRIMARIAS[id],
+    body: g.body.filter((p) => p.trim() !== "---"),
+    levels: g.prog.map(({ lv }) => ({
+      lv,
+      note: g.levels.find((level) => level.lv === lv)?.note ?? "",
+      spells: magiasV12.magias
+        .filter((magia) => magia.status === "published" && magia.vertente === id && magia.estatisticas.nivel === lv)
+        .map((magia) => {
+          const stats = magia.estatisticas;
+          const custo = stats.custo_mana_regra.texto.toUpperCase();
+          return {
+            n: magia.nome,
+            tags: [custo.includes("MANA") ? custo : `${custo} MANA`, stats.conjuracao.texto.toUpperCase()],
+            type: stats.tipo_magia,
+            range: stats.alcance.texto,
+            dur: stats.duracao.texto,
+            req: stats.pre_requisito ?? "",
+            d: magia.descricao_longa,
+          };
+        }),
+    })),
+  };
 }
 
 const META: Array<{ id: VertenteId; nome: string; frase: string }> = [
@@ -65,7 +91,7 @@ export const VERTENTES_ACERVO: VertenteAcervo[] = META.map((m) => ({
   cor: CORES_VERTENTE[m.id],
   brilho: brilhoVertente(m.id),
   arte: `/forja/vertentes/${m.id}.webp`,
-  grimorio: limparGrimorio(GRIMORIOS[m.nome]),
+  grimorio: montarGrimorio(m.id, GRIMORIOS[m.nome]),
 }));
 
 export const vertentePorNome = (nome: string) => VERTENTES_ACERVO.find((v) => v.nome === nome);

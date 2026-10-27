@@ -9,7 +9,6 @@ import { Mono } from "../ui";
 import { CartaoDossie } from "./CartaoDossie";
 import type { DraftV12 } from "../../../../../../lib/rulesetV12";
 
-const title = (s: string) => s.toLowerCase().replace(/(^|\s)(\p{L})/gu, (_, a: string, c: string) => a + c.toUpperCase());
 const meta = (id: string) => CLASSES_ACERVO.find((c) => c.id === id) ?? CLASSES_ACERVO[0];
 
 function Feats({ rank, accent }: { rank: RankDossie; accent?: boolean }) {
@@ -17,7 +16,7 @@ function Feats({ rank, accent }: { rank: RankDossie; accent?: boolean }) {
     <div className="fj-feats">
       {rank.feats.map((f) => (
         <article key={f.n}>
-          <h5 className={`fj-feats__nome ${accent ? "fj-feats__nome--am" : ""}`}>{title(f.n)}</h5>
+          <h5 className={`fj-feats__nome ${accent ? "fj-feats__nome--am" : ""}`}>{f.n}</h5>
           <RuleText text={f.d} className="fj-texto-leitura" />
         </article>
       ))}
@@ -50,7 +49,7 @@ function Assumir({ id, d, escolher }: { id: string; d: DraftV12; escolher: (slug
   return <BotaoEscolha on={on} onClick={() => escolher(id)}>{on ? `✓ ${meta(id).nome} assumida` : "Assumir classe"}</BotaoEscolha>;
 }
 
-export function ClasseLateral({ d, escolher, id }: { d: DraftV12; escolher: (slug: string) => void; id: string }) {
+export function ClasseLateral({ d, escolher, id, pericias }: { d: DraftV12; escolher: (slug: string) => void; id: string; pericias: { id: string; nome: string }[] }) {
   const [open, setOpen] = useState(false);
   const c = meta(id), dos = c.dossie, on = d.classeSlug === id;
   const top = [...dos.syn].sort((a, z) => z.n - a.n).filter((s) => s.n === 5);
@@ -90,19 +89,20 @@ export function ClasseLateral({ d, escolher, id }: { d: DraftV12; escolher: (slu
 
       {open && createPortal(
         <Shell rotulo={`Códex de ${c.nome}`} onClose={() => setOpen(false)}>
-          <CodexClasse id={id} d={d} escolher={escolher} onClose={() => setOpen(false)} />
+          <CodexClasse id={id} d={d} escolher={escolher} pericias={pericias} onClose={() => setOpen(false)} />
         </Shell>, document.body)}
     </>
   );
 }
 
-function CodexClasse({ id, d: rascunho, escolher, onClose }: { id: string; d: DraftV12; escolher: (slug: string) => void; onClose: () => void }) {
+function CodexClasse({ id, d: rascunho, escolher, pericias, onClose }: { id: string; d: DraftV12; escolher: (slug: string) => void; pericias: { id: string; nome: string }[]; onClose: () => void }) {
   const c = meta(id), d = c.dossie;
+  const nomePericia = (slug: string) => pericias.find((pericia) => pericia.id === slug)?.nome ?? slug;
   const { scroller, active, go } = useIndiceAtivo(id);
   const toc: ItemIndice[] = [
     { k: "visao", label: "Visão geral" },
     { k: "criacao", label: "Criação" },
-    { k: "prog", label: "Progressão", kids: d.feats.filter((r) => r.feats.length).map((r) => ({ k: `r-${r.r}`, label: `${r.r} · ${title(r.feats[0].n)}` })) },
+    { k: "prog", label: "Progressão", kids: d.feats.filter((r) => r.feats.length).map((r) => ({ k: `r-${r.r}`, label: `${r.r} · ${r.feats[0].n}` })) },
     { k: "subs", label: "Subclasses", kids: d.subs.map((s) => ({ k: `s-${s.n}`, label: s.n })) },
   ];
 
@@ -131,7 +131,7 @@ function CodexClasse({ id, d: rascunho, escolher, onClose }: { id: string; d: Dr
               <section id="criacao" data-sec className="fj-codex__secao">
                 <SecHead n="02" t="Criação" />
                 <h4 className="fj-codex__sub">Perícias de especialidade</h4>
-                <p className="fj-texto-leitura">{d.skills3.join(" · ")}</p>
+                <p className="fj-texto-leitura">{d.skills3.map(nomePericia).join(" · ")}</p>
                 <h4 className="fj-codex__sub fj-codex__sub--espaco">Sinergia com Vertentes</h4>
                 <Sinergia id={id} />
                 <p className="fj-codex__dica">A Vertente Primária é livre — a sinergia só indica o quanto ela conversa com a classe.</p>
@@ -162,7 +162,7 @@ function CodexClasse({ id, d: rascunho, escolher, onClose }: { id: string; d: Dr
                       <h3 className="fj-subclasse__nome">{s.n}</h3>
                       <p className="fj-subclasse__tag">{s.tag}</p>
                     </div>
-                    <p className="fj-texto-leitura fj-subclasse__lore">{s.lore}</p>
+                    <div className="fj-texto-leitura fj-subclasse__lore">{s.lore.split(/\n\s*\n/).map((paragrafo, i) => <p key={i}>{paragrafo}</p>)}</div>
                     {s.ranks.map((r) => (
                       <div key={r.r} className="fj-subclasse__rank">
                         <Mono tom="cy">Ranking {r.r}</Mono>

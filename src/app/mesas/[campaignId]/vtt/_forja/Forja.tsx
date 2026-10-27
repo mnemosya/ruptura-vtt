@@ -713,7 +713,7 @@ function lateral({ c, catalogos, classe, view, regiaoCampanha, setRegiaoCampanha
     case 1: return <RegiaoLateral d={d} set={set} id={view.regiao} regiaoCampanha={regiaoCampanha} setRegiaoCampanha={setRegiaoCampanha} />;
     case 2: return <OrigemNarrativa d={d} set={set} forja={forja} setForja={setForja} />;
     case 3: return <FichaTracos d={d} set={set} catalogos={catalogos} />;
-    case 4: return <ClasseLateral d={d} escolher={c.trocarClasse} id={view.classe} />;
+    case 4: return <ClasseLateral d={d} escolher={c.trocarClasse} id={view.classe} pericias={catalogos.pericias} />;
     case 5: {
       if (!classe) return <Panel title="Recursos iniciais"><p className="fj-recursos__nota">Os recursos usam as fórmulas da Classe. Escolha uma Classe para vê-los.</p></Panel>;
       const completos = d.atributos.corpo !== null && d.atributos.mente !== null && d.atributos.animo !== null;

@@ -7,7 +7,7 @@
     "fonte": "Notion: capítulo de cada Vertente, bloco LISTA DE MAGIAS",
     "extraido_em": "2026-10-12T23:58:26.065Z",
     "hash_sha256_origem": "737dc12031d0887c5f12d2c8662f8530a888eee092b4a485f2c651c760273840",
-    "observacao": "Efeitos são resolvidos pela descrição canônica. Conjuração automática só para custo fixo em PA; escolhas e outros tempos exigem fluxo próprio."
+    "observacao": "Efeitos são resolvidos pela descrição canônica. Conjuração automática só para custo fixo em PA; escolhas e outros tempos exigem fluxo próprio. Telecinese e Reconstruir conciliadas com as páginas atuais do Notion em 2026-10-26."
   },
   "contagem_por_vertente": {
     "biotica": 41,
@@ -2908,8 +2908,8 @@
       "categoria_label": "Magia",
       "vertente": "cinetica",
       "vertente_label": "Cinética",
-      "descricao_curta": "Você exerce força diretamente sobre um corpo, movendo-o pelo espaço sem contato físico.",
-      "descricao_longa": "Você exerce força diretamente sobre um corpo, movendo-o pelo espaço sem contato físico.\n\nAo conjurar, escolha qualquer nível entre 1 e seu nível atual em Cinética. Para cada nível acima do 1º, aumente o custo em 2 Mana. O custo em PA não é alterado.\n\n| **Nível** | **Carga máxima** | **Alcance** | **Deslocamento** | **Mana** |\n| --- | --- | --- | --- | --- |\n| **1** | 50 kg | 10 metros | 5 metros | 2 |\n| **2** | 250 kg | 15 metros | 10 metros | 4 |\n| **3** | 1 tonelada | 20 metros | 15 metros | 6 |\n| **4** | 5 toneladas | 35 metros | 20 metros | 8 |\n| **5** | 20 toneladas | 40 metros | 25 metros | 10 |\n\n- Escolha uma criatura ou objeto dentro do alcance cuja massa não ultrapasse a carga máxima. Você o desloca em qualquer direção até a distância indicada, podendo erguê-lo, abaixá-lo, puxá-lo ou empurrá-lo.\n\n- Uma criatura hostil pode reagir com **Resistir** contra sua CD de Cinética. Em falha, é deslocada. Caso atinja uma superfície sólida, seu movimento termina e ela fica **`Caída`**.\n\n- Objetos soltos são afetados automaticamente. Se o objeto estiver sendo segurado ou carregado, a criatura que o possui pode reagir com **Resistir** contra sua CD de Cinética; em falha, ele é arrancado e deslocado.\n\n- A magia não permite operar mecanismos, manejar ferramentas nem realizar ataques com o objeto. Corpos presos ou ancorados também não podem ser movidos.",
+      "descricao_curta": "Você exerce força diretamente sobre um corpo ou conjunto de objetos, movendo-os pelo espaço sem contato físico.",
+      "descricao_longa": "Você exerce força diretamente sobre um corpo ou conjunto de objetos, movendo-os pelo espaço sem contato físico.\n\nAo conjurar, escolha qualquer nível entre 1 e seu nível atual em Cinética. Para cada nível acima do 1º, aumente o custo em 2 Mana. O custo em PA não é alterado.\n\n| **Nível** | **Carga máxima** | **Alcance** | **Deslocamento** | **Mana** |\n| --- | --- | --- | --- | --- |\n| **1** | 50 kg | 10 metros | 5 metros | 2 |\n| **2** | 250 kg | 15 metros | 10 metros | 4 |\n| **3** | 1 tonelada | 20 metros | 15 metros | 6 |\n| **4** | 5 toneladas | 35 metros | 20 metros | 8 |\n| **5** | 20 toneladas | 40 metros | 25 metros | 10 |\n\n- Escolha uma criatura, um objeto ou um conjunto de objetos soltos dentro do alcance cuja massa total não ultrapasse a carga máxima. Você desloca o alvo em qualquer direção até a distância indicada, podendo erguê-lo, abaixá-lo, puxá-lo ou empurrá-lo.\n\n- Ao afetar vários objetos, todos são tratados como uma única carga e percorrem o mesmo deslocamento. Você não pode controlá-los separadamente ou dar trajetórias diferentes a cada um.\n\n- Uma criatura hostil pode reagir com **Resistir** contra sua CD de Cinética. Em falha, é deslocada. Caso atinja uma superfície sólida, seu movimento termina e ela fica **`Caída`**.\n\n- Objetos soltos são afetados automaticamente. Se o objeto estiver sendo segurado ou carregado, a criatura que o possui pode reagir com **Resistir** contra sua CD de Cinética; em falha, ele é arrancado e deslocado. Objetos segurados ou carregados não podem fazer parte de um conjunto de objetos.\n\n- A magia não permite operar mecanismos, manejar ferramentas nem realizar ataques com o objeto. Corpos presos ou ancorados também não podem ser movidos.",
       "tags": [
         "magia"
       ],
@@ -2952,13 +2952,13 @@
       "fonte_notion": {
         "paginaNotionId": "3990a136355280d6bebdf6d88aa2caa3",
         "blocoNotionId": "3b80a13635528093a215c9e6b8f4b26d",
-        "paginaEditadaEm": "2026-10-06T02:00:00.000Z",
+        "paginaEditadaEm": "2026-10-11T19:08:22.694Z",
         "tituloOriginal": "TELECINESE 2 MANA 2 PA"
       },
       "status": "published",
       "versao": "1.2.0",
       "created_at": "2026-10-09",
-      "updated_at": "2026-10-09"
+      "updated_at": "2026-10-26"
     },
     {
       "id": "cinetica_barreira_giratoria",
@@ -10644,7 +10644,7 @@
       "vertente": "material",
       "vertente_label": "Material",
       "descricao_curta": "Você recompõe o alvo em larga escala, reunindo partes e restaurando sua integridade física. Escolha um efeito:",
-      "descricao_longa": "Você recompõe o alvo em larga escala, reunindo partes e restaurando sua integridade física. Escolha um efeito:\n\n- o alvo recupera até **30 PD**;\n\n- uma armadura recupera até **3d6 MIT**;\n\n- partes separadas que estejam a até 15 m retornam às suas posições e são reincorporadas, desde que a maior parte da matéria original ainda esteja presente.\n\nO alvo volta a executar funções mecânicas que haviam sido impedidas apenas por dano físico. A magia não recria matéria ausente, munições, cargas, combustível, conteúdo, dados, runas ou componentes arcanos consumidos. Circuitos e mecanismos podem ser fisicamente remontados, mas danos lógicos, energéticos ou tecnomágicos ainda precisam ser reparados pelos meios apropriados.",
+      "descricao_longa": "Você recompõe o alvo em larga escala, reunindo partes e restaurando sua integridade física. Escolha um efeito:\n\n- o alvo recupera até **30 PD**;\n\n- uma armadura recupera até **3d6 MIT**, distribuídos entre suas Regiões danificadas;\n\n- partes separadas que estejam a até 15 m retornam às suas posições e são reincorporadas, desde que a maior parte da matéria original ainda esteja presente.\n\nO alvo volta a executar funções mecânicas que haviam sido impedidas apenas por dano físico. A magia não recria matéria ausente, munições, cargas, combustível, conteúdo, dados, runas ou componentes arcanos consumidos. Circuitos e mecanismos podem ser fisicamente remontados, mas danos lógicos, energéticos ou tecnomágicos ainda precisam ser reparados pelos meios apropriados.",
       "tags": [
         "magia"
       ],
@@ -10687,13 +10687,13 @@
       "fonte_notion": {
         "paginaNotionId": "3990a136355280deb5d8d153dac954fd",
         "blocoNotionId": "bcce8d6c508843bf8bcc4c73e68ed022",
-        "paginaEditadaEm": "2026-09-15T18:01:00.000Z",
+        "paginaEditadaEm": "2026-10-15T00:49:27.648Z",
         "tituloOriginal": "RECONSTRUIR 7 MANA 10 MINUTOS"
       },
       "status": "published",
       "versao": "1.2.0",
       "created_at": "2026-10-09",
-      "updated_at": "2026-10-09"
+      "updated_at": "2026-10-26"
     },
     {
       "id": "material_soterrar",

@@ -1,0 +1,443 @@
+{
+  "Biótica": {
+    "prog": [
+      {
+        "lv": 1,
+        "n": 4,
+        "cd": 7
+      },
+      {
+        "lv": 2,
+        "n": 8,
+        "cd": 8
+      },
+      {
+        "lv": 3,
+        "n": 11,
+        "cd": 9
+      },
+      {
+        "lv": 4,
+        "n": 13,
+        "cd": 10
+      },
+      {
+        "lv": 5,
+        "n": 14,
+        "cd": 11
+      }
+    ],
+    "desc": "Cura, adapta e transforma organismos vivos.",
+    "house": "Casa Orelis",
+    "diff": "Média",
+    "lead": "A **Biótica** é a vertente que atua sobre os processos da vida: crescimento, adaptação, simbiose, competição, reprodução e decomposição, em qualquer organismo ou sistema vivo.",
+    "quote": [
+      "“A vida não começa nem termina no corpo de vocês. Ela corre na seiva, no esporo, na colônia que se ergue sobre a carne apodrecida, no verme que devolve o morto à terra. Nós aprendemos a ler esse fluxo inteiro. Sabemos quando um tecido pede reparo e quando um campo pede descanso, quando a semente vai vingar e quando a praga vai vencer. A Biótica foi feita para conduzir o que vive: curar, adaptar, alimentar, renovar.",
+      "E dói ver o que fazem com ela. Forçam músculos até rasgar a fibra, cultivam veneno onde poderiam cultivar remédio, chamam de liberdade o que é só pressa de morrer e de matar. Vocês poderiam fazer florescer tudo o que tocam. Escolheram fazer apodrecer.”"
+    ],
+    "attr": "Casa Orelis",
+    "body": [
+      "---",
+      "A Biótica trata a vida como um conjunto de processos moldáveis. Quem domina essa vertente interfere em crescimento, adaptação, simbiose, contágio e decomposição, reorganizando organismos e ambientes em tempo real. Feridas se fecham, órgãos assumem novas funções, colônias ocupam superfícies e patógenos transformam corpos em vetores. Músculos, raízes, fungos, nervos e microrganismos deixam de obedecer apenas ao próprio ciclo e passam a responder à vontade do magista.",
+      "Nas cidades imperiais, a Biótica sustenta clínicas de regeneração, sistemas de filtragem, processamento de resíduos, produção de alimentos e programas de adaptação física. Técnicos e curandeiros usam a vertente para estabilizar feridos, conter epidemias, recuperar ambientes contaminados e cultivar organismos destinados ao trabalho urbano e industrial. No submundo e nas margens do Império, refratários recorrem a ela para sobreviver a ferimentos fatais, alterar o próprio corpo, criar redes vivas, produzir toxinas, disseminar doenças e transformar matéria orgânica em abrigo, recurso ou arma."
+    ],
+    "cast": "A Biótica depende tanto do foco mental quanto do domínio corporal.\n\nA mana só é canalizada quando o magista consegue visualizar o processo biológico que quer provocar e manter um mínimo de controle sobre o próprio corpo ou sobre o alvo. Para ativar a vertente, é preciso alinhar intenção e comando físico: reconhecer o organismo, focar no tecido, na função ou no sistema a ser alterado e, quando possível, tocar ou direcionar a mana ao ponto certo.\n› Se estiver **Imobilizado**, pode conjurar desde que consiga controlar a respiração e mover ao menos uma das mãos, mas sofre **–1 de desvantagem** nos testes de acerto e nos demais testes realizados pelas magias de Biótica, além de ter a **CD da vertente reduzida em 1**.",
+    "castLabel": "Canalização",
+    "manif": "A Biótica se revela em brilhos que variam do **verde-chá** ao **esmeralda**, irradiando da pele, dos olhos e das veias do magista conforme a mana é canalizada. O brilho acompanha o pulso, pulsando junto à circulação e desenhando linhas luminosas que descem pela pele até alcançar o alvo.\n\nNos níveis mais baixos, a manifestação se limita a halos esverdeados discretos, pontos de luz nas pontas dos dedos e uma ondulação sutil sob a superfície da pele, como se algo vivo percorresse o corpo. Com magias mais poderosas, o verde se intensifica, filamentos de luz serpenteiam pelas veias e o ar ao redor ganha cheiro de folha úmida, terra revolvida ou esporo recém-aberto.",
+    "levels": [
+      {
+        "lv": 1,
+        "note": "No 1º nível de Biótica, escolha quatro magias de nível 1.",
+        "spells": []
+      },
+      {
+        "lv": 2,
+        "note": "No 2º nível de Biótica, escolha quatro magias de nível 2 ou inferior.",
+        "spells": []
+      },
+      {
+        "lv": 3,
+        "note": "No 3º nível de Biótica, escolha três magias de nível 3 ou inferior.",
+        "spells": []
+      },
+      {
+        "lv": 4,
+        "note": "No 4º nível de Biótica, escolha duas magias de nível 4 ou inferior.",
+        "spells": []
+      },
+      {
+        "lv": 5,
+        "note": "No 5º nível de Biótica, escolha uma magia de nível 5 ou inferior.",
+        "spells": []
+      }
+    ]
+  },
+  "Cinética": {
+    "prog": [
+      {
+        "lv": 1,
+        "n": 4,
+        "cd": 7
+      },
+      {
+        "lv": 2,
+        "n": 8,
+        "cd": 8
+      },
+      {
+        "lv": 3,
+        "n": 11,
+        "cd": 9
+      },
+      {
+        "lv": 4,
+        "n": 13,
+        "cd": 10
+      },
+      {
+        "lv": 5,
+        "n": 14,
+        "cd": 11
+      }
+    ],
+    "desc": "Manipula impulso, movimento e gravidade.",
+    "house": "Casa Molvar",
+    "diff": "Fácil",
+    "lead": "A **Cinética** converte mana em impulso e movimento. Move estruturas, mantém plataformas suspensas, impulsiona corpos e manipula trajetórias.",
+    "quote": [
+      "“Vocês vivem no ritmo que nós traçamos. Cada elevador que se ergue em três eixos, cada ponte que atravessa os céus, cada metrô que corta Vosek a 600km/h carrega a marca da Casa Molvar. A Cinética não é uma dádiva de aventureiros, é um legado, construído e preservado por gerações.",
+      "Usar esse poder fora da lei é profanar o que mantém de pé o coração do Império. Cada queda contida, cada velocidade regulada, cada trajeto que mantém a cidade viva nasce da disciplina que vocês rejeitam. Se pensam que vão reescrever o fluxo, lembrem-se: a disciplina do movimento é nossa obra, e permanece sob nosso controle.”"
+    ],
+    "attr": "Casa Molvar",
+    "body": [
+      "A Cinética organiza o movimento invisível do mundo. A arte de manipular vetores é sobre intervir em trajetórias, alterar impulsos, suspender corpos ou abrir caminhos pela força aplicada sem depender de toque físico. Essa lógica torna a vertente onipresente no cenário: das engrenagens urbanas de Vosek e outras cidades do Império, sustentadas por trilhos cinéticos e plataformas suspensas, até os combates de refratários e gangues que exploram o poder bruto de empurrar, travar e desestabilizar inimigos.",
+      "Alguns praticantes se contentam com aplicações simples, como puxar objetos, reforçar saltos, projetar força em um ataque. Outros levam o domínio a extremos, erguendo faixas de movimento que arrastam tudo ao redor, criando zonas em que o movimento parece congelar ou atravessando quilômetros em pouquíssimos segundos."
+    ],
+    "cast": "A Cinética depende de movimento corporal para ser conjurada.\n\nA mana só é canalizada quando há deslocamento físico: um avanço, um salto, um giro de braço ou qualquer gesto que contenha impulso. É essa ação física que ancora os vetores no espaço e permite a conjuração.\n› Se estiver **Agarrado**, sofre **–1 de desvantagem** nos testes de acerto e nos demais testes realizados pelas magias de Cinética.\n› Se estiver **Imobilizado**, não consegue conjurar.",
+    "castLabel": "Conjuração",
+    "manif": "A Cinética se revela em vibrações visíveis no ar, que assumem tons entre o **carmesim** e o **bordô**. Os olhos do magista brilham na mesma cor, acompanhando o fluxo que ele direciona.\n\nNos níveis mais baixos, o efeito se limita a vibrações no ar e ao ranger de superfícies sob tensão. À medida que a potência cresce, o ambiente responde com tremores visíveis, como se a gravidade hesitasse em se manter estável ao redor do magista.",
+    "levels": [
+      {
+        "lv": 1,
+        "note": "No 1º nível de Cinética, escolha quatro magias de nível 1.",
+        "spells": []
+      },
+      {
+        "lv": 2,
+        "note": "No 2º nível de Cinética, escolha quatro magias de nível 2 ou inferior.",
+        "spells": []
+      },
+      {
+        "lv": 3,
+        "note": "No 3º nível de Cinética, escolha três magias de nível 3 ou inferior.",
+        "spells": []
+      },
+      {
+        "lv": 4,
+        "note": "No 4º nível de Cinética, escolha duas magias de nível 4 ou inferior.",
+        "spells": []
+      },
+      {
+        "lv": 5,
+        "note": "No 5º nível de Cinética, escolha uma magia de nível 5 ou inferior.",
+        "spells": []
+      }
+    ]
+  },
+  "Cognitiva": {
+    "prog": [
+      {
+        "lv": 1,
+        "n": 4,
+        "cd": 7
+      },
+      {
+        "lv": 2,
+        "n": 8,
+        "cd": 8
+      },
+      {
+        "lv": 3,
+        "n": 11,
+        "cd": 9
+      },
+      {
+        "lv": 4,
+        "n": 13,
+        "cd": 10
+      },
+      {
+        "lv": 5,
+        "n": 14,
+        "cd": 11
+      }
+    ],
+    "desc": "Molda a mente, a percepção e os sentidos.",
+    "house": "Casa Vireth",
+    "diff": "Média",
+    "lead": "A **Cognitiva** é a vertente que domina a mente, controlando desde percepções sensoriais até pensamentos, emoções e memórias.",
+    "quote": [
+      "“Perguntam se nós, da Vireth, manipulamos mentes… Para formular tal acusação não basta ousadia, é preciso ignorância. O que chamam de invasão, nós chamamos de clareza. O que confundem com dominação é, na verdade, o expurgo de mentiras que jamais deveriam ter sido ditas e de ilusões que só servem para degradar a mente dos cidadãos do Império.",
+      "A Cognitiva nasceu para corrigir o que está distorcido, para expor o que se esconde, para libertar o Império dos labirintos da fraude, da decadência e da anarquia. Não fugimos do peso da lucidez, porque só quem suporta a verdade pode sobreviver à intensidade da nossa vertente.",
+      "Acusar a Vireth de manipulação é confessar, sem perceber, o medo de ser descoberto como realmente é. E esse medo não nos comove. A justiça não pede licença, não busca consenso, não se cala diante do silêncio. A justiça fala através de nós – e quando falamos, toda escuridão cede lugar à clareza.”"
+    ],
+    "attr": "Casa Vireth",
+    "body": [
+      "---",
+      "A Cognitiva trata a experiência consciente como um sistema moldável. Um magista cognitivo não projeta uma imagem no espaço: ele faz uma mente enxergá-la. Não silencia fisicamente uma arma: remove da consciência a urgência de reagir a ela. Não muda o passado: altera a lembrança que determina o significado do passado para alguém.",
+      "Nas cidades imperiais, a vertente sustenta interrogatórios, terapias de trauma, comunicação silenciosa, treinamento sensorial, propaganda, proteção de informações e reabilitação de agentes. A Casa Vireth a apresenta como instrumento de lucidez pública. Dissidentes, investigadores e refratários a utilizam para atravessar vigilância, preservar testemunhas, fabricar álibis, compartilhar descobertas ou desmontar a identidade daqueles que os perseguem."
+    ],
+    "cast": "Conjurar pela Cognitiva é operar em silêncio. Não há gestos ou palavras necessários, só o fluxo interno de um raciocínio que se infiltra no outro. A magia acontece ao reconhecer padrões mentais, antecipar impulsos e alinhar-se aos desvios sutis da consciência alheia.\n› Salvo quando uma magia disser o contrário, uma criatura afetada diretamente deve estar no campo de visão do magista no momento da conjuração.",
+    "castLabel": "Canalização",
+    "manif": "A Cognitiva é a vertente mais sutil de todas: seus efeitos se resumem a um brilho **violeta** ou **roxo profundo** que pulsa discretamente nos olhos do magista, quase invisível para quem não observa de perto. Às vezes, o alvo sente um leve arrepio ou uma pressão na cabeça, como se pensamentos estivessem sendo tocados. Em magias mais poderosas, linhas breves de luz roxa podem cruzar o olhar do magista ou do alvo, sumindo em segundos.\n\nNo geral, a Cognitiva é tão discreta quanto o pensamento: sentida mais na mente do que percebida pelos sentidos.",
+    "levels": [
+      {
+        "lv": 1,
+        "note": "No 1º nível de Cognitiva, escolha quatro magias de nível 1.",
+        "spells": []
+      },
+      {
+        "lv": 2,
+        "note": "No 2º nível de Cognitiva, escolha quatro magias de nível 2 ou inferior.",
+        "spells": []
+      },
+      {
+        "lv": 3,
+        "note": "No 3º nível de Cognitiva, escolha três magias de nível 3 ou inferior. Além disso, escolha uma Especialização.",
+        "spells": []
+      },
+      {
+        "lv": 4,
+        "note": "No 4º nível de Cognitiva, escolha duas magias de nível 4 ou inferior.",
+        "spells": []
+      },
+      {
+        "lv": 5,
+        "note": "No 5º nível de Cognitiva, escolha uma magia de nível 5 ou inferior. Além disso, escolha uma Especialização.",
+        "spells": []
+      }
+    ]
+  },
+  "Energética": {
+    "prog": [
+      {
+        "lv": 1,
+        "n": 4,
+        "cd": 7
+      },
+      {
+        "lv": 2,
+        "n": 8,
+        "cd": 8
+      },
+      {
+        "lv": 3,
+        "n": 11,
+        "cd": 9
+      },
+      {
+        "lv": 4,
+        "n": 13,
+        "cd": 10
+      },
+      {
+        "lv": 5,
+        "n": 14,
+        "cd": 11
+      }
+    ],
+    "desc": "Libera e controla fenômenos energéticos.",
+    "house": "Casa Kael",
+    "diff": "Média",
+    "lead": "A **Energética** manipula a energia em suas diferentes manifestações. Converte mana em calor, frio, eletricidade, luz e som, além de interferir nos fluxos arcanos presentes em criaturas, magias e dispositivos.",
+    "quote": [
+      "“Vocês existem em cidades que nunca dormem porque a energia nunca para. Repousam cercados por telas e circuitos, respiram o ar purificado por nossas grades, e até mesmo seus escalpos só funcionam porque nós compartilhamos o gás arcano.",
+      "A energia não pertence a vocês. Pertence a nós. Ela é nossa herança, nossa técnica, nosso monopólio. E quem ousa canalizá-la fora da lei logo descobre que o mesmo fogo que aquece também consome, e que a mesma luz que guia também cega.”"
+    ],
+    "attr": "Casa Kael",
+    "body": [
+      "Para um magista da Energética, o mundo está repleto de forças em movimento. Calor atravessa superfícies, correntes procuram caminhos, ondas carregam luz e som, enquanto o arcano alimenta magias, runas e máquinas. Dominar a vertente significa perceber esses fluxos e reorganizá-los antes que se dispersem.",
+      "Suas aplicações atravessam todos os setores do Império Central. A Energética aquece residências, conserva alimentos, alimenta mecanismos, ilumina ruas e estabiliza dispositivos tecnomágicos. Em situações de conflito, os mesmos fundamentos produzem rajadas, barreiras, tempestades, campos de interferência e zonas capazes de transformar completamente um campo de batalha.",
+      "Essa amplitude torna a Energética uma das vertentes mais presentes e mais vigiadas do Império. Um magista treinado pode restaurar o funcionamento de uma instalação ou interrompê-la sem destruir uma única máquina. Pode conter uma descarga ou liberar de uma só vez a energia acumulada em todo o sistema. Para a Casa Kael, cada manifestação é um recurso a ser administrado. Para os refratários, é uma oportunidade esperando o momento de romper."
+    ],
+    "cast": "A Energética exige controle preciso das mãos.\n\nOs movimentos são sempre firmes e com tensão nas mãos e dedos, parecendo alguém ajustando um painel de controle manual ou tocando um instrumento de corda. Cada tipo de energia tem seu gesto próprio, como pressionar, puxar ou girar. A força e a direção do efeito dependem de quanta tensão ele aplica durante o gesto. Se o magista estiver com as mãos atadas, ele não consegue conjurar magias dessa vertente.\n› Se estiver **Imobilizado**, não consegue conjurar.",
+    "castLabel": "Conjuração",
+    "manif": "A Energética se manifesta em brilhos intensos de tons **alaranjados**, que se acendem nos olhos e percorrem as mãos do magista enquanto a mana é canalizada. Estalos, faíscas e ondulações de luz escapam dos dedos, acompanhando o gesto ou a direção da magia. O laranja vibrante marca a presença da vertente, mas cada efeito conjurado exibe as cores naturais de seu fenômeno (chamas vermelhas, clarões brancos, descargas azuladas, ou a transparência gélida do frio).\n\nNos níveis mais altos, a energia pulsa ao redor do magista, iluminando o ambiente com flashes, sons de eletricidade ou ressonância de calor, tornando impossível ignorar a força bruta do arcano.",
+    "levels": [
+      {
+        "lv": 1,
+        "note": "No 1º nível de Energética, escolha quatro magias de nível 1.",
+        "spells": []
+      },
+      {
+        "lv": 2,
+        "note": "No 2º nível de Energética, escolha quatro magias de nível 2 ou inferior.",
+        "spells": []
+      },
+      {
+        "lv": 3,
+        "note": "No 3º nível de Energética, escolha três magias de nível 3 ou inferior.",
+        "spells": []
+      },
+      {
+        "lv": 4,
+        "note": "No 4º nível de Energética, escolha duas magias de nível 4 ou inferior.",
+        "spells": []
+      },
+      {
+        "lv": 5,
+        "note": "No 5º nível de Energética, escolha uma magia de nível 5 ou inferior.",
+        "spells": []
+      }
+    ]
+  },
+  "Material": {
+    "prog": [
+      {
+        "lv": 1,
+        "n": 4,
+        "cd": 7
+      },
+      {
+        "lv": 2,
+        "n": 8,
+        "cd": 8
+      },
+      {
+        "lv": 3,
+        "n": 11,
+        "cd": 9
+      },
+      {
+        "lv": 4,
+        "n": 13,
+        "cd": 10
+      },
+      {
+        "lv": 5,
+        "n": 14,
+        "cd": 11
+      }
+    ],
+    "desc": "Cria, molda e destrói matéria inorgânica.",
+    "house": "Casa Lethan",
+    "diff": "Difícil",
+    "lead": "A **Material** converte mana em forma e estrutura. Dobra pisos, paredes e tetos, reforça ou enfraquece superfícies e modela objetos, barreiras e equipamentos.",
+    "quote": [
+      "“A Material é a ossatura do Império. É com ela que levantamos torres que desafiam o peso dos séculos, abrimos passagens através de cadeias montanhosas e sustentamos cidades sobre fundações que ninguém ousaria erguer sem o domínio do arcano.",
+      "Mas vocês, refratários, usam esse poder para rasgar ruas, empalar soldados, soterrar legiões e dissolver muralhas em chuva ácida. Onde poderíamos criar refúgio e ordem, vocês semeiam colapso.",
+      "Toda decisão tomada sobre a matéria se fixa no mundo como ruína ou fortaleza. E a Casa Lethan não esquece quem ergue e quem destrói.”"
+    ],
+    "attr": "Casa Lethan",
+    "body": [
+      "---",
+      "A Material domina a manipulação direta da matéria inorgânica. Seus magistas reorganizam estruturas, moldam superfícies, unem e separam objetos com a precisão de um engenheiro e o acabamento de um artesão. A mesma técnica que restaura uma passarela pode abrir um túnel de fuga, erguer uma barricada ou transformar o chão em uma arma.",
+      "No Império Central, a Material está nas fundações das megacidades, nas fortificações, nas vias subterrâneas e nas estruturas que se adaptam às necessidades de cada distrito. Magistas da Casa Lethan projetam e mantêm essas obras; refratários usam o mesmo domínio para sabotar acessos, criar rotas clandestinas, romper defesas e reconstruir o cenário a favor da operação.",
+      "O paradoxo da Material está entre construir e desestabilizar. Toda alteração permanece no mundo como proteção, passagem, ferramenta ou ruína. Para quem domina a vertente, o ambiente não é um limite fixo, mas matéria disponível esperando uma nova forma."
+    ],
+    "cast": "A Material depende de cálculo e de gestos precisos. A mana só é canalizada quando o magista consegue visualizar a estrutura que pretende produzir — peso, apoio, volume, densidade e encaixes — e realizar ao menos movimentos mínimos com as mãos, como se esculpisse a forma no espaço.\n› Se estiver **Imobilizado**, pode conjurar desde que ainda consiga mover ao menos uma das mãos, mas sofre **–1 de desvantagem** nos testes de acerto e nos demais testes realizados pelas magias de Material, além de ter a **CD da vertente reduzida em 1**.",
+    "castLabel": "Canalização",
+    "manif": "A Material se manifesta em contornos opacos e brilhos **dourados** que percorrem as mãos e os olhos do magista. Linhas geométricas surgem sobre as superfícies afetadas, como plantas arquitetônicas traçadas diretamente na matéria.\n\nNos níveis mais baixos, a manifestação se limita a faíscas douradas, poeira suspensa e um brilho de ouro velho acompanhando o toque ou o gesto. Com magias mais poderosas, fragmentos flutuam, impactos graves reverberam pelo ambiente e estruturas inteiras se rearranjam em tempo real.",
+    "levels": [
+      {
+        "lv": 1,
+        "note": "No 1º nível de Material, escolha quatro magias de nível 1.",
+        "spells": []
+      },
+      {
+        "lv": 2,
+        "note": "No 2º nível de Material, escolha quatro magias de nível 2 ou inferior.",
+        "spells": []
+      },
+      {
+        "lv": 3,
+        "note": "No 3º nível de Material, escolha três magias de nível 3 ou inferior.",
+        "spells": []
+      },
+      {
+        "lv": 4,
+        "note": "No 4º nível de Material, escolha duas magias de nível 4 ou inferior.",
+        "spells": []
+      },
+      {
+        "lv": 5,
+        "note": "No 5º nível de Material, escolha uma magia de nível 5 ou inferior.",
+        "spells": []
+      }
+    ]
+  },
+  "Sináptica": {
+    "prog": [
+      {
+        "lv": 1,
+        "n": 4,
+        "cd": 7
+      },
+      {
+        "lv": 2,
+        "n": 8,
+        "cd": 8
+      },
+      {
+        "lv": 3,
+        "n": 11,
+        "cd": 9
+      },
+      {
+        "lv": 4,
+        "n": 13,
+        "cd": 10
+      },
+      {
+        "lv": 5,
+        "n": 14,
+        "cd": 11
+      }
+    ],
+    "desc": "Manipula conexões, sistemas e identidades.",
+    "house": "Casa Arven",
+    "diff": "Difícil",
+    "lead": "A **Sináptica** é a vertente do controle de redes e conexões entre máquinas, sistemas tecnomágicos, pessoas ou dados.",
+    "quote": [
+      "“Vocês trafegam na ilusão do anonimato. Cada comando inserido, cada tentativa de ocultação, cada agulha que espetam dentro de uma trama é apenas mais um dado cruzando os nossos nós. A Malha não é território neutro; é domínio da Arven, filha da Arven, escrava da Arven. O que hoje parece apagado já foi replicado em dez de nossos servidores, regravado em centenas de logs, duplicado em espelhos que vocês nunca verão. Mesmo no escuro, vocês continuam emitindo uma luz. E nós continuamos enxergando.",
+      "A Malha é o Império. Onde ela alcança, nós já estamos. Onde ela não chega, não há nada que valha ser visto.”"
+    ],
+    "attr": "Casa Arven",
+    "body": [
+      "---",
+      "Para quem domina a Sináptica, a Malha não é só uma rede de dispositivos, mas um campo dinâmico onde comandos, dados e registros digitais podem ser moldados ou reescritos. Quem enxerga com olhos sinápticos vê pacotes de dados, ondas de rádio e sinais rúnicos como fios luminosos vibrando no ar, e manipular esses fios se torna quase tão instintivo quanto mexer as mãos.",
+      "No dia a dia de Vosek e do Império Central, a Sináptica está presente em registros, barreiras, vigilância e rotinas automáticas. Refratários sinápticos mascaram identidades, abrem passagens digitais e travam redes inteiras para proteger aliados ou sabotar operações do Império. Também são especialistas em infiltração, sequestro de dados, reprogramação de escalpos e ocultação de rastros proibidos.",
+      "Manipular sinais e dados, no entanto, não é tarefa livre de riscos. Cada intrusão pode disparar alarmes automáticos, chamar atenção de Sentinelas, Admins ou rastreadores especializados, e deixar rastros que comprometem toda a operação. O domínio da Sináptica exige não só domínio técnico, mas sangue-frio, criatividade e um instinto aguçado para perceber falhas e oportunidades em redes vivas e hostis."
+    ],
+    "cast": "A Sináptica é guiada principalmente pela mente, mas quem domina essa vertente acaba gesticulando instintivamente, como se interagisse com uma interface que só ele enxerga. Os dedos tocam sinais invisíveis, traçam comandos no ar ou “deslizam” dados entre pontos do espaço. É a concentração mental que ativa e conduz a magia, mas o corpo acompanha, traduzindo intenções em gestos que ancoram os sinais no ambiente.",
+    "castLabel": "Canalização",
+    "manif": "Nos níveis mais baixos, a presença quase passa despercebida: um brilho tênue nos olhos, lampejos sutis nos dedos, como se o magista digitasse em uma tela invisível. Em magias mais potentes, fios luminosos percorrem o ar em padrões geométricos, formando breves rastros de dados que logo se dissipam. Para observadores externos, parece mais um reflexo fugaz do que um espetáculo.\n\nA Sináptica se manifesta em tons que variam do **azul-turquesa** ao **azul-céu**, sempre em intensidade discreta. Durante a conjuração, brilhos suaves percorrem veias e nervos próximos à pele, como correntes de luz líquida pulsando no ritmo da mente do magista. Os olhos assumem reflexos azulados, mas sem a intensidade chamativa das outras vertentes.",
+    "levels": [
+      {
+        "lv": 1,
+        "note": "No 1º nível de Sináptica, escolha quatro magias de nível 1.",
+        "spells": []
+      },
+      {
+        "lv": 2,
+        "note": "No 2º nível de Sináptica, escolha quatro magias de nível 2 ou inferior.",
+        "spells": []
+      },
+      {
+        "lv": 3,
+        "note": "No 3º nível de Sináptica, escolha três magias de nível 3 ou inferior.",
+        "spells": []
+      },
+      {
+        "lv": 4,
+        "note": "No 4º nível de Sináptica, escolha duas magias de nível 4 ou inferior.",
+        "spells": []
+      },
+      {
+        "lv": 5,
+        "note": "No 5º nível de Sináptica, escolha uma magia de nível 5 ou inferior.",
+        "spells": []
+      }
+    ]
+  }
+}
