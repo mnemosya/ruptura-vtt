@@ -3287,6 +3287,15 @@ export function VttClient({
    * precise receber ref nenhum por prop.
    */
   const ferramentasRef = useRef<HTMLElement | null>(null);
+  /* O trilho rola, então as dicas dele são `fixed` (ver `.rv-ferramentas`
+     em vtt.css): a posição vem do botão sob o ponteiro ou em foco. */
+  const posicionarDicaFerramenta = (alvo: HTMLElement | null) => {
+    const botao = alvo?.closest(".rv-ferr-btn"), trilho = ferramentasRef.current;
+    if (!botao || !trilho) return;
+    const r = botao.getBoundingClientRect();
+    trilho.style.setProperty("--rv-ferr-dica-x", `${r.right + 10}px`);
+    trilho.style.setProperty("--rv-ferr-dica-y", `${r.top + r.height / 2}px`);
+  };
 
   const prefsAreasRef = useRef(prefsAreas);
   useEffect(() => { prefsAreasRef.current = prefsAreas; }, [prefsAreas]);
@@ -6140,7 +6149,10 @@ export function VttClient({
       } as React.CSSProperties}
     >
       {/* ═══ ESQUERDA — quatro seções, divididas por PAPEL ═══ */}
-      <aside ref={ferramentasRef} className="rv-ferramentas" aria-label="Ferramentas do mapa">
+      <aside ref={ferramentasRef} className="rv-ferramentas" aria-label="Ferramentas do mapa"
+        onPointerOver={(e) => posicionarDicaFerramenta(e.target as HTMLElement)}
+        onFocus={(e) => posicionarDicaFerramenta(e.target as HTMLElement)}
+        onScroll={() => posicionarDicaFerramenta(ferramentasRef.current?.querySelector(".rv-ferr-btn:hover, .rv-ferr-btn:focus-visible") ?? null)}>
         {/* 1. A MESA. Ainda sem função definida — o lugar dela é este,
                longe das ferramentas, porque o que ela vai fazer (sair
                pra "Minhas campanhas", voltar pro início) não age sobre
