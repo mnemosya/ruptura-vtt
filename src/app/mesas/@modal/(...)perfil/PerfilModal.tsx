@@ -14,6 +14,8 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "../../../_design/icons";
+import { oxanium } from "../../../_design/oxanium";
+import { teko } from "../../../_design/teko";
 
 export function PerfilModal({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -34,7 +36,7 @@ export function PerfilModal({ children }: { children: ReactNode }) {
   }, [router]);
 
   return (
-    <div className="rv-perfil-veu" onClick={() => router.back()} data-testid="perfil-modal">
+    <div className={`rv-perfil-veu ${teko.variable} ${oxanium.variable}`} onClick={() => router.back()} data-testid="perfil-modal">
       <div className="rv-perfil-caixa" role="dialog" aria-modal="true" aria-label="Perfil"
         tabIndex={-1} ref={caixaRef} onClick={(e) => e.stopPropagation()}>
         <button type="button" className="rv-perfil-fechar" onClick={() => router.back()} aria-label="Fechar perfil">

@@ -5,14 +5,12 @@
  * conta", que existe FORA de qualquer campanha). Substitui a antiga
  * `AccountNav` horizontal.
  *
- * Estrutura, conforme a referência do Figma:
- *   - sidebar expandida por padrão (marca + navegação com ícone e
- *     texto + Sair no rodapé), recolhível para o modo compacto (só
- *     ícones) e expansível de novo — a escolha fica guardada no
- *     `localStorage`; em telas estreitas ela vira drawer;
- *   - topbar discreta, só com o controle de perfil à direita e seu
- *     menu suspenso;
- *   - fundo HUD com parallax, grade e vinheta;
+ * Estrutura da V1 "Seco" (prancheta Main.dc.html do board "Minhas
+ * Campanhas — game UI"):
+ *   - header único: marca, as três seções (Campanhas, Personagens,
+ *     Compêndio) com o sublinhado laranja que cresce, e o cartão de
+ *     conta com o menu (conta, criar campanha, aparecer offline, sair);
+ *   - fundo HUD fixo com grade de pontos, linhas e uma varredura lenta;
  *   - cursor HUD próprio.
  *
  * As preferências visuais ("reduzir movimento", "alto contraste") vivem
@@ -31,13 +29,15 @@ import { setAppearOffline } from "../../../lib/campaign/presencePreferenceAction
 import { heartbeatAccountPresence } from "../../../lib/campaign/accountPresenceActions";
 import { signOut, updateVisualPrefs } from "../../../lib/auth/actions";
 import {
-  AlertTriangle, BookText, CheckCircle, ChevronDown, Eye, EyeOff, LayoutGrid, LogOut, Menu,
-  Plus, Spinner, Ticket, User, UserCog, Users, X,
+  AlertTriangle, BookText, CheckCircle, ChevronDown, Eye, EyeOff, LayoutGrid, LogOut,
+  Plus, Spinner, Ticket, UserCog, Users, X,
 } from "../../_design/icons";
 import "../../_design/app.css";
 import "../../_design/areaGlobal.css";
+import "../../_design/areaV1.css";
 import { MarcaRuptura } from "../../_design/Marca";
 import { oxanium } from "../../_design/oxanium";
+import { teko } from "../../_design/teko";
 
 export type NavKey = "campaigns" | "characters" | "compendium" | "account";
 
@@ -185,29 +185,6 @@ export function HudCursor({ enabled }: { enabled: boolean }) {
 }
 
 
-function useParallax(ref: React.RefObject<HTMLDivElement | null>, strength: number, enabled: boolean) {
-  useEffect(() => {
-    if (!enabled) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    let raf = 0;
-    const target = { x: 0, y: 0 };
-    const cur = { x: 0, y: 0 };
-    const onMove = (e: MouseEvent) => {
-      target.x = (e.clientX / window.innerWidth - 0.5) * strength;
-      target.y = (e.clientY / window.innerHeight - 0.5) * strength;
-    };
-    const tick = () => {
-      cur.x += (target.x - cur.x) * 0.05;
-      cur.y += (target.y - cur.y) * 0.05;
-      if (ref.current) ref.current.style.transform = `translate(${cur.x}px, ${cur.y}px)`;
-      raf = requestAnimationFrame(tick);
-    };
-    window.addEventListener("mousemove", onMove);
-    raf = requestAnimationFrame(tick);
-    return () => { window.removeEventListener("mousemove", onMove); cancelAnimationFrame(raf); };
-  }, [ref, strength, enabled]);
-}
-
 // ── Shell ───────────────────────────────────────────────────────────
 /**
  * Rota ativa DERIVADA do pathname, não recebida por prop.
@@ -254,9 +231,6 @@ export function GlobalShell({
   const pathname = usePathname();
   const ativo = rotaAtiva(pathname);
 
-  // A barra não recolhe mais (o botão saiu no redesign da Fase 6).
-  const collapsed = false;
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [aparecerOffline, setAparecerOffline] = useState(aparecerOfflineInicial);
@@ -277,9 +251,6 @@ export function GlobalShell({
   const [prefs, setPrefs] = useState<VisualPrefs>(visualPrefsIniciais ?? { reduceMotion: false, highContrast: false });
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastSeq = useRef(0);
-
-  const bgRef = useRef<HTMLDivElement>(null);
-  useParallax(bgRef, 20, !prefs.reduceMotion);
 
   // Conta que nunca salvou: herda o que este navegador guardava antes de
   // as preferências irem para a conta, e já grava lá. Depois da
@@ -324,15 +295,8 @@ export function GlobalShell({
     return () => { window.removeEventListener("click", close); window.removeEventListener("keydown", onKey); };
   }, [menuOpen]);
 
-  useEffect(() => {
-    if (!drawerOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setDrawerOpen(false); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [drawerOpen]);
-
-  // Navegar fecha o drawer (o Link já trocou a rota).
-  useEffect(() => { setDrawerOpen(false); setMenuOpen(false); }, [pathname]);
+  // Navegar fecha o menu de perfil (o Link já trocou a rota).
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   /**
    * A preferência é da CONTA, não deste navegador — por isso não vai
@@ -373,7 +337,9 @@ export function GlobalShell({
   const rootClass = [
     "ra-root",
     "ag",
+    "v1",
     oxanium.variable,
+    teko.variable,
     prefs.highContrast ? "ra-hc" : "",
     prefs.reduceMotion ? "ra-reduce-motion ra-no-cursor" : "",
   ].filter(Boolean).join(" ");
@@ -383,208 +349,141 @@ export function GlobalShell({
       <ToastContext.Provider value={pushToast}>
         {/* Agrega `useLinkStatus()` de todo `<LinkPending>` desta casca
             numa contagem única — é o sinal que `BootMinDurationOverlay`
-            (dentro de `.ra2-content`, abaixo) usa pra saber se alguma
+            (dentro de `.v1-conteudo`, abaixo) usa pra saber se alguma
             navegação está em voo. Precisa envolver TANTO os links do
             menu quanto a sobreposição, então fica na raiz da árvore. */}
         <NavPendingProvider>
         <div className={rootClass}>
           <HudCursor enabled={!prefs.reduceMotion} />
 
-          <div className="ra-bg" aria-hidden="true">
-            <div className="ra-bg-img" ref={bgRef} />
-            <div className="ra-bg-grid" />
-            <div className="ra-bg-vignette" />
+          {/* Fundo da V1: a arte do HUD de campanhas com tinta, gradiente,
+              máscara, grade de pontos, linhas de varredura e uma varredura
+              lenta que desce em loop. */}
+          <div className="v1-fundo" aria-hidden="true">
+            <div className="v1-fundo-img" />
+            <div className="v1-fundo-tinta" />
+            <div className="v1-fundo-grad" />
+            <div className="v1-fundo-mascara" />
+            <div className="v1-fundo-pontos" />
+            <div className="v1-fundo-linhas" />
+            <div className="v1-fundo-varredura v1-scanline" />
           </div>
 
-          <div className="ra2-shell">
-            {/*
-              MONTADO sempre, visibilidade por `data-open` — antes era
-              `drawerOpen && <div/>`, e por isso o véu era ARRANCADO do
-              DOM no frame do clique enquanto a sidebar ainda deslizava
-              por 250ms. Os dois agora saem juntos, com as mesmas
-              durações (`.mo-scrim`, motion.css). Fora do mobile ele
-              continua `display: none` pela media query de `app.css`,
-              então montá-lo sempre não custa nada.
-            */}
-            <div
-              className="ra2-scrim mo-scrim"
-              data-open={drawerOpen}
-              onClick={() => setDrawerOpen(false)}
-              aria-hidden="true"
-            />
+          <header className="v1-cab v1-e1">
+            <Link href="/mesas" className="v1-marca" aria-label="Ruptura VTT — Minhas Campanhas">
+              <MarcaRuptura como="span" />
+            </Link>
 
-            <div className={`ra2-sidebar-wrap${drawerOpen ? " ra2-sidebar-wrap--open" : ""}`}>
-              <nav
-                className={`ra2-sidebar${collapsed ? " ra2-sidebar--collapsed" : ""}`}
-                aria-label="Navegação global"
+            <nav className="v1-nav" aria-label="Navegação global">
+              {NAV_ITEMS.filter((item) => item.key !== "account").map((item) => {
+                const isActive = ativo === item.key;
+                return (
+                  <Link
+                    key={item.key}
+                    href={item.href}
+                    data-testid={`nav-${item.key}`}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`v1-sub v1-nav-item${isActive ? " on" : ""}`}
+                  >
+                    {item.label}
+                    {/* Destino pendente — ver `NavPending.tsx`. */}
+                    <LinkPending />
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="v1-perfil-ancora" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                className="v1-u v1-perfil"
+                data-testid="topbar-perfil"
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
               >
-                <Link href="/mesas" className="ra2-brand" aria-label="Ruptura VTT — Minhas Campanhas">
-                  {collapsed ? (
-                    <span className="ra2-brand-mark" aria-hidden="true">R</span>
-                  ) : (
-                    <span className="ra2-brand-full">
-                      <MarcaRuptura como="span" />
-                      <span className="ra2-brand-sub" style={{ display: "block" }}>
-                        VTT · Terminal de operações
-                      </span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="v1-banner" src="/forja/classes/vanguarda.webp" alt="" aria-hidden="true" />
+                <span className="v1-perfil-veu" aria-hidden="true" />
+                <span className="v1-hex v1-perfil-hex" aria-hidden="true">
+                  {avatarPath
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={`/api/conta/avatar?v=${encodeURIComponent(avatarPath)}`} alt="" />
+                    : shortName.charAt(0).toUpperCase()}
+                </span>
+                <span className="v1-perfil-texto">
+                  <span className="v1-perfil-nome">{shortName}</span>
+                  {/* A etiqueta era "Online" fixo — dizia a mesma coisa
+                      para quem tinha acabado de se esconder. */}
+                  <span className="v1-perfil-linha">
+                    <span className="v1-perfil-presenca" data-offline={aparecerOffline || undefined} data-testid="topbar-presenca">
+                      {aparecerOffline ? "○ " : "● "}<span className="ra-online-txt">{aparecerOffline ? "Offline" : "Online"}</span>
                     </span>
-                  )}
-                </Link>
+                    {contagens && <> · {contagens.campanhas} {contagens.campanhas === 1 ? "campanha" : "campanhas"}</>}
+                  </span>
+                </span>
+                <ChevronDown size={14} strokeWidth={2.5} className={`v1-perfil-seta${menuOpen ? " v1-perfil-seta--aberta" : ""}`} />
+              </button>
 
-                <div className="ra2-nav">
-                  {NAV_ITEMS.map((item, i) => {
-                    const isActive = ativo === item.key;
-                    const abreGrupo = i === 0 || NAV_ITEMS[i - 1].grupo !== item.grupo;
-                    return (
-                      <div key={item.key} style={{ display: "contents" }}>
-                      {abreGrupo && (
-                        <div className="ag-nav-grupo" aria-hidden="true"><span className="ag-mono">{item.grupo}</span><i /></div>
-                      )}
-                      <Link
-                        href={item.href}
-                        data-testid={`nav-${item.key}`}
-                        aria-current={isActive ? "page" : undefined}
-                        title={collapsed ? item.label : undefined}
-                        className={`ra2-nav-item${isActive ? " ra2-nav-item--active" : ""}`}
-                      >
-                        <span className="ag-nav-n" aria-hidden="true">0{i + 1}</span>
-                        <span className="ra2-nav-icon">{item.icon}</span>
-                        <span className="ra2-nav-label">{item.label}</span>
-                        {contagens && (item.key === "campaigns" || item.key === "characters") && (
-                          <span className="ag-nav-cont">{item.key === "campaigns" ? contagens.campanhas : contagens.personagens}</span>
-                        )}
-                        {/* Destino pendente — ver `NavPending.tsx` e
-                            `.ra2-nav-item:has(.mo-linkflag)` em app.css. */}
-                        <LinkPending />
-                      </Link>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="ra2-sidebar-foot">
-
+              {menuOpen && (
+                <div className="v1-menu" role="menu">
+                  <Link href="/mesas?novo=1" role="menuitem" className="v1-item" data-testid="account-nav-criar-campanha">
+                    <Plus size={15} /> Criar campanha
+                  </Link>
+                  <Link href="/mesas/conta" role="menuitem" className="v1-item" data-testid="account-nav-conta">
+                    <UserCog size={15} /> Conta e preferências
+                  </Link>
                   <button
                     type="button"
+                    role="menuitemcheckbox"
+                    aria-checked={aparecerOffline}
+                    className="v1-u v1-item"
+                    data-testid="account-aparecer-offline"
+                    onClick={handleAparecerOffline}
+                    disabled={presencaOcupada}
+                  >
+                    {/* O rótulo diz o que o clique faz: escondida, oferece voltar a aparecer online. */}
+                    {aparecerOffline ? <Eye size={15} /> : <EyeOff size={15} />}
+                    {aparecerOffline ? "Aparecer online" : "Aparecer offline"}
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="v1-u v1-item v1-item--perigo"
                     data-testid="account-nav-sair"
                     onClick={handleSignOut}
                     disabled={signingOut}
-                    title={collapsed ? "Sair" : undefined}
-                    className="ra2-nav-item ra2-nav-logout"
                     aria-busy={signingOut}
                   >
-                    {/* Sair chama uma Server Action + dois `router.*` —
-                        é a ação mais lenta da casca e a única sem
-                        feedback próprio até aqui. O rótulo já mudava
-                        pra "Saindo…"; o que faltava era o sinal de que
-                        algo está EM CURSO (e `aria-busy`, pro leitor de
-                        tela receber a mesma informação). */}
-                    <span className="ra2-nav-icon">
-                      {signingOut
-                        ? <Spinner size={18} strokeWidth={1.5} className="mo-spin" />
-                        : <LogOut size={18} strokeWidth={1.5} />}
-                    </span>
-                    <span className="ra2-nav-label">{signingOut ? "Saindo…" : "Sair"}</span>
+                    {signingOut ? <Spinner size={15} className="mo-spin" /> : <LogOut size={15} />} {signingOut ? "Saindo…" : "Sair"}
                   </button>
                 </div>
-              </nav>
+              )}
             </div>
+          </header>
 
-            <div className="ra2-main">
-              <header className="ra2-topbar">
-                <button
-                  type="button"
-                  className="ra2-menu-btn"
-                  onClick={() => setDrawerOpen((o) => !o)}
-                  aria-label="Abrir navegação"
-                  aria-expanded={drawerOpen}
-                >
-                  <Menu size={18} />
-                </button>
-
-                <div className="ra-menu-anchor" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    type="button"
-                    className="ra2-profile"
-                    data-testid="topbar-perfil"
-                    onClick={() => setMenuOpen((o) => !o)}
-                    aria-haspopup="menu"
-                    aria-expanded={menuOpen}
-                  >
-                    <span className="ra2-profile-avatar" aria-hidden="true" style={{ overflow: "hidden" }}>
-                      {avatarPath
-                        // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={`/api/conta/avatar?v=${encodeURIComponent(avatarPath)}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : <User size={15} strokeWidth={1.4} />}
-                    </span>
-                    <span className="ra2-profile-name">{shortName}</span>
-                    {/* A etiqueta era "Online" fixo — dizia a mesma coisa
-                        para quem tinha acabado de se esconder. */}
-                    <span className="ra-online" data-offline={aparecerOffline || undefined}
-                      data-testid="topbar-presenca">
-                      <span className="ra-online-dot" aria-hidden="true" />
-                      <span className="ra-online-txt">{aparecerOffline ? "Offline" : "Online"}</span>
-                    </span>
-                    <ChevronDown size={14} className={`ra2-chevron${menuOpen ? " ra2-chevron--up" : ""}`} />
-                  </button>
-
-                  {menuOpen && (
-                    <div className="ra-menu" role="menu">
-                      <div className="ra-menu-head">
-                        <div className="ra-menu-name">{displayName?.trim() || shortName}</div>
-                        <div className="ra-menu-mail">{userEmail}</div>
-                      </div>
-                      <Link href="/mesas" role="menuitem" className="ra-menu-item" data-testid="account-nav-minhas-campanhas">
-                        <LayoutGrid size={15} /> Minhas Campanhas
-                      </Link>
-                      <Link href="/mesas?novo=1" role="menuitem" className="ra-menu-item" data-testid="account-nav-criar-campanha">
-                        <Plus size={15} /> Criar campanha
-                      </Link>
-                      <Link href="/mesas/conta" role="menuitem" className="ra-menu-item" data-testid="account-nav-conta">
-                        <UserCog size={15} /> Conta e preferências
-                      </Link>
-                      <button
-                        type="button"
-                        role="menuitemcheckbox"
-                        aria-checked={aparecerOffline}
-                        className="ra-menu-item"
-                        data-testid="account-aparecer-offline"
-                        onClick={handleAparecerOffline}
-                        disabled={presencaOcupada}
-                      >
-                        {aparecerOffline ? <EyeOff size={15} /> : <Eye size={15} />}
-                        Aparecer offline
-                        <span className="ra-menu-estado" aria-hidden="true">{aparecerOffline ? "Ligado" : "Desligado"}</span>
-                      </button>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className="ra-menu-item ra-menu-item--danger"
-                        onClick={handleSignOut}
-                        disabled={signingOut}
-                      >
-                        <LogOut size={15} /> {signingOut ? "Saindo…" : "Sair"}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </header>
-
-              <div className="ra2-content">
-                {children}
-                <BootMinDurationOverlay label="Carregando" />
-              </div>
-            </div>
+          <div className="v1-conteudo">
+            {children}
+            <BootMinDurationOverlay label="Carregando" />
           </div>
 
-          <div className="ra-toasts" aria-live="polite">
+          {/* Sair é a ação mais lenta da casca (Server Action + dois
+              `router.*`): a cortina diz o que está acontecendo. */}
+          {signingOut && (
+            <div className="v1-cortina v1-saida" role="status" aria-live="polite">
+              <div className="v1-saida-corpo">
+                <MarcaRuptura como="span" className="v1-saida-marca" />
+                <span className="v1-saida-txt v1-carregando">Encerrando sessão…</span>
+              </div>
+            </div>
+          )}
+
+          <div className="v1-toasts" aria-live="polite">
             {toasts.map((t) => (
-              <div
-                key={t.id}
-                className={`ra-toast${t.kind === "success" ? " ra-toast--success" : t.kind === "error" ? " ra-toast--error" : ""}`}
-              >
+              <div key={t.id} className={`v1-toast v1-toast--${t.kind}`}>
                 {t.kind === "success" ? <CheckCircle size={14} /> : t.kind === "error" ? <AlertTriangle size={14} /> : <Ticket size={14} />}
                 {t.text}
+                <span className="v1-encolhe v1-toast-tempo" aria-hidden="true" />
               </div>
             ))}
           </div>

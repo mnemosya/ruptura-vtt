@@ -27,5 +27,6 @@ export default async function VttPage({ params }: PageProps) {
   const acesso = await resolveCampaignAccess(campaignId);
   if (acesso.kind !== "ok") return null; // o layout da campanha já resolve login/não encontrada/sem acesso
 
-  return <VttClient campaignId={campaignId} papel={acesso.role} />;
+  const { id, name, regiao, cover_path } = acesso.campaign;
+  return <VttClient campaignId={campaignId} papel={acesso.role} campanha={{ id, name, regiao, cover_path }} />;
 }

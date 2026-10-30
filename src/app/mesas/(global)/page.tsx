@@ -31,30 +31,66 @@ import {
   listCampaigns,
 } from "../../../lib/table/storage";
 import {
+  listCharacterControllers,
   listCharactersForNarratorCampaign,
   listControlledCharacters,
 } from "../../../lib/character/storage";
+import type { CharacterRecord } from "../../../lib/character";
+import { assinarDownloadUrls } from "../../../lib/vtt/imageService";
 import type { Campaign } from "../../../lib/table";
-import MesasDashboardClient, { type CampaignCardData } from "../MesasDashboardClient";
+import MesasDashboardClient, { type CampaignCardData, type MembroElenco } from "../MesasDashboardClient";
 
 export const dynamic = "force-dynamic";
 
+/** Até quantos retratos o destaque mostra; o resto vira "+N". */
+const RETRATOS_NO_DESTAQUE = 6;
+
+/** Classe lida da ficha v1.2 (`progressao.classe_id`). */
+function classeDe(c: CharacterRecord): string | null {
+  return (c.payload as { progressao?: { classe_id?: string } } | null)?.progressao?.classe_id ?? null;
+}
+
+/** Personagem de jogador (PN fica de fora do elenco do destaque). */
+function ehPersonagemDeJogador(c: CharacterRecord): boolean {
+  return (c.payload as { metadados?: { tipo_personagem?: string } } | null)?.metadados?.tipo_personagem !== "pn";
+}
+
+/** Elenco cru (antes de assinar os retratos): o avatar ainda é o id da imagem. */
+type ElencoCru = (Omit<MembroElenco, "avatarUrl"> & { avatarId: string | null })[];
+
 async function loadNarratorExtras(
   campaignId: string,
-): Promise<Pick<CampaignCardData, "memberCount" | "people" | "characterCount">> {
-  const [members, characters, info] = await Promise.all([
+  userId: string,
+): Promise<Pick<CampaignCardData, "memberCount" | "people" | "characterCount"> & { elencoCru: ElencoCru }> {
+  const [members, characters, info, controles] = await Promise.all([
     listCampaignMembers(campaignId).catch(() => []),
     listCharactersForNarratorCampaign(campaignId).catch(() => []),
     getCampaignParticipantInfo(campaignId).catch(() => new Map()),
+    listCharacterControllers(campaignId).catch(() => []),
   ]);
   const active = members.filter((m) => m.status === "active");
+  const vivos = characters.filter((c) => !c.archived_at);
+  const donoDe = new Map<string, string>();
+  controles.forEach((ct) => { if (!donoDe.has(ct.character_id)) donoDe.set(ct.character_id, ct.user_id); });
+  const elencoCru: ElencoCru = vivos.filter(ehPersonagemDeJogador).map((c) => {
+    const dono = donoDe.get(c.id) ?? null;
+    return {
+      id: c.id,
+      nome: c.name,
+      classe: classeDe(c),
+      jogador: dono ? (info.get(dono)?.display_name ?? null) : null,
+      eu: dono === userId,
+      avatarId: c.avatar_image_id ?? null,
+    };
+  });
   return {
     memberCount: active.length,
-    characterCount: characters.filter((c) => !c.archived_at).length,
+    characterCount: vivos.length,
     people: active.map((m) => ({
       userId: m.user_id,
       name: info.get(m.user_id)?.display_name ?? "Participante",
     })),
+    elencoCru,
   };
 }
 
@@ -64,6 +100,7 @@ export default async function MesasPage() {
 
   let minhasCampanhas: CampaignCardData[] = [];
   let errorMessage: string | null = null;
+  const brutos = new Map<string, ElencoCru>();
   try {
     const todas: Campaign[] = await listCampaigns();
     minhasCampanhas = await Promise.all(
@@ -76,12 +113,17 @@ export default async function MesasPage() {
           playerCount: sessionResult.playerCount,
         };
         if (campaign.owner_id === user.id) {
-          const extras = await loadNarratorExtras(campaign.id);
-          return { campaign, role: "narrator", controlledCharacterCount: null, ...extras, ...sessionFields };
+          const { elencoCru, ...extras } = await loadNarratorExtras(campaign.id, user.id);
+          brutos.set(campaign.id, elencoCru);
+          return { campaign, role: "narrator", controlledCharacterCount: null, ...extras, ...sessionFields, elenco: [] };
         }
         let controlledCharacterCount = 0;
         try {
-          controlledCharacterCount = (await listControlledCharacters(campaign.id)).length;
+          const meus = await listControlledCharacters(campaign.id);
+          controlledCharacterCount = meus.length;
+          brutos.set(campaign.id, meus.filter(ehPersonagemDeJogador).map((c) => ({
+            id: c.id, nome: c.name, classe: classeDe(c), jogador: null, eu: true, avatarId: c.avatar_image_id ?? null,
+          })));
         } catch {
           controlledCharacterCount = 0;
         }
@@ -96,9 +138,23 @@ export default async function MesasPage() {
           memberCount: null,
           characterCount: controlledCharacterCount,
           people: [],
+          elenco: [],
         };
       }),
     );
+
+    // Retratos do elenco assinados em lote — a mesma via de Personagens.
+    // Falhar aqui só tira o rosto do retrato (fica a reserva de iniciais).
+    const idsAvatar = [...brutos.values()].flatMap((lista) => lista.slice(0, RETRATOS_NO_DESTAQUE).map((m) => m.avatarId))
+      .filter((id): id is string => !!id);
+    const urls = await assinarDownloadUrls(idsAvatar, user.id).catch(() => new Map<string, string>());
+    minhasCampanhas = minhasCampanhas.map((c) => ({
+      ...c,
+      elenco: (brutos.get(c.campaign.id) ?? []).slice(0, RETRATOS_NO_DESTAQUE).map(({ avatarId, ...m }) => ({
+        ...m,
+        avatarUrl: (avatarId && urls.get(avatarId)) || null,
+      })),
+    }));
   } catch (err) {
     errorMessage = err instanceof Error ? err.message : "Erro desconhecido ao carregar campanhas.";
   }

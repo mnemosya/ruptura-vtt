@@ -46,7 +46,7 @@ export default async function PersonagensGlobaisPage() {
 
   try {
     const [campanhas, soltos] = await Promise.all([listCampaigns(), listMyLooseCharacters()]);
-    destinos = campanhas.map((c) => ({ id: c.id, nome: c.name, narra: c.owner_id === user.id }));
+    destinos = campanhas.map((c) => ({ id: c.id, nome: c.name, narra: c.owner_id === user.id, capa: { id: c.id, regiao: c.regiao, cover_path: c.cover_path } }));
 
     const porCampanha = await Promise.all(
       campanhas.map(async (campaign) => {

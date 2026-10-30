@@ -218,6 +218,58 @@ export async function prepararRecorteQuadrado(
 }
 
 /**
+ * Mesmo princípio de `prepararRecorteQuadrado`, para um retângulo de
+ * qualquer proporção (a capa da campanha é 16:9). `origem` está em pixels
+ * da imagem decodificada; `larguraSaida` é a largura do arquivo que sobe,
+ * e a altura segue a proporção do recorte.
+ */
+export async function prepararRecorte(
+  arquivo: File,
+  origem: { x: number; y: number; largura: number; altura: number },
+  larguraSaida = 1600,
+  bytesMaximo = BYTES_MAXIMO,
+): Promise<ImagemPreparada> {
+  validarArquivo(arquivo);
+
+  const bitmap = await decodificar(arquivo);
+  const razao = origem.largura / Math.max(1, origem.altura);
+  // Prendido aos limites da imagem, mantendo a proporção.
+  let largura = Math.max(1, Math.min(origem.largura, bitmap.width, bitmap.height * razao));
+  let altura = largura / razao;
+  if (altura > bitmap.height) { altura = bitmap.height; largura = altura * razao; }
+  const x = Math.max(0, Math.min(origem.x, bitmap.width - largura));
+  const y = Math.max(0, Math.min(origem.y, bitmap.height - altura));
+
+  const saidaL = Math.min(larguraSaida, Math.round(largura));
+  const saidaA = Math.max(1, Math.round(saidaL / razao));
+  const canvas = document.createElement("canvas");
+  canvas.width = saidaL;
+  canvas.height = saidaA;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    bitmap.close();
+    throw new ImagemRecusadaError("Não foi possível processar a imagem neste navegador.");
+  }
+  ctx.drawImage(bitmap, x, y, largura, altura, 0, 0, saidaL, saidaA);
+  bitmap.close();
+
+  let blob = await paraBlobWebp(canvas, 0.86);
+  if (blob.size > bytesMaximo) blob = await paraBlobWebp(canvas, 0.65);
+  if (blob.size > bytesMaximo) {
+    const mb = (bytesMaximo / (1024 * 1024)).toFixed(0);
+    throw new ImagemRecusadaError(`A imagem continua acima de ${mb} MB depois da conversão.`);
+  }
+
+  return {
+    blob,
+    sha256: await sha256Hex(blob),
+    widthPx: saidaL,
+    heightPx: saidaA,
+    previewUrl: URL.createObjectURL(blob),
+  };
+}
+
+/**
  * `PUT` direto na signed upload URL. O browser nunca usa credencial
  * própria: a URL é uma capability que o servidor emitiu depois de
  * autorizar e reservar quota.

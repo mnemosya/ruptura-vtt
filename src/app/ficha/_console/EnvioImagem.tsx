@@ -9,6 +9,10 @@
  * forma do destino — quadrado, círculo, hexágono ou livre — e faz o
  * envio em `onUsar`; o modal só cuida do arquivo e do recorte.
  *
+ * A forma "capa" é o retângulo 16:9 da capa de campanha: a janela fica
+ * larga (e o painel lateral desce para baixo dela), e o recorte devolve
+ * também a `altura`.
+ *
  * Portal para o `body` pelo mesmo motivo da janela de recorte antiga: no
  * VTT ele nasce dentro do HUD, e um ancestral com `filter`/`transform`
  * prenderia o `position: fixed` dentro dele.
@@ -24,8 +28,9 @@ import "./envioImagem.css";
 
 const plex = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex", display: "swap" });
 
-export type FormaEnvio = "quadrado" | "circulo" | "hexagono" | "livre";
-export type RecorteEnvio = { x: number; y: number; tamanho: number };
+export type FormaEnvio = "quadrado" | "circulo" | "hexagono" | "capa" | "livre";
+/** `tamanho` é a largura do recorte (o lado, nas formas quadradas); `altura` só vem na capa. */
+export type RecorteEnvio = { x: number; y: number; tamanho: number; altura?: number };
 
 /** Hexágono de ponta para cima, ocupando a caixa de ponta a ponta. */
 export const HEXAGONO = "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)";
@@ -33,8 +38,11 @@ const LARGURA_HEX = Math.sqrt(3) / 2;
 const JANELA = 248;
 const PREVIA = 92;
 const ZOOM_MAX = 4;
+/** Janela da capa: 16:9, ocupando a largura útil da caixa (552) menos o respiro da moldura (8 de cada lado). */
+const CAPA_L = 536, CAPA_A = Math.round(536 * 9 / 16);
 const MASCARA: Record<Exclude<FormaEnvio, "livre">, string> = {
   quadrado: "M0 0h200v200H0Z",
+  capa: "M0 0h200v200H0Z",
   circulo: "M100 0a100 100 0 1 1 0 200a100 100 0 1 1 0-200Z",
   hexagono: "M100 0 186.6 50v100L100 200 13.4 150V50Z",
 };
@@ -133,20 +141,22 @@ export function EnvioImagem({
   useEffect(() => { if (arquivoInicial) escolher(arquivoInicial); }, [arquivoInicial]);
 
   // Enquadramento: a imagem sempre cobre a janela; o deslocamento é preso às bordas.
-  const escala = fonte ? (JANELA / Math.min(fonte.w, fonte.h)) * zoom : 1;
+  const capa = forma === "capa";
+  const janelaL = capa ? CAPA_L : JANELA, janelaA = capa ? CAPA_A : JANELA;
+  const escala = fonte ? Math.max(janelaL / fonte.w, janelaA / fonte.h) * zoom : 1;
   const largura = fonte ? fonte.w * escala : 0, altura = fonte ? fonte.h * escala : 0;
-  const prender = (x: number, y: number) => ({ x: Math.max(JANELA - largura, Math.min(0, x)), y: Math.max(JANELA - altura, Math.min(0, y)) });
-  const pos = prender((JANELA - largura) / 2 + desloc.x, (JANELA - altura) / 2 + desloc.y);
-  const mover = (x: number, y: number) => { const p = prender(x, y); setDesloc({ x: p.x - (JANELA - largura) / 2, y: p.y - (JANELA - altura) / 2 }); };
+  const prender = (x: number, y: number) => ({ x: Math.max(janelaL - largura, Math.min(0, x)), y: Math.max(janelaA - altura, Math.min(0, y)) });
+  const pos = prender((janelaL - largura) / 2 + desloc.x, (janelaA - altura) / 2 + desloc.y);
+  const mover = (x: number, y: number) => { const p = prender(x, y); setDesloc({ x: p.x - (janelaL - largura) / 2, y: p.y - (janelaA - altura) / 2 }); };
   const passo = (delta: number) => setZoom(z => Math.max(1, Math.min(ZOOM_MAX, Math.round((z + delta) * 100) / 100)));
-  const k = PREVIA / JANELA;
-  const larguraPrevia = forma === "hexagono" ? PREVIA * LARGURA_HEX : PREVIA;
+  const k = PREVIA / janelaA;
+  const larguraPrevia = forma === "hexagono" ? PREVIA * LARGURA_HEX : capa ? Math.round(PREVIA * 16 / 9) : PREVIA;
   const recuo = forma === "hexagono" ? (JANELA * (1 - LARGURA_HEX)) / 2 : 0;
   const recortePrevia = forma === "hexagono" ? HEXAGONO : forma === "circulo" ? "circle(50%)" : undefined;
 
   const usar = async () => {
     if (!arquivo) return;
-    const ok = await onUsar(arquivo, livre ? null : { x: -pos.x / escala, y: -pos.y / escala, tamanho: JANELA / escala });
+    const ok = await onUsar(arquivo, livre ? null : { x: -pos.x / escala, y: -pos.y / escala, tamanho: janelaL / escala, ...(capa ? { altura: janelaA / escala } : {}) });
     if (ok) sair();
   };
   const remover = async () => { if (onRemover && await onRemover()) sair(); };
@@ -170,7 +180,10 @@ export function EnvioImagem({
           {atual ? <span><img src={atual} alt="" /></span>
             : <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4" /></svg>}
         </span>
-        <strong>{sobre ? "Solte para escanear" : atual ? "Trocar a imagem" : "Solte a imagem no scanner"}</strong>
+        {/* A capa não tem o scanner (nem a varredura): o texto não fala em escanear. */}
+        <strong>{forma === "capa"
+          ? (sobre ? "Solte para usar" : atual ? "Trocar a capa" : "Solte a imagem aqui")
+          : (sobre ? "Solte para escanear" : atual ? "Trocar a imagem" : "Solte a imagem no scanner")}</strong>
         <span>ou clique para escolher · PNG, JPEG ou WebP · até 30 MB</span>
       </button> : livre ? <div className="ev-livre">
         <div className="ev-livre-quadro">{canto}<img src={fonte.url} alt="" draggable={false} /><span className="ev-varre" aria-hidden="true" /></div>
@@ -180,22 +193,22 @@ export function EnvioImagem({
           <dl className="ev-dados"><div><dt>DIMENSÕES</dt><dd>{fonte.w} × {fonte.h}</dd></div><div><dt>ARQUIVO</dt><dd>{peso(arquivo?.size ?? 0)}</dd></div></dl>
           <button type="button" className="ev-secundario" onClick={() => entrada.current?.click()}>ESCOLHER OUTRA</button>
         </div>
-      </div> : <div className="ev-enquadra">
+      </div> : <div className="ev-enquadra" data-forma={forma}>
         <div className="ev-janela-moldura">
-          <div className="ev-janela" data-arrastando={arrastando} style={{ width: JANELA, height: JANELA }}
+          <div className="ev-janela" data-arrastando={arrastando} style={{ width: janelaL, height: janelaA }}
             onPointerDown={e => { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); arrasto.current = { x: e.clientX, y: e.clientY, ox: pos.x, oy: pos.y }; setArrastando(true); }}
             onPointerMove={e => { const a = arrasto.current; if (a) mover(a.ox + e.clientX - a.x, a.oy + e.clientY - a.y); }}
             onPointerUp={() => { arrasto.current = null; setArrastando(false); }}
             onWheel={e => setZoom(z => Math.max(1, Math.min(ZOOM_MAX, z - e.deltaY * 0.002)))}>
             <img src={fonte.url} alt="" draggable={false} style={{ width: largura, height: altura, transform: `translate(${pos.x}px, ${pos.y}px)` }} />
             <svg className="ev-mascara" viewBox="0 0 200 200" preserveAspectRatio="none" aria-hidden="true">
-              {forma !== "quadrado" && <path fillRule="evenodd" d={`M0 0h200v200H0Z ${MASCARA[forma]}`} />}
+              {forma !== "quadrado" && !capa && <path fillRule="evenodd" d={`M0 0h200v200H0Z ${MASCARA[forma]}`} />}
               <path className="ev-contorno" d={MASCARA[forma]} />
             </svg>
-            <span className="ev-varre" aria-hidden="true" />
+            {forma !== "capa" && <span className="ev-varre" aria-hidden="true" />}
           </div>
           {canto}
-          <span className="ev-leitura" aria-hidden="true"><span>ZOOM ×{zoom.toFixed(2)}</span><span>SAÍDA 512 PX</span></span>
+          <span className="ev-leitura" aria-hidden="true"><span>ZOOM ×{zoom.toFixed(2)}</span><span>{capa ? "SAÍDA 16:9" : "SAÍDA 512 PX"}</span></span>
         </div>
         <div className="ev-enquadra-lado">
           <span className="ev-rotulo">ENQUADRAR</span>

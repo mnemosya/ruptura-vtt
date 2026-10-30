@@ -144,6 +144,9 @@ import { esquecerCenaVista, gravarCenaVista, lerCenaVista } from "./_cenas/model
 import { CartaoTokenHover } from "./_shell/CartaoTokenHover";
 import { useConsoleDaMesa } from "../_shell/ConsoleDaMesa";
 import { BootPanel } from "../../../_boundaries/BootPanel";
+import { CortinaDaMesa } from "../../_global/CortinaDaMesa";
+import type { Campaign } from "../../../../lib/table";
+import { capaDaCampanha, nomeDaRegiao } from "../../_global/parts";
 import { AvisoSincronizacao } from "./_shell/AvisoSincronizacao";
 import { MenuDaMesa, posicaoAoLadoDe, type PosicaoMenuMesa } from "./_shell/MenuDaMesa";
 import { readSelectedTokenHudAction } from "./_acoes/hudActions";
@@ -302,9 +305,12 @@ function validarPosicaoToken(params: {
 export function VttClient({
   campaignId,
   papel,
+  campanha = null,
 }: {
   campaignId: string;
   papel: "narrator" | "player";
+  /** O que a cortina de entrada mostra enquanto a cena carrega (nome, região, capa). */
+  campanha?: Pick<Campaign, "id" | "name" | "regiao" | "cover_path"> | null;
 }) {
   const ehNarrador = papel === "narrator";
 
@@ -6057,6 +6063,15 @@ export function VttClient({
     setPan(novo);
   }, [marcarZoomPan]);
 
+  if (carregandoCena && campanha) {
+    /* A cortina da V1 continua daqui: Minhas Campanhas abriu a mesma
+       cortina antes de navegar, e ela só some quando a cena chega. O
+       loading antigo (o "Terminal da Mesa", abaixo) fica para quando a
+       página não manda a campanha. */
+    return (
+      <CortinaDaMesa continuacao nome={campanha.name} papel={papel} regiao={nomeDaRegiao(campanha)} capa={capaDaCampanha(campanha)} />
+    );
+  }
   if (carregandoCena) {
     /* O mesmo componente de carga do resto do produto (`BootPanel`),
        usando aqui a variante terminal exclusiva da campanha. A mesa

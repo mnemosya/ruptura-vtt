@@ -9,6 +9,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "../../../../lib/auth/session";
 import ContaClient from "./ContaClient";
+import { contagensDoMenu } from "../../_global/contagens";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,9 @@ export default async function ContaPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
+  const contagens = await contagensDoMenu(user.id);
   return (
-    <ContaClient email={user.email ?? "(sem email)"} displayNameInicial={user.displayName} avatarPathInicial={user.avatarPath} />
+    <ContaClient email={user.email ?? "(sem email)"} displayNameInicial={user.displayName} avatarPathInicial={user.avatarPath}
+      contagens={contagens} />
   );
 }

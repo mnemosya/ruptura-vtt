@@ -1,7 +1,9 @@
 "use client";
 
 /**
- * "Conta e preferências" (aditivo §4.3), agora dentro do shell global.
+ * "Conta e preferências" (aditivo §4.3), agora dentro do shell global,
+ * no layout da V1 "Seco": o cartão do operador (avatar, nome, totais) à
+ * esquerda e, à direita, Identidade, Preferências visuais e Sessão.
  *
  * Salvamento automático (aditivo §13.10): sem botão genérico "Salvar" —
  * grava em segundo plano, com atraso curto após a digitação parar, e
@@ -23,10 +25,7 @@ import { enviarAvatarConta, removerAvatarConta } from "./avatarActions";
 // A janela de recorte (`.rc-recorte-janela`) é estilizada no CSS do Console.
 import "../../../_design/console.css";
 import { useVisualPrefs } from "../../_global/GlobalShell";
-import { PageHead } from "../../_global/parts";
-import {
-  AlertTriangle, Check, Lock, LogOut, Monitor, Shield, Spinner, User, Zap,
-} from "../../../_design/icons";
+import { AlertTriangle, Check, Lock, LogOut, Spinner } from "../../../_design/icons";
 
 type SaveState = { kind: "idle" } | { kind: "saving" } | { kind: "saved" } | { kind: "error"; message: string };
 
@@ -35,23 +34,23 @@ const AUTOSAVE_DELAY_MS = 700;
 function SaveIndicator({ state, onRetry }: { state: SaveState; onRetry: () => void }) {
   if (state.kind === "saving") {
     return (
-      <span className="ra-save ra-save--saving" role="status" aria-live="polite">
-        <Spinner size={11} className="ra-spin" /> Salvando…
+      <span className="v1-salvo" role="status" aria-live="polite">
+        <Spinner size={11} className="mo-spin" /> Salvando…
       </span>
     );
   }
   if (state.kind === "saved") {
     return (
-      <span className="ra-save ra-save--saved" role="status" aria-live="polite">
-        <Check size={11} /> Salvo
+      <span className="v1-salvo v1-salvo--ok" role="status" aria-live="polite">
+        <Check size={11} className="v1-check" /> Salvo
       </span>
     );
   }
   if (state.kind === "error") {
     return (
-      <span className="ra-save ra-save--error" role="status" aria-live="polite">
+      <span className="v1-salvo v1-salvo--erro" role="status" aria-live="polite">
         <AlertTriangle size={11} /> Falha ao salvar: {state.message}
-        <button type="button" className="ra-linkbtn" data-testid="conta-tentar-novamente" onClick={onRetry}>
+        <button type="button" className="v1-u v1-link" data-testid="conta-tentar-novamente" onClick={onRetry}>
           Tentar novamente
         </button>
       </span>
@@ -64,10 +63,13 @@ export default function ContaClient({
   email,
   displayNameInicial,
   avatarPathInicial,
+  contagens = null,
 }: {
   email: string;
   displayNameInicial: string | null;
   avatarPathInicial: string | null;
+  /** Totais do cartão do operador; null quando a leitura falhou (não mostra). */
+  contagens?: { campanhas: number; personagens: number; narradas?: number } | null;
 }) {
   const router = useRouter();
   const { prefs, togglePref } = useVisualPrefs();
@@ -149,15 +151,17 @@ export default function ContaClient({
     router.refresh();
   }
 
-  return (
-    <div className="ra2-page ra2-page--narrow ra2-view-enter">
-      <PageHead eyebrow="SYS.OPERATOR // PERFIL" title="Conta e preferências" />
+  const nomeVisivel = displayName.trim() || email.split("@")[0] || "Operador";
 
-      <div className="ra-module">
-        <div className="ra-module-title">Identidade</div>
-        <div style={{ display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
-          {/* Avatar: o próprio quadro é o botão de trocar. */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, flex: "none" }}>
+  return (
+    <main className="v1-conta">
+      <div className="v1-conta-grade">
+        <section className="v1-e1 v1-operador" aria-label="Operador">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="v1-operador-banner" src="/forja/classes/vanguarda.webp" alt="" aria-hidden="true" />
+          <div className="v1-operador-veu" aria-hidden="true" />
+          <div className="v1-operador-corpo">
+            {/* Avatar: o próprio quadro é o botão de trocar. */}
             <button
               type="button"
               data-testid="conta-avatar"
@@ -165,150 +169,137 @@ export default function ContaClient({
               title={avatarPath ? "Trocar avatar" : "Enviar avatar"}
               disabled={avatarOcupado}
               onClick={() => inputAvatar.current?.click()}
-              className="ra-avatar-upload"
+              className="v1-u v1-avatar v1-hex"
             >
               {avatarOcupado ? (
-                <Spinner size={22} className="ra-spin" />
+                <Spinner size={22} className="mo-spin" />
               ) : avatarPath ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={`/api/conta/avatar?v=${encodeURIComponent(avatarPath)}`} alt="" width={112} height={112} />
+                <img src={`/api/conta/avatar?v=${encodeURIComponent(avatarPath)}`} alt="" width={140} height={124} />
               ) : (
-                <User size={40} strokeWidth={1.1} />
+                <span className="v1-avatar-inicial">{nomeVisivel.charAt(0).toUpperCase()}</span>
               )}
-              <span className="ra-avatar-upload__veu" aria-hidden="true">
+              <span className="v1-avatar-veu" aria-hidden="true">
                 <ImageUp size={20} strokeWidth={1.5} />
                 <span>{avatarPath ? "Trocar" : "Enviar"}</span>
               </span>
             </button>
             {avatarPath && (
-              <button type="button" className="ra-linkbtn" disabled={avatarOcupado} onClick={() => void removerAvatar()}>
+              <button type="button" className="v1-u v1-link" disabled={avatarOcupado} onClick={() => void removerAvatar()}>
                 Remover
               </button>
             )}
-          </div>
-          <input
-            ref={inputAvatar}
-            type="file"
-            accept={TIPOS_ACEITOS.join(",")}
-            hidden
-            onChange={(ev) => {
-              const f = ev.target.files?.[0];
-              ev.target.value = "";
-              if (f) { setAvatarErro(null); setArquivoAvatar(f); }
-            }}
-          />
-          {arquivoAvatar && (
-            <JanelaRecorte
-              arquivo={arquivoAvatar}
-              ocupado={avatarOcupado}
-              erro={avatarErro}
-              onConfirmar={(r) => void salvarAvatar(r)}
-              onCancelar={() => { setArquivoAvatar(null); setAvatarErro(null); }}
+            <input
+              ref={inputAvatar}
+              type="file"
+              accept={TIPOS_ACEITOS.join(",")}
+              hidden
+              onChange={(ev) => {
+                const f = ev.target.files?.[0];
+                ev.target.value = "";
+                if (f) { setAvatarErro(null); setArquivoAvatar(f); }
+              }}
             />
-          )}
+            {arquivoAvatar && (
+              <JanelaRecorte
+                arquivo={arquivoAvatar}
+                ocupado={avatarOcupado}
+                erro={avatarErro}
+                onConfirmar={(r) => void salvarAvatar(r)}
+                onCancelar={() => { setArquivoAvatar(null); setAvatarErro(null); }}
+              />
+            )}
+            {avatarErro && !arquivoAvatar && (
+              <span className="v1-campo-erro" role="alert"><AlertTriangle size={11} /> {avatarErro}</span>
+            )}
+            <div className="v1-operador-nome-bloco">
+              <span className="v1-operador-nome">{nomeVisivel}</span>
+              <span className="v1-operador-presenca">● Online</span>
+            </div>
+            {contagens && (
+              <div className="v1-operador-totais">
+                <div><span className="v1-operador-n">{contagens.campanhas}</span><span className="v1-operador-rot">{contagens.campanhas === 1 ? "Campanha" : "Campanhas"}</span></div>
+                {contagens.narradas !== undefined && <div><span className="v1-operador-n">{contagens.narradas}</span><span className="v1-operador-rot">Narra</span></div>}
+                <div><span className="v1-operador-n">{contagens.personagens}</span><span className="v1-operador-rot">{contagens.personagens === 1 ? "Personagem" : "Personagens"}</span></div>
+              </div>
+            )}
+          </div>
+        </section>
 
-          <div style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: 18 }}>
-            <div className="ra-field" style={{ margin: 0 }}>
-              <label className="ra-flabel" htmlFor="conta-nome-exibicao">Nome de exibição</label>
+        <div className="v1-conta-col">
+          <div className="v1-e1 v1-conta-cab">
+            <span className="v1-pg-sobrancelha">Perfil do operador</span>
+            <h1 className="v1-glitch-a v1-conta-titulo">Conta e preferências</h1>
+          </div>
+
+          <section className="v1-e2 v1-modulo" aria-label="Identidade">
+            <div className="v1-modulo-cab">
+              <h2 className="v1-modulo-titulo">Identidade</h2>
+              {saveState.kind !== "idle" && <SaveIndicator state={saveState} onRetry={() => persist(displayName)} />}
+            </div>
+            <label className="v1-campo-grupo" htmlFor="conta-nome-exibicao">
+              <span className="v1-campo-rotulo">Nome de exibição</span>
               <input
                 id="conta-nome-exibicao"
                 data-testid="conta-nome-exibicao"
-                className="ra-input"
+                className="v1-u v1-campo"
                 type="text"
                 value={displayName}
                 maxLength={60}
                 onChange={(e) => { setDisplayName(e.target.value); scheduleSave(e.target.value); }}
                 placeholder="Como você quer aparecer nas suas campanhas"
               />
-              <span className="ra-hint" style={{ marginTop: 6 }}>
-                É como você aparece para as pessoas das suas campanhas: na mesa, na Rede e no seu perfil.
-              </span>
-              {saveState.kind !== "idle" && (
-                <div style={{ marginTop: 6 }}>
-                  <SaveIndicator state={saveState} onRetry={() => persist(displayName)} />
+              <span className="v1-modulo-dica">É como você aparece para as pessoas das suas campanhas: na mesa, na Rede e no seu perfil.</span>
+            </label>
+            <div className="v1-campo-grupo">
+              <span className="v1-campo-rotulo">E-mail</span>
+              <span className="v1-conta-email"><Lock size={12} /><span data-testid="conta-email">{email}</span></span>
+            </div>
+          </section>
+
+          <div className="v1-conta-dupla">
+            <section className="v1-e3 v1-modulo" aria-label="Preferências visuais">
+              <h2 className="v1-modulo-titulo">Preferências visuais</h2>
+              <div className="v1-pref">
+                <div className="v1-pref-texto">
+                  <span className="v1-pref-titulo">Reduzir movimento</span>
+                  <span className="v1-pref-desc">Desativa parallax, cursor HUD e animações ambientais.</span>
                 </div>
-              )}
-            </div>
+                <button type="button" role="switch" aria-checked={prefs.reduceMotion} aria-label="Reduzir movimento"
+                  data-testid="conta-reduzir-movimento" className={`v1-u v1-switch${prefs.reduceMotion ? " on" : ""}`}
+                  onClick={() => togglePref("reduceMotion")}><span /></button>
+              </div>
+              <div className="v1-pref">
+                <div className="v1-pref-texto">
+                  <span className="v1-pref-titulo">Alto contraste</span>
+                  <span className="v1-pref-desc">Reforça bordas e legibilidade dos painéis HUD.</span>
+                </div>
+                <button type="button" role="switch" aria-checked={prefs.highContrast} aria-label="Alto contraste"
+                  data-testid="conta-alto-contraste" className={`v1-u v1-switch${prefs.highContrast ? " on" : ""}`}
+                  onClick={() => togglePref("highContrast")}><span /></button>
+              </div>
+            </section>
 
-            <div className="ra-field" style={{ margin: 0 }}>
-              <span className="ra-flabel">E-mail</span>
-              <div
-                className="ra-mono"
-                style={{ fontSize: 12.5, color: "rgba(184,216,232,.6)", display: "flex", alignItems: "center", gap: 6 }}
+            <section className="v1-e3 v1-modulo v1-modulo--sessao" aria-label="Sessão">
+              <h2 className="v1-modulo-titulo">Sessão</h2>
+              <dl className="v1-conta-kv">
+                <div><dt>Terminal</dt><dd>WEB // NAVEGADOR</dd></div>
+                <div><dt>Conta</dt><dd>{email}</dd></div>
+                <div><dt>Status</dt><dd className="v1-conta-on"><span className="v1-carregando">●</span> Conectado</dd></div>
+              </dl>
+              <button
+                type="button"
+                className="v1-u v1-ghost v1-btn-sair"
+                data-testid="conta-encerrar-sessao"
+                onClick={handleSignOut}
+                disabled={signingOut}
               >
-                <Lock size={12} />
-                <span data-testid="conta-email" style={{ wordBreak: "break-all" }}>{email}</span>
-              </div>
-            </div>
-
-            {avatarErro && !arquivoAvatar && (
-              <div className="ra-save ra-save--error" role="alert">
-                <AlertTriangle size={11} /> {avatarErro}
-              </div>
-            )}
+                <LogOut size={14} /> {signingOut ? "Encerrando…" : "Encerrar sessão"}
+              </button>
+            </section>
           </div>
         </div>
       </div>
-
-      <div className="ra-module">
-        <div className="ra-module-title"><Monitor size={12} /> Preferências visuais</div>
-
-        <div className="ra-toggle-row">
-          <div className="ra-toggle-copy">
-            <strong><Zap size={12} /> Reduzir movimento</strong>
-            <span>Desativa parallax, cursor HUD e animações ambientais.</span>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={prefs.reduceMotion}
-            aria-label="Reduzir movimento"
-            data-testid="conta-reduzir-movimento"
-            className={`ra-switch${prefs.reduceMotion ? " ra-switch--on" : ""}`}
-            onClick={() => togglePref("reduceMotion")}
-          >
-            <span className="ra-switch-knob" />
-          </button>
-        </div>
-
-        <div className="ra-toggle-row">
-          <div className="ra-toggle-copy">
-            <strong><Shield size={12} /> Alto contraste</strong>
-            <span>Reforça bordas e legibilidade dos painéis HUD.</span>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={prefs.highContrast}
-            aria-label="Alto contraste"
-            data-testid="conta-alto-contraste"
-            className={`ra-switch${prefs.highContrast ? " ra-switch--on" : ""}`}
-            onClick={() => togglePref("highContrast")}
-          >
-            <span className="ra-switch-knob" />
-          </button>
-        </div>
-      </div>
-
-      <div className="ra-module">
-        <div className="ra-module-title">Sessão</div>
-        <div className="ra-kv">
-          <div><span>Terminal</span><span className="ra-kv-v">WEB // NAVEGADOR</span></div>
-          <div><span>Conta</span><span className="ra-kv-v">{email}</span></div>
-          <div><span>Status</span><span style={{ color: "#22d3aa" }}>● Conectado</span></div>
-        </div>
-        <div style={{ marginTop: 18 }}>
-          <button
-            type="button"
-            className="ra-btn ra-btn--danger ra-btn--block"
-            data-testid="conta-encerrar-sessao"
-            onClick={handleSignOut}
-            disabled={signingOut}
-          >
-            <LogOut size={14} /> {signingOut ? "Encerrando…" : "Encerrar sessão"}
-          </button>
-        </div>
-      </div>
-    </div>
+    </main>
   );
 }

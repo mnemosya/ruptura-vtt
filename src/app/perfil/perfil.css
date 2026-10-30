@@ -1,86 +1,102 @@
 /* Perfil de usuário (NET-01). Serve às duas entradas: a página cheia em
-   /perfil e o modal interceptado sob /mesas. */
+   /perfil e o modal interceptado sob /mesas. Visual da V1 "Seco" (modal
+   de perfil da prancheta Main.dc.html): cabeçalho com a arte do HUD,
+   retrato em hexágono, nome em Teko e as campanhas como linhas. As
+   fontes chegam por variável (`teko`/`oxanium` na raiz do modal e da
+   página), porque este conteúdo vive fora da casca global. */
 
-.rv-perfil-pagina { box-sizing: border-box; min-height: 100dvh; display: flex; align-items: flex-start; justify-content: center; padding: 48px 16px; }
+.rv-perfil-pagina { box-sizing: border-box; min-height: 100dvh; display: flex; align-items: flex-start; justify-content: center; padding: 48px 16px; background: #06121c; }
 
 .rv-perfil, .rv-perfil *, .rv-perfil-veu, .rv-perfil-caixa, .rv-perfil-fechar { box-sizing: border-box; }
 
 .rv-perfil {
-  width: 100%; max-width: 560px; padding: 22px 24px 24px;
-  background: rgba(8, 20, 27, 0.92); border: 1px solid rgba(84, 172, 190, 0.28); border-radius: 3px;
-  color: rgba(216, 238, 248, 0.9);
+  --pf-teko: var(--font-teko), "Teko", sans-serif;
+  --pf-ox: var(--font-oxanium), "Oxanium", sans-serif;
+  --pf-mono: var(--font-mono), "JetBrains Mono", monospace;
+  width: 100%; max-width: 580px; background: #0c1f2b; border-top: 2px solid #00d4ff;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); color: #b8d8e8; font-family: var(--font-corpo), "Exo 2", sans-serif;
 }
-.rv-perfil--vazio { padding: 28px 24px; color: rgba(184, 216, 232, 0.8); font-size: 14px; line-height: 1.6; }
+.rv-perfil--vazio { padding: 28px 24px; color: #7f95b3; font-size: 14px; line-height: 1.6; }
 
-.rv-perfil-cab { display: flex; align-items: center; gap: 14px; padding-bottom: 16px; border-bottom: 1px solid rgba(84, 172, 190, 0.18); }
+.rv-perfil-cab {
+  position: relative; display: flex; align-items: center; gap: 18px; padding: 26px 24px 22px; overflow: hidden;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.16);
+  background: linear-gradient(90deg, rgba(12, 31, 43, 0.98) 30%, rgba(12, 31, 43, 0.6)), url("/brand/campaigns-hud.jpg") center / cover;
+}
 .rv-perfil-face {
-  flex: none; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 3px;
-  background: rgba(0, 212, 255, 0.08); border: 1px solid rgba(84, 172, 190, 0.28); color: rgba(207, 234, 246, 0.85);
+  flex: none; width: 78px; height: 68px; display: grid; place-items: center; border: 0;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  background: #1d4a5c; color: #b8d8e8; animation: pf-pop .42s cubic-bezier(.2,.8,.2,1) both;
 }
-.rv-perfil-ident { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-.rv-perfil-presenca {
-  display: inline-flex; align-items: center; align-self: flex-start; gap: 6px;
-  padding: 3px 6px; border: 1px solid rgba(245, 162, 0, 0.25); border-radius: 3px;
-  background: rgba(245, 162, 0, 0.06); color: #f5a200;
-  font-family: var(--font-mono), monospace; font-weight: 800; font-size: 10px; line-height: 14px;
-  letter-spacing: 0.18em; text-transform: uppercase;
-}
-.rv-perfil-presenca-dot { flex: none; width: 4px; height: 4px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; }
-.rv-perfil-presenca[data-offline] { color: #96aeba; border-color: rgba(150, 174, 186, 0.25); background: rgba(150, 174, 186, 0.06); }
-.rv-perfil-presenca[data-offline] .rv-perfil-presenca-dot { box-shadow: none; }
+.rv-perfil-ident { position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; }
 .rv-perfil-nome {
-  margin: 0; font-family: var(--font-orbitron), sans-serif; font-weight: 700; font-size: 19px;
-  letter-spacing: 0.04em; overflow-wrap: anywhere;
+  margin: 0; font-family: var(--pf-teko); font-weight: 600; font-size: 52px; line-height: 0.8; text-transform: uppercase;
+  color: #cfeff4; overflow-wrap: anywhere; animation: pf-glitch .5s cubic-bezier(.2,.8,.2,1) .08s both;
 }
+.rv-perfil-presenca {
+  display: inline-flex; align-items: center; align-self: flex-start; gap: 6px; padding: 3px 8px;
+  border: 1px solid rgba(245, 162, 0, 0.35); color: #f5a200;
+  font-family: var(--pf-mono); font-weight: 700; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+}
+.rv-perfil-presenca-dot { flex: none; width: 5px; height: 5px; rotate: 45deg; background: currentColor; }
+.rv-perfil-presenca[data-offline] { color: #96aeba; border-color: rgba(150, 174, 186, 0.35); }
 .rv-perfil-conta {
-  margin-left: auto; flex: none; font-size: 12px; letter-spacing: 0.06em; text-decoration: none;
-  color: rgba(0, 212, 255, 0.9); border: 1px solid rgba(84, 172, 190, 0.3); border-radius: 3px; padding: 6px 10px;
+  position: relative; flex: none; margin-left: auto; padding: 9px 12px; text-decoration: none; overflow: hidden;
+  border: 1px solid rgba(0, 212, 255, 0.45); color: #00d4ff;
+  font-family: var(--pf-ox); font-weight: 700; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
 }
-.rv-perfil-conta:hover, .rv-perfil-conta:focus-visible { background: rgba(0, 212, 255, 0.1); }
+.rv-perfil-conta::before { content: ""; position: absolute; inset: 0; background: currentColor; opacity: .16; transform: scaleX(0); transform-origin: left; transition: transform .28s cubic-bezier(.2,.8,.2,1); }
+.rv-perfil-conta:hover::before, .rv-perfil-conta:focus-visible::before { transform: scaleX(1); }
 
-.rv-perfil-secao { margin-top: 18px; }
+.rv-perfil-secao { padding: 18px 24px 24px; display: flex; flex-direction: column; gap: 10px; }
 .rv-perfil-secao-titulo {
-  display: flex; align-items: center; gap: 7px; margin: 0 0 10px;
-  font-family: var(--font-orbitron), sans-serif; font-weight: 500; font-size: 11px;
-  letter-spacing: 0.22em; text-transform: uppercase; color: rgba(150, 174, 186, 0.85);
+  display: flex; align-items: center; gap: 8px; margin: 0;
+  font-family: var(--pf-mono); font-weight: 700; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #7f95b3;
 }
-.rv-perfil-vazio-nota { margin: 0; font-size: 13px; color: rgba(150, 174, 186, 0.8); }
-.rv-perfil-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.rv-perfil-vazio-nota { margin: 0; padding: 14px 0; font-size: 14px; color: #7f95b3; }
+.rv-perfil-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .rv-perfil-linha {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: baseline;
-  padding: 10px 12px; border: 1px solid rgba(84, 172, 190, 0.16); border-radius: 3px;
-  background: rgba(0, 212, 255, 0.04);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 12px; align-items: baseline;
+  padding: 10px 12px; border: 1px solid rgba(127, 149, 179, 0.3); transition: border-color .18s ease, background .18s ease;
+  animation: pf-entra .4s cubic-bezier(.2,.8,.2,1) both;
 }
-.rv-perfil-campanha { font-size: 14px; color: rgba(216, 238, 248, 0.92); text-decoration: none; }
-.rv-perfil-campanha:hover, .rv-perfil-campanha:focus-visible { text-decoration: underline; }
-.rv-perfil-papel { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(150, 174, 186, 0.85); }
-.rv-perfil-papel[data-papel="narrator"] { color: rgba(240, 190, 90, 0.9); }
-.rv-perfil-personagens { grid-column: 1 / -1; font-size: 12px; color: rgba(184, 216, 232, 0.72); }
-.rv-perfil-personagens em { font-style: italic; color: rgba(150, 174, 186, 0.6); }
+.rv-perfil-linha:nth-child(2) { animation-delay: .05s; } .rv-perfil-linha:nth-child(3) { animation-delay: .1s; } .rv-perfil-linha:nth-child(4) { animation-delay: .15s; }
+.rv-perfil-linha:hover, .rv-perfil-linha:focus-within { border-color: #00d4ff; background: rgba(0, 212, 255, 0.12); }
+.rv-perfil-campanha { font-family: var(--pf-teko); font-weight: 600; font-size: 24px; line-height: 1; text-transform: uppercase; color: #cfeff4; text-decoration: none; }
+.rv-perfil-campanha:hover, .rv-perfil-campanha:focus-visible { text-decoration: none; color: #00d4ff; outline: none; }
+.rv-perfil-papel { font-family: var(--pf-mono); font-weight: 700; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: #00d4ff; }
+.rv-perfil-papel::before { content: "◆ "; }
+.rv-perfil-papel[data-papel="narrator"] { color: #f5a200; }
+.rv-perfil-personagens { grid-column: 1 / -1; font-size: 12px; color: #b8d8e8; }
+.rv-perfil-personagens em { font-style: italic; color: #7f95b3; }
 .rv-perfil-campanha, .rv-perfil-personagens { overflow-wrap: anywhere; }
 
 /* Modal — mesma caixa, sobre o véu. */
 .rv-perfil-veu {
-  position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 24px 16px;
-  background: rgba(2, 8, 12, 0.72); backdrop-filter: blur(2px);
+  position: fixed; inset: 0; z-index: 70; display: grid; place-items: start center; padding: 130px 16px 24px;
+  background: rgba(3, 9, 14, 0.8); animation: pf-veu .2s ease both;
 }
-.rv-perfil-caixa { position: relative; width: 100%; max-width: 610px; max-height: calc(100dvh - 48px); overflow-y: auto; }
+.rv-perfil-caixa { position: relative; width: 100%; max-width: 580px; max-height: calc(100dvh - 154px); overflow-y: auto; animation: pf-modal .3s cubic-bezier(.2,.8,.2,1) both; }
 .rv-perfil-caixa > .rv-perfil { max-width: none; }
-.rv-perfil-caixa .rv-perfil-cab { padding-right: 30px; }
+.rv-perfil-caixa .rv-perfil-cab { padding-right: 56px; }
 .rv-perfil-caixa:focus { outline: none; }
 .rv-perfil-fechar {
-  position: absolute; top: 10px; right: 10px; z-index: 1; display: grid; place-items: center;
-  width: 30px; height: 30px; padding: 0; border-radius: 3px; cursor: pointer;
-  background: transparent; border: 1px solid transparent; color: rgba(150, 174, 186, 0.8);
+  position: absolute; top: 14px; right: 14px; z-index: 2; display: grid; place-items: center;
+  width: 32px; height: 32px; padding: 0; border: 0; cursor: pointer;
+  background: rgba(6, 18, 28, 0.6); color: #b8d8e8; transition: color .15s ease, background .15s ease, transform .2s cubic-bezier(.3,1.4,.5,1);
 }
-.rv-perfil-fechar:hover, .rv-perfil-fechar:focus-visible {
-  border-color: rgba(84, 172, 190, 0.35); color: rgba(216, 238, 248, 0.95);
-}
+.rv-perfil-fechar:hover, .rv-perfil-fechar:focus-visible { color: #06121c; background: #cfeff4; transform: rotate(90deg); outline: none; }
+
+@keyframes pf-veu { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pf-modal { from { opacity: 0; transform: translateY(28px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes pf-entra { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes pf-pop { 0% { opacity: 0; transform: translateY(20px) scale(.9); } 70% { opacity: 1; transform: translateY(-3px) scale(1.02); } 100% { opacity: 1; transform: none; } }
+@keyframes pf-glitch { 0% { opacity: 0; transform: translateX(-30px) skewX(-14deg); text-shadow: -8px 0 #f5a200, 8px 0 #00d4ff; } 35% { opacity: 1; transform: translateX(5px) skewX(5deg); text-shadow: 5px 0 #f5a200, -5px 0 #00d4ff; } 100% { opacity: 1; transform: none; text-shadow: none; } }
+@media (prefers-reduced-motion: reduce) { .rv-perfil *, .rv-perfil-veu, .rv-perfil-caixa { animation: none !important; } }
 
 @media (max-width: 520px) {
-  .rv-perfil { padding: 18px 16px 20px; }
+  .rv-perfil-veu { padding-top: 24px; }
   .rv-perfil-cab { flex-wrap: wrap; }
-  .rv-perfil-ident { flex: 1; }
   .rv-perfil-conta { margin-left: 0; flex-basis: 100%; width: fit-content; }
 }
 
@@ -88,7 +104,7 @@
 .rv-avatar-trigger { position: relative; padding: 0; overflow: hidden; cursor: zoom-in; transition: border-color 160ms, box-shadow 160ms; }
 .rv-avatar-trigger > img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 180ms; }
 .rv-avatar-trigger:disabled { cursor: default; }
-.rv-avatar-trigger:not(:disabled):hover, .rv-avatar-trigger:focus-visible { border-color: #00d4ff; box-shadow: 0 0 0 3px #00d4ff18, 0 0 18px #00d4ff20; outline: none; }
+.rv-avatar-trigger:not(:disabled):hover, .rv-avatar-trigger:focus-visible { filter: brightness(1.12) drop-shadow(0 0 10px rgba(0, 212, 255, 0.6)); outline: none; }
 .rv-avatar-trigger:not(:disabled):hover > img { transform: scale(1.08); }
 .rv-avatar-zoom { position: absolute; right: 0; bottom: 0; display: grid; place-items: center; width: 20px; height: 20px; background: #06151ee6; color: #8cecff; opacity: 0; transition: opacity 160ms; }
 .rv-avatar-trigger:hover .rv-avatar-zoom, .rv-avatar-trigger:focus-visible .rv-avatar-zoom { opacity: 1; }

@@ -2,7 +2,7 @@ import "server-only";
 import { listCampaigns } from "../../../lib/table/storage";
 import { listCharactersForNarratorCampaign, listControlledCharacters } from "../../../lib/character/storage";
 
-export interface ContagensDoMenu { campanhas: number; personagens: number }
+export interface ContagensDoMenu { campanhas: number; personagens: number; /** Campanhas que esta conta narra. */ narradas: number }
 
 /**
  * Os números ao lado de "Campanhas" e "Personagens" no menu da área
@@ -22,7 +22,11 @@ export async function contagensDoMenu(userId: string): Promise<ContagensDoMenu |
         return 0;
       }
     }));
-    return { campanhas: campanhas.length, personagens: porCampanha.reduce((a, b) => a + b, 0) };
+    return {
+      campanhas: campanhas.length,
+      personagens: porCampanha.reduce((a, b) => a + b, 0),
+      narradas: campanhas.filter((c) => c.owner_id === userId).length,
+    };
   } catch {
     return null;
   }

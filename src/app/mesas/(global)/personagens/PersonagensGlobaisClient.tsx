@@ -1,13 +1,14 @@
 "use client";
 
 /**
- * Índice pessoal de personagens (área autenticada global): UMA lista de
- * linhas compactas, com busca e filtro por estado — em campanha, sem
- * campanha ou aguardando o narrador.
+ * Índice pessoal de personagens (área autenticada global), no layout da
+ * V1 "Seco": totais por estado no topo, abas de estado, busca e "Criar
+ * personagem"; uma grade de cards com retrato e, ao lado, o painel do
+ * personagem selecionado com a ação certa para o estado.
  *
- * A linha é a mesma para todos; só o ESTADO muda, e ele aparece em três
- * lugares coerentes: a barra lateral (ciano / cinza / âmbar), a linha de
- * metadados e a ação à direita (abrir · enviar para campanha · cancelar).
+ * O estado — em campanha, sem campanha ou aguardando o narrador — pinta a
+ * faixa do card e o painel com a mesma cor (ciano / cinza / âmbar) e
+ * decide a ação: abrir ficha · enviar para campanha · cancelar pedido.
  *
  * "Criar personagem" abre a Forja sem campanha. "Enviar para campanha"
  * abre um diálogo com as campanhas da conta: o pedido fica pendente até
@@ -18,13 +19,12 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PageHead, SectionHead, relativeTime } from "../../_global/parts";
-import { ArrowRight, Info } from "lucide-react";
-import { AlertTriangle, ChevronRight, RotateCw, Search, Spinner, User, Users, X } from "../../../_design/icons";
-import modal from "../../CreateCampaignModal.module.css";
+import { capaDaCampanha, relativeTime } from "../../_global/parts";
+import type { Campaign } from "../../../../lib/table";
+import { AlertTriangle, RotateCw, Search, Spinner, X } from "../../../_design/icons";
+import { usePresence } from "../../../_design/usePresence";
 import { JanelaNovoPersonagem } from "../../[campaignId]/vtt/_painel/janelas/JanelaNovoPersonagem";
 import { cancelarPedidoAction, enviarParaCampanhaAction } from "./acoes";
-import "./personagens.css";
 
 export interface PersonagemLinha {
   id: string;
@@ -44,6 +44,8 @@ export interface CampanhaDestino {
   nome: string;
   /** Quem narra o destino não precisa pedir: o personagem entra direto. */
   narra: boolean;
+  /** O que a miniatura da linha precisa (`capaDaCampanha`). */
+  capa?: Pick<Campaign, "id" | "regiao" | "cover_path">;
 }
 
 type Estado = "campanha" | "solto" | "pendente";
@@ -61,16 +63,32 @@ const NOME_CLASSE: Record<string, string> = {
   infiltrador: "Infiltrador", tecnico: "Técnico", vanguarda: "Vanguarda",
 };
 
+const ROTULO_ESTADO: Record<Estado, string> = { campanha: "Em campanha", solto: "Sem campanha", pendente: "Pendente" };
+
 const estadoDe = (p: PersonagemLinha): Estado => (p.campanha ? "campanha" : p.pendente ? "pendente" : "solto");
 
 const hrefDaFicha = (p: PersonagemLinha) =>
   p.campanha ? `/ficha?campaignId=${p.campanha.id}&characterId=${p.id}` : `/ficha?characterId=${p.id}`;
 
-/** O "+" do botão de criar — o mesmo de "Criar campanha". */
-function IconeMais() {
-  return <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="2 2 12 12" aria-hidden="true">
-    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4" stroke="currentColor" strokeWidth="0.35" />
-  </svg>;
+function IconeMais({ size = 14 }: { size?: number }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>;
+}
+
+function Seta() {
+  return <svg className="v1-seta" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3.5} aria-hidden="true"><path d="M8 4l8 8-8 8" /></svg>;
+}
+
+/** Retrato do personagem, ou a reserva (só a silhueta) quando não tem avatar. */
+function Rosto({ p, classe }: { p: PersonagemLinha; classe: string }) {
+  if (p.avatarUrl) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img className={classe} src={p.avatarUrl} alt="" />;
+  }
+  return (
+    <span className={`${classe} v1-pg-reserva`} aria-hidden="true">
+      <svg viewBox="0 0 64 88"><circle cx="32" cy="34" r="12" /><path d="M8 88 C10 64 20 54 32 54 C44 54 54 64 56 88 Z" /></svg>
+    </span>
+  );
 }
 
 export default function PersonagensGlobaisClient({
@@ -87,6 +105,9 @@ export default function PersonagensGlobaisClient({
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [criando, setCriando] = useState(false);
   const [enviando, setEnviando] = useState<PersonagemLinha | null>(null);
+  const [selId, setSelId] = useState<string | null>(personagens[0]?.id ?? null);
+  /** Cresce a cada filtro/busca: os cards entram de novo em cascata. */
+  const [lista, setLista] = useState(0);
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -96,89 +117,128 @@ export default function PersonagensGlobaisClient({
     });
   }, [personagens, filtro, busca]);
 
-  return (
-    <div className="ra2-page ra2-view-enter">
-      <PageHead eyebrow="SYS.RUPTURA // REGISTRO DE REFRATÁRIOS" title="Personagens" />
+  const contagem = useMemo(() => {
+    const c = { campanha: 0, solto: 0, pendente: 0 };
+    personagens.forEach((p) => { c[estadoDe(p)]++; });
+    return c;
+  }, [personagens]);
 
+  // A seleção sobrevive ao refresh; se o personagem sumiu, volta ao primeiro.
+  useEffect(() => {
+    if (!selId || !personagens.some((p) => p.id === selId)) setSelId(personagens[0]?.id ?? null);
+  }, [personagens, selId]);
+
+  const selecionado = personagens.find((p) => p.id === selId) ?? null;
+  const mudarFiltro = (f: Filtro) => { setFiltro(f); setLista((n) => n + 1); };
+
+  return (
+    <main className="v1-pg">
       {criando && (
         <JanelaNovoPersonagem campaignId={null} onFechar={() => setCriando(false)} onAbrirFicha={() => router.refresh()} />
       )}
-      {enviando && <DialogoEnviar p={enviando} destinos={destinos} onFechar={() => setEnviando(null)} />}
+      <DialogoEnviar p={enviando} destinos={destinos} onFechar={() => setEnviando(null)} />
 
-      <div className="ra2-toolbar">
-        <div className="ra2-toolbar-group">
-          <div className="ra2-search">
-            <span className="ra2-search-icon" aria-hidden="true"><Search size={13} strokeWidth={1.4} /></span>
-            <label htmlFor="busca-personagens" className="sr-only">Buscar personagens</label>
-            <input id="busca-personagens" data-testid="personagens-busca" type="search" value={busca}
-              onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por personagem ou campanha…" />
+      <div className="v1-pg-col">
+        <div className="v1-pg-cab v1-e1">
+          <div className="v1-pg-cab-titulo">
+            <span className="v1-pg-sobrancelha">Registro de refratários · {personagens.length} {personagens.length === 1 ? "ficha" : "fichas"}</span>
+            <h1 className="v1-glitch-a v1-pg-titulo">Personagens</h1>
           </div>
-          <div className="ra2-segmented" role="tablist" aria-label="Filtrar por estado">
-            {FILTROS.map((f) => (
-              <button key={f.id} type="button" role="tab" aria-selected={filtro === f.id} onClick={() => setFiltro(f.id)}
-                className={`ra2-seg${filtro === f.id ? " ra2-seg--active" : ""}`}>
-                {f.label}
-              </button>
+          <div className="v1-pg-contagens">
+            {([["campanha", "Em campanha"], ["solto", "Sem campanha"], ["pendente", "Pendentes"]] as const).map(([k, rot], i) => (
+              <div key={k} className={`v1-desliza-a v1-pg-contagem v1-pg-contagem--${k}`} style={{ animationDelay: `${0.1 + i * 0.06}s` }}>
+                <span className="v1-pg-contagem-n">{contagem[k]}</span>
+                <span className="v1-pg-contagem-rot">{rot}</span>
+              </div>
             ))}
           </div>
         </div>
-        <button type="button" className="ra2-secondary" data-testid="personagens-criar" onClick={() => setCriando(true)}>
-          <IconeMais />
-          <span>Criar personagem</span>
-        </button>
+
+        {errorInicial && (
+          <div className="v1-estado v1-estado--erro" role="alert">
+            <AlertTriangle size={30} />
+            <span className="v1-estado-titulo">Falha ao carregar personagens</span>
+            <span className="v1-estado-txt">{errorInicial}</span>
+            <button type="button" className="v1-u v1-ghost v1-btn-contorno" onClick={() => router.refresh()}>
+              <RotateCw size={13} /> Tentar novamente
+            </button>
+          </div>
+        )}
+
+        {!errorInicial && personagens.length === 0 && <VazioPersonagens onCriar={() => setCriando(true)} />}
+
+        {!errorInicial && personagens.length > 0 && (
+          <>
+            <div className="v1-barra v1-e2">
+              <div className="v1-abas" role="tablist" aria-label="Filtrar por estado">
+                {FILTROS.map((f) => (
+                  <button key={f.id} type="button" role="tab" aria-selected={filtro === f.id} onClick={() => mudarFiltro(f.id)}
+                    className={`v1-u v1-sub v1-aba v1-aba--peq${filtro === f.id ? " on" : ""}`}>
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+              <div className="v1-barra-vao" />
+              <label className="v1-busca v1-busca--pg">
+                <Search size={14} strokeWidth={2.5} aria-hidden="true" />
+                <span className="sr-only">Buscar personagens</span>
+                <input id="busca-personagens" data-testid="personagens-busca" type="search" className="v1-u" value={busca}
+                  onChange={(e) => { setBusca(e.target.value); setLista((n) => n + 1); }} placeholder="Buscar personagem ou campanha" />
+              </label>
+              <button type="button" className="v1-u v1-ghost v1-btn-criar" data-testid="personagens-criar" onClick={() => setCriando(true)}>
+                <IconeMais /> Criar personagem
+              </button>
+            </div>
+
+            {filtrados.length === 0 ? (
+              <div className="v1-estado v1-carta-a">
+                <span className="v1-estado-titulo">Nenhum personagem</span>
+                <span className="v1-estado-txt">{busca.trim() ? <>Nada com “{busca.trim()}”</> : "Nenhum neste filtro"}</span>
+                <button type="button" className="v1-u v1-ghost v1-btn-contorno" onClick={() => { setBusca(""); mudarFiltro("todos"); }}>Limpar filtros</button>
+              </div>
+            ) : (
+              <ul className="v1-pg-grade" data-testid="personagens-lista">
+                {filtrados.map((p, i) => {
+                  const estado = estadoDe(p), sel = p.id === selId;
+                  return (
+                    <li key={`${p.id}-${lista}`} className="v1-carta-a" style={{ animationDelay: `${(0.12 + i * 0.03).toFixed(2)}s` }}>
+                      <div className={`v1-card v1-pc${sel ? " is-sel" : ""}`} data-estado={estado} data-testid="personagem-item">
+                        <button type="button" className="v1-u v1-sel" onClick={() => setSelId(p.id)} aria-pressed={sel} aria-label={`Selecionar ${p.name}`}>
+                          <Rosto p={p} classe="v1-arte" />
+                          <span className="v1-pc-veu" aria-hidden="true" />
+                          <span className="v1-canto v1-c1" aria-hidden="true" /><span className="v1-canto v1-c2" aria-hidden="true" />
+                          <span className="v1-canto v1-c3" aria-hidden="true" /><span className="v1-canto v1-c4" aria-hidden="true" />
+                          <span className="v1-faixa" aria-hidden="true" />
+                          <span className="v1-pc-texto">
+                            <span className="v1-pc-estado" data-testid={estado === "pendente" ? "personagem-pendente" : undefined}>◆ {ROTULO_ESTADO[estado]}</span>
+                            <span className="v1-pc-nome" title={p.name}>{p.name}</span>
+                            <span className="v1-pc-meta">{[p.classe ? NOME_CLASSE[p.classe] ?? p.classe : null, p.ranking ? `Rank ${p.ranking}` : null].filter(Boolean).join(" · ") || "—"}</span>
+                            <span className="v1-pc-lugar">{p.campanha ? p.campanha.nome : p.pendente ? `Aguardando ${p.pendente.campaignName}` : "Sem campanha"}</span>
+                          </span>
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </>
+        )}
       </div>
 
-      {errorInicial && (
-        <div className="ra-state-box ra-state-box--error" role="alert">
-          <div className="ra-state-icon"><AlertTriangle size={38} style={{ color: "#ff6a80" }} /></div>
-          <h2 className="ra-h2" style={{ marginBottom: 8 }}>Falha ao carregar personagens</h2>
-          <p className="ra-muted" style={{ marginBottom: 22 }}>{errorInicial}</p>
-          <button type="button" className="ra-btn" style={{ margin: "0 auto" }} onClick={() => router.refresh()}>
-            <RotateCw size={13} /> Tentar novamente
-          </button>
-        </div>
+      {!errorInicial && selecionado && (
+        <PainelPersonagem key={selecionado.id} p={selecionado} onEnviar={() => setEnviando(selecionado)} />
       )}
-
-      {!errorInicial && personagens.length === 0 && (
-        <div className="ra-empty" data-testid="personagens-vazio">
-          <div className="ra-empty-glyph"><Users size={40} /></div>
-          <h2 className="ra-empty-title">Nenhum personagem ainda</h2>
-          <p className="ra-empty-text">
-            Crie um personagem aqui e envie para uma campanha quando quiser, ou crie direto dentro de uma das suas campanhas.
-          </p>
-        </div>
-      )}
-
-      {!errorInicial && personagens.length > 0 && (
-        <>
-          <SectionHead title="Registro" count={filtrados.length} unit="FICHA" />
-          {filtrados.length === 0 ? (
-            <div className="ra-state-box">
-              <div className="ra-state-icon"><Search size={36} style={{ color: "rgba(0,212,255,.5)" }} /></div>
-              <h2 className="ra-h2" style={{ marginBottom: 8 }}>Nenhum personagem encontrado</h2>
-              <p className="ra-muted">Ajuste a busca ou o filtro.</p>
-            </div>
-          ) : (
-            <ul className="pg-lista" data-testid="personagens-lista">
-              {filtrados.map((p) => <LinhaPersonagem key={p.id} p={p} onEnviar={() => setEnviando(p)} />)}
-            </ul>
-          )}
-        </>
-      )}
-    </div>
+    </main>
   );
 }
 
-function LinhaPersonagem({ p, onEnviar }: { p: PersonagemLinha; onEnviar: () => void }) {
+function PainelPersonagem({ p, onEnviar }: { p: PersonagemLinha; onEnviar: () => void }) {
   const router = useRouter();
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const estado = estadoDe(p);
-  const meta = [
-    p.classe ? NOME_CLASSE[p.classe] ?? p.classe : null,
-    p.ranking ? `Rank ${p.ranking}` : null,
-    p.campanha ? p.campanha.nome : p.pendente ? `Aguardando ${p.pendente.campaignName}` : "Sem campanha",
-  ].filter(Boolean).join(" · ");
+  const classe = p.classe ? NOME_CLASSE[p.classe] ?? p.classe : null;
 
   const cancelar = async () => {
     setOcupado(true); setErro(null);
@@ -188,131 +248,180 @@ function LinhaPersonagem({ p, onEnviar }: { p: PersonagemLinha; onEnviar: () => 
     router.refresh();
   };
 
-  return (
-    <li className="pg-linha ag-ch" data-estado={estado} data-testid="personagem-item">
-      <Link href={hrefDaFicha(p)} className="pg-linha__abrir" aria-label={`Abrir a ficha de ${p.name}`}>
-        <span className="pg-linha__retrato" aria-hidden="true">
-          {p.avatarUrl
-            // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={p.avatarUrl} alt="" />
-            : <User size={20} strokeWidth={1.4} />}
-        </span>
-        <span className="pg-linha__texto">
-          <span className="pg-linha__nome" title={p.name}>{p.name}</span>
-          <span className="ag-mono ag-mono--peq pg-linha__meta" title={meta}>{meta}</span>
-        </span>
-      </Link>
+  const linhas: [string, string, string?][] = [
+    ["Classe", classe ?? "—"],
+    ["Rank", p.ranking ?? "—"],
+    ["Campanha", p.campanha ? p.campanha.nome : p.pendente ? p.pendente.campaignName : "Sem campanha", p.campanha ? undefined : p.pendente ? "am" : "apagado"],
+    ["Papel", p.campanha ? (p.campanha.role === "narrator" ? "◆ Narrador" : "◆ Jogador") : "—", p.campanha ? (p.campanha.role === "narrator" ? "am" : "cy") : "apagado"],
+    ["Atualizado", relativeTime(p.updatedAt)],
+  ];
 
-      <span className="pg-linha__lado">
-        {erro && <span role="alert" className="pg-linha__erro">{erro}</span>}
-        {estado === "campanha" && p.campanha && (
-          <>
-            <span className={`ag-etiqueta ag-etiqueta--${p.campanha.role === "narrator" ? "narrador" : "jogador"}`}>
-              ◆ {p.campanha.role === "narrator" ? "Narrador" : "Jogador"}
-            </span>
-            <span className="ag-mono ag-mono--peq pg-linha__quando">{relativeTime(p.updatedAt)}</span>
-            <ChevronRight size={16} strokeWidth={2} className="pg-linha__seta" aria-hidden="true" />
-          </>
-        )}
-        {estado === "solto" && (
-          <button type="button" className="pg-acao" onClick={onEnviar} data-testid="personagem-enviar">
-            Enviar para campanha
-          </button>
-        )}
-        {estado === "pendente" && (
-          <>
-            <span className="ag-etiqueta ag-etiqueta--narrador" data-testid="personagem-pendente">◆ Pendente</span>
-            <button type="button" className="pg-acao pg-acao--neutra" onClick={() => void cancelar()} disabled={ocupado}>
-              Cancelar
-            </button>
-          </>
-        )}
-      </span>
-    </li>
+  return (
+    <aside className="v1-pg-lado v1-e3" aria-label="Personagem selecionado">
+      <section className="v1-pd" data-estado={estado}>
+        <div className="v1-pd-arte">
+          <Rosto p={p} classe="v1-pd-img v1-wipe-a" />
+          <div className="v1-pd-veu" aria-hidden="true" />
+          <span className="v1-desliza-a v1-d1 v1-pd-estado">◆ {ROTULO_ESTADO[estado]}</span>
+          <div className="v1-pd-nome-bloco">
+            <h2 className="v1-glitch-a v1-pd-nome">{p.name}</h2>
+            <span className="v1-desliza-a v1-d2 v1-pd-meta">{[classe, p.ranking ? `Rank ${p.ranking}` : null].filter(Boolean).join(" · ") || "—"}</span>
+          </div>
+        </div>
+        <div className="v1-pd-corpo">
+          <dl className="v1-desliza-a v1-d3 v1-pd-linhas">
+            {linhas.map(([k, v, cor]) => (
+              <div key={k} className="v1-pd-linha"><dt>{k}</dt><dd data-cor={cor}>{v}</dd></div>
+            ))}
+          </dl>
+          {estado === "pendente" && p.pendente && (
+            <div className="v1-pd-aviso"><span className="v1-carregando" aria-hidden="true">●</span>Aguardando o narrador de {p.pendente.campaignName}</div>
+          )}
+          {erro && <span role="alert" className="v1-campo-erro">{erro}</span>}
+          <div className="v1-pd-acoes">
+            {estado === "campanha" && (
+              <Link href={hrefDaFicha(p)} className="v1-criar v1-pd-primario" aria-label={`Abrir a ficha de ${p.name}`}>
+                <Seta /> Abrir ficha
+              </Link>
+            )}
+            {estado === "solto" && (
+              <button type="button" className="v1-u v1-criar v1-pd-primario v1-pd-primario--am" onClick={onEnviar} data-testid="personagem-enviar">
+                <Seta /> Enviar para campanha
+              </button>
+            )}
+            {estado === "pendente" && (
+              <button type="button" className="v1-u v1-ghost v1-pd-secundario v1-pd-secundario--am" onClick={() => void cancelar()} disabled={ocupado}>
+                {ocupado ? <Spinner size={13} className="mo-spin" /> : null} Cancelar pedido
+              </button>
+            )}
+            {estado !== "campanha" && (
+              <Link href={hrefDaFicha(p)} className="v1-ghost v1-pd-secundario" aria-label={`Abrir a ficha de ${p.name}`}>Abrir ficha</Link>
+            )}
+          </div>
+        </div>
+      </section>
+    </aside>
+  );
+}
+
+function VazioPersonagens({ onCriar }: { onCriar: () => void }) {
+  const vagas = [0, 1, 2, 3, 4];
+  return (
+    <section className="v1-pg-vazio" aria-label="Nenhum personagem" data-testid="personagens-vazio">
+      <span className="v1-pg-vazio-varredura" aria-hidden="true" />
+      <span className="v1-pg-vazio-canto v1-pg-vazio-canto--1" aria-hidden="true" /><span className="v1-pg-vazio-canto v1-pg-vazio-canto--2" aria-hidden="true" />
+      <span className="v1-pg-vazio-canto v1-pg-vazio-canto--3" aria-hidden="true" /><span className="v1-pg-vazio-canto v1-pg-vazio-canto--4" aria-hidden="true" />
+      <div className="v1-pg-vazio-corpo">
+        <div className="v1-pg-vagas" aria-hidden="true">
+          {vagas.map((i) => {
+            const meio = i === 2;
+            return (
+              <div key={i} className="v1-pg-vaga-flutua" style={{ animationDelay: `${(1.2 + i * 0.35).toFixed(2)}s` }}>
+                <div className={`v1-pop-a v1-pg-vaga${meio ? " v1-pg-vaga--meio" : ""}${i % 2 ? " v1-pg-vaga--alta" : ""}`}
+                  style={{ animationDelay: `${(0.35 + Math.abs(i - 2) * 0.09).toFixed(2)}s` }}>
+                  <svg viewBox="0 0 64 88"><circle cx="32" cy="34" r="12" /><path d="M8 88 C10 64 20 54 32 54 C44 54 54 64 56 88 Z" /></svg>
+                  {meio && <IconeMais size={28} />}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <h2 className="v1-glitch-a v1-pg-vazio-titulo">Nenhum personagem ainda</h2>
+        <p className="v1-desliza-a v1-pg-vazio-txt">Crie um personagem aqui e envie para uma campanha quando quiser, ou crie direto dentro de uma das suas campanhas.</p>
+        <div className="v1-desliza-a v1-pg-vazio-acao">
+          <div className="vb-pulso">
+            <button type="button" className="v1-u vb-play" onClick={onCriar}><IconeMais size={16} /> Criar personagem</button>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
 /**
- * Escolha da campanha de destino — o MESMO modal de "Criar campanha"
- * (`CreateCampaignModal.module.css`): faixa com o retrato e o nome do
- * personagem, campo de destino e rodapé com a nota e as duas ações.
+ * Escolha da campanha de destino, no modal da V1: faixa com o retrato e o
+ * nome do personagem, a lista de campanhas e o rodapé com a nota e as
+ * duas ações.
  */
-function DialogoEnviar({ p, destinos, onFechar }: { p: PersonagemLinha; destinos: CampanhaDestino[]; onFechar: () => void }) {
+function DialogoEnviar({ p, destinos, onFechar }: { p: PersonagemLinha | null; destinos: CampanhaDestino[]; onFechar: () => void }) {
   const router = useRouter();
+  const { montado } = usePresence(!!p, 180);
+  const [ultimo, setUltimo] = useState<PersonagemLinha | null>(p);
   const [destino, setDestino] = useState(destinos[0]?.id ?? "");
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
-  const [aberto, setAberto] = useState(false);
-  useEffect(() => { const id = requestAnimationFrame(() => setAberto(true)); return () => cancelAnimationFrame(id); }, []);
+
+  // Guarda o último personagem para o modal continuar desenhado durante a saída.
+  useEffect(() => { if (p) { setUltimo(p); setDestino(destinos[0]?.id ?? ""); setErro(null); } }, [p, destinos]);
   useEffect(() => {
+    if (!p) return;
     const k = (e: KeyboardEvent) => { if (e.key === "Escape" && !ocupado) onFechar(); };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
-  }, [ocupado, onFechar]);
+  }, [p, ocupado, onFechar]);
 
+  if (!montado || !ultimo) return null;
   const narra = destinos.find((d) => d.id === destino)?.narra ?? false;
 
   const enviar = async () => {
     if (!destino) { setErro("Escolha uma campanha."); return; }
     setOcupado(true); setErro(null);
-    const r = await enviarParaCampanhaAction(p.id, destino);
+    const r = await enviarParaCampanhaAction(ultimo.id, destino);
     setOcupado(false);
     if (!r.ok) { setErro(r.erro); return; }
     onFechar();
     router.refresh();
   };
 
+  // "sai" só quando está fechando (ver a nota no modal de criar campanha).
+  const sai = p ? "" : " sai";
   return (
-    <div className="ra-overlay" data-open={aberto} onMouseDown={(e) => { if (e.target === e.currentTarget && !ocupado) onFechar(); }}>
-      <div className={`ra-modal ${modal.modal} pg-modal`} role="dialog" aria-modal="true" aria-labelledby="enviar-titulo">
-        <header className={modal.banner}>
-          <div className={`${modal.cover} pg-modal__capa`} style={p.avatarUrl ? { backgroundImage: `url('${p.avatarUrl}')` } : undefined} aria-hidden="true" />
-          <div className={modal.veil} aria-hidden="true" />
-          <button type="button" className={modal.close} onClick={onFechar} disabled={ocupado} aria-label="Fechar">
-            <X size={15} />
-          </button>
-          <div className={modal.bannerCopy}>
-            <span className={modal.eyebrow}>SYS.REGISTRO // ENVIAR PARA CAMPANHA</span>
-            <span className={modal.role}>◆ Sem campanha</span>
-            <h2 id="enviar-titulo" className={modal.previewName}>{p.name}</h2>
+    <>
+      <div className={`v1-veu${sai}`} onMouseDown={() => { if (!ocupado) onFechar(); }} aria-hidden="true" />
+      <div className={`v1-modal v1-modal--enviar${sai}`} role="dialog" aria-modal="true" aria-labelledby="enviar-titulo">
+        <div className="v1-modal-capa v1-modal-capa--enviar">
+          <Rosto p={ultimo} classe="v1-modal-capa-rosto" />
+          <div className="v1-modal-capa-veu" aria-hidden="true" />
+          <button type="button" className="v1-u v1-fechar" onClick={onFechar} disabled={ocupado} aria-label="Fechar"><X size={14} /></button>
+          <div className="v1-modal-capa-texto">
+            <span className="v1-modal-sobrancelha">Enviar para campanha · <span className="v1-campo-opcional">◆ Sem campanha</span></span>
+            <h2 id="enviar-titulo" className="v1-modal-nome">{ultimo.name}</h2>
           </div>
-        </header>
-
-        <div className={modal.fields}>
-          <div className={`${modal.field} ${modal.full}`}>
-            {destinos.length === 0 ? (
-              <p className="pg-modal__vazio">Você ainda não participa de nenhuma campanha. Entre por um convite do narrador para enviar este personagem.</p>
-            ) : (
-              <>
-                <label className={modal.label} htmlFor="enviar-destino">Campanha de destino</label>
-                <select id="enviar-destino" className={modal.input} value={destino} disabled={ocupado}
-                  onChange={(e) => { setDestino(e.target.value); setErro(null); }}>
-                  {destinos.map((d) => <option key={d.id} value={d.id}>{d.nome}{d.narra ? " — você narra" : ""}</option>)}
-                </select>
-              </>
+        </div>
+        <div className="v1-modal-campos">
+          {destinos.length === 0 ? (
+            <p className="v1-painel-nota">Você ainda não participa de nenhuma campanha. Entre por um convite do narrador para enviar este personagem.</p>
+          ) : (
+            <div className="v1-campo-grupo">
+              <span className="v1-campo-rotulo">Campanha de destino</span>
+              <div className="v1-destinos" role="radiogroup" aria-label="Campanha de destino">
+                {destinos.map((d) => {
+                  const on = d.id === destino;
+                  return (
+                    <button key={d.id} type="button" role="radio" aria-checked={on} className={`v1-u v1-dest v1-dest--linha${on ? " on" : ""}`}
+                      disabled={ocupado} onClick={() => { setDestino(d.id); setErro(null); }}>
+                      {d.capa && <span className="v1-dest-arte v1-dest-arte--linha" style={capaDaCampanha(d.capa)} aria-hidden="true" />}
+                      <span className="v1-dest-nome">{d.nome}</span>
+                      <span className={`v1-dest-papel${d.narra ? " v1-dest-papel--narra" : ""}`}>◆ {d.narra ? "Você narra" : "Jogador"}</span>
+                      <span className="v1-dest-marca" aria-hidden="true">{on && <svg className="v1-check" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={4}><path d="M5 12l5 5 9-10" /></svg>}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {erro && <span role="alert" className="v1-campo-erro">{erro}</span>}
+          <div className="v1-modal-rodape">
+            {destinos.length > 0 && <span className={`v1-modal-nota${narra ? " v1-modal-nota--am" : ""}`}>{narra ? "Você narra: entra direto." : "O narrador precisa aceitar."}</span>}
+            <button type="button" className="v1-u v1-ghost v1-btn-cancelar" onClick={onFechar} disabled={ocupado}>Cancelar</button>
+            {destinos.length > 0 && (
+              <button type="button" className="v1-u v1-criar v1-btn-primario" onClick={() => void enviar()} disabled={ocupado} data-testid="personagem-enviar-confirmar">
+                {ocupado ? <><Spinner size={13} className="mo-spin" /> Enviando…</> : <>{narra ? "Adicionar à campanha" : "Enviar pedido"} <Seta /></>}
+              </button>
             )}
           </div>
         </div>
-
-        {erro && <p role="alert" className={modal.error}>{erro}</p>}
-
-        <footer className={modal.footer}>
-          {destinos.length > 0 && (
-            <span className={modal.footerNote}>
-              <Info size={14} aria-hidden="true" />
-              {narra ? "Você narra: entra direto." : "O narrador precisa aceitar."}
-            </span>
-          )}
-          <button type="button" className={modal.button} onClick={onFechar} disabled={ocupado}>Cancelar</button>
-          {destinos.length > 0 && (
-            <button type="button" className={`${modal.button} ${modal.primary}`} onClick={() => void enviar()} disabled={ocupado} data-testid="personagem-enviar-confirmar">
-              {ocupado
-                ? <><Spinner size={13} className="ra-spin" /> Enviando…</>
-                : <>{narra ? "Adicionar à campanha" : "Enviar pedido"} <ArrowRight size={14} aria-hidden="true" /></>}
-            </button>
-          )}
-        </footer>
       </div>
-    </div>
+    </>
   );
 }

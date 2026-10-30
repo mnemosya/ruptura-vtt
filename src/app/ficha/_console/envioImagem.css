@@ -43,6 +43,7 @@
 .ev-solta-forma[data-forma=hexagono]{width:96px;height:110px;--forma:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
 .ev-solta-forma[data-forma=circulo]{--forma:circle(50%)}
 .ev-solta-forma[data-forma=livre]{width:132px;height:92px}
+.ev-solta-forma[data-forma=capa]{width:164px;height:92px}
 .ev-solta-forma::before{content:"";position:absolute;inset:0;clip-path:var(--forma);background:var(--ev-borda)}
 .ev-solta-forma::after{content:"";position:absolute;inset:1.5px;clip-path:var(--forma);background:#0a171d}
 .ev-solta-forma>*{position:relative;z-index:1}
@@ -52,6 +53,10 @@
 @keyframes ev-pulso{0%,100%{filter:drop-shadow(0 0 0 transparent)}50%{filter:drop-shadow(0 0 12px var(--ev-halo))}}
 /* Enquadrar */
 .ev-enquadra,.ev-livre{display:flex;gap:24px;align-items:flex-start}
+/* Capa (16:9): a janela ocupa a largura e o painel desce para baixo dela. */
+.ev-enquadra[data-forma=capa]{flex-direction:column;gap:14px}
+.ev-enquadra[data-forma=capa] .ev-janela-moldura{align-self:center}
+.ev-enquadra[data-forma=capa] .ev-enquadra-lado{align-self:stretch;padding-top:0}
 .ev-janela-moldura{position:relative;flex:none;padding:8px 8px 30px}
 .ev-janela-moldura>.ev-canto{border-color:var(--ev-suave)}
 .ev-janela-moldura>.ev-canto[data-c="3"],.ev-janela-moldura>.ev-canto[data-c="4"]{bottom:28px}

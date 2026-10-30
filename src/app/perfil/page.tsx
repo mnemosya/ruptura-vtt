@@ -6,9 +6,11 @@
  */
 
 import { PerfilPageContent, type PerfilPageContentParams } from "./PerfilPageContent";
+import { oxanium } from "../_design/oxanium";
+import { teko } from "../_design/teko";
 
 export const dynamic = "force-dynamic";
 
 export default function PerfilPage({ searchParams }: { searchParams: Promise<PerfilPageContentParams> }) {
-  return <div className="rv-perfil-pagina"><PerfilPageContent searchParams={searchParams} /></div>;
+  return <div className={`rv-perfil-pagina ${teko.variable} ${oxanium.variable}`}><PerfilPageContent searchParams={searchParams} /></div>;
 }
