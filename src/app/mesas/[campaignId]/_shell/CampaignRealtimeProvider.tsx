@@ -271,6 +271,7 @@ export function CampaignRealtimeProvider({
   // scroll, dock e formulário em andamento não são tocados.
   const [tokenRealtime, setTokenRealtime] = useState(realtimeAccessToken);
   const [realtimeAuthEstado, setRealtimeAuthEstado] = useState<RealtimeAuthEstado>("ok");
+  const [authInicialPronta, setAuthInicialPronta] = useState(false);
 
   // A prop só substitui o token vigente se for MAIS NOVA. O payload RSC
   // de uma rota já visitada pode ser servido do cache do cliente ao
@@ -298,12 +299,14 @@ export function CampaignRealtimeProvider({
     setBrowserSupabaseRealtimeAuth(tokenRealtime)
       .then(() => {
         if (cancelado) return;
+        setAuthInicialPronta(true);
         // Não atropela um `precisa_login` — aquele exige ação do usuário
         // e não é resolvido por uma aplicação de token bem-sucedida.
         setRealtimeAuthEstado((estado) => (estado === "precisa_login" ? estado : "ok"));
       })
       .catch(() => {
         if (cancelado) return;
+        setAuthInicialPronta(true);
         setRealtimeAuthEstado("interrompido");
       });
     return () => {
@@ -551,7 +554,7 @@ export function CampaignRealtimeProvider({
   // Só `campaigns` + `table_logs`. O canal de `characters` nem é aberto
   // aqui — quem o assina é a Mesa do narrador, com status próprio (ver
   // cabeçalho).
-  const sessionSyncStatusCanal = useCampaignSessionRealtime(campaignId, {
+  const sessionSyncStatusCanal = useCampaignSessionRealtime(authInicialPronta ? campaignId : null, {
     onCampaignChange: reloadCampaign,
     onTableLogsChange: reloadLogs,
   });
@@ -567,7 +570,7 @@ export function CampaignRealtimeProvider({
   // entra em `sessionSyncStatus` (ver comentário do campo na
   // interface): uma falha aqui não pode marcar a sessão inteira como
   // fora de sincronia por causa de um dot online/offline.
-  const { onlineUserIds, status: presenceSyncStatus } = useCampaignPresence(campaignId, viewer.userId);
+  const { onlineUserIds, status: presenceSyncStatus } = useCampaignPresence(authInicialPronta ? campaignId : null, viewer.userId);
 
   const value = useMemo<CampaignSessionValue>(
     () => ({
@@ -614,5 +617,5 @@ export function CampaignRealtimeProvider({
     ],
   );
 
-  return <CampaignSessionContext.Provider value={value}>{children}</CampaignSessionContext.Provider>;
+  return <CampaignSessionContext.Provider value={value}>{authInicialPronta ? children : null}</CampaignSessionContext.Provider>;
 }

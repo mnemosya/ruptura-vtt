@@ -20,6 +20,11 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 let cachedClient: SupabaseClient | null | undefined;
+// Este client não usa supabase.auth: a sessão vive no cookie httpOnly do
+// app. Sem este callback, o supabase-js consulta sua sessão interna vazia
+// ao abrir/reabrir canais e substitui o JWT passado em setAuth pela
+// chave sb_publishable. O join privado então roda como anon.
+let realtimeAccessTokenAtual: string | null = null;
 
 export function getBrowserSupabaseClient(): SupabaseClient | null {
   if (cachedClient !== undefined) return cachedClient;
@@ -33,6 +38,7 @@ export function getBrowserSupabaseClient(): SupabaseClient | null {
 
   cachedClient = createClient(url, anonKey, {
     auth: { persistSession: false },
+    accessToken: async () => realtimeAccessTokenAtual,
   });
   return cachedClient;
 }
@@ -84,6 +90,7 @@ export function getBrowserSupabaseClient(): SupabaseClient | null {
  * outros caminhos.
  */
 export async function setBrowserSupabaseRealtimeAuth(accessToken: string | null): Promise<void> {
+  realtimeAccessTokenAtual = accessToken;
   const client = getBrowserSupabaseClient();
   if (!client) return;
   await client.realtime.setAuth(accessToken);
