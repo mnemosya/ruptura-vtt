@@ -6,6 +6,26 @@
 .hm-mercado .hm-titulo { display: block; margin: 0; font-family: var(--hx-display); font-size: 28px; font-weight: 900; text-transform: uppercase; line-height: 1.1; letter-spacing: 0; color: var(--hx-ice); }
 .hm-mercado .hm-titulo::after { display: none; }
 .hm-carteira { margin-left: auto; display: flex; align-items: center; gap: 24px; flex: none; }
+.hm-comprador { box-sizing: border-box; width: 100%; margin-bottom: 18px; padding: 10px; border: 1px solid rgba(255,138,31,.2); background: rgba(255,138,31,.04); }
+.hm-seletor { position: relative; display: grid; gap: 7px; min-width: 0; }
+.hm-seletor-rotulo { color: var(--hx-dim); font: 700 10px var(--hx-corpo); letter-spacing: .08em; text-transform: uppercase; }
+.hm-seletor-gatilho { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-width: 0; min-height: 38px; padding: 7px 10px; border: 1px solid rgba(255,138,31,.5); border-radius: 0; background: #081925; color: var(--hx-ice); font: 600 12px var(--hx-corpo); text-align: left; cursor: pointer; }
+.hm-seletor-gatilho > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hm-seletor-gatilho > svg { flex: none; }
+.hm-seletor-gatilho:hover, .hm-seletor-gatilho[aria-expanded="true"] { border-color: var(--hx-amb); }
+.hm-seletor-gatilho:focus-visible { outline: 2px solid var(--hx-amb); outline-offset: 2px; }
+.hm-seletor-gatilho:disabled { cursor: wait; opacity: .65; }
+.hm-seletor--icone { flex: none; width: 38px; height: 38px; }
+.hm-seletor--icone .hm-seletor-gatilho { position: relative; display: block; width: 38px; height: 38px; min-height: 0; padding: 0; border-radius: 0; border-color: rgba(0,212,255,.25); color: var(--hx-dim); }
+.hm-seletor--icone .hm-seletor-gatilho > svg { position: absolute; top: 50%; left: 50%; width: 18px; height: 18px; margin: 0; transform: translate(-50%, -50%); }
+.hm-seletor--icone .hm-seletor-gatilho:hover, .hm-seletor--icone .hm-seletor-gatilho[aria-expanded="true"], .hm-seletor--icone .hm-seletor-gatilho[data-ativo] { border-color: var(--hx-amb); color: var(--hx-amb); background: rgba(255,138,31,.08); }
+.hm-mercado .hm-seletor-menu.rv-menu-contextual { position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; width: max(100%, 180px); min-width: 0; max-width: min(280px, 80vw); max-height: min(320px, 50vh); overflow-y: auto; box-sizing: border-box; padding: 6px; border: 1px solid rgba(255,138,31,.4); border-radius: 2px; background: linear-gradient(180deg, #0b1322, #080e19); box-shadow: 0 18px 40px #0009; }
+.hm-mercado .hm-seletor--icone .hm-seletor-menu.rv-menu-contextual { left: auto; right: 0; width: 218px; }
+.hm-mercado .hm-seletor-menu .rv-menu-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; border: 1px solid transparent; border-radius: 2px; background: transparent; color: var(--hx-dim); font: 600 11px var(--hx-corpo); letter-spacing: .05em; text-align: left; text-transform: uppercase; cursor: pointer; }
+.hm-mercado .hm-seletor-menu .rv-menu-item > svg { margin-left: auto; flex: none; }
+.hm-mercado .hm-seletor-menu .rv-menu-item:hover, .hm-mercado .hm-seletor-menu .rv-menu-item:focus-visible { border-color: rgba(255,138,31,.45); background: rgba(255,138,31,.12); color: var(--hx-ice); }
+.hm-mercado .hm-seletor-menu .rv-menu-item:focus-visible { outline: 2px solid var(--hx-amb); outline-offset: -2px; }
+.hm-mercado .hm-seletor-menu .rv-menu-item[aria-checked="true"] { color: var(--hx-amb); }
 .hm-mercado .hx-fechar-quad { width: 44px; height: 44px; }
 .hm-fechar { flex: none; }
 .hm-corpo { position: relative; display: grid; min-height: 0; flex: 1; grid-template-columns: 232px minmax(0,1fr) clamp(320px,29cqw,360px); }
@@ -25,7 +45,7 @@
 .hm-filtro-fundo, .hm-voltar { display: none; }
 .hm-catalogo { display: flex; min-height: 0; min-width: 0; flex-direction: column; }
 .hm-ferramentas { flex: none; display: flex; align-items: center; gap: 12px; padding: 18px 20px 0; }
-.hm-lista { min-height: 0; flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 28px; scrollbar-width: thin; scrollbar-color: #24404c transparent; }
+.hm-lista { min-height: 0; flex: 1; overflow-y: auto; margin-top: 10px; padding: 20px; display: flex; flex-direction: column; gap: 28px; scrollbar-width: thin; scrollbar-color: #24404c transparent; }
 .hm-lista section { min-width: 0; }
 .hm-secao-titulo { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .hm-secao-titulo > svg { flex: none; }
@@ -47,6 +67,13 @@
 .hm-leitura { min-height: 0; flex: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #24404c transparent; }
 .hm-descricao { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
 .hm-descricao > * { flex-shrink: 0; }
+/* Campos editoriais do Notion (Efeito, PA para uso etc.) precisam da
+   largura inteira nesta coluna; a ficha genérica de duas colunas os espreme. */
+.hm-descricao .rc-prosa .rc-ficha { display: grid; gap: 14px; border: 0; }
+.hm-descricao .rc-prosa .rc-ficha > div { display: block; padding-bottom: 12px; border-bottom: 1px solid rgba(0,212,255,.12); }
+.hm-descricao .rc-prosa .rc-ficha > div + div { border-top: 0; }
+.hm-descricao .rc-prosa .rc-ficha dt { padding: 0; background: none; color: var(--hx-cy); }
+.hm-descricao .rc-prosa .rc-ficha dd { padding: 4px 0 0; line-height: 1.55; }
 .hm-compra { flex: none; border-top: 1px solid rgba(255,138,31,.25); background: rgba(0,0,0,.3); padding: 16px 18px; }
 .hm-compra .hx-passo { height: 44px; }
 .hm-compra .hx-passo button { width: 44px; }

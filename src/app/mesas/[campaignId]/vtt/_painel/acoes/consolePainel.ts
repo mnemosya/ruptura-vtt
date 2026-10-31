@@ -24,8 +24,12 @@
  */
 
 import { carregarDadosConsole, type DadosConsole } from "../../../../../../lib/console/dadosConsole";
-import { getCharacterForCampaign } from "../../../../../../lib/character/storage";
+import { getCharacterForCampaign, updateCharacterSheetPayload } from "../../../../../../lib/character/storage";
 import { getCharacterRules } from "../../../../../../lib/content";
+import { normalizeCharacter, purchaseItem, removeQuantityFromInventory } from "../../../../../../lib/character";
+import { ARS_CONTENT_ID, ARS_REGIOES, installEscalpo, type ArsRegiao } from "../../../../../../lib/character/escalpos";
+import { catalogWithMarketEscalpos } from "../../../../../../lib/character/marketEscalpos";
+import { addLog } from "../../../../../../lib/table/storage";
 import type { CharacterRecord, CharacterRulesPayload } from "../../../../../../lib/character";
 import { exigirAcessoPainel, mensagemDeErro, type ResultadoPainel } from "./comum";
 import { lerTrilhaDaCenaAtiva } from "../../../../../../lib/vtt/sceneStorage";
@@ -108,5 +112,43 @@ export async function carregarCatalogosConsoleAction(campaignId: string): Promis
     return { ok: true, dados: await carregarDadosConsole(campaignId) };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Falha ao carregar os catálogos do Console.") };
+  }
+}
+
+/** Compra pela janela do Mercado da campanha. A RPC da ficha confere a permissão de escrita. */
+export async function comprarNoMercadoAction(campaignId: string, characterId: string, slug: string, quantidade: number, precoUnitario: number, regiaoArs?: ArsRegiao): Promise<ResultadoPainel<CharacterRecord>> {
+  const v = await exigirAcessoPainel(campaignId);
+  if (!v.ok) return { ok: false, erro: v.erro };
+  if (!Number.isSafeInteger(quantidade) || quantidade < 1 || quantidade > 999 || !Number.isSafeInteger(precoUnitario) || precoUnitario < 0) {
+    return { ok: false, erro: "Quantidade ou preço inválido." };
+  }
+  try {
+    const [record, dados] = await Promise.all([getCharacterForCampaign(campaignId, characterId), carregarDadosConsole(campaignId)]);
+    if (!record || record.campaign_id !== campaignId) return { ok: false, erro: "Comprador não encontrado nesta campanha." };
+    if (dados.itemsError || dados.escalposError) return { ok: false, erro: "O catálogo do Mercado está indisponível." };
+    const catalogo = catalogWithMarketEscalpos(dados.items, dados.escalpos);
+    const item = catalogo.get(slug);
+    if (!item || (item.preco ?? 0) <= 0) return { ok: false, erro: "Esse item não está à venda." };
+    const personagem = normalizeCharacter(record.payload);
+    if (slug === ARS_CONTENT_ID && (quantidade !== 1 || !ARS_REGIOES.some(r => r.id === regiaoArs) || personagem.escalpos_instalados?.some(e => e.contentId === slug && e.regiaoArs === regiaoArs))) {
+      return { ok: false, erro: "Escolha uma região livre para comprar a ARS." };
+    }
+    const agora = new Date().toISOString();
+    const compra = purchaseItem({ character: personagem, item, quantidade, walletId: "aretz_informal", precoUnitario, nowIso: agora, catalog: [...catalogo.values()] });
+    if (!compra.ok) return { ok: false, erro: compra.reason ?? "Compra não realizada." };
+    let proximo = compra.character;
+    if (slug === ARS_CONTENT_ID) {
+      if (!compra.instance) return { ok: false, erro: "Não foi possível registrar a ARS." };
+      const instalado = installEscalpo(proximo, { contentId: slug, regiaoArs, nowIso: agora });
+      if (instalado === proximo) return { ok: false, erro: "Essa região já tem uma ARS." };
+      const consumido = removeQuantityFromInventory(instalado, compra.instance.id, 1, agora);
+      if (!consumido.ok) return { ok: false, erro: "Não foi possível instalar a ARS." };
+      proximo = consumido.character;
+    }
+    const salvo = await updateCharacterSheetPayload(characterId, proximo);
+    await addLog({ campaignId, characterId, type: "market_purchase", visibility: "public", payload: { comprador_id: characterId, comprador: record.name, destinatario_id: characterId, destinatario: record.name, carteira: "aretz_informal", item_slug: slug, item_nome: item.nome, quantidade, preco_unitario: precoUnitario, total: compra.totalCost, regiao_ars: regiaoArs ?? null } }).catch(() => undefined);
+    return { ok: true, dados: salvo };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Falha ao concluir a compra.") };
   }
 }

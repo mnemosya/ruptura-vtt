@@ -19,16 +19,19 @@ import { PropriedadeDoItem } from "./EquipamentoHud";
 
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { ARS_CONTENT_ID, ARS_REGIOES, type ArsRegiao } from "../../../../../lib/character/escalpos";
+import { useDicaPortal } from "../../../../mesas/[campaignId]/vtt/_painel/ui/DicaPortal";
+import { RARIDADE_ITEM_LABELS } from "../../../../../lib/contentSchema/itemLabels";
 import { oxanium } from "../../../../_design/oxanium";
 import "./hud-base.css";
 import "./mercado-layout.css";
 
 const AMB = "#ff8a1f", CASCO = "#081925", PERIGO = "#ff5f74", OK = "#22d3aa";
-const RAR: Record<string, string> = { comum: "#7f95b3", incomum: OK, raro: "#8b5cf6", "muito raro": "#8b5cf6", lendario: AMB, lendário: AMB };
-const corRaridade = (r?: string | null) => (r ? RAR[r.toLowerCase()] ?? "#7f95b3" : "#7f95b3");
+const RAR: Record<string, string> = { muito_comum: "#7f95b3", comum: "#7f95b3", incomum: OK, raro: "#8b5cf6", muito_raro: "#8b5cf6" };
+const chaveRaridade = (valor?: string | null) => valor?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/[\s-]+/g, "_") ?? "";
+const corRaridade = (r?: string | null) => RAR[chaveRaridade(r)] ?? "#7f95b3";
 const fmt = (n: number) => n.toLocaleString("pt-BR");
 
-import { X, Search, PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight, ChevronLeft, SlidersHorizontal, Heart } from "lucide-react";
+import { X, Search, PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight, ChevronLeft, SlidersHorizontal, Heart, Star, ArrowDownUp, Check } from "lucide-react";
 
 export interface ProdutoHud {
   /** Complementos aparecem na ficha de seus escalpos base. */
@@ -72,11 +75,13 @@ export interface ProdutoHud {
 
 export interface PropsMercadoHud {
   produtos: ProdutoHud[];
-  saldo: number;
+  saldo: number | null;
   /** Espaços ocupados agora e capacidade — avisa antes de estourar a mochila. */
   usados: number;
   capacidade: number;
-  onComprar: (slug: string, quantidade: number, precoUnitario: number, regiaoArs?: ArsRegiao) => void;
+  onComprar: (slug: string, quantidade: number, precoUnitario: number, regiaoArs?: ArsRegiao) => void | Promise<boolean>;
+  comprador?: { id: string; opcoes: { id: string; nome: string }[]; onChange: (id: string) => void };
+  erroCompra?: string | null;
   arsRegioesInstaladas?: ArsRegiao[];
   onFechar?: () => void;
   wishlist?: string[];
@@ -101,11 +106,16 @@ export interface ModoProjeto {
 const Tag = ({ children, style, className = "" }: { children: ReactNode; style?: React.CSSProperties; className?: string }) =>
   <span className={`hx-tag ${className}`} style={style}>{children}</span>;
 const Aretz = () => <span className="hx-amb">₳</span>;
-const Espacos = ({ n }: { n: number }) => (
-  <span title={`${n} espaço${n === 1 ? "" : "s"}`} style={{ display: "flex", gap: 2 }}>
-    {Array.from({ length: Math.max(n, 1) }, (_, i) => <span key={i} style={{ width: 10, height: 8, background: "var(--k)" }} />)}
-  </span>
-);
+const Espacos = ({ n }: { n: number }) => {
+  const rotulo = `Ocupa ${n} espaço${n === 1 ? "" : "s"} no inventário`;
+  const { alvo, dica } = useDicaPortal(rotulo, { lado: "abaixo" });
+  return <>
+    <span {...alvo} role="img" aria-label={rotulo} style={{ display: "flex", gap: 2 }}>
+      {Array.from({ length: Math.max(n, 0) }, (_, i) => <span key={i} aria-hidden="true" style={{ width: 10, height: 8, background: "var(--k)" }} />)}
+    </span>
+    {dica}
+  </>;
+};
 const Stat = ({ k, v }: { k: string; v: ReactNode }) => (
   <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, padding: "8px 0", borderBottom: "1px solid rgba(0,212,255,.08)" }}>
     <Tag className="hx-dim">{k}</Tag><span style={{ fontSize: 15, fontWeight: 600, textAlign: "right" }}>{v}</span>
@@ -118,8 +128,61 @@ const separarTipo = (nome: string): { titulo: string; tipo: string | null } => {
 };
 const sem = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
+function SeletorMercado({ rotulo, valor, opcoes, onChange, selecionados, onAlternar, className = "", desabilitado = false, icone, ativo = false }: {
+  rotulo: string;
+  valor: string;
+  opcoes: { id: string; rotulo: string }[];
+  onChange?: (valor: string) => void;
+  selecionados?: string[];
+  onAlternar?: (valor: string) => void;
+  className?: string;
+  desabilitado?: boolean;
+  icone?: ReactNode;
+  ativo?: boolean;
+}) {
+  const [aberto, setAberto] = useState(false);
+  const raiz = useRef<HTMLDivElement>(null);
+  const gatilho = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+  const atual = selecionados?.length
+    ? opcoes.filter(opcao => selecionados.includes(opcao.id)).map(opcao => opcao.rotulo).join(", ")
+    : opcoes.find(opcao => opcao.id === valor)?.rotulo ?? opcoes[0]?.rotulo ?? "Escolher";
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: PointerEvent) => { if (!raiz.current?.contains(e.target as Node)) setAberto(false); };
+    document.addEventListener("pointerdown", fora);
+    const foco = requestAnimationFrame(() => menu.current?.querySelector<HTMLButtonElement>('[aria-checked="true"]')?.focus({ preventScroll: true }));
+    return () => { document.removeEventListener("pointerdown", fora); cancelAnimationFrame(foco); };
+  }, [aberto]);
+  const aoTeclar = (e: React.KeyboardEvent) => {
+    if (!aberto) return;
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); setAberto(false); gatilho.current?.focus({ preventScroll: true }); return; }
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Home" && e.key !== "End") return;
+    e.preventDefault();
+    const botoes = [...(menu.current?.querySelectorAll<HTMLButtonElement>("button") ?? [])];
+    if (!botoes.length) return;
+    const indice = botoes.indexOf(document.activeElement as HTMLButtonElement);
+    const proximo = e.key === "Home" ? 0 : e.key === "End" ? botoes.length - 1 : e.key === "ArrowDown" ? (indice + 1) % botoes.length : (indice - 1 + botoes.length) % botoes.length;
+    botoes[proximo]?.focus({ preventScroll: true });
+  };
+  return <div ref={raiz} className={`hm-seletor ${icone ? "hm-seletor--icone" : ""} ${className}`} data-mercado-menu-aberto={aberto || undefined} onKeyDown={aoTeclar} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setAberto(false); }}>
+    {!icone && <span className="hm-seletor-rotulo">{rotulo}</span>}
+    <button ref={gatilho} type="button" className="hm-seletor-gatilho" data-ativo={ativo || undefined} aria-label={`${rotulo}: ${atual}`} title={`${rotulo}: ${atual}`} aria-haspopup="menu" aria-controls={menuId} aria-expanded={aberto} disabled={desabilitado} onClick={() => setAberto(v => !v)}>{icone ?? <><span>{atual}</span><ChevronDown size={15} aria-hidden="true" /></>}</button>
+    {aberto && <div ref={menu} id={menuId} className="rv-menu-contextual rv-menu-contextual--compacto hm-seletor-menu" role="menu" aria-label={rotulo}>
+      {opcoes.map(opcao => {
+        const marcado = selecionados ? (opcao.id === "" ? selecionados.length === 0 : selecionados.includes(opcao.id)) : opcao.id === valor;
+        return <button key={opcao.id} type="button" className="rv-menu-item" role={selecionados ? "menuitemcheckbox" : "menuitemradio"} aria-checked={marcado} onClick={() => {
+          if (selecionados) onAlternar?.(opcao.id);
+          else { onChange?.(opcao.id); setAberto(false); gatilho.current?.focus({ preventScroll: true }); }
+        }}><span>{opcao.rotulo}</span>{selecionados && marcado && <Check size={14} aria-hidden="true" />}</button>;
+      })}
+    </div>}
+  </div>;
+}
 
-export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, arsRegioesInstaladas = [], onFechar, wishlist = [], onAlternarWishlist, projeto }: PropsMercadoHud) {
+
+export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, comprador, erroCompra, arsRegioesInstaladas = [], onFechar, wishlist = [], onAlternarWishlist, projeto }: PropsMercadoHud) {
   const [wishlistAberta, setWishlistAberta] = useState(false);
   const [wishlistLocal, setWishlistLocal] = useState<string[]>([]);
   const desejos = onAlternarWishlist ? wishlist : wishlistLocal;
@@ -189,38 +252,50 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, ars
   const [cat, setCat] = useState<string | null>(null);
   const [sub, setSub] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [raridadesSelecionadas, setRaridadesSelecionadas] = useState<string[]>([]);
+  const [ordenacao, setOrdenacao] = useState<"categorias" | "menor_preco" | "maior_preco" | "nome">("categorias");
   const [selSlug, setSel] = useState<string | null>(null);
   const [complementoSlug, setComplemento] = useState<string | null>(null);
   const [n, setN] = useState(1);
   const [regiaoArs, setRegiaoArs] = useState<ArsRegiao | "">("");
   const [feito, setFeito] = useState(false);
+  const [comprando, setComprando] = useState(false);
   const [negociacao, setNegociacao] = useState(false);
   const [modoPreco, setModoPreco] = useState<"preco" | "desconto">("preco");
   const [rascunhoPreco, setRascunhoPreco] = useState("");
   const [precoCombinado, setPrecoCombinado] = useState<{ slug: string; valor: number } | null>(null);
   const ajusteRef = useRef<HTMLButtonElement>(null);
   const campoPrecoRef = useRef<HTMLInputElement>(null);
+  const raridades = Object.entries(RARIDADE_ITEM_LABELS);
   const lista = useMemo(
-    () => (wishlistAberta ? produtos.filter(p => desejos.includes(p.slug)) : bases).filter((p) => (!cat || grupoDe(p) === cat) && (!sub || p.sub === sub) && (sem(p.nome).includes(sem(q)) || produtos.some(c => c.parentSlugs?.includes(p.slug) && sem(c.nome).includes(sem(q))))),
-    [bases, produtos, cat, sub, q, wishlistAberta, desejos],
+    () => (wishlistAberta ? produtos.filter(p => desejos.includes(p.slug)) : bases).filter((p) =>
+      (!cat || grupoDe(p) === cat) && (!sub || p.sub === sub) &&
+      (raridadesSelecionadas.length === 0 || raridadesSelecionadas.includes(chaveRaridade(p.raridade))) &&
+      (sem(p.nome).includes(sem(q)) || produtos.some(c => c.parentSlugs?.includes(p.slug) && sem(c.nome).includes(sem(q))))),
+    [bases, produtos, cat, sub, q, raridadesSelecionadas, wishlistAberta, desejos],
   );
-  const sel = lista.find((p) => p.slug === selSlug) ?? lista[0] ?? null;
+  const porNome = (a: ProdutoHud, b: ProdutoHud) => a.nome.localeCompare(b.nome, "pt-BR");
+  const ordenarProdutos = (xs: ProdutoHud[]) => xs.sort((a, b) =>
+    ordenacao === "menor_preco" ? a.preco - b.preco || porNome(a, b) :
+    ordenacao === "maior_preco" ? b.preco - a.preco || porNome(a, b) : porNome(a, b));
+  const sel = lista.find((p) => p.slug === selSlug) ?? (ordenacao === "categorias" ? lista[0] : ordenarProdutos([...lista])[0]) ?? null;
   const complementos = produtos.filter(p => sel && p.parentSlugs?.includes(sel.slug));
   const alvo = complementos.find(p => p.slug === complementoSlug) ?? sel;
   const compraArs = alvo?.slug === ARS_CONTENT_ID;
   const familiaEscalpo = sel?.grupo?.id === "escalpos" && sel.categoria !== "modulo_escalpo" && sel.categoria !== "veneno";
   const escolherComplemento = (slug: string | null) => { setComplemento(slug); setN(1); setFeito(false); };
-  const porNome = (a: ProdutoHud, b: ProdutoHud) => a.nome.localeCompare(b.nome, "pt-BR");
   /* Com um grupo aberto que tem subcategorias, as seções são as
      subcategorias (na ordem da lista lateral); senão, uma por grupo. */
   const aberto = categorias.find((c) => c.id === cat);
-  const grupos = !wishlistAberta && aberto && aberto.subs.size > 0
+  const grupos = ordenacao !== "categorias"
+    ? [{ c: { id: "resultados", nome: wishlistAberta ? "Wishlist" : "Resultados", vertente: "", n: lista.length, subs: new Map<string, number>() }, xs: ordenarProdutos([...lista]) }].filter(g => g.xs.length)
+    : !wishlistAberta && aberto && aberto.subs.size > 0
     ? [...aberto.subs.keys()].filter((s) => !sub || s === sub)
-        .map((s) => ({ c: { ...aberto, id: `${aberto.id}/${s}`, nome: s }, xs: lista.filter((p) => p.sub === s).sort(porNome) }))
-        .concat([{ c: { ...aberto, id: `${aberto.id}/-`, nome: `Outros ${aberto.nome.toLocaleLowerCase("pt-BR")}` }, xs: sub ? [] : lista.filter((p) => !p.sub).sort(porNome) }])
+        .map((s) => ({ c: { ...aberto, id: `${aberto.id}/${s}`, nome: s }, xs: ordenarProdutos(lista.filter((p) => p.sub === s)) }))
+        .concat([{ c: { ...aberto, id: `${aberto.id}/-`, nome: `Outros ${aberto.nome.toLocaleLowerCase("pt-BR")}` }, xs: sub ? [] : ordenarProdutos(lista.filter((p) => !p.sub)) }])
         .filter((g) => g.xs.length)
     : (wishlistAberta ? [{ id: "wishlist", nome: "Wishlist", vertente: "", n: lista.length, subs: new Map<string, number>() }] : categorias.filter((c) => !cat || c.id === cat))
-        .map((c) => ({ c, xs: lista.filter((p) => wishlistAberta || grupoDe(p) === c.id).sort(porNome) }))
+        .map((c) => ({ c, xs: ordenarProdutos(lista.filter((p) => wishlistAberta || grupoDe(p) === c.id)) }))
         .filter((g) => g.xs.length);
   const abrirGrupo = (id: string | null) => { setCat(id); setSub(null); setSel(null); setComplemento(null); setFeito(false); setN(1); };
 
@@ -234,11 +309,15 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, ars
   const fecharNegociacao = () => { setNegociacao(false); requestAnimationFrame(() => ajusteRef.current?.focus()); };
   const custo = precoUnitario * n;
   const cabe = !!alvo && usados + alvo.espacos * n <= capacidade;
-  const comprar = () => {
-    if (!alvo) return;
+  const comprar = async () => {
+    if (!alvo || saldo === null || comprando) return;
     if (compraArs && (n !== 1 || !regiaoArs || arsRegioesInstaladas.includes(regiaoArs))) return;
     if (custo > saldo) return;
-    onComprar(alvo.slug, n, precoUnitario, compraArs ? regiaoArs as ArsRegiao : undefined);
+    setComprando(true);
+    let resultado: void | boolean;
+    try { resultado = await onComprar(alvo.slug, n, precoUnitario, compraArs ? regiaoArs as ArsRegiao : undefined); }
+    finally { setComprando(false); }
+    if (resultado === false) return;
     setPrecoCombinado(null);
     setFeito(true); setTimeout(() => setFeito(false), 1200); setN(1);
   };
@@ -253,8 +332,8 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, ars
           <h2 className="hx-display hm-titulo">Mercado noturno<span className="hx-amb">.</span></h2>
         </div>
         <div className="hm-carteira">{projeto ? <div style={{ textAlign: "right" }}><Tag className="hx-dim">{projeto.contagem.rotulo}</Tag><div className="hx-display" style={{ fontSize: 18, fontWeight: 700 }}>{projeto.contagem.valor}</div></div> : <>
-          <div style={{ textAlign: "right" }}><Tag className="hx-dim">mochila</Tag><div className="hx-display" style={{ fontSize: 18, fontWeight: 700 }}>{usados}<span className="hx-dim">/{capacidade}</span></div></div>
-          <div style={{ textAlign: "right" }}><Tag style={{ color: AMB, opacity: .7 }}>aretz</Tag><div className="hx-display" style={{ fontSize: 22, fontWeight: 900 }}><Aretz /> {fmt(saldo)}</div></div>
+          <div style={{ textAlign: "right" }}><Tag className="hx-dim">mochila</Tag><div className="hx-display" style={{ fontSize: 18, fontWeight: 700 }}>{saldo === null ? "—" : usados}<span className="hx-dim">/{saldo === null ? "—" : capacidade}</span></div></div>
+          <div style={{ textAlign: "right" }}><Tag style={{ color: AMB, opacity: .7 }}>aretz</Tag><div className="hx-display" style={{ fontSize: 22, fontWeight: 900 }}><Aretz /> {saldo === null ? "—" : fmt(saldo)}</div></div>
         </>}</div>
         <div className="hm-cab-acoes">{!projeto && <button type="button" className="hx-fechar-quad hm-wishlist-acesso" aria-label={wishlistAberta ? "Voltar ao mercado" : `Abrir wishlist (${desejos.length})`} data-tooltip={wishlistAberta ? "Voltar ao mercado" : "Wishlist"} aria-pressed={wishlistAberta} onClick={() => { setWishlistAberta(!wishlistAberta); abrirGrupo(null); setDetalheAberto(false); }}><Heart size={18} fill={wishlistAberta ? "currentColor" : "none"} aria-hidden="true" /></button>}
         {onFechar && <button type="button" aria-label="Fechar mercado" className="hx-fechar-quad hm-fechar" onClick={onFechar}><X size={16} aria-hidden="true" /></button>}
@@ -263,7 +342,8 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, ars
 
       <div className="hm-corpo">
         {layout !== "amplo" && categoriasAbertas && <button type="button" className="hm-filtro-fundo" aria-label="Fechar categorias" onClick={fecharCategorias} />}
-        <nav id={navId} className="hm-categorias" aria-label="Categorias" inert={!categoriasVisiveis}>
+        <nav id={navId} className="hm-categorias" aria-label={comprador ? "Comprador e categorias" : "Categorias"} inert={!categoriasVisiveis}>
+          {comprador && <SeletorMercado className="hm-comprador" rotulo="Comprador" valor={comprador.id} opcoes={[{ id: "", rotulo: "Escolher personagem" }, ...comprador.opcoes.map(p => ({ id: p.id, rotulo: p.nome }))]} onChange={comprador.onChange} desabilitado={comprando} />}
           <div className="hm-categorias-cab"><Tag className="hx-amb">Categorias</Tag><button type="button" className="hm-recolher" data-tooltip="Esconder categorias" aria-label="Esconder painel de categorias" onClick={fecharCategorias}><PanelLeftClose size={18} aria-hidden="true" /></button></div>
           <button type="button" onClick={() => { abrirGrupo(null); if (layout !== "amplo") fecharCategorias(); }} className="hx-cat-linha" data-ativo={!cat || undefined} style={{ marginBottom: 8 }}>
             <span className="hx-display" style={{ flex: 1, fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".14em" }}>Tudo</span><Tag className="hx-dim">{bases.length}</Tag>
@@ -308,23 +388,25 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, ars
               <Search size={16} aria-hidden="true" />
               <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar mercadoria…" aria-label="Buscar mercadoria" />
             </label>
+            <SeletorMercado rotulo="Raridade" valor="" selecionados={raridadesSelecionadas} onAlternar={id => setRaridadesSelecionadas(atuais => id === "" ? [] : atuais.includes(id) ? atuais.filter(r => r !== id) : [...atuais, id])} icone={<Star size={18} aria-hidden="true" />} ativo={raridadesSelecionadas.length > 0} opcoes={[{ id: "", rotulo: "Todas as raridades" }, ...raridades.map(([id, rotulo]) => ({ id, rotulo }))]} />
+            <SeletorMercado rotulo="Ordenar por" valor={ordenacao} icone={<ArrowDownUp size={18} aria-hidden="true" />} ativo={ordenacao !== "categorias"} opcoes={[{ id: "categorias", rotulo: "Categorias" }, { id: "menor_preco", rotulo: "Mais barato" }, { id: "maior_preco", rotulo: "Mais caro" }, { id: "nome", rotulo: "Ordem alfabética" }]} onChange={valor => setOrdenacao(valor as typeof ordenacao)} />
           </div>
           <div className="hm-lista">
             {grupos.map(({ c, xs }) => (
-              <section key={c.id} data-vertente={c.vertente} style={wishlistAberta ? { ["--k" as string]: AMB } : estiloGrupo(xs[0].grupo?.nome ?? xs[0].categoriaRotulo, c.vertente)}>
+              <section key={c.id} data-vertente={c.vertente} style={wishlistAberta || ordenacao !== "categorias" ? { ["--k" as string]: AMB } : estiloGrupo(xs[0].grupo?.nome ?? xs[0].categoriaRotulo, c.vertente)}>
                 <div className="hm-secao-titulo" style={{ color: "var(--k)" }}>
-                  {wishlistAberta ? <Heart size={16} aria-hidden="true" /> : <ItemCategoryIcon category={["Flechas e virotes", "Células de energia"].includes(c.nome) ? c.nome : xs[0].grupo?.nome ?? xs[0].categoriaRotulo} itemType={c.nome} size={16} />}
+                  {wishlistAberta ? <Heart size={16} aria-hidden="true" /> : ordenacao !== "categorias" ? <SlidersHorizontal size={16} aria-hidden="true" /> : <ItemCategoryIcon category={["Flechas e virotes", "Células de energia"].includes(c.nome) ? c.nome : xs[0].grupo?.nome ?? xs[0].categoriaRotulo} itemType={c.nome} size={16} />}
                   <span className="hx-display" style={{ fontSize: 14, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".18em" }}>{c.nome}</span>
                   <Tag className="hx-dim" style={{ opacity: .6 }}>{xs.length}</Tag>
                   <span style={{ height: 1, flex: 1, background: "linear-gradient(90deg, color-mix(in srgb, var(--k) 27%, transparent), transparent)" }} />
                 </div>
                 <div className="hm-grade">
                   {xs.map((p) => {
-                    const on = p.slug === sel?.slug, pobre = !projeto && p.preco > saldo, ja = !!projeto?.ja(p.slug);
+                    const on = p.slug === sel?.slug, pobre = !projeto && saldo !== null && p.preco > saldo, ja = !!projeto?.ja(p.slug);
                     const filhos = produtos.filter(c => c.parentSlugs?.includes(p.slug));
                     const rotulo = filhos.every(c => c.categoria === "veneno") ? "veneno" : "módulo";
                     return (
-                      <div key={p.slug} className="hm-cartao" data-vertente={wishlistAberta ? p.vertente : undefined} style={wishlistAberta ? estiloGrupo(p.grupo?.nome ?? p.categoriaRotulo, p.vertente) : undefined} data-complementos={filhos.length > 0 || undefined}><button type="button" onClick={(e) => { ultimoCartao.current = e.currentTarget; setSel(p.slug); escolherComplemento(null); setDetalheAberto(true); }} className="hx-produto" data-ativo={on || undefined} aria-pressed={on}>
+                      <div key={p.slug} className="hm-cartao" data-vertente={wishlistAberta || ordenacao !== "categorias" ? p.vertente : undefined} style={wishlistAberta || ordenacao !== "categorias" ? estiloGrupo(p.grupo?.nome ?? p.categoriaRotulo, p.vertente) : undefined} data-complementos={filhos.length > 0 || undefined}><button type="button" onClick={(e) => { ultimoCartao.current = e.currentTarget; setSel(p.slug); escolherComplemento(null); setDetalheAberto(true); }} className="hx-produto" data-ativo={on || undefined} aria-pressed={on}>
                         <span className="hx-produto-arte">
                           <span className="hx-produto-trama" />
                           <span className="hm-card-espacos-arte"><Espacos n={p.espacos} /></span>
@@ -402,7 +484,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, ars
                     </div>
                   </div>
                 )}
-                {familiaEscalpo && <button type="button" className="hm-escalpo-base" aria-pressed={alvo === sel} onClick={() => escolherComplemento(null)}>
+                {familiaEscalpo && complementos.length > 0 && <button type="button" className="hm-escalpo-base" aria-pressed={alvo === sel} onClick={() => escolherComplemento(null)}>
                   <span className="hm-base-identidade"><strong>{sel.sub === "Identidade" ? "Item de identidade" : "Escalpo base"}</strong><span>{alvo === sel ? "Selecionado para compra" : "Selecionar para compra"}</span></span>
                   <strong className="hm-base-preco">₳ {fmt(sel.preco)}</strong>
                 </button>}
@@ -431,7 +513,7 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, ars
                 <div className="hm-negociacao-resumo" aria-live="polite"><Stat k="Preço original" v={`₳ ${fmt(alvo.preco)}`} /><Stat k="Preço combinado" v={precoPrevisto === null ? "—" : `₳ ${fmt(precoPrevisto)}`} /><Stat k={`Total · ${n} unidade${n === 1 ? "" : "s"}`} v={precoPrevisto === null ? "—" : `₳ ${fmt(precoPrevisto * n)}`} /></div>
                 <div className="hm-negociacao-acoes"><button type="button" onClick={fecharNegociacao}>Cancelar</button><button className="hx-btn-ambar" type="button" disabled={precoPrevisto === null} onClick={() => { if (precoPrevisto !== null) setPrecoCombinado({ slug: alvo.slug, valor: precoPrevisto }); fecharNegociacao(); }}>Aplicar à compra</button></div>
               </section>}
-              {familiaEscalpo && alvo && <div className="hm-compra-alvo"><Tag className="hx-dim">{alvo === sel ? (sel.sub === "Identidade" ? "Identidade" : "Escalpo base") : alvo.categoria === "veneno" ? "Dose de veneno" : "Módulo"}</Tag><strong>{alvo.nome}</strong></div>}
+              {familiaEscalpo && complementos.length > 0 && alvo && <div className="hm-compra-alvo"><Tag className="hx-dim">{alvo === sel ? (sel.sub === "Identidade" ? "Identidade" : "Escalpo base") : alvo.categoria === "veneno" ? "Dose de veneno" : "Módulo"}</Tag><strong>{alvo.nome}</strong></div>}
               {compraArs && <label className="hm-ars-region">Região da ARS<select aria-label="Região da ARS" value={regiaoArs} onChange={e => setRegiaoArs(e.target.value as ArsRegiao | "")}><option value="">Selecione uma região</option>{ARS_REGIOES.map(r => <option key={r.id} value={r.id} disabled={arsRegioesInstaladas.includes(r.id)}>{r.nome} · {r.mit} MIT{arsRegioesInstaladas.includes(r.id) ? " · instalada" : ""}</option>)}</select></label>}
               <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
                 <div className="hx-passo">
@@ -441,23 +523,24 @@ export function MercadoHud({ produtos, saldo, usados, capacidade, onComprar, ars
                 </div>
                 <div style={{ marginLeft: "auto", textAlign: "right" }}>
                   <Tag className="hx-dim">total</Tag>
-                  <div className="hx-display" style={{ fontSize: 22, fontWeight: 900, color: custo > saldo ? PERIGO : undefined }}><Aretz /> {fmt(custo)}</div>
+                  <div className="hx-display" style={{ fontSize: 22, fontWeight: 900, color: saldo !== null && custo > saldo ? PERIGO : undefined }}><Aretz /> {fmt(custo)}</div>
                 </div>
               </div>
               <div className="hm-compra-botoes">{feito ? (
                 <div className="hx-display" role="status" style={{ display: "grid", placeItems: "center", height: 44, border: `1px solid ${OK}80`, background: `${OK}1a`, color: OK, fontSize: 13, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".2em" }}>✓ Comprado</div>
               ) : (
-                <button type="button" disabled={custo > saldo || (compraArs && (!regiaoArs || arsRegioesInstaladas.includes(regiaoArs)))} onClick={comprar} className="hx-btn-ambar" style={{ width: "100%" }}>
-                  {custo > saldo ? "Saldo insuficiente" : compraArs ? "Comprar e registrar ARS" : familiaEscalpo ? `Comprar ${alvo === sel ? (sel.sub === "Identidade" ? "item" : "escalpo") : alvo?.categoria === "veneno" ? "veneno" : "módulo"}` : "Comprar"}
+                <button type="button" disabled={saldo === null || comprando || custo > saldo || (compraArs && (!regiaoArs || arsRegioesInstaladas.includes(regiaoArs)))} onClick={comprar} className="hx-btn-ambar" style={{ width: "100%" }}>
+                  {comprando ? "Comprando…" : saldo === null ? "Escolha o comprador" : custo > saldo ? "Saldo insuficiente" : compraArs ? "Comprar e registrar ARS" : familiaEscalpo ? `Comprar ${alvo === sel ? (sel.sub === "Identidade" ? "item" : "escalpo") : alvo?.categoria === "veneno" ? "veneno" : "módulo"}` : "Comprar"}
                 </button>
               )}<button ref={ajusteRef} type="button" className="hm-ajustar-preco" aria-label="Ajustar preço" data-tooltip="Ajustar preço" aria-expanded={negociacao} disabled={feito} onClick={() => { if (negociacao) fecharNegociacao(); else { setModoPreco("preco"); setRascunhoPreco(String(precoUnitario)); setNegociacao(true); } }}><SlidersHorizontal size={18} aria-hidden="true" /></button></div>
               {alvo && precoUnitario !== alvo.preco && <div className="hm-preco-aplicado"><Tag className="hx-amb">Preço ajustado</Tag><button type="button" onClick={() => setPrecoCombinado(null)}>Restaurar</button></div>}
               {/* Sem espaço NÃO bloqueia: a compra vai para a mochila e a régua
                   mostra o excesso — é para isso que o estado de excesso existe. */}
-              {!cabe && !feito && custo <= saldo && (
+              {!cabe && !feito && saldo !== null && custo <= saldo && (
                 <div role="note" style={{ marginTop: 8, display: "flex", justifyContent: "space-between" }}><Tag style={{ color: AMB }}>vai exceder a mochila</Tag><Tag style={{ color: AMB }}>{usados + (alvo?.espacos ?? 0) * n}/{capacidade}</Tag></div>
               )}
-              <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between" }}><Tag className="hx-dim" style={{ opacity: .7 }}>saldo após</Tag><Tag className="hx-dim">₳ {fmt(Math.max(0, saldo - custo))}</Tag></div>
+              {erroCompra && <div role="alert" style={{ marginTop: 8, color: PERIGO, fontSize: 12 }}>{erroCompra}</div>}
+              <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between" }}><Tag className="hx-dim" style={{ opacity: .7 }}>saldo após</Tag><Tag className="hx-dim">{saldo === null ? "—" : `₳ ${fmt(Math.max(0, saldo - custo))}`}</Tag></div>
             </div>}
           </aside>
         ) : <aside className="hm-detalhe" />}

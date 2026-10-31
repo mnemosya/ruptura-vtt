@@ -398,6 +398,7 @@ export function PainelVtt({
   );
 
   const [sinalRecarregarBando, setSinalRecarregarBando] = useState(0);
+  const [sinalRecarregarPersonagens, setSinalRecarregarPersonagens] = useState(0);
 
   // ── Janelas internas ────────────────────────────────────────────
   // Todo destino que ANTES era `router.push`/`<Link>` virou uma destas.
@@ -484,6 +485,7 @@ export function PainelVtt({
     personagens: (
       <PersonagensTab
         campaignId={campaignId}
+        revisao={sinalRecarregarPersonagens}
         visivel={aberto && abaAtiva === "personagens"}
         ehNarrador={ehNarrador}
         onAdicionarACena={onAdicionarPersonagemACena}
@@ -649,9 +651,6 @@ export function PainelVtt({
         <JanelaMercado
           campaignId={campaignId}
           ehNarrador={ehNarrador}
-          // A loja é a aba Inventário da ficha — o Mercado sempre foi
-          // isto com um seletor na frente.
-          onAbrirFicha={(id) => consoleDaMesa?.abrir(id, "inventario")}
           onFechar={() => janelas.fechar("mercado")}
         />
       )}
@@ -660,7 +659,10 @@ export function PainelVtt({
           key={janelas.completar?.characterId ?? "novo"}
           campaignId={campaignId}
           completar={janelas.completar}
-          onAbrirFicha={(id) => consoleDaMesa?.abrir(id)}
+          onAbrirFicha={(id) => {
+            setSinalRecarregarPersonagens((anterior) => anterior + 1);
+            consoleDaMesa?.abrir(id);
+          }}
           onFechar={() => janelas.fechar("novo-personagem")}
         />
       )}
@@ -724,6 +726,7 @@ export function PainelVtt({
           <div className="rv-pn-aba" style={{ height: "100%" }}>
             <PersonagensTab
               campaignId={campaignId}
+              revisao={sinalRecarregarPersonagens}
               visivel
               ehNarrador={ehNarrador}
               onAdicionarACena={onAdicionarPersonagemACena}

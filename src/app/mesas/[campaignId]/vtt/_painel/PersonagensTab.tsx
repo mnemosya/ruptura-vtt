@@ -112,6 +112,7 @@ const IMAGEM_ARRASTO_VAZIA = (() => {
 
 export function PersonagensTab({
   campaignId,
+  revisao = 0,
   visivel,
   ehNarrador,
   onAdicionarACena,
@@ -124,6 +125,8 @@ export function PersonagensTab({
   fixtureVisual,
 }: {
   campaignId: string;
+  /** Sinal de criação/conclusão para reler o diretório sem recarregar a página. */
+  revisao?: number;
   visivel: boolean;
   ehNarrador: boolean;
   /** Abre o Console do Personagem numa janela interna — nunca navega. */
@@ -318,6 +321,13 @@ export function PersonagensTab({
     window.addEventListener("focus", aoFocar);
     return () => window.removeEventListener("focus", aoFocar);
   }, [visivel, carregar, incluirArquivados]);
+
+  const revisaoAnteriorRef = useRef(revisao);
+  useEffect(() => {
+    if (revisaoAnteriorRef.current === revisao) return;
+    revisaoAnteriorRef.current = revisao;
+    if (jaCarregouRef.current) void carregar(incluirArquivados);
+  }, [revisao, carregar, incluirArquivados]);
 
   const dados = dadosDoEstado(estado);
   const arvore = useMemo<NoDiretorio | null>(

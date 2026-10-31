@@ -10,6 +10,17 @@ const canonicalField = (label: string) => {
   return aliases[k] ?? k;
 };
 
+/** O export do Notion às vezes termina com um índice de módulos sem conteúdo. Os módulos já são itens do catálogo. */
+function withoutEmptyModuleIndex(text: string): string {
+  const lines = text.split("\n");
+  const start = lines.findIndex(line => /^#{3}\s+m[oó]dulos?\b/i.test(line.trim()));
+  if (start < 0) return text;
+  const entries = lines.slice(start + 1).map(line => line.trim()).filter(Boolean);
+  if (!entries.some(line => /^#{4}\s+\S/.test(line))) return text;
+  if (!entries.every(line => /^#{4}\s+\S/.test(line) || /^-{3,}$/.test(line))) return text;
+  return lines.slice(0, start).join("\n").trim();
+}
+
 /** Texto editorial completo, sem apêndice da importação nem campos já desenhados no card. */
 export function itemDescription(item: ItemText | undefined, displayedFields: string[] = []): string {
   if (!item) return "";
@@ -18,7 +29,7 @@ export function itemDescription(item: ItemText | undefined, displayedFields: str
     const editorial = text.replace(/\r\n?/g, "\n").split(/^\s*Dados da lista de mercadorias:\s*$/im)[0];
     const lines = editorial.split("\n");
     let first = true;
-    return lines.filter(line => {
+    const cleaned = lines.filter(line => {
       const plain = line.replace(/\*\*/g, "").trim();
       if (!plain) return true;
       // O cabeçalho importado repete raridade e, às vezes, o tipo do item.
@@ -30,6 +41,7 @@ export function itemDescription(item: ItemText | undefined, displayedFields: str
       const field = /^(?:[-*•]\s+)?([^:]{1,60}):/.exec(plain);
       return !field || !fields.has(canonicalField(field[1]));
     }).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    return withoutEmptyModuleIndex(cleaned);
   };
   return clean(item.descricao_longa?.trim() || item.descricao_curta || "") || clean(item.descricao_curta || "");
 }

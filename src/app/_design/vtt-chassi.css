@@ -296,8 +296,7 @@
 .rv-cena-btn-icone,
 .rc-picker-fechar,
 .rc-arma-swap,
-.rc-arma-fechar,
-button[aria-label]:has(svg) {
+.rc-arma-fechar {
   border-radius: var(--rv-r-peca, 4px) !important;
   corner-shape: round !important;
 }

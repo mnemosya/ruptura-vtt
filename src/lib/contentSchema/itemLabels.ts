@@ -25,11 +25,11 @@ export const CATEGORIA_ITEM_LABELS: Readonly<Record<string, string>> = {
 };
 
 export const RARIDADE_ITEM_LABELS: Readonly<Record<string, string>> = {
+  muito_comum: "Muito Comum",
   comum: "Comum",
   incomum: "Incomum",
-  muito_comum: "Muito Comum",
-  muito_raro: "Muito Raro",
   raro: "Raro",
+  muito_raro: "Muito Raro",
 };
 
 /** `undefined` quando `categoria` está ausente OU não é um valor reconhecido — nunca inventa um rótulo. */

@@ -40,6 +40,8 @@ export function JanelaMercado({ onFechar: fecharDeVez, children, titulo = "Merca
   useEffect(() => {
     function aoTeclar(e: KeyboardEvent) {
       if (e.key === "Escape") {
+        // O seletor interno fecha primeiro; o próximo Esc fecha o Mercado.
+        if (janela.current?.querySelector("[data-mercado-menu-aberto]")) return;
         e.stopPropagation();
         onFechar();
         return;
