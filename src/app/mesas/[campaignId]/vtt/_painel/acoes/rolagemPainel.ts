@@ -50,7 +50,7 @@ import { assinarDownloadUrls } from "../../../../../../lib/vtt/imageService";
 
 /** Teto do modificador manual — protege o payload e a leitura do card; fora disso é recusado, nunca truncado em silêncio. */
 const MODIFICADOR_MAX = 20;
-/** Teto da CD aceita. Acima disso não é dificuldade, é digitação errada. */
+/** Teto legado das rolagens livres; perícias aceitam qualquer CD inteira positiva. */
 const CD_MAX = 99;
 /** Teto de dados numa rolagem livre — o palco (e a leitura) não comportam mais que isso. */
 const DADOS_LIVRES_MAX = 20;
@@ -67,6 +67,7 @@ export interface PericiaRolagem {
   valor: number;
   /** Atributo que a perícia usa por padrão — deixa o rolador pré-selecionar o par certo. */
   atributoPrimario: string;
+  atributosAlternativos?: { atributo: string; contexto: string }[];
 }
 
 export interface FichaRolagem {
@@ -130,12 +131,13 @@ function montarFicha(
   // Sem catálogo de perícias publicado, as perícias DA FICHA ainda
   // servem: o personagem tem os valores, só não temos nome bonito.
   const pericias: PericiaRolagem[] = (defsPericia && defsPericia.length > 0
-    ? defsPericia.map((d) => ({ id: d.id, nome: d.nome, atributoPrimario: d.atributo_primario }))
-    : Object.keys(personagem.pericias).map((id) => ({ id, nome: id, atributoPrimario: "" }))
-  ).map(({ id, nome, atributoPrimario }) => ({
+    ? defsPericia.map((d) => ({ id: d.id, nome: d.nome, atributoPrimario: d.atributo_primario, atributosAlternativos: d.atributos_alternativos }))
+    : Object.keys(personagem.pericias).map((id) => ({ id, nome: id, atributoPrimario: "", atributosAlternativos: [] as { atributo: string; contexto: string }[] }))
+  ).map(({ id, nome, atributoPrimario, atributosAlternativos }) => ({
     id,
     nome,
     atributoPrimario,
+    atributosAlternativos,
     valor: Math.max(0, Math.trunc(personagem.pericias[id] ?? 0)),
   }));
 
@@ -270,8 +272,8 @@ export async function registrarRolagemPericiaAction(
 
     const modificador = inteiroNaFaixa(params.modificador, -MODIFICADOR_MAX, MODIFICADOR_MAX);
     if (modificador == null) return { ok: false, erro: `Modificador fora da faixa (−${MODIFICADOR_MAX} a +${MODIFICADOR_MAX}).` };
-    const cd = params.cd == null ? null : inteiroNaFaixa(params.cd, 1, CD_MAX);
-    if (params.cd != null && cd == null) return { ok: false, erro: `CD fora da faixa (1 a ${CD_MAX}).` };
+    const cd = params.cd == null ? null : typeof params.cd === "number" && Number.isSafeInteger(params.cd) && params.cd >= 1 ? params.cd : null;
+    if (params.cd != null && cd == null) return { ok: false, erro: "A CD deve ser um inteiro positivo." };
 
     // Os dados: a contagem tem que ser a do POOL derivado do Atributo
     // lido do banco, inclusive 2d8 no zero e dados adicionais no negativo, e

@@ -36,13 +36,18 @@ import { EntradaFeed, type AcoesFeed } from "./feed/EntradaFeed";
 import { RetratosFeedProvider } from "./feed/retratos";
 import { Composer } from "./feed/Composer";
 import { BandejaDados } from "../_dados3d/RoladorDados";
-import { enviarMensagemChatAction, excluirCardAction, fixarCardAction, lerContextoChatAction, type ContextoChatPainel } from "./acoes/chatPainel";
+import { enviarMensagemChatAction, excluirCardAction, fixarCardAction, lerContextoChatAction, lerOpcoesComandoChatV2Action, type ContextoChatPainel, type OpcoesComandoChat } from "./acoes/chatPainel";
 import { ItemFeedComMenu, cardTemMenu, resumoDoCartao, type AcoesMenuCard } from "./feed/MenuCard";
 import { DialogoConfirmar } from "./ui/Dialogo";
 import { cancelarUploadAction, finalizarUploadChatAction, reservarUploadAction } from "../_acoes/imageActions";
 import { ImagemRecusadaError, enviarParaUrlAssinada, prepararImagem, validarArquivo } from "../../../../../lib/vtt/imagePreparation";
-import { registrarRolagemLivreAction } from "./acoes/rolagemPainel";
+import { lerContextoRolagemAction, registrarRolagemLivreAction, registrarRolagemPericiaAction, type FichaRolagem } from "./acoes/rolagemPainel";
 import { lerComandoRolagem, type ComandoRolagem } from "./feed/comandoRolagem";
+import { lerComandoPericia, type ComandoPericia } from "./feed/comandoPericia";
+import { lerComandoConteudo } from "./feed/comandoConteudo";
+import { lerComandoSobrecarga } from "./feed/comandoSobrecarga";
+import { lerComandoFicha } from "./feed/comandoFicha";
+import { executarAcaoChatAction, conjurarMagiaChatAction, usarSobrecargaChatAction } from "./acoes/comandosChat";
 import { useRolarNaMesa } from "../_dados3d/ContextoMesaDados";
 import type { PhysicsDieSpec } from "../_dados3d/ArenaDados";
 import { aplicarDanoDoAtaqueAction, preverDanoAction } from "./acoes/combatePainel";
@@ -50,7 +55,7 @@ import { registrarDefesaAction, resolverDanoAction } from "./acoes/ataquePainel"
 import { DEFESAS_CARTAO, type EscolhaDefesa } from "./feed/AttackWorkflowCard";
 import type { CartaoAtaque } from "./feed/contratos";
 import { getRupturaPool } from "../../../../../lib/dice";
-import { lerContextoRolagemAction } from "./acoes/rolagemPainel";
+import { prepararAcaoChatAction } from "./acoes/comandosChat";
 import { EstadoErro, EstadoVazio } from "./Estados";
 import { EnvioImagem } from "../../../../ficha/_console/EnvioImagem";
 
@@ -77,18 +82,22 @@ export function ChatTab({
   /** Ação EXPLÍCITA de centralizar a câmera — a única exceção ao invariante de não mexer na cena. */
   onFocarToken?: (tokenId: string) => void;
   /** "Abrir ficha" do menu do card — abre o Console do personagem que agiu. */
-  onAbrirFicha?: (characterId: string) => void;
+  onAbrirFicha?: (characterId: string, aba?: string) => void;
   /**
    * Contexto de autoria pronto, só para a galeria visual em
    * `/dev/estilos` — nunca usado pela mesa real. Os logs vêm do
    * contexto de sessão; só a lista de identidades é lida do servidor, e
    * sem ela a aba mostraria o erro de autorização por cima do feed.
    */
-  fixtureVisual?: ContextoChatPainel;
+  fixtureVisual?: ContextoChatPainel & { fichaRolagem?: FichaRolagem; opcoesComando?: OpcoesComandoChat };
 }) {
   const { campaignId, role, viewer, logs, reloadLogs, sessionSyncStatus } = useCampaignSession();
 
   const [contexto, setContexto] = useState<ContextoChatPainel | null>(null);
+  const [fichaComando, setFichaComando] = useState<FichaRolagem | null>(null);
+  const [opcoesComando, setOpcoesComando] = useState<OpcoesComandoChat>({ acoes: [], magias: [] });
+  const [carregandoOpcoesComando, setCarregandoOpcoesComando] = useState(false);
+  const [carregandoFichaComando, setCarregandoFichaComando] = useState(false);
   const [erroContexto, setErroContexto] = useState<string | null>(null);
   const [texto, setTexto] = useState("");
   /* IMAGEM ANEXADA — escolhida pelo botão, colada ou arrastada. Fica no
@@ -226,6 +235,35 @@ export function ChatTab({
       }),
     [role, contexto, personagemDoTokenSelecionado, escolhaIdentidade],
   );
+  const catalogoPericias = useMemo(
+    () => contexto?.pericias?.length ? contexto.pericias : fichaComando?.pericias ?? [],
+    [contexto, fichaComando],
+  );
+
+  useEffect(() => {
+    const characterId = identidade.characterId;
+    setFichaComando(null);
+    setOpcoesComando({ acoes: [], magias: [] });
+    if (!visivel || !characterId) { setCarregandoFichaComando(false); setCarregandoOpcoesComando(false); return; }
+    if (fixtureVisual) {
+      setFichaComando(fixtureVisual.fichaRolagem?.characterId === characterId ? fixtureVisual.fichaRolagem : null);
+      setOpcoesComando(fixtureVisual.opcoesComando ?? { acoes: [], magias: [] });
+      setCarregandoFichaComando(false);
+      setCarregandoOpcoesComando(false);
+      return;
+    }
+    let cancelado = false;
+    setCarregandoFichaComando(true);
+    lerContextoRolagemAction(campaignId, characterId).then((r) => {
+      if (!cancelado) setFichaComando(r.ok && r.dados?.ficha?.characterId === characterId ? r.dados.ficha : null);
+    }).catch(() => { if (!cancelado) setFichaComando(null); })
+      .finally(() => { if (!cancelado) setCarregandoFichaComando(false); });
+    setCarregandoOpcoesComando(true);
+    lerOpcoesComandoChatV2Action(campaignId, characterId).then((r) => {
+      if (!cancelado && r.ok && r.dados) setOpcoesComando(r.dados);
+    }).catch(() => {}).finally(() => { if (!cancelado) setCarregandoOpcoesComando(false); });
+    return () => { cancelado = true; };
+  }, [campaignId, identidade.characterId, visivel, fixtureVisual]);
 
   // ── Não lidos ──────────────────────────────────────────────────
   // Conta sobre os CARTÕES projetados, não sobre o log bruto: um
@@ -387,6 +425,37 @@ export function ChatTab({
     await reloadLogs();
   }, [rolarNaMesa, campaignId, identidade, visibilidade, reloadLogs]);
 
+  const executarPericia = useCallback(async (comando: ComandoPericia, textoEnviado: string) => {
+    const characterId = identidade.characterId;
+    if (!characterId) { setErroEnvio("Escolha um personagem em Falar como para rolar uma perícia."); return; }
+    if (!rolarNaMesa) { setErroEnvio("A mesa de dados não está aberta nesta tela."); return; }
+    let ficha = fichaComando?.characterId === characterId ? fichaComando : null;
+    if (!ficha) {
+      const resposta = await lerContextoRolagemAction(campaignId, characterId);
+      ficha = resposta.ok ? resposta.dados?.ficha ?? null : null;
+    }
+    if (!ficha) { setErroEnvio("Não foi possível carregar a ficha deste personagem."); return; }
+    const pericia = ficha.pericias.find((p) => p.id === comando.periciaId);
+    const atributo = ficha.atributos.find((a) => a.id === (comando.atributoId ?? pericia?.atributoPrimario));
+    if (!pericia || !atributo) { setErroEnvio("Perícia ou atributo indisponível nesta ficha."); return; }
+    const pool = getRupturaPool(atributo.valor);
+    const dados = await rolarNaMesa(
+      Array.from({ length: pool.quantidadeDados }, (_, i): PhysicsDieSpec => ({ id: `chat-pericia-${i}`, sides: 8 })),
+      ACENTO_ROLAGEM_CHAT,
+    );
+    const r = await registrarRolagemPericiaAction({
+      campaignId, characterId, periciaId: pericia.id, atributoId: atributo.id,
+      modificador: comando.modificador, cd: comando.cd,
+      dados: dados.map((d) => d.value), visibilidade,
+      origem: { rotulo: "Chat — Comando", source: "vtt_painel_chat_comando" },
+    });
+    if (!r.ok) { setErroEnvio(r.erro ?? "Falha ao registrar a perícia."); return; }
+    ultimaEnviadaRef.current = textoEnviado;
+    setTexto("");
+    noFimRef.current = true;
+    await reloadLogs();
+  }, [campaignId, fichaComando, identidade.characterId, reloadLogs, rolarNaMesa, visibilidade]);
+
   // ── Envio com imagem ───────────────────────────────────────────
   // Mesmo caminho das outras imagens do VTT: prepara no browser (WebP,
   // hash), reserva, sobe direto para o Storage, finaliza no servidor —
@@ -454,6 +523,18 @@ export function ChatTab({
       return;
     }
 
+    const ficha = lerComandoFicha(conteudo);
+    if (ficha.tipo === "parcial") { setErroEnvio("Escolha uma aba da ficha na lista."); return; }
+    if (ficha.tipo === "erro") { setErroEnvio(ficha.erro); return; }
+    if (ficha.tipo === "ok") {
+      if (!identidade.characterId || !onAbrirFicha) { setErroEnvio("Escolha um personagem em Falar como para abrir a ficha."); return; }
+      onAbrirFicha(identidade.characterId, ficha.aba);
+      ultimaEnviadaRef.current = conteudo;
+      setTexto("");
+      setErroEnvio(null);
+      return;
+    }
+
     // O comando é decidido ANTES de qualquer bolha otimista: uma
     // rolagem não é uma mensagem, e não pode piscar como se fosse.
     const comando = lerComandoRolagem(conteudo);
@@ -468,6 +549,82 @@ export function ChatTab({
       } finally {
         setEnviando(false);
       }
+      return;
+    }
+
+    if (conteudo.startsWith("/") && !contexto) {
+      setErroEnvio("Aguarde o catálogo de perícias carregar antes de enviar o comando.");
+      return;
+    }
+
+    const sobrecarga = lerComandoSobrecarga(conteudo);
+    if (sobrecarga.tipo === "parcial") { setErroEnvio("Escolha um surto da lista."); return; }
+    if (sobrecarga.tipo === "erro") { setErroEnvio(sobrecarga.erro); return; }
+    if (sobrecarga.tipo === "ok") {
+      if (!identidade.characterId) { setErroEnvio("Escolha um personagem em Falar como."); return; }
+      setEnviando(true);
+      setErroEnvio(null);
+      try {
+        const r = await usarSobrecargaChatAction({ campaignId, characterId: identidade.characterId, nome: sobrecarga.nome, pontos: sobrecarga.pontos, visibilidade });
+        if (!r.ok) { setErroEnvio(r.erro ?? "Falha ao usar Sobrecarga."); return; }
+        ultimaEnviadaRef.current = conteudo;
+        setTexto("");
+        noFimRef.current = true;
+        await reloadLogs();
+      } catch (e) { setErroEnvio(e instanceof Error ? `Falha de rede: ${e.message}` : "Falha de rede ao usar Sobrecarga."); }
+      finally { setEnviando(false); }
+      return;
+    }
+    const pericia = lerComandoPericia(conteudo, catalogoPericias);
+    if (pericia.tipo === "parcial") { setErroEnvio("Escolha uma perícia da lista antes de rolar."); return; }
+    if (pericia.tipo === "erro") { setErroEnvio(pericia.erro); return; }
+    if (pericia.tipo === "ok") {
+      setEnviando(true);
+      setErroEnvio(null);
+      try { await executarPericia(pericia.comando, conteudo); }
+      catch (e) { setErroEnvio(e instanceof Error ? `Falha de rede: ${e.message}` : "Falha de rede ao rolar."); }
+      finally { setEnviando(false); }
+      return;
+    }
+    if (/^\/(?:a|m)(?:\s|$)/i.test(conteudo)) {
+      if (!identidade.characterId) { setErroEnvio("Escolha um personagem em Falar como."); return; }
+      if (carregandoOpcoesComando) { setErroEnvio("Aguarde as ações e magias do personagem carregarem."); return; }
+    }
+    const conteudoComando = lerComandoConteudo(conteudo, opcoesComando.acoes, opcoesComando.magias);
+    if (conteudoComando.tipo === "parcial") { setErroEnvio("Escolha uma opção da lista antes de executar."); return; }
+    if (conteudoComando.tipo === "erro") { setErroEnvio(conteudoComando.erro); return; }
+    if (conteudoComando.tipo === "ok") {
+      if (!identidade.characterId) { setErroEnvio("Escolha um personagem em Falar como."); return; }
+      setEnviando(true);
+      setErroEnvio(null);
+      try {
+        const pedido = { campaignId, characterId: identidade.characterId, id: conteudoComando.id, argumento: conteudoComando.argumento, visibilidade };
+        if (conteudoComando.familia === "m") {
+          const r = await conjurarMagiaChatAction(pedido);
+          if (!r.ok) { setErroEnvio(r.erro ?? "Falha ao conjurar."); return; }
+        } else {
+          const previa = await prepararAcaoChatAction(pedido);
+          if (!previa.ok) { setErroEnvio(previa.erro ?? "Ação indisponível."); return; }
+          let dados: number[] | undefined;
+          if (previa.dados) {
+            if (!rolarNaMesa) { setErroEnvio("A mesa de dados não está aberta nesta tela."); return; }
+            const pool = getRupturaPool(previa.dados.atributoValor);
+            const caidos = await rolarNaMesa(
+              Array.from({ length: pool.quantidadeDados }, (_, i): PhysicsDieSpec => ({ id: `chat-acao-${i}`, sides: 8 })),
+              ACENTO_ROLAGEM_CHAT,
+            );
+            dados = caidos.map((d) => d.value);
+          }
+          const r = await executarAcaoChatAction({ ...pedido, dados });
+          if (!r.ok) { setErroEnvio(r.erro ?? "Falha ao executar a ação."); return; }
+        }
+        ultimaEnviadaRef.current = conteudo;
+        setTexto("");
+        noFimRef.current = true;
+        await reloadLogs();
+      } catch (e) {
+        setErroEnvio(e instanceof Error ? `Falha de rede: ${e.message}` : "Falha de rede ao executar o comando.");
+      } finally { setEnviando(false); }
       return;
     }
 
@@ -502,7 +659,7 @@ export function ChatTab({
     } finally {
       setEnviando(false);
     }
-  }, [texto, anexo, enviando, identidade, visibilidade, campaignId, role, reloadLogs, executarRolagem, enviarComImagem]);
+  }, [texto, anexo, enviando, identidade, visibilidade, campaignId, role, reloadLogs, executarRolagem, executarPericia, enviarComImagem, contexto, catalogoPericias, opcoesComando, carregandoOpcoesComando, rolarNaMesa, onAbrirFicha]);
 
   // ── Aplicar dano (workflow de ataque) ──────────────────────────
   const aplicarDano = useCallback(
@@ -885,6 +1042,11 @@ export function ChatTab({
         onEnviar={enviar}
         onLimparErro={() => setErroEnvio(null)}
         ultimaEnviada={ultimaEnviadaRef.current}
+        pericias={catalogoPericias}
+        acoes={opcoesComando.acoes}
+        magias={opcoesComando.magias}
+        fichaPericias={fichaComando?.characterId === identidade.characterId ? fichaComando : null}
+        carregandoFicha={carregandoFichaComando}
       />
       {envioAnexo && (
         <EnvioImagem

@@ -11,14 +11,8 @@
  * - o gasto de PA/Reação acontece ao confirmar, e pode ser desfeito.
  */
 
-import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
-import {
-  Archive, ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, AudioWaveform, Ban, Bot, Bug, ChevronsRight, CircleSlash, Copy,
-  Crosshair, Dices, LayoutGrid, List, Download, Eraser, Eye, EyeOff, FileX, Fingerprint, Flame, Footprints, GitBranch, Grab, Hammer, Hand,
-  HandHelping, IdCard, KeyRound, Link, Lock, LockOpen, Mountain, MoveRight, Network, Package, Plug, Power, Radar, RefreshCcw,
-  Route, ScanEye, ScanSearch, Search, Settings, Shield, ShieldHalf, Shuffle, Star, Sword, Swords, Target, Timer, TriangleAlert,
-  Unlink, Unplug, Wind, X, Zap, type LucideProps,
-} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { LayoutGrid, List, Lock, Search, Star, TriangleAlert, X } from "lucide-react";
 import catalogoJson from "../../../../../content/v12/db_acoes_v1_2.json";
 import {
   buscarAcoes, montarAbaAcoes, type AcaoV12, type AtaqueAtalho, type OpcaoAcaoV12, type CatalogoAcoesV12, type CenaAcao, type GrupoAbaAcao, type ItemAbaAcao,
@@ -30,6 +24,7 @@ import { CabecalhoModulo } from "./CabecalhoModulo";
 import type { PrefillRolagem } from "./PainelRolagem";
 import "./hud/hud-base.css";
 import "./hud/acoes.css";
+import { iconeDaAcao } from "./iconeAcao";
 
 const CATALOGO = catalogoJson as unknown as CatalogoAcoesV12;
 const NOME_CENA: Record<CenaAcao, string> = { combate: "Combate", investigacao: "Investigação", trama: "Trama" };
@@ -44,20 +39,6 @@ const CHAVE_FIXADAS = "ruptura:acoes:fixadas";
 const CHAVE_CENA = "ruptura:acoes:cena";
 const CHAVE_VISAO = "ruptura:acoes:visao";
 type Visao = "lista" | "grade";
-
-type Icone = ComponentType<LucideProps>;
-const ICONES: Record<string, Icone> = {
-  deslocar: Footprints, levantar: ArrowUpFromLine, escapar: Unlink, esconder_se: EyeOff, interagir: Hand, sacar_guardar_trocar: ArrowLeftRight,
-  recarregar: RefreshCcw, atacar: Sword, agarrar: Grab, estrangular: CircleSlash, derrubar: ArrowDownToLine, empurrar: MoveRight, desarmar: Ban,
-  fintar: Shuffle, aparar: Swords, bloquear: Shield, esquivar: Wind, resistir: Mountain, mirar: Crosshair, acessar_trama: Network,
-  preparar_turno: Timer, usar_pericia: Dices, postura_defensiva: ShieldHalf, postura_ofensiva: Flame, falar: Hand, gestos_rapidos: Hand,
-  investigar: Search, vasculhar: ScanSearch, preservar: Archive, correlacionar: Link, acessar: KeyRound, arrombar: Hammer, auxiliar: HandHelping,
-  utilizar_recurso: Package, conectar: Plug, avancar: ChevronsRight, sondar: Radar, examinar: ScanEye, monitorar: Eye, forcar_rota: Route,
-  criar_ruido: AudioWaveform, desligar: Power, desplugar: Unplug, despistar: Shuffle, ofuscar: EyeOff, expor_nucleo: Target, pulso_sinaptico: Zap,
-  controlar_sistema: Settings, controlar_unidade: Bot, quebrar_bloqueio: LockOpen, travar_acesso: Lock, extrair_dados: Download,
-  corromper_dados: FileX, instalar_virus: Bug, forjar_credencial: IdCard, modificar_assinatura: Fingerprint, apagar_rastros: Eraser,
-};
-const iconeDe = (acao: AcaoV12): Icone => ICONES[acao.slug] ?? (acao.classe ? GitBranch : Copy);
 
 type AcoesApi = Pick<ConsoleApi, "character" | "derivados" | "catalogo" | "glossario" | "regras" | "somenteLeitura" | "ajustarPa" | "ajustarReacoes" | "adicionarCondicao" | "removerCondicao">;
 
@@ -95,8 +76,9 @@ function ataquesDaFicha(api: AcoesApi, nomePericia: (id: string) => string): Ata
   return out;
 }
 
-export function AcoesPanel({ api, onRolar, onAtacar }: {
+export function AcoesPanel({ api, onRolar, onAtacar, acaoInicial }: {
   api: AcoesApi;
+  acaoInicial?: string | null;
   /** Abre o painel de rolagem com a ação como intenção. */
   onRolar: (prefill: PrefillRolagem) => void;
   /** Fluxo de ataque do Console (alvo no mapa na mesa, janela da arma fora dela). `null` = desarmado. */
@@ -144,6 +126,18 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
     fixadas,
     ultimaCena,
   }), [api, fixadas, nomePericia, ultimaCena]);
+  const comandoTratadoRef = useRef<string | null>(null);
+  const [autoExecutarComando, setAutoExecutarComando] = useState<string | null>(null);
+  useEffect(() => {
+    if (!acaoInicial || comandoTratadoRef.current === acaoInicial) return;
+    const item = aba.grupos.flatMap((g) => g.itens).find((i) => i.chave === acaoInicial);
+    if (item) {
+      comandoTratadoRef.current = acaoInicial;
+      setCenaEscolhida(item.acao.cena);
+      setAutoExecutarComando(!item.acao.opcoes?.length && !item.acao.teste && !item.acao.alvo && !item.acao.custo.pa_preparado && typeof item.acao.custo.pa === "number" ? item.chave : null);
+      setAberta(item);
+    }
+  }, [acaoInicial, aba]);
 
   // Sessão ativa → Trama; senão a última cena usada. A escolha da pessoa vence enquanto a aba estiver aberta.
   const cena = cenaEscolhida ?? aba.cenaSugerida;
@@ -173,6 +167,7 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
 
   function confirmar(item: ItemAbaAcao, escolha: { pa: number; pericia: string | null; opcao: string | null }) {
     const { acao } = item;
+    setAutoExecutarComando(null);
     setAberta(null);
     if (acao.estado === "postura") {
       const ativa = item.ativa;
@@ -303,7 +298,7 @@ export function AcoesPanel({ api, onRolar, onAtacar }: {
             </>}
           </div>
 
-          {aberta && <Gaveta item={aberta} api={api} leitura={leitura} nomePericia={nomePericia} paRestantes={r.pa.restantes} paMax={r.pa.max} extraPa={extraDe(aberta.acao)} onFechar={() => setAberta(null)} onConfirmar={(e) => confirmar(aberta, e)} />}
+          {aberta && <Gaveta item={aberta} api={api} leitura={leitura} nomePericia={nomePericia} paRestantes={r.pa.restantes} paMax={r.pa.max} extraPa={extraDe(aberta.acao)} autoExecutar={autoExecutarComando === aberta.chave} onFechar={() => { setAutoExecutarComando(null); setAberta(null); }} onConfirmar={(e) => confirmar(aberta, e)} />}
           {toast && (
             <div className="ha-toast" role="status">
               <span>{toast.texto}</span>
@@ -389,7 +384,7 @@ function Custo({ valor, unidade, ram }: { valor: string; unidade: string; ram?: 
 }
 
 function Cartao({ item, onAbrir, onFixar, semIcone }: { item: ItemAbaAcao; onAbrir: () => void; onFixar?: () => void; semIcone?: boolean }) {
-  const Ic = iconeDe(item.acao);
+  const Ic = iconeDaAcao(item.acao.slug, !!item.acao.classe);
   const avisos = item.avisos.filter((a) => a.alcance === "acao");
   return (
     <div className="ha-card-wrap" style={{ ["--ha-k" as string]: corDoGrupo(item.acao.grupo, item.acao.cena) }}>
@@ -417,7 +412,7 @@ function periciasDaAcao(acao: AcaoV12, opcao: OpcaoAcaoV12 | null, todas: string
   return p ?? [];
 }
 
-function Gaveta({ item, api, leitura, nomePericia, paRestantes, paMax, extraPa, onFechar, onConfirmar }: {
+function Gaveta({ item, api, leitura, nomePericia, paRestantes, paMax, extraPa, autoExecutar, onFechar, onConfirmar }: {
   item: ItemAbaAcao;
   api: AcoesApi;
   leitura: boolean;
@@ -426,6 +421,7 @@ function Gaveta({ item, api, leitura, nomePericia, paRestantes, paMax, extraPa, 
   paMax: number;
   /** PA a mais por repetição no turno (Deslocar). */
   extraPa: number;
+  autoExecutar: boolean;
   onFechar: () => void;
   onConfirmar: (e: { pa: number; pericia: string | null; opcao: string | null }) => void;
 }) {
@@ -446,6 +442,12 @@ function Gaveta({ item, api, leitura, nomePericia, paRestantes, paMax, extraPa, 
   const k = COR_CENA[acao.cena];
   const ehPostura = acao.estado === "postura";
   const verbo = ehPostura ? (item.ativa ? "Encerrar" : "Ativar") : temTeste ? "Rolar" : "Usar";
+  const executadoRef = useRef(false);
+  useEffect(() => {
+    if (!autoExecutar || leitura || executadoRef.current) return;
+    executadoRef.current = true;
+    onConfirmar({ pa: ehPostura ? 1 : custoPa, pericia: null, opcao: null });
+  }, [autoExecutar, leitura, custoPa, ehPostura, onConfirmar]);
 
   return (
     <>

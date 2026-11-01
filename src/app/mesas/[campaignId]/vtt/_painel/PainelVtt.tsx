@@ -439,7 +439,7 @@ export function PainelVtt({
    * Aqui só ficaram as duas intenções: abrir e aquecer.
    */
   const consoleDaMesa = useConsoleDaMesa();
-  const abrirConsole = useCallback((id: string) => consoleDaMesa?.abrir(id), [consoleDaMesa]);
+  const abrirConsole = useCallback((id: string, aba?: string) => consoleDaMesa?.abrir(id, aba), [consoleDaMesa]);
   const aquecerConsole = useCallback(() => consoleDaMesa?.aquecer(), [consoleDaMesa]);
 
   const aberto = prefs.aberto;

@@ -28,6 +28,13 @@ import { addLog, listCampaignRoster } from "../../../../../../lib/table/storage"
 import { TABLE_LOG_VISIBILITIES, type TableLogEntry, type TableLogVisibility } from "../../../../../../lib/table";
 import { exigirAcessoPainel, mensagemDeErro, type ResultadoPainel } from "./comum";
 import { getScopedTableClient } from "../../../../../../lib/auth/scopedClient";
+import { getCharacterRules } from "../../../../../../lib/content";
+import type { CharacterRulesPayload } from "../../../../../../lib/character";
+import { getSpellCostChoice, getVertenteLevel, normalizeCharacter, normalizeSpellContent } from "../../../../../../lib/character";
+import { listSpellsEffective } from "../../../../../../lib/campaignContent";
+import { montarAbaAcoes, type CatalogoAcoesV12 } from "../../../../../../lib/character/abaAcoes";
+import type { EtapaComando, OpcaoComando } from "../feed/comandoConteudo";
+import acoesV12 from "../../../../../../../content/v12/db_acoes_v1_2.json";
 
 /** Teto de tamanho de uma mensagem — protege o payload jsonb e a renderização; o excedente é recusado, nunca truncado em silêncio. */
 const MAX_CARACTERES_MENSAGEM = 2000;
@@ -46,6 +53,88 @@ export interface ContextoChatPainel {
    * os interpreta); jogador, só os que controla.
    */
   personagens: IdentidadeDisponivel[];
+  /** Catálogo publicado para reconhecer comandos mesmo sem personagem escolhido. */
+  pericias?: { id: string; nome: string; atributoPrimario?: string; atributosAlternativos?: { atributo: string; contexto: string }[] }[];
+}
+
+export interface OpcoesComandoChat {
+  versao?: 2;
+  acoes: OpcaoComando[];
+  magias: OpcaoComando[];
+}
+
+function custoAcao(acao: CatalogoAcoesV12["acoes"][number]): string {
+  if (acao.custo.pa_preparado) return "1+ PA";
+  if (acao.custo.proprio) return "PA —";
+  const valores = (acao.opcoes?.length ? acao.opcoes.map((o) => o.custo.pa ?? acao.custo.pa ?? 0) : [acao.custo.pa ?? 0]);
+  const min = Math.min(...valores), max = Math.max(...valores, acao.custo.pa_max ?? 0);
+  return `${min}${acao.custo.repeticao_incremento ? "+" : max > min ? `–${max}` : ""} PA`;
+}
+
+function custoManaMagia(escolha: ReturnType<typeof getSpellCostChoice>, custo: number | null): string {
+  if (escolha?.tipo === "valor") return `${escolha.min}${escolha.max == null ? "+" : escolha.max > escolha.min ? `–${escolha.max}` : ""} Mana`;
+  if (escolha?.tipo === "nivel") {
+    const valores = escolha.tabela.linhas.map((l) => l.mana).filter((n): n is number => n != null);
+    if (valores.length) { const min = Math.min(...valores), max = Math.max(...valores); return `${min}${max > min ? `–${max}` : ""} Mana`; }
+  }
+  return custo == null ? "Mana variável" : `${custo} Mana`;
+}
+
+/** Opções efetivas da identidade atual; nunca oferece magia não aprendida. */
+export async function lerOpcoesComandoChatV2Action(campaignId: string, characterId: string): Promise<ResultadoPainel<OpcoesComandoChat>> {
+  const v = await exigirAcessoPainel(campaignId);
+  if (!v.ok) return { ok: false, erro: v.erro };
+  try {
+    const permitidos = v.acesso.role === "narrator" ? null : await listControlledCharacters(campaignId, { somenteEditar: true });
+    if (permitidos && !permitidos.some((p) => p.id === characterId)) return { ok: false, erro: "Você não pode agir por este personagem." };
+    const personagem = await getCharacterForCampaign(campaignId, characterId);
+    if (!personagem || personagem.archived_at) return { ok: false, erro: "Personagem indisponível." };
+    const ficha = normalizeCharacter(personagem.payload);
+    const aba = montarAbaAcoes(acoesV12 as unknown as CatalogoAcoesV12, ficha, { paMax: 0, reacoesPorRodada: 0 });
+    const aprendidas = new Set((ficha.magias_aprendidas ?? []).map((m) => m.spellSlug));
+    const docs = await listSpellsEffective(campaignId).catch(() => []);
+    return { ok: true, dados: {
+      versao: 2,
+      acoes: aba.grupos.flatMap((g) => g.itens.map((i) => ({
+        id: i.chave, nome: i.acao.nome, detalhe: g.nome,
+        identidade: { familia: "a" as const, cena: i.acao.cena, grupo: i.acao.grupo, slug: i.acao.slug, classe: !!i.acao.classe },
+        custo: { pa: custoAcao(i.acao), extra: i.acao.custo.reacao ? `${i.acao.custo.reacao} Reação` : i.acao.custo.ram ? `${i.acao.custo.ram} RAM` : i.acao.custo.proprio ? "Custo próprio" : undefined },
+        custosPorComplemento: Object.fromEntries((i.acao.opcoes ?? []).map((o) => [o.nome, { pa: `${o.custo.pa ?? i.acao.custo.pa ?? 0}${i.acao.custo.repeticao_incremento ? "+" : ""} PA` }])),
+        complementos: i.acao.opcoes?.map((o) => o.nome) ?? (i.acao.teste?.pericias === "qualquer"
+          ? [] : (i.acao.teste?.pericias?.length ?? 0) > 1
+            ? (i.acao.teste?.pericias as string[]).map((id) => id)
+            : []),
+      }))),
+      magias: docs.map((doc) => normalizeSpellContent(doc.payload as Record<string, unknown>))
+        .filter((s) => s.status === "published" && aprendidas.has(s.slug))
+        .map((s) => {
+          const escolha = getSpellCostChoice(s);
+          const etapas: EtapaComando[] = [];
+          if (escolha?.tipo === "nivel") {
+            const nivelVertente = getVertenteLevel(ficha, s.vertente);
+            etapas.push({ rotulo: "NÍVEL DA MAGIA", opcoes: escolha.tabela.linhas
+              .filter((l) => l.mana != null && (nivelVertente == null || l.nivel <= nivelVertente))
+              .map((l) => ({ codigo: `nivel ${l.nivel}`, nome: `Nível ${l.nivel}`, detalhe: `${l.mana} Mana`, custo: { mana: `${l.mana} Mana` } })) });
+          } else if (escolha?.tipo === "valor") {
+            etapas.push({ rotulo: "MANA INVESTIDA", opcoes: [{ codigo: `mana ${escolha.min}`, nome: `${escolha.min} Mana`, detalhe: escolha.max == null ? "MÍNIMO · DIGITE OUTRO VALOR" : `FAIXA ${escolha.min}–${escolha.max}`, custo: { mana: `${escolha.min} Mana` } }],
+              valorLivre: { prefixo: "mana", min: escolha.min, max: escolha.max } });
+          }
+          for (const e of s.estatisticas.escolhasConjuracao ?? []) {
+            etapas.push({ rotulo: `ESCOLHA ${e.rotulo.toLocaleUpperCase("pt-BR")}`, opcoes: e.opcoes.map((o) => ({ codigo: `${e.id}=${o.id}`, nome: o.nome, detalhe: o.resumo })) });
+          }
+          return { id: s.slug, nome: s.nome, detalhe: `${s.vertente} · nível ${s.estatisticas.nivel}`,
+            identidade: { familia: "m" as const, vertente: s.vertente },
+            etapas,
+            custo: { pa: `${s.estatisticas.custo_pa} PA`, mana: custoManaMagia(escolha, s.estatisticas.custo_mana) },
+            custosPorComplemento: escolha?.tipo === "nivel"
+              ? Object.fromEntries(escolha.tabela.linhas.map((l) => [`nivel ${l.nivel}`, { mana: l.mana == null ? "Mana variável" : `${l.mana} Mana` }]))
+              : {},
+            complementos: escolha?.tipo === "nivel" ? escolha.tabela.linhas.map((l) => `nivel ${l.nivel}`)
+              : escolha?.tipo === "valor" ? [`mana ${escolha.min}`]
+              : s.estatisticas.escolhasConjuracao?.[0]?.opcoes.map((o) => `${s.estatisticas.escolhasConjuracao?.[0].id}=${o.id}`) ?? [] };
+        }),
+    } };
+  } catch (e) { return { ok: false, erro: mensagemDeErro(e, "Falha ao carregar ações e magias.") }; }
 }
 
 /**
@@ -59,9 +148,10 @@ export async function lerContextoChatAction(campaignId: string): Promise<Resulta
 
   try {
     const usuario = await getCurrentUser();
-    const [roster, personagens] = await Promise.all([
+    const [roster, personagens, regrasDoc] = await Promise.all([
       listCampaignRoster(campaignId),
       v.acesso.role === "narrator" ? listCharactersForNarratorCampaign(campaignId) : listControlledCharacters(campaignId, { somenteEditar: true }),
+      getCharacterRules().catch(() => null),
     ]);
     const minhaLinha = usuario ? roster.find((r) => r.userId === usuario.id) : undefined;
     return {
@@ -69,6 +159,7 @@ export async function lerContextoChatAction(campaignId: string): Promise<Resulta
       dados: {
         nomeDaConta: minhaLinha?.displayName ?? (v.acesso.role === "narrator" ? "Narrador" : "Jogador"),
         personagens: personagens.filter((p) => !p.archived_at).map((p) => ({ id: p.id, nome: p.name })),
+        pericias: ((regrasDoc?.payload as CharacterRulesPayload | undefined)?.pericias ?? []).map((p) => ({ id: p.id, nome: p.nome, atributoPrimario: p.atributo_primario, atributosAlternativos: p.atributos_alternativos })),
       },
     };
   } catch (e) {

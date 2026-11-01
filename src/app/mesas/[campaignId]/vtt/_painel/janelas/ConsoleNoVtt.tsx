@@ -133,6 +133,7 @@ function EsqueletoConsole() {
 const ABAS_DA_FICHA = [
   "geral", "atributos", "pericias", "recursos", "condicoes", "talentos", "magias",
   "inventario", "biblioteca", "acoes", "rolagens", "log", "mesa", "personagens", "debug",
+  "personagem", "equipamentos", "mochila", "escalpos", "caracteristicas", "classe", "ruptura",
 ] as const;
 
 function abaValida(aba: string | null | undefined): string | undefined {
@@ -144,6 +145,7 @@ export function ConsoleNoVtt({
   campaignId,
   characterId,
   abaInicial,
+  comandoAberto,
   acaoToken,
   alvosNoMapa,
   onFechar,
@@ -153,6 +155,7 @@ export function ConsoleNoVtt({
   characterId: string | null;
   /** Em qual aba a ficha abre — ver `ApiConsoleDaMesa.abrir`. */
   abaInicial?: string | null;
+  comandoAberto?: { familia: "a" | "m"; id: string; sequencia: number } | null;
   acaoToken?: PedidoAcaoToken | null;
   alvosNoMapa?: AlvoAcaoToken[];
   onFechar: () => void;
@@ -237,6 +240,7 @@ export function ConsoleNoVtt({
             companionModelsIniciais={catalogos.companionModels}
             companionModelsError={catalogos.companionModelsError}
             initialTab={abaValida(abaInicial) as never}
+            comandoAberto={comandoAberto}
             initialCampaignId={campaignId}
             initialCharacterId={characterId}
             janelaDeTurno={abertura.janelaDeTurno}

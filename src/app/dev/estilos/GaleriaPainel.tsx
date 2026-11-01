@@ -183,6 +183,7 @@ export function VitrineChat() {
 /* ── composer ────────────────────────────────────────────────────── */
 
 export function VitrineComposer() {
+  const opcoes = useMemo(() => fixturesDoPainel("narrator").chat, []);
   const [texto, setTexto] = useState("");
   const [visibilidade, setVisibilidade] = useState<TableLogVisibility>("public");
   const [caso, setCaso] = useState<"normal" | "enviando" | "erro">("normal");
@@ -199,6 +200,7 @@ export function VitrineComposer() {
         ))}
       </div>
       <ColunaDoPainel>
+        <div style={{ flex: 1 }} aria-hidden="true" />
         <Composer
           papel="narrator"
           identidade={{ characterId: "p1", nome: "Mara Venn", modo: "personagem" } as Parameters<typeof Composer>[0]["identidade"]}
@@ -217,6 +219,14 @@ export function VitrineComposer() {
           anexo={anexo}
           onAnexar={(arquivo) => setEnvio({ arquivo })}
           onRemoverAnexo={() => setAnexo(null)}
+          pericias={opcoes.pericias}
+          acoes={[
+            ...opcoes.opcoesComando.acoes.map(({ id, nome, detalhe }) => ({ id, nome, detalhe })),
+            { id: "trama:extrair_dados", nome: "Extrair dados", detalhe: "Comandos" },
+            { id: "trama:corromper_dados", nome: "Corromper dados", detalhe: "Comandos" },
+          ]}
+          magias={[{ id: "biotica_corpo_feral", nome: "Corpo Feral", detalhe: "Biótica · nível 3" }, { id: "energetica_rajada_elemental", nome: "Rajada Elemental", detalhe: "Energética · nível 2" }]}
+          fichaPericias={opcoes.fichaRolagem}
         />
       </ColunaDoPainel>
       {envio && (
@@ -254,6 +264,28 @@ export function fixturesDoPainel(papel: "narrator" | "player") {
   return {
     chat: {
       nomeDaConta: narrador ? "Gabi" : "Vitor",
+      pericias: [
+        { id: "percepcao", nome: "Percepção", atributoPrimario: "mente" },
+        { id: "luta", nome: "Luta", atributoPrimario: "corpo", atributosAlternativos: [{ atributo: "mente", contexto: "uso contextual conforme ficção e foco da ação" }] },
+        { id: "arcanismo", nome: "Arcanismo", atributoPrimario: "mente" },
+        { id: "artes", nome: "Artes", atributoPrimario: "animo", atributosAlternativos: [{ atributo: "corpo", contexto: "uso contextual conforme ficção e foco da ação" }] },
+        { id: "balistica", nome: "Balística", atributoPrimario: "corpo", atributosAlternativos: [{ atributo: "mente", contexto: "uso contextual conforme ficção e foco da ação" }] },
+      ],
+      opcoesComando: {
+        acoes: [{ id: "combate:mirar", nome: "Mirar", detalhe: "Ofensiva", custo: { pa: "1 PA" }, identidade: { familia: "a" as const, cena: "combate", grupo: "ofensiva" } }, { id: "combate:atacar", nome: "Atacar", detalhe: "Ofensiva", custo: { pa: "2 PA" }, identidade: { familia: "a" as const, cena: "combate", grupo: "ofensiva" } }],
+        magias: [{ id: "cinetica_misseis_cineticos", nome: "Mísseis Cinéticos", detalhe: "Cinética · nível 1", custo: { pa: "2 PA", mana: "3 Mana" }, identidade: { familia: "m" as const, vertente: "cinetica" } }],
+      },
+      fichaRolagem: {
+        characterId: "p1", nome: "Mara Venn",
+        atributos: [{ id: "corpo", nome: "Corpo", valor: 2 }, { id: "mente", nome: "Mente", valor: 3 }, { id: "animo", nome: "Ânimo", valor: 1 }],
+        pericias: [
+          { id: "percepcao", nome: "Percepção", valor: 2, atributoPrimario: "mente" },
+          { id: "luta", nome: "Luta", valor: 3, atributoPrimario: "corpo", atributosAlternativos: [{ atributo: "mente", contexto: "uso contextual conforme ficção e foco da ação" }] },
+          { id: "arcanismo", nome: "Arcanismo", valor: 1, atributoPrimario: "mente" },
+          { id: "artes", nome: "Artes", valor: 1, atributoPrimario: "animo", atributosAlternativos: [{ atributo: "corpo", contexto: "uso contextual conforme ficção e foco da ação" }] },
+          { id: "balistica", nome: "Balística", valor: 0, atributoPrimario: "corpo", atributosAlternativos: [{ atributo: "mente", contexto: "uso contextual conforme ficção e foco da ação" }] },
+        ],
+      },
       personagens: narrador
         ? [{ id: "p1", nome: "Mara Venn" }, { id: "p2", nome: "Corvo" }, { id: "p4", nome: "Sentinela da Doca" }]
         : [{ id: "p1", nome: "Mara Venn" }],

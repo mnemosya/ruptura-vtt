@@ -11,6 +11,12 @@
  */
 
 import { escreverComando, lerComandoRolagem } from "../src/app/mesas/[campaignId]/vtt/_painel/feed/comandoRolagem";
+import { lerComandoPericia } from "../src/app/mesas/[campaignId]/vtt/_painel/feed/comandoPericia";
+import { lerComandoConteudo } from "../src/app/mesas/[campaignId]/vtt/_painel/feed/comandoConteudo";
+import { completarIdentidadeComando } from "../src/app/mesas/[campaignId]/vtt/_painel/feed/identidadeComando";
+import { etapaPendente } from "../src/app/mesas/[campaignId]/vtt/_painel/feed/etapasComando";
+import { lerComandoSobrecarga } from "../src/app/mesas/[campaignId]/vtt/_painel/feed/comandoSobrecarga";
+import { ABAS_COMANDO_FICHA, lerComandoFicha } from "../src/app/mesas/[campaignId]/vtt/_painel/feed/comandoFicha";
 import {
   EXCLUIDOS_DO_FEED,
   PROJETORES,
@@ -44,6 +50,70 @@ function ok(criterio: string, cond: boolean, detalhe: string) {
     falhou++;
     console.error(`FALHA - ${criterio}: ${detalhe}`);
   }
+}
+
+{
+  ok("FICHA1 (/f abre a visão principal)", lerComandoFicha("/f").tipo === "ok" && (lerComandoFicha("/f") as { aba: string }).aba === "personagem", "/f");
+  const inventario = lerComandoFicha("/F INVENTARIO");
+  ok("FICHA2 (nome da aba aceita maiúsculas e ausência de acento)", inventario.tipo === "ok" && inventario.aba === "mochila", JSON.stringify(inventario));
+  ok("FICHA3 (todas as abas do Console estão disponíveis)", ABAS_COMANDO_FICHA.length === 9 && ABAS_COMANDO_FICHA.every((a) => lerComandoFicha(`/f ${a.label}`).tipo === "ok"), ABAS_COMANDO_FICHA.map((a) => a.label).join(", "));
+  ok("FICHA4 (prefixo parcial pede escolha)", lerComandoFicha("/f mag").tipo === "parcial", "/f mag");
+}
+
+{
+  const energia = lerComandoSobrecarga("/S ENERGIA");
+  ok("S1 (/s executa Surto de Energia por nome curto)", energia.tipo === "ok" && energia.nome === "Surto de Energia" && energia.pontos === 1, JSON.stringify(energia));
+  const completo = lerComandoSobrecarga("/s sobrecarga surto de proteção");
+  ok("S2 (prefixo sobrecarga e acento são aceitos)", completo.tipo === "ok" && completo.nome === "Surto de Proteção", JSON.stringify(completo));
+  const urgencia = lerComandoSobrecarga("/s urgencia 2");
+  ok("S3 (Urgência aceita quantidade válida)", urgencia.tipo === "ok" && urgencia.pontos === 2, JSON.stringify(urgencia));
+  ok("S4 (quantidade fora do custo é recusada)", lerComandoSobrecarga("/s urgencia 4").tipo === "erro", "4 Sobrecargas");
+  ok("S5 (/s sobrecarga abre as opções)", lerComandoSobrecarga("/s sobrecarga").tipo === "parcial", "parcial");
+}
+
+{
+  const acoes = [{ id: "combate:mirar", nome: "Mirar", detalhe: "Combate" }];
+  const magias = [{ id: "cinetica_misseis", nome: "Mísseis Cinéticos", detalhe: "Cinética" }];
+  const acao = lerComandoConteudo("/A MIRAR", acoes, magias);
+  ok("F1 (/a resolve ação por nome)", acao.tipo === "ok" && acao.id === "combate:mirar", JSON.stringify(acao));
+  const magia = lerComandoConteudo("/m misseis cineticos", acoes, magias);
+  ok("F2 (/m aceita nome composto sem acento)", magia.tipo === "ok" && magia.id === "cinetica_misseis", JSON.stringify(magia));
+  ok("F3 (família incompleta aguarda escolha)", lerComandoConteudo("/m mis", acoes, magias).tipo === "parcial", "parcial");
+  ok("F4 (outras barras continuam texto)", lerComandoConteudo("/me olha", acoes, magias).tipo === "texto", "texto");
+  const forma = lerComandoConteudo("/a Mirar percepção", acoes, magias);
+  ok("F5 (ação conserva complemento para execução direta)", forma.tipo === "ok" && forma.argumento === "percepcao", JSON.stringify(forma));
+  const custo = lerComandoConteudo("/M MÍSSEIS CINÉTICOS mana 3", acoes, magias);
+  ok("F6 (magia conserva escolha de custo)", custo.tipo === "ok" && custo.argumento === "mana 3", JSON.stringify(custo));
+
+  const acaoAntiga = completarIdentidadeComando({ id: "trama:extrair_dados", nome: "Extrair dados", detalhe: "Comandos" }, "a");
+  ok("F7 (ação antiga recupera ícone e custos do catálogo)", acaoAntiga.identidade?.familia === "a" && acaoAntiga.identidade.slug === "extrair_dados" && acaoAntiga.identidade.grupo === "comando" && acaoAntiga.custo?.pa === "2 PA" && acaoAntiga.custo.extra === "2 RAM", JSON.stringify(acaoAntiga));
+  const magiaAntiga = completarIdentidadeComando({ id: "biotica_corpo_feral", nome: "Corpo Feral", detalhe: "Biótica · nível 3" }, "m");
+  ok("F8 (magia antiga recupera vertente, PA e Mana)", magiaAntiga.identidade?.familia === "m" && magiaAntiga.identidade.vertente === "biotica" && magiaAntiga.custo?.pa === "2 PA" && magiaAntiga.custo.mana === "5 Mana", JSON.stringify(magiaAntiga));
+  const rajada = completarIdentidadeComando({ id: "energetica_rajada_elemental", nome: "Rajada Elemental", detalhe: "Energética · nível 2" }, "m");
+  const manifestacao = etapaPendente(rajada, "");
+  ok("F9 (nome completo da magia já mostra a manifestação obrigatória)", manifestacao?.etapa.rotulo === "ESCOLHA MANIFESTAÇÃO" && manifestacao.etapa.opcoes.some((o) => o.codigo === "manifestacao=ignea"), JSON.stringify(manifestacao));
+  ok("F10 (a magia só fica completa após escolher manifestação)", etapaPendente(rajada, "manifestacao=gelida") === null, "manifestacao=gelida");
+  const ninho = completarIdentidadeComando({ id: "biotica_ninho", nome: "Ninho", detalhe: "Biótica" }, "m");
+  const primeira = etapaPendente(ninho, "");
+  const segunda = primeira?.etapa.opcoes[0] ? etapaPendente(ninho, primeira.etapa.opcoes[0].codigo) : null;
+  ok("F11 (magia com duas escolhas avança para a próxima)", primeira?.etapa.rotulo === "ESCOLHA TAMANHO" && segunda?.etapa.rotulo === "ESCOLHA FORMA", JSON.stringify([primeira?.etapa.rotulo, segunda?.etapa.rotulo]));
+}
+
+{
+  const catalogo = [{ id: "percepcao", nome: "Percepção" }, { id: "luta", nome: "Luta" }];
+  const ler = (s: string) => lerComandoPericia(s, catalogo);
+  const base = ler("/P PERCEPÇÃO +1 cd 11");
+  ok("P1 (acento, caixa, modificador e CD)", base.tipo === "ok" && base.comando.periciaId === "percepcao" && base.comando.modificador === 1 && base.comando.cd === 11, JSON.stringify(base));
+  const ordem = ler("/p percepcao cd11 ânimo -2");
+  ok("P2 (ordem livre e ânimo sem perder o ID)", ordem.tipo === "ok" && ordem.comando.atributoId === "animo" && ordem.comando.modificador === -2 && ordem.comando.cd === 11, JSON.stringify(ordem));
+  const simples = ler("/p percepcao");
+  ok("P3 (padrões do teste aberto)", simples.tipo === "ok" && simples.comando.atributoId === null && simples.comando.modificador === 0 && simples.comando.cd === null, JSON.stringify(simples));
+  ok("P4 (argumento inválido não vira rolagem)", ler("/p percepcao cd onze").tipo === "erro" && ler("/p percepcao +1 -2").tipo === "erro", "erros");
+  const cdLivre = ler("/p percepcao cd 137");
+  ok("P4b (CD escolhida livremente)", cdLivre.tipo === "ok" && cdLivre.comando.cd === 137, JSON.stringify(cdLivre));
+  ok("P5 (prefixo parcial não vira mensagem)", ler("/p perc").tipo === "parcial", ler("/p perc").tipo);
+  ok("P5b (forma direta antiga orienta a nova sintaxe)", ler("/percepcao").tipo === "erro", ler("/percepcao").tipo);
+  ok("P6 (outro comando mantém caminho do chat)", ler("/me olha").tipo === "texto", ler("/me olha").tipo);
 }
 
 let seq = 0;

@@ -1,0 +1,2715 @@
+{
+  "biotica_agucar_sentidos": {
+    "nome": "AGUÇAR SENTIDOS",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_anamnese": {
+    "nome": "ANAMNESE",
+    "vertente": "biotica",
+    "pa": 1,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA EFEITO EM CRIATURA VIVA",
+        "opcoes": [
+          {
+            "codigo": "efeito=remover_envenenado",
+            "nome": "Remover Envenenado"
+          },
+          {
+            "codigo": "efeito=repetir_resistir",
+            "nome": "Repetir Resistir",
+            "detalhe": "Contra doença, infecção ou parasita, com +1d8."
+          }
+        ]
+      }
+    ]
+  },
+  "biotica_carga_muscular": {
+    "nome": "CARGA MUSCULAR",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_colonia_sentinela": {
+    "nome": "COLÔNIA SENTINELA",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_enxerto": {
+    "nome": "ENXERTO",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_febre": {
+    "nome": "FEBRE",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_sobressalto": {
+    "nome": "SOBRESSALTO",
+    "vertente": "biotica",
+    "pa": 0,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": "REAÇÃO",
+    "etapas": []
+  },
+  "biotica_biorreator": {
+    "nome": "BIORREATOR",
+    "vertente": "biotica",
+    "pa": 3,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA FUNÇÃO",
+        "opcoes": [
+          {
+            "codigo": "funcao=filtrar",
+            "nome": "Filtrar",
+            "detalhe": "Limpa até 15 m³ de água ou ar por hora."
+          },
+          {
+            "codigo": "funcao=reciclar",
+            "nome": "Reciclar",
+            "detalhe": "Converte resíduos em alimento para 1d6 pessoas."
+          },
+          {
+            "codigo": "funcao=decompor",
+            "nome": "Decompor",
+            "detalhe": "Reduz até dois cadáveres a matéria orgânica."
+          }
+        ]
+      }
+    ]
+  },
+  "biotica_corpo_estranho": {
+    "nome": "CORPO ESTRANHO",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_esporos": {
+    "nome": "ESPOROS",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_germinar": {
+    "nome": "GERMINAR",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA EFEITO",
+        "opcoes": [
+          {
+            "codigo": "efeito=cobrir",
+            "nome": "Cobrir",
+            "detalhe": "Terreno difícil em até 4 m de raio."
+          },
+          {
+            "codigo": "efeito=bloquear",
+            "nome": "Bloquear",
+            "detalhe": "Fecha passagem de até 2 m com estrutura de 10 PD."
+          },
+          {
+            "codigo": "efeito=escalar",
+            "nome": "Escalar",
+            "detalhe": "Superfície escalável sem teste."
+          }
+        ]
+      }
+    ]
+  },
+  "biotica_hiperforca": {
+    "nome": "HIPERFORÇA",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_mimetismo": {
+    "nome": "MIMETISMO",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_musculo_elastico": {
+    "nome": "MÚSCULO ELÁSTICO",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_nervo_morto": {
+    "nome": "NERVO MORTO",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_parasita": {
+    "nome": "PARASITA",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_peconha": {
+    "nome": "PEÇONHA",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_plasticidade": {
+    "nome": "PLASTICIDADE",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA ADAPTAÇÃO",
+        "opcoes": [
+          {
+            "codigo": "adaptacao=pulmao_anfibio",
+            "nome": "Pulmão Anfíbio",
+            "detalhe": "Respira debaixo d’água."
+          },
+          {
+            "codigo": "adaptacao=visao_infratermica",
+            "nome": "Visão Infratérmica",
+            "detalhe": "Enxerga no escuro e na fumaça leve até 20 m."
+          },
+          {
+            "codigo": "adaptacao=pele_escamada",
+            "nome": "Pele Escamada",
+            "detalhe": "Reduz em 2 o primeiro dano físico da rodada."
+          },
+          {
+            "codigo": "adaptacao=sangue_depurador",
+            "nome": "Sangue Depurador",
+            "detalhe": "Imune a Envenenado; doenças param de progredir."
+          }
+        ]
+      }
+    ]
+  },
+  "biotica_transfusao": {
+    "nome": "TRANSFUSÃO",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_casulo": {
+    "nome": "CASULO",
+    "vertente": "biotica",
+    "pa": 3,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_corpo_feral": {
+    "nome": "CORPO FERAL",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA MATRIZ",
+        "opcoes": [
+          {
+            "codigo": "matriz=canidea",
+            "nome": "Canídea",
+            "detalhe": "Faro, rastreamento, perseguição e presas."
+          },
+          {
+            "codigo": "matriz=felina",
+            "nome": "Felina",
+            "detalhe": "Visão na penumbra, mobilidade e garras."
+          },
+          {
+            "codigo": "matriz=ofidica",
+            "nome": "Ofídica",
+            "detalhe": "Termorrecepção, contorção, constrição e presas peçonhentas."
+          }
+        ]
+      }
+    ]
+  },
+  "biotica_enxame": {
+    "nome": "ENXAME",
+    "vertente": "biotica",
+    "pa": 3,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_necrose": {
+    "nome": "NECROSE",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_neogenese": {
+    "nome": "NEOGÊNESE",
+    "vertente": "biotica",
+    "pa": 3,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA EFEITO",
+        "opcoes": [
+          {
+            "codigo": "efeito=reconstituir",
+            "nome": "Reconstituir",
+            "detalhe": "Regenera membro, olho, orelha ou órgão em 10 min."
+          },
+          {
+            "codigo": "efeito=apendice_vivo",
+            "nome": "Apêndice Vivo",
+            "detalhe": "Membro extra por 1 hora."
+          }
+        ]
+      }
+    ]
+  },
+  "biotica_rede_micelial": {
+    "nome": "REDE MICELIAL",
+    "vertente": "biotica",
+    "pa": 3,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_regenerar": {
+    "nome": "REGENERAR",
+    "vertente": "biotica",
+    "pa": 3,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_simbionte": {
+    "nome": "SIMBIONTE",
+    "vertente": "biotica",
+    "pa": 3,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_colmeia_de_cura": {
+    "nome": "COLMEIA DE CURA",
+    "vertente": "biotica",
+    "pa": 3,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_corte_sensorial": {
+    "nome": "CORTE SENSORIAL",
+    "vertente": "biotica",
+    "pa": 2,
+    "mana": 6,
+    "manaTexto": "6",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_epidemia": {
+    "nome": "EPIDEMIA",
+    "vertente": "biotica",
+    "pa": 3,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_fome_do_chao": {
+    "nome": "FOME DO CHÃO",
+    "vertente": "biotica",
+    "pa": 3,
+    "mana": 8,
+    "manaTexto": "8",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_jardim_hostil": {
+    "nome": "JARDIM HOSTIL",
+    "vertente": "biotica",
+    "pa": 3,
+    "mana": 8,
+    "manaTexto": "8",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_metamorfose": {
+    "nome": "METAMORFOSE",
+    "vertente": "biotica",
+    "pa": 3,
+    "mana": 8,
+    "manaTexto": "8",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_tumor_voraz": {
+    "nome": "TUMOR VORAZ",
+    "vertente": "biotica",
+    "pa": 3,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_a_carne_lembra": {
+    "nome": "A CARNE LEMBRA",
+    "vertente": "biotica",
+    "pa": 0,
+    "mana": 15,
+    "manaTexto": "15",
+    "conjuracao": "10 MINUTOS",
+    "etapas": []
+  },
+  "biotica_chamado_vivo": {
+    "nome": "CHAMADO VIVO",
+    "vertente": "biotica",
+    "pa": 3,
+    "mana": 10,
+    "manaTexto": "10",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_colheita": {
+    "nome": "COLHEITA",
+    "vertente": "biotica",
+    "pa": 3,
+    "mana": 10,
+    "manaTexto": "10",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "biotica_ninho": {
+    "nome": "NINHO",
+    "vertente": "biotica",
+    "pa": 3,
+    "mana": 10,
+    "manaTexto": "10",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA TAMANHO",
+        "opcoes": [
+          {
+            "codigo": "tamanho=pequenos",
+            "nome": "Pequenos"
+          },
+          {
+            "codigo": "tamanho=medios",
+            "nome": "Médios"
+          }
+        ]
+      },
+      {
+        "rotulo": "ESCOLHA FORMA",
+        "opcoes": [
+          {
+            "codigo": "forma=cacadores",
+            "nome": "Caçadores",
+            "detalhe": "Atacam com 2d8 + 3; 2d6 de dano em acerto."
+          },
+          {
+            "codigo": "forma=vigias",
+            "nome": "Vigias",
+            "detalhe": "Detectam criaturas a até 15 m."
+          },
+          {
+            "codigo": "forma=carregadores",
+            "nome": "Carregadores",
+            "detalhe": "Transportam criaturas ou carga."
+          }
+        ]
+      }
+    ]
+  },
+  "biotica_outro_corpo": {
+    "nome": "OUTRO CORPO",
+    "vertente": "biotica",
+    "pa": 0,
+    "mana": 15,
+    "manaTexto": "15",
+    "conjuracao": "1 HORA",
+    "etapas": []
+  },
+  "biotica_peste": {
+    "nome": "PESTE",
+    "vertente": "biotica",
+    "pa": 0,
+    "mana": 12,
+    "manaTexto": "12",
+    "conjuracao": "10 MINUTOS",
+    "etapas": []
+  },
+  "biotica_sopro_limpo": {
+    "nome": "SOPRO LIMPO",
+    "vertente": "biotica",
+    "pa": 3,
+    "mana": 10,
+    "manaTexto": "10",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_arranque": {
+    "nome": "ARRANQUE",
+    "vertente": "cinetica",
+    "pa": 1,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_contravetor": {
+    "nome": "CONTRAVETOR",
+    "vertente": "cinetica",
+    "pa": 0,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": "REAÇÃO",
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA EFEITO",
+        "opcoes": [
+          {
+            "codigo": "efeito=queda",
+            "nome": "Amortecer queda",
+            "detalhe": "Reduz a altura da queda em até 15 m."
+          },
+          {
+            "codigo": "efeito=deslocamento",
+            "nome": "Frear deslocamento",
+            "detalhe": "Reduz deslocamento involuntário em até 5 m."
+          }
+        ]
+      }
+    ]
+  },
+  "cinetica_esferas_de_impacto": {
+    "nome": "ESFERAS DE IMPACTO",
+    "vertente": "cinetica",
+    "pa": 2,
+    "mana": null,
+    "manaTexto": "3–6",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "MANA INVESTIDA",
+        "opcoes": [
+          {
+            "codigo": "mana 3",
+            "nome": "3 Mana"
+          }
+        ],
+        "valorLivre": {
+          "prefixo": "mana",
+          "min": 3,
+          "max": 6
+        }
+      }
+    ]
+  },
+  "cinetica_estase": {
+    "nome": "ESTASE",
+    "vertente": "cinetica",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_mao_invisivel": {
+    "nome": "MÃO INVISÍVEL",
+    "vertente": "cinetica",
+    "pa": 1,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_propulsao": {
+    "nome": "PROPULSÃO",
+    "vertente": "cinetica",
+    "pa": 1,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_prumo": {
+    "nome": "PRUMO",
+    "vertente": "cinetica",
+    "pa": 0,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": "REAÇÃO",
+    "etapas": []
+  },
+  "cinetica_telecinese": {
+    "nome": "TELECINESE",
+    "vertente": "cinetica",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_barreira_giratoria": {
+    "nome": "BARREIRA GIRATÓRIA",
+    "vertente": "cinetica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_defletir_projetil": {
+    "nome": "DEFLETIR PROJÉTIL",
+    "vertente": "cinetica",
+    "pa": 0,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": "REAÇÃO",
+    "etapas": []
+  },
+  "cinetica_embalo": {
+    "nome": "EMBALO",
+    "vertente": "cinetica",
+    "pa": 1,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_enterrada": {
+    "nome": "ENTERRADA",
+    "vertente": "cinetica",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_passos_sem_chao": {
+    "nome": "PASSOS SEM CHÃO",
+    "vertente": "cinetica",
+    "pa": 1,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_pelicula": {
+    "nome": "PELÍCULA",
+    "vertente": "cinetica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_ricochete": {
+    "nome": "RICOCHETE",
+    "vertente": "cinetica",
+    "pa": 1,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_troca": {
+    "nome": "TROCA",
+    "vertente": "cinetica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_cadencia": {
+    "nome": "CADÊNCIA",
+    "vertente": "cinetica",
+    "pa": 2,
+    "mana": 6,
+    "manaTexto": "6",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_compressao": {
+    "nome": "COMPRESSÃO",
+    "vertente": "cinetica",
+    "pa": 2,
+    "mana": 6,
+    "manaTexto": "6",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_elevacao": {
+    "nome": "ELEVAÇÃO",
+    "vertente": "cinetica",
+    "pa": 2,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_flash": {
+    "nome": "FLASH",
+    "vertente": "cinetica",
+    "pa": 2,
+    "mana": 6,
+    "manaTexto": "6",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_martelo_gravitico": {
+    "nome": "MARTELO GRAVÍTICO",
+    "vertente": "cinetica",
+    "pa": 2,
+    "mana": 6,
+    "manaTexto": "6",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_orbita": {
+    "nome": "ÓRBITA",
+    "vertente": "cinetica",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_plataforma_cinetica": {
+    "nome": "PLATAFORMA CINÉTICA",
+    "vertente": "cinetica",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_rebote": {
+    "nome": "REBOTE",
+    "vertente": "cinetica",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_via_cinetica": {
+    "nome": "VIA CINÉTICA",
+    "vertente": "cinetica",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_comboio": {
+    "nome": "COMBOIO",
+    "vertente": "cinetica",
+    "pa": 2,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_redoma_inercial": {
+    "nome": "REDOMA INERCIAL",
+    "vertente": "cinetica",
+    "pa": 3,
+    "mana": 8,
+    "manaTexto": "8",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_mil_maos": {
+    "nome": "MIL MÃOS",
+    "vertente": "cinetica",
+    "pa": 3,
+    "mana": 10,
+    "manaTexto": "10",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_portal": {
+    "nome": "PORTAL",
+    "vertente": "cinetica",
+    "pa": 3,
+    "mana": 10,
+    "manaTexto": "10",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cinetica_singularidade": {
+    "nome": "SINGULARIDADE",
+    "vertente": "cinetica",
+    "pa": 3,
+    "mana": 10,
+    "manaTexto": "10",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_ancorar": {
+    "nome": "ANCORAR",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_fantasma_sensorial": {
+    "nome": "FANTASMA SENSORIAL",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_impressao": {
+    "nome": "IMPRESSÃO",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_leitura_superficial": {
+    "nome": "LEITURA SUPERFICIAL",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_mascara_mental": {
+    "nome": "MÁSCARA MENTAL",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_modular_emocao": {
+    "nome": "MODULAR EMOÇÃO",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA INTENSIDADE",
+        "opcoes": [
+          {
+            "codigo": "intensidade=amplificar",
+            "nome": "Amplificar",
+            "detalhe": "Agir contra a emoção custa +1 PA."
+          },
+          {
+            "codigo": "intensidade=reduzir",
+            "nome": "Reduzir",
+            "detalhe": "A emoção deixa de ser dominante."
+          }
+        ]
+      }
+    ]
+  },
+  "cognitiva_ruido_mental": {
+    "nome": "RUÍDO MENTAL",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_tunel_atencional": {
+    "nome": "TÚNEL ATENCIONAL",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_ataque_fantasma": {
+    "nome": "ATAQUE FANTASMA",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_ataraxia": {
+    "nome": "ATARAXIA",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_eco_mnemonico": {
+    "nome": "ECO MNEMÔNICO",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_esvanecer_memoria": {
+    "nome": "ESVANECER MEMÓRIA",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_hesitacao": {
+    "nome": "HESITAÇÃO",
+    "vertente": "cognitiva",
+    "pa": 0,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": "REAÇÃO",
+    "etapas": []
+  },
+  "cognitiva_muralha_mental": {
+    "nome": "MURALHA MENTAL",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_ponto_cego": {
+    "nome": "PONTO CEGO",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_sugestao": {
+    "nome": "SUGESTÃO",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_sussurro": {
+    "nome": "SUSSURRO",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_antecipacao": {
+    "nome": "ANTECIPAÇÃO",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_assombrar": {
+    "nome": "ASSOMBRAR",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_axioma": {
+    "nome": "AXIOMA",
+    "vertente": "cognitiva",
+    "pa": 3,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_gaiola_de_pesadelos": {
+    "nome": "GAIOLA DE PESADELOS",
+    "vertente": "cognitiva",
+    "pa": 3,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_grito_psiquico": {
+    "nome": "GRITO PSÍQUICO",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_manada": {
+    "nome": "MANADA",
+    "vertente": "cognitiva",
+    "pa": 3,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA MODO",
+        "opcoes": [
+          {
+            "codigo": "modo=medo",
+            "nome": "Medo",
+            "detalhe": "Alvos não se aproximam da fonte."
+          },
+          {
+            "codigo": "modo=atracao",
+            "nome": "Atração",
+            "detalhe": "Alvos se aproximam da fonte."
+          }
+        ]
+      }
+    ]
+  },
+  "cognitiva_simulacao": {
+    "nome": "SIMULAÇÃO",
+    "vertente": "cognitiva",
+    "pa": 3,
+    "mana": 6,
+    "manaTexto": "6",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_sincronia": {
+    "nome": "SINCRONIA",
+    "vertente": "cognitiva",
+    "pa": 3,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_transmissao": {
+    "nome": "TRANSMISSÃO",
+    "vertente": "cognitiva",
+    "pa": 3,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_veu": {
+    "nome": "VÉU",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_comando": {
+    "nome": "COMANDO",
+    "vertente": "cognitiva",
+    "pa": 2,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_confabulacao": {
+    "nome": "CONFABULAÇÃO",
+    "vertente": "cognitiva",
+    "pa": 3,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_emprestimo": {
+    "nome": "EMPRÉSTIMO",
+    "vertente": "cognitiva",
+    "pa": 3,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA O QUE EMPRESTAR",
+        "opcoes": [
+          {
+            "codigo": "efeito=pericia",
+            "nome": "Perícia"
+          },
+          {
+            "codigo": "efeito=magia",
+            "nome": "Magia",
+            "detalhe": "Nível 3 ou inferior, uma conjuração."
+          },
+          {
+            "codigo": "efeito=caracteristica",
+            "nome": "Característica de Classe",
+            "detalhe": "Um uso."
+          }
+        ]
+      }
+    ]
+  },
+  "cognitiva_nublar": {
+    "nome": "NUBLAR",
+    "vertente": "cognitiva",
+    "pa": 3,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_oblivio": {
+    "nome": "OBLÍVIO",
+    "vertente": "cognitiva",
+    "pa": 3,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_palacio_onirico": {
+    "nome": "PALÁCIO ONÍRICO",
+    "vertente": "cognitiva",
+    "pa": 0,
+    "mana": 8,
+    "manaTexto": "8",
+    "conjuracao": "10 MINUTOS",
+    "etapas": []
+  },
+  "cognitiva_persona": {
+    "nome": "PERSONA",
+    "vertente": "cognitiva",
+    "pa": 3,
+    "mana": 8,
+    "manaTexto": "8",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_a_mente_lembra": {
+    "nome": "A MENTE LEMBRA",
+    "vertente": "cognitiva",
+    "pa": 0,
+    "mana": 12,
+    "manaTexto": "12",
+    "conjuracao": "10 MINUTOS",
+    "etapas": []
+  },
+  "cognitiva_consenso": {
+    "nome": "CONSENSO",
+    "vertente": "cognitiva",
+    "pa": 0,
+    "mana": 12,
+    "manaTexto": "12",
+    "conjuracao": "10 MINUTOS",
+    "etapas": []
+  },
+  "cognitiva_marionete": {
+    "nome": "MARIONETE",
+    "vertente": "cognitiva",
+    "pa": 3,
+    "mana": 15,
+    "manaTexto": "15",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "cognitiva_outra_vida": {
+    "nome": "OUTRA VIDA",
+    "vertente": "cognitiva",
+    "pa": 0,
+    "mana": 12,
+    "manaTexto": "12",
+    "conjuracao": "1 HORA",
+    "etapas": []
+  },
+  "energetica_carga": {
+    "nome": "CARGA",
+    "vertente": "energetica",
+    "pa": 1,
+    "mana": 1,
+    "manaTexto": "1",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_condensacao": {
+    "nome": "CONDENSAÇÃO",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA EFEITO",
+        "opcoes": [
+          {
+            "codigo": "efeito=coletar",
+            "nome": "Coletar",
+            "detalhe": "Até 10 litros de água."
+          },
+          {
+            "codigo": "efeito=secar",
+            "nome": "Secar",
+            "detalhe": "Remove a umidade da área."
+          },
+          {
+            "codigo": "efeito=revelar",
+            "nome": "Revelar",
+            "detalhe": "Destaca marcas, pegadas e correntes de ar."
+          }
+        ]
+      }
+    ]
+  },
+  "energetica_equalizacao": {
+    "nome": "EQUALIZAÇÃO",
+    "vertente": "energetica",
+    "pa": 1,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_evocacao": {
+    "nome": "EVOCAÇÃO",
+    "vertente": "energetica",
+    "pa": 1,
+    "mana": 1,
+    "manaTexto": "1",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA MANIFESTAÇÃO",
+        "opcoes": [
+          {
+            "codigo": "manifestacao=fogo",
+            "nome": "Fogo"
+          },
+          {
+            "codigo": "manifestacao=gelo",
+            "nome": "Gelo"
+          },
+          {
+            "codigo": "manifestacao=eletricidade",
+            "nome": "Eletricidade"
+          },
+          {
+            "codigo": "manifestacao=luz",
+            "nome": "Luz"
+          },
+          {
+            "codigo": "manifestacao=som",
+            "nome": "Som"
+          }
+        ]
+      }
+    ]
+  },
+  "energetica_laco_magnetico": {
+    "nome": "LAÇO MAGNÉTICO",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_modulacao": {
+    "nome": "MODULAÇÃO",
+    "vertente": "energetica",
+    "pa": 1,
+    "mana": null,
+    "manaTexto": "Mana variável",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "NÍVEL DA MAGIA",
+        "opcoes": [
+          {
+            "codigo": "nivel 1",
+            "nome": "Nível 1",
+            "detalhe": "1 Mana",
+            "custo": {
+              "mana": "1 Mana"
+            }
+          },
+          {
+            "codigo": "nivel 2",
+            "nome": "Nível 2",
+            "detalhe": "3 Mana",
+            "custo": {
+              "mana": "3 Mana"
+            }
+          },
+          {
+            "codigo": "nivel 3",
+            "nome": "Nível 3",
+            "detalhe": "5 Mana",
+            "custo": {
+              "mana": "5 Mana"
+            }
+          },
+          {
+            "codigo": "nivel 4",
+            "nome": "Nível 4",
+            "detalhe": "7 Mana",
+            "custo": {
+              "mana": "7 Mana"
+            }
+          },
+          {
+            "codigo": "nivel 5",
+            "nome": "Nível 5",
+            "detalhe": "9 Mana",
+            "custo": {
+              "mana": "9 Mana"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "energetica_revestimento": {
+    "nome": "REVESTIMENTO",
+    "vertente": "energetica",
+    "pa": 1,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA REVESTIMENTO",
+        "opcoes": [
+          {
+            "codigo": "revestimento=igneo",
+            "nome": "Ígneo",
+            "detalhe": "Arma causa +1d4 + Energética ígneo."
+          },
+          {
+            "codigo": "revestimento=gelido",
+            "nome": "Gélido",
+            "detalhe": "Camada de gelo; terreno difícil; Lenta."
+          },
+          {
+            "codigo": "revestimento=eletrico",
+            "nome": "Elétrico",
+            "detalhe": "Arma causa +1d4 + Energética elétrico."
+          },
+          {
+            "codigo": "revestimento=luminoso",
+            "nome": "Luminoso",
+            "detalhe": "Emite luz; golpe pode Ofuscar."
+          },
+          {
+            "codigo": "revestimento=sonoro",
+            "nome": "Sonoro",
+            "detalhe": "Amplifica ou abafa os sons do alvo."
+          }
+        ]
+      }
+    ]
+  },
+  "energetica_termografia": {
+    "nome": "TERMOGRAFIA",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_absorver_energia": {
+    "nome": "ABSORVER ENERGIA",
+    "vertente": "energetica",
+    "pa": 0,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": "REAÇÃO",
+    "etapas": []
+  },
+  "energetica_campo_de_saturacao": {
+    "nome": "CAMPO DE SATURAÇÃO",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA SATURAÇÃO",
+        "opcoes": [
+          {
+            "codigo": "saturacao=baixa",
+            "nome": "Baixa",
+            "detalhe": "Criaturas na área ficam Insaturadas."
+          },
+          {
+            "codigo": "saturacao=alta",
+            "nome": "Alta",
+            "detalhe": "Criaturas na área ficam Saturadas."
+          }
+        ]
+      }
+    ]
+  },
+  "energetica_captura_sonora": {
+    "nome": "CAPTURA SONORA",
+    "vertente": "energetica",
+    "pa": 1,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_crioforma": {
+    "nome": "CRIOFORMA",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_desvio_espectral": {
+    "nome": "DESVIO ESPECTRAL",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA FAIXA",
+        "opcoes": [
+          {
+            "codigo": "faixa=luz",
+            "nome": "Luz"
+          },
+          {
+            "codigo": "faixa=som",
+            "nome": "Som"
+          },
+          {
+            "codigo": "faixa=sinais",
+            "nome": "Sinais eletromagnéticos"
+          }
+        ]
+      }
+    ]
+  },
+  "energetica_ecolocalizacao": {
+    "nome": "ECOLOCALIZAÇÃO",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_leitura_arcana": {
+    "nome": "LEITURA ARCANA",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_pulso_eletromagnetico": {
+    "nome": "PULSO ELETROMAGNÉTICO",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_rajada_elemental": {
+    "nome": "RAJADA ELEMENTAL",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA MANIFESTAÇÃO",
+        "opcoes": [
+          {
+            "codigo": "manifestacao=ignea",
+            "nome": "Ígnea",
+            "detalhe": "2d6 + Energética ígneo; Queimando no crítico."
+          },
+          {
+            "codigo": "manifestacao=gelida",
+            "nome": "Gélida",
+            "detalhe": "1d10 + Energética gélido; prende ao chão (Agarrado)."
+          },
+          {
+            "codigo": "manifestacao=eletrica",
+            "nome": "Elétrica",
+            "detalhe": "1d10 + Energética elétrico; +1d6 em alvo molhado ou com metal."
+          }
+        ]
+      }
+    ]
+  },
+  "energetica_ressonancia": {
+    "nome": "RESSONÂNCIA",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA MANIFESTAÇÃO",
+        "opcoes": [
+          {
+            "codigo": "manifestacao=silencio",
+            "nome": "Silêncio",
+            "detalhe": "Nenhum som se propaga na área."
+          },
+          {
+            "codigo": "manifestacao=estrondo",
+            "nome": "Estrondo",
+            "detalhe": "Vigor ou fica Surda."
+          }
+        ]
+      }
+    ]
+  },
+  "energetica_transfusao_de_mana": {
+    "nome": "TRANSFUSÃO DE MANA",
+    "vertente": "energetica",
+    "pa": 1,
+    "mana": 1,
+    "manaTexto": "1",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_transposicao_sonora": {
+    "nome": "TRANSPOSIÇÃO SONORA",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_bola_de_fogo": {
+    "nome": "BOLA DE FOGO",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 6,
+    "manaTexto": "6",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_campo_de_forca": {
+    "nome": "CAMPO DE FORÇA",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_circuito": {
+    "nome": "CIRCUITO",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 6,
+    "manaTexto": "6",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_janela_espectral": {
+    "nome": "JANELA ESPECTRAL",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_lanca_de_gelo": {
+    "nome": "LANÇA DE GELO",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_nevasca": {
+    "nome": "NEVASCA",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 6,
+    "manaTexto": "6",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_onda_de_impacto": {
+    "nome": "ONDA DE IMPACTO",
+    "vertente": "energetica",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_prisma": {
+    "nome": "PRISMA",
+    "vertente": "energetica",
+    "pa": 0,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": "REAÇÃO",
+    "etapas": []
+  },
+  "energetica_dissipacao": {
+    "nome": "DISSIPAÇÃO",
+    "vertente": "energetica",
+    "pa": 3,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_lacre_de_mana": {
+    "nome": "LACRE DE MANA",
+    "vertente": "energetica",
+    "pa": 3,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_olho_solar": {
+    "nome": "OLHO SOLAR",
+    "vertente": "energetica",
+    "pa": 3,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_parede_de_fogo": {
+    "nome": "PAREDE DE FOGO",
+    "vertente": "energetica",
+    "pa": 3,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_prisao_glacial": {
+    "nome": "PRISÃO GLACIAL",
+    "vertente": "energetica",
+    "pa": 3,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_tempestade_de_raios": {
+    "nome": "TEMPESTADE DE RAIOS",
+    "vertente": "energetica",
+    "pa": 3,
+    "mana": 8,
+    "manaTexto": "8",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_chuva_de_meteoros": {
+    "nome": "CHUVA DE METEOROS",
+    "vertente": "energetica",
+    "pa": 4,
+    "mana": 10,
+    "manaTexto": "10",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "energetica_zona_nula": {
+    "nome": "ZONA NULA",
+    "vertente": "energetica",
+    "pa": 4,
+    "mana": 10,
+    "manaTexto": "10",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_acoplar": {
+    "nome": "ACOPLAR",
+    "vertente": "material",
+    "pa": 1,
+    "mana": 1,
+    "manaTexto": "1",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_alterar_propriedades": {
+    "nome": "ALTERAR PROPRIEDADES",
+    "vertente": "material",
+    "pa": 1,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA PROPRIEDADE",
+        "opcoes": [
+          {
+            "codigo": "propriedade=escorregadia",
+            "nome": "Escorregadia"
+          },
+          {
+            "codigo": "propriedade=aspera",
+            "nome": "Áspera"
+          },
+          {
+            "codigo": "propriedade=pegajosa",
+            "nome": "Pegajosa"
+          },
+          {
+            "codigo": "propriedade=condutiva",
+            "nome": "Condutiva"
+          },
+          {
+            "codigo": "propriedade=isolante",
+            "nome": "Isolante"
+          },
+          {
+            "codigo": "propriedade=opaca",
+            "nome": "Opaca"
+          },
+          {
+            "codigo": "propriedade=translucida",
+            "nome": "Translúcida"
+          },
+          {
+            "codigo": "propriedade=espelhada",
+            "nome": "Espelhada"
+          }
+        ]
+      }
+    ]
+  },
+  "material_armadilha": {
+    "nome": "ARMADILHA",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA EFEITO",
+        "opcoes": [
+          {
+            "codigo": "efeito=garra",
+            "nome": "Garra",
+            "detalhe": "Esquivar ou fica Agarrada (4 PD)."
+          },
+          {
+            "codigo": "efeito=colapso",
+            "nome": "Colapso",
+            "detalhe": "Terreno difícil; Mobilidade ou fica Caída."
+          }
+        ]
+      }
+    ]
+  },
+  "material_barreira": {
+    "nome": "BARREIRA",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_consertar": {
+    "nome": "CONSERTAR",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_imprimir": {
+    "nome": "IMPRIMIR",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_lastro": {
+    "nome": "LASTRO",
+    "vertente": "material",
+    "pa": 1,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA EFEITO",
+        "opcoes": [
+          {
+            "codigo": "efeito=leve",
+            "nome": "Leve",
+            "detalhe": "Um décimo do peso."
+          },
+          {
+            "codigo": "efeito=pesado",
+            "nome": "Pesado",
+            "detalhe": "Dez vezes o peso."
+          }
+        ]
+      }
+    ]
+  },
+  "material_miniatura": {
+    "nome": "MINIATURA",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_modelar": {
+    "nome": "MODELAR",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_arsenal": {
+    "nome": "ARSENAL",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA FORMA",
+        "opcoes": [
+          {
+            "codigo": "forma=lamina",
+            "nome": "Lâmina",
+            "detalhe": "Corpo + 1d8 cortante ou perfurante · 6 PD"
+          },
+          {
+            "codigo": "forma=lanca",
+            "nome": "Lança",
+            "detalhe": "Corpo + 1d6 perfurante · 5 PD"
+          },
+          {
+            "codigo": "forma=bastao",
+            "nome": "Bastão",
+            "detalhe": "Corpo + 1d6 contundente · 6 PD"
+          },
+          {
+            "codigo": "forma=martelo",
+            "nome": "Martelo",
+            "detalhe": "Corpo + 1d10 contundente · 8 PD"
+          },
+          {
+            "codigo": "forma=manoplas",
+            "nome": "Manoplas",
+            "detalhe": "Corpo + 1d6 contundente · 6 PD"
+          },
+          {
+            "codigo": "forma=corrente",
+            "nome": "Corrente",
+            "detalhe": "Corpo + 1d6 contundente · 5 PD"
+          },
+          {
+            "codigo": "forma=escudo",
+            "nome": "Escudo",
+            "detalhe": "8 PD"
+          },
+          {
+            "codigo": "forma=municao",
+            "nome": "Munição",
+            "detalhe": "6 unidades de um tipo."
+          }
+        ]
+      }
+    ]
+  },
+  "material_blindagem": {
+    "nome": "BLINDAGEM",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_cama_elastica": {
+    "nome": "CAMA ELÁSTICA",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_enfraquecer": {
+    "nome": "ENFRAQUECER",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_escudo_instintivo": {
+    "nome": "ESCUDO INSTINTIVO",
+    "vertente": "material",
+    "pa": 0,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": "REAÇÃO",
+    "etapas": []
+  },
+  "material_estilhacar": {
+    "nome": "ESTILHAÇAR",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_memoria_de_forma": {
+    "nome": "MEMÓRIA DE FORMA",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_plano_de_corte": {
+    "nome": "PLANO DE CORTE",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_reforcar": {
+    "nome": "REFORÇAR",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_abalo_sismico": {
+    "nome": "ABALO SÍSMICO",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_abrir_tunel": {
+    "nome": "ABRIR TÚNEL",
+    "vertente": "material",
+    "pa": 3,
+    "mana": 6,
+    "manaTexto": "6",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_campo_de_espinhos": {
+    "nome": "CAMPO DE ESPINHOS",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_carcere": {
+    "nome": "CÁRCERE",
+    "vertente": "material",
+    "pa": 3,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_convergir": {
+    "nome": "CONVERGIR",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 6,
+    "manaTexto": "6",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_empalar": {
+    "nome": "EMPALAR",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_fundir_se_a_estrutura": {
+    "nome": "FUNDIR-SE À ESTRUTURA",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_linha_de_demolicao": {
+    "nome": "LINHA DE DEMOLIÇÃO",
+    "vertente": "material",
+    "pa": 0,
+    "mana": 6,
+    "manaTexto": "6",
+    "conjuracao": "TEMPO VARIÁVEL",
+    "etapas": []
+  },
+  "material_rosacea_balistica": {
+    "nome": "ROSÁCEA BALÍSTICA",
+    "vertente": "material",
+    "pa": 2,
+    "mana": 6,
+    "manaTexto": "6",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_arquitetura_de_campo": {
+    "nome": "ARQUITETURA DE CAMPO",
+    "vertente": "material",
+    "pa": 0,
+    "mana": 8,
+    "manaTexto": "8",
+    "conjuracao": "10 MINUTOS",
+    "etapas": []
+  },
+  "material_colapso_em_cadeia": {
+    "nome": "COLAPSO EM CADEIA",
+    "vertente": "material",
+    "pa": 3,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_exoestrutura_monolitica": {
+    "nome": "EXOESTRUTURA MONOLÍTICA",
+    "vertente": "material",
+    "pa": 3,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_labirinto": {
+    "nome": "LABIRINTO",
+    "vertente": "material",
+    "pa": 3,
+    "mana": 8,
+    "manaTexto": "8",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_reconstruir": {
+    "nome": "RECONSTRUIR",
+    "vertente": "material",
+    "pa": 0,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": "10 MINUTOS",
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA EFEITO",
+        "opcoes": [
+          {
+            "codigo": "efeito=pd",
+            "nome": "Restaurar PD",
+            "detalhe": "O alvo recupera até 30 PD."
+          },
+          {
+            "codigo": "efeito=mit",
+            "nome": "Restaurar MIT",
+            "detalhe": "Uma armadura recupera 3d6 MIT."
+          },
+          {
+            "codigo": "efeito=reincorporar",
+            "nome": "Reincorporar",
+            "detalhe": "Partes separadas a até 15 m voltam ao lugar."
+          }
+        ]
+      }
+    ]
+  },
+  "material_soterrar": {
+    "nome": "SOTERRAR",
+    "vertente": "material",
+    "pa": 3,
+    "mana": 8,
+    "manaTexto": "8",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_cidadela": {
+    "nome": "CIDADELA",
+    "vertente": "material",
+    "pa": 0,
+    "mana": 12,
+    "manaTexto": "12",
+    "conjuracao": "10 MINUTOS",
+    "etapas": []
+  },
+  "material_colosso": {
+    "nome": "COLOSSO",
+    "vertente": "material",
+    "pa": 4,
+    "mana": 12,
+    "manaTexto": "12",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_geometria_soberana": {
+    "nome": "GEOMETRIA SOBERANA",
+    "vertente": "material",
+    "pa": 4,
+    "mana": 12,
+    "manaTexto": "12",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_ruina": {
+    "nome": "RUÍNA",
+    "vertente": "material",
+    "pa": 4,
+    "mana": 10,
+    "manaTexto": "10",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "material_transmutacao": {
+    "nome": "TRANSMUTAÇÃO",
+    "vertente": "material",
+    "pa": 0,
+    "mana": 15,
+    "manaTexto": "15",
+    "conjuracao": "1 HORA",
+    "etapas": []
+  },
+  "sinaptica_ancora": {
+    "nome": "ÂNCORA",
+    "vertente": "sinaptica",
+    "pa": 1,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_cache": {
+    "nome": "CACHE",
+    "vertente": "sinaptica",
+    "pa": 1,
+    "mana": 1,
+    "manaTexto": "1",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_canal": {
+    "nome": "CANAL",
+    "vertente": "sinaptica",
+    "pa": 1,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_falso_positivo": {
+    "nome": "FALSO POSITIVO",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_folego": {
+    "nome": "FÔLEGO",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_gatilho": {
+    "nome": "GATILHO",
+    "vertente": "sinaptica",
+    "pa": 1,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_indice": {
+    "nome": "ÍNDICE",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA EFEITO",
+        "opcoes": [
+          {
+            "codigo": "efeito=buscar",
+            "nome": "Buscar",
+            "detalhe": "Pesquisa dados acessíveis usando uma referência concreta e apresenta as correspondências diretas."
+          },
+          {
+            "codigo": "efeito=armazenar",
+            "nome": "Armazenar",
+            "detalhe": "Preserva por 1 hora um arquivo, registros ou até 10 minutos de fluxo. Apenas um armazenamento ativo."
+          }
+        ]
+      }
+    ]
+  },
+  "sinaptica_leitura": {
+    "nome": "LEITURA",
+    "vertente": "sinaptica",
+    "pa": 1,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_marca": {
+    "nome": "MARCA",
+    "vertente": "sinaptica",
+    "pa": 1,
+    "mana": 1,
+    "manaTexto": "1",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_mergulho": {
+    "nome": "MERGULHO",
+    "vertente": "sinaptica",
+    "pa": 1,
+    "mana": null,
+    "manaTexto": "Mana variável",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "MANA INVESTIDA",
+        "opcoes": [
+          {
+            "codigo": "mana 1",
+            "nome": "1 Mana"
+          }
+        ],
+        "valorLivre": {
+          "prefixo": "mana",
+          "min": 1,
+          "max": null
+        }
+      }
+    ]
+  },
+  "sinaptica_ruido": {
+    "nome": "RUÍDO",
+    "vertente": "sinaptica",
+    "pa": 1,
+    "mana": 2,
+    "manaTexto": "2",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_sintonizar": {
+    "nome": "SINTONIZAR",
+    "vertente": "sinaptica",
+    "pa": 1,
+    "mana": 1,
+    "manaTexto": "1",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_sonda": {
+    "nome": "SONDA",
+    "vertente": "sinaptica",
+    "pa": 1,
+    "mana": 1,
+    "manaTexto": "1",
+    "conjuracao": null,
+    "etapas": [
+      {
+        "rotulo": "ESCOLHA EFEITO",
+        "opcoes": [
+          {
+            "codigo": "efeito=varredura",
+            "nome": "Varredura",
+            "detalhe": "Detecta assinaturas sinápticas em uma esfera de 15 m: posição aproximada, categoria, atividade e fluxos detectáveis."
+          },
+          {
+            "codigo": "efeito=leitura",
+            "nome": "Leitura",
+            "detalhe": "Examina uma runa ou dispositivo a até 10 m: função atual, última operação identificável e estado geral."
+          }
+        ]
+      }
+    ]
+  },
+  "sinaptica_assistente": {
+    "nome": "ASSISTENTE",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_compilacao": {
+    "nome": "COMPILAÇÃO",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_convocar": {
+    "nome": "CONVOCAR",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_desvio": {
+    "nome": "DESVIO",
+    "vertente": "sinaptica",
+    "pa": 0,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": "Reação",
+    "etapas": []
+  },
+  "sinaptica_enlace": {
+    "nome": "ENLACE",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_extracao": {
+    "nome": "EXTRAÇÃO",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_interceptar": {
+    "nome": "INTERCEPTAR",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_isolar": {
+    "nome": "ISOLAR",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_mimesis": {
+    "nome": "MIMESIS",
+    "vertente": "sinaptica",
+    "pa": 0,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": "REAÇÃO",
+    "etapas": []
+  },
+  "sinaptica_pacote": {
+    "nome": "PACOTE",
+    "vertente": "sinaptica",
+    "pa": 0,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": "Reação",
+    "etapas": []
+  },
+  "sinaptica_pele_falsa": {
+    "nome": "PELE FALSA",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_replay": {
+    "nome": "REPLAY",
+    "vertente": "sinaptica",
+    "pa": 0,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": "Reação",
+    "etapas": []
+  },
+  "sinaptica_ultimo_ciclo": {
+    "nome": "ÚLTIMO CICLO",
+    "vertente": "sinaptica",
+    "pa": 0,
+    "mana": 3,
+    "manaTexto": "3",
+    "conjuracao": "Reação",
+    "etapas": []
+  },
+  "sinaptica_a_cacada": {
+    "nome": "A CAÇADA",
+    "vertente": "sinaptica",
+    "pa": 3,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_arquivo_vivo": {
+    "nome": "ARQUIVO VIVO",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_atravessar": {
+    "nome": "ATRAVESSAR",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_blackout": {
+    "nome": "BLACKOUT",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 6,
+    "manaTexto": "6",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_entrelinhas": {
+    "nome": "ENTRELINHAS",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_exumar": {
+    "nome": "EXUMAR",
+    "vertente": "sinaptica",
+    "pa": 3,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_interface": {
+    "nome": "INTERFACE",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 4,
+    "manaTexto": "4",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_mascara": {
+    "nome": "MÁSCARA",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_palco_virtual": {
+    "nome": "PALCO VIRTUAL",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_panorama": {
+    "nome": "PANORAMA",
+    "vertente": "sinaptica",
+    "pa": 3,
+    "mana": 6,
+    "manaTexto": "6",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_redline": {
+    "nome": "REDLINE",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_usurpacao": {
+    "nome": "USURPAÇÃO",
+    "vertente": "sinaptica",
+    "pa": 0,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": "Reação",
+    "etapas": []
+  },
+  "sinaptica_vicario": {
+    "nome": "VICÁRIO",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_agente": {
+    "nome": "AGENTE",
+    "vertente": "sinaptica",
+    "pa": 3,
+    "mana": 8,
+    "manaTexto": "8",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_desfiar": {
+    "nome": "DESFIAR",
+    "vertente": "sinaptica",
+    "pa": 3,
+    "mana": 8,
+    "manaTexto": "8",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_duplicata": {
+    "nome": "DUPLICATA",
+    "vertente": "sinaptica",
+    "pa": 3,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_fantasma_de_sinal": {
+    "nome": "FANTASMA DE SINAL",
+    "vertente": "sinaptica",
+    "pa": 3,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_heranca": {
+    "nome": "HERANÇA",
+    "vertente": "sinaptica",
+    "pa": 3,
+    "mana": 8,
+    "manaTexto": "8",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_laplace": {
+    "nome": "LAPLACE",
+    "vertente": "sinaptica",
+    "pa": 2,
+    "mana": 7,
+    "manaTexto": "7",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_construto": {
+    "nome": "CONSTRUTO",
+    "vertente": "sinaptica",
+    "pa": 4,
+    "mana": 15,
+    "manaTexto": "15",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_encarnacao": {
+    "nome": "ENCARNAÇÃO",
+    "vertente": "sinaptica",
+    "pa": 4,
+    "mana": 12,
+    "manaTexto": "12",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_onipresenca": {
+    "nome": "ONIPRESENÇA",
+    "vertente": "sinaptica",
+    "pa": 4,
+    "mana": 5,
+    "manaTexto": "5",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_render": {
+    "nome": "RENDER",
+    "vertente": "sinaptica",
+    "pa": 4,
+    "mana": 12,
+    "manaTexto": "12",
+    "conjuracao": null,
+    "etapas": []
+  },
+  "sinaptica_soberania": {
+    "nome": "SOBERANIA",
+    "vertente": "sinaptica",
+    "pa": 3,
+    "mana": 12,
+    "manaTexto": "12",
+    "conjuracao": null,
+    "etapas": []
+  }
+}

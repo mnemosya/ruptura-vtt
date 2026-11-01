@@ -4415,7 +4415,9 @@ export default function CharacterSheetClient({
             api={consoleApi}
             // "Mercado" da mesa pede a aba antiga "inventario": no Console é a Mochila (onde fica a loja provisória).
             // "acoes" vem da roda tática do token e tem o mesmo id no Console.
-            abaInicial={initialTab === "inventario" ? "mochila" : initialTab === "acoes" ? "acoes" : undefined}
+            abaInicial={initialTab === "inventario" ? "mochila" : initialTab === "geral" ? "personagem"
+              : (["personagem", "equipamentos", "mochila", "magias", "escalpos", "caracteristicas", "classe", "acoes", "ruptura"] as string[]).includes(initialTab ?? "")
+                ? initialTab as Parameters<typeof CharacterConsole>[0]["abaInicial"] : undefined}
           />
         </ConsoleErrorBoundary>
       )}
