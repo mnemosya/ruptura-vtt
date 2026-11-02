@@ -19,7 +19,6 @@
 
 import { Fragment, useCallback, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { PolyDie } from "./PolyDie";
 import { CARGA_MAX_MS } from "./lancamento";
 import { Check, Chevron, Cross, Dice, DoubleCheck, Half, Warn } from "./icones";
 import { X } from "lucide-react";
@@ -175,42 +174,44 @@ export function Leitura({ label, children }: { label: string; children: ReactNod
  */
 const DADO_SEM_RESULTADO: Accent = { key: "dado", hex: "#00d4ff", soft: "rgba(0,212,255,0.14)" };
 
-export function DadosRolados({ dados, maiorDado, size = 46, landed = false, dim = false, acento }: {
+/** Ficha de um dado (board "Chat Log"): o número num quadrinho; o que
+    VALEU acende na cor do veredito. Substitui o d8 em polígono na leitura
+    de resultado em todo lugar — ferramenta, Console e chat usam a MESMA
+    leitura. Estilo inline porque o Console roda em /ficha, sem as
+    variáveis do VTT. */
+function FichaDado({ valor, keep, cor }: { valor?: number; keep: boolean; cor: string }) {
+  return (
+    <span
+      className="rv-ficha-dado"
+      data-keep={keep ? "true" : undefined}
+      style={{
+        display: "inline-grid", placeItems: "center", minWidth: 22, height: 22, padding: "0 5px",
+        border: `1px solid ${keep ? cor : "rgba(127,149,179,.32)"}`,
+        background: keep ? `color-mix(in srgb, ${cor} 20%, transparent)` : "rgba(127,149,179,.06)",
+        color: keep ? cor : INK_DIM, fontFamily: MONO, fontSize: 12, fontWeight: 700, lineHeight: 1,
+      }}
+    >{valor == null ? "" : valor}</span>
+  );
+}
+
+export function DadosRolados({ dados, maiorDado, dim = false, acento }: {
   dados: number[];
   maiorDado: number;
+  /** Mantidos por compatibilidade das chamadas; a ficha é estática. */
   size?: number;
-  /** Anima o pouso, escalonado por dado. */
   landed?: boolean;
   /** Apaga a fileira inteira (pool ainda não rolado). */
   dim?: boolean;
-  /**
-   * Acento do dado que VALEU. Quem tem classificação passa a da faixa,
-   * pra que o dado aceso e o veredito não discordem — um "5" ciano de
-   * sucesso em cima de uma faixa vermelha de FALHA é o olho lendo duas
-   * respostas pra mesma pergunta. Sem classificação, fica o ciano do
-   * chassi.
-   */
+  /** Acento do dado que VALEU (cor do veredito); sem ele, o ciano do chassi. */
   acento?: Accent;
 }) {
-  const cor = acento ?? DADO_SEM_RESULTADO;
+  const cor = (acento ?? DADO_SEM_RESULTADO).hex;
   const maiorIdx = dados.indexOf(maiorDado);
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5 }}>
+      <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.06em", color: INK_DIM, marginRight: 2 }}>{dados.length}d8</span>
       {dados.map((valor, i) => (
-        <PolyDie
-          key={i}
-          sides={8}
-          value={dim ? undefined : valor}
-          dim={dim}
-          active={!dim && i === maiorIdx}
-          landed={landed}
-          rollIndex={i}
-          accent={cor.hex}
-          /* O preenchimento do dado é mais denso que o `soft` de uma
-             faixa (0.14 contra 0.09): num ícone pequeno o 9% some. */
-          soft={acento ? `${cor.hex}24` : cor.soft}
-          size={size}
-        />
+        <FichaDado key={i} valor={dim ? undefined : valor} keep={!dim && i === maiorIdx} cor={cor} />
       ))}
     </div>
   );
@@ -225,21 +226,17 @@ export function DadosRolados({ dados, maiorDado, size = 46, landed = false, dim 
  * dados são somados e nenhum vale mais que o outro — por isso nenhum
  * acende, a menos que a rolagem diga que o modo foi "maior".
  */
-export function DadosLivres({ termos, maior, size = 40, landed = false, acento }: {
+export function DadosLivres({ termos, maior, acento }: {
   termos: readonly { faces: number; valor: number }[];
   /** Valor que "venceu" no modo maior-dado; `null`/ausente na soma. */
   maior?: number | null;
+  /** Mantidos por compatibilidade das chamadas; a ficha é estática. */
   size?: number;
   landed?: boolean;
-  /**
-   * Acento dos dados que VALEM — a mesma regra de `DadosRolados`: quem
-   * tem veredito passa o acento da faixa, pra que o dado aceso e o
-   * veredito não discordem. Sem veredito (rolagem sem CD) fica o
-   * arcano, que é a cor da rolagem livre em repouso.
-   */
+  /** Acento dos dados que VALEM (cor do veredito); sem ele, o arcano. */
   acento?: Accent;
 }) {
-  const cor = acento ?? ACCENTS.arcane;
+  const cor = (acento ?? ACCENTS.arcane).hex;
   const maiorIdx = maior == null ? -1 : termos.findIndex((t) => t.valor === maior);
   /* SOMA leva "+" entre os dados; MAIOR não. Na soma os dados formam
      uma conta, e o "+" é o que diz que o número grande à direita saiu
@@ -254,33 +251,12 @@ export function DadosLivres({ termos, maior, size = 40, landed = false, acento }
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: somando ? 5 : 8 }}>
       {termos.map((t, i) => (
         <Fragment key={i}>
+          {/* "+" liga os dados na SOMA (não no modo maior). */}
           {somando && i > 0 && (
-            /* O TAMANHO ACOMPANHA O DADO (60% dele), e não um px fixo:
-               a mesma fileira é desenhada a 40px no feed e menor na
-               bandeja, e um valor fixo sumia do lado do dado grande.
-
-               A COR é `#43597c`, o contorno do dado PARADO em
-               `PolyDie` — de propósito mais apagada que os dados, que
-               na soma ficam todos acesos. O "+" é pontuação: liga os
-               números sem competir com eles. Acompanhando o acento ele
-               virava mais um elemento aceso na fileira. */
-            <span aria-hidden="true" style={{ flex: "none", fontFamily: MONO, fontSize: Math.round(size * 0.6), fontWeight: 400, lineHeight: 1, color: "#43597c" }}>+</span>
+            <span aria-hidden="true" style={{ flex: "none", fontFamily: MONO, fontSize: 13, fontWeight: 400, lineHeight: 1, color: "#43597c" }}>+</span>
           )}
-          <PolyDie
-            sides={t.faces}
-            value={t.valor}
-            /* NA SOMA TODOS CONTAM, então todos ficam acesos — o mesmo
-               realce que o vencedor recebe no modo maior. Apagados, os
-               dados diziam "nenhum destes importa" bem em cima da conta
-               que o total à direita acabou de fazer com eles. No modo
-               maior segue só o vencedor: ali um dado de fato vence. */
-            active={somando || i === maiorIdx}
-            landed={landed}
-            rollIndex={i}
-            accent={cor.hex}
-            soft={cor.soft}
-            size={size}
-          />
+          {/* NA SOMA todos valem (todos acesos); no modo maior, só o vencedor. */}
+          <FichaDado valor={t.valor} keep={somando || i === maiorIdx} cor={cor} />
         </Fragment>
       ))}
     </div>
