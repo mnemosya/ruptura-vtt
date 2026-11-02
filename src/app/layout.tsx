@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Chakra_Petch, Exo_2, Orbitron, JetBrains_Mono } from "next/font/google";
+import { Chakra_Petch, Exo_2, Orbitron, JetBrains_Mono, Teko, Oxanium } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
@@ -58,6 +58,25 @@ const chakraPetch = Chakra_Petch({
   display: "swap",
 });
 
+/**
+ * Tipografia do board "Chat Log" portada ao pé da letra: Teko (números
+ * grandes dos cards do feed) e Oxanium (rótulos de estado). São as
+ * fontes do protótipo que a autora refinou — o feed replica o board.
+ */
+const teko = Teko({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-teko",
+  display: "swap",
+});
+
+const oxanium = Oxanium({
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+  variable: "--font-oxanium",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Ruptura VTT",
   description: "Ruptura VTT — mesa virtual de Ruptura.",
@@ -65,7 +84,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${orbitron.variable} ${jetbrainsMono.variable} ${chakraPetch.variable} ${exo2.variable}`}>
+    <html lang="pt-BR" className={`${orbitron.variable} ${jetbrainsMono.variable} ${chakraPetch.variable} ${exo2.variable} ${teko.variable} ${oxanium.variable}`}>
       {/* suppressHydrationWarning: extensões de navegador (ex.: ColorZilla/Grammarly)
           injetam atributos no <body> antes do React hidratar (ex.: cz-shortcut-listen) —
           falso positivo de mismatch, não um bug do app. Ver https://react.dev/link/hydration-mismatch */}

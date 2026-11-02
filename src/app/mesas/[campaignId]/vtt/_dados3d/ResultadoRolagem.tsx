@@ -31,6 +31,10 @@ import type { RupturaSelectionMode } from "../../../../../lib/dice";
 export const DISPLAY = "var(--font-chakra), 'Chakra Petch', sans-serif";
 export const MONO = "var(--font-mono), 'JetBrains Mono', monospace";
 export const BODY = "var(--font-corpo), sans-serif";
+/* Fontes do board "Chat Log" (portadas ao pé da letra): Teko nos números
+   grandes do resultado, Oxanium no rótulo do veredito. */
+export const TEKO = "var(--font-teko), 'Teko', sans-serif";
+export const OXANIUM = "var(--font-oxanium), 'Oxanium', sans-serif";
 
 export const INK = "#b9c9dc";
 export const INK_DIM = "#7f95b3";
@@ -185,10 +189,10 @@ function FichaDado({ valor, keep, cor }: { valor?: number; keep: boolean; cor: s
       className="rv-ficha-dado"
       data-keep={keep ? "true" : undefined}
       style={{
-        display: "inline-grid", placeItems: "center", minWidth: 22, height: 22, padding: "0 5px",
-        border: `1px solid ${keep ? cor : "rgba(127,149,179,.32)"}`,
+        display: "inline-grid", placeItems: "center", minWidth: 20, height: 20, padding: "0 4px",
+        border: `1px solid ${keep ? cor : "rgba(127,149,179,.3)"}`,
         background: keep ? `color-mix(in srgb, ${cor} 20%, transparent)` : "rgba(127,149,179,.06)",
-        color: keep ? cor : INK_DIM, fontFamily: MONO, fontSize: 12, fontWeight: 700, lineHeight: 1,
+        color: keep ? cor : INK_DIM, fontFamily: MONO, fontSize: 11, fontWeight: 700, lineHeight: 1,
       }}
     >{valor == null ? "" : valor}</span>
   );
@@ -255,8 +259,9 @@ export function DadosLivres({ termos, maior, acento }: {
           {somando && i > 0 && (
             <span aria-hidden="true" style={{ flex: "none", fontFamily: MONO, fontSize: 13, fontWeight: 400, lineHeight: 1, color: "#43597c" }}>+</span>
           )}
-          {/* NA SOMA todos valem (todos acesos); no modo maior, só o vencedor. */}
-          <FichaDado valor={t.valor} keep={somando || i === maiorIdx} cor={cor} />
+          {/* Board: na SOMA as fichas ficam neutras (o "+" e o total já dizem
+              que todas contam); no modo maior, só o vencedor acende. */}
+          <FichaDado valor={t.valor} keep={!somando && i === maiorIdx} cor={cor} />
         </Fragment>
       ))}
     </div>
@@ -378,11 +383,11 @@ function FaixaChassi({ acento, icone, titulo, parcelas, nota, total, testIdTotal
      rótulo e o número ("CD" numa linha e "7" órfão na outra). */
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "11px 13px", border: `1px solid ${acento.hex}44`, background: acento.soft }}>
-      <div className="rup-countpop" data-testid={testIdTotal} style={{ flex: "none", fontFamily: DISPLAY, fontSize: 38, fontWeight: 700, lineHeight: 0.8, letterSpacing: "0.01em", color: acento.hex }}>{total}</div>
+      <div className="rup-countpop" data-testid={testIdTotal} style={{ flex: "none", fontFamily: TEKO, fontSize: 46, fontWeight: 600, lineHeight: 0.75, color: acento.hex }}>{total}</div>
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
           {icone}
-          <span style={{ fontFamily: DISPLAY, fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", lineHeight: 1, color: acento.hex }}>{titulo}</span>
+          <span style={{ fontFamily: OXANIUM, fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", lineHeight: 1, color: acento.hex }}>{titulo}</span>
         </div>
         <div style={{ marginTop: 5, display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 6, rowGap: 2, fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em", color: INK_FAINT }}>
           {parcelas}
