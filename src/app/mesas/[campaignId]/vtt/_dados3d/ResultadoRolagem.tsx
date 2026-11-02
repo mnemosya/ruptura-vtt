@@ -372,31 +372,22 @@ function FaixaChassi({ acento, icone, titulo, parcelas, nota, total, testIdTotal
   total: number;
   testIdTotal?: string;
 }) {
+  /* Estilo board: o TOTAL vira um número grande à esquerda; ao lado, o
+     veredito (ícone + título) e a conta compacta (parcelas). Cada parcela
+     continua num `nowrap`, pra quebra cair entre parcelas, nunca entre o
+     rótulo e o número ("CD" numa linha e "7" órfão na outra). */
   return (
-    <div style={{ position: "relative", overflow: "hidden", borderRadius: 0, border: `1px solid ${acento.hex}55` }}>
-      <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: 28, background: `repeating-linear-gradient(-45deg, ${acento.hex}44 0 2px, transparent 2px 6px)` }} />
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px 10px 40px", background: acento.soft }}>
-        {icone}
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ fontFamily: DISPLAY, fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", lineHeight: 1, color: acento.hex }}>
-            {titulo}
-          </div>
-          {/* A conta é uma linha de PARCELAS, e cada parcela é um item de
-              flex só. Antes o rótulo e o número eram itens separados
-              (texto solto + `<span>`), então a linha podia quebrar
-              exatamente entre os dois e deixar "CD" no fim de uma linha e
-              "7" órfão no começo da outra. Envelopar cada parcela num
-              `nowrap` mantém a quebra ACONTECENDO — ela só passa a cair
-              entre parcelas, que é onde ela faz sentido. */}
-          <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 6, rowGap: 2, fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em", color: INK_FAINT }}>
-            {parcelas}
-          </div>
-          {nota}
+    <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "11px 13px", border: `1px solid ${acento.hex}44`, background: acento.soft }}>
+      <div className="rup-countpop" data-testid={testIdTotal} style={{ flex: "none", fontFamily: DISPLAY, fontSize: 38, fontWeight: 700, lineHeight: 0.8, letterSpacing: "0.01em", color: acento.hex }}>{total}</div>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          {icone}
+          <span style={{ fontFamily: DISPLAY, fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", lineHeight: 1, color: acento.hex }}>{titulo}</span>
         </div>
-        <div style={{ textAlign: "right", lineHeight: 1 }}>
-          <div className="rup-countpop" data-testid={testIdTotal} style={{ fontFamily: MONO, fontSize: 22, fontWeight: 700, color: acento.hex }}>{total}</div>
-          <div style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: INK_FAINT }}>total</div>
+        <div style={{ marginTop: 5, display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 6, rowGap: 2, fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em", color: INK_FAINT }}>
+          {parcelas}
         </div>
+        {nota}
       </div>
     </div>
   );
