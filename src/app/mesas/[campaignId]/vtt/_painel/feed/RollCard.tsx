@@ -26,7 +26,7 @@
 import { Dices, Target } from "lucide-react";
 import { CartaoBase } from "../ui/CartaoBase";
 import { BarraAlvo } from "../ui/primitivas";
-import { DadosLivres, DadosRolados, FaixaResultado as FaixaDeTeste, FaixaSoma, MONO, ACCENTS, RESULTS } from "../../_dados3d/ResultadoRolagem";
+import { DadosLivres, DadosRolados, FaixaSoma, MONO, TEKO, OXANIUM, INK_DIM, INK_FAINT, ACCENTS, RESULTS } from "../../_dados3d/ResultadoRolagem";
 import type { CartaoRolagem } from "./contratos";
 import { acentoDoCartao } from "./contratos";
 import { cabecalhoDe } from "./CabecalhoPersonagem";
@@ -57,53 +57,54 @@ export function RollCard({
   const teste = cartao.teste;
   const cabecalho = cabecalhoDe(cartao.autoria);
 
-  /* ── desenho de TESTE ── */
+  /* ── desenho de TESTE (estrutura do board "Chat Log") ──
+     meta "NOME · perícia" → número grande + veredito + margem·CD → fichas
+     dos dados + pílulas de modificador. Sem título, sem subtítulo, sem
+     caixa em volta do resultado. */
   if (teste) {
+    const res = teste.classificacao ? RESULTS[teste.classificacao] : null;
+    const acc = res?.accent ?? ACCENTS.slate;
+    const total = cartao.total ?? teste.maiorDado + teste.periciaValor + teste.modificador;
+    const margem = teste.cd != null && total >= teste.cd ? total - teste.cd : null;
+    const sub = [margem != null ? `margem +${margem}` : null, teste.cd != null ? `cd ${teste.cd}` : "sem cd"]
+      .filter(Boolean).join(" · ");
+    const pilulas: string[] = [];
+    if (teste.pericia && teste.periciaValor) pilulas.push(`${teste.periciaValor >= 0 ? "+" : ""}${teste.periciaValor} ${teste.pericia.toLowerCase()}`);
+    if (teste.modificador) pilulas.push(`${teste.modificador >= 0 ? "+" : ""}${teste.modificador} mod`);
+    for (const m of cartao.modificadores) pilulas.push(`${m.valor >= 0 ? "+" : ""}${m.valor} ${m.nome.toLowerCase()}`);
     return (
       <CartaoBase
         tipo={cartao.tipoTeste}
-        nome={cartao.nome}
         icone={<Dices />}
         acento={acento}
-        autor={cartao.autoria.nome}
+        autor={`${cartao.autoria.nome} · ${cartao.nome}`}
         hora={hora}
         horaISO={cartao.criadoEm}
         cabecalho={cabecalho}
         visibilidade={visibilidade}
+        semSubtitulo
         testId="painel-feed-rolagem"
         atributos={{ "data-kind": "rolagem", "data-desenho": "teste" }}
       >
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span className="rup-countpop" data-testid="painel-feed-resultado" style={{ flex: "none", fontFamily: TEKO, fontSize: 44, fontWeight: 600, lineHeight: 0.75, color: acc.hex }}>{total}</span>
+          <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: OXANIUM, fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: acc.hex }}>
+              {res ? <res.Icon width={13} height={13} style={{ flexShrink: 0 }} /> : <Dices width={13} height={13} style={{ flexShrink: 0 }} />}
+              {res ? res.label : "Sem CD definida"}
+            </span>
+            <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em", color: INK_FAINT }}>{sub}</span>
+          </div>
+        </div>
         {cartao.dados.length > 0 && (
-          <div data-testid="painel-feed-dados">
-            {/* O dado que valeu acende na cor do VEREDITO, não no ciano
-                fixo: um "5" ciano de sucesso em cima de uma faixa
-                vermelha de FALHA faz o olho ler duas respostas pra
-                mesma pergunta. */}
-            <DadosRolados
-              dados={cartao.dados}
-              maiorDado={teste.maiorDado}
-              size={40}
-              landed
-              acento={teste.classificacao ? RESULTS[teste.classificacao].accent : undefined}
-            />
+          <div data-testid="painel-feed-dados" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            {/* O dado que valeu acende na cor do veredito. */}
+            <DadosRolados dados={cartao.dados} maiorDado={teste.maiorDado} acento={res?.accent} />
+            {pilulas.map((p, i) => (
+              <span key={i} style={{ display: "inline-grid", placeItems: "center", height: 20, padding: "0 6px", border: "1px dashed rgba(127,149,179,.35)", fontFamily: MONO, fontSize: 10, fontWeight: 700, color: INK_DIM }}>{p}</span>
+            ))}
           </div>
         )}
-
-        <FaixaDeTeste
-          testIdTotal="painel-feed-resultado"
-          r={{
-            maiorDado: teste.maiorDado,
-            modoSelecao: teste.modoSelecao,
-            pericia: teste.pericia,
-            periciaValor: teste.periciaValor,
-            modificador: teste.modificador,
-            total: cartao.total ?? teste.maiorDado + teste.periciaValor + teste.modificador,
-            cd: teste.cd,
-            classificacao: teste.classificacao,
-          }}
-          nota={<NotaDeModificadores modificadores={cartao.modificadores} />}
-        />
-
         {cartao.alvo && <BarraAlvo nome={cartao.alvo} resultado={<Target size={11} />} acento="neutro" />}
       </CartaoBase>
     );

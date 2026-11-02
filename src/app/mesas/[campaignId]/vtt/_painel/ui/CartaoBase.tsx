@@ -65,6 +65,9 @@ export interface CartaoBaseProps {
   /** Faixa no topo do card (o personagem que agiu). Quando existe, ela
       assume o lugar da linha de autor e hora. */
   cabecalho?: ReactNode;
+  /** Oculta o subtítulo (o tipo repetido). A Rolagem, p.ex., põe a perícia
+      na linha de meta e lidera com o resultado, como no board. */
+  semSubtitulo?: boolean;
 }
 
 /**
@@ -98,6 +101,7 @@ export function CartaoBase({
   testId,
   atributos,
   cabecalho,
+  semSubtitulo,
 }: CartaoBaseProps) {
   const temDetalhes = detalhes != null && onAlternarExpandido != null;
   return (
@@ -140,7 +144,7 @@ export function CartaoBase({
           {nome != null && <h3 className="pn-cartao-nome">{nome}</h3>}
           {/* O tipo aparece de novo aqui porque a espinha é `aria-hidden`
               e porque em coluna estreita ela pode truncar. */}
-          <div className="pn-cartao-subtitulo">{tipo}</div>
+          {!semSubtitulo && <div className="pn-cartao-subtitulo">{tipo}</div>}
 
           {(estado || visibilidade) && (
             <div className="pn-cartao-estado">{estado}{visibilidade}</div>
