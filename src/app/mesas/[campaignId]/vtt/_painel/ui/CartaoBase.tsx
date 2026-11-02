@@ -101,14 +101,17 @@ export function CartaoBase({
 }: CartaoBaseProps) {
   const temDetalhes = detalhes != null && onAlternarExpandido != null;
   return (
-    <article
-      className="pn-cartao"
-      data-acento={acento}
-      data-pendente={pendente ? "true" : undefined}
-      data-testid={testId}
-      {...atributos}
-    >
+    <div className="pn-cartao-linha">
+      {/* Avatar do autor FORA do card, à esquerda (board "Chat Log") —
+          mesma leitura da conversa. Ausente nos cards sem autor. */}
       {cabecalho}
+      <article
+        className="pn-cartao"
+        data-acento={acento}
+        data-pendente={pendente ? "true" : undefined}
+        data-testid={testId}
+        {...atributos}
+      >
       <div className="pn-cartao-layout">
         <div className="pn-cartao-espinha" aria-hidden="true">
           {icone && <span className="pn-cartao-ico">{icone}</span>}
@@ -123,15 +126,16 @@ export function CartaoBase({
         </div>
 
         <div className="pn-cartao-conteudo">
-          {!cabecalho && (
-            <div className="pn-cartao-cab">
-              <span className="pn-cartao-autor">{autor}</span>
-              <span className="pn-cartao-meta">
-                {hora && <time className="pn-cartao-hora" dateTime={horaISO}>{hora}</time>}
-                <BotaoMenuCard />
-              </span>
-            </div>
-          )}
+          {/* Linha de meta sempre presente: ícone do tipo (na cor do
+              acento), autor e hora. O avatar agora vive fora do card. */}
+          <div className="pn-cartao-cab">
+            {icone && <span className="pn-cartao-ico pn-cartao-ico-meta">{icone}</span>}
+            <span className="pn-cartao-autor">{autor}</span>
+            <span className="pn-cartao-meta">
+              {hora && <time className="pn-cartao-hora" dateTime={horaISO}>{hora}</time>}
+              <BotaoMenuCard />
+            </span>
+          </div>
 
           {nome != null && <h3 className="pn-cartao-nome">{nome}</h3>}
           {/* O tipo aparece de novo aqui porque a espinha é `aria-hidden`
@@ -167,6 +171,7 @@ export function CartaoBase({
           )}
         </div>
       </div>
-    </article>
+      </article>
+    </div>
   );
 }

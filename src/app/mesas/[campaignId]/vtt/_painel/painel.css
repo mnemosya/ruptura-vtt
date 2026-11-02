@@ -575,7 +575,28 @@
    especificidade ~1 id + classes). O avatar de conversa é a exceção pedida
    (board "Chat Log"): vencemos com o MESMO idioma da casa — `:not(#_)` dobrado
    eleva a especificidade acima da regra geral, sem precisar de id de verdade. */
-.rv-pn-chat .pn-msg-av:not(#_):not(#_) { border-radius: 50% !important; }
+.rv-pn-chat :is(.pn-av, .pn-msg-av):not(#_):not(#_) { border-radius: 50% !important; }
+
+/* ── Card mecânico no estilo board ──────────────────────────────────
+   Mesma leitura da conversa: avatar REDONDO fora do card, à esquerda;
+   o corpo com espinha de cor e uma linha de meta com o ícone do tipo.
+   Substitui a banda de cabeçalho (coluna de rosto) por este token. */
+.pn-cartao-linha { display: flex; gap: 11px; align-items: flex-start; }
+.pn-cartao-linha > .pn-cartao { flex: 1; min-width: 0; }
+.pn-av {
+  flex: none; width: 34px; height: 34px; display: grid; place-items: center; overflow: hidden;
+  border: 1px solid var(--pn-line-hair); background: var(--pn-inset);
+  font: 700 12px var(--font-mono), ui-monospace, monospace; color: var(--fg-a, var(--pn-txt));
+}
+.pn-av-img { width: 100%; height: 100%; object-fit: cover; }
+.rv-pn-chat .pn-cartao-linha > .pn-cartao { border-left: 2px solid var(--pn-a); }
+.rv-pn-chat .pn-cartao-cab { justify-content: flex-start; }
+.rv-pn-chat .pn-cartao-cab .pn-cartao-autor { flex: 1; min-width: 0; }
+.rv-pn-chat .pn-cartao-ico-meta {
+  width: auto; height: auto; padding: 0; border: 0; background: none;
+  color: var(--pn-a); display: inline-flex; align-items: center;
+}
+.rv-pn-chat .pn-cartao-ico-meta svg { width: 13px; height: 13px; }
 .pn-msg-av-img { width: 100%; height: 100%; object-fit: cover; }
 .pn-msg-av--vazio { visibility: hidden; }
 .pn-msg-bolha {
