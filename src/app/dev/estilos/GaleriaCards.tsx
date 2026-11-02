@@ -113,6 +113,14 @@ export const GRUPOS_CARDS: Grupo[] = [
           log("chat", { text: "O trinco já estava arrombado antes de vocês chegarem.", autorNome: "Narrador", autorTipo: "narrador" }, { visibility: "gm" }),
         ],
       },
+      {
+        chave: "propria",
+        titulo: "Sua mensagem (à direita)",
+        nota: "A mensagem da própria conta espelha para a direita — espinha e avatar do lado direito.",
+        entradas: [
+          log("chat", { text: "Entro na frente e travo a porta. Ninguém sai antes de responder.", autorNome: "Kael Varro", autorTipo: "personagem" }, { character_id: "p9", created_by_user_id: "u-eu" }),
+        ],
+      },
     ],
   },
   {
@@ -642,6 +650,7 @@ function Feed({ cartoes }: { cartoes: CartaoFeed[] }) {
               cartao={cartao}
               anterior={cartoes[i - 1]}
               papel="narrator"
+              meuId="u-eu"
               expandidos={expandidos}
               onAlternar={alternar}
               acoes={ACOES}

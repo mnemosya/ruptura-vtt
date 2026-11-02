@@ -19,9 +19,8 @@ import { createPortal } from "react-dom";
 import { ImageOff, Lock, Radio, ShieldAlert, X } from "lucide-react";
 import type { CartaoMensagem } from "./contratos";
 import { rotuloVisibilidade } from "./contratos";
-import { CabecalhoPersonagem } from "./CabecalhoPersonagem";
 import { BotaoMenuCard } from "./MenuCard";
-import { useImagemFeed } from "./retratos";
+import { useImagemFeed, useRetratoFeed } from "./retratos";
 
 /**
  * Imagem anexada à mensagem. O espaço é reservado pelas medidas
@@ -79,20 +78,28 @@ export function ChatMessageEntry({
   papel,
   hora,
   continuacao,
+  propria,
   pendente,
 }: {
   cartao: CartaoMensagem;
   papel: "narrator" | "player";
   hora: string;
   continuacao: boolean;
+  /** A mensagem é da conta que está vendo o feed — espelha para a direita. */
+  propria?: boolean;
   pendente?: boolean;
 }) {
   const narracao = cartao.estilo === "narracao";
   const selo = rotuloVisibilidade(cartao.visibilidade, papel);
   const privada = cartao.visibilidade !== "public";
-  /* Falando como personagem, o cabeçalho é o MESMO dos outros cards
-     do feed (rosto, nome na cor do lado, hora). */
   const personagem = cartao.autoria.tipo === "personagem";
+  /* Balão de conversa (board "Chat Log"): avatar REDONDO fora do card, à
+     esquerda; a mensagem da própria conta espelha para a direita. O
+     avatar e a cor do nome seguem o lado do personagem (ciano PJ,
+     vermelho PN); sem retrato, cai na sigla. */
+  const retrato = useRetratoFeed(personagem ? cartao.autoria.characterId : null);
+  const avatarUrl = retrato?.avatarUrl ?? null;
+  const corLado = retrato?.tipo === "pn" ? "var(--rv-dg)" : "var(--rv-cy)";
 
   return (
     <div
@@ -100,45 +107,57 @@ export function ChatMessageEntry({
       data-narracao={narracao ? "true" : undefined}
       data-privada={privada ? "true" : undefined}
       data-continuacao={continuacao ? "true" : undefined}
+      data-propria={propria ? "true" : undefined}
       data-acento={narracao ? "am" : privada ? "neutro" : "cy"}
       data-testid="painel-feed-mensagem"
       data-visibility={cartao.visibilidade}
     >
-      {!continuacao && personagem && (
-        <CabecalhoPersonagem autoria={cartao.autoria} hora={hora} horaISO={cartao.criadoEm} />
-      )}
-      {!continuacao && !personagem && (
-        <div className="pn-msg-cab">
-          <span className="pn-msg-face" aria-hidden="true">{iniciais(cartao.autoria.nome)}</span>
-          <span className="pn-msg-autor">{cartao.autoria.nome}</span>
-          {narracao && (
-            <span className="pn-msg-selo" data-acento="am">
-              <Radio size={9} aria-hidden="true" /> Narração
-            </span>
-          )}
-          <time className="pn-msg-hora" dateTime={cartao.criadoEm}>{hora}</time>
-          <BotaoMenuCard />
-        </div>
-      )}
-      {/* Continuação não tem cabeçalho: o "⋯" mora no canto do próprio
-          corpo, centrado na altura dele. */}
-      {continuacao && <span className="pn-msg-cont-acoes"><BotaoMenuCard /></span>}
-      {cartao.imagem && <ImagemDaMensagem imagem={cartao.imagem} />}
-      {cartao.imagemRemovida && (
-        <p className="pn-msg-imagem-removida"><ImageOff size={13} aria-hidden="true" /> Imagem removida</p>
-      )}
-      {(cartao.texto || selo || pendente || (!cartao.imagem && !cartao.imagemRemovida)) && <p className="pn-msg-texto">
-        {/* O selo de privacidade acompanha o TEXTO, não o cabeçalho —
-            assim ele sobrevive à continuação. */}
-        {selo && (
-          <span className="pn-msg-selo" data-acento={cartao.visibilidade === "gm" ? "am" : "neutro"} data-testid="painel-feed-selo-visibilidade">
-            {cartao.visibilidade === "gm" ? <ShieldAlert size={9} aria-hidden="true" /> : <Lock size={9} aria-hidden="true" />}
-            {selo}{" "}
+      <div className="pn-msg-linha">
+        {continuacao ? (
+          <span className="pn-msg-av pn-msg-av--vazio" aria-hidden="true" />
+        ) : (
+          <span
+            className="pn-msg-av"
+            style={{ "--fg-a": personagem ? corLado : "var(--pn-txt)" } as React.CSSProperties}
+            aria-hidden="true"
+          >
+            {avatarUrl
+              ? <img className="pn-msg-av-img" src={avatarUrl} alt="" draggable={false} />
+              : iniciais(cartao.autoria.nome)}
           </span>
         )}
-        {cartao.texto}
-        {pendente && <span className="pn-msg-selo" data-acento="neutro"> · enviando…</span>}
-      </p>}
+        <div className="pn-msg-bolha">
+          {!continuacao && (
+            <div className="pn-msg-cab">
+              <span className="pn-msg-autor" style={personagem ? { color: corLado } : undefined}>{cartao.autoria.nome}</span>
+              {narracao && (
+                <span className="pn-msg-selo" data-acento="am">
+                  <Radio size={9} aria-hidden="true" /> Narração
+                </span>
+              )}
+              <time className="pn-msg-hora" dateTime={cartao.criadoEm}>{hora}</time>
+              <BotaoMenuCard />
+            </div>
+          )}
+          {/* Continuação não repete o cabeçalho; o "⋯" fica no canto do balão. */}
+          {continuacao && <span className="pn-msg-cont-acoes"><BotaoMenuCard /></span>}
+          {cartao.imagem && <ImagemDaMensagem imagem={cartao.imagem} />}
+          {cartao.imagemRemovida && (
+            <p className="pn-msg-imagem-removida"><ImageOff size={13} aria-hidden="true" /> Imagem removida</p>
+          )}
+          {(cartao.texto || selo || pendente || (!cartao.imagem && !cartao.imagemRemovida)) && <p className="pn-msg-texto">
+            {/* O selo de privacidade acompanha o TEXTO — sobrevive à continuação. */}
+            {selo && (
+              <span className="pn-msg-selo" data-acento={cartao.visibilidade === "gm" ? "am" : "neutro"} data-testid="painel-feed-selo-visibilidade">
+                {cartao.visibilidade === "gm" ? <ShieldAlert size={9} aria-hidden="true" /> : <Lock size={9} aria-hidden="true" />}
+                {selo}{" "}
+              </span>
+            )}
+            {cartao.texto}
+            {pendente && <span className="pn-msg-selo" data-acento="neutro"> · enviando…</span>}
+          </p>}
+        </div>
+      </div>
     </div>
   );
 }

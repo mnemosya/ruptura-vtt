@@ -559,10 +559,34 @@
 }
 
 /* MENSAGEM — densidade mínima: sem caixa, só uma barra de acento. */
-.pn-msg { display: flex; flex-direction: column; gap: 2px; padding: 3px 2px 4px 8px; position: relative; }
-.pn-msg::before { content: ""; position: absolute; left: 0; top: 3px; bottom: 4px; width: 2px; background: transparent; }
-.pn-msg[data-narracao="true"]::before { background: var(--pn-am); }
-.pn-msg[data-privada="true"]::before { background: var(--rv-ink-faint); }
+.pn-msg { display: flex; flex-direction: column; gap: 2px; padding: 5px 2px 6px; position: relative; }
+/* Balão de conversa (board "Chat Log"): avatar REDONDO fora, à esquerda,
+   e um corpo com espinha de cor. A mensagem da própria conta espelha
+   para a direita (espinha e avatar do lado direito). A cor da espinha
+   vem do acento já herdado (--pn-a), igual aos cards. */
+.pn-msg-linha { display: flex; gap: 9px; align-items: flex-start; }
+.pn-msg[data-propria="true"] .pn-msg-linha { flex-direction: row-reverse; }
+.pn-msg-av {
+  flex: none; width: 34px; height: 34px; display: grid; place-items: center;
+  overflow: hidden; border: 1px solid var(--pn-line-hair); background: var(--pn-inset);
+  font: 700 12px var(--font-mono), ui-monospace, monospace; color: var(--fg-a, var(--pn-txt));
+}
+/* O painel força canto reto em tudo (`.rv-painel … :not(#_) { border-radius:0 !important }`,
+   especificidade ~1 id + classes). O avatar de conversa é a exceção pedida
+   (board "Chat Log"): vencemos com o MESMO idioma da casa — `:not(#_)` dobrado
+   eleva a especificidade acima da regra geral, sem precisar de id de verdade. */
+.rv-pn-chat .pn-msg-av:not(#_):not(#_) { border-radius: 50% !important; }
+.pn-msg-av-img { width: 100%; height: 100%; object-fit: cover; }
+.pn-msg-av--vazio { visibility: hidden; }
+.pn-msg-bolha {
+  position: relative; min-width: 0; max-width: 86%; flex: 0 1 auto;
+  display: flex; flex-direction: column; gap: 6px; padding: 9px 12px;
+  background: var(--pn-panel, #0c1526); border-left: 2px solid var(--pn-a, var(--rv-cy));
+}
+.pn-msg[data-propria="true"] .pn-msg-bolha {
+  border-left: none; border-right: 2px solid var(--pn-a, var(--rv-cy));
+  background: color-mix(in srgb, var(--pn-a, var(--rv-cy)) 9%, var(--pn-panel, #0c1526));
+}
 .pn-msg-cab { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .pn-msg-face {
   width: 18px; height: 18px; flex: none; display: grid; place-items: center;
@@ -584,7 +608,7 @@
   font-family: var(--font-mono), ui-monospace, monospace; font-size: 10px; color: var(--rv-ink-faint);
 }
 .pn-msg-texto {
-  margin: 0; padding-left: 24px;
+  margin: 0; padding-left: 0;
   font-family: var(--rv-body); font-size: 13px; line-height: 1.4; color: var(--pn-txt);
   white-space: pre-wrap; overflow-wrap: anywhere;
 }

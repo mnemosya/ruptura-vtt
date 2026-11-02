@@ -961,6 +961,7 @@ export function ChatTab({
               cartao={cartao}
               anterior={todos[i - 1]}
               papel={role}
+              meuId={meuId}
               expandidos={expandidos}
               onAlternar={alternarExpandido}
               acoes={acoes}

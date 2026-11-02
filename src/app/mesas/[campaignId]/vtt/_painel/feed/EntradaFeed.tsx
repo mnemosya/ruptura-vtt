@@ -62,6 +62,7 @@ export function EntradaFeed({
   cartao,
   anterior,
   papel,
+  meuId,
   expandidos,
   onAlternar,
   acoes,
@@ -70,6 +71,8 @@ export function EntradaFeed({
   cartao: CartaoFeed;
   anterior: CartaoFeed | undefined;
   papel: "narrator" | "player";
+  /** Conta que está vendo o feed — a mensagem dela vira balão à direita. */
+  meuId?: string | null;
   expandidos: ReadonlySet<string>;
   onAlternar: (id: string) => void;
   acoes: AcoesFeed;
@@ -88,6 +91,7 @@ export function EntradaFeed({
           papel={papel}
           hora={hora}
           continuacao={ehContinuacao(cartao, anterior)}
+          propria={!!meuId && cartao.autoria.userId === meuId}
           pendente={pendente}
         />
       );
