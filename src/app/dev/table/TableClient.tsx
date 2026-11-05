@@ -32,11 +32,9 @@ import { endCampaignScene } from "../../../lib/table/endScene";
 import { buildCampaignEndSceneSummary } from "../../../lib/table/endSceneSummary";
 import {
   listCrewInventory,
-  upsertCrewInventoryItem,
-  removeCrewInventoryItem,
-  updateCrewInventoryItemInstance,
   type CrewInventoryItem,
 } from "../../../lib/table/crewInventory";
+import { transferCrewItemToCharacter } from "../../../lib/table/crewTransfer";
 import {
   characterDerivedFormulas,
   computeDerivedStats,
@@ -65,8 +63,6 @@ import {
   resolvePendingRupture,
   BODY_REGIONS,
   BODY_REGION_LABELS,
-  splitInventoryInstance,
-  addInstanceToInventory,
   canSplitInstanceQuantity,
   type GmResource,
   type CharacterRecord,
@@ -2002,18 +1998,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     }));
   }
 
-  /**
-   * Transfere um item do bando para um personagem (checkpoint pós-v0.68,
-   * CP7) — usa `splitInventoryInstance`/`addInstanceToInventory` (helpers
-   * puros, `lib/character/inventory.ts`) para preservar cargas/munição
-   * carregada/Aljava/propriedades. Ordem SEGURA sem transação real entre
-   * `characters` e `campaign_inventory_items` (tabelas separadas, sem
-   * função Postgres cruzando as duas — ver relatório do checkpoint):
-   * grava no PERSONAGEM primeiro; só then reduz/remove do bando. Se o
-   * passo 2 falhar, o pior caso é uma DUPLICATA (item em ambos os
-   * lugares, corrigível manualmente pelo narrador) — nunca uma perda
-   * silenciosa do item.
-   */
+  /** Usa a mesma transferência atômica da aba Bando do VTT. */
   async function handleTransferCrewToCharacter(rowId: string) {
     if (!selectedCampaignId) return;
     setCrewInventoryError(null);
@@ -2027,66 +2012,24 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     const quantidade = form.quantidade ?? row.payload.quantidade;
     setCrewTransferBusyId(rowId);
     try {
-      const targetRecordBefore = await getCharacter(form.targetCharacterId);
-      if (!targetRecordBefore) {
-        setCrewInventoryError("Personagem de destino não encontrado — pode ter sido removido.");
-        return;
-      }
-      const nowIso = new Date().toISOString();
-      const split = splitInventoryInstance(row.payload, quantidade, nowIso);
-      if (!split.ok || !split.movedInstance) {
-        setCrewInventoryError(split.reason ?? "Transferência não permitida.");
-        return;
-      }
-
-      const targetCharacter = normalizeCharacter(targetRecordBefore.payload);
-      const quantityBeforeTarget =
-        targetCharacter.inventario?.find((i) => i.itemSlug === split.movedInstance!.itemSlug && i.categoria === "municao")?.quantidade ?? 0;
-      const nextTargetCharacter = addInstanceToInventory(targetCharacter, split.movedInstance);
-      const quantityAfterTarget =
-        nextTargetCharacter.inventario?.find((i) =>
-          split.movedInstance!.categoria === "municao" ? i.itemSlug === split.movedInstance!.itemSlug && i.categoria === "municao" : i.id === split.movedInstance!.id,
-        )?.quantidade ?? split.movedInstance.quantidade;
-
-      const derivados = computeDerivedStats(nextTargetCharacter.atributos, regras, nextTargetCharacter.mana_bonus_ruptura ?? 0, characterDerivedFormulas(nextTargetCharacter));
-      const toSave = normalizeCharacter(nextTargetCharacter, derivados);
-
-      // 1) personagem primeiro (ordem segura — ver docstring acima).
-      const savedRecord = await updateCharacter(form.targetCharacterId, toSave);
-      setPersonagensAtivos((prev) => ({ ...prev, [savedRecord.id]: savedRecord }));
-
-      // 2) só então reduz/remove do bando.
-      if (split.sourceRemainder == null) {
-        await removeCrewInventoryItem(selectedCampaignId, row.id);
-      } else {
-        await updateCrewInventoryItemInstance(selectedCampaignId, row.id, split.sourceRemainder);
-      }
-      await refreshCrewInventory(selectedCampaignId);
-
-      await addLog({
+      const result = await transferCrewItemToCharacter({
         campaignId: selectedCampaignId,
-        characterId: savedRecord.id,
-        type: "inventory_transfer",
-        visibility: "public",
-        payload: {
-          campaignId: selectedCampaignId,
-          direction: "crew_to_character",
-          targetCharacterId: savedRecord.id,
-          targetCharacterName: savedRecord.name,
-          itemInstanceId: split.movedInstance.id,
-          itemName: split.movedInstance.itemNome,
-          itemSlug: split.movedInstance.itemSlug,
-          quantityMoved: split.movedInstance.quantidade,
-          quantityBeforeSource: row.payload.quantidade,
-          quantityAfterSource: split.sourceRemainder?.quantidade ?? 0,
-          quantityBeforeTarget,
-          quantityAfterTarget,
-          chargesMoved: split.movedInstance.cargasAtual ?? null,
-          payloadPreserved: true,
-          source: "crew_inventory_transfer",
-        },
+        rowId,
+        characterId: form.targetCharacterId,
+        quantidade,
       });
-      setLogs(await listLogs(selectedCampaignId));
+      if (!result.ok) {
+        setCrewInventoryError(result.erro ?? "Transferência não permitida.");
+        return;
+      }
+      if (result.character) setPersonagensAtivos((prev) => {
+        const atual = prev[form.targetCharacterId];
+        return atual ? { ...prev, [form.targetCharacterId]: { ...atual, payload: result.character! } } : prev;
+      });
+      try { await refreshCrewInventory(selectedCampaignId); }
+      catch { setCrewInventoryError("Transferência concluída, mas a lista do bando não atualizou. Recarregue a página."); }
+      try { setLogs(await listLogs(selectedCampaignId)); }
+      catch { /* O log já foi tentado pela operação canônica. */ }
       setCrewTransferForm((prev) => ({ ...prev, [rowId]: { targetCharacterId: "", quantidade: 1 } }));
     } catch (err) {
       setCrewInventoryError(err instanceof Error ? err.message : "Erro desconhecido ao transferir do bando para o personagem.");

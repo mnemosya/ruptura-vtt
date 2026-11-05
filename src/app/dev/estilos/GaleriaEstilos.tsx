@@ -25,6 +25,7 @@ import {
   VitrineBandeja, VitrineCampos, VitrineDadosEFaixa, VitrineMesa3D, VitrineMoldura, VitrineRolador,
 } from "./GaleriaRolagem";
 import { TrilhaFaccoes } from "../../mesas/[campaignId]/vtt/_turnos/TrilhaFaccoes";
+import "../../mesas/[campaignId]/vtt/_turnos/trilha-compacta.css";
 /* O HUD já tinha um harness visual próprio, com as quatro situações
    montadas (`/dev/vtt-hud`). Ele entra na galeria REAPROVEITADO, não
    copiado: duas fixtures do mesmo HUD envelheceriam em ritmos
@@ -172,7 +173,7 @@ function NucleoDaRodada() {
       <div className="gal-grade">
         {NUCLEOS.map((n) => (
           <figure key={n.chave} className="gal-cartao">
-            <div className="gal-palco">
+            <div className="gal-palco rv-palco">
               {/* A placa é `position: absolute` com `left: 50%` — o palco
                   de mentira aqui reproduz só isso: um bloco posicionado,
                   do tamanho de um pedaço de mesa. */}
@@ -211,7 +212,7 @@ function JanelaDeRodadas() {
           fica em `visibility: hidden` — ela lê a âncora lembrada por
           usuário/campanha. Ids fabricados: aqui nada é gravado que
           importe, mas o componente exige o par. */}
-      <div className="gal-palco gal-palco--alto">
+      <div className="gal-palco gal-palco--alto rv-palco">
         <ProvedorJanelasFerramenta campaignId="galeria" usuarioId="galeria">
           <PainelRodadas
             key={painel}
@@ -444,7 +445,7 @@ function montarPecas(campaignId: string | null): Peca[] { return [
     </Secao>
   ) },
   { chave: "jan-areas", grupo: "Janelas de ferramenta", rotulo: "Áreas", render: () => (
-    <Secao titulo="Áreas" sub={<>Ociosa, área desenhada e recusa do servidor, mais a lista de áreas da cena e o painel de aparência. Componente: <code>_shell/PainelAreas.tsx</code>.</>}>
+    <Secao titulo="Áreas" sub={<>Barra secundária de formatos, largura da Faixa, ações durante desenhos por pontos e configurações compactas. Componente: <code>_shell/PainelAreas.tsx</code>.</>}>
       <VitrineAreas />
     </Secao>
   ) },

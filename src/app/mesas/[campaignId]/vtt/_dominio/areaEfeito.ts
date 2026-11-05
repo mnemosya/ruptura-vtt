@@ -114,7 +114,7 @@ export const CORES_AREA = ["vermelho", "laranja", "ambar", "verde", "ciano", "ro
 export type CorArea = (typeof CORES_AREA)[number];
 
 export const HEX_COR_AREA: Record<CorArea, string> = {
-  vermelho: "#e0455f", laranja: "#f07a1f", ambar: "#f5a200", verde: "#3ccf6e", ciano: "#35c7d8", roxo: "#8b5cf6", branco: "#eafcff",
+  vermelho: "#e0455f", laranja: "#f07a1f", ambar: "#f5a200", verde: "#3ccf6e", ciano: "#00d4ff", roxo: "#8b5cf6", branco: "#eafcff",
 };
 
 export interface MetaTipoArea {

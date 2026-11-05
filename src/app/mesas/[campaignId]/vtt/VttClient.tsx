@@ -23,9 +23,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MousePointer2, Ruler, PaintBucket, MapPin, Images, Layers, Menu, Hexagon, Swords, Minus, Undo2, Redo2, Loader2, UserPlus, Box, Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2, Dices, ImageUp, ScrollText, ChevronDown, Type, Palette } from "lucide-react";
+import { MousePointer2, Ruler, PaintBucket, MapPin, Images, Layers, Menu, Hexagon, Swords, Undo2, Redo2, Loader2, UserPlus, Box, Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2, Dices, ImageUp, ScrollText, ChevronDown, Type, Palette } from "lucide-react";
 import { HexColorInput, HexColorPicker } from "react-colorful";
-import { Plus } from "../../../_design/icons";
 import { MapaHex, TAM, type EstadoVisualToken, type CenaMapa } from "./_mapa/MapaHex";
 import { useTargets } from "./_realtime/useTargets";
 import { ChartPie, Crosshair, FilePlus } from "lucide-react";
@@ -76,7 +75,7 @@ import {
   criarMedicaoAction, apagarMedicaoAction, limparMedicoesAction,
   obterControleAction, criarTokenAction, editarTokenAction,
   duplicarTokenAction, removerTokenAction, definirFlagsTokenAction, criarFichaDoTokenAction, enviarPingAction, listarPersonagensAction,
-  criarAreaAction, atualizarAreaAction, duplicarAreaAction, removerAreaAction, lerObjetosCenaAction,
+  criarAreaAction, atualizarAreaAction, removerAreaAction, lerObjetosCenaAction,
   iniciarTrilhaAction, atualizarTrilhaAction, encerrarTrilhaAction, lerTrilhaAction,
   criarObjetoAction, removerObjetoAction, atualizarObjetoAction, moverObjetoAction, danificarObjetoAction,
   type AtualizarObjetoParams, definirCamadasCenaAction } from "./_acoes/sceneActions";
@@ -84,7 +83,7 @@ import { refreshAccessToken } from "../../../../lib/auth/actions";
 import { pegadaEfetiva, projetarPegada, pegadasSobrepoem, origemMecanica } from "./_dominio/pegada";
 import {
   type ParametrosArea, type RegiaoArea, type TipoArea,
-  HEX_COR_AREA, ancoraDaRegiao, caixaDaRegiao, origemDeAura, regiaoDaArea, resolverArea, validarParametros,
+  HEX_COR_AREA, ancoraDaRegiao, origemDeAura, regiaoDaArea, resolverArea, validarParametros,
 } from "./_dominio/areaEfeito";
 import { type PontoAxial, axialParaMundo } from "./_dominio/escalaMapa";
 import { CORES_ANOTACAO, corAnotacaoValida, hexDaAnotacao, limitarTraco, type AnotacaoCena, type CorAnotacao, type CorPredefinida } from "./_dominio/anotacoes";
@@ -105,8 +104,8 @@ import {
   alcasDeParametros, aplicarAlca, comecarEscolhaDeTokenDaAura, escolherTokenDaAura, escapeNaAura, gestoVisivel,
   tokenOrigemDaAura,
 } from "./_ferramentas/areasEstado";
-import { PainelAreas, type ItemListaArea } from "./_shell/PainelAreas";
-import { PainelAnotacoes } from "./_shell/PainelAnotacoes";
+import { PainelAreas } from "./_shell/PainelAreas";
+import { BarraAnotar, BarraMedir, BarraMarcar } from "./_shell/BarrasContextuais";
 import { useOrdemCamadas } from "./_ferramentas/camadasPreferencias";
 import { PainelTerreno } from "./_shell/PainelTerreno";
 import { PainelObjetos } from "./_shell/PainelObjetos";
@@ -114,7 +113,7 @@ import { PainelImagens } from "./_shell/PainelImagens";
 import { BibliotecaImagens } from "./_shell/BibliotecaImagens";
 import { ColocarImagem } from "./_shell/ColocarImagem";
 import { useImagensDaCena } from "./_shell/useImagensDaCena";
-import { PainelMedir, type ModoMedicao } from "./_shell/PainelMedir";
+import { type ModoMedicao } from "./_shell/PainelMedir";
 import { MODO_MEDICAO_PADRAO } from "./_dominio/medicaoRegua";
 import { PainelDados } from "./_shell/PainelDados";
 import { MesaDadosOverlay } from "./_dados3d/MesaDadosOverlay";
@@ -138,7 +137,7 @@ import { GerenciadorToken, type ValoresFormularioToken, sugerirSigla, tamanhoTem
 import { MenuContextual, type ItemMenuContextual } from "./_shell/MenuContextual";
 import { ProvedorJanelasFerramenta } from "./_shell/JanelaFerramenta";
 import { PainelCamadas, type EstadoCamadas, CAMADAS_PADRAO, camadasDeJson } from "./_shell/PainelCamadas";
-import { PainelMarcar, type CorMarcaUi, type SinalMarcaUi, type DuracaoMarcaUi } from "./_shell/PainelMarcar";
+import { type CorMarcaUi, type SinalMarcaUi, type DuracaoMarcaUi } from "./_shell/PainelMarcar";
 import { GerenciadorCenas } from "./_cenas/GerenciadorCenas";
 import { esquecerCenaVista, gravarCenaVista, lerCenaVista } from "./_cenas/modelo";
 import { CartaoTokenHover } from "./_shell/CartaoTokenHover";
@@ -168,10 +167,13 @@ import type { CharacterRulesPayload, ReactionRules } from "../../../../lib/chara
 import "../../../_design/console.css";
 import "./vtt.css";
 import "./_tema/tema-forja.css";
+import "./_turnos/trilha-compacta.css";
 import "./_tema/janelas-f.css";
 import "./_tema/janela-dados.css";
 import "./_tema/janela-medir-marcar.css";
 import "./_tema/janela-anotacoes-areas.css";
+import "./_tema/area-compacta.css";
+import "./_tema/barras-contextuais.css";
 import "./_tema/janela-mapa.css";
 import "./_tema/janela-objetos-token.css";
 import "./_tema/janela-combate.css";
@@ -189,6 +191,10 @@ const ICONE_FERRAMENTA: Record<FerramentaId, typeof MousePointer2> = {
   imagens: Images, areas: Hexagon, rodadas: Swords,
   desenhar: Pencil, texto: Type, marcadores: ChartPie,
 };
+const ICONES_TRILHA_COMPACTA = new Set<FerramentaId>([
+  "interagir", "dados", "medir", "marcar", "desenhar", "terreno",
+  "objetos", "imagens", "areas", "rodadas", "marcadores",
+]);
 
 
 
@@ -362,7 +368,7 @@ export function VttClient({
       }
       return;
     }
-    // Mudança vinda de fora de um gesto (botões +/-, centralizar): o
+    // Mudança vinda de fora de um gesto (como centralizar): o
     // estado é a fonte da verdade e o ref acompanha.
     zoomPanRef.current = { zoom, pan };
   }, [zoom, pan]);
@@ -3293,14 +3299,55 @@ export function VttClient({
    * precise receber ref nenhum por prop.
    */
   const ferramentasRef = useRef<HTMLElement | null>(null);
-  /* O trilho rola, então as dicas dele são `fixed` (ver `.rv-ferramentas`
-     em vtt.css): a posição vem do botão sob o ponteiro ou em foco. */
+  useEffect(() => {
+    const barra = ferramentasRef.current;
+    const mesa = barra?.closest<HTMLElement>(".rv-mesa");
+    if (!mesa || !barra) return;
+    const relayout = () => {
+      const base = mesa.getBoundingClientRect();
+      const relogio = mesa.querySelector<HTMLElement>(".rv-palco > .rv-tempo-chip");
+      const setaRelogio = relogio?.querySelector<SVGElement>(".rv-tempo-chip-seta");
+      const painel = mesa.querySelector<HTMLElement>('.rv-painel[data-aberto="true"]');
+      const faixa = barra.getBoundingClientRect();
+      const ultimaPecaHorario = setaRelogio?.getBoundingClientRect();
+      // O botão usa max-content + flex-wrap: sua caixa pode continuar
+      // depois da seta visível. O vão deve partir da seta, não da caixa.
+      const esquerda = ultimaPecaHorario && ultimaPecaHorario.bottom > faixa.top && ultimaPecaHorario.top < faixa.bottom
+        ? ultimaPecaHorario.right - base.left + 12 : 12;
+      const direita = painel ? painel.getBoundingClientRect().left - base.left - 12 : base.width - 12;
+      const larguraDisponivel = Math.max(48, direita - esquerda);
+      mesa.style.setProperty("--rv-ferr-largura", `${larguraDisponivel}px`);
+      // Primeiro aplica o limite de largura, depois mede a barra como
+      // ela realmente aparece. A largura rolável (scrollWidth) inclui
+      // botões fora da janela e deslocaria o centro indevidamente.
+      const larguraVisivel = barra.getBoundingClientRect().width;
+      const centroDisponivel = (direita + 12) / 2;
+      const centroMinimo = esquerda + larguraVisivel / 2;
+      const centroMaximo = direita - larguraVisivel / 2;
+      const centro = Math.max(centroMinimo, Math.min(centroDisponivel, centroMaximo));
+      mesa.style.setProperty("--rv-ferr-centro", `${centro}px`);
+    };
+    const observador = new ResizeObserver(relayout);
+    const elementos = [mesa, barra, mesa.querySelector(".rv-palco > .rv-tempo-chip"), mesa.querySelector(".rv-painel")];
+    elementos.forEach((elemento) => { if (elemento) observador.observe(elemento); });
+    const painel = mesa.querySelector(".rv-painel");
+    const mudancas = new MutationObserver(relayout);
+    if (painel) mudancas.observe(painel, { attributes: true, attributeFilter: ["data-aberto", "style"] });
+    relayout();
+    return () => { observador.disconnect(); mudancas.disconnect(); };
+  }, [carregandoCena, estadoCena?.cena.id]);
+  const dicaFerramentaRef = useRef<HTMLDivElement | null>(null);
+  /* A dica vive fora do contêiner rolável. O chanfro dos botões recorta
+     filhos posicionados e fazia a largura de scroll crescer sem fim. */
   const posicionarDicaFerramenta = (alvo: HTMLElement | null) => {
-    const botao = alvo?.closest(".rv-ferr-btn"), trilho = ferramentasRef.current;
-    if (!botao || !trilho) return;
+    const botao = alvo?.closest(".rv-ferr-btn"), dica = dicaFerramentaRef.current;
+    if (!dica) return;
+    if (!botao) { dica.hidden = true; return; }
     const r = botao.getBoundingClientRect();
-    trilho.style.setProperty("--rv-ferr-dica-x", `${r.right + 10}px`);
-    trilho.style.setProperty("--rv-ferr-dica-y", `${r.top + r.height / 2}px`);
+    dica.textContent = botao.getAttribute("aria-label") ?? "";
+    dica.style.left = `${r.left + r.width / 2}px`;
+    dica.style.top = `${r.top - 8}px`;
+    dica.hidden = false;
   };
 
   const prefsAreasRef = useRef(prefsAreas);
@@ -3325,6 +3372,15 @@ export function VttClient({
 
   const ajustarConfigAreas = useCallback((patch: Partial<ConfigAreas>) => {
     setConfigAreas((c) => ({ ...c, ...patch }));
+    // A largura da Faixa altera a prévia e a área aberta para edição.
+    if (patch.larguraFaixaM !== undefined) {
+      setEstadoAreas((estado) => {
+        const params = paramsDaFase(estado);
+        if (params?.tipo === "faixa" && patch.larguraFaixaM !== undefined)
+          return alterarParametros(estado, { ...params, larguraM: patch.larguraFaixaM });
+        return estado;
+      });
+    }
     // As duas opções de snap são PREFERÊNCIA — persistem entre sessões.
     // O resto de `ConfigAreas` (cor, opacidade, rótulo…) vira dado
     // canônico da área ao persistir, então não entra aqui.
@@ -3333,13 +3389,7 @@ export function VttClient({
     if (patch.snapOrigemToken !== undefined) prefsTocadas.snapOrigemToken = patch.snapOrigemToken;
     if (patch.snapOrigemCelula !== undefined) prefsTocadas.snapOrigemCelula = patch.snapOrigemCelula;
     if (Object.keys(prefsTocadas).length > 0) atualizarPrefsAreas(prefsTocadas);
-    // Escolher token pelo SELETOR sincroniza com o mapa (o mesmo
-    // estado que o clique no token produz) — nunca dois caminhos.
-    if (patch.tokenAuraId !== undefined) sincronizarAuraDoSeletorRef.current(patch.tokenAuraId);
   }, [atualizarPrefsAreas]);
-
-  /** Ref pra evitar dependência circular entre `ajustarConfigAreas` e o handler da Aura, declarado mais abaixo. */
-  const sincronizarAuraDoSeletorRef = useRef<(id: string | null) => void>(() => {});
 
   /**
    * A ORIGEM LÓGICA atual de um token — a mesma que alcance e efeitos
@@ -3718,34 +3768,6 @@ export function VttClient({
     setEstadoAreas((e) => removerUltimoPonto(e));
   }, []);
 
-  /**
-   * Botão "Escolher no mapa": entra na fase que faz o clique num token
-   * virar escolha de origem da Aura (e só nessa fase o clique num
-   * token deixa de selecionar/mover/girar).
-   */
-  const escolherTokenAuraNoMapa = useCallback(() => {
-    setErroAreas(null);
-    setEstadoAreas((e) => (e.fase === "escolhendo_token_da_aura" ? AREAS_OCIOSA : comecarEscolhaDeTokenDaAura()));
-  }, []);
-
-  /**
-   * Escolher pelo `<select>` sincroniza com o mapa: entra no MESMO
-   * `definindo_raio_da_aura` que o clique-e-solta no token produz —
-   * nunca conclui a Aura sozinho, nem atribui um raio final em
-   * silêncio. O mapa realça o token e o usuário arrasta em seguida,
-   * exatamente como no fluxo iniciado pelo mapa.
-   */
-  const sincronizarAuraDoSeletor = useCallback((tokenId: string | null) => {
-    if (!tokenId) {
-      setEstadoAreas((e) => (e.fase === "concluida_local" || e.fase === "definindo_raio_da_aura" ? AREAS_OCIOSA : e));
-      return;
-    }
-    const origem = origemLogicaDoToken(tokenId);
-    if (!origem) { setErroAreas("Escolha um token válido para a aura."); return; }
-    setErroAreas(null);
-    setEstadoAreas({ fase: "definindo_raio_da_aura", tokenId, origem });
-  }, [origemLogicaDoToken]);
-
   const editarArea = useCallback((id: string) => {
     const a = areaPorId.get(id);
     if (!a) return;
@@ -3757,8 +3779,6 @@ export function VttClient({
       ...c, tipo: a.tipo, cor: a.corSlug, opacidade: a.opacidade,
       rotulo: a.rotulo ?? "", visivel: a.visivel,
       ...(a.params.tipo === "faixa" ? { larguraFaixaM: a.params.larguraM } : {}),
-      ...(a.params.tipo === "linha" ? { modoLinha: a.params.modo } : {}),
-      ...(a.params.tipo === "parede" ? { alturaParedeM: a.params.alturaM } : {}),
       ...(a.params.tipo === "aura" ? { raioAuraM: a.params.raioM, tokenAuraId: a.params.tokenId } : {}),
     }));
     setEstadoAreas(comecarEdicao(id, a.revision, a.params));
@@ -3784,30 +3804,11 @@ export function VttClient({
     setErroAreas(null);
   }, []);
 
-  const duplicarAreaHandler = useCallback(async (id: string) => {
-    const r = await duplicarAreaAction({ campaignId, areaId: id });
-    if (!r.ok || !r.dados) { setErroAreas(r.erro ?? "Falha ao duplicar."); return; }
-    mesclarAreaNoEstado(r.dados.area);
-    setAreaSelecionadaId(r.dados.area.id);
-  }, [campaignId]);
-
   const excluirAreaHandler = useCallback(async (id: string) => {
     const r = await removerAreaAction({ campaignId, areaId: id });
     if (!r.ok) { setErroAreas(r.erro ?? "Falha ao remover."); return; }
     removerAreaDoEstado(id);
   }, [campaignId]);
-
-  const alternarVisibilidadeArea = useCallback(async (id: string) => {
-    const a = areaPorId.get(id);
-    if (!a) return;
-    const campos = camposDeParametros(a.params);
-    const r = await atualizarAreaAction({
-      campaignId, areaId: id, revisionEsperada: a.revision, ...campos,
-      cor: a.corSlug, opacidade: a.opacidade, rotulo: a.rotulo, visivel: !a.visivel,
-    });
-    if (!r.ok || !r.dados) { setErroAreas(r.erro ?? "Falha ao alterar visibilidade."); return; }
-    mesclarAreaNoEstado(r.dados.area);
-  }, [campaignId, areaPorId]);
 
   /**
    * Escolher o tipo AURA já coloca a ferramenta esperando um token —
@@ -3968,23 +3969,6 @@ export function VttClient({
     return () => window.removeEventListener("keydown", aoTeclar);
   }, [ferramenta, imgs, removerImagem]);
 
-  // Liga o ref usado por `ajustarConfigAreas` (declarado antes) ao
-  // handler real — sem isto o seletor de Aura não sincronizaria.
-  useEffect(() => { sincronizarAuraDoSeletorRef.current = sincronizarAuraDoSeletor; }, [sincronizarAuraDoSeletor]);
-
-  /**
-   * "Localizar no mapa": seleciona a área e centraliza o pan nela, sem
-   * mexer no zoom. A âncora vem da MESMA geometria que o mapa desenha.
-   */
-  const localizarArea = useCallback((id: string) => {
-    const a = areaPorId.get(id);
-    if (!a) return;
-    setAreaSelecionadaId(id);
-    const caixa = caixaDaRegiao(a.regiao);
-    const centro = { x: (caixa.minX + caixa.maxX) / 2, y: (caixa.minY + caixa.maxY) / 2 };
-    centralizarCameraEmPonto(centro);
-  }, [areaPorId, centralizarCameraEmPonto]);
-
   /**
    * Token que deve receber o destaque de "origem da Aura" agora —
    * `null` na esmagadora maioria do tempo. Pura função de
@@ -4001,8 +3985,7 @@ export function VttClient({
    * do botão "Agir" do slot, e separar as duas coisas é o que permite
    * consultar um personagem sem gastar a vez dele.
    *
-   * Mesma centralização de `localizarArea` (pan, zoom intacto), com a
-   * origem lógica do token — a mesma que alcance/áreas já usam, então
+   * Usa a origem lógica do token — a mesma que alcance/áreas já usam, então
    * o alvo é o centro real da pegada, não a âncora de um token grande.
    */
   const focarToken = useCallback((id: string) => {
@@ -4239,25 +4222,6 @@ export function VttClient({
   );
   const posicoesEdicaoRapida = usePosicoesEdicaoRapida(ancorasEdicaoRapidaTela, ordemPrioridadeEdicaoRapida);
 
-  const itensListaAreas = useMemo<ItemListaArea[]>(
-    () => areasResolvidas.map((a) => ({
-      id: a.id, tipo: a.tipo, rotulo: a.rotulo, visivel: a.visivel, cor: a.corSlug,
-      podeEditar: ehNarrador || a.criadorId === usuarioId,
-      criadaPorVoce: a.criadorId === usuarioId,
-      celulas: a.celulas.length, tokens: a.pegadasAfetadas.length,
-    })),
-    [areasResolvidas, ehNarrador, usuarioId],
-  );
-
-  const resumoAreaCorrente = useMemo(() => {
-    if (previaResolvida) return { celulas: previaResolvida.celulas.length, tokens: previaResolvida.pegadasAfetadas.length };
-    if (areaSelecionadaId) {
-      const a = areaPorId.get(areaSelecionadaId);
-      if (a) return { celulas: a.celulas.length, tokens: a.pegadasAfetadas.length };
-    }
-    return null;
-  }, [previaResolvida, areaSelecionadaId, areaPorId]);
-
   // ── Camadas do mapa — estado DA CENA (migration 0093).
   //
   // Já foi preferência local por usuário+cena, o que invertia o sentido
@@ -4400,7 +4364,6 @@ export function VttClient({
   const [anotacaoSelecionadaId, setAnotacaoSelecionadaId] = useState<string | null>(null);
   const [pontoTextoPendente, setPontoTextoPendente] = useState<PontoAxial | null>(null);
   const [textoRascunho, setTextoRascunho] = useState("");
-  const [textoBase, setTextoBase] = useState<string | null>(null);
   const [corAnotacao, setCorAnotacao] = useState<CorAnotacao>("ciano");
   const [anotacaoPrivada, setAnotacaoPrivada] = useState(false);
   const [seletorCorAberto, setSeletorCorAberto] = useState(false);
@@ -4412,10 +4375,6 @@ export function VttClient({
     && ((ferramenta === "desenhar" && a.tipo === "desenho") || (ferramenta === "texto" && a.tipo === "texto"))) ?? null;
   useEffect(() => { setAnotacaoSelecionadaId(null); setPontoTextoPendente(null); }, [estadoCena?.cena.id]);
   useEffect(() => { setAnotacaoSelecionadaId(null); setPontoTextoPendente(null); setSeletorCorAberto(false); }, [ferramenta]);
-  useEffect(() => {
-    const texto = anotacaoSelecionada?.tipo === "texto" ? anotacaoSelecionada.texto ?? "" : "";
-    setTextoRascunho(texto); setTextoBase(texto);
-  }, [anotacaoSelecionadaId]);
 
   const criarAnotacaoComHistorico = useCallback(async (dados: { tipo: "desenho" | "texto"; pontos: PontoAxial[]; texto: string | null; cor: CorAnotacao; espessura: number; tamanho: number; privada: boolean }) => {
     const r = await anotacoesCena.criar(dados);
@@ -4438,7 +4397,6 @@ export function VttClient({
         if (novo.ok) { atual.id = novo.dados.id; atual.revision = novo.dados.revision; }
       },
     });
-    if (dados.tipo === "texto") setAnotacaoSelecionadaId(r.dados.id);
     setPontoTextoPendente(null);
     setTextoRascunho("");
   }, [anotacoesCena.criar, anotacoesCena.remover, anotacoesCena.anotacoesRef, executarComando, usuarioId]);
@@ -4499,15 +4457,11 @@ export function VttClient({
     const texto = textoRascunho.trim();
     if (!texto) return;
     if (pontoTextoPendente) {
+      setPontoTextoPendente(null);
+      setTextoRascunho("");
       void criarAnotacaoComHistorico({ tipo: "texto", pontos: [pontoTextoPendente], texto, cor: corAnotacao, espessura: 2, tamanho: tamanhoTexto, privada: anotacaoPrivada });
-    } else if (anotacaoSelecionada?.tipo === "texto" && anotacaoSelecionada.texto !== texto) {
-      if (anotacaoSelecionada.texto !== textoBase) {
-        setErroAcao("O texto mudou em outra sessão. Selecione-o novamente antes de salvar.");
-        return;
-      }
-      void atualizarAnotacaoComHistorico(anotacaoSelecionada, { texto }).then((r) => { if (r?.ok) setTextoBase(texto); });
     }
-  }, [textoRascunho, textoBase, pontoTextoPendente, anotacaoSelecionada, corAnotacao, tamanhoTexto, anotacaoPrivada, criarAnotacaoComHistorico, atualizarAnotacaoComHistorico]);
+  }, [textoRascunho, pontoTextoPendente, corAnotacao, tamanhoTexto, anotacaoPrivada, criarAnotacaoComHistorico]);
   const moverAnotacao = useCallback((id: string, pontos: PontoAxial[]) => {
     const a = anotacoesCena.anotacoesRef.current.find((item) => item.id === id);
     if (a && (ehNarrador || a.autorId === usuarioId)) void atualizarAnotacaoComHistorico(a, { pontos });
@@ -6026,25 +5980,6 @@ export function VttClient({
   }, [clampZoom, marcarZoomPan]);
 
   /**
-   * Zoom pelos botões +/- — ancorado no MEIO do palco. Mudar só o
-   * `zoom` escalaria em torno da origem do mundo e empurraria o mapa
-   * pro canto superior esquerdo a cada clique.
-   */
-  const zoomPeloBotao = useCallback((passo: number) => {
-    const cena = estadoCenaRef.current?.cena;
-    const { zoom: zAtual, pan: panAtual } = zoomPanRef.current;
-    const novoZoom = clampZoom(+(zAtual + passo).toFixed(2));
-    if (novoZoom === zAtual) return;
-    const meio = cena ? centroDaGrade(cena.largura, cena.altura, TAM) : { x: 0, y: 0 };
-    // Ponto do mundo que está no meio agora continua no meio depois.
-    const alvo = { x: (meio.x - panAtual.x) / zAtual, y: (meio.y - panAtual.y) / zAtual };
-    const novoPan = { x: meio.x - alvo.x * novoZoom, y: meio.y - alvo.y * novoZoom };
-    marcarZoomPan(novoZoom, novoPan);
-    setZoom(novoZoom);
-    setPan(novoPan);
-  }, [clampZoom, marcarZoomPan]);
-
-  /**
    * Pan por arrasto (botão direito). Precisa ser ESTÁVEL: era criada
    * inline na prop (`onPan={(dx, dy) => ...}`), uma função NOVA a cada
    * render de `VttClient` — e é dependência do efeito de arrasto em
@@ -6092,50 +6027,34 @@ export function VttClient({
     return <div className="rv-mesa rv-mesa--carregando"><span className="rv-mesa-erro">{erroCena}</span></div>;
   }
 
-  /* AS FERRAMENTAS DE JANELA DESCEM. "Imagens" e "Rodadas" abrem um
-     painel; não mudam o que o clique no mapa faz. O lugar delas é o
-     último grupo, junto de "Adicionar token" e "Camadas" — que também
-     abrem coisa. O grupo de cima volta a ser só o ponteiro.
-
-     Elas continuam sendo FERRAMENTAS de verdade (`aria-pressed`, atalho
-     I e R, e o realce de rodada em andamento), então o botão é o mesmo
-     — só muda de vizinho. */
-  /**
-   * O TRILHO É DIVIDIDO POR PAPEL, não por tipo de gesto.
-   *
-   * Ele separava "ferramentas do ponteiro" de "ferramentas que abrem
-   * janela" — distinção verdadeira, mas que não é a pergunta de quem
-   * olha o trilho. A pergunta é QUEM PODE O QUÊ: o jogador via dois
-   * grupos, um cheio e outro com uma peça só, e a divisória entre eles
-   * separava coisas que, pra ele, eram a mesma coisa.
-   *
-   * Agora são quatro seções: o menu da mesa, o que TODO MUNDO usa, o
-   * que é SÓ DO NARRADOR, e desfazer/refazer. Pro jogador a terceira
-   * não existe — nem ela, nem a divisória dela, senão sobrariam dois
-   * traços seguidos anunciando um grupo vazio.
-   */
-  const FERRAMENTAS_SO_DO_NARRADOR: readonly FerramentaId[] = ["terreno", "objetos", "imagens", "marcadores"];
-  const ferramentasDeTodos = ferramentasDisponiveis.filter((id) => !FERRAMENTAS_SO_DO_NARRADOR.includes(id));
-  const ferramentasDoNarrador = ferramentasDisponiveis.filter((id) => FERRAMENTAS_SO_DO_NARRADOR.includes(id));
+  const ferramentasDeTodos = ferramentasDisponiveis.filter((id) =>
+    !["texto", "terreno", "objetos", "imagens", "marcadores"].includes(id));
+  const ferramentasDoNarrador = (["terreno", "objetos", "imagens", "marcadores"] as FerramentaId[])
+    .filter((id) => ferramentasDisponiveis.includes(id));
   const botaoDeFerramenta = (id: FerramentaId) => {
     const Icone = ICONE_FERRAMENTA[id];
+    const anotarAtivo = id === "desenhar" && (ferramenta === "desenhar" || ferramenta === "texto");
+    const rotulo = id === "desenhar" ? "Anotar" : ROTULO_FERRAMENTA[id];
     return (
-      <button key={id} type="button" className="rv-ferr-btn" aria-pressed={ferramenta === id}
+      <button key={id} type="button" className="rv-ferr-btn" data-janela-id={id} aria-pressed={anotarAtivo || ferramenta === id}
         // Rodadas em andamento deixam o ícone ACESO mesmo com
         // outra ferramenta ativa: é estado da mesa, não da
         // ferramenta — e é o que responde "tem combate rolando?"
         // sem abrir nada.
         data-ativo={id === "rodadas" && trilha !== null}
         aria-label={id === "rodadas" && trilha
-          ? `${ROTULO_FERRAMENTA[id]} (${ATALHO_FERRAMENTA[id]}) — rodada ${trilha.rodada} em andamento`
-          : `${ROTULO_FERRAMENTA[id]} (${ATALHO_FERRAMENTA[id]})`}
+          ? `${rotulo} (${ATALHO_FERRAMENTA[id]}) — rodada ${trilha.rodada} em andamento`
+          : `${rotulo} (${ATALHO_FERRAMENTA[id]})`}
         // Clicar de novo na ferramenta ativa FECHA ela: volta a Interagir,
         // que é o "nenhuma ferramenta" do trilho.
-        onClick={() => trocarFerramenta(ferramenta === id && id !== "interagir" ? "interagir" : id)}>
-        <Icone size={17} strokeWidth={1.6} />
+        onClick={() => trocarFerramenta((anotarAtivo || ferramenta === id) && id !== "interagir" ? "interagir" : id)}>
+        {ICONES_TRILHA_COMPACTA.has(id)
+          ? <span className="rv-ferr-icone-design" aria-hidden="true" style={{ maskImage: `url(/vtt/trilha-compacta/${id}.svg)`, WebkitMaskImage: `url(/vtt/trilha-compacta/${id}.svg)` }} />
+          : <Icone size={17} strokeWidth={1.6} aria-hidden="true" />}
+        <span className="rv-ferr-tecla" aria-hidden="true">{ATALHO_FERRAMENTA[id]}</span>
         {id === "rodadas" && trilha && <span className="rv-ferr-badge" aria-hidden="true">{trilha.rodada}</span>}
         <span className="rv-dica">
-          {ROTULO_FERRAMENTA[id]}
+          {rotulo}
           {id === "rodadas" && trilha ? ` · rodada ${trilha.rodada}` : ""}
           <kbd>{ATALHO_FERRAMENTA[id]}</kbd>
         </span>
@@ -6159,14 +6078,23 @@ export function VttClient({
          centenas de nós, e mandar cor e opacidade em cada `<path>`
          seria repetir o mesmo par milhares de vezes por render. */
       style={{
-        "--rv-grade-cor": estadoCena?.cena.gradeCor ?? undefined,
+        "--rv-grade-cor": estadoCena?.cena.gradeCor === "#96bed7" ? "#00d4ff" : estadoCena?.cena.gradeCor ?? undefined,
         "--rv-grade-opacidade": estadoCena?.cena.gradeOpacidade ?? undefined,
       } as React.CSSProperties}
     >
       {/* ═══ ESQUERDA — quatro seções, divididas por PAPEL ═══ */}
       <aside ref={ferramentasRef} className="rv-ferramentas" aria-label="Ferramentas do mapa"
+        onWheel={(e) => {
+          const barra = e.currentTarget;
+          if (barra.scrollWidth <= barra.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+          e.preventDefault();
+          e.stopPropagation();
+          barra.scrollLeft += e.deltaY;
+        }}
         onPointerOver={(e) => posicionarDicaFerramenta(e.target as HTMLElement)}
+        onPointerLeave={() => posicionarDicaFerramenta(null)}
         onFocus={(e) => posicionarDicaFerramenta(e.target as HTMLElement)}
+        onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) posicionarDicaFerramenta(null); }}
         onScroll={() => posicionarDicaFerramenta(ferramentasRef.current?.querySelector(".rv-ferr-btn:hover, .rv-ferr-btn:focus-visible") ?? null)}>
         {/* 1. A MESA. Ainda sem função definida — o lugar dela é este,
                longe das ferramentas, porque o que ela vai fazer (sair
@@ -6175,7 +6103,7 @@ export function VttClient({
         <div className="rv-menu-cena">
           <button
             ref={botaoMenuMesaRef}
-            type="button" className="rv-ferr-btn rv-ferr-menu"
+            type="button" className="rv-ferr-btn rv-ferr-menu" data-janela-id="menu"
             aria-label="Menu da mesa" aria-haspopup="menu" aria-expanded={menuMesa !== null}
             data-testid="vtt-menu-mesa-btn"
             onClick={() => setMenuMesa((a) => (a ? null : posicaoAoLadoDe(botaoMenuMesaRef.current)))}
@@ -6184,21 +6112,16 @@ export function VttClient({
             <span className="rv-dica">Menu da mesa</span>
           </button>
         </div>
-        {menuMesa && (
-          <MenuDaMesa posicao={menuMesa} onFechar={() => setMenuMesa(null)} disparadorRef={botaoMenuMesaRef} />
-        )}
         <span className="rv-ferr-sep" />
 
-        {/* 2. O QUE TODO MUNDO USA. */}
+        {/* Ferramentas comuns na sequência original da barra. */}
         {ferramentasDeTodos.map(botaoDeFerramenta)}
 
-        {/* 3. SÓ O NARRADOR — e a divisória vem JUNTO, dentro da mesma
-               condição: sem isso o jogador via dois traços colados,
-               anunciando um grupo que não existe pra ele. */}
+        {/* 3. Utilidades extras do narrador, sem equivalente no HTML. */}
         {ehNarrador && (
           <>
             <span className="rv-ferr-sep" />
-            <button type="button" className="rv-ferr-btn" aria-label="Adicionar token (N)" onClick={() => estadoCena && abrirCriarToken()}>
+            <button type="button" className="rv-ferr-btn" data-janela-id="token" aria-label="Adicionar token (N)" onClick={() => estadoCena && abrirCriarToken()}>
               <UserPlus size={17} />
               <span className="rv-dica">Adicionar token<kbd>N</kbd></span>
             </button>
@@ -6211,7 +6134,7 @@ export function VttClient({
                 alternáveis), então sem esta marca a única forma de
                 distinguir seria pelo rótulo. */}
             <button
-              ref={botaoCamadasRef} type="button" className="rv-ferr-btn" data-tipo="janela"
+              ref={botaoCamadasRef} type="button" className="rv-ferr-btn" data-tipo="janela" data-janela-id="camadas"
               aria-pressed={painelCamadasAberto} aria-label="Camadas do mapa (C)"
               onClick={alternarCamadas}
             >
@@ -6264,6 +6187,8 @@ export function VttClient({
             cena abrem pelo "Configurar" do cartão dela, dentro do
             catálogo. O trilho volta a ser só o que age sobre o mapa. */}
       </aside>
+      {menuMesa && <MenuDaMesa posicao={menuMesa} onFechar={() => setMenuMesa(null)} disparadorRef={botaoMenuMesaRef} />}
+      <div ref={dicaFerramentaRef} className="rv-ferr-tooltip" hidden aria-hidden="true" />
 
       {/* ═══ PALCO — mapa em tela cheia, tudo flutua por cima ═══ */}
       <main className="rv-palco" ref={palcoRef} data-arrastando-arquivo={arrastandoArquivo || undefined}>
@@ -6345,6 +6270,15 @@ export function VttClient({
             corTracoAtual={hexDaAnotacao(corAnotacao)}
             espessuraTracoAtual={espessuraAnotacao}
             onInserirTexto={inserirTexto}
+            editorTexto={ferramenta === "texto" && pontoTextoPendente
+              ? { ponto: pontoTextoPendente, valor: textoRascunho,
+                  cor: hexDaAnotacao(corAnotacao), tamanho: tamanhoTexto,
+                  podeEditar: !camadas.anotacoes.bloqueada }
+              : null}
+            textoEditorRef={textoAnotacaoRef}
+            onTextoEditorMudou={setTextoRascunho}
+            onSalvarTextoEditor={salvarTexto}
+            onCancelarTextoEditor={() => { setPontoTextoPendente(null); setAnotacaoSelecionadaId(null); }}
             onMoverAnotacao={moverAnotacao}
             onPan={onPanMapa}
             onWheelZoom={onWheelZoom}
@@ -6387,9 +6321,9 @@ export function VttClient({
         </div>
 
         {(ferramenta === "desenhar" || ferramenta === "texto") && (
-          // Apresentação em `_shell/PainelAnotacoes`; estado e regras de
+          // Apresentação em `_shell/BarrasContextuais`; estado e regras de
           // permissão continuam aqui, resolvidos antes de descer.
-          <PainelAnotacoes modo={ferramenta} aoFechar={() => trocarFerramenta("interagir")}
+          <BarraAnotar modo={ferramenta} onModo={trocarFerramenta} aoFechar={() => trocarFerramenta("interagir")}
             bloqueada={camadas.anotacoes.bloqueada} oculta={!camadas.anotacoes.visivel}
             temSelecao={anotacaoSelecionada !== null}
             podeEditarSelecao={anotacaoSelecionada === null || ehNarrador || anotacaoSelecionada.autorId === usuarioId}
@@ -6443,8 +6377,9 @@ export function VttClient({
         {/* A cena, na peça do relógio, logo acima dele — ver "Pilha de
             contexto" em `tema-forja.css`. */}
           <div className="rv-contexto">
+            {estadoCena && <span className="rv-contexto-modo" data-combate={!!trilha}>◆ {trilha ? "COMBATE" : "EXPLORAÇÃO"}</span>}
             {estadoCena && (ehNarrador ? (
-              <button type="button" className="rv-tempo-chip rv-contexto-cena"
+              <button type="button" className="rv-tempo-chip rv-contexto-cena" data-janela-id="cenas"
                 onClick={alternarCatalogoCenas}
                 aria-haspopup="dialog" aria-expanded={painelCenasAberto}
                 aria-label={`Cena ativa: ${estadoCena.cena.nome}${estadoCena.cena.mostrarNome ? "" : " (nome oculto para os jogadores)"}. Trocar de cena`}
@@ -6599,7 +6534,7 @@ export function VttClient({
           />
         )}
         {ferramenta === "medir" && (
-          <PainelMedir
+          <BarraMedir
             modo={modoMedicao}
             onModo={setModoMedicao}
             resumo={resumoMedicao}
@@ -6615,7 +6550,7 @@ export function VttClient({
           <PainelDados onFechar={() => trocarFerramenta("interagir")} campaignId={campaignId} personagemSugerido={personagemDoTokenSelecionado} />
         )}
         {ferramenta === "marcar" && (
-          <PainelMarcar
+          <BarraMarcar
             sinal={sinalMarca} onSinal={setSinalMarca}
             duracao={duracaoMarca} onDuracao={setDuracaoMarca}
             emCombate={trilha !== null}
@@ -6635,31 +6570,10 @@ export function VttClient({
             config={configAreas}
             onConfig={ajustarConfigAreas}
             estado={estadoAreas}
-            paramsAtuais={paramsAreaCorrente}
-            onAlterarParams={(novo) => setEstadoAreas((e) => alterarParametros(e, novo))}
-            resumo={resumoAreaCorrente}
-            tokens={tokensApresentacao.filter((t) => t.visivel).map((t) => ({ id: t.id, nome: t.nome, sigla: t.sigla }))}
-            areas={itensListaAreas}
-            selecionadaId={areaSelecionadaId}
-            onSelecionar={setAreaSelecionadaId}
-            onLocalizar={localizarArea}
             onDescartar={descartarArea}
-            onManter={() => { void manterAreaNaMesa(); }}
             onConcluirPontos={concluirPontosArea}
             onDesfazerPonto={desfazerPontoArea}
-            onEscolherTokenAura={escolherTokenAuraNoMapa}
-            onFecharFerramenta={() => trocarFerramenta("interagir")}
-            recolhido={prefsAreas.painelRecolhido}
-            onAlternarRecolhido={() => atualizarPrefsAreas({ painelRecolhido: !prefsAreas.painelRecolhido })}
-            aparenciaAberta={prefsAreas.aparenciaAberta}
-            onAlternarAparencia={() => atualizarPrefsAreas({ aparenciaAberta: !prefsAreas.aparenciaAberta })}
             motivoNaoConclui={estadoAreas.fase === "pontos" ? (podeConcluirPontos(estadoAreas).motivo ?? null) : null}
-            onEditar={editarArea}
-            onSalvarEdicao={() => { void manterAreaNaMesa(); }}
-            onCancelarEdicao={cancelarEdicaoArea}
-            onDuplicar={(id) => { void duplicarAreaHandler(id); }}
-            onExcluir={(id) => { void excluirAreaHandler(id); }}
-            onAlternarVisibilidade={(id) => { void alternarVisibilidadeArea(id); }}
             erro={erroAreas}
           />
         )}
@@ -6671,8 +6585,8 @@ export function VttClient({
             edição de vez), nunca `descartarArea` (que, em "editando",
             só restaura os últimos valores confirmados e continua
             editando — certo pro Esc no meio de um arrasto, errado pro
-            botão "Cancelar"). O rodapé do painel continua existindo
-            como alternativa de teclado. */}
+            botão "Cancelar"). Os atalhos de teclado continuam
+            disponíveis durante a edição. */}
         {(ferramenta === "areas" || estadoAreas.fase === "editando") && (
           <AcoesAreaFlutuantes
             ancoraTela={ancoraAcoesTela}
@@ -6734,12 +6648,6 @@ export function VttClient({
             está errado. Fora do trilho (esquerda) e do painel
             (direita). */}
         <AvisoSincronizacao />
-
-        <div className="rv-zoom" role="group" aria-label="Zoom">
-          <button type="button" onClick={() => zoomPeloBotao(0.15)} aria-label="Aproximar"><Plus size={14} /></button>
-          <span>{Math.round(zoom * 100)}%</span>
-          <button type="button" onClick={() => zoomPeloBotao(-0.15)} aria-label="Afastar"><Minus size={14} /></button>
-        </div>
 
         {/* ── TRILHA — núcleo no topo + trilhos das duas facções nas
             laterais (ver `_turnos/TrilhaFaccoes.tsx`). Só existe com

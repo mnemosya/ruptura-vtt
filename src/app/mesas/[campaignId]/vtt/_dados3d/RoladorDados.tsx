@@ -869,11 +869,13 @@ function RoladorClassico({ size, campaignId, personagemSugerido }: {
 /*  Bandeja do chat — livre, simples, recolhida por padrão             */
 /* ================================================================== */
 
-export function BandejaDados({ campaignId = null, personagemSugerido = null }: {
+export function BandejaDados({ campaignId = null, personagemSugerido = null, abrirSinal = 0 }: {
   campaignId?: string | null;
   personagemSugerido?: PersonagemSugerido | null;
+  abrirSinal?: number;
 }) {
   const [open, setOpen] = useState(false);
+  useEffect(() => { if (abrirSinal > 0) setOpen(true); }, [abrirSinal]);
   const [visibilidade, setVisibilidade] = useState<TableLogVisibility>("public");
   const { ctx } = useContextoRolagem(open ? campaignId : null, personagemSugerido?.id ?? null);
   return (

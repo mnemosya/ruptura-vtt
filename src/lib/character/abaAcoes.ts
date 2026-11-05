@@ -170,7 +170,7 @@ export function chaveAcao(acao: Pick<AcaoV12, "cena" | "slug">): string {
 
 export function temAcessoATrama(character: Character): boolean {
   if ((character.niveis_vertente?.sinaptica ?? 0) > 0) return true;
-  return (character.escalpos_instalados ?? []).some((e) => DECK_SINAPTICO.test(e.contentId));
+  return (character.escalpos_instalados ?? []).some((e) => DECK_SINAPTICO.test(e.contentId) && (e.desgaste ?? 0) === 0);
 }
 
 function condicoesAtivas(character: Character): Set<string> {

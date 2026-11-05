@@ -16,7 +16,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ImageOff, Lock, Radio, ShieldAlert, X } from "lucide-react";
+import { ImageOff, Lock, MessageSquare, ShieldAlert, X } from "lucide-react";
 import type { CartaoMensagem } from "./contratos";
 import { rotuloVisibilidade } from "./contratos";
 import { BotaoMenuCard } from "./MenuCard";
@@ -108,7 +108,7 @@ export function ChatMessageEntry({
       data-privada={privada ? "true" : undefined}
       data-continuacao={continuacao ? "true" : undefined}
       data-propria={propria ? "true" : undefined}
-      data-acento={narracao ? "am" : privada ? "neutro" : "cy"}
+      data-acento={narracao || cartao.autoria.tipo === "narrador" ? "am" : privada ? "neutro" : propria ? "cy" : "neutro"}
       data-testid="painel-feed-mensagem"
       data-visibility={cartao.visibilidade}
     >
@@ -129,12 +129,10 @@ export function ChatMessageEntry({
         <div className="pn-msg-bolha">
           {!continuacao && (
             <div className="pn-msg-cab">
-              <span className="pn-msg-autor" style={personagem ? { color: corLado } : undefined}>{cartao.autoria.nome}</span>
-              {narracao && (
-                <span className="pn-msg-selo" data-acento="am">
-                  <Radio size={9} aria-hidden="true" /> Narração
-                </span>
-              )}
+              <MessageSquare className="pn-msg-tipo" size={13} strokeWidth={2.2} aria-hidden="true" />
+              <span className="pn-msg-meta"><span className="pn-msg-autor">{cartao.autoria.nome}</span>
+                <span className="pn-msg-descricao"> · {narracao ? "narração" : propria ? "você" : cartao.autoria.tipo === "narrador" ? "narrador" : "mensagem"}</span>
+              </span>
               <time className="pn-msg-hora" dateTime={cartao.criadoEm}>{hora}</time>
               <BotaoMenuCard />
             </div>

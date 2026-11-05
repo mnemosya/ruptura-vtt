@@ -1033,6 +1033,14 @@ function alvoTokenNoLog(payload: Record<string, unknown>): string {
 }
 
 export function formatTableLogEntry(entry: TableLogEntry): string {
+  if (entry.type === "market_purchase") {
+    const p = entry.payload;
+    const comprador = typeof p.comprador === "string" ? p.comprador : "Personagem";
+    const item = typeof p.item_nome === "string" ? p.item_nome : "item";
+    const quantidade = typeof p.quantidade === "number" ? p.quantidade : 1;
+    const total = typeof p.total === "number" ? p.total : 0;
+    return `${comprador} comprou ${item} ×${quantidade} por ₳ ${total.toLocaleString("pt-BR")} (carteira de ${comprador}).`;
+  }
   if (entry.type === "chat") return chatText(entry.payload);
   if (entry.type === "rolagem_pericia" || entry.type === "rolagem_expressao") return formatRolagem(entry.payload);
   if (entry.type === "profile_event") return formatProfileEvent(entry.payload);

@@ -79,8 +79,8 @@ export async function removerItemBandoAction(campaignId: string, rowId: string):
 
 /**
  * Bando → personagem, pela operação canônica. Toda a mecânica
- * (divisão de stack, preservação de cargas/munição, ordem segura de
- * gravação, log) vive em `crewTransfer.ts`; aqui só a checagem de
+ * (divisão de stack, preservação de cargas/munição, transação e log)
+ * vive em `crewTransfer.ts`; aqui só a checagem de
  * papel, que dá um erro cedo e legível antes do erro de RLS.
  */
 export async function transferirItemBandoAction(params: {

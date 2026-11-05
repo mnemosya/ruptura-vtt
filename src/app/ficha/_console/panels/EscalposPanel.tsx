@@ -33,6 +33,7 @@ const nomeInstalacao = (i: InstalledEscalpo, modelo?: TechnicalContentItem) => {
   return `${base} · ${regiao?.nome ?? "região não informada"}`;
 };
 const integridadeEscalpo = (item?: TechnicalContentItem) => ars(item) ? 1 : dadosEscalpo(item).integridade;
+const nomeDesgaste = (nivel: number) => ["Íntegro", "Danificado", "Inativo"][nivel] ?? "Desconhecido";
 const ICONES = { neurais: BrainCircuit, opticos: Eye, auditivos: Ear, de_braco: Hand, internos: HeartPulse, de_perna: Footprints, de_moda: Sparkles, identidade: Fingerprint, proteses: Wrench, outros: Cpu };
 type Registro = { id: string; nome: string; modelo?: TechnicalContentItem; instancia?: InstalledEscalpo };
 type EscalposApi = Pick<ConsoleApi, "character" | "derivados" | "catalogo" | "escalpos" | "glossario" | "somenteLeitura">;
@@ -109,7 +110,7 @@ export function EscalposPanel({ api }: { api: EscalposApi }) {
             return <section key={r.id} className="hs-grupo" style={{ ["--hs-delay" as string]: `${240 + i * 50}ms` }}><div className="hs-section-title"><span /> <h3>{r.nome}</h3><i /><small>{grupo.length}</small></div>{grupo.map(e => {
               const d = dadosEscalpo(e.modelo);
               return <CartaoListaHud key={e.id} className="hs-implant" ariaLabel={`Ver ${e.nome}`}
-                nome={e.nome} subtitulo={e.modelo?.raridadeLabel ?? e.modelo?.raridade ?? "Modelo indisponível"} cor={COR}
+                nome={e.nome} subtitulo={`${e.modelo?.raridadeLabel ?? e.modelo?.raridade ?? "Modelo indisponível"} · ${nomeDesgaste(e.instancia?.desgaste ?? 0)}`} cor={COR}
                 onClick={() => setAberto(e.id)} metricas={[
                   { valor: custo(integridadeEscalpo(e.modelo)), unidade: "INT", cor: "#00d4ff" },
                   { valor: e.instancia?.regiaoArs ? e.instancia.arsMitAtual ?? arsMitMax(e.instancia.regiaoArs) : d.modulos ?? "—", unidade: e.instancia?.regiaoArs ? "MIT" : "módulos", cor: "#ff8a1f" },
@@ -139,6 +140,7 @@ function pecaEscalpo(registro: Registro, api: EscalposApi): PecaHud {
     linhas: [
       { rotulo: "Integridade", valor: integridadeEscalpo(modelo) == null ? "Não informada" : integridadeEscalpo(modelo) === 0 ? "Sem redução" : `${custo(integridadeEscalpo(modelo))} ao instalar` },
       ...(instancia?.regiaoArs ? [{ rotulo: "Região", valor: ARS_REGIOES.find(r => r.id === instancia.regiaoArs)?.nome ?? instancia.regiaoArs }, { rotulo: "MIT", valor: `${instancia.arsMitAtual ?? arsMitMax(instancia.regiaoArs)}/${arsMitMax(instancia.regiaoArs)}` }, { rotulo: "Estado", valor: instancia.arsAtiva ? "Ativa" : "Inativa" }] : []),
+      ...(instancia ? [{ rotulo: "Desgaste", valor: `${instancia.desgaste ?? 0}/2 · ${nomeDesgaste(instancia.desgaste ?? 0)}` }] : []),
       ...(dados.modulos == null ? [] : [{ rotulo: "Módulos", valor: `${dados.modulos} ${dados.modulos === 1 ? "espaço" : "espaços"}` }]),
       ...(modelo?.preco == null ? [] : [{ rotulo: "Preço base", valor: moeda(modelo.preco) }]),
       ...dados.linhas.map(([k,v]) => ({ rotulo: k, valor: String(v) })),
@@ -149,7 +151,7 @@ function pecaEscalpo(registro: Registro, api: EscalposApi): PecaHud {
         const quantidade = (api.character.inventario ?? []).filter(i => i.itemSlug === m.slug).reduce((s,i) => s + i.quantidade, 0);
         return <details key={m.slug}><summary><Layers size={14} /><span>{m.nome}{quantidade > 0 && <small>{quantidade} no inventário</small>}</span><ChevronDown size={13} /></summary><div><TextoComRegras texto={itemDescription(m)} glossario={api.glossario} /><p className="hs-module-price">{m.preco == null ? "Preço não informado" : moeda(m.preco)}</p></div></details>;
       })}<p className="hs-muted">Opções do catálogo; confirme os módulos instalados com o narrador.</p></section>}
-      {instancia && <details className="hs-record"><summary>Registro de instalação <ChevronDown size={13} /></summary>{Number.isFinite(Date.parse(instancia.instaladoEm)) && <p>Instalado em {new Date(instancia.instaladoEm).toLocaleDateString("pt-BR")}.</p>}<p className="hs-muted">Desgaste e módulos instalados não estão registrados nesta ficha.</p>{instancia.notas && <TextoComRegras texto={instancia.notas} glossario={api.glossario} />}{api.escalpos.comEfeitoAutomatico.has(instancia.id) && <p>Modificador passivo aplicado nas rolagens.</p>}</details>}
+      {instancia && <details className="hs-record"><summary>Registro de instalação <ChevronDown size={13} /></summary>{Number.isFinite(Date.parse(instancia.instaladoEm)) && <p>Instalado em {new Date(instancia.instaladoEm).toLocaleDateString("pt-BR")}.</p>}<p className="hs-muted">Módulos instalados ainda não estão registrados nesta ficha.</p>{instancia.notas && <TextoComRegras texto={instancia.notas} glossario={api.glossario} />}{api.escalpos.comEfeitoAutomatico.has(instancia.id) && <p>Modificador passivo aplicado nas rolagens.</p>}</details>}
     </>,
   };
 }
@@ -164,6 +166,11 @@ function AcoesEscalpo({ registro, api, onConcluir }: { registro: Registro; api: 
   const selecionada = ARS_REGIOES.find(r => r.id === regiaoArs);
   const arsNaMochila = escolherArs && (api.character.inventario ?? []).some(i => i.itemSlug === ARS_CONTENT_ID && i.quantidade > 0);
   return <footer className="hs-actions">
+    {remover && <label className="hs-region-label">Desgaste
+      <select aria-label={`Desgaste de ${registro.nome}`} value={registro.instancia?.desgaste ?? 0} onChange={e => api.escalpos.definirDesgaste(registro.instancia!.id, Number(e.target.value) as 0 | 1 | 2)}>
+        <option value={0}>0 · Íntegro</option><option value={1}>1 · Danificado</option><option value={2}>2 · Inativo</option>
+      </select>
+    </label>}
     {confirmando ? <>
       <p>{remover ? "Remover o registro e seus modificadores automáticos?" : `O procedimento já foi realizado? ${selecionada ? `${selecionada.nome}: ${selecionada.mit} MIT, 1 espaço e −1 Integridade. ` : ""}${arsNaMochila ? "Uma ARS já comprada será retirada da mochila. " : "O registro não compra o escalpo nem retira itens do inventário. "}A Integridade atual não é ajustada automaticamente.`}</p>
       {escolherArs && <label className="hs-region-label">Região da ARS<select aria-label="Região da ARS" value={regiaoArs} onChange={e => setRegiaoArs(e.target.value as ArsRegiao | "")}><option value="">Selecione uma região</option>{ARS_REGIOES.map(r => <option key={r.id} value={r.id} disabled={ocupadas.has(r.id)}>{r.nome} · {r.mit} MIT · Ⱥ 1.500{ocupadas.has(r.id) ? " · instalada" : ""}</option>)}</select></label>}

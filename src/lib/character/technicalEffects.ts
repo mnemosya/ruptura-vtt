@@ -67,6 +67,9 @@ export function deriveInstalledTechnicalEffects(
   const effects: ActiveEffect[] = [];
 
   for (const instancia of character.escalpos_instalados ?? []) {
+    // Desgaste 1 desliga funções especiais e módulos; os modificadores
+    // automáticos publicados são tratados como função especial.
+    if ((instancia.desgaste ?? 0) > 0) continue;
     const modelo = bySlug.get(instancia.contentId);
     if (!modelo || modelo.status !== "published") continue;
 

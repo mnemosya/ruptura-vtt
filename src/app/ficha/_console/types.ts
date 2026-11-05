@@ -57,6 +57,7 @@ export interface ConsoleApi {
     erro: string | null;
     instalar: (contentId: string, regiaoArs?: import("../../../lib/character/escalpos").ArsRegiao) => void;
     remover: (instanceId: string) => void;
+    definirDesgaste: (instanceId: string, desgaste: 0 | 1 | 2) => void;
     ativarArs: () => void;
     desativarArs: () => void;
     comEfeitoAutomatico: Set<string>;
@@ -146,6 +147,8 @@ export interface ConsoleApi {
   editarRecurso: (id: RecursoEditavel, valor: number, opcoes?: { confirmarRetorno?: boolean }) => void;
   /** Idem, para a trilha de Integridade (mesmo `updateRecursoAtual`, chave "integridade"). */
   editarIntegridade: (valor: number) => void;
+  /** Escolhe uma distorção de identidade do capítulo 19; vazio deixa a vaga por registrar. */
+  editarDistorcaoIdentidade: (indice: number, id: string) => void;
 
   /** Delta em PA gastos / Reações usadas (`adjustEstadoJogo`). `ajustarPa` devolve o quanto o contador mudou de fato: o gasto além do PA da rodada não acumula. */
   ajustarPa: (delta: number) => number;

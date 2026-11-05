@@ -102,6 +102,7 @@ function opcoesDeCusto(e: EscolhaHud, manaAtual: number): { chave: number; mana:
 }
 
 export interface PropsMagiasHud {
+  magiaInicial?: string | null;
   magias: MagiaHud[];
   /** Nível investido por vertente (canônica). `null`/ausente = desconhecido. */
   niveis: Record<string, number | null | undefined>;
@@ -481,6 +482,19 @@ export function MagiasHud(props: PropsMagiasHud) {
     || magias.filter((m) => m.vertente === b.id).length - magias.filter((m) => m.vertente === a.id).length)[0].id;
   const [vid, setVid] = useState<string>(inicial);
   const [aberta, setAberta] = useState<string | null>(null);
+  const comandoTratadoRef = useRef<string | null>(null);
+  const comandoConjuradoRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!props.magiaInicial || comandoTratadoRef.current === props.magiaInicial) return;
+    const magia = magias.find((m) => m.slug === props.magiaInicial);
+    if (magia) {
+      comandoTratadoRef.current = magia.slug;
+      if (!magia.bloqueada && !magia.escolha && !magia.escolhasConjuracao?.length && magia.mana != null && magia.mana <= props.mana.atual && !props.somenteLeitura && comandoConjuradoRef.current !== magia.slug) {
+        comandoConjuradoRef.current = magia.slug;
+        props.onConjurar(magia.slug);
+      } else { setVid(magia.vertente); setAberta(magia.slug); }
+    }
+  }, [props.magiaInicial, magias]);
   const [escolhido, setEscolhido] = useState<number | null>(null);
   const [opcoesEscolhidas, setOpcoesEscolhidas] = useState<Record<string, string>>({});
   const [menu, setMenu] = useState<{ slug: string; x: number; y: number } | null>(null);

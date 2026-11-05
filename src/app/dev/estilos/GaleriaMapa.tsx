@@ -3,10 +3,8 @@
 /**
  * FERRAMENTAS DE MAPA — as que desenham SOBRE o palco.
  *
- * Terreno, Objetos e Áreas são janelas de ferramenta como as outras,
- * mas o corpo delas é um editor com fases: pintar → selecionar →
- * editar → salvar. A galeria mostra cada fase como um exemplo próprio,
- * porque é a fase que muda o painel inteiro, não um campo dele.
+ * Terreno e Objetos usam janelas de ferramenta. Áreas usa uma faixa
+ * secundária sobre a barra principal, com ajustes em um painel compacto.
  *
  * O mesmo vale para o gerenciador de token (criar × editar) e para o
  * menu contextual (que só existe ancorado num ponto do mapa).
@@ -164,71 +162,44 @@ export function VitrineObjetos() {
 
 /* ── áreas ───────────────────────────────────────────────────────── */
 
-const TOKENS_AREA = [
-  { id: "t1", nome: "Mara Venn", sigla: "MV" },
-  { id: "t2", nome: "Corvo", sigla: "CV" },
-];
-
-const AREAS_LISTA = [
-  { id: "a1", rotulo: "Cone de Compressão", tipo: "cone" as const, cor: "ciano" as const, visivel: true, celulas: 7, tokens: 2 },
-  { id: "a2", rotulo: "Névoa", tipo: "esfera" as const, cor: "roxo" as const, visivel: false, celulas: 19, tokens: 0 },
-];
-
 export function VitrineAreas() {
-  const [fase, setFase] = useState<"ociosa" | "concluida" | "erro">("concluida");
+  const [fase, setFase] = useState<"ociosa" | "pontos" | "concluida" | "erro">("ociosa");
   const [config, setConfig] = useState(CONFIG_AREAS_PADRAO);
-  const [recolhido, setRecolhido] = useState(false);
-  const [aparencia, setAparencia] = useState(false);
 
   const estado = fase === "ociosa"
     ? AREAS_OCIOSA
-    : ({ fase: fase === "erro" ? "erro" : "concluida_local", params: { tipo: "cone", raioM: 6 }, mensagem: "O servidor recusou a área." } as unknown as Parameters<typeof PainelAreas>[0]["estado"]);
+    : fase === "pontos"
+      ? ({ fase: "pontos", tipo: "parede", pontos: [{ q: 0, r: 0 }, { q: 1, r: 0 }], cursor: null } as unknown as Parameters<typeof PainelAreas>[0]["estado"])
+      : ({ fase: fase === "erro" ? "erro" : "concluida_local", params: { tipo: "cone", raioM: 6 }, mensagem: "O servidor recusou a área." } as unknown as Parameters<typeof PainelAreas>[0]["estado"]);
 
   return (
     <>
       <Alternador
         rotulo="Fase da ferramenta de áreas"
         valor={fase}
-        onMudar={setFase}
+        onMudar={(novaFase) => {
+          setFase(novaFase);
+          if (novaFase === "pontos") setConfig((atual) => ({ ...atual, tipo: "parede" }));
+        }}
         opcoes={[
           { v: "ociosa", rotulo: "Ociosa" },
+          { v: "pontos", rotulo: "Desenho por pontos" },
           { v: "concluida", rotulo: "Área desenhada" },
           { v: "erro", rotulo: "Recusa do servidor" },
         ]}
       />
-      <PalcoJanela chave={`areas-${fase}-${recolhido}`}>
+      <div className="gal-palco gal-palco--areas">
         <PainelAreas
           config={config}
           onConfig={(patch) => setConfig((c) => ({ ...c, ...patch }))}
           estado={estado}
-          paramsAtuais={fase === "ociosa" ? null : ({ tipo: "cone", raioM: 6 } as unknown as Parameters<typeof PainelAreas>[0]["paramsAtuais"])}
-          onAlterarParams={SEM_EFEITO}
-          resumo={fase === "ociosa" ? null : { celulas: 7, tokens: 2 }}
-          tokens={TOKENS_AREA}
-          areas={AREAS_LISTA as unknown as Parameters<typeof PainelAreas>[0]["areas"]}
-          selecionadaId="a1"
-          onSelecionar={SEM_EFEITO}
-          onLocalizar={SEM_EFEITO}
-          onDescartar={SEM_EFEITO}
-          onManter={SEM_EFEITO}
-          onConcluirPontos={SEM_EFEITO}
+          onDescartar={() => setFase("ociosa")}
+          onConcluirPontos={() => setFase("concluida")}
           onDesfazerPonto={SEM_EFEITO}
-          onEscolherTokenAura={SEM_EFEITO}
           motivoNaoConclui={null}
-          onEditar={SEM_EFEITO}
-          onSalvarEdicao={SEM_EFEITO}
-          onCancelarEdicao={SEM_EFEITO}
-          onDuplicar={SEM_EFEITO}
-          onExcluir={SEM_EFEITO}
-          onAlternarVisibilidade={SEM_EFEITO}
-          onFecharFerramenta={SEM_EFEITO}
           erro={fase === "erro" ? "O servidor recusou a área: fora dos limites da cena." : null}
-          recolhido={recolhido}
-          onAlternarRecolhido={() => setRecolhido((v) => !v)}
-          aparenciaAberta={aparencia}
-          onAlternarAparencia={() => setAparencia((v) => !v)}
         />
-      </PalcoJanela>
+      </div>
     </>
   );
 }

@@ -257,6 +257,9 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     current_scene,
     mana_bonus_ruptura,
     pending_rupture_choices,
+    distorcoes_identidade: Array.isArray(raw.distorcoes_identidade)
+      ? raw.distorcoes_identidade.slice(0, 3).filter((id): id is string => typeof id === "string")
+      : [],
     ultima_vontade_pendente,
     historico_ruptura,
     talentos_adquiridos,

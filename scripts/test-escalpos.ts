@@ -19,6 +19,8 @@ import {
   arsDaRegiao,
   resolveLayeredDefense,
   restaurarArsDescansoLongo,
+  definirDesgasteEscalpo,
+  deriveInstalledTechnicalEffects,
 } from "../src/lib/character";
 import { normalizeTechnicalContentItem, type TechnicalContentItem } from "../src/lib/content";
 
@@ -150,5 +152,23 @@ assert.equal(resolveLayeredDefense({ character: ativacao.character, damageAmount
 assert.equal(arsDaRegiao(restaurarArsDescansoLongo(impacto.character), "tronco")?.atual, 4);
 assert.equal(arsDaRegiao(desativarArs(ativacao.character), "tronco"), null);
 console.log("8. Armadura externa protege antes da ARS; ativação, desgaste e descanso longo — OK");
+
+const danificada = definirDesgasteEscalpo(ativacao.character, arsInativa.escalpos_instalados![0].id, 1);
+assert.equal(danificada.escalpos_instalados![0].desgaste, 1);
+assert.equal(danificada.escalpos_instalados![0].arsAtiva, false);
+assert.equal(arsDaRegiao(danificada, "tronco"), null);
+assert.equal(ativarArs(danificada, 3).character, danificada);
+const duasArs = installEscalpo(danificada, { contentId: ARS_CONTENT_ID, regiaoArs: "cabeca", nowIso });
+const soCabecaAtiva = ativarArs(duasArs, 3).character;
+assert.equal(soCabecaAtiva.escalpos_instalados?.find(e => e.regiaoArs === "tronco")?.arsAtiva, false, "Ativar outra região não reativa uma ARS danificada.");
+assert.equal(arsDaRegiao(soCabecaAtiva, "cabeca")?.atual, 2);
+assert.equal(restaurarArsDescansoLongo(danificada).escalpos_instalados![0].desgaste, 1, "Descanso não repara Desgaste.");
+const reparada = definirDesgasteEscalpo(danificada, arsInativa.escalpos_instalados![0].id, 0);
+assert.equal(reparada.escalpos_instalados![0].desgaste, 0);
+assert.equal(normalizeCharacter(JSON.parse(JSON.stringify(reparada))).escalpos_instalados![0].desgaste, 0);
+const modeloComEfeito = { ...rpi!, payloadAutomacao: { efeitos: [{ tipo: "modificador", valor: 1, alvo_tags: ["percepcao"] }] } };
+assert.equal(deriveInstalledTechnicalEffects(comEscalpo, [modeloComEfeito]).length, 1);
+assert.equal(deriveInstalledTechnicalEffects(definirDesgasteEscalpo(comEscalpo, instancia.id, 1), [modeloComEfeito]).length, 0);
+console.log("9. Desgaste desativa funções especiais e não some no descanso — OK");
 
 console.log("\ntest-escalpos — todos os cenários passaram.");

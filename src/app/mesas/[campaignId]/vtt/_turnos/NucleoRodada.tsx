@@ -2,7 +2,7 @@
 
 /**
  * NÚCLEO DA RODADA — a placa que fica no topo do palco durante o
- * combate. Desenho do Figma (nós 440:1827 e 440:2643).
+ * combate. Desenho do HTML "VTT · Trilha compacta B · retratos".
  *
  * Vive em arquivo próprio, e não dentro de `TrilhaFaccoes`, por um
  * motivo prático: é a peça que mais foi revisada visualmente, e a
@@ -10,7 +10,7 @@
  * estados sem montar a trilha inteira em volta. Um componente só, dois
  * lugares — a página nunca mostra uma cópia que envelheceu.
  *
- * A rodada, a janela em vigor e a trilha ficam na mesma placa. Quando a
+ * A rodada, as duas janelas e o teto de PA ficam na mesma placa. Quando a
  * janela termina, a própria trilha permite resolver os lentos ou encerrar
  * a rodada. O estado continua disponível para leitor de tela.
  *
@@ -20,7 +20,7 @@
 
 import {
   type EstadoTrilha, type Lado,
-  DICA_JANELA, ROTULO_JANELA_CURTO,
+  DICA_JANELA, PISO_PA, TETO_PA,
 } from "./modelo";
 import { useDicaPortal } from "../_painel/ui/DicaPortal";
 
@@ -70,7 +70,7 @@ function Etapa({ destino, atual, rotulo, emAndamento, motivoTrava, onIr }: {
         aria-disabled={travada || undefined}
         onClick={() => { if (!travada) onIr(); }}
         {...alvo}
-      />
+      >{destino === "rapidos" ? "RÁPIDOS" : "LENTOS"}</button>
       {dica}
     </>
   );
@@ -95,20 +95,18 @@ export function NucleoRodada({
     <section className="rv-rodadas" aria-label="Rodada e ativação" data-janela={trilha.janela}>
       <div className="rv-rodadas-nucleo">
         <p className="rv-rodadas-rodada">
-          Rodada {trilha.rodada}
+          <span>RODADA</span><strong>{trilha.rodada}</strong>
           {trilha.modo !== "combate" && (
             <span className="rv-rodadas-modo" data-modo={trilha.modo}>
               {trilha.modo === "emboscada" ? "Emboscada" : trilha.modo === "tregua" ? "Trégua" : "Exploração"}
             </span>
           )}
         </p>
-        <p className="rv-rodadas-janela" data-janela={trilha.janela} title={DICA_JANELA[trilha.janela]}>
-          Turnos {ROTULO_JANELA_CURTO[trilha.janela]}
-        </p>
         {/* As etapas são o CONTROLE da rodada (avançar janela/rodada) —
             só existem pra quem conduz. O jogador lê a janela no rótulo
             acima; a faixa sozinha, sem clique, só repetia isso. */}
-        {podeConduzir && <div className="rv-rodadas-trilha" role="group" aria-label="Etapas da rodada">
+        <div className="rv-rodadas-trilha" role="group" aria-label="Etapas da rodada" title={DICA_JANELA[trilha.janela]}>
+          {podeConduzir ? <>
           <Etapa
             destino="rapidos"
             atual={trilha.janela === "rapidos"}
@@ -125,7 +123,12 @@ export function NucleoRodada({
             motivoTrava={null}
             onIr={onAvancarJanela}
           />
-        </div>}
+          </> : <>
+            <span className="rv-rodadas-etapa" data-destino="rapidos" aria-current={trilha.janela === "rapidos" ? "step" : undefined}>RÁPIDOS</span>
+            <span className="rv-rodadas-etapa" data-destino="lentos" aria-current={trilha.janela === "lentos" ? "step" : undefined}>LENTOS</span>
+          </>}
+        </div>
+        <p className="rv-rodadas-teto"><span>{trilha.janela === "rapidos" ? "TETO" : "PISO"}</span><strong>{trilha.janela === "rapidos" ? `${TETO_PA.rapidos} PA` : `${PISO_PA.lentos} PA`}</strong></p>
       </div>
       <p className="rv-rodadas-estado" role="status" aria-live="polite">{estado}</p>
     </section>

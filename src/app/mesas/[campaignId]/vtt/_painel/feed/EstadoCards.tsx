@@ -16,14 +16,13 @@
  *   · `RestCard`       — `antes → depois` de cada recurso que voltou.
  *   · `RuptureCard`    — nível, Integridade paga e Mana devolvida.
  *
- * Anatomia e CSS são os compartilhados (`CartaoBase` + `primitivas`):
- * o que distingue um card do outro continua sendo espinha, acento e
- * rótulo, nunca um fundo colorido próprio.
+ * A casca compartilhada vem de `CartaoBase`; os valores usam as linhas
+ * e segmentos do board "Chat Log".
  */
 
-import { BedDouble, HeartCrack, ShieldCheck, Siren, TrendingDown, Zap } from "lucide-react";
+import { Atom, HeartCrack, Moon, ShieldCheck, Siren, Zap } from "lucide-react";
 import { CartaoBase } from "../ui/CartaoBase";
-import { Chip, Chips, FaixaResultado, Modulo, Modulos } from "../ui/primitivas";
+import { Chip, FaixaResultado } from "../ui/primitivas";
 import { acentoDoCartao, type CartaoColapso, type CartaoDescanso, type CartaoRuptura, type CartaoSobrecarga, type FaseColapso } from "./contratos";
 import { cabecalhoDe } from "./CabecalhoPersonagem";
 
@@ -40,7 +39,7 @@ const ROTULO_FASE: Record<FaseColapso, string> = {
 const ESTADO_FASE: Record<FaseColapso, string> = {
   iniciado: "Em queda",
   avancado: "Em queda",
-  estabilizado: "Estável",
+  estabilizado: "Estabilizado",
   encerrado: "Encerrado",
   desfecho: "Desfecho",
 };
@@ -61,13 +60,14 @@ export function CollapseCard({
   const acento = acentoDoCartao(cartao);
   const parou = cartao.fase === "estabilizado" || cartao.fase === "encerrado";
   const temMotivo = !!cartao.motivo;
+  const segmento = cartao.segmento;
   return (
     <CartaoBase
       tipo={ROTULO_FASE[cartao.fase]}
-      nome={cartao.recurso ? `Colapso de ${cartao.recurso}` : "Colapso"}
-      icone={parou ? <ShieldCheck /> : <TrendingDown />}
+      nome={ESTADO_FASE[cartao.fase]}
+      icone={parou ? <ShieldCheck /> : <HeartCrack />}
       acento={acento}
-      autor={cartao.alvo ?? cartao.autoria.nome}
+      autor={`${cartao.alvo ?? cartao.autoria.nome} · colapso${cartao.recurso ? ` de ${cartao.recurso}` : ""}`}
       hora={hora}
       cabecalho={cabecalhoDe(cartao.autoria, hora, cartao.criadoEm)}
       horaISO={cartao.criadoEm}
@@ -80,17 +80,11 @@ export function CollapseCard({
       testId="painel-feed-colapso"
       atributos={{ "data-kind": "colapso", "data-fase": cartao.fase }}
     >
-      {cartao.segmento != null && (
-        <Modulos colunas={2}>
-          <Modulo
-            rotulo="Segmento"
-            valor={cartao.segmento}
-            sub={`/${cartao.segmentoMax}`}
-            acento={acento}
-            testId="painel-feed-colapso-segmento"
-          />
-          {cartao.recurso && <Modulo rotulo="Trilha" valor={cartao.recurso} acento={acento} />}
-        </Modulos>
+      {segmento != null && (
+        <div className="pn-chat-segmentos" data-testid="painel-feed-colapso-segmento">
+          <div className="pn-chat-segmentos-barra" aria-hidden="true">{Array.from({ length: cartao.segmentoMax }, (_, i) => <span key={i} data-cheio={i < segmento ? "true" : undefined} />)}</div>
+          <span>segmento {segmento} de {cartao.segmentoMax}</span>
+        </div>
       )}
       {cartao.desfecho && (
         <FaixaResultado
@@ -115,14 +109,14 @@ export function OverloadCard({
   hora: string;
   visibilidade?: React.ReactNode;
 }) {
-  const acento = acentoDoCartao(cartao);
+  const acento = "am";
   return (
     <CartaoBase
       tipo="Surto de sobrecarga"
       nome={cartao.efeito ?? "Surto"}
       icone={<Zap />}
       acento={acento}
-      autor={cartao.alvo ?? cartao.autoria.nome}
+      autor={`${cartao.alvo ?? cartao.autoria.nome}${cartao.indice != null ? ` · surto ${cartao.indice} de ${cartao.maximo}` : " · surto"}`}
       hora={hora}
       cabecalho={cabecalhoDe(cartao.autoria, hora, cartao.criadoEm)}
       horaISO={cartao.criadoEm}
@@ -137,31 +131,11 @@ export function OverloadCard({
       testId="painel-feed-sobrecarga"
       atributos={{ "data-kind": "sobrecarga" }}
     >
-      <Modulos colunas={2}>
-        {cartao.indice != null && (
-          <Modulo rotulo="Surto" valor={cartao.indice} sub={`/${cartao.maximo}`} acento="am" />
-        )}
-        {cartao.danoPsiquico != null && (
-          <Modulo
-            rotulo="Dano psíquico"
-            valor={cartao.danoPsiquico}
-            sub={cartao.danoDado ?? undefined}
-            acento="perigo"
-            destaque
-            testId="painel-feed-sobrecarga-dano"
-          />
-        )}
-      </Modulos>
+      {cartao.danoPsiquico != null && <p className="pn-texto" data-testid="painel-feed-sobrecarga-dano">{cartao.danoDado ? `${cartao.danoDado} · ` : ""}{cartao.danoPsiquico} de dano psíquico</p>}
       {/* O dano já foi aplicado em PE — mesma faixa do "Dano aplicado" do
           card de ataque. Logs antigos (sem PE) não têm a faixa. */}
       {cartao.peAntes != null && cartao.peDepois != null && (
-        <FaixaResultado
-          rotulo="Dano aplicado"
-          valor={`PE ${cartao.peAntes} → ${cartao.peDepois}`}
-          acento="ok"
-          icone={<Zap />}
-          testId="painel-feed-sobrecarga-pe"
-        />
+        <div className="pn-chat-variacao" data-testid="painel-feed-sobrecarga-pe"><span className="pn-chat-variacao-rotulo">PE</span><span className="pn-chat-variacao-valor"><span>{cartao.peAntes} →</span> {cartao.peDepois} <em data-acento="perigo">{cartao.peDepois - cartao.peAntes}</em></span></div>
       )}
     </CartaoBase>
   );
@@ -183,9 +157,9 @@ export function RestCard({
     <CartaoBase
       tipo={cartao.duracao === "longo" ? "Descanso longo" : "Descanso curto"}
       nome="Recuperação"
-      icone={<BedDouble />}
+      icone={<Moon />}
       acento="ok"
-      autor={cartao.alvo ?? cartao.autoria.nome}
+      autor={`${cartao.alvo ?? cartao.autoria.nome} · descanso ${cartao.duracao}`}
       hora={hora}
       cabecalho={cabecalhoDe(cartao.autoria, hora, cartao.criadoEm)}
       horaISO={cartao.criadoEm}
@@ -194,18 +168,14 @@ export function RestCard({
       atributos={{ "data-kind": "descanso", "data-duracao": cartao.duracao }}
     >
       {temRecursos ? (
-        <Modulos colunas={cartao.recursos.length >= 3 ? 3 : 2}>
+        <div className="pn-chat-variacoes">
           {cartao.recursos.map((r) => (
-            <Modulo
-              key={r.rotulo}
-              rotulo={r.rotulo}
-              valor={`${r.antes} → ${r.depois}`}
-              sub={r.delta > 0 ? `+${r.delta}` : String(r.delta)}
-              acento={r.delta > 0 ? "ok" : "neutro"}
-              testId={`painel-feed-descanso-${r.rotulo.toLowerCase()}`}
-            />
+            <div className="pn-chat-variacao" key={r.rotulo} data-testid={`painel-feed-descanso-${r.rotulo.toLowerCase()}`}>
+              <span className="pn-chat-variacao-rotulo">{r.rotulo}</span>
+              <span className="pn-chat-variacao-valor"><span>{r.antes} →</span> {r.depois} <em data-acento={r.delta > 0 ? "ok" : "neutro"}>{r.delta > 0 ? `+${r.delta}` : String(r.delta)}</em></span>
+            </div>
           ))}
-        </Modulos>
+        </div>
       ) : (
         <p className="pn-texto">Sem mudança de recursos.</p>
       )}
@@ -232,9 +202,9 @@ export function RuptureCard({
     <CartaoBase
       tipo="Ruptura resolvida"
       nome={cartao.nivel != null ? `Ruptura nível ${cartao.nivel}` : "Ruptura"}
-      icone={<HeartCrack />}
-      acento="perigo"
-      autor={cartao.alvo ?? cartao.autoria.nome}
+      icone={<Atom />}
+      acento="magenta"
+      autor={`${cartao.alvo ?? cartao.autoria.nome}${cartao.nivel != null ? ` · ruptura nível ${cartao.nivel}` : " · ruptura"}`}
       hora={hora}
       cabecalho={cabecalhoDe(cartao.autoria, hora, cartao.criadoEm)}
       horaISO={cartao.criadoEm}
@@ -242,20 +212,17 @@ export function RuptureCard({
       testId="painel-feed-ruptura"
       atributos={{ "data-kind": "ruptura" }}
     >
-      <Modulos colunas={2}>
+      <div className="pn-chat-variacoes">
         {cartao.integridadeAntes != null && cartao.integridadeDepois != null && (
-          <Modulo
-            rotulo="Integridade"
-            valor={`${cartao.integridadeAntes} → ${cartao.integridadeDepois}`}
-            sub={perda != null && perda !== 0 ? String(perda) : undefined}
-            acento="perigo"
-            testId="painel-feed-ruptura-integridade"
-          />
+          <div className="pn-chat-variacao" data-testid="painel-feed-ruptura-integridade">
+            <span className="pn-chat-variacao-rotulo">Integridade</span>
+            <span className="pn-chat-variacao-valor"><span>{cartao.integridadeAntes} →</span> {cartao.integridadeDepois} {perda != null && perda !== 0 && <em data-acento="perigo">{perda}</em>}</span>
+          </div>
         )}
         {cartao.bonusMana != null && (
-          <Modulo rotulo="Mana máxima" valor={`+${cartao.bonusMana}`} acento="mana" />
+          <div className="pn-chat-variacao"><span className="pn-chat-variacao-rotulo">Mana máxima</span><span className="pn-chat-variacao-valor"><em data-acento="mana">+{cartao.bonusMana}</em></span></div>
         )}
-      </Modulos>
+      </div>
       {/* Sem faixa de fecho: ela repetiria o `+N` que o módulo de Mana
           já mostra, e o card sairia com o mesmo número três vezes. */}
     </CartaoBase>

@@ -81,6 +81,13 @@ function espinhaDoTipo(tipo: string): string {
   return tipo.replace(/^TESTE DE\s+/i, "").trim() || tipo;
 }
 
+function autoriaNaLinha(autor: ReactNode): ReactNode {
+  if (typeof autor !== "string") return autor;
+  const separador = autor.indexOf(" · ");
+  if (separador < 0) return <strong className="pn-cartao-autor-nome">{autor}</strong>;
+  return <><strong className="pn-cartao-autor-nome">{autor.slice(0, separador)}</strong><span> · {autor.slice(separador + 3)}</span></>;
+}
+
 export function CartaoBase({
   tipo,
   nome,
@@ -134,7 +141,7 @@ export function CartaoBase({
               acento), autor e hora. O avatar agora vive fora do card. */}
           <div className="pn-cartao-cab">
             {icone && <span className="pn-cartao-ico pn-cartao-ico-meta">{icone}</span>}
-            <span className="pn-cartao-autor">{autor}</span>
+            <span className="pn-cartao-autor">{autoriaNaLinha(autor ?? tipo)}</span>
             <span className="pn-cartao-meta">
               {hora && <time className="pn-cartao-hora" dateTime={horaISO}>{hora}</time>}
               <BotaoMenuCard />

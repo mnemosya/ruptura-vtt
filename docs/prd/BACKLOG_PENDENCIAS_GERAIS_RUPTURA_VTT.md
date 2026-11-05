@@ -14,6 +14,8 @@
 - **Pronta após dependência:** a regra está definida, mas outra tarefa precisa ser concluída primeiro.
 - **Bloqueada:** falta uma decisão de produto, regra de jogo, contrato de dados ou referência de design indispensável. Não implementar até as dúvidas bloqueadoras serem respondidas.
 - **Em validação:** implementação entregue; verificações finais de interface ou integração ainda pendentes.
+- **Em andamento:** parte do escopo foi entregue, mas ainda faltam critérios de aceite ou decisões do item.
+- **Concluída:** escopo entregue e verificado pela evidência indicada no próprio item.
 
 ### Prioridade sugerida
 
@@ -33,7 +35,7 @@ Além dos critérios específicos de cada tarefa:
 - não manter mocks silenciosos em fluxos de produto;
 - cada entrega deve ter teste de domínio para regras e um check de interface para o caminho principal.
 
-## 2. Leitura do estado atual do repositório
+## 2. Leitura do estado em 2026-09-15 (histórico)
 
 Esta triagem considera o código existente, não apenas a lista de desejos:
 
@@ -44,7 +46,7 @@ Esta triagem considera o código existente, não apenas a lista de desejos:
 - o domínio de inventário já contém carteira, estados de loadout e uma regra parcial de mochila. Essas decisões precisam ser auditadas e aprovadas; a interface não deve assumir que a regra provisória é definitiva.
 - o VTT já tem fundações de terreno, pathfinding, objetos, seleção em grupo, imagens, cenas, painel de participantes, chat e dados 3D. As tarefas abaixo devem estender esses contratos, evitando subsistemas paralelos.
 
-### Resultado da triagem
+### Resultado da triagem original (2026-09-15)
 
 | Recorte | Quantidade |
 |---|---:|
@@ -57,6 +59,22 @@ Esta triagem considera o código existente, não apenas a lista de desejos:
 | P1 | 45 |
 | P2 | 15 |
 | P3 | 1 |
+
+### Revisão de andamento (2026-10-30)
+
+Os status abaixo foram confrontados com o código e o histórico de commits até `6cd2fc1b`, mais a implementação local de 2026-10-30 descrita nos itens. Implementação existente sem verificação suficiente ficou **Em validação**; recortes funcionais que não cobrem todos os critérios ficaram **Em andamento**. Esta revisão não afirma que migrations locais foram aplicadas a todos os ambientes.
+
+| Situação atual | Itens |
+|---|---:|
+| Concluídas | 28 |
+| Em validação | 20 |
+| Em andamento | 7 |
+| Prontas | 3 |
+| Prontas após dependência | 1 |
+| Bloqueadas | 24 |
+| **Total** | **83** |
+
+O total aumentou desde a triagem original por achados registrados depois dela. O item de teste que repetia o ID `SESS-01` foi renomeado para `TEST-03`; `SESS-01` continua reservado à sessão online.
 
 ## 3. Dependências críticas
 
@@ -101,7 +119,8 @@ PLOT-01 ──> PLOT-02
 
 ### AUTH-02 — Unificar linguagem visual da área autenticada com o VTT
 
-- **Status:** Pronta (parte estática concluída)
+- **Status:** Em validação
+- **Revisão (2026-10-30):** a área autenticada recebeu nova versão visual em `45be4739` e já usa tokens em `src/app/_design/tokens.css`. Falta repetir a conferência visual de todas as rotas globais exigida no aceite após essa mudança.
 - **Decisão tomada (2026-09-20)** sobre “qual superfície do VTT é a referência”: o **chassi** (`_design/vtt-chassi.css`). Não foi escolha de gosto — `console.css` já documenta os próprios tokens como espelho dos `--rv-*` do chassi, então ele já era a fonte de fato.
 - **`clip-path` em controle não era estilo, era defeito de acessibilidade.** Ele recorta TODA a pintura do elemento, inclusive o contorno de foco; os controles da área autenticada desenham o foco com `outline-offset` positivo, isto é, **fora** da região recortada. O canto chanfrado apagava o único sinal de onde o teclado está. Saiu de `.ra-btn`, `.ra-iconbtn`, `.ra-switch` e dos campos de formulário, substituído por `border-radius: var(--ra-r)`. As **11 regras decorativas** (selo da marca, cards, modal, moldura, vazio) continuam com o chanfro: ali ele é identidade visual e não há foco para comer.
 - Raio em token (`--ra-r`, `--ra-r-sm`), com o comentário apontando a origem no chassi — a área autenticada não carrega aquela folha, então os valores são repetidos com o nome dizendo de onde vieram.
@@ -122,7 +141,8 @@ PLOT-01 ──> PLOT-02
 
 ### CAMP-01 — Persistir metadados de campanha
 
-- **Status:** Bloqueada
+- **Status:** Em validação
+- **Revisão (2026-10-30):** `20261005120000_campaign_metadata_cover.sql`, `metadataActions.ts` e `coverService.ts` implementam descrição, capa, substituição e limpeza; falta registrar verificação integrada de autorização, órfãos e leitura nos dois contextos.
 - **Descrição:** ampliar o contrato de campanha para armazenar descrição e arte de capa, incluindo upload, referência ao asset, substituição e limpeza segura. A capa deve reutilizar a infraestrutura de imagens quando isso não misturar permissões ou ciclo de vida incompatíveis.
 - **Área afetada:** banco, storage de imagens, tipos `Campaign`, Server Actions e dashboard.
 - **Prioridade sugerida:** P0
@@ -132,7 +152,8 @@ PLOT-01 ──> PLOT-02
 
 ### CAMP-02 — Concluir modal de criação de campanha
 
-- **Status:** Pronta após dependência
+- **Status:** Em validação
+- **Revisão (2026-10-30):** `MesasDashboardClient.tsx` já tem nome, descrição, capa, prévia, bloqueio de reenvio e redirecionamento após criar. Falta check integrado do fluxo de erro e de falha parcial com asset.
 - **Descrição:** substituir o formulário de nome único por nome, descrição, arte de capa e prévia fiel do card; criar tudo em uma operação coerente e redirecionar para a campanha criada.
 - **Área afetada:** dashboard “Minhas Campanhas”, modal, criação de campanha.
 - **Prioridade sugerida:** P1
@@ -177,7 +198,7 @@ PLOT-01 ──> PLOT-02
 
 ### PRES-01 — Definir semântica de “Aparecer offline”
 
-- **Status:** Pronta (matriz aprovada em 2026-09-20)
+- **Status:** Concluída (matriz aprovada em 2026-09-20)
 - **Descrição:** produzir e aprovar uma matriz de comportamento para preferência global, sessão ativa, lista de participantes, Rede, contadores, convite, autoria de chat e ações do narrador. Separar privacidade visual de autorização e de conexão real.
 - **Área afetada:** produto, privacidade, presença global e por campanha.
 - **Prioridade sugerida:** P0
@@ -249,12 +270,15 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 
 ### NAV-02 — Tornar Mercado uma ferramenta geral da campanha
 
-- **Status:** Bloqueada
+- **Status:** Em andamento
+- **Revisão (2026-10-30):** `JanelaMercado.tsx` já abre pela campanha sem personagem ativo e oferece seleção de carteira antes de entrar no Console. O catálogo e a compra ainda operam dentro da ficha; os critérios de catálogo consultável sem personagem e seleção de destinatário no fluxo de compra não foram atendidos.
+- **Implementação parcial (2026-10-30):** a janela da campanha agora consulta o catálogo efetivo da mesa sem abrir personagem, com busca, categoria, preço e descrição. A lista de compradores continua filtrada pelo acesso existente; escolher um deles abre a ficha para concluir a compra. Ainda falta levar o item escolhido até a compra, selecionar carteira/destinatário no próprio Mercado da campanha e registrar os dois no log; por isso NAV-02 segue em andamento.
+- **Atualização (2026-11-01):** o item Mercado do menu usa a mesma janela e o mesmo catálogo visual do Console do personagem. O usuário escolhe explicitamente um personagem; a compra debita os aretz desse personagem, entrega o item ao inventário dele e registra no log comprador, destinatário e carteira. Portanto, não falta selecionar destinatário para o fluxo atual: comprador e destinatário são a mesma pessoa. A exigência antiga de escolher outra carteira ou outro destinatário descreve uma possível expansão, mas não aparece como regra aprovada em [Inventário v1.2](https://app.notion.com/p/3dd0a136355280e58284df2de80021e0). Antes de implementá-la, é preciso decidir se compras para terceiros e pagamento por CDI/CDI craqueada são permitidos. O que resta verificar no escopo atual é o fluxo integrado de compra, permissões no servidor e registro do log.
 - **Descrição:** desacoplar a abertura do Mercado de um personagem específico. A seleção de comprador/carteira, quando necessária, deve acontecer dentro do fluxo de compra e respeitar personagens controlados.
 - **Área afetada:** Janela Mercado, menu principal, inventário e permissões.
 - **Prioridade sugerida:** P1
 - **Dependências:** INV-01 para regras definitivas de item; NAV-01 para posição no menu.
-- **Critérios de aceite:** Mercado abre sem personagem ativo; catálogo pode ser consultado por papel autorizado; compra exige seleção explícita de destinatário e carteira; não permite operar personagem não controlado; logs identificam comprador e destinatário.
+- **Critérios de aceite do fluxo atual:** Mercado abre sem personagem ativo; catálogo pode ser consultado por papel autorizado; compra exige seleção explícita do personagem comprador, usa a carteira de aretz dele e entrega o item ao inventário dele; não permite operar personagem não controlado; logs identificam comprador, destinatário e carteira. Compra para outro destinatário ou com outra carteira exige regra de produto específica antes de virar critério de implementação.
 - **Dúvidas antes da implementação:** jogadores podem comprar sem sessão online? Narrador compra para qualquer personagem? Existe estoque/preço por campanha ou apenas catálogo global?
 
 ### SET-01 — Especificar configurações definitivas da mesa
@@ -271,7 +295,7 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 
 ### CONT-01 — Definir taxonomia do organizador de campanha
 
-- **Status:** Pronta (taxonomia aprovada em 2026-09-20)
+- **Status:** Concluída (taxonomia aprovada em 2026-09-20)
 - **Descrição:** especificar os tipos narrativos — sessão, anotação, handout, NPC, lugar, loja e “outros” — e separar esse domínio do conteúdo de regras oficial/override/homebrew já existente.
 - **Área afetada:** produto, modelo de dados, Conteúdo da campanha e Compêndio.
 - **Prioridade sugerida:** P0
@@ -587,7 +611,7 @@ As três viraram JANELAS dentro da mesa, e ali o sistema de design é `rv-*`: a 
 - é preciso FECHAR a janela aberta (Esc) antes de abrir a próxima: ela cobre o botão do menu, e o clique fica esperando "visible, enabled and stable" até o timeout;
 - as rotas antigas (`/biblioteca`, `/livro`, `/jogadores-e-convites`, `/configuracoes`) não existem: navegar pra elas dá 404 e o check reprovava em cascata com "rm-table=false", que é o que sobra quando não há página.
 
-### SESS-01 — Fechada: era a mira do teste, não o produto
+### TEST-03 — Fechada: era a mira do teste, não o produto
 
 - **Status:** Concluída (2026-09-22)
 - **Prioridade:** era P1 enquanto havia a hipótese de ser produto.
@@ -772,7 +796,8 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### CHAR-01 — Criar seletor de tipo em “+ Personagem”
 
-- **Status:** Pronta após dependência
+- **Status:** Em andamento
+- **Revisão (2026-10-30):** `PersonagensTab.tsx` já abre um seletor e permite criar PJ/PN. Ainda não há opção Aliado nem evidência de todos os destinos e permissões descritos no aceite.
 - **Descrição:** ao acionar “+ Personagem”, abrir menu acessível com PJ, PN e Aliado, filtrando as opções por papel antes de entrar no fluxo específico.
 - **Área afetada:** aba Personagens, menu ancorado e permissões.
 - **Prioridade sugerida:** P1
@@ -793,7 +818,9 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### CHAR-03 — Integrar criação guiada de PJ
 
-- **Status:** Pronta após dependência
+- **Status:** Em validação
+- **Revisão (2026-10-30):** a Forja v1.2 implementou criação guiada e rascunho persistente (`20261001033923_ruptura_v12_criacao_personagem.sql` e `df21adf3`). Falta conferir a entrada pelo seletor do VTT e a atualização de lista/controle sem recarga. A correção de status de 2026-09-20 abaixo é histórica.
+- **Integração (2026-10-30):** `JanelaNovoPersonagem` já usa a Forja única e abre a ficha ao concluir. O diretório de Personagens agora relê os dados quando a Forja conclui, inclusive se a aba ou a janela já estava aberta. Falta verificar visualmente o fluxo e o controle recém-atribuído na mesa para encerrar o aceite.
 - **Correção de status (2026-09-20):** estava marcada como “Pronta”, contradizendo a própria linha de dependências — ela pede CHAR-01, que espera CHAR-04 e CHAR-05, as duas bloqueadas. Não é implementável hoje.
 - **Descrição:** abrir o assistente completo já existente a partir do novo menu, preservando rascunho, validação canônica e retorno ao painel do VTT.
 - **Área afetada:** `AssistenteDeCriacao`, painel Personagens e domínio de criação.
@@ -804,7 +831,8 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### CHAR-04 — Definir e implementar criação de PN
 
-- **Status:** Bloqueada
+- **Status:** Em andamento
+- **Revisão (2026-10-30, após consulta ao Notion):** o assistente v1.2 cria PN (`586f9bf4`), e `GerenciadorToken.tsx` oferece “Criar ficha (PN)” para token avulso. O Notion já contém fichas de ameaças e decisões de formato; falta mapear essas regras para o fluxo de criação, controle, visibilidade e combate do VTT. Fonte: [Ameaças e Antagonistas](https://app.notion.com/p/3dd0a1363552807abecaee3cac0ba82f) e [decisões de formato](https://app.notion.com/p/3e30a136355280fbadf2e5939dbf2a46).
 - **Descrição:** criar o fluxo exclusivo do narrador para personagem do narrador somente após definir ficha, controle, visibilidade, defaults e participação no combate.
 - **Área afetada:** personagens, ficha, autorização, tokens e combate.
 - **Prioridade sugerida:** P1
@@ -835,7 +863,8 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### CON-02 — Harmonizar paleta e tab rail do console
 
-- **Status:** Em andamento
+- **Status:** Em validação
+- **Revisão (2026-10-30):** o trilho e a paleta foram retrabalhados em `993ff9aa` e `2d19ac00`. Os estados e tokens já descritos abaixo existem; resta conferência visual e de contraste sobre o tema atual da Forja.
 - **Andamento (2026-09-20):** o critério “tokens sem cores mágicas duplicadas” era mensurável e estava sendo violado em **73 lugares**: `#d6e4f5` aparecia 24 vezes e É `--rc-text`; `#1c2b45` nove vezes e É `--rc-line`. Trocados por token, mais quatro tokens novos para as recorrentes que não tinham nome (`--rc-text-forte`, `--rc-teal`, `--rc-surface-2`, `--rc-surface-3`).
 - **Regressão introduzida e apanhada pela medição:** os tokens eram declarados em `.rc-window-wrap`, e o cabeçalho de `/ficha` é **irmão** da janela, não descendente — ao trocar literais por token, oito elementos do cabeçalho caíram na cor padrão do navegador. Só apareceu porque as cores computadas foram fotografadas antes e comparadas depois. Os tokens passaram a ser declarados também para o cabeçalho; o layout continua só na janela.
 - **Segundo erro, sobre token contextual:** `--rc-skill-cor` vale verde em Corpo e roxo em Mente, e só recebe valor dentro de `.rc-skill`. Troquei por ele um `#0596B7` de `.rc-nric-badge`, que está fora desse escopo — o `var()` não resolveria ali, e o próprio arquivo já dizia que aquela era “cor PRÓPRIA”. Revertido, e o check passou a **ignorar tokens declarados com mais de um valor**: igualdade de valor não é duplicação quando o token é contextual.
@@ -858,7 +887,9 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### CON-03 — Ajustar sobrecarga e distorções de identidade
 
-- **Status:** Bloqueada
+- **Status:** Em validação
+- **Revisão (2026-10-30, após consulta ao Notion):** o fluxo de surto e a aba Ruptura foram ampliados em outubro (`a47c3dc1`, `471f2948`, `e51a96eb`). A regra já define 1 distorção em Integridade 5–6, 2 em 3–4 e 3 em 2; falta representar isso na interface e verificar os pips rachados. Fonte: [Integridade v1.2](https://app.notion.com/p/be50a136355283fb86bf01a56cbd575a).
+- **Implementação (2026-10-30):** o bloco de Integridade agora seleciona as dez distorções do capítulo 19 em campo próprio da ficha, sem confundi-las com Marcas/Traços de Ruptura. Os pips consumidos racham em vermelho quando a Integridade está em 6 ou menos; as faixas de 1 e 0 exibem seus avisos. Tipagem, normalização e teste de faixas passaram; o campo usa a rotina de autosave da ficha. Falta conferir o salvamento e o modal de surto visualmente em tamanhos suportados para encerrar o aceite.
 - **Descrição:** corrigir o modal de surto de sobrecarga e adicionar bloco de distorções quando integridade for 6 ou menos; pips consumidos nesse estado exibem rachaduras vermelhas diagonais.
 - **Área afetada:** aba Personagem, overload, integridade, pips e modal auxiliar.
 - **Prioridade sugerida:** P1
@@ -878,7 +909,8 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### EQP-01 — Reorganizar a aba Equipamentos e ações rápidas
 
-- **Status:** Pronta
+- **Status:** Em validação
+- **Revisão (2026-10-30):** `EquipmentPanel.tsx`, o HUD e o trilho de abas receberam reorganização e ícones em outubro (`55e78dad`, `ba053ee6`, `1bbdda22`). Falta checagem de loading/erro por item, teclado e tamanhos suportados.
 - **Descrição:** redistribuir itens para eliminar o vazio, criar estados/feedback das ações de equipar, usar amarelo menos intenso e trocar o ícone da tab rail.
 - **Área afetada:** `EquipmentPanel`, tab rail, inventário/loadout e CSS.
 - **Prioridade sugerida:** P1
@@ -888,8 +920,10 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### EQP-02 — Criar janelas e estados definitivos de itens equipados
 
-- **Status:** Bloqueada
-- **Descrição:** construir as janelas disparadas por “equipar” e a representação de itens já equipados somente depois do contrato definitivo de inventário/mochilas.
+- **Status:** Em validação
+- **Revisão (2026-10-30, após consulta ao Notion):** há detalhes de item, slots, troca de armas e posições de equipamento no Console (`EquipmentPanel.tsx`, `equipmentPositions.ts`, `13455c3d`). As regras de posições, conflitos, acesso rápido e troca estão no capítulo [Inventário v1.2](https://app.notion.com/p/3dd0a136355280e58284df2de80021e0); falta conferir e completar sua aplicação, inclusive a troca atômica.
+- **Auditoria (2026-10-30):** `scripts/test-market-notion-update.ts` e `scripts/test-backpacks.ts` passaram para posições, conflitos e troca de equipamentos. A sobrecarga ilimitada nas compras/trocas segue a decisão do usuário em INV-01. Falta validação visual das janelas, feedback de erro/loading e teclado para encerrar o aceite.
+- **Descrição:** construir as janelas disparadas por “equipar” e a representação de itens já equipados conforme o contrato de inventário/mochilas da v1.2.
 - **Área afetada:** Equipamentos, Inventário, defesa, carga e ações rápidas.
 - **Prioridade sugerida:** P1
 - **Dependências:** INV-01, INV-02, EQP-01.
@@ -898,17 +932,22 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### INV-01 — Aprovar taxonomia, dados e regras de mochila
 
-- **Status:** Bloqueada
+- **Status:** Em validação
+- **Revisão (2026-10-30, após consulta ao Notion):** o capítulo [Inventário v1.2](https://app.notion.com/p/3dd0a136355280e58284df2de80021e0) já define local único do item, posições de Equipado, Mochilas MK I–III, excesso de até 2 espaços, conjuntos pequenos, Carga, Abrigo e inventário do Bando. A antiga dependência de “receber as regras” está superada. Falta auditar os itens publicados contra essas regras e registrar a migração do legado; não falta inventar a regra de mochila.
+- **Decisão do usuário (2026-10-30):** no VTT, compras e trocas de equipamento podem deixar a mochila acima da capacidade **sem limite adicional de espaços**. A capacidade e o excesso continuam visíveis, mas não bloqueiam essas ações. Esta decisão substitui, para esses fluxos do VTT, o teto de +2 descrito no Notion. Não reintroduzir a restrição ao implementar INV-02, EQP-02, Mercado ou transferências.
+- **Auditoria (2026-10-30):** [matriz de conteúdo e migração](./INVENTARIO_V12_AUDITORIA.md): 280 itens/16 categorias, 280 slugs distintos, preços presentes; 24 veículos/módulos veiculares sem Espaços exigem representar Carga sem atribuir um espaço fictício. INV-01 segue em validação até resolver essa localização e validar a migração.
 - **Descrição:** revisar o domínio parcial existente e definir todos os tipos de item, campos por tipo, stack, carga, estados, capacidade, troca de mochila, excedente e relação com abrigo/equipamento.
 - **Área afetada:** regras, schema canônico, `character/inventory.ts`, `carga.ts`, Mercado e console.
 - **Prioridade sugerida:** P0
-- **Dependências:** regras definitivas fornecidas pelo responsável do sistema.
+- **Dependências:** regras v1.2 já publicadas no Notion; falta auditoria dos itens publicados e plano de migração.
 - **Critérios de aceite:** matriz por tipo aprovada; invariantes e exemplos; compatibilidade com itens publicados auditada; plano de migração; decisões de mochila e excedente sem lacunas; regras de moeda incluídas ou referenciadas.
 - **Dúvidas antes da implementação:** quais são todos os tipos? Quais empilham? Como se troca mochila e o que ocorre com excesso? Onde fica o abrigo? Peso/espaços coexistem? Quais itens podem ser equipados/empunhados/acesso rápido?
 
 ### INV-02 — Implementar inventário definitivo
 
-- **Status:** Bloqueada
+- **Status:** Em andamento
+- **Revisão (2026-10-30, após consulta ao Notion):** `InventarioPanel.tsx` implementa seleção múltipla, reordenação persistente, descarte confirmado, modal de item e escolha de mochila; o Mercado já compra itens. As regras estão em [Inventário v1.2](https://app.notion.com/p/3dd0a136355280e58284df2de80021e0). Falta comparar todos os fluxos e validações do servidor com elas e migrar estados legados sem perda.
+- **Ajuste de escopo (2026-10-30):** a conferência de capacidade deve mostrar a ocupação e o excesso; não deve recusar compra ou troca por falta de espaço, conforme decisão do usuário em INV-01.
 - **Descrição:** alinhar modelo, validações e interface ao contrato aprovado, migrando com segurança os estados parciais já existentes.
 - **Área afetada:** domínio de personagem, banco/JSON canônico, console, Mercado e logs.
 - **Prioridade sugerida:** P0
@@ -932,7 +971,8 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### TAB-01 — Implementar aba Magias
 
-- **Status:** Bloqueada
+- **Status:** Em validação
+- **Revisão (2026-10-30):** `MagiasPanel.tsx` e `CatalogoMagiasHud.tsx` mostram catálogo, busca, custos, escolhas de conjuração e uso. Falta check integrado de recursos, erros e log para todos os caminhos de magia; a regra de “preparar” deve ser reconciliada com a v1.2.
 - **Descrição:** criar a experiência completa de visualizar, filtrar, preparar/usar e inspecionar magias do personagem, reaproveitando domínio e conteúdo canônico já existentes.
 - **Área afetada:** console, magias, rolagens, recursos e chat.
 - **Prioridade sugerida:** P1
@@ -942,7 +982,9 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### TAB-02 — Implementar aba Escalpos
 
-- **Status:** Bloqueada
+- **Status:** Em andamento
+- **Revisão (2026-10-30, após consulta ao Notion):** `EscalposPanel.tsx` mostra instalados, catálogo, regiões, Integridade e ações de instalar/remover. O Notion já define Desgaste e módulos; o próprio detalhe da interface informa que ainda não os registra na ficha. Falta implementar esse estado, não decidir sua regra. Fonte: [Escalpos v1.2](https://app.notion.com/p/3d50a13635528061bda3c10fbb32cf04).
+- **Implementação parcial (2026-10-30):** Desgaste 0/1/2 agora é registrado por instância, aparece no painel e desativa os modificadores automáticos e a ARS quando o escalpo está danificado; descanso não o remove. O teste de escalpos passou. Módulos instalados ainda precisam de registro, capacidade por escalpo e fluxo de instalação/remoção; por isso o item segue em andamento.
 - **Descrição:** criar a experiência completa de escalpos, incluindo estado, detalhes e ações permitidas pelo domínio atual.
 - **Área afetada:** console, escalpos, efeitos e chat.
 - **Prioridade sugerida:** P1
@@ -952,7 +994,8 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### TAB-03 — Implementar aba Identidade
 
-- **Status:** Bloqueada
+- **Status:** Em andamento
+- **Revisão (2026-10-30):** a interface de Identidade foi consolidada no Console (`3b16b63e`, `d772a2c4`). Falta verificar campos editáveis, visibilidade e a integração de distorções pedida em CON-03.
 - **Descrição:** criar a aba definitiva de identidade após definir campos editáveis, visibilidade e relação com integridade/distorções.
 - **Área afetada:** console, ficha e perfil narrativo do personagem.
 - **Prioridade sugerida:** P1
@@ -962,7 +1005,9 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### TAB-04 — Implementar aba Ações
 
-- **Status:** Bloqueada
+- **Status:** Em validação
+- **Revisão (2026-10-30):** `AcoesPanel.tsx` e `abaAcoes.ts` implementam o catálogo v1.2, agrupamento e execução de vários fluxos existentes (`52fa40fd`). Falta validar atomicidade dos custos e cobertura de logs/indisponibilidade; ações de item seguem INV-02.
+- **Auditoria (2026-10-30):** o teste `scripts/test-aba-acoes.ts` passou; `executeActionOnCharacter` calcula custos e efeitos sobre uma cópia e `handleUseAction` confere munição antes de gastar PA, usa trava de clique duplo e publica `action_used` com custo e efeitos pendentes. Falta verificar em mesa os resultados publicados e ações de item ainda dependem de INV-02.
 - **Descrição:** apresentar ações disponíveis do personagem e permitir executar as que já têm contrato, centralizando ataques, ações de conteúdo e custos sem duplicar a lógica do painel de rolagem.
 - **Área afetada:** console, `actionConsole`, combate, rolagens e chat.
 - **Prioridade sugerida:** P1
@@ -1017,11 +1062,14 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### BANDO-01 — Redesenhar Bando Refratário
 
-- **Status:** Bloqueada
-- **Descrição:** redesenhar dados, interface e fluxos do Bando somente depois de receber as regras definitivas; não estender a interface atual baseada em pressupostos provisórios.
+- **Status:** Em validação
+- **Revisão (2026-10-30, após consulta ao Notion):** a v1.2 trouxe regras, `campaign_crews`, ficha do Bando e transferência de aretz (`81e801ae`, `f22d3c10`, `f58aa75e`, `3fd09faf`). As regras do Bando e do inventário coletivo já estão em [Bando Refratário](https://app.notion.com/p/3600a136355280a698d2d265cb64ae8e) e [Inventário v1.2](https://app.notion.com/p/3dd0a136355280e58284df2de80021e0); falta aplicar e testar os fluxos de itens e permissões no VTT.
+- **Auditoria (2026-10-30):** `crewTransfer.ts` e `TableClient.tsx` gravam destino e origem em chamadas separadas; uma falha na segunda deixa item duplicado. O fluxo de `/dev/table` também não confere se o personagem escolhido pertence à campanha, embora a ação canônica em `crewTransfer.ts` confira. Transferência atômica e unificação do fluxo continuam pendentes.
+- **Correção (2026-10-30):** migration `20261031013135_atomic_crew_item_transfer.sql` aplicada no Supabase. Os dois sentidos usam uma RPC que trava o personagem e o item do Bando, compara os snapshots e grava os inventários na mesma transação; `/dev/table`, Bando do VTT e Console usam a mesma operação. Testes transacionais no banco confirmaram ida/volta, transferência parcial de munição, recusa de snapshot obsoleto, reversão diante de falha na segunda gravação e permissões de narrador/controlador, sem deixar itens de teste. Falta validar os fluxos na interface autenticada.
+- **Descrição:** alinhar dados, interface e fluxos do Bando às regras da v1.2, incluindo inventário coletivo e transferências.
 - **Área afetada:** BandoTab, inventário do bando, transferências e regras de campanha.
 - **Prioridade sugerida:** P1 após desbloqueio
-- **Dependências:** regras definitivas de Bando Refratário; possível dependência de INV-01.
+- **Dependências:** regras de Bando e Inventário v1.2 já publicadas; integrar e validar inventário coletivo.
 - **Critérios de aceite:** especificação aprovada; modelo e permissões migrados; interface cobre os fluxos definidos; transferências são atômicas; testes evitam duplicação/perda de itens.
 - **Dúvidas antes da implementação:** composição, recursos, progressão, papéis, inventário, limites, controle e efeitos do Bando ainda precisam ser fornecidos.
 
@@ -1051,11 +1099,12 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### MOVE-01 — Permitir travessia advertida de barreiras e terreno difícil
 
-- **Status:** Bloqueada
-- **Descrição:** ajustar pathfinding/arrasto para permitir atravessar áreas e tokens bloqueadores, destacando o trecho em vermelho, mostrando aviso, mantendo metros visíveis e aplicando custo de terreno difícil. Corrigir a perda da contagem ao passar sobre objeto.
+- **Status:** Pronta
+- **Revisão (2026-10-30, após consulta ao Notion):** [Cenas de Combate v1.2](https://app.notion.com/p/0210a136355282b09ba50128db510387) já resolve o custo: terreno difícil consome o dobro da distância; espaço ocupado que possa ser atravessado na ficção conta como terreno difícil, e espaço intransponível continua bloqueado. O texto abaixo deve ser lido com essa distinção; não se deve liberar passagem por toda barreira. Falta implementar e testar o aviso e a medição no mapa.
+- **Descrição:** ajustar pathfinding/arrasto para permitir travessia apenas quando o obstáculo for transponível na ficção, destacando o trecho em vermelho, mostrando aviso, mantendo metros visíveis e aplicando custo de terreno difícil; espaços intransponíveis continuam bloqueados. Corrigir a perda da contagem ao passar sobre objeto.
 - **Área afetada:** movimento, pathfinding, mapa tático, medição e feedback visual.
 - **Prioridade sugerida:** P0
-- **Dependências:** definir multiplicador/custo exato da travessia e se o movimento pode terminar sobre bloqueador.
+- **Dependências:** regra de custo e passagem definida em Cenas de Combate v1.2; resta aplicar ao domínio e à interface.
 - **Critérios de aceite:** rota não é interrompida nem perde metragem; cada trecho proibido é destacado; aviso acessível e não apenas por cor; custo calculado de modo determinístico para token multicelular; servidor aceita/rejeita pela mesma regra; testes com área, objeto e token bloqueador.
 - **Dúvidas antes da implementação:** atravessar custa sempre 2×? É permitido terminar numa célula bloqueada/ocupada? Token aliado/inimigo tem regra diferente? O aviso exige confirmação antes de soltar?
 
@@ -1099,7 +1148,8 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### TIME-01 — Criar relógio e clima persistentes da campanha
 
-- **Status:** Bloqueada
+- **Status:** Em validação
+- **Revisão (2026-10-30):** decisões em `TIME_01_02_DECISOES.md`, migration `20261006104642_vtt_tempo_campanha.sql`, ações e `TempoDaCampanha.tsx` cobrem calendário Imperial, estado por campanha, edição pelo narrador e leitura pelos jogadores. `scripts/test-vtt-tempo-campanha.ts` cobre o domínio; falta validação integrada entre clientes/reconexão.
 - **Descrição:** criar estado de dia, horário e condições climáticas editável pelo narrador e visível pelos jogadores, separado do relógio real e vinculado à campanha ou cena conforme decisão.
 - **Área afetada:** ferramenta de tempo, banco, realtime, HUD e permissões.
 - **Prioridade sugerida:** P2
@@ -1109,7 +1159,8 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### TIME-02 — Sortear clima e condições
 
-- **Status:** Bloqueada
+- **Status:** Em validação
+- **Revisão (2026-10-30):** `sortearClima` usa seed e região, e `TempoDaCampanha.tsx` oferece prévia privada, Aplicar e Descartar; `scripts/test-vtt-tempo-campanha.ts` verifica determinismo. Falta confirmar o fluxo com narrador/jogador conectado e o comportamento de falha de publicação.
 - **Descrição:** oferecer ao narrador geração aleatória de clima somente depois de existir tabela/algoritmo e contexto de aplicação aprovados.
 - **Área afetada:** ferramenta de tempo, tabelas aleatórias e log.
 - **Prioridade sugerida:** P3
@@ -1121,7 +1172,8 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### TOK-01 — Oferecer “Criar ficha” para token avulso
 
-- **Status:** Bloqueada
+- **Status:** Em validação
+- **Revisão (2026-10-30):** `GerenciadorToken.tsx` oferece “Criar ficha (PN)” no token avulso; migration `20261007140500_vtt_criar_ficha_do_token.sql`. Falta check integrado de vínculo único, autorização e sincronização.
 - **Descrição:** adicionar a ação no menu contextual e no editor do token, criando/vinculando uma ficha sem duplicidade.
 - **Área afetada:** GerenciadorToken, MenuContextual, criação de personagem e vínculo token–ficha.
 - **Prioridade sugerida:** P1
@@ -1142,6 +1194,7 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 ### TOK-03 — Criar zona automática de tokens do narrador
 
 - **Status:** Bloqueada
+- **Revisão (2026-10-30):** a tentativa de zona automática foi revertida por `20261007150000_vtt_remove_zona_do_narrador.sql`, após `20261007130500_vtt_zona_do_narrador.sql`. Não marcar como entregue com base no commit de criação; a decisão de geometria e ciclo de vida continua aberta.
 - **Descrição:** criar área na qual tokens colocados recebem automaticamente visibilidade exclusiva do narrador, com feedback antes e depois da mudança.
 - **Área afetada:** mapa, áreas, ferramentas do narrador e token.
 - **Prioridade sugerida:** P2
@@ -1173,7 +1226,7 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### TOK-06 — Criar sistema de alvos no mapa inspirado no Foundry VTT
 
-- **Status:** Implementação inicial entregue; validação ampliada pendente.
+- **Status:** Em validação
 - **Decisões e entrega (2026-09-27):** Shift + botão direito marca/desmarca o alvo do participante; Shift + esquerdo mantém seleção múltipla e clique simples mantém o cartão de status. Todos veem marcações de tokens autorizados. Até 32 alvos por participante/cena, renovados enquanto a cena está aberta e expirados após 90 s sem renovação. Menu contextual oferece alternativa; Shift+F10 abre o menu do token focado. Migration `0149_vtt_targets.sql` aplicada; teste com dois clientes cobre marcação, sincronização, remoção por autor, token oculto, controle e cena privada.
 - **Descrição:** permitir que cada jogador marque um ou mais tokens como alvo no mapa, com interação rápida e feedback visual inequívoco, seguindo a ergonomia do sistema de targets do Foundry VTT sem copiar sua identidade visual. O alvo deve servir como contexto canônico para ataques, magias e outras ações.
 - **Área afetada:** mapa, tokens, seleção/interação, realtime, permissões, acessibilidade e estado da sessão.
@@ -1184,7 +1237,7 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### TOK-07 — Adicionar atalhos de ações ao token com aplicação nos alvos
 
-- **Status:** Implementação inicial entregue; resolução ampliada pendente.
+- **Status:** Em andamento
 - **Decisões e entrega (2026-09-27):** radial sem ícones via seção Ações rápidas do menu ou Shift+A, somente em token vinculado/controlado; Atacar, Conjurar, Usar item e Fechar. Botões 78×36, JetBrains Mono 10 px, chanfros com fio íntegro e tokens de hover do Console. Janela não modal: escolher arma/magia/item → conferir custo/alvo → confirmar. Reutiliza os handlers da ficha e valida contexto no servidor. Ataque abre a rolagem existente; alvo entra nos logs. Primeiro recorte usa um alvo por ação; farmácia rápida é uso em si mesmo. Defesa, aplicação de dano/efeitos, alcance e linha de efeito não ganharam automações novas; seguem as limitações do fluxo original. Toque e resolução de múltiplos alvos ficam pendentes.
 - **Descrição:** oferecer no token do personagem um acesso rápido a ações frequentes, como “Atacar” e “Conjurar magia”, usando os alvos marcados no mapa para abrir e executar o fluxo correspondente sem exigir a abertura completa da ficha.
 - **Área afetada:** token, cartão/menu contextual, ficha do personagem, combate, magia, rolagens, chat e sistema de alvos.
@@ -1208,7 +1261,7 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### VIS-02 — Permitir extravasamento das linhas de botões de rolagem
 
-- **Status:** Pronta (concluída, com conferência visual pendente)
+- **Status:** Em validação
 - **Alvo identificado pelo usuário (2026-09-20):** são os **anéis do botão de carga** (`RollButton`, “Solte para lançar”), do painel de rolagem do Console. Eles crescem 1,5× pela animação `rup-charge-ring` e nasciam dentro do próprio botão — qualquer ancestral que role (`.rc-body`, `.rv-dados-corpo`) recorta o que passa da borda.
 - **Andamento:** os anéis passaram a ser desenhados no `body`, por portal, sobre a caixa medida do botão. O recorte deixa de existir por construção, e a camada inteira é `pointer-events: none`, então a área clicável não cresce. Mesma solução usada em DICE-01.
 - **Pendente:** **conferência a olho.** Não consegui disparar a carga em teste automatizado — o botão só habilita com `rolarNaMesa` presente, que vem do provedor de dados da mesa, e o caminho até o Console aberto de dentro da campanha tem etapas demais para ser estável. O check cobre o que dá (o botão existe; a camada decorativa não rouba o clique) e diz isso explicitamente. Basta segurar o botão e ver se os anéis saem inteiros.
@@ -1245,7 +1298,8 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### ROLL-01 — Adicionar modo MENOR à rolagem livre
 
-- **Status:** Bloqueada
+- **Status:** Em validação
+- **Revisão (2026-10-30):** o modo `low` está no executor de rolagem livre em `rolagemPainel.ts`, calcula `Math.min` e chega ao contrato do card; foi introduzido em `5f8b482f`. Falta check focado do seletor, teclado e apresentação do card em empate.
 - **Descrição:** estender o seletor para `SOMAR | MAIOR | MENOR` e calcular/exibir o menor resultado com o mesmo contrato de logs e dados 3D.
 - **Área afetada:** PainelDados/RoladorDados, domínio de rolagem e cards de chat.
 - **Prioridade sugerida:** P1
@@ -1381,7 +1435,7 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 - **Critérios de aceite:** alternância não descarrega nem obstrui o mapa; edição autorizada; jogadores recebem somente projeção destinada a eles; sincronização e reconexão corretas; volume limite mantém desempenho; exportação/duplicação de cena segue regra.
 - **Dúvidas antes da implementação:** respondidas em PLOT-01.
 
-## 17. Sequenciamento recomendado
+## 17. Sequenciamento original (2026-09-15; histórico)
 
 ### Onda 0 — decisões e contratos bloqueadores
 
@@ -1415,19 +1469,11 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 3. TOOL-02–03, TIME-01–02 e TOK-03.
 4. ROLLTAB-02, IMG-02, LIGHT-02, ACCESS-01 e PLOT-02 conforme desbloqueio.
 
-## 18. Itens que não devem entrar em implementação ainda
+## 18. Itens ainda bloqueados na revisão de 2026-10-30
 
-Até decisão explícita, permanecem bloqueados:
+- **Estrutura e conteúdo:** NAV-01, SET-01, CONT-05, SHOP-01, COMP-01, COMP-02.
+- **Personagem e interface:** CHAR-05, CON-04, PART-01, FICHA-02.
+- **Mapa e movimento:** TOK-02, TOK-03, IMG-01, IMG-02, LIGHT-01, LIGHT-02, FX-01, ACCESS-01, PLOT-01, PLOT-02.
+- **Dados e ferramentas:** DICE-02, ROLLTAB-01, ROLLTAB-02, TEST-02.
 
-- semântica e implementação de “Aparecer offline”;
-- configurações definitivas da mesa;
-- taxonomia/visibilidade do conteúdo narrativo e Compêndio;
-- PN, Aliado e slots livres sem regras completas;
-- inventário/mochilas e janelas definitivas de equipado;
-- Identidade, detalhes de Magias/Escalpos e Bando Refratário;
-- padrão de ações de card do chat;
-- desenho, texto e tempo/clima nas partes sem contrato;
-- personalização de dados, tabelas de rolagem e apresentação de imagens;
-- iluminação dinâmica, Acesso e ferramenta de trama.
-
-Este bloqueio não impede pesquisa, auditoria do código, protótipos descartáveis de desempenho ou elaboração das especificações listadas. Ele impede migrations e funcionalidades de produto baseadas em suposição.
+Os itens em andamento ou validação têm o recorte faltante registrado na própria entrada. Para os bloqueados, continuam válidas as dúvidas e dependências específicas acima; pesquisa e especificação podem prosseguir.

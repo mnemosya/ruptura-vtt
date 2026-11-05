@@ -37,6 +37,7 @@ interface ApiConsoleDaMesa {
    * fazia melhor que a janela.
    */
   abrir: (characterId: string, aba?: string) => void;
+  abrirComando: (characterId: string, comando: { familia: "a" | "m"; id: string }) => void;
   abrirAcaoToken: (characterId: string, pedido: PedidoAcaoToken) => void;
   definirAlvosNoMapa: (alvos: AlvoAcaoToken[]) => void;
   fecharAcaoToken: () => void;
@@ -81,6 +82,8 @@ export function ProvedorConsoleDaMesa({ campaignId, children }: { campaignId: st
   const searchParams = useSearchParams();
   const [de, setDe] = useState<string | null>(null);
   const [acaoToken, setAcaoToken] = useState<PedidoAcaoToken | null>(null);
+  const [comandoAberto, setComandoAberto] = useState<{ familia: "a" | "m"; id: string; sequencia: number } | null>(null);
+  const sequenciaComandoRef = useRef(0);
   const acaoTokenRef = useRef(acaoToken);
   acaoTokenRef.current = acaoToken;
   const fecharAcaoToken = useCallback(() => {
@@ -106,7 +109,14 @@ export function ProvedorConsoleDaMesa({ campaignId, children }: { campaignId: st
   const [abaInicial, setAbaInicial] = useState<string | null>(null);
   const abrir = useCallback((characterId: string, aba?: string) => {
     setAcaoToken(null);
+    setComandoAberto(null);
     setAbaInicial(aba ?? null);
+    setDe(characterId);
+  }, []);
+  const abrirComando = useCallback((characterId: string, comando: { familia: "a" | "m"; id: string }) => {
+    setAcaoToken(null);
+    setComandoAberto({ ...comando, sequencia: ++sequenciaComandoRef.current });
+    setAbaInicial(comando.familia === "a" ? "acoes" : "magias");
     setDe(characterId);
   }, []);
 
@@ -122,6 +132,7 @@ export function ProvedorConsoleDaMesa({ campaignId, children }: { campaignId: st
    */
   const fechar = useCallback(() => {
     setAcaoToken(null);
+    setComandoAberto(null);
     setDe(null);
     setFechadaEm((n) => n + 1);
     router.refresh();
@@ -129,8 +140,8 @@ export function ProvedorConsoleDaMesa({ campaignId, children }: { campaignId: st
   const aquecer = useCallback(() => precarregarConsole(campaignId), [campaignId]);
 
   const api = useMemo(
-    () => ({ abrir, abrirAcaoToken, fecharAcaoToken, definirAlvosNoMapa, atacarCom, registrarTokenDoPersonagem, aquecer, aberto: de !== null, fechadaEm }),
-    [abrir, abrirAcaoToken, fecharAcaoToken, atacarCom, registrarTokenDoPersonagem, aquecer, de, fechadaEm],
+    () => ({ abrir, abrirComando, abrirAcaoToken, fecharAcaoToken, definirAlvosNoMapa, atacarCom, registrarTokenDoPersonagem, aquecer, aberto: de !== null, fechadaEm }),
+    [abrir, abrirComando, abrirAcaoToken, fecharAcaoToken, atacarCom, registrarTokenDoPersonagem, aquecer, de, fechadaEm],
   );
 
   /**
@@ -183,7 +194,7 @@ export function ProvedorConsoleDaMesa({ campaignId, children }: { campaignId: st
   return (
     <Contexto.Provider value={api}>
       {children}
-      <ConsoleNoVtt campaignId={campaignId} characterId={de} abaInicial={abaInicial} onFechar={fechar} acaoToken={acaoToken} alvosNoMapa={alvosNoMapa} />
+      <ConsoleNoVtt campaignId={campaignId} characterId={de} abaInicial={abaInicial} comandoAberto={comandoAberto} onFechar={fechar} acaoToken={acaoToken} alvosNoMapa={alvosNoMapa} />
     </Contexto.Provider>
   );
 }

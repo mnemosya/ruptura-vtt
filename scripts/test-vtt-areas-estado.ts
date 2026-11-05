@@ -153,6 +153,10 @@ const origemToken = { q: 5, r: 5 };
   });
   const solto = soltar(pressionada);
   ok("G1 (Esfera: clique sem arraste não cria geometria nenhuma — comportamento inalterado)", solto.fase === "ociosa", solto.fase);
+
+  const linha = paramsDoArraste({ ...CONFIG_AREAS_PADRAO, tipo: "linha" },
+    { q: 0, r: 0 }, { q: 4, r: 0 }, T);
+  ok("G2 (nova Linha usa sempre traço fino)", linha.tipo === "linha" && linha.modo === "traco_fino", JSON.stringify(linha));
 }
 
 console.log(`\n${passou} ok, ${falhou} falha(s).`);

@@ -60,7 +60,11 @@ export function FaixaMarcadores({ marcadores, ehNarrador, emCombate, onAjustar, 
               onContextMenu={recuar}
             >
               <span className="rv-mk-anel-segmentos" style={{ "--mk-anel": gradienteAnel(m.total, m.preenchidos) } as CSSProperties} />
-              <span className="rv-mk-anel-miolo"><IconeTipoMarcador tipo={m.tipo} tamanho={20} /></span>
+              <span className="rv-mk-anel-miolo"><IconeTipoMarcador tipo={m.tipo} tamanho={20} /><span className="rv-mk-contagem">{m.preenchidos}/{m.total}</span></span>
+              <span className="rv-mk-info">
+                <span className="rv-mk-nome">{m.nome ?? ROTULO_TIPO[m.tipo]}</span>
+                <span className="rv-mk-subtipo">{ROTULO_TIPO[m.tipo]}</span>
+              </span>
             </button>
             {/* Remover: só o narrador, aparece no hover. Sem confirmação —
                 o "Desfazer" logo abaixo cobre o clique errado. */}
@@ -70,7 +74,6 @@ export function FaixaMarcadores({ marcadores, ehNarrador, emCombate, onAjustar, 
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
               </button>
             )}
-            {m.nome && <span className="rv-mk-nome">{m.nome}</span>}
             {completo && <span className="rv-mk-selo"><span className="rv-mk-caps">{SELO_CONCLUSAO[m.tipo]}</span></span>}
             <span className="rv-mk-dica" role="tooltip">
               <span className="rv-mk-dica-topo">

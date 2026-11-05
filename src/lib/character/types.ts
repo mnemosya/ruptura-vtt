@@ -445,6 +445,8 @@ export interface Character {
    * `status: "resolved"` (histórico simples, nunca apagadas).
    */
   pending_rupture_choices?: PendingRuptureChoice[];
+  /** Até três distorções de identidade do capítulo 19, separadas de Marcas/Traços de Ruptura. */
+  distorcoes_identidade?: string[];
   /**
    * Marca que a Integridade chegou a 0 por causa de uma Ruptura
    * (checkpoint v0.45, PRD 10.6: "Se a perda final veio de Ruptura,
@@ -993,6 +995,7 @@ export interface Character {
     regiaoArs?: "bracos" | "cabeca" | "pernas" | "tronco";
     arsAtiva?: boolean;
     arsMitAtual?: number;
+    desgaste?: 0 | 1 | 2;
     instaladoEm: string;
   }[];
   /**

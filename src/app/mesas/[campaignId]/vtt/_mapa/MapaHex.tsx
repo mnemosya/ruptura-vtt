@@ -22,7 +22,6 @@ import { GLIFO_DO_SINAL, SINAIS_MARCA } from "../_dominio/sinaisDeMarca";
 import {
   type Hex,
   TAMANHOS,
-  contornoDaPegada,
   hexIguais,
   hexKey,
   hexLinha,
@@ -334,6 +333,11 @@ export interface PropsMapaHex {
   corTracoAtual?: string;
   espessuraTracoAtual?: number;
   onInserirTexto?: (ponto: PontoAxial) => void;
+  editorTexto?: { ponto: PontoAxial; valor: string; cor: string; tamanho: number; podeEditar: boolean } | null;
+  textoEditorRef?: React.RefObject<HTMLTextAreaElement | null>;
+  onTextoEditorMudou?: (texto: string) => void;
+  onSalvarTextoEditor?: () => void;
+  onCancelarTextoEditor?: () => void;
   onMoverAnotacao?: (id: string, pontos: PontoAxial[]) => void;
 
   /**
@@ -678,6 +682,11 @@ export function MapaHex({
   corTracoAtual,
   espessuraTracoAtual,
   onInserirTexto,
+  editorTexto,
+  textoEditorRef,
+  onTextoEditorMudou,
+  onSalvarTextoEditor,
+  onCancelarTextoEditor,
   onMoverAnotacao,
   pingsExibidos,
   onPingCelula,
@@ -722,6 +731,7 @@ export function MapaHex({
 }: PropsMapaHex) {
   /** Última posição axial EXATA do ponteiro num arrasto — ver `soltar()`. */
   const pontoExatoRef = useRef<{ q: number; r: number } | null>(null);
+  const ignorarBlurTextoRef = useRef(false);
   const cOculta = (id: keyof NonNullable<PropsMapaHex["camadas"]>) => (camadas?.[id]?.visivel ?? true) === false;
   /**
    * Camada de FERRAMENTA (grade, marcações, pings) escondida some pra
@@ -2433,26 +2443,11 @@ export function MapaHex({
       }}
     >
       <defs>
-        {/* Piso: gradiente + ruído. É o que evita o "cinza vazio". */}
-        {/* Piso da cena — NAVY bem escuro, não preto neutro. O cinza
-            anterior (#1a222c→#0a0e14) lia como "sem cor" ao lado do
-            chrome da mesa, que é navy inteiro (`--rv-line`,
-            `--rv-panel`): a mesa parecia dois materiais diferentes.
-            Mesma escada de luminosidade de antes (claro no foco,
-            escuro na borda) — só o matiz mudou. */}
-        <radialGradient id="rv-piso" cx="42%" cy="34%" r="78%">
-          <stop offset="0%" style={{ stopColor: "var(--fj-fundo-6, #17243a)" }} />
-          <stop offset="55%" style={{ stopColor: "var(--fj-fundo-5, #101a2c)" }} />
-          <stop offset="100%" style={{ stopColor: "var(--fj-fundo-2, #080f1e)" }} />
+        {/* Luz radial do piso copiada do board Trilha compacta B. */}
+        <radialGradient id="rv-piso" cx="45%" cy="45%" r="70%">
+          <stop offset="0%" stopColor="#14384a" />
+          <stop offset="100%" stopColor="#071621" />
         </radialGradient>
-        <filter id="rv-ruido" x="0" y="0" width="100%" height="100%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed="7" result="n" />
-          <feColorMatrix type="saturate" values="0" in="n" result="ng" />
-          <feComponentTransfer in="ng" result="na">
-            <feFuncA type="linear" slope="0.055" intercept="0" />
-          </feComponentTransfer>
-          <feComposite operator="over" in="na" in2="SourceGraphic" />
-        </filter>
         <pattern id="rv-hachura" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
           <line x1="0" y1="0" x2="0" y2="6" stroke="#f5a200" strokeWidth="1.4" opacity="0.5" />
         </pattern>
@@ -2508,7 +2503,6 @@ export function MapaHex({
         {/* ── Piso ─────────────────────────────────────────────── */}
         <rect x={minX} y={minY} width={maxX - minX} height={maxY - minY} fill="url(#rv-piso)"
           onPointerDown={onSelecionarCaixa ? iniciarCaixa : undefined} />
-        <rect x={minX} y={minY} width={maxX - minX} height={maxY - minY} filter="url(#rv-ruido)" fill="none" />
         {/* Aqui viviam duas elipses de "mancha de umidade/óleo do
             pátio". Removidas: os raios eram FIXOS em unidades de mundo
             (280×190 e 200×140), então a mesma decoração era um borrão
@@ -2603,49 +2597,6 @@ export function MapaHex({
             );
           })}
         </g>
-
-        {/* ── Moldura do mapa ──────────────────────────────────────
-            Onde a cena ACABA. Sem nada aqui, o piso simplesmente
-            desbotava no fundo do palco — e agora que token pode ficar
-            fora da grade (0127), essa emenda virou informação de
-            verdade: é ela que diz "daqui pra fora é área de espera,
-            não é a cena".
-
-            Discreta por regra: navy do próprio chrome, opacidade
-            baixa, traço que NÃO engorda com o zoom
-            (`vectorEffect="non-scaling-stroke"` — sem isso a moldura
-            vira uma tarja preta em zoom alto). Duas linhas em vez de
-            uma mais grossa: a de fora fecha o contorno, a de dentro é
-            só um eco, e o par lê como chanfro em vez de borda de
-            caixa. As cantoneiras em ciano são o único acento, curtas
-            (1,6 célula) e a 40% — marcam o canto sem virar enfeite.
-
-            `pointerEvents="none"` em tudo: ela cruza justamente a
-            faixa onde a seleção por caixa começa (o retângulo
-            `rv-fora-da-grade`), e uma decoração que engolisse gesto
-            seria o pior tipo de bug — invisível na revisão, óbvio na
-            mesa. */}
-        {(() => {
-          const m = 5;                       // respiro entre o piso e a moldura
-          const x0 = minX + m, y0 = minY + m;
-          const x1 = maxX - m, y1 = maxY - m;
-          const eco = 4;                     // distância da segunda linha
-          /* RAIO EM PIXELS DE TELA, como o palco. Dividir por `zoom` é
-             o mesmo que `vector-effect: non-scaling-stroke` faz com a
-             espessura: a moldura vive dentro do `<g>` que escala, e um
-             raio em unidades de mundo viraria um canto enorme com zoom
-             alto e reto com zoom baixo — o canto tem que ser o mesmo
-             que o do palco em qualquer aproximação. */
-          const r = 4 / zoom;
-          return (
-            <g className="rv-moldura-mapa" pointerEvents="none">
-              <rect x={x0} y={y0} width={x1 - x0} height={y1 - y0} rx={r} ry={r}
-                fill="none" style={{ stroke: "var(--fj-fundo-7, #1c2b45)" }} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
-              <rect x={x0 + eco} y={y0 + eco} width={x1 - x0 - eco * 2} height={y1 - y0 - eco * 2} rx={r} ry={r}
-                fill="none" style={{ stroke: "var(--fj-fundo-6, #16233a)" }} strokeWidth={1} opacity={0.75} vectorEffect="non-scaling-stroke" />
-            </g>
-          );
-        })()}
 
         {/* ── PILHA DA CENA (acima da grade) ── ver `empilhar`. */}
         {empilhar({
@@ -2793,7 +2744,7 @@ export function MapaHex({
         {/* Anotações da cena: ferramenta e camada próprias, sem semântica de Marcar. */}
         {cVisivel("anotacoes") && (
           <g className="rv-camada-anotacoes" pointerEvents={ferramenta === "desenhar" || ferramenta === "texto" ? "visiblePainted" : "none"}>
-            {anotacoes?.map((a) => <AnotacaoNoMapa key={a.id} a={a}
+            {anotacoes?.filter((a) => !(editorTexto && a.tipo === "texto" && a.id === anotacaoSelecionadaId)).map((a) => <AnotacaoNoMapa key={a.id} a={a}
               selecionada={anotacaoSelecionadaId === a.id}
               delta={movimentoAnotacao?.id === a.id ? movimentoAnotacao : null}
               bloqueada={cBloqueada("anotacoes")}
@@ -2804,6 +2755,26 @@ export function MapaHex({
               fill="none" stroke={corTracoAtual ?? "#00d4ff"} strokeWidth={espessuraTracoAtual ?? 2} strokeLinecap="round" strokeLinejoin="round" opacity="0.8" pointerEvents="none" />}
           </g>
         )}
+        {ferramenta === "texto" && editorTexto && cVisivel("anotacoes") && (() => {
+          const ponto = hexParaPixel(editorTexto.ponto, TAM);
+          return <foreignObject x={ponto.x - 4} y={ponto.y - editorTexto.tamanho * 1.15}
+            width={Math.max(250, editorTexto.valor.length * editorTexto.tamanho * .65 + 24)} height={Math.max(56, editorTexto.valor.split("\n").length * editorTexto.tamanho * 1.3 + 18)}
+            className="rv-texto-no-mapa" onPointerDown={(e) => e.stopPropagation()}>
+            <textarea ref={textoEditorRef}
+              value={editorTexto.valor} maxLength={500} autoFocus disabled={!editorTexto.podeEditar}
+              aria-label="Texto no mapa" placeholder="Digite…"
+              style={{ color: editorTexto.cor, fontSize: editorTexto.tamanho }}
+              onChange={(e) => onTextoEditorMudou?.(e.target.value)}
+              onBlur={() => {
+                if (ignorarBlurTextoRef.current) { ignorarBlurTextoRef.current = false; return; }
+                editorTexto.valor.trim() ? onSalvarTextoEditor?.() : onCancelarTextoEditor?.();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); ignorarBlurTextoRef.current = true; onCancelarTextoEditor?.(); e.currentTarget.blur(); }
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); ignorarBlurTextoRef.current = true; onSalvarTextoEditor?.(); e.currentTarget.blur(); }
+              }} />
+          </foreignObject>;
+        })()}
 
         {/* ── Ping efêmero — pulso curto, some sozinho (nunca persiste,
             nunca entra em undo/redo). `pointerEvents="none"`: um ping
@@ -3199,10 +3170,10 @@ export function MapaHex({
                 const dx = (pd.x / norma) * TAM * 1.7, dy = (pd.y / norma) * TAM * 1.7;
                 return (
                   <g transform={`translate(${pAncora.x} ${pAncora.y})`}>
-                    <line x1={0} y1={0} x2={dx} y2={dy} stroke="#35c8f0" strokeWidth={3} markerEnd="url(#rv-seta-posicionamento)" />
+                    <line x1={0} y1={0} x2={dx} y2={dy} stroke="#00d4ff" strokeWidth={3} markerEnd="url(#rv-seta-posicionamento)" />
                     <defs>
                       <marker id="rv-seta-posicionamento" markerWidth={8} markerHeight={8} refX={4} refY={4} orient="auto">
-                        <path d="M0,0 L8,4 L0,8 Z" fill="#35c8f0" />
+                        <path d="M0,0 L8,4 L0,8 Z" fill="#00d4ff" />
                       </marker>
                     </defs>
                   </g>
@@ -3657,7 +3628,7 @@ function Token({
   const orientacaoExibida = emGestoDeRotacao ? estadoAlcaRotacao!.orientacaoAtual : token.direcao;
   const pegadaExibida = pegada;
   /* Nunca vermelho: virar não pode ser recusado. */
-  const corGestoRotacao = emGestoDeRotacao ? "#35c8f0" : null;
+  const corGestoRotacao = emGestoDeRotacao ? "#00d4ff" : null;
   const origemMecanicaExibida = useMemo(() => origemMecanica(pegadaExibida), [pegadaExibida]);
   const escala = TAMANHOS[token.tamanho].escala;
   const raio = TAM * 0.82 * escala;
@@ -3667,6 +3638,9 @@ function Token({
   // Sem ele o `aria-label` não anuncia recurso nenhum, em vez de
   // fingir 0/0.
   const temPv = token.pv !== null && token.pvMax !== null && token.pvMax > 0;
+  const pvVisivel = temPv && (token.pvPublico === true || token.podeControlar)
+    ? Math.max(0, Math.min(1, token.pv! / token.pvMax!))
+    : null;
 
   const jaAgiuMarca = estado.jaAgiu && !estado.turnoAtual;
   const classes = [
@@ -3706,7 +3680,7 @@ function Token({
       opacity={opacoReduzido ? 0.35 : undefined}
       tabIndex={0}
       role="button"
-      aria-label={`${token.nome}, ${token.lado === "pj" ? "aliado" : token.lado === "pn" ? "hostil" : "neutro"}${temPv ? `, PV ${token.pv} de ${token.pvMax}` : ""}${token.condicoes.length ? `, condições: ${token.condicoes.map((c) => CONDICOES[c].rotulo).join(", ")}` : ""}${token.visivel ? "" : ", oculto"}${estado.alvo ? ", marcado como alvo" : ""}`}
+      aria-label={`${token.nome}, ${token.lado === "pj" ? "aliado" : token.lado === "pn" ? "hostil" : "neutro"}${pvVisivel !== null ? `, PV ${token.pv} de ${token.pvMax}` : ""}${token.condicoes.length ? `, condições: ${token.condicoes.map((c) => CONDICOES[c].rotulo).join(", ")}` : ""}${token.visivel ? "" : ", oculto"}${estado.alvo ? ", marcado como alvo" : ""}`}
       // Seleção + início de arraste no MESMO evento (pointerdown), não
       // em onClick — onClick dispararia DE NOVO no soltar do mesmo
       // gesto (mousedown+mouseup no mesmo alvo geram click), chamando
@@ -3786,31 +3760,13 @@ function Token({
         </g>
       )}
 
-      {/* Contorno de SELEÇÃO — perímetro externo da pegada realmente
-          ocupada (`contornoDaPegada`, união por cancelamento de arestas
-          compartilhadas), nunca a bounding box. Cobre pequeno/médio (o
-          próprio hex) e multicelulares (só o perímetro, sem grade
-          interna) com o MESMO mecanismo — nenhum caso especial por
-          tamanho. Usa `pegadaExibida`: acompanha a prévia de rotação
-          em tempo real, sem esperar a RPC. Puramente visual — nunca
-          intercepta clique/arrasto/rotação (a própria pegada, alguns
-          pixels abaixo na árvore, é quem continua respondendo a isso). */}
-      {estado.selecionado && (
-        <g className="rv-token-contorno-selecao" pointerEvents="none">
-          {contornoDaPegada(pegadaExibida, TAM).map((d, i) => (
-            <g key={i}>
-              <path d={d} fill="none" stroke="#0b141c" strokeWidth={4.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-              <path d={d} fill="none" stroke="#7fe3ff" strokeOpacity={0.65} strokeWidth={2} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-            </g>
-          ))}
-        </g>
-      )}
-
       {/* Marcador central — na ORIGEM MECÂNICA (pode cair entre
           células, ex.: Grande), nunca arbitrariamente numa das células
           da pegada. Todo o conteúdo que já existia (sombra, aura,
           retrato, PV, condições…) continua aqui dentro, intocado. */}
       <g transform={`translate(${origemLocal.x} ${origemLocal.y})`}>
+      <g className="rv-token-avatar">
+      {estado.selecionado && <circle className="rv-token-anel-selecao" r={raio + 12} fill="none" stroke={token.lado === "pj" ? "#00d4ff" : token.lado === "pn" ? "#ff6b7d" : cor} strokeWidth="2" strokeDasharray="10 8" pointerEvents="none" />}
       {/* sombra de contato */}
       <ellipse cx={0} cy={raio * 0.72} rx={raio * 0.78} ry={raio * 0.26} fill="#04070b" opacity="0.6" />
 
@@ -3946,7 +3902,7 @@ function Token({
         // o giro precisa começar 60° antes dele.
         const anguloHaloGraus = (ang * 180) / Math.PI - 60;
 
-        const corAlca = corGestoRotacao ?? "#35c8f0";
+        const corAlca = corGestoRotacao ?? "#00d4ff";
 
         return (
           <>
@@ -4049,14 +4005,15 @@ function Token({
         );
       })()}
 
-      {/* Aqui ficava a BARRA DE PV, flutuando acima do token. Saiu: o
-          cartão de hover (`_shell/CartaoTokenHover.tsx`) mostra PV, PE
-          e Mana com número exato, e sob a mesma autorização do
-          servidor — a barra mostrava só PV, só por aproximação, e para
-          QUALQUER um que enxergasse o token, inclusive quando o
-          recurso não estava público. `token.pv` continua chegando aqui
-          e continua sendo anunciado no `aria-label`: pra quem usa
-          leitor de tela, aquele rótulo é o cartão. */}
+      {/* Barra visual do retrato da referência. O recurso privado só é
+          mostrado para quem controla o token. */}
+      {pvVisivel !== null && (
+        <g className="rv-token-pv" pointerEvents="none">
+          <rect x={-raio + 5} y={raio + 4} width={raio * 2 - 10} height={4} fill="rgba(6,18,28,.9)" />
+          <rect x={-raio + 5} y={raio + 4} width={(raio * 2 - 10) * pvVisivel} height={4} fill={pvVisivel > .35 ? "#22d3aa" : "#ff6b7d"} />
+        </g>
+      )}
+      <text className="rv-token-nome" x={0} y={raio + 20} textAnchor="middle" pointerEvents="none">{token.nome}</text>
 
       {/* já agiu: selo de visto neutro no canto — "cumpriu a vez", não
           "saiu de combate". Mesma cor apagada do anel. */}
@@ -4128,7 +4085,7 @@ function Token({
       {estado.origemDeAura && (
         <g className="rv-token-origem-aura" pointerEvents="none">
           <circle r={raio + 13} fill="none" stroke="#0b141c" strokeWidth={4.5} strokeDasharray="6 5" opacity={0.85} />
-          <circle r={raio + 13} fill="none" stroke="#35c8f0" strokeWidth={2.2} strokeDasharray="6 5" />
+          <circle r={raio + 13} fill="none" stroke="#00d4ff" strokeWidth={2.2} strokeDasharray="6 5" />
         </g>
       )}
 
@@ -4153,6 +4110,7 @@ function Token({
         </g>
       )}
 
+      </g>
       </g>
     </g>
   );

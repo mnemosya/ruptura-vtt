@@ -33,6 +33,10 @@
  */
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { MessageSquare } from "lucide-react";
+import { useCampaignSession } from "../../_shell/CampaignRealtimeProvider";
+import { projetarEntrada, type CartaoFeed } from "./feed/contratos";
+import { resumoDoCartao } from "./feed/MenuCard";
 import { PainelAbas } from "./PainelAbas";
 import { ChatTab } from "./ChatTab";
 import { PersonagensTab } from "./PersonagensTab";
@@ -151,6 +155,31 @@ export function PainelVtt({
     compendio?: React.ComponentProps<typeof CompendioTab>["fixtureVisual"];
   };
 }) {
+  const { logs } = useCampaignSession();
+  const campanhaDosLogs = useRef(campaignId);
+  const idsConhecidos = useRef(new Set(logs.map((entrada) => entrada.id)));
+  const [filaNotificacoesChat, setFilaNotificacoesChat] = useState<CartaoFeed[]>([]);
+  const notificacaoChat = filaNotificacoesChat[0] ?? null;
+  useEffect(() => {
+    if (campanhaDosLogs.current !== campaignId) {
+      campanhaDosLogs.current = campaignId;
+      idsConhecidos.current = new Set(logs.map((entrada) => entrada.id));
+      setFilaNotificacoesChat([]);
+      return;
+    }
+    const novas = logs.filter((entrada) => !idsConhecidos.current.has(entrada.id));
+    for (const entrada of novas) idsConhecidos.current.add(entrada.id);
+    const cartoes = novas
+      .sort((a, b) => a.created_at.localeCompare(b.created_at))
+      .map(projetarEntrada)
+      .filter((cartao): cartao is CartaoFeed => cartao !== null);
+    if (cartoes.length) setFilaNotificacoesChat((fila) => [...fila, ...cartoes]);
+  }, [campaignId, logs]);
+  useEffect(() => {
+    if (!notificacaoChat) return;
+    const timer = window.setTimeout(() => setFilaNotificacoesChat((fila) => fila.slice(1)), 7000);
+    return () => window.clearTimeout(timer);
+  }, [notificacaoChat]);
   const chave = useMemo(() => chavePreferenciasPainel(usuarioId, campaignId), [usuarioId, campaignId]);
   // As preferências não podem ser lidas na renderização (SSR não tem
   // `localStorage`, e ler no primeiro render do cliente divergiria do
@@ -448,7 +477,7 @@ export function PainelVtt({
   /* O painel FLUTUA por cima do mapa — aberto, com largura escolhida
      pela pessoa; recolhido, como a coluna de abas. Quanto ele ocupa da
      borda direita vira `--rv-painel-ocupa` na mesa, pra peças presas
-     nessa borda (controle de zoom, trilho de facção) saírem de baixo
+     nessa borda (como o trilho de facção) saírem de baixo
      dele. Medido, não calculado: acompanha o arrasto de redimensionar
      e a animação de abrir/fechar sem duplicar regra. */
   useEffect(() => {
@@ -459,7 +488,7 @@ export function PainelVtt({
       const ocupa = Math.max(0, mesa.getBoundingClientRect().right - aside.getBoundingClientRect().left);
       mesa.style.setProperty("--rv-painel-ocupa", `${Math.round(ocupa)}px`);
       // Só o painel ABERTO desce até o rodapé; recolhido, a coluna de
-      // abas fica no topo e não disputa o canto de baixo (zoom).
+      // abas fica no topo e não disputa as peças no rodapé.
       mesa.style.setProperty("--rv-painel-aberto-ocupa", aberto ? `${Math.round(ocupa)}px` : "0px");
     };
     medir();
@@ -641,6 +670,15 @@ export function PainelVtt({
           ))}
         </div>
       </aside>
+
+      {notificacaoChat && (
+        <div className="rv-chat-notificacao" role="status" aria-live="polite" data-testid="vtt-notificacao-chat">
+          <button type="button" onClick={() => { selecionar("chat"); setFilaNotificacoesChat((fila) => fila.slice(1)); }} aria-label="Abrir nova entrada no Chat Log">
+            <span className="rv-chat-notificacao-selo" aria-hidden="true">{notificacaoChat.kind === "rolagem" ? (notificacaoChat.total ?? notificacaoChat.maior ?? <MessageSquare size={20} />) : <MessageSquare size={20} />}</span>
+            <span className="rv-chat-notificacao-texto"><strong>{notificacaoChat.autoria.nome}</strong><small>{resumoDoCartao(notificacaoChat)} · ABRIR NO CHAT LOG</small></span>
+          </button>
+        </div>
+      )}
 
       {/* Janelas internas — o que antes era navegação. */}
       <JanelaJogadoresConvites campaignId={campaignId} aberta={convitesAberto} onFechar={() => setConvitesAberto(false)} />

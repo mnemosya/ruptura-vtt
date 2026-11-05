@@ -25,9 +25,10 @@
 
 import { Fragment, useEffect, useRef, useState, useId } from "react";
 import { readIdentityDossier } from "../../../../lib/character/identity";
+import { DISTORCOES_IDENTIDADE, quantidadeDistorcoesIdentidade } from "../../../../lib/character/identityDistortions";
 import { progression, readClassPlay } from "../../../../lib/character/classManagement";
 import { ImageUp, Trash2 } from "lucide-react";
-import { MAX_OVERLOAD_SURGES_PER_DAY, type CharacterAttributes, type PendingRuptureChoice } from "../../../../lib/character";
+import { MAX_OVERLOAD_SURGES_PER_DAY, type CharacterAttributes } from "../../../../lib/character";
 import { useClickGuard } from "../useClickGuard";
 import type { ConsoleApi } from "../types";
 import { AvatarUserIcon } from "../avatarIcons";
@@ -285,12 +286,14 @@ function TrilhaIntegridade({
   max,
   onDefinir,
   distorcoes,
+  onEscolherDistorcao,
   leitura = false,
 }: {
   atual: number;
   max: number;
   onDefinir: (valor: number) => void;
-  distorcoes: PendingRuptureChoice[];
+  distorcoes: string[];
+  onEscolherDistorcao: (indice: number, id: string) => void;
   /** Ficha só leitura: os segmentos mostram o valor, sem clique nem prévia de ajuste. */
   leitura?: boolean;
 }) {
@@ -298,8 +301,7 @@ function TrilhaIntegridade({
   const [hover, setHover] = useState<number | null>(null);
   const [expandido, setExpandido] = useState(false);
   const total = Math.max(0, Math.round(max));
-  const quantidadeDistorcoes = atual >= 7 ? 0 : atual >= 5 ? 1 : atual >= 3 ? 2 : 3;
-  const distorcoesAtivas = distorcoes.filter((item) => item.status === "resolved").slice(-quantidadeDistorcoes).reverse();
+  const quantidadeDistorcoes = quantidadeDistorcoesIdentidade(atual);
 
   useEffect(() => {
     if (quantidadeDistorcoes === 0) setExpandido(false);
@@ -342,7 +344,7 @@ function TrilhaIntegridade({
           if (leitura) {
             return (
               <g key={i} className="rc-nric-pip" data-leitura="true" transform={`translate(${i * PIP_WIDTH} 0)`}>
-                <IntegrityPip position={position} cheio={cheio} fraturado={!cheio && atual < 7 && i < 7} />
+                <IntegrityPip position={position} cheio={cheio} fraturado={!cheio && atual < 7} />
               </g>
             );
           }
@@ -364,7 +366,7 @@ function TrilhaIntegridade({
               }}
               aria-label={`Integridade — segmento ${i + 1} de ${total}: ${cheio ? "preenchido" : "vazio"}. Clique para ajustar até aqui.`}
             >
-              <IntegrityPip position={position} cheio={cheio} fraturado={!cheio && atual < 7 && i < 7} preview={preview} />
+              <IntegrityPip position={position} cheio={cheio} fraturado={!cheio && atual < 7} preview={preview} />
               <rect className="rc-nric-pip-hit" width={PIP_WIDTH} height={14} />
             </g>
           );
@@ -385,16 +387,30 @@ function TrilhaIntegridade({
           </div>
           <div id="rc-nric-distorcoes" className="rc-nric-distorcoes" hidden={!expandido}>
             {Array.from({ length: quantidadeDistorcoes }, (_, indice) => {
-              const distorcao = distorcoesAtivas[indice];
-              const nome = distorcao?.traco || distorcao?.marca || "Distorção não registrada";
+              const id = distorcoes[indice] ?? "";
+              const distorcao = DISTORCOES_IDENTIDADE.find((item) => item.id === id);
               return (
-                <div className="rc-nric-distorcao" key={distorcao?.id ?? `distorcao-${indice}`}>
+                <div className="rc-nric-distorcao" key={`distorcao-${indice}`}>
                   <span className="rc-nric-distorcao-indice">{String(indice + 1).padStart(2, "0")}</span>
-                  <span className="rc-nric-distorcao-nome" title={nome}>{nome}</span>
-                  <span className="rc-nric-distorcao-estado">ATIVA</span>
+                  {leitura ? <span className="rc-nric-distorcao-nome">{distorcao?.nome ?? (id || "Distorção não registrada")}</span> : (
+                    <select
+                      className="rc-nric-distorcao-select"
+                      aria-label={`Distorção de identidade ${indice + 1}`}
+                      value={id}
+                      onClick={(event) => event.stopPropagation()}
+                      onChange={(event) => onEscolherDistorcao(indice, event.target.value)}
+                    >
+                      <option value="">Escolher distorção</option>
+                      {id && !distorcao && <option value={id}>{id}</option>}
+                      {DISTORCOES_IDENTIDADE.map((opcao) => <option key={opcao.id} value={opcao.id}>{opcao.nome}</option>)}
+                    </select>
+                  )}
+                  <span className="rc-nric-distorcao-estado">{id ? "ATIVA" : "PENDENTE"}</span>
                 </div>
               );
             })}
+            {atual === 1 && <p className="rc-nric-distorcao-aviso">Eu em dissolução: todas as ações devem refletir essa perda de identidade.</p>}
+            {atual <= 0 && <p className="rc-nric-distorcao-aviso">Integridade zero: o personagem deixa de ser jogável.</p>}
           </div>
         </>
       )}
@@ -798,7 +814,8 @@ export function IdentityAside({
           atual={integridade}
           max={derivados.integridade_max}
           onDefinir={api.editarIntegridade}
-          distorcoes={character.pending_rupture_choices ?? []}
+          distorcoes={character.distorcoes_identidade ?? []}
+          onEscolherDistorcao={api.editarDistorcaoIdentidade}
           leitura={leitura}
         />
 

@@ -180,6 +180,7 @@ export function ChatTab({
   }, []);
   const [ultimoIdVisto, setUltimoIdVisto] = useState<string | null>(null);
   const [aplicandoId, setAplicandoId] = useState<string | null>(null);
+  const [abrirBandejaSinal, setAbrirBandejaSinal] = useState(0);
   const [errosPorCartao, setErrosPorCartao] = useState<Record<string, string>>({});
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -761,6 +762,7 @@ export function ChatTab({
       errosPorCartao,
       onFocarToken,
       podeAplicarDano: role === "narrator",
+      onAbrirBandeja: () => setAbrirBandejaSinal((n) => n + 1),
       onDefender: defender,
       onEscolherRegiao: escolherRegiao,
       onPreverDano: role === "narrator" ? preverDano : undefined,
@@ -1002,7 +1004,7 @@ export function ChatTab({
           </button>
         )}
         <div className="pn-bandeja-dados" ref={bandejaRef}>
-          <BandejaDados campaignId={campaignId} personagemSugerido={personagemDoTokenSelecionado} />
+          <BandejaDados campaignId={campaignId} personagemSugerido={personagemDoTokenSelecionado} abrirSinal={abrirBandejaSinal} />
         </div>
       </div>
       </div>

@@ -24,11 +24,8 @@
  *    age no mapa (rolar, medir, marcar, desenhar…) tem 420px; janela
  *    de GESTÃO, que lista coisas (combate, camadas, imagens, token,
  *    áreas), tem 500px — `largura="gestao"`.
- *  · POSIÇÃO INICIAL: encostada na barra de ferramentas, com folga
- *    lateral e superior iguais para todas (`GAP_LATERAL`,
- *    `MARGEM_TOPO`). Se a trilha de turnos estiver aberta, a âncora
- *    passa a ser a borda do trilho dos jogadores — a janela nunca
- *    abre por cima dele.
+ *  · POSIÇÃO INICIAL: junto ao comando que abriu a janela. Com a barra
+ *    horizontal, abre acima dela; com a barra vertical, ao lado.
  *  · ARRASTO: pelo cabeçalho, `setPointerCapture`, sem biblioteca.
  *    Altura FIXA (nunca derivada de `y`: arrastar move, não
  *    redimensiona) e clamp que mantém a janela INTEIRA dentro do
@@ -187,9 +184,8 @@ export function JanelaFerramenta({
 
   /**
    * Posição de abertura. Lê a lembrada; se ela nunca foi arrastada
-   * (`manual: false`), reancora na barra AGORA — a barra e o trilho
-   * podem ter mudado de tamanho desde a última vez, e uma âncora velha
-   * abriria a janela no lugar errado.
+   * (`manual: false`), reancora no botão AGORA — a barra pode ter
+   * mudado de tamanho ou posição desde a última abertura.
    *
    * Roda uma vez por montagem, que é exatamente "toda vez que a
    * ferramenta abre" (o painel só existe enquanto a ferramenta está
@@ -202,7 +198,7 @@ export function JanelaFerramenta({
     }
     if (!ctx) return;
     const lembrada = carregarPosicaoJanela(ctx.usuarioId, ctx.campaignId, id);
-    const alvo = lembrada.manual ? lembrada : { ...ancoraPadraoJanela(), manual: false };
+    const alvo = lembrada.manual ? lembrada : { ...ancoraPadraoJanela(id, asideRef.current), manual: false };
     // Duplo `requestAnimationFrame` não é necessário: o clamp usa
     // `asideRef`, que já existe neste ponto do efeito (o DOM foi
     // commitado antes dos efeitos rodarem).

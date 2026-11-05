@@ -13,7 +13,7 @@
  * evitar. As REGRAS DE DOMÍNIO continuam onde sempre estiveram —
  * `splitInventoryInstance` / `addInstanceToInventory` /
  * `removeQuantityFromInventory` em `lib/character/inventory.ts`; aqui
- * só mora a ORDEM SEGURA de gravação e o log.
+ * ficam a chamada transacional e o log.
  *
  * INSTÂNCIA INTEIRA, nunca cópia rasa: o que atravessa é o objeto
  * `InventoryItemInstance` completo (cargas, munição carregada, Aljava,
@@ -22,53 +22,39 @@
  * próprio `splitInventoryInstance` — nunca "resolvida" achatando o
  * payload.
  *
- * ORDEM SEGURA (não há transação cruzando `characters` e
- * `campaign_inventory_items`, tabelas separadas sem função Postgres
- * comum): grava primeiro no DESTINO, só então reduz a ORIGEM. Se o
- * segundo passo falhar, o pior caso é uma duplicata visível e
- * corrigível — nunca uma perda silenciosa do item.
+ * As duas alterações acontecem na RPC `atomic_crew_item_transfer`, na
+ * mesma transação e com comparação do snapshot lido. Uma falha reverte
+ * ambas; uma alteração concorrente é recusada para evitar perda de itens.
  *
- * AUTORIZAÇÃO: nenhuma ampliada. Retirar do bando exige narrador dono
- * (a RLS da migration 0019 não concede UPDATE/DELETE em
- * `campaign_inventory_items` a jogador, e `updateCharacter` também
- * exige narrador); depositar no bando é aberto a participante ativo
- * (policy `campaign_inventory_items_member_insert`, migration 0038), e
- * a baixa na ficha do jogador passa pela RPC
- * `update_character_sheet_payload`, que revalida controle.
+ * AUTORIZAÇÃO: a RPC exige narrador dono para retirar e controlador da
+ * ficha ou narrador para depositar. A ficha continua passando por
+ * `update_character_sheet_payload`, que revalida o controle.
  */
 
-import { getCharacter, updateCharacter, updateCharacterSheetPayload } from "../character/storage";
+import { getCharacter } from "../character/storage";
+import { getScopedTableClient } from "../auth/scopedClient";
 import {
   addInstanceToInventory,
-  characterDerivedFormulas,
-  computeDerivedStats,
   normalizeCharacter,
   removeQuantityFromInventory,
   splitInventoryInstance,
   type InventoryItemInstance,
 } from "../character";
-import { getCharacterRules } from "../content";
-import type { CharacterRulesPayload } from "../character/types";
 import { addLog } from "./storage";
-import {
-  listCrewInventory,
-  removeCrewInventoryItem,
-  updateCrewInventoryItemInstance,
-  upsertCrewInventoryItem,
-} from "./crewInventory";
+import { listCrewInventory } from "./crewInventory";
 
 export interface ResultadoTransferencia {
   ok: boolean;
   erro?: string;
-  /** Quanto de fato mudou de lado — pode ser menos que o pedido só quando o pedido foi a stack inteira. */
+  /** Quantidade efetivamente transferida. */
   quantidadeMovida?: number;
   itemNome?: string;
+  /** Payload já gravado pela transação, para sincronizar o Console. */
+  character?: ReturnType<typeof normalizeCharacter>;
 }
 
 /**
- * Bando → personagem. Só o narrador dono chega até o fim (as duas
- * escritas exigem isso); um jogador recebe o erro de RLS, não uma
- * transferência pela metade.
+ * Bando → personagem. Só o narrador dono pode retirar.
  */
 export async function transferCrewItemToCharacter(params: {
   campaignId: string;
@@ -97,31 +83,32 @@ export async function transferCrewItemToCharacter(params: {
 
     const destino = normalizeCharacter(destinoAntes.payload);
     const proximo = addInstanceToInventory(destino, movida);
-    const regras = ((await getCharacterRules().catch(() => null))?.payload as CharacterRulesPayload | undefined) ?? null;
-    const derivados = computeDerivedStats(proximo.atributos, regras, proximo.mana_bonus_ruptura ?? 0, characterDerivedFormulas(proximo));
-    const paraSalvar = normalizeCharacter(proximo, derivados);
-
-    // 1) destino primeiro (ordem segura — ver cabeçalho).
-    const salvo = await updateCharacter(params.characterId, paraSalvar);
-
-    // 2) só então reduz/remove a origem.
-    if (split.sourceRemainder == null) {
-      await removeCrewInventoryItem(params.campaignId, linha.id);
-    } else {
-      await updateCrewInventoryItemInstance(params.campaignId, linha.id, split.sourceRemainder);
-    }
+    const client = await getScopedTableClient();
+    const { data, error } = await client.rpc("atomic_crew_item_transfer", {
+      p_campaign_id: params.campaignId,
+      p_character_id: params.characterId,
+      p_direction: "crew_to_character",
+      p_expected_character: destinoAntes.payload,
+      p_next_character: { ...destinoAntes.payload, inventario: proximo.inventario ?? [] },
+      p_moved_instance: movida,
+      p_crew_row_id: linha.id,
+      p_expected_crew: linha.payload,
+      p_next_crew: split.sourceRemainder,
+    });
+    if (error) throw error;
+    const salvo = normalizeCharacter((data as { character: unknown }).character);
 
     try {
       await addLog({
         campaignId: params.campaignId,
-        characterId: salvo.id,
+        characterId: params.characterId,
         type: "inventory_transfer",
         visibility: "public",
         payload: {
           campaignId: params.campaignId,
           direction: "crew_to_character",
-          targetCharacterId: salvo.id,
-          targetCharacterName: salvo.name,
+          targetCharacterId: params.characterId,
+          targetCharacterName: destinoAntes.name,
           itemInstanceId: movida.id,
           itemName: movida.itemNome,
           itemSlug: movida.itemSlug,
@@ -138,23 +125,16 @@ export async function transferCrewItemToCharacter(params: {
       // travar a transferência (mesma decisão de `endRound`/`endScene`).
     }
 
-    return { ok: true, quantidadeMovida: movida.quantidade, itemNome: movida.itemNome };
+    return { ok: true, quantidadeMovida: movida.quantidade, itemNome: movida.itemNome, character: salvo };
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : "Falha ao transferir o item do bando." };
   }
 }
 
 /**
- * Personagem → bando. Ordem segura INVERTIDA em relação à de cima
- * (grava no bando primeiro, só então tira da ficha) pelo mesmo
- * princípio: o destino é quem recebe primeiro.
- *
- * `usarCaminhoDoControlador` escolhe por qual porta a ficha é salva:
- * `true` (jogador controlador) usa a RPC restrita por coluna
- * `update_character_sheet_payload`, o ÚNICO caminho de escrita
- * autorizado pra ele; `false` (narrador) usa `updateCharacter`. Nunca
- * o contrário — a RLS de UPDATE direto em `characters` não autoriza
- * controlador desde a migration 0052.
+ * Personagem → bando. O jogador controlador também pode depositar.
+ * A RPC usa `update_character_sheet_payload` para narrador e controlador,
+ * preservando as validações de ficha já existentes.
  */
 export async function transferCharacterItemToCrew(params: {
   campaignId: string;
@@ -162,7 +142,6 @@ export async function transferCharacterItemToCrew(params: {
   /** `InventoryItemInstance.id` dentro do inventário do personagem. */
   instanceId: string;
   quantidade: number;
-  usarCaminhoDoControlador: boolean;
 }): Promise<ResultadoTransferencia> {
   try {
     const origemAntes = await getCharacter(params.characterId);
@@ -179,18 +158,17 @@ export async function transferCharacterItemToCrew(params: {
     const remocao = removeQuantityFromInventory(origem, params.instanceId, params.quantidade, agoraIso);
     if (!remocao.ok) return { ok: false, erro: remocao.reason };
 
-    // 1) bando primeiro — falhar aqui não tira nada do personagem.
-    await upsertCrewInventoryItem(params.campaignId, remocao.removedInstance);
-
-    // 2) só então a baixa na ficha, pelo caminho de escrita do papel.
-    const regras = ((await getCharacterRules().catch(() => null))?.payload as CharacterRulesPayload | undefined) ?? null;
-    const derivados = computeDerivedStats(remocao.character.atributos, regras, remocao.character.mana_bonus_ruptura ?? 0, characterDerivedFormulas(remocao.character));
-    const paraSalvar = normalizeCharacter(remocao.character, derivados);
-    if (params.usarCaminhoDoControlador) {
-      await updateCharacterSheetPayload(params.characterId, paraSalvar);
-    } else {
-      await updateCharacter(params.characterId, paraSalvar);
-    }
+    const client = await getScopedTableClient();
+    const { data, error } = await client.rpc("atomic_crew_item_transfer", {
+      p_campaign_id: params.campaignId,
+      p_character_id: params.characterId,
+      p_direction: "character_to_crew",
+      p_expected_character: origemAntes.payload,
+      p_next_character: { ...origemAntes.payload, inventario: remocao.character.inventario ?? [] },
+      p_moved_instance: remocao.removedInstance,
+    });
+    if (error) throw error;
+    const salvo = normalizeCharacter((data as { character: unknown }).character);
 
     try {
       await addLog({
@@ -218,7 +196,7 @@ export async function transferCharacterItemToCrew(params: {
       // Ver a nota equivalente acima.
     }
 
-    return { ok: true, quantidadeMovida: remocao.removedInstance.quantidade, itemNome: remocao.removedInstance.itemNome };
+    return { ok: true, quantidadeMovida: remocao.removedInstance.quantidade, itemNome: remocao.removedInstance.itemNome, character: salvo };
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : "Falha ao enviar o item ao bando." };
   }

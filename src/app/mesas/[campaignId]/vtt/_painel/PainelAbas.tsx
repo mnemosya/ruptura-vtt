@@ -1,8 +1,7 @@
 "use client";
 
 /**
- * A barra de abas do painel — HORIZONTAL no topo quando aberto,
- * VERTICAL como faixa de ícones quando recolhido.
+ * A barra de abas do painel — horizontal no topo nos dois estados.
  *
  * São os MESMOS elementos nos dois estados (só o flex e o `order`
  * mudam via CSS), então nem a aba ativa nem o foco se perdem ao
@@ -25,7 +24,7 @@
  */
 
 import { useRef } from "react";
-import { ChevronsLeft, Tent, ChevronsRight, MessageSquare, UsersRound, Users, BookText } from "lucide-react";
+import { ChevronLeft, ChevronRight, Tent, MessageSquare, UsersRound, Users, BookText } from "lucide-react";
 import { ABAS_ORDEM, ROTULO_ABA, proximaAbaPorSeta, type AbaId } from "./tipos";
 
 const ICONE: Record<AbaId, typeof MessageSquare> = {
@@ -35,6 +34,7 @@ const ICONE: Record<AbaId, typeof MessageSquare> = {
   bando: Tent,
   compendio: BookText,
 };
+const ICONES_TRILHA = new Set<AbaId>(["chat", "personagens", "bando", "compendio"]);
 
 export function PainelAbas({
   abaAtiva,
@@ -66,7 +66,7 @@ export function PainelAbas({
   }
 
   return (
-    <nav className="rv-painel-abas" role="tablist" aria-label="Seções do painel" aria-orientation={aberto ? "horizontal" : "vertical"} onKeyDown={aoTeclar}>
+    <nav className="rv-painel-abas" role="tablist" aria-label="Seções do painel" aria-orientation="horizontal" onKeyDown={aoTeclar}>
       {/* O PAR DO "RECOLHER", no topo da faixa vertical. Reabrir só
           acontecia clicando numa ABA — o que funciona, mas obriga a
           ESCOLHER uma seção para executar uma ação que não é sobre
@@ -84,7 +84,7 @@ export function PainelAbas({
           aria-expanded={false}
           data-testid="painel-expandir"
         >
-          <ChevronsLeft size={17} aria-hidden="true" />
+          <ChevronRight size={17} strokeWidth={3} aria-hidden="true" />
           <span className="rv-dica">Expandir painel</span>
         </button>
       )}
@@ -115,7 +115,10 @@ export function PainelAbas({
             onClick={() => onSelecionar(id)}
             data-testid={`painel-aba-${id}`}
           >
-            <Icone size={17} strokeWidth={1.6} aria-hidden="true" />
+            {ICONES_TRILHA.has(id)
+              ? <span className="rv-aba-icone-design" aria-hidden="true" style={{ maskImage: `url(/vtt/trilha-compacta/aba-${id}.svg)`, WebkitMaskImage: `url(/vtt/trilha-compacta/aba-${id}.svg)` }} />
+              : <Icone size={17} strokeWidth={1.6} aria-hidden="true" />}
+            <span className="rv-aba-rotulo" aria-hidden="true">{ROTULO_ABA[id]}</span>
             <span className="rv-dica">{ROTULO_ABA[id]}</span>
           </button>
         );
@@ -129,7 +132,7 @@ export function PainelAbas({
           aria-label="Recolher painel"
           data-testid="painel-recolher"
         >
-          <ChevronsRight size={17} aria-hidden="true" />
+          <ChevronLeft size={17} strokeWidth={3} aria-hidden="true" />
           <span className="rv-dica">Recolher painel</span>
         </button>
       )}

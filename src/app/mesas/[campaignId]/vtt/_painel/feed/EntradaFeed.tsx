@@ -48,6 +48,7 @@ export interface AcoesFeed {
   /** Ação EXPLÍCITA de centralizar a câmera num token (a única exceção ao invariante de não mexer na cena). */
   onFocarToken?: (tokenId: string) => void;
   podeAplicarDano: boolean;
+  onAbrirBandeja?: () => void;
   /** Ataque contestado — defesa (quem controla o alvo ou o narrador) e região (quem atacou). */
   onDefender?: (cartaoId: string, escolha: import("./AttackWorkflowCard").EscolhaDefesa, cartao: import("./contratos").CartaoAtaque, forca?: number) => void;
   onEscolherRegiao?: (cartao: import("./contratos").CartaoAtaque, regiao: string, forca: number) => void;
@@ -141,7 +142,7 @@ export function EntradaFeed({
     case "divisor":
       return <CombatDivider cartao={cartao} />;
     case "pendencia":
-      return <PendingCheckCard cartao={cartao} hora={hora} visibilidade={vis} />;
+      return <PendingCheckCard cartao={cartao} hora={hora} visibilidade={vis} onRolar={acoes.onAbrirBandeja} />;
     case "marcador":
       return <MarcadorCard cartao={cartao} hora={hora} visibilidade={vis} />;
   }

@@ -130,21 +130,6 @@
   left: 50%; right: auto; top: auto; bottom: calc(100% + 8px);
   transform: translateX(-50%);
 }
-/* Variante posicionada por medição (`position: fixed`, coordenadas
-   inline): o trilho de facção rola, e um balão `absolute` seria
-   recortado pela caixa de rolagem. Ver `BotaoDeclarar` em
-   `_turnos/TrilhaFaccoes.tsx`. */
-/* Esta variante carrega a DESCRIÇÃO da ação (uma frase inteira, vinda
-   de `d.descricao`), e não um rótulo curto: frase em caixa alta com
-   `letter-spacing` fica ilegível. Só aqui a tipografia volta ao texto
-   corrido — o chassi (fio + espinha) continua o mesmo. */
-.rv-dica--fixa {
-  position: fixed; z-index: 60; opacity: 1; transform: translateY(-50%);
-  font-family: inherit; font-size: 11.5px; font-weight: 400;
-  letter-spacing: normal; text-transform: none;
-}
-.rv-dica--fixa[data-lado="pn"] { transform: translate(-100%, -50%); }
-
 /* ── Ferramentas ─────────────────────────────────────────── */
 /* O TRILHO DE FERRAMENTAS usa o mesmo botão do trilho de abas do
    Console (`.rc-tabrail-btn`, em `_design/console.css`): quadrado de
@@ -527,54 +512,6 @@
 /* Dica do arraste de token: embaixo, centralizada — no canto de cima
    ela caía por cima da barra lateral de ferramentas. */
 .rv-dica-arrasto { left: 50%; top: auto; bottom: 16px; transform: translateX(-50%); max-width: 70vw; flex-wrap: nowrap; white-space: nowrap; pointer-events: none; }
-
-/* ZOOM — mesma casca do chip "Cena ativa" (fundo `--rv-panel`, fio
-   `--rv-line`, raio 2, mono 10px): são as duas peças flutuantes do
-   rodapé do palco, uma em cada canto, e não havia razão pra serem de
-   materiais diferentes.
-
-   As DIVISÓRIAS atravessam a largura inteira — é o que faz os três
-   controles lerem como um bloco segmentado em vez de três botões
-   soltos dentro de uma caixa. Pra isso o padding saiu do contêiner e
-   foi pra cada célula: com padding no pai, a linha pararia antes da
-   borda. `overflow: hidden` é o que deixa o raio recortar a primeira e
-   a última célula. */
-.rv-zoom {
-  /* `--rv-painel-aberto-ocupa` = quanto o painel ABERTO cobre da borda
-     direita (medido em `PainelVtt`). Recolhido vale 0: a coluna de abas
-     mora no topo, e o zoom volta pro canto em vez de flutuar no meio. */
-  position: absolute; right: calc(var(--rv-painel-aberto-ocupa, 0px) + 16px); bottom: 16px; z-index: 12;
-  transition: right .18s ease;
-  display: flex; flex-direction: column; align-items: stretch;
-  border: 1px solid var(--rv-line); border-radius: var(--rv-r);
-  background: var(--rv-panel);
-  box-shadow: var(--sombra);
-  overflow: hidden;
-}
-.rv-zoom button {
-  width: 40px; height: 26px;
-  display: flex; align-items: center; justify-content: center;
-  border: none; background: transparent; color: var(--rv-ink-dim); cursor: pointer;
-  transition: color .12s, background .12s;
-}
-/* A divisória é de cada célula MENOS a primeira — assim ela nunca
-   sobra no topo nem falta na última.
-   `:not(:first-child)` e não `* + *`: o reset do botão (`border: none`)
-   tem especificidade (0,1,1) e ganharia de `> * + *` (0,1,0) em
-   qualquer ordem, apagando a linha do botão de baixo. O resultado era
-   um separador só — o do `<span>`, que nenhum reset alcança. Com
-   `:not()`, a regra passa a (0,2,0) e vale pros três. */
-.rv-zoom > :not(:first-child) { border-top: 1px solid var(--rv-line); }
-.rv-zoom button:hover { color: var(--cy); background: rgba(255,255,255,.06); }
-.rv-zoom button:focus-visible { outline: 2px solid var(--cy); outline-offset: -2px; }
-.rv-zoom span {
-  /* 26 = os 24 de antes + 1px em cima e embaixo. É altura e não
-     `padding` porque `box-sizing: border-box` vale pra folha inteira
-     (`.rv-mesa *`): padding dentro de uma altura fixa não afasta nada,
-     só espreme o conteúdo. */
-  display: grid; place-items: center; height: 26px;
-  font-family: var(--font-mono), monospace; font-size: 10px; color: var(--rv-ink-dim);
-}
 
 /* ── TRILHA — FACÇÕES EM CONFRONTO ─────────────────────────
    Três superfícies estreitas encostadas nas bordas do palco, nunca uma

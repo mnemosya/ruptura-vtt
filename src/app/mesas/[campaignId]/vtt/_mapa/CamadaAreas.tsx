@@ -197,8 +197,8 @@ export function CamadaAreas({ areas, tamanhoCelula, mostrarCelulas, mostrarHalos
         const p = axialParaMundo(candidatoSnap, tamanhoCelula);
         return (
           <g className="rv-area-snap-candidato" data-testid="area-snap-candidato" transform={`translate(${p.x} ${p.y})`}>
-            <circle r={tamanhoCelula * 0.5} fill="none" stroke="#35c8f0" strokeWidth={2} strokeDasharray="4 3" opacity={0.85} />
-            <circle r={3} fill="#35c8f0" />
+            <circle r={tamanhoCelula * 0.5} fill="none" stroke="#00d4ff" strokeWidth={2} strokeDasharray="4 3" opacity={0.85} />
+            <circle r={3} fill="#00d4ff" />
           </g>
         );
       })()}
@@ -221,7 +221,7 @@ export function CamadaAreas({ areas, tamanhoCelula, mostrarCelulas, mostrarHalos
             {/* Origem: disco cheio. Se veio de um token capturado, ganha um anel extra. */}
             <circle cx={a.x} cy={a.y} r={4.5} fill="#eafcff" stroke="#0b141c" strokeWidth={1.5} data-testid="area-guia-origem" />
             {guia.tokenCapturado && (
-              <circle cx={a.x} cy={a.y} r={tamanhoCelula * 0.45} fill="none" stroke="#35c8f0" strokeWidth={2} strokeDasharray="3 3" opacity={0.9} data-testid="area-guia-token" />
+              <circle cx={a.x} cy={a.y} r={tamanhoCelula * 0.45} fill="none" stroke="#00d4ff" strokeWidth={2} strokeDasharray="3 3" opacity={0.9} data-testid="area-guia-token" />
             )}
             {/* Posição atual: anel — distinto por FORMA, não só por cor. */}
             <circle cx={b.x} cy={b.y} r={6} fill="none" stroke="#eafcff" strokeWidth={2.2} data-testid="area-guia-destino" />
@@ -400,8 +400,8 @@ export function CapturaAreas({
         return (
           <g key={a.id} className={`rv-area-alca rv-area-alca--${a.papel}`} data-alca={a.id} transform={`translate(${p.x} ${p.y})`}>
             {a.papel === "vertice"
-              ? <rect x={-4.5} y={-4.5} width={9} height={9} fill="#35c8f0" stroke="#0b141c" strokeWidth={1.2} pointerEvents="none" />
-              : <circle r={5} fill={a.papel === "origem" ? "#eafcff" : "#35c8f0"} stroke="#0b141c" strokeWidth={1.2} pointerEvents="none" />}
+              ? <rect x={-4.5} y={-4.5} width={9} height={9} fill="#00d4ff" stroke="#0b141c" strokeWidth={1.2} pointerEvents="none" />
+              : <circle r={5} fill={a.papel === "origem" ? "#eafcff" : "#00d4ff"} stroke="#0b141c" strokeWidth={1.2} pointerEvents="none" />}
             {/* Alvo de toque maior que o marcador visível — mouse, caneta e touch usam o MESMO elemento. */}
             <circle
               r={13} fill="transparent" role="slider" tabIndex={0}

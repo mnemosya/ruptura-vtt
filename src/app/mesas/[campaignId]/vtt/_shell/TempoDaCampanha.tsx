@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { createPortal } from "react-dom";
 import {
-  ChevronLeft, ChevronRight, ChevronUp, Cloud, CloudDrizzle, CloudFog, CloudLightning,
+  ChevronDown, ChevronLeft, ChevronRight, Cloud, CloudDrizzle, CloudFog, CloudLightning,
   CloudRain, CloudRainWind, CloudSnow, CloudSun, CloudSunRain, Clock, Dices, Gem, Plus, Snowflake, X,
   Sun, Wind, Zap, type LucideIcon,
 } from "lucide-react";
@@ -175,12 +175,11 @@ export function TempoDaCampanha({ campaignId, ehNarrador }: { campaignId: string
       <IconeResumo size={15} aria-hidden="true" />
       {carregando ? <span className="rv-tempo-chip-carregando">Carregando…</span> : <>
         <strong className="rv-tempo-chip-hora">{resumo.hora ?? "––:––"}</strong>
-        <span className="rv-tempo-chip-separador" aria-hidden="true" />
-        <span className="rv-tempo-chip-data">{dataPronta(resumo) && existeEstado ? `${resumo.dia} ${MESES_IMPERIAIS[resumo.mes! - 1]} · ${resumo.ano} CI` : "Definir data"}</span>
-        <span className="rv-tempo-chip-separador" aria-hidden="true" />
         <span className="rv-tempo-chip-temp">{existeEstado && resumo.temperaturaC !== null ? `${resumo.temperaturaC}°C` : "—°C"}</span>
+        <span className="rv-tempo-chip-separador" aria-hidden="true" />
+        <span className="rv-tempo-chip-data">{dataPronta(resumo) && existeEstado ? `D${diaDaSemanaImperial(resumo.mes!, resumo.dia!)} · ${String(resumo.dia).padStart(2, "0")}/${String(resumo.mes).padStart(2, "0")}/${resumo.ano}` : "Definir data"}</span>
       </>}
-      <ChevronUp size={14} className="rv-tempo-chip-seta" data-aberto={aberto} aria-hidden="true" />
+      <ChevronDown size={14} className="rv-tempo-chip-seta" data-aberto={aberto} aria-hidden="true" />
     </button>
     {aberto && <JanelaFerramenta id="tempo" icone={<IconeCondicao size={16} />} titulo="Tempo e clima"
       modo="Calendário Imperial · campanha" rotulo="Tempo e clima da campanha"

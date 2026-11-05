@@ -1,6 +1,8 @@
 import { assertDevRouteAllowed } from "../../../lib/dev/guard";
 import { GaleriaEstilos } from "./GaleriaEstilos";
 import "../../mesas/[campaignId]/vtt/vtt.css";
+import "../../mesas/[campaignId]/vtt/_tema/janelas-f.css";
+import "../../mesas/[campaignId]/vtt/_tema/area-compacta.css";
 // Os cards do feed são desenhados por `painel.css` — sem ela a estante
 // de cards sai crua (sem espinha, sem clip de canto, sem padding).
 import "../../mesas/[campaignId]/vtt/_painel/painel.css";

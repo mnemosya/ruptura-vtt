@@ -90,22 +90,23 @@ export function salvarPosicaoJanela(usuarioId: string | null, campaignId: string
   memoria.set(chave, { ...lerTudo(chave), [id]: pos });
 }
 
-/**
- * Onde uma janela abre por padrão: encostada na barra de ferramentas
- * (o menu lateral), 16px de distância dela — SEMPRE, mesmo com a
- * trilha de turnos aberta. A janela é arrastável e tem z-index acima
- * de tudo (incluindo o trilho), então cobrir o trilho por um instante
- * ao abrir não é um estado ruim — a pessoa pode arrastar pra onde
- * quiser. Priorizar "colada no menu" sobre "nunca sobrepõe o trilho"
- * é a troca pedida explicitamente.
- *
- * Mede a caixa REAL da barra: continua certo se ela mudar de largura.
- */
-export function ancoraPadraoJanela(): { x: number; y: number } {
+/** Abre junto do comando que chamou a janela, conforme a orientação da barra. */
+export function ancoraPadraoJanela(id: JanelaId, janela: HTMLElement | null): { x: number; y: number } {
   if (typeof document === "undefined") return { x: GAP_LATERAL, y: MARGEM_TOPO };
   const palco = document.querySelector(".rv-palco")?.getBoundingClientRect();
   const barra = document.querySelector(".rv-ferramentas")?.getBoundingClientRect();
   if (!palco || !barra) return { x: GAP_LATERAL, y: MARGEM_TOPO };
+  const botao = document.querySelector<HTMLElement>(`[data-janela-id="${id}"]`);
+  const alvo = botao?.getBoundingClientRect() ?? barra;
+  const largura = janela?.offsetWidth ?? 420;
+  const altura = janela?.offsetHeight ?? 320;
+  if (id === "cenas") return { x: alvo.left - palco.left, y: alvo.bottom - palco.top + 8 };
+  if (barra.width > barra.height * 2) {
+    return {
+      x: alvo.left + alvo.width / 2 - palco.left - largura / 2,
+      y: barra.top - palco.top - altura - 12,
+    };
+  }
   return { x: barra.right - palco.left + GAP_LATERAL, y: MARGEM_TOPO };
 }
 

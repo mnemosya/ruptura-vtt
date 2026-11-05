@@ -83,6 +83,8 @@
    por estilo INLINE, e inline ganha de qualquer regra daqui. Estática,
    as duas propriedades deixam de ter efeito e ela flui no centro. */
 .gal-palco--alto .rv-fp { position: static; margin: 0 auto; }
+.gal-palco--areas { min-height: 590px; }
+.gal-palco--areas .rv-area-compacta { left: 50%; bottom: 24px; max-width: calc(100% - 24px); }
 
 .gal-cartao figcaption {
   display: flex; flex-direction: column; gap: 3px; padding: 12px 2px 0;

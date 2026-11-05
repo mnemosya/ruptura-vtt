@@ -66,9 +66,9 @@ export function ContentReferenceCard({
       nome={c.nome}
       icone={iconeDaCategoria(c.categoria)}
       acento={acento}
-      autor={cartao.autoria.nome}
+      autor={`${c.categoriaRotulo || "Compêndio"} · ${c.origemRotulo}`}
       hora={hora}
-      cabecalho={cabecalhoDe(cartao.autoria, hora, cartao.criadoEm)}
+      cabecalho={undefined}
       horaISO={cartao.criadoEm}
       visibilidade={visibilidade}
       expandido={expandido}
@@ -91,15 +91,9 @@ export function ContentReferenceCard({
         </Chips>
       )}
 
-      {c.estatisticas.length > 0 && (
-        <Modulos colunas={c.estatisticas.length >= 3 ? 3 : 2}>
-          {c.estatisticas.slice(0, 6).map((e, i) => (
-            <Modulo key={i} rotulo={e.rotulo} valor={e.valor} acento={acento} />
-          ))}
-        </Modulos>
-      )}
+      {c.estatisticas.length > 0 && <p className="pn-chat-referencia-dados">{c.estatisticas.slice(0, 6).map((e) => `${e.valor} ${e.rotulo}`).join(" · ")}</p>}
 
-      {!temDescricao && c.resumo && <p className="pn-texto">{c.resumo}</p>}
+      {c.resumo && <p className="pn-texto">{c.resumo}</p>}
       {c.livro && (
         <button type="button" className="rv-pn-voltar" onClick={() => abrirNoLivro(c.livro!)} data-testid="painel-feed-abrir-livro">
           <BookOpen size={13} /> Abrir no livro
@@ -132,15 +126,15 @@ export function ContentUseCard({
   onAlternar: () => void;
   visibilidade?: React.ReactNode;
 }) {
-  const acento: AcentoCartao = cartao.tipoUso === "talento" ? "mana" : "cy";
+  const acento: AcentoCartao = cartao.tipoUso === "talento" ? "am" : "ok";
   const temDescricao = !!cartao.descricao;
   return (
     <CartaoBase
       tipo={cartao.tipoUso === "talento" ? "Talento usado" : "Item usado"}
       nome={cartao.nome}
-      icone={cartao.tipoUso === "talento" ? <Sparkles /> : <Package />}
+      icone={<Sparkles />}
       acento={acento}
-      autor={cartao.autoria.nome}
+      autor={`${cartao.autoria.nome} · ${cartao.tipoUso === "talento" ? "talento" : cartao.alvo ? `usou em ${cartao.alvo}` : "usou item"}`}
       hora={hora}
       cabecalho={cabecalhoDe(cartao.autoria, hora, cartao.criadoEm)}
       horaISO={cartao.criadoEm}
@@ -152,13 +146,8 @@ export function ContentUseCard({
       testId="painel-feed-uso"
       atributos={{ "data-kind": "uso" }}
     >
-      {cartao.tipoUso === "talento" && (cartao.gatilho || cartao.recarga || cartao.tags.length > 0) && (
-        <Chips>
-          {cartao.gatilho && <Chip acento="mana" titulo="O que dispara o talento">Gatilho: {cartao.gatilho}</Chip>}
-          {cartao.recarga && <Chip acento="am" titulo="Quando volta a ficar disponível">Recarga: {cartao.recarga}</Chip>}
-          {cartao.tags.slice(0, 5).map((t) => <Chip key={t}>{t}</Chip>)}
-        </Chips>
-      )}
+      {cartao.efeito && <p className="pn-texto">{cartao.efeito}</p>}
+      {(cartao.restante || cartao.recarga || cartao.gatilho) && <p className="pn-chat-meta-linha">{[cartao.restante, cartao.recarga, cartao.gatilho].filter(Boolean).join(" · ")}</p>}
       {cartao.tipoUso === "item" && cartao.dados.length > 0 && (
         <div data-testid="painel-feed-uso-dados">
           <DadosRolados dados={cartao.dados} maiorDado={Math.max(...cartao.dados)} size={34} landed acento={ACCENTS.good} />
@@ -178,7 +167,6 @@ export function ContentUseCard({
       {cartao.tipoUso === "item" && cartao.removidas.length > 0 && (
         <Chips>{cartao.removidas.map((c) => <Chip key={c} acento="ok">Removeu {c}</Chip>)}</Chips>
       )}
-      {cartao.efeito && (cartao.tipoUso === "talento" || (cartao.resultados.length === 0 && cartao.removidas.length === 0)) && <p className="pn-texto">{cartao.efeito}</p>}
     </CartaoBase>
   );
 }

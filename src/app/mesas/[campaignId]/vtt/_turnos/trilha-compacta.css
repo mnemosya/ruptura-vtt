@@ -1,0 +1,321 @@
+/* VTT · Trilha compacta B · retratos. Medidas, fontes e cores do HTML
+   fornecido para o protótipo. Os controles usam o estado real da mesa. */
+:root[data-tema="forja"] .rv-mesa { background: #050d14; }
+:root[data-tema="forja"] .rv-mesa > .rv-palco {
+  background: radial-gradient(circle,rgba(0,212,255,.07) 1px,transparent 1.5px) 0 0 / 22px 22px,#050d14;
+}
+.rv-palco .rv-rodadas,
+:root[data-tema="forja"] .rv-palco .rv-rodadas {
+  left: calc((100% - var(--rv-painel-aberto-ocupa,0px)) / 2); top: 14px; width: auto; max-width: calc(100% - var(--rv-painel-aberto-ocupa,0px) - 420px);
+  min-height: 62px; padding: 0; border: 0; border-radius: 0;
+  background: transparent;
+  clip-path: polygon(14px 0,calc(100% - 14px) 0,100% 100%,0 100%);
+  box-shadow: none; text-align: left;
+}
+.rv-palco .rv-rodadas::before { display: none; }
+.rv-palco .rv-rodadas-nucleo { flex-direction: row; align-items: stretch; width: auto; gap: 0; }
+.rv-palco .rv-rodadas-rodada {
+  min-width: 80px; padding: 6px 22px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 0;
+  color: #7f95b3; font: 400 8px var(--font-mono),monospace;
+  letter-spacing: .2em;
+}
+.rv-palco .rv-rodadas-rodada strong {
+  color: #cfeff4; font: 600 34px/.85 var(--font-teko),sans-serif;
+  letter-spacing: 0;
+}
+.rv-palco .rv-rodadas-modo { font-size: 7px; letter-spacing: .05em; white-space: nowrap; }
+.rv-palco .rv-rodadas-trilha {
+  width: auto; margin: 0; padding: 0 14px; display: flex; align-items: center;
+  gap: 4px; border-left: 1px solid rgba(0,212,255,.2);
+}
+.rv-palco .rv-rodadas-etapa {
+  display: grid; place-items: center; width: auto; height: 26px;
+  padding: 6px 12px; border: 1px solid rgba(127,149,179,.3);
+  background: transparent; color: #7f95b3;
+  font: 800 11px/1 var(--font-oxanium),sans-serif;
+  letter-spacing: .16em; white-space: nowrap;
+  transition: background .25s ease,color .25s ease,border-color .25s ease;
+}
+.rv-palco .rv-rodadas-etapa::after { display: none; }
+.rv-palco .rv-rodadas-etapa[data-destino="rapidos"] { border-color: #00d4ff; color: #00d4ff; }
+.rv-palco .rv-rodadas-etapa[data-destino="lentos"] { border-color: #f5a200; color: #f5a200; }
+.rv-palco .rv-rodadas-etapa[aria-current="step"][data-destino="rapidos"] { background: #00d4ff; color: #06121c; }
+.rv-palco .rv-rodadas-etapa[aria-current="step"][data-destino="lentos"] { background: #f5a200; color: #06121c; }
+.rv-palco .rv-rodadas-etapa:not([aria-current]):hover { filter: brightness(1.15); background: rgba(127,149,179,.1); }
+.rv-palco .rv-rodadas-teto {
+  min-width: 70px; padding: 0 16px; display: flex; flex-direction: column;
+  justify-content: center; border-left: 1px solid rgba(0,212,255,.2);
+  color: #7f95b3; font: 400 8px var(--font-mono),monospace;
+  letter-spacing: .2em;
+}
+.rv-palco .rv-rodadas-teto strong { color: #cfeff4; font: 600 24px/.9 var(--font-teko),sans-serif; letter-spacing: 0; }
+
+.rv-palco .rv-faccao,
+:root[data-tema="forja"] .rv-palco .rv-faccao {
+  top: 96px; bottom: 85px; width: 58px; min-width: 58px; max-width: 58px;
+  gap: 5px; align-items: stretch;
+}
+.rv-palco .rv-faccao--pj,
+:root[data-tema="forja"] .rv-palco .rv-faccao--pj { left: 14px; }
+.rv-palco .rv-faccao--pn { right: calc(var(--rv-painel-aberto-ocupa,0px) + 14px); }
+.rv-palco .rv-faccao-cab { min-height: 11px; padding: 0; gap: 4px; justify-content: flex-start; }
+.rv-palco .rv-faccao--pn .rv-faccao-cab { flex-direction: row; justify-content: flex-end; }
+.rv-palco .rv-faccao-nome {
+  color: #00d4ff; font: 700 9px var(--font-mono),monospace;
+  letter-spacing: .2em; white-space: nowrap;
+}
+.rv-palco .rv-faccao--pn .rv-faccao-nome { color: #ff6b7d; }
+.rv-palco .rv-faccao-vez {
+  position: absolute; left: 0; top: -2px; transform: translateX(calc(-100% - 6px));
+  padding: 1px 4px; background: #00d4ff; color: #06121c;
+  font: 700 7px var(--font-mono),monospace; white-space: nowrap;
+}
+.rv-palco .rv-faccao--pn .rv-faccao-vez { left: auto; right: 0; transform: translateX(calc(100% + 6px)); background: #ff6b7d; }
+.rv-palco .rv-faccao-conta,.rv-palco .rv-faccao-espinha { display: none; }
+.rv-palco .rv-faccao-lista,.rv-palco .rv-faccao--pn .rv-faccao-lista {
+  width: 58px; box-sizing: content-box; gap: 5px; align-items: stretch;
+  overflow-x: hidden; overflow-y: auto;
+}
+.rv-palco .rv-faccao--pj .rv-faccao-lista { margin: -4px -6px 0 -10px; padding: 6px 6px 0 10px; }
+.rv-palco .rv-faccao--pn .rv-faccao-lista { margin: -4px -10px 0 -6px; padding: 6px 10px 0 6px; }
+.rv-palco .rv-ator,.rv-palco .rv-faccao--pn .rv-ator {
+  display: flex; flex-direction: column; align-items: stretch; gap: 0;
+  width: 58px; padding: 0; border-radius: 0; direction: ltr;
+  transition: opacity .3s ease,transform .2s ease,filter .2s ease;
+}
+.rv-palco .rv-ator:hover { transform: translateX(3px); filter: brightness(1.12); }
+.rv-palco .rv-faccao--pn .rv-ator:hover { transform: translateX(-3px); }
+.rv-palco .rv-ator[data-situacao="agindo"] { box-shadow: 0 0 10px rgba(0,212,255,.35); }
+.rv-palco .rv-faccao--pn .rv-ator[data-situacao="agindo"] { box-shadow: 0 0 10px rgba(255,107,125,.35); }
+.rv-palco .rv-ator-retrato-caixa { width: 58px; height: 58px; }
+.rv-palco .rv-ator .rv-ator-retrato {
+  position: relative; width: 58px; height: 58px; overflow: hidden;
+  display: block; border: 0; border-left: 3px solid var(--rv-vertente-cor,#6b7f8c);
+  border-radius: 0 !important; corner-shape: round !important;
+  background: #06121c; box-shadow: none; transform: none;
+}
+.rv-palco .rv-faccao--pn .rv-ator .rv-ator-retrato { border-left: 0; border-right: 3px solid var(--rv-vertente-cor,#6b7f8c); }
+.rv-palco .rv-ator .rv-ator-retrato img { width: 100%; height: 100%; border-radius: 0; object-fit: cover; }
+.rv-palco .rv-ator-sigla { position: absolute; inset: 0; display: grid; place-items: center; }
+.rv-palco .rv-ator-retrato-sombra { position: absolute; inset: 0; background: linear-gradient(0deg,rgba(6,18,28,.95),transparent 55%); pointer-events: none; }
+.rv-palco .rv-ator-condicoes { position: absolute; right: 2px; top: 2px; display: flex; gap: 2px; }
+.rv-palco .rv-ator-condicoes span { width: 13px; height: 13px; display: grid; place-items: center; background: rgba(6,18,28,.9); border: 1px solid #ff6b7d; color: #ff6b7d; font: 700 7px var(--font-mono),monospace; }
+.rv-palco .rv-ator-pa { position: absolute; left: 4px; bottom: 9px; color: #cfeff4; font: 700 10px var(--font-mono),monospace; }
+.rv-palco .rv-faccao--pn .rv-ator-pa { left: auto; right: 4px; }
+.rv-palco .rv-ator-vitais { position: absolute; left: 3px; right: 3px; bottom: 3px; display: flex; flex-direction: column; gap: 2px; }
+.rv-palco .rv-ator-vital { height: 2px; background: rgba(127,149,179,.25); }
+.rv-palco .rv-ator-vital span { display: block; height: 100%; background: #22d3aa; }
+.rv-palco .rv-ator-vital--pe span { background: #c48bff; }
+.rv-palco .rv-ator[data-sel="true"] .rv-ator-retrato { outline: 1px solid rgba(207,239,244,.55); outline-offset: -2px; }
+.rv-palco .rv-ator-marca { left: auto; right: 2px; top: 2px; width: 13px; height: 13px; border-radius: 0; box-shadow: none; }
+.rv-palco .rv-ator-frag { right: 1px; top: 1px; bottom: auto; width: 13px; min-width: 13px; height: 13px; padding: 0; border-radius: 0; box-shadow: none; font-size: 7px; }
+.rv-palco .rv-ator-retrato-caixa .rv-ator-cancelar { top: 1px; left: 1px; width: 13px; height: 13px; border-radius: 0 !important; box-shadow: none; }
+.rv-palco .rv-ator-acoes { width: 58px; gap: 2px; }
+.rv-palco .rv-ator .rv-ator-agir {
+  width: 58px; min-height: 16px; margin-top: 2px; padding: 2px 0;
+  border: 1px solid #00d4ff; border-radius: 0;
+  background: #00d4ff; color: #06121c;
+  font: 800 10px/1 var(--font-oxanium),sans-serif; letter-spacing: .12em;
+}
+.rv-palco .rv-faccao--pn .rv-ator .rv-ator-agir { border-color: #ff6b7d; background: #ff6b7d; color: #06121c; }
+.rv-palco .rv-ator .rv-ator-agir:disabled { background: rgba(6,18,28,.9); color: #7f95b3; opacity: .55; }
+.rv-palco .rv-ator-declara { gap: 2px; }
+.rv-palco .rv-ator-declara button { height: 15px; padding: 0; border-radius: 0; font: 700 9px var(--font-mono),monospace; }
+.rv-palco .rv-ator-resolucao { flex-direction: column; gap: 2px; }
+.rv-palco .rv-faccao--pn .rv-ator-resolucao { flex-direction: column; }
+.rv-palco .rv-ator-passar { min-height: 15px; padding: 0; border-radius: 0; font: 700 9px var(--font-oxanium),sans-serif; }
+@media (max-width: 800px) {
+  :root[data-tema="forja"] .rv-palco .rv-rodadas { top: 8px; max-width: calc(100% - var(--rv-painel-aberto-ocupa,0px) - 140px); min-height: 48px; }
+  .rv-palco .rv-rodadas-rodada { min-width: 48px; padding: 4px 8px; }
+  .rv-palco .rv-rodadas-trilha { padding: 0 5px; }
+  .rv-palco .rv-rodadas-etapa { padding: 5px 4px; font-size: 8px; }
+  .rv-palco .rv-rodadas-teto { min-width: 44px; padding: 0 5px; }
+  .rv-palco .rv-faccao,:root[data-tema="forja"] .rv-palco .rv-faccao { top: 70px; bottom: 130px; }
+  .rv-palco .rv-faccao--pj,:root[data-tema="forja"] .rv-palco .rv-faccao--pj { left: 5px; }
+  .rv-palco .rv-faccao--pn { right: calc(var(--rv-painel-aberto-ocupa,0px) + 5px); }
+}
+@media (prefers-reduced-motion: reduce) { .rv-palco .rv-ator { transition: none; } }
+
+/* Cena no topo esquerdo, como no board. A cena continua abrindo o
+   catálogo pelo mesmo botão do VTT. */
+:root[data-tema="forja"] .rv-palco .rv-contexto {
+  left: 20px; top: 18px; bottom: auto; max-width: min(400px,calc(100% - 120px));
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+}
+:root[data-tema="forja"] .rv-palco .rv-contexto-modo {
+  display: block; flex: none;
+  color: #00d4ff; font: 700 10px var(--font-mono),monospace;
+  letter-spacing: .22em;
+}
+:root[data-tema="forja"] .rv-palco:has(.rv-rodadas) .rv-contexto { max-width: min(360px,calc(50% - 220px)); }
+:root[data-tema="forja"] .rv-palco .rv-contexto-modo[data-combate="true"] { color: #ff6b7d; }
+:root[data-tema="forja"] .rv-palco .rv-contexto .rv-tempo-chip.rv-tempo-chip {
+  margin-top: 0; min-height: 32px; padding: 5px 8px 7px; border: 0;
+  background: transparent; box-shadow: none; border-radius: 0 !important;
+  corner-shape: round !important; gap: 8px; width: auto; flex: none;
+}
+:root[data-tema="forja"] .rv-palco .rv-contexto .rv-tempo-chip.rv-tempo-chip:hover,
+:root[data-tema="forja"] .rv-palco .rv-contexto .rv-tempo-chip.rv-tempo-chip:focus-visible { background: transparent; box-shadow: none; }
+.rv-palco .rv-contexto-cena > svg:first-child,
+.rv-palco .rv-contexto-cena .rv-tempo-chip-data,
+.rv-palco .rv-contexto-cena .rv-tempo-chip-separador { display: none; }
+:root[data-tema="forja"] .rv-palco .rv-contexto-cena__nome {
+  position: relative; max-width: min(300px,calc(100vw - 125px)); color: #cfeff4; font: 600 34px/1 var(--font-teko),sans-serif;
+  letter-spacing: 0; text-transform: uppercase;
+}
+.rv-palco button.rv-contexto-cena .rv-contexto-cena__nome::after { content: ""; position: absolute; left: 0; bottom: -2px; width: 0; height: 1px; background: #00d4ff; transition: width .22s ease; }
+.rv-palco button.rv-contexto-cena:hover .rv-contexto-cena__nome::after,
+.rv-palco button.rv-contexto-cena:focus-visible .rv-contexto-cena__nome::after { width: min(46px,100%); }
+.rv-palco .rv-contexto-cena .rv-tempo-chip-seta {
+  width: 26px; height: 26px; padding: 7px; border-radius: 50%;
+  background: rgba(12,31,43,.85); color: #b8d8e8;
+  transition: color .2s ease, box-shadow .2s ease, transform .16s ease;
+}
+.rv-palco button.rv-contexto-cena:hover .rv-tempo-chip-seta,
+.rv-palco button.rv-contexto-cena:focus-visible .rv-tempo-chip-seta { color: #00d4ff; box-shadow: inset 0 0 0 1px rgba(0,212,255,.45); }
+.rv-palco button.rv-contexto-cena[aria-expanded="true"] .rv-tempo-chip-seta { transform: rotate(180deg); }
+.rv-palco > .rv-tempo-chip.rv-tempo-chip {
+  left: 20px; bottom: 30px; width: max-content; min-height: 26px; padding: 7px 10px 9px; column-gap: 11px; row-gap: 5px;
+  flex-wrap: wrap;
+  border: 0; border-radius: 0 !important; corner-shape: round !important;
+  background: transparent; box-shadow: none; color: #b8d8e8;
+  font: 11px var(--font-mono),monospace; letter-spacing: .12em;
+}
+.rv-palco > .rv-tempo-chip.rv-tempo-chip:hover,
+.rv-palco > .rv-tempo-chip.rv-tempo-chip:focus-visible {
+  color: #cfeff4; background: transparent; box-shadow: none;
+}
+.rv-palco > .rv-tempo-chip .rv-tempo-chip-hora { position: relative; order: -1; flex-basis: 100%; color: #cfeff4; font: 600 26px/.9 var(--font-teko),sans-serif; letter-spacing: 0; }
+.rv-palco > .rv-tempo-chip .rv-tempo-chip-hora::after { content: ""; position: absolute; left: 0; bottom: -3px; width: 0; height: 1px; background: #00d4ff; transition: width .22s ease; }
+.rv-palco > .rv-tempo-chip:hover .rv-tempo-chip-hora::after,
+.rv-palco > .rv-tempo-chip:focus-visible .rv-tempo-chip-hora::after { width: 46px; }
+.rv-palco > .rv-tempo-chip .rv-tempo-chip-data,
+.rv-palco > .rv-tempo-chip .rv-tempo-chip-temp { color: #b8d8e8; }
+.rv-palco > .rv-tempo-chip .rv-tempo-chip-data { overflow: visible; text-overflow: clip; font-weight: 700; letter-spacing: .12em; }
+.rv-palco > .rv-tempo-chip .rv-tempo-chip-separador { height: 18px; background: #526b7e; }
+.rv-palco > .rv-tempo-chip .rv-tempo-chip-seta { width: 26px; height: 26px; margin-left: 4px; padding: 7px; border-radius: 50%; background: rgba(12,31,43,.85); color: #b8d8e8; transition: color .2s ease, box-shadow .2s ease, transform .16s ease; }
+.rv-palco > .rv-tempo-chip:hover .rv-tempo-chip-seta,
+.rv-palco > .rv-tempo-chip:focus-visible .rv-tempo-chip-seta { background: rgba(12,31,43,.85); color: #00d4ff; box-shadow: inset 0 0 0 1px rgba(0,212,255,.45); }
+
+/* Relógios da campanha: placas compactas no rodapé esquerdo. */
+.rv-palco .rv-mk-faixa,
+.rv-palco .rv-mk-faixa[data-combate] {
+  left: 110px; top: auto; bottom: 116px; transform: none;
+  justify-content: flex-start; gap: 8px;
+}
+.rv-palco .rv-mk-item[data-tipo] {
+  width: auto; min-width: 146px; align-items: stretch; gap: 0;
+}
+.rv-palco .rv-mk-anel {
+  width: 100%; height: 46px; padding: 5px 12px 5px 5px;
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid color-mix(in srgb,var(--mk-cor) 40%,transparent);
+  border-radius: 0; background: rgba(6,18,28,.88); text-align: left;
+}
+.rv-palco .rv-mk-anel-segmentos { position: relative; inset: auto; flex: none; width: 38px; height: 38px; -webkit-mask: radial-gradient(circle,transparent 12px,#000 13px,#000 18px,transparent 19px); mask: radial-gradient(circle,transparent 12px,#000 13px,#000 18px,transparent 19px); }
+.rv-palco .rv-mk-anel-miolo { left: 6px; top: 6px; right: auto; bottom: auto; width: 38px; height: 38px; border: 0; background: transparent; color: #cfeff4; }
+.rv-palco .rv-mk-anel-miolo svg { display: none; }
+.rv-palco .rv-mk-contagem { color: #cfeff4; font: 600 15px/1 var(--font-teko),sans-serif; }
+.rv-palco .rv-mk-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rv-palco .rv-mk-nome { color: #cfeff4; font: 700 11px/1.1 var(--font-oxanium),sans-serif; letter-spacing: .1em; white-space: nowrap; text-align: left; }
+.rv-palco .rv-mk-subtipo { color: var(--mk-cor); font: 700 8px var(--font-mono),monospace; letter-spacing: .16em; text-transform: uppercase; }
+.rv-palco .rv-mk-item[data-completo] .rv-mk-nome { color: var(--mk-cor); }
+.rv-palco .rv-mk-item[data-completo] .rv-mk-subtipo { visibility: hidden; }
+.rv-palco .rv-mk-item[data-completo] .rv-mk-selo { position: absolute; left: 52px; top: 29px; padding: 0; background: transparent; color: var(--mk-cor); font: 700 8px var(--font-mono),monospace; letter-spacing: .12em; pointer-events: none; }
+@media (max-width: 800px) {
+  :root[data-tema="forja"] .rv-palco .rv-contexto { left: 8px; top: 65px; max-width: calc(100% - 80px); }
+  :root[data-tema="forja"] .rv-palco:has(.rv-rodadas) .rv-contexto { max-width: calc(100% - var(--rv-painel-aberto-ocupa,0px) - 80px); }
+  :root[data-tema="forja"] .rv-palco .rv-contexto-cena__nome { font-size: 25px; }
+  .rv-palco .rv-mk-faixa,.rv-palco .rv-mk-faixa[data-combate] { left: 8px; bottom: 140px; max-width: calc(100% - 16px); overflow-x: auto; }
+}
+
+/* Barra horizontal da mesa em qualquer modo, na base do palco. */
+.rv-mesa > .rv-ferramentas,
+:root[data-tema="forja"] .rv-mesa > .rv-ferramentas {
+  left: var(--rv-ferr-centro, 50%); right: auto; top: auto; bottom: 20px; width: max-content;
+  margin: 0; transform: translateX(-50%);
+  display: flex; flex-direction: row; align-items: center; gap: 3px;
+  max-width: min(900px,var(--rv-ferr-largura,calc(100% - var(--rv-painel-aberto-ocupa,0px) - 24px)));
+  height: 58px; max-height: 58px; padding: 6px; border: 0; border-radius: 0;
+  background: transparent; overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: thin; overscroll-behavior-inline: contain;
+}
+.rv-mesa > .rv-ferramentas .rv-ferr-btn {
+  width: 38px; height: 38px; border: 0; border-radius: 0 !important;
+  corner-shape: round !important; background: rgba(12,31,43,.85);
+}
+.rv-mesa > .rv-ferramentas .rv-menu-cena { width: 38px; height: 38px; }
+.rv-mesa > .rv-ferramentas .rv-ferr-sep { flex: none; width: 1px; height: 28px; margin: 0 3px; background: rgba(0,212,255,.25); }
+.rv-mesa > .rv-ferramentas .rv-dica { display: none; }
+.rv-ferr-tooltip { position: fixed; z-index: 95; transform: translate(-50%,-100%); padding: 5px 9px; border: 1px solid rgba(0,212,255,.45); background: #06121c; color: #cfeff4; font: 700 10px var(--font-mono),monospace; letter-spacing: .14em; white-space: nowrap; pointer-events: none; }
+.rv-ferr-tooltip[hidden] { display: none; }
+.rv-menu-mesa { max-height: calc(100vh - 16px); overflow-y: auto; }
+@media (max-width: 800px) {
+  .rv-mesa > .rv-ferramentas { bottom: 8px; max-width: var(--rv-ferr-largura,calc(100% - var(--rv-painel-aberto-ocupa,0px) - 16px)); }
+}
+
+/* Acabamento do board: as ferramentas existentes mantêm seus comandos,
+   atalhos e ordem de papel, mas usam a tecla e a placa do protótipo. */
+:root[data-tema="forja"] .rv-mesa > .rv-ferramentas { bottom: 22px; gap: 4px; padding: 6px; border: 0; background: transparent; box-shadow: none; height: 60px; max-height: 60px; }
+:root[data-tema="forja"] .rv-mesa > .rv-ferramentas .rv-ferr-btn {
+  position: relative; width: 46px; height: 46px; flex: none;
+  clip-path: polygon(0 0,calc(100% - 9px) 0,100% 9px,100% 100%,0 100%);
+  background: rgba(12,31,43,.85); color: #b8d8e8;
+  transition: color .15s ease,background .15s ease,transform .15s ease;
+}
+:root[data-tema="forja"] .rv-mesa > .rv-ferramentas .rv-ferr-btn svg { width: 21px; height: 21px; }
+.rv-ferr-icone-design { display: block; width: 21px; height: 21px; flex: none; background: currentColor; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
+:root[data-tema="forja"] .rv-mesa > .rv-ferramentas .rv-ferr-btn:hover { color: #cfeff4; background: rgba(0,212,255,.16); transform: translateY(-2px); }
+:root[data-tema="forja"] .rv-mesa > .rv-ferramentas .rv-ferr-btn[aria-pressed="true"] { color: #06121c; background: #00d4ff; box-shadow: 0 0 18px rgba(0,212,255,.5); }
+:root[data-tema="forja"] .rv-mesa > .rv-ferramentas .rv-ferr-btn[data-ativo="true"]:not([aria-pressed="true"]) { color: #f5a200; background: rgba(245,162,0,.11); }
+.rv-mesa > .rv-ferramentas .rv-menu-cena { width: 46px; height: 46px; }
+.rv-ferr-tecla { position: absolute; right: 3px; bottom: 2px; color: #7f95b3; font: 700 9px var(--font-mono),monospace; line-height: 1; pointer-events: none; }
+.rv-ferr-btn[aria-pressed="true"] .rv-ferr-tecla { color: #06121c; }
+
+/* No HTML a navegação ocupa o topo direito mesmo recolhida. Conservamos
+   as cinco abas reais e o mesmo estado/teclado; só a disposição muda. */
+:root[data-tema="forja"] .rv-mesa .rv-painel[data-aberto="false"] { right: 8px; top: 8px; background: transparent; }
+:root[data-tema="forja"] .rv-mesa .rv-painel[data-aberto="false"] .rv-painel-abas { flex-direction: row; gap: 4px; width: auto; padding: 0; border: 0; background: transparent; }
+.rv-painel[data-aberto="false"] .rv-aba-sep,.rv-painel[data-aberto="false"] .rv-aba-fim { display: none; }
+.rv-painel[data-aberto="false"] .rv-aba--expandir { order: 9; margin-left: 8px; }
+:root[data-tema="forja"] .rv-mesa .rv-painel .rv-aba.rv-aba { width: 36px; min-width: 36px; height: 36px; flex: none; gap: 0; border: 0; border-radius: 0 !important; corner-shape: round !important; background: rgba(12,31,43,.85); color: #7f95b3; }
+:root[data-tema="forja"] .rv-mesa .rv-painel .rv-aba.rv-aba:hover { background: rgba(0,212,255,.16); color: #cfeff4; }
+:root[data-tema="forja"] .rv-mesa .rv-painel .rv-aba.rv-aba[aria-selected="true"] { width: auto; padding: 0 10px; color: #06121c; background: #00d4ff; }
+.rv-aba-icone-design { display: block; width: 20px; height: 20px; flex: none; background: currentColor; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
+.rv-painel .rv-aba-rotulo { display: inline-block; max-width: 0; opacity: 0; overflow: hidden; white-space: nowrap; font: 800 12px var(--font-oxanium),sans-serif; letter-spacing: .06em; text-transform: uppercase; transition: max-width .52s cubic-bezier(.3,1.4,.5,1),opacity .28s ease; }
+.rv-painel .rv-aba[aria-selected="true"] .rv-aba-rotulo { max-width: 110px; opacity: 1; margin-left: 6px; }
+:root[data-tema="forja"] .rv-mesa .rv-painel[data-aberto="true"] { right: 0; top: 0; bottom: 0; border: 0; border-left: 1px solid rgba(0,212,255,.2); border-radius: 0; background: #06121c; }
+:root[data-tema="forja"] .rv-mesa .rv-painel[data-aberto="true"] .rv-painel-abas { height: 54px; padding: 0 10px; gap: 4px; border-bottom: 0; background: #050d14; }
+:root[data-tema="forja"] .rv-mesa .rv-painel[data-aberto="true"] .rv-painel-corpo { border-top: 2px solid #00d4ff; background: #06121c; }
+:root[data-tema="forja"] .rv-mesa .rv-painel[data-aberto="true"] .rv-aba.rv-aba[aria-selected="true"] { flex: 0 0 auto; }
+:root[data-tema="forja"] .rv-mesa .rv-painel[data-aberto="true"] .rv-aba.rv-aba:not([aria-selected="true"]) { flex: 0 0 36px; }
+:root[data-tema="forja"] .rv-mesa .rv-painel[data-aberto="true"] .rv-aba--recolher { margin-left: auto; }
+
+/* Profundidade sutil do mapa do protótipo, sem interferir nos gestos,
+   no zoom, nas imagens da cena ou na grade configurável. */
+.rv-palco .rv-mapa-camada::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; box-shadow: inset 0 0 120px rgba(0,0,0,.75); }
+.rv-token-nome { opacity: 0; fill: #cfeff4; font: 700 9px var(--font-mono),monospace; letter-spacing: .12em; paint-order: stroke; stroke: rgba(0,0,0,.8); stroke-width: 2px; transition: opacity .15s ease; }
+.rv-token:hover .rv-token-nome,.rv-token.is-sel .rv-token-nome { opacity: 1; }
+.rv-token-avatar { transform-origin: 0 0; transition: transform .18s cubic-bezier(.3,1.4,.5,1); }
+.rv-token:hover .rv-token-avatar { transform: scale(1.12); }
+.rv-token-anel-selecao { transform-box: fill-box; transform-origin: center; animation: rv-token-anel-giro 9s linear infinite; }
+@keyframes rv-token-anel-giro { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .rv-token-avatar { transition: none; } .rv-token-anel-selecao { animation: none; } }
+
+/* Composer: fundo, chips e campo copiam a linguagem de superfícies do
+   board; envio, visibilidade e anexo continuam os controles existentes. */
+:root[data-tema="forja"] .rv-painel .pn-composer { gap: 8px; padding: 10px 12px 14px; border-top: 1px solid rgba(0,212,255,.14); background: #06121c; }
+:root[data-tema="forja"] .rv-painel .pn-chipbtn.pn-chipbtn { min-height: 28px; padding: 0 9px; border: 0; border-left: 2px solid var(--pn-a); border-radius: 0; background: rgba(12,31,43,.85); font: 800 10px var(--font-oxanium),sans-serif; letter-spacing: .06em; }
+:root[data-tema="forja"] .rv-painel .pn-chipbtn.pn-chipbtn--icone { width: 28px; padding: 0; justify-content: center; }
+:root[data-tema="forja"] .rv-painel .pn-composer-campo { border: 1px solid rgba(0,212,255,.2); border-radius: 0; background: rgba(12,31,43,.85); }
+:root[data-tema="forja"] .rv-painel .pn-composer-input { color: #cfeff4; font: 400 13px/1.45 var(--font-corpo),"Exo 2",sans-serif; }
+:root[data-tema="forja"] .rv-painel .pn-composer-enviar { border: 0; border-radius: 0; background: rgba(0,212,255,.14); color: #00d4ff; }
+:root[data-tema="forja"] .rv-painel .pn-composer-enviar:not(:disabled) { background: #00d4ff; color: #06121c; }
+
+/* Com a lateral aberta, os controles adicionais do VTT alargam a
+   faixa. O aviso permanece no canto direito sem tapar esses botões. */
+:root[data-tema="forja"] .rv-mesa:has(.rv-painel[data-aberto="true"]) .rv-chat-notificacao { bottom: 94px; }
+@media (max-width: 1500px) {
+  :root[data-tema="forja"] .rv-mesa .rv-chat-notificacao { bottom: 94px; }
+}

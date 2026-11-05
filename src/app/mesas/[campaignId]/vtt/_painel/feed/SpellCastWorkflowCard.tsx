@@ -10,8 +10,7 @@
  *   CONJURADA → AGUARDANDO ATAQUE → ATAQUE ROLADO → DEFESA RESOLVIDA
  *   → AGUARDANDO DANO → AGUARDANDO APLICAÇÃO → RESOLVIDA
  *
- * PA e Mana consumidos aparecem em módulos pequenos, na mesma
- * linguagem das barras de recurso do Console.
+ * PA e Mana consumidos aparecem na linha compacta do protótipo.
  *
  * Quando o conteúdo efetivo não tem estrutura suficiente para conduzir
  * a resolução (sem fórmula de dano, sem resistência declarada), o card
@@ -26,7 +25,7 @@ import { Faixa, Leitura, Titulo, type MagiaHud } from "../../../../../ficha/_con
 import { TextoComRegras } from "../../../../../ficha/_console/TextoComRegras";
 import { oxanium } from "../../../../../_design/oxanium";
 import { CartaoBase } from "../ui/CartaoBase";
-import { BotaoTecnico, Chip, Chips, Modulo, Modulos, PainelTecnico } from "../ui/primitivas";
+import { BotaoTecnico, Chip, PainelTecnico } from "../ui/primitivas";
 import type { AcentoCartao, CartaoMagia, EstadoMagia } from "./contratos";
 import { cabecalhoDe } from "./CabecalhoPersonagem";
 
@@ -78,7 +77,7 @@ export function SpellCastWorkflowCard({
       nome={cartao.nome}
       icone={<Wand2 />}
       acento="mana"
-      autor={cartao.conjurador}
+      autor={`${cartao.conjurador}${cartao.vertente ? ` · ${cartao.vertente}` : ""}${cartao.nivel != null ? ` · nível ${cartao.nivel}` : ""}`}
       hora={hora}
       cabecalho={cabecalhoDe(cartao.autoria, hora, cartao.criadoEm)}
       horaISO={cartao.criadoEm}
@@ -123,32 +122,11 @@ export function SpellCastWorkflowCard({
       testId="painel-feed-magia"
       atributos={{ "data-kind": "magia", "data-workflow": cartao.workflowId, "data-estado": cartao.estado }}
     >
-      {cartao.tags.length > 0 && (
-        <Chips>
-          {cartao.tags.slice(0, 6).map((t) => (
-            <Chip key={t} acento="mana">{t}</Chip>
-          ))}
-        </Chips>
-      )}
-
-      {cartao.custos.length > 0 && (
-        <Modulos colunas={2}>
-          {cartao.custos.map((c, i) => (
-            <Modulo key={i} rotulo={c.rotulo} valor={c.valor} acento={c.acento ?? "mana"} />
-          ))}
-        </Modulos>
-      )}
-
-      {cartao.estatisticas.length > 0 && (
-        <Modulos colunas={cartao.estatisticas.length >= 3 ? 3 : 2}>
-          {cartao.estatisticas.slice(0, 6).map((e, i) => (
-            <Modulo key={i} rotulo={e.rotulo} valor={e.valor} acento="mana" />
-          ))}
-        </Modulos>
-      )}
-
-      {cartao.estado === "manual" && cartao.motivoManual && (
-        <p className="pn-texto">{cartao.motivoManual}</p>
+      <p className="pn-chat-meta-linha">
+        {[...cartao.custos.map((c) => `${c.valor} ${c.rotulo.toLowerCase()}`), ...cartao.tags.slice(0, 6), cartao.estado === "manual" ? "resolução manual" : null].filter(Boolean).join(" · ")}
+      </p>
+      {(cartao.descricao || cartao.snapshot.efeito || cartao.motivoManual) && (
+        <p className="pn-texto">{cartao.descricao || cartao.snapshot.efeito || cartao.motivoManual}</p>
       )}
     </CartaoBase>
   </>);

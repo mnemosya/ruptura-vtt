@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { EscalposPanel } from "../../ficha/_console/panels/EscalposPanel";
 import { ConsoleWindow } from "../../ficha/_console/ConsoleWindow";
-import { createInitialCharacter, installEscalpo, removeInstalledEscalpo, ativarArs, desativarArs, computeDerivedStats, normalizeItemContent } from "../../../lib/character";
+import { createInitialCharacter, installEscalpo, removeInstalledEscalpo, definirDesgasteEscalpo, ativarArs, desativarArs, computeDerivedStats, normalizeItemContent } from "../../../lib/character";
 import { normalizeTechnicalContentItem } from "../../../lib/content/technicalLibrary";
 import { catalogWithMarketEscalpos } from "../../../lib/character/marketEscalpos";
 import db from "../../../../content/v12/db_mercado_escalpos_v1_2.json";
@@ -29,6 +29,7 @@ export function PreviewEscalpos() {
     escalpos: { catalogo: falha ? [] : catalogo, erro: falha ? "Prévia de falha" : null, comEfeitoAutomatico: new Set(),
       instalar: (contentId, regiaoArs) => setCharacter(c => installEscalpo(c, { contentId, regiaoArs, nowIso: new Date().toISOString() })),
       remover: id => setCharacter(c => removeInstalledEscalpo(c, id)),
+      definirDesgaste: (id, desgaste) => setCharacter(c => definirDesgasteEscalpo(c, id, desgaste)),
       ativarArs: () => setCharacter(c => ativarArs(c, 3).character),
       desativarArs: () => setCharacter(c => desativarArs(c)),
     },

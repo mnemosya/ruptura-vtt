@@ -1,0 +1,252 @@
+/* Faixa secundária de Áreas. Vive no palco, fora do scroll da barra principal. */
+.rv-area-compacta {
+  --rv-area-acento: #a58af0;
+  --jf-acento: var(--rv-area-acento);
+  position: absolute;
+  z-index: 42;
+  left: calc((100% - var(--rv-painel-aberto-ocupa, 0px)) / 2);
+  bottom: 86px;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - var(--rv-painel-aberto-ocupa, 0px) - 24px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  color: #b8d8e8;
+  font-family: var(--font-oxanium), sans-serif;
+}
+:root[data-tema="forja"] .rv-area-compacta { bottom: 90px; }
+.rv-area-compacta button { cursor: pointer; }
+.rv-area-compacta button:disabled { cursor: not-allowed; opacity: .48; }
+.rv-area-compacta button:focus-visible,
+.rv-area-compacta input:focus-visible {
+  outline: 2px solid var(--rv-area-acento);
+  outline-offset: 2px;
+}
+.rv-area-compacta__faixa {
+  order: 2;
+  width: 100%;
+  min-width: 0;
+  height: 58px;
+  padding: 5px;
+  display: flex;
+  align-items: stretch;
+  gap: 5px;
+  border: 1px solid #1a3a4b;
+  background: rgba(6, 18, 28, .96);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .42);
+}
+.rv-area-compacta__formatos {
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #30485a transparent;
+  overscroll-behavior-inline: contain;
+}
+.rv-area-compacta__tipo {
+  flex: none;
+  width: 54px;
+  padding: 4px 2px 2px;
+  border: 1px solid transparent;
+  background: #0c1f2b;
+  color: #7f95b3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font: 700 8px/1 var(--font-oxanium), sans-serif;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.rv-area-compacta__tipo:hover:not(:disabled) { color: #cfeff4; background: #143044; }
+.rv-area-compacta__tipo[aria-pressed="true"] {
+  color: #eee6ff;
+  border-color: var(--rv-area-acento);
+  background: rgba(165, 138, 240, .17);
+  box-shadow: inset 0 -2px 0 var(--rv-area-acento);
+}
+.rv-area-compacta__separador { flex: none; width: 1px; margin: 5px 0; background: #294357; }
+.rv-area-compacta__config-botao {
+  flex: none;
+  width: 44px;
+  border: 1px solid transparent;
+  background: #0c1f2b;
+  color: #b8d8e8;
+  display: grid;
+  place-items: center;
+}
+.rv-area-compacta__config-botao:hover,
+.rv-area-compacta__config-botao[aria-expanded="true"] {
+  border-color: var(--rv-area-acento);
+  color: #eee6ff;
+  background: rgba(165, 138, 240, .17);
+}
+.rv-area-compacta__acoes,
+.rv-area-compacta__estado,
+.rv-area-compacta__erro {
+  order: 1;
+  margin: 0;
+  min-height: 34px;
+  padding: 4px 7px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(6, 18, 28, .96);
+  border: 1px solid #1a3a4b;
+  color: #7f95b3;
+  font: 700 9px var(--font-mono), monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.rv-area-compacta__acoes > span { margin-right: auto; white-space: nowrap; }
+.rv-area-compacta__acoes button {
+  min-height: 25px;
+  padding: 3px 7px;
+  border: 1px solid transparent;
+  background: #0c1f2b;
+  color: #b8d8e8;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+.rv-area-compacta__acoes button:hover:not(:disabled) { color: #eee6ff; border-color: #41516a; }
+.rv-area-compacta__acoes .rv-area-compacta__concluir {
+  color: #06121c;
+  background: var(--rv-area-acento);
+}
+.rv-area-compacta__erro { color: #ff8a98; border-color: rgba(255, 107, 125, .45); }
+
+.rv-area-compacta__parametros {
+  order: 1;
+  min-height: 58px;
+  padding: 5px 6px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #1a3a4b;
+  border-left: 2px solid var(--rv-area-acento);
+  background: linear-gradient(90deg, rgba(165, 138, 240, .1), rgba(6, 18, 28, .96) 48%);
+}
+.rv-area-compacta__parametros-contexto {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-left: 8px;
+}
+.rv-area-compacta__parametros-contexto > svg { flex: none; color: var(--rv-area-acento); }
+.rv-area-compacta__parametros-contexto > span { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.rv-area-compacta__parametros-contexto strong {
+  color: #eaf6ff;
+  font: 700 11px var(--font-oxanium), sans-serif;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.rv-area-compacta__parametros-contexto small {
+  overflow: hidden;
+  color: #7f95b3;
+  font: 10px var(--rv-body), sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rv-area-compacta__parametros-controles { display: flex; align-items: center; gap: 4px; }
+.rv-area-compacta__ajuste {
+  min-width: 155px;
+  height: 44px;
+  gap: 3px;
+  padding: 4px 5px 4px 9px;
+  border: 1px solid #294357;
+  background: #0b2230;
+}
+.rv-area-compacta__ajuste:focus-within { border-color: var(--rv-area-acento); }
+.rv-area-compacta__ajuste .jf-l { font-size: 9px; letter-spacing: .1em; }
+.rv-area-compacta__ajuste .jf-ajuste-ctl { gap: 1px; }
+.rv-area-compacta__ajuste .jf-ajuste-ctl button {
+  width: 22px;
+  height: 24px;
+  border: 1px solid #294357;
+  background: #071621;
+}
+.rv-area-compacta__valor {
+  width: 32px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+  outline: none;
+}
+.rv-area-compacta__valor:focus-visible { outline: none; box-shadow: inset 0 -1px 0 var(--rv-area-acento); }
+.rv-area-compacta__valor::placeholder { color: #4f7086; }
+.rv-area-compacta__ajuste small { color: #7f95b3; font: 700 9px var(--font-oxanium), sans-serif; }
+.rv-area-compacta__ajuste:has(input:disabled) { opacity: .48; }
+/* O painel de ajustes é irmão da lista rolável de formatos: nada o recorta. */
+.rv-area-compacta__config {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  width: min(320px, calc(100vw - 24px));
+  max-height: min(480px, calc(100vh - 300px));
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  border: 1px solid #294357;
+  background: linear-gradient(170deg, #0b1c29, #06121c 72%);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, .55);
+  scrollbar-width: thin;
+  scrollbar-color: #294357 transparent;
+}
+.rv-area-compacta__config-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #cfeff4;
+  font: 700 12px var(--font-oxanium), sans-serif;
+  letter-spacing: .12em;
+}
+.rv-area-compacta__config .jf-campo { width: 100%; }
+.rv-area-compacta__config .jf-grupo { gap: 5px; }
+.rv-area-compacta__config .jf-tile { height: 38px; }
+.rv-area-compacta__linha-cor { justify-content: space-between; gap: 4px; padding-right: 5px; }
+.rv-area-compacta__linha-cor .jf-cores { flex: none; }
+.rv-area-compacta__config .jf-faixa { gap: 6px; padding: 0 8px 0 12px; }
+.rv-area-compacta__config .jf-faixa b { min-width: 34px; }
+.rv-area-compacta__chave {
+  width: 100%;
+  height: auto;
+  min-height: 39px;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+}
+.rv-area-compacta__chave-texto { display: flex; flex-direction: column; gap: 2px; }
+.rv-area-compacta__chave strong { font: 700 10px var(--font-oxanium), sans-serif; text-transform: uppercase; }
+.rv-area-compacta__chave small { color: #7f95b3; font: 10px var(--rv-body), sans-serif; }
+.rv-area-compacta__chave .jf-ponto { opacity: .2; }
+.rv-area-compacta__chave[aria-checked="true"] .jf-ponto { opacity: 1; }
+.rv-area-compacta__nota { margin: 0; color: #7f95b3; font: 11px/1.4 var(--rv-body), sans-serif; }
+@media (max-width: 700px) {
+  .rv-area-compacta { max-width: calc(100% - var(--rv-painel-aberto-ocupa, 0px) - 12px); }
+  .rv-area-compacta__tipo { width: 49px; }
+  .rv-area-compacta__parametros-contexto small { display: none; }
+  .rv-area-compacta__acoes { flex-wrap: wrap; }
+}
+@media (max-width: 500px) {
+  .rv-area-compacta__parametros { grid-template-columns: 1fr; }
+  .rv-area-compacta__parametros-controles { flex-wrap: wrap; }
+  .rv-area-compacta__ajuste { flex: 1; }
+}

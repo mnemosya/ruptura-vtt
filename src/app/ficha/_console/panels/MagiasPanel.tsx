@@ -45,13 +45,13 @@ function evolucaoDeMagias(api: ConsoleApi): boolean {
  * fica para o Modo Evolução v1 (aprender/esquecer) e para o catálogo
  * indisponível, que o HUD não trata.
  */
-export function MagiasPanel({ api }: { api: ConsoleApi }) {
+export function MagiasPanel({ api, magiaInicial }: { api: ConsoleApi; magiaInicial?: string | null }) {
   const m = api.magias;
-  if (!evolucaoDeMagias(api) && !m.catalogError) return <MagiasEmJogo api={api} />;
+  if (!evolucaoDeMagias(api) && !m.catalogError) return <MagiasEmJogo api={api} magiaInicial={magiaInicial} />;
   return <MagiasLista api={api} />;
 }
 
-function MagiasEmJogo({ api }: { api: ConsoleApi }) {
+function MagiasEmJogo({ api, magiaInicial }: { api: ConsoleApi; magiaInicial?: string | null }) {
   const m = api.magias;
   const [catalogoAberto, setCatalogoAberto] = useState(false);
   const aprendidas = m.spells.filter((s) => s.status === "published" && m.magiasAprendidas.some((a) => a.spellSlug === s.slug));
@@ -114,6 +114,7 @@ function MagiasEmJogo({ api }: { api: ConsoleApi }) {
       <CabecalhoModulo id="ID://MAGIAS" mod="MOD.SPELLS // 07" />
       <div className="rc-inv" data-testid="console-magias">
         <MagiasHud
+          magiaInicial={magiaInicial}
           magias={magias}
           niveis={niveis}
           primaria={primaria}

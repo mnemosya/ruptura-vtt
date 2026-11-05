@@ -26,9 +26,9 @@
  */
 
 import { useEffect, useState } from "react";
-import { Crosshair, Loader2, ShieldHalf, Swords } from "lucide-react";
+import { Loader2, ShieldHalf, Swords } from "lucide-react";
 import { CartaoBase } from "../ui/CartaoBase";
-import { BarraAlvo, BotaoTecnico, Chip, Chips, FaixaResultado, Modulo, Modulos } from "../ui/primitivas";
+import { BotaoTecnico, Chip, Chips, FaixaResultado, Modulo, Modulos } from "../ui/primitivas";
 import { RollButton } from "../../_dados3d/ResultadoRolagem";
 import type { AcentoCartao, CartaoAtaque, EstadoAtaque } from "./contratos";
 import { cabecalhoDe } from "./CabecalhoPersonagem";
@@ -46,7 +46,6 @@ const ROTULO_ESTADO: Record<EstadoAtaque, string> = {
 };
 
 /** Faixa de margem (`resolveMarginBand`) → rótulo da barra do alvo. */
-const ROTULO_FAIXA: Record<string, string> = { miss: "Errou", limited: "Acerto limitado · −1 dano", standard: "Acerto", critical: "Crítico · +1 dado" };
 const ROTULO_REGIAO: Record<string, string> = { cabeca: "Cabeça", tronco: "Tronco", bracos: "Braços", pernas: "Pernas" };
 /** Defesas da regra "Ações defensivas" — id, perícia e atributo iguais aos de `ataquePainel.ts`. */
 export const DEFESAS_CARTAO = [
@@ -153,7 +152,7 @@ export function AttackWorkflowCard({
   }, [aguardandoAplicacao, cartao.id]);
   const critico = cartao.faixaMargem === "critical";
   const formulaDano = cartao.danoFormula ? `${cartao.danoFormula}${critico ? ` +1d${/d(\d+)/.exec(cartao.danoFormula)?.[1] ?? ""}` : ""}` : null;
-  const acento: AcentoCartao = cartao.magica ? "mana" : cartao.acertou === false ? "neutro" : "perigo";
+  const acento: AcentoCartao = cartao.magica ? "mana" : cartao.acertou === false ? "perigo" : cartao.estado === "resolvido" ? "ok" : "am";
   const resolvido = cartao.estado === "resolvido";
   const errou = cartao.acertou === false;
 
@@ -165,7 +164,7 @@ export function AttackWorkflowCard({
       nome={cartao.nome}
       icone={<Swords />}
       acento={acento}
-      autor={cartao.atacante}
+      autor={`${cartao.atacante} · ${cartao.nome}${cartao.alvo ? ` → ${cartao.alvo}` : ""}`}
       hora={hora}
       cabecalho={cabecalhoDe(cartao.autoria, hora, cartao.criadoEm)}
       horaISO={cartao.criadoEm}
@@ -356,57 +355,16 @@ export function AttackWorkflowCard({
         </Chips>
       )}
 
-      {/* Linha principal: ATAQUE × DEFESA + DANO. */}
-      <Modulos colunas={2}>
-        <Modulo
-          rotulo="Ataque"
-          valor={cartao.totalAtaque ?? "—"}
-          icone={<Crosshair />}
-          acento={cartao.magica ? "mana" : "cy"}
-          destaque
-          testId="painel-feed-ataque-total"
-        />
-        <Modulo rotulo={cartao.defesaNome ?? "Defesa"} valor={cartao.totalDefesa ?? "—"} icone={<ShieldHalf />} acento="neutro" destaque />
-        {cartao.dano != null && (
-          <Modulo
-            rotulo={cartao.danoTipo ? `Dano ${cartao.danoTipo}` : "Dano"}
-            valor={cartao.dano}
-            icone={<Swords />}
-            acento="perigo"
-            destaque
-            testId="painel-feed-ataque-dano"
-          />
-        )}
-      </Modulos>
-
-      {cartao.alvo && (
-        <BarraAlvo
-          nome={cartao.alvo}
-          acento={errou ? "neutro" : "ok"}
-          resultado={
-            cartao.acertou === false
-              ? "Errou"
-              : cartao.faixaMargem
-                ? `${ROTULO_FAIXA[cartao.faixaMargem] ?? cartao.faixaMargem}${cartao.margem != null ? ` · margem ${cartao.margem}` : ""}${cartao.regiao ? ` · ${ROTULO_REGIAO[cartao.regiao] ?? cartao.regiao}` : ""}`
-                : cartao.margem != null
-                  ? `Acerto vs ${cartao.margem}`
-                  : "Acerto"
-          }
-          acoes={
-            cartao.alvoTokenId && onFocarAlvo ? (
-              <BotaoTecnico
-                acento="cy"
-                onClick={() => onFocarAlvo(cartao.alvoTokenId!)}
-                titulo="Centralizar a câmera no alvo"
-                ariaLabel="Centralizar a câmera no alvo"
-                icone={<Crosshair />}
-                testId="painel-feed-focar-alvo"
-              />
-            ) : undefined
-          }
-          testId="painel-feed-ataque-alvo"
-        />
-      )}
+      <div className="pn-chat-ataque-etapas" aria-hidden="true">{["declarado", "aguardando_defesa", "aguardando_dano", "resolvido"].map((etapa, i) => <span key={etapa} data-ativo={i <= (cartao.estado === "resolvido" ? 3 : cartao.estado === "aguardando_dano" || cartao.estado === "aguardando_aplicacao" ? 2 : cartao.estado === "aguardando_defesa" ? 1 : 0) ? "true" : undefined} />)}</div>
+      <div className="pn-chat-ataque-resultado">
+        <strong data-testid="painel-feed-ataque-total">{cartao.dano ?? cartao.totalAtaque ?? "—"}</strong>
+        <span><b>{cartao.estado === "aguardando_defesa" ? "Aguardando defesa" : errou ? "Errou" : cartao.acertou ? `Acerto${cartao.regiao ? ` · ${ROTULO_REGIAO[cartao.regiao] ?? cartao.regiao}` : ""}` : ROTULO_ESTADO[cartao.estado]}</b>
+          <small>{cartao.totalAtaque != null && cartao.totalDefesa != null ? `ataque ${cartao.totalAtaque} × defesa ${cartao.totalDefesa}${cartao.margem != null ? ` · margem +${cartao.margem}` : ""}` : [cartao.tags[0], cartao.danoFormula].filter(Boolean).join(" · ")}</small>
+        </span>
+      </div>
+      {cartao.dano != null && <span className="pn-chat-ataque-dano" data-testid="painel-feed-ataque-dano">{cartao.dano}</span>}
+      {cartao.pvAntes != null && cartao.pvDepois != null && <div className="pn-chat-variacao" data-testid="painel-feed-ataque-alvo"><span className="pn-chat-variacao-rotulo">PV {cartao.alvo}</span><span className="pn-chat-variacao-valor"><span>{cartao.pvAntes} →</span> {cartao.pvDepois} <em data-acento="perigo">{cartao.pvDepois - cartao.pvAntes}</em></span></div>}
+      {cartao.alvoTokenId && onFocarAlvo && <button type="button" className="pn-chat-focar" onClick={() => onFocarAlvo(cartao.alvoTokenId!)} data-testid="painel-feed-focar-alvo">Centralizar no alvo</button>}
     </CartaoBase>
   );
 }

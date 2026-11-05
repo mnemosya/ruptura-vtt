@@ -44,7 +44,7 @@
  */
 
 import {
-  type CorArea, type ModoLinha, type ParametrosArea, type PontoAxial, type TipoArea, type Veredito,
+  type CorArea, type ParametrosArea, type PontoAxial, type TipoArea, type Veredito,
   MINIMO_DIMENSAO_M, normalizarParametros, validarParametros, validarPercursoParede, validarPoligonoPersonalizado,
 } from "../_dominio/areaEfeito";
 import { axialParaMundo, metrosParaMundo, mundoParaAxial, mundoParaMetros } from "../_dominio/escalaMapa";
@@ -73,8 +73,6 @@ export interface ConfigAreas {
   tipo: TipoArea;
   /** Faixa. */
   larguraFaixaM: number;
-  /** Linha. */
-  modoLinha: ModoLinha;
   /** Parede. */
   alturaParedeM: number;
   /** Esfera/Domo — opcional; `null` = não declarada. */
@@ -119,7 +117,6 @@ export interface ConfigAreas {
 export const CONFIG_AREAS_PADRAO: ConfigAreas = {
   tipo: "esfera",
   larguraFaixaM: 2,
-  modoLinha: "uma_celula",
   alturaParedeM: 2,
   alturaVolumeM: null,
   nivelOrigemM: null,
@@ -334,7 +331,7 @@ export function paramsDoArraste(
     case "domo":
       return normalizarParametros({ tipo: "domo", origem, raioM: distancia, alturaM: config.alturaVolumeM, nivelOrigemM: config.nivelOrigemM });
     case "linha":
-      return normalizarParametros({ tipo: "linha", origem, direcaoGraus: direcao, comprimentoM: distancia, modo: config.modoLinha });
+      return normalizarParametros({ tipo: "linha", origem, direcaoGraus: direcao, comprimentoM: distancia, modo: "traco_fino" });
     case "faixa":
       return normalizarParametros({ tipo: "faixa", origem, direcaoGraus: direcao, comprimentoM: distancia, larguraM: config.larguraFaixaM });
     case "cubo":

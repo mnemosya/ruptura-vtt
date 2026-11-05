@@ -5,6 +5,7 @@ import { somarPaGastos } from "../../../lib/character/paGastos";
 import { limiteSobrecarga, removerUltimoSurto, resolverRupturaV12, type EscolhaRuptura } from "../../../lib/character/rupturaV12";
 import { marcaPorId, tracoPorDados } from "../../../lib/rulesetV12/ruptura";
 import { reorderInventoryItem } from "../../../lib/character/inventoryOrder";
+import { distorcaoConhecida } from "../../../lib/character/identityDistortions";
 
 import { weaponRangeAt } from "../../../lib/character/weaponRange";
 import { ehCelulaDeEnergia, fonteDoPadrao, listarFontesRecarga, recarregarDaFonte } from "../../../lib/character/reloadSources";
@@ -138,6 +139,7 @@ import {
   checkSpellVertenteLevel,
   installEscalpo,
   removeInstalledEscalpo,
+  definirDesgasteEscalpo,
   ativarArs,
   desativarArs,
 } from "../../../lib/character";
@@ -175,7 +177,7 @@ import { catalogWithMarketEscalpos } from "../../../lib/character/marketEscalpos
 import { lerPermissaoNaFicha } from "../../../lib/campaign/sessionActions";
 import { resolverPericia, rollPericia, type PreparedRoll } from "../../../lib/dice";
 import { addLog } from "../../../lib/table/storage";
-import { upsertCrewInventoryItem } from "../../../lib/table/crewInventory";
+import { transferCharacterItemToCrew } from "../../../lib/table/crewTransfer";
 import type { Campaign, TableLogVisibility } from "../../../lib/table";
 import { useCharacterRealtime } from "../../../lib/realtime/useCharacterRealtime";
 import { describeRealtimeStatus } from "../../../lib/realtime/tableRealtime";
@@ -307,6 +309,7 @@ interface Props {
    * (isso é Fase 5). Ignorado se não for um TabId válido.
    */
   initialTab?: TabId;
+  comandoAberto?: { familia: "a" | "m"; id: string; sequencia: number } | null;
 }
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -370,6 +373,7 @@ export default function CharacterSheetClient({
   janelaDeTurno,
   mode,
   initialTab,
+  comandoAberto,
 }: Props) {
   const [character, setCharacter] = useState<Character>(() => createInitialCharacter(regras));
   /**
@@ -2530,81 +2534,49 @@ export default function CharacterSheetClient({
     }
   }
 
-  /**
-   * Enviar item ao inventário do bando (aba Inventário, checkpoint
-   * pós-v0.68, CP7) — usa `removeQuantityFromInventory` (helper puro,
-   * `lib/character/inventory.ts`) para tirar a quantidade do
-   * personagem preservando cargas/munição/Aljava/propriedades, e
-   * `upsertCrewInventoryItem` (mescla só munição, mesmo critério de
-   * `purchaseItem`) para gravar no bando. Ordem SEGURA sem transação
-   * real entre `characters` e `campaign_inventory_items`: reduz o
-   * personagem só DEPOIS de confirmar a escrita no bando — se a escrita
-   * no bando falhar, nada muda no personagem (falha limpa, sem duplicar
-   * nem perder o item). RLS do bando é estrita (migration 0019): exige
-   * narrador dono da mesa autenticado — sem isso, o erro aparece aqui e
-   * o item NUNCA some do personagem.
-   */
+  /** Envia o item pela mesma transação usada no Bando do VTT. */
   async function handleSendItemToCrew(instanceId: string, quantidade: number) {
-    if (!selectedCampaignId) {
+    if (!selectedCampaignId || !characterId) {
       addLogEntry("recurso", "Enviar ao bando exige mesa conectada.");
       return;
     }
-    const current = characterRef.current;
-    const instance = (current.inventario ?? []).find((i) => i.id === instanceId);
-    if (!instance) return;
-    const nowIso = new Date().toISOString();
-
-    const removal = removeQuantityFromInventory(current, instanceId, quantidade, nowIso);
-    if (!removal.ok) {
-      addLogEntry("recurso", removal.reason);
-      return;
-    }
-
     try {
-      // 1) grava no bando primeiro — falhar aqui (ex.: sem narrador autenticado) não tira nada do personagem.
-      await upsertCrewInventoryItem(selectedCampaignId, removal.removedInstance);
-
-      // 2) só então reduz/remove do personagem.
-      characterRef.current = removal.character;
-      setCharacter(removal.character);
-      const quantityAfterSource = removal.character.inventario?.find((i) => i.id === instanceId)?.quantidade ?? 0;
-      addLogEntry(
-        "recurso",
-        `Enviado ao bando: ${removal.removedInstance.itemNome} x${removal.removedInstance.quantidade}${quantityAfterSource > 0 ? ` (restam ${quantityAfterSource})` : ""}.`,
-      );
-      await persistAutomatedActionExecution(removal.character);
-
-      try {
-        await addLog({
-          campaignId: selectedCampaignId,
-          characterId: characterId ?? undefined,
-          type: "inventory_transfer",
-          visibility: "public",
-          payload: {
-            campaignId: selectedCampaignId,
-            direction: "character_to_crew",
-            sourceCharacterId: characterId,
-            sourceCharacterName: current.nome,
-            itemInstanceId: removal.removedInstance.id,
-            itemName: removal.removedInstance.itemNome,
-            itemSlug: removal.removedInstance.itemSlug,
-            quantityMoved: removal.removedInstance.quantidade,
-            quantityBeforeSource: instance.quantidade,
-            quantityAfterSource,
-            chargesMoved: removal.removedInstance.cargasAtual ?? null,
-            payloadPreserved: true,
-            source: "crew_inventory_transfer",
-          },
-        });
-      } catch {
-        avisarFalhaLogMesa();
+      // Esvazia o autosave pendente e confirma que a ficha atual foi gravada
+      // antes de a RPC comparar o snapshot. Falha de gravação interrompe tudo.
+      const prazo = Date.now() + 5000;
+      while (gravacaoEmVooRef.current || gravacaoPendenteRef.current) {
+        if (Date.now() > prazo) throw new Error("A gravação da ficha ainda está em andamento. Tente novamente.");
+        await new Promise((resolve) => setTimeout(resolve, 25));
       }
+      const atual = characterRef.current;
+      const paraSalvar = normalizeCharacter(
+        atual,
+        computeDerivedStats(atual.atributos, regras, atual.mana_bonus_ruptura ?? 0, characterDerivedFormulas(atual)),
+      );
+      const fichaSalva = mode === "product"
+        ? await updateCharacterSheetPayload(characterId, paraSalvar)
+        : await updateCharacter(characterId, paraSalvar);
+      lastSyncedCharacterRef.current = fichaSalva.payload;
+      const result = await transferCharacterItemToCrew({
+        campaignId: selectedCampaignId,
+        characterId,
+        instanceId,
+        quantidade,
+      });
+      if (!result.ok || !result.character) {
+        addLogEntry("recurso", `Falha ao enviar ao bando: ${result.erro ?? "transferência recusada"}`);
+        return;
+      }
+      characterRef.current = result.character;
+      lastSyncedCharacterRef.current = result.character;
+      setCharacter(result.character);
+      addLogEntry("recurso", `Enviado ao bando: ${result.itemNome} x${result.quantidadeMovida}.`);
     } catch (err) {
       addLogEntry(
         "recurso",
         err instanceof Error
-          ? `Falha ao enviar ao bando: ${err.message} (exige narrador dono da mesa autenticado — ver /dev/login).`
-          : "Falha ao enviar ao bando — exige narrador dono da mesa autenticado.",
+          ? `Falha ao enviar ao bando: ${err.message}`
+          : "Falha ao enviar ao bando.",
       );
     }
   }
@@ -2940,6 +2912,16 @@ export default function CharacterSheetClient({
     characterRef.current = next;
     setCharacter(next);
     addLogEntry("condicao", "Escalpo removido.");
+  }
+
+  function handleDefinirDesgasteEscalpo(instanceId: string, desgaste: 0 | 1 | 2) {
+    const current = characterRef.current;
+    const instancia = current.escalpos_instalados?.find((item) => item.id === instanceId);
+    if (!instancia || (instancia.desgaste ?? 0) === desgaste) return;
+    const next = definirDesgasteEscalpo(current, instanceId, desgaste);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `${instancia.nomeCustomizado ?? escalposIniciais.find((item) => item.slug === instancia.contentId)?.nome ?? "Escalpo"}: ${["íntegro", "danificado", "inativo"][desgaste]}.`);
   }
 
   function handleAtivarArs() {
@@ -3902,6 +3884,7 @@ export default function CharacterSheetClient({
       erro: escalposError,
       instalar: handleInstallEscalpo,
       remover: handleRemoveEscalpo,
+      definirDesgaste: handleDefinirDesgasteEscalpo,
       ativarArs: handleAtivarArs,
       desativarArs: handleDesativarArs,
       comEfeitoAutomatico: installedEscalpoIdsWithEffect,
@@ -4128,6 +4111,15 @@ export default function CharacterSheetClient({
 
     editarRecurso: (id, valor, opcoes) => updateRecursoAtual(id, valor, opcoes),
     editarIntegridade: (valor) => updateRecursoAtual("integridade", valor),
+    editarDistorcaoIdentidade: (indice, id) => {
+      if (somenteLeitura || indice < 0 || indice > 2 || (id && !distorcaoConhecida(id))) return;
+      const atual = characterRef.current;
+      const lista = Array.from({ length: 3 }, (_, posicao) => atual.distorcoes_identidade?.[posicao] ?? "");
+      lista[indice] = id;
+      const next = { ...atual, distorcoes_identidade: lista };
+      characterRef.current = next;
+      setCharacter(next);
+    },
     ajustarPa: (delta) => ajustarPaConsole(delta),
     ajustarReacoes: (delta) => ajustarReacoesConsole(delta),
 
@@ -4404,6 +4396,7 @@ export default function CharacterSheetClient({
       {consoleAberto && (
         <ConsoleErrorBoundary>
           <CharacterConsole
+            key={comandoAberto ? `${comandoAberto.familia}:${comandoAberto.id}:${comandoAberto.sequencia}` : "console"}
             aberto={consoleAberto}
             onClose={() => {
               setConsoleAberto(false);
@@ -4413,6 +4406,7 @@ export default function CharacterSheetClient({
               consoleCloseOverride?.();
             }}
             api={consoleApi}
+            comandoAberto={comandoAberto}
             // "Mercado" da mesa pede a aba antiga "inventario": no Console é a Mochila (onde fica a loja provisória).
             // "acoes" vem da roda tática do token e tem o mesmo id no Console.
             abaInicial={initialTab === "inventario" ? "mochila" : initialTab === "geral" ? "personagem"

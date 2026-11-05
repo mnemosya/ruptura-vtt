@@ -38,9 +38,9 @@ try {
   await dossier.getByRole('button', { name: 'Remover instalação' }).click();
   await dossier.getByRole('button', { name: 'Confirmar remoção' }).click();
   assert.equal(await panel.locator('.hs-implant').count(), 4);
-  await panel.getByRole('button', { name: 'Neurais: 1 implante' }).click();
+  await panel.getByRole('button', { name: 'Neurais: 1 escalpo' }).click();
   assert.equal(await panel.locator('.hs-implant').count(), 1);
-  await panel.getByRole('button', { name: 'Todos os sistemas' }).click();
+  await panel.getByRole('button', { name: 'Ver todos os escalpos' }).click();
   await page.getByRole('checkbox', { name: 'Somente leitura' }).check();
   await panel.getByRole('button', { name: 'Ver Braços Gorila' }).click();
   assert.equal(await dossier.getByRole('button', { name: 'Remover instalação' }).count(), 0);
@@ -50,7 +50,7 @@ try {
   assert.equal(await panel.locator('.hs-implant').count(), 4);
   await page.getByRole('checkbox', { name: 'Catálogo indisponível' }).uncheck();
   await page.getByRole('button', { name: 'Ficha vazia' }).click();
-  assert.match(await panel.innerText(), /Sem implantes/i);
+  assert.match(await panel.innerText(), /Sem escalpos/i);
   await page.screenshot({ path: '/tmp/escalpos-empty.png', fullPage: true });
   await page.getByRole('button', { name: 'Restaurar exemplo' }).click();
   await page.setViewportSize({ width: 390, height: 844 });

@@ -302,6 +302,7 @@ export interface CartaoEfeito extends CartaoComum {
   duracao: string | null;
   /** Condição: intensidade/pilha acumulada. */
   intensidade: number | null;
+  intensidadeMaxima?: number | null;
   /** Condição: o que ela cobra por rodada ("1d8"). */
   danoPorRodada: string | null;
   /** Condição: como sair dela ("Teste de Vigor CD 12"). */
@@ -928,6 +929,7 @@ function projetarEfeito(entry: TableLogEntry): CartaoFeed {
     alvo: txt(p, "alvoNome", "characterNome", "targetCharacterName"),
     duracao: txt(p, "duracaoRotulo", "duracao"),
     intensidade: num(p, "intensidade", "pilha", "stacks", "nivel"),
+    intensidadeMaxima: num(p, "nivelMaximo", "nivel_maximo", "maxLevel"),
     danoPorRodada: txt(p, "danoPorRodada", "danoRodada", "danoDado"),
     cura: txt(p, "curaRotulo", "cura", "resistencia"),
     delta,

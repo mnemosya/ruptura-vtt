@@ -21,10 +21,7 @@
 
 import { Fragment, useEffect, useRef } from "react";
 import {
-  Backpack,
-  BookText,
   FolderTree,
-  Library,
   LogOut,
   ScrollText,
   Settings,
@@ -40,12 +37,20 @@ import { SessionControl } from "./SessionControl";
 /** Medidas usadas pra manter o menu inteiro dentro da janela. */
 const LARGURA_MENU = 244;
 
-export interface PosicaoMenuMesa { left: number; top: number }
+export interface PosicaoMenuMesa { left: number; top: number; acima?: boolean }
 
 /** Onde o menu cabe, a partir do botão que o abriu — à direita dele. */
 export function posicaoAoLadoDe(el: HTMLElement | null): PosicaoMenuMesa {
   if (!el) return { left: 8, top: 8 };
   const b = el.getBoundingClientRect();
+  const barra = el.closest(".rv-ferramentas")?.getBoundingClientRect();
+  if (barra && barra.width > barra.height * 2) {
+    return {
+      left: Math.max(8, Math.min(b.left + b.width / 2 - LARGURA_MENU / 2, window.innerWidth - LARGURA_MENU - 8)),
+      top: b.top - 8,
+      acima: true,
+    };
+  }
   return {
     left: Math.min(b.right + 8, window.innerWidth - LARGURA_MENU - 8),
     // Alinhado pelo TOPO do botão, não centralizado: o menu é muito
@@ -65,18 +70,12 @@ interface ItemMenu {
 }
 
 const ITENS: readonly ItemMenu[] = [
-  { janela: "personagens", rotulo: "Personagens", Icone: Users },
-  // A criação COMPLETA (o assistente), distinta do "+ Personagem" da
-  // aba, que só pede um nome: aquilo é atalho de quem monta a cena.
-  { janela: "bando", rotulo: "Bando", Icone: Backpack },
-  { janela: "compendio", rotulo: "Compêndio", Icone: Library },
   { janela: "participantes", rotulo: "Participantes", Icone: UsersRound },
   // O Mercado é o caso mais curioso: a LOJA já vive dentro da ficha
   // (aba Inventário), e a página só servia pra escolher de quem é a
   // carteira. A janela é esse seletor, e ela abre o Console na aba
   // certa — não é uma tela nova, é a porta que a página era.
   { janela: "mercado", rotulo: "Mercado", Icone: Store },
-  { janela: "livro", rotulo: "Livro", Icone: BookText },
   { janela: "convites", rotulo: "Jogadores e convites", Icone: Ticket, soNarrador: true },
   { janela: "organizador", rotulo: "Organizador", Icone: FolderTree, soNarrador: true },
   // "Conteúdo da campanha" era o editor TÉCNICO de regras e o nome
@@ -138,7 +137,7 @@ export function MenuDaMesa({
       role="menu"
       aria-label="Menu da mesa"
       data-testid="vtt-menu-mesa"
-      style={{ left: posicao.left, top: posicao.top, width: LARGURA_MENU }}
+      style={{ left: posicao.left, top: posicao.top, width: LARGURA_MENU, transform: posicao.acima ? "translateY(-100%)" : undefined }}
     >
       {/* Nome da mesa e papel. Eles moravam no cabeçalho da casca, que
           não é mais desenhado aqui — e são a única resposta pra "em que
@@ -157,7 +156,7 @@ export function MenuDaMesa({
       <div className="rv-menu-mesa-grupo">
         {visiveis.map(({ janela, rotulo, Icone, porVir }) => (
           <Fragment key={rotulo}>
-          {(janela === "personagens" || janela === "convites") && <div className="rv-menu-mesa-section">{janela === "personagens" ? "Jogo" : "Campanha"}</div>}
+          {(janela === "participantes" || janela === "convites") && <div className="rv-menu-mesa-section">{janela === "participantes" ? "Jogo" : "Campanha"}</div>}
           <button
             key={rotulo}
             type="button"

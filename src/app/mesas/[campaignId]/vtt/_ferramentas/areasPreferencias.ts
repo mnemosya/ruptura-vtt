@@ -1,15 +1,10 @@
 /**
- * Preferências LOCAIS da ferramenta Áreas — snap, janela e seções
- * recolhidas. Mesmo padrão (e mesmas garantias) de
+ * Preferências LOCAIS da ferramenta Áreas — opções de snap.
+ * Mesmo padrão (e mesmas garantias) de
  * `_shell/PainelCamadas.tsx`: `localStorage`, chave versionada por
  * usuário e campanha, leitura tolerante a qualquer coisa que não bata
  * o formato, escrita que nunca quebra a mesa se o storage estiver
  * cheio ou desabilitado.
- *
- * A POSIÇÃO da janela saiu daqui: ela é de
- * `janelasPreferencias.ts`, junto com a de todas as outras janelas de
- * ferramenta — "onde deixei esta janela" é a mesma pergunta pra todas,
- * e ter uma cópia por painel foi o que deixou os formatos divergirem.
  *
  * O QUE NÃO ENTRA AQUI: dimensão, geometria, cor, opacidade,
  * visibilidade e rótulo da área. Isso é dado CANÔNICO da cena, vive em
@@ -31,18 +26,12 @@ export interface PreferenciasAreas {
    * padrão, nunca um substitui o outro).
    */
   snapOrigemCelula: boolean;
-  /** Seção "Aparência" do painel expandida? */
-  aparenciaAberta: boolean;
-  /** Painel recolhido ao cabeçalho? */
-  painelRecolhido: boolean;
 }
 
 export const PREFERENCIAS_AREAS_PADRAO: PreferenciasAreas = {
   snapDirecao: true,
   snapOrigemToken: false,
   snapOrigemCelula: true,
-  aparenciaAberta: false,
-  painelRecolhido: false,
 };
 
 const VERSAO_SCHEMA = "v1";
@@ -71,8 +60,6 @@ export function carregarPreferenciasAreas(chave: string): PreferenciasAreas {
       snapDirecao: ehBooleano(json.snapDirecao) ? json.snapDirecao : PREFERENCIAS_AREAS_PADRAO.snapDirecao,
       snapOrigemToken: ehBooleano(json.snapOrigemToken) ? json.snapOrigemToken : PREFERENCIAS_AREAS_PADRAO.snapOrigemToken,
       snapOrigemCelula: ehBooleano(json.snapOrigemCelula) ? json.snapOrigemCelula : PREFERENCIAS_AREAS_PADRAO.snapOrigemCelula,
-      aparenciaAberta: ehBooleano(json.aparenciaAberta) ? json.aparenciaAberta : PREFERENCIAS_AREAS_PADRAO.aparenciaAberta,
-      painelRecolhido: ehBooleano(json.painelRecolhido) ? json.painelRecolhido : PREFERENCIAS_AREAS_PADRAO.painelRecolhido,
     };
   } catch {
     return PREFERENCIAS_AREAS_PADRAO;

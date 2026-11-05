@@ -103,7 +103,7 @@ type Aux =
   | { tipo: "avanco"; alvo: RankingV12 }
   | null;
 
-export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto: boolean; onClose: () => void; api: ConsoleApi; abaInicial?: AbaId }) {
+export function CharacterConsole({ aberto, onClose, api, abaInicial, comandoAberto }: { aberto: boolean; onClose: () => void; api: ConsoleApi; abaInicial?: AbaId; comandoAberto?: { familia: "a" | "m"; id: string } | null }) {
   const [aba, setAba] = useState<AbaId>(abaInicial ?? "personagem");
   // Pedido de aba com o Console já aberto (ex.: roda tática → Ações).
   useEffect(() => { if (abaInicial) setAba(abaInicial); }, [abaInicial]);
@@ -409,12 +409,13 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial }: { aberto:
                 if (instancia?.aljava) iniciarRecarga(instancia);
               }} />
             ) : aba === "magias" ? (
-              <MagiasPanel api={api} />
+              <MagiasPanel api={api} magiaInicial={comandoAberto?.familia === "m" ? comandoAberto.id : null} />
             ) : aba === "escalpos" ? (
               <EscalposPanel api={api} />
             ) : aba === "acoes" ? (
               <AcoesPanel
                 api={api}
+                acaoInicial={comandoAberto?.familia === "a" ? comandoAberto.id : null}
                 onRolar={(prefill) => { if (!api.somenteLeitura) setAux({ tipo: "rolagem", prefill }); }}
                 onAtacar={(instanceId) => {
                   if (api.somenteLeitura) return;

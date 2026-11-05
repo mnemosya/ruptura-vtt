@@ -45,7 +45,6 @@ import { Check, X } from "lucide-react";
  * é delegada a `_turnos/modelo.ts`.
  */
 
-import { useState } from "react";
 import {
   type EstadoTrilha, type Janela, type Lado, type Participante,
   PISO_PA, ROTULO_LADO, TETO_PA,
@@ -88,6 +87,12 @@ export interface TrilhaFaccoesProps {
 type Situacao = "agindo" | "apto" | "aguardando" | "agiu" | "fora";
 
 const ORDEM_SITUACAO: Record<Situacao, number> = { agindo: 0, apto: 1, aguardando: 2, agiu: 3, fora: 4 };
+
+const GLIFO_CONDICAO: Record<string, { glifo: string; cor: string }> = {
+  sangrando: { glifo: "◆", cor: "#ff6b7d" },
+  lento: { glifo: "≈", cor: "#f5a200" },
+  caido: { glifo: "▼", cor: "#ff6b7d" },
+};
 
 function situacaoDe(p: Participante, trilha: EstadoTrilha): Situacao {
   if (trilha.agindoId === p.id) return "agindo";
@@ -206,8 +211,9 @@ function Faccao({
   return (
     <aside className={`rv-faccao rv-faccao--${lado}`} data-ativa={ativa} aria-label={`${ROTULO_LADO[lado]} — ativação`}>
       <header className="rv-faccao-cab">
-        <span className="rv-faccao-nome">{ROTULO_LADO[lado]}</span>
-        <span className="rv-faccao-conta" title={`${prontos} prontos nesta janela`}>{prontos}</span>
+        <span className="rv-faccao-nome">{lado === "pj" ? "◆ PJ" : "PN ◆"}</span>
+        {ativa && <span className="rv-faccao-vez">A VEZ</span>}
+        <span className="rv-faccao-conta" aria-label={`${prontos} prontos nesta janela`}>{prontos}</span>
       </header>
       <span className="rv-faccao-espinha" aria-hidden="true" />
       <ul className="rv-faccao-lista">
@@ -253,7 +259,11 @@ function Ator({
   const resolvido = situacao === "agiu" || situacao === "fora";
   const jaAgiuNaJanela = p.agiuEm.includes(trilha.janela) && p.fragmentouEm !== trilha.janela;
 
-  const motivoAgir = outroAgindo ? `${outroAgindo.nome} está em ação.` : el.motivo?.texto ?? null;
+  const percentual = (valor: number | null | undefined, maximo: number | null | undefined) =>
+    valor == null || !maximo || maximo <= 0 ? null : `${Math.min(100, Math.max(0, valor / maximo * 100))}%`;
+  const pv = podeComandar || token?.pvPublico !== false ? percentual(token?.pv, token?.pvMax) : null;
+  const pe = podeComandar || token?.pePublico !== false ? percentual(token?.pe, token?.peMax) : null;
+  const corPv = token?.pv != null && token.pvMax && token.pv / token.pvMax <= .35 ? "#ff6b7d" : "#22d3aa";
 
   return (
     <li
@@ -272,15 +282,26 @@ function Ator({
           data-vertente={token?.vertente ?? "nenhuma"}
           aria-pressed={selecionado}
           aria-label={`${p.nome} — selecionar e centralizar no mapa`}
-          title={`${p.nome} · ${restante}/${p.paTotal} PA${el.apto ? " · pode agir" : el.motivo ? ` · ${el.motivo.texto}` : ""}`}
           onClick={() => onFocar(p.id)}
         >
-          {token?.retrato ? <img src={token.retrato} alt="" /> : <span>{token?.sigla ?? p.nome.slice(0, 2).toUpperCase()}</span>}
+          {token?.retrato ? <img src={token.retrato} alt="" /> : <span className="rv-ator-sigla">{token?.sigla ?? p.nome.slice(0, 2).toUpperCase()}</span>}
+          <span className="rv-ator-retrato-sombra" aria-hidden="true" />
+          {token?.condicoes && token.condicoes.length > 0 && <span className="rv-ator-condicoes" aria-label={`Condições: ${token.condicoes.join(", ")}`}>
+            {token.condicoes.slice(0, 2).map((condicao) => {
+              const { glifo, cor } = GLIFO_CONDICAO[condicao] ?? { glifo: condicao.slice(0, 1).toUpperCase(), cor: "#ff6b7d" };
+              return <span key={condicao} style={{ color: cor, borderColor: cor }}>{glifo}</span>;
+            })}
+          </span>}
+          <span className="rv-ator-pa">{restante}/{p.paTotal}</span>
+          {(pv !== null || pe !== null) && <span className="rv-ator-vitais" aria-hidden="true">
+            {pv !== null && <span className="rv-ator-vital"><span style={{ width: pv, background: corPv }} /></span>}
+            {pe !== null && <span className="rv-ator-vital rv-ator-vital--pe"><span style={{ width: pe }} /></span>}
+          </span>}
           {/* PA fragmentado: badge pequeno no retrato, com o que sobrou
               pra gastar no retorno (regra 5). Só existe quando fragmentou
               de verdade — nunca um contador genérico de PA. */}
           {p.fragmentouEm !== null && restante > 0 && (
-            <span className="rv-ator-frag" title={`Fragmentou nos turnos ${p.fragmentouEm === "rapidos" ? "rápidos" : "lentos"} — restam ${restante} PA`}>
+            <span className="rv-ator-frag" aria-label={`Fragmentou nos turnos ${p.fragmentouEm === "rapidos" ? "rápidos" : "lentos"} — restam ${restante} PA`}>
               {restante}
             </span>
           )}
@@ -293,7 +314,7 @@ function Ator({
         {/* Cancelar o Agir é de quem comanda o personagem — o mesmo
             critério dos botões de ação ao lado. */}
         {situacao === "agindo" && podeComandar && (
-          <button type="button" className="rv-ator-cancelar" onClick={onCancelar} aria-label="Cancelar o Agir" title="Cancelar o Agir — nada é gasto">
+          <button type="button" className="rv-ator-cancelar" onClick={onCancelar} aria-label="Cancelar o Agir">
             <X size={11} strokeWidth={2.5} />
           </button>
         )}
@@ -316,7 +337,6 @@ function Ator({
             type="button"
             className="rv-ator-agir"
             disabled={!el.apto || outroAgindo !== null}
-            title={el.apto && !outroAgindo ? `Iniciar a ativação de ${p.nome}` : motivoAgir ?? undefined}
             onClick={() => onAssumir(p.id)}
           >
             Agir
@@ -330,7 +350,6 @@ function Ator({
               <BotaoDeclarar
                 key={j}
                 janela={j}
-                lado={p.lado}
                 ativo={p.declaracao === j}
                 desabilitado={declaracaoTravada}
                 onDeclarar={() => onDeclarar(p.id, j)}
@@ -364,62 +383,29 @@ function Ator({
 function Resolucao({ paDoTurno, onConcluir, onPassar }: { paDoTurno: number; onConcluir: (pa: number) => void; onPassar: () => void }) {
   return (
     <div className="rv-ator-resolucao">
-      {/* Concluir É o "Agir" do momento seguinte — mesma peça, mesma classe. */}
-      <button type="button" className="rv-ator-agir" onClick={() => onConcluir(paDoTurno)}>Concluir</button>
+      {/* Mesma ação de conclusão, com rótulo compacto para o trilho. */}
+      <button type="button" className="rv-ator-agir" onClick={() => onConcluir(paDoTurno)}>OK</button>
       <button type="button" className="rv-ator-passar" onClick={onPassar}>Passar</button>
     </div>
   );
 }
 
-/**
- * Botão de declaração com dica de hover/foco.
- *
- * A dica NÃO dá pra fazer só com CSS (como o `.rv-dica` da barra de
- * ferramentas): o trilho rola — `overflow-y: auto` em
- * `.rv-faccao-lista` —, e um balão em `position: absolute` seria
- * recortado pela caixa de rolagem exatamente onde ele precisa
- * aparecer, já que a linha de declaração É a borda do trilho.
- * `position: fixed` medido do próprio botão escapa do recorte (nenhum
- * ancestral cria containing block: ninguém no caminho tem `transform`)
- * e reusa o visual do `.rv-dica`.
- *
- * Sem `title`: o balão nativo apareceria por cima deste, com atraso e
- * outro estilo. O texto continua no `aria-label`, íntegro.
- */
 function BotaoDeclarar({
-  janela, lado, ativo, desabilitado, onDeclarar,
+  janela, ativo, desabilitado, onDeclarar,
 }: {
-  janela: Janela; lado: Lado; ativo: boolean; desabilitado: boolean; onDeclarar: () => void;
+  janela: Janela; ativo: boolean; desabilitado: boolean; onDeclarar: () => void;
 }) {
-  const [dica, setDica] = useState<{ x: number; y: number } | null>(null);
   const d = DECLARACAO[janela];
-  // O balão abre pro lado do MAPA em cada trilho — pra fora do palco
-  // ele sairia da tela.
-  const abrir = (alvo: HTMLElement) => {
-    const r = alvo.getBoundingClientRect();
-    setDica({ x: lado === "pj" ? r.right + 10 : r.left - 10, y: r.top + r.height / 2 });
-  };
   return (
-    <>
       <button
         type="button"
         data-janela={janela}
         aria-pressed={ativo}
         disabled={desabilitado}
         aria-label={d.descricao}
-        onMouseEnter={(e) => abrir(e.currentTarget)}
-        onMouseLeave={() => setDica(null)}
-        onFocus={(e) => abrir(e.currentTarget)}
-        onBlur={() => setDica(null)}
         onClick={onDeclarar}
       >
         {d.teto}
       </button>
-      {dica && (
-        <span className="rv-dica rv-dica--fixa" data-lado={lado} role="tooltip" style={{ left: dica.x, top: dica.y }}>
-          {d.descricao}
-        </span>
-      )}
-    </>
   );
 }

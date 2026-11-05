@@ -1087,6 +1087,12 @@ button.rc-modo-chip[data-evolucao="true"]:hover { --rc-card-fio: var(--rc-am); }
   min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding: 0 8px;
   font-family: var(--font-corpo), sans-serif; font-size: 13px; font-weight: 600; line-height: 18px; color: var(--rc-text);
 }
+.rc-nric-distorcao-select {
+  min-width: 0; width: 100%; padding: 6px 8px; border: 0; background: var(--rc-panel);
+  color: var(--rc-text); font-family: var(--font-corpo), sans-serif; font-size: 13px;
+}
+.rc-nric-distorcao-select:focus-visible { outline: 1px solid var(--rc-danger); outline-offset: -1px; }
+.rc-nric-distorcao-aviso { margin: 0; padding: 8px; color: var(--rc-danger); font-size: 12px; line-height: 1.4; }
 .rc-nric-distorcao-estado {
   padding-right: 8px; font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px; font-weight: 700; line-height: 1; letter-spacing: 0.065em; color: var(--rc-dim);

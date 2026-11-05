@@ -15,8 +15,8 @@
  * O grupo se afasta da âncora e inverte de lado perto das bordas, pra
  * nunca sair da área ÚTIL nem cobrir a alça principal da área.
  *
- * "Área útil" e não "viewport": a barra de ferramentas ocupa a faixa
- * esquerda e o painel de sessão a direita, os dois POR CIMA do mapa.
+ * "Área útil" e não "viewport": as barras ocupam a faixa inferior
+ * e o painel de sessão a direita, todos POR CIMA do mapa.
  * Encostar o grupo na borda do viewport punha os botões embaixo deles —
  * visíveis, e impossíveis de clicar. O limite é o retângulo do palco
  * menos o que está por cima dele.
@@ -96,7 +96,14 @@ export function areaUtilDoMapa(): AreaUtil {
     area.direita = palco.right; area.base = palco.bottom;
   }
   const barra = document.querySelector(".rv-ferramentas")?.getBoundingClientRect();
-  if (barra && barra.right > area.esquerda) area.esquerda = barra.right;
+  if (barra) {
+    if (barra.width > barra.height * 2) area.base = Math.min(area.base, barra.top - 8);
+    else if (barra.right > area.esquerda) area.esquerda = barra.right;
+  }
+  const barraAreas = document.querySelector(".rv-area-compacta")?.getBoundingClientRect();
+  if (barraAreas) area.base = Math.min(area.base, barraAreas.top - 8);
+  const ajustesAreas = document.querySelector(".rv-area-compacta__config")?.getBoundingClientRect();
+  if (ajustesAreas) area.base = Math.min(area.base, ajustesAreas.top - 8);
   const painel = document.querySelector(".rv-painel")?.getBoundingClientRect();
   if (painel && painel.left < area.direita) area.direita = painel.left;
   return area;
@@ -240,7 +247,7 @@ export function resolverPosicaoEdicaoRapida(
 
 /** Seletores dos elementos reais que o lápis nunca pode cobrir — lidos ao vivo do DOM a cada reposicionamento. Os OUTROS botões de edição rápida entram à parte (ver `resolverPosicoesEdicaoRapidas`): cada um é obstáculo dos demais, nunca de si mesmo. */
 const SELETORES_OBSTACULO_PRIORITARIO = [".rv-area-acoes-flutuantes"];
-const SELETORES_OBSTACULO_SECUNDARIO = [".rv-painel", ".rv-flutuante", ".rv-rodadas", ".rv-faccao", ".rv-ferramentas"];
+const SELETORES_OBSTACULO_SECUNDARIO = [".rv-painel", ".rv-flutuante", ".rv-rodadas", ".rv-faccao", ".rv-ferramentas", ".rv-area-compacta", ".rv-area-compacta__config"];
 
 function coletarObstaculosDoAmbiente(): RetanguloObstaculo[] {
   const obstaculos: RetanguloObstaculo[] = [];

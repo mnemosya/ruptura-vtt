@@ -498,8 +498,8 @@
 .fj-atributos__linha--base { align-items: end; }
 .fj-atributos__esq { display: flex; justify-content: flex-end; }
 .fj-atributos__dir { display: flex; justify-content: flex-start; }
-.fj-atributos__meio { width: 220px; }
-.fj-atributo { width: 100%; max-width: 220px; }
+.fj-atributos__meio { width: 244px; }
+.fj-atributo { width: 244px; max-width: 244px; }
 .fj-atributo__desc { font-size: 14px; line-height: 1.4; color: color-mix(in srgb, var(--fj-texto) 80%, transparent); }
 .fj-atributo__controle { margin-top: var(--hud-space-3); display: flex; align-items: center; justify-content: space-between; }
 .fj-atributo__btn { display: grid; height: 36px; width: 36px; place-items: center; border: 1px solid color-mix(in srgb, var(--fj-cy) 40%, transparent); font: 400 20px var(--fj-display); color: var(--fj-cy); transition: var(--fj-trans); }
