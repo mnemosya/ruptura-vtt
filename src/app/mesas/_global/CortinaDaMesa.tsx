@@ -9,8 +9,8 @@
  *     navega; sem `loading.tsx` na rota da campanha, o Next mantém a
  *     página de baixo — e a cortina — até a mesa estar pronta;
  *   - o `VttClient` mostra a cortina como CONTINUAÇÃO (`continuacao`,
- *     sem animar de novo) enquanto a cena carrega, e ela some quando a
- *     cena chega.
+ *     sem animar de novo) enquanto a cena carrega e enquanto a câmera
+ *     ajusta o mapa à largura do painel.
  *
  * Traz a própria raiz `.v1` (fontes e folha da área autenticada) porque
  * na mesa ela vive fora da casca global.

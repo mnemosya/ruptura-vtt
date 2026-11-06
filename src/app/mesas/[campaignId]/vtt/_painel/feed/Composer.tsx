@@ -20,7 +20,7 @@
  */
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Dices, Eye, ImagePlus, Loader2, Lock, Radio, ShieldAlert, Sparkles, User, X, Zap } from "lucide-react";
+import { ChevronDown, Dices, Eye, ImagePlus, Loader2, Lock, ShieldAlert, Sparkles, User, X, Zap } from "lucide-react";
 
 /**
  * Seta de enviar — exportada do Figma (Button - Enviar, nó 467:5993),
@@ -312,8 +312,9 @@ export function Composer({
   const itensAutoria: ItemMenu[] = [
     {
       id: "__auto__",
-      rotulo: `Automático (${identidade.nome})`,
+      rotulo: "AUTOMÁTICO",
       descricao: "Segue o token selecionado no mapa quando ele tem um personagem que você controla.",
+      acento: "#7f95b3",
       selecionado: escolhaIdentidade === null,
       onSelecionar: () => onEscolherIdentidade(null),
       grupoAntes: "Falar como",
@@ -322,8 +323,8 @@ export function Composer({
       ? [
           {
             id: "narrador",
-            rotulo: "Narrador",
-            icone: <Radio size={13} />,
+            rotulo: "NARRADOR",
+            acento: "#f5a200",
             selecionado: escolhaIdentidade === "narrador",
             onSelecionar: () => onEscolherIdentidade("narrador"),
           } satisfies ItemMenu,
@@ -331,15 +332,16 @@ export function Composer({
       : [
           {
             id: "conta",
-            rotulo: identidade.modo === "conta" ? identidade.nome : "Minha conta",
-            icone: <User size={13} />,
+            rotulo: identidade.modo === "conta" ? identidade.nome.toLocaleUpperCase("pt-BR") : "MINHA CONTA",
+            acento: "#7f95b3",
             selecionado: escolhaIdentidade === "conta",
             onSelecionar: () => onEscolherIdentidade("conta"),
           } satisfies ItemMenu,
         ]),
     ...identidadesDisponiveis.map((p, i) => ({
       id: p.id,
-      rotulo: p.nome,
+      rotulo: p.nome.toLocaleUpperCase("pt-BR"),
+      acento: "#00d4ff",
       selecionado: escolhaIdentidade === p.id,
       onSelecionar: () => onEscolherIdentidade(p.id),
       ...(i === 0 ? { grupoAntes: "Personagens" } : {}),
@@ -348,34 +350,36 @@ export function Composer({
 
   /** `private` é autor + narrador — nunca "só eu". */
   const ROTULO_VIS: Record<TableLogVisibility, string> = {
-    public: "Todos",
-    private: papel === "player" ? "Somente Narrador" : "Reservada",
-    gm: "Narrador",
+    public: "TODOS",
+    private: "RESERVADA",
+    gm: "NARRADOR",
   };
   const itensVis: ItemMenu[] = (papel === "narrator" ? (["public", "gm", "private"] as const) : (["public", "private"] as const)).map(
-    (v, i) => ({
+    (v) => ({
       id: v,
       rotulo: ROTULO_VIS[v],
-      icone: v === "public" ? <Eye size={13} /> : v === "gm" ? <ShieldAlert size={13} /> : <Lock size={13} />,
+      icone: v === "public" ? <Eye /> : v === "gm" ? <ShieldAlert /> : <Lock />,
+      acento: v === "public" ? "#7f95b3" : v === "gm" ? "#f5a200" : "#00d4ff",
       descricao:
         v === "public"
           ? "Todo mundo na mesa vê."
           : v === "gm"
             ? "Só o Narrador vê."
-            : papel === "player"
-              ? "Só você e o Narrador veem."
-              : "Só você vê.",
+            : "Só você e o Narrador veem.",
       selecionado: visibilidade === v,
       onSelecionar: () => onEscolherVisibilidade(v),
-      ...(i === 0 ? { grupoAntes: "Visibilidade" } : {}),
     }),
   );
+
+  const corAutoria = escolhaIdentidade === null || escolhaIdentidade === "conta" ? "#7f95b3" : identidade.modo === "narrador" ? "#f5a200" : "#00d4ff";
+  const corVisibilidade = visibilidade === "public" ? "#7f95b3" : visibilidade === "gm" ? "#f5a200" : "#00d4ff";
 
   const podeEnviar = (texto.trim().length > 0 || !!anexo) && !enviando && !etapaMagia && leituraSobrecarga.tipo !== "parcial";
 
   return (
     <form
       className="pn-composer"
+      style={{ ["--pn-composer-accent" as string]: corAutoria }}
       onSubmit={(e) => {
         e.preventDefault();
         onEnviar();
@@ -387,14 +391,15 @@ export function Composer({
           ref={btnAutoriaRef}
           type="button"
           className="pn-chipbtn"
+          style={{ ["--pn-chip-accent" as string]: corAutoria }}
           data-acento={identidade.modo === "personagem" ? "cy" : identidade.modo === "narrador" ? "am" : "neutro"}
           aria-haspopup="menu"
           aria-expanded={menuAutoria}
           onClick={() => setMenuAutoria((v) => !v)}
           data-testid="painel-composer-autoria"
         >
-          Falar como
-          <span className="pn-chipbtn-val">{identidade.nome}</span>
+          <span className="pn-chipbtn-label">FALAR COMO</span>
+          <span className="pn-chipbtn-val">{escolhaIdentidade === null ? "AUTOMÁTICO" : identidade.nome}</span>
           <ChevronDown aria-hidden="true" />
         </button>
 
@@ -402,13 +407,14 @@ export function Composer({
           ref={btnVisRef}
           type="button"
           className="pn-chipbtn"
+          style={{ ["--pn-chip-accent" as string]: corVisibilidade }}
           data-acento={visibilidade === "public" ? "neutro" : visibilidade === "gm" ? "am" : "cy"}
           aria-haspopup="menu"
           aria-expanded={menuVis}
           onClick={() => setMenuVis((v) => !v)}
           data-testid="painel-composer-visibilidade"
         >
-          {visibilidade === "public" ? <Eye aria-hidden="true" /> : visibilidade === "gm" ? <ShieldAlert aria-hidden="true" /> : <Lock aria-hidden="true" />}
+          {visibilidade === "public" ? <Eye className="pn-chipbtn-icone" aria-hidden="true" /> : visibilidade === "gm" ? <ShieldAlert className="pn-chipbtn-icone" aria-hidden="true" /> : <Lock className="pn-chipbtn-icone" aria-hidden="true" />}
           <span className="pn-chipbtn-val">{ROTULO_VIS[visibilidade]}</span>
           <ChevronDown aria-hidden="true" />
         </button>
@@ -488,7 +494,7 @@ export function Composer({
               e.preventDefault();
               onAnexar(arquivo);
             } : undefined}
-            placeholder={anexo ? "Legenda (opcional)…" : "Mensagem ou /p, /a, /m, /r, /s, /f…"}
+            placeholder={anexo ? "Legenda (opcional)…" : "Mensagem ou /"}
             data-testid="painel-chat-input"
           />
         </div>
@@ -552,6 +558,7 @@ export function Composer({
         itens={itensAutoria}
         rotulo="Falar como"
         testId="painel-composer-menu-autoria"
+        variante="autoria"
       />
       <MenuAncorado
         ancora={btnVisRef.current}
@@ -560,6 +567,8 @@ export function Composer({
         itens={itensVis}
         rotulo="Visibilidade"
         testId="painel-composer-menu-visibilidade"
+        alinhar="fim"
+        variante="visibilidade"
       />
     </form>
   );

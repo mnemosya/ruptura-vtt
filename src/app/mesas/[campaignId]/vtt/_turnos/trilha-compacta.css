@@ -264,8 +264,8 @@
   background: rgba(12,31,43,.85); color: #b8d8e8;
   transition: color .15s ease,background .15s ease,transform .15s ease;
 }
-:root[data-tema="forja"] .rv-mesa > .rv-ferramentas .rv-ferr-btn svg { width: 21px; height: 21px; }
-.rv-ferr-icone-design { display: block; width: 21px; height: 21px; flex: none; background: currentColor; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
+:root[data-tema="forja"] .rv-mesa > .rv-ferramentas .rv-ferr-btn svg { width: 24px; height: 24px; }
+.rv-ferr-icone-design { display: block; width: 24px; height: 24px; flex: none; background: currentColor; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
 :root[data-tema="forja"] .rv-mesa > .rv-ferramentas .rv-ferr-btn:hover { color: #cfeff4; background: rgba(0,212,255,.16); transform: translateY(-2px); }
 :root[data-tema="forja"] .rv-mesa > .rv-ferramentas .rv-ferr-btn[aria-pressed="true"] { color: #06121c; background: #00d4ff; box-shadow: 0 0 18px rgba(0,212,255,.5); }
 :root[data-tema="forja"] .rv-mesa > .rv-ferramentas .rv-ferr-btn[data-ativo="true"]:not([aria-pressed="true"]) { color: #f5a200; background: rgba(245,162,0,.11); }
@@ -306,9 +306,34 @@
 /* Composer: fundo, chips e campo copiam a linguagem de superfícies do
    board; envio, visibilidade e anexo continuam os controles existentes. */
 :root[data-tema="forja"] .rv-painel .pn-composer { gap: 8px; padding: 10px 12px 14px; border-top: 1px solid rgba(0,212,255,.14); background: #06121c; }
-:root[data-tema="forja"] .rv-painel .pn-chipbtn.pn-chipbtn { min-height: 28px; padding: 0 9px; border: 0; border-left: 2px solid var(--pn-a); border-radius: 0; background: rgba(12,31,43,.85); font: 800 10px var(--font-oxanium),sans-serif; letter-spacing: .06em; }
-:root[data-tema="forja"] .rv-painel .pn-chipbtn.pn-chipbtn--icone { width: 28px; padding: 0; justify-content: center; }
-:root[data-tema="forja"] .rv-painel .pn-composer-campo { border: 1px solid rgba(0,212,255,.2); border-radius: 0; background: rgba(12,31,43,.85); }
+:root[data-tema="forja"] .rv-painel .pn-chipbtn.pn-chipbtn {
+  min-height: 30px; padding: 6px 9px; gap: 7px;
+  border: 0; border-left: 2px solid var(--pn-chip-accent, var(--pn-a)); border-radius: 0;
+  background: rgba(12,31,43,.85);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+  font: 800 11px var(--font-oxanium), sans-serif; letter-spacing: .03em;
+  transition: background .15s ease, transform .12s cubic-bezier(.3,1.4,.5,1);
+}
+:root[data-tema="forja"] .rv-painel .pn-chipbtn.pn-chipbtn:hover { background: rgba(0,212,255,.12); }
+:root[data-tema="forja"] .rv-painel .pn-chipbtn.pn-chipbtn:active { transform: scale(.97); }
+:root[data-tema="forja"] .rv-painel .pn-chipbtn-label {
+  color: #7f95b3; font: 700 9.5px var(--font-mono), monospace; letter-spacing: .14em;
+}
+:root[data-tema="forja"] .rv-painel .pn-chipbtn-val {
+  color: var(--pn-chip-accent, #7f95b3); font: 800 11px var(--font-oxanium), sans-serif; letter-spacing: .03em;
+}
+:root[data-tema="forja"] .rv-painel .pn-chipbtn > svg {
+  width: 11px; height: 11px; color: var(--pn-chip-accent, #7f95b3); stroke-width: 2.4;
+  transition: rotate .2s cubic-bezier(.2,.8,.2,1);
+}
+:root[data-tema="forja"] .rv-painel .pn-chipbtn[aria-expanded="true"] > svg:last-child { rotate: 180deg; }
+:root[data-tema="forja"] .rv-painel .pn-chipbtn > svg.pn-chipbtn-icone { width: 13px; height: 13px; stroke-width: 1.9; }
+:root[data-tema="forja"] .rv-painel .pn-chipbtn.pn-chipbtn--icone { width: 32px; min-height: 30px; padding: 0; justify-content: center; margin-left: auto; border-left: 0; color: #b8d8e8; }
+:root[data-tema="forja"] .rv-painel .pn-chipbtn.pn-chipbtn--icone > svg { width: 15px; height: 15px; stroke-width: 1.8; color: #b8d8e8; }
+:root[data-tema="forja"] .rv-painel .pn-composer-campo {
+  border: 0; border-bottom: 2px solid var(--pn-composer-accent, #7f95b3); border-radius: 0;
+  background: #0c1f2b; clip-path: polygon(0 0, 100% 0, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+}
 :root[data-tema="forja"] .rv-painel .pn-composer-input { color: #cfeff4; font: 400 13px/1.45 var(--font-corpo),"Exo 2",sans-serif; }
 :root[data-tema="forja"] .rv-painel .pn-composer-enviar { border: 0; border-radius: 0; background: rgba(0,212,255,.14); color: #00d4ff; }
 :root[data-tema="forja"] .rv-painel .pn-composer-enviar:not(:disabled) { background: #00d4ff; color: #06121c; }

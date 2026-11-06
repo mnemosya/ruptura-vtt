@@ -46,7 +46,8 @@ const base = { ctrlKey: false, metaKey: false, shiftKey: false, alvoEhEditavel: 
 
 ok("3 (V ativa Interagir)", interpretarAtalho({ ...base, key: "v" }, disponiveisJogador)?.tipo === "ferramenta", "ok");
 ok("4 (M ativa Medir)", (interpretarAtalho({ ...base, key: "m" }, disponiveisJogador) as { id: string })?.id === "medir", "ok");
-ok("4b (L ativa Rolar Dados)", (interpretarAtalho({ ...base, key: "l" }, disponiveisJogador) as { id: string })?.id === "dados", "ok");
+ok("4b (R ativa Rolar Dados)", (interpretarAtalho({ ...base, key: "r" }, disponiveisJogador) as { id: string })?.id === "dados", "ok");
+ok("4c (L ativa Rodadas)", (interpretarAtalho({ ...base, key: "l" }, disponiveisJogador) as { id: string })?.id === "rodadas", "ok");
 ok(
   "5 (T não ativa nada pro jogador — ferramenta indisponível)",
   interpretarAtalho({ ...base, key: "t" }, disponiveisJogador) === null,
@@ -181,7 +182,7 @@ function comandoFake(rotulo: string, autorId: string, log: string[]): Comando {
     !/setPainelCenasAberto\(\s*\(/.test(corpo), "updater com efeito dentro é o que quebrou antes");
 }
 
-// ── N e C: os dois vizinhos que não são ferramenta ────────────────
+// ── Controles do narrador que não são ferramenta ───────────────────
 {
   const disp = ferramentasParaPapel(true);
   const ev = (key: string, extra: Partial<{ ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; alvoEhEditavel: boolean }> = {}) =>
@@ -189,12 +190,15 @@ function comandoFake(rotulo: string, autorId: string, log: string[]): Comando {
 
   ok("20 (N adiciona token)", ev("n")?.tipo === "adicionar-token", String(ev("n")?.tipo));
   ok("21 (C abre camadas)", ev("c")?.tipo === "camadas", String(ev("c")?.tipo));
-  // Os dois têm que morrer nas mesmas guardas de sempre: nada dispara
+  ok("21b (G alterna camada do narrador)", ev("g")?.tipo === "camada-narrador", String(ev("g")?.tipo));
+  // Os três têm que morrer nas mesmas guardas de sempre: nada dispara
   // com foco em campo de texto, nem com modificador (Cmd+N abre janela
   // do navegador, Ctrl+C copia).
   ok("22 (N não dispara com foco em campo)", ev("n", { alvoEhEditavel: true }) === null, "null com foco editável");
   ok("23 (Ctrl+C não vira camadas)", ev("c", { ctrlKey: true })?.tipo !== "camadas", String(ev("c", { ctrlKey: true })?.tipo));
   ok("24 (Cmd+N não vira adicionar token)", ev("n", { metaKey: true })?.tipo !== "adicionar-token", String(ev("n", { metaKey: true })?.tipo));
+  ok("24b (G não dispara com foco em campo)", ev("g", { alvoEhEditavel: true }) === null, "null com foco editável");
+  ok("24c (Ctrl+G não alterna camada)", ev("g", { ctrlKey: true })?.tipo !== "camada-narrador", String(ev("g", { ctrlKey: true })?.tipo));
   // E não podem ter roubado a tecla de nenhuma ferramenta.
   ok("25 (as teclas de ferramenta seguem intactas)",
     disp.every((f) => ev(ATALHO_FERRAMENTA[f].toLowerCase())?.tipo === "ferramenta"),

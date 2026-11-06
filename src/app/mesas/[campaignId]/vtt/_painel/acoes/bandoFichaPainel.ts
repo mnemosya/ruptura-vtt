@@ -17,6 +17,8 @@ import type { CrewCatalogV12, CrewStateV12 } from "../../../../../../lib/ruleset
 import { exigirAcessoPainel, mensagemDeErro, type ResultadoPainel } from "./comum";
 
 export interface CatalogoBandoPainel extends CrewCatalogV12 {
+  melhorias: Array<CrewCatalogV12["melhorias"][number] & { efeito: string; efeito_aprimorado?: string }>;
+  especialistas: Array<CrewCatalogV12["especialistas"][number] & { competencia: string }>;
   coberturas: Array<{ slug: string; nome: string; custo: number; requisito: string; efeito: string }>;
   areas_de_apoio: Array<{ slug: string; nome: string; qualificacao: string }>;
 }

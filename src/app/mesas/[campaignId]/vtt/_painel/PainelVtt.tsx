@@ -186,10 +186,11 @@ export function PainelVtt({
   // HTML do servidor). Nascem no padrão e são hidratadas num efeito —
   // mesma solução do `sessionMountId` do provider.
   const [prefs, setPrefs] = useState<PreferenciasPainel>(PREFERENCIAS_PAINEL_PADRAO);
-  const [hidratado, setHidratado] = useState(false);
+  const [chaveHidratada, setChaveHidratada] = useState<string | null>(null);
+  const hidratado = chaveHidratada === chave;
   useEffect(() => {
     setPrefs(carregarPreferenciasPainel(chave));
-    setHidratado(true);
+    setChaveHidratada(chave);
   }, [chave]);
 
   const atualizarPrefs = useCallback(

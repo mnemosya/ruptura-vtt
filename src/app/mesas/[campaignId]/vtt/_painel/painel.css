@@ -1296,6 +1296,56 @@
   color: var(--rv-ink-faint);
 }
 
+/* Seletor de autoria e visibilidade copiado do compositor de game UI.html.
+   O menu continua no portal para escapar do recorte do painel. */
+.pn-menu--autoria, .pn-menu--visibilidade {
+  display: block; box-sizing: border-box; padding: 4px 0; gap: 0;
+  min-width: 0; max-width: none; border: 1px solid rgba(0, 212, 255, .3);
+  border-radius: 0; background: #0a1a24;
+  box-shadow: 0 -14px 34px rgba(0, 0, 0, .65);
+  max-height: min(75vh, calc(100vh - 24px));
+}
+.pn-menu--autoria { width: 270px; }
+.pn-menu--visibilidade { width: 295px; }
+.pn-menu--autoria .pn-menu-cap {
+  padding: 9px 13px 4px; color: #7f95b3;
+  font: 700 9px var(--font-mono), monospace;
+  letter-spacing: .16em; text-transform: uppercase;
+}
+.pn-menu-item.pn-menu-item--composer {
+  box-sizing: border-box; width: 100%; display: flex; gap: 12px;
+  border: 0; border-radius: 0; background: transparent;
+  box-shadow: none; color: #cfeff4; text-align: left;
+  transition: background .12s ease, box-shadow .12s ease;
+}
+.pn-menu--autoria .pn-menu-item--composer { align-items: center; min-height: 39px; padding: 9px 14px; }
+.pn-menu--visibilidade .pn-menu-item--composer { align-items: flex-start; min-height: 60px; padding: 12px 14px; }
+.pn-menu-item.pn-menu-item--composer:hover,
+.pn-menu-item.pn-menu-item--composer:focus-visible {
+  border: 0; outline: none; background: rgba(0, 212, 255, .07);
+  box-shadow: inset 2px 0 0 #00d4ff; color: #cfeff4;
+}
+.pn-menu-diamante {
+  flex: none; width: 9px; height: 9px;
+  rotate: 45deg; background: var(--pn-menu-item-accent);
+}
+.pn-menu-item-nome {
+  flex: 1; color: #cfeff4;
+  font: 700 13px var(--font-oxanium), sans-serif;
+}
+.pn-menu-check { flex: none; width: 13px; height: 13px; color: transparent; }
+.pn-menu-item--composer[aria-checked="true"] .pn-menu-check { color: #00d4ff; }
+.pn-menu-check svg { display: block; width: 13px; height: 13px; }
+.pn-menu-item-icone { flex: none; margin-top: 1px; color: var(--pn-menu-item-accent); }
+.pn-menu-item-icone svg { display: block; width: 15px; height: 15px; stroke-width: 1.9; }
+.pn-menu-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pn-menu-item--composer .pn-menu-item-desc {
+  color: #7f95b3; font: 400 11px var(--font-corpo), "Exo 2", sans-serif;
+}
+.pn-menu-item--composer:hover .pn-menu-item-desc,
+.pn-menu-item--composer:focus-visible .pn-menu-item-desc { color: #7f95b3; }
+.pn-menu--visibilidade .pn-menu-check { margin-top: 2px; }
+
 /* ═══════════════════════ DIRETÓRIOS ═══════════════════════ */
 
 /* ── Tamanhos do diretório: tinham subido +1px na troca de Inter por

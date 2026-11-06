@@ -29,6 +29,8 @@ export interface ItemMenu {
   desabilitado?: boolean;
   /** Cabeçalho de grupo antes deste item. */
   grupoAntes?: string;
+  /** Cor do símbolo no menu do compositor. */
+  acento?: string;
   onSelecionar: () => void;
 }
 
@@ -43,6 +45,7 @@ export function MenuAncorado({
   testId,
   comDescricao,
   alinhar = "inicio",
+  variante,
 }: {
   /** Elemento que abriu o menu — âncora de posição E destino do foco ao fechar. */
   ancora: HTMLElement | null;
@@ -63,6 +66,7 @@ export function MenuAncorado({
    * uma linha, onde abrir pela esquerda deixava o menu "pendurado".
    */
   alinhar?: "inicio" | "fim";
+  variante?: "autoria" | "visibilidade";
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
@@ -75,11 +79,11 @@ export function MenuAncorado({
     if (!aberto || !ancora) return;
     const r = ancora.getBoundingClientRect();
     const el = ref.current;
-    const alturaEstimada = el?.offsetHeight ?? Math.min(itens.length * 30 + 16, 260);
-    const larguraEstimada = el?.offsetWidth ?? 190;
+    const alturaEstimada = el?.offsetHeight ?? Math.min(itens.length * (variante ? 40 : 30) + 16, 420);
+    const larguraEstimada = el?.offsetWidth ?? (variante === "autoria" ? 270 : variante === "visibilidade" ? 295 : 190);
     const abaixo = r.bottom + 6;
     const acima = r.top - alturaEstimada - 6;
-    const cabeAbaixo = abaixo + alturaEstimada <= window.innerHeight - MARGEM;
+    const cabeAbaixo = !variante && abaixo + alturaEstimada <= window.innerHeight - MARGEM;
     setPos({
       left: Math.max(MARGEM, Math.min(
         alinhar === "fim" ? r.right - larguraEstimada : r.left,
@@ -87,19 +91,23 @@ export function MenuAncorado({
       )),
       top: cabeAbaixo ? abaixo : Math.max(MARGEM, acima),
     });
-  }, [aberto, ancora, itens.length, alinhar]);
+  }, [aberto, ancora, itens.length, alinhar, variante]);
 
   // A 1ª posição sai de uma largura ESTIMADA (o menu ainda não existe).
   // Alinhado pela direita, o erro da estimativa vira desalinhamento
   // visível — então, já montado, mede de verdade e corrige uma vez.
   useLayoutEffect(() => {
-    if (!aberto || !ancora || !pos || alinhar !== "fim") return;
+    if (!aberto || !ancora || !pos) return;
     const el = ref.current;
     if (!el) return;
     const r = ancora.getBoundingClientRect();
-    const certo = Math.max(MARGEM, Math.min(r.right - el.offsetWidth, window.innerWidth - el.offsetWidth - MARGEM));
-    if (Math.abs(certo - pos.left) > 0.5) setPos({ ...pos, left: certo });
-  }, [aberto, ancora, pos, alinhar]);
+    const left = Math.max(MARGEM, Math.min(alinhar === "fim" ? r.right - el.offsetWidth : r.left, window.innerWidth - el.offsetWidth - MARGEM));
+    const abaixo = r.bottom + 6;
+    const top = variante || abaixo + el.offsetHeight > window.innerHeight - MARGEM
+      ? Math.max(MARGEM, r.top - el.offsetHeight - 6)
+      : abaixo;
+    if (Math.abs(left - pos.left) > 0.5 || Math.abs(top - pos.top) > 0.5) setPos({ left, top });
+  }, [aberto, ancora, pos, alinhar, variante]);
 
   const fechar = useCallback(() => {
     onFechar();
@@ -155,7 +163,7 @@ export function MenuAncorado({
   return createPortal(
     <div
       ref={ref}
-      className="pn-menu"
+      className={`pn-menu${variante ? ` pn-menu--${variante}` : ""}`}
       role="menu"
       aria-label={rotulo}
       style={{ left: pos.left, top: pos.top }}
@@ -168,22 +176,35 @@ export function MenuAncorado({
             type="button"
             role="menuitemradio"
             aria-checked={!!item.selecionado}
-            className="pn-menu-item"
+            className={`pn-menu-item${variante ? " pn-menu-item--composer" : ""}`}
+            style={variante ? { ["--pn-menu-item-accent" as string]: item.acento ?? "#7f95b3" } : undefined}
             disabled={item.desabilitado}
-            title={comDescricao ? undefined : item.descricao}
+            title={variante || comDescricao ? undefined : item.descricao}
             data-com-descricao={comDescricao && item.descricao ? "true" : undefined}
             onClick={() => {
               item.onSelecionar();
               fechar();
             }}
           >
-            {item.icone}
+            {variante === "autoria" ? (
+              <>
+                <span className="pn-menu-diamante" aria-hidden="true" />
+                <span className="pn-menu-item-nome">{item.rotulo}</span>
+                <span className="pn-menu-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6"><path d="M20 6 9 17l-5-5" /></svg></span>
+              </>
+            ) : variante === "visibilidade" ? (
+              <>
+                <span className="pn-menu-item-icone" aria-hidden="true">{item.icone}</span>
+                <span className="pn-menu-item-info"><span className="pn-menu-item-nome">{item.rotulo}</span><span className="pn-menu-item-desc">{item.descricao}</span></span>
+                <span className="pn-menu-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6"><path d="M20 6 9 17l-5-5" /></svg></span>
+              </>
+            ) : <>{item.icone}
             {comDescricao && item.descricao ? (
               <span className="pn-menu-item-texto">
                 <span className="pn-menu-item-rotulo">{item.rotulo}</span>
                 <span className="pn-menu-item-desc">{item.descricao}</span>
               </span>
-            ) : item.rotulo}
+            ) : item.rotulo}</>}
           </button>
         </div>
       ))}

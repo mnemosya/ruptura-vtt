@@ -78,6 +78,15 @@
 }
 .rv-mesa *, .rv-mesa *::before, .rv-mesa *::after { box-sizing: border-box; }
 
+/* O primeiro enquadramento acontece atrás da cortina. A cortina precisa
+   ser fixed: como item do grid ela criava outra linha e encolhia o palco
+   até desaparecer, produzindo o redimensionamento visível do mapa. */
+.rv-mesa[data-enquadrando="true"] .rv-painel { transition: none !important; }
+.rv-mesa-enquadramento {
+  position: fixed; inset: 0; z-index: 300;
+  display: grid; place-items: center; background: var(--fj-fundo-1, #0a0e14);
+}
+
 /* DICA — o balãozinho de hover/foco. Era uma caixa cinza sem fio e com
    texto corrido: a única peça flutuante do VTT que não se parecia com
    o resto. Agora carrega o mesmo chassi do card de decisão (fio de 1px

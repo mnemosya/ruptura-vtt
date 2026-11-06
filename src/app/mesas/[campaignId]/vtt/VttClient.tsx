@@ -22,8 +22,8 @@
  * declaração muda — nunca é duplicado.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MousePointer2, Ruler, PaintBucket, MapPin, Images, Layers, Menu, Hexagon, Swords, Undo2, Redo2, Loader2, UserPlus, Box, Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2, Dices, ImageUp, ScrollText, ChevronDown, Type, Palette } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { MousePointer2, Ruler, PaintBucket, MapPin, Images, Menu, Hexagon, Swords, Undo2, Redo2, Loader2, UserPlus, Box, Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2, Dices, ImageUp, ScrollText, ChevronDown, Type, Palette } from "lucide-react";
 import { HexColorInput, HexColorPicker } from "react-colorful";
 import { MapaHex, TAM, type EstadoVisualToken, type CenaMapa } from "./_mapa/MapaHex";
 import { useTargets } from "./_realtime/useTargets";
@@ -203,6 +203,18 @@ const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 2.4;
 /** Zoom com que toda cena abre (ao entrar na mesa e ao trocar de cena). */
 const ZOOM_ENTRADA = 0.8;
+
+/** Deslocamento do centro do palco para o centro que continua visível ao lado do painel. */
+function deslocamentoCentroVisivel(svg: SVGSVGElement): number | null {
+  const escala = svg.getScreenCTM()?.a;
+  if (!escala) return null;
+  const palco = svg.getBoundingClientRect();
+  const mesa = svg.closest<HTMLElement>(".rv-mesa");
+  const painel = mesa?.querySelector<HTMLElement>(':scope > .rv-painel[data-aberto="true"]:not([data-drawer="true"])');
+  const direita = painel ? Math.min(palco.right, painel.getBoundingClientRect().left) : palco.right;
+  if (direita <= palco.left) return 0;
+  return ((palco.left + direita) / 2 - (palco.left + palco.right) / 2) / escala;
+}
 /**
  * Fator da escala exponencial do zoom pela roda. Multiplicativo (`z *
  * exp(-delta*k)`), não aditivo (`z + delta*k`) — um zoom multiplicativo
@@ -342,6 +354,7 @@ export function VttClient({
   // dois setters agora são chamados como IRMÃOS, nunca um aninhado no
   // outro.
   const zoomPanRef = useRef({ zoom, pan });
+  const deslocamentoCentroVisivelRef = useRef<number | null>(null);
   /**
    * Último valor que um GESTO escreveu no ref de forma síncrona, ainda
    * esperando o React confirmar. Sem isto o espelho abaixo desfazia o
@@ -582,8 +595,10 @@ export function VttClient({
   const imagensRecarregarRef = useRef(imgs.recarregar);
   imagensRecarregarRef.current = imgs.recarregar;
   const [carregandoCena, setCarregandoCena] = useState(true);
+  const [cenaVisivelId, setCenaVisivelId] = useState<string | null>(null);
   const [erroCena, setErroCena] = useState<string | null>(null);
   const [usuarioId, setUsuarioId] = useState<string | null>(null);
+  const [usuarioResolvido, setUsuarioResolvido] = useState(false);
   const [historico, setHistorico] = useState<EstadoHistorico>(HISTORICO_VAZIO);
   const historicoRef = useRef(historico);
   useEffect(() => { historicoRef.current = historico; }, [historico]);
@@ -855,8 +870,16 @@ export function VttClient({
   useEffect(() => {
     let cancelado = false;
     obterUsuarioAtualAction()
-      .then((r) => { if (!cancelado && r.ok && r.dados) setUsuarioId(r.dados.id); })
-      .catch(() => { /* id fica nulo; o servidor continua sendo a autoridade */ });
+      .then((r) => {
+        if (cancelado) return;
+        if (r.ok && r.dados) setUsuarioId(r.dados.id);
+        setUsuarioResolvido(true);
+      })
+      .catch(() => {
+        // Sem id, o painel usa a preferência anônima; o servidor segue
+        // sendo a autoridade para as ações da mesa.
+        if (!cancelado) setUsuarioResolvido(true);
+      });
     return () => { cancelado = true; };
   }, []);
 
@@ -905,6 +928,7 @@ export function VttClient({
   useEffect(() => {
     const geracao = ++geracaoCenaRef.current;
     const cancelou = () => geracao !== geracaoCenaRef.current;
+    setCenaVisivelId(null);
     setCarregandoCena(true);
     carregarCenaDeEntrada().then((r) => {
       if (cancelou()) return;
@@ -944,6 +968,7 @@ export function VttClient({
   const trocarParaCena = useCallback((sceneId: string, opcoes: { lembrar: boolean }) => {
     if (estadoCenaRef.current?.cena.id === sceneId) return;
     const geracao = ++geracaoCenaRef.current;
+    setCenaVisivelId(null);
     setCarregandoCena(true);
     setErroCena(null);
     lerCenaAction({ campaignId, sceneId }).then((r) => {
@@ -1004,6 +1029,14 @@ export function VttClient({
   const [camadaNarrador, setCamadaNarrador] = useState(false);
   const camadaNarradorRef = useRef(camadaNarrador);
   useEffect(() => { camadaNarradorRef.current = camadaNarrador; }, [camadaNarrador]);
+  const alternarCamadaNarrador = useCallback(() => {
+    const ativa = !camadaNarradorRef.current;
+    camadaNarradorRef.current = ativa;
+    setCamadaNarrador(ativa);
+    setAvisoPalco(ativa
+      ? "Camada do narrador: o que você puser agora só você vê."
+      : "Camada de tokens: o que você puser agora os jogadores veem.");
+  }, []);
   /** Rascunho de token novo já na camada certa — vale para N, arrasto da aba Personagens e soltar direto. */
   const naCamadaAtual = useCallback((v: ValoresFormularioToken): ValoresFormularioToken => (
     camadaNarradorRef.current ? { ...v, visivel: false } : v
@@ -4596,23 +4629,23 @@ export function VttClient({
   const cenaIdCamera = estadoCena?.cena.id;
   const larguraCamera = estadoCena?.cena.largura;
   const alturaCamera = estadoCena?.cena.altura;
-  useEffect(() => {
-    if (!cenaIdCamera || !larguraCamera || !alturaCamera) return;
-    // Entra a 80%, com o mapa inteiro centralizado e um respiro em
-    // volta — não colado nas bordas do palco. As dimensões vêm direto
-    // da cena nova (o `estadoCenaRef` só acompanha num efeito depois).
+  useLayoutEffect(() => {
+    if (carregandoCena || !cenaIdCamera || !larguraCamera || !alturaCamera) return;
+    // O palco já está montado, mas ainda não foi pintado. Aplica de uma
+    // vez zoom e pan final, sem mostrar o centro provisório da grade.
     const centro = centroDaGrade(larguraCamera, alturaCamera, TAM);
+    const novoPan = panParaCentralizar(centro, ZOOM_ENTRADA, larguraCamera, alturaCamera, TAM);
+    const svg = document.querySelector<SVGSVGElement>(".rv-palco svg.rv-mapa");
+    const deslocamento = svg ? deslocamentoCentroVisivel(svg) : null;
+    if (deslocamento !== null) novoPan.x += deslocamento;
+    deslocamentoCentroVisivelRef.current = deslocamento;
+    marcarZoomPan(ZOOM_ENTRADA, novoPan);
     setZoom(ZOOM_ENTRADA);
-    setPan(panParaCentralizar(centro, ZOOM_ENTRADA, larguraCamera, alturaCamera, TAM));
-    // E então centra na área VISÍVEL (entre trilho e painel), como a
-    // tecla 1. No quadro seguinte: o `estadoCenaRef` e a medida do
-    // painel (`--rv-painel-aberto-ocupa`) só chegam depois dos efeitos.
-    const quadro = requestAnimationFrame(() => enquadrarMapa());
-    return () => cancelAnimationFrame(quadro);
-    // Só quando a CENA muda — não a cada ajuste de tamanho pela janela
+    setPan(novoPan);
+    // Só ao montar a cena — não a cada ajuste de tamanho pela janela
     // de Configurações, que puxaria a câmera no meio da digitação.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cenaIdCamera]);
+  }, [cenaIdCamera, carregandoCena, marcarZoomPan]);
 
   /**
    * Centraliza a câmera num token, a pedido do painel.
@@ -5891,24 +5924,75 @@ export function VttClient({
     const cena = estadoCenaRef.current?.cena;
     if (!cena) return;
     const novoPan = panParaCentralizar(centroDaGrade(cena.largura, cena.altura, TAM), ZOOM_ENTRADA, cena.largura, cena.altura, TAM);
-    // `panParaCentralizar` centra no palco INTEIRO, mas o trilho cobre a
-    // esquerda e o painel aberto a direita: o mapa aparecia deslocado
-    // para o lado do painel. Corrige pelo meio da faixa que sobra, em
-    // pixels de tela convertidos para unidades do viewBox.
+    // O painel cobre a direita do palco. A barra de ferramentas fica no
+    // rodapé e não delimita a largura visível do mapa.
     const svg = document.querySelector<SVGSVGElement>(".rv-palco svg.rv-mapa");
-    const escala = svg?.getScreenCTM()?.a;
-    if (svg && escala) {
-      const palco = svg.getBoundingClientRect();
-      const mesa = svg.closest<HTMLElement>(".rv-mesa");
-      const painel = mesa ? parseFloat(getComputedStyle(mesa).getPropertyValue("--rv-painel-aberto-ocupa")) || 0 : 0;
-      const trilho = document.querySelector(".rv-ferramentas")?.getBoundingClientRect().right ?? palco.left;
-      const meioVisivel = (Math.max(palco.left, trilho) + palco.right - painel) / 2;
-      novoPan.x += (meioVisivel - (palco.left + palco.right) / 2) / escala;
-    }
+    const deslocamento = svg ? deslocamentoCentroVisivel(svg) : null;
+    if (deslocamento !== null) novoPan.x += deslocamento;
+    deslocamentoCentroVisivelRef.current = deslocamento;
     marcarZoomPan(ZOOM_ENTRADA, novoPan);
     setZoom(ZOOM_ENTRADA);
     setPan(novoPan);
   }, [marcarZoomPan]);
+
+  // O painel pode abrir ou mudar de largura depois do enquadramento
+  // inicial. Acompanha apenas a mudança do centro visível: mantém o zoom
+  // e qualquer pan que a pessoa tenha feito desde então.
+  useEffect(() => {
+    if (carregandoCena || !cenaIdCamera) return;
+    const svg = document.querySelector<SVGSVGElement>(".rv-palco svg.rv-mapa");
+    const painel = svg?.closest<HTMLElement>(".rv-mesa")?.querySelector<HTMLElement>(":scope > .rv-painel");
+    if (!svg || !painel) return;
+    let quadro = 0;
+    let quadroRevelar = 0;
+    let assinaturaAnterior = "";
+    let quadrosEstaveis = 0;
+    let revelado = false;
+    const verificarEnquadramento = () => {
+      quadroRevelar = 0;
+      if (revelado || !usuarioResolvido || painel.dataset.hidratado !== "true") return;
+      const grupo = svg.querySelector<SVGGElement>("[data-camera-grupo]");
+      const { zoom: zoomAtual, pan: panAtual } = zoomPanRef.current;
+      const transformEsperado = `translate(${panAtual.x} ${panAtual.y}) scale(${zoomAtual})`;
+      const palco = svg.getBoundingClientRect();
+      const lateral = painel.getBoundingClientRect();
+      const assinatura = [palco.left, palco.top, palco.width, palco.height, lateral.left, lateral.width, painel.dataset.aberto, grupo?.getAttribute("transform")].join("|");
+      quadrosEstaveis = assinatura === assinaturaAnterior && grupo?.getAttribute("transform") === transformEsperado
+        ? quadrosEstaveis + 1 : 0;
+      assinaturaAnterior = assinatura;
+      if (quadrosEstaveis >= 2) {
+        revelado = true;
+        setCenaVisivelId(cenaIdCamera);
+      } else {
+        quadroRevelar = requestAnimationFrame(verificarEnquadramento);
+      }
+    };
+    const atualizar = () => {
+      quadro = 0;
+      const deslocamento = deslocamentoCentroVisivel(svg);
+      if (deslocamento === null) return;
+      const deslocamentoAnterior = deslocamentoCentroVisivelRef.current;
+      if (deslocamentoAnterior !== null && deslocamento !== deslocamentoAnterior) {
+        const { zoom: zoomAtual, pan: panAtual } = zoomPanRef.current;
+        const novoPan = { ...panAtual, x: panAtual.x + deslocamento - deslocamentoAnterior };
+        marcarZoomPan(zoomAtual, novoPan);
+        setPan(novoPan);
+      }
+      deslocamentoCentroVisivelRef.current = deslocamento;
+      // Mantém a cortina até o transform do SVG refletir o estado real
+      // da câmera e o layout permanecer estável por quadros consecutivos.
+      if (!revelado && !quadroRevelar && usuarioResolvido && painel.dataset.hidratado === "true")
+        quadroRevelar = requestAnimationFrame(verificarEnquadramento);
+    };
+    const agendar = () => { if (!quadro) quadro = requestAnimationFrame(atualizar); };
+    const observador = new ResizeObserver(agendar);
+    observador.observe(svg);
+    observador.observe(painel);
+    const mudancas = new MutationObserver(agendar);
+    mudancas.observe(painel, { attributes: true, attributeFilter: ["data-aberto", "data-drawer", "data-hidratado", "style"] });
+    agendar();
+    return () => { if (quadro) cancelAnimationFrame(quadro); if (quadroRevelar) cancelAnimationFrame(quadroRevelar); observador.disconnect(); mudancas.disconnect(); };
+  }, [cenaIdCamera, carregandoCena, usuarioResolvido, marcarZoomPan]);
 
   // ── Atalhos globais ────────────────────────────────────────────
   useEffect(() => {
@@ -5930,16 +6014,17 @@ export function VttClient({
       }
       else if (acao.tipo === "undo") desfazer();
       else if (acao.tipo === "redo") refazer();
-      // Os dois são do NARRADOR — mesma regra dos botões, que também não
+      // Estes controles são do NARRADOR — mesma regra dos botões, que não
       // aparecem pro jogador. O servidor recusa de qualquer jeito; isto
       // é só o teclado concordando com a tela.
       else if (acao.tipo === "adicionar-token") { if (ehNarrador && estadoCenaRef.current) abrirCriarToken(); }
       else if (acao.tipo === "camadas") { if (ehNarrador) alternarCamadas(); }
+      else if (acao.tipo === "camada-narrador") { if (ehNarrador) alternarCamadaNarrador(); }
       else if (acao.tipo === "enquadrar") enquadrarMapa();
     }
     window.addEventListener("keydown", ouvir);
     return () => window.removeEventListener("keydown", ouvir);
-  }, [ferramentasDisponiveis, desfazer, refazer, trocarFerramenta, ehNarrador, abrirCriarToken, alternarCamadas, enquadrarMapa]);
+  }, [ferramentasDisponiveis, desfazer, refazer, trocarFerramenta, ehNarrador, abrirCriarToken, alternarCamadas, alternarCamadaNarrador, enquadrarMapa]);
 
   // Ferramenta ativa some da barra (ex.: papel mudou) — nunca fica presa numa ferramenta invisível. Passa por `trocarFerramenta` como qualquer outra troca — nunca um `setFerramenta` divergente.
   useEffect(() => { if (!ferramentasDisponiveis.includes(ferramenta)) trocarFerramenta("interagir"); }, [ferramentasDisponiveis, ferramenta, trocarFerramenta]);
@@ -6031,6 +6116,10 @@ export function VttClient({
     !["texto", "terreno", "objetos", "imagens", "marcadores"].includes(id));
   const ferramentasDoNarrador = (["terreno", "objetos", "imagens", "marcadores"] as FerramentaId[])
     .filter((id) => ferramentasDisponiveis.includes(id));
+  const iconeCompacto = (arquivo: string) => {
+    const mascara = `url(/vtt/trilha-compacta/${arquivo}.svg)`;
+    return <span className="rv-ferr-icone-design" aria-hidden="true" style={{ maskImage: mascara, WebkitMaskImage: mascara }} />;
+  };
   const botaoDeFerramenta = (id: FerramentaId) => {
     const Icone = ICONE_FERRAMENTA[id];
     const anotarAtivo = id === "desenhar" && (ferramenta === "desenhar" || ferramenta === "texto");
@@ -6049,7 +6138,7 @@ export function VttClient({
         // que é o "nenhuma ferramenta" do trilho.
         onClick={() => trocarFerramenta((anotarAtivo || ferramenta === id) && id !== "interagir" ? "interagir" : id)}>
         {ICONES_TRILHA_COMPACTA.has(id)
-          ? <span className="rv-ferr-icone-design" aria-hidden="true" style={{ maskImage: `url(/vtt/trilha-compacta/${id}.svg)`, WebkitMaskImage: `url(/vtt/trilha-compacta/${id}.svg)` }} />
+          ? iconeCompacto(id)
           : <Icone size={17} strokeWidth={1.6} aria-hidden="true" />}
         <span className="rv-ferr-tecla" aria-hidden="true">{ATALHO_FERRAMENTA[id]}</span>
         {id === "rodadas" && trilha && <span className="rv-ferr-badge" aria-hidden="true">{trilha.rodada}</span>}
@@ -6073,6 +6162,7 @@ export function VttClient({
         acima dos três. */}
     <div
       className="rv-mesa"
+      data-enquadrando={cenaVisivelId !== cenaIdCamera}
       /* A aparência da GRADE é da cena (0122) e chega ao SVG por
          variável: `.rv-celula` é desenhada por `MapaHex` num loop de
          centenas de nós, e mandar cor e opacidade em cada `<path>`
@@ -6122,7 +6212,8 @@ export function VttClient({
           <>
             <span className="rv-ferr-sep" />
             <button type="button" className="rv-ferr-btn" data-janela-id="token" aria-label="Adicionar token (N)" onClick={() => estadoCena && abrirCriarToken()}>
-              <UserPlus size={17} />
+              {iconeCompacto("adicionar-token-v2")}
+              <span className="rv-ferr-tecla" aria-hidden="true">N</span>
               <span className="rv-dica">Adicionar token<kbd>N</kbd></span>
             </button>
             {/* Camadas é decisão de quem conduz a cena: o narrador dita
@@ -6138,7 +6229,8 @@ export function VttClient({
               aria-pressed={painelCamadasAberto} aria-label="Camadas do mapa (C)"
               onClick={alternarCamadas}
             >
-              <Layers size={17} />
+              {iconeCompacto("camadas-mapa")}
+              <span className="rv-ferr-tecla" aria-hidden="true">C</span>
               <span className="rv-dica">Camadas do mapa<kbd>C</kbd></span>
             </button>
             {/* Camada do narrador (TOK-03): um MODO, não uma janela nem
@@ -6148,38 +6240,17 @@ export function VttClient({
             <button
               type="button" className="rv-ferr-btn" data-tipo="modo" data-testid="vtt-camada-narrador"
               aria-pressed={camadaNarrador}
-              aria-label={camadaNarrador ? "Camada do narrador ligada" : "Camada do narrador"}
-              onClick={() => {
-                setCamadaNarrador((v) => !v);
-                setAvisoPalco(camadaNarrador
-                  ? "Camada de tokens: o que você puser agora os jogadores veem."
-                  : "Camada do narrador: o que você puser agora só você vê.");
-              }}
+              aria-label={camadaNarrador ? "Camada do narrador ligada (G)" : "Camada do narrador (G)"}
+              onClick={alternarCamadaNarrador}
             >
-              <EyeOff size={17} />
-              <span className="rv-dica">{camadaNarrador ? "Camada do narrador (ligada)" : "Camada do narrador"}</span>
+              {iconeCompacto(camadaNarrador ? "camada-narrador-oculta" : "camada-narrador-visivel")}
+              <span className="rv-ferr-tecla" aria-hidden="true">G</span>
+              <span className="rv-dica">{camadaNarrador ? "Camada do narrador (ligada)" : "Camada do narrador"}<kbd>G</kbd></span>
             </button>
             {ferramentasDoNarrador.map(botaoDeFerramenta)}
           </>
         )}
 
-        <span className="rv-ferr-sep" />
-        {/* 4. DESFAZER/REFAZER POR ÚLTIMO. Eles não escolhem nada —
-               desfazem o que as outras fizeram —, e no meio do trilho
-               separavam dois grupos que pertencem juntos.
-
-               A dica é DESENHADA (`.rv-dica`), não o `title` do
-               navegador: os botões de ferramenta sempre tiveram a sua,
-               e sem ela estes ficavam mudos no hover — só o leitor de
-               tela sabia o que eram. */}
-        <button type="button" className="rv-ferr-btn" aria-label="Desfazer (Ctrl+Z)" disabled={historico.desfazer.length === 0} onClick={desfazer}>
-          <Undo2 size={17} />
-          <span className="rv-dica">Desfazer<kbd>Ctrl+Z</kbd></span>
-        </button>
-        <button type="button" className="rv-ferr-btn" aria-label="Refazer (Ctrl+Shift+Z)" disabled={historico.refazer.length === 0} onClick={refazer}>
-          <Redo2 size={17} />
-          <span className="rv-dica">Refazer<kbd>Ctrl+Shift+Z</kbd></span>
-        </button>
         {/* CENAS e CONFIGURAÇÕES DA CENA saíram daqui. Nenhuma das duas
             é uma ferramenta do ponteiro, e as duas já tinham porta
             própria mais perto de onde se usa: o catálogo abre pelo chip
@@ -6862,6 +6933,14 @@ export function VttClient({
         }}
         onFocarToken={focarTokenPeloPainel}
       />
+
+      {cenaVisivelId !== cenaIdCamera && (
+        <div className="rv-mesa-enquadramento mo-scope">
+          {campanha
+            ? <CortinaDaMesa continuacao nome={campanha.name} papel={papel} regiao={nomeDaRegiao(campanha)} capa={capaDaCampanha(campanha)} />
+            : <div className="mo-boot-stage mo-boot-stage--campaign" role="status" aria-label="Preparando mapa"><BootPanel label="Preparando mapa" variante="campaign-terminal" /></div>}
+        </div>
+      )}
 
       <MenuContextual
         posicao={menuContextual ? { x: menuContextual.clientX, y: menuContextual.clientY } : null}

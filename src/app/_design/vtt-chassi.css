@@ -218,7 +218,11 @@
   .rv-mk-chip,
   .rv-mk-passo,
   .rv-mk-input,
-  .rv-mk-criar
+  .rv-mk-criar,
+  /* O compositor do HTML original tem popover e linhas retangulares. */
+  .pn-menu--autoria,
+  .pn-menu--visibilidade,
+  .pn-menu-item--composer
 )):not(button[aria-label]:has(svg)) {
   /* ordem: superior esquerdo, superior direito, inferior direito,
      inferior esquerdo — exatamente `rup-clip`. */
@@ -588,7 +592,7 @@
 /* Painel lateral da mesa (aberto): sem chanfro — só a aba selecionada
    mantém o corte. Recolhido, ele é um trilho igual ao das ferramentas. O `:not(#_)` só soma especificidade para vencer a regra geral
    de geometria do chassi (que é !important). */
-.rv-painel:not([data-aberto="false"]) *:not([role="tab"][aria-selected="true"]):not(#_) {
+.rv-painel:not([data-aberto="false"]) *:not([role="tab"][aria-selected="true"]):not(.bn-pressure-dial):not(.bn-pressure-dial strong):not(.bn-emblem-camera):not(#_) {
   corner-shape: round !important;
   border-radius: 0 !important;
 }

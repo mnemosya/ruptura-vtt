@@ -36,26 +36,25 @@ export const ROTULO_FERRAMENTA: Record<FerramentaId, string> = {
 
 export const ATALHO_FERRAMENTA: Record<FerramentaId, string> = {
   interagir: "V",
-  dados: "L",
+  dados: "R",
   medir: "M",
   marcar: "D",
   desenhar: "F",
   texto: "X",
   terreno: "T",
   objetos: "O",
-  // I estava livre — as ferramentas ocupavam V/L/M/D/T/O/A/R.
+  // I estava livre — as ferramentas ocupavam V/R/M/D/T/O/A/L.
   imagens: "I",
-  // R estava livre: as outras teclas simples em uso na mesa são
-  // V/M/D/T/O/A (ferramentas) e Q/E (girar token em posicionamento).
+  // Q/E giram o token em posicionamento.
   // P deixou de ser atalho de ferramenta com a remoção de "Apontar"
   // (virou gesto de segurar o botão esquerdo — ver `_mapa/MapaHex.tsx`).
   areas: "A",
-  rodadas: "R",
+  rodadas: "L",
   // K estava livre (M já é Medir, D é Marcar).
   marcadores: "K",
 };
 
-const TECLA_PARA_FERRAMENTA: Record<string, FerramentaId> = { v: "interagir", l: "dados", m: "medir", d: "marcar", f: "desenhar", x: "texto", t: "terreno", o: "objetos", i: "imagens", a: "areas", r: "rodadas", k: "marcadores" };
+const TECLA_PARA_FERRAMENTA: Record<string, FerramentaId> = { v: "interagir", r: "dados", m: "medir", d: "marcar", f: "desenhar", x: "texto", t: "terreno", o: "objetos", i: "imagens", a: "areas", l: "rodadas", k: "marcadores" };
 
 /**
  * Ferramentas visíveis pro papel — Terreno é sempre narrador; ÁREAS e
@@ -78,7 +77,7 @@ const TECLA_PARA_FERRAMENTA: Record<string, FerramentaId> = { v: "interagir", l:
  * `pode_editar_vtt_area`), nunca só por esconder ou mostrar o botão.
  */
 export function ferramentasParaPapel(ehNarrador: boolean): FerramentaId[] {
-  const base: FerramentaId[] = ["interagir", "dados", "medir", "marcar", "desenhar", "texto", "areas", "rodadas"];
+  const base: FerramentaId[] = ["interagir", "dados", "areas", "medir", "marcar", "desenhar", "texto", "rodadas"];
   // Imagem de cena é montagem de mesa, mesma categoria de terreno e
   // objetos. O retrato de token, que o jogador pode trocar, NÃO passa
   // por esta ferramenta — ele vive no HUD do token selecionado.
@@ -200,16 +199,17 @@ export type AcaoAtalho =
   | { tipo: "undo" }
   | { tipo: "redo" }
   /**
-   * Os dois vizinhos das ferramentas no trilho que NÃO são ferramentas:
-   * "Adicionar token" (N, de novo token) e "Camadas" (C). Ambos são do
+   * Os controles do narrador no trilho que NÃO são ferramentas:
+   * "Adicionar token" (N), "Camadas" (C) e camada do narrador (G). São do
    * narrador, mas quem sabe disso é o `VttClient` — aqui a interpretação
    * é só do teclado, como o resto deste módulo.
    *
-   * N e C estavam livres: as teclas simples em uso são V/L/M/D/T/O/I/A/R
+   * N, C e G estavam livres: as teclas simples em uso são V/L/M/D/T/O/I/A/R
    * (ferramentas) e Q/E (girar token em posicionamento).
    */
   | { tipo: "adicionar-token" }
   | { tipo: "camadas" }
+  | { tipo: "camada-narrador" }
   /**
    * Volta a câmera ao enquadramento de entrada da cena (80%, mapa
    * centralizado). Tecla 1, livre como as outras simples: nenhum atalho
@@ -243,6 +243,7 @@ export function interpretarAtalho(evento: {
   if (!mod && !evento.shiftKey) {
     if (tecla === "n") return { tipo: "adicionar-token" };
     if (tecla === "c") return { tipo: "camadas" };
+    if (tecla === "g") return { tipo: "camada-narrador" };
     if (tecla === "1") return { tipo: "enquadrar" };
     const ferramenta = TECLA_PARA_FERRAMENTA[tecla];
     if (ferramenta && ferramentasDisponiveis.includes(ferramenta)) return { tipo: "ferramenta", id: ferramenta };
@@ -258,7 +259,7 @@ export function interpretarAtalho(evento: {
  * `dataset.carregandoForca === "true"` cobre o botão "Rolar Dados"
  * carregando força (segurado, mouse/toque/caneta OU `Space`/`Enter`):
  * enquanto ele está sendo operado, uma tecla de atalho da mesa
- * (V/L/M/D/A/R/T/O/I, e N/C) não pode agir por baixo do gesto.
+ * (V/R/M/D/A/L/T/O/I, e N/C) não pode agir por baixo do gesto.
  */
 export function elementoEhEditavel(el: { tagName?: string; isContentEditable?: boolean; dataset?: { carregandoForca?: string } } | null): boolean {
   if (!el) return false;

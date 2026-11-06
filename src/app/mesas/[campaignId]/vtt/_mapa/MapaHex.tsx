@@ -2474,7 +2474,7 @@ export function MapaHex({
         </pattern>
       </defs>
 
-      <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
+      <g data-camera-grupo transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
         {/* ── FORA DA GRADE ────────────────────────────────────────
             Superfície transparente muito maior que o piso, PRIMEIRA
             de todas (nada fica escondido atrás dela — tudo é desenhado

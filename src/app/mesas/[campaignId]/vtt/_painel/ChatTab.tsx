@@ -133,7 +133,7 @@ export function ChatTab({
   const [enviando, setEnviando] = useState(false);
   const [erroEnvio, setErroEnvio] = useState<string | null>(null);
   const [pendentes, setPendentes] = useState<EnvioPendente[]>([]);
-  const [escolhaIdentidade, setEscolhaIdentidade] = useState<string | null>(null);
+  const [escolhaIdentidade, setEscolhaIdentidade] = useState<string | null>(() => role === "narrator" ? "narrador" : null);
   const [visibilidade, setVisibilidade] = useState<TableLogVisibility>("public");
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
   const [temNovas, setTemNovas] = useState(false);

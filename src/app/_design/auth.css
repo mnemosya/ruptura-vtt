@@ -184,7 +184,7 @@
    painel não rola, a timeline fica inativa e vale a opacidade base, 0
    — o degradê só existe quando há o que rolar. */
 .rv-panel::after {
-  content: ""; position: sticky; bottom: -32px; z-index: 4;
+  content: ""; position: sticky; bottom: -32px; z-index: 2;
   align-self: stretch; flex-shrink: 0;
   height: 56px; margin: calc(-56px - 26px) -48px -32px;
   background: linear-gradient(to bottom, rgba(13, 21, 28, 0), rgba(13, 21, 28, 0.96) 85%);
@@ -273,12 +273,12 @@
    preenchimento sólido em vez de gradiente translúcido de alfa baixo,
    que compõe pra quase-cinza sobre o painel escuro. */
 .rv-seg-btn--active-cyan {
-  color: #eafcff; background: linear-gradient(93deg, #123640, #1f5464);
-  border-color: #3a94ac; box-shadow: 0 0 10px rgba(0, 212, 255, 0.18);
+  color: #06121c; background: #00d4ff;
+  border-color: #00d4ff; box-shadow: 0 0 10px rgba(0, 212, 255, 0.18);
 }
 .rv-seg-btn--active-amber {
-  color: #ffe6bd; background: linear-gradient(93deg, #40290f, #654119);
-  border-color: #a97a30; box-shadow: 0 0 10px rgba(245, 162, 0, 0.18);
+  color: #06121c; background: #ff8a1f;
+  border-color: #ff8a1f; box-shadow: 0 0 10px rgba(255, 138, 31, 0.18);
 }
 .rv-seg-btn:focus-visible { outline: 1px solid rgba(0, 212, 255, 0.7); outline-offset: 2px; }
 
@@ -473,27 +473,28 @@
 /* ---------- Botão de submit (build novo, só a partir da imagem de
    referência — sem herdar nada de .rv-submit/.rv-submit-glow acima)
    ---------- */
-.auth-submit-btn {
+.rv-root .auth-submit-btn {
   display: flex; align-items: center; justify-content: center;
-  width: 100%; padding: 13px 17px; border-radius: 0;
-  font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 600;
+  width: 100%; min-height: 48px; padding: 10px 17px; border: 0; border-radius: 0;
+  appearance: none; -webkit-appearance: none; background-image: none;
+  font-family: var(--font-oxanium), "Oxanium", var(--font-orbitron), sans-serif;
+  font-size: 14px; font-weight: 800;
   letter-spacing: 0.22em; text-transform: uppercase;
-  transition: filter 0.18s ease, transform 0.08s ease, box-shadow 0.18s ease;
+  transition: background-color 0.18s ease, filter 0.18s ease, transform 0.08s ease;
 }
 .auth-submit-btn--cyan {
-  background: linear-gradient(90deg, #123640 0%, #1f5464 100%);
-  border: 1px solid #3a94ac;
-  color: #d3f4ff;
-  box-shadow: 0 0 14px rgba(0, 212, 255, 0.15);
+  background: #00d4ff;
+  color: #06121c;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
 }
 .auth-submit-btn--amber {
-  background: linear-gradient(90deg, #40290f 0%, #654119 100%);
-  border: 1px solid #a97a30;
-  color: #ffe6bd;
-  box-shadow: 0 0 14px rgba(245, 162, 0, 0.15);
+  background: #ff8a1f;
+  color: #06121c;
+  box-shadow: 0 0 18px rgba(255, 138, 31, 0.35);
 }
-.auth-submit-btn:hover:not(:disabled) { filter: brightness(1.18); }
-.auth-submit-btn:active:not(:disabled) { transform: scale(0.98); filter: brightness(1.3); }
+.auth-submit-btn--cyan:hover:not(:disabled) { background: #cfeff4; }
+.auth-submit-btn--amber:hover:not(:disabled) { background: #ffe6bd; }
+.auth-submit-btn:active:not(:disabled) { transform: scale(0.98); }
 .auth-submit-btn:focus-visible { outline: 1px solid rgba(0, 212, 255, 0.7); outline-offset: 3px; }
 
 /* Controles da autenticação: recorte e fio diagonal usam a mesma geometria.
@@ -520,12 +521,16 @@
    recuada 6px (borda 1 + padding 5); a diagonal paralela a 6px de distância
    corta 12 − 6·(2 − √2) ≈ 8.5px. */
 .rv-seg-btn { --control-notch: calc(12px - 6px * (2 - 1.41421)); }
+.auth-submit-btn { --control-notch: var(--hud-notch-sm, 12px); }
+.auth-submit-btn::after { content: none; }
 .rv-input-wrap { --control-outline: rgba(14, 107, 127, 0.6); }
 .rv-input-wrap:focus-within { --control-outline: #54acbe; border-color: var(--control-outline); }
 .rv-input-wrap--err { --control-outline: rgba(255, 60, 80, 0.5); }
 .rv-input-wrap--err:focus-within { --control-outline: #ff5a6e; border-color: var(--control-outline) !important; }
-.rv-seg-btn--active-cyan, .rv-submit--cyan, .auth-submit-btn--cyan { --control-outline: #3a94ac; }
-.rv-seg-btn--active-amber, .rv-submit--amber, .auth-submit-btn--amber { --control-outline: #a97a30; }
+.rv-seg-btn--active-cyan, .auth-submit-btn--cyan { --control-outline: #00d4ff; }
+.rv-seg-btn--active-amber, .auth-submit-btn--amber { --control-outline: #ff8a1f; }
+.rv-submit--cyan { --control-outline: #3a94ac; }
+.rv-submit--amber { --control-outline: #a97a30; }
 .rv-alert--error { --control-outline: rgba(255, 50, 70, 0.22); }
 .rv-alert--success { --control-outline: rgba(0, 220, 130, 0.22); }
 .rv-alert--info { --control-outline: rgba(0, 212, 255, 0.22); }
@@ -569,9 +574,10 @@
 .rv-join-voltar:hover { color: rgba(84, 172, 190, 1); }
 .rv-join-voltar:focus-visible { outline: 1px solid rgba(0, 212, 255, 0.5); outline-offset: 2px; }
 
-/* Input e botão de envio: cantos retos, sem chanfro. */
-.rv-input-wrap, .rv-submit, .auth-submit-btn { clip-path: none; }
-.rv-input-wrap::after, .rv-submit::after, .auth-submit-btn::after { content: none; }
+/* Os campos e o botão legado permanecem retos; o botão atual de login
+   conserva o recorte de 8px da Forja. */
+.rv-input-wrap, .rv-submit { clip-path: none; }
+.rv-input-wrap::after, .rv-submit::after { content: none; }
 
 /* ---------- Segmented: destaque que desliza ----------
    As abas ficam vazadas; quem marca a escolhida é UMA peça que corre de
@@ -595,8 +601,8 @@
     linear-gradient(45deg, transparent calc(50% - 1px), var(--fio) calc(50% - 1px) 50%, transparent 50%) top right / var(--n) var(--n) no-repeat,
     linear-gradient(45deg, transparent 50%, var(--fio) 50% calc(50% + 1px), transparent calc(50% + 1px)) bottom left / var(--n) var(--n) no-repeat;
 }
-.rv-seg-indicador-cor--cyan { --fio: #3a94ac; background: linear-gradient(93deg, #123640, #1f5464); box-shadow: inset 0 0 0 1px #3a94ac; }
-.rv-seg-indicador-cor--amber { --fio: #a97a30; background: linear-gradient(93deg, #40290f, #654119); box-shadow: inset 0 0 0 1px #a97a30; opacity: 0; }
+.rv-seg-indicador-cor--cyan { --fio: #00d4ff; background: #00d4ff; box-shadow: inset 0 0 0 1px #00d4ff; }
+.rv-seg-indicador-cor--amber { --fio: #ff8a1f; background: #ff8a1f; box-shadow: inset 0 0 0 1px #ff8a1f; opacity: 0; }
 .rv-segmented[data-modo="register"] .rv-seg-indicador-cor--cyan { opacity: 0; }
 .rv-segmented[data-modo="register"] .rv-seg-indicador-cor--amber { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {

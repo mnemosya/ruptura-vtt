@@ -204,7 +204,7 @@ export function DadosRolados({ dados, maiorDado, dim = false, acento }: {
   /** Mantidos por compatibilidade das chamadas; a ficha é estática. */
   size?: number;
   landed?: boolean;
-  /** Apaga a fileira inteira (pool ainda não rolado). */
+  /** Mostra só a notação do pool enquanto ainda não há resultado. */
   dim?: boolean;
   /** Acento do dado que VALEU (cor do veredito); sem ele, o ciano do chassi. */
   acento?: Accent;
@@ -212,10 +212,10 @@ export function DadosRolados({ dados, maiorDado, dim = false, acento }: {
   const cor = (acento ?? DADO_SEM_RESULTADO).hex;
   const maiorIdx = dados.indexOf(maiorDado);
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5 }}>
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5, minHeight: 20 }}>
       <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.06em", color: INK_DIM, marginRight: 2 }}>{dados.length}d8</span>
-      {dados.map((valor, i) => (
-        <FichaDado key={i} valor={dim ? undefined : valor} keep={!dim && i === maiorIdx} cor={cor} />
+      {!dim && dados.map((valor, i) => (
+        <FichaDado key={i} valor={valor} keep={i === maiorIdx} cor={cor} />
       ))}
     </div>
   );
@@ -1023,7 +1023,7 @@ export function RollButton({ label, solid = true, disabled = false, onRoll, onCh
     if (!teclaDeCarga(e.key)) return;
     // Suprime o `click` nativo de Enter/Espaço no <button> — quem
     // dispara a rolagem é `soltarCarga`, não o DOM — e impede que a
-    // tecla suba até os atalhos globais da mesa (V/L/M/D/A/R/T/O).
+    // tecla suba até os atalhos globais da mesa (V/R/M/D/A/L/T/O).
     e.preventDefault();
     e.stopPropagation();
     if (e.repeat) return; // key-repeat do SO não reinicia a carga

@@ -58,8 +58,8 @@ export function BandoTab({ campaignId, visivel, onEnviarParaPersonagem, recarreg
     /** Confirmação destrutiva sem `window.confirm` — ver `ui/Dialogo.tsx`. */
     const [confirmarRemocao, setConfirmarRemocao] = useState<ItemBandoPainel | null>(null);
     const jaCarregouRef = useRef(false);
-    /** "Ficha" é o Bando Refratário v1.2 (cap. 10); "Inventário" é o que a aba já mostrava. */
-    const [secao, setSecao] = useState<"visao" | "operacao" | "recursos" | "inventario">(fixtureVisual && !fichaVisual ? "inventario" : "visao");
+    /** A prancheta original tem três abas. Os recursos são detalhes da Visão. */
+    const [secao, setSecao] = useState<"visao" | "operacao" | "inventario">(fixtureVisual && !fichaVisual ? "inventario" : "visao");
     const carregar = useCallback(async () => {
         if (fixtureVisual) {
             setEstado({ fase: "pronto", dados: fixtureVisual });
@@ -115,13 +115,13 @@ export function BandoTab({ campaignId, visivel, onEnviarParaPersonagem, recarreg
     const categoriasVisiveis = grupos.length;
     const unidadesVisiveis = useMemo(() => grupos.reduce((n, g) => n + totalDeUnidades(g.itens), 0), [grupos]);
     const abas = (<nav className="bn-tabs" aria-label="Seção do bando">
-      {([["visao", "Visão"], ["operacao", "Operação"], ["recursos", "Recursos"], ["inventario", "Inventário"]] as const).map(([id, nome]) => <button type="button" key={id} aria-pressed={secao === id} onClick={() => setSecao(id)} data-testid={`painel-bando-secao-${id}`}>{nome}</button>)}
+      {([["visao", "Visão"], ["operacao", "Operação"], ["inventario", "Inventário"]] as const).map(([id, nome]) => <button type="button" key={id} aria-pressed={secao === id} onClick={() => setSecao(id)} data-testid={`painel-bando-secao-${id}`}>{nome}</button>)}
     </nav>);
     return (<div className="rv-pn-aba rv-bando">
       {(!fixtureVisual || fichaVisual) && abas}
       {(!fixtureVisual || fichaVisual) && <div className="bn-view" hidden={secao === "inventario"}><BandoFicha fixtureVisual={fichaVisual} campaignId={campaignId} visivel={visivel && secao !== "inventario"} secao={secao === "inventario" ? "visao" : secao}/></div>}
       <div className="bn-view bn-inventory" hidden={secao !== "inventario"}>
-      {dados && (<header className="bn-armory-header"><PackageOpen size={28}/><div><span className="bn-eyebrow">Reserva compartilhada</span><h2>Inventário do bando</h2><p>{totalVisivel} itens <span> / </span> {categoriasVisiveis} categorias <span> / </span> {unidadesVisiveis} unidades</p></div></header>)}
+      {dados && (<header className="bn-armory-header"><div className="bn-armory-titlebar"><span>Reserva compartilhada</span><span>STASH</span></div><div className="bn-armory-body"><h2><PackageOpen size={22}/>Inventário do bando</h2><div className="bn-armory-stats"><span><b>{totalVisivel}</b> Itens</span><span><b>{categoriasVisiveis}</b> Categorias</span><span><b>{unidadesVisiveis}</b> Unidades</span></div></div></header>)}
 
       <div className="rv-pn-dossie" data-detalhe={detalhe ? "true" : undefined}>
         <div className="rv-pn-dossie-lista">
@@ -130,9 +130,7 @@ export function BandoTab({ campaignId, visivel, onEnviarParaPersonagem, recarreg
           <div {...veuDaLista.atributos} className="rv-pn-scroll" data-testid="painel-bando-scroll">
             {estado.fase === "carregando" && <EsqueletoLista rotulo="Carregando o bando" testId="painel-bando-carregando"/>}
             {estado.fase === "erro" && (<EstadoErro mensagem={estado.mensagem} onTentarDeNovo={carregar} testId="painel-bando-erro"/>)}
-            {dados && totalVisivel === 0 && estado.fase !== "carregando" && (<EstadoVazio testId="painel-bando-vazio">
-                {consulta.trim() ? "Nenhum item com esse nome no bando." : "O bando ainda não tem nenhum item."}
-              </EstadoVazio>)}
+            {dados && totalVisivel === 0 && estado.fase !== "carregando" && (<div className="bn-empty-armory" data-testid="painel-bando-vazio"><span>Grade da reserva</span><div>{Array.from({length:6},(_,i)=><i key={i}><PackageOpen size={18}/></i>)}</div><p>{consulta.trim() ? "Nenhum item com esse nome no bando." : "O bando ainda não tem nenhum item."}</p></div>)}
             {grupos.map((grupo) => (<div key={grupo.categoria} className="rv-pn-no">
                 <CabecalhoGrupo rotulo={grupo.rotulo} contagem={grupo.itens.length} glifo={<PackageOpen size={13}/>} testId="painel-bando-grupo"/>
                 <ul className="rv-pn-lista">
