@@ -557,6 +557,14 @@
   padding: 6px 8px 8px; scrollbar-width: thin;
   display: flex; flex-direction: column; gap: 5px;
 }
+.rv-pn-chat-carregar {
+  align-self: center; flex: none; margin: 4px 0 8px; padding: 6px 10px;
+  border: 1px solid var(--pn-line-hair); background: var(--pn-inset);
+  color: var(--pn-txt); font: 600 11px var(--font-mono), ui-monospace, monospace;
+  cursor: pointer;
+}
+.rv-pn-chat-carregar:hover { border-color: var(--pn-cy); }
+.rv-pn-chat-carregar:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 2px; }
 
 /* MENSAGEM — densidade mínima: sem caixa, só uma barra de acento. */
 .pn-msg { display: flex; flex-direction: column; gap: 2px; padding: 5px 2px 6px; position: relative; }

@@ -19,7 +19,7 @@
  * nunca aparece e um ataque evolui dentro do mesmo card.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronsDown, ImagePlus, Pin } from "lucide-react";
 import { useCampaignSession } from "../../_shell/CampaignRealtimeProvider";
 import type { TableLogVisibility } from "../../../../../lib/table";
@@ -66,10 +66,11 @@ import { EnvioImagem } from "../../../../ficha/_console/EnvioImagem";
  * cedo demais num painel alto e tarde demais num baixo.
  */
 const DISTANCIA_ATALHO = 600;
+const CARTOES_POR_PAGINA = 100;
 
 const ACENTO_ROLAGEM_CHAT = "#35c7d8";
 
-export function ChatTab({
+function ChatTabImpl({
   visivel,
   personagemDoTokenSelecionado,
   onFocarToken,
@@ -184,6 +185,9 @@ export function ChatTab({
   const [errosPorCartao, setErrosPorCartao] = useState<Record<string, string>>({});
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [limiteVisivel, setLimiteVisivel] = useState(CARTOES_POR_PAGINA);
+  const restaurarScrollRef = useRef<{ altura: number; topo: number } | null>(null);
+  const focarCardRef = useRef<string | null>(null);
   const noFimRef = useRef(true);
   /** Scroll preservado entre trocas de aba (a aba não desmonta, mas fica `hidden` e perde a métrica). */
   const scrollSalvoRef = useRef<number | null>(null);
@@ -795,6 +799,31 @@ export function ChatTab({
 
   const canalDegradado = sessionSyncStatus === "error";
   const todos = useMemo(() => [...cartoes, ...cartoesPendentes], [cartoes, cartoesPendentes]);
+  const inicioVisivel = Math.max(0, todos.length - limiteVisivel);
+  const visiveis = useMemo(() => todos.slice(inicioVisivel), [todos, inicioVisivel]);
+  const carregarAnteriores = useCallback(() => {
+    const el = scrollRef.current;
+    if (el) restaurarScrollRef.current = { altura: el.scrollHeight, topo: el.scrollTop };
+    setLimiteVisivel((atual) => atual + CARTOES_POR_PAGINA);
+  }, []);
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const restaurar = restaurarScrollRef.current;
+    if (restaurar) {
+      el.scrollTop = restaurar.topo + el.scrollHeight - restaurar.altura;
+      scrollSalvoRef.current = el.scrollTop;
+      restaurarScrollRef.current = null;
+    }
+    const id = focarCardRef.current;
+    if (!id) return;
+    const card = document.getElementById(`feed-card-${id}`);
+    if (!card) return;
+    el.scrollTop += card.getBoundingClientRect().top - el.getBoundingClientRect().top - el.clientHeight / 2;
+    card.setAttribute("data-destaque", "true");
+    window.setTimeout(() => card.removeAttribute("data-destaque"), 1600);
+    focarCardRef.current = null;
+  }, [inicioVisivel]);
   /* Personagens que agiram no feed — o cabeçalho dos cards e a face
      das mensagens mostram o rosto deles. A chave em string segura a identidade da
      lista entre renders que não trazem personagem novo. */
@@ -875,11 +904,17 @@ export function ChatTab({
   );
   const irParaCard = useCallback((id: string) => {
     const el = document.getElementById(`feed-card-${id}`);
-    if (!el) return;
+    if (!el) {
+      const index = todos.findIndex((c) => c.id === id);
+      if (index < 0) return;
+      focarCardRef.current = id;
+      setLimiteVisivel((atual) => Math.max(atual, todos.length - index));
+      return;
+    }
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     el.setAttribute("data-destaque", "true");
     window.setTimeout(() => el.removeAttribute("data-destaque"), 1600);
-  }, []);
+  }, [todos]);
 
   return (
     <div
@@ -956,12 +991,19 @@ export function ChatTab({
         {todos.length === 0 ? (
           <EstadoVazio testId="painel-chat-vazio">Nenhum evento nesta campanha ainda.</EstadoVazio>
         ) : (
-          todos.map((cartao, i) => (
+          <>
+          {inicioVisivel > 0 && (
+            <button type="button" className="rv-pn-chat-carregar" onClick={carregarAnteriores}
+              data-testid="painel-chat-carregar-anteriores">
+              Carregar mensagens anteriores ({inicioVisivel})
+            </button>
+          )}
+          {visiveis.map((cartao, i) => (
             <ItemFeedComMenu key={cartao.id} cartao={cartao} acoes={acoesDoCard(cartao)}>
             <EntradaFeed
               key={cartao.id}
               cartao={cartao}
-              anterior={todos[i - 1]}
+              anterior={todos[inicioVisivel + i - 1]}
               papel={role}
               meuId={meuId}
               expandidos={expandidos}
@@ -970,7 +1012,8 @@ export function ChatTab({
               pendente={cartao.id.startsWith("local-")}
             />
             </ItemFeedComMenu>
-          ))
+          ))}
+          </>
         )}
       </div>
 
@@ -1067,3 +1110,7 @@ export function ChatTab({
     </div>
   );
 }
+
+// A câmera atualiza a mesa a cada gesto; o feed só precisa reagir a mudanças
+// das próprias props ou do contexto de sessão (novos logs, papel etc.).
+export const ChatTab = memo(ChatTabImpl);

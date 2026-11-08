@@ -102,6 +102,25 @@ function paraBlobWebp(canvas: HTMLCanvasElement, qualidade: number): Promise<Blo
   });
 }
 
+async function codificarWebp(
+  canvas: HTMLCanvasElement, qualidade: number, qualidadeReduzida: number, bytesMaximo: number,
+): Promise<Blob> {
+  try {
+    let blob = await paraBlobWebp(canvas, qualidade);
+    if (blob.size > bytesMaximo) blob = await paraBlobWebp(canvas, qualidadeReduzida);
+    if (blob.size > bytesMaximo) {
+      const mb = (bytesMaximo / (1024 * 1024)).toFixed(0);
+      throw new ImagemRecusadaError(`A imagem continua acima de ${mb} MB depois da conversão.`);
+    }
+    return blob;
+  } finally {
+    // O Blob já possui os bytes finais. Zerar as dimensões libera o buffer
+    // de pixels do canvas antes de abrir o preview ou iniciar o upload.
+    canvas.width = 0;
+    canvas.height = 0;
+  }
+}
+
 async function sha256Hex(blob: Blob): Promise<string> {
   const buffer = await blob.arrayBuffer();
   const digest = await crypto.subtle.digest("SHA-256", buffer);
@@ -138,12 +157,7 @@ export async function prepararImagem(
   // Uma segunda passada com qualidade menor só quando a primeira
   // estourou o teto: reduzir sempre custaria nitidez em toda imagem
   // para resolver o caso de algumas.
-  let blob = await paraBlobWebp(canvas, 0.82);
-  if (blob.size > bytesMaximo) blob = await paraBlobWebp(canvas, 0.6);
-  if (blob.size > bytesMaximo) {
-    const mb = (bytesMaximo / (1024 * 1024)).toFixed(0);
-    throw new ImagemRecusadaError(`A imagem continua acima de ${mb} MB depois da conversão.`);
-  }
+  const blob = await codificarWebp(canvas, 0.82, 0.6, bytesMaximo);
 
   return {
     blob,
@@ -201,12 +215,7 @@ export async function prepararRecorteQuadrado(
   ctx.drawImage(bitmap, x, y, tamanho, tamanho, 0, 0, lado, lado);
   bitmap.close();
 
-  let blob = await paraBlobWebp(canvas, 0.86);
-  if (blob.size > bytesMaximo) blob = await paraBlobWebp(canvas, 0.65);
-  if (blob.size > bytesMaximo) {
-    const mb = (bytesMaximo / (1024 * 1024)).toFixed(0);
-    throw new ImagemRecusadaError(`A imagem continua acima de ${mb} MB depois da conversão.`);
-  }
+  const blob = await codificarWebp(canvas, 0.86, 0.65, bytesMaximo);
 
   return {
     blob,
@@ -253,12 +262,7 @@ export async function prepararRecorte(
   ctx.drawImage(bitmap, x, y, largura, altura, 0, 0, saidaL, saidaA);
   bitmap.close();
 
-  let blob = await paraBlobWebp(canvas, 0.86);
-  if (blob.size > bytesMaximo) blob = await paraBlobWebp(canvas, 0.65);
-  if (blob.size > bytesMaximo) {
-    const mb = (bytesMaximo / (1024 * 1024)).toFixed(0);
-    throw new ImagemRecusadaError(`A imagem continua acima de ${mb} MB depois da conversão.`);
-  }
+  const blob = await codificarWebp(canvas, 0.86, 0.65, bytesMaximo);
 
   return {
     blob,

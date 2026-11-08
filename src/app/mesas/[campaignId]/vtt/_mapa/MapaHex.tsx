@@ -759,15 +759,30 @@ export function MapaHex({
 
   const realceSet = useMemo(() => new Set(celulasRealce.map(hexKey)), [celulasRealce]);
 
+  // Um handler por gesto na grade, em vez de vários closures por célula.
+  // O índice aponta para a lista memoizada pela dimensão da cena.
+  const celulaDoAlvo = (target: EventTarget): Hex | null => {
+    if (!(target instanceof Element)) return null;
+    const index = target.closest<SVGPathElement>(".rv-celula[data-cell-index]")?.dataset.cellIndex;
+    return index === undefined ? null : celulas[Number(index)] ?? null;
+  };
+
   const dHex = hexPath(TAM);
   const dHexInner = hexPath(TAM - 1.5);
 
   // Limites do mundo, pra centralizar o viewBox.
-  const cantos = celulas.map((c) => hexParaPixel(c, TAM));
-  const minX = Math.min(...cantos.map((p) => p.x)) - TAM * 2;
-  const minY = Math.min(...cantos.map((p) => p.y)) - TAM * 2;
-  const maxX = Math.max(...cantos.map((p) => p.x)) + TAM * 2;
-  const maxY = Math.max(...cantos.map((p) => p.y)) + TAM * 2;
+  const { minX, minY, maxX, maxY } = useMemo(() => {
+    let esquerda = Infinity, topo = Infinity, direita = -Infinity, base = -Infinity;
+    for (const celula of celulas) {
+      const { x, y } = hexParaPixel(celula, TAM);
+      esquerda = Math.min(esquerda, x);
+      topo = Math.min(topo, y);
+      direita = Math.max(direita, x);
+      base = Math.max(base, y);
+    }
+    return { minX: esquerda - TAM * 2, minY: topo - TAM * 2,
+      maxX: direita + TAM * 2, maxY: base + TAM * 2 };
+  }, [celulas]);
   // Folga ALÉM do mundo — o quanto de vazio em volta da grade ainda
   // conta como "mapa" pra quem arrasta uma seleção por caixa lá fora
   // (ver o retângulo `rv-fora-da-grade`). Uma vez o tamanho do próprio
@@ -2540,8 +2555,46 @@ export function MapaHex({
           // ficava desenhado na última célula depois do cursor já ter
           // ido pro painel ou pra fora do mapa.
           onMouseLeave={previaPincelRaio != null ? () => setCelulaSobCursor(null) : undefined}
+          onClick={onClicarCelula ? (e) => {
+            const celula = celulaDoAlvo(e.target);
+            if (celula) onClicarCelula(celula);
+          } : undefined}
+          onPointerDown={(e) => {
+            const celula = celulaDoAlvo(e.target);
+            if (!celula) return;
+            if ((ferramenta === "terreno" || ferramenta === "objetos") && onPressCelula && !cBloqueada("terrenoFuncional")) {
+              if (e.button !== 0) return;
+              setPintando(true);
+              onPressCelula(celula);
+            } else if (ferramenta === "medir") {
+              iniciarMedicao(celula, e.clientX, e.clientY, e.button);
+            } else if (ferramenta === "interagir" && onSelecionarCaixa) {
+              iniciarCaixa(e);
+            }
+          }}
+          onPointerOver={(e) => {
+            if ((ferramenta !== "terreno" && ferramenta !== "objetos") || !pintando || !onEntrarCelulaPintando || cBloqueada("terrenoFuncional")) return;
+            const celula = celulaDoAlvo(e.target);
+            if (celula) onEntrarCelulaPintando(celula);
+          }}
+          onMouseOver={(e) => {
+            const celula = celulaDoAlvo(e.target);
+            if (!celula) return;
+            const hint = hintParaCelula(celula);
+            if (hint) setHint({ ...hint, x: e.clientX, y: e.clientY });
+            if (previaPincelRaio != null) setCelulaSobCursor((atual) => atual && hexIguais(atual, celula) ? atual : celula);
+          }}
+          onMouseMove={(e) => {
+            const celula = celulaDoAlvo(e.target);
+            if (!celula) return;
+            const hint = hintParaCelula(celula);
+            if (hint) setHint((atual) => atual ? { ...atual, x: e.clientX, y: e.clientY } : { ...hint, x: e.clientX, y: e.clientY });
+          }}
+          onMouseOut={(e) => {
+            if (celulaDoAlvo(e.target)) setHint((atual) => atual ? null : atual);
+          }}
         >
-          {celulas.map((c) => {
+          {celulas.map((c, index) => {
             const p = hexParaPixel(c, TAM);
             const realce = realceSet.has(hexKey(c));
             const noPreview = celulasPreview?.has(hexKey(c)) ?? false;
@@ -2549,50 +2602,10 @@ export function MapaHex({
             return (
               <path
                 key={hexKey(c)}
+                data-cell-index={index}
                 d={dHex}
                 transform={`translate(${p.x} ${p.y})`}
                 className={`rv-celula${realce ? ` rv-celula--realce rv-celula--${tipoRealce ?? "alcance"}` : ""}${noPreview ? " rv-celula--rota" : ""}${noPincel ? " rv-celula--pincel" : ""}`}
-                onClick={onClicarCelula ? () => onClicarCelula(c) : undefined}
-                onPointerDown={
-                  (ferramenta === "terreno" || ferramenta === "objetos") && onPressCelula && !cBloqueada("terrenoFuncional")
-                    ? (e) => { if (e.button !== 0) return; setPintando(true); onPressCelula(c); }
-                    : ferramenta === "medir"
-                      ? (e) => iniciarMedicao(c, e.clientX, e.clientY, e.button)
-                      // Interagir: a célula precisa do MESMO início de
-                      // seleção-por-caixa que o piso já tem
-                      // (`iniciarCaixa`). Sem isto, clicar/arrastar
-                      // sobre uma célula da grade — que é quase todo o
-                      // mapa — nunca chegava no piso por baixo (são
-                      // elementos IRMÃOS, o pointerdown não sobe de um
-                      // pro outro), e não havia como desselecionar sem
-                      // Esc.
-                      : ferramenta === "interagir" && onSelecionarCaixa
-                        ? iniciarCaixa
-                        : undefined
-                }
-                onPointerEnter={
-                  (ferramenta === "terreno" || ferramenta === "objetos") && pintando && onEntrarCelulaPintando && !cBloqueada("terrenoFuncional")
-                    ? () => onEntrarCelulaPintando(c)
-                    : undefined
-                }
-                onMouseEnter={(e) => {
-                  const hh = hintParaCelula(c);
-                  if (hh) setHint({ ...hh, x: e.clientX, y: e.clientY });
-                  if (previaPincelRaio != null) setCelulaSobCursor((a) => (a && hexIguais(a, c) ? a : c));
-                }}
-                // Mover DENTRO da célula também abre a hint, não só
-                // reposiciona uma já aberta. `onMouseEnter` sozinho
-                // deixava um buraco real: se o conteúdo da célula
-                // aparece com o cursor JÁ parado em cima dela — o
-                // narrador pinta terreno debaixo do ponteiro, ou outra
-                // pessoa pinta e o eco chega — não há transição de
-                // entrada pra disparar, e a hint só apareceria depois de
-                // sair e voltar.
-                onMouseMove={(e) => {
-                  const hh = hintParaCelula(c);
-                  if (hh) setHint((h) => (h ? { ...h, x: e.clientX, y: e.clientY } : { ...hh, x: e.clientX, y: e.clientY }));
-                }}
-                onMouseLeave={() => setHint((h) => (h ? null : h))}
               />
             );
           })}
