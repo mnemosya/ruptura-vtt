@@ -49,6 +49,9 @@ for (const arquivo of arquivos) {
       assert.ok(valor_1 + valor_2 + valor_3 <= catalogo.size, `${classe.slug}/${p.slug}: perfil excede o catálogo`);
     }
     assert.deepEqual(Object.keys(c.sinergia_vertentes ?? {}).sort(), [...VERTENTES_V12].sort(), `${classe.slug}: sinergia precisa cobrir as seis Vertentes`);
+    // O texto de cada Vertente para a Classe, verbatim do capítulo ("Biótica favorece Combatentes que…").
+    assert.deepEqual(Object.keys(c.sinergia_textos ?? {}).sort(), [...VERTENTES_V12].sort(), `${classe.slug}: textos de sinergia precisam cobrir as seis Vertentes`);
+    for (const [id, texto] of Object.entries(c.sinergia_textos ?? {})) assert.match(texto, / favorece .+ que pretendem /, `${classe.slug}/${id}: texto de sinergia fora do padrão`);
     for (const id of ["pv", "pe", "mana", "integridade", "reacoes", "andar", "correr"]) assert.ok(c.recursos[id], `${classe.slug}: recurso "${id}" ausente`);
   }
   for (const sub of bundle.subclasses) {

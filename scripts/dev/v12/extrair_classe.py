@@ -252,11 +252,15 @@ def extrair(texto, slug, recurso_classe=None):
         assert m, f"lista de valor {n} não encontrada"
         return pericias_da_linha(m.group(1))
 
-    sinergia = {}
+    sinergia, sinergia_textos = {}, {}
     for nome, vid in VERTENTES.items():
-        m = re.search(rf"^(?:#+ )?{nome}\n.*?\nSinergia:\s*([●○]+)", cr, flags=re.M | re.S)
+        m = re.search(rf"^(?:#+ )?{nome}\n(.*?)\nSinergia:\s*([●○]+)", cr, flags=re.M | re.S)
         assert m, f"sinergia de {nome} não encontrada"
-        sinergia[vid] = m.group(1).count("●")
+        sinergia[vid] = m.group(2).count("●")
+        # O texto da Vertente para a Classe ("Biótica favorece Combatentes que…"), verbatim.
+        texto_v = " ".join(l.strip() for l in m.group(1).split("\n") if l.strip())
+        assert texto_v.startswith(f"{nome} favorece"), f"texto de sinergia de {nome} fora do padrão: {texto_v[:60]}"
+        sinergia_textos[vid] = texto_v
     m = re.search(r"Ⱥ\s*([\d.]+)", cr)
     aretz = int(m.group(1).replace(".", ""))
     mochila = int(re.search(r"Mochila de (\d+) espaços", cr).group(1))
@@ -293,7 +297,7 @@ def extrair(texto, slug, recurso_classe=None):
         slug, titulo(re.search(r"^# CRIANDO UMA? (.+)$", texto, flags=re.M).group(1)),
         paragrafos(desc), papel, secundarios,
         criacao(perfis_pericias(perfis["Abrangente"], perfis["Padrão"], perfis["Especializado"]),
-                lista(3), lista(2), rec, sinergia, aretz, mochila),
+                lista(3), lista(2), rec, sinergia, aretz, mochila, sinergia_textos),
         caracteristicas, subs, recursos_classe,
     )
     return cls, subs, pendencias + NOTAS_EDITORIAIS

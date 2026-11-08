@@ -157,6 +157,14 @@
           "material": 5,
           "sinaptica": 5
         },
+        "sinergia_textos": {
+          "biotica": "Biótica favorece Técnicos que pretendem intervir em corpos implantados, integrar organismos a dispositivos e trabalhar com estruturas vivas.",
+          "cinetica": "Cinética favorece Técnicos que pretendem reposicionar Unidades, manipular partes móveis e alcançar pontos difíceis do ambiente.",
+          "cognitiva": "Cognitiva favorece Técnicos que pretendem influenciar operadores, proteger mentes e controlar a resposta humana aos sistemas que administram.",
+          "energetica": "Energética favorece Técnicos que pretendem alimentar, estabilizar ou interferir no funcionamento de dispositivos.",
+          "material": "Material favorece Técnicos que pretendem construir, reparar, adaptar e reforçar equipamentos ou estruturas.",
+          "sinaptica": "Sináptica favorece Técnicos que pretendem controlar sistemas, trocar informações e integrar pessoas a dispositivos."
+        },
         "equipamento_inicial": {
           "aretz": 3000,
           "espacos_mochila": 10,

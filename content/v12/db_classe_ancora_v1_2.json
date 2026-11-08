@@ -161,6 +161,14 @@
           "material": 4,
           "sinaptica": 3
         },
+        "sinergia_textos": {
+          "biotica": "Biótica favorece Âncoras que pretendem curar e intervir sobre condições físicas.",
+          "cinetica": "Cinética favorece Âncoras que pretendem reposicionar aliados, interromper ameaças e alcançar quem precisa de suporte.",
+          "cognitiva": "Cognitiva favorece Âncoras que pretendem proteger a mente, orientar pessoas e intervir sobre estados emocionais.",
+          "energetica": "Energética favorece Âncoras que pretendem redistribuir energia, proteger aliados e neutralizar ameaças.",
+          "material": "Material favorece Âncoras que pretendem fortificar posições, reparar equipamentos e criar proteção para o grupo.",
+          "sinaptica": "Sináptica favorece Âncoras que pretendem coordenar aliados, acompanhar sistemas e distribuir informações durante a operação."
+        },
         "equipamento_inicial": {
           "aretz": 3000,
           "espacos_mochila": 10,

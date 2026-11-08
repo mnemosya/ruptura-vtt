@@ -159,6 +159,14 @@
           "material": 3,
           "sinaptica": 2
         },
+        "sinergia_textos": {
+          "biotica": "Biótica favorece Caçadores que pretendem rastrear organismos, adaptar capacidades físicas e utilizar formas de vida como parte de sua preparação.",
+          "cinetica": "Cinética favorece Caçadores que pretendem controlar distâncias, perseguir alvos e ocupar rapidamente posições vantajosas.",
+          "cognitiva": "Cognitiva favorece Caçadores que pretendem investigar intenções, manipular percepções e preparar alvos para uma abordagem.",
+          "energetica": "Energética favorece Caçadores que pretendem reunir informações, explorar ambientes e neutralizar alvos com diferentes manifestações de energia.",
+          "material": "Material favorece Caçadores que pretendem preparar o terreno, criar proteção e restringir as rotas de seus alvos.",
+          "sinaptica": "Sináptica favorece Caçadores que pretendem rastrear sinais, investigar registros e acompanhar alvos por sistemas conectados."
+        },
         "equipamento_inicial": {
           "aretz": 3000,
           "espacos_mochila": 10,

@@ -100,7 +100,7 @@ def subclasse(slug, nome, classe_slug, descricao, e, c, a):
             "caracteristicas": {"E": e, "C": c, "A": a}}
 
 
-def criacao(perfis_per, valor3, valor2, recursos, sinergia, aretz=3000, mochila=10):
+def criacao(perfis_per, valor3, valor2, recursos, sinergia, aretz=3000, mochila=10, sinergia_textos=None):
     return {
         "perfis_atributos": PERFIS_ATRIBUTOS,
         "perfis_pericias": perfis_per,
@@ -110,6 +110,7 @@ def criacao(perfis_per, valor3, valor2, recursos, sinergia, aretz=3000, mochila=
         "recursos": recursos,
         "vertentes_primarias": "qualquer",
         "sinergia_vertentes": sinergia,
+        **({"sinergia_textos": sinergia_textos} if sinergia_textos else {}),
         "equipamento_inicial": {"aretz": aretz, "espacos_mochila": mochila, "itens": []},
     }
 

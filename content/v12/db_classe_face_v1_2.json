@@ -159,6 +159,14 @@
           "material": 1,
           "sinaptica": 3
         },
+        "sinergia_textos": {
+          "biotica": "Biótica favorece Faces que pretendem alterar aparências, interpretar estados físicos e utilizar transformações orgânicas em suas interações.",
+          "cinetica": "Cinética favorece Faces que pretendem controlar deslocamentos, alcançar interlocutores e conduzir o movimento de grupos.",
+          "cognitiva": "Cognitiva favorece Faces que pretendem manipular percepções, emoções e comportamentos.",
+          "energetica": "Energética favorece Faces que pretendem controlar a atenção, produzir espetáculos e utilizar o ambiente como parte de sua atuação.",
+          "material": "Material favorece Faces que pretendem transformar objetos, preparar ambientes e utilizar recursos materiais em suas negociações.",
+          "sinaptica": "Sináptica favorece Faces que pretendem controlar informações, comunicações e presença pública através de sistemas conectados."
+        },
         "equipamento_inicial": {
           "aretz": 3000,
           "espacos_mochila": 10,

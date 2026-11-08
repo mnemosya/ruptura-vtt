@@ -58,7 +58,7 @@ function dossieClasse(classe: ClassContentV12, subclasses: SubclassContentV12[])
     skills3: classe.criacao.pericias_valor_3,
     syn: Object.entries(classe.criacao.sinergia_vertentes ?? {}).map(([id, n]) => ({
       v: VERTENTES[id] ?? id,
-      d: `Sinergia ${n} de 5 com ${VERTENTES[id] ?? id}.`,
+      d: classe.criacao.sinergia_textos?.[id] ?? `Sinergia ${n} de 5 com ${VERTENTES[id] ?? id}.`,
       n,
     })),
     feats: RANKINGS.map((r) => {

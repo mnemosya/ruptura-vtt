@@ -158,6 +158,14 @@
           "material": 2,
           "sinaptica": 5
         },
+        "sinergia_textos": {
+          "biotica": "Biótica favorece Infiltradores que pretendem alterar o próprio corpo, ampliar os sentidos e ocultar vestígios biológicos durante uma infiltração.",
+          "cinetica": "Cinética favorece Infiltradores que pretendem atravessar obstáculos, alcançar posições inacessíveis e controlar deslocamentos durante uma infiltração.",
+          "cognitiva": "Cognitiva favorece Infiltradores que pretendem manipular atenção, percepção e memória durante uma infiltração.",
+          "energetica": "Energética favorece Infiltradores que pretendem controlar luz e som, sabotar equipamentos e neutralizar ameaças rapidamente.",
+          "material": "Material favorece Infiltradores que pretendem abrir passagens, modificar barreiras e transformar a estrutura do ambiente durante uma infiltração.",
+          "sinaptica": "Sináptica favorece Infiltradores que pretendem comprometer dispositivos, comunicações e sistemas de identificação."
+        },
         "equipamento_inicial": {
           "aretz": 3000,
           "espacos_mochila": 10,

@@ -156,6 +156,14 @@
           "material": 4,
           "sinaptica": 1
         },
+        "sinergia_textos": {
+          "biotica": "Biótica favorece Vanguardas que pretendem permanecer ativas sob pressão e adaptar sua resistência às ameaças encontradas.",
+          "cinetica": "Cinética favorece Vanguardas que pretendem tomar terreno rapidamente e controlar o posicionamento do confronto.",
+          "cognitiva": "Cognitiva favorece Vanguardas que pretendem dominar a atenção, desorganizar inimigos e conduzi-los para posições desfavoráveis.",
+          "energetica": "Energética favorece Vanguardas que pretendem revestir armas, criar áreas perigosas e neutralizar ameaças mágicas ou tecnológicas.",
+          "material": "Material favorece Vanguardas que pretendem fortificar posições e determinar por onde o confronto pode avançar.",
+          "sinaptica": "Sináptica favorece Vanguardas que pretendem controlar sistemas conectados, explorar a infraestrutura do campo e atuar através de dispositivos."
+        },
         "equipamento_inicial": {
           "aretz": 3000,
           "espacos_mochila": 10,

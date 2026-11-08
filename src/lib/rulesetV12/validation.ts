@@ -119,6 +119,14 @@ export function validateClassContentV12(value: unknown): ValidationResultV12<Cla
   });
   requireStringArray(creation.pericias_valor_3, "criacao.pericias_valor_3", errors, 1);
   requireStringArray(creation.pericias_valor_2, "criacao.pericias_valor_2", errors, 1);
+  if (creation.sinergia_textos !== undefined) {
+    const textos = requireRecord(creation.sinergia_textos, "criacao.sinergia_textos", errors);
+    const sinergia = (creation.sinergia_vertentes ?? {}) as Record<string, unknown>;
+    for (const [vertente, texto] of Object.entries(textos)) {
+      requireString(texto, `criacao.sinergia_textos.${vertente}`, errors);
+      if (!(vertente in sinergia)) errors.push(`criacao.sinergia_textos.${vertente}: Vertente sem sinergia na Classe.`);
+    }
+  }
 
   const features = requireRecord(root.caracteristicas, "caracteristicas", errors);
   const featureSlugs = new Set<string>();

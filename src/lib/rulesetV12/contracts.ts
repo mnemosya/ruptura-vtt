@@ -100,6 +100,8 @@ export interface ClassContentV12 {
     recursos: Record<string, ResourceFormulaV12>;
     vertentes_primarias: "qualquer" | string[];
     sinergia_vertentes?: Record<string, 1 | 2 | 3 | 4 | 5>;
+    /** O texto de cada Vertente para esta Classe, como no capítulo da Classe ("Biótica favorece Combatentes que…"). */
+    sinergia_textos?: Record<string, string>;
     equipamento_inicial: {
       aretz: number;
       espacos_mochila: number;

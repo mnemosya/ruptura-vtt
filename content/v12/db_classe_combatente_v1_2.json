@@ -154,6 +154,14 @@
           "material": 3,
           "sinaptica": 1
         },
+        "sinergia_textos": {
+          "biotica": "Biótica favorece Combatentes que pretendem fortalecer o próprio corpo, sobreviver a ferimentos e debilitar organismos inimigos.",
+          "cinetica": "Cinética favorece Combatentes que pretendem combinar mobilidade, impacto e pressão contínua.",
+          "cognitiva": "Cognitiva favorece Combatentes que pretendem desorganizar adversários, controlar comportamentos e criar oportunidades de ataque.",
+          "energetica": "Energética favorece Combatentes que pretendem maximizar o dano e explorar diferentes resistências.",
+          "material": "Material favorece Combatentes que pretendem preparar suas próprias oportunidades e superar defesas físicas.",
+          "sinaptica": "Sináptica favorece Combatentes que pretendem enfrentar ameaças na Trama, interferir em sistemas e reunir informações táticas."
+        },
         "equipamento_inicial": {
           "aretz": 3000,
           "espacos_mochila": 10,
