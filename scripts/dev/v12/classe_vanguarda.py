@@ -31,26 +31,6 @@ berserker = subclasse(
     ],
 )
 
-carcereiro = subclasse(
-    "carcereiro", "Carcereiro", SLUG,
-    "Carcereiros transformam a região ao redor em território controlado. Fecham passagens, interrompem retiradas e mantêm adversários onde representam menos perigo. Sua força está em restringir escolhas: quanto mais perto um inimigo chega, mais difícil se torna sair.",
-    [
-        f("sem_saida", "Sem Saída",
-          "Uma vez por rodada, quando uma criatura hostil adjacente tentar se deslocar voluntariamente para mais longe de você, pode gastar uma Reação e 1 Ímpeto para realizar imediatamente uma das seguintes ações contra ela: Agarrar, Derrubar ou Empurrar.",
-          "A manobra acontece antes do deslocamento e não exige PA. Se você vencer, o deslocamento é interrompido e a criatura perde os metros que ainda percorreria com aquela ação. Em um sucesso crítico, essa criatura fica impedida de usar qualquer ação de deslocamento até o início do próximo turno dela."),
-    ],
-    [
-        f("cela_movel", "Cela Móvel",
-          "Quando acertar um ataque ou vencer uma ação de Sem Saída contra uma criatura hostil adjacente, você pode gastar 2 Ímpetos para impor os seguintes efeitos até o início do seu próximo turno:\n• A criatura precisa gastar 2 m de deslocamento para percorrer cada 1 m;\n• A criatura sofre –1 de desvantagem na próxima ação defensiva dela."),
-    ],
-    [
-        f("sentenca", "Sentença",
-          "Uma vez por cena, pode gastar 1 PA e 2 Ímpetos para escolher uma quantidade de criaturas hostis a até 2 m igual ao seu valor de Corpo, mínimo de 1.",
-          "Realize imediatamente uma das ações de Sem Saída contra cada criatura escolhida, sem gastar PA ou uma Reação. Você pode escolher uma ação diferente para cada criatura, e as manobras são resolvidas separadamente.",
-          "Cada criatura contra a qual vencer a manobra sofre os efeitos de Cela Móvel até o início do seu próximo turno."),
-    ],
-)
-
 colosso = subclasse(
     "colosso", "Colosso", SLUG,
     "Colossos dominam o confronto pelo espaço que ocupam e pela dificuldade de removê-los. Avançam através de ataques, colisões e formações inimigas sem perder terreno. Quanto maior a pressão ao redor, mais difícil se torna interromper sua marcha.",
@@ -101,7 +81,7 @@ guardiao = subclasse(
     ],
 )
 
-subs = [berserker, carcereiro, colosso, guardiao]
+subs = [berserker, colosso, guardiao]
 
 vanguarda = classe(
     SLUG, "Vanguarda",

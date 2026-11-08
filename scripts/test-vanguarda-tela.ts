@@ -74,21 +74,6 @@ assert.equal(n(bk), 1);
 assert.ok(erro(make('E', 'berserker'), { op: 'contra' }), 'Contra-Ataque é do C');
 assert.equal(readClassPlay({ ...bk, current_scene: 2 }).vanguarda, undefined, 'a Fúria acaba com a cena');
 
-// Carcereiro: Sem Saída 1, Cela Móvel 2, Sentença 2 + 1 PA.
-let cc = make('A', 'carcereiro');
-for (let i = 0; i < 3; i++) cc = va(cc, { op: 'receber', fonte: 'adjacente' });
-cc = va(cc, { op: 'semSaida', manobra: 'Derrubar' }, 'Sem Saída · Derrubar');
-assert.equal(readClassPlay(cc).vanguarda!.registro.at(-1)!.nome, 'Sem Saída · Derrubar');
-cc = va(cc, { op: 'cela' }, 'Cela Móvel');
-assert.equal(n(cc), 0);
-assert.ok(erro(cc, { op: 'sentenca' }), 'Sentença precisa de 2 Ímpetos');
-cc = desfazer(cc);
-cc = applyClassCommand(cc, { type: 'vanguarda', acao: { op: 'sentenca' }, passo: 'Sentença', pa: 1 }, 4).character;
-assert.equal(n(cc), 0);
-assert.equal(cc.estado_jogo?.pa_gastos, 1, 'Sentença desconta 1 PA');
-cc = desfazer(cc);
-assert.equal(cc.estado_jogo?.pa_gastos ?? 0, 0, 'DESFAZER devolve o PA');
-
 // Colosso: Absorver Impacto pelo Corpo; Centro da Batalha zera o custo só na rodada.
 let cl = make('A', 'colosso');
 cl = va(cl, { op: 'receber', fonte: 'adjacente' });

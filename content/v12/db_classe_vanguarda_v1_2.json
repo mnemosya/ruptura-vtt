@@ -194,7 +194,6 @@
       },
       "subclasses": [
         "berserker",
-        "carcereiro",
         "colosso",
         "guardiao"
       ],
@@ -319,62 +318,31 @@
           {
             "slug": "dor_e_combustivel",
             "nome": "Dor é Combustível",
-            "descricao": "Uma vez por rodada, quando sofrer uma perda de PV causada por uma criatura hostil, receba 1 Ímpeto. Esse ganho pode ocorrer mesmo que já tenha recebido Ímpeto naquela rodada de outras formas, respeitando seu limite.\n\nDepois de sofrer essa perda, você pode se deslocar 2 m em direção à criatura que a causou."
+            "descricao": "Uma vez por rodada, quando sofrer uma perda de PV causada por uma criatura hostil, receba **1 Ímpeto**. Esse ganho pode ocorrer mesmo que já tenha recebido Ímpeto naquela rodada de outras formas, respeitando seu limite.\n\nDepois de sofrer essa perda, você pode se deslocar **2 m** em direção à criatura que a causou."
           },
           {
             "slug": "furia",
             "nome": "Fúria",
-            "descricao": "Quando seus PV atuais forem reduzidos à metade dos seus PV máximos ou menos, você entra em Fúria.\n\nAlém disso, depois de receber Ímpeto por Dor é Combustível, você pode gastar 2 Ímpetos para entrar em Fúria antes de alcançar esse limite.\n\nA Fúria permanece até o final da cena.\n\nEnquanto estiver em Fúria:\n• Seus ataques corpo a corpo causam o dobro do bônus de dano de Corpo.\n• Você recebe +1 de vantagem em testes de Vigor."
+            "descricao": "Quando seus PV atuais forem reduzidos à metade dos seus PV máximos ou menos, você entra em **Fúria**.\n\nAlém disso, depois de receber Ímpeto por **Dor é Combustível**, você pode gastar **2 Ímpetos** para entrar em Fúria antes de alcançar esse limite.\n\nA Fúria permanece até o final da cena.\n\nEnquanto estiver em Fúria:\n\n- Seus ataques corpo a corpo causam o dobro do bônus de dano de `Corpo`.\n- Você recebe **+1 de vantagem** em testes de `Vigor`."
           }
         ],
         "C": [
           {
             "slug": "contra_ataque",
             "nome": "Contra-Ataque",
-            "descricao": "Você aprende a transformar os golpes sofridos em contra-ataques e resistência.\n\nUma vez por rodada, depois que uma criatura ao seu alcance fizer você perder PV, pode gastar 2 Ímpetos e uma Reação para realizar imediatamente um ataque corpo a corpo contra ela. Se estiver em Fúria, esse ataque recebe +1 de vantagem. O ataque acontece depois da resolução do dano e dos demais efeitos que provocaram a perda de PV."
+            "descricao": "Você aprende a transformar os golpes sofridos em contra-ataques e resistência.\n\nUma vez por rodada, depois que uma criatura ao seu alcance fizer você perder PV, pode gastar **2 Ímpetos** e uma **Reação** para realizar imediatamente um ataque corpo a corpo contra ela. Se estiver em **Fúria**, esse ataque recebe **+1 de vantagem**. O ataque acontece depois da resolução do dano e dos demais efeitos que provocaram a perda de PV."
           },
           {
             "slug": "negar_a_dor",
             "nome": "Negar a Dor",
-            "descricao": "Uma vez por cena, enquanto estiver em Fúria, quando um ataque de uma criatura hostil fosse fazer você perder PV, pode gastar 2 Ímpetos para sofrer apenas metade dessa perda, arredondada para cima."
+            "descricao": "Uma vez por cena, enquanto estiver em **Fúria**, quando um ataque de uma criatura hostil fosse fazer você perder PV, pode gastar **2 Ímpetos** para sofrer apenas metade dessa perda, arredondada para cima."
           }
         ],
         "A": [
           {
             "slug": "limite_rompido",
             "nome": "Limite Rompido",
-            "descricao": "Uma vez por cena, enquanto estiver em Fúria, você pode romper seus limites até o final do seu próximo turno.\n\nAo ativar esta característica:\n• Receba Ímpeto até alcançar seu limite;\n• Seus ataques corpo a corpo e manobras de combate custam –1 PA, até o mínimo de 1 PA;\n• Seus ataques corpo a corpo causam o triplo do bônus de dano de Corpo;\n• Você permanece consciente ao chegar a 0 PV;\n• Condições físicas recebidas durante o efeito ficam suspensas.\n\nQuando Limite Rompido terminar, as condições suspensas voltam a produzir seus efeitos caso suas durações ainda não tenham terminado. Se você estiver com 0 PV, entra em Colapso. Recuperar ao menos 1 PV antes desse momento permite que continue agindo normalmente."
-          }
-        ]
-      }
-    },
-    {
-      "schema_version": 1,
-      "ruleset_version": "1.2",
-      "slug": "carcereiro",
-      "nome": "Carcereiro",
-      "classe_slug": "vanguarda",
-      "descricao": "Carcereiros transformam a região ao redor em território controlado. Fecham passagens, interrompem retiradas e mantêm adversários onde representam menos perigo. Sua força está em restringir escolhas: quanto mais perto um inimigo chega, mais difícil se torna sair.",
-      "caracteristicas": {
-        "E": [
-          {
-            "slug": "sem_saida",
-            "nome": "Sem Saída",
-            "descricao": "Uma vez por rodada, quando uma criatura hostil adjacente tentar se deslocar voluntariamente para mais longe de você, pode gastar uma Reação e 1 Ímpeto para realizar imediatamente uma das seguintes ações contra ela: Agarrar, Derrubar ou Empurrar.\n\nA manobra acontece antes do deslocamento e não exige PA. Se você vencer, o deslocamento é interrompido e a criatura perde os metros que ainda percorreria com aquela ação. Em um sucesso crítico, essa criatura fica impedida de usar qualquer ação de deslocamento até o início do próximo turno dela."
-          }
-        ],
-        "C": [
-          {
-            "slug": "cela_movel",
-            "nome": "Cela Móvel",
-            "descricao": "Quando acertar um ataque ou vencer uma ação de Sem Saída contra uma criatura hostil adjacente, você pode gastar 2 Ímpetos para impor os seguintes efeitos até o início do seu próximo turno:\n• A criatura precisa gastar 2 m de deslocamento para percorrer cada 1 m;\n• A criatura sofre –1 de desvantagem na próxima ação defensiva dela."
-          }
-        ],
-        "A": [
-          {
-            "slug": "sentenca",
-            "nome": "Sentença",
-            "descricao": "Uma vez por cena, pode gastar 1 PA e 2 Ímpetos para escolher uma quantidade de criaturas hostis a até 2 m igual ao seu valor de Corpo, mínimo de 1.\n\nRealize imediatamente uma das ações de Sem Saída contra cada criatura escolhida, sem gastar PA ou uma Reação. Você pode escolher uma ação diferente para cada criatura, e as manobras são resolvidas separadamente.\n\nCada criatura contra a qual vencer a manobra sofre os efeitos de Cela Móvel até o início do seu próximo turno."
+            "descricao": "Uma vez por cena, enquanto estiver em **Fúria**, você pode romper seus limites até o final do seu próximo turno.\n\nAo ativar esta característica:\n\n- Receba **Ímpeto** até alcançar seu limite;\n- Seus ataques corpo a corpo e manobras de combate custam **–1 PA**, até o mínimo de 1 PA;\n- Seus ataques corpo a corpo causam o triplo do bônus de dano de `Corpo`.\n- Você permanece consciente ao chegar a 0 PV;\n- Condições físicas recebidas durante o efeito ficam suspensas.\n\nQuando Limite Rompido terminar, as condições suspensas voltam a produzir seus efeitos caso suas durações ainda não tenham terminado. Se você estiver com 0 PV, entra em Colapso. Recuperar ao menos 1 PV antes desse momento permite que continue agindo normalmente."
           }
         ]
       }
@@ -391,31 +359,36 @@
           {
             "slug": "corpo_colossal",
             "nome": "Corpo Colossal",
-            "descricao": "Você é considerado uma criatura Grande. Seus ataques e efeitos medem alcance a partir de qualquer célula que você ocupe."
+            "descricao": "Você é considerado uma criatura **Grande**. Seus ataques e efeitos medem alcance a partir de qualquer célula que você ocupe."
           },
           {
             "slug": "absorver_impacto",
             "nome": "Absorver Impacto",
-            "descricao": "Uma vez por rodada, quando sofrer uma perda de PV, pode gastar 1 Ímpeto para reduzi-la em uma quantidade igual ao seu valor de Corpo, até o mínimo de 0."
+            "descricao": "Uma vez por rodada, quando sofrer uma perda de PV, pode gastar **1 Ímpeto** para reduzi-la em uma quantidade igual ao seu valor de **Corpo**, até o mínimo de 0."
+          },
+          {
+            "slug": "passagem_negada",
+            "nome": "Passagem Negada",
+            "descricao": "Uma vez por rodada, quando uma criatura hostil adjacente tentar se afastar voluntariamente de você, pode gastar uma **Reação** e **1 Ímpeto** para realizar um ataque corpo a corpo contra ela, sem gastar PA.\n\nO ataque acontece antes do deslocamento. A criatura pode continuar se movendo normalmente após sua resolução."
           }
         ],
         "C": [
           {
             "slug": "passo_firme",
             "nome": "Passo Firme",
-            "descricao": "Enquanto possuir ao menos 1 Ímpeto, reduza em 2 m qualquer movimento forçado aplicado a você."
+            "descricao": "Enquanto possuir ao menos **1 Ímpeto**, reduza em **2 m** qualquer movimento forçado aplicado a você.\n\nAlém disso, quando acertar um ataque de **Passagem Negada**, o deslocamento que provocou a Reação é interrompido, e o alvo perde os metros restantes daquela ação."
           },
           {
             "slug": "abrir_caminho",
             "nome": "Abrir Caminho",
-            "descricao": "Quando gastar Ímpeto para se deslocar, você ignora terreno difícil e pode abrir caminho através de uma criatura hostil do seu tamanho ou menor. Uma vez por rodada, antes de entrar no espaço ocupado por ela, realize Empurrar ou Derrubar contra essa criatura, sem gastar PA.\n\nSe vencer a manobra, pode atravessar o espaço da criatura e continuar o deslocamento. Se perder, pare no último espaço livre antes dela. Em qualquer caso, precisa terminar o deslocamento em um espaço livre."
+            "descricao": "Quando gastar Ímpeto para se deslocar, você ignora terreno difícil e pode abrir caminho através de uma criatura hostil do seu tamanho ou menor. Uma vez por rodada, antes de entrar no espaço ocupado por ela, realize ==Empurrar== ou ==Derrubar== contra essa criatura, sem gastar PA.\n\nSe vencer a manobra, pode atravessar o espaço da criatura e continuar o deslocamento. Se perder, pare no último espaço livre antes dela. Em qualquer caso, precisa terminar o deslocamento em um espaço livre."
           }
         ],
         "A": [
           {
             "slug": "centro_da_batalha",
             "nome": "Centro da Batalha",
-            "descricao": "Uma vez por cena, no início do seu turno, pode se tornar o Centro da Batalha até o início do seu próximo turno.\n\nDurante esse período:\n• Aplique a redução de Absorver Impacto a cada perda de PV que sofrer, sem gastar Ímpeto.\n• Você não pode ser movido contra sua vontade nem ficar Caído.\n• Uma vez por turno, quando realizar um ataque corpo a corpo, estenda o ataque a uma segunda criatura ao seu alcance."
+            "descricao": "Uma vez por cena, no início do seu turno, pode se tornar o **Centro da Batalha** até o início do seu próximo turno.\n\nDurante esse período:\n\n- Aplique a redução de **Absorver Impacto** a cada perda de PV que sofrer, sem gastar Ímpeto.\n- Você não pode ser movido contra sua vontade nem ficar `Caído.`\n- Uma vez por turno, quando realizar um ataque corpo a corpo, estenda o ataque a uma segunda criatura ao seu alcance."
           }
         ]
       }
@@ -432,36 +405,36 @@
           {
             "slug": "arsenal_defensivo",
             "nome": "Arsenal Defensivo",
-            "descricao": "Você pode equipar um escudo como arma primária e outro como arma secundária. Cada escudo mantém seus próprios PD, e você escolhe qual deles utiliza sempre que Bloquear.\n\nEnquanto estiver empunhando dois escudos com ao menos 1 PD cada, recebe +1 de vantagem em testes de Reflexos para Bloquear.\n\nAtaques corpo a corpo realizados com um escudo causam 1d6 + Corpo de dano."
+            "descricao": "Você pode equipar um escudo como arma primária e outro como arma secundária. Cada escudo mantém seus próprios PD, e você escolhe qual deles utiliza sempre que **Bloquear**.\n\nEnquanto estiver empunhando dois escudos com ao menos 1 PD cada, recebe **+1 de vantagem** em testes de `Reflexos` para **Bloquear**.\n\nAtaques corpo a corpo realizados com um escudo causam **1d6** + `Corpo` de dano."
           },
           {
             "slug": "posicao_de_guarda",
             "nome": "Posição de Guarda",
-            "descricao": "Uma vez por cena, durante seu turno, você pode assumir Postura Defensiva sem gastar PA."
+            "descricao": "Uma vez por cena, durante seu turno, você pode assumir **Postura Defensiva** sem gastar PA."
           },
           {
             "slug": "impeto_protetor",
             "nome": "Ímpeto Protetor",
-            "descricao": "Uma vez por rodada, quando obtiver sucesso ao Bloquear um ataque contra você ou um aliado, receba 1 Ímpeto. Esse ganho pode ocorrer mesmo que você já tenha recebido Ímpeto por Ponta de Lança na mesma rodada."
+            "descricao": "Uma vez por rodada, quando obtiver sucesso ao ==Bloquear== um ataque contra você ou um aliado, receba **1 Ímpeto**. Esse ganho pode ocorrer mesmo que você já tenha recebido Ímpeto por **Ponta de Lança** na mesma rodada."
           },
           {
             "slug": "interceptar",
             "nome": "Interceptar",
-            "descricao": "Uma vez por rodada, quando um aliado a até 2 m for alvo de um ataque, você pode gastar 1 Ímpeto para se deslocar até 2 m antes da resolução do ataque. Esse deslocamento não exige PA, precisa terminar adjacente ao aliado e permite que você utilize Bloquear contra o ataque.\n\nVocê decide normalmente se gasta uma Reação para Bloquear. Caso realize a defesa sem gastar uma Reação, aplique a desvantagem cumulativa normalmente."
+            "descricao": "Uma vez por rodada, quando um aliado a até **2 m** for alvo de um ataque, você pode gastar **1 Ímpeto** para se deslocar até **2 m** antes da resolução do ataque. Esse deslocamento não exige PA, precisa terminar adjacente ao aliado e permite que você utilize ==Bloquear== contra o ataque.\n\nVocê decide normalmente se gasta uma Reação para ==Bloquear==. Caso realize a defesa sem gastar uma Reação, aplique a desvantagem cumulativa normalmente."
           }
         ],
         "C": [
           {
             "slug": "abrigo_movel",
             "nome": "Abrigo Móvel",
-            "descricao": "Depois de obter sucesso ao Bloquear com um escudo, você pode gastar 1 Ímpeto para transformar esse escudo em um abrigo móvel até o início do seu próximo turno.\n\nEnquanto estiver ativo e o escudo permanecer empunhado e com ao menos 1 PD:\n\n- Aliados adjacentes a você recebem o mesmo grau de cobertura concedido pelo escudo usado para ativar Abrigo Móvel, mesmo que não estejam diretamente atrás de você. Essa proteção só se aplica contra ataques cuja origem você perceba e contra os quais possa interpor o escudo.\n- Quando gastar Ímpeto para se deslocar, escolha um aliado protegido por Abrigo Móvel; depois do seu deslocamento, ele pode se deslocar até 2 m sem gastar PA. O aliado precisa terminar esse deslocamento a até 2 m de você."
+            "descricao": "Depois de obter sucesso ao **Bloquear** com um escudo, você pode gastar **1 Ímpeto** para transformar esse escudo em um abrigo móvel até o início do seu próximo turno.\n\nEnquanto estiver ativo e o escudo permanecer empunhado e com ao menos 1 PD:\n\n- Aliados adjacentes a você recebem o mesmo grau de cobertura concedido pelo escudo usado para ativar **Abrigo Móvel**, mesmo que não estejam diretamente atrás de você. Essa proteção só se aplica contra ataques cuja origem você perceba e contra os quais possa interpor o escudo.\n- Quando gastar Ímpeto para se deslocar, escolha um aliado protegido por **Abrigo Móvel**; depois do seu deslocamento, ele pode se deslocar até **2 m** sem gastar PA. O aliado precisa terminar esse deslocamento a até **2 m** de você."
           }
         ],
         "A": [
           {
             "slug": "ninguem_fica_para_tras",
             "nome": "Ninguém Fica Para Trás",
-            "descricao": "Uma vez por cena, no início do seu turno, você pode assumir uma formação protetora até o início do seu próximo turno.\n\nDurante esse período:\n• O alcance de Interceptar aumenta para 4 m.\n• Interceptar não possui limite de usos por rodada.\n• Utilizar Interceptar não exige o gasto de Ímpeto.\n\nCada bloqueio realizado durante o efeito é uma ação defensiva separada. Você decide normalmente se gasta uma Reação e acumula desvantagem pelas defesas realizadas sem Reação."
+            "descricao": "Uma vez por cena, no início do seu turno, você pode assumir uma formação protetora até o início do seu próximo turno.\n\nDurante esse período:\n\n- O alcance de **Interceptar** aumenta para **4 m.**\n- **Interceptar** não possui limite de usos por rodada.\n- Utilizar **Interceptar** não exige o gasto de Ímpeto.\n\nCada bloqueio realizado durante o efeito é uma ação defensiva separada. Você decide normalmente se gasta uma Reação e acumula desvantagem pelas defesas realizadas sem Reação."
           }
         ]
       }

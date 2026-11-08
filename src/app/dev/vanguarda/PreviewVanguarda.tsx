@@ -9,7 +9,7 @@ import itens from "../../../../content/v12/db_mercado_itens_v1_2.json";
 
 const catalogo = new Map(itens.itens.map(normalizeItemContent).map(i => [i.slug, i]));
 const RANKS = ["F", "E", "D", "C", "B", "A", "S"];
-const SUBS = ["", "berserker", "carcereiro", "colosso", "guardiao"];
+const SUBS = ["", "berserker", "colosso", "guardiao"];
 const agora = "2026-10-26T00:00:00.000Z";
 
 const semente = (rank: string, sub: string): Character => {

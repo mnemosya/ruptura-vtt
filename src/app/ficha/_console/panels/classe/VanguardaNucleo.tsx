@@ -37,9 +37,6 @@ const ICONES: Record<string, string> = {
   dor: "M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-3 2-4 2-7 1 1 2 2 3 4 0-3 0-5 0-8Z",
   furia: "M13 2 4 14h7l-1 8 9-12h-7Z",
   limite: "M12 2v6M12 16v6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M2 12h6M16 12h6",
-  semsaida: "M4 4h16v16H4ZM9 4v16M15 4v16",
-  cela: "M5 3v18M10 3v18M14 3v18M19 3v18M3 3h18M3 21h18",
-  sentenca: "M14 4l6 6M9 9l6 6M12 6l-8 8 4 4 8-8M3 21h10",
   colossal: "M4 20V9l8-6 8 6v11ZM9 20v-6h6v6",
   absorver: "M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6ZM12 8v5M9.5 10.5 12 13l2.5-2.5",
   passo: "M6 20h12M9 20V10l3-6 3 6v10",
@@ -53,7 +50,7 @@ const ICONES: Record<string, string> = {
 /** Ícone de cada linha do ÍMPETO DA CENA, pelo começo do nome. */
 const ICONE_REGISTRO: [string, string][] = [["Ponta de Lança", ICONES.adjacente], ["Avançar", ICONES.avancar], ["Deslocamento", ICONES.avancar], ["Pressionar", "M12 5v14M5 12h14"],
   ["Avanço", ICONES.irrefreavel], ["Dor", ICONES.dor], ["Fúria", ICONES.furia], ["Contra", "M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3"], ["Negar", ICONES.escudo], ["Limite", ICONES.limite],
-  ["Sem Saída", ICONES.semsaida], ["Cela", ICONES.cela], ["Sentença", ICONES.sentenca], ["Absorver", ICONES.absorver], ["Abrir", "M4 12h10M10 6l6 6-6 6M20 4v16"], ["Centro", ICONES.centro],
+  ["Absorver", ICONES.absorver], ["Abrir", "M4 12h10M10 6l6 6-6 6M20 4v16"], ["Centro", ICONES.centro],
   ["Interceptar", ICONES.interceptar], ["Bloquear", ICONES.escudo], ["Abrigo", "M3 11 12 4l9 7M5 10v10h14V10M9 20v-5h6v5"], ["Posição", ICONES.guarda], ["Ninguém", ICONES.ninguem], ["Ímpetos perdidos", "M18 6 6 18M6 6l12 12"]];
 
 const REGRAS = {
@@ -69,9 +66,6 @@ const REGRAS = {
   contra: "Uma vez por rodada, depois que uma criatura ao seu alcance fizer você perder PV, gaste 2 Ímpetos e uma Reação para um ataque corpo a corpo imediato contra ela. Em Fúria, +1 de vantagem.",
   negar: "Uma vez por cena, em Fúria, quando um ataque fosse fazer você perder PV, gaste 2 Ímpetos para sofrer apenas metade, arredondada para cima.",
   limite: "Uma vez por cena, em Fúria, até o final do seu próximo turno: receba Ímpeto até o limite; ataques corpo a corpo e manobras custam –1 PA (mínimo 1); ataques corpo a corpo causam o triplo do bônus de dano de Corpo; você permanece consciente a 0 PV; condições físicas recebidas ficam suspensas.",
-  semsaida: "Uma vez por rodada, quando uma criatura hostil adjacente tentar se deslocar voluntariamente para mais longe de você, gaste uma Reação e 1 Ímpeto para Agarrar, Derrubar ou Empurrar, antes do deslocamento e sem PA. Vencendo, o deslocamento é interrompido.",
-  cela: "Quando acertar um ataque ou vencer Sem Saída contra uma criatura hostil adjacente, gaste 2 Ímpetos. Até o início do seu próximo turno, ela gasta 2 m de deslocamento por 1 m e sofre –1 de desvantagem na próxima ação defensiva.",
-  sentenca: (k: number) => `Uma vez por cena, gaste 1 PA e 2 Ímpetos e escolha até ${k} ${k === 1 ? "criatura hostil" : "criaturas hostis"} a até 2 m (seu Corpo). Faça uma ação de Sem Saída contra cada uma, sem PA nem Reação; cada uma contra a qual vencer sofre Cela Móvel até o início do seu próximo turno.`,
   colossal: "Você é considerado uma criatura Grande. Seus ataques e efeitos medem alcance a partir de qualquer célula que você ocupe.",
   absorver: "Uma vez por rodada, quando sofrer uma perda de PV, gaste 1 Ímpeto para reduzi-la em uma quantidade igual ao seu Corpo, até o mínimo de 0.",
   passo: "Enquanto possuir ao menos 1 Ímpeto, reduza em 2 m qualquer movimento forçado aplicado a você.",
@@ -99,7 +93,7 @@ function arco(j: number, max: number) {
 
 export function VanguardaNucleo({ api, rank, subclassId }: { api: Api; rank: string; subclassId?: string }) {
   const [painel, setPainel] = useState<null | "habilidades" | "cena">(null);
-  const [modo, setModo] = useState<null | "gastar" | "semsaida" | "abrir">(null);
+  const [modo, setModo] = useState<null | "gastar" | "abrir">(null);
   const [bloqueando, setBloqueando] = useState<string | null>(null);
   const [pendAbrigo, setPendAbrigo] = useState<string | null>(null);
   const idGrad = useId().replace(/:/g, "");
@@ -164,12 +158,6 @@ export function VanguardaNucleo({ api, rank, subclassId }: { api: Api; rank: str
       clicar: () => acao({ op: "furia", via: furia ? "sair" : "pv" }, furia ? "Fúria encerrada" : "Fúria") });
     if (at("A") && furia) chipsSub.push({ chave: "limite", icone: ICONES.limite, rotulo: "LIMITE ROMPIDO", valor: limite ? "ATÉ O FIM DO PRÓXIMO TURNO" : uso("scene:limite") ? "USADO NA CENA" : "1× POR CENA", ativo: limite, brasa: limite, usado: !limite && !!uso("scene:limite"), dica: REGRAS.limite,
       clicar: () => acao({ op: "limite" }, "Limite Rompido") });
-  } else if (ss === "carcereiro") {
-    chipsSub.push({ chave: "semsaida", icone: ICONES.semsaida, rotulo: "SEM SAÍDA", valor: uso("round:semsaida") ? "USADO NA RODADA" : "1× POR RODADA", usado: !!uso("round:semsaida"), ativo: modo === "semsaida", dica: REGRAS.semsaida,
-      clicar: () => setModo(modo === "semsaida" ? null : "semsaida") });
-    if (at("A")) chipsSub.push({ chave: "sentenca", icone: ICONES.sentenca, rotulo: "SENTENÇA", valor: uso("scene:sentenca") ? "USADO NA CENA" : "1× POR CENA · 1 PA", usado: !!uso("scene:sentenca"), dica: REGRAS.sentenca(Math.max(1, corpo)),
-      clicar: () => { if (n >= 2) acao({ op: "sentenca" }, "Sentença", 1); } });
-    if (at("C")) chipsSub.push({ chave: "cela", icone: ICONES.cela, rotulo: "CELA MÓVEL", valor: "2 ÍMPETOS", dica: REGRAS.cela, clicar: () => { if (n >= 2) acao({ op: "cela" }, "Cela Móvel"); } });
   } else if (ss === "colosso") {
     if (at("A")) chipsSub.push({ chave: "centro", icone: ICONES.centro, rotulo: "CENTRO DA BATALHA", valor: centro ? "ATÉ SEU PRÓXIMO TURNO" : uso("scene:centro") ? "USADO NA CENA" : "1× POR CENA", ativo: centro, usado: !centro && !!uso("scene:centro"), dica: REGRAS.centro,
       clicar: () => acao({ op: "centro", valor: !centro }, centro ? "Centro da Batalha encerrado" : "Centro da Batalha") });
@@ -260,10 +248,6 @@ export function VanguardaNucleo({ api, rank, subclassId }: { api: Api; rank: str
               <span>GASTAR EM</span>
               {gastosVisiveis.map(g => <button key={g.chave} type="button" className="in-uso ca-tem-dica" disabled={locked} onClick={g.clicar}>{g.rotulo}<Dica pos="cima" texto={g.regra} /></button>)}
               <button type="button" className="in-link" data-tom="neutro" disabled={locked} onClick={() => acao({ op: "perder" }, "Ímpeto perdido")}>PERDER TODOS</button>
-              <button type="button" className="in-link" data-tom="neutro" onClick={() => setModo(null)}>CANCELAR</button>
-            </> : modo === "semsaida" ? <>
-              <span>SEM SAÍDA</span>
-              {(["Agarrar", "Derrubar", "Empurrar"] as const).map(m => <button key={m} type="button" className="in-uso ca-tem-dica" disabled={locked || n < 1} onClick={() => acao({ op: "semSaida", manobra: m }, `Sem Saída · ${m}`)}>{m.toUpperCase()}<Dica pos="cima" texto={`Sem Saída: gaste uma Reação e 1 Ímpeto para ${m} a criatura antes do deslocamento, sem PA.`} /></button>)}
               <button type="button" className="in-link" data-tom="neutro" onClick={() => setModo(null)}>CANCELAR</button>
             </> : modo === "abrir" ? <>
               <span className="ca-tem-dica" tabIndex={0}>ABRIR CAMINHO<Dica pos="cima-esq" texto={REGRAS.abrir} /></span>

@@ -20,7 +20,6 @@ export type VanguardaEstado = {
   /** Guardião: escudo transformado em Abrigo Móvel e a rodada. */
   abrigo?: { escudo: string; rodada: number };
 };
-export type Manobra = "Agarrar" | "Derrubar" | "Empurrar";
 export type VanguardaAcao =
   | { op: "receber"; fonte: "adjacente" | "dor" }
   | { op: "gastar"; uso: "avancar" | "pressionar"; n: number }
@@ -30,9 +29,6 @@ export type VanguardaAcao =
   | { op: "contra" }
   | { op: "negar" }
   | { op: "limite" }
-  | { op: "semSaida"; manobra: Manobra }
-  | { op: "cela" }
-  | { op: "sentenca" }
   | { op: "absorver" }
   | { op: "abrirCaminho"; manobra: "Empurrar" | "Derrubar" }
   | { op: "centro"; valor: boolean }
@@ -136,30 +132,6 @@ export function aplicarVanguarda(s: ClassPlayState, a: VanguardaAcao, ctx: Conte
       s.uses["scene:limite"] = 1;
       v.limite = s.round;
       reg("recebeu", "Limite Rompido", "Recebeu Ímpeto até o limite · até o final do seu próximo turno.");
-      break;
-    }
-    case "semSaida": {
-      if (!sub("carcereiro", "E")) return "Sem Saída indisponível";
-      if (s.resource < 1) return "Ímpeto insuficiente";
-      gastar(1);
-      s.uses["round:semsaida"] = 1;
-      reg("usou", `Sem Saída · ${a.manobra}`, "Gastou 1 Ímpeto e uma Reação · a manobra acontece antes do deslocamento, sem PA.");
-      break;
-    }
-    case "cela": {
-      if (!sub("carcereiro", "C")) return "Cela Móvel indisponível";
-      if (s.resource < 2) return "Ímpeto insuficiente";
-      gastar(2);
-      reg("usou", "Cela Móvel", "Gastou 2 Ímpetos · até o início do seu próximo turno: 2 m de deslocamento por 1 m e –1 na próxima ação defensiva.");
-      break;
-    }
-    case "sentenca": {
-      if (!sub("carcereiro", "A")) return "Sentença indisponível";
-      if (s.resource < 2) return "Ímpeto insuficiente";
-      gastar(2);
-      s.uses["scene:sentenca"] = 1;
-      const k = Math.max(1, ctx.corpo);
-      reg("usou", "Sentença", `Gastou 1 PA e 2 Ímpetos · Sem Saída contra até ${plural(k, "criatura", "criaturas")} a até 2 m.`);
       break;
     }
     case "absorver": {

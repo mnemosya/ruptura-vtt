@@ -710,41 +710,6 @@
     ],
     "plural": "Surtos de combate"
   },
-  "carcereiro": {
-    "classe": "vanguarda",
-    "nome": "Carcereiro",
-    "titulo": "Zona de contenção",
-    "layout": "contencao",
-    "entidade": "Adversário",
-    "campos": [
-      "Manobra aplicada",
-      "Restrição de movimento",
-      "Penalidade",
-      "Validade"
-    ],
-    "estados": [
-      "Contido",
-      "Em deslocamento",
-      "Liberto"
-    ],
-    "cor": "#69a9ff",
-    "nucleo": "Ímpeto · Presença",
-    "regras": [
-      {
-        "rank": "E",
-        "text": "Sem Saída:1/rodada,Reação+1 Ímpeto; inimigo adjacente tenta afastar-se. Escolher Agarrar/Derrubar/Empurrar antes do movimento; sucesso interrompe e perde metros restantes; crítico bloqueia ações de movimento até início do próximo turno dele."
-      },
-      {
-        "rank": "C",
-        "text": "Cela Móvel:2 Ímpetos após ataque ou Sem Saída bem-sucedido em adjacente; alvo, deslocamento2:1 e penalidade na próxima defesa; termina no início do próximo turno do usuário."
-      },
-      {
-        "rank": "A",
-        "text": "Sentença:1/cena,1 PA+2 Ímpetos; até Corpo alvos a2 m, mínimo1; manobra diferente por alvo, sem PA/Reações extras, resultados separados; sucessos aplicam Cela Móvel."
-      }
-    ],
-    "plural": "Adversários"
-  },
   "colosso": {
     "classe": "vanguarda",
     "nome": "Colosso",
