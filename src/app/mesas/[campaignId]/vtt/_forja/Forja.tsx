@@ -34,6 +34,7 @@ import { Antecedente, FichaTracos, OrigemNarrativa, Tracos } from "./passos/Traj
 import { Pericias, PericiasLateral } from "./passos/Pericias";
 import { ProgressaoInicial } from "./ProgressaoInicial";
 import { Progressao, ProgressaoLateral } from "./passos/Progressao";
+import { ProgressaoFluxo } from "./progressao/ProgressaoFluxo";
 import { avancarRankingV12Action } from "../_acoes/evolucaoV12Actions";
 
 export interface ForjaProps {
@@ -132,6 +133,8 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
   }
 
   const cur = PASSOS[passo];
+  // Progressão em sub-etapas: ocupa o palco (sem menu, lateral nem doca; o rodapé é dela).
+  const fluxoProgressao = passo === 8 && Boolean(d.classeSlug) && c.etapas.length > 0;
   const status = !c.persiste ? "" : c.conflito ? "Salvamento pausado" : c.salvando ? "Salvando…" : c.temRascunhoSalvo ? "Rascunho salvo" : "";
   return (
     <div style={vars} className={raiz}>
@@ -146,12 +149,12 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
       <div className="fj-palco">
         <BarraTopo group={cur.group} label={cur.label} onExit={() => { void c.salvarAgora(); setStarted(false); }} />
 
-        <div className="fj-sem-barra fj-grade">
-          <MenuLateral step={passo} setStep={c.irPara} completos={c.passosCompletos} nomeMesa={nomeMesa} status={status} oculto={ocultoPasso} />
+        <div className={`fj-sem-barra fj-grade ${fluxoProgressao ? "fj-grade--progressao" : ""}`}>
+          {!fluxoProgressao && <MenuLateral step={passo} setStep={c.irPara} completos={c.passosCompletos} nomeMesa={nomeMesa} status={status} oculto={ocultoPasso} />}
           <main key={passo} className="fj-boot fj-centro">
             {centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente, semAvatar: semCampanha })}
           </main>
-          <aside className="fj-sem-barra fj-lateral">
+          {!fluxoProgressao && <aside className="fj-sem-barra fj-lateral">
             <PlacaIdentidade d={d} avatar={avatar.url} progress={c.sincronia} ranking={d.rankingInicial ?? rankingInicial} onRankingChange={(ranking) => set({ rankingInicial: ranking })} />
             {c.conflito && (
               <div className="fj-aviso" role="alert">
@@ -172,10 +175,10 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
               </div>
             )}
             <div key={passo} className="fj-boot">{lateral({ c, catalogos, classe, view, regiaoCampanha, setRegiaoCampanha, pn, setPn })}</div>
-          </aside>
+          </aside>}
         </div>
 
-        <Doca
+        {!fluxoProgressao && <Doca
           step={passo}
           setStep={c.irPara}
           oculto={ocultoPasso}
@@ -185,7 +188,7 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
           erro={c.erroEnvio}
           rotuloSelar={completar ? `Selar ${completar.nome}` : "Selar refratário"}
           onSelar={() => void selar()}
-        />
+        />}
       </div>
 
       {avatar.abrindo && (
@@ -570,7 +573,11 @@ function centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente, s
     case 5: return <Atributos d={d} set={set} perfis={perfisAtributosV12(catalogos.classes, d.classeSlug)} avatar={avatar.url} progress={c.sincronia} nomeAntecedente={nomeAntecedente} onNavigate={c.irPara} />;
     case 6: return <Pericias d={d} set={set} catalogos={catalogos} classe={classe} irParaClasse={() => c.irPara(4)} />;
     case 7: return <Carrossel items={VERTENTES_ACERVO.map((v) => ({ id: v.id, nome: v.nome, img: v.arte, top: "VERTENTE PRIMÁRIA", sub: v.frase.split(".")[0], color: v.cor, posicaoArte: v.id === "cognitiva" ? "left top" : undefined }))} value={d.vertente} viewId={view.vertente} onView={onView("vertente")} onPick={(id) => set({ vertente: id })} cta="Sintonizar" />;
-    case 8: return <Progressao d={d} set={set} catalogos={catalogos} etapas={c.etapas} irParaClasse={() => c.irPara(4)} />;
+    case 8: return d.classeSlug && c.etapas.length
+      ? <ProgressaoFluxo contexto="criacao" kicker="Etapa 09" d={d} set={set} catalogos={catalogos} etapas={c.etapas} classe={classe}
+          sincronia={Math.round(c.sincronia * 100)} primaria={d.vertente}
+          voltarForja={{ rotulo: PASSOS[7].label, onClick: () => c.irPara(7) }} concluir={{ rotulo: PASSOS[9].label, onClick: () => c.irPara(9) }} />
+      : <Progressao d={d} set={set} catalogos={catalogos} etapas={c.etapas} irParaClasse={() => c.irPara(4)} />;
     default: return <div className="fj-revisao-centro"><Holograma d={d} avatar={avatar.url} progress={c.sincronia} solid={c.sincronia >= 1} nomeAntecedente={nomeAntecedente} onNavigate={c.irPara} /></div>;
   }
 }
