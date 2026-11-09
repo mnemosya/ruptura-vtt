@@ -13,15 +13,17 @@ export function PerfilAvatar({ userId, versao, nome }: { userId: string; versao?
   const available = loaded === src && failed !== src;
 
   return <>
-    <button type="button" className="rv-perfil-face rv-avatar-trigger" disabled={!available}
-      aria-label={`Ampliar avatar de ${nome}`} aria-haspopup="dialog" title={available ? "Ampliar avatar" : "Sem avatar disponível"}
-      onClick={() => dialog.current?.showModal()}>
-      {failed !== src ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt="" onLoad={() => setLoaded(src)} onError={() => setFailed(src)} />
-      ) : <User size={22} strokeWidth={1.3} />}
+    <span className="rv-avatar-wrap">
+      <button type="button" className="rv-perfil-face rv-avatar-trigger" disabled={!available}
+        aria-label={`Ampliar avatar de ${nome}`} aria-haspopup="dialog" title={available ? "Ampliar avatar" : "Sem avatar disponível"}
+        onClick={() => dialog.current?.showModal()}>
+        {failed !== src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={src} alt="" onLoad={() => setLoaded(src)} onError={() => setFailed(src)} />
+        ) : <User size={22} strokeWidth={1.3} />}
+      </button>
       {available && <span className="rv-avatar-zoom" aria-hidden="true"><ZoomIn size={14} strokeWidth={1.8} /></span>}
-    </button>
+    </span>
     <dialog ref={dialog} className="rv-avatar-dialog" aria-labelledby={titleId}
       onKeyDown={(event) => event.stopPropagation()}
       onClick={(event) => {

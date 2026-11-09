@@ -366,6 +366,20 @@
 /* Reduzir movimento (preferência da conta, `.ra-reduce-motion` na raiz) e do sistema. */
 .v1.ra-reduce-motion *, .v1.ra-reduce-motion *::before, .v1.ra-reduce-motion *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 @media (prefers-reduced-motion: reduce) { .v1 *, .v1 *::before, .v1 *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
+
+/* Alto contraste na casca V1: as regras antigas em app.css só cobrem ra-*. */
+.v1.ra-hc { --v1-texto: #e0f4fb; --v1-apagado: #b7ccd6; --v1-fundo: #081923; }
+.v1.ra-hc .v1-fundo-img { filter: brightness(.48) saturate(.65); }
+.v1.ra-hc .v1-cab { background: #06121c; border-bottom-color: #76e5f7; }
+.v1.ra-hc :is(.v1-modulo, .v1-operador, .v1-painel, .v1-card, .v1-pd, .v1-pg-vazio) {
+  background-color: #091b26;
+  box-shadow: inset 0 0 0 1px rgba(118, 229, 247, .8);
+}
+.v1.ra-hc .v1-perfil { background: #091b26; border-color: #76e5f7; }
+.v1.ra-hc .v1-perfil .v1-banner { opacity: .12; }
+.v1.ra-hc .v1-pref { border-top-color: rgba(118, 229, 247, .7); }
+.v1.ra-hc :is(.v1-busca, .v1-switch) { border-color: #76e5f7; }
+.v1.ra-hc .v1-campo { box-shadow: inset 0 0 0 1px #76e5f7; }
 .v1 .v1-u:focus-visible, .v1 a:focus-visible { outline: 2px solid var(--v1-cy); outline-offset: 3px; }
 .v1 .v1-campo:focus-visible, .v1 .v1-busca input:focus-visible, .v1 .v1-sel:focus-visible { outline: none; }
 

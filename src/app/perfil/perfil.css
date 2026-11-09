@@ -28,6 +28,7 @@
   clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
   background: #1d4a5c; color: #b8d8e8; animation: pf-pop .42s cubic-bezier(.2,.8,.2,1) both;
 }
+.rv-avatar-wrap { position: relative; flex: none; display: block; width: 78px; height: 68px; }
 .rv-perfil-ident { position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; }
 .rv-perfil-nome {
   margin: 0; font-family: var(--pf-teko); font-weight: 600; font-size: 52px; line-height: 0.8; text-transform: uppercase;
@@ -106,8 +107,8 @@
 .rv-avatar-trigger:disabled { cursor: default; }
 .rv-avatar-trigger:not(:disabled):hover, .rv-avatar-trigger:focus-visible { filter: brightness(1.12) drop-shadow(0 0 10px rgba(0, 212, 255, 0.6)); outline: none; }
 .rv-avatar-trigger:not(:disabled):hover > img { transform: scale(1.08); }
-.rv-avatar-zoom { position: absolute; right: 0; bottom: 0; display: grid; place-items: center; width: 20px; height: 20px; background: #06151ee6; color: #8cecff; opacity: 0; transition: opacity 160ms; }
-.rv-avatar-trigger:hover .rv-avatar-zoom, .rv-avatar-trigger:focus-visible .rv-avatar-zoom { opacity: 1; }
+.rv-avatar-zoom { position: absolute; right: -5px; bottom: -5px; display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid #8cecff; background: #06151e; color: #8cecff; opacity: 0; pointer-events: none; transition: opacity 160ms; }
+.rv-avatar-wrap:hover .rv-avatar-zoom, .rv-avatar-wrap:focus-within .rv-avatar-zoom { opacity: 1; }
 .rv-avatar-dialog {
   box-sizing: border-box; width: min(560px, calc(100vw - 32px)); max-width: none; max-height: calc(100dvh - 32px);
   margin: auto; padding: 0; overflow: auto; color: #d8eef8; background: #08141b;
