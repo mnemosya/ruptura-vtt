@@ -22,6 +22,7 @@
     "test:tecnico-tela": "tsx scripts/test-tecnico-tela.ts",
     "test:forja-codex-classes": "node --import tsx scripts/test-forja-codex-classes.ts",
     "test:forja-codex-vertentes": "node --import tsx scripts/test-forja-codex-vertentes.ts",
+    "check:forja-atalhos": "node --import tsx scripts/dev/check-forja-atalhos.ts",
     "test:vanguarda-tela": "tsx scripts/test-vanguarda-tela.ts",
     "test:ruptura-v12": "tsx scripts/test-ruptura-v12.ts",
     "test:reactions": "tsx scripts/test-reactions.ts",

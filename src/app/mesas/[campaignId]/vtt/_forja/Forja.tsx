@@ -35,6 +35,7 @@ import { Pericias, PericiasLateral } from "./passos/Pericias";
 import { ProgressaoInicial } from "./ProgressaoInicial";
 import { Progressao, ProgressaoLateral } from "./passos/Progressao";
 import { ProgressaoFluxo } from "./progressao/ProgressaoFluxo";
+import { eventoDaForjaDisponivel } from "./atalhos";
 import { avancarRankingV12Action } from "../_acoes/evolucaoV12Actions";
 
 export interface ForjaProps {
@@ -407,13 +408,7 @@ function Doca({ step, setStep, oculto = () => false, pendentes, podeSelar, envia
   // Não disparam enquanto se digita nem com modificadores.
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.defaultPrevented) return;
-      const t = e.target as HTMLElement | null;
-      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-      // A própria Forja abre dentro de uma janela `aria-modal` na mesa: só
-      // bloqueia um modal que esteja POR CIMA dela (Códex, mapa, recorte…).
-      const modais = [...document.querySelectorAll(".rc-recorte-janela, [aria-modal='true']")];
-      if (modais.some((m) => !m.querySelector(".fj-doca"))) return;
+      if (!eventoDaForjaDisponivel(e, document.querySelector(".fj-doca"))) return;
       const tecla = e.key.toLowerCase();
       if (tecla === "q" && step > 0) setStep(anterior(step));
       else if (tecla === "e") { if (mostrarSelar) { if (podeSelarAgora) onSelar(); } else setStep(proximo(step)); }
@@ -458,6 +453,7 @@ function Titulo({ nomeMesa, c, completar, onContinuar, onNovo, onSair, semCampan
   onSair?: () => void;
 }) {
   const [confirmarNovo, setConfirmarNovo] = useState(false);
+  const botaoPrimario = useRef<HTMLButtonElement | null>(null);
   const carregando = c.estado.tipo === "carregando";
   type Item = { id: string; titulo: string; sub: string; primario: boolean; acao: () => void; desabilitado?: boolean };
   const itens: Item[] = [];
@@ -483,8 +479,16 @@ function Titulo({ nomeMesa, c, completar, onContinuar, onNovo, onSair, semCampan
   if (onSair) itens.push({ id: "sair", titulo: semCampanha ? "Voltar" : "Voltar à mesa", sub: semCampanha ? "Personagens" : nomeMesa, primario: false, acao: onSair });
 
   const primario = itens.find((i) => i.primario && !i.desabilitado);
+  // O portal da Forja não tira automaticamente o foco do botão que a abriu.
+  useEffect(() => { botaoPrimario.current?.focus({ preventScroll: true }); }, [primario?.id]);
   useEffect(() => {
-    const k = (e: KeyboardEvent) => { if (e.key === "Enter" && !(e.target instanceof HTMLButtonElement) && primario) primario.acao(); };
+    const k = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" || !primario || !eventoDaForjaDisponivel(e, document.querySelector(".fj-titulo"))) return;
+      // Um botão da própria tela já recebe Enter pelo comportamento nativo.
+      if (e.target instanceof Element && e.target.closest(".fj-titulo button")) return;
+      e.preventDefault();
+      primario.acao();
+    };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
   }, [primario]);
@@ -507,7 +511,7 @@ function Titulo({ nomeMesa, c, completar, onContinuar, onNovo, onSair, semCampan
         {c.estado.tipo === "incompativel" && <p className="fj-titulo__alerta" role="alert">{c.estado.mensagem} <button type="button" onClick={() => void onNovo()}>Descartar e começar do zero</button></p>}
         <div className="fj-titulo__menu">
           {itens.map((it) => (
-            <button type="button" key={it.id} disabled={it.desabilitado} onClick={it.acao} className={`fj-ch-tab fj-titulo__item ${it.primario ? "fj-titulo__item--primario" : ""}`}>
+            <button type="button" key={it.id} ref={it.id === primario?.id ? botaoPrimario : undefined} disabled={it.desabilitado} onClick={it.acao} className={`fj-ch-tab fj-titulo__item ${it.primario ? "fj-titulo__item--primario" : ""}`}>
               {it.primario && <span className="fj-titulo__item-sublinhado" />}
               <div><div className="fj-titulo__item-nome">{it.titulo}</div><Mono>{it.sub}</Mono></div>
               <span className="fj-titulo__item-seta" aria-hidden="true">›</span>

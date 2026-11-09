@@ -1537,6 +1537,7 @@ export function MapaHex({
       encerrarArrasto();
     }
     function tecla(e: KeyboardEvent) {
+      if (document.querySelector('[aria-modal="true"]')) return;
       if (elementoEhEditavel(document.activeElement as HTMLElement | null)) return;
       if (e.key === "Escape") { encerrarArrasto(); return; }
       if (e.key.toLowerCase() === "q") {
@@ -2075,6 +2076,7 @@ export function MapaHex({
   useEffect(() => {
     if (estadoMedicao.fase === "ociosa") return;
     function tecla(e: KeyboardEvent) {
+      if (document.querySelector('[aria-modal="true"]')) return;
       if (elementoEhEditavel(document.activeElement as HTMLElement | null)) return;
       if (e.key === "Escape") { setEstadoMedicao({ fase: "ociosa" }); return; }
       if (e.key === "Enter") {

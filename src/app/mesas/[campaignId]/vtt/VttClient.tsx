@@ -2371,7 +2371,7 @@ export function VttClient({
   };
   useEffect(() => {
     const ouvir = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || elementoEhEditavel(document.activeElement as HTMLElement | null)) return;
+      if (e.defaultPrevented || document.querySelector('[aria-modal="true"]') || elementoEhEditavel(document.activeElement as HTMLElement | null)) return;
       if (!e.shiftKey || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
       const tecla = e.key.toLowerCase();
       const categoria = ({ q: "atacar", w: "conjurar", e: "item" } as const)[tecla as "q" | "w" | "e"];
@@ -2919,6 +2919,7 @@ export function VttClient({
   useEffect(() => {
     if (fluxoToken?.fase !== "posicionando" && fluxoToken?.fase !== "erro") return;
     function aoTeclar(e: KeyboardEvent) {
+      if (document.querySelector('[aria-modal="true"]')) return;
       if (elementoEhEditavel(document.activeElement as HTMLElement | null)) return;
       if (e.key === "Escape") { e.preventDefault(); cancelarPosicionamento(); return; }
       const tecla = e.key.toLowerCase();
@@ -3892,6 +3893,7 @@ export function VttClient({
   useEffect(() => {
     if (ferramenta !== "areas" && estadoAreas.fase !== "editando") return;
     function aoTeclar(e: KeyboardEvent) {
+      if (document.querySelector('[aria-modal="true"]')) return;
       if (elementoEhEditavel(document.activeElement as HTMLElement | null)) return;
       if (e.key === "Escape") {
         const atualAgora = estadoAreasRef.current;
@@ -3989,6 +3991,7 @@ export function VttClient({
     if (ferramenta !== "imagens" || !imgs.selecionadaId) return;
     function aoTeclar(e: KeyboardEvent) {
       if (e.key !== "Delete" && e.key !== "Backspace") return;
+      if (document.querySelector('[aria-modal="true"]')) return;
       if (e.ctrlKey || e.metaKey) return;
       // Backspace num campo do painel é "apagar caractere", nunca
       // "apagar imagem".
@@ -4503,6 +4506,7 @@ export function VttClient({
   useEffect(() => {
     if (!anotacaoSelecionada || (ferramenta !== "desenhar" && ferramenta !== "texto")) return;
     const aoTeclar = (e: KeyboardEvent) => {
+      if (document.querySelector('[aria-modal="true"]')) return;
       if ((e.key !== "Delete" && e.key !== "Backspace") || elementoEhEditavel(document.activeElement as HTMLElement | null)) return;
       if (camadas.anotacoes.bloqueada || (!ehNarrador && anotacaoSelecionada.autorId !== usuarioId)) return;
       e.preventDefault(); void removerAnotacaoComHistorico(anotacaoSelecionada);
@@ -5998,6 +6002,7 @@ export function VttClient({
   useEffect(() => {
     function ouvir(e: KeyboardEvent) {
       if (e.defaultPrevented) return;
+      if (document.querySelector('[aria-modal="true"]')) return;
       if (e.key === "Escape" && document.querySelector('.rv-token-actions')) return;
       const acao = interpretarAtalho(
         { key: e.key, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, alvoEhEditavel: elementoEhEditavel(document.activeElement as HTMLElement | null) },
@@ -6012,6 +6017,15 @@ export function VttClient({
         setSelecionadosIds(new Set());
         setSelecionadoId(null);
       }
+      else if (acao.tipo === "apagar" && ehNarrador && ferramenta === "interagir") {
+        const ids = selecionadosIds.size ? [...selecionadosIds] : selecionadoId ? [selecionadoId] : [];
+        const alvos = ids.map((id) => tokenPorId.get(id)).filter((t): t is TokenApresentacao => Boolean(t));
+        if (alvos.length) {
+          e.preventDefault();
+          if (alvos.length > 1) setConfirmandoRemocaoLote(alvos);
+          else setConfirmandoRemocao(alvos[0]);
+        }
+      }
       else if (acao.tipo === "undo") desfazer();
       else if (acao.tipo === "redo") refazer();
       // Estes controles são do NARRADOR — mesma regra dos botões, que não
@@ -6024,7 +6038,7 @@ export function VttClient({
     }
     window.addEventListener("keydown", ouvir);
     return () => window.removeEventListener("keydown", ouvir);
-  }, [ferramentasDisponiveis, desfazer, refazer, trocarFerramenta, ehNarrador, abrirCriarToken, alternarCamadas, alternarCamadaNarrador, enquadrarMapa]);
+  }, [ferramentasDisponiveis, desfazer, refazer, trocarFerramenta, ehNarrador, ferramenta, selecionadosIds, selecionadoId, tokenPorId, abrirCriarToken, alternarCamadas, alternarCamadaNarrador, enquadrarMapa]);
 
   // Ferramenta ativa some da barra (ex.: papel mudou) — nunca fica presa numa ferramenta invisível. Passa por `trocarFerramenta` como qualquer outra troca — nunca um `setFerramenta` divergente.
   useEffect(() => { if (!ferramentasDisponiveis.includes(ferramenta)) trocarFerramenta("interagir"); }, [ferramentasDisponiveis, ferramenta, trocarFerramenta]);

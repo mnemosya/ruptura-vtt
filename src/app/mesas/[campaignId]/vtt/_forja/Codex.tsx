@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Key, Mono } from "./ui";
 import { oxanium } from "../../../../_design/oxanium";
+import { eventoDaForjaDisponivel } from "./atalhos";
 
 /** Teclado de leitura: "I" abre o Códex quando o foco não está num campo de texto. */
 export function useAtalhoCodex(abrir: () => void) {
@@ -10,7 +11,10 @@ export function useAtalhoCodex(abrir: () => void) {
   useEffect(() => { ref.current = abrir; });
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
-      if ((e.key === "i" || e.key === "I") && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) ref.current();
+      if (e.key.toLowerCase() === "i" && eventoDaForjaDisponivel(e, document.querySelector(".fj-root.fj-forja"))) {
+        e.preventDefault();
+        ref.current();
+      }
     };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);

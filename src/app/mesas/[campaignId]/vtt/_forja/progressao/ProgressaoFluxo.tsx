@@ -8,6 +8,7 @@ import { PassoAtributo, PassoGanhos, PassoPericias, PassoSubclasse, PassoVertent
 import { PassoEntrada } from "./PassoEntrada";
 import { ROTULO_PASSO, passoResolvido, passosDaProgressao, type TipoPasso } from "./fluxo";
 import "./progressao.css";
+import { eventoDaForjaDisponivel } from "../atalhos";
 
 /**
  * PROGRESSÃO EM SUB-ETAPAS — a mesma tela na criação (passo 09 da Forja)
@@ -56,9 +57,7 @@ export function ProgressaoFluxo({ contexto, d, set, catalogos, etapas, classe, s
   // Q volta, E avança — os mesmos atalhos da doca da Forja, que some nesta tela.
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.defaultPrevented) return;
-      const t = e.target as HTMLElement | null;
-      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      if (!eventoDaForjaDisponivel(e, document.querySelector(".fj-root.fj-forja"))) return;
       const tecla = e.key.toLowerCase();
       if (tecla === "q" && anterior) anterior();
       else if (tecla === "e" && atalhoAvancar.current) atalhoAvancar.current();
