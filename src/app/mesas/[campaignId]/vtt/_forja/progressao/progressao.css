@@ -94,7 +94,11 @@
 .fj-pg .pg-md { font: 400 13.5px/1.62 var(--pg-c); color: var(--fj-texto); max-width: 76ch; }
 .fj-pg .pg-md p { margin: 0 0 10px; }
 .fj-pg .pg-md > :last-child { margin-bottom: 0; }
-.fj-pg .pg-md h4 { margin: 14px 0 7px; font: 700 12px/1.2 var(--pg-d); letter-spacing: .08em; text-transform: uppercase; color: var(--fj-gelo); }
+/* Subtítulo de seção (MANOBRAS TÁTICAS) e título de item (ATAQUE ENCADEADO), como os headings e toggles do Notion. */
+.fj-pg .pg-md h4 { display: flex; align-items: center; gap: 10px; margin: 20px 0 9px; font: 700 11.5px/1.2 var(--pg-d); letter-spacing: .18em; text-transform: uppercase; color: var(--fj-cy); }
+.fj-pg .pg-md h4::after { content: ""; flex: 1; height: 1px; background: rgba(0,212,255,.22); }
+.fj-pg .pg-md h5 { margin: 16px 0 6px; padding-left: 11px; border-left: 2px solid var(--fj-ok); font: 700 13px/1.25 var(--pg-d); letter-spacing: .06em; text-transform: uppercase; color: #eaf6fb; }
+.fj-pg .pg-md > h4:first-child, .fj-pg .pg-md > h5:first-child { margin-top: 0; }
 .fj-pg .pg-md strong { font-weight: 600; color: #e7f3fa; }
 .fj-pg .pg-md em { font-style: italic; }
 .fj-pg .pg-md code { font: 500 12px/1 var(--pg-m); color: #8fe6ff; background: rgba(0,212,255,.12); border: 1px solid rgba(0,212,255,.2); padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
@@ -102,6 +106,14 @@
 .fj-pg .pg-md ul { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 7px; }
 .fj-pg .pg-md li { position: relative; padding-left: 18px; }
 .fj-pg .pg-md li::before { content: ""; position: absolute; left: 2px; top: 8px; width: 6px; height: 6px; transform: rotate(45deg); background: var(--fj-ok); }
+.fj-pg .pg-md-tabela { margin: 4px 0 12px; overflow-x: auto; }
+/* Bordas separadas (não `collapse`): no modo colado a borda externa vaza meio
+   pixel para fora e a caixa de rolagem corta o lado direito. */
+.fj-pg .pg-md table { box-sizing: border-box; width: 100%; border-collapse: separate; border-spacing: 0; border-top: 1px solid rgba(0,212,255,.15); border-left: 1px solid rgba(0,212,255,.15); font-size: 13.5px; line-height: 1.4; }
+.fj-pg .pg-md th, .fj-pg .pg-md td { border-right: 1px solid rgba(0,212,255,.15); border-bottom: 1px solid rgba(0,212,255,.15); padding: 7px 12px; text-align: left; vertical-align: middle; }
+.fj-pg .pg-md th { background: rgba(0,212,255,.1); font: 700 11px/1.2 var(--pg-d); letter-spacing: .12em; text-transform: uppercase; color: var(--fj-gelo); }
+.fj-pg .pg-md td:first-child { color: #e7f3fa; white-space: nowrap; }
+.fj-pg .pg-md tbody tr:nth-child(even) td { background: rgba(0,212,255,.03); }
 .fj-pg .pg-md blockquote { margin: 10px 0; padding: 8px 12px; border-left: 2px solid rgba(0,212,255,.4); background: rgba(0,212,255,.05); color: #a7c4d4; font-style: italic; }
 
 /* ════════════ ENTRADA ════════════ */
@@ -118,7 +130,13 @@
 /* 300px como na prancheta; em telas baixas a placa sobe na arte para a Sincronia não sair do painel. */
 .fj-pg .pg-en-id__placa { position: relative; flex: 1; display: flex; flex-direction: column; padding: clamp(0px, calc(100cqh - 260px), 300px) 24px 24px; }
 .fj-pg .pg-en-id__nome { display: block; margin: 8px 0 6px; font: 800 30px/1 var(--pg-d); letter-spacing: .04em; text-transform: uppercase; color: var(--fj-gelo); }
-.fj-pg .pg-en-id__sub { display: block; font: 400 13px/1.4 var(--pg-c); color: var(--fj-texto); }
+.fj-pg .pg-en-sub { align-self: flex-start; display: flex; flex-direction: column; gap: 4px; margin-top: 6px; padding: 7px 22px 7px 14px; background: var(--fj-am); clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%); }
+.fj-pg .pg-en-sub .pg-mono { font-weight: 700; color: rgba(6,18,28,.65); }
+.fj-pg .pg-en-sub b { font: 800 18px/1 var(--pg-d); letter-spacing: .06em; text-transform: uppercase; color: var(--fj-abismo); white-space: nowrap; }
+/* Sem subclasse ainda: a tarja fica só insinuada. */
+.fj-pg .pg-en-sub--aberta { background: rgba(255,138,31,.16); }
+.fj-pg .pg-en-sub--aberta .pg-mono { color: var(--fj-am); }
+.fj-pg .pg-en-sub--aberta b { font: 600 13px/1 var(--pg-c); letter-spacing: 0; text-transform: none; color: var(--fj-texto); }
 .fj-pg .pg-en-sinc { margin-top: auto; }
 .fj-pg .pg-en-sinc__linha { display: flex; justify-content: space-between; }
 .fj-pg .pg-seg { display: flex; gap: 3px; margin-top: 8px; }
@@ -185,7 +203,7 @@
 .fj-pg .pg-sb-vazio { margin: 0; font: 400 14px/1.6 var(--pg-c); color: var(--fj-texto); }
 
 /* ════════════ VOCÊ GANHA ════════════ */
-.fj-pg .pg-vg-retrato { width: 320px; flex: none; position: relative; overflow: hidden; }
+.fj-pg .pg-vg-retrato { width: 420px; flex: none; position: relative; overflow: hidden; }
 .fj-pg .pg-vg-retrato__veu { position: absolute; inset: 0; background: linear-gradient(to top, rgba(6,18,28,.97) 20%, transparent 60%); }
 .fj-pg .pg-vg-retrato__txt { position: absolute; left: 20px; right: 20px; bottom: 20px; }
 .fj-pg .pg-vg-retrato__txt i { display: block; width: 26px; height: 3px; background: var(--fj-cy); margin: 8px 0 10px; }
@@ -312,3 +330,140 @@
 .fj-pg .pg-at-chip { font: 700 10.5px/1 var(--pg-d); letter-spacing: .1em; text-transform: uppercase; color: #8fb6c9; padding: 5px 8px; border: 1px solid rgba(0,212,255,.22); border-radius: 0 5px 0 5px; corner-shape: bevel; }
 .fj-pg .pg-at-row--on .pg-at-afeta { border-top-color: rgba(255,138,31,.2); }
 .fj-pg .pg-at-row--on .pg-at-chip { color: #ffc489; border-color: rgba(255,138,31,.45); background: rgba(255,138,31,.08); }
+
+/* ── Troca de subclasse (motion) ──
+   A arte nova abre numa cortina vinda do lado da carta clicada, com um fio
+   âmbar na borda, e assenta de um zoom leve; o nome entra varrido depois da
+   barra; texto e índice sobem em fade, o índice um tempo depois. */
+.fj-pg .pg-sb-camada { position: absolute; inset: 0; overflow: hidden; }
+.fj-pg .pg-sb-cortina { animation: pg-sb-cortina-dir .58s cubic-bezier(.45, .05, .15, 1) both; }
+.fj-pg .pg-sb-cortina--esq { animation-name: pg-sb-cortina-esq; }
+.fj-pg .pg-sb-cortina .pg-arte { animation: pg-sb-assenta 1.1s var(--fj-ease) both; }
+@keyframes pg-sb-cortina-dir { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0); } }
+@keyframes pg-sb-cortina-esq { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes pg-sb-assenta { from { transform: scale(1.05); filter: brightness(1.18) saturate(1.1); } 60% { filter: none; } to { transform: none; filter: none; } }
+
+.fj-pg .pg-sb-fio { position: absolute; inset: 0; pointer-events: none; animation: pg-sb-fio-dir .58s cubic-bezier(.45, .05, .15, 1) both; }
+.fj-pg .pg-sb-fio--esq { animation-name: pg-sb-fio-esq; }
+.fj-pg .pg-sb-fio::before { content: ""; position: absolute; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, transparent, #ffd2a6 30%, var(--fj-am) 70%, transparent); box-shadow: 0 0 14px 2px rgba(255,138,31,.55), 0 0 40px 6px rgba(255,138,31,.18); }
+.fj-pg .pg-sb-fio--dir::before { left: 0; }
+.fj-pg .pg-sb-fio--esq::before { right: 0; }
+@keyframes pg-sb-fio-dir { from { transform: translateX(100%); opacity: 1; } 80% { opacity: 1; } to { transform: none; opacity: 0; } }
+@keyframes pg-sb-fio-esq { from { transform: translateX(-100%); opacity: 1; } 80% { opacity: 1; } to { transform: none; opacity: 0; } }
+
+.fj-pg .pg-sb-heroi__nome i { transform-origin: left; animation: pg-sb-barra .34s var(--fj-ease) .18s both; }
+.fj-pg .pg-sb-heroi__nome b { animation: pg-sb-varre .5s var(--fj-ease) .26s both; }
+@keyframes pg-sb-barra { from { transform: scaleX(0); } }
+@keyframes pg-sb-varre { from { clip-path: inset(-10% 100% -10% 0); opacity: .4; transform: translateX(-6px); } to { clip-path: inset(-10% -2% -10% 0); opacity: 1; transform: none; } }
+
+.fj-pg .pg-sb-entra { animation: pg-sb-entra .4s var(--fj-ease) both; }
+.fj-pg .pg-sb-entra--depois { animation-delay: .1s; }
+@keyframes pg-sb-entra { from { opacity: 0; transform: translateY(8px); } }
+.fj-pg .pg-sb-sai { animation: pg-sb-sai .14s cubic-bezier(.4, 0, 1, 1) both; }
+@keyframes pg-sb-sai { to { opacity: 0; transform: translateY(-4px); } }
+
+.fj-pg .pg-sb-tile { transition: border-color .24s var(--fj-ease), box-shadow .24s var(--fj-ease), transform .24s var(--fj-ease); }
+.fj-pg .pg-sb-tile:active { transform: scale(.985); }
+.fj-pg .pg-sb-tile .pg-arte { transition: filter .24s var(--fj-ease), transform .5s var(--fj-ease); }
+.fj-pg .pg-sb-tile:hover .pg-arte { transform: scale(1.03); }
+.fj-pg .pg-sb-tile__no { transition: color .24s var(--fj-ease); }
+
+@media (prefers-reduced-motion: reduce) {
+  .fj-pg .pg-sb-cortina, .fj-pg .pg-sb-cortina--esq { animation: pg-sb-funde .2s linear both; }
+  .fj-pg .pg-sb-cortina .pg-arte, .fj-pg .pg-sb-fio, .fj-pg .pg-sb-heroi__nome i, .fj-pg .pg-sb-heroi__nome b, .fj-pg .pg-sb-entra { animation: none; }
+  .fj-pg .pg-sb-fio { display: none; }
+  .fj-pg .pg-sb-sai { animation-duration: 1ms; }
+  .fj-pg .pg-sb-tile, .fj-pg .pg-sb-tile .pg-arte { transition: none; }
+  .fj-pg .pg-sb-tile:hover .pg-arte, .fj-pg .pg-sb-tile:active { transform: none; }
+}
+@keyframes pg-sb-funde { from { opacity: 0; } }
+
+/* ════════════ MOTION DOS FLUXOS ════════════
+   O vocabulário da Forja: cada sub-etapa entra no "boot" (`fj-boot`: sobe,
+   clareia e desfoca); listas e cartas vêm em cascata logo atrás; o foco
+   reacende quando muda o que se está vendo; valor que muda reaparece e pip
+   novo acende. Sempre `backwards` (nunca `both`): acabada a entrada, o hover
+   e o :active voltam a mandar no transform. */
+.fj-pg .pg-corpo { animation: fj-boot var(--fj-dur-boot) var(--fj-ease) backwards; }
+.fj-pg .pg-troca { animation: fj-boot var(--fj-dur-boot) var(--fj-ease) calc(var(--i, 0) * 50ms) backwards; }
+
+.fj-pg :is(.pg-en-item, .pg-vt-row, .pg-at-row, .pg-feat, .pg-sb-tile, .pg-pk-carta) {
+  animation: pg-surge .45s var(--fj-ease) calc(var(--atraso, 140ms) + min(var(--i, 0), 12) * var(--passo, 45ms)) backwards;
+}
+.fj-pg .pg-pk-carta { --passo: 22ms; }
+.fj-pg .pg-sb-tile { --atraso: 220ms; }
+@keyframes pg-surge { from { opacity: 0; transform: translateY(10px); filter: brightness(1.6); } }
+
+/* Toque: o card cede um pouco. */
+.fj-pg .pg-en-item { transition: border-color .16s ease, background .16s ease, transform .2s var(--fj-ease); }
+.fj-pg .pg-vt-row, .fj-pg .pg-at-row { transition: border-color .16s ease, background-color .2s ease, transform .2s var(--fj-ease); }
+.fj-pg .pg-pk-carta__corpo { transition: border-color .16s ease, opacity .16s ease, transform .2s var(--fj-ease); }
+.fj-pg :is(.pg-en-item, .pg-vt-row, .pg-at-row, .pg-pk-carta__corpo):active:not(:disabled) { transform: scale(.985); }
+.fj-pg .pg-avancar { transition: opacity .2s ease; }
+
+/* Escolher: o nome da linha acende. */
+.fj-pg :is(.pg-vt-row--on .pg-vt-row__nome, .pg-at-row--on .pg-at-row__nome) { animation: pg-acende .5s var(--fj-ease); }
+@keyframes pg-acende { from { filter: brightness(2.2); text-shadow: 0 0 14px currentColor; } }
+
+/* Pip novo (perícia, atributo): nasce pequeno, passa do ponto e assenta. */
+.fj-pg :is(.pg-los--novo, .pg-at-pip--novo, .pg-at-mini--novo) { animation: pg-pip .42s var(--fj-ease); }
+@keyframes pg-pip { from { transform: rotate(45deg) scale(.3); filter: brightness(2.2); } 55% { transform: rotate(45deg) scale(1.3); } to { transform: rotate(45deg); } }
+
+/* Saldo de perícias: o número muda com um pulso. */
+.fj-pg .pg-conta { animation: pg-conta .4s var(--fj-ease); }
+@keyframes pg-conta { from { transform: scale(1.18); filter: brightness(1.7); text-shadow: 0 0 22px rgba(255,138,31,.7); } }
+
+/* Stepper: o passo atual dá um pulso e o fio até ele se preenche. */
+.fj-pg .pg-stp b { position: relative; }
+.fj-pg .pg-stp--atual b::after { content: ""; position: absolute; inset: -1px; border: 1px solid currentColor; border-radius: 50%; animation: pg-stp-ping .8s cubic-bezier(0, 0, .2, 1) .15s both; pointer-events: none; }
+@keyframes pg-stp-ping { from { transform: scale(1); opacity: .9; } to { transform: scale(2.3); opacity: 0; } }
+.fj-pg .pg-stp-fio { position: relative; }
+.fj-pg .pg-stp-fio::after { content: ""; position: absolute; inset: 0; background: var(--fj-cy); transform: scaleX(0); transform-origin: left; transition: transform .45s var(--fj-ease); }
+.fj-pg .pg-stp-fio--feito::after { transform: none; }
+
+/* Vertente: a cor do foco desliza para a nova; a arte reassenta. */
+.fj-pg .pg-vt-foco { transition: border-color .4s var(--fj-ease), box-shadow .4s var(--fj-ease); }
+.fj-pg .pg-vt-arte .pg-arte { animation: pg-arte-chega .7s var(--fj-ease) backwards; }
+@keyframes pg-arte-chega { from { opacity: 0; transform: scale(1.05); filter: brightness(1.5) saturate(1.2); } }
+.fj-pg .pg-vt-sin__pips i.pg-on { animation: pg-pip-redondo .35s var(--fj-ease) backwards; }
+.fj-pg .pg-vt-sin__pips i:nth-child(2) { animation-delay: .23s; }
+.fj-pg .pg-vt-sin__pips i:nth-child(3) { animation-delay: .29s; }
+.fj-pg .pg-vt-sin__pips i:nth-child(4) { animation-delay: .35s; }
+.fj-pg .pg-vt-sin__pips i:nth-child(5) { animation-delay: .41s; }
+.fj-pg .pg-vt-sin__pips i:nth-child(1) { animation-delay: .17s; }
+@keyframes pg-pip-redondo { from { transform: scale(.2); opacity: 0; } 60% { transform: scale(1.35); opacity: 1; } }
+
+/* Entrada: o momento do Ranking alcançado. */
+.fj-pg .pg-en-rank__hex { animation: pg-hex .7s var(--fj-ease) .12s backwards; }
+@keyframes pg-hex { from { transform: scale(.5) rotate(-60deg); opacity: 0; filter: brightness(2.4); } 70% { filter: brightness(1.3); } }
+.fj-pg .pg-en-rank__titulo { animation: pg-sb-varre .55s var(--fj-ease) .3s backwards; }
+.fj-pg .pg-en-rank .pg-mono { animation: pg-surge .4s var(--fj-ease) .22s backwards; }
+.fj-pg .pg-rk { animation: pg-surge .35s var(--fj-ease) calc(var(--i, 0) * 40ms) backwards; }
+.fj-pg .pg-rk--atual { animation: pg-rk-atual .9s var(--fj-ease) calc(var(--i, 0) * 40ms + .1s) backwards; }
+@keyframes pg-rk-atual { from { opacity: 0; transform: scale(.4); filter: brightness(2.5); } 45% { opacity: 1; transform: scale(1.25); } }
+.fj-pg .pg-en-id .pg-arte { animation: pg-arte-chega 1s var(--fj-ease) backwards; }
+.fj-pg .pg-en-id__nome { animation: pg-sb-varre .5s var(--fj-ease) .2s backwards; }
+.fj-pg .pg-en-sub { animation: pg-tarja .45s var(--fj-ease) .42s backwards; }
+@keyframes pg-tarja { from { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); } }
+.fj-pg .pg-seg i { animation: pg-surge .3s var(--fj-ease) calc(.5s + var(--i, 0) * 35ms) backwards; }
+.fj-pg .pg-seg i.pg-on { animation-name: pg-seg; }
+@keyframes pg-seg { from { background: rgba(0,212,255,.12); box-shadow: none; } 50% { background: #bff4ff; box-shadow: 0 0 14px var(--fj-cy); } }
+
+/* Você ganha: retrato assenta, nome varre, contador estala. */
+.fj-pg .pg-vg-retrato .pg-arte { animation: pg-arte-chega 1s var(--fj-ease) backwards; }
+.fj-pg .pg-vg-retrato__txt i { transform-origin: left; animation: pg-sb-barra .34s var(--fj-ease) .2s backwards; }
+.fj-pg .pg-vg-retrato__txt b { animation: pg-sb-varre .5s var(--fj-ease) .28s backwards; }
+.fj-pg .pg-vg-n { animation: pg-vg-n .5s var(--fj-ease) .3s backwards; }
+@keyframes pg-vg-n { from { transform: translateY(-3px) scale(0); } 60% { transform: translateY(-3px) scale(1.3); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .fj-pg :is(.pg-corpo, .pg-troca, .pg-en-item, .pg-vt-row, .pg-at-row, .pg-feat, .pg-sb-tile, .pg-pk-carta, .pg-conta,
+    .pg-los--novo, .pg-at-pip--novo, .pg-at-mini--novo, .pg-vt-row__nome, .pg-at-row__nome, .pg-arte, .pg-vt-sin__pips i,
+    .pg-en-rank__hex, .pg-en-rank__titulo, .pg-en-rank .pg-mono, .pg-rk, .pg-en-id__nome, .pg-en-sub, .pg-seg i,
+    .pg-vg-retrato__txt i, .pg-vg-retrato__txt b, .pg-vg-n) { animation: none; }
+  .fj-pg .pg-stp--atual b::after { display: none; }
+  .fj-pg :is(.pg-vt-sin__pips, .pg-seg) i.pg-on { animation: none; }
+  .fj-pg .pg-stp-fio::after { transition: none; }
+  .fj-pg :is(.pg-vt-foco, .pg-en-item, .pg-vt-row, .pg-at-row, .pg-pk-carta__corpo) { transition: none; }
+  .fj-pg :is(.pg-en-item, .pg-vt-row, .pg-at-row, .pg-pk-carta__corpo):active:not(:disabled) { transform: none; }
+}

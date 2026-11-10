@@ -1,22 +1,47 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Check } from "lucide-react";
-import { arteSubclasse } from "../acervo/subclasses";
+import { arteSubclasse, focoSubclasse, posicaoDoFoco } from "../acervo/subclasses";
 import type { TipoPasso } from "./fluxo";
 
-/** Arte da subclasse; sem arquivo, cai na arte da classe. */
-export function ArteSubclasse({ slug, classeSlug, posicao, className = "pg-arte", alt = "" }: { slug: string; classeSlug: string; posicao: string; className?: string; alt?: string }) {
+/**
+ * Arte da subclasse, recortada em volta do foco da imagem (o recorte é
+ * recalculado quando a caixa muda de tamanho); sem arquivo, cai na arte da
+ * classe.
+ */
+// Mede antes de pintar (no servidor não há o que medir).
+const useMedida = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+export function ArteSubclasse({ slug, classeSlug, className = "pg-arte", alt = "" }: { slug: string; classeSlug: string; className?: string; alt?: string }) {
   const [falhou, setFalhou] = useState(false);
   const ref = useRef<HTMLImageElement>(null);
+  const foco = focoSubclasse(slug);
+  // Antes de medir, o foco em % já o mantém dentro do recorte.
+  const [posicao, setPosicao] = useState(`${foco[0] * 100}% ${foco[1] * 100}%`);
   // Uma falha antes da hidratação não chega ao onError: confere na montagem.
   useEffect(() => {
     setFalhou(false);
     const img = ref.current;
     if (img?.complete && img.naturalWidth === 0) setFalhou(true);
   }, [slug]);
+  // Antes da pintura: uma arte já carregada (ou trocada de lugar) nunca aparece
+  // no recorte aproximado para depois pular.
+  useMedida(() => {
+    const img = ref.current;
+    if (!img || falhou) return;
+    const medir = () => {
+      if (!img.naturalWidth || !img.clientWidth) return;
+      setPosicao(posicaoDoFoco(foco, { w: img.clientWidth, h: img.clientHeight }, { w: img.naturalWidth, h: img.naturalHeight }));
+    };
+    medir();
+    img.addEventListener("load", medir);
+    const obs = new ResizeObserver(medir);
+    obs.observe(img);
+    return () => { img.removeEventListener("load", medir); obs.disconnect(); };
+  }, [foco, falhou]);
   // eslint-disable-next-line @next/next/no-img-element
-  return <img ref={ref} src={falhou ? `/forja/classes/${classeSlug}.webp` : arteSubclasse(slug)} alt={alt} className={className} style={{ objectPosition: posicao }} onError={() => setFalhou(true)} />;
+  return <img ref={ref} src={falhou ? `/forja/classes/${classeSlug}.webp` : arteSubclasse(slug)} alt={alt} className={className} style={{ objectPosition: falhou ? "50% 22%" : posicao }} onError={() => setFalhou(true)} />;
 }
 
 export interface ItemStepper {
@@ -32,7 +57,7 @@ export function Stepper({ itens }: { itens: ItemStepper[] }) {
     <div className="pg-stps">
       {itens.map((it, i) => (
         <Fragment key={it.tipo}>
-          {i > 0 && <span className="pg-stp-fio" />}
+          {i > 0 && <span className={`pg-stp-fio ${itens[i - 1].estado === "feito" ? "pg-stp-fio--feito" : ""}`} />}
           <button type="button" onClick={it.onIr} aria-current={it.estado === "atual" ? "step" : undefined}
             className={`pg-stp ${it.estado === "feito" ? "pg-stp--feito" : it.estado === "atual" ? "pg-stp--atual" : ""}`}>
             <b>

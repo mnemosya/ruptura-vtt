@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useRef, useState, type AnimationEvent, type CSSProperties, type ReactNode } from "react";
 import { Zap } from "lucide-react";
 import type { CatalogosCriacaoV12 } from "../../_acoes/criacaoV12Actions";
 import {
@@ -15,7 +15,6 @@ import {
   type FeatureV12,
 } from "../../../../../../lib/rulesetV12";
 import { VERTENTES_ACERVO } from "../acervo/vertentes";
-import { enquadramentoSubclasse } from "../acervo/subclasses";
 import { ArteSubclasse, type Acao } from "./Partes";
 import { TextoMd } from "./TextoMd";
 
@@ -31,6 +30,35 @@ export interface PropsPasso {
 const RANKS_SUBCLASSE = ["E", "C", "A"] as const;
 const paragrafos = (t: string) => t.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
 
+/**
+ * Arte do herói com troca animada: a arte nova entra por cima da anterior
+ * numa cortina vinda do lado da carta clicada (com um fio de luz na borda) e
+ * assenta de um leve zoom; a anterior sai quando a cortina termina. Cada arte
+ * é uma camada com chave própria: a que fica embaixo é o MESMO elemento que
+ * estava na tela, nunca remontado (senão ela pisca e pula de recorte).
+ */
+function HeroiArte({ slug, nome, classeSlug, ordem }: { slug: string; nome: string; classeSlug: string; ordem: number }) {
+  const [t, setT] = useState<{ atual: string; ordem: number; anterior?: string; dir: 1 | -1; n: number }>({ atual: slug, ordem, dir: 1, n: 0 });
+  // Estado derivado da prop: a troca guarda a arte anterior já nesta render.
+  if (t.atual !== slug) setT({ atual: slug, ordem, anterior: t.atual, dir: ordem >= t.ordem ? 1 : -1, n: t.n + 1 });
+  const lado = t.dir === 1 ? "dir" : "esq";
+  const camadas = t.anterior ? [t.anterior, t.atual] : [t.atual];
+  return (
+    <>
+      {camadas.map((s) => {
+        const entrando = s === t.atual && t.n > 0;
+        return (
+          <span key={s} className={`pg-sb-camada ${entrando ? `pg-sb-cortina pg-sb-cortina--${lado}` : ""}`}
+            onAnimationEnd={entrando ? (e) => { if (e.target === e.currentTarget) setT((x) => (x.atual === s ? { ...x, anterior: undefined } : x)); } : undefined}>
+            <ArteSubclasse slug={s} classeSlug={classeSlug} alt={s === t.atual ? nome : ""} />
+          </span>
+        );
+      })}
+      {t.n > 0 && t.anterior && <span key={`fio${t.n}`} className={`pg-sb-fio pg-sb-fio--${lado}`} aria-hidden="true" />}
+    </>
+  );
+}
+
 /* ════════════ SUBCLASSE ════════════ */
 
 /**
@@ -43,7 +71,12 @@ export function PassoSubclasse({ etapa, catalogos, classe, classeSlug, mudar, ro
   const [vendo, setVendo] = useState(etapa.escolha.subclasse_id ?? lista[0]?.slug);
   const secoes = useRef<Record<string, HTMLDivElement | null>>({});
   const sel = lista.find((s) => s.slug === vendo) ?? lista[0];
-  if (!sel) return <><div className="pg-corpo"><p className="pg-sb-vazio">Esta classe não tem subclasses publicadas.</p></div>{rodape()}</>;
+  // O texto troca em dois tempos: o atual sai em fade e só então o novo entra.
+  const [lendo, setLendo] = useState(sel?.slug);
+  const lido = lista.find((s) => s.slug === lendo) ?? sel;
+  const saindo = !!sel && lido?.slug !== sel.slug;
+  const fimSaida = (e: AnimationEvent<HTMLElement>) => { if (e.target === e.currentTarget && e.animationName === "pg-sb-sai") setLendo(sel?.slug); };
+  if (!sel || !lido) return <><div className="pg-corpo"><p className="pg-sb-vazio">Esta classe não tem subclasses publicadas.</p></div>{rodape()}</>;
   const ir = (r: string) => secoes.current[r]?.scrollIntoView({ block: "start", behavior: "smooth" });
 
   return (
@@ -51,9 +84,9 @@ export function PassoSubclasse({ etapa, catalogos, classe, classeSlug, mudar, ro
       <div className="pg-corpo pg-corpo--coluna">
         <div className="pg-sb-topo">
           <div className="pg-sb-heroi">
-            <ArteSubclasse slug={sel.slug} classeSlug={classeSlug} posicao={enquadramentoSubclasse(sel.slug).retrato} alt={sel.nome} />
+            <HeroiArte slug={sel.slug} nome={sel.nome} classeSlug={classeSlug} ordem={lista.indexOf(sel)} />
             <span className="pg-sb-heroi__veu" />
-            <span className="pg-sb-heroi__nome"><i /><b>{sel.nome}</b></span>
+            <span key={sel.slug} className="pg-sb-heroi__nome"><i /><b>{sel.nome}</b></span>
           </div>
           <div className="pg-sb-texto">
             <div className="pg-sb-papel">
@@ -62,10 +95,10 @@ export function PassoSubclasse({ etapa, catalogos, classe, classeSlug, mudar, ro
               <span className="pg-mono">Características de Subclasse</span>
             </div>
             <div className="pg-sb-ler">
-              <div key={sel.slug} className="pg-sb-scroll pg-rolagem">
-                {paragrafos(sel.descricao).map((p, i) => <p key={i} className="pg-sb-lore">{p}</p>)}
+              <div key={lido.slug} className={`pg-sb-scroll pg-rolagem ${saindo ? "pg-sb-sai" : "pg-sb-entra"}`} onAnimationEnd={fimSaida}>
+                {paragrafos(lido.descricao).map((p, i) => <p key={i} className="pg-sb-lore">{p}</p>)}
                 {RANKS_SUBCLASSE.map((r) => {
-                  const feats = sel.caracteristicas[r] ?? [];
+                  const feats = lido.caracteristicas[r] ?? [];
                   if (!feats.length) return null;
                   return (
                     <div key={r} ref={(el) => { secoes.current[r] = el; }}>
@@ -80,9 +113,9 @@ export function PassoSubclasse({ etapa, catalogos, classe, classeSlug, mudar, ro
                   );
                 })}
               </div>
-              <nav className="pg-sb-indice" aria-label="Características por Ranking">
+              <nav key={`indice-${lido.slug}`} className={`pg-sb-indice ${saindo ? "pg-sb-sai" : "pg-sb-entra pg-sb-entra--depois"}`} aria-label="Características por Ranking">
                 {RANKS_SUBCLASSE.map((r) => {
-                  const feats = sel.caracteristicas[r] ?? [];
+                  const feats = lido.caracteristicas[r] ?? [];
                   if (!feats.length) return null;
                   const on = r === etapa.para;
                   return (
@@ -103,8 +136,8 @@ export function PassoSubclasse({ etapa, catalogos, classe, classeSlug, mudar, ro
             return (
               <button type="button" key={s.slug} onClick={() => setVendo(s.slug)} aria-pressed={on}
                 aria-label={`${s.nome}${etapa.escolha.subclasse_id === s.slug ? " (escolhida)" : ""}`}
-                className={`pg-sb-tile ${on ? "pg-sb-tile--on" : ""}`}>
-                <ArteSubclasse slug={s.slug} classeSlug={classeSlug} posicao={enquadramentoSubclasse(s.slug).faixa} />
+                className={`pg-sb-tile ${on ? "pg-sb-tile--on" : ""}`} style={{ "--i": i } as CSSProperties}>
+                <ArteSubclasse slug={s.slug} classeSlug={classeSlug} />
                 <span className="pg-sb-tile__veu" />
                 <span className="pg-sb-tile__no">{String(i + 1).padStart(2, "0")}</span>
                 {/* Nome + a primeira característica do Rank E (dado real), como na prancheta. */}
@@ -142,7 +175,7 @@ export function PassoGanhos({ etapa, catalogos, classe, classeSlug }: PropsPasso
     <div className="pg-corpo">
       <aside className="pg-vg-retrato pg-vidro">
         {sub
-          ? <ArteSubclasse slug={sub.slug} classeSlug={classeSlug} posicao={enquadramentoSubclasse(sub.slug).retrato} alt={sub.nome} />
+          ? <ArteSubclasse slug={sub.slug} classeSlug={classeSlug} alt={sub.nome} />
           // eslint-disable-next-line @next/next/no-img-element
           : <img src={`/forja/classes/${classeSlug}.webp`} alt="" className="pg-arte" />}
         <span className="pg-vg-retrato__veu" />
@@ -161,7 +194,7 @@ export function PassoGanhos({ etapa, catalogos, classe, classeSlug }: PropsPasso
             <article className="pg-feat pg-feat--nota"><TextoMd texto="As características chegam com a Subclasse escolhida." /></article>
           )}
           {feats.map((f, i) => (
-            <article key={f.slug} className="pg-feat">
+            <article key={f.slug} className="pg-feat" style={{ "--i": i } as CSSProperties}>
               <div className="pg-feat__cab"><span className="pg-feat__n">{String(i + 1).padStart(2, "0")}</span><h3 className="pg-feat__nome">{f.nome}</h3></div>
               <TextoMd texto={f.descricao} />
             </article>
@@ -198,8 +231,8 @@ export function PassoVertente({ etapa, classe, mudar, primaria }: PropsPasso & {
     <div className="pg-corpo">
       <section className="pg-vt-foco" style={{ "--vx": v.cor, "--vx-luz": LUZ[v.id] } as CSSProperties}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <div className="pg-vt-arte"><img src={v.arte} alt={v.nome} className="pg-arte" /></div>
-        <div className="pg-vt-placa">
+        <div className="pg-vt-arte"><img key={v.id} src={v.arte} alt={v.nome} className="pg-arte" /></div>
+        <div key={v.id} className="pg-vt-placa pg-troca">
           <div>
             <span className="pg-vt-kicker">{v.id === primaria ? "Vertente primária" : "Vertente"}</span>
             <h2 className="pg-vt-nome">{v.nome}</h2>
@@ -224,13 +257,13 @@ export function PassoVertente({ etapa, classe, mudar, primaria }: PropsPasso & {
 
       <aside className="pg-vt-lista">
         <span className="pg-mono pg-mono--cy">{VERTENTES_V12.length} Vertentes</span>
-        {VERTENTES_V12.map((id) => {
+        {VERTENTES_V12.map((id, n) => {
           const a = VERTENTES_ACERVO.find((x) => x.id === id);
           if (!a) return null;
           const on = escolhida === id;
           return (
             <button type="button" key={id} onClick={() => escolher(id)} aria-pressed={on} disabled={cheia(id) && !on}
-              className={`pg-vt-row ${on ? "pg-vt-row--on" : ""}`} style={{ "--vx": a.cor, "--vx-luz": LUZ[id] } as CSSProperties}>
+              className={`pg-vt-row ${on ? "pg-vt-row--on" : ""}`} style={{ "--vx": a.cor, "--vx-luz": LUZ[id], "--i": n } as CSSProperties}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <span className="pg-vt-thumb"><img src={a.arte} alt="" className="pg-arte" /></span>
               <span className="pg-vt-row__texto">
@@ -258,7 +291,7 @@ export function PassoPericias({ etapa, catalogos, classe, mudar }: PropsPasso) {
       <aside className="pg-pk-lado">
         <div className="pg-pk-saldo">
           <span className="pg-mono pg-mono--am">Pontos a distribuir</span>
-          <b>{restam}</b>
+          <b key={restam} className="pg-conta">{restam}</b>
           <span className="pg-pk-saldo__de">de {a.pontos_pericia} restantes neste Ranking</span>
         </div>
         <div className="pg-pk-leg">
@@ -273,7 +306,7 @@ export function PassoPericias({ etapa, catalogos, classe, mudar }: PropsPasso) {
       </aside>
 
       <section className="pg-pk-grade pg-rolagem">
-        {catalogos.pericias.map((p) => {
+        {catalogos.pericias.map((p, i) => {
           const base = etapa.base.pericias[p.id] ?? 0;
           const n = etapa.escolha.pericias[p.id] ?? 0;
           const pode = etapa.pericias_gastas < a.pontos_pericia && base + n < a.limite_pericia;
@@ -284,7 +317,7 @@ export function PassoPericias({ etapa, catalogos, classe, mudar }: PropsPasso) {
             mudar({ pericias });
           };
           return (
-            <div key={p.id} className={`pg-pk-carta ${rec ? "pg-pk-carta--rec" : base + n === 0 ? "pg-pk-carta--apagada" : ""}`}>
+            <div key={p.id} className={`pg-pk-carta ${rec ? "pg-pk-carta--rec" : base + n === 0 ? "pg-pk-carta--apagada" : ""}`} style={{ "--i": i } as CSSProperties}>
               <button type="button" disabled={!pode} onClick={() => ajustar(1)} className="pg-pk-carta__corpo"
                 title={pode ? "+1 ponto" : base + n >= a.limite_pericia ? `No limite ${a.limite_pericia}` : "Sem pontos"}>
                 {rec && <span className="pg-pk-carta__rec">REC</span>}
@@ -342,9 +375,9 @@ export function PassoAtributo({ etapa, classe, mudar }: PropsPasso) {
     <div className="pg-corpo">
       <section className="pg-at-foco">
         <span className="pg-at-foco__kicker">Atributo</span>
-        <h2 className="pg-at-foco__nome">{t.nome}</h2>
-        <p className="pg-at-foco__desc">{t.desc}</p>
-        <div className="pg-at-valor">
+        <h2 key={`${t.id}-nome`} className="pg-at-foco__nome pg-troca">{t.nome}</h2>
+        <p key={`${t.id}-desc`} className="pg-at-foco__desc pg-troca" style={{ "--i": 1 } as CSSProperties}>{t.desc}</p>
+        <div key={`${t.id}-valor`} className="pg-at-valor pg-troca" style={{ "--i": 2 } as CSSProperties}>
           <span className="pg-at-valor__n">{base[t.id]} <span className="pg-at-valor__seta">→</span> <span className="pg-at-valor__novo">{base[t.id] + 1}</span></span>
           <div>
             <span className="pg-at-valor__pips">{pips(t.id, "pg-at-pip")}</span>
@@ -352,7 +385,7 @@ export function PassoAtributo({ etapa, classe, mudar }: PropsPasso) {
           </div>
         </div>
         {afeta(t.id).length > 0 && (
-          <div className="pg-at-muda">
+          <div key={`${t.id}-muda`} className="pg-at-muda pg-troca" style={{ "--i": 3 } as CSSProperties}>
             <span className="pg-mono pg-mono--am">O que muda</span>
             {afeta(t.id).map((r) => (
               <div key={r.id} className="pg-at-muda__linha">
@@ -366,12 +399,12 @@ export function PassoAtributo({ etapa, classe, mudar }: PropsPasso) {
 
       <aside className="pg-at-lista">
         <span className="pg-mono pg-mono--cy">{ATRIBUTOS.length} Atributos</span>
-        {ATRIBUTOS.map((a) => {
+        {ATRIBUTOS.map((a, n) => {
           const on = escolhido === a.id;
           const v = base[a.id];
           return (
             <button type="button" key={a.id} onClick={() => escolher(a.id)} aria-pressed={on} disabled={!on && cheio(a.id)}
-              className={`pg-at-row ${on ? "pg-at-row--on" : ""}`}>
+              className={`pg-at-row ${on ? "pg-at-row--on" : ""}`} style={{ "--i": n } as CSSProperties}>
               <span className="pg-at-row__topo">
                 <span className="pg-at-row__cab"><span className="pg-at-row__nome">{a.nome}</span><span className="pg-at-row__nivel">{v}→{v + 1}</span></span>
                 <span className="pg-at-row__desc">{a.desc}</span>

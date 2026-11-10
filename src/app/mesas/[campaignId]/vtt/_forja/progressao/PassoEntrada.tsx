@@ -1,9 +1,8 @@
 "use client";
 
-import { Fragment, type ReactNode } from "react";
+import { Fragment, type CSSProperties, type ReactNode } from "react";
 import { ChevronsUp, Gem, ListChecks, ShieldCheck, Sparkles } from "lucide-react";
 import { RANKINGS_V12, type EtapaProgressaoV12 } from "../../../../../../lib/rulesetV12";
-import { enquadramentoSubclasse } from "../acervo/subclasses";
 import { ArteSubclasse, Rodape, type Acao } from "./Partes";
 import { passoResolvido, tiposDaEtapa, type TipoPasso } from "./fluxo";
 import { rotuloGanho } from "./Passos";
@@ -64,7 +63,7 @@ export function PassoEntrada({ etapa, migalha, personagem, subclasses, classeSlu
             {RANKINGS_V12.filter((r) => r !== "S+" || etapa.para === "S+").map((r, k) => (
               <Fragment key={r}>
                 {k > 0 && <span className="pg-rk-fio" />}
-                <span className={`pg-rk ${k < i ? "pg-rk--feito" : k === i ? "pg-rk--atual" : ""}`}>{r}</span>
+                <span className={`pg-rk ${k < i ? "pg-rk--feito" : k === i ? "pg-rk--atual" : ""}`} style={{ "--i": k } as CSSProperties}>{r}</span>
               </Fragment>
             ))}
           </div>
@@ -74,18 +73,22 @@ export function PassoEntrada({ etapa, migalha, personagem, subclasses, classeSlu
       <div className="pg-corpo">
         <aside className="pg-en-id pg-vidro">
           {sub && !definindo
-            ? <ArteSubclasse slug={sub.slug} classeSlug={classeSlug} posicao={enquadramentoSubclasse(sub.slug).retrato} />
+            ? <ArteSubclasse slug={sub.slug} classeSlug={classeSlug} />
             // eslint-disable-next-line @next/next/no-img-element
             : <img src={`/forja/classes/${classeSlug}.webp`} alt="" className="pg-arte" style={{ objectPosition: "50% 22%" }} />}
           <span className="pg-en-id__veu" />
           <div className="pg-en-id__placa">
             <span className="pg-mono pg-mono--cy">Classe</span>
             <span className="pg-en-id__nome">{personagem.classe}</span>
-            <span className="pg-en-id__sub">{definindo || !sub ? "Subclasse a definir neste Ranking" : sub.nome}</span>
+            {/* Tarja âmbar (a cor da subclasse na escolha), inclinada como os segmentos da Sincronia. */}
+            <span className={`pg-en-sub ${definindo || !sub ? "pg-en-sub--aberta" : ""}`}>
+              <span className="pg-mono">Subclasse</span>
+              <b>{definindo || !sub ? "A definir neste Ranking" : sub.nome}</b>
+            </span>
             {sinc != null && (
               <div className="pg-en-sinc">
                 <div className="pg-en-sinc__linha"><span className="pg-mono">Sincronia</span><span className="pg-mono pg-mono--am">{sinc}%</span></div>
-                <div className="pg-seg">{Array.from({ length: 10 }).map((_, k) => <i key={k} className={k < Math.round(sinc / 10) ? "pg-on" : ""} />)}</div>
+                <div className="pg-seg">{Array.from({ length: 10 }).map((_, k) => <i key={k} className={k < Math.round(sinc / 10) ? "pg-on" : ""} style={{ "--i": k } as CSSProperties} />)}</div>
               </div>
             )}
           </div>
@@ -98,12 +101,12 @@ export function PassoEntrada({ etapa, migalha, personagem, subclasses, classeSlu
           </div>
           <span className="pg-mono pg-en-secao">Neste Ranking</span>
           <div className="pg-en-lista">
-            {itens.map((t) => {
+            {itens.map((t, n) => {
               const [nome, subt] = texto(t);
               const auto = t === "ganhos";
               const feito = passoResolvido(etapa, t);
               return (
-                <button type="button" key={t} onClick={() => onIr(t)} className={`pg-en-item ${auto ? "pg-en-item--auto" : ""}`}>
+                <button type="button" key={t} onClick={() => onIr(t)} className={`pg-en-item ${auto ? "pg-en-item--auto" : ""}`} style={{ "--i": n } as CSSProperties}>
                   <span className={`pg-en-ic ${auto ? "pg-en-ic--auto" : ""}`}>{ICONE[t]}</span>
                   <span className="pg-en-item__texto"><span className="pg-en-item__nome">{nome}</span><span className="pg-en-item__sub">{subt}</span></span>
                   {!auto && <span className={`pg-tag ${feito ? "pg-tag--feito" : ""}`}>{feito ? "Feito" : "Pendente"}</span>}

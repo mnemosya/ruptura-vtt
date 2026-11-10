@@ -16,6 +16,7 @@ export default async function ProgressaoDevPage({ searchParams }: { searchParams
   return (
     <ProgressaoDev
       catalogos={catalogoDev()}
+      classeSlug={q.classe}
       caso={q.caso ?? "E"}
       tela={q.tela}
       quadro={q.quadro === "1"}

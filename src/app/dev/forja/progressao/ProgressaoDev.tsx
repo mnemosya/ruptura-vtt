@@ -21,13 +21,13 @@ const CASOS: Record<string, { partida: PartidaProgressaoV12; alvo: RankingV12 }>
 };
 
 /**
- * Prévia isolada da Progressão em sub-etapas, com o Combatente.
+ * Prévia isolada da Progressão em sub-etapas, com o Combatente (ou `?classe=<slug>`).
  * `?caso=E|C|D|multi`, `?palco=1440|1920`, `?tela=E:vertente` abre direto numa sub-etapa e
  * `?quadro=1` prende a tela em 1080×700 — o tamanho das pranchetas —
  * para a comparação lado a lado.
  */
-export function ProgressaoDev({ catalogos, caso, tela, quadro, palco, escolhas }: { catalogos: CatalogosCriacaoV12; caso: string; tela?: string; quadro: boolean; palco?: number; escolhas: Record<string, DraftAvancoV12> }) {
-  const classe = catalogos.classes.find((c) => c.slug === "combatente");
+export function ProgressaoDev({ catalogos, classeSlug = "combatente", caso, tela, quadro, palco, escolhas }: { catalogos: CatalogosCriacaoV12; classeSlug?: string; caso: string; tela?: string; quadro: boolean; palco?: number; escolhas: Record<string, DraftAvancoV12> }) {
+  const classe = catalogos.classes.find((c) => c.slug === classeSlug);
   const { partida, alvo } = CASOS[caso] ?? CASOS.E;
   const [avancos, setAvancos] = useState<Record<string, DraftAvancoV12>>(escolhas);
   const etapas = useMemo(
@@ -38,7 +38,7 @@ export function ProgressaoDev({ catalogos, caso, tela, quadro, palco, escolhas }
     <ProgressaoFluxo
       contexto={caso === "C" ? "evolucao" : "criacao"}
       kicker={caso === "C" ? "Evolução" : "Etapa 09"}
-      d={{ classeSlug: "combatente", avancos }}
+      d={{ classeSlug, avancos }}
       set={(p) => setAvancos(p.avancos ?? {})}
       catalogos={catalogos}
       etapas={etapas}
