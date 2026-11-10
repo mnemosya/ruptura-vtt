@@ -175,28 +175,28 @@
           {
             "slug": "ponta_de_lanca",
             "nome": "Ponta de Lança",
-            "descricao": "Sua presença na linha de frente gera Ímpeto, um recurso que representa o ritmo adquirido ao avançar e permanecer diretamente envolvido no confronto.\n\nSeu limite inicial é de 2 Ímpetos.\n\nGANHANDO ÍMPETO\nUma vez por rodada, quando entrar ou começar seu turno adjacente a uma criatura hostil, receba 1 Ímpeto. Suas Características de Subclasse podem conceder outras maneiras de ganhar Ímpeto em Rankings superiores.\n\nUSANDO ÍMPETO\nDepois de realizar uma ação, você pode gastar qualquer quantidade de Ímpeto para se deslocar 2 m por Ímpeto gasto, sem gastar PA. Você pode realizar esse deslocamento uma vez depois de cada ação. Todo o Ímpeto destinado ao deslocamento deve ser gasto ao iniciá-lo. Suas Características de Classe e de Subclasse concedem outras maneiras de utilizar Ímpeto em Rankings superiores.\n\nPERDENDO ÍMPETO\nVocê perde todos os Ímpetos quando a cena termina ou quando encerra seu turno sem estar diretamente envolvido no confronto. Para permanecer envolvido, você precisa estar adjacente a uma criatura hostil, ocupando uma posição ameaçada por ela ou participando diretamente de uma disputa ainda ativa determinada pelo Narrador."
+            "descricao": "Sua presença na linha de frente gera **Ímpeto**, um recurso que representa o ritmo adquirido ao avançar e permanecer diretamente envolvido no confronto.\n\nSeu limite inicial é de **2 Ímpetos**.\n\n**GANHANDO ÍMPETO**\n\nUma vez por rodada, quando entrar ou começar seu turno adjacente a uma criatura hostil, receba **1 Ímpeto**.\n\nSuas Características de Subclasse podem conceder outras maneiras de ganhar Ímpeto em Rankings superiores.\n\n**USANDO ÍMPETO**\n\nDepois de realizar uma ação, você pode gastar qualquer quantidade de Ímpeto para se deslocar 2 m por **Ímpeto** gasto, sem gastar PA.\n\nVocê pode realizar esse deslocamento uma vez depois de cada ação. Todo o Ímpeto destinado ao deslocamento deve ser gasto ao iniciá-lo.\n\nSuas Características de Classe e de Subclasse concedem outras maneiras de utilizar Ímpeto em Rankings superiores.\n\n**PERDENDO ÍMPETO**\n\nVocê perde todos os Ímpetos quando a cena termina ou quando encerra seu turno sem estar diretamente envolvido no confronto.\n\nPara permanecer envolvido, você precisa estar adjacente a uma criatura hostil, ocupando uma posição ameaçada por ela ou participando diretamente de uma disputa ainda ativa determinada pelo Narrador."
           }
         ],
         "D": [
           {
             "slug": "ganhar_terreno",
             "nome": "Ganhar Terreno",
-            "descricao": "Seu limite aumenta para 3 Ímpetos.\n\nAlém disso, cada Ímpeto passa a poder ser gasto de uma das seguintes maneiras:\n• Avançar: depois de realizar uma ação, deslocar-se 2 m sem gastar PA;\n• Pressionar: depois de acertar um ataque ou vencer uma manobra de combate, aumentar em 1 a margem de sucesso.\n\nVocê pode gastar vários Ímpetos após a mesma ação, repetindo ou combinando esses efeitos. Cada Ímpeto gasto concede uma aplicação."
+            "descricao": "Seu limite aumenta para **3 Ímpetos**.\n\nAlém disso, cada **Ímpeto** passa a poder ser gasto de uma das seguintes maneiras:\n\n- **Avançar:** depois de realizar uma ação, deslocar-se **2 m** sem gastar PA;\n- **Pressionar:** depois de acertar um ataque ou vencer uma manobra de combate, aumentar em **1** a margem de sucesso;\n\nVocê pode gastar vários Ímpetos após a mesma ação, repetindo ou combinando esses efeitos. Cada Ímpeto gasto concede uma aplicação."
           }
         ],
         "B": [
           {
             "slug": "presenca_dominante",
             "nome": "Presença Dominante",
-            "descricao": "Enquanto possuir 3 Ímpetos, criaturas hostis adjacentes a você sofrem –2 de desvantagem em ataques e manobras de combate que não tenham você entre os alvos."
+            "descricao": "Enquanto possuir **3 Ímpetos**, criaturas hostis adjacentes a você sofrem **–2 de desvantagem** em ataques e manobras de combate que não tenham você entre os alvos."
           }
         ],
         "S": [
           {
             "slug": "avanco_irrefreavel",
             "nome": "Avanço Irrefreável",
-            "descricao": "Seu limite aumenta para 4 Ímpetos.\n\nUma vez por rodada, depois de gastar um ou mais Ímpetos e ainda possuir pelo menos 1 Ímpeto, recupere 1 Ímpeto. Essa recuperação acontece depois que o efeito que exigiu o gasto for resolvido.\n\nAlém disso, quando fosse perder todos os seus Ímpetos por encerrar o turno fora do confronto, conserve 1 Ímpeto."
+            "descricao": "Seu limite aumenta para **4 Ímpetos**.\n\nUma vez por rodada, depois de gastar um ou mais Ímpetos e ainda possuir pelo menos **1 Ímpeto**, recupere **1 Ímpeto**. Essa recuperação acontece depois que o efeito que exigiu o gasto for resolvido.\n\nAlém disso, quando fosse perder todos os seus Ímpetos por encerrar o turno fora do confronto, conserve **1 Ímpeto**."
           }
         ]
       },
