@@ -55,11 +55,13 @@ type Feedback =
   | { kind: "needsConfirmation"; email: string };
 
 function TextField({
-  id, label, type, value, onChange, error, icon, placeholder, autoComplete, readOnly, testId,
+  id, label, type, inputMode, spellCheck, value, onChange, error, icon, placeholder, autoComplete, readOnly, testId,
 }: {
   id: string;
   label: string;
   type: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  spellCheck?: boolean;
   value: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   error?: string;
@@ -78,6 +80,8 @@ function TextField({
           id={id}
           data-testid={testId}
           type={type}
+          inputMode={inputMode}
+          spellCheck={spellCheck}
           value={value}
           onChange={onChange}
           readOnly={readOnly}
@@ -474,7 +478,11 @@ export function LoginForm({
                 id="rv-email"
                 testId="login-email"
                 label="E-MAIL"
-                type="email"
+                // `type=email` desativa substituições de texto do macOS.
+                // A validação do endereço já acontece em `validate()`.
+                type="text"
+                inputMode="email"
+                spellCheck
                 value={email}
                 onChange={lockedEmail ? undefined : (e) => setEmail(e.target.value)}
                 readOnly={!!lockedEmail}
