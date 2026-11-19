@@ -1,0 +1,199 @@
+/* =====================================================================
+   PROPOSTA C — MESA. Escopo `.pc` (raiz do protótipo) e `.rp-c-mesa`
+   (rótulos sobre a mesa, portal no `body`, fora da `.rv-mesa`).
+   Normal = aço sem cor. Sobrecarga = luz ciano (#6ff0ff). Âmbar
+   continua só nas faixas limitadas e na rampa da carga.
+   ===================================================================== */
+
+.pc { --pc-aco: #cfd8df; --pc-luz: #6ff0ff; --pc-ruptura: #ff4fd8; --pc-perigo: #ff5f74; }
+
+/* ── Vitrine: as duas colunas, lado a lado ── */
+.pc .rp-c-pool {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+  margin: 14px 0 14px;
+}
+/* Não magista: uma coluna só, centrada, na mesma escala. */
+.pc .rp-c-pool.is-unica { grid-template-columns: minmax(0, 212px); justify-content: center; }
+
+/* Coluna chanfrada com borda em camada dupla (a de trás é a borda). */
+.pc .rp-c-col {
+  --c-borda: color-mix(in srgb, var(--c-acento) 22%, transparent);
+  --c-fundo: rgba(5, 16, 26, .72);
+  position: relative; display: block; width: 100%; margin: 0; padding: 1px; border: 0;
+  background: var(--c-borda); color: inherit; font: inherit; text-align: center;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  transition: background 160ms ease-out;
+}
+.pc button.rp-c-col { cursor: pointer; }
+.pc .rp-c-col-in {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 8px 10px 10px;
+  background: var(--c-fundo);
+  clip-path: polygon(0 0, calc(100% - 9.6px) 0, 100% 9.6px, 100% 100%, 9.6px 100%, 0 calc(100% - 9.6px));
+  transition: background 160ms ease-out, box-shadow 160ms ease-out;
+}
+/* A que vale: borda e fundo na cor do veredito. */
+.pc .rp-c-col[data-vale] {
+  --c-borda: color-mix(in srgb, var(--c-cor) 58%, transparent);
+  --c-fundo: color-mix(in srgb, var(--c-cor) 9%, #05101a);
+}
+/* A luz do Sobrecarga mora dentro da peça (o recorte cortaria um brilho por fora). */
+.pc .rp-c-col[data-natureza="sobrecarga"] .rp-c-col-in { box-shadow: inset 0 0 22px rgba(111, 240, 255, .07); }
+.pc .rp-c-col[data-natureza="sobrecarga"][data-vale] .rp-c-col-in { box-shadow: inset 0 0 28px rgba(111, 240, 255, .18); }
+/* A outra, esmaecida — só os filhos (a peça e o rótulo de ação ficam inteiros). */
+.pc .rp-c-col[data-apagada] .rp-c-col-in > :not(.rp-c-col-pe) { opacity: .45; transition: opacity 160ms ease-out; }
+
+/* Acionável: o hover acende a prévia da troca. */
+.pc .rp-c-col[data-acao]:not(:disabled):hover { --c-borda: color-mix(in srgb, var(--c-acento) 72%, transparent); }
+.pc .rp-c-col[data-acao]:not(:disabled):hover .rp-c-col-in > * { opacity: 1; }
+.pc .rp-c-col[data-acao]:focus-visible { outline: none; --c-borda: #eaf6ff; }
+
+.pc .rp-c-col-cab {
+  align-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: 4px; min-height: 22px;
+  color: var(--c-acento); font: 700 9.5px var(--font-oxanium), sans-serif; letter-spacing: .13em; text-transform: uppercase;
+}
+.pc .rp-c-col-nome { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.pc .rp-c-col-cab svg { flex: none; }
+.pc .rp-c-col-rot { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Estado da coluna, no canto da cabeça: "Vale" na que vale; a ação
+   (Trocar/Voltar) na outra. */
+.pc .rp-c-col-pe {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  min-height: 20px; padding: 0 4px;
+  color: color-mix(in srgb, var(--c-cor) 80%, #eaf6ff); font: 800 9px var(--font-oxanium), sans-serif; letter-spacing: .12em; text-transform: uppercase;
+}
+.pc .rp-c-col-pe:empty { display: none; }
+.pc .rp-c-col-pe[data-acao] {
+  border: 1px solid color-mix(in srgb, var(--c-acento) 55%, transparent); color: var(--c-acento);
+  transition: background 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out;
+}
+.pc .rp-c-col[data-acao]:not(:disabled):hover .rp-c-col-pe,
+.pc .rp-c-col[data-acao]:focus-visible .rp-c-col-pe { background: var(--c-acento); border-color: var(--c-acento); color: #05101a; }
+
+.pc .rp-c-col-corpo { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 40px; }
+.pc .rp-c-col-total { font: 600 40px/.8 var(--font-teko), sans-serif; font-variant-numeric: tabular-nums; }
+.pc .rp-c-col-faixa {
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 2px 6px; min-height: 14px;
+  font: 800 10.5px/1.3 var(--font-oxanium), sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #4f7086;
+}
+.pc .rp-c-col-faixa i { font: 700 11px var(--font-mono), monospace; font-style: normal; letter-spacing: 0; }
+.pc .rp-c-col:not([data-pronta]) .rp-c-col-faixa { font: 10px var(--font-mono), monospace; letter-spacing: .06em; text-transform: none; }
+
+/* ── Conta e barra do conduto ── */
+.pc .rp-c-res { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.pc .rp-c-conta {
+  margin: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 2px 6px;
+  font: 10px var(--font-mono), monospace; letter-spacing: .05em; text-transform: uppercase; color: #4f7086;
+}
+.pc .rp-c-conta > span { white-space: nowrap; }
+.pc .rp-c-conta b { font: 700 12px var(--font-mono), monospace; color: #8ea0bd; }
+.pc .rp-c-conta-luz { display: inline-flex; align-items: center; gap: 4px; color: var(--pc-luz); }
+
+.pc .rp-c-barra { display: flex; align-items: stretch; gap: 3px; height: 18px; }
+.pc .rp-c-cel {
+  flex: 1 1 0; min-width: 0; display: grid; place-items: center;
+  border: 1px solid #1a3a4b; background: rgba(5, 16, 26, .6); color: #4f7086;
+  font: 700 7.5px var(--font-mono), monospace; letter-spacing: .04em; text-transform: uppercase;
+  overflow: hidden; white-space: nowrap;
+  transition: background 200ms cubic-bezier(.23, 1, .32, 1), border-color 200ms ease-out, color 200ms ease-out;
+}
+.pc .rp-c-cel[data-tipo="base"] { color: var(--pc-luz); }
+.pc .rp-c-cel[data-tipo="ruptura"] { flex-grow: 1.8; border-color: color-mix(in srgb, var(--pc-ruptura) 45%, transparent); color: var(--pc-ruptura); }
+.pc .rp-c-cel[data-tipo="excedente"] { flex-grow: 1.15; border-color: color-mix(in srgb, var(--pc-perigo) 38%, transparent); color: #ff8a98; }
+.pc .rp-c-cel[data-cheia] { background: color-mix(in srgb, var(--pc-luz) 72%, #05101a); border-color: var(--pc-luz); color: #05101a; }
+.pc .rp-c-cel[data-tipo="ruptura"][data-cheia] { background: var(--pc-ruptura); border-color: var(--pc-ruptura); color: #05101a; }
+.pc .rp-c-cel[data-tipo="excedente"][data-cheia] { background: var(--pc-perigo); border-color: var(--pc-perigo); color: #05101a; }
+/* A célula que a troca preencheria. */
+.pc .rp-c-cel[data-previa] { animation: rp-c-previa 1100ms ease-in-out infinite; }
+@keyframes rp-c-previa {
+  0%, 100% { box-shadow: inset 0 0 0 1px currentColor; }
+  50% { box-shadow: inset 0 0 0 1px currentColor, 0 0 10px color-mix(in srgb, currentColor 60%, transparent); }
+}
+/* Com o ponteiro na coluna do Sobrecarga, a prévia para de piscar e fica meio cheia. */
+.pc .rv-rf-hero:has(.rp-c-col[data-acao="trocar"]:is(:hover, :focus-visible)) .rp-c-cel[data-previa] {
+  animation: none; box-shadow: inset 0 0 0 1px currentColor; background: color-mix(in srgb, currentColor 34%, #05101a);
+}
+/* A célula paga entra com um pulso curto (a troca é rara: um pouco mais de ênfase). */
+.pc .rp-c-cel[data-paga] { animation: rp-c-paga 380ms cubic-bezier(.23, 1, .32, 1) both; }
+@keyframes rp-c-paga { from { filter: brightness(1.9); box-shadow: 0 0 14px currentColor; } }
+.pc .rp-c-barra-num { flex: none; min-width: 34px; display: flex; align-items: center; justify-content: flex-end; white-space: nowrap; font: 700 12px var(--font-mono), monospace; color: #eaf6ff; }
+.pc .rp-c-barra-num small { font-size: 10px; font-weight: 400; color: #4f7086; }
+
+.pc .rp-c-legenda {
+  --c-tom: var(--pc-luz);
+  display: flex; align-items: center; gap: 10px; min-height: 24px;
+  font: 10px var(--font-mono), monospace; letter-spacing: .03em; color: #7f95b3;
+}
+.pc .rp-c-legenda[data-tom="ruptura"] { --c-tom: var(--pc-ruptura); }
+.pc .rp-c-legenda[data-tom="perigo"] { --c-tom: var(--pc-perigo); }
+.pc .rp-c-legenda > span { flex: 1; min-width: 0; overflow-wrap: anywhere; color: color-mix(in srgb, var(--c-tom) 70%, #7f95b3); }
+.pc .rp-c-legenda[data-usada] > span { color: #cfeff4; }
+.pc .rp-c-legenda b { color: var(--c-tom); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.pc .rp-c-desfazer { flex: none; margin: 0; height: 26px; }
+.pc .rp-c-acao { margin: 0; text-align: center; font: 9.5px var(--font-mono), monospace; letter-spacing: .06em; color: #7f95b3; }
+
+/* ── Cartão ── */
+.pc .rp-c-traco { display: flex; flex-direction: column; gap: 2px; font: 10px var(--font-mono), monospace; letter-spacing: .03em; color: var(--pc-luz); }
+.pc .rp-c-traco s { color: #4f7086; text-decoration-color: rgba(127, 149, 179, .5); }
+.pc .rp-c-fichas { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.pc .rp-c-cartao-sobre {
+  --c-tom: var(--pc-luz);
+  display: flex; align-items: center; gap: 7px; padding: 6px 4px 6px 9px;
+  box-shadow: inset 2px 0 0 var(--c-tom); background: color-mix(in srgb, var(--c-tom) 7%, transparent);
+  color: var(--c-tom); font: 10px var(--font-mono), monospace; letter-spacing: .03em;
+}
+.pc .rp-c-cartao-sobre[data-tom="ruptura"] { --c-tom: var(--pc-ruptura); }
+.pc .rp-c-cartao-sobre[data-tom="perigo"] { --c-tom: var(--pc-perigo); }
+.pc .rp-c-cartao-sobre > span { flex: 1; min-width: 0; color: #cfeff4; overflow-wrap: anywhere; }
+.pc .rp-c-cartao-sobre > span b { color: var(--c-tom); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.pc .rp-c-cartao-desfazer {
+  flex: none; display: inline-flex; align-items: center; gap: 5px; padding: 3px 6px; border: 0; background: transparent; cursor: pointer;
+  color: #7f95b3; font: 700 9.5px var(--font-oxanium), sans-serif; letter-spacing: .14em; text-transform: uppercase;
+}
+.pc .rp-c-cartao-desfazer:hover { color: #eaf6ff; background: rgba(255, 255, 255, .05); }
+.pc .rp-c-cartao-desfazer:focus-visible { outline: 1px solid var(--c-tom); outline-offset: 1px; }
+
+/* ── Rótulos sobre a mesa (portal no body, valores literais) ── */
+.rp-c-mesa { position: fixed; inset: 0; z-index: 901; pointer-events: none; }
+.rp-c-rot {
+  position: absolute; left: 0; top: 0; padding: 1px;
+  background: color-mix(in srgb, var(--c-cor) 55%, transparent);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .45);
+  animation: rp-c-rot-entra 160ms cubic-bezier(.23, 1, .32, 1) both;
+  transition: opacity 160ms ease-out;
+  will-change: transform;
+}
+@keyframes rp-c-rot-entra { from { opacity: 0; } }
+.rp-c-rot[data-apagado] { opacity: 0; }
+.rp-c-rot[data-natureza="sobrecarga"] { background: color-mix(in srgb, #6ff0ff 60%, transparent); }
+.rp-c-rot-in {
+  display: flex; align-items: baseline; gap: 7px; margin: 0; padding: 6px 10px 7px; border: 0;
+  background: rgba(5, 16, 26, .93); color: var(--c-cor); text-align: left; white-space: nowrap;
+  font: 800 10px var(--font-oxanium), sans-serif; letter-spacing: .12em; text-transform: uppercase;
+  clip-path: polygon(0 0, calc(100% - 7.6px) 0, 100% 7.6px, 100% 100%, 7.6px 100%, 0 calc(100% - 7.6px));
+}
+.rp-c-rot-in b { font: 600 22px/.8 var(--font-teko), sans-serif; letter-spacing: 0; }
+.rp-c-rot-in svg { align-self: center; flex: none; color: #6ff0ff; }
+.rp-c-rot.is-acao { pointer-events: auto; }
+.rp-c-rot.is-acao .rp-c-rot-in { cursor: pointer; transition: background 120ms ease-out; }
+.rp-c-rot.is-acao:hover .rp-c-rot-in { background: rgba(8, 30, 42, .96); }
+.rp-c-rot-in:focus-visible { outline: none; box-shadow: inset 0 0 0 1px #eaf6ff; }
+.rp-c-rot-trocar {
+  align-self: center; padding: 3px 7px; border: 1px solid rgba(111, 240, 255, .55);
+  color: #6ff0ff; font: 800 9px var(--font-oxanium), sans-serif; letter-spacing: .16em;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.rp-c-rot.is-acao:hover .rp-c-rot-trocar,
+.rp-c-rot-in:focus-visible .rp-c-rot-trocar { background: #6ff0ff; color: #05101a; }
+.rp-c-rot-in small { align-self: center; font: 9.5px var(--font-mono), monospace; letter-spacing: .03em; text-transform: none; color: #6ff0ff; }
+.rp-c-rot-in[data-tom="ruptura"] small { color: #ff4fd8; }
+.rp-c-rot-in[data-tom="perigo"] small { color: #ff8a98; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pc .rp-c-cel[data-previa] { animation: none; box-shadow: inset 0 0 0 1px currentColor; }
+  .pc .rp-c-cel[data-paga], .rp-c-rot { animation: none; }
+  .pc .rp-c-col, .pc .rp-c-col-in, .pc .rp-c-cel { transition: none; }
+}
+.rp-escopo[data-reduzido="true"] .pc .rp-c-cel[data-previa] { animation: none; box-shadow: inset 0 0 0 1px currentColor; }
+.rp-escopo[data-reduzido="true"] .pc .rp-c-cel[data-paga] { animation: none; }

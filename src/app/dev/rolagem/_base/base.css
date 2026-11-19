@@ -1,0 +1,202 @@
+/* =====================================================================
+   PROTÓTIPOS DE ROLAGEM — folha comum (/dev/rolagem-*).
+   Prefixo `rp-`. Tudo escopado em `.rp-raiz` (a mesa simulada), na
+   bancada (`.rp-bancada`) ou na camada dos dados (`.rp-overlay`, que
+   mora no `body`, fora da `.rv-mesa` — por isso usa valores literais).
+   ===================================================================== */
+
+.rp-raiz.rv-mesa { grid-template-columns: auto minmax(0, 1fr); }
+.rp-raiz *, .rp-raiz *::before, .rp-raiz *::after { box-sizing: border-box; }
+
+/* ── Palco e mapa de mentira ───────────────────────────────────────── */
+.rp-palco { margin: 0; }
+.rp-mapa { position: absolute; inset: 0; }
+.rp-token {
+  position: absolute; z-index: 1; transform: translate(-50%, -50%);
+  width: 46px; height: 46px; border-radius: 50%; padding: 0;
+  display: grid; place-items: center;
+  border: 2px solid #00d4ff; background: color-mix(in srgb, #00d4ff 12%, #071621);
+  color: #cfeff4; font: 700 10px var(--font-mono), monospace; letter-spacing: .04em;
+  cursor: pointer; transition: box-shadow 120ms ease-out, transform 160ms cubic-bezier(.23, 1, .32, 1);
+}
+.rp-token[data-lado="pn"] { border-color: #ff5f74; background: color-mix(in srgb, #ff5f74 12%, #071621); }
+/* Token é redondo; o chanfro global do chassi (botões dentro de
+   `.rv-mesa`) não vale aqui. Mesmo idioma do `painel.css`: `:not(#_)`
+   sobe a especificidade sem id de verdade. */
+.rp-raiz .rp-token:not(#_) { border-radius: 50% !important; corner-shape: round !important; }
+.rp-bancada :is(button, a):not(#_) { border-radius: 0 !important; corner-shape: round !important; }
+.rp-token:hover { transform: translate(-50%, -50%) scale(1.06); }
+.rp-token[aria-pressed="true"] { box-shadow: 0 0 0 3px #06121c, 0 0 0 5px currentColor; }
+.rp-token:focus-visible { outline: 2px solid #eaf6ff; outline-offset: 3px; }
+.rp-mapa-sel {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); margin: 0;
+  font: 10px var(--font-mono), monospace; letter-spacing: .12em; text-transform: uppercase; color: #4f7086;
+}
+
+.rp-reabrir {
+  position: absolute; left: 16px; top: 16px; z-index: 17;
+  display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 14px;
+  border: 0; background: #0b1c29; color: #eaf6ff; cursor: pointer;
+  font: 700 11px var(--rv-display), sans-serif; letter-spacing: .16em; text-transform: uppercase;
+  box-shadow: inset 0 0 0 1px #1a3a4b; transition: background 120ms ease-out, transform 160ms cubic-bezier(.23, 1, .32, 1);
+}
+.rp-reabrir:hover { background: #102a3b; transform: translateY(-2px); }
+.rp-reabrir:focus-visible { outline: 1px solid #00d4ff; outline-offset: 2px; }
+
+.rp-observando {
+  position: absolute; left: 16px; top: 16px; z-index: 5; margin: 0; max-width: 360px;
+  padding: 8px 10px; border: 1px dashed #3a4450; background: rgba(11, 15, 20, .82);
+  font: 10px/1.5 var(--font-mono), monospace; letter-spacing: .06em; color: #8b96a3;
+}
+
+/* ── Janela ────────────────────────────────────────────────────────── */
+.rp-ajuste-alvo .jf-ajuste-ctl { margin-left: auto; }
+.rp-alvo-modo {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 0; margin: -4px 0;
+  border: 0; background: transparent; color: #4f7086; cursor: pointer;
+  transition: color 120ms ease-out;
+}
+.rp-alvo-modo:hover, .rp-alvo-modo:hover .jf-l { color: #eaf6ff; }
+.rp-alvo-modo[aria-pressed="true"] .jf-l, .rp-alvo-modo[aria-pressed="true"] svg { color: var(--jf-acento); }
+.rp-alvo-modo:focus-visible { outline: 1px solid var(--jf-acento); outline-offset: 2px; }
+/* "Iniciou" — célula de ajuste de largura inteira, com o segmento à direita. */
+.rp-iniciou { grid-column: 1 / -1; gap: 14px; }
+.rp-iniciou-seg { display: flex; min-width: 0; flex: 0 1 260px; gap: 4px; }
+.rp-iniciou-seg button {
+  flex: 1 1 0; min-width: 0; height: 26px; padding: 0 10px; box-sizing: border-box;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  border: 1px solid transparent; background: transparent; color: #7f95b3; cursor: pointer;
+  font: 700 10px var(--rv-display), sans-serif; letter-spacing: .14em; text-transform: uppercase;
+  transition: background 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out;
+}
+.rp-iniciou-seg button span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-iniciou-seg button:hover { background: #0f2735; color: #eaf6ff; }
+.rp-iniciou-seg button[aria-pressed="true"] {
+  border-color: var(--jf-acento); color: #eaf6ff;
+  background: color-mix(in srgb, var(--jf-acento) 10%, var(--fj-fundo-1, #05101a));
+}
+.rp-iniciou-seg button[aria-pressed="true"] svg { color: var(--jf-acento); }
+.rp-iniciou-seg button:focus-visible { outline: 1px solid var(--jf-acento); outline-offset: 2px; }
+
+/* Rodapé fixo da janela: botão de rolar + nota grudam no pé do corpo
+   quando ele rola. Sem rolagem, fica exatamente onde já estava. */
+.rp-rolar-fixo {
+  position: sticky; bottom: -20px; z-index: 3;
+  display: flex; flex-direction: column; gap: 14px;
+  margin: -4px -20px -20px; padding: 0 20px 20px;
+  background: linear-gradient(to bottom, rgba(6, 18, 28, 0), var(--fj-fundo-2, #06121c) 22px);
+}
+.rp-rolar-fixo .rv-rolar-f { margin-top: 0; }
+.rp-rolar-fixo .jf-nota { margin: 0; }
+
+/* Botões das propostas: o hover que sobe fica (padrão da casa). */
+.rp-raiz .rp-acao { transition: transform 160ms cubic-bezier(.23, 1, .32, 1), background 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out, box-shadow 120ms ease-out; }
+.rp-raiz .rp-acao:not(:disabled):hover { transform: translateY(-1px); }
+.rp-raiz .rp-acao:not(:disabled):active { transform: translateY(0) scale(.98); transition-duration: 80ms; }
+
+/* Entrada curta para o que aparece depois do assentar (≤ 200 ms, saída forte). */
+@keyframes rp-entra { from { opacity: 0; transform: translateY(4px); } }
+@keyframes rp-aparece { from { opacity: 0; } }
+.rp-entra { animation: rp-entra 180ms cubic-bezier(.23, 1, .32, 1) both; }
+
+/* ── Chat ──────────────────────────────────────────────────────────── */
+.rp-chat { display: flex; flex-direction: column; }
+.rp-chat-cab {
+  flex: none; display: flex; align-items: center; gap: 9px; height: 46px; padding: 0 14px;
+  border-bottom: 1px solid #122a38; color: #eaf6ff;
+  font: 700 11px var(--rv-display), sans-serif; letter-spacing: .16em; text-transform: uppercase;
+}
+.rp-chat-cab svg { color: #00d4ff; }
+.rp-chat-cab-meta { margin-left: auto; font: 9.5px var(--font-mono), monospace; letter-spacing: .1em; color: #4f7086; }
+.rp-chat .rv-pn-chat { flex: 1; min-height: 0; }
+.rp-chat-lista { padding: 14px 12px 18px; }
+.rp-chat-vazio {
+  margin: auto 0; padding: 32px 8px; text-align: center;
+  font: 10px var(--font-mono), monospace; letter-spacing: .14em; text-transform: uppercase; color: #4f7086;
+}
+.rp-chat-item { animation: rp-entra 200ms cubic-bezier(.23, 1, .32, 1) both; }
+.rp-raiz .pn-cartao-linha[data-focado="true"] > .pn-cartao { box-shadow: 0 0 0 1px var(--pn-a); transition: box-shadow 160ms ease-out; }
+
+/* ── Camada dos dados (no body, fora da mesa) ─────────────────────── */
+.rp-overlay canvas { animation: rp-aparece 120ms ease-out both; }
+.rp-overlay[data-tipo="cena"] canvas { animation-duration: 140ms; }
+.rp-etiqueta-mesa {
+  position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none;
+  padding: 5px 10px 5px 9px; border-left: 2px solid #00d4ff; background: rgba(5, 16, 26, .88);
+  color: #eaf6ff; font: 700 10px var(--font-oxanium), var(--font-chakra), sans-serif; letter-spacing: .14em; text-transform: uppercase;
+  white-space: nowrap; box-shadow: 0 6px 18px rgba(0, 0, 0, .45);
+  transition: opacity 200ms ease-out;
+}
+.rp-etiqueta-mesa[data-assentou="true"] { opacity: 0; transition-delay: 500ms; }
+
+/* ── Bancada ───────────────────────────────────────────────────────── */
+.rp-bancada {
+  position: relative; z-index: 30; width: 288px; height: 100dvh; overflow: hidden auto;
+  display: flex; flex-direction: column;
+  background: repeating-linear-gradient(135deg, #0b0e12 0 8px, #0d1015 8px 16px);
+  border-right: 1px dashed #3a4450;
+  color: #aab4bf; font: 11px/1.45 var(--font-mono), ui-monospace, monospace;
+  scrollbar-width: thin; scrollbar-color: #2a323c transparent;
+}
+.rp-bancada * { box-sizing: border-box; }
+.rp-bancada.is-fechada { width: 34px; }
+.rp-b-abrir {
+  width: 34px; height: 100%; border: 0; background: transparent; color: #8b96a3; cursor: pointer;
+  font: 700 10px var(--font-mono), monospace; letter-spacing: .24em; text-transform: uppercase;
+}
+.rp-b-abrir span { display: inline-block; writing-mode: vertical-rl; transform: rotate(180deg); }
+.rp-b-abrir:hover { color: #e3e8ee; background: #12161c; }
+.rp-b-cab {
+  position: sticky; top: 0; z-index: 1; flex: none;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 14px; background: #0b0e12; border-bottom: 1px dashed #3a4450;
+}
+.rp-b-cab strong { display: block; color: #e3e8ee; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; }
+.rp-b-cab small { display: block; margin-top: 2px; color: #6b7682; font-size: 10px; }
+.rp-bancada button {
+  font: inherit; color: #cfd6de; background: #161b22; border: 1px solid #2a323c; cursor: pointer;
+  padding: 5px 8px; transition: background 100ms, border-color 100ms, color 100ms;
+}
+.rp-bancada button:hover:not(:disabled) { background: #1d242d; border-color: #4a5664; }
+.rp-bancada button:disabled { opacity: .4; cursor: default; }
+.rp-bancada button[aria-pressed="true"] { background: #e3e8ee; color: #0b0e12; border-color: #e3e8ee; }
+.rp-bancada :focus-visible { outline: 2px solid #ffd166; outline-offset: 1px; }
+.rp-b-corpo { padding: 4px 14px 24px; }
+.rp-b-links { display: flex; gap: 6px; margin: 10px 0 2px; }
+.rp-b-links a {
+  flex: 1; text-align: center; padding: 5px 0; border: 1px solid #2a323c; color: #cfd6de; text-decoration: none;
+}
+.rp-b-links a:first-child { flex: 2; }
+.rp-b-links a:hover { border-color: #4a5664; }
+.rp-b-links a[aria-current="page"] { background: #e3e8ee; color: #0b0e12; border-color: #e3e8ee; }
+.rp-b-secao { padding: 12px 0 10px; border-bottom: 1px dashed #262d36; }
+.rp-b-secao h3 { margin: 0 0 8px; color: #6b7682; font-size: 10px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; }
+.rp-b-seg { display: flex; }
+.rp-b-seg button { flex: 1; }
+.rp-b-seg button + button { margin-left: -1px; }
+.rp-b-check { display: flex; align-items: center; gap: 8px; margin-top: 7px; cursor: pointer; }
+.rp-b-check input { accent-color: #e3e8ee; }
+.rp-b-num { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 6px; }
+.rp-b-num-ctl { display: inline-flex; align-items: center; }
+.rp-b-num-ctl button { width: 26px; padding: 3px 0; }
+.rp-b-num-ctl output { min-width: 40px; text-align: center; color: #e3e8ee; font-weight: 700; }
+.rp-b-nota { margin: 8px 0 0; color: #8b96a3; font-size: 10.5px; }
+.rp-b-cenarios { display: grid; gap: 4px; }
+.rp-b-cenarios button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; }
+.rp-b-cenarios b { color: #e3e8ee; font-weight: 700; }
+.rp-b-cenarios small { color: #7b8692; font-size: 10px; }
+.rp-b-remoto { margin-top: 8px; }
+.rp-b-remoto small { color: #8b96a3; }
+.rp-b-linha { display: flex; gap: 4px; margin-top: 5px; }
+.rp-b-linha button { flex: 1; }
+.rp-b-medidas { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0; }
+.rp-b-medidas dt { color: #6b7682; }
+.rp-b-medidas dd { margin: 0; color: #e3e8ee; text-align: right; }
+.rp-b-largo { width: 100%; margin-top: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rp-chat-item, .rp-entra, .rp-overlay canvas { animation-duration: 1ms !important; }
+  .rp-raiz .rp-acao, .rp-token { transition: none !important; }
+}
+.rp-escopo[data-reduzido="true"] .rp-chat-item,
+.rp-escopo[data-reduzido="true"] .rp-entra { animation: rp-aparece 120ms ease-out both !important; }

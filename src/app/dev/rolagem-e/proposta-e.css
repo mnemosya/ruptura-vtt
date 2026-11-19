@@ -1,0 +1,333 @@
+/* =====================================================================
+   PROPOSTA E — CARTA. Escopo `.pe` (raiz da mesa simulada).
+   A mão mora no pé do palco, centrada entre a bancada e o chat.
+   ===================================================================== */
+
+.pe {
+  --re-carta-l: 292px;
+  --re-vao: 18px;
+  --re-fundo: #0a1923;
+  --re-fundo-2: #0d212e;
+  --re-linha: #1b3a4b;
+  --re-tinta: #b8d8e8;
+  --re-clara: #eaf6ff;
+  --re-apagada: #5d7a90;
+  --re-ciano: #00d4ff;
+}
+
+.pe .re-mao :is(button, input, [role="option"], [role="radio"]):not(#_):not(#_) { border-radius: 0 !important; corner-shape: round !important; }
+
+.pe .re-mao {
+  --rp-acento: var(--re-ciano);
+  --jf-acento: var(--re-ciano);
+  position: absolute; z-index: 16; left: 16px; right: 340px; bottom: 18px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  pointer-events: none; color: var(--re-tinta);
+}
+.pe .re-mao > * { pointer-events: auto; }
+/* Quem observa não tem a faixa de ações: a carta baixada não pode encostar no pé da tela. */
+.pe .re-mao[data-observa] { bottom: 34px; }
+
+/* ── o par de cartas ───────────────────────────────────────────────── */
+.pe .re-par { position: relative; display: flex; gap: var(--re-vao); align-items: flex-end; padding-top: 26px; }
+/* A carta baixada desce 20 px: o espaço dela não pode cair no botão. */
+.pe .re-mao[data-par] .re-par { margin-bottom: 18px; }
+
+.pe .re-carta {
+  --px: 0px; --py: 0px; --ps: 1;
+  --tom: var(--re-ciano);
+  position: relative; display: block; width: var(--re-carta-l); padding: 0; border: 0; background: none; color: inherit; text-align: left; font: inherit;
+  transform: translate(var(--px), var(--py)) scale(var(--ps)); transform-origin: 50% 100%;
+  transition: transform 260ms cubic-bezier(.23, 1, .32, 1), filter 200ms ease-out;
+  filter: drop-shadow(0 22px 34px rgba(0, 0, 0, .55));
+}
+/* A carta que vale sobe; a outra baixa e apaga. */
+.pe .re-mao[data-par] .re-carta[data-vale="true"] {
+  --py: -6px;
+  filter: drop-shadow(0 22px 34px rgba(0, 0, 0, .55)) drop-shadow(0 0 22px color-mix(in srgb, var(--tom) 32%, transparent));
+}
+.pe .re-carta[data-vale="false"] { --py: 20px; --ps: .93; filter: drop-shadow(0 16px 24px rgba(0, 0, 0, .5)) saturate(.5) brightness(.66); }
+.pe button.re-carta[data-vale="false"] { cursor: pointer; }
+.pe button.re-carta[data-vale="false"]:hover,
+.pe .re-carta[data-vale="false"]:has(.re-voltar:hover) { --py: 8px; --ps: .96; filter: drop-shadow(0 18px 28px rgba(0, 0, 0, .5)) saturate(.9) brightness(.92); }
+.pe button.re-carta:focus-visible { outline: none; }
+.pe button.re-carta:focus-visible .re-face { outline: 2px solid var(--re-clara); outline-offset: -5px; }
+.pe button.re-carta:active { --ps: .95; transition-duration: 80ms; }
+
+/* Fita "vale" sobre a carta levantada (só com as duas na mesa). */
+.pe .re-mao[data-par] .re-carta[data-vale="true"]::after {
+  content: "Vale"; position: absolute; left: 50%; top: -22px; transform: translateX(-50%);
+  padding: 3px 10px; background: var(--tom); color: #06121c;
+  font: 800 9.5px var(--font-mono), monospace; letter-spacing: .22em; text-transform: uppercase;
+  animation: re-fita 180ms cubic-bezier(.23, 1, .32, 1) both;
+}
+@keyframes re-fita { from { opacity: 0; transform: translate(-50%, 4px); } }
+
+/* A vaga do Sobrecarga: escondida atrás da carta do teste até rolar. */
+.pe .re-vaga {
+  transition: transform 280ms cubic-bezier(.23, 1, .32, 1), opacity 200ms ease-out;
+}
+.pe .re-vaga:not([data-aberta]) {
+  transform: translateX(calc(-100% - var(--re-vao))) scale(.9); opacity: 0; pointer-events: none;
+}
+/* Sem a do Sobrecarga, a carta do teste fica no centro. */
+.pe .re-par:has(> .re-vaga:not([data-aberta])) > .re-principal { --px: calc(var(--re-carta-l) / 2 + var(--re-vao) / 2); }
+.pe .re-par:has(> .re-vaga:not([data-aberta])) > .re-vaga { margin-left: calc(-1 * var(--re-carta-l) - var(--re-vao)); }
+
+/* ── a face (moldura em duas camadas: borda e recheio) ─────────────── */
+.pe .re-face {
+  position: relative; display: block;
+  background: linear-gradient(170deg, var(--tom), #173547 38%, #10293a 70%, color-mix(in srgb, var(--tom) 45%, #10293a));
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+}
+.pe .re-face::before {
+  content: ""; position: absolute; inset: 1.5px; z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 46% at 50% 52%, color-mix(in srgb, var(--cor, var(--tom)) 13%, transparent), transparent 70%),
+    repeating-linear-gradient(135deg, rgba(234, 246, 255, .018) 0 1px, transparent 1px 7px),
+    linear-gradient(180deg, var(--re-fundo-2), var(--re-fundo));
+  clip-path: polygon(0 0, calc(100% - 15.4px) 0, 100% 15.4px, 100% 100%, 15.4px 100%, 0 calc(100% - 15.4px));
+}
+.pe .re-face > * { position: relative; z-index: 1; }
+
+/* Virar: frente (montar) e verso (o Normal) na mesma célula. */
+.pe .re-principal { perspective: 1400px; }
+.pe .re-giro {
+  display: grid; transform-style: preserve-3d;
+  transition: transform 300ms cubic-bezier(.23, 1, .32, 1);
+}
+.pe .re-giro > .re-face { grid-area: 1 / 1; backface-visibility: hidden; transition: visibility 0s linear 0s; }
+.pe .re-giro > .re-face[data-oculta] { visibility: hidden; transition: visibility 0s linear 150ms; }
+.pe .re-verso { transform: rotateY(180deg); }
+.pe .re-principal[data-virada] .re-giro { transform: rotateY(180deg); }
+
+.pe .re-frente-in, .pe .re-verso-in, .pe .re-sobre .re-face {
+  display: flex; flex-direction: column; gap: 10px; min-height: 312px; padding: 16px 18px 18px;
+}
+
+/* ── cabeçalho comum ───────────────────────────────────────────────── */
+.pe .re-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 32px; }
+.pe .re-esc-quem { min-width: 0; }
+.pe .re-esc-quem .rp-esc-gatilho { height: 32px; color: var(--re-clara); }
+.pe .re-esc-quem svg { flex: none; color: var(--re-apagada); }
+.pe .re-av {
+  flex: none; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--re-ciano); background: rgba(0, 212, 255, .08);
+  font: 700 8.5px var(--font-mono), monospace; letter-spacing: .04em; color: #cfeff4;
+}
+.pe .re-quem-nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 14px var(--rv-display), sans-serif; }
+.pe .re-visib {
+  flex: none; width: 30px; height: 30px; display: grid; place-items: center; padding: 0;
+  border: 0; background: transparent; color: var(--re-apagada); cursor: pointer; box-shadow: inset 0 0 0 1px var(--re-linha);
+  transition: color 120ms ease-out, box-shadow 120ms ease-out;
+}
+.pe .re-visib:hover { color: var(--re-clara); box-shadow: inset 0 0 0 1px #2c5a72; }
+.pe .re-visib:focus-visible { outline: 1px solid var(--re-ciano); outline-offset: 2px; }
+
+.pe .re-tipo { font: 700 9px var(--font-mono), monospace; letter-spacing: .22em; text-transform: uppercase; color: var(--re-apagada); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pe .re-dado-rot { display: inline-flex; align-items: center; gap: 8px; min-width: 0; font: 700 10px var(--font-mono), monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--re-tinta); }
+.pe .re-dado-rot > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* A gema da CD: o alvo no canto, como o custo de uma carta. */
+.pe .re-gema { flex: none; display: inline-flex; align-items: center; gap: 8px; }
+.pe .re-gema-rot { font: 700 9px var(--font-mono), monospace; letter-spacing: .18em; color: var(--re-apagada); }
+.pe .re-gema-pedra {
+  width: 30px; height: 30px; display: grid; place-items: center; transform: rotate(45deg);
+  background: linear-gradient(135deg, #eaf6ff, #9fc3d6); box-shadow: 0 0 12px rgba(234, 246, 255, .25);
+}
+.pe .re-gema-pedra b { transform: rotate(-45deg); font: 600 19px/1 var(--font-teko), sans-serif; color: #06121c; padding-top: 2px; }
+
+/* ── frente: montar o teste ────────────────────────────────────────── */
+.pe .re-esc-titulo { min-width: 0; margin-top: -4px; }
+.pe .re-esc-titulo .rp-esc-gatilho { gap: 8px; max-width: 100%; color: var(--re-clara); }
+.pe .re-titulo { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 800 25px/1.1 var(--rv-display), sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+.pe .re-titulo-v { flex: none; font: 600 30px/.8 var(--font-teko), sans-serif; color: var(--re-ciano); }
+.pe .re-esc-titulo svg { flex: none; color: var(--re-apagada); transition: color 120ms ease-out, transform 160ms cubic-bezier(.23, 1, .32, 1); }
+.pe .re-esc-titulo .rp-esc-gatilho:hover svg { color: var(--re-clara); transform: translateY(1px); }
+
+.pe .re-atributos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.pe .re-atributos button {
+  display: flex; align-items: baseline; justify-content: center; gap: 6px; height: 34px; padding: 0 6px;
+  border: 0; background: rgba(4, 14, 22, .45); color: var(--re-apagada); cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--re-linha);
+  transition: color 120ms ease-out, background 120ms ease-out, box-shadow 120ms ease-out;
+}
+.pe .re-atributos span { font: 700 9.5px var(--font-mono), monospace; letter-spacing: .14em; text-transform: uppercase; }
+.pe .re-atributos b { font: 600 19px/1 var(--font-teko), sans-serif; }
+.pe .re-atributos button:hover:not(:disabled),
+.pe .re-atributos button[aria-checked="true"] {
+  color: var(--re-clara); background: color-mix(in srgb, var(--re-ciano) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--re-ciano) 55%, transparent);
+}
+.pe .re-atributos button[aria-checked="true"] b { color: var(--re-ciano); }
+.pe .re-atributos button:focus-visible { outline: 1px solid var(--re-ciano); outline-offset: 1px; }
+.pe .re-atributos button:disabled { cursor: default; }
+
+.pe .re-formula {
+  display: flex; align-items: baseline; gap: 8px; padding: 12px 2px 10px; margin: 2px 0;
+  border-top: 1px solid var(--re-linha); border-bottom: 1px solid var(--re-linha);
+}
+.pe .re-formula-d { font: 800 15px var(--rv-display), sans-serif; letter-spacing: .08em; color: var(--re-tinta); }
+.pe .re-formula-op { font: 600 26px/1 var(--font-teko), sans-serif; color: var(--re-apagada); }
+.pe .re-formula-n { font: 600 52px/.74 var(--font-teko), sans-serif; color: var(--re-clara); font-variant-numeric: tabular-nums; }
+.pe .re-formula-faixa { margin-left: auto; font: 700 10px var(--font-mono), monospace; letter-spacing: .12em; color: var(--re-apagada); }
+
+.pe .re-ajustes { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; margin-top: auto; }
+.pe .re-ajuste {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px; height: 34px; padding: 0 2px 0 8px;
+  box-shadow: inset 0 0 0 1px var(--re-linha); background: rgba(4, 14, 22, .45);
+}
+.pe .re-ajuste.is-largo { grid-column: 1 / -1; }
+.pe .re-rot { font: 700 9px var(--font-mono), monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--re-apagada); }
+.pe .re-ajuste .rp-passo-b { width: 22px; }
+.pe .re-ajuste .rp-passo-v { width: 30px; }
+.pe .re-seg { display: inline-flex; gap: 2px; }
+.pe .re-seg button {
+  height: 22px; padding: 0 6px; border: 0; background: transparent; color: var(--re-apagada); cursor: pointer;
+  font: 700 9.5px var(--font-mono), monospace; letter-spacing: .14em;
+  transition: color 120ms ease-out, background 120ms ease-out, box-shadow 120ms ease-out;
+}
+.pe .re-seg button:hover { color: var(--re-clara); }
+.pe .re-seg button[aria-pressed="true"] { color: var(--re-clara); background: rgba(0, 212, 255, .12); box-shadow: inset 0 0 0 1px rgba(0, 212, 255, .55); }
+.pe .re-seg button:focus-visible { outline: 1px solid var(--re-ciano); outline-offset: 1px; }
+.pe .re-seg.is-largo { flex: 1; min-width: 0; justify-content: flex-end; }
+.pe .re-seg.is-largo button { min-width: 0; max-width: 62%; }
+.pe .re-seg.is-largo button span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── verso e carta do Sobrecarga: o resultado ──────────────────────── */
+.pe .re-miolo { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 4px 0; }
+.pe .re-total {
+  font: 600 116px/.74 var(--font-teko), sans-serif; font-variant-numeric: tabular-nums;
+  color: var(--cor, var(--re-clara)); text-shadow: 0 0 34px color-mix(in srgb, var(--cor, #eaf6ff) 45%, transparent);
+  animation: re-total 220ms cubic-bezier(.23, 1, .32, 1) both;
+}
+@keyframes re-total { from { opacity: 0; transform: translateY(8px) scale(.94); } }
+.pe .re-veredito {
+  display: inline-flex; align-items: center; gap: 8px; max-width: 100%;
+  font: 800 14px/1 var(--rv-display), sans-serif; letter-spacing: .13em; text-transform: uppercase; color: var(--cor, var(--re-tinta));
+}
+.pe .re-veredito svg { flex: none; }
+.pe .re-veredito-nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pe .re-veredito b { flex: none; font: 700 14px var(--font-mono), monospace; letter-spacing: 0; }
+.pe .re-conta { font: 10px/1.4 var(--font-mono), monospace; letter-spacing: .05em; text-transform: uppercase; color: var(--re-apagada); }
+.pe .re-conta b { color: var(--cor); }
+.pe .re-miolo.is-rolando .re-total { color: #2c4a5e; text-shadow: none; animation: re-pisca 900ms ease-in-out infinite; }
+.pe .re-miolo.is-rolando .re-veredito { color: var(--re-apagada); }
+@keyframes re-pisca { 50% { opacity: .4; } }
+.pe .re-girando-grande { display: block; margin: 18px 0 10px; animation: re-gira 900ms cubic-bezier(.45, .05, .55, .95) infinite; }
+
+/* Selo do preço: o que se perde ao usar a carta. */
+.pe .re-sobre .re-cab { min-height: 44px; padding-left: 56px; }
+.pe .re-selo {
+  position: absolute !important; top: 16px; left: 16px; z-index: 2 !important;
+  width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--tom) 55%, #fff), var(--tom) 60%);
+  box-shadow: 0 0 0 3px #0a1923, 0 0 0 4px color-mix(in srgb, var(--tom) 70%, transparent), 0 0 18px color-mix(in srgb, var(--tom) 60%, transparent);
+  animation: re-selo 2.4s ease-in-out infinite;
+}
+.pe .re-selo b { font: 600 22px/1 var(--font-teko), sans-serif; color: #12051a; padding-top: 3px; }
+@keyframes re-selo { 50% { box-shadow: 0 0 0 3px #0a1923, 0 0 0 4px color-mix(in srgb, var(--tom) 70%, transparent), 0 0 26px color-mix(in srgb, var(--tom) 85%, transparent); } }
+.pe .re-sobre[data-vale="true"] .re-selo { animation: none; }
+
+.pe .re-preco {
+  display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; margin: 0 -4px -4px;
+  background: color-mix(in srgb, var(--tom) 13%, transparent); box-shadow: inset 2px 0 0 var(--tom);
+}
+.pe .re-preco b { font: 800 11px var(--rv-display), sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--tom); }
+.pe .re-preco span { font: 10px var(--font-mono), monospace; letter-spacing: .03em; color: var(--re-tinta); }
+.pe .re-preco[data-pendente] b::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-left: 8px; border-radius: 50%; background: var(--tom); vertical-align: middle; animation: re-pisca 900ms ease-in-out infinite; }
+.pe .re-sobre[data-vale="false"] .re-preco { padding-right: 84px; }
+.pe .re-usar {
+  position: absolute !important; right: 14px; bottom: 21px;
+  padding: 6px 10px; background: var(--tom); color: #12051a;
+  font: 800 10px var(--font-mono), monospace; letter-spacing: .16em; text-transform: uppercase;
+  transition: transform 160ms cubic-bezier(.23, 1, .32, 1);
+}
+.pe button.re-sobre:hover .re-usar { transform: translateY(-1px); }
+.pe .re-sobre[data-voo] .re-face::before { background: repeating-linear-gradient(135deg, rgba(157, 140, 255, .05) 0 2px, transparent 2px 9px), linear-gradient(180deg, var(--re-fundo-2), var(--re-fundo)); }
+.pe .re-sobre .re-dado-rot.is-sobre > span:last-child { color: var(--tom); }
+
+/* A carta do Normal baixada é o desfazer. */
+.pe .re-voltar {
+  position: absolute; inset: 0; z-index: 5; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 18px;
+  border: 0; background: transparent; cursor: pointer;
+}
+.pe .re-voltar span {
+  display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px;
+  background: rgba(6, 18, 28, .92); color: var(--re-clara); box-shadow: inset 0 0 0 1px #2c5a72;
+  font: 800 10px var(--font-mono), monospace; letter-spacing: .14em; text-transform: uppercase;
+}
+.pe .re-voltar:focus-visible span { outline: 2px solid var(--re-clara); outline-offset: 2px; }
+
+/* ── ações (sob a mão) ─────────────────────────────────────────────── */
+.pe .re-acoes {
+  display: flex; align-items: center; gap: 10px; width: var(--re-carta-l);
+  transition: width 260ms cubic-bezier(.23, 1, .32, 1);
+}
+.pe .re-mao[data-par] .re-acoes { width: calc(var(--re-carta-l) * 2 + var(--re-vao)); }
+.pe .re-editar {
+  flex: none; display: inline-flex; align-items: center; gap: 7px; height: 44px; padding: 0 14px;
+  border: 0; background: rgba(6, 18, 28, .88); color: var(--re-tinta); cursor: pointer; box-shadow: inset 0 0 0 1px var(--re-linha);
+  font: 700 10px var(--font-mono), monospace; letter-spacing: .14em; text-transform: uppercase;
+}
+.pe .re-editar:hover:not(:disabled) { color: var(--re-clara); box-shadow: inset 0 0 0 1px #2c5a72; }
+.pe .re-editar:disabled { opacity: .45; cursor: default; }
+.pe .re-editar:focus-visible { outline: 1px solid var(--re-ciano); outline-offset: 2px; }
+.pe .re-pool { flex: none; display: flex; gap: 2px; margin-left: auto; }
+.pe .re-mao:not([data-par]) .re-pool { margin-left: 0; }
+.pe .re-pool-s { filter: drop-shadow(0 0 calc(2px + var(--brilho, 0) * 10px) color-mix(in srgb, var(--tom) calc(30% + var(--brilho, 0) * 60%), transparent)); }
+.pe .re-girando { animation: re-gira 900ms cubic-bezier(.45, .05, .55, .95) infinite; }
+@keyframes re-gira { 50% { transform: rotate(18deg) scale(.92); opacity: .7; } }
+.pe .re-acoes .rv-rolar-f {
+  flex: 1; min-width: 0; max-width: 300px;
+  clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 11px 100%, 0 calc(100% - 11px));
+}
+.pe .re-acoes .jf-prim { min-height: 44px; font-size: 12px; letter-spacing: .22em; }
+.pe .re-acoes .jf-prim:focus-visible { outline: 1px solid #eaf6ff; outline-offset: -4px; }
+
+/* ── quem observa: recolhida ───────────────────────────────────────── */
+.pe .re-recolhida {
+  display: inline-flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px 0 8px;
+  border: 0; background: rgba(8, 20, 30, .94); color: var(--re-tinta); cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--re-linha), inset 3px 0 0 var(--cor), 0 14px 30px rgba(0, 0, 0, .45);
+  font: 800 11px var(--rv-display), sans-serif; letter-spacing: .12em; text-transform: uppercase;
+  animation: re-fita 200ms cubic-bezier(.23, 1, .32, 1) both;
+}
+.pe .re-recolhida b { font: 600 24px/.8 var(--font-teko), sans-serif; color: var(--cor); margin-right: 4px; }
+.pe .re-recolhida-s { width: 8px; height: 8px; transform: rotate(45deg); background: #9d8cff; }
+
+/* ── chat ──────────────────────────────────────────────────────────── */
+.pe .re-c-antes { font: 10px var(--font-mono), monospace; text-transform: uppercase; letter-spacing: .05em; color: #7f95b3; text-decoration: line-through; text-decoration-color: rgba(127, 149, 179, .6); }
+.pe .re-c-par { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+.pe .re-mini {
+  display: flex; flex-direction: column; gap: 4px; padding: 7px 9px;
+  box-shadow: inset 0 0 0 1px rgba(127, 149, 179, .25); opacity: .6;
+}
+.pe .re-mini[data-vale] { opacity: 1; box-shadow: inset 0 0 0 1px var(--cor); background: color-mix(in srgb, var(--cor) 9%, transparent); }
+.pe .re-mini-rot { display: flex; justify-content: space-between; gap: 6px; white-space: nowrap; font: 700 8.5px var(--font-mono), monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--re-apagada); }
+.pe .re-mini-rot i { font-style: normal; font-weight: 400; color: var(--re-apagada); }
+.pe .re-mini[data-natureza="sobrecarga"] .re-mini-rot { color: #9d8cff; }
+.pe .re-mini-v { display: flex; align-items: baseline; gap: 8px; font: 700 10px var(--font-mono), monospace; color: var(--cor); }
+.pe .re-mini-v b { font: 600 24px/.8 var(--font-teko), sans-serif; }
+.pe .re-c-sobre {
+  --tom: #9d8cff;
+  display: flex; align-items: center; gap: 8px; margin-top: 6px; padding: 7px 8px;
+  background: color-mix(in srgb, var(--tom) 9%, transparent); box-shadow: inset 2px 0 0 var(--tom);
+}
+.pe .re-c-sobre-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font: 10px/1.35 var(--font-mono), monospace; color: var(--re-tinta); }
+.pe .re-c-sobre-txt b { color: var(--tom); text-transform: uppercase; letter-spacing: .08em; }
+.pe .re-c-desfazer {
+  flex: none; display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 8px;
+  border: 0; background: transparent; color: var(--re-clara); cursor: pointer; box-shadow: inset 0 0 0 1px #2c5a72;
+  font: 700 9px var(--font-mono), monospace; letter-spacing: .12em; text-transform: uppercase;
+}
+.pe .re-c-desfazer:hover { background: rgba(234, 246, 255, .08); }
+
+/* ── movimento reduzido ────────────────────────────────────────────── */
+.rp-escopo[data-reduzido] .pe :is(.re-carta, .re-giro, .re-vaga, .re-acoes, .re-total, .re-selo, .re-girando, .re-girando-grande, .re-recolhida, .re-usar),
+.rp-escopo[data-reduzido] .pe .re-carta::after,
+.rp-escopo[data-reduzido] .pe .re-giro > .re-face { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .pe :is(.re-carta, .re-giro, .re-vaga, .re-acoes, .re-total, .re-selo, .re-girando, .re-girando-grande, .re-recolhida, .re-usar),
+  .pe .re-carta::after, .pe .re-giro > .re-face { animation: none !important; transition: none !important; }
+}

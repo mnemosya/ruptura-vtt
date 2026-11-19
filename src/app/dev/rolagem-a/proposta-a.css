@@ -1,0 +1,114 @@
+/* =====================================================================
+   PROPOSTA A — RESERVA. Escopo `.pa` (raiz do protótipo).
+   Âmbar = Sobrecarga, e só ele. Faixas limitadas no gelo.
+   ===================================================================== */
+
+.pa { --pa-ambar: #ff8a1f; --pa-ambar-hi: #ffb47a; --pa-gelo: #d6e6ee; --pa-ruptura: #ff4fd8; --pa-perigo: #ff5f74; }
+
+/* Chat: a espinha das limitadas no gelo. */
+.pa .rv-pn-chat [data-acento="gelo"] { --pn-a: #d6e6ee; }
+
+/* ── Pool (vitrine) ── */
+.pa .rp-a-pool { gap: 14px; }
+.pa .rp-a-pool-rot { font: 10px var(--font-mono), monospace; letter-spacing: .06em; color: #7f95b3; margin-right: -4px; }
+.pa .rp-a-pool .rp-ficha { font-size: 13px; }
+.pa .rp-a-pool-voo { display: inline-flex; }
+
+/* ── Reserva: a linha inteira é o botão; o preço mora nele ── */
+.pa .rp-a-resultado { display: flex; flex-direction: column; gap: 8px; }
+.pa .rp-a-reserva {
+  --pa-borda: color-mix(in srgb, var(--pa-ambar) 38%, transparent);
+  --pa-fundo: color-mix(in srgb, var(--pa-ambar) 5%, #05101a);
+  position: relative; display: block; width: 100%; padding: 1px; border: 0; cursor: pointer;
+  text-align: left; color: inherit; font: inherit;
+  /* Chanfro com borda em camada dupla: a de trás é a borda. */
+  background: var(--pa-borda);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+.pa .rp-a-reserva-in {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  min-height: 52px; padding: 8px 12px 8px 10px;
+  background: var(--pa-fundo);
+  clip-path: polygon(0 0, calc(100% - 9.6px) 0, 100% 9.6px, 100% 100%, 9.6px 100%, 0 calc(100% - 9.6px));
+  transition: background 120ms ease-out;
+}
+.pa .rp-a-reserva:not(:disabled):hover { --pa-borda: color-mix(in srgb, var(--pa-ambar) 70%, transparent); --pa-fundo: color-mix(in srgb, var(--pa-ambar) 11%, #05101a); }
+.pa .rp-a-reserva:focus-visible { outline: none; --pa-borda: #ffe1c7; }
+.pa .rp-a-reserva:disabled { cursor: progress; }
+.pa .rp-a-reserva[data-melhora] .rp-a-seta { color: var(--pa-ambar); }
+.pa .rp-a-reserva[data-tom="ruptura"] { --pa-borda: color-mix(in srgb, var(--pa-ruptura) 40%, transparent); }
+.pa .rp-a-reserva[data-tom="ruptura"]:not(:disabled):hover { --pa-borda: color-mix(in srgb, var(--pa-ruptura) 72%, transparent); }
+.pa .rp-a-reserva[data-tom="perigo"] { --pa-borda: color-mix(in srgb, var(--pa-perigo) 42%, transparent); }
+.pa .rp-a-reserva[data-tom="perigo"]:not(:disabled):hover { --pa-borda: color-mix(in srgb, var(--pa-perigo) 75%, transparent); }
+.pa .rp-a-reserva.is-voo { cursor: default; --pa-borda: color-mix(in srgb, var(--pa-ambar) 18%, transparent); }
+
+.pa .rp-a-chip { display: grid; place-items: center; width: 34px; height: 34px; }
+.pa .rp-a-texto { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pa .rp-a-linha1 {
+  display: flex; align-items: baseline; gap: 6px; min-width: 0; white-space: nowrap; overflow: hidden;
+  font: 800 11px var(--font-oxanium), sans-serif; letter-spacing: .1em; text-transform: uppercase;
+}
+.pa .rp-a-linha1 > span:not(.rp-a-seta):not(.rp-a-margem) { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pa .rp-a-linha1 b { font: 600 22px/0.8 var(--font-teko), sans-serif; letter-spacing: 0; }
+.pa .rp-a-linha1.is-apagada { color: #4f7086; font-weight: 600; }
+.pa .rp-a-seta { color: #4f7086; font-family: var(--font-mono), monospace; font-weight: 700; }
+.pa .rp-a-margem { flex: none; font: 700 11px var(--font-mono), monospace; letter-spacing: 0; }
+.pa .rp-a-preco { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; row-gap: 2px; min-width: 0; }
+.pa .rp-a-preco b { font: 800 10.5px var(--font-oxanium), sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--pa-ambar); line-height: 1.2; }
+.pa .rp-a-preco small { font: 9.5px var(--font-mono), monospace; letter-spacing: .04em; color: #7f95b3; }
+.pa .rp-a-reserva[data-tom="ruptura"] .rp-a-preco b { color: var(--pa-ruptura); }
+.pa .rp-a-reserva[data-tom="perigo"] .rp-a-preco b { color: var(--pa-perigo); }
+/* A ação, à direita: discreta parada, acende no hover/foco da linha inteira. */
+.pa .rp-a-trocar {
+  align-self: center; padding: 6px 9px; border: 1px solid color-mix(in srgb, var(--pa-ambar) 45%, transparent);
+  color: var(--pa-ambar); font: 800 10px var(--font-oxanium), sans-serif; letter-spacing: .16em; text-transform: uppercase;
+  transition: background 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out;
+}
+.pa .rp-a-reserva:not(:disabled):hover .rp-a-trocar,
+.pa .rp-a-reserva:focus-visible .rp-a-trocar { background: var(--pa-ambar); border-color: var(--pa-ambar); color: #08111c; }
+.pa .rp-a-reserva[data-tom="ruptura"] .rp-a-trocar { border-color: color-mix(in srgb, var(--pa-ruptura) 50%, transparent); color: var(--pa-ruptura); }
+.pa .rp-a-reserva[data-tom="ruptura"]:not(:disabled):hover .rp-a-trocar,
+.pa .rp-a-reserva[data-tom="ruptura"]:focus-visible .rp-a-trocar { background: var(--pa-ruptura); border-color: var(--pa-ruptura); color: #08111c; }
+.pa .rp-a-reserva[data-tom="perigo"] .rp-a-trocar { border-color: color-mix(in srgb, var(--pa-perigo) 50%, transparent); color: var(--pa-perigo); }
+.pa .rp-a-reserva[data-tom="perigo"]:not(:disabled):hover .rp-a-trocar,
+.pa .rp-a-reserva[data-tom="perigo"]:focus-visible .rp-a-trocar { background: var(--pa-perigo); border-color: var(--pa-perigo); color: #08111c; }
+.pa .rp-a-acao { margin: -2px 0 0; font: 9.5px var(--font-mono), monospace; letter-spacing: .06em; color: #7f95b3; }
+
+/* Usada: a mesma linha vira o registro do que foi pago, com o desfazer. */
+.pa .rp-a-usada {
+  --pa-tom: var(--pa-ambar);
+  display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 6px 8px 12px;
+  background: color-mix(in srgb, var(--pa-tom) 8%, #05101a); box-shadow: inset 2px 0 0 var(--pa-tom);
+  color: var(--pa-tom);
+}
+.pa .rp-a-usada[data-tom="ruptura"] { --pa-tom: var(--pa-ruptura); }
+.pa .rp-a-usada[data-tom="perigo"] { --pa-tom: var(--pa-perigo); }
+.pa .rp-a-usada-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.pa .rp-a-usada-txt b { font: 800 10.5px var(--font-oxanium), sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+.pa .rp-a-usada-txt span { font: 10px var(--font-mono), monospace; letter-spacing: .03em; color: #b8d8e8; overflow-wrap: anywhere; }
+.pa .rp-a-desfazer { margin: 0; flex: none; }
+.pa .rp-a-nota-faixa { display: inline-flex; align-items: center; gap: 4px; margin-top: 5px; font: 9.5px var(--font-mono), monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--pa-ambar); }
+
+/* ── Cartão ── */
+.pa .rp-a-antes { font: 10px var(--font-mono), monospace; letter-spacing: .03em; color: #4f7086; text-decoration: line-through; text-decoration-color: rgba(127,149,179,.5); }
+.pa .rp-a-fichas { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.pa .rp-a-cartao-sobre {
+  --pa-tom: var(--pa-ambar);
+  display: flex; align-items: center; gap: 7px; padding: 6px 4px 6px 9px;
+  box-shadow: inset 2px 0 0 var(--pa-tom); background: color-mix(in srgb, var(--pa-tom) 7%, transparent);
+  color: var(--pa-tom); font: 10px var(--font-mono), monospace; letter-spacing: .03em;
+}
+.pa .rp-a-cartao-sobre[data-tom="ruptura"] { --pa-tom: var(--pa-ruptura); }
+.pa .rp-a-cartao-sobre[data-tom="perigo"] { --pa-tom: var(--pa-perigo); }
+.pa .rp-a-cartao-sobre > span { flex: 1; min-width: 0; color: #cfeff4; overflow-wrap: anywhere; }
+.pa .rp-a-cartao-sobre > span b { color: var(--pa-tom); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.pa .rp-a-cartao-desfazer {
+  flex: none; display: inline-flex; align-items: center; gap: 5px; padding: 3px 6px; border: 0; background: transparent; cursor: pointer;
+  color: #7f95b3; font: 700 9.5px var(--font-oxanium), sans-serif; letter-spacing: .14em; text-transform: uppercase;
+}
+.pa .rp-a-cartao-desfazer:hover { color: #eaf6ff; background: rgba(255, 255, 255, .05); }
+.pa .rp-a-cartao-desfazer:focus-visible { outline: 1px solid var(--pa-tom); outline-offset: 1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pa .rp-a-reserva-in { transition: none; }
+}

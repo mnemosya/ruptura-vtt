@@ -14,6 +14,7 @@
 
 import { assertDevRouteAllowed } from "../../../lib/dev/guard";
 import { PainelHarness } from "./PainelHarness";
+import { VitrineEstilos } from "./VitrineEstilos";
 import { BandejaDados, RoladorDados } from "../../mesas/[campaignId]/vtt/_dados3d/RoladorDados";
 import { ProvedorMesaDados } from "../../mesas/[campaignId]/vtt/_dados3d/ContextoMesaDados";
 import { MesaDadosOverlay } from "../../mesas/[campaignId]/vtt/_dados3d/MesaDadosOverlay";
@@ -26,6 +27,7 @@ export default function DevDadosPage() {
   return (
     <ProvedorMesaDados>
       <div style={{ minHeight: "100dvh", background: "#060a12", padding: 24, display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
+        <VitrineEstilos />
         <div style={{ width: 434, borderRadius: 2, border: "1px solid #18263f", background: "linear-gradient(160deg,#0b1424,#080e19)", padding: 16 }}>
           <RoladorDados />
         </div>

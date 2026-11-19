@@ -1,0 +1,66 @@
+/* =====================================================================
+   PEÇAS DE COMPOSIÇÃO (D e E) — lista suspensa `Escolha` e número
+   `Passo`. Desenho neutro; cada proposta tinge com `--rp-acento`.
+   ===================================================================== */
+
+.rp-esc { position: relative; display: inline-flex; min-width: 0; }
+.rp-esc-gatilho {
+  display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%;
+  border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; padding: 0;
+}
+.rp-esc-gatilho:disabled { cursor: default; opacity: .55; }
+.rp-esc-gatilho:focus-visible { outline: 1px solid var(--rp-acento, #00d4ff); outline-offset: 3px; }
+
+.rp-esc-lista {
+  position: absolute; z-index: 60; min-width: 220px; max-height: 300px; overflow: auto;
+  display: flex; flex-direction: column; padding: 6px;
+  background: #0a1b27; box-shadow: inset 0 0 0 1px #1d4054, 0 18px 40px rgba(0, 0, 0, .55);
+  animation: rp-esc-entra 140ms cubic-bezier(.23, 1, .32, 1) both;
+  scrollbar-width: thin; scrollbar-color: #1d4054 transparent;
+}
+.rp-esc-lista[data-lado="cima"] { bottom: calc(100% + 8px); transform-origin: bottom left; }
+.rp-esc-lista[data-lado="baixo"] { top: calc(100% + 8px); transform-origin: top left; }
+.rp-esc-lista[data-alinhar="inicio"] { left: -6px; }
+.rp-esc-lista[data-alinhar="fim"] { right: -6px; }
+@keyframes rp-esc-entra { from { opacity: 0; transform: translateY(4px) scale(.98); } }
+
+.rp-esc-titulo {
+  padding: 6px 10px 8px; font: 700 9px var(--font-mono), monospace; letter-spacing: .2em;
+  text-transform: uppercase; color: #4f7086;
+}
+.rp-esc-opcao {
+  display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 0 10px;
+  border: 0; background: transparent; color: #b8d8e8; text-align: left; cursor: pointer;
+  font: 600 13px var(--rv-display, sans-serif); box-shadow: inset 0 0 0 1px transparent;
+  transition: background 120ms ease-out, color 120ms ease-out, box-shadow 120ms ease-out;
+}
+.rp-esc-opcao-nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-esc-opcao-det { font: 9.5px var(--font-mono), monospace; color: #4f7086; }
+.rp-esc-opcao-v { font: 600 17px/1 var(--font-teko, sans-serif); color: var(--rp-acento, #00d4ff); font-variant-numeric: tabular-nums; }
+/* Selecionado = hover: borda acesa e halo, nunca claro sobre médio. */
+.rp-esc-opcao:hover, .rp-esc-opcao:focus-visible, .rp-esc-opcao[aria-selected="true"] {
+  outline: none; color: #eaf6ff;
+  background: color-mix(in srgb, var(--rp-acento, #00d4ff) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rp-acento, #00d4ff) 55%, transparent);
+}
+
+.rp-passo { display: inline-flex; align-items: center; }
+.rp-passo-b {
+  width: 26px; height: 26px; display: grid; place-items: center; padding: 0;
+  border: 0; background: transparent; color: #7f95b3; cursor: pointer;
+  font: 600 15px/1 var(--font-mono), monospace;
+  transition: color 120ms ease-out, background 120ms ease-out;
+}
+.rp-passo-b:hover:not(:disabled) { color: #eaf6ff; background: rgba(127, 149, 179, .12); }
+.rp-passo-b:disabled { opacity: .3; cursor: default; }
+.rp-passo-b:focus-visible { outline: 1px solid var(--rp-acento, #00d4ff); outline-offset: -1px; }
+.rp-passo-v {
+  width: 36px; height: 26px; padding: 0; border: 0; background: transparent; outline: none;
+  text-align: center; color: #eaf6ff; font: 600 21px/1 var(--font-teko, sans-serif); font-variant-numeric: tabular-nums;
+}
+.rp-passo-v::placeholder { color: #4f7086; opacity: 1; }
+.rp-passo-v:focus { box-shadow: inset 0 -1px 0 var(--rp-acento, #00d4ff); }
+
+@media (prefers-reduced-motion: reduce) {
+  .rp-esc-lista { animation: none; }
+}

@@ -11,6 +11,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import * as CANNON from "cannon-es";
 import { parametrosDeLancamento } from "./lancamento";
+import { criarHalo, criarVisualEstilizado, lerEstiloDado, montarCenarioEstilizado, type EstiloDado } from "./estilosDado";
 
 /* ---- triangles per face (non-indexed geometry) ------------------- */
 const TRIS_PER_FACE: Record<number, number> = {
@@ -185,7 +186,16 @@ function createD10(escala = 1): THREE.BufferGeometry {
   // não por ajuste visual (ao contrário da versão anterior, que tinha
   // uma dobra real de ~40° em cada face).
   const n = 5;
-  const R = 1, H = 0.6; // proporções do antiprisma gerador
+  // Proporções do antiprisma gerador. `H` decide o quão pontudo o d10
+  // sai: o polo do dual fica a 1/H, então H baixo = pontas compridas.
+  // Com 0,6 o polo ficava 49% mais longe do centro que os vértices do
+  // equador; como o porte é normalizado pelo CIRCUNRAIO (a ponta), o
+  // corpo encolhia para 0,58 enquanto os outros dados ocupam 0,88 — o
+  // d10 parecia menor E mais comprido. Com 0,85 a ponta fica só ~6% além
+  // do equador: todos os vértices quase na mesma esfera, mesmo porte dos
+  // demais. Continua um trapezoedro pentagonal (faces iguais e planas),
+  // então nenhuma face fica favorecida.
+  const R = 1, H = 0.85;
   const vec = (a: number, h: number) => new THREE.Vector3(R * Math.cos(a), h, R * Math.sin(a));
   const T = Array.from({ length: n }, (_, i) => vec((2 * Math.PI * i) / n, H));
   const B = Array.from({ length: n }, (_, i) => vec((2 * Math.PI * i) / n + Math.PI / n, -H));
@@ -408,6 +418,49 @@ export function topFaceValue(faces: FaceInfo[], quaternion: CANNON.Quaternion, s
   return best.value;
 }
 
+/**
+ * Um dado PARADO, com a face de maior valor para cima, no estilo pedido
+ * — para a vitrine de `/dev/dados`, que compara os estilos lado a lado
+ * sem física. O grupo já vem apoiado no chão (y = 0).
+ */
+export function criarDadoDeVitrine(sides: number, accent: string, estilo: EstiloDado) {
+  const model = buildDieModel(sides, 1);
+  const descartaveis: { dispose: () => void }[] = [model.geo];
+  let group: THREE.Group;
+  let destacar: (valor: number) => void = () => {};
+  if (estilo === "atual") {
+    const material = new THREE.MeshPhongMaterial({
+      color: new THREE.Color("#07101d"), emissive: new THREE.Color(accent), emissiveIntensity: 0.055,
+      specular: new THREE.Color(accent), shininess: 105,
+    });
+    const mesh = new THREE.Mesh(model.geo, material);
+    mesh.castShadow = true;
+    const edgeGeo = new THREE.EdgesGeometry(model.geo, 12);
+    const edgeMaterial = new THREE.LineBasicMaterial({ color: new THREE.Color(accent) });
+    group = new THREE.Group();
+    group.add(mesh, new THREE.LineSegments(edgeGeo, edgeMaterial));
+    addFaceLabels(model.geo, group, sides, accent, 1);
+    descartaveis.push(material, edgeGeo, edgeMaterial);
+  } else {
+    const visual = criarVisualEstilizado(model.geo, sides, TRIS_PER_FACE[sides] ?? 1, accent, estilo);
+    group = visual.group;
+    destacar = visual.destacar;
+    descartaveis.push({ dispose: visual.descartar });
+  }
+  // Face de maior valor para cima (no d4, para BAIXO: ele se lê pela ponta).
+  const topo = model.faces.reduce((a, b) => (b.value > a.value ? b : a));
+  const alvo = new THREE.Vector3(0, sides === 4 ? -1 : 1, 0);
+  const pose = new THREE.Quaternion().setFromUnitVectors(topo.normal, alvo);
+  group.quaternion.copy(pose);
+  const pos = model.geo.attributes.position as THREE.BufferAttribute;
+  let minY = Infinity;
+  for (let i = 0; i < pos.count; i++) {
+    minY = Math.min(minY, new THREE.Vector3().fromBufferAttribute(pos, i).applyQuaternion(pose).y);
+  }
+  group.position.y = -minY;
+  return { group, pose, valor: topo.value, destacar, descartar: () => descartaveis.forEach((d) => d.dispose()) };
+}
+
 function random01() {
   const values = new Uint32Array(1);
   crypto.getRandomValues(values);
@@ -429,6 +482,7 @@ export function PhysicsDiceArena({
   className,
   perfil = "bandeja",
   forca,
+  estilo,
 }: {
   dice: PhysicsDieSpec[];
   rollToken: number;
@@ -445,6 +499,9 @@ export function PhysicsDiceArena({
   /** 0–1: quanto o botão "Rolar" foi carregado. Só afeta as condições
    *  INICIAIS do lançamento (impulso, giro) — nunca a face lida no fim. */
   forca?: number;
+  /** Estilo visual (`estilosDado`). Sem valor, vale o escolhido no
+   *  harness `/dev/dados` — e, sem escolha, o `ESTILO_PADRAO` (metal). */
+  estilo?: EstiloDado;
   /** Compatibilidade com o chamador. O overlay tem escala própria em
    * pixels e não acompanha o zoom do mapa. */
   zoomMapa?: number;
@@ -470,6 +527,7 @@ export function PhysicsDiceArena({
     el.appendChild(renderer.domElement);
 
     const mesa = perfil === "mesa";
+    const estiloAtivo = estilo ?? lerEstiloDado();
     // Única ponte entre "quanto tempo seguraram o botão" e a física —
     // aqui, não espalhado pelos pontos abaixo, pra continuar sendo UMA
     // conversão, testável isolada de `three`/`cannon-es`.
@@ -505,6 +563,9 @@ export function PhysicsDiceArena({
     camera.position.set(0, 100 * Math.cos(inclinacao), 100 * Math.sin(inclinacao));
     camera.lookAt(0, 0, 0);
 
+    // Variação em estudo: luz, ambiente e sombra próprios (`estilosDado`).
+    const cenario = estiloAtivo === "atual" ? null : montarCenarioEstilizado(renderer, scene, accent);
+    if (!cenario) {
     scene.add(new THREE.AmbientLight(0xffffff, 0.32));
     const keyLight = new THREE.DirectionalLight(accent, 4.2);
     // A posição da luz era pensada pro ângulo ANTERIOR da câmera — de
@@ -518,13 +579,14 @@ export function PhysicsDiceArena({
     const rimLight = new THREE.DirectionalLight(0xffffff, 0.8);
     rimLight.position.set(-4, 3, -2);
     scene.add(rimLight);
+    }
 
     // Na mesa o "piso" não pode ser um retângulo opaco: ele tamparia o
     // mapa de verdade por baixo dos dados. `ShadowMaterial` desenha SÓ a
     // sombra de contato — o resto do plano fica transparente — então o
     // mapa continua visível, com os dados ancorados nele por sombra.
     const floorMaterial: THREE.Material = mesa
-      ? new THREE.ShadowMaterial({ opacity: 0.32 })
+      ? new THREE.ShadowMaterial({ opacity: cenario ? 0.42 : 0.32 })
       : new THREE.MeshStandardMaterial({ color: new THREE.Color("#07101d"), roughness: 0.88, metalness: 0.08 });
     const floorMesh = new THREE.Mesh(
       new THREE.PlaneGeometry(arenaHalfX * 2, arenaHalfZ * 2),
@@ -617,6 +679,11 @@ export function PhysicsDiceArena({
 
     const physicalDice = dice.map((die, index) => {
       const model = buildDieModel(die.sides, escala);
+      const estilizado = estiloAtivo === "atual"
+        ? null
+        : criarVisualEstilizado(model.geo, die.sides, TRIS_PER_FACE[die.sides] ?? 1, accent, estiloAtivo);
+      const halo = estilizado ? criarHalo(accent, CIRCUNRAIO_ALVO * escala * 3.4) : null;
+      if (halo) scene.add(halo.mesh);
       const material = new THREE.MeshPhongMaterial({
         color: new THREE.Color("#07101d"),
         emissive: new THREE.Color(accent),
@@ -629,9 +696,11 @@ export function PhysicsDiceArena({
       const edgeGeo = new THREE.EdgesGeometry(model.geo, 12);
       const edgeMaterial = new THREE.LineBasicMaterial({ color: new THREE.Color(accent) });
       const edges = new THREE.LineSegments(edgeGeo, edgeMaterial);
-      const group = new THREE.Group();
-      group.add(mesh, edges);
-      addFaceLabels(model.geo, group, die.sides, accent, escala);
+      const group = estilizado ? estilizado.group : new THREE.Group();
+      if (!estilizado) {
+        group.add(mesh, edges);
+        addFaceLabels(model.geo, group, die.sides, accent, escala);
+      }
       scene.add(group);
 
       // Na mesa a massa não muda (`mass: 1`, sempre), mas o dado é
@@ -688,7 +757,7 @@ export function PhysicsDiceArena({
         randomBetween(-giro, giro),
       );
       world.addBody(body);
-      return { die, model, group, body, material, edgeGeo, edgeMaterial };
+      return { die, model, group, body, material, edgeGeo, edgeMaterial, estilizado, halo };
     });
 
     const resize = () => {
@@ -717,6 +786,7 @@ export function PhysicsDiceArena({
         group.position.set(body.position.x, body.position.y, body.position.z);
         group.quaternion.set(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
       });
+      cenario?.ajustar(arenaHalfX, arenaHalfZ);
       floorMesh.scale.set(arenaHalfX / (floorMesh.geometry.parameters.width / 2), arenaHalfZ / (floorMesh.geometry.parameters.height / 2), 1);
       renderer.render(scene, camera);
     };
@@ -735,9 +805,10 @@ export function PhysicsDiceArena({
       elapsed += dt;
       world.step(1 / 120, dt, 8);
 
-      physicalDice.forEach(({ body, group }) => {
+      physicalDice.forEach(({ body, group, halo }) => {
         group.position.set(body.position.x, body.position.y, body.position.z);
         group.quaternion.set(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
+        halo?.seguir(body.position.x, body.position.y, body.position.z);
       });
 
       const stable = physicalDice.every(({ body }) =>
@@ -752,6 +823,9 @@ export function PhysicsDiceArena({
           ...die,
           value: topFaceValue(model.faces, body.quaternion, die.sides),
         }));
+        // A face lida acende e as outras recuam — desenhado no quadro
+        // final, logo abaixo, antes de o laço parar.
+        physicalDice.forEach(({ estilizado }, i) => estilizado?.destacar(results[i].value));
         onSettledRef.current(results);
       }
 
@@ -763,16 +837,21 @@ export function PhysicsDiceArena({
     return () => {
       cancelAnimationFrame(raf);
       observer.disconnect();
+      cenario?.descartar();
       renderer.dispose();
       floorMesh.geometry.dispose();
       floorMaterial.dispose();
       gridMaterials.forEach((material) => material.dispose());
-      physicalDice.forEach(({ model, group, material, edgeGeo, edgeMaterial }) => {
+      physicalDice.forEach(({ model, group, material, edgeGeo, edgeMaterial, estilizado, halo }) => {
+        estilizado?.descartar();
+        halo?.descartar();
         model.geo.dispose();
         material.dispose();
         edgeGeo.dispose();
         edgeMaterial.dispose();
-        group.traverse((child) => {
+        // Os rótulos estilizados usam texturas compartilhadas e já foram
+        // soltos em `estilizado.descartar()`.
+        if (!estilizado) group.traverse((child) => {
           if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
             child.material.map?.dispose();
             child.material.dispose();
@@ -783,7 +862,7 @@ export function PhysicsDiceArena({
       if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accent, diceSignature, height, rollToken, perfil, forca]);
+  }, [accent, diceSignature, height, rollToken, perfil, forca, estilo]);
 
   return (
     <div

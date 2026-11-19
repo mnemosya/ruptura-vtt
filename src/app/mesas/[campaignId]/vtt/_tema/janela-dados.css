@@ -43,7 +43,7 @@
   min-width: 212px; max-height: 220px; overflow: auto; box-sizing: border-box;
   padding: 4px; display: flex; flex-direction: column; gap: 2px;
   background: #071621; border: 1px solid #1a3a4b; box-shadow: 0 14px 32px rgba(0, 0, 0, .65);
-  animation: rv-rf-pop .14s ease-out;
+  animation: rv-rf-pop .14s var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1));
 }
 .rv-fp--f .rv-rf-pop.is-cima { top: auto; bottom: calc(100% + 8px); }
 .rv-fp--f .rv-rf-pop.is-direita { left: auto; right: 0; }

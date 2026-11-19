@@ -30,8 +30,10 @@ import { createPortal } from "react-dom";
 import { PhysicsDiceArena, type PhysicsDieResult } from "./ArenaDados";
 import { usePedidoMesaDados } from "./ContextoMesaDados";
 
-/** Quanto tempo os dados ficam parados na mesa, legíveis, antes de sumir. */
-const TEMPO_LEITURA_MS = 950;
+/** Quanto tempo os dados ficam parados na mesa, legíveis, antes de sumir.
+ *  Eram 950ms, dos quais 320 já apagando: com quatro ou cinco dados não
+ *  dava tempo de ler as faces. */
+const TEMPO_LEITURA_MS = 1800;
 /** Janela final desse tempo em que eles se apagam, em vez de sumir seco. */
 const TEMPO_SAIDA_MS = 320;
 

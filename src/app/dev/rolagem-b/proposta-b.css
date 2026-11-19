@@ -1,0 +1,133 @@
+/* =====================================================================
+   PROPOSTA B — REGISTRO. Escopo `.pb` (raiz do protótipo).
+   A decisão mora no cartão do chat. O Sobrecarga não tem cor fixa: a
+   cor é o preço (`--pb-tom`, posto inline por quem desenha):
+   violeta abaixo do limite · magenta alcança (Ruptura) · vermelho ultrapassa.
+   Âmbar fica onde já estava (faixas limitadas, rampa da carga).
+   ===================================================================== */
+
+.pb { --pb-ink: #cfeff4; --pb-dim: #7f95b3; --pb-fundo: #071621; }
+
+/* Losango do preço — o mesmo `.jf-ponto` das janelas F, na cor do tom. */
+.pb .rp-b-losango {
+  flex: none; display: inline-block; width: 7px; height: 7px;
+  transform: rotate(45deg); background: var(--pb-tom, #9d8cff);
+}
+
+/* ── Janela: pool (sem linha nova) ── */
+.pb .rp-b-pool { gap: 14px; }
+.pb .rp-b-pool-rot { margin-right: -4px; font: 10px var(--font-mono), monospace; letter-spacing: .06em; color: var(--pb-dim); }
+.pb .rp-b-pool .rp-ficha { font-size: 13px; }
+.pb .rp-b-pool-voo { display: inline-flex; }
+.pb .rp-b-ficha-s {
+  display: inline-flex; padding: 3px; margin: -3px; border: 0; background: transparent; cursor: pointer;
+}
+.pb .rp-b-ficha-s:hover .rp-ficha { border-color: var(--pb-tom) !important; }
+.pb .rp-b-ficha-s:focus-visible { outline: 1px solid var(--pb-tom); outline-offset: 2px; }
+/* Uma frase só: o losango e o texto correm juntos e quebram como texto. */
+.pb .rp-b-nota-faixa {
+  display: block; margin-top: 6px;
+  font: 9.5px/1.5 var(--font-mono), monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--pb-tom);
+}
+.pb .rp-b-nota-faixa .rp-b-losango { display: inline-block; width: 6px; height: 6px; margin-right: 6px; vertical-align: 1px; }
+.pb .rp-b-nota-faixa .rp-b-nota-pend { display: inline; }
+.pb .rp-b-nota-pend { color: var(--pb-dim); }
+
+/* ── Cartão ── */
+.pb .rp-b-antes { font: 10px var(--font-mono), monospace; letter-spacing: .03em; color: #4f7086; text-decoration: line-through; text-decoration-color: rgba(127, 149, 179, .5); }
+.pb .rp-b-fichas { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.pb .rp-b-fichas .rp-b-losango { width: 6px; height: 6px; }
+
+/* Decisão: o selo do preço em cima, o botão de usar embaixo (o cartão
+   tem ~215 px de miolo no painel de 316 px). */
+.pb .rp-b-decisao { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding-top: 2px; }
+
+/* Selo chanfrado — borda em camada dupla: a de trás é a borda. */
+.pb .rp-b-selo {
+  align-self: flex-start; display: inline-flex; max-width: 100%; padding: 1px;
+  background: color-mix(in srgb, var(--pb-tom) 46%, transparent);
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+}
+.pb .rp-b-selo-in {
+  display: flex; align-items: flex-start; gap: 8px; min-width: 0; padding: 6px 11px 7px 9px;
+  background: color-mix(in srgb, var(--pb-tom) 10%, var(--pb-fundo));
+  clip-path: polygon(0 0, calc(100% - 6.6px) 0, 100% 6.6px, 100% 100%, 6.6px 100%, 0 calc(100% - 6.6px));
+}
+.pb .rp-b-selo-in > .rp-b-losango { margin-top: 3px; }
+.pb .rp-b-selo-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pb .rp-b-selo-txt b {
+  font: 800 10px/1.3 var(--font-oxanium), sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--pb-tom);
+}
+.pb .rp-b-selo-txt small { font: 9.5px var(--font-mono), monospace; letter-spacing: .04em; color: var(--pb-dim); }
+.pb .rp-b-selo[data-ultima] .rp-b-selo-txt small { color: #ff5f74; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; }
+
+/* Usar Sobrecarga — largura toda, chanfro com borda em camada dupla. */
+.pb .rp-b-usar {
+  --pb-borda: color-mix(in srgb, var(--pb-tom) 55%, transparent);
+  display: block; width: 100%; padding: 1px; border: 0; cursor: pointer;
+  background: var(--pb-borda); color: inherit; font: inherit; text-align: left;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+.pb .rp-b-usar-in {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 46px;
+  padding: 7px 12px 7px 11px; background: color-mix(in srgb, var(--pb-tom) 7%, var(--pb-fundo));
+  clip-path: polygon(0 0, calc(100% - 9.6px) 0, 100% 9.6px, 100% 100%, 9.6px 100%, 0 calc(100% - 9.6px));
+  transition: background 120ms ease-out;
+}
+.pb .rp-b-usar:not(:disabled):hover { --pb-borda: var(--pb-tom); }
+.pb .rp-b-usar:not(:disabled):hover .rp-b-usar-in { background: color-mix(in srgb, var(--pb-tom) 16%, var(--pb-fundo)); }
+.pb .rp-b-usar:focus-visible { outline: none; --pb-borda: #eaf6ff; }
+.pb .rp-b-usar:disabled { cursor: progress; }
+.pb .rp-b-usar:disabled .rp-b-usar-in > * { opacity: .55; }
+.pb .rp-b-usar-txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pb .rp-b-usar-txt b {
+  display: inline-flex; align-items: center; gap: 6px; color: #eaf6ff;
+  font: 800 10.5px var(--font-oxanium), sans-serif; letter-spacing: .14em; text-transform: uppercase;
+}
+.pb .rp-b-usar-txt b svg { flex: none; color: var(--pb-tom); }
+.pb .rp-b-usar-txt small {
+  font: 700 9.5px var(--font-mono), monospace; letter-spacing: .04em; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pb .rp-b-usar-total { flex: none; font: 600 30px/0.8 var(--font-teko), sans-serif; font-variant-numeric: tabular-nums; }
+/* Cartão antigo: a decisão numa linha só, que se abre no clique. */
+.pb .rp-b-recolhida {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; min-height: 24px; padding: 3px 7px 3px 8px;
+  border: 1px dashed color-mix(in srgb, var(--pb-tom) 45%, transparent); background: transparent; cursor: pointer;
+  color: var(--pb-dim); font: 700 9.5px var(--font-mono), monospace; letter-spacing: .06em; text-transform: uppercase;
+}
+.pb .rp-b-recolhida .rp-b-losango { width: 6px; height: 6px; }
+.pb .rp-b-recolhida:hover { color: #eaf6ff; border-style: solid; }
+.pb .rp-b-recolhida:focus-visible { outline: 1px solid var(--pb-tom); outline-offset: 2px; }
+.pb .rp-b-acao { margin: 0; font: 9.5px var(--font-mono), monospace; letter-spacing: .04em; color: var(--pb-dim); }
+
+/* Consequência: o que a troca cobrou, na cor do preço pago. */
+.pb .rp-b-consequencia {
+  display: flex; flex-direction: column; gap: 5px; padding: 8px 8px 8px 10px;
+  box-shadow: inset 2px 0 0 var(--pb-tom); background: color-mix(in srgb, var(--pb-tom) 8%, transparent);
+}
+.pb .rp-b-cons-cab { display: flex; align-items: center; gap: 6px; min-height: 20px; color: var(--pb-tom); }
+.pb .rp-b-cons-cab > svg { flex: none; }
+.pb .rp-b-cons-cab b { flex: 1; min-width: 0; font: 800 10px var(--font-oxanium), sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+.pb .rp-b-cons-txt { font: 10px/1.55 var(--font-mono), monospace; letter-spacing: .02em; color: var(--pb-ink); overflow-wrap: anywhere; }
+.pb .rp-b-consequencia[data-ultima] .rp-b-cons-txt { color: #ffd7dc; }
+.pb .rp-b-desfazer {
+  flex: none; display: inline-flex; align-items: center; gap: 5px; margin: -3px -2px -3px 0; padding: 3px 6px;
+  border: 0; background: transparent; cursor: pointer; color: var(--pb-dim);
+  font: 700 9.5px var(--font-oxanium), sans-serif; letter-spacing: .14em; text-transform: uppercase;
+}
+.pb .rp-b-desfazer:hover { color: #eaf6ff; background: rgba(255, 255, 255, .05); }
+.pb .rp-b-desfazer:focus-visible { outline: 1px solid var(--pb-tom); outline-offset: 1px; }
+
+/* Perda ainda caindo na mesa: um ponto que pulsa até os d4 assentarem. */
+.pb .rp-b-pulso {
+  display: inline-block; width: 6px; height: 6px; margin: 0 7px 1px 0; vertical-align: middle;
+  border-radius: 50%; background: var(--pb-tom); animation: rp-b-pulso 900ms ease-in-out infinite;
+}
+@keyframes rp-b-pulso { 50% { opacity: .25; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pb .rp-b-pulso { animation: none; }
+  .pb .rp-b-usar-in { transition: none; }
+}
+.rp-escopo[data-reduzido="true"] .pb .rp-b-pulso { animation: none; }
