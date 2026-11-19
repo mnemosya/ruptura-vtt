@@ -1,0 +1,473 @@
+/* ==========================================================================
+   LIVRO DIGITAL — estudo em /dev/livro (ver LivroDigital.tsx).
+   Tudo em px do DESENHO: o palco escala a mesa inteira (`--lv-escala`).
+
+   Direção gráfica
+   · Página de 640×860 com mancha de 528×720 em DUAS colunas.
+   · Três vozes de letra: Teko (títulos, altos e condensados, como cartaz),
+     Oxanium (intertítulos e rótulos), Exo 2 (texto).
+   · Duas tintas sobre papel escuro: âmbar marca estrutura (títulos, fios,
+     cabeçalho de tabela); ciano marca remissão e nota.
+   · O CORTE: diagonal de ~5°, a mesma da passarela da capa, fatia a arte e
+     os blocos de cor, com um fio ciano paralelo fora de registro.
+   · A arte sangra: sai pela borda da página e se desfaz no papel.
+   ========================================================================== */
+
+.lv-raiz {
+  --lv-cy: #00d4ff;
+  --lv-am: #ff8a1f;
+  --lv-gelo: #cfeff4;
+  --lv-branco: #f0fafd;
+  --lv-texto: #c0d7e3;
+  --lv-apagado: #7f95b3;
+  --lv-papel: #08141f;
+  --lv-painel: #0e2536;
+  --lv-mesa: #03080d;
+  --lv-acento: var(--lv-am);
+  --lv-titulo: var(--font-teko), var(--font-oxanium), sans-serif;
+  --lv-display: var(--font-oxanium), "Oxanium", var(--font-orbitron), sans-serif;
+  --lv-corpo: var(--font-corpo), system-ui, sans-serif;
+  --lv-mono: var(--font-mono), ui-monospace, monospace;
+  --lv-sai: cubic-bezier(.16, 1, .3, 1);
+  position: fixed; inset: 0; overflow: hidden;
+  background: radial-gradient(ellipse 70% 60% at 50% 46%, #0a1826 0%, transparent 70%), var(--lv-mesa);
+  color: var(--lv-texto);
+  font-family: var(--lv-corpo);
+  -webkit-font-smoothing: antialiased;
+}
+.lv-raiz *, .lv-raiz *::before, .lv-raiz *::after { box-sizing: border-box; }
+/* `:where` zera a especificidade: qualquer classe do livro vence estes resets. */
+:where(.lv-raiz) button { all: unset; box-sizing: border-box; cursor: pointer; }
+:where(.lv-raiz) svg { width: 13px; height: 13px; }
+.lv-raiz button:focus-visible { outline: 1px solid var(--lv-cy); outline-offset: 2px; }
+
+.lv-mesa {
+  position: absolute; left: 50%; top: 50%; width: 1340px; height: 952px;
+  transform: translate(-50%, -50%) scale(var(--lv-escala, 1));
+}
+.lv-livro { position: absolute; left: 30px; top: 36px; width: 1280px; height: 860px; }
+
+/* ---- capa (livro fechado) ------------------------------------------------ */
+.lv-capa {
+  position: absolute; left: 320px; top: 0; width: 640px; height: 860px; overflow: hidden;
+  border-radius: 2px 5px 5px 2px;
+  box-shadow: 0 0 0 1px rgba(0, 212, 255, .22), 14px 30px 70px rgba(0, 0, 0, .75), 3px 3px 0 #0d1d2b, 6px 6px 0 #091520;
+  view-transition-name: lv-dir;
+  transition: translate .22s var(--lv-sai), box-shadow .22s var(--lv-sai);
+}
+.lv-capa:hover { translate: 0 -4px; box-shadow: 0 0 0 1px rgba(0, 212, 255, .45), 18px 40px 80px rgba(0, 0, 0, .8), 3px 3px 0 #0d1d2b, 6px 6px 0 #091520; }
+.lv-capa__face { position: absolute; inset: 0; background: #06121c; }
+.lv-capa__arte { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 62% 50%; }
+.lv-capa__veu { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(6, 18, 28, .9), rgba(6, 18, 28, .35) 36%, rgba(6, 18, 28, .1) 55%, rgba(6, 18, 28, .96) 92%); }
+.lv-capa__lombada { position: absolute; left: 0; top: 0; bottom: 0; width: 26px; background: linear-gradient(to right, rgba(0, 0, 0, .65), rgba(0, 0, 0, .15) 60%, transparent); border-right: 1px solid rgba(207, 239, 244, .07); }
+.lv-capa__topo { position: absolute; top: 44px; left: 0; right: 0; text-align: center; font: 600 11px var(--lv-mono); letter-spacing: .34em; color: var(--lv-gelo); }
+.lv-capa__topo i, .lv-rosto__topo i { font-style: normal; color: var(--lv-am); }
+.lv-capa__marca { position: absolute; top: 150px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 14px; text-shadow: 0 2px 18px #06121c; }
+.lv-capa__frase { font: 600 11px var(--lv-mono); letter-spacing: .3em; color: var(--lv-cy); }
+.lv-capa__logo { --ds-marca-tamanho: 90px; }
+.lv-capa__pe { position: absolute; left: 60px; right: 48px; bottom: 50px; display: flex; flex-direction: column; gap: 3px; padding-left: 14px; border-left: 2px solid var(--lv-cy); }
+.lv-capa__pe strong { font: 700 17px/1.3 var(--lv-display); letter-spacing: .3em; color: var(--lv-gelo); }
+.lv-capa__pe > span { font: 500 10px/1.5 var(--lv-mono); letter-spacing: .1em; color: var(--lv-texto); }
+.lv-capa__lema { display: flex; justify-content: space-between; margin-top: 22px; font: 700 10.5px var(--lv-mono); letter-spacing: .12em; color: var(--lv-gelo); }
+.lv-capa__lema span:last-child { color: var(--lv-am); }
+
+/* ---- livro aberto ---------------------------------------------------------- */
+.lv-prancha { position: absolute; inset: -5px -12px; z-index: 0; border-radius: 3px; background: #050d15; box-shadow: 0 0 0 1px rgba(0, 212, 255, .12), 0 44px 90px rgba(0, 0, 0, .8), 0 6px 18px rgba(0, 0, 0, .6); }
+.lv-lombada { position: absolute; left: 639px; top: 0; width: 2px; height: 100%; z-index: 4; background: rgba(0, 0, 0, .55); pointer-events: none; }
+
+.lv-pagina { position: absolute; top: 0; width: 640px; height: 860px; z-index: 2; overflow: hidden; isolation: isolate; background: var(--lv-papel); }
+.lv-pagina--esq { left: 0; view-transition-name: lv-esq; }
+.lv-pagina--dir { left: 640px; view-transition-name: lv-dir; }
+/* Grão do papel, bem fino. */
+.lv-pagina::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .7 0 0 0 0 .9 0 0 0 0 1 0 0 0 .035 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* A dobra: uma sombra curta junto à lombada, só o bastante para as duas páginas não virarem uma chapa. */
+.lv-pagina::after { content: ""; position: absolute; top: 0; bottom: 0; width: 46px; z-index: 5; pointer-events: none; }
+.lv-pagina--esq::after { right: 0; background: linear-gradient(to left, rgba(0, 0, 0, .42), transparent); }
+.lv-pagina--dir::after { left: 0; background: linear-gradient(to right, rgba(0, 0, 0, .42), transparent); }
+
+/* Fólio: número grande na margem de fora, capítulo em versalete ao lado. */
+.lv-folio { position: absolute; bottom: 24px; z-index: 3; display: flex; align-items: baseline; gap: 12px; }
+.lv-pagina--esq .lv-folio { left: 56px; }
+.lv-pagina--dir .lv-folio { right: 56px; flex-direction: row-reverse; }
+.lv-folio b { font: 600 27px/1 var(--lv-titulo); color: var(--lv-branco); font-variant-numeric: tabular-nums; }
+.lv-folio span { max-width: 380px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 500 8.5px/1 var(--lv-mono); letter-spacing: .24em; text-transform: uppercase; color: var(--lv-apagado); }
+
+/* Unha: a marca do capítulo impressa na borda de fora, cada capítulo um degrau abaixo. */
+.lv-unha { position: absolute; z-index: 3; width: 24px; height: 20px; display: grid; place-items: center; background: var(--lv-cor); color: #04121c; font: 800 9px/1 var(--lv-display); letter-spacing: .02em; }
+.lv-pagina--esq .lv-unha { left: 0; }
+.lv-pagina--dir .lv-unha { right: 0; }
+/* As unhas dos outros capítulos aparecem no corte do livro, do lado em que as páginas deles estão. */
+.lv-unha-fora { position: absolute; z-index: 1; width: 7px; height: 20px; background: color-mix(in srgb, var(--lv-cor) 50%, #08141f); transition: width .16s var(--lv-sai), background .15s ease; }
+.lv-unha-fora--dir { left: 1280px; }
+.lv-unha-fora--esq { right: 1280px; }
+.lv-unha-fora:hover, .lv-unha-fora:focus-visible { width: 16px; background: var(--lv-cor); z-index: 9; }
+.lv-unha-fora::before { content: ""; position: absolute; inset: -1px -6px; }
+
+/* Virar: a margem de fora da página é o lugar de pegar; o canto levanta. */
+.lv-virar { position: absolute; top: 44px; bottom: 0; width: 46px; z-index: 6; }
+.lv-pagina--esq .lv-virar { left: 0; cursor: w-resize; }
+.lv-pagina--dir .lv-virar { right: 0; cursor: e-resize; }
+.lv-virar::after { content: ""; position: absolute; bottom: 0; width: 44px; height: 44px; transition: clip-path .2s var(--lv-sai); }
+.lv-pagina--dir .lv-virar::after { right: 0; background: linear-gradient(315deg, var(--lv-mesa) 50%, #24435c 50%, #10212f 78%); clip-path: inset(100% 0 0 100%); }
+.lv-pagina--esq .lv-virar::after { left: 0; background: linear-gradient(45deg, var(--lv-mesa) 50%, #24435c 50%, #10212f 78%); clip-path: inset(100% 100% 0 0); }
+.lv-virar:hover::after, .lv-virar:focus-visible::after { clip-path: inset(0); }
+
+/* Orelha: dobrar o canto de cima marca a página. */
+.lv-orelha { position: absolute; top: 0; width: 36px; height: 36px; z-index: 7; opacity: 0; transition: opacity .15s ease; }
+.lv-pagina--esq .lv-orelha { left: 0; background: linear-gradient(135deg, var(--lv-mesa) 50%, #2a4c66 50%, #132637 80%); }
+.lv-pagina--dir .lv-orelha { right: 0; background: linear-gradient(225deg, var(--lv-mesa) 50%, #2a4c66 50%, #132637 80%); }
+.lv-orelha:hover, .lv-orelha:focus-visible, .lv-orelha--dobrada { opacity: 1; }
+.lv-pagina--esq .lv-orelha--dobrada { background: linear-gradient(135deg, var(--lv-mesa) 50%, var(--lv-am) 50%, #7a3f0c 85%); }
+.lv-pagina--dir .lv-orelha--dobrada { background: linear-gradient(225deg, var(--lv-mesa) 50%, var(--lv-am) 50%, #7a3f0c 85%); }
+
+/* ==========================================================================
+   A MANCHA — a página composta pelo `compositor`.
+   A bancada usa exatamente estas regras: nada aqui pode depender do lado da
+   página para medir altura.
+   ========================================================================== */
+.lv-bancada { position: fixed; left: -6000px; top: 0; width: 640px; height: 860px; visibility: hidden; pointer-events: none; }
+.lv-miolo { position: absolute; inset: 0; }
+.lv-pg {
+  position: absolute; left: 56px; top: 62px; width: 528px; height: 720px;
+  font: 400 13.5px/20px var(--lv-corpo); color: var(--lv-texto);
+  orphans: 2; widows: 2; overflow-wrap: break-word;
+}
+.lv-banda { column-count: 2; column-gap: 24px; }
+.lv-banda--fim { column-fill: auto; }
+.lv-banda--eq { column-fill: balance; }
+.lv-banda--uma { column-count: 1; }
+.lv-banda > :first-child { margin-top: 0 !important; }
+.lv-vao { display: flow-root; }
+.lv-pg > .lv-vao:first-child > :first-child { margin-top: 0; }
+.lv-pg--lado .lv-banda { column-count: 1; width: 252px; }
+.lv-pagina--esq .lv-pg--lado .lv-banda { margin-left: 276px; }
+
+/* texto */
+.lv-par { margin: 0 0 10px; }
+.lv-capitular:not(.lv-cont)::first-letter { float: left; margin: 4px 8px 0 0; font: 700 84px/56px var(--lv-titulo); color: var(--lv-acento); }
+.lv-pg strong { font-weight: 600; color: var(--lv-branco); }
+/* linhas de ficha (Dano:, Mãos:, Preço:): bloco apertado, rótulo em versalete */
+.lv-dado { margin-bottom: 1px; padding-left: 9px; border-left: 2px solid color-mix(in srgb, var(--lv-acento) 55%, transparent); }
+.lv-dado > strong:first-child { margin-right: 3px; font: 700 9.5px/20px var(--lv-display); letter-spacing: .1em; text-transform: uppercase; color: var(--lv-gelo); }
+.lv-dado + :not(.lv-dado) { margin-top: 11px; }
+.lv-pg em { color: var(--lv-gelo); }
+
+/* título principal: atravessa as colunas e o fio dele sai pela borda da página */
+.lv-h1 { display: flex; align-items: flex-end; gap: 16px; margin: 24px 0 14px; font: 600 58px/46px var(--lv-titulo); letter-spacing: .012em; text-transform: uppercase; color: var(--lv-branco); }
+.lv-h1 span { flex: 0 1 auto; padding-top: 6px; text-wrap: balance; }
+.lv-h1::after { content: ""; flex: 1 1 0; min-width: 48px; height: 3px; margin: 0 -56px 10px 0; background: var(--lv-acento); }
+
+/* intertítulos */
+.lv-t, .lv-v { break-after: avoid; break-inside: avoid; font-family: var(--lv-display); text-transform: uppercase; text-wrap: balance; }
+.lv-t--1, .lv-t--2 { margin: 18px 0 6px; font-size: 16px; font-weight: 800; line-height: 20px; letter-spacing: .02em; color: var(--lv-acento); }
+.lv-t--3 { margin: 14px 0 4px; font-size: 12.5px; font-weight: 700; line-height: 20px; letter-spacing: .09em; color: var(--lv-branco); }
+.lv-t--4 { margin: 12px 0 2px; font: 600 9.5px/20px var(--lv-mono); letter-spacing: .18em; color: var(--lv-cy); }
+/* verbete: tarja de entrada, fácil de achar correndo o olho pela coluna */
+.lv-v--0 { margin: 16px 0 8px; padding: 5px 9px 4px; border-left: 3px solid var(--lv-acento); background: color-mix(in srgb, var(--lv-acento) 15%, transparent); font-size: 12.5px; font-weight: 700; line-height: 16px; letter-spacing: .06em; color: var(--lv-branco); }
+.lv-v--1 { margin: 13px 0 4px; font-size: 12px; font-weight: 700; line-height: 20px; letter-spacing: .07em; color: var(--lv-cy); }
+.lv-v--2 { margin: 10px 0 2px; font: 600 9.5px/20px var(--lv-mono); letter-spacing: .14em; color: var(--lv-gelo); }
+
+/* listas */
+.lv-lista { margin: 0 0 10px; padding: 0; list-style: none; }
+.lv-lista > li { position: relative; margin-bottom: 4px; padding-left: 14px; }
+ul.lv-lista > li::before { content: ""; position: absolute; left: 1px; top: 8px; width: 5px; height: 5px; background: var(--lv-acento); }
+ul.lv-lista > li.lv-cont::before { display: none; }
+ol.lv-lista { padding-left: 20px; list-style: decimal; }
+ol.lv-lista > li { padding-left: 2px; }
+ol.lv-lista > li::marker { font: 700 11px var(--lv-display); color: var(--lv-acento); }
+ol.lv-lista > li.lv-cont { list-style: none; }
+.lv-lista__filhos { margin-top: 4px; }
+
+.lv-citacao { margin: 4px 0 12px; padding-left: 12px; border-left: 2px solid var(--lv-acento); font-style: italic; color: var(--lv-gelo); }
+.lv-citacao p { margin: 0 0 8px; }
+.lv-citacao > :last-child { margin-bottom: 0; }
+
+/* caixa: painel chapado com o canto cortado e etiqueta ciano (a tinta das notas) */
+.lv-caixa {
+  margin: 6px 0 14px; padding: 0 12px 3px; font-size: 12.5px; line-height: 18px;
+  background: linear-gradient(225deg, transparent 11px, var(--lv-painel) 11px);
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+.lv-caixa > :first-child:not(.lv-caixa__rotulo) { margin-top: 0; padding-top: 10px; }
+.lv-caixa__rotulo { display: table; margin: 0 0 9px -12px; padding: 4px 11px 3px 12px; background: var(--lv-cy); font: 800 9.5px/14px var(--lv-display); letter-spacing: .14em; text-transform: uppercase; color: #04141f; break-after: avoid; }
+.lv-caixa.lv-cont { padding-top: 10px; }
+.lv-caixa .lv-par { margin-bottom: 8px; }
+
+/* tabelas: cabeçalho em tarja chapada, linhas zebradas, sem grade */
+.lv-tabela { width: 100%; margin: 4px 0 14px; border-collapse: collapse; font-size: 11.5px; line-height: 15px; }
+.lv-tabela tr { break-inside: avoid; }
+.lv-tabela th, .lv-tabela td { padding: 4px 7px; text-align: left; vertical-align: top; }
+.lv-tabela td { border-bottom: 1px solid rgba(207, 239, 244, .08); }
+.lv-tabela tr:nth-child(even) td { background: rgba(207, 239, 244, .035); }
+.lv-tabela th { font: 700 9px/13px var(--lv-display); letter-spacing: .08em; text-transform: uppercase; color: var(--lv-cy); border-bottom: 1px solid rgba(207, 239, 244, .08); }
+.lv-tabela .lv-cab th { padding: 5px 7px 4px; border: 0; background: var(--lv-acento); color: #1c0d00; }
+.lv-tabela--larga { margin: 6px 0 18px; font-size: 12px; line-height: 16px; }
+.lv-tabela--miuda { font-size: 10.5px; line-height: 14px; hyphens: auto; }
+.lv-tabela--miuda th, .lv-tabela--miuda td { padding: 4px 5px; overflow-wrap: break-word; }
+.lv-tabela--miuda th { font-size: 8px; letter-spacing: 0; hyphens: none; overflow-wrap: normal; }
+
+/* imagem dentro da coluna (só as aninhadas; as demais sobem para o alto da página) */
+.lv-fig { margin: 4px 0 14px; break-inside: avoid; }
+.lv-fig img { display: block; width: 100%; height: auto; }
+.lv-fig figcaption { margin-top: 5px; font: 400 9px/14px var(--lv-mono); letter-spacing: .04em; color: var(--lv-apagado); }
+/* arte no alto: sangra pelas três bordas e se desfaz no papel */
+.lv-fig--topo { position: relative; margin: -62px -56px 18px; overflow: hidden; }
+.lv-fig--topo img { width: 100%; height: 100%; object-fit: cover; -webkit-mask-image: linear-gradient(to bottom, #000 56%, transparent 100%); mask-image: linear-gradient(to bottom, #000 56%, transparent 100%); }
+.lv-fig--topo::after { content: ""; position: absolute; left: -4%; right: -4%; bottom: 44px; height: 1px; background: color-mix(in srgb, var(--lv-cy) 75%, transparent); transform: rotate(-5.36deg); }
+.lv-fig--topo figcaption { position: absolute; right: 56px; bottom: 0; margin: 0; text-align: right; }
+/* arte de pé: toma a coluna de fora inteira, cortada na diagonal */
+.lv-fig--lado { position: absolute; top: -62px; bottom: -78px; right: -56px; width: 316px; margin: 0; overflow: hidden; clip-path: polygon(38px 0, 100% 0, 100% 100%, 0 100%); }
+.lv-pagina--esq .lv-fig--lado { right: auto; left: -56px; clip-path: polygon(0 0, 100% 0, calc(100% - 38px) 100%, 0 100%); }
+.lv-fig--lado img { width: 100%; height: 100%; object-fit: cover; }
+.lv-fig--lado figcaption { display: none; }
+
+/* fichas (galeria de subpáginas): três por linha, arte cortada na diagonal */
+.lv-fichas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 6px 0 18px; }
+.lv-ficha { position: relative; display: flex; flex-direction: column; min-width: 0; transition: translate .18s var(--lv-sai); }
+.lv-ficha:hover { translate: 0 -3px; }
+.lv-ficha__arte { height: 118px; overflow: hidden; background: #06121c; border-top: 3px solid var(--lv-acento); clip-path: polygon(0 0, 100% 0, 100% 86%, 0 100%); }
+.lv-ficha__arte img { width: 100%; height: 100%; object-fit: cover; }
+.lv-ficha__pag { position: absolute; top: 9px; right: 8px; font: 600 22px/1 var(--lv-titulo); color: var(--lv-branco); text-shadow: 0 1px 8px rgba(0, 0, 0, .9); }
+.lv-ficha__nome { margin-top: 2px; font: 600 30px/26px var(--lv-titulo); letter-spacing: .01em; text-transform: uppercase; color: var(--lv-acento); }
+.lv-ficha__rotulo { font: 500 8.5px/14px var(--lv-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--lv-apagado); }
+.lv-ficha__descricao { margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 11.5px; line-height: 15px; color: var(--lv-texto); }
+
+/* remissões */
+.lv-termo { font: 700 .82em/1 var(--lv-display); letter-spacing: .05em; text-transform: uppercase; color: var(--lv-cy); white-space: nowrap; }
+.lv-termo--link { border-bottom: 1px dotted color-mix(in srgb, var(--lv-cy) 60%, transparent); }
+.lv-termo--link:hover { border-bottom-style: solid; }
+.lv-link { color: var(--lv-cy); border-bottom: 1px dotted color-mix(in srgb, var(--lv-cy) 60%, transparent); }
+.lv-link:hover { border-bottom-style: solid; }
+.lv-ver { font: 500 .78em/1 var(--lv-mono); color: var(--lv-apagado); white-space: nowrap; }
+.lv-pag { display: inline-block; min-width: 2.4em; font-variant-numeric: tabular-nums; }
+.lv-remissao { display: flex; align-items: baseline; gap: 8px; width: 100%; margin: 0 0 6px; font: 700 12px/20px var(--lv-display); letter-spacing: .06em; text-transform: uppercase; color: var(--lv-gelo); break-inside: avoid; transition: color .15s ease; }
+.lv-remissao:hover { color: var(--lv-cy); }
+.lv-remissao .lv-pag { min-width: 0; font: 600 18px/1 var(--lv-titulo); }
+.lv-fio { flex: 1; min-width: 12px; border-bottom: 1px dotted rgba(207, 239, 244, .3); transform: translateY(-4px); }
+
+.lv-divisor { width: 34px; height: 2px; margin: 14px 0; border: 0; background: var(--lv-acento); }
+
+@keyframes lv-realce { 0%, 55% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--lv-cy) 30%, transparent); background-color: color-mix(in srgb, var(--lv-cy) 30%, transparent); } 100% { box-shadow: 0 0 0 6px transparent; } }
+.lv-realce { animation: lv-realce 1.8s ease-out; }
+
+.lv-espera { position: absolute; left: 56px; top: 62px; width: 528px; height: 320px; background: repeating-linear-gradient(to bottom, rgba(207, 239, 244, .05) 0 8px, transparent 8px 20px); -webkit-mask-image: linear-gradient(to right, #000 252px, transparent 252px, transparent 276px, #000 276px); mask-image: linear-gradient(to right, #000 252px, transparent 252px, transparent 276px, #000 276px); }
+
+/* ==========================================================================
+   PÁGINAS COMPOSTAS À MÃO
+   ========================================================================== */
+.lv-tracos { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+.lv-traco { fill: none; }
+.lv-traco--cy { stroke: var(--lv-cy); stroke-width: 1.5; }
+.lv-traco--am { stroke: var(--lv-acento); stroke-width: 4; }
+
+/* ---- folha de rosto ------------------------------------------------------- */
+.lv-rosto { position: absolute; inset: 0; padding: 84px 56px; }
+.lv-rosto__topo { font: 600 10px var(--lv-mono); letter-spacing: .4em; text-transform: uppercase; color: var(--lv-apagado); }
+.lv-raiz .lv-rosto .lv-rosto__logo { --ds-marca-tamanho: 104px; display: block; margin: 150px 0 0; text-align: left; }
+.lv-rosto__sub { margin-top: 44px; font: 600 54px/.84 var(--lv-titulo); letter-spacing: .012em; text-transform: uppercase; color: var(--lv-gelo); }
+.lv-rosto__fecho { position: absolute; left: 56px; bottom: 80px; margin: 0; font: 700 11px/1.8 var(--lv-display); letter-spacing: .14em; text-transform: uppercase; color: var(--lv-texto); }
+.lv-rosto__fecho span { display: block; margin-top: 8px; font: 700 26px/1 var(--lv-titulo); letter-spacing: -.02em; color: var(--lv-am); }
+
+/* ---- sumário -------------------------------------------------------------- */
+.lv-sumario { position: absolute; left: 56px; top: 62px; width: 528px; height: 720px; }
+.lv-sumario__titulo { margin: 0 0 22px; font: 700 104px/.78 var(--lv-titulo); letter-spacing: .005em; text-transform: uppercase; color: var(--lv-branco); }
+.lv-sumario__lista { height: 606px; column-count: 2; column-gap: 28px; column-fill: auto; }
+.lv-sumario__secao { margin: 0 0 4px; padding: 0 0 5px; border-bottom: 2px solid var(--lv-am); font: 800 9.5px/14px var(--lv-display); letter-spacing: .14em; color: var(--lv-am); break-after: avoid; }
+.lv-sumario__linha + .lv-sumario__secao { margin-top: 16px; }
+.lv-sumario__linha { display: grid; grid-template-columns: 28px 1fr auto; align-items: baseline; gap: 6px; width: 100%; min-height: 27px; padding: 3px 0; break-inside: avoid; font: 600 11px/14px var(--lv-display); letter-spacing: .05em; text-transform: uppercase; color: var(--lv-gelo); transition: color .15s ease; }
+.lv-sumario__linha:hover { color: var(--lv-cy); }
+.lv-sumario__num { font: 600 19px/1 var(--lv-titulo); color: var(--lv-am); }
+.lv-sumario__linha .lv-pag { min-width: 0; font: 600 19px/1 var(--lv-titulo); color: var(--lv-branco); }
+.lv-sumario__linha:hover .lv-pag { color: var(--lv-cy); }
+
+/* ---- abertura de capítulo -------------------------------------------------- */
+.lv-ab { position: absolute; inset: 0; }
+.lv-ab__recorte { position: absolute; left: 0; top: 0; width: 640px; overflow: hidden; background: #050d15; }
+.lv-ab__arte { position: absolute; top: 0; left: 0; height: 100%; max-width: none; object-fit: cover; }
+.lv-ab__veu { position: absolute; inset: 0; }
+.lv-ab__kicker { display: flex; flex-direction: column; gap: 7px; }
+.lv-ab__kicker b { font: 800 11px/1 var(--lv-display); letter-spacing: .2em; text-transform: uppercase; color: var(--lv-acento); }
+.lv-ab__kicker span { font: 500 9px/1 var(--lv-mono); letter-spacing: .24em; text-transform: uppercase; color: var(--lv-gelo); }
+.lv-ab__h1 { margin: 12px 0 0; font: 700 150px/.78 var(--lv-titulo); letter-spacing: 0; text-transform: uppercase; color: var(--lv-branco); text-wrap: balance; }
+.lv-ab__h1--frase { font-size: 92px; font-weight: 600; line-height: .84; }
+.lv-ab__h1 em { font-style: normal; color: var(--lv-am); }
+.lv-ab__epigrafe { margin: 24px 0 0; padding-left: 14px; border-left: 2px solid var(--lv-acento); font: italic 400 14.5px/22px var(--lv-corpo); color: var(--lv-gelo); break-inside: avoid; }
+.lv-ab__epigrafe cite { display: block; margin-top: 8px; font: 500 9px/1.6 var(--lv-mono); font-style: normal; letter-spacing: .16em; text-transform: uppercase; color: var(--lv-apagado); }
+.lv-ab__lide { margin: 20px 0 0; font: 500 15px/23px var(--lv-corpo); color: #dcecf3; }
+.lv-neste { margin-top: 24px; padding-left: 14px; border-left: 2px solid var(--lv-acento); break-inside: avoid; }
+.lv-neste__rotulo { margin-bottom: 4px; font: 800 9.5px/16px var(--lv-display); letter-spacing: .18em; text-transform: uppercase; color: var(--lv-acento); }
+.lv-neste__linha { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; width: 100%; font: 600 11px/23px var(--lv-display); letter-spacing: .05em; text-transform: uppercase; color: var(--lv-gelo); transition: color .15s ease; }
+.lv-neste__linha:hover { color: var(--lv-cy); }
+.lv-neste__nome { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.lv-neste__linha .lv-pag { min-width: 0; font: 600 18px/1 var(--lv-titulo); }
+.lv-neste__resto { font: 400 9px/18px var(--lv-mono); letter-spacing: .1em; color: var(--lv-apagado); }
+
+/* faixa: a arte atravessa o alto das duas páginas e é cortada por uma diagonal só */
+.lv-ab--faixa .lv-ab__recorte { height: 520px; }
+.lv-ab--faixa .lv-ab__arte { width: 1280px; }
+.lv-ab--faixa.lv-ab--dir .lv-ab__arte { left: -640px; }
+.lv-ab--faixa.lv-ab--esq .lv-ab__recorte { clip-path: polygon(0 0, 100% 0, 100% 460px, 0 520px); }
+.lv-ab--faixa.lv-ab--dir .lv-ab__recorte { clip-path: polygon(0 0, 100% 0, 100% 400px, 0 460px); }
+.lv-ab--faixa .lv-ab__veu { background: linear-gradient(to top, rgba(8, 20, 31, .7), transparent 42%); }
+.lv-ab__titulo { position: absolute; z-index: 3; left: 56px; right: 40px; bottom: 96px; }
+.lv-ab__apoio { position: absolute; z-index: 3; left: 56px; right: 56px; top: 492px; height: 280px; }
+.lv-ab__apoio--duas { column-count: 2; column-gap: 24px; column-fill: balance; }
+.lv-ab__apoio > :first-child { margin-top: 0; }
+
+/* coluna: a arte toma a página esquerda e invade a direita pelo corte */
+.lv-ab--coluna .lv-ab__recorte { height: 860px; }
+.lv-ab--coluna .lv-ab__arte { width: 852px; }
+.lv-ab--coluna.lv-ab--dir .lv-ab__arte { left: -640px; }
+.lv-ab--coluna.lv-ab--dir .lv-ab__recorte { clip-path: polygon(0 0, 200px 0, 110px 100%, 0 100%); }
+.lv-ab--coluna .lv-ab__veu { background: linear-gradient(to top, rgba(8, 20, 31, .5), transparent 30%); }
+.lv-ab__lateral { position: absolute; z-index: 3; left: 256px; right: 56px; top: 104px; bottom: 100px; display: flex; flex-direction: column; }
+.lv-ab__lateral .lv-ab__lide { font-size: 14px; line-height: 21px; }
+.lv-ab__lateral .lv-neste { margin-top: auto; }
+
+/* cunha: sem arte, um bloco de cor chapada cortado na diagonal, com o número vazado */
+.lv-ab__cunha { position: absolute; inset: 0; background: repeating-linear-gradient(-66deg, rgba(0, 0, 0, .07) 0 2px, transparent 2px 8px), var(--lv-acento); }
+.lv-ab--cunha.lv-ab--esq .lv-ab__cunha { clip-path: polygon(0 0, 100% 0, 100% 397px, 430px 100%, 0 100%); }
+.lv-ab--cunha.lv-ab--dir .lv-ab__cunha { clip-path: polygon(0 0, 180px 0, 0 397px); }
+.lv-ab__secao { position: absolute; z-index: 3; left: 56px; top: 64px; font: 700 10px/1 var(--lv-mono); letter-spacing: .3em; text-transform: uppercase; color: #1c0d00; }
+.lv-ab__numeral { position: absolute; z-index: 3; left: 30px; bottom: -64px; font: 700 660px/.74 var(--lv-titulo); letter-spacing: -.02em; color: #08141f; }
+.lv-ab__lateral--cunha { left: 236px; top: 150px; }
+
+/* ---- fim de capítulo ------------------------------------------------------ */
+.lv-fim { position: absolute; inset: 0; }
+.lv-fim__seguir { position: absolute; z-index: 3; left: 56px; right: 56px; top: 648px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.lv-fim__rotulo { font: 800 10px/1 var(--lv-display); letter-spacing: .2em; text-transform: uppercase; color: var(--lv-acento); }
+.lv-fim__nome { font: 700 72px/.8 var(--lv-titulo); text-transform: uppercase; color: var(--lv-branco); transition: color .15s ease; }
+.lv-fim__seguir:hover .lv-fim__nome { color: var(--lv-cy); }
+.lv-fim__pag { font: 500 10px/1 var(--lv-mono); letter-spacing: .14em; color: var(--lv-apagado); }
+.lv-fim__pag .lv-pag { min-width: 0; }
+.lv-fim__marca { position: absolute; left: 56px; top: 62px; font: 700 40px/1 var(--lv-titulo); letter-spacing: -.02em; color: var(--lv-acento); }
+
+/* ---- índice remissivo ----------------------------------------------------- */
+.lv-ind { position: absolute; left: 56px; top: 62px; width: 528px; height: 720px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.lv-ind__col { min-width: 0; }
+.lv-ind--primeira { padding-top: 144px; }
+.lv-ind__cabeca { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+.lv-ind__titulo { margin: 0; font: 700 104px/.78 var(--lv-titulo); text-transform: uppercase; color: var(--lv-branco); }
+.lv-ind__busca { display: flex; align-items: center; gap: 7px; width: 220px; height: 30px; margin-bottom: 12px; padding: 0 8px; border-bottom: 2px solid var(--lv-cy); color: var(--lv-cy); }
+.lv-ind__busca input { all: unset; flex: 1; min-width: 0; font: 400 12px var(--lv-corpo); color: var(--lv-gelo); }
+.lv-ind__busca input::placeholder { color: var(--lv-apagado); }
+.lv-ind__busca input::-webkit-search-cancel-button { display: none; }
+.lv-ind__letra { display: flex; align-items: flex-end; height: 36px; font: 700 30px/.8 var(--lv-titulo); color: var(--lv-acento); }
+.lv-ind__linha { display: flex; align-items: baseline; gap: 5px; width: 100%; height: 18px; font: 400 10.5px/18px var(--lv-corpo); color: var(--lv-texto); white-space: nowrap; transition: color .15s ease; }
+.lv-ind__linha:hover { color: var(--lv-cy); }
+.lv-ind__nome { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.lv-ind__origem { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; font: 400 7.5px/18px var(--lv-mono); color: color-mix(in srgb, var(--lv-apagado) 75%, transparent); }
+.lv-ind__linha .lv-pag { min-width: 0; font: 500 14px/18px var(--lv-titulo); color: var(--lv-gelo); }
+.lv-ind__linha:hover .lv-pag { color: var(--lv-cy); }
+.lv-ind__nada { position: absolute; left: 0; top: 150px; margin: 0; font-size: 13px; color: var(--lv-apagado); }
+
+/* ==========================================================================
+   FORA DAS PÁGINAS
+   ========================================================================== */
+/* Balão: sempre opaco. */
+.lv-dica {
+  position: absolute; z-index: 30; display: flex; align-items: center; gap: 8px; padding: 6px 9px; white-space: nowrap; pointer-events: none;
+  background: #0c1b29; border: 1px solid rgba(0, 212, 255, .4); box-shadow: 0 8px 22px rgba(0, 0, 0, .7);
+  font: 600 10px/1 var(--lv-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--lv-gelo);
+  visibility: hidden;
+}
+.lv-dica b { color: var(--lv-am); }
+.lv-dica svg { width: 11px; height: 11px; }
+button:hover > .lv-dica, button:focus-visible > .lv-dica { visibility: visible; }
+.lv-unha-fora .lv-dica { top: -4px; }
+.lv-unha-fora--dir .lv-dica { left: calc(100% + 10px); }
+.lv-unha-fora--esq .lv-dica { right: calc(100% + 10px); }
+
+/* orelhas marcadas (no topo do livro) */
+.lv-marca { position: absolute; top: -24px; z-index: 1; width: 26px; height: 28px; display: flex; align-items: flex-start; justify-content: center; padding-top: 6px; background: var(--lv-am); color: #1c0d00; font: 800 9.5px/1 var(--lv-display); font-variant-numeric: tabular-nums; border-radius: 2px 2px 0 0; transition: translate .18s var(--lv-sai); }
+.lv-marca:hover { translate: 0 -4px; z-index: 9; }
+.lv-marca .lv-dica { bottom: calc(100% + 6px); left: 50%; translate: -50% 0; }
+
+/* fita */
+.lv-fita { position: absolute; left: 637px; width: 6px; z-index: 8; background: linear-gradient(to right, #a04c05, #e07612 50%, #b05a0c); box-shadow: 1px 0 3px rgba(0, 0, 0, .5); }
+.lv-fita--aqui { top: -10px; height: 908px; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 9px), 0 100%); }
+.lv-fita--ponta { top: -12px; height: 24px; opacity: .5; transition: opacity .15s ease, height .18s var(--lv-sai); }
+.lv-fita--ponta:hover { opacity: 1; height: 32px; }
+.lv-fita--rabo, .lv-fita--capa { top: 852px; height: 46px; transition: translate .18s var(--lv-sai); }
+.lv-fita--rabo:hover, .lv-fita--capa:hover { translate: 0 5px; }
+.lv-fita--antes { left: 622px; rotate: 4deg; transform-origin: top center; }
+.lv-fita--depois { left: 652px; rotate: -4deg; transform-origin: top center; }
+.lv-fita--capa { left: 368px; }
+.lv-fita--rabo::after, .lv-fita--capa::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 10px; background: var(--lv-mesa); clip-path: polygon(0 100%, 50% 0, 100% 100%); }
+.lv-fita .lv-dica { top: calc(100% + 8px); left: 50%; translate: -50% 0; }
+.lv-fita--ponta .lv-dica { top: auto; bottom: calc(100% + 6px); }
+
+/* corte (folhear) */
+.lv-corte { position: absolute; left: 30px; top: 918px; width: 1280px; height: 26px; display: flex; align-items: center; gap: 14px; cursor: ew-resize; touch-action: none; }
+.lv-corte__rotulo { font: 600 9px/1 var(--lv-mono); letter-spacing: .28em; text-transform: uppercase; color: var(--lv-apagado); }
+.lv-corte__trilho { flex: 1; height: 8px; display: flex; gap: 1px; }
+.lv-corte__trilho i { flex: 1 1 0; min-width: 1px; background: #132536; transition: background .15s ease; }
+.lv-corte__trilho i.lv-corte__cap { box-shadow: inset 2px 0 0 color-mix(in srgb, var(--lv-cor) 55%, transparent); }
+.lv-corte:hover .lv-corte__trilho i { background: #19314a; }
+.lv-corte__trilho i.lv-corte__aqui, .lv-corte:hover .lv-corte__trilho i.lv-corte__aqui { background: var(--lv-am); box-shadow: none; }
+.lv-dica--corte { visibility: visible; bottom: calc(100% + 2px); translate: -50% 0; }
+
+/* fechar */
+.lv-fechar { position: absolute; right: 30px; top: 4px; display: flex; align-items: center; gap: 8px; height: 22px; font: 700 10px/1 var(--lv-mono); letter-spacing: .2em; text-transform: uppercase; color: var(--lv-apagado); transition: color .15s ease; }
+.lv-fechar:hover { color: var(--lv-gelo); }
+.lv-fechar kbd { padding: 3px 5px; border: 1px solid currentColor; font: inherit; letter-spacing: .08em; }
+
+/* ==========================================================================
+   VIRAR A PÁGINA — View Transition.
+   O navegador fotografa as páginas `lv-esq` e `lv-dir` antes e depois; aqui
+   as fotos giram em torno da lombada. Para a frente: a página da direita
+   sobe até ficar de perfil (1ª metade) e a nova página da esquerda desce do
+   perfil até assentar (2ª metade). Para trás, o espelho.
+   ========================================================================== */
+::view-transition-old(lv-esq), ::view-transition-new(lv-esq),
+::view-transition-old(lv-dir), ::view-transition-new(lv-dir) {
+  animation: none; mix-blend-mode: normal; backface-visibility: hidden;
+}
+::view-transition-group(lv-esq), ::view-transition-group(lv-dir) { animation-duration: calc(var(--lv-dur, 560ms) * .5); animation-timing-function: cubic-bezier(.3, 0, .2, 1); }
+::view-transition-image-pair(lv-esq), ::view-transition-image-pair(lv-dir) { isolation: auto; }
+
+@keyframes lv-sobe-dir { from { transform: perspective(2600px) rotateY(0deg); filter: brightness(1); } to { transform: perspective(2600px) rotateY(-90deg); filter: brightness(.38); } }
+@keyframes lv-desce-esq { from { transform: perspective(2600px) rotateY(90deg); filter: brightness(.38); } to { transform: perspective(2600px) rotateY(0deg); filter: brightness(1); } }
+@keyframes lv-sobe-esq { from { transform: perspective(2600px) rotateY(0deg); filter: brightness(1); } to { transform: perspective(2600px) rotateY(90deg); filter: brightness(.38); } }
+@keyframes lv-desce-dir { from { transform: perspective(2600px) rotateY(-90deg); filter: brightness(.38); } to { transform: perspective(2600px) rotateY(0deg); filter: brightness(1); } }
+/* A página de baixo sai da sombra da folha que sobe; a que recebe a folha escurece um instante. */
+@keyframes lv-revela { from { filter: brightness(.55); } to { filter: brightness(1); } }
+@keyframes lv-recebe { from { filter: brightness(1); } to { filter: brightness(.6); } }
+@keyframes lv-some { to { opacity: 0; } }
+@keyframes lv-surge { from { opacity: 0; } }
+
+/* para a frente (e abrir o livro: a capa é a "página da direita") */
+html:is([data-lv-vira="frente"], [data-lv-vira="abre"])::view-transition-old(lv-dir) {
+  z-index: 3; transform-origin: 0 50%;
+  animation: lv-sobe-dir calc(var(--lv-dur) * .46) cubic-bezier(.5, 0, .9, .55) both;
+}
+html:is([data-lv-vira="frente"], [data-lv-vira="abre"])::view-transition-new(lv-dir) { z-index: 1; animation: lv-revela calc(var(--lv-dur) * .7) ease-out both; }
+html:is([data-lv-vira="frente"], [data-lv-vira="abre"])::view-transition-old(lv-esq) { z-index: 1; animation: lv-recebe calc(var(--lv-dur) * .54) ease-in calc(var(--lv-dur) * .46) both; }
+html:is([data-lv-vira="frente"], [data-lv-vira="abre"])::view-transition-new(lv-esq) {
+  z-index: 3; transform-origin: 100% 50%;
+  animation: lv-desce-esq calc(var(--lv-dur) * .54) cubic-bezier(.1, .45, .3, 1) calc(var(--lv-dur) * .46) both;
+}
+
+/* para trás */
+html[data-lv-vira="tras"]::view-transition-old(lv-esq) {
+  z-index: 3; transform-origin: 100% 50%;
+  animation: lv-sobe-esq calc(var(--lv-dur) * .46) cubic-bezier(.5, 0, .9, .55) both;
+}
+html[data-lv-vira="tras"]::view-transition-new(lv-esq) { z-index: 1; animation: lv-revela calc(var(--lv-dur) * .7) ease-out both; }
+html[data-lv-vira="tras"]::view-transition-old(lv-dir) { z-index: 1; animation: lv-recebe calc(var(--lv-dur) * .54) ease-in calc(var(--lv-dur) * .46) both; }
+html[data-lv-vira="tras"]::view-transition-new(lv-dir) {
+  z-index: 3; transform-origin: 0 50%;
+  animation: lv-desce-dir calc(var(--lv-dur) * .54) cubic-bezier(.1, .45, .3, 1) calc(var(--lv-dur) * .46) both;
+}
+
+/* fechar: sem cerimônia */
+html[data-lv-vira="fecha"]::view-transition-old(lv-esq), html[data-lv-vira="fecha"]::view-transition-old(lv-dir) { animation: lv-some var(--lv-dur) ease-out both; }
+html[data-lv-vira="fecha"]::view-transition-new(lv-dir) { animation: lv-surge var(--lv-dur) ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  .lv-raiz * { transition: none !important; animation: none !important; }
+}
