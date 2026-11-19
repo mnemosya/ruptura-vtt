@@ -9,6 +9,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { parseResourceEdit } from "../src/app/ficha/_console/resourceMath";
 import {
+  areaLivreDaMesa,
+  geometriaFlutuante,
   geometriaInicial,
   geometriaMaximizada,
   limitarPosicao,
@@ -16,6 +18,7 @@ import {
   redimensionarPelaEsquerda,
   MIN_W,
   MIN_H,
+  TABLIST_W,
   type Geometry,
 } from "../src/app/ficha/_console/geometry";
 import { itemCabeNoSlot, itensCompativeisComSlot, projectBodySlots } from "../src/app/ficha/_console/slots";
@@ -63,6 +66,32 @@ const inicialPequena = geometriaInicial(vpPequena);
 assert.equal(inicialPequena.w, MIN_W, "Abaixo do mínimo a janela fica no mínimo (conteúdo é que rola).");
 assert.equal(inicialPequena.h, MIN_H, "Idem para a altura.");
 console.log("4. Geometria inicial — OK");
+
+// O VTT mantém a largura natural e abre na altura máxima do viewport.
+const areaMapa = { x: 96, y: 56, w: 1420, h: 960 };
+const noMapa = geometriaFlutuante(vpGrande, areaMapa, 818);
+assert.equal(noMapa.x, Math.round(areaMapa.x + (areaMapa.w - noMapa.w - TABLIST_W) / 2));
+assert.equal(noMapa.y, 16);
+assert.equal(noMapa.w, geometriaInicial(vpGrande, 726, 818).w);
+assert.equal(noMapa.h, vpGrande.h - 32, "Abertura usa toda a altura do viewport, com 16px em cada borda.");
+const areaEstreita = { x: 96, y: 56, w: 610, h: 750 };
+const naAreaEstreita = geometriaFlutuante({ w: 1000, h: 800 }, areaEstreita, 818);
+assert.equal(naAreaEstreita.w, 818);
+assert.equal(naAreaEstreita.h, 768);
+assert.ok(naAreaEstreita.x + naAreaEstreita.w + TABLIST_W <= 1000, "O trilho permanece na viewport.");
+console.log("4a. Altura máxima do viewport e posição horizontal centralizada — OK");
+
+const mesa = { x: 0, y: 0, w: 1600, h: 900 };
+const painel = { x: 1280, y: 8, w: 312, h: 884 };
+const ferramentasEmbaixo = { x: 350, y: 820, w: 720, h: 60 };
+const areaComBarraEmbaixo = areaLivreDaMesa({ w: 1600, h: 900 }, mesa, ferramentasEmbaixo, painel);
+assert.equal(areaComBarraEmbaixo.x, 0, "Barra horizontal inferior não empurra o Console para a direita.");
+assert.equal(areaComBarraEmbaixo.y + areaComBarraEmbaixo.h, 820, "Barra inferior limita a altura livre.");
+assert.equal(areaComBarraEmbaixo.w, 1280, "Painel ocupa a faixa direita.");
+const ferramentasNaEsquerda = { x: 4, y: 8, w: 60, h: 640 };
+assert.equal(areaLivreDaMesa({ w: 1600, h: 900 }, mesa, ferramentasNaEsquerda, painel).x, 64,
+  "Barra vertical à esquerda limita a largura livre.");
+console.log("4a.1. Área livre com barra inferior ou lateral — OK");
 
 // -------------------------------------------------------------
 // 4b. `alturaMaxima` (altura da coluna 1) vira teto da altura de
@@ -135,6 +164,9 @@ const antes: Geometry = { x: 140, y: 90, w: 1300, h: 780 };
 const max = geometriaMaximizada(vpGrande);
 assert.ok(max.w > antes.w && max.h > antes.h, "Maximizada ocupa mais que a anterior.");
 assert.ok(max.x > 0 && max.y > 0, "Maximizada mantém inset visual.");
+const maxEstreita = geometriaMaximizada({ w: 320, h: 480 });
+assert.ok(maxEstreita.x + maxEstreita.w + TABLIST_W <= 320 && maxEstreita.y + maxEstreita.h <= 480,
+  "Maximizada mantém janela e trilho visíveis mesmo abaixo do tamanho mínimo da janela flutuante.");
 // Restaurar é devolver o objeto guardado — o teste garante que nada o mutou.
 const restaurada = { ...antes };
 assert.deepEqual(restaurada, { x: 140, y: 90, w: 1300, h: 780 }, "Restaurar devolve a geometria exata.");

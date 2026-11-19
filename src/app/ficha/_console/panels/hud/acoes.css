@@ -1,4 +1,5 @@
-/* Aba Ações — layout aprovado em work/mockups/aba-acoes.html (variante B).
+/* Aba Ações — partiu de work/mockups/aba-acoes.html (variante B); a composição
+   foi revista depois (bloco COMPOSIÇÃO, no fim desta folha).
    Uma cor por cena (--ha-k): Combate âmbar, Investigação ciano, Trama violeta.
    A cor só marca o que é da cena (aba, ícone, custo); o fundo é o mesmo. */
 
@@ -165,29 +166,255 @@
 .ha-visao button[aria-pressed=true] { color: var(--hx-cy); background: #00d4ff14; }
 
 /* visão em grade: cartão vertical só com ícone, nome e custo */
-.ha-lista[data-visao=grade] .ha-grade { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 8px; }
 /* na grade, aviso e estrela vão para os cantos: no nome, quebravam a linha e desalinhavam os cartões */
-.ha-lista[data-visao=grade] .ha-aviso { position: absolute; top: 8px; right: 8px; }
-.ha-lista[data-visao=grade] .ha-estrela { position: absolute; top: 9px; left: 9px; }
-.ha-lista[data-visao=grade] .ha-etq { position: absolute; top: 8px; left: 8px; }
-.ha-lista[data-visao=grade] .ha-card { flex-direction: column; justify-content: flex-start; gap: 8px; min-height: 122px; height: 100%; padding: 14px 8px 10px; text-align: center; }
-.ha-lista[data-visao=grade] .ha-card::before { position: absolute; left: 0; top: 0; right: 0; width: auto; height: 2px; }
-.ha-lista[data-visao=grade] .ha-ic { width: 40px; height: 40px; margin: 0; }
-.ha-lista[data-visao=grade] .ha-ic svg { width: 20px; height: 20px; }
-.ha-lista[data-visao=grade] .ha-txt { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
-.ha-lista[data-visao=grade] .ha-nome { justify-content: center; flex-wrap: wrap; gap: 4px; font-size: 12.5px; line-height: 1.25; letter-spacing: .04em; }
-.ha-lista[data-visao=grade] .ha-sub, .ha-lista[data-visao=grade] .ha-linha { display: none; }
-.ha-lista[data-visao=grade] .ha-custo { gap: 8px; justify-content: center; }
-.ha-lista[data-visao=grade] .ha-custo > span { display: flex; align-items: baseline; gap: 4px; }
-.ha-lista[data-visao=grade] .ha-custo b { font-size: 14px; }
-.ha-lista[data-visao=grade] .ha-custo small { margin: 0; }
-.ha-lista[data-visao=grade] .ha-arma { justify-content: center; }
-.ha-lista[data-visao=grade] .ha-arma .ha-nome { font-size: 11.5px; }
 /* atalhos: na lista, sem ícone (a barra lateral basta); na grade, todo cartão tem ícone */
-.ha-lista:not([data-visao=grade]) .ha-card:not([data-com-icone]) .ha-ic { display: none; }
-.ha-lista[data-visao=grade] .ha-card::before { display: block !important; }
-.ha-lista[data-visao=grade] .ha-aviso:hover::after { left: auto; right: -6px; }
+.ha-lista .ha-card:not([data-com-icone]) .ha-ic { display: none; }
 /* grade: o cartão ocupa a altura da linha e o nome fica no centro vertical entre o ícone e o custo */
-.ha-lista[data-visao=grade] .ha-card-wrap { display: flex; }
-.ha-lista[data-visao=grade] .ha-card { flex: 1; height: auto; min-height: 136px; justify-content: space-between; }
-.ha-lista[data-visao=grade] .ha-txt { min-height: 34px; }
+
+/* =====================================================================
+   REFINO — movimento e resposta.
+
+   Nada aqui muda a estrutura (cenas, recursos, busca, seções, cartões,
+   gaveta). O que entra é como a aba se move e como responde:
+   - entrada em cascata (e de novo, mais curta, a cada troca de cena);
+   - cartão que sobe no hover/foco e afunda no clique;
+   - prévia do custo nos losangos do topo (ver AcoesPanel.tsx);
+   - gaveta com saída, opções com hover igual ao selecionado, aviso com
+     contagem dos 4s do "Desfazer".
+   Animações de entrada usam `backwards` (nunca `forwards`): o transform
+   delas não pode ficar preso por cima do transform do hover.
+   ===================================================================== */
+.ha { --ha-ease: cubic-bezier(.23, 1, .32, 1); --ha-base: 30ms; --ha-passo: 18ms; }
+/* Depois da entrada (data-vivo), cena nova e seção reaberta não esperam o topo. */
+.ha[data-vivo] { --ha-base: 0ms; --ha-passo: 18ms; }
+@keyframes ha-sobe { from { opacity: 0; transform: translateY(8px); } }
+@keyframes ha-risca { from { transform: scaleX(0); } }
+@keyframes ha-rec-in { from { opacity: 0; transform: translateY(8px) scale(.95); } }
+
+/* ---------- entrada ---------- */
+.ha-cenas { animation: ha-sobe .22s var(--ha-ease) backwards; }
+.ha-recursos .ha-rec { animation: ha-rec-in .22s var(--ha-ease) backwards; }
+.ha-recursos .ha-rec:nth-child(1) { animation-delay: 15ms; }
+.ha-recursos .ha-rec:nth-child(2) { animation-delay: 30ms; }
+.ha-recursos .ha-rec:nth-child(3) { animation-delay: 45ms; }
+.ha-recursos .ha-rec:nth-child(4) { animation-delay: 60ms; }
+.ha-ferr { animation: ha-sobe .22s var(--ha-ease) 30ms backwards; }
+.ha-cena-corpo > * { --o: 5; animation: ha-sobe .22s var(--ha-ease) backwards; animation-delay: calc(var(--ha-base) + var(--o) * var(--ha-passo)); }
+.ha-cena-corpo > :nth-child(1) { --o: 0; } .ha-cena-corpo > :nth-child(2) { --o: 1; } .ha-cena-corpo > :nth-child(3) { --o: 2; }
+.ha-cena-corpo > :nth-child(4) { --o: 3; } .ha-cena-corpo > :nth-child(5) { --o: 4; } .ha-cena-corpo > :nth-child(6) { --o: 5; }
+.ha-cena-corpo > :nth-child(7) { --o: 5; }
+.ha-card-wrap { --i: 9; animation: ha-sobe .2s var(--ha-ease) backwards; animation-delay: calc(var(--ha-base) + 10ms + var(--o, 0) * var(--ha-passo) + var(--i) * 6ms); }
+.ha-grade > :nth-child(1) { --i: 0; } .ha-grade > :nth-child(2) { --i: 1; } .ha-grade > :nth-child(3) { --i: 2; }
+.ha-grade > :nth-child(4) { --i: 3; } .ha-grade > :nth-child(5) { --i: 4; } .ha-grade > :nth-child(6) { --i: 5; }
+.ha-grade > :nth-child(7) { --i: 6; } .ha-grade > :nth-child(8) { --i: 7; } .ha-grade > :nth-child(9) { --i: 8; }
+/* Seção que a pessoa recolheu e abriu de novo: os cartões voltam já. */
+.ha-secao[data-alternada] .ha-card-wrap { animation-delay: calc(var(--i) * 16ms); }
+
+/* ---------- cenas ---------- */
+.ha-cena { transition: color .15s, scale .1s ease; }
+.ha-cena:active { scale: .97; }
+
+/* ---------- recursos ---------- */
+.ha-rec { transition: background .16s ease; }
+.ha-rec-num { transition: color .16s ease; }
+/* Prévia: os losangos que a ação sob o ponteiro gastaria. */
+@keyframes ha-previa { 0%, 100% { opacity: 1; } 50% { opacity: .22; } }
+.ha-pip[data-previa] { animation: ha-previa .72s ease-in-out infinite; }
+/* Não há o bastante: a célula avisa (e só avisa — a ação continua lá). */
+@keyframes ha-falta { 20% { transform: translateX(-3px); } 50% { transform: translateX(3px); } 80% { transform: translateX(-2px); } }
+/* O tranco vai no número, não na célula: trocar a `animation` da célula
+   e voltar faria a entrada dela tocar de novo a cada hover. */
+.ha-rec[data-falta] { --ha-fio: color-mix(in srgb, #ff5f74 62%, var(--hx-abismo)); }
+.ha-rec[data-falta] .ha-rec-num { color: #ff8d9c; animation: ha-falta .34s ease-out; }
+
+/* ---------- busca e visão ---------- */
+.ha-busca { transition: border-color .15s ease, background .15s ease, color .15s ease; }
+.ha-busca:focus-within { border-color: var(--hx-cy); color: var(--hx-cy); background: color-mix(in srgb, var(--hx-cy) 6%, #06141e); }
+.ha .ha-busca input:focus-visible { outline: 0; }
+.ha-visao button:active { scale: .92; }
+
+/* ---------- cabeçalho de seção ---------- */
+.ha-sec i { transform-origin: left; animation: ha-risca .26s var(--ha-ease) backwards; animation-delay: calc(var(--ha-base) + 20ms + var(--o, 0) * var(--ha-passo)); }
+.ha-sec h3 { transition: color .15s ease; }
+.ha-sec-seta { flex: none; color: var(--hx-dim); transition: transform .26s var(--ha-ease), color .15s ease; }
+.ha-sec[aria-expanded=false] .ha-sec-seta { transform: rotate(-90deg); }
+.ha-sec:hover:not(:disabled) h3 { color: #fff; }
+.ha-sec:hover:not(:disabled) .ha-sec-seta { color: var(--ha-k); }
+
+/* ---------- cartão ---------- */
+.ha-card { transition: background .16s ease, border-color .16s ease, transform .24s var(--ha-ease), scale .1s ease; }
+:is(.ha-card-wrap:hover > .ha-card, .ha-card:focus-visible):not(:disabled) { background: color-mix(in srgb, var(--ha-k) 10%, #0a1d2a); border-color: color-mix(in srgb, var(--ha-k) 55%, transparent); transform: translateY(-2px); }
+.ha-card:active:not(:disabled) { scale: .985; }
+.ha-ic { transition: background .16s ease, border-color .16s ease; }
+.ha-ic svg { transition: transform .3s var(--ha-ease); }
+:is(.ha-card-wrap:hover, .ha-card:focus-visible) .ha-ic { background: color-mix(in srgb, var(--ha-k) 24%, transparent); border-color: color-mix(in srgb, var(--ha-k) 60%, transparent); }
+:is(.ha-card-wrap:hover, .ha-card:focus-visible) .ha-ic svg { transform: scale(1.15); }
+.ha-custo b { transform-origin: right center; transition: transform .24s var(--ha-ease), color .16s ease; }
+:is(.ha-card-wrap:hover, .ha-card:focus-visible) .ha-custo b { transform: scale(1.14); }
+/* Custo que passa do que resta: o número apaga. Indicação, não trava. */
+.ha-custo[data-falta] b:not(.ha-ram) { color: color-mix(in srgb, var(--ha-k) 34%, var(--hx-dim)); }
+/* A função é uma frase: cabe em duas linhas em vez de cortar na primeira. */
+.ha-sub { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+
+/* ---------- gaveta ---------- */
+@keyframes ha-sai { to { transform: translateX(36px); opacity: 0; } }
+@keyframes ha-veu-sai { to { opacity: 0; } }
+.ha-veu[data-saindo] { animation: ha-veu-sai .2s ease-in forwards; }
+.ha-gaveta[data-saindo] { animation: ha-sai .2s cubic-bezier(.4, 0, 1, 1) forwards; pointer-events: none; }
+.ha-g-cab > *, .ha-g-corpo > * { animation: ha-sobe .38s var(--ha-ease) backwards; }
+.ha-g-cab > :nth-child(1) { animation-delay: 70ms; } .ha-g-cab > :nth-child(2) { animation-delay: 100ms; }
+.ha-g-cab > :nth-child(3) { animation-delay: 130ms; } .ha-g-cab > :nth-child(4) { animation-delay: 160ms; }
+.ha-g-corpo > * { animation-delay: 300ms; }
+.ha-g-corpo > :nth-child(1) { animation-delay: 190ms; } .ha-g-corpo > :nth-child(2) { animation-delay: 225ms; }
+.ha-g-corpo > :nth-child(3) { animation-delay: 260ms; }
+.ha-g-pe { animation: ha-sobe .38s var(--ha-ease) 240ms backwards; }
+/* Opção: o hover é o mesmo visual do selecionado. */
+.ha-op { transition: color .14s ease, border-color .14s ease, background .14s ease, scale .1s ease; }
+.ha-op:hover { color: var(--hx-ice); border-color: var(--ha-k); background: color-mix(in srgb, var(--ha-k) 14%, transparent); }
+.ha-op:hover b { color: var(--ha-k); }
+.ha-op:active { scale: .97; }
+.ha-btn { transition: background .15s ease, color .15s ease, border-color .15s ease, scale .1s ease; }
+.ha-btn:active:not(:disabled) { scale: .98; }
+.ha-g-topo button { transition: color .15s ease; }
+.ha-g-topo button:hover { color: var(--hx-ice); }
+
+/* ---------- aviso (toast) ---------- */
+/* Entra por `translate`, que soma com o `transform` que o centraliza. */
+@keyframes ha-toast-in { from { opacity: 0; translate: 0 10px; } }
+.ha-toast { overflow: hidden; animation: ha-toast-in .28s var(--ha-ease) backwards; }
+/* A contagem dos 4s em que o "Desfazer" ainda está na tela. */
+@keyframes ha-contagem { to { transform: scaleX(0); } }
+.ha-toast::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--hx-cy); transform-origin: left; animation: ha-contagem 4s linear forwards; }
+.ha-toast button { padding: 5px 9px; border: 1px solid #00d4ff40; transition: background .15s ease, color .15s ease, border-color .15s ease; }
+.ha-toast button:hover { color: var(--hx-abismo); background: var(--hx-cy); border-color: var(--hx-cy); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ha *, .ha *::before, .ha *::after { animation: none !important; transition-duration: .01ms !important; }
+  /* Sem o piscar, a prévia do custo continua visível: os losangos ficam apagados. */
+  .ha-pip[data-previa] { opacity: .32; }
+}
+
+/* =====================================================================
+   COMPOSIÇÃO — a aba pela ordem de uso na mesa.
+
+   - Topo em duas faixas: cenas + busca/visão na primeira; recursos do
+     turno na segunda. (Eram três; a busca tinha uma faixa só dela.)
+   - Postura é estado do turno: par de alternância ao lado de PA e
+     Reação, com o hover igual ao selecionado.
+   - "Na mão" reaproveita o cartão de arma do mockup (`.ha-arma`).
+   - Fixar tem botão: estrela numa margem à direita do cartão, pra não
+     pisar no custo. A margem existe em todo cartão da lista, pra coluna
+     de custos não dançar entre os que têm estrela e os que não têm.
+   - Livres: linha de fichas no fim, em vez de dois cartões.
+   ===================================================================== */
+
+/* ---------- topo ---------- */
+.ha-topo { position: relative; display: flex; flex: none; flex-wrap: wrap; align-items: flex-end; gap: 0 28px; padding: 18px 24px 0; border-bottom: 1px solid #00d4ff24; animation: ha-sobe .22s var(--ha-ease) backwards; }
+.ha-topo .ha-cenas { padding: 0; border-bottom: 0; animation: none; }
+.ha-topo .ha-ferr { flex: 1; min-width: 240px; padding: 0 0 9px; justify-content: flex-end; animation: none; }
+.ha-topo .ha-busca { flex: 1; max-width: 330px; }
+@container (max-width: 640px) {
+  .ha-topo .ha-ferr { flex-basis: 100%; padding-top: 12px; }
+  .ha-topo .ha-busca { max-width: none; }
+}
+
+/* ---------- postura ---------- */
+.ha-postura { --ha-k: #ffd23f; display: flex; flex-direction: column; justify-content: center; gap: 7px; margin-left: auto; animation: ha-rec-in .22s var(--ha-ease) 60ms backwards; }
+.ha-postura-ops { display: flex; gap: 6px; }
+.ha-postura-op { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 11px; font: 600 12px var(--hx-display); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; color: var(--hx-texto); background: #06141e; border: 1px solid #00d4ff22; transition: color .14s ease, border-color .14s ease, background .14s ease, scale .1s ease; }
+.ha-postura-op svg { flex: none; color: var(--hx-dim); transition: color .14s ease; }
+.ha-postura-op:is(:hover, :focus-visible, [aria-pressed=true]) { color: var(--hx-ice); border-color: var(--ha-k); background: color-mix(in srgb, var(--ha-k) 14%, #06141e); }
+.ha-postura-op:is(:hover, :focus-visible, [aria-pressed=true]) svg { color: var(--ha-k); }
+.ha-postura-op:active { scale: .97; }
+/* Estreito, a postura quebra pra linha de baixo: encosta à esquerda, junto dos recursos. */
+@container (max-width: 640px) { .ha-postura { margin-left: 0; } }
+
+/* ---------- fixar ---------- */
+.ha-lista .ha-card { padding-right: 32px; }
+.ha-fixar { position: absolute; z-index: 1; top: 50%; right: 5px; display: grid; place-items: center; width: 22px; height: 22px; color: var(--hx-dim); opacity: 0; transform: translateY(-50%); transition: opacity .15s ease, color .15s ease, scale .12s ease; }
+.ha-card-wrap:hover .ha-fixar, .ha-fixar:focus-visible, .ha-fixar[aria-pressed=true] { opacity: 1; }
+.ha-fixar:hover, .ha-fixar[aria-pressed=true] { color: #ff8a1f; }
+.ha-fixar:hover { scale: 1.2; }
+.ha-fixar:active { scale: .85; }
+
+/* ---------- livres ---------- */
+.ha-livres { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 22px; padding-top: 14px; border-top: 1px solid #00d4ff14; }
+.ha-livres-rot { margin-right: 4px; font: 700 11px var(--hx-display); text-transform: uppercase; letter-spacing: .18em; color: var(--hx-dim); }
+.ha-livre { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 11px; font: 600 12px var(--hx-display); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; color: var(--hx-texto); background: #0a1d2a; border: 1px solid #00d4ff12; transition: color .14s ease, border-color .14s ease, background .14s ease, transform .22s var(--ha-ease), scale .1s ease; }
+.ha-livre svg { flex: none; color: var(--ha-k); }
+.ha-livre:is(:hover, :focus-visible) { color: var(--hx-ice); border-color: color-mix(in srgb, var(--ha-k) 55%, transparent); background: color-mix(in srgb, var(--ha-k) 10%, #0a1d2a); transform: translateY(-2px); }
+.ha-livre:active { scale: .97; }
+
+.ha-custo-pips { display: none; }
+
+/* =====================================================================
+   AS DUAS VISÕES — o alternador do topo escolhe entre elas.
+   `cartao` (padrão) — cartão chanfrado em duas colunas, com o custo num
+   painel cortado em diagonal; a divisória acende no hover.
+   `lista` — uma coluna densa, sem caixas; custo em losangos, iguais aos
+   do recurso do topo.
+   (A grade antiga, de azulejos só com ícone e nome, saiu.)
+   ===================================================================== */
+
+/* ---------- comum aos dois: recursos maiores ---------- */
+.ha-rec { height: 66px; padding: 0 22px 0 18px; }
+.ha-rec-num { font-size: 38px; }
+.ha-pip--losango { width: 14px; height: 14px; }
+.ha-sec h3 { font-size: 12px; }
+
+/* ---------- visão cartão ---------- */
+.ha-lista[data-visao=cartao] .ha-grade { gap: 8px; }
+.ha-lista[data-visao=cartao] .ha-card {
+  --ch: polygon(0 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 13px 100%, 0 calc(100% - 13px));
+  --fio: color-mix(in srgb, var(--ha-k) 24%, #12293a);
+  --fundo: linear-gradient(90deg, color-mix(in srgb, var(--ha-k) 9%, #081925), #081925 48%);
+  isolation: isolate; min-height: 66px; padding: 0; gap: 14px; border: 0; background: var(--fio); clip-path: var(--ch);
+}
+.ha-lista[data-visao=cartao] .ha-card::after { content: ""; position: absolute; inset: 1px; z-index: -1; background: var(--fundo); clip-path: var(--ch); }
+.ha-lista[data-visao=cartao] .ha-arma { --fundo: linear-gradient(90deg, color-mix(in srgb, #ff8a1f 18%, #081925), #081925 72%); }
+.ha-lista[data-visao=cartao] :is(.ha-card-wrap:hover > .ha-card, .ha-card:focus-visible):not(:disabled) {
+  --fio: color-mix(in srgb, var(--ha-k) 80%, transparent);
+  --fundo: linear-gradient(90deg, color-mix(in srgb, var(--ha-k) 18%, #081925), color-mix(in srgb, var(--ha-k) 6%, #081925));
+  background: var(--fio);
+}
+.ha-lista[data-visao=cartao] .ha-ic { width: 40px; height: 40px; margin-left: 14px; }
+.ha-lista[data-visao=cartao] .ha-ic svg { width: 19px; height: 19px; }
+.ha-lista[data-visao=cartao] .ha-txt { padding: 11px 0; }
+.ha-lista[data-visao=cartao] .ha-nome { font-size: 14px; }
+.ha-lista[data-visao=cartao] .ha-custo {
+  position: relative; align-self: stretch; align-items: center; justify-content: center; min-width: 86px; gap: 14px;
+  margin: 1px 1px 1px 0; padding: 0 30px 0 28px; text-align: center;
+  background: color-mix(in srgb, var(--ha-k) 10%, #06141e); /* O canto de cima à direita repete o chanfro do cartão (13px): reto, o painel cobria o fio na diagonal. */
+  clip-path: polygon(18px 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 0 100%);
+  transition: background .18s ease;
+}
+.ha-lista[data-visao=cartao] .ha-custo::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 18px; opacity: .45; transition: opacity .18s ease;
+  background: linear-gradient(to bottom right, transparent calc(50% - 1.2px), var(--ha-k) calc(50% - 1.2px), var(--ha-k) calc(50% + .6px), transparent calc(50% + .6px));
+}
+.ha-lista[data-visao=cartao] :is(.ha-card-wrap:hover, .ha-card:focus-visible) .ha-custo { background: color-mix(in srgb, var(--ha-k) 24%, #06141e); }
+.ha-lista[data-visao=cartao] :is(.ha-card-wrap:hover, .ha-card:focus-visible) .ha-custo::before { opacity: 1; }
+.ha-lista[data-visao=cartao] .ha-custo b { font-size: 22px; transform-origin: center; }
+
+/* ---------- visão lista ---------- */
+.ha-lista[data-visao=lista] .ha-grade { grid-template-columns: 1fr; gap: 0; }
+.ha-lista[data-visao=lista] .ha-card { min-height: 46px; gap: 14px; padding: 6px 34px 6px 0; background: transparent; border: 0; border-bottom: 1px solid #00d4ff14; }
+.ha-lista[data-visao=lista] .ha-card::before { display: block !important; position: absolute; left: 0; top: 9px; bottom: 9px; width: 3px; align-self: auto; background: var(--ha-k); transform: scaleY(0); transition: transform .22s var(--ha-ease); }
+.ha-lista[data-visao=lista] :is(.ha-card-wrap:hover > .ha-card, .ha-card:focus-visible):not(:disabled) { transform: none; border-color: color-mix(in srgb, var(--ha-k) 40%, transparent); background: linear-gradient(90deg, color-mix(in srgb, var(--ha-k) 16%, transparent), transparent 72%); }
+.ha-lista[data-visao=lista] :is(.ha-card-wrap:hover > .ha-card, .ha-card:focus-visible)::before { transform: none; }
+.ha-lista[data-visao=lista] .ha-ic { display: grid !important; width: 28px; height: 28px; margin-left: 14px; background: none; border: 0; }
+.ha-lista[data-visao=lista] .ha-txt { display: flex; align-items: baseline; gap: 18px; }
+.ha-lista[data-visao=lista] .ha-nome { flex: none; width: 230px; font-size: 13.5px; }
+.ha-lista[data-visao=lista] .ha-sub, .ha-lista[data-visao=lista] .ha-linha { flex: 1; min-width: 0; margin: 0; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ha-lista[data-visao=lista] .ha-custo > span { display: flex; align-items: center; gap: 9px; }
+.ha-lista[data-visao=lista] .ha-custo small { margin: 0; min-width: 18px; text-align: left; }
+.ha-lista[data-visao=lista] .ha-custo-pips { display: flex; gap: 6px; padding-right: 2px; }
+.ha-lista[data-visao=lista] .ha-custo-pips i { width: 10px; height: 10px; background: var(--ha-k); transform: rotate(45deg); box-shadow: 0 0 7px -1px var(--ha-k); }
+.ha-lista[data-visao=lista] .ha-custo-pips i[data-vazio] { background: transparent; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ha-k) 60%, transparent); }
+.ha-lista[data-visao=lista] .ha-custo-pips ~ b { display: none; }
+.ha-lista[data-visao=lista] .ha-custo[data-falta] .ha-custo-pips i { opacity: .38; }
+@container (max-width: 640px) { .ha-lista[data-visao=lista] .ha-nome { width: 150px; } }
+/* Na lista a linha da arma segue numa linha só, mas com o espaço entre os dados. */
+.ha-lista[data-visao=lista] .ha-linha { display: flex; flex-wrap: nowrap; gap: 12px; }
+/* O placeholder da busca não tinha regra: ficava no cinza padrão do navegador. Mesmo tom do `.hx-busca`. */
+.ha-busca input::placeholder { color: color-mix(in srgb, var(--hx-dim) 60%, transparent); opacity: 1; }

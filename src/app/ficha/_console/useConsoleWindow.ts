@@ -15,6 +15,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  areaLivreDaMesa,
+  geometriaFlutuante,
   geometriaInicial,
   geometriaMaximizada,
   limitarPosicao,
@@ -25,6 +27,7 @@ import {
   MIN_H,
   MIN_W,
   TABLIST_W,
+  type AreaUtil,
   type Geometry,
 } from "./geometry";
 
@@ -32,6 +35,25 @@ export type WindowMode = "normal" | "maximized" | "minimized";
 
 function viewport() {
   return { w: window.innerWidth, h: window.innerHeight };
+}
+
+function areaDoRetangulo(retangulo: DOMRect): AreaUtil {
+  return { x: retangulo.left, y: retangulo.top, w: retangulo.width, h: retangulo.height };
+}
+
+function areaUtil(vp: ReturnType<typeof viewport>, ancorado: boolean): AreaUtil {
+  const inteira = { x: 0, y: 0, w: vp.w, h: vp.h };
+  if (!ancorado) return inteira;
+  const mesa = document.querySelector<HTMLElement>(".rv-mesa");
+  if (!mesa) return inteira;
+  const ferramentas = mesa.querySelector<HTMLElement>(".rv-ferramentas");
+  const painel = mesa.querySelector<HTMLElement>(".rv-painel");
+  return areaLivreDaMesa(
+    vp,
+    areaDoRetangulo(mesa.getBoundingClientRect()),
+    ferramentas ? areaDoRetangulo(ferramentas.getBoundingClientRect()) : undefined,
+    painel ? areaDoRetangulo(painel.getBoundingClientRect()) : undefined,
+  );
 }
 
 /**
@@ -42,6 +64,8 @@ function viewport() {
 export interface OpcoesConsoleWindow {
   larguraInicialMax?: number;
   alturaInicialFallback?: number;
+  /** Dentro da mesa, os controles ao redor do mapa definem onde a janela cabe. */
+  ancorado?: boolean;
 }
 
 export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
@@ -49,6 +73,7 @@ export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
   const [geo, setGeo] = useState<Geometry | null>(null);
   /** Geometria de antes de maximizar — devolvida intacta no restaurar. */
   const geoAntesDeMaximizar = useRef<Geometry | null>(null);
+  const posicionadaManualmente = useRef(false);
 
   /**
    * Altura/largura de janela equivalentes ao tamanho NATURAL do
@@ -81,31 +106,28 @@ export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
    */
   const redimensionadaManualmente = useRef(false);
 
-  // Geometria inicial só no cliente (depende da viewport real).
+  const ajustarAutomaticamente = useCallback(() => {
+    const vp = viewport();
+    const alvo = opts?.ancorado
+      ? geometriaFlutuante(vp, areaUtil(vp, true), larguraMaximaEfetiva)
+      : geometriaInicial(vp, alturaMaximaEfetiva, larguraMaximaEfetiva);
+    setGeo((atual) => atual && atual.x === alvo.x && atual.y === alvo.y && atual.w === alvo.w && atual.h === alvo.h ? atual : alvo);
+  }, [alturaMaximaEfetiva, larguraMaximaEfetiva, opts?.ancorado]);
+
+  // Geometria inicial só no cliente (depende da viewport e do painel reais).
   useEffect(() => {
     if (!aberto || geo) return;
-    setGeo(geometriaInicial(viewport(), alturaMaximaEfetiva, larguraMaximaEfetiva));
+    ajustarAutomaticamente();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aberto, geo, alturaMaximaEfetiva, larguraMaximaEfetiva]);
+  }, [aberto, geo, ajustarAutomaticamente]);
 
-  // Conteúdo acabou de ser medido (ou mudou de tamanho, ex.: atributo
-  // ganhou mais um ponto na trilha de PA): enquanto o usuário não
-  // redimensionou na mão, sincroniza a janela com a MESMA fórmula de
-  // `geometriaInicial` (fração de viewport + teto de conteúdo) nos dois
-  // sentidos — cobre o "flash" do primeiro paint e uma 1ª medição
-  // incompleta (dados carregando async). ESSENCIAL manter o teto de
-  // viewport aqui: só o de conteúdo deixava a janela mais alta que a
-  // tela em telas pequenas. Maximizada ou redimensionada na mão: não
-  // mexe.
+  // Quando o conteúdo muda de tamanho, recalcula a posição automática.
+  // Arraste, resize e maximização manuais preservam a escolha da pessoa.
   useEffect(() => {
     if (alturaMaximaEfetiva == null && larguraMaximaEfetiva == null) return;
-    if (mode !== "normal" || redimensionadaManualmente.current) return;
-    setGeo((atual) => {
-      if (!atual) return atual;
-      const alvo = geometriaInicial(viewport(), alturaMaximaEfetiva, larguraMaximaEfetiva);
-      return atual.w === alvo.w && atual.h === alvo.h ? atual : { ...atual, w: alvo.w, h: alvo.h };
-    });
-  }, [alturaMaximaEfetiva, larguraMaximaEfetiva, mode]);
+    if (mode !== "normal" || redimensionadaManualmente.current || posicionadaManualmente.current) return;
+    ajustarAutomaticamente();
+  }, [alturaMaximaEfetiva, larguraMaximaEfetiva, mode, ajustarAutomaticamente]);
 
   // Viewport mudou de tamanho: reposiciona para a janela continuar
   // alcançável, e reajusta a maximizada para a nova área útil.
@@ -113,6 +135,10 @@ export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
     if (!aberto) return;
     function onResize() {
       const vp = viewport();
+      if (mode === "normal" && !redimensionadaManualmente.current && !posicionadaManualmente.current) {
+        ajustarAutomaticamente();
+        return;
+      }
       setGeo((atual) => {
         if (!atual) return atual;
         if (mode === "maximized") return geometriaMaximizada(vp);
@@ -125,7 +151,25 @@ export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
     }
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [aberto, mode]);
+  }, [aberto, mode, ajustarAutomaticamente]);
+
+  // Abrir/recolher ou redimensionar o painel altera a área livre sem
+  // disparar `window.resize`. A posição automática acompanha essa mudança.
+  useEffect(() => {
+    if (!aberto || !opts?.ancorado) return;
+    const mesa = document.querySelector<HTMLElement>(".rv-mesa");
+    if (!mesa) return;
+    const painel = mesa.querySelector<HTMLElement>(".rv-painel");
+    const trilho = mesa.querySelector<HTMLElement>(".rv-ferramentas");
+    const atualizar = () => {
+      if (mode === "normal" && !redimensionadaManualmente.current && !posicionadaManualmente.current) ajustarAutomaticamente();
+    };
+    const tamanho = new ResizeObserver(atualizar);
+    for (const el of [mesa, painel, trilho]) if (el) tamanho.observe(el);
+    const atributos = new MutationObserver(atualizar);
+    if (painel) atributos.observe(painel, { attributes: true, attributeFilter: ["data-aberto", "data-drawer", "style"] });
+    return () => { tamanho.disconnect(); atributos.disconnect(); };
+  }, [aberto, opts?.ancorado, mode, ajustarAutomaticamente]);
 
   const podeManipular = mode === "normal";
 
@@ -145,6 +189,7 @@ export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
       const offsetY = e.clientY - geo.y;
 
       function mover(ev: PointerEvent) {
+        if (Math.abs(ev.clientX - e.clientX) + Math.abs(ev.clientY - e.clientY) > 3) posicionadaManualmente.current = true;
         setGeo((atual) =>
           atual ? limitarPosicao({ ...atual, x: ev.clientX - offsetX, y: ev.clientY - offsetY }, viewport()) : atual,
         );
@@ -255,6 +300,7 @@ export function useConsoleWindow(aberto: boolean, opts?: OpcoesConsoleWindow) {
    * quebrando o restaurar.
    */
   const alternarMaximizar = useCallback(() => {
+    posicionadaManualmente.current = true;
     if (mode === "maximized") {
       const anterior = geoAntesDeMaximizar.current;
       geoAntesDeMaximizar.current = null;

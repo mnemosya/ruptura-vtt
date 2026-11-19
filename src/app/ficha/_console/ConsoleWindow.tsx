@@ -82,9 +82,11 @@ export function ConsoleWindow({
   conteudoChave?: string | number;
   children: ReactNode;
 }) {
-  const win = useConsoleWindow(aberto, { larguraInicialMax, alturaInicialFallback });
-  const cursorHabilitado = useCursorHabilitado();
   const ancorado = useConsoleAncorado();
+  const win = useConsoleWindow(aberto, { larguraInicialMax, alturaInicialFallback, ancorado });
+  // Só a maximização pedida pela pessoa torna a ficha ancorada modal.
+  const modal = !ancorado || win.mode === "maximized";
+  const cursorHabilitado = useCursorHabilitado();
   const windowRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const tituloId = useId();
@@ -155,9 +157,9 @@ export function ConsoleWindow({
     if (!aberto || minimizada) return;
     const el = windowRef.current;
     if (!el) return;
-    // Ancorada, abrir a ficha não pode arrancar o foco de onde a
-    // pessoa estava — ela abriu uma janela ao lado, não trocou de tela.
-    if (!ancorado && !el.contains(document.activeElement)) {
+    // A janela flutuante compartilha o foco com o mapa; a maximizada
+    // assume a tela e recebe o foco inicial, como a ficha fora do VTT.
+    if (modal && !el.contains(document.activeElement)) {
       el.querySelector<HTMLElement>("[data-foco-inicial]")?.focus();
     }
 
@@ -167,7 +169,7 @@ export function ConsoleWindow({
       // Ancorada, a janela divide o teclado com a tela de baixo: só
       // responde quando o foco está DENTRO dela. Sem isto, o Escape de
       // quem está mexendo no mapa fecharia a ficha pelas costas.
-      if (ancorado && !el!.contains(document.activeElement)) return;
+      if (!modal && !el!.contains(document.activeElement)) return;
       if (e.key === "Escape") {
         // Escape pertence primeiro a quem está aberto por cima: uma
         // edição inline ou um modal auxiliar. Só fecha a janela quando
@@ -186,7 +188,7 @@ export function ConsoleWindow({
       // Armadilha de Tab é comportamento de MODAL: prender o foco numa
       // janela ancorada tiraria o resto da tela da navegação por
       // teclado sem que nada estivesse bloqueado de fato.
-      if (e.key !== "Tab" || ancorado) return;
+      if (e.key !== "Tab" || !modal) return;
       const alvos = el!.querySelectorAll<HTMLElement>(
         'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
       );
@@ -203,7 +205,7 @@ export function ConsoleWindow({
     }
     document.addEventListener("keydown", onKeyDown, true);
     return () => document.removeEventListener("keydown", onKeyDown, true);
-  }, [aberto, minimizada, fechar, ancorado]);
+  }, [aberto, minimizada, fechar, modal, Boolean(win.geo)]);
 
   /**
    * LADO DO TRILHO DE ABAS. Ele é irmão da janela e fica do lado de
@@ -232,7 +234,7 @@ export function ConsoleWindow({
     <div className={`rc-cursor-scope ${oxanium.variable}`}>
       <HudCursor enabled={cursorHabilitado} />
 
-      {!minimizada && !ancorado && <div className="rc-backdrop" onMouseDown={(e) => e.preventDefault()} />}
+      {!minimizada && modal && <div className="rc-backdrop" onMouseDown={(e) => e.preventDefault()} />}
 
       <div
         ref={windowRef}
@@ -240,7 +242,7 @@ export function ConsoleWindow({
         data-mode={win.mode}
         data-trilho={ladoTrilho}
         role="dialog"
-        aria-modal={!minimizada && !ancorado}
+        aria-modal={!minimizada && modal}
         aria-labelledby={tituloId}
         // `inert` enquanto minimizada: some da navegação por teclado sem
         // desmontar (o que preservaria o estado interno). Vive aqui (não

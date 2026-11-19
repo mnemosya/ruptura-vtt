@@ -20,6 +20,36 @@ export interface Viewport {
   h: number;
 }
 
+/** Retângulo livre entre os controles da mesa, em coordenadas da viewport. */
+export interface AreaUtil {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Reserva o espaço ocupado pelos controles que flutuam sobre o mapa. */
+export function areaLivreDaMesa(vp: Viewport, mesa: AreaUtil, ferramentas?: AreaUtil, painel?: AreaUtil): AreaUtil {
+  let esquerda = Math.max(0, mesa.x);
+  let direita = Math.min(vp.w, mesa.x + mesa.w, painel?.x ?? vp.w);
+  let topo = Math.max(0, mesa.y);
+  let base = Math.min(vp.h, mesa.y + mesa.h);
+  if (ferramentas) {
+    const distancias = [
+      ferramentas.x - mesa.x,
+      mesa.x + mesa.w - ferramentas.x - ferramentas.w,
+      ferramentas.y - mesa.y,
+      mesa.y + mesa.h - ferramentas.y - ferramentas.h,
+    ];
+    const lado = distancias.indexOf(Math.min(...distancias));
+    if (lado === 0) esquerda = Math.max(esquerda, ferramentas.x + ferramentas.w);
+    if (lado === 1) direita = Math.min(direita, ferramentas.x);
+    if (lado === 2) topo = Math.max(topo, ferramentas.y + ferramentas.h);
+    if (lado === 3) base = Math.min(base, ferramentas.y);
+  }
+  return { x: esquerda, y: topo, w: Math.max(0, direita - esquerda), h: Math.max(0, base - topo) };
+}
+
 /**
  * Tamanho mínimo da janela (spec §1): abaixo disso o conteúdo rola
  * (ver `.rc-grid` em console.css, que tem seu próprio `min-width` e
@@ -121,8 +151,9 @@ function tetoDeEixo(valorViewport: number, fracao: number, conteudoMaximo: numbe
 }
 
 /**
- * Geometria inicial: próxima da proporção do wireframe (~86vw × 90vh),
- * respeitando os mínimos e centralizada. Em viewports menores que o
+ * Geometria inicial fora do VTT: próxima da proporção do wireframe
+ * (~86vw × 90vh), respeitando os mínimos e ancorada perto do topo.
+ * Em viewports menores que o
  * mínimo a janela fica no tamanho mínimo — o conteúdo é que rola.
  *
  * `alturaMaxima`/`larguraMaxima`, quando informadas (medidas da coluna
@@ -144,30 +175,27 @@ const GAP_TRILHO = 16;
 /** Folga do topo, também a das janelas de ferramenta. */
 const MARGEM_TOPO = 74;
 
-/**
- * Onde o Console NASCE: encostado no trilho da esquerda, perto do
- * topo — nunca centralizado.
- *
- * Centralizado, ele abria bem no meio do mapa e tapava justamente o
- * que a pessoa estava olhando quando pediu a ficha. Encostado na
- * barra de ferramentas ele segue a mesma âncora que TODAS as janelas
- * de ferramenta do VTT já usam, então abrir a ficha não muda o lugar
- * pra onde o olho vai.
- *
- * A largura do trilho é MEDIDA (a barra do VTT e o trilho da campanha
- * têm larguras diferentes, e fora das duas não há trilho nenhum) —
- * nunca um número chutado que ficaria errado em metade das telas.
- */
+/** Posição original da janela fora do VTT. */
 function ancoraSuperiorEsquerda(vp: Viewport, w: number, h: number): { x: number; y: number } {
   const trilho = typeof document === "undefined"
     ? null
     : document.querySelector(".rv-ferramentas") ?? document.querySelector(".rm-shell-rail");
   const borda = trilho ? trilho.getBoundingClientRect().right : 0;
   return {
-    // Se a janela não couber ao lado do trilho (tela estreita), o
-    // clamp de sempre traz ela de volta pra dentro.
     x: Math.max(GAP_TRILHO, Math.min(Math.round(borda + GAP_TRILHO), vp.w - w - GAP_TRILHO)),
     y: Math.max(GAP_TRILHO, Math.min(MARGEM_TOPO, vp.h - h - GAP_TRILHO)),
+  };
+}
+
+/** Abre o Console na altura máxima do viewport, com a largura original. */
+export function geometriaFlutuante(vp: Viewport, area: AreaUtil, larguraMaxima?: number): Geometry {
+  const natural = geometriaInicial(vp, undefined, larguraMaxima);
+  const larguraTotal = natural.w + TABLIST_W;
+  return {
+    ...natural,
+    h: Math.max(1, vp.h - 32),
+    x: Math.max(16, Math.min(Math.round(area.x + (area.w - larguraTotal) / 2), vp.w - larguraTotal - 16)),
+    y: 16,
   };
 }
 
@@ -264,8 +292,10 @@ export function redimensionarPelaEsquerda(
  * Maximizar é ocupar a tela — sem teto de conteúdo.
  */
 export function geometriaMaximizada(vp: Viewport): Geometry {
-  const h = Math.max(MIN_H, vp.h - INSET_MAXIMIZADO * 2);
-  const w = Math.max(MIN_W, vp.w - INSET_MAXIMIZADO * 2 - TABLIST_W);
+  // No modo maximizado, caber na tela prevalece sobre o piso da janela
+  // flutuante: o conteúdo já tem rolagem própria nas telas estreitas.
+  const h = Math.max(1, vp.h - INSET_MAXIMIZADO * 2);
+  const w = Math.max(1, vp.w - INSET_MAXIMIZADO * 2 - TABLIST_W);
   return {
     x: INSET_MAXIMIZADO,
     y: INSET_MAXIMIZADO,

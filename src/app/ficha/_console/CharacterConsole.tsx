@@ -23,7 +23,7 @@
  */
 
 import { useConsoleDaMesa } from "../../mesas/[campaignId]/_shell/ConsoleDaMesa";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Eye } from "lucide-react";
 import {
   ImagemRecusadaError,
@@ -102,6 +102,38 @@ type Aux =
   | { tipo: "aviso"; titulo: string; mensagem: string }
   | { tipo: "avanco"; alvo: RankingV12 }
   | null;
+
+/**
+ * Onde a tela de uma aba se divide em blocos, pra quem não tem lista em
+ * `BLOCOS_DA_ABA`: desce pelo primeiro filho enquanto houver um só, e
+ * devolve os filhos do primeiro nível que tiver dois ou mais. Camadas
+ * de fundo (absolutas) e o que não ocupa espaço ficam de fora.
+ */
+function blocosDaTela(raiz: HTMLElement): HTMLElement[] {
+  let no = raiz;
+  for (let nivel = 0; nivel < 8; nivel++) {
+    const filhos = ([...no.children] as HTMLElement[]).filter((f) => {
+      const r = f.getBoundingClientRect();
+      if (r.width < 4 || r.height < 4) return false;
+      const posicao = getComputedStyle(f).position;
+      return posicao !== "absolute" && posicao !== "fixed";
+    });
+    if (filhos.length >= 2) return filhos.slice(0, 12);
+    if (!filhos.length) break;
+    no = filhos[0];
+  }
+  return no === raiz ? [] : [no];
+}
+
+/** Atraso de cada bloco na troca de aba: encolhe a cada um, e o grupo fecha em ~300ms. */
+const ATRASOS_DA_TROCA = [0, 25, 45, 60, 70, 80];
+
+/** Blocos que entram em sequência na troca de aba, nas abas em que a divisão automática não serve. */
+const BLOCOS_DA_ABA: Partial<Record<AbaId, string>> = {
+  personagem: ".rc-nric-card, .rc-npr-card, .rc-vitals, .rc-ncond-wrap, .rc-skills-wrap, .rc-pins",
+  ruptura: ".rp-anel, .rp-hero-lado, .rp-trilho, .rp-escada",
+  magias: ".rc-inv > .hx-grade > div:not(.hx-scan) > div > *",
+};
 
 export function CharacterConsole({ aberto, onClose, api, abaInicial, comandoAberto }: { aberto: boolean; onClose: () => void; api: ConsoleApi; abaInicial?: AbaId; comandoAberto?: { familia: "a" | "m"; id: string } | null }) {
   const [aba, setAba] = useState<AbaId>(abaInicial ?? "personagem");
@@ -188,6 +220,58 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial, comandoAber
     } else setAux({ tipo: "avanco", alvo });
   };
   const tabpanelRef = useRef<HTMLDivElement>(null);
+
+  // TROCA DE ABA — um método só, pra todas, nos limites das skills do
+  // Emil Kowalski (`skills/skills-emilkowalski`: review-animations e
+  // choreograph). Troca de aba é gesto de alta frequência, então:
+  // - nada espera: o conteúdo novo entra no clique, sem saída do antigo
+  //   segurando a troca;
+  // - os BLOCOS da aba sobem em sequência, mas o grupo inteiro termina em
+  //   ~300ms: 220ms cada, na curva de saída forte, com atrasos que
+  //   ENCOLHEM (0, 25, 45, 60, 70, 80ms) em vez de um passo uniforme;
+  // - o primeiro bloco anda mais (10px) que os seguintes (6px);
+  // - é decoração: não bloqueia clique nem foco enquanto toca.
+  // De onde vêm os blocos:
+  // - Identidade e Ações: da própria folha de estilo, no mesmo ritmo;
+  // - abas com lista em `BLOCOS_DA_ABA`: dali;
+  // - o resto (Classe, que tem uma tela por classe, e Inventário):
+  //   `blocosDaTela` desce pela aba até achar onde ela se divide;
+  // - Equipamentos e Escalpos: coreografia própria (varredura, montagem)
+  //   na PRIMEIRA visita desde que o Console montou; nas voltas,
+  //   `data-revisita` a zera (console.css) e entram por blocos também.
+  //   O atributo sai depois de 1,5s, mais que a entrada mais longa, pra
+  //   nada do que já terminou recomeçar.
+  // É Web Animations, e não CSS, porque os cartões de Personagem têm
+  // animações de estado em CSS: uma `animation` de entrada na folha
+  // recomeçaria toda vez que uma delas terminasse.
+  const focoRef = useRef<HTMLDivElement>(null);
+  const abasVisitadas = useRef(new Set<string>());
+  const primeiraAba = useRef(true);
+  useLayoutEffect(() => {
+    const revisita = abasVisitadas.current.has(aba);
+    abasVisitadas.current.add(aba);
+    const el = focoRef.current;
+    const primeira = primeiraAba.current;
+    primeiraAba.current = false;
+    if (!el) return;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const longa = !!el.querySelector(".hx-eq-motion, .hs-motion");
+    el.toggleAttribute("data-revisita", revisita && longa);
+    el.toggleAttribute("data-troca", !primeira);
+    if (!primeira) t = setTimeout(() => { el.removeAttribute("data-revisita"); el.removeAttribute("data-troca"); }, 1500);
+    // A primeira aba entra com a própria janela (`rc-in`); só as trocas animam aqui.
+    const cascataPropria = !!el.querySelector(".hi-painel, .ha") || (longa && !revisita);
+    if (!primeira && !cascataPropria && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const seletor = BLOCOS_DA_ABA[aba];
+      const blocos = seletor ? [...el.querySelectorAll<HTMLElement>(seletor)] : blocosDaTela(el);
+      // Ordem de leitura: de cima pra baixo, e da esquerda pra direita na mesma linha.
+      const pos = new Map(blocos.map((b) => [b, b.getBoundingClientRect()]));
+      blocos.sort((a, b) => Math.round((pos.get(a)!.top - pos.get(b)!.top) / 24) || pos.get(a)!.left - pos.get(b)!.left);
+      blocos.forEach((b, n) => b.animate([{ opacity: 0, transform: `translateY(${n === 0 ? 10 : 6}px)` }, { opacity: 1, transform: "none" }],
+        { duration: 220, delay: ATRASOS_DA_TROCA[Math.min(n, ATRASOS_DA_TROCA.length - 1)], easing: "cubic-bezier(0.23, 1, 0.32, 1)", fill: "backwards" }));
+    }
+    return () => { if (t) clearTimeout(t); };
+  }, [aba]);
 
   useEffect(() => {
     if (aba === "classe" && !temClasse) setAba("caracteristicas");
@@ -538,7 +622,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial, comandoAber
         alturaInicialFallback={ALTURA_INICIAL_FALLBACK}
         conteudoChave={aba}
       >
-        <div className="rc-foco-content">{aba === "personagem" ? renderPersonagem() : renderConteudoAba()}</div>
+        <div className="rc-foco-content" ref={focoRef}>{aba === "personagem" ? renderPersonagem() : renderConteudoAba()}</div>
       </ConsoleWindow>
 
       {/* Modais auxiliares NÃO passam pelo portal de ConsoleWindow — sem

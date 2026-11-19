@@ -23,8 +23,8 @@ interface Hospedeiro {
   /**
    * O Console está ANCORADO dentro de outra tela viva (hoje: o VTT).
    *
-   * Muda o que a janela é: sem véu por cima do que está embaixo, sem
-   * `aria-modal`, sem armadilha de Tab. Uma ficha aberta não pode
+   * Na abertura flutuante não há véu, `aria-modal` nem armadilha de Tab.
+   * Uma ficha aberta não pode
    * congelar o mapa — a pessoa consulta a ficha PARA agir na mesa, e
    * ter que fechar a janela antes de mover um token transforma
    * consulta em interrupção.

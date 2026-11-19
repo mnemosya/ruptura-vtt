@@ -5092,3 +5092,67 @@ body.rc-livro-por-cima .fj-shell { z-index: 700; }
   background: color-mix(in srgb, var(--rv-vertente-cor, #00d4ff) 22%, transparent);
 }
 .rc-link-livro:focus-visible { outline: 1px solid var(--rv-vertente-cor, #00d4ff); outline-offset: 1px; }
+
+/* ABAS DE UM MÓDULO SÓ — sem a carcaça de módulo.
+   Equipamentos, Inventário, Magias, Escalpos, Identidade, Classe, Ações
+   e Ruptura ocupam a aba inteira com UM módulo. A carcaça dele (faixa
+   `ID://…`, fio, fundo, e o recuo de 16px da janela em volta) só
+   repetia a moldura do próprio Console: o conteúdo agora vai de borda
+   a borda da janela, direto sobre o fundo dela, com o recuo que cada
+   painel já tem por dentro.
+   Em Personagem tudo fica — lá são vários módulos lado a lado, e a
+   moldura é o que separa um do outro. Personagem não passa por
+   `.rc-tabpanel`, então nenhuma regra daqui a alcança. */
+.rc-body:has(.rc-tabpanel) { padding: 0; }
+.rc-tabpanel > .rc-eq-outer > .rc-eq-card-outer > .rc-modcab,
+.rc-tabpanel > .hc-panel > .rc-modcab,
+.rc-tabpanel > .hi-painel > .rc-modcab { display: none; }
+.rc-tabpanel > .rc-eq-outer > .rc-eq-card-outer,
+.rc-tabpanel > .rc-eq-outer > .rc-eq-card-outer > .hx,
+.rc-tabpanel > .rc-eq-outer > .rc-eq-card-outer > .rc-inv > .hx,
+.rc-tabpanel > .hc-panel,
+.rc-tabpanel > .hi-painel { background: none; border: 0; border-radius: 0; }
+/* FUNDO DAS ABAS — o do Inventário, em todas menos Personagem.
+   As três camadas de `.ih` (inventario-hud.css): o degradê radial, a
+   grade de 48px que some nas bordas e as linhas de varredura. Moram no
+   contêiner das abas, que não rola (o `.rc-tabpanel` rola por dentro),
+   atrás do conteúdo. No Inventário o `.ih` cobre isto com o mesmo
+   desenho. Personagem não tem `.rc-tabsarea-main`. */
+.rc-tabsarea-main {
+  isolation: isolate;
+  background: radial-gradient(ellipse 70% 60% at 50% 45%, #0c1f2b 0%, #06121c 75%);
+}
+.rc-tabsarea-main::before,
+.rc-tabsarea-main::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.rc-tabsarea-main::before {
+  opacity: .35;
+  background-image:
+    linear-gradient(color-mix(in srgb, #00d4ff 6%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, #00d4ff 6%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+}
+.rc-tabsarea-main::after {
+  opacity: .6;
+  background-image: repeating-linear-gradient(0deg, color-mix(in srgb, #00d4ff 4%, transparent) 0 1px, transparent 1px 3px);
+}
+
+/* TROCA DE ABA — volta a uma aba de coreografia longa.
+   A entrada por blocos é de CharacterConsole.tsx (e das folhas de
+   Identidade e Ações). Aqui, só o que cala a varredura de Equipamentos e
+   a montagem de Escalpos nas revisitas, quando elas entram por blocos
+   como as outras: duração e atraso vão a zero, em
+   vez de `animation: none`, pra que tirar o atributo depois não faça
+   nada recomeçar. Nenhuma das duas tem animação contínua, então vão
+   inteiras (com 1ms, um pulso ou giro viraria estrobo). */
+.rc-foco-content[data-revisita] :is(.hx-eq-motion, .hx-eq-motion *, .hs-motion, .hs-motion *),
+.rc-foco-content[data-revisita] :is(.hx-eq-motion, .hx-eq-motion *, .hs-motion, .hs-motion *)::before,
+.rc-foco-content[data-revisita] :is(.hx-eq-motion, .hx-eq-motion *, .hs-motion, .hs-motion *)::after { animation-duration: 1ms !important; animation-delay: 0s !important; }
+/* (Pseudo-elemento não entra em `:is()` — o navegador descarta o ramo —,
+   por isso `::before`/`::after` vão em seletores próprios.) */
+
+/* Em TODA troca de aba: o "boot" do Inventário (500ms, peça única) e as
+   subidas internas de Magias (380ms) dão lugar à entrada por blocos, que
+   é a mesma de todas as abas. `data-troca` sai junto com `data-revisita`,
+   então trocar de vista dentro do Inventário depois anima como sempre. */
+.rc-foco-content[data-troca] :is(.ih-boot, .hx-rise) { animation-duration: 1ms !important; animation-delay: 0s !important; }
