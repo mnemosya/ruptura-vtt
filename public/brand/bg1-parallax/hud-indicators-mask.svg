@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1672" height="941" viewBox="0 0 1672 941" preserveAspectRatio="none">
+  <!-- Recortes dos indicadores; mantém intactos a moldura e o radar. -->
+  <path fill="white" fill-rule="evenodd" d="M0 0H1672V941H0Z
+    M35 64H112V89H35Z
+    M1568 36H1640V57H1568Z
+    M1434 888H1657V910H1434Z
+    M1040 916H1103V938H1040Z
+    M290 916H354V938H290Z
+    M340 843H390V861H340Z"/>
+</svg>

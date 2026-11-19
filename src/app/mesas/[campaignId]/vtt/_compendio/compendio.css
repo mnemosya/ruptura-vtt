@@ -275,6 +275,9 @@
 .fj-livro-icone svg { width: 20px; height: 20px; }
 .fj-livro-icone:hover, .fj-livro-icone--on { color: var(--fj-cy); }
 
+/* "Esc Fechar": respiro entre a tecla e a palavra, alinhadas pela linha de base (pelo centro, a mono e a Oxanium ficavam 1,5px desencontradas). */
+.fj-livro-fechar .fj-livro-so-desktop { display: inline-flex; align-items: baseline; gap: 10px; }
+
 /* Toque: sem hover, o "Expandir" fica sempre à mão. */
 @media (hover: none) {
   .fj-livro-expandir { opacity: 1; pointer-events: auto; }
@@ -385,4 +388,53 @@
   /* Imagem ampliada: botão de fechar ao alcance e imagem do tamanho da tela. */
   .fj-livro-ampliada { padding: var(--hud-space-3); padding-top: max(var(--hud-space-3), env(safe-area-inset-top)); }
   .fj-livro-ampliada__img { max-height: calc(100dvh - 100px); }
+}
+
+/* ── Virar a página ──────────────────────────────────────────────────
+   O efeito aprovado no board "Minhas Campanhas — game UI": a arte entra
+   por uma cortina diagonal, o título chega com um glitch de duas tintas
+   e o texto desliza da esquerda. Valores copiados de lá (`v1-wipe`,
+   `v1-glitch`, `v1-desliza`; curva `--v1-sai`).
+
+   Toca sozinho a cada capítulo: o `<article>` tem `key` do capítulo e a
+   capa é outro componente, então trocar de página remonta o conteúdo e
+   as animações recomeçam — navegar por âncora DENTRO do capítulo não
+   remonta e não anima.
+
+   `backwards`, não `both`: o quadro final não fica preso no elemento.
+   Com `both` o `text-shadow` do glitch apagaria o `.fj-glow` do título e
+   o `clip-path` da cortina ficaria para sempre sobre a arte. */
+.fj-codex__leitura { --lv-sai: cubic-bezier(.2, .8, .2, 1); }
+
+@keyframes fj-livro-cortina {
+  from { clip-path: polygon(0 0, 0 0, -20% 100%, -20% 100%); transform: scale(1.08); }
+  to { clip-path: polygon(0 0, 120% 0, 100% 100%, -20% 100%); transform: none; }
+}
+@keyframes fj-livro-glitch {
+  0% { opacity: 0; transform: translateX(-36px) skewX(-14deg); text-shadow: -8px 0 var(--fj-am), 8px 0 var(--fj-cy); }
+  35% { opacity: 1; transform: translateX(6px) skewX(5deg); text-shadow: 5px 0 var(--fj-am), -5px 0 var(--fj-cy); }
+  55% { transform: translateX(-3px) skewX(-1deg); text-shadow: -2px 0 var(--fj-am), 2px 0 var(--fj-cy); }
+}
+@keyframes fj-livro-desliza { from { opacity: 0; transform: translateX(-20px); } }
+
+/* Capítulo */
+.fj-livro-heroi .fj-codex__heroi-img { animation: fj-livro-cortina .6s var(--lv-sai) backwards; }
+.fj-livro-heroi .fj-codex__heroi-texto > :first-child { animation: fj-livro-desliza .36s var(--lv-sai) backwards; }
+.fj-livro-heroi .fj-codex__heroi-titulo { animation: fj-livro-glitch .5s var(--lv-sai) .08s backwards; }
+.fj-livro-heroi .fj-livro-abertura { animation: fj-livro-desliza .36s var(--lv-sai) .16s backwards; }
+.fj-livro-heroi .fj-livro-enviar--heroi { animation: fj-livro-desliza .36s var(--lv-sai) .22s backwards; }
+.fj-codex__leitura .fj-livro-texto { animation: fj-livro-desliza .36s var(--lv-sai) .22s backwards; }
+
+/* Capa */
+.fj-capa .fj-capa__imagem { animation: fj-livro-cortina .6s var(--lv-sai) backwards; }
+.fj-capa .fj-capa__marca { animation: fj-livro-desliza .36s var(--lv-sai) .16s backwards; }
+.fj-capa .fj-capa__cidade-nome { animation: fj-livro-desliza .36s var(--lv-sai) .25s backwards; }
+.fj-capa .fj-capa__leitura { animation: fj-livro-desliza .36s var(--lv-sai) .3s backwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fj-livro-heroi .fj-codex__heroi-img, .fj-livro-heroi .fj-codex__heroi-texto > :first-child,
+  .fj-livro-heroi .fj-codex__heroi-titulo, .fj-livro-heroi .fj-livro-abertura,
+  .fj-livro-heroi .fj-livro-enviar--heroi, .fj-codex__leitura .fj-livro-texto,
+  .fj-capa .fj-capa__imagem, .fj-capa .fj-capa__marca, .fj-capa .fj-capa__cidade-nome,
+  .fj-capa .fj-capa__leitura { animation: none; }
 }

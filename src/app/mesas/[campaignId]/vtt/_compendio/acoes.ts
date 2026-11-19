@@ -27,11 +27,14 @@ import { exigirAcessoPainel, mensagemDeErro, type ResultadoPainel } from "../_pa
 
 /**
  * Quem pode ler o livro: na mesa, quem tem acesso à campanha; fora dela
- * (página Compêndio da área autenticada, `campaignId` nulo), qualquer conta logada.
+ * (`campaignId` nulo: página Compêndio da área autenticada e a tela de
+ * acesso), qualquer pessoa, mesmo sem conta. O livro publicado já é
+ * leitura pública na RLS (`content_documents_public_read`); o que segue
+ * exigindo a mesa é enviar ao chat.
  */
 async function exigirLeitor(campaignId: string | null): Promise<{ ok: true } | { ok: false; erro: string }> {
   if (campaignId) return exigirAcessoPainel(campaignId);
-  return (await getCurrentUser()) ? { ok: true } : { ok: false, erro: "Sessão expirada." };
+  return { ok: true };
 }
 import { rotuloCapitulo, textoDe, textoPlanoDosBlocos, type LinhaCapitulo } from "./modelo";
 
@@ -56,7 +59,8 @@ export async function listarCapitulosAction(campaignId: string | null): Promise<
     });
     // Usar o Compêndio é o que mantém o livro em dia: checa o Notion em segundo
     // plano, no máximo a cada 12 horas (Fase 3, sincronizacaoAutomatica.ts).
-    after(() => talvezSincronizar());
+    // Só quem tem conta dispara a checagem; a leitura da tela de acesso, não.
+    if (campaignId || (await getCurrentUser())) after(() => talvezSincronizar());
     return { ok: true, dados: linhas.sort((a, b) => a.ordem - b.ordem) };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Não foi possível carregar o Compêndio.") };

@@ -16,6 +16,7 @@
  * ao final, a pessoa entra normalmente por /login.
  */
 
+import { traduzirErroAuth } from "../../lib/auth/mensagens";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getBrowserSupabaseClient } from "../../lib/supabase/browserClient";
@@ -61,13 +62,13 @@ export default function RedefinirSenhaPage() {
     async function verify() {
       if (accessToken && refreshToken) {
         const { error } = await supabase!.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-        if (error) { setPhase({ kind: "error", message: error.message }); return; }
+        if (error) { setPhase({ kind: "error", message: traduzirErroAuth(error, "Não foi possível redefinir a senha. Peça um novo link.") }); return; }
         setPhase({ kind: "ready" });
         return;
       }
       if (tokenHash) {
         const { error } = await supabase!.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" });
-        if (error) { setPhase({ kind: "error", message: error.message }); return; }
+        if (error) { setPhase({ kind: "error", message: traduzirErroAuth(error, "Não foi possível redefinir a senha. Peça um novo link.") }); return; }
         setPhase({ kind: "ready" });
         return;
       }
@@ -91,7 +92,7 @@ export default function RedefinirSenhaPage() {
 
     setPhase({ kind: "saving" });
     const { error } = await supabase.auth.updateUser({ password });
-    if (error) { setPhase({ kind: "error", message: error.message }); return; }
+    if (error) { setPhase({ kind: "error", message: traduzirErroAuth(error, "Não foi possível redefinir a senha. Peça um novo link.") }); return; }
     await supabase.auth.signOut().catch(() => undefined);
     setPhase({ kind: "done" });
   }

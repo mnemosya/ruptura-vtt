@@ -9,6 +9,7 @@
 
 import { headers } from "next/headers";
 import { createAnonAuthClient } from "./anonClient";
+import { traduzirErroAuth } from "./mensagens";
 import { getScopedTableClient } from "./scopedClient";
 import { writeAuthTokens, clearAuthTokens, readAuthTokens } from "./session";
 
@@ -25,7 +26,7 @@ export async function signInWithPassword(email: string, password: string): Promi
     const supabase = createAnonAuthClient();
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error || !data.session) {
-      return { ok: false, error: error?.message ?? "Login não retornou sessão." };
+      return { ok: false, error: error ? traduzirErroAuth(error, "Não foi possível entrar. Tente de novo.") : "Login não retornou sessão." };
     }
     await writeAuthTokens({
       access_token: data.session.access_token,
@@ -33,7 +34,7 @@ export async function signInWithPassword(email: string, password: string): Promi
     });
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Erro desconhecido no login." };
+    return { ok: false, error: traduzirErroAuth(err, err instanceof Error ? err.message : "Erro desconhecido no login.") };
   }
 }
 
@@ -70,7 +71,7 @@ export async function signUpWithPassword(
       password,
       ...(trimmedName ? { options: { data: { display_name: trimmedName } } } : {}),
     });
-    if (error) return { ok: false, error: error.message };
+    if (error) return { ok: false, error: traduzirErroAuth(error, "Não foi possível criar a conta. Tente de novo.") };
     if (!data.session) return { ok: true, needsConfirmation: true };
     await writeAuthTokens({
       access_token: data.session.access_token,
@@ -78,7 +79,7 @@ export async function signUpWithPassword(
     });
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Erro desconhecido no cadastro." };
+    return { ok: false, error: traduzirErroAuth(err, err instanceof Error ? err.message : "Erro desconhecido no cadastro.") };
   }
 }
 
@@ -206,7 +207,7 @@ export async function refreshAccessToken(): Promise<RefreshedAccessToken> {
 
     return primeira;
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Erro desconhecido ao renovar a sessão." };
+    return { ok: false, error: traduzirErroAuth(err, err instanceof Error ? err.message : "Erro desconhecido ao renovar a sessão.") };
   }
 }
 
@@ -289,7 +290,7 @@ export async function requestPasswordReset(email: string): Promise<AuthActionRes
     await supabase.auth.resetPasswordForEmail(trimmed, redirectTo ? { redirectTo } : undefined);
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Erro desconhecido ao pedir a redefinição de senha." };
+    return { ok: false, error: traduzirErroAuth(err, err instanceof Error ? err.message : "Erro desconhecido ao pedir a redefinição de senha.") };
   }
 }
 
@@ -306,10 +307,10 @@ export async function updateDisplayName(displayName: string): Promise<AuthAction
     const client = await getScopedTableClient();
     const trimmed = displayName.trim();
     const { error } = await client.auth.updateUser({ data: { display_name: trimmed || null } });
-    if (error) return { ok: false, error: error.message };
+    if (error) return { ok: false, error: traduzirErroAuth(error, "Não foi possível atualizar o nome de exibição.") };
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Erro desconhecido ao atualizar nome de exibição." };
+    return { ok: false, error: traduzirErroAuth(err, err instanceof Error ? err.message : "Erro desconhecido ao atualizar nome de exibição.") };
   }
 }
 
@@ -324,9 +325,9 @@ export async function updateVisualPrefs(prefs: { reduceMotion: boolean; highCont
     const { error } = await client.auth.updateUser({
       data: { visual_prefs: { reduceMotion: !!prefs.reduceMotion, highContrast: !!prefs.highContrast } },
     });
-    if (error) return { ok: false, error: error.message };
+    if (error) return { ok: false, error: traduzirErroAuth(error, "Não foi possível salvar as preferências.") };
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Erro desconhecido ao salvar preferências." };
+    return { ok: false, error: traduzirErroAuth(err, err instanceof Error ? err.message : "Erro desconhecido ao salvar preferências.") };
   }
 }

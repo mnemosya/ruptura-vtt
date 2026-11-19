@@ -85,10 +85,38 @@
 .rv-img-wrap { position: absolute; inset: 0; }
 .rv-img {
   position: absolute; inset: 0;
-  background-image: url('/brand/auth-hud.jpg');
+  background-image: url('/brand/bg1-parallax/background.png');
   background-size: cover;
   background-position: center;
-  filter: brightness(0.98) saturate(1.02);
+  filter: brightness(1.12) contrast(0.96) saturate(1.5);
+}
+.rv-depth-background {
+  transform: translate3d(calc(var(--rv-par-x, 0) * -3px), calc(var(--rv-par-y, 0) * -2px), 0) scale(1.05);
+}
+.rv-depth-midground {
+  background-image: url('/brand/bg1-parallax/midground.png');
+  transform: translate3d(calc(var(--rv-par-x, 0) * -9px), calc(var(--rv-par-y, 0) * -6px), 0) scale(1.05);
+}
+.rv-depth-foreground {
+  background-image: url('/brand/bg1-parallax/foreground.png');
+  mask-image: url('/brand/bg1-parallax/hud-indicators-mask.svg');
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  /* Moldura acompanha a viewport inteira; cover cortava topo e rodapé
+     em telas largas. Não participa da escala/paralaxe do cenário. */
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  transform: none;
+  z-index: 3;
+  pointer-events: none;
+  filter: brightness(1.05) saturate(0.7);
+  opacity: 0.75;
+}
+@media (prefers-reduced-motion: no-preference) and (pointer: fine) {
+  .rv-depth-background, .rv-depth-midground { will-change: transform; }
+}
+@media (prefers-reduced-motion: reduce), (pointer: coarse) {
+  .rv-depth-background, .rv-depth-midground { transform: scale(1.05); }
 }
 .rv-img-tint { position: absolute; inset: 0; background: rgba(0, 40, 80, 0.04); pointer-events: none; }
 .rv-img-grad {
@@ -161,19 +189,19 @@
   position: absolute; top: 4px; bottom: 4px; width: 8px; opacity: 0.6;
   box-shadow: 0 0 18px rgba(56, 193, 212, 0.22); pointer-events: none; z-index: 6;
 }
-.rv-stripe-l { left: 3px; background: linear-gradient(180deg, rgba(230, 165, 46, 0.2) 0%, #e6a52e 13%, rgba(56, 193, 212, 0.12) 47%, #38c1d4 82%, rgba(56, 193, 212, 0.2) 100%); }
-.rv-stripe-r { right: 3px; background: linear-gradient(180deg, rgba(56, 193, 212, 0.2) 0%, #38c1d4 18%, rgba(56, 193, 212, 0.12) 53%, #e6a52e 87%, rgba(230, 165, 46, 0.2) 100%); }
+.rv-stripe-l { left: 3px; background: linear-gradient(180deg, rgba(255, 138, 31, 0.2) 0%, #ff8a1f 13%, rgba(56, 193, 212, 0.12) 47%, #38c1d4 82%, rgba(56, 193, 212, 0.2) 100%); }
+.rv-stripe-r { right: 3px; background: linear-gradient(180deg, rgba(56, 193, 212, 0.2) 0%, #38c1d4 18%, rgba(56, 193, 212, 0.12) 53%, #ff8a1f 87%, rgba(255, 138, 31, 0.2) 100%); }
 
 .rv-panel {
   min-width: 0;
-  position: relative; background: rgba(13, 21, 28, 0.82); border: 1px solid rgba(0, 212, 255, 0.25);
+  position: relative; background: rgba(13, 21, 28, 0.6); border: 1px solid rgba(0, 212, 255, 0.25);
   border-radius: 0; padding: 34px 48px 32px; display: flex; flex-direction: column; gap: 26px; align-items: center;
-  overflow: hidden; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  overflow: hidden; backdrop-filter: blur(18px) saturate(1.3); -webkit-backdrop-filter: blur(18px) saturate(1.3);
   /* Teto de altura: com conteúdo extra (cadastro + cartão do convite)
      o painel passava da viewport e desmontava o layout. Acima do teto,
      rola por dentro, com a barra de rolagem escondida. O teto é só
-     relativo à viewport (80%), pra acompanhar qualquer altura de tela. */
-  max-height: 80dvh;
+     relativo à viewport (88%), pra acompanhar qualquer altura de tela. */
+  max-height: 88dvh;
   overflow-y: auto; overscroll-behavior: contain;
   scrollbar-width: none;
 }
@@ -243,7 +271,7 @@
 @keyframes rv-glitch {
   0%, 92%, 100% { transform: none; filter: none; }
   93% { transform: translateX(-2px) skewX(-0.6deg); filter: brightness(1.12); }
-  94% { transform: translateX(2px); }
+  94% { transform: translateX(3px); }
   95% { transform: translateX(-1px); }
   96% { transform: none; }
 }
@@ -618,4 +646,362 @@
 .rv-submit:is(:hover:not(:disabled), :focus-visible) {
   outline: 1px solid var(--control-outline);
   outline-offset: -2px;
+}
+
+/* ============================================================
+   CENA VIVA — paralaxe, brasas, ligar do painel, aperto de mão
+   e saída de cena. Tudo em opacity/transform (regra de ouro do
+   motion.css); nada aqui muda a caixa de nenhum controle.
+   ============================================================ */
+
+/* Cenário em cover com folga; HUD inteiro ajustado à viewport.
+   Leituras ancoradas à faixa inferior da moldura (817, 913 em 1672×941). */
+.rv-readings { left: 48.86%; bottom: max(18px, 2.98%); }
+.rv-mundo { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+
+.rv-particles {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  z-index: 2; pointer-events: none;
+}
+
+/* Ligar do painel: as faixas laterais acendem em sentidos opostos e os
+   fios de topo/base abrem do centro, logo depois da entrada. */
+.rv-stripe { animation: rv-stripe-on 0.7s var(--mo-ease-out) 0.3s both; }
+.rv-stripe-l { transform-origin: top; }
+.rv-stripe-r { transform-origin: bottom; }
+@keyframes rv-stripe-on { from { transform: scaleY(0); opacity: 0; } to { transform: none; opacity: 0.6; } }
+.rv-deco { animation: rv-deco-on 0.8s var(--mo-ease-out) 0.25s both; }
+@keyframes rv-deco-on { from { transform: scaleX(0); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Caps Lock: etiqueta dentro do campo, sem empurrar nada. */
+.rv-caps {
+  position: absolute; right: 38px; padding: 3px 6px; pointer-events: none;
+  font-family: var(--font-mono), monospace; font-size: 9px; font-weight: 700; letter-spacing: 0.14em; line-height: 1;
+  color: #ffb45c; background: rgba(255, 138, 31, 0.12); border: 1px solid rgba(255, 138, 31, 0.4);
+  animation: mo-view-in var(--mo-dur-enter) var(--mo-ease-out) both;
+}
+.rv-input-wrap--caps .rv-input--pwd { padding-right: 118px; }
+
+/* O botão não deixa nada vazar do chanfro (onda e linhas ficam dentro). */
+.rv-root .auth-submit-btn { overflow: hidden; }
+
+/* Saída de cena (acesso concedido): o painel desliga como tubo — achata
+   numa linha e some —, a câmera mergulha no fundo e a tela escurece até
+   a próxima rota assumir. A legenda fica pra carga lenta não parecer
+   travamento. */
+.rv-root[data-estado="concedido"] .rv-panel-wrap {
+  pointer-events: none;
+  animation: rv-desliga 0.6s var(--mo-ease-in) 0.55s both;
+}
+@keyframes rv-desliga {
+  0% { transform: none; opacity: 1; }
+  70% { transform: scale(1, 0.006); opacity: 1; }
+  100% { transform: scale(0.15, 0.006); opacity: 0; }
+}
+.rv-root[data-estado="concedido"] .rv-mundo { animation: rv-mergulho 2.2s cubic-bezier(0.5, 0, 0.75, 0.3) 0.75s both; }
+@keyframes rv-mergulho { to { transform: scale(1.4); } }
+.rv-root[data-estado="concedido"] .rv-coord { animation: rv-some 0.4s ease 0.55s both; }
+@keyframes rv-some { to { opacity: 0; } }
+.rv-saida {
+  position: absolute; inset: 0; z-index: 8; pointer-events: none; opacity: 0;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: radial-gradient(ellipse at center, rgba(7, 9, 15, 0.82) 0%, #07090f 75%);
+  font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: 0.32em; color: rgba(143, 236, 255, 0.85);
+}
+.rv-saida-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: #00d4ff; box-shadow: 0 0 8px #00d4ff;
+  animation: rv-blink 0.9s ease-in-out infinite;
+}
+.rv-root[data-estado="concedido"] .rv-saida { animation: rv-saida-in 0.9s ease 1.15s both; }
+@keyframes rv-saida-in { to { opacity: 1; } }
+
+/* ---------- Campo e botão vindos do estudo B (/dev/login-b) ----------
+   Campo liso e mais alto, sem ícone à esquerda; o foco é borda ciana
+   com um anel de 3px. O rótulo continua o da casa. O botão ganha a
+   altura do estudo. */
+.rv-input-icon { display: none; }
+.rv-input-wrap {
+  background: rgba(12, 19, 26, 0.42); border-color: rgba(120, 170, 190, 0.22);
+  backdrop-filter: blur(10px) saturate(1.2); -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  box-shadow: inset 0 1px 0 rgba(160, 220, 240, 0.06);
+  --control-outline: rgba(120, 170, 190, 0.22);
+}
+.rv-input { height: 52px; padding: 0 16px; font-size: 16px; color: #e8f5fb; }
+.rv-input--pwd { padding-right: 44px; }
+.rv-input-wrap--caps .rv-input--pwd { padding-right: 124px; }
+.rv-input-wrap:hover { background: rgba(12, 19, 26, 0.5); border-color: #2f4a5a; }
+.rv-input-wrap:focus-within {
+  background: rgba(10, 16, 22, 0.6); border-color: #00d4ff; --control-outline: #00d4ff;
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.13);
+}
+.rv-input-wrap--err:focus-within { box-shadow: 0 0 0 3px rgba(255, 90, 110, 0.14) !important; }
+.rv-input:-webkit-autofill,
+.rv-input:-webkit-autofill:hover,
+.rv-input:-webkit-autofill:focus { box-shadow: 0 0 0 1000px #0e161e inset; -webkit-text-fill-color: #e8f5fb; }
+.rv-toggle-btn { right: 14px; }
+.rv-root .auth-submit-btn { min-height: 54px; }
+
+/* O degradê de fim de rolagem (`.rv-panel::after`) tinha margem inferior
+   de -32px, que comia o padding de baixo do painel: o rodapé encostava
+   na borda e o painel rolava 32px mesmo cabendo inteiro. A margem sai e
+   o degradê desce pelos mesmos 32px por transform, sem ocupar altura. */
+.rv-panel::after { margin-bottom: 0; transform: translateY(32px); }
+
+/* Sem rótulo acima do campo: o nome do campo é o próprio placeholder,
+   na tipografia que o rótulo tinha (o `aria-label` guarda a leitura). */
+.rv-input::placeholder {
+  font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: 0.15em;
+  text-transform: uppercase; color: rgba(84, 172, 190, 0.7);
+}
+/* O placeholder é menor (11px) que o texto digitado (16px) e se apoiava
+   na linha de base do texto grande — por isso caía abaixo do meio. Com
+   o campo vazio, o próprio input assume a tipografia do placeholder, e
+   a linha dele centra na altura do campo. */
+.rv-input:placeholder-shown {
+  font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: 0.15em; line-height: 1;
+}
+
+/* Reflexo local na borda, sem deslocar os controles. */
+.rv-edge-light {
+  position: absolute; inset: 0; pointer-events: none; z-index: 7;
+  opacity: 0; transition: opacity 350ms ease;
+}
+.rv-edge-light {
+  padding: 1px;
+  background: radial-gradient(180px circle at var(--rv-light-x, 50%) var(--rv-light-y, 50%), rgba(110,230,255,.65), transparent 80%);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .rv-panel-wrap:hover > .rv-edge-light { opacity: 1; }
+}
+.rv-root[data-modo="register"] .rv-edge-light {
+  background: radial-gradient(180px circle at var(--rv-light-x, 50%) var(--rv-light-y, 50%), rgba(255,185,95,.6), transparent 80%);
+}
+.rv-atmosfera {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(ellipse at 35% 75%, rgba(220,125,35,.12), transparent 65%);
+  opacity: 0; transition: opacity 1.2s ease;
+}
+.rv-root[data-modo="register"] .rv-atmosfera { opacity: 1; }
+/* Traço de conexão passa uma vez ao receber foco e desaparece. */
+.rv-root .rv-input-wrap::before {
+  content: ""; position: absolute; bottom: 0; left: 0; width: 24px; height: 1px;
+  background: #8fecff; box-shadow: 0 0 6px #00d4ff;
+  pointer-events: none; opacity: 0; transition: opacity 200ms ease;
+}
+.rv-root .rv-input-wrap:focus-within::before {
+  animation: rv-connect 600ms ease-out;
+}
+@keyframes rv-connect {
+  0% { left: 0; opacity: 0; }
+  15% { opacity: .8; }
+  70% { opacity: .6; }
+  100% { left: calc(100% - 24px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rv-edge-light, .rv-root .rv-input-wrap::before { display: none; }
+}
+
+/* ---------- Compêndio na tela de acesso (CompendioAcesso.tsx) ----------
+   Ficha compacta no canto superior direito: a capa em miniatura, o nome e
+   a tecla. Mesmo recorte de canto dos controles (corte no alto à direita,
+   rente ao canto da tela), vidro escuro por trás. Abrir mostra o livro
+   (LivroCodex), com a mesma entrada que ele tem na mesa. */
+.rv-compendio {
+  --n: 10px; --contorno: rgba(0, 212, 255, 0.25);
+  all: unset; box-sizing: border-box; cursor: pointer;
+  position: absolute; bottom: 24px; left: 24px; z-index: 6; height: 60px;
+  display: flex; align-items: center; gap: 14px; padding: 6px 14px 6px 6px;
+  clip-path: polygon(0 0, calc(100% - var(--n)) 0, 100% var(--n), 100% 100%, var(--n) 100%, 0 calc(100% - var(--n)));
+  background: rgba(6, 18, 28, 0.72);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  animation: rv-compendio-entra 0.6s cubic-bezier(0.23, 1, 0.32, 1) 0.35s both;
+  transition: background-color 0.18s ease, scale 0.12s cubic-bezier(0.23, 1, 0.32, 1);
+}
+@media (pointer: fine) { .rv-root .rv-compendio { cursor: none; } }
+/* O contorno é um anel de 1px recortado na MESMA geometria do chanfro: um
+   polígono só, com o contorno de fora e o de dentro (regra evenodd), então
+   o fio segue as diagonais sem quebra nem emenda. O chanfro de dentro é
+   n − 0.15px: a diagonal sai com ~1,3px, porque o antialiasing espalha o
+   fio inclinado e 1px exato parece mais fino que as retas. */
+.rv-compendio::after {
+  --k: calc(var(--n) - 0.15px);
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  background: var(--contorno); transition: background-color 0.18s ease;
+  clip-path: polygon(evenodd,
+    0 0, calc(100% - var(--n)) 0, 100% var(--n), 100% 100%, var(--n) 100%, 0 calc(100% - var(--n)), 0 0,
+    1px 1px, 1px calc(100% - 1px - var(--k)), calc(1px + var(--k)) calc(100% - 1px), calc(100% - 1px) calc(100% - 1px), calc(100% - 1px) calc(1px + var(--k)), calc(100% - 1px - var(--k)) 1px, 1px 1px);
+}
+.rv-compendio-capa {
+  position: relative; width: 48px; height: 48px; flex: none; overflow: hidden;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+}
+.rv-compendio-arte { object-fit: cover; object-position: 55% 38%; opacity: 0.75; filter: saturate(0.85); transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.2s ease, filter 0.2s ease; }
+.rv-compendio-texto { display: flex; flex-direction: column; gap: 3px; }
+.rv-compendio-kicker { font-family: var(--font-mono), monospace; font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: #54acbe; }
+.rv-compendio-titulo { font-family: var(--font-oxanium), "Oxanium", sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #e8f5fb; transition: color 0.18s ease; }
+.rv-compendio-tecla {
+  margin-left: 6px; width: 24px; height: 24px; display: grid; place-items: center;
+  font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 700; line-height: 1;
+  color: #e8f5fb; border: 1px solid rgba(0, 212, 255, 0.55); background: rgba(0, 212, 255, 0.06);
+  transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+.rv-compendio:is(:hover, :focus-visible) { background-color: rgba(6, 18, 28, 0.85); }
+.rv-compendio:is(:hover, :focus-visible)::after { background-color: rgba(0, 212, 255, 0.75); }
+.rv-compendio:is(:hover, :focus-visible) .rv-compendio-arte { opacity: 1; filter: saturate(1.05); transform: scale(1.08); }
+.rv-compendio:is(:hover, :focus-visible) .rv-compendio-titulo { color: #00d4ff; }
+.rv-compendio:is(:hover, :focus-visible) .rv-compendio-tecla { color: #06121c; background: #00d4ff; border-color: #00d4ff; }
+.rv-compendio:active { scale: 0.98; }
+.rv-root[data-estado="concedido"] .rv-compendio { animation: rv-some 0.4s ease 0.55s both; pointer-events: none; }
+@media (max-width: 900px) {
+  .rv-compendio { bottom: 16px; left: 16px; height: 52px; gap: 12px; }
+  .rv-compendio-capa { width: 40px; height: 40px; }
+}
+/* Sem teclado físico (toque), a tecla não diz nada. */
+@media (hover: none) { .rv-compendio-tecla { display: none; } .rv-compendio { padding-right: 16px; } }
+@keyframes rv-compendio-entra { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* Com o livro aberto, o cursor do login sai de cena (o livro usa o do sistema). */
+body:has(.fj-shell) :is(.rv-cursor-dot, .rv-cursor-ring) { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .rv-compendio { animation: none; }
+}
+
+/* ---------- Sem card: o conteúdo flutua na cena ----------
+   O painel perdeu fundo, bordas e vidro; o que o emoldurava (o fio ciano
+   e as faixas âmbar/ciano) virou a moldura da tela (.rv-tela-moldura).
+   Uma sombra radial sem borda, atrás do conteúdo, segura a leitura. */
+.rv-panel-wrap { border: none; padding: 0; }
+.rv-panel-wrap::before {
+  content: ""; position: absolute; inset: 4% 2%; z-index: -1; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(6, 14, 20, 0.28), rgba(6, 14, 20, 0.1) 50%, transparent 100%);
+}
+.rv-panel { background: none; border: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.rv-panel::after, .rv-panel-scan { display: none; }
+
+.rv-tela-moldura {
+  position: fixed; inset: 0; z-index: 4; pointer-events: none;
+  border: 1px solid rgba(0, 212, 255, 0.14);
+}
+.rv-tela-moldura .rv-stripe { --espessura: 6px; }
+.rv-tela-moldura :is(.rv-stripe-l, .rv-stripe-r) { top: -1px; bottom: -1px; width: var(--espessura); }
+.rv-tela-moldura .rv-stripe-l { left: -1px; }
+.rv-tela-moldura .rv-stripe-r { right: -1px; }
+/* Em cima e embaixo, os fios que fechavam o card (.rv-deco), agora na
+   borda da tela e um pouco mais grossos. */
+.rv-tela-moldura .rv-deco { left: 0; right: 0; gap: 2px; }
+/* Na opacidade das linhas, não do .rv-deco: a animação de entrada dele termina em opacidade 1. */
+.rv-tela-moldura .rv-deco > * { opacity: 0.22; }
+.rv-tela-moldura .rv-deco-top { top: 0; }
+.rv-tela-moldura .rv-deco-bottom { bottom: 0; }
+.rv-tela-moldura .rv-deco-line-a { height: 2px; width: min(720px, 60%); }
+.rv-tela-moldura .rv-deco-line-b { height: 2px; }
+.rv-root[data-estado="concedido"] .rv-tela-moldura { animation: rv-some 0.4s ease 0.55s both; }
+@media (max-width: 900px) {
+  .rv-tela-moldura .rv-stripe { --espessura: 4px; }
+}
+
+/* ---------- Eixo central ----------
+   Tudo sobre um eixo: a marca centralizada com o subtítulo embaixo dela,
+   um só caminho (entrar) e o outro modo como link abaixo do botão. Sem
+   abas e sem divisor: o respiro faz a separação. */
+.rv-brand { align-items: center; gap: 14px; --ds-marca-tamanho: clamp(3rem, 15vw, 80px); }
+/* O espaçamento entre letras sobra à direita da última: compensa à esquerda pra centralizar de verdade. */
+.rv-subtitle { padding-left: 0.21em; }
+.rv-header { margin-bottom: 18px; }
+.rv-troca {
+  display: flex; align-items: center; justify-content: center; gap: 10px; margin: -4px 0 0; position: relative; z-index: 3;
+  font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(84, 172, 190, 0.7);
+  animation: rv-enter 0.6s ease 0.3s both;
+}
+.rv-troca-btn {
+  all: unset; cursor: pointer; padding: 4px 2px; color: #00d4ff; font-weight: 700; letter-spacing: 0.15em;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.35); transition: color 0.18s ease, border-color 0.18s ease;
+}
+@media (pointer: fine) { .rv-root .rv-troca-btn { cursor: none; } }
+.rv-troca-btn:hover { color: #e8f5fb; border-color: #e8f5fb; }
+.rv-troca-btn:focus-visible { outline: 1px solid rgba(0, 212, 255, 0.7); outline-offset: 3px; }
+.rv-root[data-modo="register"] .rv-troca-btn { color: #ff8a1f; border-color: rgba(255, 138, 31, 0.4); }
+.rv-root[data-modo="register"] .rv-troca-btn:hover { color: #ffe3c4; border-color: #ffe3c4; }
+.rv-form .auth-submit-btn { margin-top: 12px; }
+/* O rodapé desce para a base da tela, centralizado no eixo. */
+.rv-root > .rv-foot { position: absolute; left: 50%; bottom: 28px; translate: -50% 0; margin: 0; z-index: 6; }
+.rv-root[data-estado="concedido"] > .rv-foot { animation: rv-some 0.4s ease 0.55s both; }
+/* Campos e botão na largura da marca (RUPTURA a 80px mede ~395px): 395 + 2 × 48 de respiro do painel. */
+@media (min-width: 901px) { .rv-panel-wrap { width: min(491px, 100%); } }
+/* No celular a ficha do Compêndio ocupa a base à esquerda: o rodapé sobe acima dela. */
+@media (max-width: 900px) { .rv-root > .rv-foot { bottom: 84px; } }
+
+/* ---------- Botão: sinal (vindo do estudo B4) ----------
+   O processo inteiro do botão numa linguagem só, a do sinal: rótulo
+   decodificando, linhas de varredura e onda. O que precisa de JS mora em
+   `botaoSinal.ts`.
+     repouso    cheio
+     hover      rótulo decodifica + clarão que assenta + linhas passam uma vez
+     clique     onda do ponto do clique até as pontas
+     enviando   inverte: escuro com texto na cor; linhas rolando; cada fase
+                entra decodificando
+     concedido  enche de novo com clarão e onda do centro
+     falha      tranco vermelho que assenta; rótulo volta decodificando */
+.rv-root .auth-submit-btn {
+  --cor: #00d4ff; --cx: 50%;
+  transition: background-color 0.2s cubic-bezier(0.23, 1, 0.32, 1), color 0.2s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.2s cubic-bezier(0.23, 1, 0.32, 1), scale 0.12s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.rv-root .auth-submit-btn--amber { --cor: #ff8a1f; }
+.auth-submit-btn:is(:hover:not(:disabled), :focus-visible) { outline: none; }
+.rv-root .auth-submit-btn:active:not(:disabled) { transform: none; scale: 0.97; }
+
+/* Linhas de varredura (::after): uma passada no hover, rolando enquanto envia. */
+.rv-root .auth-submit-btn::after {
+  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0;
+  background: repeating-linear-gradient(180deg, rgba(6, 18, 28, 0.26) 0 1px, transparent 1px 4px);
+}
+.rv-root .auth-submit-btn:is(:hover:not(:disabled), :focus-visible):not([data-estado]) { animation: rv-clarao 0.3s cubic-bezier(0.23, 1, 0.32, 1) both; }
+.rv-root .auth-submit-btn:is(:hover:not(:disabled), :focus-visible):not([data-estado])::after { animation: rv-linhas 0.3s cubic-bezier(0.23, 1, 0.32, 1) both; }
+
+/* Clique: onda (::before) do ponto do clique até as pontas. */
+.rv-root .auth-submit-btn[data-transmite]:not([data-estado])::before {
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: rgba(255, 255, 255, 0.6);
+  animation: rv-onda 0.32s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+/* Enviando: o botão inverte e transmite. */
+.rv-root .auth-submit-btn[data-estado="ocupado"] { background-color: #06121c; color: var(--cor); box-shadow: 0 0 18px rgba(0, 212, 255, 0.18); }
+.rv-root .auth-submit-btn--amber[data-estado="ocupado"] { box-shadow: 0 0 18px rgba(255, 138, 31, 0.18); }
+.rv-root .auth-submit-btn[data-estado="ocupado"]::after {
+  opacity: 1;
+  background: repeating-linear-gradient(180deg, color-mix(in srgb, var(--cor) 16%, transparent) 0 1px, transparent 1px 4px);
+  animation: rv-rolar 0.5s linear infinite;
+}
+
+/* Concedido: enche de novo, clarão e onda do centro. */
+.rv-root .auth-submit-btn[data-estado="concedido"] {
+  background-color: var(--cor); color: #06121c; box-shadow: 0 0 28px rgba(0, 212, 255, 0.55);
+  animation: rv-trava 0.5s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+.rv-root .auth-submit-btn[data-estado="concedido"]::before {
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; --cx: 50%;
+  background: rgba(255, 255, 255, 0.7);
+  animation: rv-onda 0.5s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+/* Falha: tranco vermelho que assenta na cor do modo. */
+.rv-root .auth-submit-btn[data-falha]:not([data-estado]) { animation: rv-falha 0.42s cubic-bezier(0.23, 1, 0.32, 1) both; }
+
+@keyframes rv-clarao { from { filter: brightness(1.35); } to { filter: none; } }
+@keyframes rv-linhas { from { opacity: 1; background-position: 0 0; } to { opacity: 0; background-position: 0 12px; } }
+@keyframes rv-onda {
+  from { clip-path: inset(0 calc(100% - var(--cx)) 0 var(--cx)); opacity: 1; }
+  to { clip-path: inset(0 0 0 0); opacity: 0; }
+}
+@keyframes rv-rolar { from { background-position: 0 0; } to { background-position: 0 8px; } }
+@keyframes rv-trava { from { filter: brightness(1.6); } to { filter: none; } }
+@keyframes rv-falha {
+  0% { background-color: #ff5a6e; }
+  100% { background-color: var(--cor); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rv-root .auth-submit-btn, .rv-root .auth-submit-btn::before, .rv-root .auth-submit-btn::after { animation: none !important; }
 }
