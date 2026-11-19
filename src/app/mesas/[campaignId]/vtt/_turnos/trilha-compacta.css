@@ -58,7 +58,7 @@
 }
 .rv-palco .rv-faccao--pj,
 :root[data-tema="forja"] .rv-palco .rv-faccao--pj { left: 14px; }
-.rv-palco .rv-faccao--pn { right: calc(var(--rv-painel-aberto-ocupa,0px) + 14px); }
+.rv-palco .rv-faccao--pn { right: 14px; translate: calc(-1 * var(--rv-painel-aberto-ocupa,0px)) 0; }
 .rv-palco .rv-faccao-cab { min-height: 11px; padding: 0; gap: 4px; justify-content: flex-start; }
 .rv-palco .rv-faccao--pn .rv-faccao-cab { flex-direction: row; justify-content: flex-end; }
 .rv-palco .rv-faccao-nome {
@@ -84,8 +84,10 @@
   width: 58px; padding: 0; border-radius: 0; direction: ltr;
   transition: opacity .3s ease,transform .2s ease,filter .2s ease;
 }
-.rv-palco .rv-ator:hover { transform: translateX(3px); filter: brightness(1.12); }
-.rv-palco .rv-faccao--pn .rv-ator:hover { transform: translateX(-3px); }
+/* Hover só clareia. A trilha é varrida pelo cursor o tempo todo; o
+   retrato escorregando 3px a cada passada lia como atraso, não como
+   resposta. */
+.rv-palco .rv-ator:hover { filter: brightness(1.12); }
 .rv-palco .rv-ator[data-situacao="agindo"] { box-shadow: 0 0 10px rgba(0,212,255,.35); }
 .rv-palco .rv-faccao--pn .rv-ator[data-situacao="agindo"] { box-shadow: 0 0 10px rgba(255,107,125,.35); }
 .rv-palco .rv-ator-retrato-caixa { width: 58px; height: 58px; }
@@ -133,7 +135,7 @@
   .rv-palco .rv-rodadas-teto { min-width: 44px; padding: 0 5px; }
   .rv-palco .rv-faccao,:root[data-tema="forja"] .rv-palco .rv-faccao { top: 70px; bottom: 130px; }
   .rv-palco .rv-faccao--pj,:root[data-tema="forja"] .rv-palco .rv-faccao--pj { left: 5px; }
-  .rv-palco .rv-faccao--pn { right: calc(var(--rv-painel-aberto-ocupa,0px) + 5px); }
+  .rv-palco .rv-faccao--pn { right: 5px; }
 }
 @media (prefers-reduced-motion: reduce) { .rv-palco .rv-ator { transition: none; } }
 
@@ -262,7 +264,7 @@
   position: relative; width: 46px; height: 46px; flex: none;
   clip-path: polygon(0 0,calc(100% - 9px) 0,100% 9px,100% 100%,0 100%);
   background: rgba(12,31,43,.85); color: #b8d8e8;
-  transition: color .15s ease,background .15s ease,transform .15s ease;
+  transition: color .15s ease,background .15s ease,transform .15s ease,scale 160ms var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1));
 }
 :root[data-tema="forja"] .rv-mesa > .rv-ferramentas .rv-ferr-btn svg { width: 24px; height: 24px; }
 .rv-ferr-icone-design { display: block; width: 24px; height: 24px; flex: none; background: currentColor; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
@@ -283,7 +285,7 @@
 :root[data-tema="forja"] .rv-mesa .rv-painel .rv-aba.rv-aba:hover { background: rgba(0,212,255,.16); color: #cfeff4; }
 :root[data-tema="forja"] .rv-mesa .rv-painel .rv-aba.rv-aba[aria-selected="true"] { width: auto; padding: 0 10px; color: #06121c; background: #00d4ff; }
 .rv-aba-icone-design { display: block; width: 20px; height: 20px; flex: none; background: currentColor; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
-.rv-painel .rv-aba-rotulo { display: inline-block; max-width: 0; opacity: 0; overflow: hidden; white-space: nowrap; font: 800 12px var(--font-oxanium),sans-serif; letter-spacing: .06em; text-transform: uppercase; transition: max-width .52s cubic-bezier(.3,1.4,.5,1),opacity .28s ease; }
+.rv-painel .rv-aba-rotulo { display: inline-block; max-width: 0; opacity: 0; overflow: hidden; white-space: nowrap; font: 800 12px var(--font-oxanium),sans-serif; letter-spacing: .06em; text-transform: uppercase; transition: max-width .2s var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1)),opacity .15s ease; }
 .rv-painel .rv-aba[aria-selected="true"] .rv-aba-rotulo { max-width: 110px; opacity: 1; margin-left: 6px; }
 :root[data-tema="forja"] .rv-mesa .rv-painel[data-aberto="true"] { right: 0; top: 0; bottom: 0; border: 0; border-left: 1px solid rgba(0,212,255,.2); border-radius: 0; background: #06121c; }
 :root[data-tema="forja"] .rv-mesa .rv-painel[data-aberto="true"] .rv-painel-abas { height: 54px; padding: 0 10px; gap: 4px; border-bottom: 0; background: #050d14; }
@@ -297,11 +299,11 @@
 .rv-palco .rv-mapa-camada::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; box-shadow: inset 0 0 120px rgba(0,0,0,.75); }
 .rv-token-nome { opacity: 0; fill: #cfeff4; font: 700 9px var(--font-mono),monospace; letter-spacing: .12em; paint-order: stroke; stroke: rgba(0,0,0,.8); stroke-width: 2px; transition: opacity .15s ease; }
 .rv-token:hover .rv-token-nome,.rv-token.is-sel .rv-token-nome { opacity: 1; }
-.rv-token-avatar { transform-origin: 0 0; transition: transform .18s cubic-bezier(.3,1.4,.5,1); }
-.rv-token:hover .rv-token-avatar { transform: scale(1.12); }
+/* O token NÃO cresce no hover: o mapa é a superfície mais varrida do
+   VTT, e o nome que acende acima já diz "é este". */
 .rv-token-anel-selecao { transform-box: fill-box; transform-origin: center; animation: rv-token-anel-giro 9s linear infinite; }
 @keyframes rv-token-anel-giro { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .rv-token-avatar { transition: none; } .rv-token-anel-selecao { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .rv-token-anel-selecao { animation: none; } }
 
 /* Composer: fundo, chips e campo copiam a linguagem de superfícies do
    board; envio, visibilidade e anexo continuam os controles existentes. */
@@ -312,7 +314,7 @@
   background: rgba(12,31,43,.85);
   clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
   font: 800 11px var(--font-oxanium), sans-serif; letter-spacing: .03em;
-  transition: background .15s ease, transform .12s cubic-bezier(.3,1.4,.5,1);
+  transition: background .15s ease, transform 160ms var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1));
 }
 :root[data-tema="forja"] .rv-painel .pn-chipbtn.pn-chipbtn:hover { background: rgba(0,212,255,.12); }
 :root[data-tema="forja"] .rv-painel .pn-chipbtn.pn-chipbtn:active { transform: scale(.97); }
@@ -324,7 +326,7 @@
 }
 :root[data-tema="forja"] .rv-painel .pn-chipbtn > svg {
   width: 11px; height: 11px; color: var(--pn-chip-accent, #7f95b3); stroke-width: 2.4;
-  transition: rotate .2s cubic-bezier(.2,.8,.2,1);
+  transition: rotate .2s var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1));
 }
 :root[data-tema="forja"] .rv-painel .pn-chipbtn[aria-expanded="true"] > svg:last-child { rotate: 180deg; }
 :root[data-tema="forja"] .rv-painel .pn-chipbtn > svg.pn-chipbtn-icone { width: 13px; height: 13px; stroke-width: 1.9; }

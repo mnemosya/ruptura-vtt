@@ -28,6 +28,18 @@
   color-scheme: dark;
 }
 
+/*
+ * Placeholder padrão do app inteiro. Campo sem regra própria caía no
+ * cinza neutro do navegador, que destoa do azul-acinzentado das telas
+ * (foi assim que a busca da aba Ações apareceu "sem CSS"). O `:where`
+ * zera a especificidade: qualquer `::placeholder` de folha própria
+ * continua vencendo, então isto só alcança quem não tinha nenhuma.
+ */
+:where(input, textarea)::placeholder {
+  color: rgba(127, 149, 179, 0.6);
+  opacity: 1;
+}
+
 body {
   margin: 0;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;

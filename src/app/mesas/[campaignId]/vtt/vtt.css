@@ -120,6 +120,21 @@
 }
 .rv-ferr-btn:hover .rv-dica, .rv-ferr-btn:focus-visible .rv-dica,
 .rv-aba:hover .rv-dica, .rv-aba:focus-visible .rv-dica { opacity: 1; transition-delay: .35s; }
+
+/* GRUPO AQUECIDO. O atraso de 350ms existe para a dica não piscar em
+   quem só atravessa o grupo; ele NÃO deve se repetir em cada vizinho de
+   quem já está lendo dicas. O grupo guarda um inteiro registrado que
+   vira 1 depois dos 350ms com algum botão sob o cursor (ou em foco) e só
+   volta a 0 300ms depois de o cursor sair — tempo de cruzar o vão entre
+   dois botões. Enquanto vale 1, a dica do botão seguinte aparece na hora. */
+@property --rv-dica-quente { syntax: "<integer>"; inherits: true; initial-value: 0; }
+:is(.rv-painel-abas, .rv-area-edicao-rapida, .rv-area-item-acoes) { transition: --rv-dica-quente 0s .3s; }
+:is(.rv-painel-abas, .rv-area-edicao-rapida, .rv-area-item-acoes):has(> :is(button, [role="tab"]):is(:hover, :focus-visible)) {
+  --rv-dica-quente: 1; transition-delay: .35s;
+}
+:is(.rv-painel-abas, .rv-area-edicao-rapida, .rv-area-item-acoes) > :is(button, [role="tab"]):is(:hover, :focus-visible) .rv-dica {
+  opacity: var(--rv-dica-quente); transition-delay: 0s;
+}
 .rv-painel .rv-dica { left: auto; right: calc(100% + 10px); }
 /* Abre para a ESQUERDA por obrigação, não por gosto: estes botões vivem
    na borda direita de uma janela de ferramenta, e o corpo da janela
@@ -196,7 +211,7 @@
      que o mapa, a peça se separa dele sem precisar de moldura. */
   border: 1px solid rgba(var(--rv-marca-rgb, 0, 212, 255), .15); border-radius: var(--rv-r-peca);
   background: var(--rv-peca, #0c1526); color: var(--rv-ink-dim, #7f95b3); cursor: pointer;
-  transition: color .14s, background .14s, border-color .14s;
+  transition: color .14s, background .14s, border-color .14s, scale 160ms var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1));
 }
 /* A BORDA DO HOVER É A DO ATIVO. O que separa "estou passando por
    cima" de "é esta" passa a ser o fundo e o brilho, não uma terceira
@@ -232,7 +247,10 @@
    mesma receita que `.rc-tabrail-btn:active` já usava no Console.
    Era a última assimetria entre os dois trilhos: o Console tinha os
    quatro estados por exigência do CON-02, o VTT tinha três. */
+/* PRESSIONAR ENCOLHE. `scale` (a propriedade, não `transform`) para
+   não disputar com nenhum transform que um tema ponha no botão. */
 .rv-ferr-btn:active:not(:disabled) {
+  scale: .97;
   border-color: var(--rv-cy-borda, #108bac);
   background: linear-gradient(rgba(var(--rv-marca-rgb, 0, 212, 255), .2), rgba(var(--rv-marca-rgb, 0, 212, 255), .2)), var(--rv-peca, #0c1526);
 }
@@ -317,6 +335,10 @@
 .rv-tempo-chip:focus-visible { outline: 2px solid var(--rv-cy); outline-offset: 2px; }
 .rv-tempo-chip > svg:first-child { flex: none; color: var(--rv-cy); }
 .rv-tempo-chip-hora { flex: none; color: var(--rv-cy); font-size: 14px; font-weight: 500; }
+/* Números que MUDAM no lugar (relógio, total da rolagem, valor de chip,
+   pontos de dano) usam algarismos de largura fixa: sem isto o texto ao
+   redor anda um pixel a cada troca de dígito. */
+.rv-tempo-chip-hora, .rup-countpop, .rv-fp-pd-val, .rv-painel .pn-chipbtn-val { font-variant-numeric: tabular-nums; }
 .rv-tempo-chip-separador { flex: none; height: 15px; width: 1px; background: var(--rv-line-max); }
 .rv-tempo-chip-data { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--rv-ink-dim); }
 .rv-tempo-chip-temp { flex: none; color: var(--rv-ink-dim); }
@@ -670,7 +692,10 @@
    de ferramentas (8px de margem + 36px de botão), à direita o painel
    (aberto ou recolhido, medido em `PainelVtt`). */
 .rv-faccao--pj { left: calc(8px + 36px + 10px); align-items: flex-start; }
-.rv-faccao--pn { right: calc(var(--rv-painel-ocupa, 44px) + 10px); align-items: flex-end; transition: right .18s ease; }
+/* O recuo do painel entra por `translate`, não por `right`: a largura
+   do painel muda a cada quadro enquanto ele abre, e deslocar por
+   transform não refaz o layout do palco a cada passo. */
+.rv-faccao--pn { right: 10px; translate: calc(-1 * var(--rv-painel-ocupa, 44px)) 0; align-items: flex-end; transition: translate .18s ease; }
 
 .rv-faccao-cab { display: flex; align-items: center; gap: 7px; padding: 0 4px; }
 .rv-faccao--pn .rv-faccao-cab { flex-direction: row-reverse; }
@@ -878,12 +903,13 @@
   .rv-ator-retrato:hover { transform: none; }
 }
 
+
 /* Telas estreitas: retratos menores e trilhos rentes à borda — a
    informação some por ÚLTIMO, nunca antes do mapa. */
 @media (max-width: 1040px) {
   .rv-faccao { min-width: 96px; }
   .rv-faccao--pj { left: 6px; }
-  .rv-faccao--pn { right: 6px; }
+  .rv-faccao--pn { right: 6px; translate: none; }
   .rv-ator-retrato { width: 40px; height: 40px; font-size: 11px; }
   .rv-faccao--pj .rv-faccao-espinha { left: 24px; }
   .rv-faccao--pn .rv-faccao-espinha { right: 24px; }
@@ -934,7 +960,11 @@
   font-family: var(--rv-display);
   font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
   cursor: pointer;
-  transition: color .14s, border-color .14s, background .14s;
+  transition: color .14s, border-color .14s, background .14s, scale 160ms var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1));
+}
+.rv-btn:active:not(:disabled) { scale: .97; }
+@media (prefers-reduced-motion: reduce) {
+  .rv-btn:active:not(:disabled), .rv-ferr-btn:active:not(:disabled) { scale: none; }
 }
 .rv-btn:hover:not(:disabled) { color: var(--rv-ink); border-color: var(--rv-line-max); background: var(--rv-raise); }
 /* A classe repetida não é enfeite: `mesa.css` tem `.rm-root button {
@@ -2684,7 +2714,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   75%  { transform: scale(1.02); }
   100% { transform: scale(1); }
 }
-.rup-land { animation: rup-land .24s cubic-bezier(.2, 1, .4, 1) both; transform-origin: center; }
+.rup-land { animation: rup-land .24s var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1)) both; transform-origin: center; }
 @keyframes rup-reveal {
   0%   { opacity: 0; transform: translateY(6px); }
   100% { opacity: 1; transform: translateY(0); }
@@ -4096,7 +4126,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   position: absolute; inset: 0; z-index: 40; pointer-events: none;
   display: flex; padding: 12px;
   background: rgba(var(--fj-fundo-1-rgb, 6, 11, 20), .72); backdrop-filter: blur(3px);
-  animation: rv-arrastando-entra .14s ease-out;
+  animation: rv-arrastando-entra .14s var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1));
 }
 .rv-arrastando-imagem-caixa {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
@@ -6172,7 +6202,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   box-shadow: 0 16px 20px rgba(0, 0, 0, .5);
   /* A entrada é curta de propósito: o cartão já custou a espera do
      hover, e uma animação longa em cima disso leria como lentidão. */
-  animation: rv-cartao-token-entra .12s ease-out;
+  animation: rv-cartao-token-entra .12s var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1));
 }
 /* Seta ancorada no centro real do token. Duas camadas triangulares
    reproduzem borda e fundo do cartão sem fresta ou linha atravessando
@@ -6710,7 +6740,7 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
   position: fixed; inset: 0; z-index: 900;
   display: grid; place-items: center; padding: 40px;
   background: rgba(var(--fj-fundo-0-rgb, 4, 8, 15), .88); backdrop-filter: blur(4px);
-  cursor: zoom-out; animation: rv-imagem-ampliada-entra .14s ease-out;
+  cursor: zoom-out; animation: rv-imagem-ampliada-entra .14s var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1));
 }
 .rv-imagem-ampliada img {
   max-width: 100%; max-height: 100%; object-fit: contain; cursor: default;
@@ -6764,7 +6794,7 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
 .rv-mk-item {
   position: relative; width: 128px; pointer-events: auto;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
-  animation: rv-mk-entra 200ms cubic-bezier(.2, 0, 0, 1) backwards;
+  animation: rv-mk-entra 200ms var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1)) backwards;
 }
 
 .rv-mk-anel {
@@ -6810,7 +6840,7 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
   padding: 4px 6px 4px 8px; line-height: 1;
   font: 700 9px var(--rv-mono); letter-spacing: .2em; text-transform: uppercase;
   color: var(--rv-ground); background: var(--mk-cor);
-  animation: rv-mk-fade 160ms 80ms ease-out backwards;
+  animation: rv-mk-fade 160ms 80ms var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1)) backwards;
 }
 .rv-mk-selo .rv-mk-caps { margin-right: -.2em; }
 
@@ -6857,7 +6887,7 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
   background: var(--rv-panel); border: 1px solid var(--rv-line-strong);
   box-shadow: 0 14px 30px rgba(0, 0, 0, .45);
   font: 500 12px var(--rv-body); color: var(--rv-ink);
-  animation: rv-mk-entra 160ms cubic-bezier(.2, 0, 0, 1) backwards;
+  animation: rv-mk-entra 160ms var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1)) backwards;
 }
 .rv-mk-aviso-desfazer {
   padding: 4px 8px; cursor: pointer; border: 1px solid var(--rv-line); background: transparent;
@@ -6875,7 +6905,7 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
   box-shadow: var(--rv-shadow-pop);
   clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
   transform: translateX(-50%);
-  animation: rv-mk-pop-entra 160ms cubic-bezier(.2, 0, 0, 1) backwards;
+  animation: rv-mk-pop-entra 160ms var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1)) backwards;
   font-family: var(--rv-body); color: var(--rv-ink);
 }
 .rv-mk-pop[data-combate] { top: 250px; }

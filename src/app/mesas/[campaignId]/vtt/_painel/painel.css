@@ -250,7 +250,7 @@
    limiar devolve o painel ao lugar com um respiro, senão ele salta.
    Durante o arrasto a transição é desligada — ela ia atrasar o painel
    em relação à mão, que é justamente o que se quer evitar. */
-.rv-painel { transition: transform .16s ease-out, opacity .16s ease-out; }
+.rv-painel { transition: transform .16s var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1)), opacity .16s var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1)); }
 .rv-painel[data-redimensionando="true"] { transition: none; }
 
 /* Drawer — flutua sobre a borda direita, SEM véu (o mapa continua
@@ -1130,7 +1130,7 @@
 .rv-pn-chat .pn-chat-soltar {
   position: absolute; inset: 0; z-index: 30; padding: 10px;
   display: flex; background: rgba(var(--fj-fundo-1-rgb, 6, 11, 20), .78); backdrop-filter: blur(3px);
-  pointer-events: none; animation: pn-soltar-entra .14s ease-out;
+  pointer-events: none; animation: pn-soltar-entra .14s var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1));
 }
 .rv-pn-chat .pn-chat-soltar-caixa {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
@@ -2261,7 +2261,7 @@
 
   position: fixed; z-index: 481;
   display: flex; flex-direction: column;
-  animation: pn-jan-in .2s cubic-bezier(.16, 1, .3, 1) both;
+  animation: pn-jan-in .2s var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1)) both;
 }
 .pn-jan *, .pn-jan *::before, .pn-jan *::after { box-sizing: border-box; }
 .pn-jan button, .pn-jan input, .pn-jan select, .pn-jan textarea { font-family: inherit; }
@@ -2301,7 +2301,7 @@
   padding: 10px 14px; border-top: 1px solid var(--pn-line-hair);
 }
 @keyframes pn-jan-in-centro { from { opacity: 0; transform: translate(-50%, -46%) scale(.99); } to { opacity: 1; transform: translate(-50%, -50%); } }
-.pn-dialogo { animation: pn-jan-in-centro .18s cubic-bezier(.16, 1, .3, 1) both; }
+.pn-dialogo { animation: pn-jan-in-centro .18s var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1)) both; }
 @media (prefers-reduced-motion: reduce) { .pn-dialogo { animation: none; } }
 
 /* Em viewport pequena a janela interna vira quase tela cheia. */
@@ -2539,12 +2539,38 @@ textarea.rv-pn-input.rv-pn-input {
   corner-shape: round bevel round round !important;
 }
 
-/* Busca de personagens: só a borda de baixo, sem caixa nem cantos. */
-.rv-painel:not([data-aberto="false"]) .rv-pn-linha-busca :is(.rv-pn-busca.rv-pn-busca, .rv-pn-busca-input):not(#_):not(#_) {
-  border-width: 0 0 1px;
+/* Busca de Personagens com o mesmo campo de "Buscar campanha" da área
+   autenticada. A linha envolve só esta aba; BuscaDiretorio também serve
+   Bando e Compêndio. */
+.rv-pn-linha-busca .rv-pn-busca {
+  gap: 10px;
+  max-width: 360px;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 1px solid rgba(0, 212, 255, .35);
   border-radius: 0 !important;
-  padding-inline: 4px;
+  corner-shape: round;
+  background: rgba(12, 31, 43, .8);
+  color: #7f95b3;
+  transition: border-color .2s ease, box-shadow .25s ease, background .2s ease;
 }
+.rv-pn-linha-busca .rv-pn-busca:hover { background: rgba(12, 31, 43, .95); }
+.rv-pn-linha-busca .rv-pn-busca:focus-within {
+  border-bottom-color: #00d4ff;
+  box-shadow: 0 1px 0 #00d4ff, 0 10px 18px -12px #00d4ff;
+}
+.rv-pn-linha-busca .rv-pn-busca > svg {
+  width: 14px; height: 14px; stroke-width: 2.5;
+  transition: stroke .2s ease, transform .2s var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1));
+}
+.rv-pn-linha-busca .rv-pn-busca:focus-within > svg { stroke: #00d4ff; transform: scale(1.15); }
+.rv-pn-linha-busca .rv-pn-busca-input,
+.rv-pn-linha-busca .rv-pn-busca-input::placeholder {
+  font-family: var(--font-corpo), "Exo 2", sans-serif;
+  font-size: 14px;
+}
+.rv-pn-linha-busca .rv-pn-busca-input { border: 0; padding: 0; color: #cfeff4; }
+.rv-pn-linha-busca .rv-pn-busca-input::placeholder { color: #7f95b3; }
 
 /* Respiro lateral da aba Personagens: lista e busca no mesmo recuo. */
 .rv-pn-scroll--pers.rv-pn-scroll--pers { padding-inline: 14px; }
@@ -2647,7 +2673,7 @@ textarea.rv-pn-input.rv-pn-input {
 .rv-pn-chat .pn-msg[data-narracao="true"] .pn-msg-texto { color: #cfeff4; font-size: 15px; font-style: italic; }
 .rv-pn-chat .pn-msg[data-continuacao="true"] { margin-top: 0; }
 .rv-pn-chat .pn-msg-imagem { width: 100%; height: 150px; border: 0; padding: 0; overflow: hidden; }
-.rv-pn-chat .pn-msg-imagem img { width: 100%; height: 100%; max-height: none; object-fit: cover; transition: transform .5s cubic-bezier(.2,.8,.2,1); }
+.rv-pn-chat .pn-msg-imagem img { width: 100%; height: 100%; max-height: none; object-fit: cover; transition: transform .2s var(--mo-ease-out, cubic-bezier(.16, 1, .3, 1)); }
 .rv-pn-chat .pn-msg-imagem:hover img { transform: scale(1.04); }
 
 /* Chat Log · CARDS 02–15: casca e tipografia do HTML de origem. */
@@ -2679,7 +2705,7 @@ textarea.rv-pn-input.rv-pn-input {
 .rv-pn-chat .pn-cartao-estado { margin: 0; }
 .rv-pn-chat .pn-cartao-acoes { margin: 0; padding: 0; border: 0; gap: 14px; }
 .rv-pn-chat .pn-cartao[data-kind="pendencia"] { border-left-style: dashed; }
-.rv-pn-chat .pn-cartao[data-kind="ruptura"] { animation: pn-chat-rup 3s ease-in-out infinite; }
+.rv-pn-chat .pn-cartao[data-kind="ruptura"] { animation: pn-chat-rup 3s ease-in-out 1; }
 @keyframes pn-chat-rup { 0%,100% { background: rgba(12,31,43,.72); } 50% { background: rgba(60,20,55,.6); } }
 .rv-pn-chat .pn-av { width: 34px; height: 34px; border: 1px solid rgba(127,149,179,.28); background: rgba(127,149,179,.12); color: #cfeff4; font: 800 11px var(--font-oxanium), Oxanium, sans-serif; }
 .rv-pn-chat .pn-divisor { gap: 12px; padding: 4px 0; }
