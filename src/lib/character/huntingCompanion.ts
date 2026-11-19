@@ -14,7 +14,10 @@ const rankC = (rank: string) => ['C', 'B', 'A', 'S', 'S+'].includes(rank);
 const modelCache = new Map<boolean, HuntingModel[]>();
 export function huntingModels(rank: string): HuntingModel[] {
   const cached = modelCache.get(rankC(rank)); if (cached) return cached;
-  const source = rankC(rank) ? subclass.caracteristicas.C[0].descricao : subclass.caracteristicas.E.find(f => f.slug === 'companheiros_de_caca')!.descricao;
+  // O livro pode usar Markdown para dar ênfase aos rótulos e ações.
+  // A extração abaixo opera sobre texto simples em ambos os formatos.
+  const source = (rankC(rank) ? subclass.caracteristicas.C[0].descricao : subclass.caracteristicas.E.find(f => f.slug === 'companheiros_de_caca')!.descricao)
+    .replace(/\*\*|`|==/g, '');
   const models = profiles.map(profile => {
     const start = source.indexOf(`\n\n${profile.heading}\n\n- Tamanho:`);
     const tail = source.slice(start + profile.heading.length + 4);
