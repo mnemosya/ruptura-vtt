@@ -56,11 +56,13 @@ function gravarUltimoLido(pageId: string) {
 
 export function LivroCodex({ campaignId, inicial, buscaInicial = "", onClose }: { campaignId: string | null; inicial?: DestinoLivro | null; buscaInicial?: string; onClose: () => void }) {
   const [montado, setMontado] = useState(false);
+  const [fechando, setFechando] = useState(false);
+  const solicitarFechamento = useCallback(() => setFechando(true), []);
   useEffect(() => setMontado(true), []);
   if (!montado) return null;
   return createPortal(
-    <Shell rotulo="Compêndio de RUPTURA" onClose={onClose}>
-      <Livro campaignId={campaignId} inicial={inicial ?? null} buscaInicial={buscaInicial} onClose={onClose} />
+    <Shell className="fj-shell--livro" rotulo="Compêndio de RUPTURA" onClose={solicitarFechamento} fechando={fechando} onSaidaConcluida={onClose}>
+      <Livro campaignId={campaignId} inicial={inicial ?? null} buscaInicial={buscaInicial} onClose={solicitarFechamento} />
     </Shell>,
     document.body,
   );
@@ -70,6 +72,7 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
   const [linhas, setLinhas] = useState<LinhaCapitulo[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [atual, setAtual] = useState<DestinoLivro | null>(inicial);
+  const [navegou, setNavegou] = useState(false);
   const [historico, setHistorico] = useState<(DestinoLivro | null)[]>([]);
   const [ultimoLido, setUltimoLido] = useState<string | null>(null);
   const [capitulos, setCapitulos] = useState<Map<string, CapituloCompendio>>(new Map());
@@ -273,6 +276,7 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
   const atualRef = useRef(atual);
   atualRef.current = atual;
   const ir = useCallback((destino: DestinoLivro) => {
+    setNavegou(true);
     setBusca("");
     setBuscaAberta(false);
     const a = atualRef.current;
@@ -280,6 +284,7 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
     setAtual({ ...destino });
   }, []);
   const irCapa = () => {
+    setNavegou(true);
     setBusca("");
     setBuscaAberta(false);
     if (atualRef.current) setHistorico((h) => [...h, atualRef.current]);
@@ -288,6 +293,7 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
   const voltar = () => {
     const anterior = historico[historico.length - 1];
     if (anterior === undefined) return;
+    setNavegou(true);
     setHistorico(historico.slice(0, -1));
     setAtual(anterior ? { ...anterior } : null);
   };
@@ -331,7 +337,7 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
   const naRaiz = raizAtual === atual?.pageId;
 
   return (
-    <div className="fj-borda fj-ch fj-codex fj-livro" data-testid="compendio-livro">
+    <div className="fj-borda fj-ch fj-codex fj-livro" data-entrada-inicial={!navegou || undefined} data-testid="compendio-livro">
       {ampliada && createPortal(
         <div className={`fj-root ${oxanium.variable} fj-mapa-grande fj-livro-ampliada`} role="dialog" aria-modal="true" aria-label="Imagem ampliada" onClick={() => setAmpliada(null)} data-testid="compendio-imagem-ampliada">
           <div className="fj-mapa-grande__topo" onClick={(e) => e.stopPropagation()}>

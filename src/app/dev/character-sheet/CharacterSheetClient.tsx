@@ -3980,6 +3980,7 @@ export default function CharacterSheetClient({
       return r;
     },
     mesa: selectedCampaignId && characterId ? { campaignId: selectedCampaignId, characterId } : null,
+    personagemSoltoId: !selectedCampaignId && characterId ? characterId : null,
 
     /**
      * Atributo primário de uma perícia, com o mesmo fallback que as

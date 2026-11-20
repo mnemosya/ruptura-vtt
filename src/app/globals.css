@@ -40,6 +40,10 @@
   opacity: 1;
 }
 
+/* Corpo de texto (Exo 2, `--font-corpo`): peso e espaço entre letras padrão.
+   Textos que precisam de outro valor declaram por cima. */
+:root { --corpo-peso: 500; --corpo-espaco: 0.015em; }
+
 body {
   margin: 0;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;

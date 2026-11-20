@@ -4,6 +4,37 @@
  * citações, etiquetas de termo, busca. Tokens e moldura vêm de forja.css.
  */
 
+/* A janela expande de uma lâmina horizontal e recolhe pelo mesmo caminho.
+   Transições permitem inverter a
+   abertura em andamento sem saltar para o estado totalmente aberto. */
+.fj-shell--livro {
+  --livro-mov-dur: 300ms;
+  --livro-mov-curva: var(--mo-ease-standard, cubic-bezier(.4, 0, .2, 1));
+  opacity: 1;
+  transition: opacity var(--livro-mov-dur) var(--livro-mov-curva);
+}
+.fj-shell--livro .fj-shell__caixa {
+  animation: none;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  transition: clip-path 240ms cubic-bezier(0, 0, .6, 1);
+}
+@starting-style {
+  .fj-shell--livro { opacity: 0; }
+  .fj-shell--livro .fj-shell__caixa {
+    clip-path: polygon(0 49.8%, 100% 49.8%, 100% 50.2%, 0 50.2%);
+  }
+}
+.fj-shell--livro.fj-shell--saindo { animation: none; opacity: 0; }
+.fj-shell--livro.fj-shell--saindo .fj-shell__caixa {
+  clip-path: polygon(0 49.8%, 100% 49.8%, 100% 50.2%, 0 50.2%);
+  transition-timing-function: var(--mo-ease-in, cubic-bezier(.4, 0, 1, 1));
+}
+@media (prefers-reduced-motion: reduce) {
+  .fj-shell--livro { transition-duration: 1ms; }
+  .fj-shell--livro .fj-shell__caixa { transition: none; clip-path: none; }
+  .fj-shell--livro.fj-shell--saindo .fj-shell__caixa { clip-path: none; }
+}
+
 /* ── Ícones (Lucide): acompanham o tamanho do texto ao lado. ── */
 .fj-livro-ico { display: inline-block; width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; stroke-width: 2; }
 .fj-livro-voltar, .fj-livro-pai, .fj-livro-card__abrir { display: inline-flex; align-items: center; gap: 2px; }
@@ -76,6 +107,23 @@
   .fj-capa__texto p { font-size: 16px; }
 }
 
+.fj-livro .fj-codex__leitura {
+  --livro-scroll-cor: color-mix(in srgb, var(--fj-teal) 55%, var(--fj-fundo));
+  --livro-scroll-hover: color-mix(in srgb, var(--fj-teal) 70%, var(--fj-fundo));
+  scrollbar-width: thin;
+  scrollbar-color: var(--livro-scroll-cor) transparent;
+}
+@supports selector(::-webkit-scrollbar) {
+  .fj-livro .fj-codex__leitura { scrollbar-width: auto; scrollbar-color: auto; }
+}
+.fj-livro .fj-codex__leitura::-webkit-scrollbar { width: 5px; }
+.fj-livro .fj-codex__leitura::-webkit-scrollbar-track { background: transparent; }
+.fj-livro .fj-codex__leitura::-webkit-scrollbar-thumb {
+  background: var(--livro-scroll-cor);
+  border: 0;
+  border-radius: var(--hud-radius-hard);
+}
+.fj-livro .fj-codex__leitura::-webkit-scrollbar-thumb:hover { background: var(--livro-scroll-hover); }
 .fj-codex__leitura:focus { outline: none; }
 
 /* ── Texto ─────────────────────────────────────────────── */
@@ -430,6 +478,15 @@
 .fj-capa .fj-capa__marca { animation: fj-livro-desliza .36s var(--lv-sai) .16s backwards; }
 .fj-capa .fj-capa__cidade-nome { animation: fj-livro-desliza .36s var(--lv-sai) .25s backwards; }
 .fj-capa .fj-capa__leitura { animation: fj-livro-desliza .36s var(--lv-sai) .3s backwards; }
+
+/* Ao abrir a janela, só o recolhimento da moldura se move, como na saída.
+   As animações editoriais ficam para a navegação entre páginas. */
+.fj-livro[data-entrada-inicial] :is(
+  .fj-codex__heroi-img, .fj-codex__heroi-texto > :first-child,
+  .fj-codex__heroi-titulo, .fj-livro-abertura, .fj-livro-enviar--heroi,
+  .fj-livro-texto, .fj-capa__imagem, .fj-capa__marca,
+  .fj-capa__cidade-nome, .fj-capa__leitura
+) { animation: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .fj-livro-heroi .fj-codex__heroi-img, .fj-livro-heroi .fj-codex__heroi-texto > :first-child,

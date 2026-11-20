@@ -11,11 +11,12 @@
  *
  * Arrastável pelo cabeçalho, com a mesma memória LOCAL das janelas de
  * ferramenta (`janelasPreferencias.ts`, id "marcadores"): até ser
- * arrastado abre centrado sob a faixa; depois, onde a pessoa deixou.
+ * arrastado abre junto do botão K da barra, como as outras janelas;
+ * depois, onde a pessoa deixou.
  */
 
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
-import { carregarPosicaoJanela, limitarPosicaoJanela, salvarPosicaoJanela, type PosicaoJanela } from "../_ferramentas/janelasPreferencias";
+import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { ancoraPadraoJanela, carregarPosicaoJanela, limitarPosicaoJanela, salvarPosicaoJanela, type PosicaoJanela } from "../_ferramentas/janelasPreferencias";
 import {
   gradienteAnel, limitarTotal, NOME_MAX, SEGMENTOS_REFERENCIA, type TipoMarcador,
 } from "../_dominio/marcadores";
@@ -36,9 +37,11 @@ export function PainelMarcadores({ campaignId, usuarioId, emCombate, onCriar, on
   const popRef = useRef<HTMLDivElement | null>(null);
   const [posicao, setPosicao] = useState<PosicaoJanela | null>(null);
   const arrastoRef = useRef<{ dx: number; dy: number } | null>(null);
-  useEffect(() => {
+  // Antes da pintura: sem isso a janela piscaria no centro antes de ir pra barra.
+  useLayoutEffect(() => {
     const lembrada = carregarPosicaoJanela(usuarioId, campaignId, "marcadores");
-    if (lembrada.manual) setPosicao(limitarPosicaoJanela(lembrada, popRef.current));
+    const alvo = lembrada.manual ? lembrada : { ...ancoraPadraoJanela("marcadores", popRef.current), manual: false };
+    setPosicao(limitarPosicaoJanela(alvo, popRef.current));
   }, [campaignId, usuarioId]);
 
   const aoPressionarCab = (e: PointerEvent<HTMLDivElement>) => {

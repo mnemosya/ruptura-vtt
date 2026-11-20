@@ -16,6 +16,7 @@
  * campanha ou aguardando o narrador — é um campo da linha, não uma seção.
  */
 
+import { urlAvatarPessoal } from "../../../../lib/character/avatarPessoal";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "../../../../lib/auth/session";
 import { listCampaigns } from "../../../../lib/table/storage";
@@ -81,7 +82,8 @@ export default async function PersonagensGlobaisPage() {
           id: c.id,
           name: c.name,
           ...progressaoDe(c),
-          avatarUrl: (c.avatar_image_id && avatares.get(c.avatar_image_id)) || null,
+          // Sem campanha, a cara mora na conta do dono (avatar pessoal).
+          avatarUrl: (c.avatar_image_id && avatares.get(c.avatar_image_id)) || urlAvatarPessoal(c.id, c.avatar_path) || null,
           campanha: campaign ? { id: campaign.id, nome: campaign.name, role: role! } : null,
           pendente,
           updatedAt: c.updated_at,

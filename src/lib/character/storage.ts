@@ -438,6 +438,10 @@ export async function assignCharacterToCampaign(characterId: string, campaignId:
   if (error) {
     throw new CharacterStorageError(`Falha ao vincular personagem "${characterId}" à mesa: ${error.message}`, error);
   }
+  if (campaignId) {
+    const { promoverAvatarPessoal } = await import("./avatarPessoal");
+    await promoverAvatarPessoal(characterId).catch(() => {});
+  }
   return data as CharacterRecord;
 }
 
@@ -600,7 +604,11 @@ export async function cancelCharacterJoin(characterId: string): Promise<void> {
 }
 
 export async function acceptCharacterJoin(characterId: string): Promise<void> {
-  return chamarRpcPersonagem("aceitar_pedido_personagem", { p_character_id: characterId }, "Falha ao aceitar o personagem");
+  await chamarRpcPersonagem("aceitar_pedido_personagem", { p_character_id: characterId }, "Falha ao aceitar o personagem");
+  // Entrou na campanha: o avatar pessoal (conta do dono) vai para a
+  // biblioteca dela. Falha aqui não desfaz a entrada.
+  const { promoverAvatarPessoal } = await import("./avatarPessoal");
+  await promoverAvatarPessoal(characterId).catch(() => {});
 }
 
 export async function rejectCharacterJoin(characterId: string): Promise<void> {

@@ -87,8 +87,8 @@ function CodexVertente({ id, d: rascunho, set, onClose }: { id: VertenteId; d: D
   return (
     <div className="fj-borda fj-ch fj-codex" style={{ "--vc": v.cor, "--vc-brilho": v.brilho } as CSSProperties}>
       <div className="fj-ch fj-vidro fj-codex__corpo">
-        <CabecalhoCodex icone={<span className="fj-ch-hex fj-codex-cab__hex" style={{ background: v.cor, boxShadow: `0 0 14px ${v.brilho}` }} />} kicker="Grimório de vertente · Códex" titulo={v.nome} onClose={onClose}>
-          <span className="fj-codex-cab__contador"><Mono pequeno>Magias iniciais</Mono><span>{need} depois</span></span>
+        <CabecalhoCodex icone={<span className="fj-ch-hex fj-codex-cab__hex" style={{ background: v.cor, boxShadow: `0 0 14px ${v.brilho}` }}><img src={v.arte} alt="" /></span>} kicker="Grimório de vertente · Códex" titulo={v.nome} onClose={onClose}>
+          <span className="fj-codex-cab__contador"><Mono pequeno>Magias iniciais</Mono><span>{need}</span></span>
           <BotaoEscolha on={tuned} onClick={() => set({ vertente: id })}>{tuned ? "✓ Sintonizada" : "Sintonizar"}</BotaoEscolha>
         </CabecalhoCodex>
 
@@ -126,22 +126,28 @@ function CodexVertente({ id, d: rascunho, set, onClose }: { id: VertenteId; d: D
                   <h4 className="fj-codex__sub fj-codex__sub--grande">Progressão</h4>
                   <ol className="fj-vertente-progressao">
                     {d.prog.map((p) => (
-                      <li key={p.lv} className={`fj-ch fj-vertente-progressao__nivel ${p.lv === 1 ? "fj-vertente-progressao__nivel--atual" : ""}`}>
+                      <li key={p.lv} className={`fj-vertente-progressao__nivel ${p.lv === 1 ? "fj-vertente-progressao__nivel--atual" : ""}`}>
                         <Mono pequeno>Nível {p.lv}</Mono>
                         <span className="fj-vertente-progressao__n">{p.n}</span>
                         <span className="fj-vertente-progressao__rodape"><span>Magias</span><span>CD {p.cd}</span></span>
                       </li>
                     ))}
                   </ol>
-                  <p className="fj-codex__dica">CD da vertente = 6 + nível. Na criação, a Vertente Primária começa no nível 1.</p>
+                  <div className="fj-vertente-regra">
+                    <span className="fj-vertente-regra__formula"><span>CD</span><b>6 + nível</b></span>
+                    <p>Na criação, a Vertente Primária começa no <strong>nível 1</strong>.</p>
+                  </div>
                 </div>
               </section>
 
               <section id="primaria" data-sec className="fj-codex__secao fj-codex__secao--fio">
                 <SecHead n="03" t="Vertente Primária" />
                 <RuleText text={d.primaria.intro} className="fj-texto-leitura" />
-                <div id="primaria-n3" data-sec className="fj-codex__bloco">
-                  <h4 className="fj-codex__sub fj-codex__sub--grande">Nível 3 · {d.primaria.nivel3.titulo}</h4>
+                <div id="primaria-n3" data-sec className="fj-codex__bloco fj-codex__marco">
+                  <div className="fj-codex__marco-cab">
+                    <span className="fj-codex__marco-nivel">Nível 3</span>
+                    <h4 className="fj-codex__sub fj-codex__sub--grande">{d.primaria.nivel3.titulo}</h4>
+                  </div>
                   <RuleText text={d.primaria.nivel3.descricao} className="fj-texto-leitura" />
                 </div>
               </section>

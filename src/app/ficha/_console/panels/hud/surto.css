@@ -17,6 +17,7 @@
   display: flex; flex-direction: column;
   color: #a9c4d4; font-family: var(--font-corpo), sans-serif;
   background: radial-gradient(ellipse 70% 60% at 70% 0%, rgba(255, 138, 31, .08), transparent 60%);
+  font-weight: var(--corpo-peso); letter-spacing: var(--corpo-espaco);
 }
 .sx-k { font-family: var(--font-mono), ui-monospace, monospace; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--sx-apagado); }
 .sx button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
@@ -72,7 +73,7 @@
 .sx-preco > div { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; background: #07121a; }
 .sx-preco dt { font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--sx-apagado); }
 .sx-preco dd { margin: 0; font-family: var(--font-oxanium), sans-serif; font-weight: 600; font-size: 18px; color: var(--sx-am); }
-.sx-preco dd small { font-family: var(--font-corpo), sans-serif; font-weight: 400; font-size: 11px; color: var(--sx-apagado); }
+.sx-preco dd small { font-family: var(--font-corpo), sans-serif; font-weight: 400; font-size: 11px; color: var(--sx-apagado); letter-spacing: var(--corpo-espaco); }
 .sx-aviso { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid rgba(255, 95, 116, .45); background: rgba(255, 95, 116, .07); font-size: 12.5px; line-height: 1.5; color: #ffd0d6; }
 .sx-aviso svg { flex: none; margin-top: 2px; color: #ff5f74; }
 .sx-aviso b { color: #ff8f9d; }

@@ -42,6 +42,7 @@
   overflow: hidden;
   font-family: var(--font-corpo), sans-serif;
   padding: 24px;
+  font-weight: var(--corpo-peso); letter-spacing: var(--corpo-espaco);
 }
 .rv-root button { font-family: inherit; }
 
@@ -338,6 +339,7 @@
 .rv-input {
   width: 100%; background: transparent; border: none; outline: none; color: #b8d8e8;
   font-family: var(--font-corpo), sans-serif; font-size: 15px; font-weight: 400; padding: 13px 13px 13px 34px;
+  letter-spacing: var(--corpo-espaco);
 }
 .rv-input--pwd { padding-right: 38px; }
 .rv-input::placeholder { color: rgba(84, 172, 190, 0.45); }
@@ -592,7 +594,7 @@
   letter-spacing: 0.02em; overflow-wrap: anywhere;
 }
 .rv-join-papel { font-family: var(--font-mono), monospace; font-size: 9.5px; letter-spacing: 0.16em; color: rgba(84, 172, 190, 0.8); }
-.rv-join-texto { font-family: var(--font-corpo), sans-serif; font-size: 14px; line-height: 1.5; color: rgba(184, 216, 232, 0.8); margin: 0; }
+.rv-join-texto { font-family: var(--font-corpo), sans-serif; font-size: 14px; line-height: 1.5; color: rgba(184, 216, 232, 0.8); margin: 0; font-weight: var(--corpo-peso); letter-spacing: var(--corpo-espaco); }
 .rv-join-texto strong { color: #d3ecf7; }
 .rv-join-acoes { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
 .rv-join-voltar {

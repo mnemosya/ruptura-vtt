@@ -149,7 +149,11 @@ export function ProgressaoFluxo({ contexto, d, set, catalogos, etapas, classe, s
   const [corpo, nota_] = {
     ganhos: [<PassoGanhos key="g" {...props} />, null],
     atributo: [<PassoAtributo key="a" {...props} />, "+1 ponto de Atributo"],
-    vertente: [<PassoVertente key={etapa.para} {...props} primaria={primaria} />, "+1 ponto de Vertente"],
+    vertente: [<PassoVertente key={etapa.para} {...props} primaria={primaria} rodape={(confirmar) => {
+      const seguir = confirmar && { ...avancar, ...confirmar, onClick: () => { confirmar.onClick(); avancar.onClick(); } };
+      atalhoAvancar.current = seguir && !seguir.desabilitado ? seguir.onClick : null;
+      return <Rodape voltar={voltar} avancar={seguir ?? avancar} fecho={fimDoRanking} erro={erro} />;
+    }} />, "+1 ponto de Vertente"],
     pericias: [<PassoPericias key="p" {...props} />, `+${pontos} ponto${pontos === 1 ? "" : "s"} de Perícia`],
   }[passo.tipo] as [ReactNode, string | null];
 
@@ -157,7 +161,7 @@ export function ProgressaoFluxo({ contexto, d, set, catalogos, etapas, classe, s
     <section className={`fj-pg fj-pg--${passo.tipo}`}>
       {cab(ROTULO_PASSO[passo.tipo], nota_ && <span className="pg-mono pg-mono--am">{nota_}</span>)}
       {corpo}
-      <Rodape voltar={voltar} avancar={avancar} fecho={fimDoRanking} erro={erro} />
+      {passo.tipo !== "vertente" && <Rodape voltar={voltar} avancar={avancar} fecho={fimDoRanking} erro={erro} />}
     </section>
   );
 }

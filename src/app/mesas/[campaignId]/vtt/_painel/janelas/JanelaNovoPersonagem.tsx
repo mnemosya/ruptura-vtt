@@ -16,6 +16,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Forja } from "../../_forja/Forja";
+import { VeuForja } from "../../_forja/VeuForja";
 import { oxanium } from "../../../../../_design/oxanium";
 import { lerCatalogosCriacaoV12Action, type CatalogosCriacaoV12 } from "../../_acoes/criacaoV12Actions";
 import type { PersonagemACompletar } from "../../_shell/JanelasDaMesa";
@@ -74,11 +75,12 @@ export function JanelaNovoPersonagem({
           onSair={onFechar}
           onConcluir={(id) => { onFechar(); onAbrirFicha(id); }}
         />
-      ) : (
+      ) : erro ? (
         <div className={`fj-root ${oxanium.variable} fj-janela__carregando`}>
-          {erro ? <p role="alert">{erro} <button type="button" onClick={onFechar}>{campaignId ? "Voltar à mesa" : "Voltar"}</button></p> : <p>Preparando a Forja…</p>}
+          <p role="alert">{erro} <button type="button" onClick={onFechar}>{campaignId ? "Voltar à mesa" : "Voltar"}</button></p>
         </div>
-      )}
+      ) : null}
+      {!erro && <VeuForja pronto={!!catalogos} />}
     </div>,
     document.body,
   );

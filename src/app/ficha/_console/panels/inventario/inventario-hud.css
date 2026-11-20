@@ -357,7 +357,9 @@ button.ih-modal-acoes-valor:hover { background: rgba(0, 212, 255, .06); }
 .ih-modal-acoes-menu { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 5; width: 220px; padding: 4px; background: #0a1620; border: 1px solid #1a3646; box-shadow: 0 16px 36px rgba(0, 0, 0, .6); animation: ih-modal-acoes-menu .2s cubic-bezier(.05, .7, .1, 1) both; }
 @keyframes ih-modal-acoes-menu { from { opacity: 0; translate: 0 6px; } to { opacity: 1; translate: 0 0; } }
 .ih-modal-acoes-item { position: relative; display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: 0; background: transparent; cursor: pointer; text-align: left;
-  font: 500 13px var(--font-corpo), sans-serif; color: #9fb2c8; transition: background .2s cubic-bezier(.4, 1, .6, 1), color .2s cubic-bezier(.4, 1, .6, 1); }
+  font: 500 13px var(--font-corpo), sans-serif; color: #9fb2c8; transition: background .2s cubic-bezier(.4, 1, .6, 1), color .2s cubic-bezier(.4, 1, .6, 1);
+  letter-spacing: var(--corpo-espaco);
+}
 .ih-modal-acoes-item svg { width: 15px; height: 15px; stroke-width: 1.8; color: #4f6285; transition: color .2s, translate .2s cubic-bezier(.4, 1, .6, 1); }
 .ih-modal-acoes-item::before { content: ""; position: absolute; left: 0; top: 7px; bottom: 7px; width: 2px; background: #00d4ff; transform: scaleY(0); transition: transform .26s cubic-bezier(.05, .7, .1, 1); }
 .ih-modal-acoes-item:hover, .ih-modal-acoes-item:focus-visible { background: rgba(0, 212, 255, .06); color: #e6f6ff; outline: none; }

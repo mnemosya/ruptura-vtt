@@ -22,14 +22,20 @@ export function useAtalhoCodex(abrir: () => void) {
 }
 
 /** Moldura do modal de Códex: véu, varredura e Esc para fechar. Vai num portal no body. */
-export function Shell({ children, onClose, rotulo }: { children: ReactNode; onClose: () => void; rotulo: string }) {
+export function Shell({ children, onClose, rotulo, fechando = false, onSaidaConcluida, className = "" }: { children: ReactNode; onClose: () => void; rotulo: string; fechando?: boolean; onSaidaConcluida?: () => void; className?: string }) {
   useEffect(() => {
     const k = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
   }, [onClose]);
   return (
-    <div className={`fj-root ${oxanium.variable} fj-shell`} role="dialog" aria-modal="true" aria-label={rotulo}>
+    <div className={`fj-root ${oxanium.variable} fj-shell ${className}${fechando ? " fj-shell--saindo" : ""}`} role="dialog" aria-modal="true" aria-label={rotulo}
+      onAnimationEnd={(e) => {
+        if (fechando && e.target === e.currentTarget && e.animationName === "fj-shell-saida") onSaidaConcluida?.();
+      }}
+      onTransitionEnd={(e) => {
+        if (fechando && e.target === e.currentTarget && e.propertyName === "opacity") onSaidaConcluida?.();
+      }}>
       <div className="fj-shell__veu" onClick={onClose} />
       <div className="fj-scan fj-cobre fj-shell__scan" />
       <div className="fj-boot fj-shell__caixa">{children}</div>

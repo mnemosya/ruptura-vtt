@@ -64,6 +64,7 @@
   background: #07090f;
   color: var(--rm-text);
   font-family: var(--font-corpo), system-ui, sans-serif;
+  font-weight: var(--corpo-peso); letter-spacing: var(--corpo-espaco);
 }
 .rm-root *,
 .rm-root *::before,
@@ -540,6 +541,7 @@
               border-color var(--mo-dur-micro) var(--mo-ease-standard),
               opacity var(--mo-dur-micro) var(--mo-ease-standard),
               transform var(--mo-dur-micro) var(--mo-ease-standard);
+              letter-spacing: var(--corpo-espaco);
 }
 .rm-btn:hover:not(:disabled) { border-color: var(--cy); }
 .rm-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
@@ -785,6 +787,7 @@
     background var(--mo-dur-micro) var(--mo-ease-standard),
     border-color var(--mo-dur-micro) var(--mo-ease-standard),
     transform var(--mo-dur-micro) var(--mo-ease-standard);
+    letter-spacing: var(--corpo-espaco);
 }
 .rm-turndock-acao:active:not(:disabled) { transform: scale(var(--mo-scale-press)); }
 .rm-turndock-atual[data-sua-vez="true"] ~ .rm-turndock-acao {

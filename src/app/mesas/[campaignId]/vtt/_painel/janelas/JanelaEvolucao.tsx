@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { RankingV12 } from "../../../../../../lib/rulesetV12";
 import { ForjaEvolucao } from "../../_forja/ForjaEvolucao";
+import { VeuForja } from "../../_forja/VeuForja";
 import { oxanium } from "../../../../../_design/oxanium";
 import { lerCatalogosCriacaoV12Action, type CatalogosCriacaoV12 } from "../../_acoes/criacaoV12Actions";
 import { lerPartidaEvolucaoV12Action, type PartidaEvolucaoV12 } from "../../_acoes/evolucaoV12Actions";
@@ -61,11 +62,12 @@ export function JanelaEvolucao({ campaignId, characterId, alvo, onFechar }: {
           onSair={onFechar}
           onConcluir={onFechar}
         />
-      ) : (
+      ) : erro ? (
         <div className={`fj-root ${oxanium.variable} fj-janela__carregando`}>
-          {erro ? <p role="alert">{erro} <button type="button" onClick={onFechar}>Voltar à ficha</button></p> : <p>Preparando a Forja…</p>}
+          <p role="alert">{erro} <button type="button" onClick={onFechar}>Voltar à ficha</button></p>
         </div>
-      )}
+      ) : null}
+      {!erro && <VeuForja pronto={!!dados} />}
     </div>,
     document.body,
   );

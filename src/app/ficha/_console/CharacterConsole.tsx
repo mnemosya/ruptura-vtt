@@ -22,6 +22,7 @@
  * porque o console minimizado precisa mostrar a MESMA imagem.
  */
 
+import { enviarAvatarPessoalAction, lerAvatarPessoalAction, removerAvatarPessoalAction } from "../../mesas/[campaignId]/vtt/_acoes/avatarPessoalActions";
 import { useConsoleDaMesa } from "../../mesas/[campaignId]/_shell/ConsoleDaMesa";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Eye } from "lucide-react";
@@ -310,6 +311,14 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial, comandoAber
   // URLs valem 5.
   const campaignId = mesa?.campaignId ?? null;
   const characterId = mesa?.characterId ?? null;
+  const soltoId = mesa ? null : api.personagemSoltoId ?? null;
+  // Personagem solto: o avatar mora na conta do dono e sai por uma rota versionada.
+  useEffect(() => {
+    if (!aberto || !soltoId) return;
+    let vivo = true;
+    void lerAvatarPessoalAction(soltoId).then((r) => { if (vivo) setAvatarUrl(r.url ?? null); });
+    return () => { vivo = false; };
+  }, [aberto, soltoId]);
   useEffect(() => {
     if (!aberto || !campaignId || !characterId) return;
     let vivo = true;
@@ -330,6 +339,24 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial, comandoAber
 
   /** Envio do recorte escolhido no modal. Devolve se deu certo (o modal só fecha então). */
   async function enviarAvatarRecortado(arquivo: File, recorte: { x: number; y: number; tamanho: number }): Promise<boolean> {
+    if (!mesa && soltoId) {
+      setAvatarEnviando(true);
+      setAvatarErro(null);
+      try {
+        const preparada = await prepararRecorteQuadrado(arquivo, recorte);
+        const dados = new FormData();
+        dados.set("arquivo", new File([preparada.blob], "avatar.webp", { type: "image/webp" }));
+        const r = await enviarAvatarPessoalAction(soltoId, dados);
+        if (!r.ok) throw new Error(r.erro ?? "Não foi possível enviar a imagem.");
+        setAvatarUrl(r.url ?? preparada.previewUrl);
+        return true;
+      } catch (e) {
+        setAvatarErro(e instanceof Error ? e.message : "Não foi possível enviar a imagem.");
+        return false;
+      } finally {
+        setAvatarEnviando(false);
+      }
+    }
     if (!mesa) {
       // Sem mesa não há onde guardar; a prévia local vale nesta sessão.
       try { setAvatarUrl((await prepararRecorteQuadrado(arquivo, recorte)).previewUrl); return true; }
@@ -381,6 +408,16 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial, comandoAber
    * o que se desfaz aqui é só o vínculo.
    */
   async function removerAvatar(): Promise<boolean> {
+    if (!mesa && soltoId) {
+      if (avatarEnviando) return false;
+      setAvatarEnviando(true);
+      setAvatarErro(null);
+      const r = await removerAvatarPessoalAction(soltoId).catch(() => ({ ok: false, erro: undefined }));
+      setAvatarEnviando(false);
+      if (!r.ok) { setAvatarErro(r.erro ?? "Não foi possível remover o avatar."); return false; }
+      setAvatarUrl(null);
+      return true;
+    }
     if (!mesa) { setAvatarUrl(null); return true; }
     if (avatarEnviando) return false;
     setAvatarEnviando(true);
@@ -646,7 +683,7 @@ export function CharacterConsole({ aberto, onClose, api, abaInicial, comandoAber
           arquivoInicial={envioAvatar.arquivo}
           erro={avatarErro}
           enviando={avatarEnviando}
-          aviso={mesa ? null : "Esta ficha não está numa mesa: a imagem vale só nesta sessão."}
+          aviso={mesa || soltoId ? null : "Esta ficha não está numa mesa: a imagem vale só nesta sessão."}
           onUsar={(arquivo, recorte) => recorte ? enviarAvatarRecortado(arquivo, recorte) : false}
           onRemover={removerAvatar}
           fechar={() => { setEnvioAvatar(null); setAvatarErro(null); }}

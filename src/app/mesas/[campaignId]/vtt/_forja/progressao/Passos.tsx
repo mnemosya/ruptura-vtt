@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState, type AnimationEvent, type CSSProperties, type ReactNode } from "react";
-import { Zap } from "lucide-react";
+import { useEffect, useRef, useState, type AnimationEvent, type CSSProperties, type ReactNode } from "react";
+import { Maximize2, X, Zap } from "lucide-react";
+import { createPortal } from "react-dom";
 import type { CatalogosCriacaoV12 } from "../../_acoes/criacaoV12Actions";
 import {
   ATRIBUTO_MAXIMO_V12,
@@ -59,6 +60,28 @@ function HeroiArte({ slug, nome, classeSlug, ordem }: { slug: string; nome: stri
   );
 }
 
+/** A arte da subclasse em tela cheia. Esc, clique fora ou o X fecham. */
+function ArteAmpliada({ src, nome, onFechar }: { src: string; nome: string; onFechar: () => void }) {
+  const [saindo, setSaindo] = useState(false);
+  const fechar = () => setSaindo(true);
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); setSaindo(true); } };
+    window.addEventListener("keydown", k, true);
+    return () => window.removeEventListener("keydown", k, true);
+  }, []);
+  return createPortal(
+    <div className={`fj-pg pg-ampliada ${saindo ? "pg-ampliada--sai" : ""}`} role="dialog" aria-modal="true" aria-label={nome}
+      onClick={fechar} onAnimationEnd={(e) => { if (saindo && e.target === e.currentTarget) onFechar(); }}>
+      <figure className="pg-ampliada__quadro" onClick={(e) => e.stopPropagation()}>
+        <img src={src} alt={nome} />
+        <figcaption><i />{nome}</figcaption>
+      </figure>
+      <button type="button" className="pg-ampliada__fechar" onClick={fechar} aria-label="Fechar" autoFocus><X size={18} /></button>
+    </div>,
+    document.body,
+  );
+}
+
 /* ════════════ SUBCLASSE ════════════ */
 
 /**
@@ -79,15 +102,25 @@ export function PassoSubclasse({ etapa, catalogos, classe, classeSlug, mudar, ro
   if (!sel || !lido) return <><div className="pg-corpo"><p className="pg-sb-vazio">Esta classe não tem subclasses publicadas.</p></div>{rodape()}</>;
   const ir = (r: string) => secoes.current[r]?.scrollIntoView({ block: "start", behavior: "smooth" });
 
+  // A arte em tela cheia usa a imagem que está de fato na tela (inclui o fallback da classe).
+  const [ampliada, setAmpliada] = useState<string | null>(null);
+  const abrirArte = (el: HTMLElement) => {
+    const imgs = el.querySelectorAll<HTMLImageElement>(".pg-sb-camada img");
+    const src = imgs[imgs.length - 1]?.currentSrc;
+    if (src) setAmpliada(src);
+  };
   return (
     <>
       <div className="pg-corpo pg-corpo--coluna">
         <div className="pg-sb-topo">
-          <div className="pg-sb-heroi">
+          <div className="pg-sb-heroi" role="button" tabIndex={0} aria-label={`Ampliar a arte de ${sel.nome}`}
+            onClick={(e) => abrirArte(e.currentTarget)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrirArte(e.currentTarget); } }}>
             <HeroiArte slug={sel.slug} nome={sel.nome} classeSlug={classeSlug} ordem={lista.indexOf(sel)} />
             <span className="pg-sb-heroi__veu" />
             <span key={sel.slug} className="pg-sb-heroi__nome"><i /><b>{sel.nome}</b></span>
+            <span className="pg-sb-heroi__ampliar" aria-hidden="true"><Maximize2 size={15} strokeWidth={2} /></span>
           </div>
+          {ampliada && <ArteAmpliada src={ampliada} nome={sel.nome} onFechar={() => setAmpliada(null)} />}
           <div className="pg-sb-texto">
             <div className="pg-sb-papel">
               <span className="pg-sb-papel__ic"><Zap size={15} strokeWidth={2.2} aria-hidden="true" /></span>
@@ -216,7 +249,7 @@ export function PassoGanhos({ etapa, catalogos, classe, classeSlug }: PropsPasso
 /** Cor-luz (textos claros) quando a prancheta define; nas outras, o CSS deriva da cor da vertente. */
 const LUZ: Record<string, string | undefined> = { cinetica: "#ff9fae" };
 
-export function PassoVertente({ etapa, classe, mudar, primaria }: PropsPasso & { primaria?: string }) {
+export function PassoVertente({ etapa, classe, mudar, primaria, rodape }: PropsPasso & { primaria?: string; rodape: (confirmar?: Acao) => ReactNode }) {
   const sinergia = classe?.criacao.sinergia_vertentes ?? {};
   const escolhida = etapa.escolha.vertente;
   const [vendo, setVendo] = useState<string>(escolhida ?? primaria ?? VERTENTES_V12[0]);
@@ -228,6 +261,7 @@ export function PassoVertente({ etapa, classe, mudar, primaria }: PropsPasso & {
   const escolher = (id: string) => { setVendo(id); mudar({ vertente: escolhida === id ? undefined : id }); };
 
   return (
+    <>
     <div className="pg-corpo">
       <section className="pg-vt-foco" style={{ "--vx": v.cor, "--vx-luz": LUZ[v.id] } as CSSProperties}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -276,6 +310,9 @@ export function PassoVertente({ etapa, classe, mudar, primaria }: PropsPasso & {
         })}
       </aside>
     </div>
+    {/* O "Confirmar" sintoniza a vertente à vista e segue; o E faz o mesmo. */}
+    {rodape({ rotulo: `Confirmar ${v.nome}`, onClick: () => mudar({ vertente: v.id }), desabilitado: cheia(v.id) })}
+    </>
   );
 }
 

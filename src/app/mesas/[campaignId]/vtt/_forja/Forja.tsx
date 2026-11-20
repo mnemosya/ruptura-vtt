@@ -16,6 +16,7 @@ import type { CatalogosCriacaoV12 } from "../_acoes/criacaoV12Actions";
 import { ANTECEDENTE_PERSONALIZADO_ID, RANKINGS_V12, REGIOES_V12, escolhasDoAvancoV12, perfisAtributosV12, resolveClassResourceV12, type AttributeIdV12, type ClassContentV12, type DraftV12, type RankingV12, type RegiaoIdV12 } from "../../../../../lib/rulesetV12";
 import { ImagemRecusadaError, enviarParaUrlAssinada, prepararRecorteQuadrado, type ImagemPreparada } from "../../../../../lib/vtt/imagePreparation";
 import { cancelarUploadAction, definirAvatarPersonagemAction, finalizarUploadAvatarAction, reservarUploadAction } from "../_acoes/imageActions";
+import { enviarAvatarPessoalAction } from "../_acoes/avatarPessoalActions";
 import { EnvioImagem } from "../../../../ficha/_console/EnvioImagem";
 import { REGIOES } from "./acervo/regioes";
 import { CLASSES_ACERVO } from "./acervo/classes";
@@ -48,8 +49,8 @@ export interface ForjaProps {
   campaignId?: string;
   /**
    * Personagem sem campanha (página Personagens): sela sem mesa, com o
-   * conteúdo oficial, e sem avatar — a imagem é guardada na campanha, então
-   * o avatar vem depois que o personagem entrar numa. O rank inicial é
+   * conteúdo oficial; o avatar vai para a conta do dono e passa para a
+   * campanha quando o personagem entrar numa. O rank inicial é
    * livre, como com campanha: sela no F e a progressão sobe até o escolhido.
    */
   semCampanha?: boolean;
@@ -101,8 +102,8 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
     const id = await c.concluir({ pn: catalogos.ehNarrador && pn });
     if (!id) return;
     if (!campaignId && !semCampanha) return;
-    // Avatar só existe com campanha (a imagem é guardada nela).
-    if (campaignId && avatar.preparada) await avatar.enviar(campaignId, id);
+    // Com campanha a imagem vai para a biblioteca dela; sem, para a conta do dono.
+    if (avatar.preparada) await (campaignId ? avatar.enviar(campaignId, id) : avatar.enviarPessoal(id));
     const alvo = d.rankingInicial ?? rankingInicial;
     if (alvo === "F") { onConcluir?.(id); return; }
     // Aplica Ranking a Ranking as escolhas feitas no passo Progressão. Se
@@ -153,7 +154,7 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
         <div className={`fj-sem-barra fj-grade ${fluxoProgressao ? "fj-grade--progressao" : ""}`}>
           {!fluxoProgressao && <MenuLateral step={passo} setStep={c.irPara} completos={c.passosCompletos} nomeMesa={nomeMesa} status={status} oculto={ocultoPasso} />}
           <main key={passo} className="fj-boot fj-centro">
-            {centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente, semAvatar: semCampanha })}
+            {centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente })}
           </main>
           {!fluxoProgressao && <aside className="fj-sem-barra fj-lateral">
             <PlacaIdentidade d={d} avatar={avatar.url} progress={c.sincronia} ranking={d.rankingInicial ?? rankingInicial} onRankingChange={(ranking) => set({ rankingInicial: ranking })} />
@@ -270,10 +271,18 @@ function useAvatarDaForja() {
       // O personagem já existe: o avatar pode ser enviado de novo pela ficha.
     }
   };
+  /** Personagem sem campanha: a imagem vai para o avatar pessoal (conta do dono). */
+  const enviarPessoal = async (characterId: string) => {
+    if (!preparada) return;
+    const dados = new FormData();
+    dados.set("arquivo", new File([preparada.blob], "avatar.webp", { type: "image/webp" }));
+    // Falha não desfaz a criação: o avatar pode ser enviado de novo pela ficha.
+    await enviarAvatarPessoalAction(characterId, dados).catch(() => {});
+  };
   return {
     url: preparada?.previewUrl ?? AVATAR_PADRAO,
     preparada, abrindo, erro, ocupado,
-    abrir, confirmarRecorte, remover, enviar,
+    abrir, confirmarRecorte, remover, enviar, enviarPessoal,
     fecharEnvio: () => { setAbrindo(null); setErro(null); },
     limparErro: () => setErro(null),
   };
@@ -534,25 +543,14 @@ interface Contexto {
   view: Vista;
 }
 
-function centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente, semAvatar = false }: Contexto & {
+function centro({ c, catalogos, classe, view, onView, avatar, nomeAntecedente }: Contexto & {
   onView: (k: keyof Vista) => (id: string) => void;
   avatar: AvatarDaForja;
-  /** Sem campanha não há onde guardar a imagem: o avatar fica para depois. */
-  semAvatar?: boolean;
   nomeAntecedente?: string;
 }): ReactNode {
   const { d, set } = c;
   switch (c.passo) {
-    case 0: return semAvatar ? (
-      <div className="fj-conceito">
-        <div className="fj-conceito__avatar">
-          <Holograma d={d} avatar={avatar.url} progress={c.sincronia} nomeAntecedente={nomeAntecedente} onNavigate={c.irPara} />
-        </div>
-        <div className="fj-conceito__rodape">
-          <Mono>O avatar é enviado depois que o personagem entrar numa campanha</Mono>
-        </div>
-      </div>
-    ) : (
+    case 0: return (
       <div className="fj-conceito">
         <div className="fj-conceito__avatar">
           <Holograma d={d} avatar={avatar.url} progress={c.sincronia} nomeAntecedente={nomeAntecedente} onNavigate={c.irPara} />

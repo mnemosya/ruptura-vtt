@@ -184,13 +184,13 @@
 .ag .ag-destaque__titulo { max-width: 100%; margin: 26px 0 0; font: 800 clamp(36px, 5vw, 60px)/1.05 var(--ag-display); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ag-gelo); text-shadow: 0 0 12px color-mix(in srgb, var(--ag-cy) 70%, transparent); overflow-wrap: anywhere; }
 .ag .ag-destaque__identidade { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; margin-top: 18px; font: 600 11px/1.5 var(--ag-mono); letter-spacing: 0.14em; text-transform: uppercase; }
 .ag .ag-destaque__regiao { color: var(--ag-texto); }
-.ag .ag-destaque__presenca { display: flex; align-items: baseline; gap: 12px; max-width: 100%; margin: auto 0 0; padding-top: 28px; font: 500 14px/1.5 var(--font-corpo), sans-serif; color: var(--ag-gelo); }
+.ag .ag-destaque__presenca { display: flex; align-items: baseline; gap: 12px; max-width: 100%; margin: auto 0 0; padding-top: 28px; font: 500 14px/1.5 var(--font-corpo), sans-serif; color: var(--ag-gelo); letter-spacing: var(--corpo-espaco); }
 .ag .ag-destaque__presenca-ponto { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ag-apagado); }
 .ag .ag-destaque__rodape { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) auto; align-items: center; gap: 24px; min-height: 84px; padding: 16px 32px; border-top: 1px solid color-mix(in srgb, var(--ag-cy) 45%, transparent); background: rgba(7, 27, 40, 0.3); }
 .ag .ag-destaque__rodape::before { content: ""; position: absolute; top: -2px; left: 32px; width: 66px; height: 2px; background: var(--ag-am); }
 .ag .ag-destaque__dado { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .ag .ag-destaque__dado + .ag-destaque__dado { border-left: 1px solid color-mix(in srgb, var(--ag-cy) 25%, transparent); padding-left: 24px; }
-.ag .ag-destaque__dado strong, .ag .ag-destaque__dado time { font: 600 15px/1.4 var(--font-corpo), sans-serif; color: var(--ag-gelo); }
+.ag .ag-destaque__dado strong, .ag .ag-destaque__dado time { font: 600 15px/1.4 var(--font-corpo), sans-serif; color: var(--ag-gelo); letter-spacing: var(--corpo-espaco); }
 .ag .ag-destaque__entrar { min-width: 210px; }
 .ag .ag-destaque__entrar span { transform: translateY(1px); }
 @container campanha-destaque (max-width: 680px) {

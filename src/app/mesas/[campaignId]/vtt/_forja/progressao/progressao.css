@@ -467,3 +467,65 @@
   .fj-pg :is(.pg-vt-foco, .pg-en-item, .pg-vt-row, .pg-at-row, .pg-pk-carta__corpo) { transition: none; }
   .fj-pg :is(.pg-en-item, .pg-vt-row, .pg-at-row, .pg-pk-carta__corpo):active:not(:disabled) { transform: none; }
 }
+
+/* ── Herói da subclasse: hover e ampliar ──
+   Hover: a arte aproxima devagar, o véu cede, o nome sobe e a barra cresce;
+   o ícone de ampliar aparece no canto. Clique abre a arte em tela cheia. */
+.fj-pg .pg-sb-heroi { cursor: zoom-in; transition: box-shadow .3s var(--fj-ease), border-color .2s ease; }
+/* `scale` (não `transform`): a cortina de troca anima `transform` com fill e venceria o hover. */
+.fj-pg .pg-sb-heroi .pg-sb-camada .pg-arte { transition: scale .7s cubic-bezier(0.23, 1, 0.32, 1), filter .4s ease; }
+.fj-pg .pg-sb-heroi__veu { transition: opacity .35s ease; }
+.fj-pg .pg-sb-heroi__nome { transition: transform .35s cubic-bezier(0.23, 1, 0.32, 1); }
+.fj-pg .pg-sb-heroi__nome i { transition: width .35s cubic-bezier(0.23, 1, 0.32, 1); }
+.fj-pg .pg-sb-heroi__ampliar {
+  position: absolute; top: 14px; right: 26px; display: grid; place-items: center; width: 32px; height: 32px;
+  color: #fff1e4; background: rgba(6, 18, 28, .72); border: 1px solid rgba(255, 138, 31, .55);
+  opacity: 0; transform: translateY(-4px) scale(.92); transition: opacity .2s ease, transform .25s cubic-bezier(0.23, 1, 0.32, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .fj-pg .pg-sb-heroi:hover { box-shadow: 0 0 0 1px rgba(255,138,31,.45), 0 18px 44px rgba(0,0,0,.5), 0 0 28px rgba(255,138,31,.18); }
+  .fj-pg .pg-sb-heroi:hover .pg-sb-camada .pg-arte { scale: 1.06; filter: saturate(1.08) brightness(1.04); }
+  .fj-pg .pg-sb-heroi:hover .pg-sb-heroi__veu { opacity: .82; }
+  .fj-pg .pg-sb-heroi:hover .pg-sb-heroi__nome { transform: translateY(-4px); }
+  .fj-pg .pg-sb-heroi:hover .pg-sb-heroi__nome i { width: 52px; }
+  .fj-pg .pg-sb-heroi:hover .pg-sb-heroi__ampliar { opacity: 1; transform: none; }
+}
+.fj-pg .pg-sb-heroi:focus-visible { outline: 2px solid var(--fj-am); outline-offset: 3px; }
+.fj-pg .pg-sb-heroi:focus-visible .pg-sb-heroi__ampliar { opacity: 1; transform: none; }
+.fj-pg .pg-sb-heroi:active { scale: .99; transition: scale .12s cubic-bezier(0.23, 1, 0.32, 1); }
+
+.pg-ampliada {
+  position: fixed; inset: 0; z-index: 9000; display: grid; place-items: center; padding: 48px;
+  background: rgba(4, 8, 12, .86); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  cursor: zoom-out; animation: pg-ampliada-fundo .24s ease-out both;
+}
+.pg-ampliada__quadro {
+  margin: 0; position: relative; max-width: min(1100px, 100%); max-height: 100%; cursor: default;
+  animation: pg-ampliada-entra .28s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+.pg-ampliada__quadro img {
+  display: block; max-width: 100%; max-height: calc(100vh - 140px); object-fit: contain;
+  border: 1.5px solid var(--fj-am); box-shadow: 0 0 0 1px rgba(255,138,31,.2), 0 30px 80px rgba(0,0,0,.6);
+}
+.pg-ampliada__quadro figcaption {
+  display: flex; align-items: center; gap: 12px; margin-top: 14px;
+  font: 800 18px/1 var(--pg-d, var(--fj-display)); letter-spacing: .08em; text-transform: uppercase; color: #fff1e4;
+}
+.pg-ampliada__quadro figcaption i { width: 24px; height: 3px; background: var(--fj-am); }
+.pg-ampliada__fechar {
+  position: absolute; top: 20px; right: 20px; display: grid; place-items: center; width: 40px; height: 40px; cursor: pointer;
+  color: #fff1e4; background: rgba(6, 18, 28, .8); border: 1px solid rgba(255, 138, 31, .45);
+  transition: background .15s ease, scale .12s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.pg-ampliada__fechar:hover { background: rgba(255, 138, 31, .18); }
+.pg-ampliada__fechar:active { scale: .95; }
+.pg-ampliada--sai { animation: pg-ampliada-sai .18s ease-out both; }
+.pg-ampliada--sai .pg-ampliada__quadro { animation: pg-ampliada-quadro-sai .18s ease-out both; }
+@keyframes pg-ampliada-fundo { from { opacity: 0; } }
+@keyframes pg-ampliada-entra { from { opacity: 0; transform: scale(.96); filter: blur(4px); } }
+@keyframes pg-ampliada-sai { to { opacity: 0; } }
+@keyframes pg-ampliada-quadro-sai { to { opacity: 0; transform: scale(.98); } }
+@media (prefers-reduced-motion: reduce) {
+  .fj-pg .pg-sb-heroi .pg-sb-camada .pg-arte, .fj-pg .pg-sb-heroi__nome { transition: none; }
+  .pg-ampliada, .pg-ampliada__quadro { animation-duration: .01s; }
+}

@@ -103,7 +103,7 @@ export function Antecedente({ d, set, catalogos }: { d: DraftV12; set: SetDraft;
               <Mono tom={linked ? "am" : undefined}>{linked ? "✓ Vinculado" : "Não vinculado"}</Mono>
             </div>
             <h3 className="fj-registro__titulo fj-glow">{cur.nome}</h3>
-            <div className="fj-registro__texto">{semFamiliaridade(cur.descricao, cur.familiaridade).split("\n\n").map((p, i) => <p key={i}>{p}</p>)}</div>
+            <div className="fj-registro__texto"><TextoTrajetoria texto={semFamiliaridade(cur.descricao, cur.familiaridade)} /></div>
             {cur.familiaridade && (
               <div className="fj-registro__caixa">
                 <Mono tom="cy">Familiaridade</Mono>
@@ -212,7 +212,55 @@ const NOVO_TRACO = "novo_personalizado";
 const nomeCategoria = (id?: string) => CATEGORIAS_TRACO.find((c) => c.id === id)?.nome ?? "Outras";
 
 /** Linhas de custo ("Por 1 ponto…") ganham caixa própria. */
-const estiloLinha = (x: string) => (/^(Por|Use) \**\d/.test(x) ? "fj-traco__custo" : "");
+/** Parágrafo curto terminado em ":" ("CDI Craqueada:", "RPI Forjado (Nível 2):") abre um item. */
+const ehSubtitulo = (x: string) => x.length <= 60 && /:\**$/.test(x.trim()) && !/[.!?]/.test(x.replace(/\(.*?\)/g, ""));
+const rotuloLinha = /^\**(Mecânica|Efeito|Limite|Uso|Requisito|Custo|Duração)\**:\**\s*/;
+
+/** Texto corrido das trajetórias (antecedentes, qualidades, complicações) com a marcação do livro. */
+function TextoTrajetoria({ texto }: { texto: string }) {
+  const custo = /^(?:Por|Use) \**\d+\**\s*pontos?,?\s*/;
+  const paragrafo = (x: string, i: number) => {
+    const r = x.match(rotuloLinha);
+    if (r) return <div key={i} className="fj-texto__rotulado"><span className="fj-texto__rotulo">{r[1]}</span><Rich text={x.slice(r[0].length)} /></div>;
+    return <Rich key={i} text={x} />;
+  };
+  // Como no livro (Notion): cada item ("CDI Craqueada:") é um toggle
+  // fechado, aninhado sob o parágrafo que o apresenta. Os parágrafos
+  // seguintes entram nele até o próximo item, bloco de custo ou "Na campanha".
+  // Um item logo depois de um bloco de custo fica DENTRO desse bloco.
+  type Bloco = { no: ReactNode; filhos?: ReactNode[] };
+  const blocos: Bloco[] = [];
+  let item: { titulo: string; corpo: ReactNode[] } | null = null;
+  let custoAberto: Bloco | null = null;
+  const fecha = () => {
+    if (!item) return;
+    const el = (
+      <details key={`item-${blocos.length}-${item.titulo}`} className="fj-texto__item">
+        <summary className="fj-texto__sub">{item.titulo}</summary>
+        <div className="fj-texto__item-corpo">{item.corpo}</div>
+      </details>
+    );
+    if (custoAberto) custoAberto.filhos!.push(el); else blocos.push({ no: el });
+    item = null;
+  };
+  texto.split("\n\n").forEach((x, i) => {
+    if (ehSubtitulo(x)) { fecha(); item = { titulo: x.trim().replace(/\*\*/g, "").replace(/:$/, ""), corpo: [] }; return; }
+    const pts = x.match(custo);
+    const fechaItem = pts || prefixoCampanha.test(x);
+    if (item && !fechaItem) { item.corpo.push(paragrafo(x, i)); return; }
+    fecha();
+    custoAberto = null;
+    if (prefixoCampanha.test(x)) { blocos.push({ no: <div key={i} className="fj-traco__campanha"><h4 className="fj-traco__campanha-titulo">Na campanha</h4><Rich text={x.replace(prefixoCampanha, "").replace(/^(\**)(\p{Ll})/u, (_, a: string, c: string) => a + c.toUpperCase())} /></div> }); return; }
+    if (pts) {
+      custoAberto = { no: <Rich text={`**${pts[0].replace(/\*\*/g, "").trim()}** ${x.slice(pts[0].length)}`} />, filhos: [] };
+      blocos.push(custoAberto);
+      return;
+    }
+    blocos.push({ no: paragrafo(x, i) });
+  });
+  fecha();
+  return <>{blocos.map((b, i) => b.filhos ? <div key={i} className="fj-traco__custo">{b.no}{b.filhos}</div> : b.no)}</>;
+}
 const prefixoCampanha = /^(?:\*\*)?Na campanha:(?:\*\*)?\s*/i;
 
 export function Tracos({ d, set, catalogos }: { d: DraftV12; set: SetDraft; catalogos: CatalogosCriacaoV12 }) {
@@ -352,9 +400,7 @@ export function Tracos({ d, set, catalogos }: { d: DraftV12; set: SetDraft; cata
             </div>
             <h3 className="fj-registro__titulo fj-registro__titulo--menor fj-glow">{cur.nome}</h3>
             <div className="fj-traco__texto">
-              {cur.descricao.split("\n\n").map((x, i) => prefixoCampanha.test(x)
-                ? <div key={i} className="fj-traco__campanha"><h4 className="fj-traco__campanha-titulo">Na campanha</h4><Rich text={x.replace(prefixoCampanha, "")} /></div>
-                : <Rich key={i} text={x} className={estiloLinha(x)} />)}
+              <TextoTrajetoria texto={cur.descricao} />
             </div>
             <div className="fj-traco__acoes">
               <div className="fj-traco__custos">
@@ -399,7 +445,9 @@ export function FichaTracos({ d, set, catalogos }: { d: DraftV12; set: SetDraft;
       {(["qualidades", "complicacoes"] as const).map((k) => {
         const lista = d[k], soma = somaPontosV12(lista), q = k === "qualidades";
         const nome = (e: DraftEscolhaV12) => catalogos[k].find((x) => x.slug === e.id)?.nome ?? e.titulo?.trim() ?? e.id;
-        const placar = q ? `${QUALIDADES - soma}` : soma >= COMPLICACOES_MINIMO ? "✓" : `${COMPLICACOES_MINIMO - soma}`;
+        const falta = (q ? QUALIDADES : COMPLICACOES_MINIMO) - soma;
+        // Qualidades somam EXATAMENTE 3: passar disso também não fecha.
+        const placar = (q ? falta === 0 : falta <= 0) ? "✓" : falta < 0 ? `${-falta} a mais` : `faltam ${falta}`;
         return (
           <Panel key={k} ambar={!q} title={ROTULO[k]} right={<span className={`fj-ficha-tracos__sobra ${q ? "" : "fj-ficha-tracos__sobra--escuro"}`}>{placar}</span>}>
             <div className="fj-ficha-tracos__topo" data-tipo={k}>
@@ -415,7 +463,6 @@ export function FichaTracos({ d, set, catalogos }: { d: DraftV12; set: SetDraft;
                 </span>
               </div>
             )) : <p className="fj-ficha-tracos__vazio">Nenhum registro adquirido.</p>}
-            {!q && soma > COMPLICACOES_MINIMO && <p className="fj-ficha-tracos__nota">Complicações além de 2 pontos só com acordo do grupo.</p>}
           </Panel>
         );
       })}

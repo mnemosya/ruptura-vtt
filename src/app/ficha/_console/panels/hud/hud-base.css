@@ -369,7 +369,9 @@ button.hx-mun-valor:hover { border-color: rgba(0, 212, 255, .35); background: rg
 .hx-menu { --dec: cubic-bezier(.05, .7, .1, 1); --out: cubic-bezier(.4, 1, .6, 1);
   position: fixed; z-index: 640; width: 240px; box-sizing: border-box; background: #0a1620; border: 1px solid #1a3646;
   box-shadow: 0 20px 44px rgba(0, 0, 0, .65); font-family: var(--font-corpo), sans-serif;
-  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); animation: hx-menu-in .26s var(--dec) both; }
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); animation: hx-menu-in .26s var(--dec) both;
+  font-weight: var(--corpo-peso); letter-spacing: var(--corpo-espaco);
+}
 .hx-menu::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--k); }
 @keyframes hx-menu-in { from { opacity: 0; translate: 0 -6px; } to { opacity: 1; translate: 0 0; } }
 .hx-menu-cab { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; align-items: center; padding: 14px 14px 12px; }
@@ -387,7 +389,9 @@ button.hx-mun-valor:hover { border-color: rgba(0, 212, 255, .35); background: rg
 .hx-menu-acao:hover svg, .hx-menu-acao:focus-visible svg { translate: 3px 0; }
 .hx-menu-secao { padding: 4px 6px 6px; border-top: 1px solid #122a38; }
 .hx-menu-item { position: relative; display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: center; gap: 10px; width: 100%; padding: 8px; border: 0; background: transparent; cursor: pointer; text-align: left;
-  font: 500 13px var(--font-corpo), sans-serif; color: #9fb2c8; transition: background .2s var(--out), color .2s var(--out); }
+  font: 500 13px var(--font-corpo), sans-serif; color: #9fb2c8; transition: background .2s var(--out), color .2s var(--out);
+  letter-spacing: var(--corpo-espaco);
+}
 .hx-menu-item svg { width: 15px; height: 15px; stroke-width: 1.8; color: #4f6285; transition: color .2s var(--out), translate .2s var(--out); }
 .hx-menu-item::before { content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: 2px; background: #00d4ff; transform: scaleY(0); transition: transform .26s var(--dec); }
 .hx-menu-item:hover, .hx-menu-item:focus-visible { background: rgba(0, 212, 255, .07); color: #e6f6ff; outline: none; }
@@ -413,7 +417,9 @@ button.hx-mun-valor:hover { border-color: rgba(0, 212, 255, .35); background: rg
 /* Dica da propriedade: nome na cor do item + a regra em texto corrido. */
 .hx-prop-dica { position: fixed; z-index: 760; width: 260px; box-sizing: border-box; padding: 9px 12px; pointer-events: none;
   background: #0c1c26; box-shadow: inset 0 0 0 1px #1c3645, inset 2px 0 0 var(--k, #00d4ff), 0 14px 30px rgba(0, 0, 0, .55);
-  font: 400 13px/1.45 var(--font-corpo), sans-serif; color: #b9c9dc; animation: hx-prop-dica .18s cubic-bezier(.05, .7, .1, 1) both; }
+  font: var(--corpo-peso) 13px/1.45 var(--font-corpo), sans-serif; color: #b9c9dc; animation: hx-prop-dica .18s cubic-bezier(.05, .7, .1, 1) both;
+  letter-spacing: var(--corpo-espaco);
+}
 .hx-prop-dica[data-acima] { transform: translateY(-100%); }
 .hx-prop-dica b { display: block; margin-bottom: 3px; font: 700 10px var(--font-mono), monospace; letter-spacing: 1.6px; text-transform: uppercase; color: var(--k, #00d4ff); }
 @keyframes hx-prop-dica { from { opacity: 0; translate: 0 4px; } to { opacity: 1; translate: 0 0; } }

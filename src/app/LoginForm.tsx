@@ -403,7 +403,7 @@ export function AuthMoldura({
       {/* Rodapé na base da tela, centralizado no eixo. */}
       <div className="rv-foot">
         <span className="rv-foot-line" aria-hidden="true" />
-        <span className="rv-foot-txt">{rodape ?? <>RUPTURA VTT v0.0.1 // ACESSO RESTRITO</>}</span>
+        <span className="rv-foot-txt">{rodape ?? <>A ORDEM É UMA FACHADA</>}</span>
         <span className="rv-foot-line" aria-hidden="true" />
       </div>
 
@@ -580,7 +580,7 @@ export function LoginForm({
                   <Link href="/dev/table" className="rv-foot-link">/DEV/TABLE</Link>
                 </>
               ) : (
-                <>RUPTURA VTT v0.0.1 // ACESSO RESTRITO</>
+                <>A ORDEM É UMA FACHADA</>
               )}
             </>
       }

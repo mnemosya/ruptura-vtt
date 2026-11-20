@@ -111,6 +111,8 @@ export interface ConsoleApi {
    * painel de rolagem esconde a escolha de quem enxerga.
    */
   mesa: { campaignId: string; characterId: string } | null;
+  /** Personagem salvo e SEM mesa: o avatar fica na conta do dono (`lib/character/avatarPessoal`). */
+  personagemSoltoId?: string | null;
 
   /** Atributo primário de uma perícia (com o fallback de sempre: Corpo). */
   atributoDaPericia: (periciaId: string) => keyof CharacterAttributes;
