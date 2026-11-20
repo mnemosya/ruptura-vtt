@@ -42,3 +42,21 @@
 @media (prefers-reduced-motion: reduce) {
   .ds-marca__eco { display: none; }
 }
+
+/* Entrada "decodifica" (`MarcaEntrada.tsx`, login): a letra real guarda a
+   largura e fica transparente; o glifo sorteado aparece por cima até ela
+   assentar. O eco espera a entrada terminar. */
+.ds-marca__letra { position: relative; display: inline-block; }
+.ds-marca--entrada .ds-marca__letra[data-fixa="0"] { color: transparent; text-shadow: none; }
+.ds-marca--entrada .ds-marca__letra[data-fixa="0"]::after {
+  content: attr(data-glifo);
+  position: absolute; inset: 0; text-align: center;
+  color: color-mix(in srgb, var(--ds-marca-ciano) 75%, transparent);
+}
+.ds-marca--entrada .ds-marca__letra[data-fixa="1"] { animation: ds-marca-assenta 0.18s ease-out; }
+@keyframes ds-marca-assenta { from { filter: brightness(1.8); } to { filter: none; } }
+.ds-marca--entrada .ds-marca__eco { transition: opacity 0.2s ease; }
+.ds-marca--entrada[data-pronto="0"] .ds-marca__eco { opacity: 0; animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .ds-marca--entrada .ds-marca__letra { animation: none; }
+}

@@ -127,3 +127,26 @@ function registrarAuthAplicada(accessToken: string | null): void {
     (window as unknown as { __rupturaRealtimeAuth?: AuthRealtimeAplicada }).__rupturaRealtimeAuth = authAplicada;
   }
 }
+
+let cachedRecoveryClient: SupabaseClient | null | undefined;
+
+/**
+ * Client SÓ para a redefinição de senha (`/redefinir-senha`). O client de
+ * Realtime acima usa a opção `accessToken`, e com ela o supabase-js
+ * bloqueia todo `supabase.auth.*` (lança "accessing supabase.auth.X is
+ * not possible") — a página ficava presa em "Validando o link". Este não
+ * guarda sessão nem lê a URL sozinho: a página passa o token explicitamente.
+ */
+export function getBrowserRecoveryClient(): SupabaseClient | null {
+  if (cachedRecoveryClient !== undefined) return cachedRecoveryClient;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) {
+    cachedRecoveryClient = null;
+    return null;
+  }
+  cachedRecoveryClient = createClient(url, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+  return cachedRecoveryClient;
+}

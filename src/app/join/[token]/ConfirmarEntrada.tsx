@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, type ReactNode } from "react";
 import { AlertCircle, Spinner } from "../../_design/icons";
 import { aceitarConviteAction, type EstadoAceite } from "./actions";
 
@@ -10,8 +10,9 @@ const INICIAL: EstadoAceite = { erro: null };
 /**
  * `demo`: a galeria de estilos monta o botão sem convite real — o
  * envio é ignorado em vez de chamar o servidor.
+ * `cartao`: a credencial do convite, encaixada logo acima do botão.
  */
-export function ConfirmarEntrada({ token, demo }: { token: string; demo?: boolean }) {
+export function ConfirmarEntrada({ token, demo, cartao }: { token: string; demo?: boolean; cartao: ReactNode }) {
   const [estado, acao, pendente] = useActionState(aceitarConviteAction.bind(null, token), INICIAL);
 
   return (
@@ -26,10 +27,13 @@ export function ConfirmarEntrada({ token, demo }: { token: string; demo?: boolea
           <span>{estado.erro}</span>
         </div>
       )}
-      <button type="submit" disabled={pendente} className="auth-submit-btn auth-submit-btn--cyan" data-testid="join-confirmar">
-        {pendente && <Spinner size={13} className="rv-spin" style={{ marginRight: 10 }} />}
-        {pendente ? "ENTRANDO..." : "ENTRAR NA CAMPANHA"}
-      </button>
+      <div className="rv-join-credencial">
+        {cartao}
+        <button type="submit" disabled={pendente} className="auth-submit-btn auth-submit-btn--cyan" data-testid="join-confirmar">
+          {pendente && <Spinner size={13} className="rv-spin" style={{ marginRight: 10 }} />}
+          {pendente ? "ENTRANDO..." : "ENTRAR NA CAMPANHA"}
+        </button>
+      </div>
       <Link href="/mesas" className="rv-join-voltar">AGORA NÃO</Link>
     </form>
   );
