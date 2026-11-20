@@ -3653,8 +3653,14 @@ function Token({
   // Sem ele o `aria-label` não anuncia recurso nenhum, em vez de
   // fingir 0/0.
   const temPv = token.pv !== null && token.pvMax !== null && token.pvMax > 0;
-  const pvVisivel = temPv && (token.pvPublico === true || token.podeControlar)
+  // Quem pode ver já vem filtrado do banco (`read_vtt_scene_tokens`):
+  // quem controla (inclui o narrador), Vitalista (PV) e Terapeuta (PE).
+  const pvVisivel = temPv
     ? Math.max(0, Math.min(1, token.pv! / token.pvMax!))
+    : null;
+  const temPe = token.pe !== null && token.peMax !== null && token.peMax > 0;
+  const peVisivel = temPe
+    ? Math.max(0, Math.min(1, token.pe! / token.peMax!))
     : null;
 
   const jaAgiuMarca = estado.jaAgiu && !estado.turnoAtual;
@@ -3695,7 +3701,7 @@ function Token({
       opacity={opacoReduzido ? 0.35 : undefined}
       tabIndex={0}
       role="button"
-      aria-label={`${token.nome}, ${token.lado === "pj" ? "aliado" : token.lado === "pn" ? "hostil" : "neutro"}${pvVisivel !== null ? `, PV ${token.pv} de ${token.pvMax}` : ""}${token.condicoes.length ? `, condições: ${token.condicoes.map((c) => CONDICOES[c].rotulo).join(", ")}` : ""}${token.visivel ? "" : ", oculto"}${estado.alvo ? ", marcado como alvo" : ""}`}
+      aria-label={`${token.nome}, ${token.lado === "pj" ? "aliado" : token.lado === "pn" ? "hostil" : "neutro"}${pvVisivel !== null ? `, PV ${token.pv} de ${token.pvMax}` : ""}${peVisivel !== null ? `, PE ${token.pe} de ${token.peMax}` : ""}${peVisivel !== null ? `, PE ${token.pe} de ${token.peMax}` : ""}${token.condicoes.length ? `, condições: ${token.condicoes.map((c) => CONDICOES[c].rotulo).join(", ")}` : ""}${token.visivel ? "" : ", oculto"}${estado.alvo ? ", marcado como alvo" : ""}`}
       // Seleção + início de arraste no MESMO evento (pointerdown), não
       // em onClick — onClick dispararia DE NOVO no soltar do mesmo
       // gesto (mousedown+mouseup no mesmo alvo geram click), chamando
@@ -4025,10 +4031,16 @@ function Token({
       {pvVisivel !== null && (
         <g className="rv-token-pv" pointerEvents="none">
           <rect x={-raio + 5} y={raio + 4} width={raio * 2 - 10} height={4} fill="rgba(6,18,28,.9)" />
-          <rect x={-raio + 5} y={raio + 4} width={(raio * 2 - 10) * pvVisivel} height={4} fill={pvVisivel > .35 ? "#22d3aa" : "#ff6b7d"} />
+          <rect x={-raio + 5} y={raio + 4} width={(raio * 2 - 10) * pvVisivel} height={4} fill="#e0455e" />
         </g>
       )}
-      <text className="rv-token-nome" x={0} y={raio + 20} textAnchor="middle" pointerEvents="none">{token.nome}</text>
+      {peVisivel !== null && (
+        <g className="rv-token-pe" pointerEvents="none">
+          <rect x={-raio + 5} y={raio + (pvVisivel !== null ? 10 : 4)} width={raio * 2 - 10} height={4} fill="rgba(6,18,28,.9)" />
+          <rect x={-raio + 5} y={raio + (pvVisivel !== null ? 10 : 4)} width={(raio * 2 - 10) * peVisivel} height={4} fill="#8878d6" />
+        </g>
+      )}
+      <text className="rv-token-nome" x={0} y={raio + (pvVisivel !== null && peVisivel !== null ? 26 : 20)} textAnchor="middle" pointerEvents="none">{token.nome}</text>
 
       {/* já agiu: selo de visto neutro no canto — "cumpriu a vez", não
           "saiu de combate". Mesma cor apagada do anel. */}
