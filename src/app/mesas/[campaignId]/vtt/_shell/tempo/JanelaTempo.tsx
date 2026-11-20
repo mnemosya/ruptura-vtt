@@ -304,7 +304,7 @@ export function JanelaTempo(p: PropsJanelaTempo) {
           </div>
           <div style={css("display:grid;grid-template-columns:1fr 1fr;gap:10px")}>
             <label style={css("display:flex;flex-direction:column;gap:5px")}><span className="idlab" style={css("color:var(--apagado)")}>ANO CI</span><input className="u cmp" type="number" min={0} max={9999} value={t.ano ?? ""} onChange={(e) => p.aoMudarData({ ano: e.target.value === "" ? null : Number(e.target.value) })} /></label>
-            <label style={css("display:flex;flex-direction:column;gap:5px")}><span className="idlab" style={css("color:var(--apagado)")}>HORÁRIO</span><span className="u cmp"><HoraEditavel hora={t.hora ?? "12:00"} editavel aoMudar={(hora) => p.aoMudarData({ hora })} /></span></label>
+            <label style={css("display:flex;flex-direction:column;gap:5px")}><span className="idlab" style={css("color:var(--apagado)")}>HORÁRIO</span><span className="u cmp"><HoraEditavel hora={t.hora ?? "12:00"} editavel setas={false} aoMudar={(hora) => p.aoMudarData({ hora })} /></span></label>
           </div>
           <div style={css("display:grid;grid-template-columns:1fr 1fr;gap:10px")}>
             <label style={css("display:flex;flex-direction:column;gap:5px")}><span className="idlab" style={css("color:var(--apagado)")}>TEMPERATURA °C</span><input className="u cmp" type="number" min={-100} max={100} step="0.1" value={t.temperaturaC ?? ""} onChange={(e) => p.aoAlterar({ temperaturaC: e.target.value === "" ? null : Number(e.target.value) })} /></label>
