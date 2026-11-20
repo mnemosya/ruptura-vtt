@@ -165,6 +165,13 @@
     repeating-linear-gradient(-45deg, color-mix(in srgb, var(--pn-a) 30%, transparent) 0 4px, transparent 4px 8px) top / 100% 4px no-repeat,
     var(--pn-panel);
 }
+/* O hover do card no chat troca o `background` inteiro; a faixa
+   precisa vir junto, senão some sob o cursor. */
+:root[data-tema="forja"] .rv-pn-chat .pn-cartao-linha > .pn-cartao:hover {
+  background:
+    repeating-linear-gradient(-45deg, color-mix(in srgb, var(--pn-a) 30%, transparent) 0 4px, transparent 4px 8px) top / 100% 4px no-repeat,
+    rgba(16, 42, 58, .92);
+}
 :root[data-tema="forja"] .pn-cartao::before { width: 3px; box-shadow: 0 0 8px var(--pn-a); }
 
 /* ── Placa de rodadas · Borda em degradê + varredura ──────────── */
