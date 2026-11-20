@@ -71,7 +71,7 @@ const MIN_MAX = 10000 * 360 * 1440 - 1;
 type Data = { ano: number; mes: number; dia: number };
 type Aba = "calendario" | "clima" | "agenda";
 const ABAS: { id: Aba; rotulo: string }[] = [
-  { id: "calendario", rotulo: "CALENDÁRIO" }, { id: "clima", rotulo: "CLIMA" }, { id: "agenda", rotulo: "AGENDA" },
+  { id: "clima", rotulo: "CLIMA" }, { id: "calendario", rotulo: "CALENDÁRIO" }, { id: "agenda", rotulo: "AGENDA" },
 ];
 
 export interface PropsJanelaTempo {
@@ -110,7 +110,7 @@ export function JanelaTempo(p: PropsJanelaTempo) {
   const { tempo: t, ehNarrador } = p;
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [completo, setCompleto] = useState(false);
-  const [aba, setAba] = useState<Aba>("calendario");
+  const [aba, setAba] = useState<Aba>("clima");
   /** Dia aberto pelo menu ("Abrir agenda"): a Agenda mostra só os eventos dele. */
   const [destaque, setDestaque] = useState<Data | null>(null);
   const [mesNav, setMesNav] = useState<{ ano: number; mes: number } | null>(null);
@@ -391,7 +391,7 @@ export function JanelaTempo(p: PropsJanelaTempo) {
         <div style={css("display:flex;align-items:center;gap:6px")}>
           {completo
             ? winbtn("Recolher", () => setCompleto(false), <Minimize2 size={13} strokeWidth={2.2} aria-hidden="true" />)
-            : winbtn("Expandir", () => abrir("calendario"), <Maximize2 size={13} strokeWidth={2.2} aria-hidden="true" />)}
+            : winbtn("Expandir", () => abrir("clima"), <Maximize2 size={13} strokeWidth={2.2} aria-hidden="true" />)}
           {winbtn("Fechar", p.aoFechar, <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>, true)}
         </div>
       </div>
