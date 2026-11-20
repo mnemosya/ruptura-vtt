@@ -8,13 +8,24 @@ import { validarNovaMarcacao, type MarcacaoCalendario, type NovaMarcacao } from 
 type Resultado<T> = { ok: true; dados: T } | { ok: false; erro: string };
 
 export async function listarMarcacoesAction(campaignId: string, ano: number, mes: number): Promise<Resultado<MarcacaoCalendario[]>> {
+  if (!Number.isInteger(ano) || !Number.isInteger(mes)) return { ok: false, erro: "Mês inválido." };
+  return listar(campaignId, { ano, mes });
+}
+
+/** Todas as marcações visíveis da campanha — a agenda da janela de tempo. */
+export async function listarTodasMarcacoesAction(campaignId: string): Promise<Resultado<MarcacaoCalendario[]>> {
+  return listar(campaignId, null);
+}
+
+async function listar(campaignId: string, filtro: { ano: number; mes: number } | null): Promise<Resultado<MarcacaoCalendario[]>> {
   const acesso = await resolveCampaignAccess(campaignId);
   if (acesso.kind !== "ok") return { ok: false, erro: "Você não tem acesso a esta campanha." };
-  if (!Number.isInteger(ano) || !Number.isInteger(mes)) return { ok: false, erro: "Mês inválido." };
   const client = await getScopedTableClient();
+  let consulta = client.from("vtt_calendar_marks").select("id, game_year, game_month, game_day, kind, title, visibility, official, author_id")
+    .eq("campaign_id", campaignId);
+  if (filtro) consulta = consulta.eq("game_year", filtro.ano).eq("game_month", filtro.mes);
   const [{ data, error }, { data: roster }] = await Promise.all([
-    client.from("vtt_calendar_marks").select("id, game_year, game_month, game_day, kind, title, visibility, official, author_id")
-      .eq("campaign_id", campaignId).eq("game_year", ano).eq("game_month", mes).order("created_at"),
+    consulta.order("created_at"),
     client.rpc("list_campaign_roster", { p_campaign_id: campaignId }),
   ]);
   if (error) return { ok: false, erro: error.message };

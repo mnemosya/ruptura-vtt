@@ -1,0 +1,88 @@
+/*
+ * TEMPO E CLIMA — CSS da prancheta "Tempo e clima · A · painel de comando"
+ * (board `TempoA.dc.html`) copiado LITERALMENTE, só escopado em `.tb`.
+ *
+ * Não reinterpretar: cada valor aqui é o da prancheta. As únicas trocas
+ * são as fontes pelo nome → variáveis do `next/font` (o nome solto não
+ * resolve no app) e `:root` → `.tb`. Conferir com
+ *   node scripts/dev/compare-board.mjs TempoA.dc.html "http://localhost:3000/dev/tempo"
+ */
+
+.tb, .tb * { box-sizing: border-box; }
+.tb .u { all: unset; box-sizing: border-box; }
+.tb {
+  --mola: cubic-bezier(.3,1.4,.5,1); --sai: cubic-bezier(.2,.8,.2,1);
+  --cy: #00d4ff; --am: #f5a200; --vm: #ff6b7d; --gelo: #cfeff4; --texto: #b8d8e8; --apagado: #7f95b3; --verde: #22d3aa; --roxo: #c48bff;
+}
+.tb .idlab { font-family: var(--font-mono), monospace; font-weight: 700; font-size: 10px; letter-spacing: .2em; }
+.tb .painelc { position: relative; background: #06121c; border: 1px solid rgba(0,212,255,.16); }
+.tb .idhead { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-bottom: 1px solid rgba(0,212,255,.14); }
+.tb .winbtn { width: 30px; height: 30px; display: grid; place-items: center; color: var(--apagado); border: 1px solid rgba(0,212,255,.18); transition: background .15s, color .15s; }
+.tb .winbtn.fecha { color: var(--vm); border-color: rgba(255,107,125,.4); }
+.tb .winbtn.fecha:hover { background: var(--vm); color: #06121c; }
+.tb .navb { width: 28px; height: 28px; display: grid; place-items: center; color: var(--texto); border: 1px solid rgba(0,212,255,.22); background: #06121c; transition: background .15s, color .15s, transform .12s var(--mola); }
+.tb .navb:hover { background: rgba(0,212,255,.14); color: var(--gelo); }
+.tb .navb:active { transform: scale(.9); }
+.tb .hojeb { padding: 5px 10px; border: 1px solid rgba(0,212,255,.3); color: var(--cy); font-family: var(--font-mono), monospace; font-weight: 700; font-size: 9px; letter-spacing: .14em; transition: background .15s; }
+.tb .hojeb:hover { background: rgba(0,212,255,.12); }
+.tb .dia { position: relative; display: grid; place-items: center; min-height: 40px; border: 1px solid rgba(127,149,179,.16); background: rgba(11,34,48,.45); color: var(--texto); font-family: var(--font-mono), monospace; font-size: 14px; transition: border-color .12s, background .12s, color .12s; }
+.tb .dia:hover { border-color: rgba(0,212,255,.5); color: var(--gelo); background: rgba(0,212,255,.07); }
+.tb .dia.sel { border-color: var(--cy); background: rgba(0,212,255,.16); color: var(--gelo); box-shadow: inset 0 0 0 1px rgba(0,212,255,.45); }
+.tb .diasem { display: grid; place-items: center; height: 20px; color: var(--apagado); font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .12em; }
+.tb .marcas { position: absolute; left: 0; right: 0; bottom: 4px; display: flex; justify-content: center; gap: 3px; height: 5px; pointer-events: none; }
+.tb .marca { width: 5px; height: 5px; border-radius: 50%; }
+.tb .tt { position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); width: 180px; z-index: 30; background: #081826; border: 1px solid rgba(0,212,255,.35); box-shadow: 0 10px 30px rgba(0,0,0,.6); padding: 9px 10px; display: none; pointer-events: none; text-align: left; }
+.tb .dia:hover .tt { display: block; }
+.tb .tt-cab { display: flex; justify-content: space-between; font-family: var(--font-mono), monospace; font-size: 9px; letter-spacing: .08em; color: var(--apagado); margin-bottom: 6px; }
+.tb .tt-item { display: flex; gap: 7px; align-items: flex-start; margin-top: 5px; }
+.tb .tt-item b { display: block; font-family: var(--font-corpo), sans-serif; font-weight: 600; font-size: 11px; color: var(--gelo); line-height: 1.2; }
+.tb .tt-item small { font-family: var(--font-mono), monospace; font-size: 8px; color: var(--apagado); }
+.tb .atbtn { padding: 10px; text-align: center; background: rgba(0,212,255,.05); border: 1px solid rgba(0,212,255,.2); color: var(--texto); font-family: var(--font-oxanium), sans-serif; font-weight: 700; font-size: 11px; letter-spacing: .1em; transition: background .14s, color .14s, transform .1s var(--mola); }
+.tb .atbtn:hover { background: rgba(0,212,255,.14); color: var(--gelo); }
+.tb .atbtn:active { transform: scale(.95); }
+.tb .primary { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: var(--cy); color: #06121c; font-family: var(--font-oxanium), sans-serif; font-weight: 800; font-size: 12px; letter-spacing: .14em; clip-path: polygon(9px 0,100% 0,calc(100% - 9px) 100%,0 100%); transition: filter .14s, transform .1s var(--mola); }
+.tb .primary:hover { filter: brightness(1.1); }
+.tb .primary:active { transform: scale(.97); }
+.tb .ghost { display: flex; align-items: center; justify-content: center; gap: 7px; padding: 11px; border: 1px solid rgba(0,212,255,.28); color: var(--cy); font-family: var(--font-oxanium), sans-serif; font-weight: 700; font-size: 11px; letter-spacing: .12em; transition: background .14s; }
+.tb .ghost:hover { background: rgba(0,212,255,.1); }
+.tb .ghost.on { background: rgba(0,212,255,.14); border-color: var(--cy); }
+.tb .chip { padding: 7px 10px; border: 1px solid rgba(127,149,179,.28); color: var(--apagado); background: transparent; font-family: var(--font-mono), monospace; font-weight: 700; font-size: 10px; letter-spacing: .06em; transition: background .12s, color .12s, border-color .12s; }
+.tb .chip:hover { border-color: rgba(0,212,255,.5); color: var(--texto); }
+.tb .chip.on { border-color: var(--cy); background: rgba(0,212,255,.16); color: var(--gelo); }
+.tb .ev { display: flex; align-items: center; gap: 10px; padding-right: 11px; border: 1px solid rgba(0,212,255,.1); background: rgba(11,34,48,.3); min-height: 46px; overflow: hidden; transition: border-color .12s, background .12s, transform .1s var(--mola); }
+.tb .ev:hover { border-color: rgba(0,212,255,.3); background: rgba(0,212,255,.06); }
+.tb .ev:active { transform: scale(.99); }
+.tb .ev-bar { flex: none; width: 3px; align-self: stretch; }
+.tb .ev-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; margin-left: 3px; }
+.tb .agenda-rol { padding: 0 14px 10px; display: flex; flex-direction: column; gap: 7px; }
+.tb .colD-rol::-webkit-scrollbar { width: 8px; }
+.tb .colD-rol::-webkit-scrollbar-track { background: rgba(0,212,255,.04); }
+.tb .colD-rol::-webkit-scrollbar-thumb { background: rgba(0,212,255,.28); border-radius: 0; }
+.tb .colD-rol::-webkit-scrollbar-thumb:hover { background: rgba(0,212,255,.45); }
+.tb .cmp { width: 100%; background: #0b1a26; border: 1px solid rgba(0,212,255,.22); color: var(--gelo); font-family: var(--font-mono), monospace; font-size: 12px; padding: 7px 9px; }
+.tb .cmp:focus { outline: 1px solid var(--cy); }
+.tb .editwrap { overflow: auto; }
+.tb .editwrap::-webkit-scrollbar { width: 8px; }
+.tb .editwrap::-webkit-scrollbar-thumb { background: rgba(0,212,255,.25); }
+.tb .menu { position: absolute; z-index: 50; width: 188px; background: #081826; border: 1px solid rgba(0,212,255,.3); box-shadow: 0 14px 40px rgba(0,0,0,.7); }
+.tb .menu-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; color: var(--texto); font-family: var(--font-corpo), sans-serif; font-size: 13px; transition: background .12s, color .12s; }
+.tb .menu-item:hover { background: rgba(0,212,255,.12); color: var(--gelo); }
+.tb .backdrop { position: absolute; inset: 0; z-index: 40; }
+.tb .novain { width: 100%; background: #0b1a26; border: 1px solid rgba(0,212,255,.22); color: var(--gelo); font-family: var(--font-corpo), sans-serif; font-size: 13px; padding: 9px 11px; }
+.tb .novain:focus { outline: 1px solid var(--cy); }
+.tb .nbtn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px; border: 1px solid rgba(127,149,179,.28); color: var(--apagado); background: transparent; font-family: var(--font-corpo), sans-serif; font-weight: 600; font-size: 11px; transition: all .12s; }
+.tb .nbtn:hover { border-color: rgba(0,212,255,.5); color: var(--texto); }
+.tb .nbtn.on { border-color: var(--cy); background: rgba(0,212,255,.16); color: var(--gelo); }
+.tb .aviso { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 60; background: #081826; border: 1px solid var(--cy); color: var(--gelo); font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: .06em; padding: 9px 16px; box-shadow: 0 10px 30px rgba(0,0,0,.6); }
+
+/* ── dois níveis: compacto + completo com abas ─────────────────────
+ * Peças novas no mesmo vocabulário da prancheta (idlab + sublinhado ciano). */
+.tb .aba { flex: 1; padding: 12px 0 10px; text-align: center; color: var(--apagado); border-bottom: 2px solid transparent; font-family: var(--font-mono), monospace; font-weight: 700; font-size: 10px; letter-spacing: .2em; transition: color .12s, border-color .12s, background .12s; }
+.tb .aba:hover { color: var(--texto); background: rgba(0,212,255,.05); }
+.tb .aba.on { color: var(--gelo); border-bottom-color: var(--cy); }
+.tb .aba:focus-visible, .tb .winbtn:focus-visible, .tb .dia:focus-visible, .tb .ev:focus-visible { outline: 1px solid var(--cy); outline-offset: 1px; }
+.tb .winbtn:not(.fecha):hover { background: rgba(0,212,255,.14); color: var(--gelo); }
+/* balão do dia: nas duas primeiras linhas abre para baixo; nas bordas, encosta */
+.tb .tt.baixo { bottom: auto; top: calc(100% + 6px); }
+.tb .tt.esq { left: 0; transform: none; }
+.tb .tt.dir { left: auto; right: 0; transform: none; }
