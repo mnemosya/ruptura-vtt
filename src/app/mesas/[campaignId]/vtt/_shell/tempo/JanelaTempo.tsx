@@ -28,6 +28,7 @@ import {
   NOMES_TIPO_MARCACAO, NOMES_VISIBILIDADE, TIPOS_MARCACAO, TITULO_MARCACAO_MAX, VISIBILIDADES_MARCACAO,
   diasEntre, distanciaRelativa, type MarcacaoCalendario, type NovaMarcacao, type TipoMarcacao, type VisibilidadeMarcacao,
 } from "../../_dominio/marcacoesCalendario";
+import { HoraEditavel } from "./HoraEditavel";
 import "./tempo-board.css";
 
 /* ── estilos inline no formato da prancheta ──────────────────────── */
@@ -168,7 +169,6 @@ export function JanelaTempo(p: PropsJanelaTempo) {
     .sort((a, b) => { const fa = a.dias < 0 ? 1 : 0, fb = b.dias < 0 ? 1 : 0; return fa !== fb ? fa - fb : Math.abs(a.dias) - Math.abs(b.dias); });
   const proximo = eventos.find((e) => e.dias >= 0) ?? null;
   const IconeCond = ICONE[t.condicao];
-  const heroBorda = esp ? ROXO : CY;
   const heroBg = esp ? "linear-gradient(135deg,rgba(0,212,255,.06),rgba(196,139,255,.1)),#06121c" : "#06121c";
   const tag = esp ? "◇ ANÔMALA" : estacaoDoMes(t.mes ?? 1).toUpperCase();
   const tagCor = esp ? ROXO : APAGADO;
@@ -184,7 +184,7 @@ export function JanelaTempo(p: PropsJanelaTempo) {
 
   /* ── peças ─────────────────────────────────────────────────────── */
   const hero = (grande: boolean) => (
-    <div className="painelc" style={css(`flex:none;border-top:2px solid ${heroBorda};background:${heroBg}`)}>
+    <div className="painelc" style={css(`flex:none;background:${heroBg}`)}>
       <div className="idhead" style={css("border-bottom-color:rgba(0,212,255,.14)")}><span className="idlab" style={css("color:var(--apagado)")}>CONDIÇÕES ATUAIS</span><span className="idlab" style={{ color: tagCor }}>{tag}</span></div>
       <div style={css(grande ? "padding:16px;display:flex;align-items:center;gap:16px" : "padding:12px;display:flex;align-items:center;gap:12px")}>
         <span style={css(`flex:none;width:${grande ? 58 : 46}px;height:${grande ? 58 : 46}px;display:grid;place-items:center;color:${condCor};border:1px solid ${condBorda};background:${condBg2}`)}><IconeCond size={grande ? 30 : 24} strokeWidth={1.8} aria-hidden="true" /></span>
@@ -201,9 +201,9 @@ export function JanelaTempo(p: PropsJanelaTempo) {
   const aviso = avisoClima && <p style={css("flex:none;margin:0;padding:9px 11px;background:rgba(196,139,255,.08);border:1px solid rgba(196,139,255,.3);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.04em;color:var(--roxo)")}>{avisoClima}</p>;
   const atalhos = ehNarrador && (
     <div style={css("flex:none;display:grid;grid-template-columns:repeat(3,1fr);gap:7px")}>
-      <button type="button" className="u atbtn" disabled={p.salvando} onClick={() => avancar(10, "+10 minutos")} style={css("cursor:pointer")}>+10 MIN</button>
-      <button type="button" className="u atbtn" disabled={p.salvando} onClick={() => avancar(60, "+1 hora")} style={css("cursor:pointer")}>+1 HORA</button>
-      <button type="button" className="u atbtn" disabled={p.salvando} onClick={() => avancar(1440, "+1 dia")} style={css("cursor:pointer")}>+1 DIA</button>
+      <button type="button" className="rv-btn tb-acao" disabled={p.salvando} onClick={() => avancar(10, "+10 minutos")} style={css("cursor:pointer")}>+10 MIN</button>
+      <button type="button" className="rv-btn tb-acao" disabled={p.salvando} onClick={() => avancar(60, "+1 hora")} style={css("cursor:pointer")}>+1 HORA</button>
+      <button type="button" className="rv-btn tb-acao" disabled={p.salvando} onClick={() => avancar(1440, "+1 dia")} style={css("cursor:pointer")}>+1 DIA</button>
     </div>
   );
   const linhaEvento = ({ m, dias: dd }: { m: MarcacaoCalendario; dias: number }, aoClicar: () => void) => (
@@ -220,9 +220,8 @@ export function JanelaTempo(p: PropsJanelaTempo) {
   );
   const irParaMes = (m: MarcacaoCalendario) => { setMesNav(m.ano === t.ano && m.mes === t.mes ? null : { ano: m.ano, mes: m.mes }); setMenu(null); };
   const publicar = (
-    <button type="button" className="u primary" disabled={p.salvando || (p.existeEstado && !mud)}
-      onClick={async () => { if (await p.aoPublicar()) avisar("Alterações publicadas"); }}
-      style={{ ...css("cursor:pointer;padding:10px 16px"), opacity: mud || !p.existeEstado ? 1 : 0.4 }}>PUBLICAR</button>
+    <button type="button" className="rv-btn rv-btn--pri" disabled={p.salvando || (p.existeEstado && !mud)}
+      onClick={async () => { if (await p.aoPublicar()) avisar("Alterações publicadas"); }}>Publicar</button>
   );
   const barraPublicar = (
     <div style={css("flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:#06121c;border-top:1px solid rgba(0,212,255,.16)")}>
@@ -274,7 +273,7 @@ export function JanelaTempo(p: PropsJanelaTempo) {
       </div>
       <div style={css("flex:none;display:flex;align-items:center;justify-content:space-between;padding-top:3px;border-top:1px solid rgba(0,212,255,.1)")}>
         <span className="idlab" style={css("color:var(--cy)")}>{temData ? `D${diaDaSemanaImperial(t.mes!, t.dia!)} · DIA ${t.dia}` : "DATA NÃO DEFINIDA"}</span>
-        <span style={css("font-family:Teko,sans-serif;font-weight:600;font-size:26px;line-height:.8;color:var(--gelo)")}>{t.hora ?? "––:––"}</span>
+        <HoraEditavel hora={t.hora} editavel={ehNarrador} aoMudar={(hora) => p.aoMudarData({ hora })} estilo={css("font-family:Teko,sans-serif;font-weight:600;font-size:26px;line-height:.8;color:var(--gelo)")} />
       </div>
       {atalhos}
     </div>
@@ -287,7 +286,7 @@ export function JanelaTempo(p: PropsJanelaTempo) {
       {aviso}
       {!ehNarrador && p.existeEstado && t.descricao && <p style={css("margin:0;font-family:'Exo 2',sans-serif;font-size:13px;line-height:1.5;color:var(--texto)")}>{t.descricao}</p>}
       {ehNarrador && <>
-        <button type="button" className="u primary" disabled={p.salvando} onClick={sortear} style={css("cursor:pointer;flex:none")}>{iconeDado}SORTEAR CLIMA</button>
+        <button type="button" className="rv-btn rv-btn--pri tb-acao" disabled={p.salvando} onClick={sortear}>{iconeDado}Sortear clima</button>
         <div className="editwrap" style={css("flex:none;display:flex;flex-direction:column;gap:13px")}>
           <div style={css("display:flex;flex-direction:column;gap:6px")}>
             <span className="idlab" style={css("color:var(--cy)")}>CONDIÇÃO</span>
@@ -305,7 +304,7 @@ export function JanelaTempo(p: PropsJanelaTempo) {
           </div>
           <div style={css("display:grid;grid-template-columns:1fr 1fr;gap:10px")}>
             <label style={css("display:flex;flex-direction:column;gap:5px")}><span className="idlab" style={css("color:var(--apagado)")}>ANO CI</span><input className="u cmp" type="number" min={0} max={9999} value={t.ano ?? ""} onChange={(e) => p.aoMudarData({ ano: e.target.value === "" ? null : Number(e.target.value) })} /></label>
-            <label style={css("display:flex;flex-direction:column;gap:5px")}><span className="idlab" style={css("color:var(--apagado)")}>HORÁRIO</span><input className="u cmp" type="time" value={t.hora ?? ""} onChange={(e) => p.aoMudarData({ hora: e.target.value || null })} /></label>
+            <label style={css("display:flex;flex-direction:column;gap:5px")}><span className="idlab" style={css("color:var(--apagado)")}>HORÁRIO</span><span className="u cmp"><HoraEditavel hora={t.hora ?? "12:00"} editavel aoMudar={(hora) => p.aoMudarData({ hora })} /></span></label>
           </div>
           <div style={css("display:grid;grid-template-columns:1fr 1fr;gap:10px")}>
             <label style={css("display:flex;flex-direction:column;gap:5px")}><span className="idlab" style={css("color:var(--apagado)")}>TEMPERATURA °C</span><input className="u cmp" type="number" min={-100} max={100} step="0.1" value={t.temperaturaC ?? ""} onChange={(e) => p.aoAlterar({ temperaturaC: e.target.value === "" ? null : Number(e.target.value) })} /></label>
@@ -360,7 +359,7 @@ export function JanelaTempo(p: PropsJanelaTempo) {
         {aviso}
         <div style={css("display:flex;align-items:center;justify-content:space-between;padding:2px 2px 0")}>
           <span className="idlab" style={css("color:var(--cy)")}>{dataTxt}</span>
-          <span style={css("font-family:Teko,sans-serif;font-weight:600;font-size:28px;line-height:.8;color:var(--gelo)")}>{t.hora ?? "––:––"}</span>
+          <HoraEditavel hora={t.hora} editavel={ehNarrador} aoMudar={(hora) => p.aoMudarData({ hora })} estilo={css("font-family:Teko,sans-serif;font-weight:600;font-size:28px;line-height:.8;color:var(--gelo)")} />
         </div>
         {proximo && <div style={css("display:flex;flex-direction:column;gap:6px")}>
           <span className="idlab" style={css("color:var(--apagado)")}>PRÓXIMO EVENTO</span>
@@ -368,11 +367,11 @@ export function JanelaTempo(p: PropsJanelaTempo) {
         </div>}
         {atalhos}
         <div style={css(ehNarrador ? "display:grid;grid-template-columns:1fr 1fr;gap:10px" : "display:grid;grid-template-columns:1fr;gap:10px")}>
-          {ehNarrador && <button type="button" className="u primary" disabled={p.salvando} onClick={sortear} style={css("cursor:pointer")}>{iconeDado}SORTEAR CLIMA</button>}
-          <button type="button" className="u ghost" onClick={() => abrir("calendario")} style={css("cursor:pointer")}>CALENDÁRIO</button>
+          {ehNarrador && <button type="button" className="rv-btn rv-btn--pri tb-acao" disabled={p.salvando} onClick={sortear}>{iconeDado}Sortear clima</button>}
+          <button type="button" className="rv-btn tb-acao" onClick={() => abrir("calendario")}>Calendário</button>
         </div>
       </div>}
-      {!completo && ehNarrador && (mud || !p.existeEstado) && <div style={css("position:relative")}>{barraPublicar}</div>}
+      {!completo && ehNarrador && <div style={css("position:relative")}>{barraPublicar}</div>}
 
       {/* COMPLETO · abas */}
       {completo && <>
@@ -426,7 +425,7 @@ export function JanelaTempo(p: PropsJanelaTempo) {
           </div>
           <div style={css("display:flex;align-items:center;justify-content:space-between;padding-top:2px")}>
             <span style={css("font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--apagado)")}>Enter salva · Esc fecha</span>
-            <button type="submit" className="u primary" disabled={!novaTitulo.trim()} style={{ ...css("cursor:pointer;padding:11px 18px"), opacity: novaTitulo.trim() ? 1 : 0.4 }}>SALVAR MARCAÇÃO</button>
+            <button type="submit" className="rv-btn rv-btn--pri" disabled={!novaTitulo.trim()}>Salvar marcação</button>
           </div>
         </form>
       </div>}

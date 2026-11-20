@@ -175,6 +175,8 @@ export function TempoDaCampanha({ campaignId, ehNarrador }: { campaignId: string
       aoAvancar={avancar} aoSortear={sortear} aoCiclarCondicao={ciclarCondicao}
       aoMudarData={mudarData} aoAlterar={alterar}
       aoPublicar={() => salvar(rascunho)}
-      aoTornarDiaAtual={tornarDiaAtual} aoCriarMarcacao={criarMarcacao} />, document.body)}
+      aoTornarDiaAtual={tornarDiaAtual} aoCriarMarcacao={criarMarcacao} />,
+      // Dentro da mesa: tokens, chanfro e botões (`.rv-btn`) são os do VTT.
+      chipRef.current?.closest(".rv-mesa") ?? document.body)}
   </>;
 }

@@ -86,3 +86,33 @@
 .tb .tt.baixo { bottom: auto; top: calc(100% + 6px); }
 .tb .tt.esq { left: 0; transform: none; }
 .tb .tt.dir { left: auto; right: 0; transform: none; }
+
+/* ── botões do VTT (`.rv-btn`) dentro da janela ────────────────────
+ * A janela mora dentro de `.rv-mesa`: tokens, chanfro e `.rv-btn` são os
+ * da mesa. Aqui só a largura cheia nas grades de ação. */
+.tb .rv-btn.tb-acao { width: 100%; justify-content: center; padding: 9px 10px; }
+.tb .rv-btn svg { flex: none; }
+
+/* ── horário editável no lugar (HoraEditavel) ───────────────────── */
+.tb .hora-ed { display: inline-flex; align-items: baseline; }
+.tb .hora-seg {
+  all: unset; box-sizing: content-box; width: 2ch; padding: 0 1px; text-align: center;
+  font: inherit; color: inherit; line-height: inherit; letter-spacing: inherit; cursor: text;
+  --rv-notch: 3px; transition: background .12s, box-shadow .12s;
+}
+.tb .hora-seg:hover { background: rgba(0,212,255,.1); }
+.tb .hora-seg:focus { background: rgba(0,212,255,.18); box-shadow: inset 0 -2px 0 var(--cy); }
+.tb .hora-seg::selection { background: rgba(0,212,255,.45); color: var(--gelo); }
+.tb span.cmp { display: flex; }
+
+/* campos numéricos sem as setinhas nativas */
+.tb input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+.tb input[type="number"]::-webkit-inner-spin-button,
+.tb input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* A regra global de chanfro da mesa pega todo input/tab: o segmento de
+   hora e as abas são retos (sublinhado é a marca deles, não a casca). */
+.tb .hora-seg:not(#_), .tb .aba:not(#_) { border-radius: 0 !important; corner-shape: round; }
+.tb .aba:not(#_) { background: transparent; }
+.tb .aba:not(#_):hover { background: rgba(0,212,255,.05); }
+.tb .hora-seg:focus { background: rgba(0,212,255,.12); }

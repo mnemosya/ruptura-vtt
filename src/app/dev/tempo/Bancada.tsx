@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import "../../mesas/[campaignId]/vtt/vtt.css";
+import "../../mesas/[campaignId]/vtt/_tema/tema-forja.css";
 import { JanelaTempo } from "../../mesas/[campaignId]/vtt/_shell/tempo/JanelaTempo";
 import {
   CONDICOES_CLIMATICAS, ajustarContextoManual, avancarTempoImperial, definirClimaManual, minutoImperial,
@@ -31,8 +33,10 @@ export function Bancada() {
   const [t, setT] = useState(INICIAL);
   const [marcacoes, setMarcacoes] = useState(MARCACOES);
   const mud = JSON.stringify(t) !== JSON.stringify(publicado);
+  // Como no VTT: o tema Forja vai no <html>.
+  useEffect(() => { document.documentElement.setAttribute("data-tema", "forja"); }, []);
   return (
-    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#02070b" }}>
+    <main className="rv-mesa" style={{ display: "grid", placeItems: "center" }}>
       <JanelaTempo tempo={t} existeEstado ehNarrador temMudancas={mud} salvando={false} marcacoes={marcacoes}
         aoFechar={() => {}}
         aoEscolherDia={(d) => setT((a) => ajustarContextoManual(a, d))}
