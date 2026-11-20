@@ -78,10 +78,19 @@ export function validarTempo(t: TempoCampanha): string | null {
 const BASE: Record<Regiao, Partial<Record<Condicao, number>>> = {
   Vastra: { ceu_limpo: 10, parcialmente_nublado: 15, nublado: 22, neblina: 13, chuva_leve: 10, chuva: 12, chuva_forte: 3, tempestade: 2, neve_leve: 8, neve: 6, nevasca: 2 },
   Beldran: { ceu_limpo: 37, parcialmente_nublado: 28, nublado: 12, neblina: 6, chuva_leve: 9, chuva: 6, chuva_forte: 2, tempestade: 1 },
-  Talesh: { ceu_limpo: 9, parcialmente_nublado: 13, nublado: 16, neblina: 10, chuva_leve: 12, chuva: 18, chuva_forte: 14, tempestade: 8 },
+  Talesh: { ceu_limpo: 9, parcialmente_nublado: 13, nublado: 16, neblina: 10, chuva_leve: 18, chuva: 18, chuva_forte: 8, tempestade: 8 },
   Kravus: { ceu_limpo: 5, parcialmente_nublado: 7, nublado: 19, neblina: 12, neve_leve: 18, neve: 23, nevasca: 16 },
-  Torvash: { ceu_limpo: 21, parcialmente_nublado: 10, nublado: 10, neblina: 6, chuva_leve: 7, chuva: 8, chuva_forte: 6, tempestade: 8, chuva_iridescente: 9, nevoeiro_cristalino: 7, tempestade_arcana: 8 },
+  Torvash: { ceu_limpo: 21, parcialmente_nublado: 10, nublado: 10, neblina: 6, chuva_leve: 7, chuva: 8, chuva_forte: 6, tempestade: 8 },
 };
+const VERAO_VASTRA: Partial<Record<Condicao, number>> = {
+  ceu_limpo: 47, parcialmente_nublado: 26, nublado: 14, neblina: 6,
+  chuva_leve: 9, chuva: 6, chuva_forte: 2, tempestade: 1.5,
+};
+const CHANCE_ARCANA: Record<Regiao, number> = { Vastra: 0.16, Beldran: 0.16, Talesh: 0.20, Kravus: 0.16, Torvash: 0.30 };
+const PESOS_ARCANOS: Partial<Record<Condicao, number>> = {
+  chuva_iridescente: 9, nevoeiro_cristalino: 7, tempestade_arcana: 8,
+};
+const HORAS_NEVASCA_KRAVUS: Record<Estacao, number> = { inverno: 48, primavera: 36, verao: 24, outono: 36 };
 const INSTABILIDADE: Record<Regiao, number> = { Beldran: 0.6, Vastra: 1, Kravus: 1, Talesh: 1.4, Torvash: 2.8 };
 const TEMPERATURA_BASE: Record<Regiao, Record<Estacao, number>> = {
   Vastra: { inverno: -9, primavera: 5, verao: 13, outono: 4 },
@@ -132,13 +141,23 @@ function escolher<T>(itens: readonly [T, number][], random: () => number): T {
   for (const [valor, peso] of itens) { alvo -= Math.max(0, peso); if (alvo < 0) return valor; }
   return itens[itens.length - 1][0];
 }
-function pesoCondicao(regiao: Regiao, estacao: Estacao, hora: number, condicao: Condicao, anterior: Condicao): number {
-  let peso = BASE[regiao][condicao] ?? 0;
+function fatorChuvaBeldran(mes: number, dia: number): number {
+  const estacao = estacaoDoMes(mes);
+  if (estacao === "inverno") return 2;
+  if (estacao === "verao") return 0.2;
+  const diaNaEstacao = ((mes - 3) % 3) * 30 + dia - 1;
+  const umidade = estacao === "outono" ? diaNaEstacao / 89 : (89 - diaNaEstacao) / 89;
+  return 0.2 + 1.8 * umidade;
+}
+function pesoCondicao(regiao: Regiao, estacao: Estacao, hora: number, condicao: Condicao, anterior: Condicao, fatorBeldran: number): number {
+  const base = regiao === "Vastra" && estacao === "verao" ? VERAO_VASTRA : BASE[regiao];
+  let peso = PESOS_ARCANOS[condicao] ?? base[condicao] ?? 0;
+  if (regiao === "Torvash" && condicao === "tempestade_arcana") peso = 2;
   if (FRIO.has(condicao)) peso *= estacao === "inverno" ? 2.8 : estacao === "verao" ? (regiao === "Kravus" ? 0.75 : 0.12) : 1.1;
-  if (regiao === "Beldran" && CHUVA.has(condicao)) peso *= estacao === "inverno" ? 2 : estacao === "verao" ? 0.2 : 0.8;
-  if (regiao === "Vastra" && CHUVA.has(condicao)) peso *= estacao === "inverno" ? 0.55 : 1.2;
-  if (regiao === "Talesh" && CHUVA.has(condicao)) peso *= estacao === "verao" || estacao === "primavera" ? 1.4 : 0.9;
-  if (regiao === "Kravus" && CHUVA.has(condicao)) peso *= 0.05;
+  const chuvaComum = CHUVA.has(condicao) && !(condicao in PESOS_ARCANOS);
+  if (regiao === "Beldran" && chuvaComum) peso *= fatorBeldran;
+  if (regiao === "Vastra" && estacao !== "verao" && chuvaComum) peso *= estacao === "inverno" ? 0.55 : 1.2;
+  if (regiao === "Talesh" && chuvaComum) peso *= estacao === "verao" || estacao === "primavera" ? 1.4 : 0.9;
   if (condicao === "neblina" || condicao === "nevoeiro_cristalino") peso *= hora >= 4 && hora <= 9 ? 1.7 : 0.8;
   if (condicao === "ceu_limpo") peso *= hora >= 10 && hora <= 17 ? 1.2 : 0.9;
   if (condicao === anterior) peso *= regiao === "Torvash" ? 0.65 : 1.7;
@@ -154,14 +173,32 @@ export function temperaturaAlvo(t: Pick<TempoCampanha, "regiao" | "mes" | "hora"
     t.condicao === "ceu_limpo" && estacao === "verao" ? 3 : t.condicao === "nublado" ? -1 : 0;
   return Math.round(TEMPERATURA_BASE[t.regiao][estacao] + diurno + ajuste);
 }
+// Os últimos 60 dias da primavera e os primeiros 60 do outono fazem a transição.
+function influenciaVeraoVastra(mes: number, dia: number): number {
+  if (mes === 4 || mes === 5) return ((mes - 4) * 30 + dia - 1) / 59;
+  if (mes === 9 || mes === 10) return 1 - ((mes - 9) * 30 + dia - 1) / 59;
+  return 0;
+}
+
 /** Sorteio coeso e reproduzível; preserva a data e a hora da campanha. */
 export function sortearClima(seed: number, tempo: TempoCampanha): TempoCampanha {
   const agora = minutoImperial(tempo);
   if (agora === null || !REGIOES.includes(tempo.regiao)) throw new Error("Defina uma data imperial válida antes de sortear.");
   const random = geradorSeed(seed);
   const estacao = estacaoDoMes(tempo.mes!);
-  const condicao = escolher(CONDICOES_CLIMATICAS.map(({ id }) => [id, pesoCondicao(tempo.regiao, estacao, Number(tempo.hora!.slice(0, 2)), id, tempo.condicao)] as [Condicao, number]), random);
-  const baseHoras = condicao === "nevasca" && tempo.regiao === "Kravus" ? 48 : condicao === "tempestade" || condicao === "tempestade_arcana" ? 6 : 18;
+  const arcano = random() < CHANCE_ARCANA[tempo.regiao];
+  const candidatas = CONDICOES_CLIMATICAS.filter(({ id }) => (id in PESOS_ARCANOS) === arcano);
+  const hora = Number(tempo.hora!.slice(0, 2));
+  const influenciaVerao = tempo.regiao === "Vastra" ? influenciaVeraoVastra(tempo.mes!, tempo.dia!) : 0;
+  const fatorBeldran = tempo.regiao === "Beldran" ? fatorChuvaBeldran(tempo.mes!, tempo.dia!) : 1;
+  const pesos = candidatas.map(({ id }): [Condicao, number] => {
+    const atual = pesoCondicao(tempo.regiao, estacao, hora, id, tempo.condicao, fatorBeldran);
+    if (influenciaVerao === 0 || arcano) return [id, atual];
+    const verao = pesoCondicao("Vastra", "verao", hora, id, tempo.condicao, fatorBeldran);
+    return [id, atual * (1 - influenciaVerao) + verao * influenciaVerao];
+  });
+  const condicao = escolher(pesos, random);
+  const baseHoras = condicao === "nevasca" && tempo.regiao === "Kravus" ? HORAS_NEVASCA_KRAVUS[estacao] : condicao === "tempestade" || condicao === "tempestade_arcana" ? 6 : 18;
   const duracao = Math.max(60, Math.round((baseHoras * (0.65 + random() * 0.85) / INSTABILIDADE[tempo.regiao]) * 60));
   const vento = escolher(VENTO_POR_CONDICAO[condicao], random);
   const alvo = temperaturaAlvo({ ...tempo, condicao });
