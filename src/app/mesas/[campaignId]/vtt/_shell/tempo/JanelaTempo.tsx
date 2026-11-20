@@ -111,13 +111,8 @@ export function JanelaTempo(p: PropsJanelaTempo) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [completo, setCompleto] = useState(false);
   const [aba, setAba] = useState<Aba>("calendario");
-  /** Dia aberto pelo menu ("Abrir agenda"): os eventos dele ficam realçados na Agenda. */
+  /** Dia aberto pelo menu ("Abrir agenda"): a Agenda mostra só os eventos dele. */
   const [destaque, setDestaque] = useState<Data | null>(null);
-  const agendaRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (aba !== "agenda" || !destaque) return;
-    agendaRef.current?.querySelector<HTMLElement>("[data-destaque]")?.scrollIntoView({ block: "nearest" });
-  }, [aba, destaque]);
   const [mesNav, setMesNav] = useState<{ ano: number; mes: number } | null>(null);
   const [menu, setMenu] = useState<{ dia: number; x: number; y: number } | null>(null);
   /** Diálogo de marcação: nova (sem `id`) ou edição de uma existente. */
@@ -245,8 +240,7 @@ export function JanelaTempo(p: PropsJanelaTempo) {
   const linhaEvento = ({ m, dias: dd }: { m: MarcacaoCalendario; dias: number }, aoClicar: () => void) => (
     <button type="button" key={m.id} className="u ev" style={css("cursor:pointer;flex:none")}
       aria-label={`${m.titulo}, ${m.dia} de ${MESES_IMPERIAIS[m.mes - 1]}, ${distanciaRelativa(dd)}`} onClick={aoClicar}
-      onContextMenu={(e) => abrirMenuEvento(e, m)} data-menu-aberto={menuEv?.m.id === m.id || undefined}
-      data-destaque={(aba === "agenda" && destaque && destaque.ano === m.ano && destaque.mes === m.mes && destaque.dia === m.dia) || undefined}>
+      onContextMenu={(e) => abrirMenuEvento(e, m)} data-menu-aberto={menuEv?.m.id === m.id || undefined}>
       <span className="ev-bar" style={{ background: COR_TIPO[m.tipo] }}></span>
       <span className="ev-dot" style={{ background: dotFundo(m.tipo), border: dotBorda(m.tipo) }}></span>
       <span style={css("flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;text-align:left")}>
@@ -365,9 +359,20 @@ export function JanelaTempo(p: PropsJanelaTempo) {
   );
 
   /* ── agenda (aba) ──────────────────────────────────────────────── */
+  const doDia = destaque && eventos.filter(({ m }) => m.ano === destaque.ano && m.mes === destaque.mes && m.dia === destaque.dia);
+  const listaAgenda = doDia && doDia.length > 0 ? doDia : eventos;
   const agenda = (
-    <div ref={agendaRef} className="colD-rol" style={css("flex:1;min-height:0;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:7px")}>
-      {eventos.map((e) => linhaEvento(e, () => { irParaMes(e.m); setAba("calendario"); }))}
+    <div className="colD-rol" style={css("flex:1;min-height:0;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:7px")}>
+      {doDia && doDia.length > 0 && destaque && (
+        <div style={css("flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 2px 5px")}>
+          <span style={css("display:flex;flex-direction:column;gap:3px;min-width:0")}>
+            <span className="idlab" style={css("color:var(--cy)")}>D{diaDaSemanaImperial(destaque.mes, destaque.dia)} · {destaque.dia} {MESES_IMPERIAIS[destaque.mes - 1].toUpperCase()} · {destaque.ano} CI</span>
+            <span style={css("font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.04em;color:var(--apagado)")}>{doDia.length} {doDia.length === 1 ? "evento" : "eventos"} · {distanciaRelativa(diasEntre(hoje, destaque))}</span>
+          </span>
+          <button type="button" className="rv-btn" onClick={() => setDestaque(null)}>Ver todos</button>
+        </div>
+      )}
+      {listaAgenda.map((e) => linhaEvento(e, () => { irParaMes(e.m); setAba("calendario"); }))}
       {eventos.length === 0 && <span style={css("padding:16px 2px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--apagado)")}>Nenhum evento marcado · botão direito num dia para criar</span>}
     </div>
   );
