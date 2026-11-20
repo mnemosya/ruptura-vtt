@@ -50,6 +50,7 @@ import { getCurrentUser } from "../../../lib/auth/session";
 import { readAppearOffline } from "../../../lib/campaign/presencePreferenceActions";
 import { GlobalShell } from "../_global/GlobalShell";
 import { contagensDoMenu } from "../_global/contagens";
+import { ChegadaDoLogin } from "../_global/ChegadaDoLogin";
 
 export default async function AreaGlobalLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
@@ -58,15 +59,7 @@ export default async function AreaGlobalLayout({ children }: { children: React.R
 
   return (
     <>
-    {/* Chegada do login: a tela escura de saída ("ENTRANDO NA MALHA") continua
-        aqui e se dissolve sobre a área, em vez de cortar seco. O login marca a
-        chegada em sessionStorage; este script, antes de qualquer pintura,
-        acende o véu e o apaga da marcação depois que a animação termina. */}
-    <div id="v1-chegada" className="v1-chegada" aria-hidden="true" suppressHydrationWarning>
-      <span className="v1-chegada-ponto" />
-      ENTRANDO NA MALHA
-    </div>
-    <script dangerouslySetInnerHTML={{ __html: SCRIPT_CHEGADA }} />
+    <ChegadaDoLogin />
     <GlobalShell userEmail={user.email ?? "(sem email)"} displayName={user.displayName} avatarPath={user.avatarPath} visualPrefsIniciais={user.visualPrefs}
       aparecerOfflineInicial={presenca.appearOffline} contagens={contagens}>
       {children}
@@ -74,6 +67,3 @@ export default async function AreaGlobalLayout({ children }: { children: React.R
     </>
   );
 }
-
-/** Ver o comentário no JSX. Duração casada com `.v1-chegada` em areaV1.css. */
-const SCRIPT_CHEGADA = `try{if(sessionStorage.getItem("ruptura:chegada")){sessionStorage.removeItem("ruptura:chegada");var v=document.getElementById("v1-chegada");if(v&&!matchMedia("(prefers-reduced-motion: reduce)").matches){v.setAttribute("data-ativa","");setTimeout(function(){v.removeAttribute("data-ativa")},1700)}}}catch(e){}`;

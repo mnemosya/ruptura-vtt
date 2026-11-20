@@ -912,7 +912,7 @@
    Continua a saída de cena do login: o mesmo escuro com "ENTRANDO NA MALHA"
    cobre a área e se dissolve (0,7s após 0,25s), enquanto o fundo pousa do
    mergulho (escala 1,12 → 1) e a casca entra logo depois do véu começar a
-   abrir. Só na chegada (layout.tsx acende `data-ativa` por 1,7s). */
+   abrir. Só na chegada (ChegadaDoLogin acende `data-ativa` por 1,7s). */
 .v1-chegada { display: none; }
 .v1-chegada[data-ativa] {
   position: fixed; inset: 0; z-index: 9990; pointer-events: none;
