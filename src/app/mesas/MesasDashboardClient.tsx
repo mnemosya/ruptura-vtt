@@ -632,7 +632,7 @@ function CreateCampaignModal({
   const [nome, setNome] = useState("");
   const [nomeTocado, setNomeTocado] = useState(false);
   const [previewId, setPreviewId] = useState("preview");
-  const [regiao, setRegiao] = useState<RegiaoIdV12 | null>(null);
+  const [regiao, setRegiao] = useState<RegiaoIdV12 | null>("vastra");
   const [rankingInicial, setRankingInicial] = useState<RankingV12>("F");
   const [descricao, setDescricao] = useState("");
   const [capa, setCapa] = useState<File | null>(null);
