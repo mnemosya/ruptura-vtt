@@ -18,7 +18,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import {
   Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudRainWind, CloudSnow, CloudSun, CloudSunRain,
-  Gem, Maximize2, Minimize2, Pencil, Trash2, Snowflake, Sun, Wind, Zap, type LucideIcon,
+  CalendarSearch, Gem, Maximize2, Minimize2, Pencil, Trash2, Snowflake, Sun, Wind, Zap, type LucideIcon,
 } from "lucide-react";
 import {
   MESES_IMPERIAIS, REGIOES, VENTOS, NOMES_VENTO, condicaoEspecial, diaDaSemanaImperial, estacaoDoMes,
@@ -111,6 +111,13 @@ export function JanelaTempo(p: PropsJanelaTempo) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [completo, setCompleto] = useState(false);
   const [aba, setAba] = useState<Aba>("calendario");
+  /** Dia aberto pelo menu ("Abrir agenda"): os eventos dele ficam realçados na Agenda. */
+  const [destaque, setDestaque] = useState<Data | null>(null);
+  const agendaRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (aba !== "agenda" || !destaque) return;
+    agendaRef.current?.querySelector<HTMLElement>("[data-destaque]")?.scrollIntoView({ block: "nearest" });
+  }, [aba, destaque]);
   const [mesNav, setMesNav] = useState<{ ano: number; mes: number } | null>(null);
   const [menu, setMenu] = useState<{ dia: number; x: number; y: number } | null>(null);
   /** Diálogo de marcação: nova (sem `id`) ou edição de uma existente. */
@@ -150,7 +157,7 @@ export function JanelaTempo(p: PropsJanelaTempo) {
   const pontoDoMenu = (e: ReactMouseEvent) => {
     const r = rootRef.current?.getBoundingClientRect();
     if (!r) return null;
-    const x = Math.min(e.clientX - r.left, r.width - 196), y = Math.min(e.clientY - r.top, r.height - 110);
+    const x = Math.min(e.clientX - r.left, r.width - 196), y = Math.min(e.clientY - r.top, r.height - 150);
     return { x: Math.max(4, x), y: Math.max(4, y) };
   };
   const abrirMenu = (e: ReactMouseEvent, dia: number) => {
@@ -238,7 +245,8 @@ export function JanelaTempo(p: PropsJanelaTempo) {
   const linhaEvento = ({ m, dias: dd }: { m: MarcacaoCalendario; dias: number }, aoClicar: () => void) => (
     <button type="button" key={m.id} className="u ev" style={css("cursor:pointer;flex:none")}
       aria-label={`${m.titulo}, ${m.dia} de ${MESES_IMPERIAIS[m.mes - 1]}, ${distanciaRelativa(dd)}`} onClick={aoClicar}
-      onContextMenu={(e) => abrirMenuEvento(e, m)} data-menu-aberto={menuEv?.m.id === m.id || undefined}>
+      onContextMenu={(e) => abrirMenuEvento(e, m)} data-menu-aberto={menuEv?.m.id === m.id || undefined}
+      data-destaque={(aba === "agenda" && destaque && destaque.ano === m.ano && destaque.mes === m.mes && destaque.dia === m.dia) || undefined}>
       <span className="ev-bar" style={{ background: COR_TIPO[m.tipo] }}></span>
       <span className="ev-dot" style={{ background: dotFundo(m.tipo), border: dotBorda(m.tipo) }}></span>
       <span style={css("flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;text-align:left")}>
@@ -358,7 +366,7 @@ export function JanelaTempo(p: PropsJanelaTempo) {
 
   /* ── agenda (aba) ──────────────────────────────────────────────── */
   const agenda = (
-    <div className="colD-rol" style={css("flex:1;min-height:0;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:7px")}>
+    <div ref={agendaRef} className="colD-rol" style={css("flex:1;min-height:0;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:7px")}>
       {eventos.map((e) => linhaEvento(e, () => { irParaMes(e.m); setAba("calendario"); }))}
       {eventos.length === 0 && <span style={css("padding:16px 2px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--apagado)")}>Nenhum evento marcado · botão direito num dia para criar</span>}
     </div>
@@ -407,7 +415,7 @@ export function JanelaTempo(p: PropsJanelaTempo) {
       {completo && <>
         <div role="tablist" aria-label="Seções" style={css("position:relative;flex:none;display:flex;background:#06121c;border-bottom:1px solid rgba(0,212,255,.16)")}>
           {ABAS.map((a) => (
-            <button type="button" key={a.id} role="tab" aria-selected={aba === a.id} className={`u aba ${aba === a.id ? "on" : ""}`} onClick={() => { setAba(a.id); setMenu(null); }} style={css("cursor:pointer")}>
+            <button type="button" key={a.id} role="tab" aria-selected={aba === a.id} className={`u aba ${aba === a.id ? "on" : ""}`} onClick={() => { setAba(a.id); setMenu(null); setDestaque(null); }} style={css("cursor:pointer")}>
               {a.rotulo}{a.id === "agenda" && eventos.length > 0 && <span style={css("color:var(--cy);margin-left:6px")}>{eventos.length}</span>}
             </button>
           ))}
@@ -427,6 +435,10 @@ export function JanelaTempo(p: PropsJanelaTempo) {
       {/* menu de contexto do dia */}
       {menu && <div className="menu" role="menu" style={{ left: `${menu.x}px`, top: `${menu.y}px` }}>
         <div style={css("padding:8px 12px;border-bottom:1px solid rgba(0,212,255,.14)")}><span className="idlab" style={css("color:var(--apagado)")}>DIA {menu.dia} · {MESES_IMPERIAIS[mes - 1]} {ano}</span></div>
+        {marcasMes.some((m) => m.dia === menu.dia) && <>
+          <button type="button" role="menuitem" className="u menu-item" onClick={() => { setDestaque({ ano, mes, dia: menu.dia }); setMenu(null); abrir("agenda"); }} style={css("cursor:pointer")}><CalendarSearch size={14} strokeWidth={2.2} aria-hidden="true" />Abrir agenda</button>
+          <div style={css("height:1px;background:rgba(0,212,255,.12)")}></div>
+        </>}
         <button type="button" role="menuitem" className="u menu-item" onClick={() => { setCompondo({ ano, mes, dia: menu.dia }); setMenu(null); setNovaTitulo(""); setNovaTipo("lembrete"); setNovaVis("mesa"); }} style={css("cursor:pointer")}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Nova marcação</button>
         {ehNarrador && <>
           <div style={css("height:1px;background:rgba(0,212,255,.12)")}></div>
