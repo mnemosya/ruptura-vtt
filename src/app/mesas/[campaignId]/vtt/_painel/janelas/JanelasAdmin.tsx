@@ -14,16 +14,17 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, Copy, Eye, Link2, Loader2, Pencil, ShieldCheck, Trash2, UserMinus, UserPlus, UserRound } from "lucide-react";
+import { Check, ChevronDown, CircleCheck, Copy, Eye, Link2, Loader2, Mail, Pencil, Send, ShieldCheck, Trash2, TriangleAlert, UserMinus, UserPlus, UserRound } from "lucide-react";
 import { MenuAncorado } from "../ui/MenuAncorado";
 import { useDicaPortal } from "../ui/DicaPortal";
 import type { PermissaoPersonagem } from "../../../../../../lib/character/storage";
 import { JanelaInterna } from "../ui/JanelaInterna";
-import { BotaoTecnico, Caption, Chip, Chips, PainelTecnico, Pip } from "../ui/primitivas";
+import { BotaoTecnico, Caption, Chip, Chips, PainelTecnico } from "../ui/primitivas";
 import { EstadoCarregando, EstadoErro, EstadoVazio } from "../Estados";
 import {
   criarConviteAction,
   definirPermissaoAction,
+  enviarConviteAction,
   lerAcessoPersonagemAction,
   lerJogadoresConvitesAction,
   removerParticipanteAction,
@@ -70,6 +71,22 @@ function BotaoConfirma({
   );
 }
 
+type ModoConvite = "email" | "link";
+
+interface ResultadoConvite {
+  link: string;
+  mensagem: string;
+  tipo: "ok" | "aviso";
+}
+
+const dataCurta = (iso: string | null | undefined) =>
+  iso ? new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) : null;
+
+/** Nome visível do convite: rótulo, senão e-mail, senão o tipo. */
+function nomeDoConvite(c: DadosJogadoresConvites["convites"][number]) {
+  return c.label ?? c.email ?? (c.kind === "email" ? "Convite por e-mail" : "Link reutilizável");
+}
+
 export function JanelaJogadoresConvites({
   campaignId,
   aberta,
@@ -82,9 +99,12 @@ export function JanelaJogadoresConvites({
   const [dados, setDados] = useState<DadosJogadoresConvites | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState<string | null>(null);
+  const [modo, setModo] = useState<ModoConvite>("email");
   const [rotulo, setRotulo] = useState("");
-  const [linkNovo, setLinkNovo] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [resultado, setResultado] = useState<ResultadoConvite | null>(null);
   const [copiado, setCopiado] = useState(false);
+  const [verEncerrados, setVerEncerrados] = useState(false);
 
   const carregar = useCallback(async () => {
     const r = await lerJogadoresConvitesAction(campaignId);
@@ -99,129 +119,296 @@ export function JanelaJogadoresConvites({
   }, [aberta, carregar]);
 
   async function executar(chave: string, acao: () => Promise<{ ok: boolean; erro?: string }>) {
+    if (ocupado) return;
     setOcupado(chave);
     try {
       const r = await acao();
       if (!r.ok) setErro(r.erro ?? "A operação foi recusada.");
       else await carregar();
+    } catch {
+      setErro("Não foi possível confirmar a operação. Confira a lista antes de tentar de novo.");
     } finally {
       setOcupado(null);
     }
   }
 
+  function mostrarResultado(r: ResultadoConvite) {
+    setResultado(r);
+    setCopiado(false);
+  }
+
+  function enviarPorEmail(textoSimples: boolean) {
+    const destino = email.trim();
+    void executar("email", async () => {
+      setErro(null);
+      setResultado(null);
+      const r = await enviarConviteAction(campaignId, destino, rotulo, textoSimples);
+      if (r.ok && r.dados) {
+        mostrarResultado({
+          link: r.dados.link,
+          tipo: r.dados.enviado ? "ok" : "aviso",
+          mensagem: r.dados.enviado ? `O servidor de e-mail aceitou o convite para ${destino}.` : "Convite criado, mas o envio não foi confirmado.",
+        });
+        setEmail("");
+        setRotulo("");
+      }
+      return r;
+    });
+  }
+
+  function gerarLink() {
+    void executar("novo", async () => {
+      setErro(null);
+      setResultado(null);
+      const r = await criarConviteAction(campaignId, rotulo, window.location.origin);
+      if (r.ok && r.dados) {
+        mostrarResultado({ link: r.dados.link, tipo: "ok", mensagem: "Link de convite criado." });
+        setRotulo("");
+      }
+      return r;
+    });
+  }
+
   if (!aberta) return null;
 
+  const ativos = dados?.convites.filter((c) => c.ativo && !c.ativadoEm) ?? [];
+  const encerrados = dados?.convites.filter((c) => !c.ativo || c.ativadoEm) ?? [];
+
   return (
-    <JanelaInterna aberta titulo="Jogadores e convites" largura={620} altura={560} onFechar={onFechar} testId="painel-janela-convites">
+    <JanelaInterna aberta titulo="Jogadores e convites" largura={620} altura={600} onFechar={onFechar} testId="painel-janela-convites">
       {erro && <EstadoErro mensagem={erro} onTentarDeNovo={carregar} testId="painel-convites-erro" />}
       {!dados ? (
         <EstadoCarregando />
       ) : (
-        <>
-          <Caption>Participantes</Caption>
-          <ul className="rv-pn-lista" style={{ marginTop: 8 }} data-testid="painel-convites-participantes">
-            {dados.participantes.map((p) => (
-              <li key={p.userId} className="rv-pn-linha">
-                <span className="rv-pn-face" aria-hidden="true">
-                  {p.displayName.slice(0, 2).toUpperCase()}
-                </span>
-                <span className="rv-pn-linha-texto">
-                  <strong className="rv-pn-linha-nome">{p.displayName}</strong>
-                  <span className="rv-pn-linha-sub">{p.role === "narrator" ? "Narrador" : "Jogador"}</span>
-                </span>
-                {p.role === "player" && (
-                  <BotaoConfirma
-                    rotulo="Remover"
-                    ocupado={ocupado === `m:${p.userId}`}
-                    onConfirmar={() => executar(`m:${p.userId}`, () => removerParticipanteAction(campaignId, p.userId))}
-                    testId="painel-convites-remover-participante"
-                  />
-                )}
-              </li>
-            ))}
-          </ul>
-
-          <div style={{ marginTop: 18 }}>
-            <Caption>Convites</Caption>
-          </div>
-
-          <PainelTecnico className="rv-pn-campo" testId="painel-convites-criar">
-            <label className="rv-pn-campo" style={{ marginTop: 0 }}>
-              <span>Rótulo do convite (opcional)</span>
-              <input
-                className="rv-pn-input"
-                value={rotulo}
-                onChange={(e) => setRotulo(e.target.value)}
-                placeholder="Ex.: grupo da terça"
-                data-testid="painel-convites-rotulo"
-              />
-            </label>
-            <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
-              <BotaoTecnico
-                primario
-                acento="cy"
-                ocupado={ocupado === "novo"}
-                icone={<Link2 />}
-                onClick={() =>
-                  executar("novo", async () => {
-                    const r = await criarConviteAction(campaignId, rotulo, window.location.origin);
-                    if (r.ok && r.dados) {
-                      setLinkNovo(r.dados.link);
-                      setRotulo("");
-                      setCopiado(false);
-                    }
-                    return r;
-                  })
-                }
-                testId="painel-convites-gerar"
-              >
-                Gerar link de convite
-              </BotaoTecnico>
-            </div>
-            {linkNovo && (
-              <div style={{ marginTop: 8, display: "flex", gap: 6, alignItems: "center" }}>
-                <input className="rv-pn-input" readOnly value={linkNovo} style={{ flex: 1 }} data-testid="painel-convites-link" />
-                <BotaoTecnico
-                  acento={copiado ? "ok" : "cy"}
-                  icone={copiado ? <Check /> : <Copy />}
-                  onClick={() => {
-                    void navigator.clipboard?.writeText(linkNovo).then(() => setCopiado(true));
-                  }}
-                  testId="painel-convites-copiar"
-                >
-                  {copiado ? "Copiado" : "Copiar"}
-                </BotaoTecnico>
-              </div>
-            )}
-          </PainelTecnico>
-
-          {dados.convites.length === 0 ? (
-            <EstadoVazio>Nenhum convite criado ainda.</EstadoVazio>
-          ) : (
-            <ul className="rv-pn-lista" style={{ marginTop: 10 }} data-testid="painel-convites-lista">
-              {dados.convites.map((c) => (
-                <li key={c.id} className="rv-pn-linha">
-                  <Pip acento={c.ativo ? "ok" : "neutro"} ligado={c.ativo} />
-                  <span className="rv-pn-linha-texto">
-                    <strong className="rv-pn-linha-nome">{c.label ?? (c.email ?? "Convite sem rótulo")}</strong>
-                    <span className="rv-pn-linha-sub">
-                      {c.kind === "email" ? "Por e-mail" : "Reutilizável"}
-                      {c.ativadoEm ? " · ativado" : c.ativo ? " · ativo" : " · revogado"}
-                    </span>
+        <div className="rv-conv">
+          <section className="rv-conv-secao">
+            <Caption>Participantes · {dados.participantes.length}</Caption>
+            <ul className="rv-pn-lista" data-testid="painel-convites-participantes">
+              {dados.participantes.map((p) => (
+                <li key={p.userId} className="rv-pn-linha rv-conv-linha">
+                  <span className="rv-pn-face" aria-hidden="true">
+                    {p.displayName.slice(0, 2).toUpperCase()}
                   </span>
-                  {c.ativo && (
+                  <span className="rv-pn-linha-texto">
+                    <strong className="rv-pn-linha-nome">{p.displayName}</strong>
+                    {p.email && <span className="rv-pn-linha-sub rv-conv-email">{p.email}</span>}
+                  </span>
+                  <Chip acento={p.role === "narrator" ? "am" : "cy"}>{p.role === "narrator" ? "Narrador" : "Jogador"}</Chip>
+                  {p.role === "player" && (
+                    <BotaoConfirma
+                      rotulo="Remover"
+                      ocupado={ocupado === `m:${p.userId}`}
+                      onConfirmar={() => executar(`m:${p.userId}`, () => removerParticipanteAction(campaignId, p.userId))}
+                      testId="painel-convites-remover-participante"
+                    />
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="rv-conv-secao">
+            <Caption>Convidar</Caption>
+            <PainelTecnico className="rv-conv-comp" testId="painel-convites-criar">
+              <div className="rv-conv-abas" role="tablist" aria-label="Forma de convite">
+                {([
+                  ["email", "Por e-mail", <Mail key="i" />],
+                  ["link", "Por link", <Link2 key="i" />],
+                ] as const).map(([id, nome, icone]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={modo === id}
+                    className="rv-conv-aba"
+                    onClick={() => setModo(id)}
+                    data-testid={`painel-convites-modo-${id}`}
+                  >
+                    {icone}
+                    {nome}
+                  </button>
+                ))}
+              </div>
+
+              {modo === "email" ? (
+                <form
+                  className="rv-conv-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    enviarPorEmail(new FormData(event.currentTarget).has("textoSimples"));
+                  }}
+                >
+                  <label className="rv-pn-campo">
+                    <span>E-mail do jogador</span>
+                    <span className="rv-conv-fila">
+                      <input
+                        type="email"
+                        autoComplete="email"
+                        required
+                        maxLength={254}
+                        className="rv-pn-input"
+                        placeholder="nome@exemplo.com"
+                        value={email}
+                        disabled={ocupado === "email"}
+                        onChange={(event) => setEmail(event.target.value)}
+                        data-testid="painel-convites-email"
+                      />
+                      <BotaoTecnico
+                        tipo="submit"
+                        primario
+                        ocupado={ocupado === "email"}
+                        desabilitado={ocupado !== null || !email.trim()}
+                        icone={ocupado === "email" ? <Loader2 className="rv-spin" /> : <Send />}
+                        testId="painel-convites-enviar"
+                      >
+                        {ocupado === "email" ? "Enviando…" : "Enviar"}
+                      </BotaoTecnico>
+                    </span>
+                  </label>
+                  <label className="rv-pn-campo">
+                    <span>Rótulo (opcional)</span>
+                    <input
+                      className="rv-pn-input"
+                      value={rotulo}
+                      onChange={(e) => setRotulo(e.target.value)}
+                      placeholder="Ex.: grupo da terça"
+                      data-testid="painel-convites-rotulo"
+                    />
+                  </label>
+                  <label>
+                    <input type="checkbox" name="textoSimples" disabled={ocupado !== null} /> Enviar em texto simples
+                  </label>
+                </form>
+              ) : (
+                <form
+                  className="rv-conv-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    gerarLink();
+                  }}
+                >
+                  <label className="rv-pn-campo">
+                    <span>Rótulo (opcional)</span>
+                    <span className="rv-conv-fila">
+                      <input
+                        className="rv-pn-input"
+                        value={rotulo}
+                        onChange={(e) => setRotulo(e.target.value)}
+                        placeholder="Ex.: grupo da terça"
+                        data-testid="painel-convites-rotulo"
+                      />
+                      <BotaoTecnico
+                        tipo="submit"
+                        primario
+                        ocupado={ocupado === "novo"}
+                        desabilitado={ocupado !== null}
+                        icone={ocupado === "novo" ? <Loader2 className="rv-spin" /> : <Link2 />}
+                        testId="painel-convites-gerar"
+                      >
+                        Gerar link
+                      </BotaoTecnico>
+                    </span>
+                  </label>
+                  <p className="rv-conv-nota">Qualquer pessoa com o link entra na campanha enquanto ele estiver ativo.</p>
+                </form>
+              )}
+
+              {resultado && (
+                <div className="rv-conv-resultado" data-tipo={resultado.tipo} data-testid="painel-convites-resultado">
+                  <p className="rv-conv-resultado-msg" role="status">
+                    {resultado.tipo === "ok" ? <CircleCheck size={14} /> : <TriangleAlert size={14} />}
+                    {resultado.mensagem}
+                  </p>
+                  <span className="rv-conv-fila">
+                    <input
+                      className="rv-pn-input rv-conv-link"
+                      readOnly
+                      value={resultado.link}
+                      onFocus={(e) => e.currentTarget.select()}
+                      data-testid="painel-convites-link"
+                    />
+                    <BotaoTecnico
+                      acento={copiado ? "ok" : "cy"}
+                      icone={copiado ? <Check /> : <Copy />}
+                      onClick={() => {
+                        void navigator.clipboard?.writeText(resultado.link).then(() => setCopiado(true));
+                      }}
+                      testId="painel-convites-copiar"
+                    >
+                      {copiado ? "Copiado" : "Copiar"}
+                    </BotaoTecnico>
+                  </span>
+                </div>
+              )}
+            </PainelTecnico>
+          </section>
+
+          <section className="rv-conv-secao">
+            <Caption>Convites ativos · {ativos.length}</Caption>
+            {ativos.length === 0 ? (
+              <EstadoVazio>Nenhum convite ativo.</EstadoVazio>
+            ) : (
+              <ul className="rv-pn-lista" data-testid="painel-convites-lista">
+                {ativos.map((c) => (
+                  <li key={c.id} className="rv-pn-linha rv-conv-linha">
+                    <span className="rv-pn-face rv-conv-ico" aria-hidden="true">
+                      {c.kind === "email" ? <Mail size={15} /> : <Link2 size={15} />}
+                    </span>
+                    <span className="rv-pn-linha-texto">
+                      <strong className={!c.label && c.email ? "rv-pn-linha-nome rv-conv-email" : "rv-pn-linha-nome"}>{nomeDoConvite(c)}</strong>
+                      <span className="rv-pn-linha-sub">
+                        {[
+                          c.kind === "email" ? (c.label && c.email ? c.email : "Por e-mail") : c.label ? "Link reutilizável" : null,
+                          dataCurta(c.criadoEm) && `criado ${dataCurta(c.criadoEm)}`,
+                          dataCurta(c.expiraEm) && `expira ${dataCurta(c.expiraEm)}`,
+                        ].filter(Boolean).join(" · ")}
+                      </span>
+                    </span>
                     <BotaoConfirma
                       rotulo="Revogar"
                       ocupado={ocupado === `c:${c.id}`}
                       onConfirmar={() => executar(`c:${c.id}`, () => revogarConviteAction(campaignId, c.id))}
                       testId="painel-convites-revogar"
                     />
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {encerrados.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  className="rv-conv-encerrados"
+                  aria-expanded={verEncerrados}
+                  onClick={() => setVerEncerrados((v) => !v)}
+                  data-testid="painel-convites-ver-encerrados"
+                >
+                  <ChevronDown size={13} className="rv-conv-encerrados-seta" />
+                  Encerrados · {encerrados.length}
+                </button>
+                {verEncerrados && (
+                  <ul className="rv-pn-lista rv-conv-lista-encerrados" data-testid="painel-convites-encerrados">
+                    {encerrados.map((c) => (
+                      <li key={c.id} className="rv-pn-linha rv-conv-linha">
+                        <span className="rv-pn-face rv-conv-ico" aria-hidden="true">
+                          {c.kind === "email" ? <Mail size={15} /> : <Link2 size={15} />}
+                        </span>
+                        <span className="rv-pn-linha-texto">
+                          <strong className={!c.label && c.email ? "rv-pn-linha-nome rv-conv-email" : "rv-pn-linha-nome"}>{nomeDoConvite(c)}</strong>
+                          <span className="rv-pn-linha-sub">
+                            {c.ativadoEm ? `Aceito ${dataCurta(c.ativadoEm)}` : "Revogado"}
+                            {dataCurta(c.criadoEm) && ` · criado ${dataCurta(c.criadoEm)}`}
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
+          </section>
+        </div>
       )}
     </JanelaInterna>
   );
