@@ -65,7 +65,7 @@
 .tb .editwrap::-webkit-scrollbar { width: 8px; }
 .tb .editwrap::-webkit-scrollbar-thumb { background: rgba(0,212,255,.25); }
 .tb .menu { position: absolute; z-index: 50; width: 188px; background: #081826; border: 1px solid rgba(0,212,255,.3); box-shadow: 0 14px 40px rgba(0,0,0,.7); }
-.tb .menu-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; color: var(--texto); font-family: var(--font-corpo), sans-serif; font-size: 13px; transition: background .12s, color .12s; }
+.tb .menu-item { width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; color: var(--texto); font-family: var(--font-corpo), sans-serif; font-size: 13px; transition: background .12s, color .12s; }
 .tb .menu-item:hover { background: rgba(0,212,255,.12); color: var(--gelo); }
 .tb .backdrop { position: absolute; inset: 0; z-index: 40; }
 .tb .novain { width: 100%; background: #0b1a26; border: 1px solid rgba(0,212,255,.22); color: var(--gelo); font-family: var(--font-corpo), sans-serif; font-size: 13px; padding: 9px 11px; }
@@ -112,7 +112,7 @@
 
 /* A regra global de chanfro da mesa pega todo input/tab: o segmento de
    hora e as abas são retos (sublinhado é a marca deles, não a casca). */
-.tb .hora-seg:not(#_), .tb .aba:not(#_) { border-radius: 0 !important; corner-shape: round; }
+.tb .hora-seg:not(#_), .tb .aba:not(#_), .tb .menu-item:not(#_) { border-radius: 0 !important; corner-shape: round; }
 .tb .aba:not(#_) { background: transparent; }
 .tb .aba:not(#_):hover { background: rgba(0,212,255,.05); }
 .tb .hora-seg:focus { background: rgba(0,212,255,.12); }
