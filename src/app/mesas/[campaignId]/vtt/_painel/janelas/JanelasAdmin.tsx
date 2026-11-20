@@ -188,16 +188,17 @@ export function JanelaJogadoresConvites({
             </div>
             <form className="rv-pn-campo" onSubmit={(event) => {
               event.preventDefault();
+              const textoSimples = new FormData(event.currentTarget).has("textoSimples");
               void executar("email", async () => {
                 setErro(null);
                 setStatusEnvio(null);
                 setLinkNovo(null);
                 setCopiado(false);
-                const r = await enviarConviteAction(campaignId, email, rotulo);
+                const r = await enviarConviteAction(campaignId, email, rotulo, textoSimples);
                 if (r.ok && r.dados) {
                   setLinkNovo(r.dados.link);
                   setStatusEnvio(r.dados.enviado
-                    ? `Convite enviado para ${email.trim()}.`
+                    ? `O servidor de e-mail aceitou o convite para ${email.trim()}.`
                     : "O convite foi criado, mas o envio não foi confirmado. Você pode copiar o link abaixo.");
                   setEmail("");
                   setRotulo("");
@@ -210,6 +211,9 @@ export function JanelaJogadoresConvites({
                 <input type="email" autoComplete="email" required maxLength={254} className="rv-pn-input"
                   value={email} disabled={ocupado === "email"} onChange={(event) => setEmail(event.target.value)}
                   data-testid="painel-convites-email" />
+              </label>
+              <label>
+                <input type="checkbox" name="textoSimples" disabled={ocupado !== null} /> Enviar em texto simples
               </label>
               <div>
                 <BotaoTecnico tipo="submit" primario ocupado={ocupado === "email"} desabilitado={ocupado !== null} icone={<Mail />} testId="painel-convites-enviar">

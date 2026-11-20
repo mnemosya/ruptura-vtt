@@ -129,7 +129,7 @@ export function ConvitesModal({ aberto, campanhas, campanhaInicial, onClose }: {
     await carregar(campanhaId);
   }
 
-  async function enviar() {
+  async function enviar(textoSimples: boolean) {
     if (!campanhaId || ocupado) return;
     const contextoDoEnvio = contexto.current;
     setOcupado("email");
@@ -138,7 +138,7 @@ export function ConvitesModal({ aberto, campanhas, campanhaInicial, onClose }: {
     setLinkNovo(null);
     setCopiado(false);
     try {
-      const r = await enviarConviteAction(campanhaId, email, rotulo);
+      const r = await enviarConviteAction(campanhaId, email, rotulo, textoSimples);
       if (contexto.current !== contextoDoEnvio) return;
       if (!r.ok || !r.dados) {
         setErro(r.erro ?? "Falha ao criar o convite por e-mail.");
@@ -146,7 +146,7 @@ export function ConvitesModal({ aberto, campanhas, campanhaInicial, onClose }: {
       }
       setLinkNovo(r.dados.link);
       setStatusEnvio(r.dados.enviado
-        ? `Convite enviado para ${email.trim()}.`
+        ? `O servidor de e-mail aceitou o convite para ${email.trim()}.`
         : "O convite foi criado, mas o envio não foi confirmado. Você pode copiar o link abaixo.");
       setEmail("");
       setRotulo("");
@@ -236,12 +236,18 @@ export function ConvitesModal({ aberto, campanhas, campanhaInicial, onClose }: {
                   {ocupado === "novo" ? <Spinner size={13} className="mo-spin" /> : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></svg>}
                   {ocupado === "novo" ? "Gerando…" : "Gerar link de convite"}
                 </button>
-                <form className="v1-campo-grupo" onSubmit={(event) => { event.preventDefault(); void enviar(); }}>
+                <form className="v1-campo-grupo" onSubmit={(event) => {
+                  event.preventDefault();
+                  void enviar(new FormData(event.currentTarget).has("textoSimples"));
+                }}>
                   <label className="v1-campo-grupo">
                     <span className="v1-campo-rotulo">E-mail do jogador</span>
                     <input type="email" autoComplete="email" required maxLength={254} value={email} disabled={ocupado === "email"}
                       className="v1-u v1-campo v1-campo--peq" onChange={(event) => setEmail(event.target.value)}
                       data-testid="dash-convites-email" />
+                  </label>
+                  <label className="v1-painel-nota">
+                    <input type="checkbox" name="textoSimples" disabled={ocupado !== null} /> Enviar em texto simples
                   </label>
                   <button type="submit" className="v1-u v1-criar v1-btn-gerar" disabled={ocupado !== null} data-testid="dash-convites-enviar">
                     {ocupado === "email" ? "Enviando…" : "Enviar convite"}
