@@ -122,6 +122,7 @@ export async function enviarConviteAction(
   campaignId: string,
   email: string,
   rotulo: string,
+  textoSimples = false,
 ): Promise<ResultadoPainel<{ link: string; enviado: boolean }>> {
   const v = await exigirNarradorPainel(campaignId);
   if (!v.ok) return { ok: false, erro: v.erro };
@@ -139,7 +140,7 @@ export async function enviarConviteAction(
     const link = new URL(`/join/${rawToken}`, envio.origem);
     // Se o SMTP falhar ou a confirmação se perder, o narrador pode usar o
     // mesmo link por outro canal sem invalidar uma entrega já aceita.
-    const enviado = await envio.enviar(destinatario, v.acesso.campaign.name, link).catch(() => false);
+    const enviado = await envio.enviar(destinatario, v.acesso.campaign.name, link, textoSimples === true).catch(() => false);
     return { ok: true, dados: { link: link.href, enviado } };
   } catch {
     return { ok: false, erro: "Não foi possível criar o convite por e-mail." };

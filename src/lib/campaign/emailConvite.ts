@@ -30,13 +30,22 @@ export function configurarEnvioConvite() {
 
   return {
     origem,
-    async enviar(destinatario: string, campanha: string, link: URL): Promise<boolean> {
+    async enviar(destinatario: string, campanha: string, link: URL, textoSimples: boolean): Promise<boolean> {
+      const { subject, text, html } = montarEmailConvite(campanha, link);
       const resultado = await smtp.sendMail({
         from: { name: "Ruptura VTT", address: remetente },
         to: { name: "", address: destinatario },
-        ...montarEmailConvite(campanha, link),
+        subject,
+        text,
+        html: textoSimples ? undefined : html,
       });
-      return resultado.accepted.length === 1;
+      const aceito = resultado.accepted.length === 1;
+      console.info("[convite-email] resposta SMTP", {
+        aceito,
+        formato: textoSimples ? "texto" : "html",
+        messageId: resultado.messageId,
+      });
+      return aceito;
     },
   };
 }
