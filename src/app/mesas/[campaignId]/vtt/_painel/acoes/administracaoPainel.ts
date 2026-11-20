@@ -21,6 +21,7 @@
  */
 
 import {
+  createCampaignEmailInvite,
   createCampaignInvite,
   getCampaignParticipantInfo,
   listCampaignInvites,
@@ -28,6 +29,7 @@ import {
   removeCampaignMember,
   revokeCampaignInvite,
 } from "../../../../../../lib/table/storage";
+import { configurarEnvioConvite } from "../../../../../../lib/campaign/emailConvite";
 import type { CampaignInvite } from "../../../../../../lib/table";
 import {
   grantCharacterControl,
@@ -113,6 +115,35 @@ export async function criarConviteAction(campaignId: string, rotulo: string, bas
     return { ok: true, dados: { link: `${origem}/join/${rawToken}` } };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Falha ao criar o convite.") };
+  }
+}
+
+export async function enviarConviteAction(
+  campaignId: string,
+  email: string,
+  rotulo: string,
+  textoSimples = false,
+): Promise<ResultadoPainel<{ link: string; enviado: boolean }>> {
+  const v = await exigirNarradorPainel(campaignId);
+  if (!v.ok) return { ok: false, erro: v.erro };
+
+  const destinatario = email.trim().toLowerCase();
+  if (destinatario.length > 254 || !/^[^\s@,;:<>"()\\]+@(?:[a-z0-9-]+\.)+[a-z0-9-]+$/i.test(destinatario)) {
+    return { ok: false, erro: "Informe um e-mail válido para o jogador." };
+  }
+
+  const envio = configurarEnvioConvite();
+  if (!envio) return { ok: false, erro: "O envio de convites por e-mail ainda não foi configurado." };
+
+  try {
+    const { rawToken } = await createCampaignEmailInvite(campaignId, destinatario, rotulo);
+    const link = new URL(`/join/${rawToken}`, envio.origem);
+    // Se o SMTP falhar ou a confirmação se perder, o narrador pode usar o
+    // mesmo link por outro canal sem invalidar uma entrega já aceita.
+    const enviado = await envio.enviar(destinatario, v.acesso.campaign.name, link, textoSimples === true).catch(() => false);
+    return { ok: true, dados: { link: link.href, enviado } };
+  } catch {
+    return { ok: false, erro: "Não foi possível criar o convite por e-mail." };
   }
 }
 

@@ -19,6 +19,7 @@ import { usePresence } from "../../_design/usePresence";
 import { Check, Spinner, X } from "../../_design/icons";
 import {
   criarConviteAction,
+  enviarConviteAction,
   lerJogadoresConvitesAction,
   removerParticipanteAction,
   revogarConviteAction,
@@ -43,20 +44,34 @@ export function ConvitesModal({ aberto, campanhas, campanhaInicial, onClose }: {
   const [dados, setDados] = useState<DadosJogadoresConvites | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [rotulo, setRotulo] = useState("");
+  const [email, setEmail] = useState("");
+  const [statusEnvio, setStatusEnvio] = useState<string | null>(null);
   const [linkNovo, setLinkNovo] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [confirma, setConfirma] = useState<string | null>(null);
   const confirmaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const contexto = useRef(0);
 
   // Ao abrir, começa pela campanha que estava em destaque.
   useEffect(() => {
-    if (aberto) { setCampanhaId(campanhaInicial); setRotulo(""); setLinkNovo(null); setCopiado(false); setConfirma(null); }
+    contexto.current += 1;
+    if (aberto) {
+      setCampanhaId(campanhaInicial);
+      setRotulo("");
+      setEmail("");
+      setStatusEnvio(null);
+      setLinkNovo(null);
+      setCopiado(false);
+      setConfirma(null);
+    }
   }, [aberto, campanhaInicial]);
 
   const carregar = useCallback(async (id: string) => {
+    const contextoAtual = contexto.current;
     setErro(null);
     const r = await lerJogadoresConvitesAction(id);
+    if (contexto.current !== contextoAtual) return;
     if (r.ok && r.dados) setDados(r.dados);
     else { setDados(null); setErro(r.erro ?? "Falha ao carregar jogadores e convites."); }
   }, []);
@@ -80,8 +95,9 @@ export function ConvitesModal({ aberto, campanhas, campanhaInicial, onClose }: {
   const campanha = campanhas.find((c) => c.id === campanhaId) ?? null;
 
   function trocar(id: string) {
-    if (id === campanhaId) return;
-    setCampanhaId(id); setTroca((n) => n + 1); setRotulo(""); setLinkNovo(null); setCopiado(false); setConfirma(null);
+    if (id === campanhaId || ocupado === "email") return;
+    contexto.current += 1;
+    setCampanhaId(id); setTroca((n) => n + 1); setRotulo(""); setEmail(""); setStatusEnvio(null); setLinkNovo(null); setCopiado(false); setConfirma(null);
   }
 
   /** Segundo clique em até 3 s executa; o primeiro só arma. */
@@ -93,7 +109,7 @@ export function ConvitesModal({ aberto, campanhas, campanhaInicial, onClose }: {
   }
 
   async function executar(chave: string, fn: () => Promise<{ ok: boolean; erro?: string }>) {
-    if (!campanhaId) return;
+    if (!campanhaId || ocupado) return;
     setOcupado(chave); setErro(null);
     const r = await fn();
     setOcupado(null);
@@ -102,7 +118,8 @@ export function ConvitesModal({ aberto, campanhas, campanhaInicial, onClose }: {
   }
 
   async function gerar() {
-    if (!campanhaId) return;
+    if (!campanhaId || ocupado) return;
+    setStatusEnvio(null);
     setOcupado("novo"); setErro(null); setCopiado(false);
     const r = await criarConviteAction(campanhaId, rotulo, window.location.origin);
     setOcupado(null);
@@ -110,6 +127,37 @@ export function ConvitesModal({ aberto, campanhas, campanhaInicial, onClose }: {
     setLinkNovo(r.dados.link);
     setRotulo("");
     await carregar(campanhaId);
+  }
+
+  async function enviar(textoSimples: boolean) {
+    if (!campanhaId || ocupado) return;
+    const contextoDoEnvio = contexto.current;
+    setOcupado("email");
+    setErro(null);
+    setStatusEnvio(null);
+    setLinkNovo(null);
+    setCopiado(false);
+    try {
+      const r = await enviarConviteAction(campanhaId, email, rotulo, textoSimples);
+      if (contexto.current !== contextoDoEnvio) return;
+      if (!r.ok || !r.dados) {
+        setErro(r.erro ?? "Falha ao criar o convite por e-mail.");
+        return;
+      }
+      setLinkNovo(r.dados.link);
+      setStatusEnvio(r.dados.enviado
+        ? `O servidor de e-mail aceitou o convite para ${email.trim()}.`
+        : "O convite foi criado, mas o envio não foi confirmado. Você pode copiar o link abaixo.");
+      setEmail("");
+      setRotulo("");
+      await carregar(campanhaId);
+    } catch {
+      if (contexto.current === contextoDoEnvio) {
+        setErro("Não foi possível confirmar a operação. Confira a lista de convites antes de tentar de novo.");
+      }
+    } finally {
+      setOcupado(null);
+    }
   }
 
   // "sai" só quando está fechando (ver a nota no modal de criar campanha).
@@ -135,7 +183,7 @@ export function ConvitesModal({ aberto, campanhas, campanhaInicial, onClose }: {
             {campanhas.map((c) => {
               const on = c.id === campanhaId;
               return (
-                <button key={c.id} type="button" role="tab" aria-selected={on} className={`v1-u v1-dest${on ? " on" : ""}`} onClick={() => trocar(c.id)}>
+                <button key={c.id} type="button" role="tab" aria-selected={on} disabled={ocupado === "email"} className={`v1-u v1-dest${on ? " on" : ""}`} onClick={() => trocar(c.id)}>
                   <span className="v1-dest-arte" style={capaDaCampanha(c)} aria-hidden="true" />
                   <span className="v1-dest-nome">{c.name}</span>
                 </button>
@@ -184,10 +232,28 @@ export function ConvitesModal({ aberto, campanhas, campanhaInicial, onClose }: {
                   <input className="v1-u v1-campo v1-campo--peq" value={rotulo} onChange={(e) => setRotulo(e.target.value)}
                     placeholder="Ex.: grupo da terça" data-testid="dash-convites-rotulo" />
                 </label>
-                <button type="button" className="v1-u v1-criar v1-btn-gerar" onClick={() => void gerar()} disabled={ocupado === "novo"} data-testid="dash-convites-gerar">
+                <button type="button" className="v1-u v1-criar v1-btn-gerar" onClick={() => void gerar()} disabled={ocupado !== null} data-testid="dash-convites-gerar">
                   {ocupado === "novo" ? <Spinner size={13} className="mo-spin" /> : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></svg>}
                   {ocupado === "novo" ? "Gerando…" : "Gerar link de convite"}
                 </button>
+                <form className="v1-campo-grupo" onSubmit={(event) => {
+                  event.preventDefault();
+                  void enviar(new FormData(event.currentTarget).has("textoSimples"));
+                }}>
+                  <label className="v1-campo-grupo">
+                    <span className="v1-campo-rotulo">E-mail do jogador</span>
+                    <input type="email" autoComplete="email" required maxLength={254} value={email} disabled={ocupado === "email"}
+                      className="v1-u v1-campo v1-campo--peq" onChange={(event) => setEmail(event.target.value)}
+                      data-testid="dash-convites-email" />
+                  </label>
+                  <label className="v1-painel-nota">
+                    <input type="checkbox" name="textoSimples" disabled={ocupado !== null} /> Enviar em texto simples
+                  </label>
+                  <button type="submit" className="v1-u v1-criar v1-btn-gerar" disabled={ocupado !== null} data-testid="dash-convites-enviar">
+                    {ocupado === "email" ? "Enviando…" : "Enviar convite"}
+                  </button>
+                </form>
+                {statusEnvio && <p role="status" className="v1-painel-nota">{statusEnvio}</p>}
                 {linkNovo && (
                   <div className="v1-conv-link v1-desliza-a">
                     <input readOnly value={linkNovo} className="v1-u v1-conv-link-txt" data-testid="dash-convites-link" onFocus={(e) => e.currentTarget.select()} />
