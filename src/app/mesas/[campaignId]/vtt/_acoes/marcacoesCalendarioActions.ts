@@ -3,7 +3,7 @@
 import "server-only";
 import { resolveCampaignAccess } from "../../../../../lib/campaign/access";
 import { getScopedTableClient } from "../../../../../lib/auth/scopedClient";
-import { validarNovaMarcacao, type MarcacaoCalendario, type NovaMarcacao } from "../_dominio/marcacoesCalendario";
+import { validarNovaMarcacao, type EdicaoMarcacao, type MarcacaoCalendario, type NovaMarcacao } from "../_dominio/marcacoesCalendario";
 
 type Resultado<T> = { ok: true; dados: T } | { ok: false; erro: string };
 
@@ -39,6 +39,7 @@ async function listar(campaignId: string, filtro: { ano: number; mes: number } |
       visibilidade: r.visibility as MarcacaoCalendario["visibilidade"], oficial: r.official as boolean,
       autorId: r.author_id as string,
       autorNome: r.author_id === acesso.user.id ? "Você" : r.official ? "Narrador" : nomes.get(r.author_id as string) ?? "Jogador",
+      podeAlterar: r.author_id === acesso.user.id || (acesso.role === "narrator" && r.visibility !== "privada"),
     })),
   };
 }
@@ -56,5 +57,31 @@ export async function criarMarcacaoAction(campaignId: string, nova: NovaMarcacao
     official: acesso.role === "narrator",
   });
   if (error) return { ok: false, erro: error.message };
+  return { ok: true, dados: null };
+}
+
+export async function editarMarcacaoAction(campaignId: string, id: string, edicao: EdicaoMarcacao): Promise<Resultado<null>> {
+  const acesso = await resolveCampaignAccess(campaignId);
+  if (acesso.kind !== "ok") return { ok: false, erro: "Você não tem acesso a esta campanha." };
+  // Data não muda aqui; a validação completa só precisa de uma data válida qualquer.
+  const erro = validarNovaMarcacao({ ...edicao, ano: 0, mes: 1, dia: 1 });
+  if (erro) return { ok: false, erro };
+  const client = await getScopedTableClient();
+  const { data, error } = await client.from("vtt_calendar_marks")
+    .update({ kind: edicao.tipo, title: edicao.titulo.trim(), visibility: edicao.visibilidade })
+    .eq("campaign_id", campaignId).eq("id", id).select("id");
+  if (error) return { ok: false, erro: error.message };
+  if (!data?.length) return { ok: false, erro: "Você não pode editar esta marcação." };
+  return { ok: true, dados: null };
+}
+
+export async function apagarMarcacaoAction(campaignId: string, id: string): Promise<Resultado<null>> {
+  const acesso = await resolveCampaignAccess(campaignId);
+  if (acesso.kind !== "ok") return { ok: false, erro: "Você não tem acesso a esta campanha." };
+  const client = await getScopedTableClient();
+  const { data, error } = await client.from("vtt_calendar_marks").delete()
+    .eq("campaign_id", campaignId).eq("id", id).select("id");
+  if (error) return { ok: false, erro: error.message };
+  if (!data?.length) return { ok: false, erro: "Você não pode apagar esta marcação." };
   return { ok: true, dados: null };
 }

@@ -127,3 +127,10 @@
 }
 .tb .hora-seta:not(#_):hover { color: var(--cy); background: rgba(0,212,255,.1); }
 .tb .hora-seta:not(#_):active { color: var(--gelo); background: rgba(0,212,255,.2); }
+
+/* menu do evento: Apagar em vermelho; o segundo clique confirma */
+.tb .menu-item.perigo { color: var(--vm); }
+.tb .menu-item.perigo:hover { background: rgba(255,107,125,.12); color: #ffb3bd; }
+.tb .menu-item.perigo.confirmar { background: rgba(255,107,125,.16); color: #ffd0d6; font-weight: 600; }
+.tb .ev[data-menu-aberto] { border-color: rgba(0,212,255,.3); background: rgba(0,212,255,.06); }
+.tb .nbtn:disabled { opacity: .35; cursor: not-allowed; }

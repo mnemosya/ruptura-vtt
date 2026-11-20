@@ -18,7 +18,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import {
   Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudRainWind, CloudSnow, CloudSun, CloudSunRain,
-  Gem, Maximize2, Minimize2, Snowflake, Sun, Wind, Zap, type LucideIcon,
+  Gem, Maximize2, Minimize2, Pencil, Trash2, Snowflake, Sun, Wind, Zap, type LucideIcon,
 } from "lucide-react";
 import {
   MESES_IMPERIAIS, REGIOES, VENTOS, NOMES_VENTO, condicaoEspecial, diaDaSemanaImperial, estacaoDoMes,
@@ -26,7 +26,7 @@ import {
 } from "../../_dominio/tempoCampanha";
 import {
   NOMES_TIPO_MARCACAO, NOMES_VISIBILIDADE, TIPOS_MARCACAO, TITULO_MARCACAO_MAX, VISIBILIDADES_MARCACAO,
-  diasEntre, distanciaRelativa, type MarcacaoCalendario, type NovaMarcacao, type TipoMarcacao, type VisibilidadeMarcacao,
+  diasEntre, distanciaRelativa, type EdicaoMarcacao, type MarcacaoCalendario, type NovaMarcacao, type TipoMarcacao, type VisibilidadeMarcacao,
 } from "../../_dominio/marcacoesCalendario";
 import { HoraEditavel } from "./HoraEditavel";
 import "./tempo-board.css";
@@ -97,6 +97,9 @@ export interface PropsJanelaTempo {
   aoPublicar: () => Promise<boolean>;
   aoTornarDiaAtual: (data: Data) => void;
   aoCriarMarcacao: (nova: NovaMarcacao) => Promise<string | null>;
+  /** Devolvem a mensagem de erro, ou `null` quando deu certo. */
+  aoEditarMarcacao: (id: string, edicao: EdicaoMarcacao) => Promise<string | null>;
+  aoApagarMarcacao: (id: string) => Promise<string | null>;
 }
 
 const iconeDado = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect width="12" height="12" x="2" y="10" rx="2"></rect><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"></path><path d="M6 18h.01M10 14h.01M15 6h.01M18 9h.01"></path></svg>;
@@ -110,7 +113,10 @@ export function JanelaTempo(p: PropsJanelaTempo) {
   const [aba, setAba] = useState<Aba>("calendario");
   const [mesNav, setMesNav] = useState<{ ano: number; mes: number } | null>(null);
   const [menu, setMenu] = useState<{ dia: number; x: number; y: number } | null>(null);
-  const [compondo, setCompondo] = useState<{ dia: number } | null>(null);
+  /** Diálogo de marcação: nova (sem `id`) ou edição de uma existente. */
+  const [compondo, setCompondo] = useState<{ ano: number; mes: number; dia: number; id?: string; alheia?: boolean } | null>(null);
+  /** Menu do evento (clique direito na agenda); `confirmar` = segundo clique em Apagar. */
+  const [menuEv, setMenuEv] = useState<{ m: MarcacaoCalendario; x: number; y: number; confirmar: boolean } | null>(null);
   const [novaTitulo, setNovaTitulo] = useState("");
   const [novaTipo, setNovaTipo] = useState<TipoMarcacao>("lembrete");
   const [novaVis, setNovaVis] = useState<VisibilidadeMarcacao>("mesa");
@@ -126,11 +132,11 @@ export function JanelaTempo(p: PropsJanelaTempo) {
   useEffect(() => { if (p.erro) avisar(p.erro); }, [p.erro]);
   useEffect(() => { if (compondo) tituloRef.current?.focus(); }, [compondo]);
   useEffect(() => {
-    if (!menu && !compondo) return;
-    const aoTeclar = (e: KeyboardEvent) => { if (e.key === "Escape") { setMenu(null); setCompondo(null); } };
+    if (!menu && !compondo && !menuEv) return;
+    const aoTeclar = (e: KeyboardEvent) => { if (e.key === "Escape") { setMenu(null); setMenuEv(null); setCompondo(null); } };
     window.addEventListener("keydown", aoTeclar);
     return () => window.removeEventListener("keydown", aoTeclar);
-  }, [menu, compondo]);
+  }, [menu, compondo, menuEv]);
 
   const { ano, mes } = mesNav ?? { ano: t.ano ?? 186, mes: t.mes ?? 1 };
   const esp = condicaoEspecial(t.condicao);
@@ -141,19 +147,42 @@ export function JanelaTempo(p: PropsJanelaTempo) {
   const navMes = (d: number) => { const n = mudarMesImperial(ano, mes, d); if (n) { setMesNav(n); setMenu(null); } };
   const abrir = (a: Aba) => { setCompleto(true); setAba(a); };
 
+  const pontoDoMenu = (e: ReactMouseEvent) => {
+    const r = rootRef.current?.getBoundingClientRect();
+    if (!r) return null;
+    const x = Math.min(e.clientX - r.left, r.width - 196), y = Math.min(e.clientY - r.top, r.height - 110);
+    return { x: Math.max(4, x), y: Math.max(4, y) };
+  };
   const abrirMenu = (e: ReactMouseEvent, dia: number) => {
     e.preventDefault();
-    const r = rootRef.current?.getBoundingClientRect();
-    if (!r) return;
-    const x = Math.min(e.clientX - r.left, r.width - 196), y = Math.min(e.clientY - r.top, r.height - 110);
-    setMenu({ dia, x: Math.max(4, x), y: Math.max(4, y) });
+    const pt = pontoDoMenu(e);
+    if (pt) { setMenuEv(null); setMenu({ dia, ...pt }); }
+  };
+  const abrirMenuEvento = (e: ReactMouseEvent, m: MarcacaoCalendario) => {
+    e.preventDefault();
+    if (!m.podeAlterar) return;
+    const pt = pontoDoMenu(e);
+    if (pt) { setMenu(null); setMenuEv({ m, ...pt, confirmar: false }); }
+  };
+  const editar = (m: MarcacaoCalendario) => {
+    setMenuEv(null);
+    setNovaTitulo(m.titulo); setNovaTipo(m.tipo); setNovaVis(m.visibilidade);
+    setCompondo({ ano: m.ano, mes: m.mes, dia: m.dia, id: m.id, alheia: m.autorNome !== "Você" });
+  };
+  const apagar = async (m: MarcacaoCalendario) => {
+    setMenuEv(null);
+    const erro = await p.aoApagarMarcacao(m.id);
+    avisar(erro ?? "Marcação apagada");
   };
   const salvarNova = async () => {
     const titulo = novaTitulo.trim();
     if (!titulo || !compondo) return;
-    const erro = await p.aoCriarMarcacao({ ano, mes, dia: compondo.dia, tipo: novaTipo, titulo, visibilidade: novaVis });
+    const erro = compondo.id
+      ? await p.aoEditarMarcacao(compondo.id, { tipo: novaTipo, titulo, visibilidade: novaVis })
+      : await p.aoCriarMarcacao({ ano: compondo.ano, mes: compondo.mes, dia: compondo.dia, tipo: novaTipo, titulo, visibilidade: novaVis });
     if (erro) { avisar(erro); return; }
-    setCompondo(null); setNovaTitulo(""); avisar("Marcação salva");
+    const editou = Boolean(compondo.id);
+    setCompondo(null); setNovaTitulo(""); avisar(editou ? "Marcação atualizada" : "Marcação salva");
   };
   const avancar = (min: number, txt: string) => { p.aoAvancar(min); setMesNav(null); avisar(txt); };
   const sortear = () => { const nome = p.aoSortear(); if (nome) avisar(`Clima sorteado · ${nome}`); };
@@ -208,7 +237,8 @@ export function JanelaTempo(p: PropsJanelaTempo) {
   );
   const linhaEvento = ({ m, dias: dd }: { m: MarcacaoCalendario; dias: number }, aoClicar: () => void) => (
     <button type="button" key={m.id} className="u ev" style={css("cursor:pointer;flex:none")}
-      aria-label={`${m.titulo}, ${m.dia} de ${MESES_IMPERIAIS[m.mes - 1]}, ${distanciaRelativa(dd)}`} onClick={aoClicar}>
+      aria-label={`${m.titulo}, ${m.dia} de ${MESES_IMPERIAIS[m.mes - 1]}, ${distanciaRelativa(dd)}`} onClick={aoClicar}
+      onContextMenu={(e) => abrirMenuEvento(e, m)} data-menu-aberto={menuEv?.m.id === m.id || undefined}>
       <span className="ev-bar" style={{ background: COR_TIPO[m.tipo] }}></span>
       <span className="ev-dot" style={{ background: dotFundo(m.tipo), border: dotBorda(m.tipo) }}></span>
       <span style={css("flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;text-align:left")}>
@@ -391,22 +421,34 @@ export function JanelaTempo(p: PropsJanelaTempo) {
       </>}
 
       {/* backdrop p/ menu e dialog */}
-      {(menu || compondo) && <div className="backdrop" onClick={() => { setMenu(null); setCompondo(null); }} style={{ background: compondo ? "rgba(5,13,20,.55)" : "transparent" }}></div>}
+      {(menu || menuEv || compondo) && <div className="backdrop" onClick={() => { setMenu(null); setMenuEv(null); setCompondo(null); }}
+        onContextMenu={(e) => { e.preventDefault(); setMenu(null); setMenuEv(null); }} style={{ background: compondo ? "rgba(5,13,20,.55)" : "transparent" }}></div>}
 
       {/* menu de contexto do dia */}
       {menu && <div className="menu" role="menu" style={{ left: `${menu.x}px`, top: `${menu.y}px` }}>
         <div style={css("padding:8px 12px;border-bottom:1px solid rgba(0,212,255,.14)")}><span className="idlab" style={css("color:var(--apagado)")}>DIA {menu.dia} · {MESES_IMPERIAIS[mes - 1]} {ano}</span></div>
-        <button type="button" role="menuitem" className="u menu-item" onClick={() => { setCompondo({ dia: menu.dia }); setMenu(null); setNovaTitulo(""); setNovaTipo("lembrete"); setNovaVis("mesa"); }} style={css("cursor:pointer")}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Nova marcação</button>
+        <button type="button" role="menuitem" className="u menu-item" onClick={() => { setCompondo({ ano, mes, dia: menu.dia }); setMenu(null); setNovaTitulo(""); setNovaTipo("lembrete"); setNovaVis("mesa"); }} style={css("cursor:pointer")}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Nova marcação</button>
         {ehNarrador && <>
           <div style={css("height:1px;background:rgba(0,212,255,.12)")}></div>
           <button type="button" role="menuitem" className="u menu-item" onClick={() => { p.aoTornarDiaAtual({ ano, mes, dia: menu.dia }); setMenu(null); setMesNav(null); avisar("Dia definido como atual"); }} style={css("cursor:pointer")}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>Tornar dia atual</button>
         </>}
       </div>}
 
-      {/* nova marcação */}
-      {compondo && <div role="dialog" aria-label={`Nova marcação em ${compondo.dia} de ${MESES_IMPERIAIS[mes - 1]}`} style={css("position:absolute;z-index:50;left:50%;top:50%;transform:translate(-50%,-50%);width:360px;max-width:calc(100% - 20px);background:#06121c;border:1px solid rgba(0,212,255,.3);box-shadow:0 20px 60px rgba(0,0,0,.7)")}>
+      {/* menu de contexto do evento */}
+      {menuEv && <div className="menu" role="menu" style={{ left: `${menuEv.x}px`, top: `${menuEv.y}px` }}>
+        <div style={css("padding:8px 12px;border-bottom:1px solid rgba(0,212,255,.14);white-space:nowrap;overflow:hidden;text-overflow:ellipsis")}><span className="idlab" style={css("color:var(--apagado)")}>{menuEv.m.dia}/{menuEv.m.mes} · {NOMES_TIPO_MARCACAO[menuEv.m.tipo].toUpperCase()}</span></div>
+        <button type="button" role="menuitem" className="u menu-item" onClick={() => editar(menuEv.m)} style={css("cursor:pointer")}><Pencil size={14} strokeWidth={2.2} aria-hidden="true" />Editar</button>
+        <div style={css("height:1px;background:rgba(0,212,255,.12)")}></div>
+        <button type="button" role="menuitem" className={`u menu-item perigo ${menuEv.confirmar ? "confirmar" : ""}`}
+          onClick={() => { if (menuEv.confirmar) void apagar(menuEv.m); else setMenuEv({ ...menuEv, confirmar: true }); }} style={css("cursor:pointer")}>
+          <Trash2 size={14} strokeWidth={2.2} aria-hidden="true" />{menuEv.confirmar ? "Confirmar apagar" : "Apagar"}
+        </button>
+      </div>}
+
+      {/* nova marcação / editar marcação */}
+      {compondo && <div role="dialog" aria-label={`${compondo.id ? "Editar" : "Nova"} marcação em ${compondo.dia} de ${MESES_IMPERIAIS[compondo.mes - 1]}`} style={css("position:absolute;z-index:50;left:50%;top:50%;transform:translate(-50%,-50%);width:360px;max-width:calc(100% - 20px);background:#06121c;border:1px solid rgba(0,212,255,.3);box-shadow:0 20px 60px rgba(0,0,0,.7)")}>
         <div style={css("display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid rgba(0,212,255,.16)")}>
-          <div style={css("display:flex;flex-direction:column;gap:3px")}><span style={css("display:flex;align-items:center;gap:8px")}><span style={css("width:8px;height:8px;background:var(--cy);rotate:45deg")}></span><span style={css("font-family:Oxanium,sans-serif;font-weight:800;font-size:13px;letter-spacing:.16em;color:var(--gelo)")}>NOVA MARCAÇÃO</span></span><span className="idlab" style={css("color:var(--apagado);padding-left:16px")}>{compondo.dia} {MESES_IMPERIAIS[mes - 1]} · {distanciaRelativa(diasEntre(hoje, { ano, mes, dia: compondo.dia }))}</span></div>
+          <div style={css("display:flex;flex-direction:column;gap:3px")}><span style={css("display:flex;align-items:center;gap:8px")}><span style={css("width:8px;height:8px;background:var(--cy);rotate:45deg")}></span><span style={css("font-family:Oxanium,sans-serif;font-weight:800;font-size:13px;letter-spacing:.16em;color:var(--gelo)")}>{compondo.id ? "EDITAR MARCAÇÃO" : "NOVA MARCAÇÃO"}</span></span><span className="idlab" style={css("color:var(--apagado);padding-left:16px")}>{compondo.dia} {MESES_IMPERIAIS[compondo.mes - 1]} · {distanciaRelativa(diasEntre(hoje, compondo))}</span></div>
           <button type="button" className="u winbtn fecha" aria-label="Fechar" onClick={() => setCompondo(null)} style={css("cursor:pointer;width:26px;height:26px")}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); void salvarNova(); }} style={css("padding:16px;display:flex;flex-direction:column;gap:14px")}>
@@ -420,12 +462,14 @@ export function JanelaTempo(p: PropsJanelaTempo) {
           <div style={css("display:flex;flex-direction:column;gap:6px")}>
             <span className="idlab" style={css("color:var(--apagado)")}>QUEM VÊ</span>
             <div style={css("display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px")}>
-              {VISIBILIDADES_MARCACAO.map((v) => <button type="button" key={v} className={`u nbtn ${novaVis === v ? "on" : ""}`} aria-pressed={novaVis === v} onClick={() => setNovaVis(v)} style={css("cursor:pointer")}>{NOMES_VISIBILIDADE[v]}</button>)}
+              {VISIBILIDADES_MARCACAO.map((v) => <button type="button" key={v} className={`u nbtn ${novaVis === v ? "on" : ""}`} aria-pressed={novaVis === v}
+                // "Só eu" é do autor: o narrador, editando a marcação de outra pessoa, não a torna privada.
+                disabled={v === "privada" && compondo.alheia} onClick={() => setNovaVis(v)} style={css("cursor:pointer")}>{NOMES_VISIBILIDADE[v]}</button>)}
             </div>
           </div>
           <div style={css("display:flex;align-items:center;justify-content:space-between;padding-top:2px")}>
             <span style={css("font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--apagado)")}>Enter salva · Esc fecha</span>
-            <button type="submit" className="rv-btn rv-btn--pri" disabled={!novaTitulo.trim()}>Salvar marcação</button>
+            <button type="submit" className="rv-btn rv-btn--pri" disabled={!novaTitulo.trim()}>{compondo.id ? "Salvar alterações" : "Salvar marcação"}</button>
           </div>
         </form>
       </div>}

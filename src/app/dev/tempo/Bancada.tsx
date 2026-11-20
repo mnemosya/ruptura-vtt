@@ -18,7 +18,7 @@ const INICIAL: TempoCampanha = {
   climaDesdeMinuto: desde, climaAteMinuto: agora + 18 * 60, weatherSeed: 1, revision: 1,
 };
 const m = (id: string, dia: number, tipo: MarcacaoCalendario["tipo"], titulo: string, autorNome: string, visibilidade: MarcacaoCalendario["visibilidade"]): MarcacaoCalendario =>
-  ({ id, ano: 186, mes: 12, dia, tipo, titulo, autorNome, visibilidade, oficial: autorNome === "Narrador", autorId: "" });
+  ({ id, ano: 186, mes: 12, dia, tipo, titulo, autorNome, visibilidade, oficial: autorNome === "Narrador", autorId: "", podeAlterar: true });
 const MARCACOES: MarcacaoCalendario[] = [
   m("a", 3, "lembrete", "Reagrupar no cais", "Narrador", "mesa"),
   m("b", 9, "evento", "Festival das Brumas", "Narrador", "mesa"),
@@ -47,7 +47,9 @@ export function Bancada() {
         aoAlterar={(c) => setT((a) => ({ ...a, ...c }))}
         aoPublicar={async () => { setPublicado(t); return true; }}
         aoTornarDiaAtual={(d) => setT((a) => ajustarContextoManual(a, d))}
-        aoCriarMarcacao={async (nova) => { setMarcacoes((l) => [...l, { ...nova, id: `n${Date.now()}`, autorNome: "Você", autorId: "", oficial: true }]); return null; }} />
+        aoCriarMarcacao={async (nova) => { setMarcacoes((l) => [...l, { ...nova, id: `n${Date.now()}`, autorNome: "Você", autorId: "", oficial: true, podeAlterar: true }]); return null; }}
+        aoEditarMarcacao={async (id, e) => { setMarcacoes((l) => l.map((x) => (x.id === id ? { ...x, ...e } : x))); return null; }}
+        aoApagarMarcacao={async (id) => { setMarcacoes((l) => l.filter((x) => x.id !== id)); return null; }} />
     </main>
   );
 }

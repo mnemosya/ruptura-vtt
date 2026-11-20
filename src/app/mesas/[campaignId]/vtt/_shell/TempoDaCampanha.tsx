@@ -12,8 +12,8 @@ import {
   CONDICOES_CLIMATICAS, MESES_IMPERIAIS, TEMPO_VAZIO, ajustarContextoManual, avancarTempoImperial, definirClimaManual,
   diaDaSemanaImperial, minutoImperial, nomeCondicao, sortearClima, validarTempo, type Condicao, type TempoCampanha,
 } from "../_dominio/tempoCampanha";
-import { listarTodasMarcacoesAction, criarMarcacaoAction } from "../_acoes/marcacoesCalendarioActions";
-import type { MarcacaoCalendario, NovaMarcacao } from "../_dominio/marcacoesCalendario";
+import { apagarMarcacaoAction, criarMarcacaoAction, editarMarcacaoAction, listarTodasMarcacoesAction } from "../_acoes/marcacoesCalendarioActions";
+import type { EdicaoMarcacao, MarcacaoCalendario, NovaMarcacao } from "../_dominio/marcacoesCalendario";
 import { JanelaTempo } from "./tempo/JanelaTempo";
 
 const ICONES_CONDICAO: Record<Condicao, LucideIcon> = {
@@ -141,11 +141,29 @@ export function TempoDaCampanha({ campaignId, ehNarrador }: { campaignId: string
     const proximo = ajustarContextoManual(rascunho, data);
     setRascunho(proximo); void salvar(proximo);
   };
+  // Depois de criar/editar/apagar relê a lista: traz id e autor resolvidos já
+  // (o realtime também relê, mas DELETE filtrado por campanha não chega por ele).
+  const releMarcacoes = async () => {
+    const resultado = await listarTodasMarcacoesAction(campaignId);
+    if (resultado.ok) setMarcacoes(resultado.dados);
+  };
   const criarMarcacao = async (nova: NovaMarcacao): Promise<string | null> => {
     const resultado = await criarMarcacaoAction(campaignId, nova);
     if (!resultado.ok) return resultado.erro;
-    // O realtime recarrega a lista com o autor resolvido; isto só evita o vão até lá.
-    setMarcacoes((lista) => [...lista, { ...nova, id: `local-${Date.now()}`, oficial: ehNarrador, autorId: "", autorNome: "Você" }]);
+    await releMarcacoes();
+    return null;
+  };
+  const editarMarcacao = async (id: string, edicao: EdicaoMarcacao): Promise<string | null> => {
+    const resultado = await editarMarcacaoAction(campaignId, id, edicao);
+    if (!resultado.ok) return resultado.erro;
+    setMarcacoes((lista) => lista.map((m) => (m.id === id ? { ...m, ...edicao, titulo: edicao.titulo.trim() } : m)));
+    void releMarcacoes();
+    return null;
+  };
+  const apagarMarcacao = async (id: string): Promise<string | null> => {
+    const resultado = await apagarMarcacaoAction(campaignId, id);
+    if (!resultado.ok) return resultado.erro;
+    setMarcacoes((lista) => lista.filter((m) => m.id !== id));
     return null;
   };
   const existeEstado = atual.revision > 0;
@@ -175,7 +193,8 @@ export function TempoDaCampanha({ campaignId, ehNarrador }: { campaignId: string
       aoAvancar={avancar} aoSortear={sortear} aoCiclarCondicao={ciclarCondicao}
       aoMudarData={mudarData} aoAlterar={alterar}
       aoPublicar={() => salvar(rascunho)}
-      aoTornarDiaAtual={tornarDiaAtual} aoCriarMarcacao={criarMarcacao} />,
+      aoTornarDiaAtual={tornarDiaAtual} aoCriarMarcacao={criarMarcacao}
+      aoEditarMarcacao={editarMarcacao} aoApagarMarcacao={apagarMarcacao} />,
       // Dentro da mesa: tokens, chanfro e botões (`.rv-btn`) são os do VTT.
       chipRef.current?.closest(".rv-mesa") ?? document.body)}
   </>;
