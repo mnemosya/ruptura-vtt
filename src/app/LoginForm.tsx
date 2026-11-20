@@ -36,7 +36,7 @@ import {
   User,
 } from "./_design/icons";
 import "./_design/auth.css";
-import { MarcaRuptura } from "./_design/Marca";
+import { MarcaEntrada } from "./_design/MarcaEntrada";
 import { CompendioAcesso } from "./_design/CompendioAcesso";
 import { useBotaoSinal } from "./_design/botaoSinal";
 import { AuthParticles } from "./_design/AuthParticles";
@@ -169,7 +169,7 @@ function PasswordField({
  * esquerda pra direita. Mexe direto no nó de texto (sem estado), e o
  * `aria-label` guarda a leitura estável.
  */
-function Decodifica({ texto, atraso = 250 }: { texto: string; atraso?: number }) {
+export function Decodifica({ texto, atraso = 250 }: { texto: string; atraso?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     const el = ref.current;
@@ -314,24 +314,20 @@ export function AuthMoldura({
     if (!abalo || !wrapRef.current) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     // Web Animations: re-dispara a cada erro sem remontar o formulário.
-    // Sem card, o tranco é do conteúdo: cada peça (marca, campos, botão, link)
-    // treme com um atraso de 45ms em relação à anterior, de cima pra baixo,
-    // como uma onda de choque; o vermelho acende na moldura da tela.
+    // Só os campos tremem, cada um 30ms depois do anterior, de cima pra
+    // baixo; marca, botão e links ficam parados. O vermelho acende na moldura.
     const pecas = wrapRef.current.querySelectorAll<HTMLElement>(
-      ".rv-header, .rv-field, .rv-recover, .auth-submit-btn, .rv-troca, .rv-join-faixa",
+      ".rv-field",
     );
+    // Mola amortecida (seno que decai), amostrada em 24 quadros: as idas e
+    // voltas encolhem de forma contínua em vez de saltar entre 4 posições.
+    const TRANCO = Array.from({ length: 25 }, (_, k) => {
+      const t = k / 24;
+      const x = 10 * Math.exp(-3.8 * t) * Math.sin(t * Math.PI * 5.5);
+      return { translate: `${(k === 24 ? 0 : -x).toFixed(2)}px 0` };
+    });
     pecas.forEach((peca, i) => {
-      peca.animate(
-        [
-          { translate: "0 0" },
-          { translate: "-8px 0" },
-          { translate: "6px 0" },
-          { translate: "-4px 0" },
-          { translate: "2px 0" },
-          { translate: "0 0" },
-        ],
-        { duration: 420, delay: i * 45, easing: "cubic-bezier(0.3, 0.7, 0.4, 1)" },
-      );
+      peca.animate(TRANCO, { duration: 440, delay: i * 30, easing: "linear" });
     });
     molduraRef.current?.animate(
       [
@@ -587,7 +583,7 @@ export function LoginForm({
     >
           <div className="rv-header">
             <div className="rv-brand">
-              <MarcaRuptura className="rv-marca" />
+              <MarcaEntrada className="rv-marca" />
               <p className="rv-subtitle"><Decodifica texto="VIRTUAL TABLETOP" atraso={650} /></p>
             </div>
           </div>

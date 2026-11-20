@@ -32,9 +32,41 @@ for (const regiao of REGIOES) {
     assert.ok(clima.climaAteMinuto! > clima.climaDesdeMinuto!);
     return clima;
   });
-  if (regiao !== "Torvash") assert.equal(amostras.some((c) => c.condicao === "tempestade_arcana"), false);
+  for (const mes of [1, 3, 6, 9]) {
+    const contagens = new Map<string, number>();
+    for (let seed = 0; seed < 1000; seed++) {
+      const { condicao } = sortearClima(seed, { ...base, mes, regiao });
+      contagens.set(condicao, (contagens.get(condicao) ?? 0) + 1);
+    }
+    for (const id of ["chuva_iridescente", "nevoeiro_cristalino", "tempestade_arcana"]) {
+      assert.ok((contagens.get(id) ?? 0) >= 10, regiao + " mês " + mes + " " + id);
+    }
+  }
   if (regiao === "Kravus") assert.ok(amostras.filter((c) => c.condicao === "neve" || c.condicao === "nevasca").length > 100);
   if (regiao === "Beldran") assert.equal(amostras.some((c) => c.condicao.startsWith("neve")), false);
+}
+for (const mes of [6, 7, 8]) {
+  let estado = { ...base, regiao: "Vastra" as const, mes };
+  let limpo = 0, chuva = 0;
+  const observadas = new Set<string>();
+  for (let seed = 0; seed < 1000; seed++) {
+    const clima = sortearClima(seed, estado);
+    assert.ok(!["neve_leve", "neve", "nevasca"].includes(clima.condicao));
+    if (clima.condicao === "ceu_limpo") limpo++;
+    observadas.add(clima.condicao);
+    if (clima.condicao.startsWith("chuva") || clima.condicao.startsWith("tempestade")) chuva++;
+    estado = { ...estado, condicao: clima.condicao };
+  }
+  assert.ok(limpo > 300 && chuva > 100 && chuva < 300);
+  for (const fenomeno of ["chuva_iridescente", "nevoeiro_cristalino", "tempestade_arcana"]) assert.ok(observadas.has(fenomeno));
+}
+// Nas duas bordas do verão, as mesmas sementes devem produzir as mesmas condições.
+for (const [ultimoMes, proximoMes] of [[5, 6], [8, 9]]) {
+  for (let seed = 0; seed < 1000; seed++) {
+    const vastra = { ...base, regiao: "Vastra" as const };
+    assert.equal(sortearClima(seed, { ...vastra, mes: ultimoMes, dia: 30 }).condicao,
+      sortearClima(seed, { ...vastra, mes: proximoMes, dia: 1 }).condicao);
+  }
 }
 const estavel = definirClimaManual({ ...base, temperaturaC: 6 }, "nublado");
 assert.equal(estavel.temperaturaC, temperaturaAlvo(estavel));

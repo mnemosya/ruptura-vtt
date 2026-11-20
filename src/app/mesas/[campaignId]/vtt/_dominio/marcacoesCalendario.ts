@@ -11,7 +11,10 @@ export interface MarcacaoCalendario {
   id: string; ano: number; mes: number; dia: number;
   tipo: TipoMarcacao; titulo: string; visibilidade: VisibilidadeMarcacao; oficial: boolean;
   autorId: string; autorNome: string;
+  /** Quem vê pode editar/apagar: o autor, ou o narrador se não for privada. */
+  podeAlterar?: boolean;
 }
+export type EdicaoMarcacao = Pick<NovaMarcacao, "tipo" | "titulo" | "visibilidade">;
 export interface NovaMarcacao {
   ano: number; mes: number; dia: number; tipo: TipoMarcacao; titulo: string; visibilidade: VisibilidadeMarcacao;
 }

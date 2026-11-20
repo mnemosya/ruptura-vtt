@@ -200,31 +200,12 @@
 .rv-palco > .rv-tempo-chip:hover .rv-tempo-chip-seta,
 .rv-palco > .rv-tempo-chip:focus-visible .rv-tempo-chip-seta { background: rgba(12,31,43,.85); color: #00d4ff; box-shadow: inset 0 0 0 1px rgba(0,212,255,.45); }
 
-/* Relógios da campanha: placas compactas no rodapé esquerdo. */
+/* Relógios da campanha: no rodapé esquerdo, com o anel original. */
 .rv-palco .rv-mk-faixa,
 .rv-palco .rv-mk-faixa[data-combate] {
   left: 110px; top: auto; bottom: 116px; transform: none;
   justify-content: flex-start; gap: 8px;
 }
-.rv-palco .rv-mk-item[data-tipo] {
-  width: auto; min-width: 146px; align-items: stretch; gap: 0;
-}
-.rv-palco .rv-mk-anel {
-  width: 100%; height: 46px; padding: 5px 12px 5px 5px;
-  display: flex; align-items: center; gap: 8px;
-  border: 1px solid color-mix(in srgb,var(--mk-cor) 40%,transparent);
-  border-radius: 0; background: rgba(6,18,28,.88); text-align: left;
-}
-.rv-palco .rv-mk-item .rv-mk-anel-segmentos { position: relative; inset: auto; flex: none; width: 38px; height: 38px; -webkit-mask: radial-gradient(circle,transparent 12px,#000 13px,#000 18px,transparent 19px); mask: radial-gradient(circle,transparent 12px,#000 13px,#000 18px,transparent 19px); }
-.rv-palco .rv-mk-anel-miolo { left: 6px; top: 6px; right: auto; bottom: auto; width: 38px; height: 38px; border: 0; background: transparent; color: #cfeff4; }
-.rv-palco .rv-mk-anel-miolo svg { display: none; }
-.rv-palco .rv-mk-contagem { color: #cfeff4; font: 600 15px/1 var(--font-teko),sans-serif; }
-.rv-palco .rv-mk-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.rv-palco .rv-mk-nome { color: #cfeff4; font: 700 11px/1.1 var(--font-oxanium),sans-serif; letter-spacing: .1em; white-space: nowrap; text-align: left; }
-.rv-palco .rv-mk-subtipo { color: var(--mk-cor); font: 700 8px var(--font-mono),monospace; letter-spacing: .16em; text-transform: uppercase; }
-.rv-palco .rv-mk-item[data-completo] .rv-mk-nome { color: var(--mk-cor); }
-.rv-palco .rv-mk-item[data-completo] .rv-mk-subtipo { visibility: hidden; }
-.rv-palco .rv-mk-item[data-completo] .rv-mk-selo { position: absolute; left: 52px; top: 29px; padding: 0; background: transparent; color: var(--mk-cor); font: 700 8px var(--font-mono),monospace; letter-spacing: .12em; pointer-events: none; }
 @media (max-width: 800px) {
   :root[data-tema="forja"] .rv-palco .rv-contexto { left: 8px; top: 65px; max-width: calc(100% - 80px); }
   :root[data-tema="forja"] .rv-palco:has(.rv-rodadas) .rv-contexto { max-width: calc(100% - var(--rv-painel-aberto-ocupa,0px) - 80px); }

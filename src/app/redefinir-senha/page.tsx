@@ -19,8 +19,9 @@
 import { traduzirErroAuth } from "../../lib/auth/mensagens";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getBrowserSupabaseClient } from "../../lib/supabase/browserClient";
+import { getBrowserRecoveryClient } from "../../lib/supabase/browserClient";
 import { AlertCircle, CheckCircle, KeyRound, Lock, Spinner } from "../_design/icons";
+import { AuthMoldura, Decodifica } from "../LoginForm";
 import "../_design/auth.css";
 
 type Phase =
@@ -35,9 +36,11 @@ export default function RedefinirSenhaPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [fieldError, setFieldError] = useState<string | null>(null);
+  /** Cada incremento sacode os campos (mesmo tranco do login). */
+  const [abalo, setAbalo] = useState(0);
 
   useEffect(() => {
-    const supabase = getBrowserSupabaseClient();
+    const supabase = getBrowserRecoveryClient();
     if (!supabase) {
       setPhase({
         kind: "error",
@@ -78,21 +81,24 @@ export default function RedefinirSenhaPage() {
       });
     }
 
-    void verify();
+    const FALHA = "Não foi possível validar o link. Abra-o de novo ou peça outro em RECUPERAR SENHA.";
+    verify().catch((err: unknown) => {
+      setPhase({ kind: "error", message: traduzirErroAuth(err as Error, FALHA) });
+    });
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFieldError(null);
-    if (password.length < 8) { setFieldError("Mínimo de 8 caracteres"); return; }
-    if (password !== confirm) { setFieldError("As senhas não coincidem"); return; }
+    if (password.length < 8) { setFieldError("Mínimo de 8 caracteres"); setAbalo((n) => n + 1); return; }
+    if (password !== confirm) { setFieldError("As senhas não coincidem"); setAbalo((n) => n + 1); return; }
 
-    const supabase = getBrowserSupabaseClient();
+    const supabase = getBrowserRecoveryClient();
     if (!supabase) return;
 
     setPhase({ kind: "saving" });
-    const { error } = await supabase.auth.updateUser({ password });
-    if (error) { setPhase({ kind: "error", message: traduzirErroAuth(error, "Não foi possível redefinir a senha. Peça um novo link.") }); return; }
+    const { error } = await supabase.auth.updateUser({ password }).catch((err: unknown) => ({ error: err as Error }));
+    if (error) { setAbalo((n) => n + 1); setPhase({ kind: "error", message: traduzirErroAuth(error, "Não foi possível redefinir a senha. Peça um novo link.") }); return; }
     await supabase.auth.signOut().catch(() => undefined);
     setPhase({ kind: "done" });
   }
@@ -100,33 +106,14 @@ export default function RedefinirSenhaPage() {
   const busy = phase.kind === "saving" || phase.kind === "verifying";
 
   return (
-    <div className="rv-root">
-      <div className="rv-bg" aria-hidden="true">
-        <div className="rv-img-wrap">
-          <div className="rv-img" />
-          <div className="rv-img-tint" />
-          <div className="rv-img-grad" />
-          <div className="rv-img-mask" />
-        </div>
-      </div>
-
-      <div className="rv-panel-wrap">
-        <div className="rv-stripe rv-stripe-l" aria-hidden="true" />
-        <div className="rv-stripe rv-stripe-r" aria-hidden="true" />
-        <main className="rv-panel">
-          <div className="rv-deco rv-deco-top" aria-hidden="true">
-            <div className="rv-deco-line-a" />
-            <div className="rv-deco-line-b" />
-          </div>
-
+    <AuthMoldura
+      abalo={abalo}
+      rodape={<Link href="/login" className="rv-foot-link">VOLTAR AO TERMINAL DE ACESSO</Link>}
+    >
           <div className="rv-header">
             <div className="rv-brand">
-              <div className="rv-badge">
-                <span className="rv-badge-dot" aria-hidden="true" />
-                <span className="rv-badge-txt">// SYS.AUTH.RESET</span>
-              </div>
-              <h1 className="rv-title" style={{ fontSize: "clamp(26px, 7vw, 34px)" }}>NOVA SENHA</h1>
-              <p className="rv-subtitle">REDEFINIÇÃO DE ACESSO</p>
+              <h1 className="rv-join-titulo">NOVA SENHA</h1>
+              <p className="rv-subtitle"><Decodifica texto="REDEFINIÇÃO DE ACESSO" atraso={250} /></p>
             </div>
           </div>
 
@@ -191,24 +178,18 @@ export default function RedefinirSenhaPage() {
                 </div>
               </div>
 
-              <button type="submit" disabled={busy} className="rv-submit rv-submit--cyan">
-                <span className="rv-submit-glow rv-submit-glow--base" aria-hidden="true" />
-                <span className="rv-submit-glow rv-submit-glow--hover" aria-hidden="true" />
-                {phase.kind === "saving" && <Spinner size={13} className="rv-spin rv-z" />}
-                <span className="rv-z">{phase.kind === "saving" ? "SALVANDO..." : "DEFINIR SENHA"}</span>
+              <button
+                type="submit"
+                disabled={busy}
+                className="auth-submit-btn auth-submit-btn--cyan"
+                data-estado={phase.kind === "saving" ? "ocupado" : undefined}
+                aria-busy={phase.kind === "saving" || undefined}
+              >
+                {phase.kind === "saving" ? "SALVANDO" : "DEFINIR SENHA"}
               </button>
             </form>
           )}
 
-          <div className="rv-foot">
-            <span className="rv-foot-line" aria-hidden="true" />
-            <span className="rv-foot-txt">
-              <Link href="/login" className="rv-foot-link">VOLTAR AO TERMINAL DE ACESSO</Link>
-            </span>
-            <span className="rv-foot-line" aria-hidden="true" />
-          </div>
-        </main>
-      </div>
-    </div>
+    </AuthMoldura>
   );
 }

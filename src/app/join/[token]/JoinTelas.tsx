@@ -8,28 +8,20 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { AuthMoldura, LoginForm } from "../../LoginForm";
+import { AuthMoldura, Decodifica, LoginForm } from "../../LoginForm";
 import { ConfirmarEntrada } from "./ConfirmarEntrada";
 
+/**
+ * Mesmo cabeçalho do login, sem selo nem divisor: título e, abaixo, a
+ * linha de contexto que decodifica ao entrar (como o "VIRTUAL TABLETOP").
+ */
 function Cabecalho({ badge, titulo, subtitulo }: { badge: string; titulo: ReactNode; subtitulo?: ReactNode }) {
   return (
     <div className="rv-header">
       <div className="rv-brand">
-        <div className="rv-badge">
-          <span className="rv-badge-dot" aria-hidden="true" />
-          <span className="rv-badge-txt">
-            // SYS.CONVITE
-            <span className="rv-badge-sep" aria-hidden="true" />
-            {badge}
-          </span>
-        </div>
         <h1 className="rv-join-titulo">{titulo}</h1>
+        <p className="rv-subtitle"><Decodifica texto={badge} atraso={250} /></p>
         {subtitulo && <p className="rv-join-sub">{subtitulo}</p>}
-      </div>
-      <div className="rv-divider" aria-hidden="true">
-        <span className="rv-div-line" />
-        <span className="rv-div-icon">⬡</span>
-        <span className="rv-div-line" />
       </div>
     </div>
   );
@@ -88,6 +80,20 @@ export function TelaJoinLogin({ token, campanha, emailTravado }: { token: string
   );
 }
 
+/** Credencial do convite: campanha em destaque e os dados em linhas. */
+function CartaoCredencial({ nome, email, papel = "Jogador" }: { nome: string; email: string | null; papel?: string }) {
+  return (
+    <div className="rv-join-credencial-cartao">
+      <span className="rv-label">CAMPANHA</span>
+      <strong className="rv-join-campanha-nome">{nome}</strong>
+      <dl className="rv-join-credencial-linhas">
+        <div><dt>ACESSO</dt><dd className="rv-val--amber">{papel.toUpperCase()}</dd></div>
+        {email && <div><dt>ENTRAR COMO</dt><dd>{email}</dd></div>}
+      </dl>
+    </div>
+  );
+}
+
 /** Logado e ainda fora da campanha: confirma antes de entrar. */
 export function TelaJoinConfirmar({ token, campanha, email, demo }: {
   token: string; campanha: string; email: string | null; demo?: boolean;
@@ -96,13 +102,7 @@ export function TelaJoinConfirmar({ token, campanha, email, demo }: {
     <AuthMoldura>
       <Cabecalho badge="CONVITE RECEBIDO" titulo="Entrar na campanha?" />
       <div className="rv-form" data-testid="join-confirmacao">
-        <CartaoCampanha nome={campanha} />
-        {email && (
-          <p className="rv-join-texto">
-            Você vai entrar como <strong>{email}</strong>.
-          </p>
-        )}
-        <ConfirmarEntrada token={token} demo={demo} />
+        <ConfirmarEntrada token={token} demo={demo} cartao={<CartaoCredencial nome={campanha} email={email} />} />
       </div>
     </AuthMoldura>
   );

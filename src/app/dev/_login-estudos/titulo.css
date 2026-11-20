@@ -1,0 +1,69 @@
+/* Estudo da entrada da marca — ver TituloEstudo.tsx. */
+
+.te-letra { position: relative; display: inline-block; }
+
+/* O eco só falha depois que a entrada termina. */
+.te-marca[data-pronto="0"] .ds-marca__eco { opacity: 0; animation: none; }
+.te-marca .ds-marca__eco { transition: opacity 0.2s ease; }
+
+/* A · Decodifica: a letra real guarda a largura; o glifo fica por cima. */
+.te-marca[data-entrada="decodifica"] .te-letra[data-fixa="0"] { color: transparent; text-shadow: none; }
+.te-marca[data-entrada="decodifica"] .te-letra[data-fixa="0"]::after {
+  content: attr(data-glifo);
+  position: absolute; inset: 0; text-align: center;
+  color: color-mix(in srgb, var(--ds-marca-ciano) 75%, transparent);
+}
+.te-marca[data-entrada="decodifica"] .te-letra[data-fixa="1"] { animation: te-assenta 0.18s ease-out; }
+@keyframes te-assenta { from { filter: brightness(1.8); } to { filter: none; } }
+
+/* B · Foco: sobe e sai do desfoque, 35ms entre letras. */
+.te-marca[data-entrada="foco"] .te-letra {
+  animation: te-foco 0.38s cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation-delay: calc(var(--i) * 35ms + 60ms);
+}
+@keyframes te-foco {
+  from { opacity: 0; transform: translateY(0.22em); filter: blur(10px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+/* C · Varredura: a linha passa e deixa a marca revelada atrás dela. */
+.te-marca[data-entrada="varredura"] .ds-marca__logo {
+  animation: te-revela 0.46s cubic-bezier(0.65, 0, 0.35, 1) 0.06s both;
+}
+@keyframes te-revela { from { clip-path: inset(-20% 100% -20% 0); } to { clip-path: inset(-20% 0 -20% 0); } }
+.te-marca[data-entrada="varredura"]::before {
+  content: ""; position: absolute; top: -10%; bottom: -10%; width: 2px; left: 0; pointer-events: none;
+  background: var(--ds-marca-ciano);
+  box-shadow: 0 0 10px var(--ds-marca-ciano), 0 0 24px color-mix(in srgb, var(--ds-marca-ciano) 60%, transparent);
+  animation: te-linha 0.46s cubic-bezier(0.65, 0, 0.35, 1) 0.06s both;
+}
+@keyframes te-linha {
+  0% { left: 0; opacity: 1; }
+  85% { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .te-marca .te-letra, .te-marca .ds-marca__logo, .te-marca::before { animation: none !important; }
+}
+
+.te-nota {
+  margin: 0; text-align: center; font-family: var(--font-mono), monospace; font-size: 10px;
+  letter-spacing: 0.12em; color: rgba(84, 172, 190, 0.7); text-transform: uppercase;
+}
+
+/* Controles do estudo, fora do painel. */
+.te-controles {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 50;
+  display: flex; align-items: center; gap: 6px; padding: 6px;
+  background: rgba(2, 10, 20, 0.72); border: 1px solid rgba(0, 212, 255, 0.18); backdrop-filter: blur(8px);
+}
+.te-botao {
+  font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 7px 10px; color: rgba(184, 216, 232, 0.8); background: transparent;
+  border: 1px solid transparent; cursor: pointer; transition: border-color 0.15s ease, background 0.15s ease;
+}
+.te-botao:hover, .te-botao[aria-pressed="true"] {
+  border-color: rgba(0, 212, 255, 0.45); background: rgba(0, 212, 255, 0.1); color: #e8f5fb;
+}
+.te-sep { width: 1px; height: 18px; background: rgba(0, 212, 255, 0.2); }
