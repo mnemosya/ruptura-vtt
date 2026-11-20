@@ -14,7 +14,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, Copy, Eye, Link2, Loader2, Pencil, ShieldCheck, Trash2, UserMinus, UserPlus, UserRound } from "lucide-react";
+import { Check, ChevronDown, Copy, Eye, Link2, Loader2, Mail, Pencil, ShieldCheck, Trash2, UserMinus, UserPlus, UserRound } from "lucide-react";
 import { MenuAncorado } from "../ui/MenuAncorado";
 import { useDicaPortal } from "../ui/DicaPortal";
 import type { PermissaoPersonagem } from "../../../../../../lib/character/storage";
@@ -24,6 +24,7 @@ import { EstadoCarregando, EstadoErro, EstadoVazio } from "../Estados";
 import {
   criarConviteAction,
   definirPermissaoAction,
+  enviarConviteAction,
   lerAcessoPersonagemAction,
   lerJogadoresConvitesAction,
   removerParticipanteAction,
@@ -83,6 +84,8 @@ export function JanelaJogadoresConvites({
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [rotulo, setRotulo] = useState("");
+  const [email, setEmail] = useState("");
+  const [statusEnvio, setStatusEnvio] = useState<string | null>(null);
   const [linkNovo, setLinkNovo] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
 
@@ -99,11 +102,14 @@ export function JanelaJogadoresConvites({
   }, [aberta, carregar]);
 
   async function executar(chave: string, acao: () => Promise<{ ok: boolean; erro?: string }>) {
+    if (ocupado) return;
     setOcupado(chave);
     try {
       const r = await acao();
       if (!r.ok) setErro(r.erro ?? "A operação foi recusada.");
       else await carregar();
+    } catch {
+      setErro("Não foi possível confirmar a operação. Confira a lista antes de tentar de novo.");
     } finally {
       setOcupado(null);
     }
@@ -161,9 +167,11 @@ export function JanelaJogadoresConvites({
                 primario
                 acento="cy"
                 ocupado={ocupado === "novo"}
+                desabilitado={ocupado !== null}
                 icone={<Link2 />}
                 onClick={() =>
                   executar("novo", async () => {
+                    setStatusEnvio(null);
                     const r = await criarConviteAction(campaignId, rotulo, window.location.origin);
                     if (r.ok && r.dados) {
                       setLinkNovo(r.dados.link);
@@ -178,6 +186,38 @@ export function JanelaJogadoresConvites({
                 Gerar link de convite
               </BotaoTecnico>
             </div>
+            <form className="rv-pn-campo" onSubmit={(event) => {
+              event.preventDefault();
+              void executar("email", async () => {
+                setErro(null);
+                setStatusEnvio(null);
+                setLinkNovo(null);
+                setCopiado(false);
+                const r = await enviarConviteAction(campaignId, email, rotulo);
+                if (r.ok && r.dados) {
+                  setLinkNovo(r.dados.link);
+                  setStatusEnvio(r.dados.enviado
+                    ? `Convite enviado para ${email.trim()}.`
+                    : "O convite foi criado, mas o envio não foi confirmado. Você pode copiar o link abaixo.");
+                  setEmail("");
+                  setRotulo("");
+                }
+                return r;
+              });
+            }}>
+              <label className="rv-pn-campo" style={{ marginTop: 0 }}>
+                <span>E-mail do jogador</span>
+                <input type="email" autoComplete="email" required maxLength={254} className="rv-pn-input"
+                  value={email} disabled={ocupado === "email"} onChange={(event) => setEmail(event.target.value)}
+                  data-testid="painel-convites-email" />
+              </label>
+              <div>
+                <BotaoTecnico tipo="submit" primario ocupado={ocupado === "email"} desabilitado={ocupado !== null} icone={<Mail />} testId="painel-convites-enviar">
+                  {ocupado === "email" ? "Enviando…" : "Enviar convite"}
+                </BotaoTecnico>
+              </div>
+            </form>
+            {statusEnvio && <p role="status">{statusEnvio}</p>}
             {linkNovo && (
               <div style={{ marginTop: 8, display: "flex", gap: 6, alignItems: "center" }}>
                 <input className="rv-pn-input" readOnly value={linkNovo} style={{ flex: 1 }} data-testid="painel-convites-link" />
