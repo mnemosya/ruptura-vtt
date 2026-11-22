@@ -19,7 +19,7 @@ import "./compendio.css";
 import { abrirCapituloAction, enviarSelecaoAoChatAction, enviarTrechoAoChatAction, listarCapitulosAction, textosDoLivroAction } from "./acoes";
 import { BotaoExpandir, Blocos, type ContextoLeitura } from "./Blocos";
 import { CapaLivro } from "./CapaLivro";
-import { posicaoDaCapa } from "./enquadramento";
+import { imagensDoCapitulo, posicaoDaCapa } from "./enquadramento";
 import {
   agruparPorSecao,
   capituloRaiz,
@@ -183,7 +183,7 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
       setCarregando(false);
       if (!r.ok || !r.dados) return setErro(r.erro ?? "Não foi possível abrir o capítulo.");
       setErro(null);
-      setCapitulos((m) => new Map(m).set(atual.pageId, r.dados!));
+      setCapitulos((m) => new Map(m).set(atual.pageId, imagensDoCapitulo(r.dados!)));
     });
     return () => { vivo = false; };
   }, [atual, capitulos, campaignId]);
@@ -194,7 +194,7 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
     if (!raizAtual || raizAtual === atual?.pageId || capitulos.has(raizAtual)) return;
     let vivo = true;
     void abrirCapituloAction(campaignId, raizAtual).then((r) => {
-      if (vivo && r.ok && r.dados) setCapitulos((m) => new Map(m).set(raizAtual, r.dados!));
+      if (vivo && r.ok && r.dados) setCapitulos((m) => new Map(m).set(raizAtual, imagensDoCapitulo(r.dados!)));
     });
     return () => { vivo = false; };
   }, [raizAtual, atual, capitulos, campaignId]);
