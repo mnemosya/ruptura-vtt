@@ -7,7 +7,8 @@
  * Subclasses, Perícias) e o ponto de partida (Ranking e valores atuais).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useCamada } from "../../../../../_design/camadas";
 import { createPortal } from "react-dom";
 import type { RankingV12 } from "../../../../../../lib/rulesetV12";
 import { ForjaEvolucao } from "../../_forja/ForjaEvolucao";
@@ -27,6 +28,7 @@ export function JanelaEvolucao({ campaignId, characterId, alvo, onFechar }: {
   const [dados, setDados] = useState<{ catalogos: CatalogosCriacaoV12; partida: PartidaEvolucaoV12 } | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [montado, setMontado] = useState(false);
+  const raizRef = useRef<HTMLDivElement>(null);
   useEffect(() => { setMontado(true); }, []);
 
   useEffect(() => {
@@ -40,16 +42,13 @@ export function JanelaEvolucao({ campaignId, characterId, alvo, onFechar }: {
     return () => { vivo = false; };
   }, [campaignId, characterId]);
 
-  useEffect(() => {
-    if (dados) return;
-    const k = (e: KeyboardEvent) => { if (e.key === "Escape") onFechar(); };
-    window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
-  }, [dados, onFechar]);
+  // Esc fecha só enquanto carrega; com a Forja montada, o Esc segue
+  // para ela (`undefined`). Tab contido na janela o tempo todo.
+  useCamada({ aberta: montado, fechar: dados ? undefined : onFechar, raiz: raizRef, modal: true });
 
   if (!montado) return null;
   return createPortal(
-    <div className="fj-janela" role="dialog" aria-modal="true" aria-label={`Evoluir até o Ranking ${alvo}`}>
+    <div ref={raizRef} className="fj-janela" role="dialog" aria-modal="true" aria-label={`Evoluir até o Ranking ${alvo}`}>
       {dados ? (
         <ForjaEvolucao
           catalogos={dados.catalogos}

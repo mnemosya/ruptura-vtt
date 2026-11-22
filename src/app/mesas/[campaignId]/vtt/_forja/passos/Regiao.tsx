@@ -9,6 +9,7 @@ import { CartaoDossie } from "./CartaoDossie";
 import type { SetDraft } from "../tipos";
 import type { DraftV12 } from "../../../../../../lib/rulesetV12";
 import { oxanium } from "../../../../../_design/oxanium";
+import { useCamada } from "../../../../../_design/camadas";
 import type { RegiaoIdV12 } from "../../../../../../lib/rulesetV12/contracts";
 
 const reg = (id: string) => REGIOES.find((r) => r.id === id) ?? REGIOES[0];
@@ -202,13 +203,10 @@ function CodexRegional({ start, d, set, onClose }: { start: string; d: DraftV12;
     { k: "regra", label: "Regra de origem", kids: [{ k: "comparar", label: "Comparar regiões" }] },
   ];
   const [big, setBig] = useState(false);
-  useEffect(() => {
-    if (!big) return;
-    // captura o Esc antes do Shell para fechar só o mapa
-    const k = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopImmediatePropagation(); setBig(false); } };
-    window.addEventListener("keydown", k, true);
-    return () => window.removeEventListener("keydown", k, true);
-  }, [big]);
+  const mapaRef = useRef<HTMLDivElement>(null);
+  // Pilha de camadas: o mapa é a camada de cima, então o Esc fecha só ele
+  // e o Shell do Códex continua aberto.
+  useCamada({ aberta: big, fechar: () => setBig(false), raiz: mapaRef, modal: true });
   const pick = () => set({ regiaoId: r.id, localOrigem: on ? d.localOrigem : "" });
 
   return (
@@ -310,7 +308,7 @@ function CodexRegional({ start, d, set, onClose }: { start: string; d: DraftV12;
 
         {/* portal no body: o Shell usa transform, o que prenderia o fixed dentro do códex */}
         {big && createPortal(
-          <div onClick={() => setBig(false)} className={`fj-root ${oxanium.variable} fj-mapa-grande`} role="dialog" aria-modal="true" aria-label="Mapa do Império">
+          <div ref={mapaRef} onClick={() => setBig(false)} className={`fj-root ${oxanium.variable} fj-mapa-grande`} role="dialog" aria-modal="true" aria-label="Mapa do Império">
             <div onClick={(e) => e.stopPropagation()} className="fj-mapa-grande__topo">
               <div><Mono pequeno tom="cy">Atlas imperial</Mono><div className="fj-codex-cab__titulo">Braxus Vantahl</div></div>
               <div className="fj-mapa-grande__regioes">

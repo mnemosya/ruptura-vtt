@@ -17,8 +17,10 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useCamada } from "../../../../../_design/camadas";
 import { BotaoTecnico } from "./primitivas";
 import type { Acento } from "./primitivas";
+import { ehEnter } from "../../../../../_design/teclado";
 
 function useMoldura(aoFechar: () => void, aberto: boolean) {
   const ref = useRef<HTMLDivElement>(null);
@@ -35,31 +37,9 @@ function useMoldura(aoFechar: () => void, aberto: boolean) {
     abridorRef.current?.focus?.({ preventScroll: true });
   }, [aoFechar]);
 
-  useEffect(() => {
-    if (!aberto) return;
-    function aoTeclar(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        fechar();
-        return;
-      }
-      if (e.key !== "Tab") return;
-      const focaveis = ref.current?.querySelectorAll<HTMLElement>("button:not(:disabled), input:not(:disabled)");
-      if (!focaveis || focaveis.length === 0) return;
-      const primeiro = focaveis[0];
-      const ultimo = focaveis[focaveis.length - 1];
-      if (!e.shiftKey && document.activeElement === ultimo) {
-        e.preventDefault();
-        primeiro.focus({ preventScroll: true });
-      } else if (e.shiftKey && document.activeElement === primeiro) {
-        e.preventDefault();
-        ultimo.focus({ preventScroll: true });
-      }
-    }
-    window.addEventListener("keydown", aoTeclar, true);
-    return () => window.removeEventListener("keydown", aoTeclar, true);
-  }, [aberto, fechar]);
+  // Esc e Tab pela pilha de camadas: um diálogo aberto dentro de uma
+  // janela fecha sozinho, sem levar a janela junto.
+  useCamada({ aberta: aberto, fechar, raiz: ref, modal: true });
 
   return { ref, fechar, montado };
 }
@@ -149,7 +129,7 @@ export function DialogoTexto({
               placeholder={placeholder}
               onChange={(e) => setValor(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
+                if (ehEnter(e)) {
                   e.preventDefault();
                   confirmar();
                 }

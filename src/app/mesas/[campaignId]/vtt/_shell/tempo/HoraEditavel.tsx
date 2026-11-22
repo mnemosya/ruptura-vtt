@@ -13,6 +13,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { ehEnter } from "../../../../../_design/teclado";
 
 type Parte = "h" | "m";
 const LIMITE: Record<Parte, number> = { h: 24, m: 60 };
@@ -113,7 +114,7 @@ function Segmento({ parte, valor, aoMudar, rotulo, setas }: { parte: Parte; valo
         const passo = e.shiftKey ? 10 : 1;
         if (e.key === "ArrowUp") { e.preventDefault(); setDigitado(null); aoMudar(valor + passo); }
         else if (e.key === "ArrowDown") { e.preventDefault(); setDigitado(null); aoMudar(valor - passo); }
-        else if (e.key === "Enter") { e.preventDefault(); confirmar(digRef.current); e.currentTarget.blur(); }
+        else if (ehEnter(e)) { e.preventDefault(); confirmar(digRef.current); e.currentTarget.blur(); }
         else if (e.key === "Escape") { e.stopPropagation(); setDigitado(null); e.currentTarget.blur(); }
       }} />
   );

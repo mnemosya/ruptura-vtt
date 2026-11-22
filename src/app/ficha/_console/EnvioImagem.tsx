@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { useCamada } from "../../_design/camadas";
 import { createPortal } from "react-dom";
 import { CircleAlert, Info, Upload, X } from "lucide-react";
 import { BYTES_ORIGINAL_MAXIMO } from "../../../lib/vtt/imagePreparation";
@@ -121,6 +122,10 @@ export function EnvioImagem({
   const fecharBotao = useRef<HTMLButtonElement>(null);
   const centro = useCentroDoConsole();
   const sair = () => setSaindo(true);
+  const raizRef = useRef<HTMLDivElement>(null);
+  // Esc pela pilha de camadas, com o foco onde estiver: o envio é a
+  // camada de cima, então fecha antes do modal que o abriu.
+  useCamada({ aberta: montado && !saindo, fechar: sair, raiz: raizRef, modal: true });
   const livre = forma === "livre";
 
   useEffect(() => { setMontado(true); }, []);
@@ -168,7 +173,7 @@ export function EnvioImagem({
 
   return createPortal(<div className="rc-cursor-scope ev-modal" data-saindo={saindo} onAnimationEnd={e => { if (saindo && e.target === e.currentTarget) fechar(); }}>
     <div className="pn-jan-fundo" aria-hidden="true" onClick={sair} />
-    <div className="pn-jan pn-dialogo ev-jan" data-console={centralizarNoConsole && !!centro} style={estilo} role="dialog" aria-modal="true" aria-label={contexto ? `${titulo} · ${contexto}` : titulo} onKeyDown={e => { if (e.key === "Escape") { e.stopPropagation(); sair(); } }}>
+    <div ref={raizRef} className="pn-jan pn-dialogo ev-jan" data-console={centralizarNoConsole && !!centro} style={estilo} role="dialog" aria-modal="true" aria-label={contexto ? `${titulo} · ${contexto}` : titulo}>
       <div className="pn-jan-top">
         <span className="pn-jan-titulo">{titulo}{contexto && <span style={{ opacity: 0.6 }}> · {contexto}</span>}</span>
         <div className="pn-jan-btns">

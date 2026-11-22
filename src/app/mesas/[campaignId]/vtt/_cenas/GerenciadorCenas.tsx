@@ -59,6 +59,7 @@ import { EnvioImagem } from "../../../../ficha/_console/EnvioImagem";
 import { caixaDaGrade } from "../_dominio/imagemCena";
 import { GavetaCasca } from "./GavetaCasca";
 import { LinhaPasta } from "./LinhaPasta";
+import { ehEnter } from "../../../../_design/teclado";
 import type {
   CartaoCena as DadosCartaoCena, CenaVtt, ModoDuplicacao, PastaCena, PosicaoJogador,
 } from "../../../../../lib/vtt/sceneStorage";
@@ -1379,7 +1380,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                 data-testid="pasta-nova-nome"
                 onChange={(e) => setNomePastaNova(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") { e.preventDefault(); void criarPastaNova(); }
+                  if (ehEnter(e)) { e.preventDefault(); void criarPastaNova(); }
                   if (e.key === "Escape") { e.preventDefault(); setCriandoPasta(false); setNomePastaNova(""); setPaiDaPastaNova(null); }
                 }}
               />
@@ -1631,7 +1632,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                 onChange={(e) => setRenomeandoAberta(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Escape") { e.preventDefault(); setRenomeandoAberta(null); }
-                  if (e.key === "Enter") {
+                  if (ehEnter(e)) {
                     e.preventDefault();
                     const limpo = renomeandoAberta.trim();
                     setRenomeandoAberta(null);

@@ -18,6 +18,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import type { Bancada } from "../../../../lib/character/supportLoadout";
 import { AuxJanela } from "./AuxModals";
+import { ehEnter } from "../../../_design/teclado";
 
 /** Cor de cada tipo — estável pela ordem das linhas. */
 const CORES = ["#9fb2c8", "#ff5f74", "#ffc94a", "#00d4ff", "#8d62e8", "#22d3aa"];
@@ -160,7 +161,7 @@ function Quantidade({ valor, rotulo, pulso, onDefinir }: { valor: number; rotulo
       <span className="rc-banc-valor" data-erro={erro || undefined}>
         <input ref={ref} value={texto} aria-label={`${rotulo}: quantidade, +N, -N ou max`} aria-invalid={erro}
           onChange={(e) => { setTexto(e.target.value); setErro(false); }}
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirmar(); } else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); setEditando(false); } }}
+          onKeyDown={(e) => { if (ehEnter(e)) { e.preventDefault(); confirmar(); } else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); setEditando(false); } }}
           onBlur={() => { if (!onDefinir(texto)) setEditando(false); else setEditando(false); }} />
       </span>
     );

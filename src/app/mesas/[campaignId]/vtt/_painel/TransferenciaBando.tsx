@@ -18,6 +18,7 @@ import { lerDiretorioPersonagensAction } from "./acoes/personagensPainel";
 import { transferirItemBandoAction } from "./acoes/bandoPainel";
 import type { ItemTransferivel } from "./bandoModelo";
 import { EstadoCarregando, EstadoErro } from "./Estados";
+import { CamadaModal } from "../../../../_design/CamadaModal";
 
 export interface AlvoTransferencia {
   /** Só o essencial da linha — a instância inteira nunca precisa atravessar o cliente: o servidor a relê pelo id. */
@@ -92,7 +93,7 @@ export function TransferenciaBando({
         if (e.target === e.currentTarget && !enviando) onFechar();
       }}
     >
-      <div className="rv-modal rv-modal--confirmar" role="dialog" aria-modal="true" aria-label={`Transferir ${alvo.item.nome}`} data-testid="painel-bando-transferencia">
+      <CamadaModal fechar={() => { if (!enviando) onFechar(); }} className="rv-modal rv-modal--confirmar" role="dialog" aria-modal="true" aria-label={`Transferir ${alvo.item.nome}`} data-testid="painel-bando-transferencia">
         <header className="rv-modal-cab">
           <h2>Transferir do bando</h2>
           <button type="button" className="rv-modal-fechar" aria-label="Fechar" onClick={onFechar} disabled={enviando}>×</button>
@@ -149,7 +150,7 @@ export function TransferenciaBando({
             {enviando ? <Loader2 size={14} className="rv-spin" /> : null} Transferir
           </button>
         </footer>
-      </div>
+      </CamadaModal>
     </div>
   );
 }

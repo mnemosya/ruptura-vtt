@@ -364,8 +364,8 @@
 .v1 .v1-saida-txt { font-family: var(--v1-mono); font-size: 12px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--v1-apagado); }
 
 /* Reduzir movimento (preferência da conta, `.ra-reduce-motion` na raiz) e do sistema. */
-.v1.ra-reduce-motion *, .v1.ra-reduce-motion *::before, .v1.ra-reduce-motion *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
-@media (prefers-reduced-motion: reduce) { .v1 *, .v1 *::before, .v1 *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
+.v1.ra-reduce-motion *, .v1.ra-reduce-motion *::before, .v1.ra-reduce-motion *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-property: opacity, color, background-color, border-color, outline-color, text-decoration-color, box-shadow, fill, stroke !important; }
+@media (prefers-reduced-motion: reduce) { .v1 *, .v1 *::before, .v1 *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-property: opacity, color, background-color, border-color, outline-color, text-decoration-color, box-shadow, fill, stroke !important; } }
 
 /* Alto contraste na casca V1: as regras antigas em app.css só cobrem ra-*. */
 .v1.ra-hc { --v1-texto: #e0f4fb; --v1-apagado: #b7ccd6; --v1-fundo: #081923; }

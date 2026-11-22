@@ -21,7 +21,9 @@
  * `aria-label`/`aria-describedby` de quem chama.
  */
 
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useId, useRef, useState, type ReactNode } from "react";
+import { useCamada } from "../../../../_design/camadas";
+import { descreverAlvo } from "../_painel/ui/DicaPortal";
 
 export interface AlvoDaDica {
   onMouseEnter: (e: React.MouseEvent<HTMLElement>) => void;
@@ -62,8 +64,12 @@ export function useDicaFlutuante(
 } {
   const { lado = "auto", acento } = opcoes;
   const [pos, setPos] = useState<{ x: number; y: number; lado: "esquerda" | "direita" } | null>(null);
+  const id = useId();
+  const soltar = useRef<(() => void) | null>(null);
 
   const abrir = useCallback((el: HTMLElement) => {
+    soltar.current?.();
+    soltar.current = descreverAlvo(el, texto, id);
     const r = el.getBoundingClientRect();
     // Largura típica de uma dica curta. Não dá pra medir antes de
     // existir, e medir depois faria o balão pular de lado na cara de
@@ -78,9 +84,15 @@ export function useDicaFlutuante(
       y: r.top + r.height / 2,
       lado: resolvido,
     });
-  }, [lado]);
+  }, [lado, texto, id]);
 
-  const fechar = useCallback(() => setPos(null), []);
+  const fechar = useCallback(() => {
+    soltar.current?.();
+    soltar.current = null;
+    setPos(null);
+  }, []);
+  // Esc dispensa a dica sem tirar o mouse nem o foco do controle.
+  useCamada({ aberta: pos !== null, fechar });
 
   return {
     alvo: {
@@ -97,6 +109,7 @@ export function useDicaFlutuante(
         // trilho de facções usa, e a razão de ele existir no CSS.
         data-lado={pos.lado === "esquerda" ? "pn" : undefined}
         role="tooltip"
+        id={id}
         style={{ left: pos.x, top: pos.y, ...(acento ? { "--jf-acento": acento, color: acento } as React.CSSProperties : {}) }}
       >
         {texto}

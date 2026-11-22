@@ -8,6 +8,7 @@ import combatente from "../../../../../../content/v12/db_classe_combatente_v1_2.
 import "./classOperations.css";
 import "./classSecondary.css";
 import { GameRepertoire } from "./GameRepertoire";
+import { ehEnter } from "../../../../_design/teclado";
 
 type Api = Pick<ConsoleApi, "character" | "somenteLeitura"> & Partial<Pick<ConsoleApi, "classe" | "derivados" | "atributoDaPericia" | "rolarTeste">>;
 type Maneuver = { id: string; name: string; category: string; description: string };
@@ -84,7 +85,7 @@ export function ClassOperations({ api, classId, rank, subclassId }: { api: Api; 
     return <section className="hc-operation hc-face" aria-label="Reserva de Confiança">
       <header className="hc-op-head"><div><span className="hc-kicker">01 / INFLUÊNCIA</span><h3>Reserva de Confiança</h3></div><span className="hc-op-meta">{state.dice.length} / {resource.max} D8 GUARDADOS</span></header>
       <div className="hc-face-layout"><div className="hc-face-reserve"><div className="hc-reserve-caption"><span>Dados guardados</span><small>{reached(rank, "B") ? "Até o fim da operação" : "Até o fim da cena"}</small></div><div className="hc-face-slots">{Array.from({ length: resource.max }, (_, index) => <button key={index} type="button" aria-label={`Editar dado guardado ${index + 1}: ${state.dice[index] ?? "vazio"}`} disabled={locked || index > state.dice.length} onClick={() => openEditor(index)} data-filled={state.dice[index] != null}><small>0{index + 1}</small><svg className="hc-confidence-gem" viewBox="0 0 100 110" aria-hidden="true"><path d="M50 4 94 55 50 106 6 55Z"/><path d="M6 55 50 25 94 55 50 85Z"/></svg><strong>{state.dice[index] ?? "+"}</strong><span>{state.dice[index] == null ? "INSERIR VALOR" : "EDITAR D8"}</span></button>)}</div>
-        {dieEditor !== null && <div className="hc-die-editor"><label>RESULTADO DO D8<input autoFocus type="number" inputMode="numeric" min="1" max="8" value={dieValue} onChange={event => setDieValue(event.target.value)} onKeyDown={event => { if (event.key === "Enter") saveDie(); if (event.key === "Escape") setDieEditor(null); }} /></label><button type="button" disabled={!/^[1-8]$/.test(dieValue)} onClick={saveDie}>Salvar</button>{state.dice[dieEditor] != null && <button type="button" onClick={() => { send?.({ type: "setDie", index: dieEditor, value: null }); setDieEditor(null); }}>Remover</button>}</div>}
+        {dieEditor !== null && <div className="hc-die-editor"><label>RESULTADO DO D8<input autoFocus type="number" inputMode="numeric" min="1" max="8" value={dieValue} onChange={event => setDieValue(event.target.value)} onKeyDown={event => { if (ehEnter(event)) saveDie(); if (event.key === "Escape") setDieEditor(null); }} /></label><button type="button" disabled={!/^[1-8]$/.test(dieValue)} onClick={saveDie}>Salvar</button>{state.dice[dieEditor] != null && <button type="button" onClick={() => { send?.({ type: "setDie", index: dieEditor, value: null }); setDieEditor(null); }}>Remover</button>}</div>}
         </div></div>
     </section>;
   }

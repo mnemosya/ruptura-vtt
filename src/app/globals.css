@@ -29,6 +29,17 @@
 }
 
 /*
+ * Esc esconde as dicas de hover/foco feitas só de CSS até o mouse ou o
+ * foco irem para outro elemento (`_design/camadas.ts` põe e tira o
+ * atributo). É o "dispensável sem mover o ponteiro" da WCAG 1.4.13.
+ * `visibility` não mexe no layout nem na opacidade do botão (o balão
+ * continua opaco quando volta).
+ */
+[data-dicas-ocultas] :is(.ca-dica, .cr-dica, .rv-dica, .rc-winbtn-dica, .rc-ndesl-dica, .rv-mk-dica, .rv-menu-item-dica, .fj-campo__tooltip, .hx-prop-dica, .rc-termo-dica) {
+  visibility: hidden !important;
+}
+
+/*
  * Placeholder padrão do app inteiro. Campo sem regra própria caía no
  * cinza neutro do navegador, que destoa do azul-acinzentado das telas
  * (foi assim que a busca da aba Ações apareceu "sem CSS"). O `:where`

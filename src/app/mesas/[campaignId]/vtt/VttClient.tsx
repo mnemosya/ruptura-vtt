@@ -25,6 +25,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { MousePointer2, Ruler, PaintBucket, MapPin, Images, Menu, Hexagon, Swords, Undo2, Redo2, Loader2, UserPlus, Box, Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2, Dices, ImageUp, ScrollText, ChevronDown, Type, Palette } from "lucide-react";
 import { HexColorInput, HexColorPicker } from "react-colorful";
+import { CamadaModal } from "../../../_design/CamadaModal";
 import { MapaHex, TAM, type EstadoVisualToken, type CenaMapa } from "./_mapa/MapaHex";
 import { useTargets } from "./_realtime/useTargets";
 import { ChartPie, Crosshair, FilePlus } from "lucide-react";
@@ -6043,13 +6044,9 @@ export function VttClient({
   // Ferramenta ativa some da barra (ex.: papel mudou) — nunca fica presa numa ferramenta invisível. Passa por `trocarFerramenta` como qualquer outra troca — nunca um `setFerramenta` divergente.
   useEffect(() => { if (!ferramentasDisponiveis.includes(ferramenta)) trocarFerramenta("interagir"); }, [ferramentasDisponiveis, ferramenta, trocarFerramenta]);
 
-  // Esc fecha a confirmação de remoção — mesma convenção de todo outro flutuante desta tela.
-  useEffect(() => {
-    if (!confirmandoRemocao) return;
-    function ouvir(e: KeyboardEvent) { if (e.key === "Escape") setConfirmandoRemocao(null); }
-    window.addEventListener("keydown", ouvir);
-    return () => window.removeEventListener("keydown", ouvir);
-  }, [confirmandoRemocao]);
+  // O Esc das confirmações de remoção vem da pilha de camadas
+  // (`CamadaModal`, lá embaixo): fecha a confirmação sem cancelar mais
+  // nada desta tela.
 
   const clampZoom = useCallback((z: number) => Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z)), []);
 
@@ -7006,7 +7003,7 @@ export function VttClient({
 
       {confirmandoRemocaoLote && (
         <div className="rv-modal-fundo" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setConfirmandoRemocaoLote(null); }}>
-          <div className="rv-modal rv-modal--confirmar" role="alertdialog" aria-modal="true"
+          <CamadaModal fechar={() => setConfirmandoRemocaoLote(null)} className="rv-modal rv-modal--confirmar" role="alertdialog" aria-modal="true"
             aria-label={`Remover ${confirmandoRemocaoLote.length} tokens`} data-testid="vtt-confirmar-remocao-lote">
             <header className="rv-modal-cab">
               <h2>Remover {confirmandoRemocaoLote.length} tokens</h2>
@@ -7031,12 +7028,12 @@ export function VttClient({
                 Remover
               </button>
             </footer>
-          </div>
+          </CamadaModal>
         </div>
       )}
       {confirmandoRemocao && (
         <div className="rv-modal-fundo" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setConfirmandoRemocao(null); }}>
-          <div className="rv-modal rv-modal--confirmar" role="alertdialog" aria-modal="true" aria-label={`Remover ${confirmandoRemocao.nome}`}>
+          <CamadaModal fechar={() => setConfirmandoRemocao(null)} className="rv-modal rv-modal--confirmar" role="alertdialog" aria-modal="true" aria-label={`Remover ${confirmandoRemocao.nome}`}>
             <header className="rv-modal-cab">
               <h2>Remover token</h2>
               <button type="button" className="rv-modal-fechar" aria-label="Fechar" onClick={() => setConfirmandoRemocao(null)}>×</button>
@@ -7050,7 +7047,7 @@ export function VttClient({
                 Remover
               </button>
             </footer>
-          </div>
+          </CamadaModal>
         </div>
       )}
     </div>

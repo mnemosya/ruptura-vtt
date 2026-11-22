@@ -32,6 +32,7 @@ import { ItemCategoryIcon } from "../../../../_design/itemIcons";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { oxanium } from "../../../../_design/oxanium";
 import "./inventario-hud.css";
+import { ehEnter } from "../../../../_design/teclado";
 
 export type LocalHud = "mochila" | "equipado" | "abrigo";
 type VistaHud = LocalHud | "todos";
@@ -417,7 +418,7 @@ function Carteira({ valor, onDefinir }: { valor: number | null; onDefinir?: (tex
             onBlur={confirmar}
             onKeyDown={(e) => {
               e.stopPropagation();
-              if (e.key === "Enter") { e.preventDefault(); confirmar(); }
+              if (ehEnter(e)) { e.preventDefault(); confirmar(); }
               if (e.key === "Escape") { e.preventDefault(); setTexto(null); setAviso(null); }
             }} />
         ) : onDefinir && valor != null ? (

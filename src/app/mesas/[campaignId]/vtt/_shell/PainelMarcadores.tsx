@@ -21,6 +21,7 @@ import {
   gradienteAnel, limitarTotal, NOME_MAX, SEGMENTOS_REFERENCIA, type TipoMarcador,
 } from "../_dominio/marcadores";
 import { IconeTipoMarcador } from "./FaixaMarcadores";
+import { ehEnter } from "../../../../_design/teclado";
 
 export function PainelMarcadores({ campaignId, usuarioId, emCombate, onCriar, onFechar }: {
   campaignId: string;
@@ -74,7 +75,7 @@ export function PainelMarcadores({ campaignId, usuarioId, emCombate, onCriar, on
 
   const teclado = (e: KeyboardEvent) => {
     // Enter num botão é o próprio botão (escolher tipo, segmentos); fora dele, cria.
-    if (e.key === "Enter" && !(e.target instanceof HTMLButtonElement)) { e.preventDefault(); void criar(); }
+    if (ehEnter(e) && !(e.target instanceof HTMLButtonElement)) { e.preventDefault(); void criar(); }
     else if (e.key === "Escape") { e.preventDefault(); onFechar(); }
   };
 

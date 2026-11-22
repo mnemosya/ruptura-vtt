@@ -20,6 +20,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, Folder, FolderOpen, X } from "lucide-react";
 import type { PastaCena } from "../../../../../lib/vtt/sceneStorage";
 import { MenuPasta, posicaoNoCursor, type PosicaoMenu } from "./MenuPasta";
+import { ehEnter } from "../../../../_design/teclado";
 
 export interface PropsLinhaPasta {
   pasta: PastaCena;
@@ -148,7 +149,7 @@ export function LinhaPasta(p: PropsLinhaPasta) {
             data-testid="pasta-campo-nome"
             onChange={(e) => setRascunho(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") { e.preventDefault(); confirmar(); }
+              if (ehEnter(e)) { e.preventDefault(); confirmar(); }
               if (e.key === "Escape") { e.preventDefault(); setEditando(false); }
             }}
             onBlur={confirmar}
@@ -232,7 +233,7 @@ export function LinhaPasta(p: PropsLinhaPasta) {
             onChange={(e) => setConfirmacao(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Escape") { e.preventDefault(); setConfirmandoExclusao(false); }
-              if (e.key === "Enter" && confirmacao.trim() === p.pasta.nome) {
+              if (ehEnter(e) && confirmacao.trim() === p.pasta.nome) {
                 e.preventDefault();
                 setConfirmandoExclusao(false);
                 p.onExcluir(confirmacao.trim());

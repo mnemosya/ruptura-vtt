@@ -25,6 +25,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Maximize2, Minimize2, Minus, X } from "lucide-react";
+import { useCamada } from "../../../../../_design/camadas";
 import "../painel.css";
 
 type Modo = "normal" | "maximizada" | "minimizada";
@@ -87,36 +88,9 @@ export function JanelaInterna({
     abridorRef.current?.focus?.({ preventScroll: true });
   }, [onFechar]);
 
-  // Esc fecha; Tab fica contido na janela enquanto ela está modal.
-  useEffect(() => {
-    if (!aberta || modo === "minimizada") return;
-    function aoTeclar(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        fechar();
-        return;
-      }
-      if (e.key !== "Tab" || !modal) return;
-      const raiz = janelaRef.current;
-      if (!raiz) return;
-      const focaveis = raiz.querySelectorAll<HTMLElement>(
-        'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
-      );
-      if (focaveis.length === 0) return;
-      const primeiro = focaveis[0];
-      const ultimo = focaveis[focaveis.length - 1];
-      if (!e.shiftKey && document.activeElement === ultimo) {
-        e.preventDefault();
-        primeiro.focus({ preventScroll: true });
-      } else if (e.shiftKey && document.activeElement === primeiro) {
-        e.preventDefault();
-        ultimo.focus({ preventScroll: true });
-      }
-    }
-    window.addEventListener("keydown", aoTeclar, true);
-    return () => window.removeEventListener("keydown", aoTeclar, true);
-  }, [aberta, modo, fechar, modal]);
+  // Esc fecha (só se esta for a camada de cima); Tab fica contido na
+  // janela enquanto ela está modal.
+  useCamada({ aberta: aberta && modo !== "minimizada", fechar, raiz: janelaRef, modal });
 
   // Foco inicial dentro da janela, sem rolar nada.
   useEffect(() => {

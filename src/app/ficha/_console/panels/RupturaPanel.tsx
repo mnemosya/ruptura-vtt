@@ -33,6 +33,7 @@ import { CabecalhoModulo } from "./CabecalhoModulo";
 import { COR_FAMILIA, COR_TIPO_TRACO, FUNDO_FAMILIA, FUNDO_TIPO_TRACO, ICONE_MARCA, ICONE_TIPO_TRACO, romano } from "./ruptura/iconesMarca";
 import { RodaTracos, type EscolhaTraco } from "./ruptura/RodaTracos";
 import { rotulo as rotuloVertente } from "./MagiasPanel";
+import { useCamada } from "../../../_design/camadas";
 import "./hud/hud-base.css";
 import "./hud/ruptura.css";
 
@@ -98,14 +99,17 @@ function DetalheCard({ cor, fundo, icone, fita, kicker, nome, onFechar, children
   children: React.ReactNode;
 }) {
   const fechar = useRef<HTMLButtonElement>(null);
+  const raizRef = useRef<HTMLDivElement>(null);
   useEffect(() => { fechar.current?.focus(); }, []);
+  // Esc pela pilha de camadas, com o foco onde estiver; Tab contido.
+  useCamada({ aberta: true, fechar: onFechar, raiz: raizRef, modal: true });
   return (
     <div className="rp-ficha-fundo" onClick={onFechar}>
       <div
+        ref={raizRef}
         className="rp-ficha" role="dialog" aria-modal="true" aria-label={nome}
         style={{ ["--rp-cor" as string]: cor, ["--rp-fundo" as string]: fundo }}
         onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); onFechar(); } }}
       >
         <span className="rp-card-brilho" aria-hidden="true" />
         <button ref={fechar} type="button" className="rp-fechar rp-ficha-fechar" aria-label="Fechar detalhes" onClick={onFechar}>✕</button>

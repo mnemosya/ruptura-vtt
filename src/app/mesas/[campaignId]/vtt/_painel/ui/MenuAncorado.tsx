@@ -19,6 +19,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useCamada } from "../../../../../_design/camadas";
 
 export interface ItemMenu {
   id: string;
@@ -71,6 +72,9 @@ export function MenuAncorado({
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const [montado, setMontado] = useState(false);
+  // Sobe a cada rolagem/redimensionamento com o menu aberto: o menu é
+  // `fixed` e o âncora não, então sem remedir ele ficava parado no ar.
+  const [remedir, setRemedir] = useState(0);
   useEffect(() => setMontado(true), []);
 
   // Posiciona ACIMA do âncora quando não há espaço embaixo — o composer
@@ -107,7 +111,25 @@ export function MenuAncorado({
       ? Math.max(MARGEM, r.top - el.offsetHeight - 6)
       : abaixo;
     if (Math.abs(left - pos.left) > 0.5 || Math.abs(top - pos.top) > 0.5) setPos({ left, top });
-  }, [aberto, ancora, pos, alinhar, variante]);
+  }, [aberto, ancora, pos, alinhar, variante, remedir]);
+
+  useEffect(() => {
+    if (!aberto) return;
+    let quadro = 0;
+    const agendar = () => {
+      if (quadro) return;
+      quadro = requestAnimationFrame(() => { quadro = 0; setRemedir((n) => n + 1); });
+    };
+    // Captura: rolagem de QUALQUER caixa (o feed, a aba, a janela), não
+    // só da página — `scroll` não sobe pela árvore.
+    window.addEventListener("scroll", agendar, true);
+    window.addEventListener("resize", agendar);
+    return () => {
+      cancelAnimationFrame(quadro);
+      window.removeEventListener("scroll", agendar, true);
+      window.removeEventListener("resize", agendar);
+    };
+  }, [aberto]);
 
   const fechar = useCallback(() => {
     onFechar();
@@ -127,21 +149,34 @@ export function MenuAncorado({
     return () => cancelAnimationFrame(id);
   }, [aberto]);
 
+  // Esc pela pilha de camadas: fecha só o menu, não a janela em que ele
+  // foi aberto.
+  useCamada({ aberta: aberto, fechar, raiz: ref });
+
   useEffect(() => {
     if (!aberto) return;
     function aoTeclar(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
+      const menu = ref.current;
+      const ativo = document.activeElement;
+      // Só com o foco no menu ou no âncora: setas em outro campo da tela
+      // continuam sendo do campo.
+      if (!menu || !(menu.contains(ativo) || (ancora && ancora === ativo))) return;
+      if (e.key === "Tab") {
+        // Tab sai do menu: fecha e devolve o foco ao âncora, e o Tab
+        // segue dali para o próximo controle da tela.
         fechar();
         return;
       }
-      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Home" && e.key !== "End") return;
       e.preventDefault();
-      const botoes = Array.from(ref.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ?? []);
+      const botoes = Array.from(menu.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"));
       if (botoes.length === 0) return;
-      const i = botoes.indexOf(document.activeElement as HTMLButtonElement);
-      const prox = e.key === "ArrowDown" ? (i + 1) % botoes.length : (i - 1 + botoes.length) % botoes.length;
+      const i = botoes.indexOf(ativo as HTMLButtonElement);
+      const prox =
+        e.key === "Home" ? 0
+        : e.key === "End" ? botoes.length - 1
+        : e.key === "ArrowDown" ? (i + 1) % botoes.length
+        : (i - 1 + botoes.length) % botoes.length;
       botoes[prox]?.focus({ preventScroll: true });
     }
     function aoApontar(e: PointerEvent) {

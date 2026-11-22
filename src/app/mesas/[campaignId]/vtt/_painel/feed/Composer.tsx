@@ -53,6 +53,7 @@ import { lerComandoSobrecarga } from "./comandoSobrecarga";
 import { ABAS_COMANDO_FICHA, lerComandoFicha } from "./comandoFicha";
 import { ABAS, type AbaId } from "../../../../../ficha/_console/tabs";
 import { SURTOS_SOBRECARGA } from "../../../../../../lib/rulesetV12/ruptura";
+import { ehEnter } from "../../../../../_design/teclado";
 
 type SugestaoComando = { id: string; rotulo: string; detalhe: string; completar: string; tipo?: "s" | "f"; aba?: AbaId; marca?: string; acento?: string; custo?: { pa?: string; mana?: string; extra?: string }; identidade?: OpcaoComando["identidade"] | { familia: "p"; atributo: string }; valorPericia?: number; ajuda?: string };
 const COR_ATRIBUTO: Record<string, string> = { corpo: "#11d43b", mente: "#7e50f1", animo: "#00d4ff" };
@@ -290,7 +291,7 @@ export function Composer({
         escolherSugestao(sugestaoAtiva);
         return;
       }
-      if (e.key === "Enter" && !e.shiftKey) {
+      if (ehEnter(e) && !e.shiftKey) {
         e.preventDefault();
         if (etapaMagia) { if (mostrarSugestoes && sugestoes[sugestaoAtiva]) escolherSugestao(sugestaoAtiva); return; }
         if (mostrarSugestoes && (leituraSobrecarga.tipo === "parcial" || leituraFicha.tipo === "parcial" || leituraFicha.tipo !== "ok" && leituraSobrecarga.tipo !== "ok" && leituraPericia.tipo !== "ok" && leituraConteudo.tipo !== "ok" || sugestaoNavegada) && sugestoes[sugestaoAtiva]) { escolherSugestao(sugestaoAtiva); return; }

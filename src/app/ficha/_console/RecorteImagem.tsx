@@ -33,6 +33,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { RotateCcw, ZoomIn } from "lucide-react";
 import { useCentroDoConsole } from "./useCentroDoConsole";
+import { useCamada } from "../../_design/camadas";
 
 /** Lado da janela de enquadramento, em pixels de tela. */
 const JANELA = 240;
@@ -93,10 +94,15 @@ export function JanelaRecorte({
   const centroConsole = useCentroDoConsole();
   const [montado, setMontado] = useState(false);
   useEffect(() => { setMontado(true); }, []);
+  const raizRef = useRef<HTMLDivElement>(null);
+  // Esc cancela o enquadramento (a janela que o abriu continua); Tab
+  // contido. Com o envio em voo, o Esc não cancela nada.
+  useCamada({ aberta: montado, fechar: props.ocupado ? null : props.onCancelar, raiz: raizRef, modal: true });
   if (!montado) return null;
 
   return createPortal(
     <div
+      ref={raizRef}
       className="rc-cursor-scope rc-recorte-janela"
       role="dialog"
       aria-modal="true"

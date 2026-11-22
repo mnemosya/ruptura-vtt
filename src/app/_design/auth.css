@@ -34,7 +34,7 @@
   box-sizing: border-box;
   position: relative;
   width: 100%;
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -87,6 +87,11 @@
 .rv-img {
   position: absolute; inset: 0;
   background-image: url('/brand/bg1-parallax/background.png');
+  background-image: image-set(
+    url('/brand/bg1-parallax/background.avif') type('image/avif'),
+    url('/brand/bg1-parallax/background.webp') type('image/webp'),
+    url('/brand/bg1-parallax/background.png') type('image/png')
+  );
   background-size: cover;
   background-position: center;
   filter: brightness(1.12) contrast(0.96) saturate(1.5);
@@ -96,10 +101,20 @@
 }
 .rv-depth-midground {
   background-image: url('/brand/bg1-parallax/midground.png');
+  background-image: image-set(
+    url('/brand/bg1-parallax/midground.avif') type('image/avif'),
+    url('/brand/bg1-parallax/midground.webp') type('image/webp'),
+    url('/brand/bg1-parallax/midground.png') type('image/png')
+  );
   transform: translate3d(calc(var(--rv-par-x, 0) * -9px), calc(var(--rv-par-y, 0) * -6px), 0) scale(1.05);
 }
 .rv-depth-foreground {
   background-image: url('/brand/bg1-parallax/foreground.png');
+  background-image: image-set(
+    url('/brand/bg1-parallax/foreground.avif') type('image/avif'),
+    url('/brand/bg1-parallax/foreground.webp') type('image/webp'),
+    url('/brand/bg1-parallax/foreground.png') type('image/png')
+  );
   mask-image: url('/brand/bg1-parallax/hud-indicators-mask.svg');
   mask-size: 100% 100%;
   mask-repeat: no-repeat;
@@ -161,7 +176,7 @@
    larga o `cover` corta a própria faixa pra fora da viewport; o piso
    de 18px mantém as leituras visíveis nesse caso. */
 .rv-readings {
-  --rv-hud-px: max(100vw / 1672, 100vh / 941);
+  --rv-hud-px: max(100vw / 1672, 100dvh / 941);
   position: absolute; bottom: max(18px, calc(50% - 442.5 * var(--rv-hud-px))); left: calc(50% - 19 * var(--rv-hud-px)); transform: translate(-50%, 50%);
   font-family: var(--font-mono), monospace; font-size: 8.5px; letter-spacing: 0.08em;
   line-height: 1; z-index: 4; pointer-events: none; display: flex; gap: 32px; white-space: nowrap;
@@ -494,7 +509,7 @@
   .rv-root, .rv-root *, .rv-root *::before, .rv-root *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-property: opacity, color, background-color, border-color, outline-color, text-decoration-color, box-shadow, fill, stroke !important;
   }
   .rv-cursor-dot, .rv-cursor-ring { display: none !important; }
   .rv-root, .rv-root button, .rv-root a, .rv-root input, .rv-root label { cursor: auto; }

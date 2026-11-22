@@ -19,6 +19,7 @@ import { CartaoListaHud } from "./hud/CartaoListaHud";
 import { JanelaMercado } from "./hud/JanelaMercado";
 import { FichaItemConteudo, type PecaHud } from "./hud/EquipamentoHud";
 import "./hud/hud-base.css";
+import { useCamada } from "../../../_design/camadas";
 import "./hud/catalogo-magias.css";
 import "./hud/escalpos.css";
 
@@ -205,20 +206,12 @@ function JanelaEscalpo({ titulo, onFechar, children }: { titulo: string; onFecha
   const ref = useRef<HTMLDivElement>(null), fecharRef = useRef(onFechar);
   fecharRef.current = onFechar;
   useEffect(() => {
-    const el = ref.current, origem = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    el?.querySelector<HTMLButtonElement>("button")?.focus();
-    const teclado = (event: KeyboardEvent) => {
-      if (document.body.classList.contains("rc-livro-por-cima")) return;
-      if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); fecharRef.current(); }
-      if (event.key !== "Tab" || !el) return;
-      const alvos = [...el.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input, select, textarea, summary, [tabindex="0"]')].filter(e => e.getClientRects().length > 0);
-      const primeiro = alvos[0], ultimo = alvos[alvos.length - 1];
-      if (!el.contains(document.activeElement)) { event.preventDefault(); (event.shiftKey ? ultimo : primeiro)?.focus(); }
-      else if (event.shiftKey && document.activeElement === primeiro) { event.preventDefault(); ultimo?.focus(); }
-      else if (!event.shiftKey && document.activeElement === ultimo) { event.preventDefault(); primeiro?.focus(); }
-    };
-    window.addEventListener("keydown", teclado, true);
-    return () => { window.removeEventListener("keydown", teclado, true); origem?.focus(); };
+    const origem = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    ref.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    return () => { origem?.focus(); };
   }, []);
+  // Esc e Tab pela pilha de camadas. O Códex aberto de um termo do dossiê
+  // é a camada de cima e recebe o Esc antes.
+  useCamada({ aberta: true, fechar: () => fecharRef.current(), raiz: ref, modal: true });
   return createPortal(<div className={`hx hs-backdrop ${oxanium.variable}`} onMouseDown={e => { if (e.target === e.currentTarget) onFechar(); }}><div ref={ref} role="dialog" aria-modal="true" aria-label={titulo} className="hs-dialog hx-edge hx-ch hx-pop"><div className="hs-dialog-inner hx-ch">{children}</div></div></div>, document.body);
 }

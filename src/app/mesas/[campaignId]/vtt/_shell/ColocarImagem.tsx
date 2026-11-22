@@ -30,7 +30,8 @@
  * chata de desfazer depois (fundo é único por cena).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useCamada } from "../../../../_design/camadas";
 import { Image as IconeImagem, Loader2, Map, Shapes, X } from "lucide-react";
 import type { ImagemPreparada } from "../../../../../lib/vtt/imagePreparation";
 import { larguraInicialM, pesoLegivel } from "../_dominio/imagemCena";
@@ -61,19 +62,14 @@ export function ColocarImagem({
   // Esc cancela, como em toda janela do VTT. Enter NÃO confirma: a
   // escolha de papel é a única coisa que esta janela decide, e confirmar
   // por tecla passaria por cima dela sem a pessoa ter olhado.
-  useEffect(() => {
-    function aoTeclar(e: KeyboardEvent) {
-      if (e.key === "Escape" && !ocupado) { e.preventDefault(); onCancelar(); }
-    }
-    window.addEventListener("keydown", aoTeclar);
-    return () => window.removeEventListener("keydown", aoTeclar);
-  }, [ocupado, onCancelar]);
+  const raizRef = useRef<HTMLDivElement>(null);
+  useCamada({ aberta: true, fechar: () => { if (!ocupado) onCancelar(); }, raiz: raizRef, modal: true });
 
   const larguraM = larguraInicialM(papel, preparada.widthPx, larguraCena);
   const alturaM = (larguraM * preparada.heightPx) / preparada.widthPx;
 
   return (
-    <div className="rv-colocar-imagem" role="dialog" aria-modal="true" aria-label="Colocar imagem na cena">
+    <div ref={raizRef} className="rv-colocar-imagem" role="dialog" aria-modal="true" aria-label="Colocar imagem na cena">
       <header className="rv-colocar-imagem__cab">
         <span className="rv-colocar-imagem__ico" aria-hidden><IconeImagem size={15} /></span>
         <div className="rv-colocar-imagem__txt">

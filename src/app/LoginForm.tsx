@@ -20,6 +20,7 @@
 
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
+import { preload } from "react-dom";
 import {
   signInWithPassword,
   signUpWithPassword,
@@ -309,6 +310,11 @@ export function AuthMoldura({
   const wrapRef = useRef<HTMLDivElement>(null);
   const molduraRef = useRef<HTMLDivElement>(null);
   useBotaoSinal(wrapRef, abalo);
+  // O fundo é a maior pintura da tela e mora no CSS (`.rv-img`), onde o
+  // scanner de pré-carga não o enxerga: sem isto ele só começa a baixar
+  // depois que a folha de estilo chega e é aplicada. Quem não lê AVIF
+  // ignora a dica pelo `type` e segue o `image-set()` do CSS.
+  preload("/brand/bg1-parallax/background.avif", { as: "image", type: "image/avif", fetchPriority: "high" });
 
   useEffect(() => {
     if (!abalo || !wrapRef.current) return;

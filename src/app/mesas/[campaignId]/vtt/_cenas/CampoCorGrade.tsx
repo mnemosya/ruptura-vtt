@@ -20,6 +20,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { ehEnter } from "../../../../_design/teclado";
 
 /** Cores de LINHA, não de preenchimento: claras o bastante pra ler sobre mapa escuro. */
 export const CORES_DA_GRADE: { hex: string; rotulo: string }[] = [
@@ -80,7 +81,7 @@ export function CampoCorGrade(p: {
         onChange={(e) => setRascunho(e.target.value)}
         onBlur={(e) => confirmar(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter") { e.preventDefault(); confirmar(rascunho); }
+          if (ehEnter(e)) { e.preventDefault(); confirmar(rascunho); }
           if (e.key === "Escape") { e.preventDefault(); setRascunho(p.valor); }
         }}
       />

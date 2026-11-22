@@ -3319,7 +3319,9 @@ span.rc-ncond-abrir { cursor: default; }
   position: fixed; z-index: 620; transform: translate(-50%, calc(-100% - 8px));
   box-sizing: border-box;
   display: flex; flex-direction: column; gap: 4px;
-  max-width: 280px; padding: 8px 10px; pointer-events: none;
+  /* Recebe o mouse: dá para ir do termo até a dica e ler com calma
+     (WCAG 1.4.13). A ponte abaixo cobre os 8px entre os dois. */
+  max-width: 280px; padding: 8px 10px;
   border: 1px solid var(--rc-line); border-radius: var(--rc-r-sm);
   background: rgba(8, 18, 24, 0.97);
   box-shadow: 0 12px 32px rgba(0, 0, 0, .55);
@@ -3335,6 +3337,7 @@ span.rc-ncond-abrir { cursor: default; }
   box-shadow: inset 0 0 0 1px #1c3645, inset 2px 0 0 var(--rc-termo-dica-cor), 0 14px 30px rgba(0, 0, 0, .55);
 }
 .rc-termo-dica[data-tipo="condicao"] { --rc-termo-dica-cor: var(--rc-danger, #ff5f74); }
+.rc-termo-dica::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 9px; }
 .rc-termo-dica-cab {
   display: flex; align-items: baseline; gap: 6px;
   color: var(--rc-text); font: 600 13px/16px var(--font-corpo), sans-serif;
@@ -5108,7 +5111,7 @@ button.rc-banc-valor:hover { background: #0f202b; }
 .rc-banc-guardar:active:not(:disabled) { transform: scale(.97); }
 .rc-banc-guardar:disabled { background: #16303f; color: #4f6285; cursor: default; }
 @media (prefers-reduced-motion: reduce) {
-  .rc-aux:has(.rc-banc), .rc-aux:has(.rc-banc) * { animation: none !important; transition-duration: .01ms !important; }
+  .rc-aux:has(.rc-banc), .rc-aux:has(.rc-banc) * { animation: none !important; transition-property: opacity, color, background-color, border-color, outline-color, text-decoration-color, box-shadow, fill, stroke !important; }
 }
 
 /* Livro aberto por um link de regra (TextoComRegras): por cima das janelas do Console (catálogo = 600). */

@@ -872,7 +872,7 @@
 .fj-mapa-grande__regiao--atual { border-color: var(--fj-cy); background: color-mix(in srgb, var(--fj-cy) 20%, transparent); color: var(--fj-gelo); }
 .fj-mapa-grande__fechar { margin-left: auto; }
 .fj-mapa-grande__area { display: grid; min-height: 0; flex: 1; place-items: center; }
-.fj-mapa-grande__moldura { max-height: 100%; width: 100%; max-width: min(100%, calc((100vh - 8rem) * 2.56)); }
+.fj-mapa-grande__moldura { max-height: 100%; width: 100%; max-width: min(100%, calc((100dvh - 8rem) * 2.56)); }
 .fj-mapa-grande__rodape { margin-top: var(--hud-space-4); display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--hud-space-1) var(--hud-space-5); align-self: flex-start; }
 .fj-mapa-grande__nome { font: 800 18px var(--fj-display); text-transform: uppercase; letter-spacing: 0.025em; color: var(--fj-gelo); }
 .fj-mapa-grande__grow { font-size: 15px; color: color-mix(in srgb, var(--fj-texto) 85%, transparent); }

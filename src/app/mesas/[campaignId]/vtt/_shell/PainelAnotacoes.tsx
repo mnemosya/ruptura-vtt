@@ -18,6 +18,7 @@ import { HexColorInput, HexColorPicker } from "react-colorful";
 import { Pencil, Type } from "lucide-react";
 import { JanelaFerramenta } from "./JanelaFerramenta";
 import { CORES_ANOTACAO, corAnotacaoValida, hexDaAnotacao, type CorAnotacao, type CorPredefinida } from "../_dominio/anotacoes";
+import { ehEnter } from "../../../../_design/teclado";
 
 const assinarNada = () => () => {};
 /**
@@ -133,7 +134,7 @@ export function PainelAnotacoes(p: PropsPainelAnotacoes) {
               style={{ fontSize: Math.round(p.medida * 1.15) }}
               onChange={(e) => p.onTextoRascunho(e.target.value)} onKeyDown={(e) => {
                 if (e.key === "Escape") { e.preventDefault(); p.onCancelarTexto(); e.currentTarget.blur(); }
-                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); p.onSalvarTexto(); }
+                if (ehEnter(e) && (e.ctrlKey || e.metaKey)) { e.preventDefault(); p.onSalvarTexto(); }
               }} />
           ) : (
             <span className="rv-anot-amostra" style={{ fontSize: Math.round(p.medida * 1.15) }} aria-hidden="true">Texto no mapa</span>

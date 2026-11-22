@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { X } from "../../../_design/icons";
 import { oxanium } from "../../../_design/oxanium";
 import { teko } from "../../../_design/teko";
+import { useCamada } from "../../../_design/camadas";
 
 export function PerfilModal({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -25,15 +26,15 @@ export function PerfilModal({ children }: { children: ReactNode }) {
   useEffect(() => {
     anterior.current = document.activeElement;
     caixaRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") router.back(); };
-    window.addEventListener("keydown", onKey);
     return () => {
-      window.removeEventListener("keydown", onKey);
       // Devolve o foco a quem abriu — sem isso ele volta para o <body>
       // e quem navega por teclado perde o lugar na lista.
       (anterior.current as HTMLElement | null)?.focus?.();
     };
-  }, [router]);
+  }, []);
+  // Esc pela pilha de camadas (um menu aberto no perfil fecha primeiro);
+  // Tab contido na caixa.
+  useCamada({ aberta: true, fechar: () => router.back(), raiz: caixaRef, modal: true });
 
   return (
     <div className={`rv-perfil-veu ${teko.variable} ${oxanium.variable}`} onClick={() => router.back()} data-testid="perfil-modal">

@@ -338,15 +338,21 @@ button.hx-mun-valor:hover { border-color: rgba(0, 212, 255, .35); background: rg
    Hover: a borda acende, uma barra na cor do item sobe na esquerda e o
    prompt "↵ vestir" acende. Ver o item: o olho ao lado do prompt (ou
    clique direito). Curvas: ease-out 220 ms / desaceleração enfática. */
+/* Alvo de teclado do cartão (ver o comentário em `EquipamentoHud`):
+   invisível e sem mouse; o anel de foco é desenhado no próprio cartão,
+   como antes, pelo `:has()`. */
+.hx-cartao:has(> .hx-cartao-alvo) { position: relative; }
+.hx-cartao-alvo { all: unset; position: absolute; inset: 0; pointer-events: none; }
+.hx-cartao:not([data-acao]):has(> .hx-cartao-alvo:focus-visible) { outline: 2px solid var(--k); outline-offset: 2px; }
 .hx-cartao[data-acao] { position: relative; transition: border-color .22s cubic-bezier(.4, 1, .6, 1), background .22s cubic-bezier(.4, 1, .6, 1); }
 .hx-cartao[data-acao]::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--k); transform: scaleY(0); transition: transform .28s cubic-bezier(.05, .7, .1, 1); pointer-events: none; }
-.hx-cartao[data-acao]:hover::after, .hx-cartao[data-acao]:focus-visible::after { transform: scaleY(1); }
-.hx-cartao[data-acao]:focus-visible { outline: 2px solid var(--k); outline-offset: 2px; }
+.hx-cartao[data-acao]:hover::after, .hx-cartao[data-acao]:has(> .hx-cartao-alvo:focus-visible)::after { transform: scaleY(1); }
+.hx-cartao[data-acao]:has(> .hx-cartao-alvo:focus-visible) { outline: 2px solid var(--k); outline-offset: 2px; }
 .hx-cartao-prompt { position: absolute; right: 10px; bottom: 8px; z-index: 2; display: flex; align-items: center; gap: 8px; }
 .hx-cartao-acao { display: inline-flex; align-items: center; gap: 6px; font: 700 10px var(--font-mono), monospace; letter-spacing: 1.6px; text-transform: uppercase; color: #4f6285; transition: color .22s cubic-bezier(.4, 1, .6, 1); }
 .hx-cartao-tecla { display: inline-grid; place-items: center; min-width: 16px; height: 16px; padding: 0 3px; box-sizing: border-box; border: 1px solid #2a3b58; border-bottom-width: 2px; font: 700 10px var(--font-mono), monospace; color: #6a7f99; transition: color .22s, background .22s, border-color .22s; }
-.hx-cartao[data-acao]:hover .hx-cartao-acao, .hx-cartao[data-acao]:focus-visible .hx-cartao-acao { color: var(--k); }
-.hx-cartao[data-acao]:hover .hx-cartao-tecla, .hx-cartao[data-acao]:focus-visible .hx-cartao-tecla { border-color: var(--k); background: var(--k); color: #06121c; }
+.hx-cartao[data-acao]:hover .hx-cartao-acao, .hx-cartao[data-acao]:has(> .hx-cartao-alvo:focus-visible) .hx-cartao-acao { color: var(--k); }
+.hx-cartao[data-acao]:hover .hx-cartao-tecla, .hx-cartao[data-acao]:has(> .hx-cartao-alvo:focus-visible) .hx-cartao-tecla { border-color: var(--k); background: var(--k); color: #06121c; }
 .hx-cartao-ver { display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 1px solid transparent; background: transparent; color: #4f6285; cursor: pointer; opacity: 0; transition: opacity .2s, color .18s, border-color .18s; }
 .hx-cartao[data-acao]:hover .hx-cartao-ver, .hx-cartao-ver:focus-visible { opacity: 1; }
 .hx-cartao-ver:hover { color: #e6f6ff; border-color: #2a3b58; }
@@ -356,7 +362,7 @@ button.hx-mun-valor:hover { border-color: rgba(0, 212, 255, .35); background: rg
 .hx-cartao-municao .hx-display { flex: 1; min-width: 0; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--hx-texto); }
 .hx-cartao-municao:hover { background: rgba(0,212,255,.06); color: #fff; }
 .hx-cartao-municao:focus-visible { outline: 1px solid #00d4ff; outline-offset: -1px; }
-@media (prefers-reduced-motion: reduce) { .hx-cartao[data-acao], .hx-cartao[data-acao] * { transition-duration: .01ms !important; } }
+@media (prefers-reduced-motion: reduce) { .hx-cartao[data-acao], .hx-cartao[data-acao] * { transition-property: opacity, color, background-color, border-color, outline-color, text-decoration-color, box-shadow, fill, stroke !important; } }
 /* Espaço do prompt: só a ÚLTIMA linha (a dos números) divide a altura
    com ele — reservar no cartão inteiro espremia o título e soltava a tag. */
 .hx-cartao[data-acao] .hx-cartao-stats { padding-right: 96px; }
@@ -402,7 +408,7 @@ button.hx-mun-valor:hover { border-color: rgba(0, 212, 255, .35); background: rg
 .hx-menu-item[data-perigo]::before { background: #ff5f74; }
 .hx-menu-item[data-perigo]:hover, .hx-menu-item[data-perigo]:focus-visible { background: rgba(255, 95, 116, .09); color: #ffb3bd; }
 .hx-menu-item[data-confirmando] { color: #ff5f74; }
-@media (prefers-reduced-motion: reduce) { .hx-menu, .hx-menu * { animation: none !important; transition-duration: .01ms !important; } }
+@media (prefers-reduced-motion: reduce) { .hx-menu, .hx-menu * { animation: none !important; transition-property: opacity, color, background-color, border-color, outline-color, text-decoration-color, box-shadow, fill, stroke !important; } }
 
 /* ── Propriedades no detalhe do item ───────────────────────────────
    Uma linha de termos, como os termos de regra grifados no texto:
@@ -483,7 +489,7 @@ button.hx-mun-valor:hover { border-color: rgba(0, 212, 255, .35); background: rg
    triângulo do que estivesse no mapa por trás. */
 .pa-janela .hx-ch { clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); }
 .pa-janela { position: absolute; width: 400px; max-width: calc(100vw - 32px); pointer-events: auto; box-shadow: 0 30px 80px -20px #000; }
-.pa-casco { display: flex; flex-direction: column; max-height: min(620px, calc(100vh - 120px)); background: var(--hx-casco); color: var(--hx-texto); }
+.pa-casco { display: flex; flex-direction: column; max-height: min(620px, calc(100dvh - 120px)); background: var(--hx-casco); color: var(--hx-texto); }
 
 .pa-cab { flex-shrink: 0; padding-top: 14px; cursor: grab; user-select: none; }
 .pa-cab:active { cursor: grabbing; }

@@ -47,6 +47,7 @@ import { type LadoToken, type VertenteToken } from "../_dominio/tokenApresentaca
 import { GAP_LATERAL } from "../_ferramentas/janelasPreferencias";
 import { prepararRecorteQuadrado, type ImagemPreparada } from "../../../../../lib/vtt/imagePreparation";
 import { EnvioImagem } from "../../../../ficha/_console/EnvioImagem";
+import { ehEnter } from "../../../../_design/teclado";
 
 export interface ValoresFormularioToken {
   nome: string;
@@ -713,7 +714,7 @@ export function GerenciadorToken({
         </button>
       </header>
 
-      <div className="rv-modal-corpo rv-janela-token-corpo jf-corpo" onKeyDown={(e) => { if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA" && (e.target as HTMLElement).tagName !== "BUTTON") { e.preventDefault(); confirmar(); } }}>
+      <div className="rv-modal-corpo rv-janela-token-corpo jf-corpo" onKeyDown={(e) => { if (ehEnter(e) && (e.target as HTMLElement).tagName !== "TEXTAREA" && (e.target as HTMLElement).tagName !== "BUTTON") { e.preventDefault(); confirmar(); } }}>
 
         {/* ══ VITRINE: A PEÇA É O FORMULÁRIO ═════════════════════════
             O próprio token, grande: digita-se a sigla DENTRO do disco e o

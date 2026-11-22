@@ -1313,7 +1313,7 @@
   min-width: 0; max-width: none; border: 1px solid rgba(0, 212, 255, .3);
   border-radius: 0; background: #0a1a24;
   box-shadow: 0 -14px 34px rgba(0, 0, 0, .65);
-  max-height: min(75vh, calc(100vh - 24px));
+  max-height: min(75vh, calc(100dvh - 24px));
 }
 .pn-menu--autoria { width: 270px; }
 .pn-menu--visibilidade { width: 295px; }

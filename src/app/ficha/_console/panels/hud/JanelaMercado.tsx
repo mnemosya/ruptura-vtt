@@ -17,6 +17,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useCamada } from "../../../../_design/camadas";
 import "./janela-mercado.css";
 
 /** Duração da saída em `janela-mercado.css` — só desmonta depois dela. */
@@ -37,8 +38,14 @@ export function JanelaMercado({ onFechar: fecharDeVez, children, titulo = "Merca
   useEffect(() => { setMontado(true); }, []);
   useEffect(() => { if (montado) janela.current?.focus(); }, [montado]);
 
+  // Na pilha sem fechar por ela: o Mercado mantém as regras de teclado
+  // abaixo (o seletor interno fecha primeiro), mas cede tudo a uma camada
+  // aberta por cima dele, como o envio de imagem ou um diálogo.
+  const camada = useCamada({ aberta: montado, raiz: janela });
+
   useEffect(() => {
     function aoTeclar(e: KeyboardEvent) {
+      if (!camada.ehTopo()) return;
       if (e.key === "Escape") {
         // O seletor interno fecha primeiro; o próximo Esc fecha o Mercado.
         if (janela.current?.querySelector("[data-mercado-menu-aberto]")) return;
@@ -60,7 +67,7 @@ export function JanelaMercado({ onFechar: fecharDeVez, children, titulo = "Merca
     }
     window.addEventListener("keydown", aoTeclar, true);
     return () => window.removeEventListener("keydown", aoTeclar, true);
-  }, [onFechar]);
+  }, [onFechar, camada]);
 
   if (!montado) return null;
 

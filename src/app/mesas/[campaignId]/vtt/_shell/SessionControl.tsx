@@ -6,6 +6,7 @@ import { useCampaignSession } from "../../_shell/CampaignRealtimeProvider";
 import { useOnlineSession } from "../../_shell/OnlineSessionProvider";
 import { changeOnlineSession } from "../../../../../lib/campaign/onlineSessionActions";
 import { readAppearOffline } from "../../../../../lib/campaign/presencePreferenceActions";
+import { dataHoraDaMesa, horaDaMesa } from "../../../../../lib/datas";
 
 export function SessionControl() {
   const { campaignId, isNarrator, realtimeAuthDegradado, sessionSyncStatus } = useCampaignSession();
@@ -61,7 +62,7 @@ export function SessionControl() {
           {loading ? "Consultando…" : error ? "Indisponível" : online ? "ONLINE" : "OFFLINE"}
         </div>
         {!loading && !error && online && session && <div className="rv-session-time">
-          <time dateTime={session.started_at} title={new Date(session.started_at).toLocaleString("pt-BR")}>Desde {new Date(session.started_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</time>
+          <time dateTime={session.started_at} title={dataHoraDaMesa(session.started_at)}>Desde {horaDaMesa(session.started_at, { hour: "2-digit", minute: "2-digit" })}</time>
         </div>}
       </div>
       {isNarrator && !loading && !error && <button type="button" role="menuitem" className={`rv-session-toggle${online ? "" : " rv-session-toggle--start"}`} disabled={busy} onClick={() => online ? setConfirmation(session.id) : void change(true, null)}>

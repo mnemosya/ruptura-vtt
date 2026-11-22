@@ -36,6 +36,7 @@ import { AvatarUserIcon } from "../avatarIcons";
 import { PassoValor } from "./ModoEvolucao";
 import { CabecalhoModulo } from "./CabecalhoModulo";
 import { DiamondPip } from "../pips";
+import { ehEnter } from "../../../_design/teclado";
 
 const ATRIBUTOS: { id: keyof CharacterAttributes; nome: string }[] = [
   { id: "corpo", nome: "Corpo" },
@@ -522,7 +523,7 @@ function CampoNome({ nome, onGravar }: { nome: string; onGravar: (nome: string) 
         onChange={(e) => setTexto(e.target.value)}
         onBlur={gravar}
         onKeyDown={(e) => {
-          if (e.key === "Enter") {
+          if (ehEnter(e)) {
             e.preventDefault();
             gravar();
             e.currentTarget.blur();

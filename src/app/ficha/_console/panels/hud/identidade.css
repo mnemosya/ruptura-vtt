@@ -212,5 +212,5 @@
 }
 @media(max-width:480px) { .hi-editor fieldset{grid-template-columns:1fr;} .hi-janela footer span{display:none;} .hi-editor,.hi-detalhe{padding:20px;} }
 @media (prefers-reduced-motion:reduce) {
- .hi-painel *,.hi-painel *::before,.hi-painel *::after,.hi-emblema * {animation:none!important;transition-duration:.01ms!important;}
+ .hi-painel *,.hi-painel *::before,.hi-painel *::after,.hi-emblema * {animation:none!important;transition-property: opacity, color, background-color, border-color, outline-color, text-decoration-color, box-shadow, fill, stroke !important;}
 }

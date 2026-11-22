@@ -16,13 +16,14 @@
  * campanha, o personagem volta para cá como "sem campanha".
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { capaDaCampanha, relativeTime } from "../../_global/parts";
 import type { Campaign } from "../../../../lib/table";
 import { AlertTriangle, RotateCw, Search, Spinner, X } from "../../../_design/icons";
 import { usePresence } from "../../../_design/usePresence";
+import { useCamada } from "../../../_design/camadas";
 import { JanelaNovoPersonagem } from "../../[campaignId]/vtt/_painel/janelas/JanelaNovoPersonagem";
 import { cancelarPedidoAction, enviarParaCampanhaAction } from "./acoes";
 
@@ -353,12 +354,9 @@ function DialogoEnviar({ p, destinos, onFechar }: { p: PersonagemLinha | null; d
 
   // Guarda o último personagem para o modal continuar desenhado durante a saída.
   useEffect(() => { if (p) { setUltimo(p); setDestino(destinos[0]?.id ?? ""); setErro(null); } }, [p, destinos]);
-  useEffect(() => {
-    if (!p) return;
-    const k = (e: KeyboardEvent) => { if (e.key === "Escape" && !ocupado) onFechar(); };
-    window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
-  }, [p, ocupado, onFechar]);
+  const modalRef = useRef<HTMLDivElement>(null);
+  // Esc e Tab pela pilha de camadas.
+  useCamada({ aberta: !!p, fechar: () => { if (!ocupado) onFechar(); }, raiz: modalRef, modal: true });
 
   if (!montado || !ultimo) return null;
   const narra = destinos.find((d) => d.id === destino)?.narra ?? false;
@@ -378,7 +376,7 @@ function DialogoEnviar({ p, destinos, onFechar }: { p: PersonagemLinha | null; d
   return (
     <>
       <div className={`v1-veu${sai}`} onMouseDown={() => { if (!ocupado) onFechar(); }} aria-hidden="true" />
-      <div className={`v1-modal v1-modal--enviar${sai}`} role="dialog" aria-modal="true" aria-labelledby="enviar-titulo">
+      <div ref={modalRef} className={`v1-modal v1-modal--enviar${sai}`} role="dialog" aria-modal="true" aria-labelledby="enviar-titulo">
         <div className="v1-modal-capa v1-modal-capa--enviar">
           <Rosto p={ultimo} classe="v1-modal-capa-rosto" />
           <div className="v1-modal-capa-veu" aria-hidden="true" />

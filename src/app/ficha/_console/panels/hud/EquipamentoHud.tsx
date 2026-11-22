@@ -478,10 +478,15 @@ const Vazio = ({ children }: { children: ReactNode }) => (
 function Cartao({ p, acoes, comando, apagado, marca, pe, onVer, onVerPeca, ativo, ganho, acao, onMenu }: { p: PecaHud; acoes?: ReactNode; comando?: ReactNode; apagado?: boolean; marca?: string; pe?: ReactNode; onVer: () => void; onVerPeca?: (p: PecaHud) => void; ativo?: boolean; ganho?: number; acao?: { rotulo: string; onClick: () => void; ambar?: boolean }; onMenu?: (x: number, y: number) => void }) {
   return (
     <div onClick={acao ? acao.onClick : onVer} onContextMenu={acao ? (ev) => { ev.preventDefault(); if (onMenu) onMenu(ev.clientX, ev.clientY); else onVer(); } : undefined}
-      role={acao ? "button" : undefined} tabIndex={acao ? 0 : undefined} aria-label={acao ? `${acao.rotulo} ${p.nome}` : undefined}
-      onKeyDown={acao ? (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); acao.onClick(); } } : undefined}
       data-acao={acao ? "true" : undefined}
       className={`hx-ch hx-cartao ${ativo ? "hx-edge" : ""}`} style={{ ["--k" as string]: acao?.ambar ? AMB : corDe(p), cursor: "pointer", opacity: apagado ? .6 : 1 }}>
+      {/* O cartão inteiro como botão, sem aninhar controles: o contêiner
+          deixou de ser `role="button"` (ele tem o "ver", a munição e os
+          comandos dentro). Este botão cobre o cartão, fica por baixo do
+          conteúdo e não recebe o mouse — o clique continua no contêiner;
+          ele existe para o Tab, o Enter e o leitor de tela. */}
+      <button type="button" className="hx-cartao-alvo" aria-label={acao ? `${acao.rotulo} ${p.nome}` : `Ver ${p.nome}`}
+        onClick={(ev) => { ev.stopPropagation(); if (acao) acao.onClick(); else onVer(); }} />
       {acao && (
         <span className="hx-cartao-prompt">
           <button type="button" className="hx-cartao-ver" aria-label={`Ver ${p.nome}`} title="Ver item"
