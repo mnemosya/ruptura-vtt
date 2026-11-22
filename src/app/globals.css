@@ -35,7 +35,7 @@
  * `visibility` não mexe no layout nem na opacidade do botão (o balão
  * continua opaco quando volta).
  */
-[data-dicas-ocultas] :is(.ca-dica, .cr-dica, .rv-dica, .rc-winbtn-dica, .rc-ndesl-dica, .rv-mk-dica, .rv-menu-item-dica, .fj-campo__tooltip, .hx-prop-dica, .rc-termo-dica) {
+[data-dicas-ocultas] :is(.ca-dica, .rv-ferr-tooltip, .rv-tooltip-terreno, .cr-dica, .rv-dica, .rc-winbtn-dica, .rc-ndesl-dica, .rv-mk-dica, .rv-menu-item-dica, .fj-campo__tooltip, .hx-prop-dica, .rc-termo-dica) {
   visibility: hidden !important;
 }
 
