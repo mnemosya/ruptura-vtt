@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getImportSessionById } from "../../../../../lib/contentSchema/importSessionQueries";
+import { dataHoraDaMesa } from "../../../../../lib/datas";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +25,8 @@ export default async function ImportSessaoPage({ params }: PageProps) {
         <span>status: {sessao.status}</span>
         <span>versão do formato: {sessao.versao_formato}</span>
         <span>hash do pacote: {sessao.hash_pacote.slice(0, 16)}…</span>
-        <span>criada em: {new Date(sessao.created_at).toLocaleString("pt-BR")}</span>
-        {sessao.confirmada_em && <span>confirmada em: {new Date(sessao.confirmada_em).toLocaleString("pt-BR")}</span>}
+        <span>criada em: {dataHoraDaMesa(sessao.created_at)}</span>
+        {sessao.confirmada_em && <span>confirmada em: {dataHoraDaMesa(sessao.confirmada_em)}</span>}
       </div>
 
       {sessao.avisos.length > 0 && (

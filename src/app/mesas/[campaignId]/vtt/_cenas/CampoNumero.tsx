@@ -26,6 +26,7 @@
  */
 
 import { useState } from "react";
+import { ehEnter } from "../../../../_design/teclado";
 
 /**
  * O texto que o campo mostra para um número.
@@ -95,7 +96,7 @@ export function CampoNumero({ valor, onConfirmar, min, max, className, decimais 
       onChange={(e) => setRascunho(e.target.value)}
       onBlur={confirmar}
       onKeyDown={(e) => {
-        if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); }
+        if (ehEnter(e)) { e.preventDefault(); e.currentTarget.blur(); }
         if (e.key === "Escape") { e.preventDefault(); setRascunho(null); }
       }}
     />

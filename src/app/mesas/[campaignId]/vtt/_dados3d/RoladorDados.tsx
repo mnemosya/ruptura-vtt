@@ -50,6 +50,7 @@ import {
 } from "../_painel/acoes/rolagemPainel";
 import type { TableLogVisibility } from "../../../../../lib/table";
 import { getRupturaPool, type RupturaSelectionMode } from "../../../../../lib/dice";
+import { ehEnter } from "../../../../_design/teclado";
 
 /* Tokens do design, faixas de margem e as peças de RESULTADO moram em
    `ResultadoRolagem.tsx` — o Console do Personagem desenha o resultado
@@ -1053,7 +1054,7 @@ function AjusteMod({ valor, onChange }: { valor: number; onChange: (n: number) =
             if (/^[+-]?\d+$/.test(proximo)) onChange(Number(proximo));
           }}
           onBlur={() => setEditando(false)}
-          onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+          onKeyDown={(e) => { if (ehEnter(e)) e.currentTarget.blur(); }}
         />
         <button type="button" aria-label="Aumentar modificador" onClick={() => onChange(valor + 1)}><Plus size={11} strokeWidth={2.8} /></button>
       </span>

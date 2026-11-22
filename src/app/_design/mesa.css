@@ -60,7 +60,7 @@
   --rm-panel-w: 320px;
 
   position: relative;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: #07090f;
   color: var(--rm-text);
   font-family: var(--font-corpo), system-ui, sans-serif;
@@ -1096,11 +1096,16 @@
   .rm-navrail-hint { display: none; }
 }
 
+/* Menos movimento: animações terminam na hora, no estado final, e UMA
+   vez — sem `iteration-count`, um pulso infinito de 0,01 ms virava um
+   ciclo sem fim que cintilava. Transições de cor e opacidade continuam
+   (não são movimento); as de posição, escala e tamanho somem. */
 @media (prefers-reduced-motion: reduce) {
   .rm-root *,
   .rm-root *::before,
   .rm-root *::after {
     animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-property: opacity, color, background-color, border-color, outline-color, text-decoration-color, box-shadow, fill, stroke !important;
   }
 }

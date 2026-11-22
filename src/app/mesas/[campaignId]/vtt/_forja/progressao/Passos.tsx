@@ -18,6 +18,7 @@ import {
 import { VERTENTES_ACERVO } from "../acervo/vertentes";
 import { ArteSubclasse, type Acao } from "./Partes";
 import { TextoMd } from "./TextoMd";
+import { useCamada } from "../../../../../_design/camadas";
 
 type Catalogos = Pick<CatalogosCriacaoV12, "subclasses" | "pericias">;
 export interface PropsPasso {
@@ -64,13 +65,11 @@ function HeroiArte({ slug, nome, classeSlug, ordem }: { slug: string; nome: stri
 function ArteAmpliada({ src, nome, onFechar }: { src: string; nome: string; onFechar: () => void }) {
   const [saindo, setSaindo] = useState(false);
   const fechar = () => setSaindo(true);
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); setSaindo(true); } };
-    window.addEventListener("keydown", k, true);
-    return () => window.removeEventListener("keydown", k, true);
-  }, []);
+  const raizRef = useRef<HTMLDivElement>(null);
+  // Esc pela pilha de camadas: fecha a arte, não a Forja por baixo.
+  useCamada({ aberta: !saindo, fechar, raiz: raizRef, modal: true });
   return createPortal(
-    <div className={`fj-pg pg-ampliada ${saindo ? "pg-ampliada--sai" : ""}`} role="dialog" aria-modal="true" aria-label={nome}
+    <div ref={raizRef} className={`fj-pg pg-ampliada ${saindo ? "pg-ampliada--sai" : ""}`} role="dialog" aria-modal="true" aria-label={nome}
       onClick={fechar} onAnimationEnd={(e) => { if (saindo && e.target === e.currentTarget) onFechar(); }}>
       <figure className="pg-ampliada__quadro" onClick={(e) => e.stopPropagation()}>
         <img src={src} alt={nome} />

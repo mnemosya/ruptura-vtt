@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode, type RefObject } from "rea
 import { Key, Mono } from "./ui";
 import { oxanium } from "../../../../_design/oxanium";
 import { eventoDaForjaDisponivel } from "./atalhos";
+import { useCamada } from "../../../../_design/camadas";
 
 /** Teclado de leitura: "I" abre o Códex quando o foco não está num campo de texto. */
 export function useAtalhoCodex(abrir: () => void) {
@@ -23,13 +24,11 @@ export function useAtalhoCodex(abrir: () => void) {
 
 /** Moldura do modal de Códex: véu, varredura e Esc para fechar. Vai num portal no body. */
 export function Shell({ children, onClose, rotulo, fechando = false, onSaidaConcluida, className = "" }: { children: ReactNode; onClose: () => void; rotulo: string; fechando?: boolean; onSaidaConcluida?: () => void; className?: string }) {
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
-  }, [onClose]);
+  const raizRef = useRef<HTMLDivElement>(null);
+  // Esc pela pilha de camadas; Tab contido. Saindo, já não é camada.
+  useCamada({ aberta: !fechando, fechar: onClose, raiz: raizRef, modal: true });
   return (
-    <div className={`fj-root ${oxanium.variable} fj-shell ${className}${fechando ? " fj-shell--saindo" : ""}`} role="dialog" aria-modal="true" aria-label={rotulo}
+    <div ref={raizRef} className={`fj-root ${oxanium.variable} fj-shell ${className}${fechando ? " fj-shell--saindo" : ""}`} role="dialog" aria-modal="true" aria-label={rotulo}
       onAnimationEnd={(e) => {
         if (fechando && e.target === e.currentTarget && e.animationName === "fj-shell-saida") onSaidaConcluida?.();
       }}

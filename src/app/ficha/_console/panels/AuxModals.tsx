@@ -24,6 +24,7 @@ import {
 import type { InventoryItemInstance, ItemContent } from "../../../../lib/character";
 import { BODY_SLOT_LABELS, itensCompativeisComSlot, type BodySlotId } from "../slots";
 import { useCentroDoConsole } from "../useCentroDoConsole";
+import { useCamada } from "../../../_design/camadas";
 import type { ConsoleApi } from "../types";
 
 export function AuxJanela({
@@ -42,6 +43,10 @@ export function AuxJanela({
   children: ReactNode;
 }) {
   const centro = useCentroDoConsole();
+  const raizRef = useRef<HTMLDivElement>(null);
+  // Esc fecha esta janela (e só ela: o Console por baixo cede o Esc
+  // quando não é a camada de cima); Tab contido.
+  useCamada({ aberta: true, fechar: onFechar, raiz: raizRef, modal: true });
   return (
     <div
       className="rc-aux-backdrop"
@@ -50,6 +55,7 @@ export function AuxJanela({
       }}
     >
       <div
+        ref={raizRef}
         className="rc-aux"
         role="dialog"
         aria-modal="true"
@@ -123,16 +129,8 @@ export function ConsolePicker({
     event.currentTarget.releasePointerCapture?.(event.pointerId);
   }
 
-  useEffect(() => {
-    function fecharComEscape(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      event.stopPropagation();
-      onFechar();
-    }
-    window.addEventListener("keydown", fecharComEscape, true);
-    return () => window.removeEventListener("keydown", fecharComEscape, true);
-  }, [onFechar]);
+  // Esc pela pilha de camadas; Tab contido quando o seletor é modal.
+  useCamada({ aberta: true, fechar: onFechar, raiz: janelaRef, modal });
 
   return (
     <div

@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RANKINGS_V12, VERTENTES_V12, type AttributeIdV12, type RankingV12 } from "../../../../../lib/rulesetV12";
 import { avancarRankingV12Action, lerAvancoV12Action, type PacoteAvancoV12 } from "../_acoes/evolucaoV12Actions";
+import { useCamada } from "../../../../_design/camadas";
 
 const ATRIBUTOS: { id: AttributeIdV12; nome: string }[] = [
   { id: "corpo", nome: "Corpo" }, { id: "mente", nome: "Mente" }, { id: "animo", nome: "Ânimo" },
@@ -26,6 +27,10 @@ export function ProgressaoInicial({ campaignId, characterId, alvo, onConcluir }:
   const [vertente, setVertente] = useState("");
   const concluirRef = useRef(onConcluir);
   const concluidoRef = useRef(false);
+  const raizRef = useRef<HTMLElement>(null);
+  // Fluxo obrigatório: sem fechar por Esc (`null` consome a tecla para o
+  // VTT por baixo não reagir), com o Tab contido na janela.
+  useCamada({ aberta: true, fechar: null, raiz: raizRef, modal: true });
   concluirRef.current = onConcluir;
 
   const concluir = useCallback(() => {
@@ -85,7 +90,7 @@ export function ProgressaoInicial({ campaignId, characterId, alvo, onConcluir }:
   const faltam = pacote ? RANKINGS_V12.indexOf(alvo) - RANKINGS_V12.indexOf(pacote.de) : 0;
   return (
     <div className="fj-progressao__backdrop" role="presentation">
-      <section className="fj-progressao" role="dialog" aria-modal="true" aria-label={`Progressão inicial até o Rank ${alvo}`}>
+      <section ref={raizRef} className="fj-progressao" role="dialog" aria-modal="true" aria-label={`Progressão inicial até o Rank ${alvo}`}>
         <header className="fj-progressao__header">
           <span>SYS.FORGE // PROGRESSÃO INICIAL</span>
           <h2>Rank {pacote?.de ?? "F"} → {pacote?.para ?? alvo}</h2>

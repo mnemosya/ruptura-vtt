@@ -39,6 +39,9 @@ import { ConvitesModal } from "./_global/ConvitesModal";
 import { EnvioImagem, type RecorteEnvio } from "../ficha/_console/EnvioImagem";
 import { prepararRecorte } from "../../lib/vtt/imagePreparation";
 import { CortinaDaMesa } from "./_global/CortinaDaMesa";
+import { useCamada } from "../_design/camadas";
+import { ehEnter } from "../_design/teclado";
+import { dataHoraDaMesa } from "../../lib/datas";
 
 /** Um personagem de jogador no elenco do destaque. */
 export interface MembroElenco {
@@ -538,7 +541,7 @@ function PainelAtividade({ campanhas, destaqueId, onSelecionar }: { campanhas: C
                   <span className="v1-losango" aria-hidden="true" />
                   <span className="v1-linha-texto">
                     <span className="v1-linha-nome" title={row.campaign.name}>{row.campaign.name}</span>
-                    <span className="v1-linha-quando">Sessão · <time dateTime={row.latestSession!.started_at}>{new Date(row.latestSession!.started_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</time></span>
+                    <span className="v1-linha-quando">Sessão · <time dateTime={row.latestSession!.started_at}>{dataHoraDaMesa(row.latestSession!.started_at, { dateStyle: "short", timeStyle: "short" })}</time></span>
                   </span>
                 </button>
               </li>
@@ -632,7 +635,7 @@ function CreateCampaignModal({
   const [nome, setNome] = useState("");
   const [nomeTocado, setNomeTocado] = useState(false);
   const [previewId, setPreviewId] = useState("preview");
-  const [regiao, setRegiao] = useState<RegiaoIdV12 | null>(null);
+  const [regiao, setRegiao] = useState<RegiaoIdV12 | null>("vastra");
   const [rankingInicial, setRankingInicial] = useState<RankingV12>("F");
   const [descricao, setDescricao] = useState("");
   const [capa, setCapa] = useState<File | null>(null);
@@ -653,23 +656,9 @@ function CreateCampaignModal({
   // (`devolverFocoAoGatilho`) — ver a nota lá: aqui dentro o
   // `autoFocus` do input já apagou o rastro de quem abriu.
 
-  useEffect(() => {
-    if (!aberto) return;
-    const onKey = (e: KeyboardEvent) => {
-      // Com o envio da capa aberto, o Esc é dele (ele fecha a si mesmo), não do modal.
-      if (envioCapa) return;
-      if (e.key === "Escape" && !busy) onClose();
-      if (e.key !== "Tab") return;
-      const focusables = dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled)');
-      if (!focusables?.length) return;
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [aberto, busy, onClose, envioCapa]);
+  // Esc e Tab pela pilha de camadas. O envio da capa, quando aberto, é
+  // a camada de cima: o Esc é dele, não do modal.
+  useCamada({ aberta: aberto, fechar: () => { if (!busy) onClose(); }, raiz: dialogRef, modal: true });
 
   useEffect(() => {
     if (!capa) { setCapaPreview(null); return; }
@@ -796,7 +785,7 @@ function CreateCampaignModal({
             <input id="nova-campanha-nome" data-testid="dash-nova-mesa" className="v1-u v1-campo"
               value={nome} autoFocus maxLength={120}
               onChange={(e) => { setNome(e.target.value); setNomeTocado(true); if (e.target.value.trim()) setErro(null); }}
-              onKeyDown={(e) => { if (e.key === "Enter") void handleCreate(); }}
+              onKeyDown={(e) => { if (ehEnter(e)) void handleCreate(); }}
               placeholder="Ex.: Ecos de Vosek" />
             {nomeTocado && !nomeOk && <span role="alert" className="v1-campo-erro v1-desliza-a">Informe o nome da campanha.</span>}
           </label>

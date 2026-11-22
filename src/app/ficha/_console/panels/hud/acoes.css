@@ -289,7 +289,7 @@
 .ha-toast button:hover { color: var(--hx-abismo); background: var(--hx-cy); border-color: var(--hx-cy); }
 
 @media (prefers-reduced-motion: reduce) {
-  .ha *, .ha *::before, .ha *::after { animation: none !important; transition-duration: .01ms !important; }
+  .ha *, .ha *::before, .ha *::after { animation: none !important; transition-property: opacity, color, background-color, border-color, outline-color, text-decoration-color, box-shadow, fill, stroke !important; }
   /* Sem o piscar, a prévia do custo continua visível: os losangos ficam apagados. */
   .ha-pip[data-previa] { opacity: .32; }
 }

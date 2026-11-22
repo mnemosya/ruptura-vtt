@@ -19,14 +19,16 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { useCamada } from "../../_design/camadas";
 import { createPortal } from "react-dom";
-import { IBM_Plex_Sans } from "next/font/google";
-import { oxanium } from "../../_design/oxanium";
+import { CircleAlert, Info, Upload, X } from "lucide-react";
 import { BYTES_ORIGINAL_MAXIMO } from "../../../lib/vtt/imagePreparation";
 import { useCentroDoConsole } from "./useCentroDoConsole";
+/* Moldura das janelas do VTT (`.pn-jan`): tokens do chassi e a casca/topbar/rodapé. */
+import "../../_design/vtt-chassi.css";
+import "../../mesas/[campaignId]/vtt/_painel/painel.css";
 import "./envioImagem.css";
 
-const plex = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex", display: "swap" });
 
 export type FormaEnvio = "quadrado" | "circulo" | "hexagono" | "capa" | "livre";
 /** `tamanho` é a largura do recorte (o lado, nas formas quadradas); `altura` só vem na capa. */
@@ -77,14 +79,14 @@ function peso(bytes: number) {
 }
 
 export function EnvioImagem({
-  titulo, contexto, canal = "UPLOAD://IMAGEM", forma, atual, arquivoInicial, rotuloUsar = "USAR IMAGEM",
+  titulo, contexto, forma, atual, arquivoInicial, rotuloUsar = "USAR IMAGEM",
   aviso, erro, enviando = false, cor, centralizarNoConsole = false, previaToken, onUsar, onRemover, fechar,
 }: {
   /** "IMAGEM DO COMPANHEIRO", "AVATAR DA FICHA"… */
   titulo: string;
   /** Linha pequena acima do título: de quem é a imagem. */
   contexto?: string;
-  /** Código da faixa de sistema no topo. */
+  /** Código de canal da moldura antiga; a janela do VTT não o exibe. */
   canal?: string;
   forma: FormaEnvio;
   /** Imagem que já está lá: aparece no scanner e libera o "remover". */
@@ -120,6 +122,10 @@ export function EnvioImagem({
   const fecharBotao = useRef<HTMLButtonElement>(null);
   const centro = useCentroDoConsole();
   const sair = () => setSaindo(true);
+  const raizRef = useRef<HTMLDivElement>(null);
+  // Esc pela pilha de camadas, com o foco onde estiver: o envio é a
+  // camada de cima, então fecha antes do modal que o abriu.
+  useCamada({ aberta: montado && !saindo, fechar: sair, raiz: raizRef, modal: true });
   const livre = forma === "livre";
 
   useEffect(() => { setMontado(true); }, []);
@@ -163,22 +169,25 @@ export function EnvioImagem({
   const canto = <><i className="ev-canto" data-c="1" /><i className="ev-canto" data-c="2" /><i className="ev-canto" data-c="3" /><i className="ev-canto" data-c="4" /></>;
 
   if (!montado) return null;
-  const estilo = { ...(cor ? { "--ev": cor } : {}), ...(centralizarNoConsole && centro ? { "--ev-x": `${centro.x}px`, "--ev-y": `${centro.y}px` } : {}) } as React.CSSProperties;
+  const estilo = { ...(cor ? { "--ev": cor, "--rv-cy": cor } : {}), ...(centralizarNoConsole && centro ? { "--ev-x": `${centro.x}px`, "--ev-y": `${centro.y}px` } : {}) } as React.CSSProperties;
 
-  return createPortal(<div className={`rc-cursor-scope ev-modal ${oxanium.variable} ${plex.variable}`} data-saindo={saindo} data-console={centralizarNoConsole && !!centro} style={estilo} onAnimationEnd={e => { if (saindo && e.target === e.currentTarget) fechar(); }}>
-    <div className="ev-veu" aria-hidden="true" onClick={sair} />
-    <div className="ev-caixa" role="dialog" aria-modal="true" aria-label={titulo} onKeyDown={e => { if (e.key === "Escape") { e.stopPropagation(); sair(); } }}>
-      <div className="ev-faixa" aria-hidden="true"><span>{canal}</span><span>{fonte ? `FONTE ${fonte.w}×${fonte.h} · ${peso(arquivo?.size ?? 0)}` : "AGUARDANDO SINAL"}</span></div>
-      <header><div>{contexto && <small>{contexto}</small>}<h3>{titulo}</h3></div><button ref={fecharBotao} type="button" aria-label="Fechar" onClick={sair}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg></button></header>
-
+  return createPortal(<div className="rc-cursor-scope ev-modal" data-saindo={saindo} onAnimationEnd={e => { if (saindo && e.target === e.currentTarget) fechar(); }}>
+    <div className="pn-jan-fundo" aria-hidden="true" onClick={sair} />
+    <div ref={raizRef} className="pn-jan pn-dialogo ev-jan" data-console={centralizarNoConsole && !!centro} style={estilo} role="dialog" aria-modal="true" aria-label={contexto ? `${titulo} · ${contexto}` : titulo}>
+      <div className="pn-jan-top">
+        <span className="pn-jan-titulo">{titulo}{contexto && <span style={{ opacity: 0.6 }}> · {contexto}</span>}</span>
+        <div className="pn-jan-btns">
+          <button ref={fecharBotao} type="button" className="pn-jan-btn pn-jan-btn--fechar" aria-label="Fechar" onClick={sair}><X size={13} aria-hidden="true" /></button>
+        </div>
+      </div>
+      <div className="pn-jan-corpo ev-corpo">
       <input ref={entrada} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={e => { escolher(e.target.files?.[0]); e.target.value = ""; }} />
       {!fonte ? <button type="button" className="ev-solta" data-sobre={sobre} onClick={() => entrada.current?.click()}
         onDragOver={e => { e.preventDefault(); setSobre(true); }} onDragLeave={() => setSobre(false)}
         onDrop={e => { e.preventDefault(); setSobre(false); escolher(e.dataTransfer.files?.[0]); }}>
-        {canto}
         <span className="ev-solta-forma" data-forma={forma}>
           {atual ? <span><img src={atual} alt="" /></span>
-            : <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4" /></svg>}
+            : <Upload size={32} strokeWidth={1.6} aria-hidden="true" />}
         </span>
         {/* A capa não tem o scanner (nem a varredura): o texto não fala em escanear. */}
         <strong>{forma === "capa"
@@ -191,7 +200,7 @@ export function EnvioImagem({
           <span className="ev-rotulo">PRÉVIA</span>
           <p>A imagem vai inteira, sem recorte.</p>
           <dl className="ev-dados"><div><dt>DIMENSÕES</dt><dd>{fonte.w} × {fonte.h}</dd></div><div><dt>ARQUIVO</dt><dd>{peso(arquivo?.size ?? 0)}</dd></div></dl>
-          <button type="button" className="ev-secundario" onClick={() => entrada.current?.click()}>ESCOLHER OUTRA</button>
+          <button type="button" className="ev-fj ev-fj-fantasma ev-trocar" onClick={() => entrada.current?.click()}>Escolher outra</button>
         </div>
       </div> : <div className="ev-enquadra" data-forma={forma}>
         <div className="ev-janela-moldura">
@@ -212,28 +221,26 @@ export function EnvioImagem({
         </div>
         <div className="ev-enquadra-lado">
           <span className="ev-rotulo">ENQUADRAR</span>
-          <p>Arraste para posicionar. Use a roda ou a régua para aproximar.</p>
           <div className="ev-zoom">
             <button type="button" aria-label="Afastar" disabled={zoom <= 1} onClick={() => passo(-0.25)}>−</button>
             <input type="range" min={1} max={ZOOM_MAX} step={0.01} value={zoom} aria-label="Zoom" style={{ "--p": `${((zoom - 1) / (ZOOM_MAX - 1)) * 100}%` } as React.CSSProperties} onChange={e => setZoom(Number(e.target.value))} />
             <button type="button" aria-label="Aproximar" disabled={zoom >= ZOOM_MAX} onClick={() => passo(0.25)}>+</button>
           </div>
-          <span className="ev-rotulo">{previaToken ? "COMO VAI FICAR NO MAPA" : "COMO VAI FICAR"}</span>
+          {!capa && <><span className="ev-rotulo">{previaToken ? "COMO VAI FICAR NO MAPA" : "COMO VAI FICAR"}</span>
           {previaToken ? <TokenNaGrade fonte={fonte.url} largura={largura} altura={altura} pos={pos} cor={previaToken} />
-            : <div className="ev-previa"><span style={{ width: larguraPrevia, height: PREVIA, clipPath: recortePrevia }}><img src={fonte.url} alt="" style={{ width: largura * k, height: altura * k, transform: `translate(${(pos.x - recuo) * k}px, ${pos.y * k}px)` }} /></span></div>}
-          <button type="button" className="ev-secundario" onClick={() => entrada.current?.click()}>ESCOLHER OUTRA</button>
+            : <div className="ev-previa"><span style={{ width: larguraPrevia, height: PREVIA, clipPath: recortePrevia }}><img src={fonte.url} alt="" style={{ width: largura * k, height: altura * k, transform: `translate(${(pos.x - recuo) * k}px, ${pos.y * k}px)` }} /></span></div>}</>}
+          <button type="button" className="ev-fj ev-fj-fantasma ev-trocar" onClick={() => entrada.current?.click()}>Escolher outra</button>
         </div>
       </div>}
 
-      {(recado || erro || aviso) && <p className="ev-aviso" data-tom={recado || erro ? "erro" : undefined} role={recado || erro ? "alert" : undefined}>{recado ?? erro ?? aviso}</p>}
+      {(recado || erro || aviso) && <p className="ev-aviso" data-tom={recado || erro ? "erro" : undefined} role={recado || erro ? "alert" : undefined}>{recado || erro ? <CircleAlert size={16} aria-hidden="true" /> : <Info size={16} aria-hidden="true" />}<span>{recado ?? erro ?? aviso}</span></p>}
       {enviando && <div className="ev-transmite" role="status"><span>TRANSMITINDO</span><i /></div>}
-      <footer>
-        {atual && onRemover && !fonte ? <button type="button" className="ev-perigo" disabled={enviando} onClick={remover}>REMOVER IMAGEM</button> : <span />}
-        <div>
-          <button type="button" className="ev-link" onClick={sair}>CANCELAR</button>
-          <button type="button" className="ev-primario" disabled={!fonte || enviando} onClick={usar}>{enviando ? "ENVIANDO…" : rotuloUsar}</button>
-        </div>
-      </footer>
+      </div>
+      <div className="pn-dialogo-acoes ev-acoes">
+        {atual && onRemover && !fonte && <button type="button" className="ev-fj ev-fj-fantasma ev-remover" disabled={enviando} onClick={() => void remover()}>Remover imagem</button>}
+        <button type="button" className="ev-fj ev-fj-fantasma" onClick={sair}>Cancelar</button>
+        <button type="button" className="ev-fj ev-fj-primario" disabled={!fonte || enviando} aria-busy={enviando || undefined} onClick={() => void usar()}>{enviando ? "Enviando…" : rotuloUsar}</button>
+      </div>
     </div>
   </div>, document.body);
 }

@@ -1139,7 +1139,7 @@
 /* ── Fundação funcional das ferramentas (estado persistido) ────── */
 /* Palco de espera da mesa. O terminal compartilhado (`BootPanel`) cobre
    a viewport durante o carregamento; esta base mantém a altura da rota. */
-.rv-mesa--carregando { display: flex; align-items: center; justify-content: center; width: 100%; height: 100vh; background: var(--fj-fundo-1, #0a0e14); color: var(--txt-dim); font-size: 13px; }
+.rv-mesa--carregando { display: flex; align-items: center; justify-content: center; width: 100%; height: 100dvh; background: var(--fj-fundo-1, #0a0e14); color: var(--txt-dim); font-size: 13px; }
 .rv-mesa-erro { max-width: 40ch; text-align: center; line-height: 1.5; }
 .rv-spin { animation: rv-spin 1s linear infinite; color: var(--cy); }
 @keyframes rv-spin { to { transform: rotate(360deg); } }
@@ -1260,7 +1260,7 @@
   background: rgba(4,7,11,.66); backdrop-filter: blur(3px); padding: 20px;
 }
 .rv-modal {
-  width: 100%; max-width: 480px; max-height: calc(100vh - 40px); overflow: auto;
+  width: 100%; max-width: 480px; max-height: calc(100dvh - 40px); overflow: auto;
   border-radius: var(--raio); background: var(--rv-panel); box-shadow: inset 0 0 0 1px var(--linha), var(--sombra);
   display: flex; flex-direction: column;
 }
@@ -1385,7 +1385,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    conteúdo natural, e o scroll interno nunca aconteceria). */
 .rv-janela-token {
   position: fixed; z-index: 45; width: 100%; max-width: 560px;
-  max-height: calc(100vh - 40px); overflow: hidden;
+  max-height: calc(100dvh - 40px); overflow: hidden;
   border-radius: var(--raio); background: var(--rv-panel);
   box-shadow: inset 0 0 0 1px var(--linha), var(--sombra);
   display: flex; flex-direction: column;
@@ -1573,7 +1573,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-token-vertente[aria-checked="true"] { border-color: var(--rv-vertente-cor); color: var(--rv-ink); }
 
 @media (max-width: 560px) {
-  .rv-janela-token { max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); }
+  .rv-janela-token { max-width: calc(100vw - 16px); max-height: calc(100dvh - 16px); }
 }
 
 /* ── Mais opções — disclosure nativo ───────────────────────────── */
@@ -1711,7 +1711,10 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-camada-grade--oculta { opacity: 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  .rv-mesa *, .rv-mesa *::before, .rv-mesa *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  /* Uma vez só (`iteration-count`): sem isso, animação infinita de
+     0,01 ms girava sem parar. Cor e opacidade seguem com transição;
+     posição, escala e tamanho não. */
+  .rv-mesa *, .rv-mesa *::before, .rv-mesa *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-property: opacity, color, background-color, border-color, outline-color, text-decoration-color, box-shadow, fill, stroke !important; }
   /* A regra genérica acima encolhe a duração da animação do ping quase
      a zero — como ela é `infinite`, o navegador renderiza o ÚLTIMO
      frame (raio grande, opacidade 0): o ping simplesmente nunca
@@ -3800,7 +3803,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
      palco). */
   position: fixed; overflow: hidden;
   width: 100%; max-width: 560px;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
   /* `.rv-fp` traz z-index 17 (janela de ferramenta, que vive DENTRO do
      palco e fica atrás do painel da sessão). Esta janela é livre na
      tela inteira e precisa passar por cima do painel — o 45 é dela e

@@ -13,6 +13,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { parseResourceEdit } from "../resourceMath";
+import { ehEnter } from "../../../_design/teclado";
 
 export function ResourceValueCard({
   atual,
@@ -96,7 +97,7 @@ export function ResourceValueCard({
             setInvalido(false);
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            if (ehEnter(e)) {
               e.preventDefault();
               confirmar();
             } else if (e.key === "Escape") {

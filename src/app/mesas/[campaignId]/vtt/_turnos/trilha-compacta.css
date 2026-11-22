@@ -233,7 +233,7 @@
 .rv-mesa > .rv-ferramentas .rv-dica { display: none; }
 .rv-ferr-tooltip { position: fixed; z-index: 95; transform: translate(-50%,-100%); padding: 5px 9px; border: 1px solid rgba(0,212,255,.45); background: #06121c; color: #cfeff4; font: 700 10px var(--font-mono),monospace; letter-spacing: .14em; white-space: nowrap; pointer-events: none; }
 .rv-ferr-tooltip[hidden] { display: none; }
-.rv-menu-mesa { max-height: calc(100vh - 16px); overflow-y: auto; }
+.rv-menu-mesa { max-height: calc(100dvh - 16px); overflow-y: auto; }
 @media (max-width: 800px) {
   .rv-mesa > .rv-ferramentas { bottom: 8px; max-width: var(--rv-ferr-largura,calc(100% - var(--rv-painel-aberto-ocupa,0px) - 16px)); }
 }

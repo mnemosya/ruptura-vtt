@@ -28,6 +28,7 @@ import {
   PISO_PA, ROTULO_JANELA_CURTO, ROTULO_LADO, TETO_PA, paRestante,
 } from "./modelo";
 import type { TokenApresentacao } from "../_dominio/tokenApresentacao";
+import { CamadaModal } from "../../../../_design/CamadaModal";
 
 /**
  * Modos que a trilha realmente usa. "tregua" suspende a contagem e
@@ -562,7 +563,7 @@ function Confirmacao({
 }) {
   return (
     <div className="rv-modal-fundo" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) onCancelar(); }}>
-      <div className="rv-modal rv-modal--confirmar" role="alertdialog" aria-modal="true" aria-label={titulo}>
+      <CamadaModal fechar={onCancelar} className="rv-modal rv-modal--confirmar" role="alertdialog" aria-modal="true" aria-label={titulo}>
         <header className="rv-modal-cab">
           <h2>{titulo}</h2>
           <button type="button" className="rv-modal-fechar" aria-label="Fechar" onClick={onCancelar}>×</button>
@@ -574,7 +575,7 @@ function Confirmacao({
             {ocupado ? <><Loader2 size={13} className="rv-girando" /> Aguarde…</> : rotuloConfirmar}
           </button>
         </footer>
-      </div>
+      </CamadaModal>
     </div>
   );
 }

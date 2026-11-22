@@ -25,6 +25,7 @@ import { X } from "lucide-react";
 import "./seletor.css";
 import type { TableLogVisibility } from "../../../../../lib/table";
 import type { RupturaSelectionMode } from "../../../../../lib/dice";
+import { ehEnter } from "../../../../_design/teclado";
 
 /* ---- tokens do design ------------------------------------------- */
 
@@ -814,7 +815,7 @@ export function Stepper({ value, onChange }: { value: number; onChange: (n: numb
           if (/^[+-]?\d+$/.test(proximo)) onChange(Number(proximo));
         }}
         onBlur={() => setEditando(false)}
-        onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+        onKeyDown={(e) => { if (ehEnter(e)) e.currentTarget.blur(); }}
       />
       <button type="button" aria-label="Aumentar modificador" onClick={() => onChange(value + 1)}>+</button>
     </div>

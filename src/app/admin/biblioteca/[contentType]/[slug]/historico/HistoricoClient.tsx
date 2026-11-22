@@ -5,6 +5,7 @@ import type { ContentChangelogRow } from "../../../../../../lib/contentSchema/ch
 import { compararPublicado } from "../../../../../../lib/contentSchema/publishDiff";
 import { buttonStyle, sectionStyle } from "../../../rascunhos/_shared/formStyles";
 import { DiffView } from "../../../rascunhos/_shared/DiffView";
+import { dataDaMesa, dataHoraDaMesa } from "../../../../../../lib/datas";
 
 const CHANGE_LABEL: Record<ContentChangelogRow["change_type"], string> = {
   created: "Criado",
@@ -100,7 +101,7 @@ export function HistoricoClient({
                   {h.version_before ? `${h.version_before} → ` : ""}
                   <strong>{h.version_after ?? "—"}</strong>
                 </span>
-                <span style={{ fontSize: 12, color: "#7d7d8a" }}>{new Date(h.created_at).toLocaleString("pt-BR")}</span>
+                <span style={{ fontSize: 12, color: "#7d7d8a" }}>{dataHoraDaMesa(h.created_at)}</span>
                 <span style={{ fontSize: 12, color: "#7d7d8a" }}>{h.author_email ?? "autor desconhecido"}</span>
                 <button onClick={() => setAbertos((p) => ({ ...p, [h.id]: !p[h.id] }))} style={{ ...buttonStyle, marginLeft: "auto", padding: "4px 10px" }}>
                   {aberto ? "ocultar mudanças" : "ver mudanças"}
@@ -126,7 +127,7 @@ export function HistoricoClient({
 }
 
 function rotuloEntrada(h: ContentChangelogRow): string {
-  const data = new Date(h.created_at).toLocaleDateString("pt-BR");
+  const data = dataDaMesa(h.created_at);
   return `${h.version_after ?? "—"} · ${CHANGE_LABEL[h.change_type]} · ${data}`;
 }
 

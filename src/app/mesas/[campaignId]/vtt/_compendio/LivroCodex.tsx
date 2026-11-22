@@ -14,12 +14,13 @@ import type { CapituloCompendio } from "../../../../../lib/compendio/tipos";
 import { CabecalhoCodex, Shell, useIndiceAtivo } from "../_forja/Codex";
 import { Key, Mono } from "../_forja/ui";
 import { oxanium } from "../../../../_design/oxanium";
+import { useCamada } from "../../../../_design/camadas";
 import "../_forja/forja.css";
 import "./compendio.css";
 import { abrirCapituloAction, enviarSelecaoAoChatAction, enviarTrechoAoChatAction, listarCapitulosAction, textosDoLivroAction } from "./acoes";
 import { BotaoExpandir, Blocos, type ContextoLeitura } from "./Blocos";
 import { CapaLivro } from "./CapaLivro";
-import { posicaoDaCapa } from "./enquadramento";
+import { imagensDoCapitulo, posicaoDaCapa } from "./enquadramento";
 import {
   agruparPorSecao,
   capituloRaiz,
@@ -33,6 +34,7 @@ import {
   type DestinoLivro,
   type LinhaCapitulo,
 } from "./modelo";
+import { ehEnter } from "../../../../_design/teclado";
 
 const CHAVE_ULTIMO_LIDO = "ruptura:compendio:ultimo";
 const PAGINA_BRAXUS = "d1d0a13635528315a0980176a3020e19";
@@ -85,8 +87,6 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
 
   /** No celular o índice vira gaveta e a busca abre por um botão (desktop: sempre visíveis). */
   const [indiceAberto, setIndiceAberto] = useState(false);
-  const indiceAbertoRef = useRef(indiceAberto);
-  indiceAbertoRef.current = indiceAberto;
   const [buscaAberta, setBuscaAberta] = useState(!!buscaInicial);
   const campoBusca = useRef<HTMLInputElement>(null);
   const indiceRef = useRef<HTMLElement>(null);
@@ -97,13 +97,9 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
 
   /** Imagem aberta em tela cheia ("Expandir"). */
   const [ampliada, setAmpliada] = useState<{ url: string; legenda: string } | null>(null);
-  const ampliadaRef = useRef(ampliada);
-  ampliadaRef.current = ampliada;
 
   /** Menu de contexto sobre uma seleção (só na mesa: fora dela não há chat). */
   const [menuSelecao, setMenuSelecao] = useState<{ x: number; y: number; texto: string; ancora: string | null } | null>(null);
-  const menuSelecaoRef = useRef(menuSelecao);
-  menuSelecaoRef.current = menuSelecao;
 
   function abrirMenuSelecao(e: React.MouseEvent) {
     if (!campaignId || !atual) return;
@@ -183,7 +179,7 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
       setCarregando(false);
       if (!r.ok || !r.dados) return setErro(r.erro ?? "Não foi possível abrir o capítulo.");
       setErro(null);
-      setCapitulos((m) => new Map(m).set(atual.pageId, r.dados!));
+      setCapitulos((m) => new Map(m).set(atual.pageId, imagensDoCapitulo(r.dados!)));
     });
     return () => { vivo = false; };
   }, [atual, capitulos, campaignId]);
@@ -194,7 +190,7 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
     if (!raizAtual || raizAtual === atual?.pageId || capitulos.has(raizAtual)) return;
     let vivo = true;
     void abrirCapituloAction(campaignId, raizAtual).then((r) => {
-      if (vivo && r.ok && r.dados) setCapitulos((m) => new Map(m).set(raizAtual, r.dados!));
+      if (vivo && r.ok && r.dados) setCapitulos((m) => new Map(m).set(raizAtual, imagensDoCapitulo(r.dados!)));
     });
     return () => { vivo = false; };
   }, [raizAtual, atual, capitulos, campaignId]);
@@ -209,34 +205,15 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
   }, [busca, textos, campaignId]);
 
   const { scroller, active, go } = useIndiceAtivo(capitulo?.notionPageId ?? null);
-  // Esc fecha o livro. Em captura: o livro está por cima de tudo na mesa, então
-  // a tecla é dele antes do painel, do mapa ou de qualquer outro atalho.
-  const fecharRef = useRef(onClose);
-  fecharRef.current = onClose;
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      if (menuSelecaoRef.current || ampliadaRef.current) {
-        e.preventDefault();
-        e.stopPropagation();
-        setMenuSelecao(null);
-        setAmpliada(null);
-        return;
-      }
-      if (indiceAbertoRef.current) {
-        e.preventDefault();
-        e.stopPropagation();
-        setIndiceAberto(false);
-        return;
-      }
-      if (!fecharRef.current) return;
-      e.preventDefault();
-      e.stopPropagation();
-      fecharRef.current?.();
-    };
-    window.addEventListener("keydown", k, true);
-    return () => window.removeEventListener("keydown", k, true);
-  }, []);
+  // Esc pela pilha de camadas. O livro inteiro é a camada do `Shell`
+  // (fecha o Compêndio); a imagem ampliada, o menu de seleção e a gaveta
+  // do índice entram por cima dele quando abrem, então cada Esc fecha
+  // só o que está mais em cima, e uma dica aberta sobre o texto fecha
+  // antes de tudo.
+  const ampliadaRaizRef = useRef<HTMLDivElement>(null);
+  useCamada({ aberta: !!ampliada, fechar: () => setAmpliada(null), raiz: ampliadaRaizRef, modal: true });
+  useCamada({ aberta: !!menuSelecao, fechar: () => setMenuSelecao(null) });
+  useCamada({ aberta: indiceAberto, fechar: () => setIndiceAberto(false) });
 
   // O foco entra no livro ao abrir: teclado (rolagem, Esc, Tab) passa a valer aqui, não no painel.
   useEffect(() => { scroller.current?.focus({ preventScroll: true }); }, [scroller]);
@@ -339,7 +316,7 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
   return (
     <div className="fj-borda fj-ch fj-codex fj-livro" data-entrada-inicial={!navegou || undefined} data-testid="compendio-livro">
       {ampliada && createPortal(
-        <div className={`fj-root ${oxanium.variable} fj-mapa-grande fj-livro-ampliada`} role="dialog" aria-modal="true" aria-label="Imagem ampliada" onClick={() => setAmpliada(null)} data-testid="compendio-imagem-ampliada">
+        <div ref={ampliadaRaizRef} className={`fj-root ${oxanium.variable} fj-mapa-grande fj-livro-ampliada`} role="dialog" aria-modal="true" aria-label="Imagem ampliada" onClick={() => setAmpliada(null)} data-testid="compendio-imagem-ampliada">
           <div className="fj-mapa-grande__topo" onClick={(e) => e.stopPropagation()}>
             {ampliada.legenda && <span className="fj-mapa-grande__nome">{ampliada.legenda}</span>}
             <button type="button" onClick={() => setAmpliada(null)} className="fj-fechar fj-mapa-grande__fechar">ESC · Fechar</button>
@@ -385,7 +362,7 @@ function Livro({ campaignId, inicial, buscaInicial, onClose }: { campaignId: str
             aria-label="Buscar no livro"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+            onKeyDown={(e) => { if (ehEnter(e)) e.currentTarget.blur(); }}
             data-testid="compendio-busca"
           />
           <button

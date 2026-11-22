@@ -35,7 +35,7 @@
   --ra-r: 2px;
   --ra-r-sm: 2px;
   position: relative;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: #07090f;
   color: #b8d8e8;
   font-family: var(--font-corpo), sans-serif;
@@ -138,7 +138,7 @@
 }
 
 /* ── Shell ─────────────────────────────────────────────────────── */
-.ra2-shell { position: relative; z-index: 1; display: flex; width: 100%; min-height: 100vh; }
+.ra2-shell { position: relative; z-index: 1; display: flex; width: 100%; min-height: 100dvh; }
 .ra2-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .ra2-topbar {
   position: sticky; top: 0; z-index: 30;
@@ -160,7 +160,7 @@
 
 /* ── Sidebar ───────────────────────────────────────────────────── */
 .ra2-sidebar {
-  position: sticky; top: 0; align-self: flex-start; height: 100vh;
+  position: sticky; top: 0; align-self: flex-start; height: 100dvh;
   display: flex; flex-direction: column; gap: 24px;
   width: 240px; flex-shrink: 0; padding: 20px 24px;
   border-right: 1px solid rgba(0, 212, 255, 0.12);
@@ -1069,7 +1069,7 @@
       transform var(--mo-dur-enter) var(--mo-ease-out),
       visibility var(--mo-dur-enter) allow-discrete;
   }
-  .ra2-sidebar-wrap .ra2-sidebar { height: 100vh; width: 240px; padding: 20px 24px; }
+  .ra2-sidebar-wrap .ra2-sidebar { height: 100dvh; width: 240px; padding: 20px 24px; }
   .ra2-sidebar-wrap .ra2-nav-label,
   .ra2-sidebar-wrap .ra2-brand-full { display: block; }
   .ra2-sidebar-wrap .ra2-nav-item { justify-content: flex-start; padding: 12px; }
@@ -1098,14 +1098,14 @@
 .ra-reduce-motion *::after {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
-  transition-duration: 0.01ms !important;
+  transition-property: opacity, color, background-color, border-color, outline-color, text-decoration-color, box-shadow, fill, stroke !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ra-root, .ra-root *, .ra-root *::before, .ra-root *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-property: opacity, color, background-color, border-color, outline-color, text-decoration-color, box-shadow, fill, stroke !important;
   }
   /* .ra-cursor-dot/.ra-cursor-ring e o fallback de cursor:auto ficam
      em cursor.css (compartilhado com o Console). */

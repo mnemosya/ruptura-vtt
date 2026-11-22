@@ -26,6 +26,7 @@ import {
   type DadosJogadoresConvites,
 } from "../[campaignId]/vtt/_painel/acoes/administracaoPainel";
 import { capaDaCampanha } from "./parts";
+import { useCamada } from "../../_design/camadas";
 
 function iniciais(nome: string): string {
   return nome.trim().split(/\s+/).map((w) => w.charAt(0)).join("").slice(0, 2).toUpperCase() || "?";
@@ -52,6 +53,7 @@ export function ConvitesModal({ aberto, campanhas, campanhaInicial, onClose }: {
   const [confirma, setConfirma] = useState<string | null>(null);
   const confirmaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const contexto = useRef(0);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // Ao abrir, começa pela campanha que estava em destaque.
   useEffect(() => {
@@ -82,12 +84,8 @@ export function ConvitesModal({ aberto, campanhas, campanhaInicial, onClose }: {
     void carregar(campanhaId);
   }, [aberto, campanhaId, carregar]);
 
-  useEffect(() => {
-    if (!aberto) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [aberto, onClose]);
+  // Esc fecha só se esta for a camada de cima; Tab fica contido no modal.
+  useCamada({ aberta: aberto, fechar: onClose, raiz: modalRef, modal: true });
 
   useEffect(() => () => { if (confirmaTimer.current) clearTimeout(confirmaTimer.current); }, []);
 
@@ -167,7 +165,7 @@ export function ConvitesModal({ aberto, campanhas, campanhaInicial, onClose }: {
   return (
     <>
       <div className={`v1-veu${sai}`} onMouseDown={onClose} aria-hidden="true" />
-      <div className={`v1-modal v1-modal--convites${sai}`} role="dialog" aria-modal="true" aria-label="Jogadores e convites" data-testid="dash-janela-convites">
+      <div ref={modalRef} className={`v1-modal v1-modal--convites${sai}`} role="dialog" aria-modal="true" aria-label="Jogadores e convites" data-testid="dash-janela-convites">
         <div className="v1-conv-capa">
           {campanha && <div key={troca} className={`v1-conv-capa-img${troca ? " v1-wipe-a" : ""}`} style={capaDaCampanha(campanha)} aria-hidden="true" />}
           <div className="v1-modal-capa-veu" aria-hidden="true" />

@@ -104,6 +104,7 @@ import { type CantoImagem, CamadaImagens } from "./CamadaImagens";
 import { type ImagemCena, alturaEfetivaM, pxPorMetro, retanguloDaImagem } from "../_dominio/imagemCena";
 import { useAnimacaoToken } from "./useAnimacaoToken";
 import { CORES_VERTENTE } from "../../../../_design/coresVertente";
+import { ehEnter } from "../../../../_design/teclado";
 
 /** Anel e selo de quem já agiu na janela — neutro, sem a cor do lado. */
 const COR_JA_AGIU = "#5f7492";
@@ -2786,7 +2787,7 @@ export function MapaHex({
               }}
               onKeyDown={(e) => {
                 if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); ignorarBlurTextoRef.current = true; onCancelarTextoEditor?.(); e.currentTarget.blur(); }
-                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); ignorarBlurTextoRef.current = true; onSalvarTextoEditor?.(); e.currentTarget.blur(); }
+                if (ehEnter(e) && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); ignorarBlurTextoRef.current = true; onSalvarTextoEditor?.(); e.currentTarget.blur(); }
               }} />
           </foreignObject>;
         })()}

@@ -26,6 +26,7 @@ import { ladoDoTrilho, type LadoTrilho } from "./geometry";
 import { useConsoleAncorado } from "./ConsoleCloseContext";
 import { Scrollbar } from "./scrollbar";
 import { HudCursor } from "../../mesas/_global/GlobalShell";
+import { useCamada } from "../../_design/camadas";
 import "../../_design/console.css";
 
 /** Não inicia arraste quando o clique nasce num elemento interativo. */
@@ -152,6 +153,11 @@ export function ConsoleWindow({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aberto, !!win.geo, conteudoChave, win.registrarAlturaColuna1, win.registrarLarguraGrid]);
 
+  // Na pilha de camadas sem fechar por ela (`fechar` ausente): o Esc do
+  // Console continua com as regras abaixo, mas só quando nada foi aberto
+  // por cima dele (um diálogo, um menu, uma dica).
+  const camada = useCamada({ aberta: aberto && !minimizada, raiz: windowRef, modal });
+
   // Foco inicial e armadilha de foco enquanto a janela está visível.
   useEffect(() => {
     if (!aberto || minimizada) return;
@@ -171,6 +177,7 @@ export function ConsoleWindow({
       // quem está mexendo no mapa fecharia a ficha pelas costas.
       if (!modal && !el!.contains(document.activeElement)) return;
       if (e.key === "Escape") {
+        if (!camada.ehTopo()) return;
         // Escape pertence primeiro a quem está aberto por cima: uma
         // edição inline ou um modal auxiliar. Só fecha a janela quando
         // não há nada mais específico para cancelar — sem isso, cancelar

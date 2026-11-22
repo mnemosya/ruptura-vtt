@@ -31,6 +31,7 @@ import {
   Archive, ArchiveRestore, ArrowDown, ArrowUp, Check, Copy,
   MonitorPlay, MoreVertical, Pencil, SlidersHorizontal, Trash2, Users, X,
 } from "lucide-react";
+import { ehEnter } from "../../../../_design/teclado";
 import type {
   CartaoCena as DadosCartaoCena, ModoDuplicacao, PosicaoJogador,
 } from "../../../../../lib/vtt/sceneStorage";
@@ -277,7 +278,7 @@ export function CartaoCena(p: PropsCartaoCena) {
               data-testid="cena-campo-nome"
               onChange={(e) => setRascunho(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") { e.preventDefault(); confirmarNome(); }
+                if (ehEnter(e)) { e.preventDefault(); confirmarNome(); }
                 if (e.key === "Escape") { e.preventDefault(); setModo("normal"); }
               }}
               // Sair do campo confirma, como em toda edição inline da

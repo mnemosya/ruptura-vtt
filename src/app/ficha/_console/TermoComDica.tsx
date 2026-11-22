@@ -11,12 +11,13 @@
  * daria dois tooltips que divergem no primeiro ajuste.
  */
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { listarCapitulosAction } from "../../mesas/[campaignId]/vtt/_compendio/acoes";
 import { indiceDeTermos, resolverTermo, type DestinoLivro } from "../../mesas/[campaignId]/vtt/_compendio/modelo";
 import type { TermoDeRegra } from "./types";
+import { useCamada } from "../../_design/camadas";
 
 const LivroCodex = dynamic(() => import("../../mesas/[campaignId]/vtt/_compendio/LivroCodex").then((m) => m.LivroCodex), { ssr: false });
 
@@ -54,6 +55,22 @@ export function TermoComDica({
   const [buscaCodex, setBuscaCodex] = useState("");
   const [codexAberto, setCodexAberto] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const descricaoId = useId();
+
+  const fecharDica = () => {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    setEm(null);
+  };
+  /* Um respiro antes de sumir: sem isso, atravessar o termo com o mouse
+     pisca a dica a cada passagem. É também o tempo de levar o mouse do
+     termo até a dica, que fica aberta enquanto o mouse estiver em cima
+     dela (WCAG 1.4.13). */
+  const agendarFechamento = () => {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => setEm(null), 120);
+  };
+  // Esc dispensa a dica sem tirar o mouse nem o foco do termo.
+  useCamada({ aberta: em !== null, fechar: fecharDica });
 
   useEffect(() => {
     if (!codexAberto) return;
@@ -98,6 +115,7 @@ export function TermoComDica({
         tabIndex={0}
         role="button"
         aria-label={`Abrir ${termo.nome} no Códex`}
+        aria-describedby={descricaoId}
         onClick={(e) => { e.stopPropagation(); void abrirNoCodex(); }}
         onKeyDown={(e) => {
           if (e.key !== "Enter" && e.key !== " ") return;
@@ -106,21 +124,26 @@ export function TermoComDica({
           void abrirNoCodex();
         }}
         onMouseEnter={(e) => abrir(e.currentTarget)}
-        onMouseLeave={() => {
-          /* Um respiro antes de sumir: sem isso, atravessar o termo com
-             o mouse pisca o tooltip a cada passagem. */
-          timerRef.current = window.setTimeout(() => setEm(null), 80);
-        }}
+        onMouseLeave={agendarFechamento}
         onFocus={(e) => abrir(e.currentTarget)}
-        onBlur={() => setEm(null)}
+        onBlur={fecharDica}
       >
         {children}
+      </span>
+      {/* A descrição do termo fica sempre na árvore, escondida, para o
+          leitor de tela lê-la ao focar o termo: a dica visual só nasce
+          depois do foco e chegaria tarde. */}
+      <span id={descricaoId} hidden>
+        {termo.rotulo ?? ROTULO_DO_TIPO[termo.tipo]}. {termo.descricao ?? "Sem descrição publicada para este termo."}
       </span>
       {erro && <span role="alert" className="rc-termo-erro">{erro}</span>}
       {em && typeof document !== "undefined" && createPortal(
         <span
           role="tooltip"
+          aria-hidden="true"
           className="rc-termo-dica rc-cursor-scope"
+          onMouseEnter={() => { if (timerRef.current) window.clearTimeout(timerRef.current); }}
+          onMouseLeave={agendarFechamento}
           data-tipo={termo.tipo}
           /* O portal tira a dica de dentro do overflow/clip-path da
              janela. As coordenadas continuam sendo as da viewport. */

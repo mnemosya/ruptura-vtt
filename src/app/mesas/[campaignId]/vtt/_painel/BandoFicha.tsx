@@ -15,6 +15,7 @@ import { subscribeToCampaignCrewRealtime } from "../../../../../lib/realtime/tab
 import { EstadoCarregando, EstadoErro } from "./Estados";
 import { BotaoTecnico, SecaoDossie } from "./ui/primitivas";
 import { Select } from "../_dados3d/ResultadoRolagem";
+import { ehEnter } from "../../../../_design/teclado";
 type Identidade = Pick<CrewStateV12, "nome" | "simbolo" | "principio" | "contato_inicial" | "inimigo_ou_divida">;
 const CAMPOS_IDENTIDADE: Array<{
     id: keyof Identidade;
@@ -50,7 +51,7 @@ function Campo({ rotulo, valor, onMudar, onConfirmar, testId, placeholder }: {
 }) {
     return (<label className="rv-pn-campo">
       <span>{rotulo}</span>
-      <input className="rv-pn-input" value={valor} placeholder={placeholder} onChange={(e) => onMudar(e.target.value)} onBlur={onConfirmar} onKeyDown={(e) => { if (e.key === "Enter") {
+      <input className="rv-pn-input" value={valor} placeholder={placeholder} onChange={(e) => onMudar(e.target.value)} onBlur={onConfirmar} onKeyDown={(e) => { if (ehEnter(e)) {
         e.preventDefault();
         onConfirmar?.();
     } }} data-testid={testId}/>
@@ -61,14 +62,16 @@ function Linha({ children }: {
 }) {
     return <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap", marginTop: 8 }}>{children}</div>;
 }
+// WebP: os PNG originais (cerca de 2 MB cada) continuam em `public/`
+// como fonte; estes têm a mesma resolução e um décimo do peso.
 const ARTE_ESPECIALISTA: Record<string, string> = {
-    biomecanico: "/especialistas/biomecanic.png",
-    clinico: "/especialistas/clinico.png",
-    forjador: "/especialistas/forjador.png",
-    informante: "/especialistas/informante.png",
-    mecanico: "/especialistas/mecanico.png",
-    quimico: "/especialistas/quimico.png",
-    tecelao: "/especialistas/tecelão.png",
+    biomecanico: "/especialistas/biomecanico.webp",
+    clinico: "/especialistas/clinico.webp",
+    forjador: "/especialistas/forjador.webp",
+    informante: "/especialistas/informante.webp",
+    mecanico: "/especialistas/mecanico.webp",
+    quimico: "/especialistas/quimico.webp",
+    tecelao: "/especialistas/tecelao.webp",
 };
 const POSICAO_ESPECIALISTA: Record<string, string> = {
     biomecanico: "58% 26%", clinico: "42% 28%", forjador: "54% 26%", informante: "34% 24%",
@@ -423,7 +426,7 @@ export function BandoFicha({ campaignId, visivel, secao = "visao", fixtureVisual
         {estado.especialistas.length>0&&<button className="bn-pay-button" type="button" disabled={ocupado} data-testid="painel-bando-pagar" onClick={()=>{const r=payIntervalV12(estado,catalogo);const partes=[`Pagos ${aretz(r.pagos)}`];if(r.semSalario.length)partes.push(`sem salário: ${r.semSalario.join(", ")}`);if(r.encerrados.length)partes.push(`contrato encerrado: ${r.encerrados.join(", ")}`);void gravar(r.estado,`${partes.join("; ")}.`)}}>Pagar a retaguarda · intervalo</button>}
         <TituloListaBando titulo="Disponíveis para recrutar" extra="REC · SAL"/>
         {catalogo.especialistas.map(e=><article className="bn-specialist-card" key={e.slug}>
-          <div className="bn-specialist-art"><img src={ARTE_ESPECIALISTA[e.slug]} alt="" loading="lazy" style={{objectPosition:POSICAO_ESPECIALISTA[e.slug]??"center"}}/><span className="bn-specialist-grade" data-kind={e.slug}/></div>
+          <div className="bn-specialist-art"><img src={ARTE_ESPECIALISTA[e.slug]} alt="" loading="lazy" decoding="async" width={1672} height={941} style={{objectPosition:POSICAO_ESPECIALISTA[e.slug]??"center"}}/><span className="bn-specialist-grade" data-kind={e.slug}/></div>
           <div className="bn-specialist-copy"><small>{catalogo.areas_de_apoio.find(a=>a.slug===e.area)?.nome??e.area}</small><strong>{e.nome}</strong><span>REC {aretz(e.recrutamento)} &nbsp; SAL {aretz(e.salario)}</span><button type="button" disabled={ocupado} data-testid={`painel-bando-recrutar-${e.slug}`} onClick={()=>void aplicar(recruitSpecialistV12(estado,e.slug,catalogo),"Especialista recrutado.")}>+ RECRUTAR</button></div>
           <span className="bn-specialist-rank">RK {e.ranking_minimo}</span>
         </article>)}

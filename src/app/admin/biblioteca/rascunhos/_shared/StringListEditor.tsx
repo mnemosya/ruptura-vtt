@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { buttonStyle, inputStyle } from "./formStyles";
+import { ehEnter } from "../../../../_design/teclado";
 
 export function StringListEditor({
   label,
@@ -51,7 +52,7 @@ export function StringListEditor({
           value={novo}
           onChange={(e) => setNovo(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            if (ehEnter(e)) {
               e.preventDefault();
               adicionar();
             }

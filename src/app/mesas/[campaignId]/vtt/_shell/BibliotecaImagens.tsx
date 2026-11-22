@@ -26,7 +26,8 @@
  * "o que é este arquivo?" — sem esconder nada.
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useCamada } from "../../../../_design/camadas";
 import { Images, Loader2, Map, Shapes, Trash2, X } from "lucide-react";
 import { type ImagemBiblioteca, pesoLegivel, usoDaImagem } from "../_dominio/imagemCena";
 
@@ -54,6 +55,10 @@ export interface PropsBibliotecaImagens {
 export function BibliotecaImagens({
   imagens, carregando, urls, jaTemFundo, ocupado, onColocar, onExcluir, erro, onFechar,
 }: PropsBibliotecaImagens) {
+  const raizRef = useRef<HTMLDivElement>(null);
+  // Esc fecha (a janela de colocar imagem, aberta por cima, fecha antes);
+  // Tab fica contido na biblioteca.
+  useCamada({ aberta: true, fechar: onFechar, raiz: raizRef, modal: true });
   /* O papel é escolhido ANTES de clicar na imagem: um clique só, e a
      miniatura é o botão. Perguntar depois ("como quer colocar?")
      colocaria um passo entre a escolha e o resultado. */
@@ -70,7 +75,7 @@ export function BibliotecaImagens({
   const visiveis = imagens ?? [];
 
   return (
-    <div className="rv-biblioteca" role="dialog" aria-modal="true" aria-label="Biblioteca de imagens" data-testid="biblioteca-imagens">
+    <div ref={raizRef} className="rv-biblioteca" role="dialog" aria-modal="true" aria-label="Biblioteca de imagens" data-testid="biblioteca-imagens">
       <header className="rv-biblioteca__cab">
         <span className="rv-biblioteca__ico" aria-hidden><Images size={15} /></span>
         <div className="rv-biblioteca__txt">

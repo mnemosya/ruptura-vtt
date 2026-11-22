@@ -199,6 +199,7 @@ export function Forja({ catalogos, regiaoCampanha: regiaoFixa, nomeMesa = "Mesa 
           contexto="FORJA"
           canal="UPLOAD://AVATAR"
           forma="circulo"
+          cor="#00d4ff"
           previaToken="#45b8c9"
           atual={avatar.preparada?.previewUrl ?? null}
           arquivoInicial={avatar.abrindo.arquivo}

@@ -13,7 +13,8 @@
  * completa, de quem vai jogar com ele (ou o "completar" daquele atalho).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useCamada } from "../../../../../_design/camadas";
 import { createPortal } from "react-dom";
 import { Forja } from "../../_forja/Forja";
 import { VeuForja } from "../../_forja/VeuForja";
@@ -39,6 +40,7 @@ export function JanelaNovoPersonagem({
   const [catalogos, setCatalogos] = useState<CatalogosCriacaoV12 | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [montado, setMontado] = useState(false);
+  const raizRef = useRef<HTMLDivElement>(null);
   useEffect(() => { setMontado(true); }, []);
 
   useEffect(() => {
@@ -52,17 +54,13 @@ export function JanelaNovoPersonagem({
     return () => { vivo = false; };
   }, [campaignId]);
 
-  // Esc fecha só enquanto a Forja ainda carrega; dentro dela, Esc é dos Códex.
-  useEffect(() => {
-    if (catalogos) return;
-    const k = (e: KeyboardEvent) => { if (e.key === "Escape") onFechar(); };
-    window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
-  }, [catalogos, onFechar]);
+  // Esc fecha só enquanto a Forja ainda carrega; dentro dela, Esc é dos
+  // Códex (`undefined` deixa a tecla seguir). Tab contido na janela.
+  useCamada({ aberta: montado, fechar: catalogos ? undefined : onFechar, raiz: raizRef, modal: true });
 
   if (!montado) return null;
   return createPortal(
-    <div className="fj-janela" role="dialog" aria-modal="true" aria-label={completar ? `Completar ${completar.nome}` : "Forja de Refratário"} data-testid="painel-janela-novo-personagem">
+    <div ref={raizRef} className="fj-janela" role="dialog" aria-modal="true" aria-label={completar ? `Completar ${completar.nome}` : "Forja de Refratário"} data-testid="painel-janela-novo-personagem">
       {catalogos ? (
         <Forja
           catalogos={catalogos}
