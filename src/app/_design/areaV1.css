@@ -434,6 +434,9 @@
 .v1 .v1-rotulo-nome { font-family: var(--v1-ox); font-weight: 700; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--v1-gelo); }
 .v1 .v1-rotulo-sub { font-family: var(--v1-mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--v1-apagado); }
 .v1 .v1-rotulo-sub--eu { color: var(--v1-am); }
+/* O destaque recorta (`overflow: hidden`) e o elenco encosta no padding
+   esquerdo: centrado, o rótulo do primeiro retrato vazava e era cortado. */
+.v1 .v1-retrato-wrap:first-child .v1-rotulo { left: 0; translate: 0 0; align-items: flex-start; text-align: left; }
 .v1 .v1-retrato-extra, .v1 .v1-retrato-vazio { width: 64px; height: 88px; display: grid; place-items: center; clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%); }
 .v1 .v1-retrato-extra { background: rgba(207,239,244,0.08); border-bottom: 3px solid rgba(127,149,179,0.5); font-family: var(--v1-teko); font-weight: 600; font-size: 30px; color: var(--v1-gelo); }
 .v1 .v1-retrato-vazio { clip-path: none; border: 1px dashed rgba(127,149,179,0.6); color: var(--v1-apagado); }
